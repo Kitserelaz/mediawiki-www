@@ -1,0 +1,22 @@
+{
+	"@metadata": {
+		"authors": [
+			"Olimar",
+			"Pyscowicz",
+			"Quiddity"
+		]
+	},
+	"apihelp-flow+close-open-topic-param-reason": "Syy aiheen lukitsemiselle tai avaamiselle lukituksesta.",
+	"apihelp-flow+edit-header-param-format": "Kuvauksen formaatti (wikitext|html)",
+	"apihelp-flow+edit-header-example-1": "Muokkaa sivun [[Talk:Sandbox]] kuvausta",
+	"apihelp-flow+edit-post-param-postId": "Viestin tunniste.",
+	"apihelp-flow+edit-post-param-prev_revision": "Nykyisen viestiversion versiotunniste päällekkäisten muokkausten tarkistamiseksi.",
+	"apihelp-flow+edit-post-param-content": "Viestin sisältö.",
+	"apihelp-flow+edit-post-param-format": "Viestin sisällön formaatti (wikitext|html)",
+	"apihelp-flow+edit-post-example-1": "Muokkaa viestiä aiheessa [[Topic:S2tycnas4hcucw8w]]",
+	"apihelp-flow+moderate-topic-example-1": "Poista aihe [[Topic:S2tycnas4hcucw8w]]",
+	"apihelp-flow+new-topic-param-topic": "Uuden aiheotsikon teksti.",
+	"apihelp-flow+new-topic-param-content": "Aiheen ensimmäisen vastauksen sisältö.",
+	"apihelp-flow+view-topic-example-1": "Näytä [[Topic:S2tycnas4hcucw8w]]",
+	"apihelp-flow+view-topic-summary-param-revId": "Lataa tämä versio uusimman sijasta."
+}

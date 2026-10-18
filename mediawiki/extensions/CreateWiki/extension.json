@@ -1,0 +1,483 @@
+{
+	"name": "CreateWiki",
+	"author": [
+		"Southparkfan",
+		"John Lewis",
+		"Paladox",
+		"Universal Omega",
+		"Agent Isai",
+		"Alex"
+	],
+	"url": "https://github.com/miraheze/CreateWiki",
+	"descriptionmsg": "createwiki-desc",
+	"namemsg": "createwiki-extensionname",
+	"license-name": "GPL-3.0-or-later",
+	"type": "specialpage",
+	"requires": {
+		"MediaWiki": ">= 1.43.0",
+		"platform": {
+			"php": ">= 8.1"
+		}
+	},
+	"MessagesDirs": {
+		"CreateWiki": [
+			"i18n"
+		]
+	},
+	"ExtensionMessagesFiles": {
+		"CreateWikiMagic": "CreateWikiMagic.php"
+	},
+	"TranslationAliasesDirs": {
+		"CreateWikiAliases": "i18n/aliases"
+	},
+	"AutoloadNamespaces": {
+		"Miraheze\\CreateWiki\\": "includes/",
+		"Miraheze\\CreateWiki\\Maintenance\\": "maintenance/"
+	},
+	"TestAutoloadNamespaces": {
+		"Miraheze\\CreateWiki\\Tests\\": "tests/phpunit/"
+	},
+	"JobClasses": {
+		"CreateWikiJob": {
+			"class": "Miraheze\\CreateWiki\\Jobs\\CreateWikiJob",
+			"services": [
+				"WikiManagerFactory",
+				"WikiRequestManager"
+			],
+			"needsPage": false
+		},
+		"RequestWikiAIJob": {
+			"class": "Miraheze\\CreateWiki\\Jobs\\RequestWikiAIJob",
+			"services": [
+				"CreateWikiConfig",
+				"CreateWikiHookRunner",
+				"WikiRequestManager"
+			],
+			"needsPage": false
+		},
+		"RequestWikiRemoteAIJob": {
+			"class": "Miraheze\\CreateWiki\\Jobs\\RequestWikiRemoteAIJob",
+			"services": [
+				"CreateWikiConfig",
+				"CreateWikiLogger",
+				"HttpRequestFactory",
+				"WikiRequestManager"
+			],
+			"needsPage": false
+		},
+		"SetContainersAccessJob": {
+			"class": "Miraheze\\CreateWiki\\Jobs\\SetContainersAccessJob",
+			"services": [
+				"CreateWikiConfig",
+				"RepoGroup"
+			],
+			"needsPage": false
+		}
+	},
+	"GroupPermissions": {
+		"user": {
+			"requestwiki": true
+		}
+	},
+	"AvailableRights": [
+		"createwiki",
+		"createwiki-deleterequest",
+		"createwiki-suppressionlog",
+		"createwiki-suppressrequest",
+		"requestwiki"
+	],
+	"LogActionsHandlers": {
+		"farmer/createwiki": "LogFormatter",
+		"farmer/comment": "LogFormatter",
+		"farmer/create-failure": "LogFormatter",
+		"farmer/requestapprove": "LogFormatter",
+		"farmer/requestdecline": "LogFormatter",
+		"farmer/requestmoredetails": "LogFormatter",
+		"farmer/requestonhold": "LogFormatter",
+		"farmer/requestreopen": "LogFormatter",
+		"farmer/requestwiki": {
+			"class": "Miraheze\\CreateWiki\\LogFormatter\\FarmerLogFormatter",
+			"services": [
+				"LinkRenderer"
+			]
+		},
+		"farmersuppression/*": "LogFormatter"
+	},
+	"LogHeaders": {
+		"farmer": "farmer-log-header",
+		"farmersuppression": "farmersuppression-log-header"
+	},
+	"LogNames": {
+		"farmer": "farmer-log-name",
+		"farmersuppression": "farmersuppression-log-name"
+	},
+	"LogTypes": [
+		"farmer",
+		"farmersuppression"
+	],
+	"LogRestrictions": {
+		"farmersuppression": "createwiki-suppressionlog"
+	},
+	"ActionFilteredLogs": {
+		"farmer": {
+			"createwiki": [
+				"createwiki"
+			],
+			"comment": [
+				"comment"
+			],
+			"create-failure": [
+				"create-failure"
+			],
+			"requestapprove": [
+				"requestapprove"
+			],
+			"requestdecline": [
+				"requestdecline"
+			],
+			"requestmoredetails": [
+				"requestmoredetails"
+			],
+			"requestonhold": [
+				"requestonhold"
+			],
+			"requestreopen": [
+				"requestreopen"
+			],
+			"requestwiki": [
+				"requestwiki"
+			]
+		},
+		"farmersuppression": {
+			"delete": [
+				"delete"
+			],
+			"public": [
+				"public"
+			],
+			"suppress": [
+				"suppress"
+			]
+		}
+	},
+	"SpecialPages": {
+		"CreateWiki": {
+			"class": "Miraheze\\CreateWiki\\Specials\\SpecialCreateWiki",
+			"services": [
+				"CreateWikiDatabaseUtils",
+				"CreateWikiValidator",
+				"WikiManagerFactory"
+			]
+		},
+		"RequestWiki": {
+			"class": "Miraheze\\CreateWiki\\RequestWiki\\Specials\\SpecialRequestWiki",
+			"services": [
+				"CreateWikiDatabaseUtils",
+				"CreateWikiHookRunner",
+				"CreateWikiValidator",
+				"WikiRequestManager"
+			]
+		},
+		"RequestWikiQueue": {
+			"class": "Miraheze\\CreateWiki\\RequestWiki\\Specials\\SpecialRequestWikiQueue",
+			"services": [
+				"CreateWikiDatabaseUtils",
+				"LanguageNameUtils",
+				"UserFactory",
+				"WikiRequestManager",
+				"WikiRequestViewer"
+			]
+		}
+	},
+	"Hooks": {
+		"BeforeCreateEchoEvent": {
+			"handler": "Notifications"
+		},
+		"GetAllBlockActions": {
+			"handler": "Main"
+		},
+		"GetMagicVariableIDs": {
+			"handler": "Main"
+		},
+		"LoadExtensionSchemaUpdates": {
+			"handler": "Installer"
+		},
+		"LoginFormValidErrorMessages": {
+			"handler": "Main"
+		},
+		"MakeGlobalVariablesScript": {
+			"handler": "Main"
+		},
+		"ManageWikiCoreProvider": {
+			"handler": "ManageWiki"
+		},
+		"ParserGetVariableValueSwitch": {
+			"handler": "Main"
+		},
+		"SetupAfterCache": {
+			"handler": "Main"
+		},
+		"UserGetReservedNames": {
+			"handler": "Main"
+		}
+	},
+	"HookHandlers": {
+		"Installer": {
+			"class": "Miraheze\\CreateWiki\\Hooks\\Handlers\\Installer"
+		},
+		"Main": {
+			"class": "Miraheze\\CreateWiki\\Hooks\\Handlers\\Main",
+			"services": [
+				"CreateWikiConfig",
+				"CreateWikiDatabaseUtils",
+				"CreateWikiDataFactory",
+				"RemoteWikiFactory"
+			]
+		},
+		"ManageWiki": {
+			"class": "Miraheze\\CreateWiki\\Hooks\\Handlers\\ManageWiki",
+			"services": [
+				"CreateWikiConfig",
+				"CreateWikiDatabaseUtils",
+				"CreateWikiDataFactory",
+				"CreateWikiHookRunner",
+				"JobQueueGroupFactory"
+			]
+		},
+		"Notifications": {
+			"class": "Miraheze\\CreateWiki\\Hooks\\Handlers\\Notifications"
+		}
+	},
+	"RestRoutes": [
+		{
+			"path": "/createwiki/v0/wiki_requests/user/{username}",
+			"method": "GET",
+			"class": "Miraheze\\CreateWiki\\RequestWiki\\Rest\\UserWikiRequestsHandler",
+			"services": [
+				"CreateWikiRestUtils",
+				"UserFactory",
+				"WikiRequestManager"
+			]
+		},
+		{
+			"path": "/createwiki/v0/wiki_request/{id}/comment",
+			"method": "POST",
+			"class": "Miraheze\\CreateWiki\\RequestWiki\\Rest\\WikiRequestAddCommentHandler",
+			"services": [
+				"CreateWikiRestUtils",
+				"WikiRequestManager"
+			]
+		},
+		{
+			"path": "/createwiki/v0/wiki_request/{id}",
+			"method": "GET",
+			"class": "Miraheze\\CreateWiki\\RequestWiki\\Rest\\WikiRequestInfoHandler",
+			"services": [
+				"CreateWikiRestUtils",
+				"WikiRequestManager"
+			]
+		}
+	],
+	"ResourceModules": {
+		"ext.createwiki.oouiform": {
+			"scripts": "ext.createwiki.oouiform.ooui.js",
+			"dependencies": [
+				"mediawiki.storage",
+				"oojs-ui-widgets"
+			]
+		},
+		"ext.createwiki.oouiform.styles": {
+			"styles": "ext.createwiki.oouiform.ooui.less"
+		},
+		"ext.createwiki.requestwiki.oouiform.styles": {
+			"styles": "ext.createwiki.requestwiki.oouiform.ooui.less"
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "modules",
+		"remoteExtPath": "CreateWiki/modules"
+	},
+	"config": {
+		"CreateWikiAIThreshold": {
+			"description": "Integer. Must be a positive integer. Minimum percentage point threshold for a request to be automatically approved when acceptable. 0 will disable auto approval.",
+			"value": 0
+		},
+		"CreateWikiAutoApprovalFilter": {
+			"description": "Array. Regexes in request descriptions to never auto approve if matched.",
+			"value": []
+		},
+		"CreateWikiCacheDirectory": {
+			"description": "String. The path to store CreateWiki cache files at.",
+			"value": ""
+		},
+		"CreateWikiCacheType": {
+			"description": "Index from $wgObjectCaches. If set, this will be used instead of $wgMainCacheType for CreateWiki cache.",
+			"value": null
+		},
+		"CreateWikiCannedResponses": {
+			"description": "Array. An array of default responses to give. If this is enabled (not an empty array), free-text options are removed.",
+			"value": []
+		},
+		"CreateWikiCategories": {
+			"description": "Array. An array of categories used for wiki categorization. If this is an empty array, categories will not be used at all.",
+			"value": []
+		},
+		"CreateWikiCollation": {
+			"description": "String. Sets the collation to use when creating the wiki database. Example is 'DEFAULT SET utf8mb4 COLLATE utf8mb4_unicode_ci'",
+			"value": ""
+		},
+		"CreateWikiContainers": {
+			"description": "Array. List of local containers to create. Format: <container> => <public/public-private/private>. public means directory will always be public. public-private is to support public/private and uses isPrivate check. private means directory is private regardless of wiki status. Defaults to MediaWiki default containers with most public apart from deleted and temp.",
+			"value": {
+				"local-public": "public-private",
+				"local-thumb": "public-private",
+				"local-transcoded": "public-private",
+				"local-temp": "private",
+				"local-deleted": "private"
+			}
+		},
+		"CreateWikiDatabaseClusters": {
+			"description": "Array. LBFactory clusters which CreateWiki considers active. Format: <display name> => <cluster name from LBFactory>.",
+			"value": []
+		},
+		"CreateWikiDatabaseClustersInactive": {
+			"description": "Array. LBFactory clusters which are not considered active for wikis to be created on. Format: <display name> => <cluster name from LBFactory>.",
+			"value": []
+		},
+		"CreateWikiDatabaseSuffix": {
+			"description": "String. Database suffix.",
+			"value": "wiki"
+		},
+		"CreateWikiDisallowedSubdomains": {
+			"description": "Array. Regexes to match for disallowed subdomains.",
+			"value": []
+		},
+		"CreateWikiEmailNotifications": {
+			"description": "Boolean. Whether to send emails for new wiki creations.",
+			"value": false
+		},
+		"CreateWikiEnableManageInactiveWikis": {
+			"description": "Boolean. Whether the ManageInactiveWikis maintenance script be enabled. That script marks wikis as inactive, closed, or deleted per $wgCreateWikiStateDays.",
+			"value": false
+		},
+		"CreateWikiEnableRESTAPI": {
+			"description": "Boolean. Whether the CreateWiki REST API should be enabled.",
+			"value": true
+		},
+		"CreateWikiInactiveExemptReasonOptions": {
+			"description": "Array. Possible options for marking a wiki as exempt from inactivity.",
+			"value": []
+		},
+		"CreateWikiNotificationEmail": {
+			"description": "String. Email address to send internally generated notification emails to. Does not depend on $wgCreateWikiEmailNotifications.",
+			"value": "root@localhost"
+		},
+		"CreateWikiOpenAIConfig": {
+			"description": "Array. OpenAI configuration array, including dry run status, Assistant ID and API Key.",
+			"value": {
+				"dryrun": true,
+				"assistantid": null,
+				"apikey": null
+			}
+		},
+		"CreateWikiPersistentModelFile": {
+			"description": "String. Location to a file that can be overwritten to contain a persistent machine learning model.",
+			"value": ""
+		},
+		"CreateWikiPurposes": {
+			"description": "Array. List of identified purposes to show when requesting a wiki.",
+			"value": []
+		},
+		"CreateWikiRequestCountWarnThreshold": {
+			"description": "Integer. Amount of wiki requests a user can have before being flagged. 0 to disable.",
+			"value": 0
+		},
+		"CreateWikiShowBiographicalOption": {
+			"description": "Boolean. Whether to show a biographical person option when requesting a wiki.",
+			"value": false
+		},
+		"CreateWikiSQLFiles": {
+			"description": "Array. All SQLs to be loaded into every wiki by default.",
+			"value": []
+		},
+		"CreateWikiStateDays": {
+			"description": "Array. Integer values in days when a wiki is deemed inactive, closed, removed (hidden) and deleted. Number of days passed since last change - not from initial inactivity.",
+			"value": {
+				"inactive": 45,
+				"closed": 15,
+				"removed": 120,
+				"deleted": 7
+			}
+		},
+		"CreateWikiSubdomain": {
+			"description": "String. The main part of subdomains, e.g. wiki.example.org, example.org is the main part.",
+			"value": ""
+		},
+		"CreateWikiUseClosedWikis": {
+			"description": "Boolean. Whether to implement front end logic for closing wikis.",
+			"value": false
+		},
+		"CreateWikiUseEchoNotifications": {
+			"description": "Boolean. Whether to use Echo notifications.",
+			"value": false
+		},
+		"CreateWikiUseExperimental": {
+			"description": "Boolean. Whether to implement front-end logic for marking wikis as experimental.",
+			"value": false
+		},
+		"CreateWikiUseInactiveWikis": {
+			"description": "Boolean. Whether to implement front end logic for inactive wikis.",
+			"value": false
+		},
+		"CreateWikiUseJobQueue": {
+			"description": "Boolean. Whether to defer intensive tasks to the jobqueue.",
+			"value": false
+		},
+		"CreateWikiUsePrivateWikis": {
+			"description": "Boolean. Whether to implement front end logic for marking wikis as private.",
+			"value": true
+		},
+		"RequestWikiConfirmAgreement": {
+			"description": "Boolean. Whether to require users to confirm they will abide by farm policies.",
+			"value": false
+		},
+		"RequestWikiConfirmEmail": {
+			"description": "Boolean. Whether to require users to confirm emails before being able to request wikis.",
+			"value": true
+		},
+		"RequestWikiMinimumLength": {
+			"description": "Integer. Minimum length for the reason field within RequestWiki.",
+			"value": false
+		}
+	},
+	"ConfigRegistry": {
+		"CreateWiki": "MediaWiki\\Config\\GlobalVarConfig::newInstance"
+	},
+	"DefaultUserOptions": {
+		"echo-subscriptions-web-request-comment": true,
+		"echo-subscriptions-email-request-comment": false,
+		"echo-subscriptions-web-request-declined": true,
+		"echo-subscriptions-email-request-declined": true,
+		"echo-subscriptions-web-request-moredetails": true,
+		"echo-subscriptions-email-request-moredetails": true,
+		"echo-subscriptions-web-wiki-creation": true,
+		"echo-subscriptions-email-wiki-creation": false
+	},
+	"RateLimits": {
+		"requestwiki": {
+			"user": [
+				5,
+				60
+			]
+		}
+	},
+	"ServiceWiringFiles": [
+		"includes/ServiceWiring.php"
+	],
+	"DatabaseVirtualDomains": [
+		"virtual-createwiki",
+		"virtual-createwiki-central"
+	],
+	"load_composer_autoloader": true,
+	"manifest_version": 2
+}

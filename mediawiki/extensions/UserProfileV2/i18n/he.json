@@ -1,0 +1,39 @@
+{
+	"@metadata": {
+		"authors": [
+			"Amire80",
+			"Freddy9"
+		]
+	},
+	"userprofilev2-desc": "מערכת פרופיל משתמש מבוססת ויקי.",
+	"userprofilev2-selectavatar": "נא לבחור תמונה מייצגת",
+	"userprofilev2-avatarchanged": "התמונה המייצגת עודכנה בהצלחה.",
+	"userprofilev2-avatardeleted": "התמונה המייצגת נמחקה בהצלחה.",
+	"userprofilev2-user-locked": "חשבון משתמש זה הושבת באופן גלובלי.",
+	"userprofilev2-edit-profile": "עריכת הפרופיל שלך",
+	"userprofilev2-apierror-forbidden": "הגישה נחסמה: אין לך הרשאה לשנות את התמונה המייצגת הזאת.",
+	"userprofilev2-apierror-invalidpermission": "אסור: אין לך הרשאה לערוך את הפרופיל של $1",
+	"userprofilev2-apierror-nofile": "לא נבחר קובץ להעלאה.",
+	"userprofilev2-apierror-ratelimited": "לא ניתן להעלות תמונות כרגע.",
+	"userprofilev2-apierror-invalidusername": "אין משתמש רשום עם שם המשתמש \"$1\" בוויקי הזה.",
+	"userprofilev2-about-me": "עליי",
+	"userprofilev2-discord": "שם משתמש ברשת דיסקורד",
+	"userprofilev2-twitter": "שם משתמש בטוויטר",
+	"userprofilev2-mastodon": "שם משתמש במסטודון",
+	"userprofilev2-about-me-placeholder": "כאן אפשר לכתוב על עצמך...",
+	"userprofilev2-about-me-help": "כאן אפשר לספר לנו על עצמך. עד 200 תווים.",
+	"userprofilev2-mastodon-help": "שם המשתמש שלך במסטודון, עם @",
+	"userprofilev2-twitter-help": "שם המשתמש שלך בטוויטר, עם @",
+	"userprofilev2-discord-help": "שם המשתמש שלך בדיסקורד, ללא #",
+	"userprofilev2-showglobalgroups": "להציג את הקבוצות הגלובליות שלי?",
+	"userprofilev2-showglobaleditcount": "הצגת ספירת עריכות גלובלית?",
+	"userprofilev2-showglobalgroupshelp": "להציג קבוצות משתמשים גלובליות שאני חלק מהן (יהיו גלויות לכולם)",
+	"userprofilev2-showglobaleditcounthelp": "להציג את ספירת העריכות הגלובלית שלי מ־CentralAuth (תהיה גלויה לכולם)",
+	"userprofilev2-edit": "עריכה",
+	"userprofilev2-edit-count": "{{PLURAL:$1|עריכה אחת|$1 עריכות}}",
+	"userprofilev2-globaledit-count": "{{PLURAL:$1|עריכה גלובלית אחת|$1 עריכות גלובליות}}",
+	"userprofilev2-editavatar": "עריכת תמונה מייצגת",
+	"userprofilev2-edit-back": "חזרה",
+	"userprofilev2-deleteavatar": "מחיקת תמונה מייצגת",
+	"userprofilev2-helptext": "בתיבת הדו־שיח הזאת אפשר לשנות את התוכן של פרופיל המשתמש שלך."
+}

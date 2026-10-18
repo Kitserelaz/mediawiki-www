@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Deltaspace"
+		]
+	},
+	"share": "Поделиться",
+	"share-email": "Поделиться по электронной почте",
+	"share-linkedin": "Поделиться в LinkedIn",
+	"share-linkedin-desc": "Разрешить добавление ссылки для обмена статьями через LinkedIn на боковую панель",
+	"share-reddit": "Поделиться на Реддите"
+}

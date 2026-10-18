@@ -1,0 +1,25 @@
+{
+	"@metadata": {
+		"authors": [
+			"Lakejason0"
+		]
+	},
+	"share": "分享",
+	"share-desc": "添加一个侧边栏portlet，以让用户在社交媒体平台上轻松分享wiki条目",
+	"share-header": "分享这个",
+	"share-email": "通过电子邮件分享",
+	"share-email-desc": "允许通过电子邮件分享条目的链接添加到侧边栏",
+	"share-facebook": "分享到Facebook",
+	"share-facebook-desc": "允许通过Facebook分享条目的链接添加到侧边栏",
+	"share-linkedin": "分享到LinkedIn",
+	"share-linkedin-desc": "允许通过LinkedIn分享条目的链接添加到侧边栏",
+	"share-reddit": "分享到Reddit",
+	"share-reddit-desc": "允许通过Reddit分享条目的链接添加到侧边栏",
+	"share-tumblr": "分享到Tumblr",
+	"share-tumblr-desc": "允许通过Tumblr分享条目的链接添加到侧边栏",
+	"share-twitter": "分享到Twitter",
+	"share-twitter-desc": "允许通过Twitter分享条目的链接添加到侧边栏",
+	"share-sidebar-basicbuttons": "使用基本按钮模式？",
+	"share-preftoggle": "禁用在侧边栏中显示分享链接？",
+	"right-viewsharelinks": "查看侧边栏共享portlet"
+}

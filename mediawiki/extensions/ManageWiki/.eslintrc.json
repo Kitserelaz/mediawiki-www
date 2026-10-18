@@ -1,0 +1,16 @@
+{
+	"root": true,
+	"extends": [
+		"wikimedia/client",
+		"wikimedia/jquery",
+		"wikimedia/mediawiki"
+	],
+	"ignorePatterns": [ "vendor/**" ],
+	"rules": {
+		"no-jquery/no-global-selector": "off",
+		"no-jquery/no-sizzle": "off"
+	},
+	"parserOptions": {
+		"ecmaVersion": 2024
+	}
+}

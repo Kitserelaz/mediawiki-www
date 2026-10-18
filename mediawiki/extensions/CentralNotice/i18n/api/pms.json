@@ -1,0 +1,26 @@
+{
+	"@metadata": {
+		"authors": [
+			"Borichèt"
+		]
+	},
+	"apihelp-centralnoticeallocations-param-project": "Ël proget për ël qual oten-e j'alocassion.",
+	"apihelp-centralnoticeallocations-param-country": "Ël pais da filtré.",
+	"apihelp-centralnoticeallocations-param-language": "La lenga da filtré.",
+	"apihelp-centralnoticeallocations-param-anonymous": "Lë stat ëd conession da filtré (ver|fàuss).",
+	"apihelp-centralnoticeallocations-param-device": "Ël nòm dl'angign da filtré.",
+	"apihelp-centralnoticeallocations-param-bucket": "Ël sigilin da filtré, për nìmer (0 .. $1, facoltativ).",
+	"apihelp-centralnoticeallocations-example-1": "Smon-e chèiche alocassion",
+	"apihelp-centralnoticequerycampaign-param-campaign": "Nòm ëd la campagna. Ch'a separa ij valor mùltipl con na \"|\" (sbara vertical).",
+	"apihelp-centralnoticequerycampaign-example-1": "Smon-e la campagn «Plea_US»",
+	"apihelp-centralnoticechoicedata-param-project": "Ël proget për ël qual oten-e ij dàit për serne ël tilèt.",
+	"apihelp-centralnoticechoicedata-param-language": "La lenga dont oten-e ij dàit për la sernia dël tilèt.",
+	"apihelp-centralnoticechoicedata-example-1": "Oten-e ij dàit për serne un tilèt për j'utent ëd la Wikipedia anglèisa.",
+	"apihelp-query+centralnoticelogs-param-campaign": "Nòm ëd la campagna (opsional). Ch'a separa ij valor mùltipl con na \"|\" (sbara vertical).",
+	"apihelp-query+centralnoticelogs-param-user": "Stranòm (facoltativ).",
+	"apihelp-query+centralnoticelogs-param-limit": "Nùmer màssim ëd linie da smon-e (facoltativ).",
+	"apihelp-query+centralnoticelogs-param-offset": "Posission ant l'ansem dj'arzultà (facoltativ).",
+	"apihelp-query+centralnoticelogs-param-start": "Ora d'achit ëd la pàgina (facoltativ).",
+	"apihelp-query+centralnoticelogs-param-end": "Ora ëd fin ëd la pàgina (facoltativ).",
+	"apihelp-query+centralnoticelogs-example-1": "Smon-e j'argistr"
+}

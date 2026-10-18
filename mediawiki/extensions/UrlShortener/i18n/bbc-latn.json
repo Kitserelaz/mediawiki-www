@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"Salomo Christian Hutajulu"
+		]
+	},
+	"urlshortener-toolbox": "Dapothon hamu ma URL na jempek",
+	"urlshortener-toolbox-qrcode": "Tangkup kode QR",
+	"urlshortener-qrcode-downloaded": "Nunga ditangkup do kode QR gabe ugasan SVG"
+}

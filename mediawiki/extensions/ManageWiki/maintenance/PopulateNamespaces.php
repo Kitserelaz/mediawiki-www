@@ -1,0 +1,126 @@
+<?php
+
+namespace Miraheze\ManageWiki\Maintenance;
+
+use MediaWiki\MainConfigNames;
+use MediaWiki\Maintenance\Maintenance;
+use Miraheze\ManageWiki\Helpers\Factories\ModuleFactory;
+use Miraheze\ManageWiki\Helpers\Utils\DatabaseUtils;
+use Wikimedia\Rdbms\IDatabase;
+use function array_keys;
+use function is_array;
+use function json_encode;
+use function str_replace;
+use function ucfirst;
+use const CONTENT_MODEL_WIKITEXT;
+use const NS_MAIN;
+use const NS_PROJECT;
+use const NS_PROJECT_TALK;
+
+class PopulateNamespaces extends Maintenance {
+
+	private DatabaseUtils $databaseUtils;
+	private ModuleFactory $moduleFactory;
+
+	public function __construct() {
+		parent::__construct();
+
+		$this->addOption( 'force', 'Force populating namespaces even if ManageWiki namespaces is enabled.' );
+		$this->requireExtension( 'ManageWiki' );
+	}
+
+	private function initServices(): void {
+		$services = $this->getServiceContainer();
+		$this->databaseUtils = $services->get( 'ManageWikiDatabaseUtils' );
+		$this->moduleFactory = $services->get( 'ManageWikiModuleFactory' );
+	}
+
+	public function execute(): void {
+		$this->initServices();
+		if ( !$this->hasOption( 'force' ) && $this->moduleFactory->isEnabled( 'namespaces' ) ) {
+			$this->fatalError( 'Disable ManageWiki Namespaces on this wiki.' );
+		}
+
+		$dbw = $this->databaseUtils->getGlobalPrimaryDB();
+
+		$siteName = $this->getConfig()->get( MainConfigNames::Sitename );
+		$metaNS = ucfirst( str_replace( ' ', '_', $siteName ) );
+
+		$namespaces = $this->getConfig()->get( MainConfigNames::CanonicalNamespaceNames );
+		$namespaces[NS_MAIN] = '<Main>';
+
+		foreach ( $namespaces as $id => $name ) {
+			$id = (int)$id;
+			if ( $id < 0 ) {
+				// We don't like 'imaginary' namespaces
+				continue;
+			}
+
+			if ( $id === NS_PROJECT ) {
+				$name = $metaNS;
+			}
+
+			if ( $id === NS_PROJECT_TALK ) {
+				$name = '$1_talk';
+			}
+
+			$matchedNSKeys = array_keys( $this->getConfig()->get( MainConfigNames::NamespaceAliases ), $id, true );
+			$nsAliases = [];
+
+			foreach ( $matchedNSKeys as $alias ) {
+				$nsAliases[] = $alias;
+			}
+
+			$check = $dbw->newSelectQueryBuilder()
+				->table( 'mw_namespaces' )
+				->fields( [
+					'ns_namespace_name',
+					'ns_namespace_id',
+				] )
+				->where( [
+					'ns_dbname' => $this->getConfig()->get( MainConfigNames::DBname ),
+					'ns_namespace_id' => $id,
+				] )
+				->caller( __METHOD__ )
+				->fetchRow();
+
+			if ( !$check ) {
+				$this->insertNamespace( $dbw, $id, (string)$name, $nsAliases );
+			}
+		}
+	}
+
+	private function insertNamespace(
+		IDatabase $dbw,
+		int $id,
+		string $name,
+		array $nsAliases
+	): void {
+		$namespacesToBeSearchedDefault = $this->getConfig()->get( MainConfigNames::NamespacesToBeSearchedDefault );
+		$namespaceContentModels = $this->getConfig()->get( MainConfigNames::NamespaceContentModels );
+		$namespaceProtection = $this->getConfig()->get( MainConfigNames::NamespaceProtection );
+		$dbw->newInsertQueryBuilder()
+			->insertInto( 'mw_namespaces' )
+			->row( [
+				'ns_dbname' => $this->getConfig()->get( MainConfigNames::DBname ),
+				'ns_namespace_id' => $id,
+				'ns_namespace_name' => $name,
+				'ns_searchable' => (int)( $namespacesToBeSearchedDefault[$id] ?? 0 ),
+				'ns_subpages' => (int)( $this->getConfig()->get( MainConfigNames::NamespacesWithSubpages )[$id] ?? 0 ),
+				'ns_content' => (int)( $this->getConfig()->get( MainConfigNames::ContentNamespaces )[$id] ?? 0 ),
+				'ns_content_model' => (string)( $namespaceContentModels[$id] ?? CONTENT_MODEL_WIKITEXT ),
+				'ns_protection' => is_array( $namespaceProtection[$id] ?? false ) ?
+					(string)( $namespaceProtection[$id][0] ?? '' ) :
+					(string)( $namespaceProtection[$id] ?? '' ),
+				'ns_aliases' => json_encode( $nsAliases ) ?: '[]',
+				'ns_core' => $id < 1000,
+				'ns_additional' => '[]',
+			] )
+			->caller( __METHOD__ )
+			->execute();
+	}
+}
+
+// @codeCoverageIgnoreStart
+return PopulateNamespaces::class;
+// @codeCoverageIgnoreEnd

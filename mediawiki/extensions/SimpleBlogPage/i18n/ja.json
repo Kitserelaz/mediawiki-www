@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": [
+			"MathXplore",
+			"Mugenpman"
+		]
+	},
+	"action-createblogpost": "新しいブログ投稿を作成する"
+}

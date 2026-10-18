@@ -1,0 +1,83 @@
+# Local configuration and credentials; keep shareable environment templates.
+.env
+.env.*
+!.env.example
+!.env.*.example
+!.env.sample
+!.env.*.sample
+*.local.json
+/docker/secrets/*
+!/docker/secrets/.gitkeep
+/docker/secrets-*/
+/mediawiki/PrivateSettings.php
+/mediawiki/OAuth2.key*
+/mediawiki/*-health.php
+
+# Persistent Docker storage, snapshots, and archived installation files.
+/.docker-data/
+/backups/
+/docker/private-backup/
+/mediawiki/extensions_old/
+/mediawiki/CreateWiki-old/
+/mediawiki/extensions_staging/CreateWiki-old/
+/mediawiki/*-old.php
+*.php.save
+*.php.bak
+*.php.orig
+/mediawiki/*.tar.gz
+/mediawiki/*.zip
+
+# MediaWiki runtime data and machine-specific legacy setup/debug files.
+/mediawiki/images/
+/mediawiki/image-imports/
+/mediawiki/cache/
+/mediawiki/cw_cache/
+/mediawiki/tmp/
+/mediawiki/sitemaps/
+/mediawiki/dump.rdb
+/mediawiki/SetupCreateWiki.php
+/mediawiki/a
+/mediawiki/*.log
+/mediawiki/cirrus_scripts/*.log
+
+# Counter databases, including SQLite WAL/journal sidecars.
+/Moe-Counter/data/
+/Moe-Counter/count.db
+/Moe-Counter/count.db-*
+/Moe-Counter/*.log
+
+# Regenerable dependencies and local tooling caches.
+node_modules/
+.pnp
+.pnp.*
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.phpunit.result.cache
+.phpunit.cache/
+/docker/.npm-cache/
+/docker/.browsers/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Generated test reports.
+coverage/
+/docker/tests/test-results/
+/docker/tests/playwright-report/
+
+# OS and editor files.
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Keep bundled vendor directories, extension/skin sources, and lockfiles:
+# the Docker builds currently rely on the supplied dependency trees.
+# Do not blanket-ignore *.key, *.pem, *.db, or *.sql: tests use such fixtures.

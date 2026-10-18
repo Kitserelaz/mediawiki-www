@@ -1,0 +1,88 @@
+@import 'mediawiki.skin.variables.less';
+@import 'mediawiki.mixins.less';
+@import 'variables.less';
+
+// Use slightly increased specificity to override the rule defined in MediaWiki Core (see
+// https://gerrit.wikimedia.org/g/mediawiki/core/+/aebc1fdc8a2692584ab09691e2cbace5597ba386/resources/src/mediawiki.special/contributions.less#16).
+.ext-ipinfo-panel-layout .ext-ipinfo-collapsible-layout .oo-ui-fieldsetLayout-group {
+	max-width: none;
+}
+
+.ext-ipinfo-widget {
+	min-height: 2em;
+	line-height: 1.2;
+}
+
+.ext-ipinfo-widget-error {
+	margin: 1em;
+}
+
+.ext-ipinfo-widget-properties {
+	margin: 0;
+}
+
+.ext-ipinfo-widget-property {
+	padding: @ipinfo-padding @ipinfo-padding 0;
+}
+
+.ext-ipinfo-widget-property:last-child {
+	padding-bottom: @ipinfo-padding;
+}
+
+.ext-ipinfo-widget-property-label {
+	margin-bottom: 4px;
+	font-size: @ipinfo-property-font-size;
+	color: @color-subtle;
+}
+
+.ext-ipinfo-widget-property-value {
+	margin-left: 0;
+	color: @color-base;
+}
+
+.ext-ipinfo-widget-property-no-data > .ext-ipinfo-widget-property-value {
+	color: @color-placeholder;
+	font-style: italic;
+}
+
+// Styling for specific properties
+[ data-property='asn' ]:not( .ext-ipinfo-widget-property-no-data ) > .ext-ipinfo-widget-property-value {
+	font-family: monospace;
+}
+
+// Proxy types show a list without bullet point styling
+[ data-property='proxytypes' ] .ext-ipinfo-widget-property-value > ul {
+	list-style: none;
+	margin-left: 0;
+}
+
+.ext-ipinfo-widget-value-recent-edits {
+	color: @color-subtle;
+}
+
+// Style the tooltip available for some properties in the infobox
+// The tooltip should be on the right edge and vertically centered.
+// Because it's an interactive object, it needs to have a minimum size
+// which happens to be larger than the heading height.
+// Use absolute positioning to take it out of document flow, respect
+// the height of the label, and position the tooltip accordingly.
+.ext-ipinfo-panel-layout {
+	.ext-ipinfo-widget-property-label {
+		// Create block context to position the tooltip against
+		position: relative;
+	}
+
+	.ext-ipinfo-widget-property-tooltip {
+		position: absolute;
+		// Using transform here to vertically center the tooltip
+		// results in a loss of the stacking context; instead hardcode
+		// the offset based on half the height (32px / 2)
+		top: ~'calc( 50% - 16px )';
+		font-weight: normal;
+
+		.oo-ui-buttonElement-button {
+			margin-left: 0;
+			opacity: @opacity-icon-subtle;
+		}
+	}
+}

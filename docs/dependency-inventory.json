@@ -1,0 +1,4886 @@
+{
+  "mediawiki": "1.45.1",
+  "components": [
+    {
+      "type": "extensions",
+      "name": "3D",
+      "version": "0.0.1",
+      "sha256": "4bbdfcd6d02563f83da555bab243a424c198451f5ddda1f5712c22b01f8fd776",
+      "requires": {
+        "MediaWiki": ">= 1.42"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "AJAXPoll",
+      "version": "2.3",
+      "sha256": "ca354d6bb87c75d058ccd86511c828b62aadb29acb16b2fbe40df8b41a4da36e",
+      "requires": {
+        "MediaWiki": ">= 1.35.3"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "AbuseFilter",
+      "version": null,
+      "sha256": "ff496fa555e5cf756ead49ce07bb0ad78766f914d0c8182879b84aa04fd9c7ad",
+      "requires": {
+        "MediaWiki": ">= 1.43.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "AdminLinks",
+      "version": "0.6.3",
+      "sha256": "e4adcddaf1902d7b41e358f48146a25093408c077797bbfe9a7b6db9fae34cc7",
+      "requires": {
+        "MediaWiki": ">= 1.35.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "AdvancedSearch",
+      "version": null,
+      "sha256": "ab961da54aab582195827f0e9f0f88fe0f421c59714fb52fe06f5003785a56eb",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "AntiSpoof",
+      "version": null,
+      "sha256": "baaeb197fab1bff877c8311a1b785b907c96c4d3cd77b014b5de545ae7b33b1f",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "ApprovedRevs",
+      "version": "2.2.2",
+      "sha256": "6ac4c6d9c899aa04545376862d3e1d5d333c495044dd0cfd52173963e77f7eb6",
+      "requires": {
+        "MediaWiki": ">= 1.40.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Arrays",
+      "version": "2.2.1",
+      "sha256": "e53e21ed1c7c045e3cbdd40fc1eebbe8c726f95e9c748f5d8a6684b3a733ad85",
+      "requires": {
+        "MediaWiki": ">= 1.34.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "ArticleCreationWorkflow",
+      "version": null,
+      "sha256": "c1dd168a37ed0a75d66c93062ce2b36796e0265ec5adfc59ac469b1997ad2ba8",
+      "requires": {
+        "MediaWiki": ">= 1.42"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "ArticlePlaceholder",
+      "version": null,
+      "sha256": "087652ffcfb8265507d0372c89ebee569e16323c776f1d9ff80ffc9cff2163d0",
+      "requires": {
+        "MediaWiki": ">= 1.42",
+        "extensions": {
+          "Scribunto": "*"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "ArticleRatings",
+      "version": "2.5.1",
+      "sha256": "0cc7ccdcddb809f4c1cca677375a406586f680319e4f6ac498966d7f869746d5",
+      "requires": {
+        "MediaWiki": ">= 1.39.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "ArticleToCategory2",
+      "version": "1.3",
+      "sha256": "24f4b1766d43cd098984cd4286c9ee056faedf4c61856f32d6caebed48554906",
+      "requires": {
+        "MediaWiki": ">= 1.32.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "AuthorProtect",
+      "version": "1.4.0",
+      "sha256": "8259f5baa5077a05a85b77d2aca38beb474820c908352f1e897e24d06dc82e4e",
+      "requires": {
+        "MediaWiki": ">= 1.31.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "AutoCreateCategoryPages",
+      "version": "1.0.3",
+      "sha256": "816a36f1de2e9d415dadab16cc60935a9bb63b3894874aba4aa4740cc53882e8",
+      "requires": {
+        "MediaWiki": ">= 1.28.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "AutoCreatePage",
+      "version": "0.9",
+      "sha256": "b071f90d122c1df40cb7cde9e5ee7f54120282d6e12d6b0881e1454d2ac9d886",
+      "requires": {
+        "MediaWiki": ">= 1.36.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Babel",
+      "version": null,
+      "sha256": "021fd4b6b7ede54971116bdd595cc9cd09a672eefbf77fa64155cc04eab1497b",
+      "requires": {
+        "MediaWiki": ">= 1.41.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "BetaFeatures",
+      "version": "0.1",
+      "sha256": "9a722f32d1a33b7e28f7c2e0249b7ddc732198d46510d0e16b1469633f14e954",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "BlogPage",
+      "version": "3.0",
+      "sha256": "338e60ff1b62f22c3dce763e0aabc1d6a671d0bae75f609e0fcff3b154458b4d",
+      "requires": {
+        "MediaWiki": ">= 1.43.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Bootstrap",
+      "version": "5.0.0",
+      "sha256": "59e8629d556dca3bd4788bfde56c20926b07e28eab4213c5e3e502306ce5c394",
+      "requires": {
+        "MediaWiki": ">= 1.39.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "CFCachePurge",
+      "version": "1.0.0",
+      "sha256": "d3fd2164d2bcd69c250221e6e8c2f6624cffdd4413e4caacfe27eb4e94455019",
+      "requires": {}
+    },
+    {
+      "type": "extensions",
+      "name": "CSS",
+      "version": "3.5.0",
+      "sha256": "910058b12181d7a63d27aa541321a03f7613eee56a5af455688c45e63c22fdcc",
+      "requires": {
+        "MediaWiki": ">= 1.35.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Calendar",
+      "version": "1.1",
+      "sha256": "62feffa44f733bd4b2374b91690efef43944525dae1e93bf9142fae4883eb277",
+      "requires": {
+        "MediaWiki": ">= 1.42"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Capiunto",
+      "version": null,
+      "sha256": "8ce5ffd7e1244c3a0cdebb61f47af9df4e5a02996d2c5d9fc6d891758d4220f8",
+      "requires": {
+        "MediaWiki": ">= 1.42"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Cargo",
+      "version": "3.8",
+      "sha256": "771b31e3ce4bca1f282056cff32d8eb2ebe0acf5d7a9107d3ccf89c5886a28f3",
+      "requires": {
+        "MediaWiki": ">= 1.40"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "CategoryExplorer",
+      "version": null,
+      "sha256": "390c2f6418babe70b22e45602b31b0e042418b7cf2e922aecfa15aaafa51b7f4",
+      "requires": {
+        "MediaWiki": ">= 1.38.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "CategorySortHeaders",
+      "version": "0.4.0",
+      "sha256": "00654a721c1f60a981d635d694acc9d2974803a0d1513f08aee9970e6f3718eb",
+      "requires": {
+        "MediaWiki": ">= 1.35.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "CategoryTests",
+      "version": "1.7.0",
+      "sha256": "c9b1bd5b709f2f0335866ecff6142c2b80f86edc58f986bd29b34d98868d01ac",
+      "requires": {
+        "MediaWiki": ">= 1.32.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "CategoryTree",
+      "version": null,
+      "sha256": "5c77afc8a6c21dfe29baa56212b6f9164853faf65ad163189d2e1a8cc8f73d47",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "CentralAuth",
+      "version": null,
+      "sha256": "5b6205c5943810f966cff4ba0bce543889b5cf1a16113ca44b449da8a319e47b",
+      "requires": {
+        "MediaWiki": ">= 1.45",
+        "extensions": {
+          "AntiSpoof": "*"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "CentralNotice",
+      "version": "2.6.1",
+      "sha256": "6a590ef3f87caf5c5773eb1caf564fad9bd09333804f3507bee85db92b5d779b",
+      "requires": {
+        "MediaWiki": ">= 1.43",
+        "extensions": {
+          "EventLogging": "*"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "CharInsert",
+      "version": null,
+      "sha256": "eaf11a993cbffa358ba60198ac6784161684d98c280b52172ad5ecf660250617",
+      "requires": {
+        "MediaWiki": ">= 1.42"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "CheckUser",
+      "version": "2.5",
+      "sha256": "06ce3c9c1828af6e607d8980d9e1c3b919069ed7a0018cd481013f3ad223ec7d",
+      "requires": {
+        "MediaWiki": ">= 1.43.0",
+        "platform": {
+          "ext-openssl": "*"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "CirrusSearch",
+      "version": null,
+      "sha256": "85dede7260b68c5ca069315cfeda830e471816f6341d6dd2f5828550c0ab906a",
+      "requires": {
+        "MediaWiki": ">= 1.43",
+        "extensions": {
+          "Elastica": ">= 6.0.1"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Cite",
+      "version": null,
+      "sha256": "1d3ecdd78d33eadb670a8822829f14e19a4a7fe4a78578b674ca56c9fd3663d3",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "CiteThisPage",
+      "version": null,
+      "sha256": "c013b3489dca22ce822310da656496027a4cc483a01417713934ca5aa79441fc",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "CleanChanges",
+      "version": "2024-01-22",
+      "sha256": "4627115dbfdf332d3f69c2a4fecc412253dd41d42fe8f26a349d338c1f2bd2c1",
+      "requires": {
+        "MediaWiki": ">= 1.35.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "CodeEditor",
+      "version": null,
+      "sha256": "26c4acf0fbb07f72a32e606c48ac27fdb6b0d63bb8242326e3ff328b68ad61e9",
+      "requires": {
+        "MediaWiki": ">= 1.43",
+        "extensions": {
+          "WikiEditor": ">= 0.5.2"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "CodeMirror",
+      "version": "6.0.0",
+      "sha256": "f0bd4f50e86f089c16dc279f7b5bef3efa9edd01ba76b205339f6b31293ece9c",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "CollapsibleVector",
+      "version": "0.1.12",
+      "sha256": "f1d9bc2ed85544a7d9ebcc4935bec590a95a3ead3d138abdd19f710b75e6de91",
+      "requires": {
+        "MediaWiki": ">= 1.40.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "CommentStreams",
+      "version": "8.0.2",
+      "sha256": "9d507b140cc9a528b9ee00c62e1272fa8a3db22e5762838455fd158ff0f8fd44",
+      "requires": {
+        "MediaWiki": ">= 1.39.0",
+        "platform": {
+          "php": ">= 7.4"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Commentbox",
+      "version": "0.3.0",
+      "sha256": "ea3b8c3d49916f8fa39d40e5e3a020df6c0088979f455e9c968a9de5efcbfe2e",
+      "requires": {
+        "MediaWiki": ">= 1.41.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Comments",
+      "version": "5.0",
+      "sha256": "087d43f5ad74f4b55c4133a9cc74e14631bd896653f1a27341486b9b0128e3ea",
+      "requires": {
+        "MediaWiki": ">= 1.35.3"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "CommonsMetadata",
+      "version": null,
+      "sha256": "3312830c3b0a90a57d8d4dc6882ac4b77e5f266cb0f06a2ab550019045abf0a9",
+      "requires": {
+        "MediaWiki": ">= 1.42"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "ConfirmEdit",
+      "version": "1.6.0",
+      "sha256": "fa418586e9979d7cb5743c3a950138043641b5f8daa32044c224dea33625c7c3",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "ContactPage",
+      "version": "2.3",
+      "sha256": "8c43a37519c143b2617d55b5266eac677a8a494776a775c57eb2933e6e92a3ac",
+      "requires": {
+        "MediaWiki": ">= 1.42.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "ContributionScores",
+      "version": "1.26.1",
+      "sha256": "08ddaaae7c0846bf7eafc4e6f0263de5ec80000e550b84a3c1f3835600f95e3c",
+      "requires": {
+        "MediaWiki": ">= 1.34.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "CookieWarning",
+      "version": "0.3.0",
+      "sha256": "4d28a294bfeb0971aded5c132cdab856652f30c9ba4ca690c6658902479b1b82",
+      "requires": {
+        "MediaWiki": ">= 1.41.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "CountDownClock",
+      "version": "1.0.0",
+      "sha256": "5fc67e55bce138233f24dedeffd781da3aea26ceea94e269c4c1aebc0d239463",
+      "requires": {
+        "MediaWiki": ">= 1.31.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "CreatePage",
+      "version": "0.5.0",
+      "sha256": "2b19856c06908b0e00dc60b778ff98100849e96b31487a217f0ad2128c44a79d",
+      "requires": {
+        "MediaWiki": ">= 1.35.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "CreatePageUw",
+      "version": "0.1.0",
+      "sha256": "048ad72ef258b2a00ebab51d6e90b581d9f90af6f730eaef98c9168acc68f73e",
+      "requires": {
+        "MediaWiki": ">= 1.35.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "CreateRedirect",
+      "version": "1.5.1",
+      "sha256": "4299c72557224bf57dcfdaa2b1330e03f843fc3fc924a68e20fd00a827ec4b3b",
+      "requires": {
+        "MediaWiki": ">= 1.38.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "CreateWiki",
+      "version": null,
+      "sha256": "5d84856108a86e1a8415991cbef6f7c2abbf434fb26c70a222bffb0db863cb2e",
+      "requires": {
+        "MediaWiki": ">= 1.43.0",
+        "platform": {
+          "php": ">= 8.1"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "CreatedPagesList",
+      "version": "1.2.1",
+      "sha256": "8c7fa7163b66b7b25e566264a596614b636aaf6eb8c5117f057b263fb4f61458",
+      "requires": {
+        "MediaWiki": ">= 1.39.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "CustomSearchProfiles",
+      "version": null,
+      "sha256": "b5011ef2625e3f587f6603c305a093ffb168132794d4cf8c86819808775ebe49",
+      "requires": {
+        "MediaWiki": ">= 1.35.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "CustomSubtitle",
+      "version": "0.1.0",
+      "sha256": "95eacd0e7873e152b52fd37fda0ba8273ce00b04259c9c4b90f699107bbf90b3",
+      "requires": {
+        "MediaWiki": ">= 1.34.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "DPLForum",
+      "version": "3.7.2",
+      "sha256": "d5979973f3e0a60b5560a140580f72c8fee8d611b7733b4310b76aaccb9f5e28",
+      "requires": {
+        "MediaWiki": ">= 1.37.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "DarkMode",
+      "version": "0.2.0",
+      "sha256": "285f6d572be380beb62fe3b2739301b761611f562996b8b09712a53c79d9497a",
+      "requires": {
+        "MediaWiki": ">= 1.38.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "DataDump",
+      "version": null,
+      "sha256": "78e8dc28ff098c5c474833d8d8c6730a1e7c39fb0e898c100a15c27a328fb262",
+      "requires": {
+        "MediaWiki": ">= 1.43.0",
+        "platform": {
+          "php": ">= 8.1"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "DataTransfer",
+      "version": "1.6.1",
+      "sha256": "f07ea7784b3e97622fd034a63a1d12d245a7bafde24aaa49c5c1b88e482bad97",
+      "requires": {
+        "MediaWiki": ">= 1.37.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "DeleteUserPages",
+      "version": "1.0.0",
+      "sha256": "8fe399fc873489c85d0ba0d9cab7a1e399d12f4709626c7cb0e2f334cc5aae64",
+      "requires": {
+        "MediaWiki": ">= 1.29.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Description2",
+      "version": "0.4.1",
+      "sha256": "72d05161b0ef64974065a3cf361cfba0348e24a995ca23d93ed4c056d9fea347",
+      "requires": {
+        "MediaWiki": ">= 1.35.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Disambiguator",
+      "version": "1.4",
+      "sha256": "7b612b104cd4dc94f9007cfd7b499bf64e20fe341552aa26ebf9f21b841357ea",
+      "requires": {
+        "MediaWiki": ">= 1.42"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "DiscordNotifications",
+      "version": "3.0.0",
+      "sha256": "7aa7a022c0ef9028634d9c96d888c6ab2f0c8593462077c90a9225577b00d4cd",
+      "requires": {
+        "MediaWiki": ">= 1.43.0",
+        "platform": {
+          "php": ">= 8.1"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "DiscussionTools",
+      "version": "0.0.0",
+      "sha256": "69218f3956d3d013acb08a6e89e7aac43e20e81a4b07326d12360d7bbc28d39b",
+      "requires": {
+        "MediaWiki": ">= 1.43.0",
+        "extensions": {
+          "VisualEditor": "*",
+          "Linter": "*"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "DismissableSiteNotice",
+      "version": "1.0.1",
+      "sha256": "311e5a5d487237119ce864d4d543120d640466da7d990027b100fcae90ee78c2",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "DisplayTitle",
+      "version": "4.0.3",
+      "sha256": "f25987578a3e504d2d5a6297d96804aadb97f9b348eb7a4aaefbcc2a19956839",
+      "requires": {
+        "MediaWiki": ">= 1.41.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Drafts",
+      "version": "0.3.7",
+      "sha256": "18ac36637781dc83be3ad68906cffc54faf9dfdf29fa6a0f4913eca0ee7a0261",
+      "requires": {
+        "MediaWiki": ">= 1.35.3"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "DummyFandoomMainpageTags",
+      "version": "1.0.0",
+      "sha256": "91ec18768668b65ebaff295b38341273cb59921480424637fc196d6d861b9a0e",
+      "requires": {}
+    },
+    {
+      "type": "extensions",
+      "name": "DynamicPageList",
+      "version": "1.7.0",
+      "sha256": "21a92e798dbf8b26c2ead8a020fedff098665696950c123c2bdafa1f8dab34a8",
+      "requires": {
+        "MediaWiki": ">= 1.42"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "DynamicPageList3",
+      "version": "3.6.2",
+      "sha256": "ee91dbc05fdd605e95c7219afbf76f7db913b517d91868a6f787b0ff8a86c6c3",
+      "requires": {
+        "MediaWiki": ">= 1.43.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "DynamicSidebar",
+      "version": "1.1",
+      "sha256": "7357023d9219c939f5555ad497ae0cbb33d046117f517eef3473ebb0096bf4f8",
+      "requires": {
+        "MediaWiki": ">= 1.35.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Echo",
+      "version": null,
+      "sha256": "d322a9f186cf11ef43ed192a4402670ae329f2b2b6def02f6f0756d781c60001",
+      "requires": {
+        "MediaWiki": ">= 1.45"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "EditSubpages",
+      "version": "3.5.0",
+      "sha256": "1a07dc3c4b587fbd8571b03f017f815c785b197a17be5208bf9be95b8c2ae2ff",
+      "requires": {
+        "MediaWiki": ">= 1.34.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Editcount",
+      "version": null,
+      "sha256": "d001683cfb3db4a287d009057761beb460070e2478446ab7b7a4bbf2a5e4af12",
+      "requires": {
+        "MediaWiki": ">= 1.36.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Elastica",
+      "version": "6.2.0",
+      "sha256": "8d1791445eaacb3c7029a2a1e57fd1e36372d54778568486da15d033ba8ecf79",
+      "requires": {
+        "MediaWiki": ">= 1.43",
+        "platform": {
+          "ext-curl": "*"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "EmbedSpotify",
+      "version": "1.0.3",
+      "sha256": "2afc4350f950a7afb99b5982d0d1e694bbbaa4d9226bb4ec578d6811ab9ac8c2",
+      "requires": {}
+    },
+    {
+      "type": "extensions",
+      "name": "EmbedVideo",
+      "version": "3.4.3",
+      "sha256": "9d6fd0608d273cc62057850412f56a9f7ffa442cee4491bbef6fe758e29b7681",
+      "requires": {
+        "MediaWiki": ">= 1.39.0",
+        "platform": {
+          "php": ">=8.0"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "EventBus",
+      "version": "0.5.0",
+      "sha256": "155e4e302312039c4a264f30134f27c9aedaaf30e9ec1fd4caf24a957e8c8d6c",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "EventLogging",
+      "version": null,
+      "sha256": "339311ae16546347ef0c9c8fb07b53cea682e2eb76df3167c282b5e1748bbd14",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "EventStreamConfig",
+      "version": null,
+      "sha256": "fa0b1fa9e4609f54db9165ca2a20f877184cba0836fce95f86a0c5ef0caee737",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "ExternalData",
+      "version": "3.4-alpha",
+      "sha256": "cd9658e78c5b2fc8f35a36fabc3d8fa231e3d2dcac27546b7ff301890f519bb0",
+      "requires": {
+        "MediaWiki": ">= 1.39.4"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "FeaturedFeeds",
+      "version": null,
+      "sha256": "239c4da2a8fdad52b061a16ee553c7a4afd37cb94b8df964ca351b45f7713d7b",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "FlaggedRevs",
+      "version": null,
+      "sha256": "2c4bf028a5be52ef3d4196870cba8cde1900d31d7c4aa4722e7ce9d8d7717890",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "FlexDiagrams",
+      "version": "0.8",
+      "sha256": "80fec25cbace364ffa713cd4d327c7afbae749dfc4bb451afc0b0405653b6865",
+      "requires": {
+        "MediaWiki": ">= 1.40.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Flow",
+      "version": "1.2.0",
+      "sha256": "3fd777bf87f4d9030aeb2a4f12cad05611231fc379dade5611f7346209f3615c",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "FontAwesome",
+      "version": "3.0.0",
+      "sha256": "9aa31ac08b60bd64d19b09723bda09dbfb0b736ab63198cf07092e02b815f8b8",
+      "requires": {
+        "MediaWiki": ">=1.39"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "ForcePreview",
+      "version": "2.0.0",
+      "sha256": "1a0fb63ba7c2fe68c51f6355831a157faed939e14fc4c3351eca7c425a223c46",
+      "requires": {
+        "MediaWiki": ">= 1.41.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Gadgets",
+      "version": null,
+      "sha256": "dde5b771cbdd2f3a291ad53a930d7b5d4214d0d0a607d1819613ecbd0755efdc",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Genealogy",
+      "version": "2.4.0",
+      "sha256": "8e0fd2ac55eed8e2b795be50b426d11cd22cb7c8dff074fcc90cf0e07384e146",
+      "requires": {
+        "MediaWiki": ">= 1.39"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "GeoCrumbs",
+      "version": "2.0.1",
+      "sha256": "24c681eda7a1f28684e761f8242a69cce38f866ae6a3474bed4bb775ec8d5981",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "GeoData",
+      "version": null,
+      "sha256": "c4340ff450b0776cb2b7969e1033ed38112a63d489511eda39e662c490f7b004",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "GeoGebra",
+      "version": "3.0.9",
+      "sha256": "8b86af926cdadbb665ef4243b4764e3d80cfbdf78d05b69767e9325f9d3ce4a0",
+      "requires": {
+        "MediaWiki": ">= 1.25.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "GlobalBlocking",
+      "version": null,
+      "sha256": "5f9629697f2806ed61f93cb9011b7dffb28f9c1a249e51ba37f9a2aace4f253b",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "GlobalCssJs",
+      "version": "3.4.0",
+      "sha256": "209aff826ca3542505b94d8bc61d80b614e14a96ea6a7ba2db0e79542dee33e9",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "GlobalNewFiles",
+      "version": null,
+      "sha256": "ae64c982b2d009e96ca221294a59a91b7837406e1c2f5d5daaa0d4d31500222e",
+      "requires": {
+        "MediaWiki": ">= 1.43.0",
+        "platform": {
+          "php": ">= 8.1"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "GlobalPreferences",
+      "version": "0.1.2",
+      "sha256": "20d484b707000fdf1fda1f5fd21eb8b056be9dd55502068ccff65dcddaea99cf",
+      "requires": {
+        "MediaWiki": ">= 1.45"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "GlobalUsage",
+      "version": "2.2.0",
+      "sha256": "b7144ca98fcad4689eb23a7a54eb62bbc38d39f5a4386483c116e97fba862471",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "GlobalUserPage",
+      "version": "0.11.1",
+      "sha256": "ea3e7363ccba7baa00f55298798d667618b244e87a2404ef3f3c81e9add2a4be",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "GlobalWatchlist",
+      "version": null,
+      "sha256": "c9c2fce6574a872a66427d3afa884ee307f55bb176b6ff28b47d90fe5e324193",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "GoogleDocs4MW",
+      "version": "1.5",
+      "sha256": "a0e28cd62123d5b2330b7f0f1d55c586ade32948fe448f349ce8869706ee2ccb",
+      "requires": {
+        "MediaWiki": ">= 1.42.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "GoogleForms",
+      "version": null,
+      "sha256": "eadb1c32628179ac118407aaf5465dea1d46602692869cebcedec22e58bbcb0e",
+      "requires": {
+        "MediaWiki": ">= 1.42.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "GoogleNewsSitemap",
+      "version": "2.2.0",
+      "sha256": "a8e001b1201b606b9e40c96a4e19dd5cb1df78fa61d64ed6548e581e01d0c3d4",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Graph",
+      "version": null,
+      "sha256": "eb703e6d97d91af21cfffebeb256ab5e597d53755ecbf45e4c18de2f6d493cb0",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "GroupsSidebar",
+      "version": "0.3.0",
+      "sha256": "6cf9ada35f02f1ae0e90afc7f3ede22302410f8aafb533c4a68490d31a0e493b",
+      "requires": {
+        "MediaWiki": ">= 1.35.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "GrowthExperiments",
+      "version": null,
+      "sha256": "02855c884b580f16158ab3d5562e21087b8adcf088da79d51fa690c674dd15b2",
+      "requires": {
+        "MediaWiki": ">= 1.43.0",
+        "extensions": {
+          "VisualEditor": "*"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "GuidedTour",
+      "version": "2.0",
+      "sha256": "71c288468e28bfeb9cdc97067293596a2579e4d15b6050a0ec96e67e8959be47",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "HAWelcome",
+      "version": "0.8.4",
+      "sha256": "747a7e2a10513dc5b48448516fd015b3305462aadc5cd005cddb2d9e90027f57",
+      "requires": {
+        "MediaWiki": ">= 1.38.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "HeaderTabs",
+      "version": "2.3",
+      "sha256": "47d6df1135e92228e31b23ed30d025ceb625a104df47c54f4ab649b943f2df0b",
+      "requires": {
+        "MediaWiki": ">= 1.33"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "HideSection",
+      "version": "3.0",
+      "sha256": "8913d7c7d2744ce85317828645e074d01e32fd73e62f42e11b9ba47bc9550d34",
+      "requires": {}
+    },
+    {
+      "type": "extensions",
+      "name": "HighlightLinksInCategory",
+      "version": "0.9.0",
+      "sha256": "3ec73ff49a9265d1c33d612d6b2630f8e1ab92e93a8feaebd9ec5fec6fa8a77c",
+      "requires": {}
+    },
+    {
+      "type": "extensions",
+      "name": "HitCounters",
+      "version": "0.4",
+      "sha256": "5820cfcc8db03e7d21778d7b668d894ee807cc1512f2a06e4b7104a0a0418917",
+      "requires": {
+        "MediaWiki": ">= 1.36.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "IPInfo",
+      "version": "0.0.0",
+      "sha256": "31ad85dd759e5b08ee1b5eefd5d3ab66fb1e4dcae5d99eae0e50e954a6a8f38b",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "ImageMap",
+      "version": null,
+      "sha256": "61de4686543176252dd0550db8f479b016b21ab2043a6c4b5e56795c3bcb2b8a",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "ImageRating",
+      "version": "2.5.0",
+      "sha256": "06f3a6b13f44820590c0794ab4f0a0f81656b0a6ebde82943ded2791f619212e",
+      "requires": {
+        "MediaWiki": ">= 1.35.3"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "ImportDump",
+      "version": null,
+      "sha256": "ca5e623c70cccd7ab64a60f5d356a866e744d5008d20c48053bca871ad58b172",
+      "requires": {
+        "MediaWiki": ">= 1.43.0",
+        "platform": {
+          "php": ">= 8.1"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "IncidentReporting",
+      "version": "1.3.1",
+      "sha256": "204346fef8ac4cad12a427351b51e152ff036fe6e80a427dbdbfdca0b92ed84f",
+      "requires": {
+        "MediaWiki": ">= 1.43.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "InputBox",
+      "version": "0.3.0",
+      "sha256": "b981be6aa69eb70b64ab5a71e99eb470d5ce61fe9cdcb739ff33d94be4d37c24",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Interwiki",
+      "version": "3.2",
+      "sha256": "cf28db88375e0556f9ebe7c5e3c4bdb976ea84a3dbb7dfc08312873bf400dd14",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "InterwikiDispatcher",
+      "version": "1.4.3",
+      "sha256": "74c46e5a7a1108dcd368949e1c19cd658fa70d0695045d5b3935337a495e9a90",
+      "requires": {
+        "MediaWiki": ">= 1.35.0",
+        "platform": {
+          "php": ">= 7.4"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "InterwikiSorting",
+      "version": null,
+      "sha256": "36ecbd67488002d3e802aac7f048d7a53e3dabc94a7c75ee591ba8f936e7a32e",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "JSBreadCrumbs",
+      "version": "1.1.2",
+      "sha256": "12f45626e347995384ca5d656df4f3e5e5c03a4e337722e981af60ebd4be9776",
+      "requires": {
+        "MediaWiki": ">= 1.35.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "JavascriptSlideshow",
+      "version": "2.2.0",
+      "sha256": "02e9df6046bcba6595cdc39027fcfc90e38a723dbd8dd6a1aab3cf5c3c1f4fbc",
+      "requires": {
+        "MediaWiki": ">= 1.43.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Josa",
+      "version": "0.2.0",
+      "sha256": "31f15768e1eb49fb2812990c9783413f1cc6a2de656c6b8e6e148eae21e86aba",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "JsCalendar",
+      "version": "0.4.0",
+      "sha256": "1ad3d02830794ead284a5eabc75330a3d8cb830ee29e720e9d028e2e2404d698",
+      "requires": {
+        "MediaWiki": ">= 1.39.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "JsonConfig",
+      "version": "1.2.0",
+      "sha256": "991a5156695c2f29265179576ba53fa4fd69669d2e7d8f87cac3290d5f5742b4",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Kartographer",
+      "version": null,
+      "sha256": "777d5f51e5a33f984dea10c5a5f16a56e22bf319a871e45a85f2add27eafc362",
+      "requires": {
+        "MediaWiki": ">= 1.43",
+        "extensions": {
+          "JsonConfig": "*"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "LabeledSectionTransclusion",
+      "version": null,
+      "sha256": "f79d3aa7753ad9eef5d556c408522408c1f5ff48db354f2cb81c3a2ef231ff43",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "LanguageSelector",
+      "version": "1.0.0",
+      "sha256": "641c799c6092cb1644152205b8d3a7d269fd11f6207c75926ee428e1317a530f",
+      "requires": {
+        "MediaWiki": ">= 1.35.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "LastModified",
+      "version": "1.2.0",
+      "sha256": "1b09a9cbf766fea88e9149f5899a4d66e5515cee49dbdd2cefad8684f1665dd3",
+      "requires": {
+        "MediaWiki": ">= 1.29.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "LdapAuthentication",
+      "version": "2.2.0",
+      "sha256": "fc4ac683562d77e0dc2079237028093b823c4baac48c61959196f0e05617ee61",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Lingo",
+      "version": "3.2.3",
+      "sha256": "cfd30b74ee85afdca16a6932e09e5d6433c51ba60cacb77bd66e67617a28a55a",
+      "requires": {
+        "MediaWiki": ">= 1.39"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "LinkCards",
+      "version": "0.4.0",
+      "sha256": "3c4a900104c55efd64ddc92ad7db5e1f599f3d852e7bdee4600bf5b78f360b8a",
+      "requires": {
+        "MediaWiki": ">= 1.35.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "LinkSuggest",
+      "version": "2.2.0",
+      "sha256": "300f6f72586c8fdc0d0ac7e05642e795a6c07f400ad69f7c7e827b7b3e915b26",
+      "requires": {
+        "MediaWiki": ">= 1.35.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "LinkTarget",
+      "version": "0.2",
+      "sha256": "08b98ea5f0ab17c2b8192afb04287bf3152d6b2f19838d83f4d82ea2f53bba7b",
+      "requires": {
+        "MediaWiki": ">= 1.35.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "LinkTitles",
+      "version": "8.1.1",
+      "sha256": "25af0d35d6bb1533a34462725e29739d33b4b52bb52c3a08d7cadcb8b0d098c3",
+      "requires": {
+        "MediaWiki": ">= 1.35.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Linter",
+      "version": null,
+      "sha256": "90ff8849d44ed2b846fe458641d58db96963de65b92d3738ada4f2f84a3ac831",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "LockAuthor",
+      "version": "1.0",
+      "sha256": "3ffa7405d2325531ad92b3ad68613e1c74f2295651702fc7c44b54faf7352f40",
+      "requires": {
+        "MediaWiki": ">= 1.39.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "LoginNotify",
+      "version": "0.1",
+      "sha256": "8c11ae6f2509596a5cc925033fe7d5ee3bf4b950f0e820d46957c49149a5b1f6",
+      "requires": {
+        "MediaWiki": ">= 1.43",
+        "extensions": {
+          "Echo": "*"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "LogoFunctions",
+      "version": "2.2",
+      "sha256": "365d96a78725f99c0ce2bc0f0f875939a1484c9b2d1d9c7af297aac1f278bb40",
+      "requires": {
+        "MediaWiki": ">= 1.39.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Loops",
+      "version": "1.0.0-beta",
+      "sha256": "50862c83a61647de1c133048c3c7f61ff80c8cde3c1be3fc62b923bcc12bf282",
+      "requires": {
+        "MediaWiki": ">=1.29"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "MagicNoCache",
+      "version": "1.6.0",
+      "sha256": "76bed500b45cecf82782c153b40c797c291e0341ab8d9924d34ac0565fa93098",
+      "requires": {
+        "MediaWiki": ">= 1.38.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "ManageWiki",
+      "version": null,
+      "sha256": "1ea35721772f1cd15af95181421899ca78af4d5fc8b5a93da95c7cde14e38cfc",
+      "requires": {
+        "MediaWiki": ">= 1.43.0",
+        "extensions": {
+          "CreateWiki": "*"
+        },
+        "platform": {
+          "php": ">= 8.2"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Maps",
+      "version": "10.3.0",
+      "sha256": "8746ca35ec99f2a383a3a64ec6aff0019b736da0314313b8f6d291d5cdf8eb02",
+      "requires": {
+        "MediaWiki": ">= 1.35.0",
+        "platform": {
+          "php": ">= 7.4"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "MassEditRegex",
+      "version": "8.4.1",
+      "sha256": "003c8767bd2741954f86a076da0e0dc389b60faaa5ca4b0ad37f75cdcb443f44",
+      "requires": {
+        "MediaWiki": ">= 1.40.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "MassMessage",
+      "version": "0.5.0",
+      "sha256": "84d18b66ae26d5f2deee0601e3265822382dc0d31e827a86e3bab901b5e72fc1",
+      "requires": {
+        "MediaWiki": ">= 1.43.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Math",
+      "version": null,
+      "sha256": "060820264ef61e362974f8a7480675367e53046e4e84ca9e84c0a45657545b29",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "MatomoAnalytics",
+      "version": "1.3.5",
+      "sha256": "d8391b2223f7bab186471d737eb08c03f15e0d1de3dd5f1617981e3563f5c985",
+      "requires": {
+        "MediaWiki": ">= 1.43.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "MediaSearch",
+      "version": null,
+      "sha256": "9d4390e08b163997cea62b80ffa9a8de9d860c31d30eabf6d76b2f7d2b2aa879",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "MediaSpoiler",
+      "version": "0.1.0",
+      "sha256": "d587b8125eafa071dbad51db160f5b1a735cbe3da3c821606d33f9ac5ec061a8",
+      "requires": {
+        "MediaWiki": ">= 1.41.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "MediaWikiChat",
+      "version": "2.24.0",
+      "sha256": "9692b3d96d42b395b9c4c92fde96bff8591249b52bb71cb7bb2c59d1dd5e2d44",
+      "requires": {
+        "MediaWiki": ">=1.39"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Mermaid",
+      "version": "4.0.0-alpha",
+      "sha256": "285d5261eb6351cfa8fcd0c67d5320f8199b9e72291b225e6558ae6dcf39b1a5",
+      "requires": {
+        "MediaWiki": ">= 1.39"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "MintyDocs",
+      "version": "1.4.1",
+      "sha256": "d8094c4874fbc229d33140d4e89c97fac651e28ebf8a8ae56c32fa0b41c8d6cc",
+      "requires": {
+        "MediaWiki": ">= 1.40"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "MirahezeMagic",
+      "version": null,
+      "sha256": "1b216a763cbb494f30d2779f2760063fda5c07403b5b416cfce2c313e44e06a6",
+      "requires": {
+        "MediaWiki": ">= 1.43.0",
+        "platform": {
+          "php": ">= 8.1"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "MobileDetect",
+      "version": "2.4",
+      "sha256": "48c2ddd5fc23d4e67f207ededc296258b3feae7dd4d9d3b0c5e3665b98c415c6",
+      "requires": {
+        "MediaWiki": ">= 1.35.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "MobileFrontend",
+      "version": "2.4.1",
+      "sha256": "b604bcfc7404c504fbb5e02b01ca0d3ff4ae549825d4d9a61d26bc3d0dd19f50",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "MobileTabsPlugin",
+      "version": "0.1.0",
+      "sha256": "56af387916257b447be4619fabfbcc45b1f7ed5305c57aa4739e99994bfc9675",
+      "requires": {}
+    },
+    {
+      "type": "extensions",
+      "name": "Moderation",
+      "version": "1.9.2",
+      "sha256": "29ba7d02fe12276c6368af7fed46443bb7efb734ecadf23ac40987372d2953ac",
+      "requires": {
+        "MediaWiki": ">= 1.43.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "MoeCounter",
+      "version": "1.0.0",
+      "sha256": "95493b3242cd1acdb979023e1e2e204b39db9560c1b3176ef28c6d1aed729f86",
+      "requires": {}
+    },
+    {
+      "type": "extensions",
+      "name": "MsCalendar",
+      "version": "3.0",
+      "sha256": "35299878012dd643997005e8df8881446eae92e4072b49e7d11253c682cf3d43",
+      "requires": {
+        "MediaWiki": ">= 1.39.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "MsCatSelect",
+      "version": "8.1",
+      "sha256": "d0676ab5b976c21fd95697546aae951cab99c99e37734121037315f91ad6fd47",
+      "requires": {
+        "MediaWiki": ">= 1.43.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "MsLinks",
+      "version": "6.0",
+      "sha256": "07cf515d07f59b2c290809e50317f04234e68abe546b1d283ad7bd8a951ee282",
+      "requires": {
+        "MediaWiki": ">= 1.39.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "MsUpload",
+      "version": "14.2",
+      "sha256": "365f0c7bb49be83aac372d0ad84c0da6e4c514079e9bf05356983bcf957a7785",
+      "requires": {
+        "MediaWiki": ">= 1.41.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "MultiBoilerplate",
+      "version": "2.2.0",
+      "sha256": "3c1c732fbed6b9020bb421be2f248e4f15056f40c1ff8d60712eb43808790c6b",
+      "requires": {
+        "MediaWiki": ">= 1.39.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "MultiPurge",
+      "version": "1.2.1",
+      "sha256": "228051153d0aae06ce9d4c9e4ebf3cd7374342824d150bdd407f29c3a317bee6",
+      "requires": {
+        "MediaWiki": ">= 1.39.0",
+        "platform": {
+          "php": ">=8.0"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "MultimediaViewer",
+      "version": null,
+      "sha256": "8c4d9ffb73d43ef0d4ddf7052fc438e33cbf75a5cd7b5942d000a68bdbbfb2b7",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "MyVariables",
+      "version": "4.5",
+      "sha256": "d5eb4cbab372c15eaeb09e2c8ce61b3f955d004ce1c8d70c558e0e00b9132dcc",
+      "requires": {
+        "MediaWiki": ">= 1.35.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "NamespacePreload",
+      "version": "1.2.0",
+      "sha256": "959e025e52070714e94614cf796277d8a77a189034f4f85c9270c133d2cbf580",
+      "requires": {}
+    },
+    {
+      "type": "extensions",
+      "name": "NativeSvgHandler",
+      "version": "1.5.0",
+      "sha256": "7174e1d1fc81d08729379a4584669fb324881a136256f062f3cf18d8defccd40",
+      "requires": {
+        "MediaWiki": ">= 1.35.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "NearbyPages",
+      "version": "1.0.0",
+      "sha256": "ffcc806d66efd5f090aa1f65a50441b190828a537a7e9aaa150c5205c39d7e49",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Network",
+      "version": "3.0.0",
+      "sha256": "44159ea010a9f2e8e8c68e57d8d8863a68047c51410a6acb5f4f31011fcbee1f",
+      "requires": {
+        "MediaWiki": ">= 1.39.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "NewSignupPage",
+      "version": "1.3.0",
+      "sha256": "425b3c421a99b31c27738d51d03b141a493882386b6760ca1dbe7d40a8a03e0f",
+      "requires": {
+        "MediaWiki": ">= 1.35.3"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "NewUserMessage",
+      "version": "3.6.0, 2016-10-31",
+      "sha256": "6ec73eae99f15ac2cfbade561d1edd077dfabf0fadd4e9e897b63fd3ada532ff",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "NewUserNotif",
+      "version": "1.7.0",
+      "sha256": "e532ad30476e5ae9e9dfcda333a85939ec8ca8d0a95ef6b7cd1de2a697cd7185",
+      "requires": {
+        "MediaWiki": ">= 1.35.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "NewestPages",
+      "version": "1.22",
+      "sha256": "e72bdf4a39887588bb1a84fd37382a8353d745aac06121df6cc06962328825fe",
+      "requires": {
+        "MediaWiki": ">= 1.40"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Newsletter",
+      "version": "1.2.1",
+      "sha256": "886a8fc5fa14a1ff4a9ed38b62beb7436429e5c04260d4357461ba7aab2ddbf2",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "NoTitle",
+      "version": "0.4.0",
+      "sha256": "fa48f860d17ab75ac5f06fec74a529b950cab2ca92b3717a79b3177a468f01b3",
+      "requires": {
+        "MediaWiki": ">= 1.29.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Nuke",
+      "version": null,
+      "sha256": "3a27c9d92fe2eaf2b74ddd308d1109fca5913846d9338f7c8807195321ea58af",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "NukeDPL",
+      "version": "1.6",
+      "sha256": "c4ca7d125fb0cad76161cf1321979145efcf23d099aff878058b9d2e118d1929",
+      "requires": {
+        "MediaWiki": ">= 1.37.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "OATHAuth",
+      "version": "0.5.0",
+      "sha256": "b822b3cb77d2bb9ed7578be7441532bee7a96554c14807d0734ce7a99cee5af8",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "OAuth",
+      "version": "1.1.0",
+      "sha256": "56ec36d1a2ad4394ae547db6336b1c34a87e742a71ce52da1a9556b10ac9bcdf",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "OOJSPlus",
+      "version": "3.2.0-alpha",
+      "sha256": "050f39ed3c76f5a4e819bffcb9790b83e1057ea6494a3f5f0de70a69ae182043",
+      "requires": {
+        "MediaWiki": ">= 1.43.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "OpenGraphMeta",
+      "version": "0.5.6",
+      "sha256": "61c9042a41a6fd2e9cf9b518b5f50564c000ecad4d1e0759c3983a70dabdd579",
+      "requires": {
+        "MediaWiki": ">= 1.35.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "OreDict",
+      "version": "3.4.2",
+      "sha256": "d5440ccfe91f7d2f8c5e1b6a327e308c92df3b9984650559ea7b8e948830f1c1",
+      "requires": {}
+    },
+    {
+      "type": "extensions",
+      "name": "OrphanedTalkPages",
+      "version": "1.5.0",
+      "sha256": "e663f038254121aeeeea375a0df44ec2ee3c18cb4eeb103e542317d9bbbfeaaf",
+      "requires": {
+        "MediaWiki": ">=1.41.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "PDFEmbed",
+      "version": "2.1.0",
+      "sha256": "b1aee469da8262debd099194c380345b56e8c236c266a42455a0eae76b35d54c",
+      "requires": {
+        "MediaWiki": ">= 1.43.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "PWA",
+      "version": "0.3b",
+      "sha256": "535a7b6fd52576ec2c77e232ef9c047ab79c68319fff43e8c0a6c5ce54a1fa78",
+      "requires": {
+        "MediaWiki": ">= 1.31.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "PageAssessments",
+      "version": "1.1.0",
+      "sha256": "6833c8fa59d54fbbea0be563edfb09885ddb9fb36ee1e41e2cdeda2d18a39f55",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "PageForms",
+      "version": "6.0",
+      "sha256": "a64e3ea70c4c91184bf0321bfc855ff4b2825a2e78c5aba54815344d805bf79a",
+      "requires": {
+        "MediaWiki": ">= 1.40"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "PageImages",
+      "version": null,
+      "sha256": "71de103218b4bdc185bfeee53c60f775e25f089588c1b404240f99352aebbe95",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "PageLanguage",
+      "version": null,
+      "sha256": "775fd9dbfbcc67df48c32b1c07103d4f464d646e4395cff6fe7236056beeb8ce",
+      "requires": {
+        "MediaWiki": ">= 1.40"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "PageNotice",
+      "version": null,
+      "sha256": "5207e050c0622110e9bfdfc6f701677b6259232d9ebe4aff69fe5c42dd6e6135",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "PageProperties",
+      "version": "1.5.2",
+      "sha256": "ce0bfbcf6a29d07fdcdd7c52bc0300b570b8ef4371b0685731cde5dd998cc5a4",
+      "requires": {
+        "MediaWiki": ">= 1.35.3"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "PageSchemas",
+      "version": "0.9.2",
+      "sha256": "5175e20c852c2a8a6ace0ae4b6714e7c81649b2cf52ad7b54fcd0d4cd25e6e46",
+      "requires": {
+        "MediaWiki": ">= 1.36"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "PageTriage",
+      "version": null,
+      "sha256": "ca17f70a9fb1809d153cd2ee8e1ad15a214802cd72c10dda8baa226d6b6a0fe4",
+      "requires": {
+        "MediaWiki": ">= 1.43.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "PagedTiffHandler",
+      "version": null,
+      "sha256": "1b1b63a86fa6ec7d9c6085c685ee01eb1eb5a8c11cc2b8bc65302e8563ea62cb",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "ParserFunctions",
+      "version": "1.6.1",
+      "sha256": "412813897f4993c598aaeb3f9a9224d861d1f22353b31f8e28996a115e8fde39",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "ParserMigration",
+      "version": "2.0.0",
+      "sha256": "e97bb0c3202a97948d13d159539dbffb1e4d74880a44eee30e281ee130afbc68",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "PdfHandler",
+      "version": null,
+      "sha256": "4258a0a4351754a082d796578a65dd8bd228af6fb5c3f6255b65a934bfe26307",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "PerPageLanguage",
+      "version": "1.0.0",
+      "sha256": "05187dc40a99ed76fb45052e3f89e99ebf4aa44ca24f6347770254ab33165158",
+      "requires": {
+        "MediaWiki": ">= 1.42"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Phonos",
+      "version": "0.1.0",
+      "sha256": "7eab3a09b17bc5607dac710428af71eb2ee44176173f98b08a99b6924573380f",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "PipeEscape",
+      "version": "3.0.0",
+      "sha256": "0b2a1a4311b79e2a72cf041f8e89b9d5cf242115cfca7c187bfa227eb1a98c86",
+      "requires": {
+        "MediaWiki": ">= 1.35.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Poem",
+      "version": null,
+      "sha256": "13409b3a761e6978f8e02e6d5c30547488b3169e3a8d39244d78745389edfb8c",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "PollNY",
+      "version": "3.8.0",
+      "sha256": "494a690caae1226918e01629e3b290db0834be1a7f7f7fbece5e6a27ea6b078d",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Popups",
+      "version": null,
+      "sha256": "10549d9b80064746f7e8937c9d1e0263f90618517ca06ca47d7a0584091881ef",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "PortableInfobox",
+      "version": "0.8",
+      "sha256": "f28b07756a66796fc8b738f2e0ce6dc0cb766cf02c871cd6172cbc3ed6b91ddc",
+      "requires": {
+        "MediaWiki": ">= 1.43.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Preloader",
+      "version": "1.4.1",
+      "sha256": "08152f303cbced4051f084d740cfa098c154f2bb305dd7abfbb15e8b4a48cb14",
+      "requires": {}
+    },
+    {
+      "type": "extensions",
+      "name": "ProofreadPage",
+      "version": null,
+      "sha256": "afa0f1b1a9ab0589e0c6fff945e73fb8289858b55d99c1bcbd3abf0a15faac5f",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "PropertySuggester",
+      "version": "3.2.1",
+      "sha256": "64cc44932d01ed8bbff0218c9deb9c194ef123ef1f166bd531e1db654bb0c977",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "ProtectSite",
+      "version": "0.5.3",
+      "sha256": "a1de5f5e2b34736d6e6739c7174eb1a272147f390a50976ac22c56b66d17372f",
+      "requires": {
+        "MediaWiki": ">= 1.31.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "ProtectionIndicator",
+      "version": "0.1",
+      "sha256": "6741e161479b4f8c512797fd8a13248a40e4fc32d52eb8bdcb4c0c5a5ccfc80d",
+      "requires": {
+        "MediaWiki": ">= 1.39.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Purge",
+      "version": "2.1.1",
+      "sha256": "31b723c88345f74cbe4e8693dd3aa77903216754266196d55dcfcf24f07e978e",
+      "requires": {
+        "MediaWiki": ">= 1.35.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "QuickInstantCommons",
+      "version": "1.5.1",
+      "sha256": "ec9ba13317d373ae050546953481b467ddfb40df3d80d84ec9df89ce22e784f5",
+      "requires": {
+        "MediaWiki": ">= 1.42",
+        "platform": {
+          "ext-curl": "*",
+          "php": ">= 7.4.3"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Quiz",
+      "version": "1.2.1",
+      "sha256": "2fddf4de85d1d6b18e90c3f741f211a619fa03f43d8b94d486dc3f82dce14ba6",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "QuizGame",
+      "version": "4.4",
+      "sha256": "158d4399b79eb1c4ef5538c9baefe6a4975f8d47a4208d2e41364b661e70244f",
+      "requires": {
+        "MediaWiki": ">= 1.43.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "RSS",
+      "version": "2.25.1",
+      "sha256": "d702e99089d944f17d12208142ded51c240569629f6f072cdc6f38f025731756",
+      "requires": {
+        "MediaWiki": ">= 1.45"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "RandomGameUnit",
+      "version": "2.8.0",
+      "sha256": "2463d1695c7b9f02ab776abe69b0aa05bd549d66476854bc7299e9e0594e9fd8",
+      "requires": {
+        "MediaWiki": ">= 1.35.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "RandomImage",
+      "version": "1.5.1",
+      "sha256": "dfaba064085623aed615c857fe8662af8b188d910b43040f30571c0e6cd9ccef",
+      "requires": {
+        "MediaWiki": ">= 1.35"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "RandomSelection",
+      "version": "2.3.0",
+      "sha256": "75b30fe5733f7885dc4a7a5d3570a96c6dcb0d6a8c1c8cf5118ed772bbf556b9",
+      "requires": {
+        "MediaWiki": ">= 1.31.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "RatePage",
+      "version": "2.14.0",
+      "sha256": "0df0cf8f8b06212afa448e22b99b31a57b0d36ce18e1d428dcced62c12e60eb2",
+      "requires": {
+        "MediaWiki": ">= 1.36.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "RealMe",
+      "version": null,
+      "sha256": "70ed9ca3653e2a74eae45af8db24196f1af9cf6fd82672002cdde2f9ededecc2",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "RegexFunctions",
+      "version": "2.0.0",
+      "sha256": "99b9130b5d77131cb433950bd194474e9d808f9926774e454fbffeff8e1bdd7d",
+      "requires": {
+        "MediaWiki": ">= 1.31.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "RelatedArticles",
+      "version": "3.1.0",
+      "sha256": "9ada54eb99f9a6b58677a9e3abcb7351af27c5dc89c42190d742345dedef1cbf",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "RemovePII",
+      "version": "3.0.0",
+      "sha256": "cfa20e16bae4ab1e1d3863e5e7c315f9f41442e6be57421b46863f634941c2c3",
+      "requires": {
+        "MediaWiki": ">= 1.43.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "RemoveRedlinks",
+      "version": "1.1.0",
+      "sha256": "3eec3c85d773dfc5fd6fd3ced4ca791870f576ae09fca48a15ccd0d6640bfb07",
+      "requires": {
+        "MediaWiki": ">= 1.39.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "ReplaceText",
+      "version": "1.8",
+      "sha256": "4ee615d25a5ff21d874c2f03150b0ec0457697a2cb95bd88e5b6ec446928ed5e",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Report",
+      "version": null,
+      "sha256": "29be4f8de30b3a2703c9487a352da9f9ddc9741baaa2a75e4332f01de5be0273",
+      "requires": {
+        "MediaWiki": ">= 1.35.0",
+        "platform": {
+          "php": ">= 5.6"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "ReportIncident",
+      "version": null,
+      "sha256": "b69f1d6b242601921a300bf90cf1068792b6cc427162de71674460e6ce57469e",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "RequestSSL",
+      "version": null,
+      "sha256": "240e6d554d63a7fc6be92fea2493b5c94b8d267cac72a73566733386107e68da",
+      "requires": {
+        "MediaWiki": ">= 1.43.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "RevisionSlider",
+      "version": null,
+      "sha256": "a9545d258dfa3afe2bbebd147779fdd8babc375962be641ef1b26bba53410732",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "RightFunctions",
+      "version": "1.13.0",
+      "sha256": "3f55d1eecac7a97ae112d1436584ede9dd6310d80018b5fc9c7433da8eb48a9e",
+      "requires": {
+        "MediaWiki": ">= 1.35.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "RottenLinks",
+      "version": "2.1.1",
+      "sha256": "6dcb0f0dc83e25cba153664cf5f0a15b2cbea51e20c275c0bf24c4caf9f42490",
+      "requires": {
+        "MediaWiki": ">= 1.43.0",
+        "platform": {
+          "php": ">= 8.0"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "SandboxLink",
+      "version": null,
+      "sha256": "c2324bd420526b637bb23d890046f88bd8c373d2255fe816dd9244c97fabbde7",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "SaneCase",
+      "version": "3.1",
+      "sha256": "6ac4ebfdb4d43cde02876f0320aacfd0f7e8978c4a58532b9f7d7a773e7180f2",
+      "requires": {
+        "MediaWiki": ">= 1.39.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Score",
+      "version": "0.3.0",
+      "sha256": "3fa8e69d9cdc39b2f225b054733c681a1acaa62b20b9f1a5df4209b044324b9a",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Screenplay",
+      "version": "0.6",
+      "sha256": "3730223b3ffc4d9561ece3f58bf903ed92c91baaf982cd9ba0ec80fb3e639e05",
+      "requires": {
+        "MediaWiki": ">= 1.39.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Scribunto",
+      "version": null,
+      "sha256": "e04b137f90d942a93734c5e5c487c0a01418e5420ba1bcb7d67f5042bad4b9b8",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "SecureLinkFixer",
+      "version": null,
+      "sha256": "6e5ed3fd6381ffb67dcabbfc075a4c64b66809589fb6dd155ad75a88e155a1ca",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "SecurePoll",
+      "version": "3.0.0",
+      "sha256": "7fa431ba3cda9a9612c6304ec8d02d26759e7d5cd373b56da9e308fb488a5abe",
+      "requires": {
+        "MediaWiki": ">= 1.43.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "SemanticDrilldown",
+      "version": "4.0.0-beta4",
+      "sha256": "85e37ca4711dd3e39f0785603570df789d039714b24725b8e3aac9eef1dae869",
+      "requires": {
+        "MediaWiki": ">= 1.39",
+        "platform": {
+          "php": ">= 7.4"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "SemanticFormsSelect",
+      "version": "4.0.0-beta",
+      "sha256": "08e4bbaacdb93d2f42600e43117fe0d4f3f293b36ecec437b8cabb4269762579",
+      "requires": {
+        "MediaWiki": ">= 1.39"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "SemanticScribunto",
+      "version": "2.3.2",
+      "sha256": "28d7634283f96a20264ab54acaadf98ec5446dbe4d8ba0b5f4624d4ab6b5cf78",
+      "requires": {
+        "MediaWiki": ">= 1.39",
+        "extensions": {
+          "Scribunto": "*",
+          "SemanticMediaWiki": ">= 4.1"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Share",
+      "version": "2.0",
+      "sha256": "fa2df5a6b6999d3d9c6d929d463f01f5ba11a011f0f6742a7bed0e51724ae4f7",
+      "requires": {
+        "MediaWiki": ">= 1.38.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "ShortDescription",
+      "version": "4.0.0",
+      "sha256": "c2073a73500eceeda96b5d1e0a2a8f85d71189a304ec8d1b03757602229a43d9",
+      "requires": {
+        "MediaWiki": ">= 1.43.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "SimpleBatchUpload",
+      "version": "2.0.1",
+      "sha256": "8883ea13273d603d0cc8d94ac960a661abc73761a6e87c4783088e635c44bafd",
+      "requires": {
+        "MediaWiki": ">=1.35"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "SimpleBlogPage",
+      "version": "4.1.0-alpha",
+      "sha256": "2f427b799feb18544849b2c0bd6239d1b690fd276fbeada69b7059c2c1662815",
+      "requires": {
+        "MediaWiki": ">= 1.43.0",
+        "extensions": {
+          "OOJSPlus": ">= 2.1.0"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "SimpleChanges",
+      "version": "1.1",
+      "sha256": "832f6f120bfa96ad09df4f17453cfee4e62064dd35e027b63a4df3881f8985b2",
+      "requires": {
+        "MediaWiki": ">= 1.34.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "SimpleTooltip",
+      "version": "2.0.0",
+      "sha256": "7df0d63266f0364779a1d495d5dd31fc0ee9560fe4042cdda6aea6908e97ef15",
+      "requires": {
+        "MediaWiki": ">= 1.39.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "SkinPerPage",
+      "version": "1.2.0",
+      "sha256": "00f971e1893b4360751e6bc2a414687d0044507bee59fa9634ea5b1e3ed04fcf",
+      "requires": {
+        "MediaWiki": ">= 1.31.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "SkyWikiMagic",
+      "version": null,
+      "sha256": "167d7cc007a5c00ae2481168b85d849796dd7c7e74cccca389be20d18c6497a3",
+      "requires": {
+        "MediaWiki": ">= 1.42.0",
+        "platform": {
+          "php": ">= 8.0"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "SnapProjectEmbed",
+      "version": "3.2.0",
+      "sha256": "bc6c0706bf961034d5c960aac15d8f19b38071c663957638f3db87f1420ae797",
+      "requires": {
+        "MediaWiki": ">=1.35.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "SoftRedirector",
+      "version": "0.138",
+      "sha256": "85f31ee744ae5121efc0a616d91d6a009060190a1ba678a330c9b05c37515598",
+      "requires": {
+        "MediaWiki": ">= 1.35.3"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "SpamBlacklist",
+      "version": null,
+      "sha256": "9897902edbf54059601f1516e1e9b32521e421bc6b7b7b3b8a5eda5ab39e6a97",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Spoilers",
+      "version": "2.2.6",
+      "sha256": "556590b27ee5211683dcadefcda5cd60468e1a364e66cd6f9cb3f56543d12133",
+      "requires": {
+        "MediaWiki": ">= 1.27.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "StandardDialogs",
+      "version": "3.1.0-alpha",
+      "sha256": "5bbce6ec34ec742ee7ff93efc30989725a631e9f08ac8c700d8eb73460a95b07",
+      "requires": {
+        "MediaWiki": ">= 1.43.0",
+        "extensions": {
+          "OOJSPlus": ">= 3.0.0"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "StopForumSpam",
+      "version": "0.4.0",
+      "sha256": "344a84eb81d7bc7fef07c9d5816863ad488d9a05dbf0c09f6436c22fafb50c34",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "StructuredNavigation",
+      "version": "2.0.0",
+      "sha256": "e17e19c03ce99dfd5c04084bbbb052dbdce9d1a886ff05ddab20b29ccd3f0a3b",
+      "requires": {
+        "MediaWiki": ">= 1.43.0",
+        "platform": {
+          "php": ">= 7.4"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "SubPageList3",
+      "version": "1.4",
+      "sha256": "067e310ac99c11cf101d9ad7f3449b7358402f6ec9c1f09ebfd965f2aaa83848",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "SubpageFun",
+      "version": "0.7.0",
+      "sha256": "df3d2ab14ed666d07fcbe616c5542ab3973d5dbdc02a8895b3eb837cb5fe00e5",
+      "requires": {
+        "MediaWiki": ">= 1.34.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "SyntaxHighlight_GeSHi",
+      "version": "2.0",
+      "sha256": "99fb59412c3b780fce5b00612a8327b411e46ad1c5fb041bc69929d9ad9d4da4",
+      "requires": {
+        "MediaWiki": ">= 1.43",
+        "platform": {
+          "ability-shell": true
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "TabberNeue",
+      "version": "3.0.0",
+      "sha256": "bf0a41154b272c2bb66d26475c1f92fa8bbce16b5acbc6564a8dda7545b2e075",
+      "requires": {
+        "MediaWiki": ">= 1.43.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Tabs",
+      "version": "1.3.2",
+      "sha256": "47e1c2240327ba0da035c69a747fad2b63111296125e45fe2ae05cdbc36fd31f",
+      "requires": {
+        "MediaWiki": ">= 1.29.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "TemplateData",
+      "version": "0.1.2",
+      "sha256": "3bb1e3e5200d710e136c7f4c2a1b9f7ef04563734b64f54d7af49122c6933eef",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "TemplateSandbox",
+      "version": "1.1.0",
+      "sha256": "269b875bc39f134dfc6ee57eb51830f958da60defb75ca833038c92ad6be7a76",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "TemplateStyles",
+      "version": "1.0",
+      "sha256": "74bb7c44b843573906a46f282cd09438235a8acfd15ed4ee0d086b647d7a5aa4",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "TemplateStylesExtender",
+      "version": "2.0.0",
+      "sha256": "219524d4dec3d006197b58a05b7f042bff25580213dab7d6a3476e0020c41910",
+      "requires": {
+        "MediaWiki": ">= 1.43.0",
+        "platform": {
+          "php": ">=8.0"
+        },
+        "extensions": {
+          "TemplateStyles": ">= 1.0"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "TemplateWizard",
+      "version": "0.1.0",
+      "sha256": "f221bca0644c67ecd3f361a6d91f8e4f1714f636b2a3a5336ba1576cb38ef1eb",
+      "requires": {
+        "MediaWiki": ">= 1.43",
+        "extensions": {
+          "TemplateData": "*",
+          "WikiEditor": ">= 0.5.3"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "TextExtracts",
+      "version": null,
+      "sha256": "352ca0edb2b75a4454004517ee8c9a46da3654fc5463fd2ff8294dced7f97810",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Thanks",
+      "version": "1.2.0",
+      "sha256": "600c7fb121dcee9a645eaf73f6701c3b5258501023681e9e7d43914ab3fa3ba7",
+      "requires": {
+        "MediaWiki": ">= 1.43",
+        "extensions": {
+          "Echo": "*"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Theme",
+      "version": "2.5",
+      "sha256": "879fe729510c759aa1835120cf47609976eaa7bb1a19e6f39f7ba1c72994b3a7",
+      "requires": {
+        "MediaWiki": ">= 1.39.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Tilesheets",
+      "version": "5.0.2",
+      "sha256": "4a67da281d0ca54ca3de8092e44696c8e25ac1aa9489d7b169e8a46ce4edb0ac",
+      "requires": {}
+    },
+    {
+      "type": "extensions",
+      "name": "TimeMachine",
+      "version": "0.4",
+      "sha256": "88bb94ba9a5ef8c6bfb485c21f4b984e2ec2f8ea7af8c8ce468bb2025de9470d",
+      "requires": {
+        "MediaWiki": ">= 1.31.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "TimedMediaHandler",
+      "version": "0.6.0",
+      "sha256": "6020ae40c1b7d7067f2a6f709826224ed49ad258f9c21a5ffa85a185c5c1b9d8",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Timeline",
+      "version": null,
+      "sha256": "56d63be09df83d26267ae36bdafdb90c87a375d77870478da8a3daa93a6d020e",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "TimezoneConverter",
+      "version": "0.2.0",
+      "sha256": "f36fdcdc60cacae57d4e16d8e6a9fe9ca379124ea44152ac583a3c95dca69cd8",
+      "requires": {
+        "MediaWiki": ">= 1.36"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "TitleBlacklist",
+      "version": "1.5.0",
+      "sha256": "2bfe2d935909169035b2a427251a2cbc0d93516e1ea129fa874fe25c675d7b12",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "TitleKey",
+      "version": "1.0",
+      "sha256": "d28562c0f73a83d0965a93d293b634a11cf5f88559ed34ea65ea8cfb95aaa160",
+      "requires": {
+        "MediaWiki": ">= 1.42"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "TocTree",
+      "version": "1.12.0",
+      "sha256": "dde8672de5217cb7506e46d6a4626144c0f6266233a68dcd1170fbd9d35814fe",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "TorBlock",
+      "version": "1.1.0",
+      "sha256": "2cc36b2c9e810470b96f56b7af5e0c141015a25e1d6ae94f4abdc7412a5bf43b",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Translate",
+      "version": "2024-07-16",
+      "sha256": "f411a47f8fe7a1571d50958075ea809980390531ed84b2abbcad18f63d89f5d9",
+      "requires": {
+        "MediaWiki": ">= 1.42.0",
+        "extensions": {
+          "UniversalLanguageSelector": "*"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "TranslationNotifications",
+      "version": "2018-08-05",
+      "sha256": "74c4527505ab5329049cb4634a35c3c1a8606bcea136f0e5dbc9951bf627b1bf",
+      "requires": {
+        "MediaWiki": ">= 1.43",
+        "extensions": {
+          "MassMessage": "*",
+          "Translate": "*"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "TreeAndMenu",
+      "version": "4.2.5, 2021-10-31",
+      "sha256": "c9a5092e4ebe10b4a9ef99675a52c53098dd8953ca4ffd5df539951be93f8f0e",
+      "requires": {}
+    },
+    {
+      "type": "extensions",
+      "name": "TwitterTag",
+      "version": "1.2.1",
+      "sha256": "33459f4c9cee53cd520f043e4d17d976baaeafcbb5ebaa2edf386629557a4091",
+      "requires": {
+        "MediaWiki": ">= 1.27.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "TwoColConflict",
+      "version": null,
+      "sha256": "f409e632ef06e8b6cd0f1b125e7154dc5a5f5474fefae6b48aa0d6f674947a08",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "UniversalLanguageSelector",
+      "version": "2025-03-15",
+      "sha256": "01f29f6e603ea75a6ad3e62693932d5e99327e82d575b14de5c1b421faebddcf",
+      "requires": {
+        "MediaWiki": ">= 1.43.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "UnlinkedWikibase",
+      "version": "3.0.0",
+      "sha256": "9a7e8c6d2029f422a071a0c77d6f1e45f417a6190f6568c121e835fdd0b2dd13",
+      "requires": {
+        "MediaWiki": ">= 1.38"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "UnusedRedirects",
+      "version": "1.5",
+      "sha256": "8bc39995fec61af1999dd4c2d46523bbc12909c79530c75bda1bdb99ce0b56b9",
+      "requires": {
+        "MediaWiki": ">= 1.34.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "UploadWizard",
+      "version": "1.5.0",
+      "sha256": "4456bb982e5a5abdcea2ce78d85ea23dafb53b9365110d06e373b3b227cdb9d8",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "UploadsLink",
+      "version": null,
+      "sha256": "b60ee6961845b5f237ef93f6cfaa4059f7612d8b3087f40b8e04536b25ee7372",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "UrlGetParameters",
+      "version": "1.6.0",
+      "sha256": "798596720a43f4d6a4b435aa6c80908ffd5a1d6517fe8b00661ffbf69d41d00c",
+      "requires": {
+        "MediaWiki": ">= 1.35.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "UrlShortener",
+      "version": "1.2.0",
+      "sha256": "5f8f5dbcba4f55b94660fd93f84a2028142457a572474df23bd896fcefe42613",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "UserFunctions",
+      "version": "2.8.1",
+      "sha256": "a1ebd6a4a78452cae76b2210e040ad0ebf59f18275b6ad8bde7794456bbfe8d5",
+      "requires": {
+        "MediaWiki": ">= 1.35.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "UserPageEditProtection",
+      "version": "4.1.0",
+      "sha256": "db5c19c03259dd2b59525edae82383c19385b86ce0606510a3a3d625c4c6798d",
+      "requires": {
+        "MediaWiki": ">= 1.29.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "UserProfileV2",
+      "version": "1.0.5",
+      "sha256": "05682b18f044c58daeaab2f1c29d1e7c3691d9b346d026bee968ca68a7e02bb3",
+      "requires": {
+        "MediaWiki": ">= 1.41.0",
+        "platform": {
+          "php": ">= 8.0"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "VEForAll",
+      "version": "0.5.2",
+      "sha256": "8ac8a9c74b65f34fc48d8b454c4a7200bfcbf6f98f4d49e7eb1586c51da533cb",
+      "requires": {
+        "MediaWiki": ">= 1.35.0",
+        "extensions": {
+          "VisualEditor": "*"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Variables",
+      "version": "2.6.0-beta",
+      "sha256": "08429a8156b5a1e0b031fc97aa7b4cd729fef4a56f04bb6b384f1b9283f022a9",
+      "requires": {
+        "MediaWiki": ">= 1.29.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "VariablesLua",
+      "version": "1.6.0",
+      "sha256": "c7d9ee82aa9da46c7e30989b74a9d7b72822b2362acefea5b1feeb8717f82a55",
+      "requires": {
+        "MediaWiki": ">= 1.35.0",
+        "extensions": {
+          "Scribunto": "*",
+          "Variables": ">= 2.0"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "Video",
+      "version": "1.10",
+      "sha256": "7227e6665939c5af9a23bbf2e5676bf502901c6b27e10951b45035c5f8df5b32",
+      "requires": {
+        "MediaWiki": ">= 1.43.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "VisualEditor",
+      "version": null,
+      "sha256": "bffed3abf8eac3c37d0d7fc75c9ace47092d91f93b6e60fdfa3044cb22422909",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "VoteNY",
+      "version": "3.2",
+      "sha256": "ddd4e7d1dba1431a660ee89cdeff920f6b7f523fe50ce20dff0754f4a1d1d1fe",
+      "requires": {
+        "MediaWiki": ">= 1.35.3"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "WebAuthn",
+      "version": "1.0.0",
+      "sha256": "ee00c2a9d674ee79c168717f456b3001f7078d4bf17651e1202cff4a0e3673f8",
+      "requires": {
+        "MediaWiki": ">= 1.43",
+        "extensions": {
+          "OATHAuth": ">= 0.4.4"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "WebChat",
+      "version": "1.4.0",
+      "sha256": "e2e1685596852a721d7cd962659fc0e57bdefe4b14237da7db4fc2f98ccb75ff",
+      "requires": {
+        "MediaWiki": ">= 1.34.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "WikiCategoryTagCloud",
+      "version": "1.6",
+      "sha256": "fd13b691661d4a30c52708d7735de3cc65fcfdcfef8c52feb91ee47235360a77",
+      "requires": {
+        "MediaWiki": ">= 1.43.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "WikiDiscover",
+      "version": null,
+      "sha256": "92e4551c910d9cbebb9007cd527a7310fb53ce335587e40ba92bd096d6b1c60f",
+      "requires": {
+        "MediaWiki": ">= 1.43.0",
+        "extensions": {
+          "CreateWiki": "*"
+        },
+        "platform": {
+          "php": ">= 8.1"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "WikiEditor",
+      "version": "0.5.4",
+      "sha256": "7a872af6aae87035d68cede6aa16b9e5f309b5cd283b11ed7fccf7f44b63b796",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "WikiForum",
+      "version": "2.7.0",
+      "sha256": "dd8711ddf26b9aa7aa6d92fd3704bd4d2953b05d52226000b7f7b822ae3604f5",
+      "requires": {
+        "MediaWiki": ">= 1.40.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "WikiLove",
+      "version": "1.3.1",
+      "sha256": "05cf02d03ed1f6c6c8ef4f3bc31c6019b58ebfe3cff6d8265497366a1a1c5267",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "WikiSEO",
+      "version": "2.7.0",
+      "sha256": "ed78f871442673e6f72dd07f32a3887c7f662884c946d33c5fe8a0559c775fb1",
+      "requires": {
+        "MediaWiki": ">= 1.40.0",
+        "platform": {
+          "php": ">=7.4.0"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "WikiTextLoggedInOut",
+      "version": "1.6.0",
+      "sha256": "0364dcca643b8bd784556ec6a7b0fed9b2d99fe533f051c4bd10db25ce3cb5c7",
+      "requires": {
+        "MediaWiki": ">= 1.39.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "WikibaseCirrusSearch",
+      "version": "0.1.0",
+      "sha256": "082a13e4fe2c9ccff0253470b8888a1b987f81c0ca034abc9dec8213cd4901b6",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "WikibaseEdtf",
+      "version": "2.1.1",
+      "sha256": "2f3027050cec930211f327b16bb14b331d1d4e0bea0a51230c4df8e1a9cf47d8",
+      "requires": {
+        "MediaWiki": ">= 1.37.0",
+        "extensions": {
+          "WikibaseRepository": "*"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "WikibaseLexeme",
+      "version": null,
+      "sha256": "193b8b369495784ff3f5dc33e85a2953904630e2817635bb090ff743facb5194",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "WikibaseLexemeCirrusSearch",
+      "version": "0.1.0",
+      "sha256": "9b4c74c17617b94d648be2e4ff542c4e9c6b1109cf05b01057e82a610b23ad6a",
+      "requires": {
+        "extensions": {
+          "WikibaseCirrusSearch": "*",
+          "WikibaseLexeme": "*"
+        },
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "WikibaseLocalMedia",
+      "version": "2.0.0",
+      "sha256": "73e6894e96509443061f850ed60afc9548e40c038e52b0d8e52b8276ce89355e",
+      "requires": {
+        "MediaWiki": ">= 1.40.0",
+        "extensions": {
+          "WikibaseRepository": "*"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "WikibaseMediaInfo",
+      "version": "0.1.0",
+      "sha256": "3d93f37e30b7a322c8ddb01cde729dbb2e7b8eded18e74127baf2179ff27c282",
+      "requires": {
+        "MediaWiki": ">= 1.43",
+        "extensions": {
+          "UniversalLanguageSelector": "*",
+          "WikibaseCirrusSearch": "*"
+        }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "WikibaseQualityConstraints",
+      "version": "1.0.0",
+      "sha256": "ff886085ad7c46b79945337043e9bdf93089056550123ceabcadae7ff2297fe3",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "WikidataPageBanner",
+      "version": "0.0.3",
+      "sha256": "54d2fe8b8fb1e36dfe273e95dcd98cf64b5298d9f94ae10c143ab64b8aaf17e4",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "WikimediaIncubator",
+      "version": "6.3.0",
+      "sha256": "24011a56923ff6a179cd84355b366a5ae019fc86ada7f62a05238551d5a27543",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "YouTube",
+      "version": "1.9.4",
+      "sha256": "fd966deb18f6488189fc023ce91ed11175f8e7d1d51e9275fe951938c4abdeda",
+      "requires": {
+        "MediaWiki": ">= 1.34.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "cldr",
+      "version": "4.17.0",
+      "sha256": "3abcf37a743f2ddd9983ad1f9a9bc87f208b2583bab06cfcf04c16f396b09446",
+      "requires": {
+        "MediaWiki": ">= 1.39.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "mw-ScratchBlocks4",
+      "version": null,
+      "sha256": "b73674087508225d0238d8601b83f914b2e4d4a86caec26b298d3cbfee0da8f2",
+      "requires": {
+        "MediaWiki": ">= 1.35.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "mw-snapblocks",
+      "version": "1.3.1",
+      "sha256": "18104cbb0ab4b45c479653f69138b12dd316f652f614d722af938dc10952a298",
+      "requires": {
+        "MediaWiki": ">= 1.35.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "wikihiero",
+      "version": "1.1",
+      "sha256": "85eff0ad0708b5923f44a76b61ae039bd608a0e5889907ae13b08137cbc20bf7",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "skins",
+      "name": "Anisa",
+      "version": "1.0",
+      "sha256": "7df5dcdb6818d222b3cd5bc08ec2f882d74e9daf5194a3882dc28190bae2e38c",
+      "requires": {
+        "MediaWiki": ">= 1.39.0"
+      }
+    },
+    {
+      "type": "skins",
+      "name": "BlueSky",
+      "version": "1.7.0",
+      "sha256": "2c3c830ba685d5770fc0378a1c33b0dc8935d905287090332b431f0288c6f19d",
+      "requires": {
+        "MediaWiki": ">=1.41.0"
+      }
+    },
+    {
+      "type": "skins",
+      "name": "Citizen",
+      "version": "3.5.0",
+      "sha256": "0919b66e3065d0b6391bb0d20f1a1aff1cb822ddcd5aa444e57ff60b2e70e165",
+      "requires": {
+        "MediaWiki": ">= 1.43.0"
+      }
+    },
+    {
+      "type": "skins",
+      "name": "CologneBlue",
+      "version": null,
+      "sha256": "938024202da2cf218cb3ba9bb36d275448f045ba182e055d7309a90c4d1e70b6",
+      "requires": {
+        "MediaWiki": ">= 1.42"
+      }
+    },
+    {
+      "type": "skins",
+      "name": "Cosmos",
+      "version": "7.0.0",
+      "sha256": "2cb2ee637bc90c981e7fd5097d67fcca6dc21ee691b1a606d56017e57f1ee20e",
+      "requires": {
+        "MediaWiki": ">= 1.42.0"
+      }
+    },
+    {
+      "type": "skins",
+      "name": "DuskToDawn",
+      "version": "1.4.3",
+      "sha256": "eb61693965754233fc0fe54099dcdc19454369de13bbc44413df9ca6524949b0",
+      "requires": {
+        "MediaWiki": ">= 1.39.0"
+      }
+    },
+    {
+      "type": "skins",
+      "name": "Evelution",
+      "version": "164.1.0",
+      "sha256": "baeba2a94067ed3c3592ece098d551b358251f4ad151bfc49f1dac2de30f0d23",
+      "requires": {
+        "MediaWiki": ">= 1.39.0"
+      }
+    },
+    {
+      "type": "skins",
+      "name": "Eveskin",
+      "version": "1.0",
+      "sha256": "fe0edf1dabee9611e39599c18ed47622d9bdf4c4143e81f9b31af73c03311781",
+      "requires": {
+        "MediaWiki": ">= 1.25.0"
+      }
+    },
+    {
+      "type": "skins",
+      "name": "Femiwiki",
+      "version": "5.1.2",
+      "sha256": "33ab72c8bf692d78aed694ed2e944e9ee4fb542791d68d60499c24682b8ae0c3",
+      "requires": {
+        "MediaWiki": ">= 1.42.0"
+      }
+    },
+    {
+      "type": "skins",
+      "name": "Foreground",
+      "version": null,
+      "sha256": "3367a4a5a1479d5e5592eeb6319eb9f6a45d0fe09ee9f32a6f70881a03a9a486",
+      "requires": {
+        "MediaWiki": ">= 1.39.0"
+      }
+    },
+    {
+      "type": "skins",
+      "name": "Gamepress",
+      "version": "1.4.0",
+      "sha256": "cb0d62b0442f9584a528995b2114129a0bf08d5db53b05360a0ca78f6af1ece7",
+      "requires": {
+        "MediaWiki": ">= 1.39.0"
+      }
+    },
+    {
+      "type": "skins",
+      "name": "HasSomeColours",
+      "version": "0.2",
+      "sha256": "9b454fffd8fef5c3e9d925cdbb07aa2186b0f33e19238c49fa5ae1841b9747c5",
+      "requires": {
+        "MediaWiki": ">= 1.39"
+      }
+    },
+    {
+      "type": "skins",
+      "name": "Lakeus",
+      "version": "1.4.1",
+      "sha256": "45068fb179dad257691cbdb83010cd1a1e8bf70ac49464a6d12198a8b2c1f58f",
+      "requires": {
+        "MediaWiki": ">= 1.43.0"
+      }
+    },
+    {
+      "type": "skins",
+      "name": "Mask",
+      "version": "0.7",
+      "sha256": "7bdffb2b32c90c812153a9322af9bcd02d90f1c866a79376ec7461ba8d2b4fa6",
+      "requires": {
+        "MediaWiki": ">= 1.39.0"
+      }
+    },
+    {
+      "type": "skins",
+      "name": "Medik",
+      "version": "5.1.3",
+      "sha256": "240292e6bd050fc4e624ebc2a23d1f8325276a57a9a46bd51b86d03fe7be437c",
+      "requires": {
+        "MediaWiki": ">= 1.39.0"
+      }
+    },
+    {
+      "type": "skins",
+      "name": "Metrolook",
+      "version": "7.0.0",
+      "sha256": "52eca441e290f5d66ea75be8d14dc3df20faa45a0dfc1cc7af095e487931449e",
+      "requires": {
+        "MediaWiki": ">= 1.41.0"
+      }
+    },
+    {
+      "type": "skins",
+      "name": "MinervaNeue",
+      "version": null,
+      "sha256": "5b35e3814207e9f01f4cbba55b9388944529e756c454f5b3b00603f69bcdb88b",
+      "requires": {
+        "MediaWiki": ">= 1.45"
+      }
+    },
+    {
+      "type": "skins",
+      "name": "Mirage",
+      "version": null,
+      "sha256": "a285be215fd71727690abe0eb40452f132f301ae71ccba16af74296959e43a68",
+      "requires": {
+        "MediaWiki": ">= 1.41.0"
+      }
+    },
+    {
+      "type": "skins",
+      "name": "Modern",
+      "version": null,
+      "sha256": "e0cd0884818de4f62e0d6d2876b80602b1a726431687712543d737a118586edf",
+      "requires": {
+        "MediaWiki": ">= 1.42"
+      }
+    },
+    {
+      "type": "skins",
+      "name": "Monaco",
+      "version": "2.8.0",
+      "sha256": "35361ba00daf5a3efb3284f5970681502a47e448d43fea76ac790ca06817a59f",
+      "requires": {
+        "MediaWiki": ">= 1.41.0"
+      }
+    },
+    {
+      "type": "skins",
+      "name": "MonoBook",
+      "version": null,
+      "sha256": "351cfc2b1a0c2f741947b4a00ea8c0b24472ea50924bd967c41f19ec35be9a4c",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "skins",
+      "name": "Nimbus",
+      "version": "3.6.0",
+      "sha256": "1bac789fd603c64e5af4c2d10e1f93a30aca602ef17de46e91f90d47fd18e0a0",
+      "requires": {
+        "MediaWiki": ">= 1.39"
+      }
+    },
+    {
+      "type": "skins",
+      "name": "Nostalgia",
+      "version": null,
+      "sha256": "94817ddcc9dd6b6519989bd3a3c56321072218db07fe6fccee9c43d02afb9751",
+      "requires": {
+        "MediaWiki": ">= 1.42"
+      }
+    },
+    {
+      "type": "skins",
+      "name": "Pivot",
+      "version": null,
+      "sha256": "281e9d3ecab56c481cc733699d4bbcb8dcde2f8d195c4f0c3f691522477b82e3",
+      "requires": {
+        "MediaWiki": ">= 1.41.0"
+      }
+    },
+    {
+      "type": "skins",
+      "name": "Refreshed",
+      "version": "4.0.8",
+      "sha256": "05bfcc4dd4fddbc29a47923c6138347e7b2fcbf54bfe7c083e659ecc32590602",
+      "requires": {
+        "MediaWiki": ">= 1.43.0"
+      }
+    },
+    {
+      "type": "skins",
+      "name": "Splash",
+      "version": "2.0.1",
+      "sha256": "fbec6d30fe63337b69f80d5433f421b7af9b26cfac09fe86d6ea2e2a1c43c9af",
+      "requires": {
+        "MediaWiki": ">= 1.40.0"
+      }
+    },
+    {
+      "type": "skins",
+      "name": "Timeless",
+      "version": "0.9.1",
+      "sha256": "79e2a610af3274db14608f4310da26c30dbe5fee0747724ad120908018c22a12",
+      "requires": {
+        "MediaWiki": ">= 1.43"
+      }
+    },
+    {
+      "type": "skins",
+      "name": "Truglass",
+      "version": "4.1.9",
+      "sha256": "5064c0bf8838ea22ff3c0b41b46fd563a58bd66021df1321adebc540e31a33d5",
+      "requires": {
+        "MediaWiki": ">= 1.39.0"
+      }
+    },
+    {
+      "type": "skins",
+      "name": "Tweeki",
+      "version": "4.39.2",
+      "sha256": "7e271007f5af13528bfa810c7b742c37924f0b528f88009cd2fe5ab1dd3c818e",
+      "requires": {
+        "MediaWiki": ">= 1.39.0"
+      }
+    },
+    {
+      "type": "skins",
+      "name": "Vector",
+      "version": "1.0.0",
+      "sha256": "7200284ebd040dca865940d1b64a6730bb653a790b5e43836e4362dced29ce8b",
+      "requires": {
+        "MediaWiki": ">= 1.45"
+      }
+    },
+    {
+      "type": "skins",
+      "name": "WMAU",
+      "version": "0.6.0",
+      "sha256": "0cb5c2fdec31011d5cce6b1e1b96780070f56b4fd3a5ab97bd0d3c5616a51953",
+      "requires": {
+        "MediaWiki": ">= 1.39.0"
+      }
+    },
+    {
+      "type": "skins",
+      "name": "apex",
+      "version": null,
+      "sha256": "d3ec0ec267f8ad31583b6e6cb8edbe81cf4af745336043d9d6cbab41444c5097",
+      "requires": {
+        "MediaWiki": ">= 1.39.0"
+      }
+    },
+    {
+      "type": "skins",
+      "name": "chameleon",
+      "version": "5.0.0-dev",
+      "sha256": "ec479e4065e7961debbe00d9ac5e7e5cd63ea5683d5fac6831c0b414c3d3ee68",
+      "requires": {
+        "MediaWiki": ">= 1.39.0",
+        "extensions": {
+          "Bootstrap": "~5.0"
+        }
+      }
+    },
+    {
+      "type": "skins",
+      "name": "erudite",
+      "version": "1.8",
+      "sha256": "49f1079adf1e89cb342facacfa439b766534ba29e526f2c87b8de79123acb49c",
+      "requires": {
+        "MediaWiki": ">= 1.39.0"
+      }
+    },
+    {
+      "type": "skins",
+      "name": "snapwikiskin",
+      "version": "5.0.0",
+      "sha256": "1a5a6a81b3d5723d6466210a1e2135dcd08ffd3d43f5161205b68a7087a85d5d",
+      "requires": {
+        "MediaWiki": ">= 1.42.0"
+      }
+    }
+  ],
+  "lockfiles": {
+    "mediawiki/composer.lock": "f2e13e043d3814f9564151ba84fa299eb7a3b78bd70c7dc8d035b4ec6c256867",
+    "Moe-Counter/pnpm-lock.yaml": "bf2cdcba5fd4d8c2c977816a7ce3ea9fc5843eefa75104cb5ff0c4f7129695e0",
+    "Moe-Counter/bun.lock": "72151d4740fca52ae1283d886ad4d16d3db32aa4de67e641a20a81d8f6f7c0d6",
+    "mediawiki/extensions/AdminLinks/composer.lock": "5787c73e2c480d5c4e543973509b341185002f96b549f97fe8834bf7f5981c40",
+    "mediawiki/extensions/AntiSpoof/composer.lock": "f02e6ca03e92d3c51202c22bdaa5fba0a7c0d73d760a01552941d990b2f677f3",
+    "mediawiki/extensions/Babel/composer.lock": "13aeed95ae8a998a5a28a87bd371b252fab25b0e22b1d8f79e737a56e3d85b73",
+    "mediawiki/extensions/Bootstrap/composer.lock": "72d1896667270e9460571f648df43b9a0f72b17926585d2631e3d65b0937c014",
+    "mediawiki/extensions/CSS/composer.lock": "0ede55614cbe0a77df5400d83b9c117d8247d4b1fe761954ce1593d37ab919da",
+    "mediawiki/extensions/CheckUser/composer.lock": "56eee65fceafea57a5715756b7accdb7ab98b450f78e0f3bf2a10999ba6908a6",
+    "mediawiki/extensions/DataTransfer/composer.lock": "0244ae6f43576d5642f7a658770c0640708298e3de6e6fd212f5e0e9eac18b35",
+    "mediawiki/extensions/Elastica/composer.lock": "9c663f27435272bc7ddfa851170fc8c23496345d0aed5a1cfeda946992207aef",
+    "mediawiki/extensions/EventLogging/composer.lock": "8a3f1835e27088945fed474d38bebef93f2eb1186edc248e971b910d89513f67",
+    "mediawiki/extensions/Flow/composer.lock": "7f65e7c6387b71d78aeaef1e66b3f40f207cd506699eb9a41811765335bd488a",
+    "mediawiki/extensions/IPInfo/composer.lock": "4b4de3b2e64bd64250190619b69d96bd09acd3f40fcf78d01b0e742916db1e50",
+    "mediawiki/extensions/Kartographer/composer.lock": "3766d330cff2ced847658ab212996c932e6d5fc3500c7079a9caeeda299776b9",
+    "mediawiki/extensions/Lingo/composer.lock": "3db7203e69e4a0205c8400e2880bd574f945ca3718d3c65e71242b4e1ef18b79",
+    "mediawiki/extensions/NearbyPages/composer.lock": "a984f74540d90c47b76b57423535e43ad89f536093cea96c70d6274772333897",
+    "mediawiki/extensions/OATHAuth/composer.lock": "00d1117ad35a42d585bc7ad5b8911ea8ded0b469dc85ccfd5839674396e7b544",
+    "mediawiki/extensions/OAuth/composer.lock": "39ae47e3838db2362deace0d5bb8d5306b348ee0a90a0279586784514f089e21",
+    "mediawiki/extensions/OOJSPlus/composer.lock": "8d08e37d0465bdfc9e7c90f365c2d7944b43c6060b09f0f75272455cbec9afa5",
+    "mediawiki/extensions/PageProperties/composer.lock": "51017f1ad910af9aa139a345630959909352d7f242a6ff83bae301755e48f3e2",
+    "mediawiki/extensions/Phonos/composer.lock": "00b334b1622eba49235db89850d4d184cfb4b0055371dcb157d2df434d3b41f0",
+    "mediawiki/extensions/SimpleBlogPage/composer.lock": "2a4736e80d768e87f65f2e7831ac0db3ddc757a1c88097ae68e1554cf0d90dd6",
+    "mediawiki/extensions/SimpleTooltip/composer.lock": "154bd63c8d641a992394c93c81cba51a81c8ee392d90cd2ba85fe13a5243e5a5",
+    "mediawiki/extensions/StructuredNavigation/composer.lock": "2f999d8f77705db56e052212d06641ca805a39a3e2ec8900210a0b82b150a78e",
+    "mediawiki/extensions/TemplateStyles/composer.lock": "b37ef2953a656435ed49b10daa8a2585c181db6cff56173d386a8b21634509bd",
+    "mediawiki/extensions/TimedMediaHandler/composer.lock": "953f1de3e45d4691dfa2e71f73e7145beb07b9c13874fda1616a962b4595c4dc",
+    "mediawiki/extensions/Translate/composer.lock": "eb17d45ec27838e77589278fd7f8aaa3664b512c46be01081851680ddc11e481",
+    "mediawiki/extensions/UrlShortener/composer.lock": "b28c9a45044f704a805b29555dab97af76e5e42a4ecd637e719c2ca1f16d81c9",
+    "mediawiki/extensions/WebAuthn/composer.lock": "18fa1da2fa827f846e5ee3f1bd2638e79825cc227b4fb2e5259a7a5c1125ea1c",
+    "mediawiki/extensions/WikibaseEdtf/composer.lock": "89d3a0063af69383c88299390e0057d624eccbbef041c88c8faec45058ef6c00",
+    "mediawiki/extensions/WikibaseMediaInfo/composer.lock": "a271d542f4a9be1986172351df1636a18ffc810054e41be6fd267c2778ed1f13",
+    "mediawiki/extensions/WikibaseQualityConstraints/composer.lock": "c838e2bcacae8c9b0173b564b9267a2c63c75b515d781895449b5a0c34d4bdc1",
+    "mediawiki/skins/chameleon/composer.lock": "d55c65294d136af49e8e7b1e8cbc9ff58f89619b2b04628fd6c1373ab78924e9",
+    "mediawiki/tests/phpunit/data/composer/composer.lock": "7e98a60218a05c7ccb47c9abffec748833166006682ab7310aeffafbaa4f5854"
+  },
+  "local_patches": {
+    "mediawiki/extensions/DataDump/includes/Api/ApiDeleteDumps.php": "23ddf177ae870652d44526408430df179343f2692e266973e739930ec1e68316",
+    "mediawiki/extensions/DataDump/includes/Api/ApiGenerateDumps.php": "e24f7e5b42eb6ae09c566f12b1390ed678adc16cf35a5155dadf102f19e73022"
+  },
+  "installed_dependencies": {
+    "mediawiki/extensions/AdminLinks/vendor/composer/installed.json": [
+      {
+        "name": "composer/installers",
+        "version": "v2.3.0",
+        "reference": "12fb2dfe5e16183de69e784a7b84046c43d97e8e"
+      }
+    ],
+    "mediawiki/extensions/AntiSpoof/vendor/composer/installed.json": [
+      {
+        "name": "wikimedia/equivset",
+        "version": "1.7.1",
+        "reference": "c23fd697a35794ee907cf143c54fbb003532341e"
+      }
+    ],
+    "mediawiki/extensions/Babel/vendor/composer/installed.json": [
+      {
+        "name": "composer/installers",
+        "version": "v2.3.0",
+        "reference": "12fb2dfe5e16183de69e784a7b84046c43d97e8e"
+      }
+    ],
+    "mediawiki/extensions/Bootstrap/vendor/composer/installed.json": [
+      {
+        "name": "composer/installers",
+        "version": "v2.3.0",
+        "reference": "12fb2dfe5e16183de69e784a7b84046c43d97e8e"
+      },
+      {
+        "name": "mediawiki/scss",
+        "version": "4.0.0",
+        "reference": "dc8a252bce1727a43bd609e1c95c485ce58cb2f5"
+      },
+      {
+        "name": "scssphp/scssphp",
+        "version": "v1.13.0",
+        "reference": "63d1157457e5554edf00b0c1fabab4c1511d2520"
+      }
+    ],
+    "mediawiki/extensions/CSS/vendor/composer/installed.json": [
+      {
+        "name": "wikimedia/css-sanitizer",
+        "version": "v5.5.0",
+        "reference": "72d751f04c09ff92b31426208025e5c859e9b4af"
+      },
+      {
+        "name": "wikimedia/scoped-callback",
+        "version": "v5.0.0",
+        "reference": "7fa061561a70c49e5e5e6d40dd8f7c151affa0f3"
+      },
+      {
+        "name": "wikimedia/utfnormal",
+        "version": "4.0.0",
+        "reference": "6f3690d3ca446d9745fa3410bb993470afd7bc25"
+      }
+    ],
+    "mediawiki/extensions/CheckUser/vendor/composer/installed.json": [
+      {
+        "name": "firebase/php-jwt",
+        "version": "v6.10.0",
+        "reference": "a49db6f0a5033aef5143295342f1c95521b075ff"
+      }
+    ],
+    "mediawiki/extensions/DataTransfer/vendor/composer/installed.json": [
+      {
+        "name": "composer/installers",
+        "version": "v2.3.0",
+        "reference": "12fb2dfe5e16183de69e784a7b84046c43d97e8e"
+      },
+      {
+        "name": "composer/pcre",
+        "version": "3.3.2",
+        "reference": "b2bed4734f0cc156ee1fe9c0da2550420d99a21e"
+      },
+      {
+        "name": "ezyang/htmlpurifier",
+        "version": "v4.18.0",
+        "reference": "cb56001e54359df7ae76dc522d08845dc741621b"
+      },
+      {
+        "name": "maennchen/zipstream-php",
+        "version": "3.1.2",
+        "reference": "aeadcf5c412332eb426c0f9b4485f6accba2a99f"
+      },
+      {
+        "name": "markbaker/complex",
+        "version": "3.0.2",
+        "reference": "95c56caa1cf5c766ad6d65b6344b807c1e8405b9"
+      },
+      {
+        "name": "markbaker/matrix",
+        "version": "3.0.1",
+        "reference": "728434227fe21be27ff6d86621a1b13107a2562c"
+      },
+      {
+        "name": "phpoffice/phpspreadsheet",
+        "version": "1.29.10",
+        "reference": "c80041b1628c4f18030407134fe88303661d4e4e"
+      },
+      {
+        "name": "psr/http-client",
+        "version": "1.0.3",
+        "reference": "bb5906edc1c324c9a05aa0873d40117941e5fa90"
+      },
+      {
+        "name": "psr/http-factory",
+        "version": "1.1.0",
+        "reference": "2b4765fddfe3b508ac62f829e852b1501d3f6e8a"
+      },
+      {
+        "name": "psr/http-message",
+        "version": "2.0",
+        "reference": "402d35bcb92c70c026d1a6a9883f06b2ead23d71"
+      },
+      {
+        "name": "psr/simple-cache",
+        "version": "3.0.0",
+        "reference": "764e0b3939f5ca87cb904f570ef9be2d78a07865"
+      }
+    ],
+    "mediawiki/extensions/Elastica/vendor/composer/installed.json": [
+      {
+        "name": "elasticsearch/elasticsearch",
+        "version": "v7.17.3",
+        "reference": "b8a60b4136ee31117d1aa1b19879530eb6d11efb"
+      },
+      {
+        "name": "ezimuel/guzzlestreams",
+        "version": "4.1.0",
+        "reference": "903161be81e9f497cc42fb7db982404a4e6441b0"
+      },
+      {
+        "name": "ezimuel/ringphp",
+        "version": "1.4.0",
+        "reference": "bc983599ec7add50c00e420e867c403c8ed16ae7"
+      },
+      {
+        "name": "nyholm/dsn",
+        "version": "2.0.1",
+        "reference": "9445621b426bac8c0ca161db8cd700da00a4e618"
+      },
+      {
+        "name": "psr/log",
+        "version": "3.0.2",
+        "reference": "f16e1d5863e37f8d8c2a01719f5b34baa2b714d3"
+      },
+      {
+        "name": "react/promise",
+        "version": "v3.2.0",
+        "reference": "8a164643313c71354582dc850b42b33fa12a4b63"
+      },
+      {
+        "name": "ruflin/elastica",
+        "version": "7.3.1",
+        "reference": "7c61a630c3d456b00a5610960ae3a9bd29987469"
+      },
+      {
+        "name": "symfony/deprecation-contracts",
+        "version": "v3.6.0",
+        "reference": "63afe740e99a13ba87ec199bb07bbdee937a5b62"
+      },
+      {
+        "name": "symfony/polyfill-php73",
+        "version": "v1.32.0",
+        "reference": "0f68c03565dcaaf25a890667542e8bd75fe7e5bb"
+      }
+    ],
+    "mediawiki/extensions/EventLogging/vendor/composer/installed.json": [
+      {
+        "name": "justinrainbow/json-schema",
+        "version": "5.3.0",
+        "reference": "feb2ca6dd1cebdaf1ed60a4c8de2e53ce11c4fd8"
+      },
+      {
+        "name": "psr/log",
+        "version": "1.1.4",
+        "reference": "d49695b909c3b7628b6289db5479a1c204601f11"
+      },
+      {
+        "name": "wikimedia/metrics-platform",
+        "version": "4.2.2",
+        "reference": "f2ce03c89b387028adf3503fcb9bf825ce974959"
+      },
+      {
+        "name": "wikimedia/timestamp",
+        "version": "v4.2.0",
+        "reference": "e7b9e56fe00f3d41283e360f5a81d83ecbea921e"
+      }
+    ],
+    "mediawiki/extensions/Flow/vendor/composer/installed.json": [
+      {
+        "name": "pimple/pimple",
+        "version": "v3.5.0",
+        "reference": "a94b3a4db7fb774b3d78dad2315ddc07629e1bed"
+      },
+      {
+        "name": "psr/container",
+        "version": "2.0.2",
+        "reference": "c71ecc56dfe541dbd90c5360474fbc405f8d5963"
+      }
+    ],
+    "mediawiki/extensions/IPInfo/vendor/composer/installed.json": [
+      {
+        "name": "composer/ca-bundle",
+        "version": "1.5.7",
+        "reference": "d665d22c417056996c59019579f1967dfe5c1e82"
+      },
+      {
+        "name": "geoip2/geoip2",
+        "version": "v2.13.0",
+        "reference": "6a41d8fbd6b90052bc34dff3b4252d0f88067b23"
+      },
+      {
+        "name": "maxmind-db/reader",
+        "version": "v1.12.1",
+        "reference": "815939e006b7e68062b540ec9e86aaa8be2b6ce4"
+      },
+      {
+        "name": "maxmind/web-service-common",
+        "version": "v0.10.0",
+        "reference": "d7c7c42fc31bff26e0ded73a6e187bcfb193f9c4"
+      }
+    ],
+    "mediawiki/extensions/Kartographer/vendor/composer/installed.json": [
+      {
+        "name": "justinrainbow/json-schema",
+        "version": "5.3.0",
+        "reference": "feb2ca6dd1cebdaf1ed60a4c8de2e53ce11c4fd8"
+      }
+    ],
+    "mediawiki/extensions/Lingo/vendor/composer/installed.json": [
+      {
+        "name": "composer/installers",
+        "version": "v2.3.0",
+        "reference": "12fb2dfe5e16183de69e784a7b84046c43d97e8e"
+      }
+    ],
+    "mediawiki/extensions/NearbyPages/vendor/composer/installed.json": [],
+    "mediawiki/extensions/OATHAuth/vendor/composer/installed.json": [
+      {
+        "name": "bacon/bacon-qr-code",
+        "version": "2.0.8",
+        "reference": "8674e51bb65af933a5ffaf1c308a660387c35c22"
+      },
+      {
+        "name": "christian-riesen/base32",
+        "version": "1.6.0",
+        "reference": "2e82dab3baa008e24a505649b0d583c31d31e894"
+      },
+      {
+        "name": "dasprid/enum",
+        "version": "1.0.6",
+        "reference": "8dfd07c6d2cf31c8da90c53b83c026c7696dda90"
+      },
+      {
+        "name": "endroid/qr-code",
+        "version": "4.6.1",
+        "reference": "a75c913b0e4d6ad275e49a2c1de1cacffc6c2184"
+      },
+      {
+        "name": "jakobo/hotp-php",
+        "version": "v2.0.0",
+        "reference": "ff2f13d1918001e54b3f49deb1d366bcfcc98437"
+      }
+    ],
+    "mediawiki/extensions/OAuth/vendor/composer/installed.json": [
+      {
+        "name": "defuse/php-encryption",
+        "version": "v2.4.0",
+        "reference": "f53396c2d34225064647a05ca76c1da9d99e5828"
+      },
+      {
+        "name": "firebase/php-jwt",
+        "version": "v6.11.1",
+        "reference": "d1e91ecf8c598d073d0995afa8cd5c75c6e19e66"
+      },
+      {
+        "name": "lcobucci/clock",
+        "version": "2.3.0",
+        "reference": "c7aadcd6fd97ed9e199114269c0be3f335e38876"
+      },
+      {
+        "name": "lcobucci/jwt",
+        "version": "4.1.5",
+        "reference": "fe2d89f2eaa7087af4aa166c6f480ef04e000582"
+      },
+      {
+        "name": "league/event",
+        "version": "2.3.0",
+        "reference": "062ebb450efbe9a09bc2478e89b7c933875b0935"
+      },
+      {
+        "name": "league/oauth2-server",
+        "version": "dev-v9.0.0-alpha",
+        "reference": "61d770dc284898ea2905d66e12f8f7e5f6664092"
+      },
+      {
+        "name": "league/uri",
+        "version": "6.8.0",
+        "reference": "a700b4656e4c54371b799ac61e300ab25a2d1d39"
+      },
+      {
+        "name": "league/uri-interfaces",
+        "version": "2.3.0",
+        "reference": "00e7e2943f76d8cb50c7dfdc2f6dee356e15e383"
+      },
+      {
+        "name": "paragonie/random_compat",
+        "version": "v9.99.100",
+        "reference": "996434e5492cb4c3edcb9168db6fbb1359ef965a"
+      },
+      {
+        "name": "psr/clock",
+        "version": "1.0.0",
+        "reference": "e41a24703d4560fd0acb709162f73b8adfc3aa0d"
+      },
+      {
+        "name": "psr/http-message",
+        "version": "1.1",
+        "reference": "cb6ce4845ce34a8ad9e68117c10ee90a29919eba"
+      },
+      {
+        "name": "stella-maris/clock",
+        "version": "0.1.7",
+        "reference": "fa23ce16019289a18bb3446fdecd45befcdd94f8"
+      }
+    ],
+    "mediawiki/extensions/OOJSPlus/vendor/composer/installed.json": [
+      {
+        "name": "composer/installers",
+        "version": "v2.3.0",
+        "reference": "12fb2dfe5e16183de69e784a7b84046c43d97e8e"
+      },
+      {
+        "name": "mwstake/mediawiki-component-commonwebapis",
+        "version": "3.0.18",
+        "reference": "7f9c954da27ea56201a28c72db1cb119412d6df8"
+      },
+      {
+        "name": "mwstake/mediawiki-component-datastore",
+        "version": "2.0.0",
+        "reference": "ebb4a6224fd89bd8ebe347733da04d2b1cf8de65"
+      },
+      {
+        "name": "mwstake/mediawiki-component-formengine",
+        "version": "3.0.6",
+        "reference": "7dbfea1ca982121fbcf501195eaab3328dbd2155"
+      },
+      {
+        "name": "mwstake/mediawiki-component-utils",
+        "version": "3.0.1",
+        "reference": "adca79be446de2d4a84e4ce63527b513e730849f"
+      },
+      {
+        "name": "mwstake/mediawiki-componentloader",
+        "version": "1.0.1",
+        "reference": "9884a1bcec50095748b68e7328f13baa969b35aa"
+      }
+    ],
+    "mediawiki/extensions/PageProperties/vendor/composer/installed.json": [
+      {
+        "name": "easyrdf/easyrdf",
+        "version": "1.1.1",
+        "reference": "c7b0a9dbcb211eb7de03ee99ff5b52d17f2a8e64"
+      },
+      {
+        "name": "ml/iri",
+        "version": "1.1.4",
+        "reference": "cbd44fa913e00ea624241b38cefaa99da8d71341"
+      },
+      {
+        "name": "ml/json-ld",
+        "version": "1.2.1",
+        "reference": "537e68e87a6bce23e57c575cd5dcac1f67ce25d8"
+      }
+    ],
+    "mediawiki/extensions/Phonos/vendor/composer/installed.json": [],
+    "mediawiki/extensions/SimpleBlogPage/vendor/composer/installed.json": [
+      {
+        "name": "composer/installers",
+        "version": "v2.3.0",
+        "reference": "12fb2dfe5e16183de69e784a7b84046c43d97e8e"
+      },
+      {
+        "name": "mwstake/mediawiki-component-commonuserinterface",
+        "version": "6.0.0",
+        "reference": "5713ce7ec91749cdb68128360c2411a0f51a75c0"
+      },
+      {
+        "name": "mwstake/mediawiki-component-commonwebapis",
+        "version": "3.0.18",
+        "reference": "7f9c954da27ea56201a28c72db1cb119412d6df8"
+      },
+      {
+        "name": "mwstake/mediawiki-component-datastore",
+        "version": "2.0.0",
+        "reference": "ebb4a6224fd89bd8ebe347733da04d2b1cf8de65"
+      },
+      {
+        "name": "mwstake/mediawiki-component-utils",
+        "version": "3.0.1",
+        "reference": "adca79be446de2d4a84e4ce63527b513e730849f"
+      },
+      {
+        "name": "mwstake/mediawiki-componentloader",
+        "version": "1.0.1",
+        "reference": "9884a1bcec50095748b68e7328f13baa969b35aa"
+      }
+    ],
+    "mediawiki/extensions/StructuredNavigation/vendor/composer/installed.json": [
+      {
+        "name": "justinrainbow/json-schema",
+        "version": "5.3.0",
+        "reference": "feb2ca6dd1cebdaf1ed60a4c8de2e53ce11c4fd8"
+      }
+    ],
+    "mediawiki/extensions/TemplateStyles/vendor/composer/installed.json": [
+      {
+        "name": "wikimedia/css-sanitizer",
+        "version": "v5.5.0",
+        "reference": "72d751f04c09ff92b31426208025e5c859e9b4af"
+      },
+      {
+        "name": "wikimedia/scoped-callback",
+        "version": "v5.0.0",
+        "reference": "7fa061561a70c49e5e5e6d40dd8f7c151affa0f3"
+      },
+      {
+        "name": "wikimedia/utfnormal",
+        "version": "4.0.0",
+        "reference": "6f3690d3ca446d9745fa3410bb993470afd7bc25"
+      }
+    ],
+    "mediawiki/extensions/TimedMediaHandler/vendor/composer/installed.json": [
+      {
+        "name": "james-heinrich/getid3",
+        "version": "v1.9.23",
+        "reference": "06c7482532ff2b3f9111b011d880ca6699c8542b"
+      }
+    ],
+    "mediawiki/extensions/Translate/vendor/composer/installed.json": [
+      {
+        "name": "composer/installers",
+        "version": "v2.3.0",
+        "reference": "12fb2dfe5e16183de69e784a7b84046c43d97e8e"
+      },
+      {
+        "name": "mustangostang/spyc",
+        "version": "0.6.3",
+        "reference": "4627c838b16550b666d15aeae1e5289dd5b77da0"
+      }
+    ],
+    "mediawiki/extensions/UrlShortener/vendor/composer/installed.json": [
+      {
+        "name": "bacon/bacon-qr-code",
+        "version": "v3.0.1",
+        "reference": "f9cc1f52b5a463062251d666761178dbdb6b544f"
+      },
+      {
+        "name": "dasprid/enum",
+        "version": "1.0.6",
+        "reference": "8dfd07c6d2cf31c8da90c53b83c026c7696dda90"
+      },
+      {
+        "name": "endroid/qr-code",
+        "version": "5.1.0",
+        "reference": "393fec6c4cbdc1bd65570ac9d245704428010122"
+      }
+    ],
+    "mediawiki/extensions/WebAuthn/vendor/composer/installed.json": [
+      {
+        "name": "beberlei/assert",
+        "version": "v3.3.3",
+        "reference": "b5fd8eacd8915a1b627b8bfc027803f1939734dd"
+      },
+      {
+        "name": "brick/math",
+        "version": "0.9.3",
+        "reference": "ca57d18f028f84f777b2168cd1911b0dee2343ae"
+      },
+      {
+        "name": "fgrosse/phpasn1",
+        "version": "v2.5.0",
+        "reference": "42060ed45344789fb9f21f9f1864fc47b9e3507b"
+      },
+      {
+        "name": "league/uri",
+        "version": "6.8.0",
+        "reference": "a700b4656e4c54371b799ac61e300ab25a2d1d39"
+      },
+      {
+        "name": "league/uri-interfaces",
+        "version": "2.3.0",
+        "reference": "00e7e2943f76d8cb50c7dfdc2f6dee356e15e383"
+      },
+      {
+        "name": "psr/http-client",
+        "version": "1.0.3",
+        "reference": "bb5906edc1c324c9a05aa0873d40117941e5fa90"
+      },
+      {
+        "name": "psr/http-factory",
+        "version": "1.1.0",
+        "reference": "2b4765fddfe3b508ac62f829e852b1501d3f6e8a"
+      },
+      {
+        "name": "psr/http-message",
+        "version": "1.1",
+        "reference": "cb6ce4845ce34a8ad9e68117c10ee90a29919eba"
+      },
+      {
+        "name": "psr/log",
+        "version": "1.1.4",
+        "reference": "d49695b909c3b7628b6289db5479a1c204601f11"
+      },
+      {
+        "name": "ramsey/collection",
+        "version": "2.1.1",
+        "reference": "344572933ad0181accbf4ba763e85a0306a8c5e2"
+      },
+      {
+        "name": "ramsey/uuid",
+        "version": "4.8.1",
+        "reference": "fdf4dd4e2ff1813111bd0ad58d7a1ddbb5b56c28"
+      },
+      {
+        "name": "spomky-labs/base64url",
+        "version": "v2.0.4",
+        "reference": "7752ce931ec285da4ed1f4c5aa27e45e097be61d"
+      },
+      {
+        "name": "spomky-labs/cbor-php",
+        "version": "v2.1.0",
+        "reference": "28e2712cfc0b48fae661a48ffc6896d7abe83684"
+      },
+      {
+        "name": "symfony/polyfill-php80",
+        "version": "v1.32.0",
+        "reference": "0cc9dd0f17f61d8131e7df6b84bd344899fe2608"
+      },
+      {
+        "name": "symfony/process",
+        "version": "v5.4.47",
+        "reference": "5d1662fb32ebc94f17ddb8d635454a776066733d"
+      },
+      {
+        "name": "thecodingmachine/safe",
+        "version": "v1.3.3",
+        "reference": "a8ab0876305a4cdaef31b2350fcb9811b5608dbc"
+      },
+      {
+        "name": "web-auth/cose-lib",
+        "version": "v3.3.12",
+        "reference": "efa6ec2ba4e840bc1316a493973c9916028afeeb"
+      },
+      {
+        "name": "web-auth/metadata-service",
+        "version": "v3.3.12",
+        "reference": "ef40d2b7b68c4964247d13fab52e2fa8dbd65246"
+      },
+      {
+        "name": "web-auth/webauthn-lib",
+        "version": "v3.3.12",
+        "reference": "5ef9b21c8e9f8a817e524ac93290d08a9f065b33"
+      }
+    ],
+    "mediawiki/extensions/WikibaseEdtf/vendor/composer/installed.json": [
+      {
+        "name": "carbonphp/carbon-doctrine-types",
+        "version": "3.2.0",
+        "reference": "18ba5ddfec8976260ead6e866180bd5d2f71aa1d"
+      },
+      {
+        "name": "composer/installers",
+        "version": "v2.3.0",
+        "reference": "12fb2dfe5e16183de69e784a7b84046c43d97e8e"
+      },
+      {
+        "name": "nesbot/carbon",
+        "version": "2.73.0",
+        "reference": "9228ce90e1035ff2f0db84b40ec2e023ed802075"
+      },
+      {
+        "name": "professional-wiki/edtf",
+        "version": "3.0.2",
+        "reference": "a20ddf02b94874526d78440cc3df40b3ed98d887"
+      },
+      {
+        "name": "psr/clock",
+        "version": "1.0.0",
+        "reference": "e41a24703d4560fd0acb709162f73b8adfc3aa0d"
+      },
+      {
+        "name": "symfony/deprecation-contracts",
+        "version": "v3.6.0",
+        "reference": "63afe740e99a13ba87ec199bb07bbdee937a5b62"
+      },
+      {
+        "name": "symfony/polyfill-mbstring",
+        "version": "v1.32.0",
+        "reference": "6d857f4d76bd4b343eac26d6b539585d2bc56493"
+      },
+      {
+        "name": "symfony/polyfill-php80",
+        "version": "v1.32.0",
+        "reference": "0cc9dd0f17f61d8131e7df6b84bd344899fe2608"
+      },
+      {
+        "name": "symfony/translation",
+        "version": "v6.4.22",
+        "reference": "7e3b3b7146c6fab36ddff304a8041174bf6e17ad"
+      },
+      {
+        "name": "symfony/translation-contracts",
+        "version": "v3.6.0",
+        "reference": "df210c7a2573f1913b2d17cc95f90f53a73d8f7d"
+      }
+    ],
+    "mediawiki/extensions/WikibaseMediaInfo/vendor/composer/installed.json": [
+      {
+        "name": "serialization/serialization",
+        "version": "4.1.0",
+        "reference": "4403fbab83e0187791d35caef4eef4395811e58d"
+      }
+    ],
+    "mediawiki/extensions/WikibaseQualityConstraints/vendor/composer/installed.json": [
+      {
+        "name": "data-values/common",
+        "version": "1.2.0",
+        "reference": "b21c2bd3b213d6233a645003df4f88956afc52f4"
+      },
+      {
+        "name": "data-values/data-values",
+        "version": "3.1.0",
+        "reference": "1084142918095dfedf9b6cc0de0755f8c4628264"
+      },
+      {
+        "name": "data-values/geo",
+        "version": "4.5.1",
+        "reference": "eb1996b7ece9d501a86772755b1ba5dac25a540f"
+      },
+      {
+        "name": "data-values/interfaces",
+        "version": "1.2.0",
+        "reference": "22573cd52a7b37416f28ed6a8d8706543b0d430a"
+      },
+      {
+        "name": "data-values/number",
+        "version": "0.12.3",
+        "reference": "0e7e3217d04d48d3b895171e743ac81bf4824735"
+      },
+      {
+        "name": "data-values/serialization",
+        "version": "1.2.5",
+        "reference": "b31b3af537a3ac9f3b70f42cc03f2221c6fd8fd7"
+      },
+      {
+        "name": "data-values/time",
+        "version": "1.2.0",
+        "reference": "d8e8cf713fa33f22f973fb06fbbafedd722401eb"
+      },
+      {
+        "name": "serialization/serialization",
+        "version": "4.1.0",
+        "reference": "4403fbab83e0187791d35caef4eef4395811e58d"
+      },
+      {
+        "name": "symfony/polyfill-php80",
+        "version": "v1.32.0",
+        "reference": "0cc9dd0f17f61d8131e7df6b84bd344899fe2608"
+      },
+      {
+        "name": "wikimedia/purtle",
+        "version": "v2.0.0",
+        "reference": "af5b7f1da5bbfea6f2b7992600bfdaf258f61762"
+      }
+    ],
+    "mediawiki/skins/chameleon/vendor/composer/installed.json": [
+      {
+        "name": "composer/installers",
+        "version": "v2.3.0",
+        "reference": "12fb2dfe5e16183de69e784a7b84046c43d97e8e"
+      },
+      {
+        "name": "jeroen/file-fetcher",
+        "version": "6.1.0",
+        "reference": "d38fb0587b52b28bd24fda599f2da69ac8530453"
+      },
+      {
+        "name": "mediawiki/bootstrap",
+        "version": "5.0.0",
+        "reference": "46defe1eaa750639c6bad6e3582ca4a250493d8e"
+      },
+      {
+        "name": "mediawiki/scss",
+        "version": "4.0.0",
+        "reference": "dc8a252bce1727a43bd609e1c95c485ce58cb2f5"
+      },
+      {
+        "name": "psr/http-message",
+        "version": "1.1",
+        "reference": "cb6ce4845ce34a8ad9e68117c10ee90a29919eba"
+      },
+      {
+        "name": "psr/log",
+        "version": "3.0.2",
+        "reference": "f16e1d5863e37f8d8c2a01719f5b34baa2b714d3"
+      },
+      {
+        "name": "scssphp/scssphp",
+        "version": "v1.13.0",
+        "reference": "63d1157457e5554edf00b0c1fabab4c1511d2520"
+      }
+    ],
+    "mediawiki/vendor/composer/installed.json": [
+      {
+        "name": "composer/pcre",
+        "version": "3.3.2",
+        "reference": "b2bed4734f0cc156ee1fe9c0da2550420d99a21e"
+      },
+      {
+        "name": "composer/semver",
+        "version": "3.4.4",
+        "reference": "198166618906cb2de69b95d7d47e5fa8aa1b2b95"
+      },
+      {
+        "name": "composer/spdx-licenses",
+        "version": "1.5.9",
+        "reference": "edf364cefe8c43501e21e88110aac10b284c3c9f"
+      },
+      {
+        "name": "composer/xdebug-handler",
+        "version": "3.0.5",
+        "reference": "6c1925561632e83d60a44492e0b344cf48ab85ef"
+      },
+      {
+        "name": "dealerdirect/phpcodesniffer-composer-installer",
+        "version": "v1.2.0",
+        "reference": "845eb62303d2ca9b289ef216356568ccc075ffd1"
+      },
+      {
+        "name": "doctrine/dbal",
+        "version": "3.10.0",
+        "reference": "1cf840d696373ea0d58ad0a8875c0fadcfc67214"
+      },
+      {
+        "name": "doctrine/deprecations",
+        "version": "1.1.6",
+        "reference": "d4fe3e6fd9bb9e72557a19674f44d8ac7db4c6ca"
+      },
+      {
+        "name": "doctrine/event-manager",
+        "version": "2.1.1",
+        "reference": "dda33921b198841ca8dbad2eaa5d4d34769d18cf"
+      },
+      {
+        "name": "doctrine/instantiator",
+        "version": "2.1.0",
+        "reference": "23da848e1a2308728fe5fdddabf4be17ff9720c7"
+      },
+      {
+        "name": "doctrine/sql-formatter",
+        "version": "1.5.2",
+        "reference": "d6d00aba6fd2957fe5216fe2b7673e9985db20c8"
+      },
+      {
+        "name": "felixfbecker/advanced-json-rpc",
+        "version": "v3.2.1",
+        "reference": "b5f37dbff9a8ad360ca341f3240dc1c168b45447"
+      },
+      {
+        "name": "giorgiosironi/eris",
+        "version": "0.14.1",
+        "reference": "fe4302d938c6cca1b661032da4cfe9b7a11d1009"
+      },
+      {
+        "name": "guzzlehttp/guzzle",
+        "version": "7.10.0",
+        "reference": "b51ac707cfa420b7bfd4e4d5e510ba8008e822b4"
+      },
+      {
+        "name": "guzzlehttp/promises",
+        "version": "2.3.0",
+        "reference": "481557b130ef3790cf82b713667b43030dc9c957"
+      },
+      {
+        "name": "guzzlehttp/psr7",
+        "version": "2.8.0",
+        "reference": "21dc724a0583619cd1652f673303492272778051"
+      },
+      {
+        "name": "hamcrest/hamcrest-php",
+        "version": "v2.1.1",
+        "reference": "f8b1c0173b22fa6ec77a81fe63e5b01eba7e6487"
+      },
+      {
+        "name": "johnkary/phpunit-speedtrap",
+        "version": "v4.0.1",
+        "reference": "d6600d2218396b78856c335f83479503957a5fa9"
+      },
+      {
+        "name": "justinrainbow/json-schema",
+        "version": "5.3.0",
+        "reference": "feb2ca6dd1cebdaf1ed60a4c8de2e53ce11c4fd8"
+      },
+      {
+        "name": "lcobucci/clock",
+        "version": "2.2.0",
+        "reference": "fb533e093fd61321bfcbac08b131ce805fe183d3"
+      },
+      {
+        "name": "lcobucci/jwt",
+        "version": "4.1.5",
+        "reference": "fe2d89f2eaa7087af4aa166c6f480ef04e000582"
+      },
+      {
+        "name": "liuggio/statsd-php-client",
+        "version": "v1.0.18",
+        "reference": "c42e6d6687b7b2d7683186ec7f4f03351cc3dbca"
+      },
+      {
+        "name": "mck89/peast",
+        "version": "v1.17.2",
+        "reference": "465810689c477fbba17f4f949b75e4d0bdab13ea"
+      },
+      {
+        "name": "mediawiki/mediawiki-codesniffer",
+        "version": "v48.0.0",
+        "reference": "6d46ca2334d5e1c5be10bf28e01f6010cfbff212"
+      },
+      {
+        "name": "mediawiki/mediawiki-phan-config",
+        "version": "0.17.0",
+        "reference": "5e98f0ae2755650c6bebb682c0fcc06b371745c9"
+      },
+      {
+        "name": "mediawiki/minus-x",
+        "version": "1.1.3",
+        "reference": "553f920ad53f78b33ea654f8623c2a50b5ac7efd"
+      },
+      {
+        "name": "mediawiki/phan-taint-check-plugin",
+        "version": "7.0.0",
+        "reference": "1d70b8bdbc0fcc048f204a86e07a8ac2fa324c55"
+      },
+      {
+        "name": "microsoft/tolerant-php-parser",
+        "version": "v0.1.2",
+        "reference": "3eccfd273323aaf69513e2f1c888393f5947804b"
+      },
+      {
+        "name": "monolog/monolog",
+        "version": "2.9.3",
+        "reference": "a30bfe2e142720dfa990d0a7e573997f5d884215"
+      },
+      {
+        "name": "myclabs/deep-copy",
+        "version": "1.13.4",
+        "reference": "07d290f0c47959fd5eed98c95ee5602db07e0b6a"
+      },
+      {
+        "name": "netresearch/jsonmapper",
+        "version": "v4.5.0",
+        "reference": "8e76efb98ee8b6afc54687045e1b8dba55ac76e5"
+      },
+      {
+        "name": "nikic/php-parser",
+        "version": "v5.7.0",
+        "reference": "dca41cd15c2ac9d055ad70dbfd011130757d1f82"
+      },
+      {
+        "name": "oojs/oojs-ui",
+        "version": "v0.53.0",
+        "reference": "f0c25397b8d6827fd52bd35f663475b92910e16e"
+      },
+      {
+        "name": "pear/console_getopt",
+        "version": "v1.4.3",
+        "reference": "a41f8d3e668987609178c7c4a9fe48fecac53fa0"
+      },
+      {
+        "name": "pear/mail",
+        "version": "v2.0.0",
+        "reference": "eb053f8b74f4f3178105fcf001626e63068c0dbc"
+      },
+      {
+        "name": "pear/mail_mime",
+        "version": "1.10.12",
+        "reference": "d032c7c9335e96d5954ac6e93d33955f3b7246e2"
+      },
+      {
+        "name": "pear/net_smtp",
+        "version": "1.12.1",
+        "reference": "5d7ba854d75a7c207d8581de1cc6fd2895ae2518"
+      },
+      {
+        "name": "pear/net_socket",
+        "version": "v1.2.2",
+        "reference": "bbe6a12bb4f7059dba161f6ddd43f369c0ec8d09"
+      },
+      {
+        "name": "pear/net_url2",
+        "version": "v2.2.3",
+        "reference": "c1f2b316ed9b05e881cdb494f7550ddf817c76c8"
+      },
+      {
+        "name": "pear/pear-core-minimal",
+        "version": "v1.10.18",
+        "reference": "c7b55789d01de0ce090d289b73f1bbd6a2f113b1"
+      },
+      {
+        "name": "pear/pear_exception",
+        "version": "v1.0.2",
+        "reference": "b14fbe2ddb0b9f94f5b24cf08783d599f776fff0"
+      },
+      {
+        "name": "phan/phan",
+        "version": "5.5.1",
+        "reference": "2b6a846eff1a65dd0229ffa2370b4c35a96b7f3c"
+      },
+      {
+        "name": "phar-io/manifest",
+        "version": "2.0.4",
+        "reference": "54750ef60c58e43759730615a392c31c80e23176"
+      },
+      {
+        "name": "phar-io/version",
+        "version": "3.2.1",
+        "reference": "4f7fd7836c6f332bb2933569e566a0d6c4cbed74"
+      },
+      {
+        "name": "php-parallel-lint/php-console-color",
+        "version": "v1.0.1",
+        "reference": "7adfefd530aa2d7570ba87100a99e2483a543b88"
+      },
+      {
+        "name": "php-parallel-lint/php-console-highlighter",
+        "version": "v1.0.0",
+        "reference": "5b4803384d3303cf8e84141039ef56c8a123138d"
+      },
+      {
+        "name": "php-parallel-lint/php-parallel-lint",
+        "version": "v1.4.0",
+        "reference": "6db563514f27e19595a19f45a4bf757b6401194e"
+      },
+      {
+        "name": "phpcsstandards/phpcsextra",
+        "version": "1.4.0",
+        "reference": "fa4b8d051e278072928e32d817456a7fdb57b6ca"
+      },
+      {
+        "name": "phpcsstandards/phpcsutils",
+        "version": "1.1.1",
+        "reference": "f7eb16f2fa4237d5db9e8fed8050239bee17a9bd"
+      },
+      {
+        "name": "phpdocumentor/reflection-common",
+        "version": "2.2.0",
+        "reference": "1d01c49d4ed62f25aa84a747ad35d5a16924662b"
+      },
+      {
+        "name": "phpdocumentor/reflection-docblock",
+        "version": "5.6.6",
+        "reference": "5cee1d3dfc2d2aa6599834520911d246f656bcb8"
+      },
+      {
+        "name": "phpdocumentor/type-resolver",
+        "version": "1.12.0",
+        "reference": "92a98ada2b93d9b201a613cb5a33584dde25f195"
+      },
+      {
+        "name": "phpstan/phpdoc-parser",
+        "version": "2.3.2",
+        "reference": "a004701b11273a26cd7955a61d67a7f1e525a45a"
+      },
+      {
+        "name": "phpunit/php-code-coverage",
+        "version": "9.2.32",
+        "reference": "85402a822d1ecf1db1096959413d35e1c37cf1a5"
+      },
+      {
+        "name": "phpunit/php-file-iterator",
+        "version": "3.0.6",
+        "reference": "cf1c2e7c203ac650e352f4cc675a7021e7d1b3cf"
+      },
+      {
+        "name": "phpunit/php-invoker",
+        "version": "3.1.1",
+        "reference": "5a10147d0aaf65b58940a0b72f71c9ac0423cc67"
+      },
+      {
+        "name": "phpunit/php-text-template",
+        "version": "2.0.4",
+        "reference": "5da5f67fc95621df9ff4c4e5a84d6a8a2acf7c28"
+      },
+      {
+        "name": "phpunit/php-timer",
+        "version": "5.0.3",
+        "reference": "5a63ce20ed1b5bf577850e2c4e87f4aa902afbd2"
+      },
+      {
+        "name": "phpunit/phpunit",
+        "version": "9.6.21",
+        "reference": "de6abf3b6f8dd955fac3caad3af7a9504e8c2ffa"
+      },
+      {
+        "name": "psr/cache",
+        "version": "3.0.0",
+        "reference": "aa5030cfa5405eccfdcb1083ce040c2cb8d253bf"
+      },
+      {
+        "name": "psr/clock",
+        "version": "1.0.0",
+        "reference": "e41a24703d4560fd0acb709162f73b8adfc3aa0d"
+      },
+      {
+        "name": "psr/container",
+        "version": "2.0.2",
+        "reference": "c71ecc56dfe541dbd90c5360474fbc405f8d5963"
+      },
+      {
+        "name": "psr/http-client",
+        "version": "1.0.3",
+        "reference": "bb5906edc1c324c9a05aa0873d40117941e5fa90"
+      },
+      {
+        "name": "psr/http-factory",
+        "version": "1.1.0",
+        "reference": "2b4765fddfe3b508ac62f829e852b1501d3f6e8a"
+      },
+      {
+        "name": "psr/http-message",
+        "version": "1.1",
+        "reference": "cb6ce4845ce34a8ad9e68117c10ee90a29919eba"
+      },
+      {
+        "name": "psr/log",
+        "version": "1.1.4",
+        "reference": "d49695b909c3b7628b6289db5479a1c204601f11"
+      },
+      {
+        "name": "psy/psysh",
+        "version": "v0.12.21",
+        "reference": "4821fab5b7cd8c49a673a9fd5754dc9162bb9e97"
+      },
+      {
+        "name": "ralouphie/getallheaders",
+        "version": "3.0.3",
+        "reference": "120b605dfeb996808c31b6477290a714d356e822"
+      },
+      {
+        "name": "sabre/event",
+        "version": "5.1.7",
+        "reference": "86d57e305c272898ba3c28e9bd3d65d5464587c2"
+      },
+      {
+        "name": "sebastian/cli-parser",
+        "version": "1.0.2",
+        "reference": "2b56bea83a09de3ac06bb18b92f068e60cc6f50b"
+      },
+      {
+        "name": "sebastian/code-unit",
+        "version": "1.0.8",
+        "reference": "1fc9f64c0927627ef78ba436c9b17d967e68e120"
+      },
+      {
+        "name": "sebastian/code-unit-reverse-lookup",
+        "version": "2.0.3",
+        "reference": "ac91f01ccec49fb77bdc6fd1e548bc70f7faa3e5"
+      },
+      {
+        "name": "sebastian/comparator",
+        "version": "4.0.10",
+        "reference": "e4df00b9b3571187db2831ae9aada2c6efbd715d"
+      },
+      {
+        "name": "sebastian/complexity",
+        "version": "2.0.3",
+        "reference": "25f207c40d62b8b7aa32f5ab026c53561964053a"
+      },
+      {
+        "name": "sebastian/diff",
+        "version": "4.0.6",
+        "reference": "ba01945089c3a293b01ba9badc29ad55b106b0bc"
+      },
+      {
+        "name": "sebastian/environment",
+        "version": "5.1.5",
+        "reference": "830c43a844f1f8d5b7a1f6d6076b784454d8b7ed"
+      },
+      {
+        "name": "sebastian/exporter",
+        "version": "4.0.8",
+        "reference": "14c6ba52f95a36c3d27c835d65efc7123c446e8c"
+      },
+      {
+        "name": "sebastian/global-state",
+        "version": "5.0.8",
+        "reference": "b6781316bdcd28260904e7cc18ec983d0d2ef4f6"
+      },
+      {
+        "name": "sebastian/lines-of-code",
+        "version": "1.0.4",
+        "reference": "e1e4a170560925c26d424b6a03aed157e7dcc5c5"
+      },
+      {
+        "name": "sebastian/object-enumerator",
+        "version": "4.0.4",
+        "reference": "5c9eeac41b290a3712d88851518825ad78f45c71"
+      },
+      {
+        "name": "sebastian/object-reflector",
+        "version": "2.0.4",
+        "reference": "b4f479ebdbf63ac605d183ece17d8d7fe49c15c7"
+      },
+      {
+        "name": "sebastian/recursion-context",
+        "version": "4.0.6",
+        "reference": "539c6691e0623af6dc6f9c20384c120f963465a0"
+      },
+      {
+        "name": "sebastian/resource-operations",
+        "version": "3.0.4",
+        "reference": "05d5692a7993ecccd56a03e40cd7e5b09b1d404e"
+      },
+      {
+        "name": "sebastian/type",
+        "version": "3.2.1",
+        "reference": "75e2c2a32f5e0b3aef905b9ed0b179b953b3d7c7"
+      },
+      {
+        "name": "sebastian/version",
+        "version": "3.0.2",
+        "reference": "c6c1022351a901512170118436c764e473f6de8c"
+      },
+      {
+        "name": "seld/jsonlint",
+        "version": "1.11.0",
+        "reference": "1748aaf847fc731cfad7725aec413ee46f0cc3a2"
+      },
+      {
+        "name": "squizlabs/php_codesniffer",
+        "version": "3.13.2",
+        "reference": "5b5e3821314f947dd040c70f7992a64eac89025c"
+      },
+      {
+        "name": "stella-maris/clock",
+        "version": "0.1.7",
+        "reference": "fa23ce16019289a18bb3446fdecd45befcdd94f8"
+      },
+      {
+        "name": "symfony/console",
+        "version": "v7.4.7",
+        "reference": "e1e6770440fb9c9b0cf725f81d1361ad1835329d"
+      },
+      {
+        "name": "symfony/deprecation-contracts",
+        "version": "v3.6.0",
+        "reference": "63afe740e99a13ba87ec199bb07bbdee937a5b62"
+      },
+      {
+        "name": "symfony/polyfill-php82",
+        "version": "v1.33.0",
+        "reference": "5d2ed36f7734637dacc025f179698031951b1692"
+      },
+      {
+        "name": "symfony/polyfill-php83",
+        "version": "v1.33.0",
+        "reference": "17f6f9a6b1735c0f163024d959f700cfbc5155e5"
+      },
+      {
+        "name": "symfony/polyfill-php84",
+        "version": "v1.33.0",
+        "reference": "d8ced4d875142b6a7426000426b8abc631d6b191"
+      },
+      {
+        "name": "symfony/polyfill-php85",
+        "version": "v1.33.0",
+        "reference": "d4e5fcd4ab3d998ab16c0db48e6cbb9a01993f91"
+      },
+      {
+        "name": "symfony/service-contracts",
+        "version": "v3.6.1",
+        "reference": "45112560a3ba2d715666a509a0bc9521d10b6c43"
+      },
+      {
+        "name": "symfony/string",
+        "version": "v7.3.8",
+        "reference": "0b1f55d79b9effb940d376799dba7cf6f2dee420"
+      },
+      {
+        "name": "symfony/var-dumper",
+        "version": "v8.0.6",
+        "reference": "2e14f7e0bf5ff02c6e63bd31cb8e4855a13d6209"
+      },
+      {
+        "name": "symfony/yaml",
+        "version": "v6.4.25",
+        "reference": "e54b060bc9c3dc3d4258bf0d165d0064e755f565"
+      },
+      {
+        "name": "theseer/tokenizer",
+        "version": "1.3.1",
+        "reference": "b7489ce515e168639d17feec34b8847c326b0b3c"
+      },
+      {
+        "name": "tysonandre/var_representation_polyfill",
+        "version": "0.1.3",
+        "reference": "e9116c2c352bb0835ca428b442dde7767c11ad32"
+      },
+      {
+        "name": "webmozart/assert",
+        "version": "2.1.6",
+        "reference": "ff31ad6efc62e66e518fbab1cde3453d389bcdc8"
+      },
+      {
+        "name": "wikimedia/alea",
+        "version": "1.0.0",
+        "reference": "ef39b2c50af83c2b0c358bcb2ef8ce9d709bc054"
+      },
+      {
+        "name": "wikimedia/assert",
+        "version": "v0.5.1",
+        "reference": "27c983fddac1197dc37f6a7cec00fc02861529cd"
+      },
+      {
+        "name": "wikimedia/at-ease",
+        "version": "v3.0.0",
+        "reference": "89f2ec17fd99f551d4f61db59ac60d9a8e3bbc34"
+      },
+      {
+        "name": "wikimedia/base-convert",
+        "version": "v2.0.2",
+        "reference": "aa997185e0b42c1f61a11f3e1980cad144175111"
+      },
+      {
+        "name": "wikimedia/bcp-47-code",
+        "version": "v2.0.1",
+        "reference": "bface192672b0c743152d0b838475c139ba0a1e0"
+      },
+      {
+        "name": "wikimedia/cdb",
+        "version": "3.0.0",
+        "reference": "3d7622f39319ea2149cac92415222d1fb39c46d0"
+      },
+      {
+        "name": "wikimedia/cldr-plural-rule-parser",
+        "version": "v3.0.0",
+        "reference": "c36903b9a05f52b1c4fa96301667539f3b58cf61"
+      },
+      {
+        "name": "wikimedia/codex",
+        "version": "v0.7.1",
+        "reference": "3f70e3184fa1708398780748efeea6a6f5de56b8"
+      },
+      {
+        "name": "wikimedia/common-passwords",
+        "version": "v0.5.1",
+        "reference": "924c5d58f447652f364aab052e516e40d86cebe9"
+      },
+      {
+        "name": "wikimedia/composer-merge-plugin",
+        "version": "v2.1.0",
+        "reference": "a03d426c8e9fb2c9c569d9deeb31a083292788bc"
+      },
+      {
+        "name": "wikimedia/css-sanitizer",
+        "version": "v6.1.0",
+        "reference": "1e6b1494a2047f90f8951902d2da263860d508ce"
+      },
+      {
+        "name": "wikimedia/cssjanus",
+        "version": "v2.3.0",
+        "reference": "c5868a543c466c994ba5bf9b3297e150105ab803"
+      },
+      {
+        "name": "wikimedia/html-formatter",
+        "version": "4.1.0",
+        "reference": "c2fdae55da33feb6d44d34ddc66c4b007981bcf2"
+      },
+      {
+        "name": "wikimedia/idle-dom",
+        "version": "v2.1.0",
+        "reference": "85bb88abcefd554e1d231092909996efe6e92610"
+      },
+      {
+        "name": "wikimedia/ip-utils",
+        "version": "5.0.0",
+        "reference": "119e0ed321e967b4f5748a404fa8a3eb5dad4aa3"
+      },
+      {
+        "name": "wikimedia/json-codec",
+        "version": "v4.0.0",
+        "reference": "3367a2b4ae54ebfeb4930deb9bf497eafa86542d"
+      },
+      {
+        "name": "wikimedia/langconv",
+        "version": "0.5.0",
+        "reference": "07cd2f09b8456e673953aa33b2001399a42987ae"
+      },
+      {
+        "name": "wikimedia/less.php",
+        "version": "v5.2.2",
+        "reference": "0c64fe7477dbd491b27d3b10fc74a577d3bd66ec"
+      },
+      {
+        "name": "wikimedia/minify",
+        "version": "2.9.0",
+        "reference": "244bbb0c0acf0c1679078cc87cbc95c79ad9f33f"
+      },
+      {
+        "name": "wikimedia/normalized-exception",
+        "version": "v2.1.1",
+        "reference": "adde60bc19f67e1e29aef2d22c411d84bcfb131e"
+      },
+      {
+        "name": "wikimedia/object-factory",
+        "version": "v5.0.1",
+        "reference": "a0439aac5f14e218dc1f40a98eb14e4b26a01341"
+      },
+      {
+        "name": "wikimedia/parsoid",
+        "version": "v0.22.0",
+        "reference": "a3900ed8810c87e8cd79678be27671a0f41bc137"
+      },
+      {
+        "name": "wikimedia/php-session-serializer",
+        "version": "v3.0.2",
+        "reference": "b14ae6e10b31c387299e57822e231484b1b7ad24"
+      },
+      {
+        "name": "wikimedia/purtle",
+        "version": "v2.0.0",
+        "reference": "af5b7f1da5bbfea6f2b7992600bfdaf258f61762"
+      },
+      {
+        "name": "wikimedia/relpath",
+        "version": "4.0.2",
+        "reference": "06163ec07ec61a48638ec999190ad9a23710048f"
+      },
+      {
+        "name": "wikimedia/remex-html",
+        "version": "5.1.0",
+        "reference": "c75f653afdfc42040e27d311236e7856ebedaa25"
+      },
+      {
+        "name": "wikimedia/request-timeout",
+        "version": "v3.0.0",
+        "reference": "4e980a916b30fa0acc79bd0133f2d1aa456cccb0"
+      },
+      {
+        "name": "wikimedia/running-stat",
+        "version": "v2.1.0",
+        "reference": "0aa66cf58f98ca2de9972a8177cbec625c4c9969"
+      },
+      {
+        "name": "wikimedia/scoped-callback",
+        "version": "v5.0.0",
+        "reference": "7fa061561a70c49e5e5e6d40dd8f7c151affa0f3"
+      },
+      {
+        "name": "wikimedia/services",
+        "version": "4.0.0",
+        "reference": "87f71136c19ca4769dcb2b870e565dceb72e23fb"
+      },
+      {
+        "name": "wikimedia/shellbox",
+        "version": "4.3.0",
+        "reference": "35d9cd2d88368464df8760ca4d59c98f46db8cfe"
+      },
+      {
+        "name": "wikimedia/testing-access-wrapper",
+        "version": "3.0.0",
+        "reference": "975e89994a667b2ab10b36f99d049318b6137db8"
+      },
+      {
+        "name": "wikimedia/timestamp",
+        "version": "v5.0.0",
+        "reference": "b5d6de92c8d966b07e31e5382b573aafc09b3fb9"
+      },
+      {
+        "name": "wikimedia/utfnormal",
+        "version": "4.0.0",
+        "reference": "6f3690d3ca446d9745fa3410bb993470afd7bc25"
+      },
+      {
+        "name": "wikimedia/wait-condition-loop",
+        "version": "v2.0.2",
+        "reference": "9bb0894e8c5195d43b2f2babbe4cc8f36bd5be0e"
+      },
+      {
+        "name": "wikimedia/wikipeg",
+        "version": "5.0.1",
+        "reference": "9da488e9f9e2dcb51e3b0743e8d88ebe570b8225"
+      },
+      {
+        "name": "wikimedia/wrappedstring",
+        "version": "v4.0.1",
+        "reference": "0d526868d92fa855c70a845336a777c63b30b400"
+      },
+      {
+        "name": "wikimedia/xmp-reader",
+        "version": "0.10.2",
+        "reference": "b3cb5fae3ec105bab4c59aa594f74f6f11117285"
+      },
+      {
+        "name": "wikimedia/zest-css",
+        "version": "4.1.1",
+        "reference": "771f7944c293eaf5e10ab87420ae3419d8356edc"
+      },
+      {
+        "name": "wmde/hamcrest-html-matchers",
+        "version": "v1.1.0",
+        "reference": "4dd3ca958e1087c60a0933d10b53abc0423ad9dc"
+      },
+      {
+        "name": "zordius/lightncandy",
+        "version": "v1.2.6",
+        "reference": "b451f73e8b5c73e62e365997ba3c993a0376b72a"
+      }
+    ]
+  },
+  "php_extensions": {
+    "ext-calendar": [
+      "MediaWiki"
+    ],
+    "ext-ctype": [
+      "MediaWiki",
+      "RatePage"
+    ],
+    "ext-dom": [
+      "MediaWiki",
+      "DiscussionTools",
+      "Lingo",
+      "chameleon"
+    ],
+    "ext-fileinfo": [
+      "MediaWiki"
+    ],
+    "ext-iconv": [
+      "MediaWiki"
+    ],
+    "ext-intl": [
+      "MediaWiki",
+      "Genealogy",
+      "Math"
+    ],
+    "ext-json": [
+      "MediaWiki",
+      "DiscussionTools",
+      "EventLogging",
+      "MultiPurge",
+      "TemplateStylesExtender",
+      "WikiSEO"
+    ],
+    "ext-libxml": [
+      "MediaWiki"
+    ],
+    "ext-mbstring": [
+      "MediaWiki"
+    ],
+    "ext-openssl": [
+      "MediaWiki",
+      "CheckUser",
+      "OAuth"
+    ],
+    "ext-xml": [
+      "MediaWiki"
+    ],
+    "ext-xmlreader": [
+      "MediaWiki"
+    ],
+    "ext-curl": [
+      "Elastica",
+      "QuickInstantCommons"
+    ],
+    "ext-ldap": [
+      "LdapAuthentication"
+    ],
+    "ext-zlib": [
+      "StopForumSpam",
+      "TemplateData"
+    ],
+    "ext-filter": [
+      "chameleon"
+    ]
+  }
+}

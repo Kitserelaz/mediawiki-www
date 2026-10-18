@@ -1,0 +1,30 @@
+{
+	"@metadata": {
+		"authors": [
+			"HoodWiki"
+		]
+	},
+  "skinname-evelution": "ئیڤلوەن",
+  "evelution-skin-desc": "پێستێک لەسەر بنەمای فاندۆم دێسکتۆپ و Windows 11",
+  "evelution.css": "/* الأنماط المتراصة CSS المعروضة هنا ستؤثر على مستخدمي واجهة Evelution */",
+  "evelution.js": "/* أي جافاسكريبت هنا سيتم تحميلها للمستخدمين الذين يستعملون واجهة Evelution */",
+  "evelution-themes": "ڕووکارەکان",
+  "evelution-explore": "گەڕان",
+  "evelution-togglesize": "گۆڕینی قەبارە",
+  "evelution-pages": "{{PLURAL:$1| لاپەڕە | لاپەڕە}}",
+  "evelution-files": "{{PLURAL:$1| فایل| فایلەکان}}",
+  "evelution-edits": "{{PLURAL:$1| دەستکاری | دەستکاری}}",
+  "evelution-users": "{{PLURAL:$1| بەکارهێنەر| بەکارهێنەران}}",
+  "evelution-newfiles": "فایلە نوێکان",
+  "evelution-darkmode": "دۆخی تاریک",
+  "evelution-lightmode": "دۆخی کاڵ",
+  "evelution-support": "ڕاژەکاری پشتگیری",
+  "evelution-documentation": "دۆکیومێنت",
+  "evelution-standard": "ستاندارد",
+  "evelution-visual-styles": "ستایلە بینراوەکان",
+  "evelution-visual-colors": "ڕەنگی بینراو",
+  "evelution-color-colors": "ڕەنگی",
+  "evelution-color-pokemoncolors": "ڕەنگیPokémon",
+  "evelution-activity-module": "{{Special:RecentChanges/days=30,limit=8,hidebots,hidelog,hideminor,namespace=0,hidecategorization}}",
+  "evelution-about-module-info": ""
+} 

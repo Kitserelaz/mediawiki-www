@@ -1,0 +1,17 @@
+{
+	"@metadata": {
+		"authors": [
+			"Ajeje Brazorf"
+		]
+	},
+	"ipinfo-infobox-title": "Nfurmazzioni IP",
+	"ipinfo-property-label-isp": "ISP",
+	"ipinfo-property-label-proxytypes": "IP/Proxy veru",
+	"ipinfo-property-value-proxytype-isanonymousvpn": "VPN anònimu",
+	"ipinfo-property-label-edits": "Cuntribbuti",
+	"ipinfo-value-local-edits": "{{PLURAL:$1|$1 canciamentu|$1 canciamenti|0=Nuḍḍu canciamentu}} lucali",
+	"ipinfo-value-recent-edits": "({{PLURAL:$1|$1 ntî ùrtimi 24 uri}})",
+	"ipinfo-property-no-data": "Nun dispunìbbili",
+	"ipinfo-beta-feature-title": "Nfurmazzioni di l'IP",
+	"prefs-ipinfo": "Nfurmazzioni supra l'IP"
+}

@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"Eleassar"
+		]
+	},
+	"simpleblogpage-desc": "Sistem za bloganje z možnostjo komentiranja in glasovanja, [[Special:CreateBlogPost|posebna stran za ustvarjanje blogovskih objav]] in [[Special:ArticlesHome|posebna stran za seznam blogovskih objav]]",
+	"right-createblogpost": "[[Special:CreateBlogPost|Ustvarjanje novih blogovskih objav]]",
+	"action-createblogpost": "ustvarjanje novih blogovskih objav"
+}

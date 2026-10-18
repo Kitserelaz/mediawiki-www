@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Bosogo"
+		]
+	},
+	"chat-today": "бүгүн",
+	"chat-yesterday": "кечээ",
+	"chat-block": "бөгөттөө",
+	"chat-blocked": "$2 $1 тарабынан {{GENDER:$3|бөгөттөлгөн}}."
+}

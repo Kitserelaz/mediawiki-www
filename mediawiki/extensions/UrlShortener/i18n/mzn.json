@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"محک"
+		]
+	},
+	"urlshortener-toolbox": "کچیک URL بیتن",
+	"urlshortener-toolbox-qrcode": "اینجه QR کُد ره بیتن",
+	"urlshortener-qrcode-downloaded": "ونه QRcode ره اتا SVG فایل دله دانلود هاکردنی"
+}

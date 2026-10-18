@@ -1,0 +1,58 @@
+{
+	"name": "Admin Links",
+	"version": "0.6.3",
+	"author": [
+		"Yaron Koren"
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:Admin_Links",
+	"descriptionmsg": "adminlinks-desc",
+	"license-name": "GPL-2.0-or-later",
+	"type": "specialpage",
+	"requires": {
+		"MediaWiki": ">= 1.35.0"
+	},
+	"GroupPermissions": {
+		"sysop": {
+			"adminlinks": true
+		}
+	},
+	"AvailableRights": [
+		"adminlinks"
+	],
+	"SpecialPages": {
+		"AdminLinks": "AdminLinks"
+	},
+	"MessagesDirs": {
+		"AdminLinks": [
+			"i18n"
+		]
+	},
+	"ExtensionMessagesFiles": {
+		"AdminLinksAlias": "AdminLinks.alias.php"
+	},
+	"AutoloadClasses": {
+		"AdminLinks": "includes/AdminLinks.php",
+		"AdminLinksHook": "includes/AdminLinksHook.php",
+		"AdminLinksHooks": "includes/AdminLinksHooks.php",
+		"AdminLinksHookRunner": "includes/AdminLinksHookRunner.php",
+		"ALTree": "includes/ALTree.php",
+		"ALSection": "includes/ALSection.php",
+		"ALRow": "includes/ALRow.php",
+		"ALItem": "includes/ALItem.php"
+	},
+	"ConfigRegistry": {
+		"AdminLinks": "GlobalVarConfig::newInstance"
+	},
+	"config": {
+		"AdminLinksDelimiter": "·"
+	},
+	"Hooks": {
+		"SkinTemplateNavigation::Universal": "main"
+	},
+	"HookHandlers": {
+		"main": {
+			"class": "AdminLinksHooks"
+		}
+	},
+	"manifest_version": 1
+}

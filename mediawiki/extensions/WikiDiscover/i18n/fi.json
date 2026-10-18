@@ -1,0 +1,19 @@
+{
+	"@metadata": {
+		"authors": [
+			"MITO",
+			"Moj",
+			"Nike",
+			"Pyscowicz"
+		]
+	},
+	"randomwiki": "Ohjaa satunnaiseen wikiin",
+	"wikidiscover": "Tutustu wikeihin",
+	"wikidiscover-table-category": "Luokka",
+	"wikidiscover-table-description": "Kuvaus",
+	"wikidiscover-table-established": "Perustettu",
+	"wikidiscover-table-language": "Kieli",
+	"wikidiscover-table-state": "Tila",
+	"wikidiscover-table-visibility": "Näkyvyys",
+	"wikidiscover-table-wiki": "Wikin nimi"
+}

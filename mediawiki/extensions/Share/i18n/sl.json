@@ -1,0 +1,25 @@
+{
+	"@metadata": {
+		"authors": [
+			"Eleassar"
+		]
+	},
+	"share": "Deli",
+	"share-desc": "V stransko letvico doda programček za preprosto deljenje viki člankov na platformah družbenih omrežij.",
+	"share-header": "Deli",
+	"share-email": "Deli po e-pošti",
+	"share-email-desc": "Dovoli, da se v stransko letvico doda povezava za deljenje člankov po e-pošti",
+	"share-facebook": "Deli na Facebooku",
+	"share-facebook-desc": "Dovoli, da se v stransko letvico doda povezava za deljenje člankov na Facebooku",
+	"share-linkedin": "Deli na linkedInu",
+	"share-linkedin-desc": "Dovoli, da se v stransko letvico doda povezava za deljenje člankov na LinkedInu",
+	"share-reddit": "Deli na Redditu",
+	"share-reddit-desc": "Dovoli, da se v stransko letvico doda povezava za deljenje člankov na Redditu",
+	"share-tumblr": "Deli na Tumblr",
+	"share-tumblr-desc": "Dovolite, da se v stransko letvico doda povezava za deljenje člankov na Tumblrju",
+	"share-twitter": "Deli na Twitterju",
+	"share-twitter-desc": "Dovoli, da se v stransko letvico doda povezava za deljenje člankov na Twitterju",
+	"share-sidebar-basicbuttons": "Želite uporabljati način osnovnih gumbov?",
+	"share-preftoggle": "Ali želite izklopiti prikaz povezav za deljenje v stranski letvici?",
+	"right-viewsharelinks": "Ogled stranskega programčka za deljenje"
+}

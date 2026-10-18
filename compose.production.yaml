@@ -1,0 +1,18 @@
+services:
+  php:
+    environment: {MW_ENV: production}
+  worker:
+    environment: {MW_ENV: production}
+  scheduler:
+    environment: {MW_ENV: production}
+  init:
+    environment: {MW_ENV: production}
+  web:
+    ports: !override ['80:80', '443:443']
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL}
+      MW_PUBLIC_HOSTS: ${MW_PUBLIC_HOSTS:?List every production wiki and auth hostname separated by comma and space}
+    volumes:
+      - ./docker/caddy/Caddyfile.production:/etc/caddy/Caddyfile:ro
+  mailpit:
+    profiles: [disabled]

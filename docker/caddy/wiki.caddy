@@ -1,0 +1,63 @@
+(wiki) {
+    root * /var/www/mediawiki
+    encode zstd gzip
+    header X-Content-Type-Options nosniff
+    route {
+        # Only public assets and known entrypoints are exposed. Caddy ignores .htaccess.
+        @private path_regexp private (?i)(^/\.|/\.|^/(vendor|includes|maintenance|tests|sql|cache|cw_cache|docker|image-imports|sitemaps|mw-config)(/|$)|^/(LocalSettings|PrivateSettings|GlobalSettings|GlobalCache|GlobalExtensions|ConfigSettings|SkyWikiFunctions|ManageWikiSettings|ManageWikiNamespaces|ManageWikiExtensions|LocalWiki|SetupCreateWiki|db-health|redis-health|smtp-health|honeypot)\.php|\.(key|pem|log|sql|db|rdb|ya?ml|lock|bak|save|tar\.gz)$)
+        respond @private 404
+        @protectedUpload path_regexp protectedUpload ^/images/[^/]+/(deleted|temp)/
+        respond @protectedUpload 404
+        # Shared-auth URLs carry the target database in their first path component.
+        @auth host auth.{$MW_DOMAIN:localhost}
+        handle @auth {
+            @authArticle path_regexp authArticle ^/[a-z0-9_]+wiki/wiki/(.*)$
+            handle @authArticle {
+                rewrite * /index.php?title={re.authArticle.1}&{query}
+                php_fastcgi php:9000 {
+                    env HTTPS on
+                    env HTTP_X_FORWARDED_PROTO https
+                    env REQUEST_URI {http.request.orig_uri}
+                }
+            }
+            @authEntry path_regexp authEntry ^/[a-z0-9_]+wiki/w/(index|api|load|rest)\.php(/.*)?$
+            handle @authEntry {
+                rewrite * /{re.authEntry.1}.php{re.authEntry.2}
+                php_fastcgi php:9000 {
+                    env HTTPS on
+                    env HTTP_X_FORWARDED_PROTO https
+                    env REQUEST_URI {http.request.orig_uri}
+                }
+            }
+            respond 404
+        }
+        @short path_regexp article ^/wiki/(.*)$
+        rewrite @short /index.php?title={re.article.1}&{query}
+        @root path /
+        rewrite @root /index.php
+        @entry path_regexp entry ^/(index|api|load|rest|img_auth|thumb|thumb_handler|opensearch_desc)\.php(/.*)?$
+        handle @entry {
+            php_fastcgi php:9000 {
+                env HTTPS on
+                env HTTP_X_FORWARDED_PROTO https
+                    env REQUEST_URI {http.request.orig_uri}
+            }
+        }
+        @php path_regexp php (?i)\.php(/|$)
+        respond @php 404
+        @upload path_regexp upload ^/images/[^/]+/(.*)$
+        handle @upload {
+            rewrite * /img_auth.php/{re.upload.1}
+            php_fastcgi php:9000 {
+                env HTTPS on
+                env HTTP_X_FORWARDED_PROTO https
+                    env REQUEST_URI {http.request.orig_uri}
+            }
+        }
+        @assets path /resources/* /skins/* /extensions/*
+        handle @assets {
+            file_server
+        }
+        respond 404
+    }
+}

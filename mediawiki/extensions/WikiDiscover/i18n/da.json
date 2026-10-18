@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Kranix",
+			"Saederup92",
+			"Zakawer2"
+		]
+	},
+	"randomwiki": "Omdiriger til en tilfældig wiki",
+	"wikidiscover-table-category": "Kategori",
+	"wikidiscover-table-language": "Sprog",
+	"wikidiscover-table-state": "Status",
+	"wikidiscover-table-visibility": "Synlighed",
+	"wikidiscover-table-wiki": "Wikinavn"
+}

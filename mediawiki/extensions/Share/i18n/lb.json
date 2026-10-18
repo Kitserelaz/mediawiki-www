@@ -1,0 +1,20 @@
+{
+	"@metadata": {
+		"authors": [
+			"Volvox"
+		]
+	},
+	"share": "Deelen",
+	"share-header": "Deelen",
+	"share-email": "Per E-Mail deelen",
+	"share-facebook": "Op Facebook deelen",
+	"share-linkedin": "Op LinkedIn deelen",
+	"share-pinterest": "Op Pinterest deelen",
+	"share-reddit": "Op Reddit deelen",
+	"share-telegram": "Op Telegram deelen",
+	"share-tumblr": "Op Tumblr deelen",
+	"share-twitter": "Op Twitter deelen",
+	"share-vk": "Op VK deelen",
+	"share-weibo": "Op Weibo deelen",
+	"share-whatsapp": "Op WhatsApp deelen"
+}

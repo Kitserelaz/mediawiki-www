@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"RidJasper",
+			"Siam2019"
+		]
+	},
+	"timeline-tracking-category": "หน้าที่ใช้ส่วนขยาย EasyTimeline",
+	"timeline-readerr": "ไม่สามารถอ่านไฟล์ $1 ได้",
+	"timeline-rsvg-error": "ไม่สามารถแปลง SVG เป็น PNG:\n$1"
+}

@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": [
+			"Seipinne"
+		]
+	},
+	"countDownClock-days": "$1 {{PLURAL:$1|peivi|peeivi|peeivi|peivid}}"
+}

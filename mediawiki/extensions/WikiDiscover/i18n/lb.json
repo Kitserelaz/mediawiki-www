@@ -1,0 +1,28 @@
+{
+	"@metadata": {
+		"authors": [
+			"Robby",
+			"Volvox"
+		]
+	},
+	"apihelp-query+wikidiscover-example": "All Wikien am Formulaire weisen.",
+	"apihelp-query+wikidiscover-param-limit": "Maximal Zuel vun de Resultater déi gewise ginn",
+	"randomwiki": "Op eng zoufälleg Wiki viruleeden",
+	"wikidiscover": "Wikien entdecken",
+	"wikidiscover-label-active": "Aktiv",
+	"wikidiscover-label-any": "(all)",
+	"wikidiscover-label-closed": "Zou",
+	"wikidiscover-label-deleted": "Geläscht",
+	"wikidiscover-label-description": "Kuerzbeschreiwung",
+	"wikidiscover-label-inactive": "Inaktiv",
+	"wikidiscover-label-locked": "Gespaart",
+	"wikidiscover-label-open": "Op",
+	"wikidiscover-label-private": "Privat",
+	"wikidiscover-label-public": "Ëffentlech",
+	"wikidiscover-table-category": "Kategorie",
+	"wikidiscover-table-description": "Beschreiwung",
+	"wikidiscover-table-language": "Sprooch",
+	"wikidiscover-table-state": "Status",
+	"wikidiscover-table-visibility": "Visibilitéit",
+	"wikidiscover-table-wiki": "Numm vun der Wiki"
+}

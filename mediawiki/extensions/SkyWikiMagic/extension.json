@@ -1,0 +1,122 @@
+{
+	"name": "SkywikiMagic",
+	"author": [
+		"Agent Isai",
+		"John Lewis",
+		"Labster",
+		"MacFan4000",
+		"Reception123",
+		"Revi",
+		"Paladox",
+		"Southparkfan",
+		"Universal Omega",
+		"Waki285"
+	],
+	"descriptionmsg": "skywikimagic-description",
+	"namemsg": "skywikimagic-extensionname",
+	"license-name": "GPL-3.0-or-later",
+	"type": "other",
+	"requires": {
+		"MediaWiki": ">= 1.42.0",
+		"platform": {
+			"php": ">= 8.0"
+		}
+	},
+	"MessagesDirs": {
+		"WikiOasisMagic": [
+			"i18n/wikioasis"
+		]
+	},
+	"AutoloadNamespaces": {
+		"WikiOasis\\WikiOasisMagic\\": "includes/"
+	},
+	"SpecialPages": {
+		"CreateNewWiki": {
+			"class": "WikiOasis\\WikiOasisMagic\\SpecialCreateNewWiki",
+			"services": [
+				"CreateWikiDatabaseUtils",
+				"WikiManagerFactory",
+				"CreateWikiValidator",
+				"WikiRequestManager"
+			]
+		},
+		"ChangeDomain": {
+			"class": "WikiOasis\\WikiOasisMagic\\SpecialChangeDomain",
+			"services": [
+				"CreateWikiDatabaseUtils",
+				"RemoteWikiFactory"
+			]
+		}
+	},
+	"AvailableRights": [
+		"createnewwiki"
+	],
+	"Hooks": {
+		"AbuseFilterShouldFilterAction": {
+			"handler": "Main"
+		},
+		"ContributionsToolLinks": {
+			"handler": "Main"
+		},
+		"CreateWikiStatePrivate": {
+			"handler": "Main"
+		},
+		"CreateWikiTables": {
+			"handler": "Main"
+		},
+		"GetLocalURL::Internal": {
+			"handler": "Main"
+		},
+		"GlobalUserPageWikis": {
+			"handler": "Main"
+		},
+		"ImportDumpJobGetFile": {
+			"handler": "Main"
+		},
+		"MessageCacheFetchOverrides": {
+			"handler": "Main"
+		},
+		"MimeMagicInit": {
+			"handler": "Main"
+		},
+		"SiteNoticeAfter": {
+			"handler": "Main"
+		},
+		"SkinAddFooterLinks": {
+			"handler": "Main"
+		},
+		"TitleReadWhitelist": {
+			"handler": "Main"
+		}
+	},
+	"HookHandlers": {
+		"Main": {
+			"class": "WikiOasis\\WikiOasisMagic\\HookHandlers\\Main",
+			"factory": "WikiOasis\\WikiOasisMagic\\HookHandlers\\Main::factory",
+			"services": [
+				"MainConfig",
+				"CommentStore",
+				"DBLoadBalancerFactory",
+				"HttpRequestFactory"
+			]
+		}
+	},
+	"config": {
+		"WikiOasisMagicMemcachedServers": {
+			"description": "Array. Memcached servers to use for clearing memcached keys when a wiki is deleted or renamed.",
+			"value": []
+		}
+	},
+	"ConfigRegistry": {
+		"WikiOasisMagic": "MediaWiki\\Config\\GlobalVarConfig::newInstance"
+	},
+	"RateLimits": {
+		"createnewwiki": {
+			"user": [
+				1,
+				86400
+			]
+		}
+	},
+	"manifest_version": 2
+}

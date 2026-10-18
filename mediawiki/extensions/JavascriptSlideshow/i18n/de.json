@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": []
+	},
+	"javascriptslideshow-desc": "Erzeugt eine Slideshow aus in div eingebetteten Elementen",
+	"javascriptslideshow-invalid-parameter": "Nicht unterstützer Wert $2 für Parameter $1 (Erlaubt sind: $3). ",
+	"javascriptslideshow-invalid-num-parameter": "Der Parameter $1 muss eine Zahl sein"
+}

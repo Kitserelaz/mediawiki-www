@@ -1,0 +1,20 @@
+{
+	"@metadata": {
+		"authors": [
+			"Baidoom",
+			"Elkan21",
+			"Kewl Sunshine",
+			"Robertjamal12",
+			"Rsaawah"
+		]
+	},
+	"ipinfo-property-label-location": "Bea",
+	"ipinfo-property-label-source": "Mfiti",
+	"ipinfo-log-access-level-ipinfo-view-basic": "Ɛho akwanya yɛ ketewa",
+	"ipinfo-log-access-level-ipinfo-view-full": "Akwanya mua",
+	"logentry-ipinfo-view_popup": "$1 {{GENDER:$2|Hwɛe}} $4 IP ho nsɛm a ɛbaeɛ maa $3.",
+	"ipinfo-change-access-level-enable": "w'ama kwan",
+	"ipinfo-change-access-level-disable": "Ɛnnyɛ adwuma",
+	"ipinfo-special-ipinfo": "IP ho nsɛm",
+	"ipinfo-special-ipinfo-table-caption": "IP ho nsɛm ma $1"
+}

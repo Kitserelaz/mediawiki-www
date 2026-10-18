@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Yupik"
+		]
+	},
+	"countDownClock-days": "{{PLURAL:$1|$1 peiʹvved|1=peiʹvv|2=2 peeiʹv|3=3 peeiʹv|4=4 peeiʹv|5=5 peeiʹv|6=6 peeiʹv}}",
+	"countDownClock-hours": "{{PLURAL:$1|$1 čiâssâd|1=čiâss|2=2 čiâss|3=3 čiâss|4=4 čiâss|5=5 čiâss|6=6 čiâss}}",
+	"countDownClock-minutes": "{{PLURAL:$1|$1 minuttâd|1=minutt|2=2 minuutt|3=3 minuutt|4=4 minuutt|5=5 minuutt|6=6 minuutt}}",
+	"countDownClock-seconds": "{{PLURAL:$1|$1 sekunttâd|1=sekuntt|2=2 sekuunt|3=3 sekuunt|4=4 sekuunt|5=5 sekuunt|6=6 sekuunt}}"
+}

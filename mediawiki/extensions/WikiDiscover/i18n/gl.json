@@ -1,0 +1,24 @@
+{
+	"@metadata": {
+		"authors": [
+			"Banjo",
+			"Elisardojm",
+			"Iváns",
+			"Toliño"
+		]
+	},
+	"apihelp-query+wikidiscover-example": "Amosar tódalas wikis no sitio.",
+	"apihelp-query+wikidiscover-param-limit": "O número máximo de resultados a seren amosados.",
+	"apihelp-query+wikidiscover-param-prop": "A información a devolver sobre unha wiki definida.",
+	"apihelp-query+wikidiscover-param-state": "Filtrar polo estado dunha wiki definida por CrearWiki.",
+	"apihelp-query+wikidiscover-summary": "Obter unha lista das wikis nun sitio de aloxamento de wikis CrearWiki.",
+	"randomwiki": "Wiki aleatorio",
+	"randomwiki-header": "Seleccione máis abaixo unha categoría e unha lingua e irá a un wiki ó chou que cumpra cos criterios seleccionados.",
+	"wikidiscover": "Descubrir wikis",
+	"wikidiscover-desc": "Permite [[Special:WikiDiscover|descubrir wikis]] nun sitio de aloxamento de wikis con [[Special:CreateWiki|CrearWiki]].",
+	"wikidiscover-table-category": "Categoría",
+	"wikidiscover-table-language": "Lingua",
+	"wikidiscover-table-state": "Estado",
+	"wikidiscover-table-visibility": "Visibilidade",
+	"wikidiscover-table-wiki": "Nome do wiki"
+}

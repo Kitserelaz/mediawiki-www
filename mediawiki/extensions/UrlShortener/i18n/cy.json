@@ -1,0 +1,20 @@
+{
+	"@metadata": {
+		"authors": [
+			"Afalau",
+			"Ceirios"
+		]
+	},
+	"urlshortener": "Byrhau URL",
+	"urlshortener-blocked": "Ni all ddefnyddwyr wedi'u blocio greu URLs byrion.",
+	"urlshortener-manage-reason": "Rheswm",
+	"urlshortener-shortened-url-label": "URL byr",
+	"urlshortener-toolbox": "Cael URL byr",
+	"urlshortener-toolbox-qrcode": "Lawrlwytho cod QR",
+	"urlshortener-url-input-label": "URL",
+	"urlshortener-url-input-submit": "Byrhau",
+	"urlshortener-url-input-submitting": "Wrthi'n byrhau…",
+	"log-action-filter-urlshortener-delete": "Dileu URL",
+	"log-action-filter-urlshortener-restore": "Adfer URL",
+	"urlshortener-qrcode-downloaded": "Lawrlwythwyd cod QR fel ffeil SVG"
+}

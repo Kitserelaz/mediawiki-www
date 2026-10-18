@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"Римма"
+		]
+	},
+	"urlshortener-toolbox": "Босьтны джендӧтӧм URL-адрес",
+	"urlshortener-toolbox-qrcode": "Босьтны аслыт QR код",
+	"urlshortener-qrcode-downloaded": "SVG файлӧн пыртӧм QR код"
+}

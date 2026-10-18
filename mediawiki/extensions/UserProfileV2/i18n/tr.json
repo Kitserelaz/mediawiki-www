@@ -1,0 +1,30 @@
+{
+	"@metadata": {
+		"authors": [
+			"Hedda"
+		]
+	},
+	"userprofilev2-desc": "Wiki tabanlı kullanıcı profili sistemi.",
+	"userprofilev2-selectavatar": "Avatar Seç",
+	"userprofilev2-avatarchanged": "Avatar başarıyla değiştirildi.",
+	"userprofilev2-avatardeleted": "Avatar başarıyla silindi.",
+	"userprofilev2-user-locked": "Bu kullanıcı hesabı, küresel olarak devre dışı bırakıldı.",
+	"userprofilev2-edit-profile": "Profilinizi Düzenleyin",
+	"userprofilev2-apierror-forbidden": "Yasak: Bu avatarı değiştirme yetkiniz yok.",
+	"userprofilev2-apierror-nofile": "Yüklenecek dosya sağlanmadı.",
+	"userprofilev2-apierror-ratelimited": "Şu anda resim yükleyemezsiniz.",
+	"userprofilev2-apierror-invalidusername": "Bu viki'de '$1' kullanıcı adıyla kayıtlı kullanıcı bulunmamaktadır.",
+	"userprofilev2-about-me": "Hakkımda",
+	"userprofilev2-discord": "Discord Kullanıcı Adı",
+	"userprofilev2-twitter": "Twitter Kullanıcı Adı",
+	"userprofilev2-mastodon": "Mastodon Kullanıcı Adı",
+	"userprofilev2-about-me-placeholder": "Kendiniz hakkında bir şeyler yazın...",
+	"userprofilev2-about-me-help": "Bize kendinizden bahsedin. En fazla 200 karakter.",
+	"userprofilev2-mastodon-help": "Mastodon Kullanıcı Adınız, @ ile",
+	"userprofilev2-twitter-help": "Twitter Kullanıcı Adınız, @ ile",
+	"userprofilev2-discord-help": "Discord Kullanıcı Adınız, # olmadan",
+	"userprofilev2-showglobalgroups": "Küresel gruplarımı göster?",
+	"userprofilev2-showglobaleditcount": "Küresel düzenleme sayımı göster?",
+	"userprofilev2-showglobalgroupshelp": "Parçası olduğum küresel kullanıcı gruplarını göster (herkes tarafından görülebilir)",
+	"userprofilev2-showglobaleditcounthelp": "CentralAuth'tan gelen küresel düzenleme sayımı göster (herkes tarafından görülebilir)"
+}

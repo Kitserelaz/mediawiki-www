@@ -1,0 +1,260 @@
+@import 'mediawiki.skin.variables.less';
+
+// Sticky header and footer
+.ext-managewiki-search.oo-ui-fieldLayout,
+.ext-managewiki-submit-formfields {
+	position: -webkit-sticky;
+	position: sticky;
+	z-index: @z-index-sticky;
+	border-color: @border-color-subtle;
+	background: @background-color-base;
+	padding-block: @spacing-75;
+
+	.oo-ui-textInputWidget {
+		max-width: none;
+	}
+}
+
+.ext-managewiki-search {
+	&.oo-ui-fieldLayout {
+		top: 0;
+		border-bottom-width: @border-width-base;
+		border-bottom-style: @border-style-base;
+		margin: 0;
+	}
+
+	.oo-ui-textInputWidget {
+		max-width: none;
+	}
+}
+
+/* Flexbox gap not supported by all browsers */
+/* stylelint-disable-next-line plugin/no-unsupported-browser-features */
+.ext-managewiki-submit-formfields {
+	bottom: 0;
+	display: flex;
+	align-items: center;
+	border-top-width: @border-width-base;
+	border-top-style: @border-style-base;
+	gap: @spacing-50;
+
+	.oo-ui-textInputWidget {
+		margin-inline-end: 0;
+	}
+
+	.mw-htmlform-ooui & .mw-htmlform-submit-buttons {
+		margin: 0;
+	}
+}
+
+.ext-managewiki-tabs {
+	.ext-managewiki-fieldset-wrapper {
+		padding-right: 0;
+		padding-left: 0;
+
+		&:first-child {
+			padding-top: 0;
+		}
+
+		&:last-child {
+			padding-bottom: 0;
+		}
+	}
+
+	&.ext-managewiki-tabs-searching {
+		// Prevent "Save" bar getting too close to results
+		min-height: 30em;
+		padding: @spacing-125; // match .oo-ui-tabPanelLayout padding
+
+		/* Tab panels */
+		.oo-ui-tabPanelLayout:not( .ext-managewiki-search-matched ),
+		/* Fields */
+		.oo-ui-widget > [ class^='mw-htmlform-field-' ]:not( .ext-managewiki-search-matched ),
+		/* Wrappers */
+		.ext-managewiki-fieldset-wrapper:not( .ext-managewiki-search-matched ) {
+			display: none;
+		}
+
+		.oo-ui-tabPanelLayout.ext-managewiki-search-matched {
+			> fieldset > legend {
+				max-width: none;
+			}
+		}
+
+		.oo-ui-indexLayout-stackLayout > .oo-ui-panelLayout {
+			padding: 0;
+			margin: 0;
+
+			+ .oo-ui-tabPanelLayout {
+				margin-top: @spacing-150;
+			}
+		}
+	}
+}
+
+// Highlight could be in an overlay
+.ext-managewiki-search-highlight {
+	border-radius: @border-radius-base !important; /* stylelint-disable-line declaration-no-important */
+	background: @background-color-progressive-subtle !important; /* stylelint-disable-line declaration-no-important */
+	outline: @spacing-12 solid @background-color-progressive-subtle !important; /* stylelint-disable-line declaration-no-important */
+}
+
+.ext-managewiki-search-noresults {
+	margin: @spacing-125;
+	font-style: italic;
+	text-align: center;
+}
+
+/* TODO: Support mobile */
+.skin-minerva .ext-managewiki-search {
+	display: none;
+}
+
+@media ( min-width: @min-width-breakpoint-tablet ) {
+	.mw-special-ManageWiki .mw-specialpage-summary {
+		margin-right: 21em;
+
+		& + .ext-managewiki-search.oo-ui-fieldLayout {
+			margin: -36px 0 8px 0;
+			float: right;
+		}
+	}
+}
+
+.ext-managewiki-tabs-wrapper.oo-ui-panelLayout-framed,
+.ext-managewiki-tabs > .oo-ui-menuLayout-content > .oo-ui-indexLayout-stackLayout > .oo-ui-tabPanelLayout {
+	/* Decrease contrast of `border` slightly as padding/border combination is sufficient
+	 * accessibility wise and focus of content is more important here. */
+	border-color: @border-color-subtle;
+}
+
+/* JavaScript disabled */
+.client-nojs {
+	// Disable .oo-ui-panelLayout-framed on outer wrapper
+	.ext-managewiki-tabs-wrapper {
+		border-width: 0;
+		border-radius: 0;
+	}
+
+	.ext-managewiki-tabs {
+		// Hide the tab menu when JS is disabled as we can't use this feature
+		> .oo-ui-menuLayout-menu {
+			display: none;
+		}
+
+		.ext-managewiki-section-fieldset {
+			// <legend> is hard to style, so apply border to top of group
+			> .oo-ui-fieldsetLayout-group {
+				padding-top: @spacing-125;
+				border-top: @border-subtle;
+			}
+
+			// Remove spacing between legend and underline
+			&.oo-ui-labelElement > .oo-ui-fieldsetLayout-header > .oo-ui-labelElement-label {
+				margin-bottom: 0;
+			}
+		}
+
+		// Spacing between sections
+		> .oo-ui-menuLayout-content > .oo-ui-indexLayout-stackLayout > .oo-ui-tabPanelLayout:not( :last-child ) {
+			margin-bottom: @spacing-100;
+		}
+	}
+}
+
+/* JavaScript enabled */
+.client-js {
+	.ext-managewiki-tabs {
+		.oo-ui-tabPanelLayout {
+			// Panels don't need borders as the IndexLayout is inside a framed wrapper.
+			border: 0;
+
+			// Hide section legend, only used in nojs mode
+			&:not( .ext-managewiki-search-matched ) > fieldset > legend {
+				display: none;
+			}
+		}
+
+		// Hide all but the first panel before infusion
+		&:not( .ext-managewiki-tabs-infused ) {
+			.oo-ui-tabPanelLayout:not( :first-child ) {
+				display: none;
+			}
+		}
+	}
+}
+
+#mw-htmlform-info {
+	> .oo-ui-fieldLayout-align-top > .oo-ui-fieldLayout-body > .oo-ui-fieldLayout-header {
+		display: inline-block;
+		width: 20%;
+		padding: 0;
+		vertical-align: middle;
+	}
+
+	> .oo-ui-fieldLayout-align-top .oo-ui-fieldLayout-help {
+		margin-right: 0;
+	}
+
+	> .oo-ui-fieldLayout.oo-ui-fieldLayout-align-top > .oo-ui-fieldLayout-body > .oo-ui-fieldLayout-field {
+		display: inline-block;
+		width: 80%;
+		vertical-align: middle;
+	}
+}
+
+/* Compact number inputs */
+.mw-htmlform-field-HTMLFloatField,
+.mw-htmlform-field-HTMLIntField {
+	.oo-ui-inputWidget {
+		max-width: 10em;
+	}
+}
+
+.oo-ui-fieldLayout-field .oo-ui-tagMultiselectWidget ~ :not( :first-child ) {
+	display: none;
+}
+
+/* Need the specificity to override the default styles in skins such as Minerva */
+.mw-htmlform-field-HTMLFormFieldCloner {
+	.mw-htmlform-cloner {
+		/* stylelint-disable-next-line plugin/no-unsupported-browser-features */
+		&-ul {
+			display: flex;
+			flex-direction: column;
+			padding: 0;
+			margin: 0;
+			gap: @spacing-25;
+			list-style: none;
+		}
+
+		&-li {
+			margin: 0;
+		}
+
+		&-row {
+			display: flex;
+			max-width: 50em; // .oo-ui-textInputWidget max-width
+
+			> .mw-htmlform-field-HTMLTextField {
+				flex-grow: 1;
+			}
+		}
+
+		&-delete-button {
+			margin-inline-start: @border-width-base * -1; // Merge with text input
+		}
+
+		&-create-button {
+			margin-block-start: @spacing-25;
+		}
+	}
+}
+
+.mw-special-ManageWiki .oo-ui-fieldLayout {
+	margin-top: 0;
+}
+
+.mw-special-ManageWiki .ext-managewiki-fakesubmit {
+	display: none;
+}

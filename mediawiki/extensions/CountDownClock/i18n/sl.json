@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Eleassar"
+		]
+	},
+	"countDownClock-desc": "Doda funkcijo razčlenjevalnika za prikaz odštevalnga časa",
+	"countDownClock-invalidtime": "Navedite veljaven parameter končnega časa",
+	"countDownClock-days": "$1 {{PLURAL:$1|dan|dni}}",
+	"countDownClock-hours": "$1 {{PLURAL:$1|ura|uri|ure|ur}}",
+	"countDownClock-minutes": "$1 {{PLURAL:$1|minuta|minuti|minute|minut}}",
+	"countDownClock-seconds": "$1 {{PLURAL:$1|sekunda|sekundi|sekunde|sekund}}",
+	"countDownClock-expired": "Preteklo"
+}

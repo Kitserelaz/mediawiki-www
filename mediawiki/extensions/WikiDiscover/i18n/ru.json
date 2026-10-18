@@ -1,0 +1,39 @@
+{
+	"@metadata": {
+		"authors": [
+			"BerryAVGN",
+			"DDPAT",
+			"Danvintius Bookix",
+			"Happy13241",
+			"Ice bulldog",
+			"Kareyac",
+			"Movses",
+			"Nk88",
+			"Okras",
+			"Ole Yves",
+			"Pacha Tchernof",
+			"Rubin16",
+			"Stjn",
+			"WerySkok"
+		]
+	},
+	"apihelp-query+wikidiscover-example": "Показать все вики в форме.",
+	"apihelp-query+wikidiscover-param-limit": "Максимальное количество результатов для отображения.",
+	"apihelp-query+wikidiscover-param-prop": "Информация, которую нужно вернуть о переданной вики.",
+	"apihelp-query+wikidiscover-param-state": "Фильтровать по установленному CreateWiki состоянию вики.",
+	"apihelp-query+wikidiscover-summary": "Получить список вики на вики-ферме CreateWiki.",
+	"randomwiki": "Перенаправление на случайный вики-проект",
+	"randomwiki-header": "Выберите категорию и язык ниже, и при отправке вы будете перенаправлены случайным образом в вики, которая соответствует выбранным критериям.",
+	"randomwiki-parameters": "Выберите параметры",
+	"wikidiscover": "Поиск вики",
+	"wikidiscover-desc": "Позволяет [[Special:WikiDiscover|находить вики]] на вики-ферме вики с [[Special:CreateWiki|CreateWiki]].",
+	"wikidiscover-header": "Выберите параметры для вашего поиска",
+	"wikidiscover-header-info": "Вы можете искать вики по всей этой ферме, выбирая такие параметры, как язык и т. д.",
+	"wikidiscover-table-category": "Категория",
+	"wikidiscover-table-description": "Описание",
+	"wikidiscover-table-established": "Установлено",
+	"wikidiscover-table-language": "Язык",
+	"wikidiscover-table-state": "Состояние",
+	"wikidiscover-table-visibility": "Видимость",
+	"wikidiscover-table-wiki": "Название вики"
+}

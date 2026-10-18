@@ -1,0 +1,80 @@
+:root {
+	--desktop-background-image:?DesktopWallpaper;
+	--desktop-background-image-filter:opacity(100%);
+	--desktop-background-image-blend-mode:normal;
+	--desktop-background-color:?Background;
+	--desktop-background-mode:four-quarters;
+	--desktop-background-size:['cover','contain','stretched','full','full','cover'][?PictureStyle];
+	--desktop-background-horizontal-alignment:['center','center','center','top','center','center'][?PictureStyle];
+	--desktop-background-vertical-alignment:['center','center','center','left','center','center'][?PictureStyle];
+	--desktop-background-no-horizontal-tiling:([1,4].includes(?PictureStyle));
+	--desktop-background-no-vertical-tiling:([1,4].includes(?PictureStyle));
+	--desktop-background-multi-monitor:([5].includes(?PictureStyle));
+	--desktop-text-background-color:auto;
+	if (?HighConttast != 0) {
+		if (?AppMode === 'Light') {
+			--canvas-background-color:#ffffff;
+			--inactive-text-background-color:#8b8680;
+			--canvas-text-background-color:#000000;
+		} else {
+			--canvas-background-color:#000000;
+			--inactive-text-background-color:#8b8680;
+			--canvas-text-background-color:#ffffff
+		}
+		--canvas-secondary-background-color:auto;
+		--canvas-text-secondary-background-color:auto;
+		--highlight-background-color:auto; 
+		--highlight-text-background-color:auto; 
+		--hyperlink-background-color:?ColorizationColor;
+		--active-title-background-color:auto;
+		--active-title-text-background-color:auto;
+		if (?AppMode === 'Light') {
+			--inactive-title-background-color:#ffffff;
+		} else {
+			--inactive-title-background-color:#000000;
+		}
+		--inactive-title-text-background-color:auto;
+	} else {
+		--canvas-background-color:?Canvas;
+		--canvas-secondary-background-color:?ButtonFace;
+		--inactive-text-background-color:?GrayText;
+		--canvas-text-backgronud-color:?CanvasText;
+		--canvas-text-secondary-background-color:?ButtonText;
+		--highlight-background-color:?Highlight;
+		--highlight-text-background-color:?HighlightText;
+		--hyperlink-background-color:?LinkText;
+		--active-title-background-color:?ActiveCaption;
+		--active-title-text-background-color:?CaptionText;
+		--inactive-title-background-color:?InactiveCaption;
+		--inactive-title-text-background-color:?InactiveCaptionText;
+	}
+	--caret-width:?CaretSize;
+	--custom-secondary-font:"";
+	--border-radius:3px;
+	--icon-filter:opacity(1);
+	--icon-filter-hover:opacity(0.8);
+	--icon-filter-duration:300ms;
+	--icon-filter-delay:0; 
+	if (?HighConttast != 0) {
+		--system-visual-mode:contrast;
+	} else if (?Composition === 0) {
+		--system-visual-mode:lite;
+	} else {
+		--system-visual-mode:['lite', 'standard'][?TransaprencyLevel];
+	}
+	if (?MSStyle === 'Aero') {
+		--system-visual-style:standard;
+	} else if (?MSStyle === 'AeroLite') {
+		--system-visual-style:basic;
+	} else if (?MSStyle === '') { // Empty string is the Classic Visual Style
+		--system-visual-style:retro;
+	} else if (?MSStyle === 'Color') { // Color is used in some Windows hacks (Such as enabling color title bars in Win10 RTM)
+		--system-visual-style:simple;
+	} else {
+		--system-visual-style:general;
+	}
+	--system-cursor-scheme:?CursorScheme;
+	--system-cursor-theme:auto;
+	--system-cursor-hue:0deg;
+	--system-sound-scheme:?SoundScheme;
+	}

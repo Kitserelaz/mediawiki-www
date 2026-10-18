@@ -1,0 +1,41 @@
+{
+	"@metadata": {
+		"authors": [
+			"Saraiki"
+		]
+	},
+	"action-createwiki": "وکی بݨاؤ",
+	"action-requestwiki": "وکیاں دی ارداس کرو",
+	"createwiki": "وکی بݨاؤ",
+	"createwiki-defaultmainpage-summary": "پہلا پرت بݨاؤ",
+	"createwiki-label-all-languages": "یکے",
+	"createwiki-label-all-statuses": "یکے",
+	"createwiki-label-category": "ونکی",
+	"createwiki-label-dbname": "ڈیٹابیس ناں",
+	"createwiki-label-language": "زبان:",
+	"createwiki-label-private": "نشان لاؤ جوایہ وکی ذاتی ہے",
+	"createwiki-label-reason": "سبب:",
+	"createwiki-label-requester": "ارداسی:",
+	"createwiki-label-sitename": "سائٹ دا ناں:",
+	"createwiki-success": "ایہ وکی کامیابی نال بݨ ڳئی۔",
+	"log-action-filter-farmer-requestapprove": "وکی ارداس منظور تھئی",
+	"notification-createwiki-wiki-creation-visitwiki-label": "وکی تے ون٘ڄو",
+	"requestwiki": "وکی دی ارداس کرو",
+	"requestwiki-label-add-comment": "تبصرہ شامل کرو",
+	"requestwiki-label-edit-request": "ارداس وچ تبدیلی کرو",
+	"requestwiki-label-language": "زبان:",
+	"requestwiki-label-sitename": "وکی دا ناں:",
+	"requestwiki-label-subdomain": "آپݨی وکی کیتے ذیلی ڈومین چݨو:",
+	"requestwikiqueue-approve": "منظور",
+	"requestwikiqueue-approved": "منظور تھی ڳیا",
+	"requestwikiqueue-decline": "انکار",
+	"requestwikiqueue-declined": "انکار تھی ڳیا",
+	"requestwikiqueue-request-label-comment": "رائے:",
+	"requestwikiqueue-request-label-language": "زبان",
+	"requestwikiqueue-request-label-requester": "ارداسی",
+	"requestwikiqueue-request-label-sitename": "سائٹ دا ناں",
+	"requestwikiqueue-request-label-status": "حیثیت",
+	"requestwikiqueue-request-label-url": "یوآرایل",
+	"right-createwiki": "وکیاں ٻݨاؤ",
+	"right-requestwiki": "وکیاں دی ارداس کرو"
+}

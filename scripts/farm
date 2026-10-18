@@ -1,0 +1,43 @@
+#!/bin/sh
+set -eu
+cd "$(dirname "$0")/.."
+farmEnvFile=''
+if [ "${1:-}" = --env-file ]; then
+  [ "$#" -ge 3 ] || { echo 'Usage: scripts/farm --env-file FILE COMMAND'; exit 1; }
+  farmEnvFile=$2
+  shift 2
+fi
+compose() {
+  if [ -n "$farmEnvFile" ]; then docker compose --env-file "$farmEnvFile" "$@";
+  else docker compose "$@"; fi
+}
+case "${1:-help}" in
+  setup) exec python3 scripts/setup-dev.py ;;
+  setup-production) shift; exec python3 scripts/setup-production.py "$@" ;;
+  build)
+    compose build php
+    compose build web
+    compose build counter ;;
+  up) compose --profile dev up -d ;;
+  init) shift; compose run --rm init php /opt/farm/manage.php fresh "$@" ;;
+  init-production) shift; compose run --rm init php /opt/farm/manage.php fresh-production "$@" ;;
+  restore)
+    shift
+    compose up -d --wait database memcached
+    compose run --rm --no-deps init php /opt/farm/manage.php restore "$@" ;;
+  backup) shift; compose run --rm --no-deps init php /opt/farm/manage.php backup "$@" ;;
+  update|refresh|list)
+    action=$1; shift
+    compose run --rm init php /opt/farm/manage.php "$action" "$@" ;;
+  logs) shift; compose logs -f "$@" ;;
+  stop) compose --profile '*' stop ;;
+  snapshot)
+    shift
+    if [ -n "$farmEnvFile" ]; then exec scripts/snapshot --env-file "$farmEnvFile" "$@";
+    else exec scripts/snapshot "$@"; fi ;;
+  certificate)
+    mkdir -p docker/secrets
+    compose cp web:/data/caddy/pki/authorities/local/root.crt docker/secrets/local-ca.crt ;;
+  smoke) exec python3 docker/tests/smoke.py ;;
+  *) printf '%s\n' 'Usage: scripts/farm [--env-file FILE] setup|setup-production --domain DOMAIN|build|init|init-production|up|update|refresh|list|snapshot NAME|backup /backups/NAME|restore /backups/NAME|logs|stop|certificate|smoke' ;;
+esac

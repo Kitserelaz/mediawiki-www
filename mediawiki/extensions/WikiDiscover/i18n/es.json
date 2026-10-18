@@ -1,0 +1,34 @@
+{
+	"@metadata": {
+		"authors": [
+			"Agent",
+			"EmicraftNoob",
+			"Fitoschido",
+			"HylianAngel",
+			"Jackiezelaya",
+			"Jakeukalane"
+		]
+	},
+	"apihelp-query+wikidiscover-example": "Mostrar todas las wikis del formulario.",
+	"apihelp-query+wikidiscover-param-limit": "Número máximo de resultados para mostrar.",
+	"apihelp-query+wikidiscover-param-prop": "Información que devolver acerca de una wiki definida.",
+	"apihelp-query+wikidiscover-param-state": "Filtrar por el estado definido de CreateWiki de una wiki.",
+	"apihelp-query+wikidiscover-summary": "Obtenga una lista de wikis de una granja de wiki de CreateWiki.",
+	"randomwiki": "Redirigir a una wiki al azar",
+	"randomwiki-header": "Elija una categoría y un idioma a continuación y, al enviarlo, se le redirigirá a un wiki aleatorio que cumpla los criterios seleccionados.",
+	"randomwiki-parameters": "Seleccionar parámetros",
+	"wikidiscover": "Descubrir wikis",
+	"wikidiscover-desc": "Permite [[Special:WikiDiscover|descubrir wikis]] de un servicio de alojamiento a través de [[Special:CreateWiki|CreateWiki]].",
+	"wikidiscover-header": "Seleccione parámetros para tu busqueda",
+	"wikidiscover-header-info": "Puede buscar wikis en esta wikigranja seleccionando parámetros como el idioma y otros.",
+	"wikidiscover-label-any": "(cualquier)",
+	"wikidiscover-label-inactive": "Inactivo",
+	"wikidiscover-label-public": "Público",
+	"wikidiscover-table-category": "Categoría",
+	"wikidiscover-table-description": "Descripción",
+	"wikidiscover-table-established": "Establecido",
+	"wikidiscover-table-language": "Idioma",
+	"wikidiscover-table-state": "Estado o provincia",
+	"wikidiscover-table-visibility": "Visibilidad",
+	"wikidiscover-table-wiki": "Nombre de la wiki"
+}

@@ -1,0 +1,34 @@
+{
+	"@metadata": {
+		"authors": [
+			"Robby",
+			"Volvox"
+		]
+	},
+	"userprofilev2-desc": "E wikibaséierte Benotzerprofilsystem.",
+	"userprofilev2-selectavatar": "Avatar eraussichen",
+	"userprofilev2-avatarchanged": "Avatar erfollegräich geännert.",
+	"userprofilev2-avatardeleted": "Avatar erfollegräich geläscht.",
+	"userprofilev2-user-locked": "Dëse Benotzerkont gouf global desaktivéiert.",
+	"userprofilev2-edit-profile": "Äre Profil änneren",
+	"userprofilev2-apierror-forbidden": "Verbueden: Dir hutt net d'Recht fir dësen Avatar z'änneren.",
+	"userprofilev2-apierror-nofile": "Et gouf kee Fichier ugi fir eropzelueden.",
+	"userprofilev2-apierror-ratelimited": "Dir kënnt zu dësem Ament keng Biller eroplueden.",
+	"userprofilev2-apierror-invalidusername": "Et ass kee Benotzer mam Benotzernumm '$1' op dëser Wiki registréiert.",
+	"userprofilev2-about-me": "Iwwer mech",
+	"userprofilev2-discord": "Discord-Benotzernumm",
+	"userprofilev2-twitter": "Twitter-Benotzernumm",
+	"userprofilev2-mastodon": "Mastodon-Benotzernumm",
+	"userprofilev2-about-me-placeholder": "Schreift eppes iwwer Iech...",
+	"userprofilev2-about-me-help": "Sot eis méi iwwer Iech selwer. 200 Zeeche maximal.",
+	"userprofilev2-mastodon-help": "Äre Mastodon-Benotzernumm, mam @",
+	"userprofilev2-twitter-help": "Ären Twitter-Benotzernumm, mam @",
+	"userprofilev2-discord-help": "Ären Discord-Benotzernumm, ouni den #",
+	"userprofilev2-showglobalgroups": "Meng global Gruppe weisen?",
+	"userprofilev2-showglobaleditcount": "Zuel vu menge globalen Ännerunge weisen?",
+	"userprofilev2-showglobalgroupshelp": "Global Benotzergruppe weisen zu deenen ech gehéieren (ass fir jiddereen ze gesinn)",
+	"userprofilev2-showglobaleditcounthelp": "D'Zuel vu menge globalen Ännerunge vun CentralAuth weisen (ass fir jiddereen ze gesinn)",
+	"userprofilev2-edit": "Änneren",
+	"userprofilev2-edit-count": "$1 Ännerungen",
+	"userprofilev2-globaledit-count": "$1 global Ännerungen"
+}

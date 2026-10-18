@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Geraki",
+			"KonVog"
+		]
+	},
+	"urlshortener-toolbox": "Λάβετε συντομευμένη διεύθυνση URL",
+	"urlshortener-toolbox-qrcode": "Λήψη κωδικού QR",
+	"urlshortener-qrcode-downloaded": "Ο κωδικός QR λήφθηκε ως αρχείο SVG"
+}

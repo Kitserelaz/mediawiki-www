@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"Hamilton Abreu"
+		]
+	},
+	"simpleblogpage-desc": "Sistema de blogues com funcionalidade de comentários e votação, [[Special:CreateBlogPost|uma página especial para publicar artigos no blogue]] e [[Special:ArticlesHome|uma página especial para listar artigos do blogue]]",
+	"right-createblogpost": "[[Special:CreateBlogPost|Criar novos artigos de blogue]]",
+	"action-createblogpost": "criar novos artigos de blogue"
+}

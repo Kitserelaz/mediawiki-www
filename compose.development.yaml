@@ -1,0 +1,12 @@
+# Optional live edits for core code and extensions; runtime data remains in volumes.
+services:
+  php:
+    volumes:
+      - ./mediawiki/includes:/var/www/mediawiki/includes:ro
+      - ./mediawiki/extensions:/var/www/mediawiki/extensions:ro
+      - ./mediawiki/skins:/var/www/mediawiki/skins:ro
+  web:
+    volumes:
+      - ./mediawiki/resources:/var/www/mediawiki/resources:ro
+      - ./mediawiki/extensions:/var/www/mediawiki/extensions:ro
+      - ./mediawiki/skins:/var/www/mediawiki/skins:ro

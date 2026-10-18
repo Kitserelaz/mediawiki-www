@@ -1,0 +1,29 @@
+{
+	"@metadata": {
+		"authors": [
+			"You"
+		]
+	},
+	"cfcachepurge": "Purge Cloudflare cache",
+	"cfcachepurge-desc": "Adds a special page for purging Cloudflare cache for the current wiki host.",
+	"cfcachepurge-intro": "This page purges Cloudflare cache for the current wiki host.",
+	"cfcachepurge-rate-limit": "Rate limit: $1 purges per $2 minutes.",
+	"cfcachepurge-used": "Used: $1/$2",
+	"cfcachepurge-remaining": "Remaining: $1",
+	"cfcachepurge-next-refresh": "Next refresh in: $1",
+	"cfcachepurge-submit": "Purge Cloudflare host cache",
+	"cfcachepurge-not-configured": "Cloudflare purge is not configured.",
+	"cfcachepurge-success": "Cloudflare cache purged successfully for host: $1",
+	"cfcachepurge-failed": "Cloudflare purge failed: $1",
+	"cfcachepurge-status-line": "Used: $1/$2 | Remaining: $3 | Next refresh in: $4",
+	"cfcachepurge-could-not-determine-host": "Could not determine request host.",
+	"cfcachepurge-http-error": "HTTP $1: $2",
+	"cfcachepurge-unknown-api-error": "Unknown API error",
+	"cfcachepurge-rate-limit-exceeded": "Rate limit exceeded. Maximum $1 purges per $2 minutes. Try again in $3.",
+	"cfcachepurge-duration-now": "now",
+	"cfcachepurge-duration-minutes-seconds": "$1m $2s",
+	"cfcachepurge-duration-minutes": "$1m",
+	"cfcachepurge-duration-seconds": "$1s",
+	"right-cloudflarepurge": "Purge Cloudflare cache via Special:CFCachePurge",
+	"action-cloudflarepurge": "purge Cloudflare cache"
+}

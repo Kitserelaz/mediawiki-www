@@ -1,0 +1,33 @@
+{
+	"@metadata": {
+		"authors": [
+			"HoodWiki"
+		]
+	},
+  "skinname-evelution": "Evelution",
+  "evelution-skin-desc": "Una skin basata su FandomDesktop e Windows 11",
+  "evelution.css": "/* Gli stili CSS inseriti qui si applicano agli utenti che usano il tema Evelution */",
+  "evelution.js": "/* Il codice JavaScript inserito qui viene caricato dagli utenti che usano il tema Evelution */",
+  "evelution-themes": "Temi",
+  "evelution-explore": "Esplora",
+  "evelution-togglesize": "Cambia Dimensione",
+  "evelution-toggleaccent": "Cambia Accento",
+  "evelution-togglefont": "Cambia Font",
+  "evelution-pages": "{{PLURAL:$1|Articolo|Articoli}}",
+  "evelution-files": "{{PLURAL:$1|File|File}}",
+  "evelution-edits": "{{PLURAL:$1|Modifica|Modifiche}}",
+  "evelution-users": "{{PLURAL:$1|Utente|Utenti}}",
+  "evelution-newfiles": "File",
+  "evelution-darkmode": "Modalità Oscura",
+  "evelution-lightmode": "Modalità Luce",
+  "evelution-support": "Server Di Supporto",
+  "evelution-documentation": "Documentazione",
+  "evelution-standard": "Standard",
+  "evelution-visual-styles": "Stili Visivi",
+  "evelution-visual-colors": "Colori Visivi",
+  "evelution-color-colors": "Colori",
+  "evelution-color-pokemoncolors": "Colori Pokémon",
+  "evelution-activity-module": "{{Special:RecentChanges/days=30,limit=8,hidebots,hidelog,hideminor,namespace=0,hidecategorization}}",
+  "evelution-about-module-info": "",
+  "evelution-designer-title": "CPE Theme Designer"
+} 

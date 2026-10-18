@@ -1,0 +1,24 @@
+{
+	"@metadata": {
+		"authors": [
+			"Brettchenweber",
+			"Kghbln",
+			"Metalhead64",
+			"Raimond Spekking",
+			"Umherirrender"
+		]
+	},
+	"timeline-desc": "Ergänzt das Tag <code>&lt;timeline&gt;</code> zur Erstellung von Zeitleisten",
+	"timeline-error-storage": "Timeline-Fehler. Ausgabedateien konnten nicht gespeichert werden.",
+	"timeline-error-temp": "Timeline-Fehler. Temporäre Dateien konnten nicht erstellt werden.",
+	"timeline-error-command": "Timeline-Fehler. Kommando war: $1",
+	"timeline-invalidmap": "EasyTimeline hat eine ungültige Grafik generiert.",
+	"timeline-tracking-category": "Seiten, die Timeline-Erweiterung verwenden",
+	"timeline-tracking-category-desc": "Diese Seite enthält ein <code>&lt;timeline&gt;</code>-Tag.",
+	"timeline-readerr": "Die Datei $1 kann nicht gelesen werden.",
+	"timeline-scripterr": "Remote-Skript kann nicht ausgeführt werden: $1 wurde mit Statuscode $2 beendet\n$3",
+	"timeline-perlnotexecutable": "Perl konnte nicht ausgeführt werden: $1 ist keine ausführbare Datei. Stelle sicher, dass <code>$wgTimelinePerlCommand</code> korrekt festgelegt ist.",
+	"timeline-ploticusnotexecutable": "Ploticus konnte nicht ausgeführt werden: $1 ist keine ausführbare Datei. Stelle sicher, dass <code>$wgTimelinePloticusCommand</code> richtig konfiguriert ist.",
+	"timeline-compilererr": "Die Eingabe für EasyTimeline kann nicht kompiliert werden:\n$1",
+	"timeline-rsvg-error": "SVG konnte nicht zu PNG konvertiert werden:\n$1"
+}

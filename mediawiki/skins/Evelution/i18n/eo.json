@@ -1,0 +1,30 @@
+{
+	"@metadata": {
+		"authors": [
+			"HoodWiki"
+		]
+	},
+  "skinname-evelution": "Evelution",
+  "evelution-skin-desc": "Haŭto bazita sur FandomDesktop kaj Windows 11",
+  "evelution.css": "/* La jena CSS influos la paĝaspekton por uzantoj de la Evelution temo. */",
+  "evelution.js": "/* La jena Ĝavaskripto ŝargiĝos por uzantoj de la Evelution temo. */",
+  "evelution-themes": "Temoj",
+  "evelution-explore": "Esplori",
+  "evelution-togglesize": "Ŝalti grandecon",
+  "evelution-pages": "{{PLURAL:$1|Artikolo |Artikoloj}}",
+  "evelution-files": "{{PLURAL:$1|Dosiero|Dosieroj}}",
+  "evelution-edits": "{{PLURAL:$1|Redakti|Redaktoj}}",
+  "evelution-users": "{{PLURAL:$1|Uzanto|Uzantoj}}",
+  "evelution-newfiles": "Dosieroj",
+  "evelution-darkmode": "Malluma reĝimo",
+  "evelution-lightmode": "Luma reĝimo",
+  "evelution-support": "Subtena servilo",
+  "evelution-documentation": "Dokumentado",
+  "evelution-standard": "Norma",
+  "evelution-visual-styles": "Vidaj stiloj",
+  "evelution-visual-colors": "Vidaj koloroj",
+  "evelution-color-colors": "Koloroj",
+  "evelution-color-pokemoncolors": "Pokémon Koloroj",
+  "evelution-activity-module": "{{Special:RecentChanges/days=30,limit=8,hidebots,hidelog,hideminor,namespace=0,hidecategorization}}",
+  "evelution-about-module-info": ""
+} 

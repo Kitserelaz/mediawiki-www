@@ -1,0 +1,6 @@
+# This customized farm uses the workspace stack, including MariaDB and shared auth.
+# Initialize with ../scripts/farm init, then use ../scripts/farm up.
+# See ../docs/DOCKER.md for HTTPS trust, maintenance, backups and production setup.
+name: ${COMPOSE_PROJECT_NAME:-cloudwiki}
+include:
+  - path: ../compose.yaml

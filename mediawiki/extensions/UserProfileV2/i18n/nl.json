@@ -1,0 +1,39 @@
+{
+	"@metadata": {
+		"authors": [
+			"McDutchie"
+		]
+	},
+	"prefs-profile": "GebruikersprofielV2",
+	"userprofilev2-desc": "Een wiki-gebaseerd gebruikersprofielsysteem.",
+	"userprofilev2-selectavatar": "Avatar selecteren",
+	"userprofilev2-avatarchanged": "De avatar is gewijzigd.",
+	"userprofilev2-avatardeleted": "De avatar is verwijderd.",
+	"userprofilev2-user-locked": "Dit gebruikersaccount is globaal uitgeschakeld.",
+	"userprofilev2-edit-profile": "Uw profiel aanpassen",
+	"userprofilev2-apierror-forbidden": "Verboden: u hebt geen toestemming om deze avatar te wijzigen.",
+	"userprofilev2-apierror-invalidpermission": "Verboden: u hebt geen toestemming om het profiel van $1 te bewerken",
+	"userprofilev2-apierror-nofile": "Er is geen bestand gegeven om te uploaden.",
+	"userprofilev2-apierror-ratelimited": "U kunt op dit moment geen afbeeldingen uploaden.",
+	"userprofilev2-apierror-invalidusername": "Er is op deze wiki geen gebruiker geregistreerd met de gebruikersnaam ‘$1’.",
+	"userprofilev2-about-me": "Over mij",
+	"userprofilev2-discord": "Discord-gebruikersnaam",
+	"userprofilev2-twitter": "Twitter-gebruikersnaam",
+	"userprofilev2-mastodon": "Mastodon-gebruikersnaam",
+	"userprofilev2-about-me-placeholder": "Schrijf iets over uzelf…",
+	"userprofilev2-about-me-help": "Vertel ons iets over uzelf. Maximaal 200 tekens.",
+	"userprofilev2-mastodon-help": "Uw Mastodon-gebruikersnaam, met de @",
+	"userprofilev2-twitter-help": "Uw Twitter-gebruikersnaam, met de @",
+	"userprofilev2-discord-help": "Uw Discord-gebruikersnaam, zonder het #",
+	"userprofilev2-showglobalgroups": "Mijn globale groepen weergeven?",
+	"userprofilev2-showglobaleditcount": "Mijn globale aantal bewerkingen weergeven?",
+	"userprofilev2-showglobalgroupshelp": "De globale gebruikersgroepen waarvan ik deel uitmaak weergeven (ze worden voor iedereen zichtbaar)",
+	"userprofilev2-showglobaleditcounthelp": "Mijn globale aantal bewerkingen van CentralAuth weergeven (het wordt voor iedereen zichtbaar)",
+	"userprofilev2-edit": "Bewerken",
+	"userprofilev2-edit-count": "$1 bewerkingen",
+	"userprofilev2-globaledit-count": "$1 globale bewerkingen",
+	"userprofilev2-editavatar": "Avatar bewerken",
+	"userprofilev2-edit-back": "Terug",
+	"userprofilev2-deleteavatar": "Avatar verwijderen",
+	"userprofilev2-helptext": "Met dit dialoogvenster kunt u de inhoud van uw gebruikersprofiel wijzigen."
+}

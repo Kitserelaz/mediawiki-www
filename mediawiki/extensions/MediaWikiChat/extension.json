@@ -1,0 +1,204 @@
+{
+	"name": "MediaWikiChat",
+	"version": "2.24.0",
+	"author": [
+		"Adam Carter/UltrasonicNXT"
+	],
+	"license-name": "GPL-2.0-or-later",
+	"url": "https://www.mediawiki.org/wiki/Extension:MediaWikiChat",
+	"descriptionmsg": "chat-desc",
+	"type": "specialpage",
+	"requires": {
+		"MediaWiki": ">=1.39"
+	},
+	"config": {
+		"ChatKicks": {
+			"value": true,
+			"description": "Enable the 'kicking' of other users by chatmods and sysops (and any and all other user groups with the 'modchat' user right)?"
+		},
+		"ChatRichMessages": {
+			"value": true,
+			"description": "Parse chat messages through the WikiText parser?"
+		},
+		"ChatSidebarPortlet": {
+			"value": true,
+			"description": "Show the online users module in the sidebar?"
+		},
+		"ChatOnlineTimeout": {
+			"value": 6000,
+			"description": "The length of time it takes for a user to be considered offline. Smaller values give faster response times for users to be considered offline, but increase the chance of users being reported offline when they aren't (there may just be a temporary blip in their connection to the server). Set in 100ths of a second. The default value of 6000 translates to 1 minute."
+		},
+		"ChatFloodMessages": {
+			"value": 3,
+			"description": "Stops users sending more than X messages per Y seconds. Defaults to 3 messages per 5 seconds."
+		},
+		"ChatFloodSeconds": {
+			"value": 5,
+			"description": "Stops users sending more than X messages per Y seconds. Defaults to 3 messages per 5 seconds."
+		},
+		"ChatLinkUsernames": {
+			"value": false,
+			"description": "Link users' user names to their user pages in the main chat window?"
+		},
+		"ChatMeCommand": {
+			"value": false,
+			"description": "Enable \"/me <text>\" command that prints a status-type message?"
+		},
+		"ChatUseStyleAttribute": {
+			"value": true,
+			"description": "Allow the use of the style attribute on HTML elements?"
+		},
+		"ChatMaxMessageLength": {
+			"value": 1000,
+			"description": "Maximum individual chat message length in characters."
+		}
+	},
+	"SpecialPages": {
+		"Chat": {
+			"class": "SpecialChat",
+			"services": [
+				"UserOptionsLookup",
+				"UserGroupManager"
+			]
+		}
+	},
+	"MessagesDirs": {
+		"MediaWikiChat": [
+			"i18n"
+		]
+	},
+	"ExtensionMessagesFiles": {
+		"MediaWikiChatAlias": "MediaWikiChat.alias.php"
+	},
+	"APIModules": {
+		"chatgetnew": "ChatGetNewAPI",
+		"chatsend": "ChatSendAPI",
+		"chatsendpm": "ChatSendPMAPI",
+		"chatkick": "ChatKickAPI"
+	},
+	"LogTypes": [
+		"chat",
+		"privatechat"
+	],
+	"ActionFilteredLogs": {
+		"chat": {
+			"kick": [
+				"kick"
+			]
+		}
+	},
+	"LogActionsHandlers": {
+		"chat/*": "LogFormatter",
+		"privatechat/*": "LogFormatter"
+	},
+	"FilterLogTypes": {
+		"chat": true,
+		"privatechat": true
+	},
+	"LogRestrictions": {
+		"privatechat": "viewpmlog"
+	},
+	"AutoloadClasses": {
+		"ChatGetNewAPI": "includes/api/ChatGetNewAPI.php",
+		"ChatSendAPI": "includes/api/ChatSendAPI.php",
+		"ChatSendPMAPI": "includes/api/ChatSendPMAPI.php",
+		"ChatKickAPI": "includes/api/ChatKickAPI.php",
+		"GetNewWorker": "includes/api/GetNewWorker.php",
+		"SpecialChat": "includes/specials/SpecialChat.php",
+		"SpecialChatTemplate": "includes/templates/SpecialChatTemplate.php",
+		"MediaWikiChat": "includes/MediaWikiChat.php",
+		"MediaWikiChatHooks": "includes/MediaWikiChatHooks.php"
+	},
+	"Hooks": {
+		"UserGroupsChanged": "MediaWikiChatHooks::onUserGroupsChanged",
+		"LoadExtensionSchemaUpdates": "MediaWikiChatHooks::onLoadExtensionSchemaUpdates",
+		"SkinAfterPortlet": "MediaWikiChatHooks::onSkinAfterPortlet",
+		"SkinBuildSidebar": "MediaWikiChatHooks::onSkinBuildSidebar",
+		"GetPreferences": "MediaWikiChatHooks::onGetPreferences"
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "",
+		"remoteExtPath": "MediaWikiChat"
+	},
+	"ResourceModules": {
+		"ext.mediawikichat.css": {
+			"styles": "MediaWikiChat.css"
+		},
+		"ext.mediawikichat.js": {
+			"scripts": "MediaWikiChat.js",
+			"messages": [
+				"january", "february", "march", "april", "may", "june", "july", "august", "september", "october",
+				"november", "december", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday",
+				"sunday", "chat-type-your-private-message", "chat-no-other-users", "chat-blocked-from-chat",
+				"just-now", "chat-a-minute-ago", "minutes-ago", "chat-youve-been-kicked", "chat-you-kicked",
+				"chat-kicked", "chat-kick", "chat-youve-been-blocked", "chat-you-blocked", "chat-blocked",
+				"chat-block", "chat-private-message", "chat-user-is-moderator", "chat-you-are-moderator",
+				"chat-joined", "chat-left", "chat-mod-image", "chat-yesterday", "chat-flood", "chat-too-long",
+				"chat-idle-minutes", "chat-idle-hours", "chat-idle-more", "chat-today", "chat-message-from",
+				"chat-private-message-from", "chat-mentioned-by"
+			],
+			"dependencies": [
+				"mediawiki.api",
+				"mediawiki.jqueryMsg",
+				"mediawiki.user",
+				"mediawiki.util"
+			]
+		},
+		"ext.mediawikichat.site": {
+			"class": "MediaWiki\\ResourceLoader\\WikiModule",
+			"scripts": [ "MediaWiki:Chat.js" ]
+		},
+		"ext.mediawikichat.site.styles": {
+			"class": "MediaWiki\\ResourceLoader\\WikiModule",
+			"styles": [ "MediaWiki:Chat.css" ]
+		}
+	},
+	"AvailableRights": [
+		"chat",
+		"modchat",
+		"viewpmlog"
+	],
+	"AddGroups": {
+		"sysop": [
+			"chatmod",
+			"blockedfromchat"
+		],
+		"chatmod": [
+			"blockedfromchat"
+		]
+	},
+	"RemoveGroups": {
+		"sysop": [
+			"chatmod",
+			"blockedfromchat"
+		],
+		"chatmod": [
+			"blockedfromchat"
+		]
+	},
+	"GroupPermissions": {
+		"chatmod": {
+			"chat": true,
+			"modchat": true
+		},
+		"user": {
+			"chat": true
+		},
+		"sysop": {
+			"chat": true,
+			"modchat": true
+		}
+	},
+	"RevokePermissions": {
+		"blockedfromchat": {
+			"chat": true
+		}
+	},
+	"DefaultUserOptions": {
+		"chat-ping-mention": 1,
+		"chat-ping-pm": 1,
+		"chat-notify-mention": 1,
+		"chat-notify-pm": 1
+	},
+	"manifest_version": 2
+}

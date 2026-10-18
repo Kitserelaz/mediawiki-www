@@ -1,0 +1,16 @@
+{
+  "name": "MoeCounter",
+  "version": "1.0.0",
+  "author": "you",
+  "Description": "Adds a <moecounter> tag that builds an image URL for count.cloudwiki.us",
+  "AutoloadClasses": {
+    "MoecounterHooks": "includes/MoecounterHooks.php"
+  },
+  "Hooks": {
+    "ParserFirstCallInit": "MoecounterHooks::onParserFirstCallInit"
+  },
+  "MessagesDirs": {
+    "Moecounter": "i18n"
+  },
+  "manifest_version": 2
+}

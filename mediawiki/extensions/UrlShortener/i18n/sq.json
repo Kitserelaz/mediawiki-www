@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Liridon",
+			"INNERLMNT"
+		]
+	},
+	"urlshortener-failed-try-again": "Dështoi. Provoni përsëri?",
+	"urlshortener-toolbox": "Merre adresën e shkurtuar",
+	"urlshortener-toolbox-qrcode": "Shkarko kodin QR",
+	"urlshortener-qrcode-downloaded": "Kodi QR i shkarkuar si skedar SVG"
+}

@@ -1,0 +1,14 @@
+{
+	"root": true,
+	"extends": [
+		"../../modules/.eslintrc.json",
+		"wikimedia/qunit"
+	],
+	"rules": {
+		"no-jquery/no-parse-html-literal": "off",
+		"no-jquery/no-global-selector": "off",
+		"no-shadow": "warn",
+		"no-jquery/no-extend": "warn",
+		"es-x/no-object-assign": "warn"
+	}
+}

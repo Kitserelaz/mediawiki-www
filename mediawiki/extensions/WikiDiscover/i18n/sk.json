@@ -1,0 +1,28 @@
+{
+	"@metadata": {
+		"authors": [
+			"KormiSK",
+			"TreeIsLife",
+			"Yardom78"
+		]
+	},
+	"apihelp-query+wikidiscover-example": "Zobraziť všetky wiki na formulári.",
+	"apihelp-query+wikidiscover-param-limit": "Maximálny počet zobrazených výsledkov.",
+	"apihelp-query+wikidiscover-param-prop": "Informácie o definovanej wiki.",
+	"apihelp-query+wikidiscover-param-state": "Filtrovať podľa určeného stavu wiki.",
+	"apihelp-query+wikidiscover-summary": "Získať zoznam wiki stránok na farme Vytvor wiki.",
+	"randomwiki": "Presmerovanie na náhodnú wiki",
+	"randomwiki-header": "Nižšie vyberte kategóriu a jazyk a po odoslaní budete presmerovaní na náhodnú wiki, ktorá spĺňa vybrané kritériá.",
+	"randomwiki-parameters": "Vyberte parametre",
+	"wikidiscover": "Objavte wiki",
+	"wikidiscover-desc": "Umožňuje [[Special:WikiDiscover|objavovať wiki]] na wiki farme s [[Special:CreateWiki|Vytvoriť wiki]].",
+	"wikidiscover-header": "Vyberte parametre vyhľadávania",
+	"wikidiscover-header-info": "Môžete vyhľadávať wiki na tejto farme výberom parametrov, ako sú jazyk a ďalšie.",
+	"wikidiscover-table-category": "Kategória",
+	"wikidiscover-table-description": "Popis",
+	"wikidiscover-table-established": "Ustanovená",
+	"wikidiscover-table-language": "Jazyk",
+	"wikidiscover-table-state": "Štát",
+	"wikidiscover-table-visibility": "Viditeľnosť",
+	"wikidiscover-table-wiki": "Názov wiki"
+}

@@ -1,0 +1,38 @@
+{
+	"@metadata": {
+		"authors": [
+			"PretzelRocky"
+		]
+	},
+	"userprofilev2-desc": "Ein Wiki-basiertes Benutzerprofilsystem.",
+	"userprofilev2-selectavatar": "Avatar auswählen",
+	"userprofilev2-avatarchanged": "Avatar erfolgreich geändert.",
+	"userprofilev2-avatardeleted": "Avatar erfolgreich gelöscht.",
+	"userprofilev2-user-locked": "Dieses Benutzerkonto wurde global deaktiviert.",
+	"userprofilev2-edit-profile": "Bearbeite dein Profil",
+	"userprofilev2-apierror-forbidden": "Verweigert: Du bist nicht berechtigt, diesen Avatar zu ändern.",
+	"userprofilev2-apierror-invalidpermission": "Verweigert: Du bist nicht berechtigt, das Profil von $1 zu bearbeiten.",
+	"userprofilev2-apierror-nofile": "Es wurde keine Datei zum Hochladen bereitgestellt.",
+	"userprofilev2-apierror-ratelimited": "Du kannst aktuell keine Bilder hochladen.",
+	"userprofilev2-apierror-invalidusername": "Auf diesem Wiki ist kein Benutzer mit dem Namen „$1“ registriert.",
+	"userprofilev2-about-me": "Über mich",
+	"userprofilev2-discord": "Discord-Benutzername",
+	"userprofilev2-twitter": "Twitter-Benutzername",
+	"userprofilev2-mastodon": "Mastodon-Benutzername",
+	"userprofilev2-about-me-placeholder": "Schreibe etwas über dich selbst...",
+	"userprofilev2-about-me-help": "Erzähle uns von dir. Max. 200 Zeichen.",
+	"userprofilev2-mastodon-help": "Dein Mastodon-Benutzername, mit @",
+	"userprofilev2-twitter-help": "Dein Twitter-Benutzername, mit @",
+	"userprofilev2-discord-help": "Dein Discord-Benutzername, ohne #",
+	"userprofilev2-showglobalgroups": "Meine globalen Gruppen anzeigen?",
+	"userprofilev2-showglobaleditcount": "Meine globale Bearbeitungsanzahl anzeigen?",
+	"userprofilev2-showglobalgroupshelp": "Globale Benutzergruppen anzeigen, denen ich angehöre (für alle sichtbar)",
+	"userprofilev2-showglobaleditcounthelp": "Meine globale Bearbeitungsanzahl von CentralAuth anzeigen (für alle sichtbar)",
+	"userprofilev2-edit": "Bearbeiten",
+	"userprofilev2-edit-count": "$1 Bearbeitungen",
+	"userprofilev2-globaledit-count": "$1 Globale Bearbeitungen",
+	"userprofilev2-editavatar": "Avatar bearbeiten",
+	"userprofilev2-edit-back": "Zurück",
+	"userprofilev2-deleteavatar": "Avatar löschen",
+	"userprofilev2-helptext": "Nutze diesen Dialog, um die Inhalte deines Benutzerprofils zu ändern."
+}

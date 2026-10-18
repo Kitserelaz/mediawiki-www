@@ -1,0 +1,22 @@
+{
+	"@metadata": {
+		"authors": [
+			"Roustammr",
+			"Sagan",
+			"Азат Хәлилов",
+			"З. ӘЙЛЕ",
+			"Ләйсән"
+		]
+	},
+	"commentbox-desc": "Аныҡ биттәргә комментарий юлы өҫтәй",
+	"commentbox-savebutton": "Комментарийҙы һаҡларға",
+	"commentbox-name": "Исем:",
+	"commentbox-name-explanation": "<small>(Кәңәш. Әгәр [[Special:UserLogin|системала танылһағыҙ]], исемегеҙҙе ҡулдан яҙырға тура килмәйәсәк)</small>",
+	"commentbox-log": "Яңы комментарийҙар",
+	"commentbox-first-comment-heading": "== Комментарийҙар ==",
+	"commentbox-regex": "/\\n==\\s*Комментарийҙар\\s*==\\s*\\n/i",
+	"commentbox-errorpage-title": "Комментарий өҫтәгәндә хата китте",
+	"commentbox-error-page-nonexistent": "Был бит юҡ!",
+	"commentbox-error-namespace": "Был исемдәр арауығында комментарийҙар рөхсәт ителмәй!",
+	"commentbox-error-empty-comment": "Буш комментарийҙар рөхсәт ителмәй!"
+}

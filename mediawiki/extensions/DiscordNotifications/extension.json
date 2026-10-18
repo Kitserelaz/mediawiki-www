@@ -1,0 +1,247 @@
+{
+	"name": "DiscordNotifications",
+	"version": "3.0.0",
+	"author": "Universal Omega",
+	"url": "https://github.com/miraheze/DiscordNotifications",
+	"descriptionmsg": "discordnotifications-desc",
+	"namemsg": "discordnotifications-extensionname",
+	"license-name": "GPL-3.0-or-later",
+	"type": "other",
+	"requires": {
+		"MediaWiki": ">= 1.43.0",
+		"platform": {
+			"php": ">= 8.1"
+		}
+	},
+	"AutoloadNamespaces": {
+		"Miraheze\\DiscordNotifications\\": "includes/"
+	},
+	"MessagesDirs": {
+		"DiscordNotifications": [
+			"i18n"
+		]
+	},
+	"HookHandlers": {
+		"main": {
+			"class": "Miraheze\\DiscordNotifications\\Hooks",
+			"services": [
+				"ConfigFactory",
+				"DiscordNotifier",
+				"RevisionLookup",
+				"TitleFactory",
+				"UserFactory",
+				"UserGroupManager",
+				"WikiPageFactory"
+			]
+		}
+	},
+	"Hooks": {
+		"PageDeleteComplete": {
+			"handler": "main"
+		},
+		"PageUndeleteComplete": {
+			"handler": "main"
+		},
+		"PageMoveComplete": {
+			"handler": "main"
+		},
+		"LocalUserCreated": {
+			"handler": "main"
+		},
+		"BlockIpComplete": {
+			"handler": "main"
+		},
+		"UploadComplete": {
+			"handler": "main"
+		},
+		"ArticleProtectComplete": {
+			"handler": "main"
+		},
+		"UserGroupsChanged": {
+			"handler": "main"
+		},
+		"APIFlowAfterExecute": {
+			"handler": "main"
+		},
+		"AfterImportPage": {
+			"handler": "main"
+		},
+		"PageSaveComplete": {
+			"handler": "main"
+		},
+		"ModerationPending": {
+			"handler": "main"
+		}
+	},
+	"config": {
+		"DiscordIncomingWebhookUrl": {
+			"value": ""
+		},
+		"DiscordAdditionalIncomingWebhookUrls": {
+			"value": []
+		},
+		"DiscordFromName": {
+			"value": ""
+		},
+		"DiscordSendMethod": {
+			"value": "curl"
+		},
+		"DiscordCurlProxy": {
+			"value": ""
+		},
+		"DiscordIncludePageUrls": {
+			"value": true
+		},
+		"DiscordIncludeUserUrls": {
+			"value": true
+		},
+		"DiscordIgnoreMinorEdits": {
+			"value": false
+		},
+		"DiscordDisableEmbedFooter": {
+			"value": false
+		},
+		"DiscordExcludeConditions": {
+			"value": []
+		},
+		"DiscordNotificationWikiUrl": {
+			"value": ""
+		},
+		"DiscordNotificationCentralAuthWikiUrl": {
+			"value": ""
+		},
+		"DiscordNotificationWikiUrlEnding": {
+			"value": "index.php?title="
+		},
+		"DiscordNotificationWikiUrlEndingUserRights": {
+			"value": "Special:UserRights/"
+		},
+		"DiscordNotificationWikiUrlEndingBlockList": {
+			"value": "Special:BlockList"
+		},
+		"DiscordNotificationWikiUrlEndingBlockUser": {
+			"value": "Special:Block/"
+		},
+		"DiscordNotificationWikiUrlEndingUserPage": {
+			"value": "User:"
+		},
+		"DiscordNotificationWikiUrlEndingUserTalkPage": {
+			"value": "User_talk:"
+		},
+		"DiscordNotificationWikiUrlEndingUserContributions": {
+			"value": "Special:Contributions/"
+		},
+		"DiscordNotificationWikiUrlEndingEditArticle": {
+			"value": "&action=edit"
+		},
+		"DiscordNotificationWikiUrlEndingDeleteArticle": {
+			"value": "&action=delete"
+		},
+		"DiscordNotificationWikiUrlEndingHistory": {
+			"value": "&action=history"
+		},
+		"DiscordNotificationWikiUrlEndingDiff": {
+			"value": "&diff=prev&oldid="
+		},
+		"DiscordNotificationNewUser": {
+			"value": true
+		},
+		"DiscordNotificationBlockedUser": {
+			"value": true
+		},
+		"DiscordNotificationAddedArticle": {
+			"value": true
+		},
+		"DiscordNotificationRemovedArticle": {
+			"value": true
+		},
+		"DiscordNotificationUnremovedArticle": {
+			"value": true
+		},
+		"DiscordNotificationMovedArticle": {
+			"value": true
+		},
+		"DiscordNotificationEditedArticle": {
+			"value": true
+		},
+		"DiscordNotificationFileUpload": {
+			"value": true
+		},
+		"DiscordNotificationProtectedArticle": {
+			"value": true
+		},
+		"DiscordNotificationShowSuppressed": {
+			"value": true
+		},
+		"DiscordNotificationUserGroupsChanged": {
+			"value": true
+		},
+		"DiscordNotificationFlow": {
+			"value": true
+		},
+		"DiscordNotificationAfterImportPage": {
+			"value": true
+		},
+		"DiscordNotificationIncludeAutocreatedUsers": {
+			"value": true
+		},
+		"DiscordNotificationModerationPending": {
+			"value": true
+		},
+		"DiscordIncludeDiffSize": {
+			"value": true
+		},
+		"DiscordShowNewUserFullName": {
+			"value": false
+		},
+		"DiscordShowNewUserEmail": {
+			"value": false
+		},
+		"DiscordShowNewUserIP": {
+			"value": false
+		},
+		"DiscordAvatarUrl": {
+			"value": ""
+		},
+		"DiscordEnableExperimentalCVTFeatures": {
+			"value": false
+		},
+		"DiscordExperimentalCVTMatchLimit": {
+			"value": 250
+		},
+		"DiscordExperimentalCVTMatchFilter": {
+			"value": []
+		},
+		"DiscordExperimentalCVTUsernameFilter": {
+			"value": []
+		},
+		"DiscordExperimentalCVTSendAllIPEdits": {
+			"value": true
+		},
+		"DiscordExperimentalCVTSendAllNewUsers": {
+			"value": true
+		},
+		"DiscordExperimentalCVTSendAllUserBlocks": {
+			"value": true
+		},
+		"DiscordExperimentalFeedLanguageCode": {
+			"value": ""
+		},
+		"DiscordExperimentalWebhook": {
+			"value": ""
+		},
+		"DiscordExperimentalNewUsersWebhook": {
+			"value": ""
+		},
+		"DiscordExperimentalUserBlocksWebhook": {
+			"value": ""
+		}
+	},
+	"ConfigRegistry": {
+		"DiscordNotifications": "MediaWiki\\Config\\GlobalVarConfig::newInstance"
+	},
+	"ServiceWiringFiles": [
+		"includes/ServiceWiring.php"
+	],
+	"manifest_version": 2
+}

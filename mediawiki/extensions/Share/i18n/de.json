@@ -1,0 +1,22 @@
+{
+	"@metadata": {
+		"authors": []
+	},
+	"share": "Teilen",
+	"share-desc": "Fügt ein Seitenleisten-Portlet hinzu, mit dem Benutzer Wiki-Artikel einfach auf Social-Media-Plattformen teilen können",
+	"share-header": "Teilen",
+	"share-email": "Per E-Mail teilen",
+	"share-facebook": "Auf Facebook teilen",
+	"share-linkedin": "Auf LinkedIn teilen",
+	"share-pinterest": "Auf Pinterest teilen",
+	"share-reddit": "Auf Reddit teilen",
+	"share-telegram": "Auf Telegram teilen",
+	"share-tumblr": "Auf Tumblr teilen",
+	"share-twitter": "Auf Twitter teilen",
+	"share-vk": "Auf VK teilen",
+	"share-weibo": "Auf Weibo teilen",
+	"share-whatsapp": "Auf WhatsApp teilen",
+	"share-preftoggle": "Anzeige von Freigabelinks in der Seitenleiste deaktivieren?",
+	"right-viewsharelinks": "Portlet für die Seitenleistenfreigabe anzeigen",
+	"action-viewsharelinks": "Portlet für die Seitenleistenfreigabe anzuzeigen"
+}

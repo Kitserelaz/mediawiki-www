@@ -1,0 +1,18 @@
+{
+	"@metadata": {
+		"authors": [
+			"Abijeet Patro",
+			"AnupamM"
+		]
+	},
+	"userprofilev2-selectavatar": "अवतार चुनें",
+	"userprofilev2-edit-profile": "अपनी प्रोफ़ाइल संपादित करें",
+	"userprofilev2-apierror-forbidden": "निषिद्ध: आपको इस अवतार को बदलने की अनुमति नहीं है।",
+	"userprofilev2-apierror-nofile": "अपलोड करने के लिए कोई फ़ाइल उपलब्ध नहीं कराई गई।",
+	"userprofilev2-apierror-ratelimited": "आप इस समय इमेज अपलोड नहीं कर सकते।",
+	"userprofilev2-about-me": "मेरे बारे में",
+	"userprofilev2-twitter": "ट्विटर उपयोगकर्ता नाम",
+	"userprofilev2-about-me-placeholder": "अपने बारे में कुछ लिखें...",
+	"userprofilev2-edit": "सम्पादन",
+	"userprofilev2-edit-back": "पीछे"
+}

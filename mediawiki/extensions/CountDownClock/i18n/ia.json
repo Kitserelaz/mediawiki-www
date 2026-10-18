@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"McDutchie"
+		]
+	},
+	"countDownClock-desc": "Adde un function al analysator syntactic pro monstrar un tempore de conto inverse",
+	"countDownClock-invalidtime": "Per favor forni un parametro endTime valide",
+	"countDownClock-days": "$1 {{PLURAL:$1|die|dies}}",
+	"countDownClock-hours": "$1 {{PLURAL:$1|hora|horas}}",
+	"countDownClock-minutes": "$1 {{PLURAL:$1|minuta|minutas}}",
+	"countDownClock-seconds": "$1 {{PLURAL:$1|secunda|secundas}}",
+	"countDownClock-expired": "Expirate"
+}

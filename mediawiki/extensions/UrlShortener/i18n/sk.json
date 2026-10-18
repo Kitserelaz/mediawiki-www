@@ -1,0 +1,16 @@
+{
+	"@metadata": {
+		"authors": [
+			"Luky001",
+			"Teslaton"
+		]
+	},
+	"urlshortener-copy-success": "URL skopírované do schránky.",
+	"urlshortener-desc": "Skracovač pre ľubovoľné URL",
+	"urlshortener-shortened-url-alt": "Môžete tiež použiť toto alternatívne URL:",
+	"urlshortener-shortened-url-label": "Skrátené URL",
+	"urlshortener-toolbox": "Získať skrátené URL",
+	"urlshortener-toolbox-qrcode": "Stiahnuť QR kód",
+	"urlshortener-url-input-submitting": "Skracuje sa...",
+	"urlshortener-qrcode-downloaded": "QR kód stiahnutý ako SVG súbor"
+}

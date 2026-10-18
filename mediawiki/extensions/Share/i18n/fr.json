@@ -1,0 +1,32 @@
+{
+	"@metadata": {
+		"authors": [
+			"Verdy p",
+			"JLTRY"
+		]
+	},
+	"share": "Partager",
+	"share-desc": "Ajoute une section dans la barre latérale qui permet aux utilisateurs de partager facilement des articles wiki sur les plateformes de médias sociaux",
+	"share-header": "Partager ceci",
+	"share-email": "Partager par courriel",
+	"share-email-desc": "Autorise l’ajout d’un lien dans la barre latérale pour partager des articles par courriel.",
+	"share-facebook": "Partager sur Facebook",
+	"share-facebook-desc": "Autorise l’ajout d’un lien dans la barre latérale pour partager des articles via Facebook.",
+	"share-linkedin": "Partager sur LinkedIn",
+	"share-linkedin-desc": "Autorise l’ajout d’un lien dans la barre latérale pour partager des articles via LinkedIn.",
+	"share-pinterest": "Partager sur Pinterest",
+	"share-reddit": "Partager sur Reddit",
+	"share-reddit-desc": "Autorise l’ajout d’un lien dans la barre latérale pour partager des articles via Reddit.",
+	"share-telegram": "Partager sur Telegram",
+	"share-tumblr": "Partager sur Tumblr",
+	"share-tumblr-desc": "Autorise l’ajout d’un lien dans la barre latérale pour partager des articles via Tumblr.",
+	"share-twitter": "Partager sur Twitter",
+	"share-twitter-desc": "Autorise l’ajout d’un lien dans la barre latérale pour partager des articles via Twitter.",
+	"share-vk": "Partager sur VK",
+	"share-weibo": "Partager sur Weibo",
+	"share-whatsapp": "Partager sur WhatsApp",
+	"share-sidebar-basicbuttons": "Utiliser le mode « Boutons de base » ?",
+	"share-preftoggle": "Désactiver l’affichage des liens de partage dans la barre latérale ?",
+	"right-viewsharelinks": "Afficher la section de partage de liens dans la barre latérale",
+	"action-viewsharelinks": "Afficher la section de partage de liens dans la barre latérale"
+}

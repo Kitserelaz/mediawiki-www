@@ -1,0 +1,39 @@
+{
+	"@metadata": {
+		"authors": [
+			"SongNgu.xyz"
+		]
+	},
+	"prefs-profile": "UserProfileV2",
+	"userprofilev2-desc": "Hệ thống hồ sơ người dùng dựa trên nền tảng wiki",
+	"userprofilev2-selectavatar": "Chọn hình đại diện",
+	"userprofilev2-avatarchanged": "Đã thay đổi ảnh đại diện của bạn.",
+	"userprofilev2-avatardeleted": "Đã xóa ảnh đại diện của bạn.",
+	"userprofilev2-user-locked": "Tài khoản người dùng này đã bị khóa toàn cục.",
+	"userprofilev2-edit-profile": "Sửa đổi hồ sơ",
+	"userprofilev2-apierror-forbidden": "Bị cấm: Bạn không có quyền thay đổi ảnh đại diện của người dùng này.",
+	"userprofilev2-apierror-invalidpermission": "Bị cấm: bạn không có quyền sửa đổi hồ sơ của $1",
+	"userprofilev2-apierror-nofile": "Chưa có tập tin nào được cung cấp.",
+	"userprofilev2-apierror-ratelimited": "Chưa thể tải lên hình đại diện vào lúc này.",
+	"userprofilev2-apierror-invalidusername": "Không có người dùng '$1' tại wiki này.",
+	"userprofilev2-about-me": "Mô tả",
+	"userprofilev2-discord": "Discord",
+	"userprofilev2-twitter": "Twitter",
+	"userprofilev2-mastodon": "Mastodon",
+	"userprofilev2-about-me-placeholder": "Viết gì đó về bản thân bạn...",
+	"userprofilev2-about-me-help": "Viết mô tả về bản thân bạn tại đây. Tối đa 200 kí tự.",
+	"userprofilev2-mastodon-help": "Tên người dùng Mastodon, bao gồm cả @",
+	"userprofilev2-twitter-help": "Tên người dùng Twitter, bao gồm cả @",
+	"userprofilev2-discord-help": "Tên người dùng Discord, bỏ dấu #",
+	"userprofilev2-showglobalgroups": "Hiển thị nhóm người dùng toàn cục?",
+	"userprofilev2-showglobaleditcount": "Hiển thị số lần sửa đổi toàn cục?",
+	"userprofilev2-showglobalgroupshelp": "Hiển thị nhóm người dùng toàn cục (công khai cho tất cả mọi người)",
+	"userprofilev2-showglobaleditcounthelp": "Hiển thị số lần sửa đổi toàn cục (công khai cho tất cả mọi người)",
+	"userprofilev2-edit": "Sửa",
+	"userprofilev2-edit-count": "$1 Sửa đổi",
+	"userprofilev2-globaledit-count": "$1 Sửa đổi toàn cục",
+	"userprofilev2-editavatar": "Tải lên hình đại diện",
+	"userprofilev2-edit-back": "Trở lại",
+	"userprofilev2-deleteavatar": "Gỡ hình đại diện",
+	"userprofilev2-helptext": "Hãy sử dụng giao diện này để cập nhật trang hồ sơ của bạn."
+}

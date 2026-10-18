@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"DiegoAmbrocio",
+			"Fitoschido"
+		]
+	},
+	"countDownClock-desc": "Añade una función de análisis sintáctico para mostrar una cuenta atrás",
+	"countDownClock-days": "$1 {{PLURAL:$1|día|días}}",
+	"countDownClock-hours": "$1 {{PLURAL:$1|hora|horas}}",
+	"countDownClock-minutes": "$1 {{PLURAL:$1|minuto|minutos}}",
+	"countDownClock-seconds": "$1 {{PLURAL:$1|segundo|segundos}}",
+	"countDownClock-expired": "Caducado"
+}

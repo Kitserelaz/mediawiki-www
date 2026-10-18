@@ -1,0 +1,16 @@
+{
+	"@metadata": {
+		"authors": [
+			"Banjo",
+			"Elisardojm",
+			"Toliño"
+		]
+	},
+	"apihelp-shortenurl-summary": "Acurtar un URL longo nun máis curto.",
+	"apihelp-shortenurl-param-url": "URL a acurtar.",
+	"apihelp-shortenurl-param-qrcode": "Obter un código QR. O URL ligado só se acurtará se é moi longo.",
+	"apihelp-shortenurl-example-1": "Obter o URL curto para <kbd><nowiki>https://en.wikipedia.org/wiki/Arctica</nowiki></kbd>.",
+	"apihelp-shortenurl-example-2": "Obter un código QR para <kbd><nowiki>https://en.wikipedia.org/wiki/Arctica</nowiki></kbd>.",
+	"apierror-urlshortener-disabled": "Non se poden crear novos enderezos URL curtos",
+	"apierror-urlshortener-permissiondenied": "Non tes permiso para crear enderezos URL curtos"
+}

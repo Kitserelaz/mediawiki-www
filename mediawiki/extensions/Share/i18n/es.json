@@ -1,0 +1,25 @@
+{
+	"@metadata": {
+		"authors": [
+			"Agent"
+		]
+	},
+	"share": "Compartir",
+	"share-desc": "Agrega un portlet a la barra lateral que permite a los usuarios compartir fácilmente artículos wiki en plataformas de redes sociales",
+	"share-header": "Comparta esto",
+	"share-email": "Compartir por correo electrónico",
+	"share-email-desc": "Permite que se agregue a la barra lateral un enlace para compartir artículos por correo electrónico",
+	"share-facebook": "Compartir en Facebook",
+	"share-facebook-desc": "Permite que se agregue un enlace para compartir artículos a través de Facebook en la barra lateral",
+	"share-linkedin": "Compartir en LinkedIn",
+	"share-linkedin-desc": "Permite que se agregue un enlace para compartir artículos a través de LinkedIn en la barra lateral",
+	"share-reddit": "Compartir en Reddit",
+	"share-reddit-desc": "Permite que se agregue a la barra lateral un enlace para compartir artículos a través de Reddit",
+	"share-tumblr": "Compartir en Tumblr",
+	"share-tumblr-desc": "Permite que se agregue un enlace para compartir artículos a través de Tumblr a la barra lateral",
+	"share-twitter": "Compartir en Twitter",
+	"share-twitter-desc": "Permite que se agregue un enlace para compartir artículos a través de Twitter en la barra lateral",
+	"share-sidebar-basicbuttons": "¿Usar el modo de botones básicos?",
+	"share-preftoggle": "¿Deshabilitar la visualización de enlaces para compartir en la barra lateral?",
+	"right-viewsharelinks": "Ver el portlet de compartir de la barra lateral"
+}

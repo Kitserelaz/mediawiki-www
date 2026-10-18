@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": [
+			"Mehtab ahmed"
+		]
+	},
+	"countDownClock-minutes": "{{PLURAL:$1|منٽ}}"
+}

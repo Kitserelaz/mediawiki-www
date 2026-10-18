@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Fitoschido",
+			"Macofe"
+		]
+	},
+	"apihelp-query+babel-summary": "Obtener información sobre los idiomas que conoce el usuario",
+	"apihelp-query+babel-param-user": "Usuario del cual obtener información",
+	"apihelp-query+babel-example-1": "Obtener la información de Babel del usuario <kbd>Example</kbd>"
+}

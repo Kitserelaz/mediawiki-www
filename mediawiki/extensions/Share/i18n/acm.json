@@ -1,0 +1,19 @@
+{
+	"@metadata": {
+		"authors": [
+			"Ahmedadeljaff",
+			"MRidhaAJ"
+		]
+	},
+	"share": "شارك",
+	"share-desc": "يحط مدخل شريط جانبي يخلي المستخدمين يشاركون مقالات الويكي بسهوله على الشوشيال ميديا",
+	"share-header": "شارك هاذ",
+	"share-email": "شارك عبر الإيميل",
+	"share-facebook": "شارك لفيسبوك",
+	"share-linkedin": "شارك للينكيدين",
+	"share-reddit": "شارك لريديت",
+	"share-tumblr": "شارك لتومبلر",
+	"share-twitter": "شارك لتويتر",
+	"share-sidebar-basicbuttons": "تستخدم وضع الأزرار البسيطه؟",
+	"share-preftoggle": "تطفي عرض وصلات المشاركه بالشريط الجانبي؟"
+}

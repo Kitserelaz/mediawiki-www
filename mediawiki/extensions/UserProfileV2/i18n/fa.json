@@ -1,0 +1,29 @@
+{
+	"@metadata": {
+		"authors": [
+			"Jeeputer"
+		]
+	},
+	"userprofilev2-desc": "یک سامانهٔ نمایهٔ کاربری مبتنی بر ویکی.",
+	"userprofilev2-selectavatar": "انتخاب آواتار",
+	"userprofilev2-avatarchanged": "آواتار با موفقیت تغییر یافت.",
+	"userprofilev2-avatardeleted": "آواتار با موفقیت حذف شد.",
+	"userprofilev2-user-locked": "این حساب کاربری به‌صورت سراسری غیرفعال شده است.",
+	"userprofilev2-edit-profile": "نمایهٔ خود را ویرایش کنید",
+	"userprofilev2-apierror-forbidden": "ممنوع است: شما اجازهٔ تغییر این آواتار را ندارید.",
+	"userprofilev2-apierror-nofile": "پرونده‌ای برای بارگذاری ارائه نشده است.",
+	"userprofilev2-apierror-ratelimited": "در حال حاضر نمی‌توانید تصویر بارگذاری کنید.",
+	"userprofilev2-apierror-invalidusername": "هیچ کاربری با نام کاربری «$1» در این ویکی ثبت نشده است.",
+	"userprofilev2-about-me": "دربارهٔ من",
+	"userprofilev2-discord": "نام کاربری در دیسکورد",
+	"userprofilev2-twitter": "نام کاربری در توییتر",
+	"userprofilev2-mastodon": "نام کاربری در ماستودون",
+	"userprofilev2-about-me-placeholder": "از خودتان بنویسید...",
+	"userprofilev2-about-me-help": "از خودتان بگویید. حداکثر ۲۰۰ نویسه.",
+	"userprofilev2-mastodon-help": "نام کاربری شما در ماستودون، بدون @",
+	"userprofilev2-twitter-help": "نام کاربری شما در توییتر، بدون @",
+	"userprofilev2-discord-help": "نام کاربری شما در دیسکورد، بدون #",
+	"userprofilev2-showglobalgroups": "نمایش گروه‌های سراسری من؟",
+	"userprofilev2-showglobaleditcount": "نمایش شمار ویرایش‌های سراسری من؟",
+	"userprofilev2-showglobalgroupshelp": "نمایش گروه‌های کاربری سراسری که من عضوی از آن‌ها هست (برای همگان قابل مشاهده خواهد بود)"
+}

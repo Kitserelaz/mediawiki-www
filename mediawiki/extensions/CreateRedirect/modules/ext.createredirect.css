@@ -1,0 +1,8 @@
+.createredirect-cloner ul {
+	list-style: none;
+	margin: 0;
+}
+
+.createredirect-cloner .createredirect-delete {
+	display: none;
+}

@@ -1,0 +1,23 @@
+{
+	"@metadata": {
+		"authors": [
+			"Salvemm el lombard"
+		]
+	},
+	"ipinfo-infobox-title": "Informazzion IP",
+	"ipinfo-property-label-connectiontype": "Manera de conession",
+	"ipinfo-property-label-usertype": "Proprietari de la conession",
+	"ipinfo-property-label-active-blocks": "Bloch Ativ",
+	"ipinfo-value-active-blocks": "{{PLURAL:$1|$1 bloch ativ|0=Nanca on bloch ativ}}.",
+	"ipinfo-property-label-edits": "Contribuzzion",
+	"ipinfo-value-local-edits": "{{PLURAL:$1|$1 modifega local|$1 modifeghe locai|0=Nanca ona modifega local}}",
+	"ipinfo-value-recent-edits": "({{PLURAL:$1|$1 in di darere 24 ore}})",
+	"ipinfo-widget-error-ip-no-edits": "I informazzion IP per quell adress IP a poden minga vesser otegnude desgià che 'l gh'ha mai fad di modifeghe a 'sto wiki chì.",
+	"ipinfo-infobox-use-terms": "L'istrument de informazzion sora l'IP el dopera el databeis MaxMind per mostrà di detali compagn de IP, proxy, e quanti dispositiv a inn 'dree a compartì quell'adress IP là.",
+	"ipinfo-infobox-submit-agreement": "Pizza l'istrument de informazzion sora l'IP",
+	"ipinfo-infobox-disable-instructions": "Se te voeulet smorzà questa fonzion chì te podet fàll in [[Special:Preferences|Special:preferenze]].",
+	"ipinfo-use-agreement-submit-error": "On quaicoss l'è andad minga ben. Proeuvegh an'mò. l'error de messag ricevud l'è: $1",
+	"ipinfo-rest-access-denied-blocked-user": "Te gh'hee minga el permess de fà quel'azzion chì desgià che 'l to cunt l'è blocad.",
+	"ipinfo-beta-feature-description": "L'arnes \"Informazzion\" IP el ponta a fornì di informazzion essenziai sora i adress IP per jutai a fà i sò mester. Se po rivà a 'ste informazzion chì con la pagina Special:Contribuzzion de l'adress IP. Una version sintetica de queste informazzion chì l'è disponibel in d'un popup in pari ai adress IP in di pagine [[Special:Log|Register]],  [[Special:Contributions|Contribuzzion]] e [[Special:RecentChanges|Ultime modifiche]].",
+	"group-no-ipinfo": "Utent blocad de l'istrument Informazzion IP"
+}

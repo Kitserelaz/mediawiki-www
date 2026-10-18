@@ -1,0 +1,205 @@
+{
+	"name": "UserProfileV2",
+	"version": "1.0.5",
+	"author": [
+		"Original Authority"
+	],
+	"url": "https://gitlab.com/telepedia/extensions/userprofilev2",
+	"descriptionmsg": "userprofilev2-desc",
+	"license-name": "GPL-2.0-or-later",
+	"type": "other",
+	"requires": {
+		"MediaWiki": ">= 1.41.0",
+		"platform": {
+			"php": ">= 8.0"
+		}
+	},
+	"AutoloadNamespaces": {
+		"Telepedia\\UserProfileV2\\": "includes"
+	},
+	"MessagesDirs": {
+		"UserProfileV2": [
+			"i18n"
+		]
+	},
+	"ExtensionMessagesFiles": {
+		"UserProfileV2Aliases": "UserProfileV2.alias.php"
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "resources",
+		"remoteExtPath": ""
+	},
+	"AvailableRights": [
+		"profilemanager"
+	],
+	"GroupPermissions": {
+		"*": {
+			"profilemanager": false
+		},
+		"user": {
+			"profilemanager": false
+		}
+	},
+	"namespaces": [
+		{
+			"id": 2,
+			"constant": "NS_USER",
+			"name": "User",
+			"protection": "edit"
+		}
+	],
+	"Hooks": {
+		"ArticleFromTitle": "main",
+		"GetPreferences": "main"
+	},
+	"HookHandlers": {
+		"main": {
+			"class": "Telepedia\\UserProfileV2\\Hooks\\Hooks",
+			"services": [
+				"UserProfileV2HookRunner"
+			]
+		}
+	},
+	"ResourceModules": {
+		"ext.userProfileV2.edit": {
+			"scripts": [
+				"js/ext.userProfileV2.edit.js"
+			],
+			"dependencies": [
+				"oojs-ui-widgets",
+				"oojs-ui-windows",
+				"oojs-ui-core"
+			],
+			"messages": [
+				"cancel",
+				"help",
+				"userprofilev2-selectavatar",
+				"userprofilev2-avatarchanged",
+				"userprofilev2-avatardeleted",
+				"userprofilev2-edit-profile",
+				"userprofilev2-apierror-forbidden",
+				"userprofilev2-apierror-nofile",
+				"userprofilev2-apierror-ratelimited",
+				"userprofilev2-apierror-invalidusername",
+				"userprofilev2-about-me",
+				"userprofilev2-discord",
+				"userprofilev2-twitter",
+				"userprofilev2-mastodon",
+				"userprofilev2-about-me-placeholder",
+				"userprofilev2-discord-placeholder",
+				"userprofilev2-twitter-placeholder",
+				"userprofilev2-mastodon-placeholder",
+				"userprofilev2-about-me-help",
+				"userprofilev2-discord-help",
+				"userprofilev2-twitter-help",
+				"userprofilev2-mastodon-help",
+				"userprofilev2-showglobalgroups",
+				"userprofilev2-showglobalgroupshelp",
+				"userprofilev2-showglobaleditcount",
+				"userprofilev2-showglobaleditcounthelp",
+				"userprofilev2-edit-back",
+				"userprofilev2-editavatar",
+				"userprofilev2-deleteavatar",
+				"userprofilev2-helptext",
+				"savechanges"
+			]
+		},
+		"ext.userProfileV2.styles": {
+			"class": "Telepedia\\UserProfileV2\\UserProfileV2Module",
+			"styles": [
+				"css/ext.userProfileV2.less"
+			],
+			"skinStyles": {
+				"timeless": [
+					"css/skins/timeless.less"
+				]
+			}
+		}
+	},
+	"APIListModules": {
+		"queryuserprofilev2": {
+			"class": "Telepedia\\UserProfileV2\\Api\\QueryUserProfileV2",
+			"services": [
+				"UserOptionsLookup",
+				"UserFactory"
+			]
+		}
+	},
+	"APIModules": {
+		"setuserprofilev2": {
+			"class": "Telepedia\\UserProfileV2\\Api\\SetUserProfileV2Preferences",
+			"services": [
+				"UserOptionsManager",
+				"UserFactory",
+				"PermissionManager"
+			]
+		},
+		"userprofilev2uploadavatar": {
+			"class": "Telepedia\\UserProfileV2\\Api\\UploadUserProfileV2Avatar",
+			"services": [
+				"UserFactory",
+				"PermissionManager"
+			]
+		},
+		"userprofilev2deleteavatar": {
+			"class": "Telepedia\\UserProfileV2\\Api\\DeleteUserProfileV2Avatar",
+			"services": [
+				"UserFactory",
+				"PermissionManager"
+			]
+		}
+	},
+	"ConfigRegistry": {
+		"UserProfileV2": "MediaWiki\\Config\\GlobalVarConfig::newInstance"
+	},
+	"config": {
+		"UserProfileV2Color": {
+			"value": "#E1E1E1",
+			"path": false,
+			"description": "Accent colour used for the background of user group tags",
+			"public": true
+		},
+		"UserProfileV2AvatarBorderRadius": {
+			"value": "50%",
+			"path": false,
+			"description": "Accent colour used for the background of user group tags",
+			"public": true
+		},
+		"UserProfileV2UseGlobalAvatars": {
+			"value": false,
+			"path": false,
+			"description": "Use the same avatar across all wikis on a Wiki Farm",
+			"public": true
+		},
+		"UserProfileV2Backend": {
+			"value": "",
+			"path": false,
+			"description": "Backend to use for user profile images",
+			"public": true
+		},
+		"UserProfileGlobalUploadDirectory": {
+			"value": "",
+			"public": true,
+			"description": "The upload directory for the global wiki when using global avatars"
+		},
+		"UserProfileGlobalUploadPath": {
+			"value": "",
+			"public": true,
+			"description": "The upload path for the global wiki when using global avatars"
+		},
+		"UserProfileGlobalUploadBaseUrl": {
+			"value": "",
+			"public": true,
+			"description": "The upload base url for the global wiki when using global avatars"
+		},
+		"UserProfileV2CacheType": {
+			"value": "",
+			"public": true,
+			"description": "A value corresponding to an entry in $wgObjectCaches for the cache"
+		}
+	},
+	"ServiceWiringFiles": [
+		"ServiceWiring.php"
+	],
+	"manifest_version": 2
+}

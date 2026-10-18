@@ -1,0 +1,25 @@
+{
+    admin off
+    on_demand_tls {
+        ask http://127.0.0.1:8081/tls-allow
+    }
+}
+import /etc/caddy/wiki.caddy
+# This permission endpoint is internal to the proxy container and is never published.
+http://127.0.0.1:8081 {
+    @local expression {query.domain} == "localhost" || {query.domain}.endsWith(".localhost")
+    respond @local 200
+    respond 403
+}
+https://counter.{$MW_DOMAIN:localhost} {
+    tls internal {
+        on_demand
+    }
+    reverse_proxy counter:3000
+}
+https://{$MW_DOMAIN:localhost}, https://*.{$MW_DOMAIN:localhost}, https://*.{$MW_BETA_DOMAIN:beta.localhost} {
+    tls internal {
+        on_demand
+    }
+    import wiki
+}

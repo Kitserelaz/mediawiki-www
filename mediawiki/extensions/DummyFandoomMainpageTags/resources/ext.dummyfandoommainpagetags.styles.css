@@ -1,0 +1,33 @@
+.main-page-tag-rcs {
+    clear: right;
+    float: right;
+    padding: 0;
+    width: 300px;
+}
+
+.main-page-tag-lcs-exploded {
+    float: left;
+    width: 100%;
+}
+
+@media only screen and (min-width: 1024px) {
+    .main-page-tag-rcs .rcs-container {
+        width: 300px;
+    }
+}
+
+@media only screen and (min-width: 1024px) {
+    .main-page-tag-lcs-exploded {
+        width: calc(100% - 320px);
+    }
+}
+
+@media only screen and (max-width: 1023px) {
+    .main-page-tag-rcs {
+        clear: both;
+        column-count: 2;
+        float: none;
+        padding: 13px 10px 0;
+        width: auto;
+    }
+}

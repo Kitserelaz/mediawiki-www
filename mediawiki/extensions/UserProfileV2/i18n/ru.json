@@ -1,0 +1,20 @@
+{
+	"@metadata": {
+		"authors": [
+			"Kareyac",
+			"Pacha Tchernof",
+			"Yurina Tatiana"
+		]
+	},
+	"userprofilev2-about-me": "О себе",
+	"userprofilev2-discord": "Имя пользователя Discord",
+	"userprofilev2-twitter": "Имя пользователя в Twitter",
+	"userprofilev2-mastodon": "Имя пользователя Mastodon",
+	"userprofilev2-about-me-placeholder": "Напишите что-нибудь о себе...",
+	"userprofilev2-edit": "Править",
+	"userprofilev2-edit-count": "$1 {{PLURAL:$1|правка|правки|правок}}",
+	"userprofilev2-globaledit-count": "$1 {{PLURAL:$1|глобальная правка|глобальных правки|глобальных правок}}",
+	"userprofilev2-editavatar": "Изменить аватар",
+	"userprofilev2-edit-back": "Назад",
+	"userprofilev2-deleteavatar": "Удалить аватар"
+}

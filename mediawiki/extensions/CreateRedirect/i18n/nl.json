@@ -1,0 +1,22 @@
+{
+	"@metadata": {
+		"authors": [
+			"Elroy",
+			"Mainframe98",
+			"Romaine",
+			"Siebrand"
+		]
+	},
+	"createredirect": "Doorverwijzing aanmaken",
+	"createredirect-desc": "Voegt een [[Special:CreateRedirect|speciale pagina]] toe om eenvoudig doorverwijzingen aan te maken",
+	"createredirect-error": "Fout: authenticatie mislukt.",
+	"createredirect-enable-multiline": "Voer meer titels in",
+	"createredirect-instructions": "Via het onderstaande formulier kunt u een doorverwijzingspagina aanmaken of een bestaande pagina vervangen door een doorverwijzing.",
+	"createredirect-invalid-title": "Fout: \"$1\" is niet een correcte titel.",
+	"createredirect-overwrite": "Waarschuwingen negeren",
+	"createredirect-page-title": "Paginanaam:",
+	"createredirect-redirect-done": "Doorverwijzing aangemaakt van \"$1\" naar \"$2\"",
+	"createredirect-redirect-to": "Doorverwijzen naar:",
+	"createredirect-save": "Pagina opslaan",
+	"createredirect-would-overwrite": "Waarschuwing: pagina \"[[:$1]]\" bestaat al."
+}

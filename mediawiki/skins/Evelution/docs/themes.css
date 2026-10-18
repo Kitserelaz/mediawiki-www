@@ -1,0 +1,657 @@
+/** Light **/
+/* Standard */
+.theme-A.colorscheme-light.visualcolors-standard {
+--desktop-background-image:;
+--desktop-background-image-filter:opacity(1);
+--desktop-background-image-blend-mode:normal;
+--desktop-background-color:#ffffff;
+--desktop-text-background-color:#606c71;
+--desktop-background-horizontal-alignment:center;
+--desktop-background-vertical-alignment:center;
+--desktop-background-size:;
+--desktop-background-no-horizontal-tiling:true;
+--desktop-background-no-vertical-tiling:true;
+--canvas-background-color:#ffffff;
+--canvas-secondary-background-color:#f3f6fa;
+--inactive-text-background-color:#6d9aaa;
+--active-text-background-color:#ad651c;
+--canvas-text-background-color:#606c71;
+--canvas-text-secondary-background-color:#606c71;
+--highlight-background-color:#159957;
+--highlight-text-background-color:#042414;
+--hyperlink-background-color:#1e6bb8;
+--visited-hyperlink-background-color:#1e6bb8;
+--active-title-background-color:#59957e;
+--active-title-text-background-color:#10271c;
+--inactive-title-background-color:#d6e5df;
+--inactive-title-text-background-color:#11211b;
+--custom-sans-serif-font:Roboto Flex;
+--custom-serif-font:Roboto Serif;
+--custom-rounded-font:Rubik;
+--custom-monospace-font:Inconsolata;
+--border-radius:5px;
+--icon-filter:opacity(1);
+--icon-filter-hover:opacity(0.8);
+--icon-filter-duration:300ms;
+--icon-filter-delay:0ms;
+--system-acryllic-opacity:0.6;
+--system-generic-color-hue-shift:0;
+--system-generic-color-saturation:100%;
+--system-icon-style:round;
+}
+
+/* Dynamic Red */
+.theme-B.colorscheme-light.visualcolors-standard {
+--desktop-background-image:;
+--desktop-background-image-filter:opacity(1);
+--desktop-background-image-blend-mode:normal;
+--desktop-background-color:auto;
+--desktop-text-background-color:auto;
+--desktop-background-horizontal-alignment:center;
+--desktop-background-vertical-alignment:center;
+--desktop-background-size:cover;
+--desktop-background-no-horizontal-tiling:false;
+--desktop-background-no-vertical-tiling:false;
+--canvas-background-color:auto;
+--canvas-secondary-background-color:auto;
+--inactive-text-background-color:auto;
+--active-text-background-color:auto;
+--canvas-text-background-color:auto;
+--canvas-text-secondary-background-color:auto;
+--highlight-background-color:auto;
+--highlight-text-background-color:auto;
+--hyperlink-background-color:#991515;
+--visited-hyperlink-background-color:auto;
+--active-title-background-color:auto;
+--active-title-text-background-color:auto;
+--inactive-title-background-color:auto;
+--inactive-title-text-background-color:auto;
+--custom-sans-serif-font:Roboto Flex;
+--custom-serif-font:Roboto Serif;
+--custom-rounded-font:Rubik;
+--custom-monospace-font:Inconsolata;
+--border-radius:5px;
+--icon-filter:opacity(1);
+--icon-filter-hover:opacity(0.8);
+--icon-filter-duration:300ms;
+--icon-filter-delay:0ms;
+--system-acryllic-opacity:0.6;
+--system-generic-color-hue-shift:0;
+--system-generic-color-saturation:100%;
+--system-icon-style:round;
+}
+/* Dynamic Green */
+.theme-C.colorscheme-light.visualcolors-standard {
+--desktop-background-image:;
+--desktop-background-image-filter:opacity(1);
+--desktop-background-image-blend-mode:normal;
+--desktop-background-color:auto;
+--desktop-text-background-color:auto;
+--desktop-background-horizontal-alignment:center;
+--desktop-background-vertical-alignment:center;
+--desktop-background-size:cover;
+--desktop-background-no-horizontal-tiling:false;
+--desktop-background-no-vertical-tiling:false;
+--canvas-background-color:auto;
+--canvas-secondary-background-color:auto;
+--inactive-text-background-color:auto;
+--active-text-background-color:auto;
+--canvas-text-background-color:auto;
+--canvas-text-secondary-background-color:auto;
+--highlight-background-color:auto;
+--highlight-text-background-color:auto;
+--hyperlink-background-color:#0f6e3f;
+--visited-hyperlink-background-color:auto;
+--active-title-background-color:auto;
+--active-title-text-background-color:auto;
+--inactive-title-background-color:auto;
+--inactive-title-text-background-color:auto;
+--custom-sans-serif-font:Roboto Flex;
+--custom-serif-font:Roboto Serif;
+--custom-rounded-font:Rubik;
+--custom-monospace-font:Inconsolata;
+--border-radius:5px;
+--icon-filter:opacity(1);
+--icon-filter-hover:opacity(0.8);
+--icon-filter-duration:300ms;
+--icon-filter-delay:0ms;
+--system-acryllic-opacity:0.6;
+--system-generic-color-hue-shift:0;
+--system-generic-color-saturation:100%;
+--system-icon-style:round;
+}
+
+/* Dynamic Blue */
+.theme-D.colorscheme-light.visualcolors-standard {
+--desktop-background-image:;
+--desktop-background-image-filter:opacity(1);
+--desktop-background-image-blend-mode:normal;
+--desktop-background-color:auto;
+--desktop-text-background-color:auto;
+--desktop-background-horizontal-alignment:center;
+--desktop-background-vertical-alignment:center;
+--desktop-background-size:cover;
+--desktop-background-no-horizontal-tiling:false;
+--desktop-background-no-vertical-tiling:false;
+--canvas-background-color:auto;
+--canvas-secondary-background-color:auto;
+--inactive-text-background-color:auto;
+--active-text-background-color:auto;
+--canvas-text-background-color:auto;
+--canvas-text-secondary-background-color:auto;
+--highlight-background-color:auto;
+--highlight-text-background-color:auto;
+--hyperlink-background-color:#1b63ac;
+--visited-hyperlink-background-color:auto;
+--active-title-background-color:auto;
+--active-title-text-background-color:auto;
+--inactive-title-background-color:auto;
+--inactive-title-text-background-color:auto;
+--custom-sans-serif-font:Roboto Flex;
+--custom-serif-font:Roboto Serif;
+--custom-rounded-font:Rubik;
+--custom-monospace-font:Inconsolata;
+--border-radius:5px;
+--icon-filter:opacity(1);
+--icon-filter-hover:opacity(0.8);
+--icon-filter-duration:300ms;
+--icon-filter-delay:0ms;
+--system-acryllic-opacity:0.6;
+--system-generic-color-hue-shift:0;
+--system-generic-color-saturation:100%;
+--system-icon-style:round;
+}
+
+/* Evelution */
+.theme-E.colorscheme-light.visualcolors-standard {
+--desktop-background-image:none;
+--desktop-background-image-filter:opacity(100%);
+--desktop-background-image-blend-mode:normal;
+--desktop-background-color:#ffcba4;
+--desktop-text-background-color:#2d383a;
+--desktop-background-horizontal-alignment:left;
+--desktop-background-vertical-alignment:top;
+--desktop-background-size:cover;
+--desktop-background-no-horizontal-tiling:false;
+--desktop-background-no-vertical-tiling:false;
+--canvas-background-color:#ffffff;
+--canvas-secondary-background-color:auto;
+--inactive-text-background-color:#c8c8cd;
+--active-text-background-color:#c62d42;
+--canvas-text-background-color:#2d383a;
+--canvas-text-secondary-background-color:auto;
+--highlight-background-color:#93ccea;
+--highlight-text-background-color:auto;
+--hyperlink-background-color:#1560bd;
+--visited-hyperlink-background-color:#733380;
+--active-title-background-color:#00755e;
+--active-title-text-background-color:auto;
+--inactive-title-background-color:#01786f;
+--inactive-title-text-background-color:auto;
+--custom-sans-serif-font:Roboto Flex;
+--custom-serif-font:Roboto Serif;
+--custom-rounded-font:Rubik;
+--custom-monospace-font:Inconsolata;
+--border-radius:5px;
+--icon-filter:opacity(1);
+--icon-filter-hover:opacity(0.8);
+--icon-filter-duration:300ms;
+--icon-filter-delay:0ms;
+--system-acryllic-opacity:0.6;
+--system-generic-color-hue-shift:0;
+--system-generic-color-saturation:100%;
+--system-icon-style:round;
+}
+
+/* CPE Language */
+.theme-F.colorscheme-light.visualcolors-standard {
+--desktop-background-image:;
+--desktop-background-image-filter:opacity(100%);
+--desktop-background-image-blend-mode:normal;
+--desktop-background-color:#e4c8ff;
+--desktop-text-background-color:#3e2557;
+--desktop-background-horizontal-alignment:left;
+--desktop-background-vertical-alignment:top;
+--desktop-background-size:;
+--desktop-background-no-horizontal-tiling:true;
+--desktop-background-no-vertical-tiling:true;
+--canvas-background-color:#f1f2f3;
+--canvas-secondary-background-color:#d3d4d5;
+--inactive-text-background-color:#898aa5;
+--active-text-background-color:#851500;
+--canvas-text-background-color:#222222;
+--canvas-text-secondary-background-color:#222222;
+--highlight-background-color:#c97700;
+--highlight-text-background-color:#321f05;
+--hyperlink-background-color:#d82200;
+--visited-hyperlink-background-color:#d82200;
+--active-title-background-color:#b37f00;
+--active-title-text-background-color:#2e2000;
+--inactive-title-background-color:#b88300;
+--inactive-title-text-background-color:#573d00;
+--custom-sans-serif-font:Roboto Flex;
+--custom-serif-font:Roboto Serif;
+--custom-rounded-font:Rubik;
+--custom-monospace-font:Inconsolata;
+--border-radius:5px;
+--icon-filter:opacity(1);
+--icon-filter-hover:opacity(0.8);
+--icon-filter-duration:300ms;
+--icon-filter-delay:0ms;
+--system-acryllic-opacity:0.6;
+--system-generic-color-hue-shift:0;
+--system-generic-color-saturation:100%;
+--system-icon-style:round;
+}
+
+/* High Contrast */
+.theme-G.colorscheme-light.visualcolors-standard {
+--desktop-background-image:none;
+--desktop-background-image-filter:opacity(1);
+--desktop-background-image-blend-mode:normal;
+--desktop-background-color:#eed9c4;
+--desktop-text-background-color:#000000;
+--desktop-background-horizontal-alignment:center;
+--desktop-background-vertical-alignment:center;
+--desktop-background-size:cover;
+--desktop-background-no-horizontal-tiling:false;
+--desktop-background-no-vertical-tiling:false;
+--canvas-background-color:#eed9c4;
+--canvas-secondary-background-color:#eed9c4;
+--inactive-text-background-color:#c8c8cd;
+--active-text-background-color:#2887c8;
+--canvas-text-background-color:#000000;
+--canvas-text-secondary-background-color:#000000;
+--highlight-background-color:#664228;
+--highlight-text-background-color:#fdd5b1;
+--hyperlink-background-color:#2887c8;
+--visited-hyperlink-background-color:#2887c8;
+--active-title-background-color:#009dc4;
+--active-title-text-background-color:#000000;
+--inactive-title-background-color:#c8c8cd;
+--inactive-title-text-background-color:#000000;
+--custom-sans-serif-font:Roboto Flex;
+--custom-serif-font:Roboto Serif;
+--custom-rounded-font:Rubik;
+--custom-monospace-font:Inconsolata;
+--border-radius:5px;
+--icon-filter:opacity(1);
+--icon-filter-hover:opacity(1);
+--icon-filter-duration:0ms;
+--icon-filter-delay:0ms;
+--system-acryllic-opacity:0.8;
+--system-generic-color-hue-shift:0;
+--system-generic-color-saturation:100%;
+--system-icon-style:round;
+}
+
+/* Classic High Contrast */
+.theme-H.colorscheme-light.visualcolors-standard {
+--desktop-background-image:none;
+--desktop-background-image-filter:opacity(1);
+--desktop-background-image-blend-mode:normal;
+--desktop-background-color:#ffffff;
+--desktop-text-background-color:#000000;
+--desktop-background-horizontal-alignment:center;
+--desktop-background-vertical-alignment:center;
+--desktop-background-size:cover;
+--desktop-background-no-horizontal-tiling:false;
+--desktop-background-no-vertical-tiling:false;
+--canvas-background-color:#ffffff;
+--canvas-secondary-background-color:#ffffff;
+--inactive-text-background-color:#b94e48;
+--active-text-background-color:#0066ff;
+--canvas-text-background-color:#000000;
+--canvas-text-secondary-background-color:#000000;
+--highlight-background-color:#733380;
+--highlight-text-background-color:#ffffff;
+--hyperlink-background-color:#0066ff;
+--visited-hyperlink-background-color:#0066ff;
+--active-title-background-color:#000000;
+--active-title-text-background-color:#ffffff;
+--inactive-title-background-color:#ffffff;
+--inactive-title-text-background-color:#000000;
+--custom-sans-serif-font:Roboto Flex;
+--custom-serif-font:Roboto Serif;
+--custom-rounded-font:Rubik;
+--custom-monospace-font:Inconsolata;
+--border-radius:5px;
+--icon-filter:opacity(1);
+--icon-filter-hover:opacity(1);
+--icon-filter-duration:0ms;
+--icon-filter-delay:0ms;
+--system-acryllic-opacity:0.8;
+--system-generic-color-hue-shift:0;
+--system-generic-color-saturation:100%;
+--system-icon-style:round;
+}
+
+/** Dark **/
+
+/* Standard */
+.theme-A.colorscheme-dark.visualcolors-standard {
+--desktop-background-image:;
+--desktop-background-image-filter:opacity(1);
+--desktop-background-image-blend-mode:normal;
+--desktop-background-color:#000000;
+--desktop-text-background-color:#8b989d;
+--desktop-background-horizontal-alignment:center;
+--desktop-background-vertical-alignment:center;
+--desktop-background-size:;
+--desktop-background-no-horizontal-tiling:true;
+--desktop-background-no-vertical-tiling:true;
+--canvas-background-color:#000000;
+--canvas-secondary-background-color:#070a0d;
+--inactive-text-background-color:#266082;
+--active-text-background-color:#a66622;
+--canvas-text-background-color:#8b989d;
+--canvas-text-secondary-background-color:#8b989d;
+--highlight-background-color:#1eaa64;
+--highlight-text-background-color:#00351b;
+--hyperlink-background-color:#5badff;
+--visited-hyperlink-background-color:#5badff;
+--active-title-background-color:#47886f;
+--active-title-text-background-color:#08120d;
+--inactive-title-background-color:#12221c;
+--inactive-title-text-background-color:#d5e5df;
+--custom-sans-serif-font:Roboto Flex;
+--custom-serif-font:Roboto Serif;
+--custom-rounded-font:Rubik;
+--custom-monospace-font:Inconsolata;
+--border-radius:5px;
+--icon-filter:opacity(1);
+--icon-filter-hover:opacity(0.8);
+--icon-filter-duration:300ms;
+--icon-filter-delay:0ms;
+--system-acryllic-opacity:0.6;
+--system-generic-color-hue-shift:0;
+--system-generic-color-saturation:100%;
+--system-icon-style:round;
+}	
+
+/* Dynamic Red */
+.theme-B.colorscheme-dark.visualcolors-standard {
+--desktop-background-image:;
+--desktop-background-image-filter:opacity(1);
+--desktop-background-image-blend-mode:normal;
+--desktop-background-color:auto;
+--desktop-text-background-color:auto;
+--desktop-background-horizontal-alignment:center;
+--desktop-background-vertical-alignment:center;
+--desktop-background-size:cover;
+--desktop-background-no-horizontal-tiling:false;
+--desktop-background-no-vertical-tiling:false;
+--canvas-background-color:auto;
+--canvas-secondary-background-color:auto;
+--inactive-text-background-color:auto;
+--active-text-background-color:auto;
+--canvas-text-background-color:auto;
+--canvas-text-secondary-background-color:auto;
+--highlight-background-color:auto;
+--highlight-text-background-color:auto;
+--hyperlink-background-color:#ffafaf;
+--visited-hyperlink-background-color:auto;
+--active-title-background-color:auto;
+--active-title-text-background-color:auto;
+--inactive-title-background-color:auto;
+--inactive-title-text-background-color:auto;
+--custom-sans-serif-font:Roboto Flex;
+--custom-serif-font:Roboto Serif;
+--custom-rounded-font:Rubik;
+--custom-monospace-font:Inconsolata;
+--border-radius:5px;
+--icon-filter:opacity(1);
+--icon-filter-hover:opacity(0.8);
+--icon-filter-duration:300ms;
+--icon-filter-delay:0ms;
+--system-acryllic-opacity:0.6;
+--system-generic-color-hue-shift:0;
+--system-generic-color-saturation:100%;
+--system-icon-style:round;
+}
+
+/* Dynamic Green */
+.theme-C.colorscheme-dark.visualcolors-standard {
+--desktop-background-image:;
+--desktop-background-image-filter:opacity(1);
+--desktop-background-image-blend-mode:normal;
+--desktop-background-color:auto;
+--desktop-text-background-color:auto;
+--desktop-background-horizontal-alignment:center;
+--desktop-background-vertical-alignment:center;
+--desktop-background-size:cover;
+--desktop-background-no-horizontal-tiling:false;
+--desktop-background-no-vertical-tiling:false;
+--canvas-background-color:auto;
+--canvas-secondary-background-color:auto;
+--inactive-text-background-color:auto;
+--active-text-background-color:auto;
+--canvas-text-background-color:auto;
+--canvas-text-secondary-background-color:auto;
+--highlight-background-color:auto;
+--highlight-text-background-color:auto;
+--hyperlink-background-color:#1abc6b;
+--visited-hyperlink-background-color:auto;
+--active-title-background-color:auto;
+--active-title-text-background-color:auto;
+--inactive-title-background-color:auto;
+--inactive-title-text-background-color:auto;
+--custom-sans-serif-font:Roboto Flex;
+--custom-serif-font:Roboto Serif;
+--custom-rounded-font:Rubik;
+--custom-monospace-font:Inconsolata;
+--border-radius:5px;
+--icon-filter:opacity(1);
+--icon-filter-hover:opacity(0.8);
+--icon-filter-duration:300ms;
+--icon-filter-delay:0ms;
+--system-acryllic-opacity:0.6;
+--system-generic-color-hue-shift:0;
+--system-generic-color-saturation:100%;
+--system-icon-style:round;
+}
+	
+/* Dynamic Blue */
+.theme-D.colorscheme-dark.visualcolors-standard {
+--desktop-background-image:;
+--desktop-background-image-filter:opacity(1);
+--desktop-background-image-blend-mode:normal;
+--desktop-background-color:auto;
+--desktop-text-background-color:auto;
+--desktop-background-horizontal-alignment:center;
+--desktop-background-vertical-alignment:center;
+--desktop-background-size:cover;
+--desktop-background-no-horizontal-tiling:false;
+--desktop-background-no-vertical-tiling:false;
+--canvas-background-color:auto;
+--canvas-secondary-background-color:auto;
+--inactive-text-background-color:auto;
+--active-text-background-color:auto;
+--canvas-text-background-color:auto;
+--canvas-text-secondary-background-color:auto;
+--highlight-background-color:auto;
+--highlight-text-background-color:auto;
+--hyperlink-background-color:#5badff;
+--visited-hyperlink-background-color:auto;
+--active-title-background-color:auto;
+--active-title-text-background-color:auto;
+--inactive-title-background-color:auto;
+--inactive-title-text-background-color:auto;
+--custom-sans-serif-font:Roboto Flex;
+--custom-serif-font:Roboto Serif;
+--custom-rounded-font:Rubik;
+--custom-monospace-font:Inconsolata;
+--border-radius:5px;
+--icon-filter:opacity(1);
+--icon-filter-hover:opacity(0.8);
+--icon-filter-duration:300ms;
+--icon-filter-delay:0ms;
+--system-acryllic-opacity:0.6;
+--system-generic-color-hue-shift:0;
+--system-generic-color-saturation:100%;
+--system-icon-style:round;
+}
+
+/* Evelution */
+.theme-E.colorscheme-dark.visualcolors-standard {
+--desktop-background-image:none;
+--desktop-background-image-filter:opacity(100%);
+--desktop-background-image-blend-mode:normal;
+--desktop-background-color:#af593e;
+--desktop-text-background-color:#eed9c4;
+--desktop-background-horizontal-alignment:left;
+--desktop-background-vertical-alignment:top;
+--desktop-background-size:cover;
+--desktop-background-no-horizontal-tiling:false;
+--desktop-background-no-vertical-tiling:false;
+--canvas-background-color:#000000;
+--canvas-secondary-background-color:auto;
+--inactive-text-background-color:#614051;
+--active-text-background-color:#fc80a5;
+--canvas-text-background-color:#eed9c4;
+--canvas-text-secondary-background-color:auto;
+--highlight-background-color:#1560bd;
+--highlight-text-background-color:auto;
+--hyperlink-background-color:#95e0e8;
+--visited-hyperlink-background-color:#e29cd2;
+--active-title-background-color:#7ba05b;
+--active-title-text-background-color:auto;
+--inactive-title-background-color:#63b76c;
+--inactive-title-text-background-color:auto;
+--custom-sans-serif-font:Roboto Flex;
+--custom-serif-font:Roboto Serif;
+--custom-rounded-font:Rubik;
+--custom-monospace-font:Inconsolata;
+--border-radius:5px;
+--icon-filter:opacity(1);
+--icon-filter-hover:opacity(0.8);
+--icon-filter-duration:300ms;
+--icon-filter-delay:0ms;
+--system-acryllic-opacity:0.6;
+--system-generic-color-hue-shift:0;
+--system-generic-color-saturation:100%;
+--system-icon-style:round;
+}
+
+/* CPE Language */
+.theme-F.colorscheme-dark.visualcolors-standard {
+--desktop-background-image:;
+--desktop-background-image-filter:opacity(100%);
+--desktop-background-image-blend-mode:normal;
+--desktop-background-color:#441177;
+--desktop-text-background-color:#e4c8ff;
+--desktop-background-horizontal-alignment:left;
+--desktop-background-vertical-alignment:top;
+--desktop-background-size:;
+--desktop-background-no-horizontal-tiling:true;
+--desktop-background-no-vertical-tiling:true;
+--canvas-background-color:#0c0d0e;
+--canvas-secondary-background-color:#2a2b2c;
+--inactive-text-background-color:#5d5e74;
+--active-text-background-color:#ffbeb1;
+--canvas-text-background-color:#dddddd;
+--canvas-text-secondary-background-color:#dddddd;
+--highlight-background-color:#c17300;
+--highlight-text-background-color:#2a1c05;
+--hyperlink-background-color:#ffa696;
+--visited-hyperlink-background-color:#ffa696;
+--active-title-background-color:#b17e00;
+--active-title-text-background-color:#291d00;
+--inactive-title-background-color:#7a5500;
+--inactive-title-text-background-color:#d3ad56;
+--custom-sans-serif-font:Roboto Flex;
+--custom-serif-font:Roboto Serif;
+--custom-rounded-font:Rubik;
+--custom-monospace-font:Inconsolata;
+--border-radius:5px;
+--icon-filter:opacity(1);
+--icon-filter-hover:opacity(0.8);
+--icon-filter-duration:300ms;
+--icon-filter-delay:0ms;
+--system-acryllic-opacity:0.6;
+--system-generic-color-hue-shift:0;
+--system-generic-color-saturation:100%;
+--system-icon-style:round;
+}	
+	
+/* High Contrast */
+.theme-G.colorscheme-dark.visualcolors-standard {
+--desktop-background-image:none;
+--desktop-background-image-filter:opacity(1);
+--desktop-background-image-blend-mode:normal;
+--desktop-background-color:#212121;
+--desktop-text-background-color:#ffffff;
+--desktop-background-horizontal-alignment:center;
+--desktop-background-vertical-alignment:center;
+--desktop-background-size:cover;
+--desktop-background-no-horizontal-tiling:false;
+--desktop-background-no-vertical-tiling:false;
+--canvas-background-color:#212121;
+--canvas-secondary-background-color:#212121;
+--inactive-text-background-color:#a9b2c3;
+--active-text-background-color:#7ed4e6;
+--canvas-text-background-color:#ffffff;
+--canvas-text-secondary-background-color:#ffffff;
+--highlight-background-color:#95e0e8;
+--highlight-text-background-color:#263c40;
+--hyperlink-background-color:#7ed4e6;
+--visited-hyperlink-background-color:#7ed4e6;
+--active-title-background-color:#ffae42;
+--active-title-text-background-color:#000000;
+--inactive-title-background-color:#ddebec;
+--inactive-title-text-background-color:#000000;
+--custom-sans-serif-font:Roboto Flex;
+--custom-serif-font:Roboto Serif;
+--custom-rounded-font:Rubik;
+--custom-monospace-font:Inconsolata;
+--border-radius:5px;
+--icon-filter:opacity(1);
+--icon-filter-hover:opacity(1);
+--icon-filter-duration:0ms;
+--icon-filter-delay:0ms;
+--system-acryllic-opacity:0.8;
+--system-generic-color-hue-shift:0;
+--system-generic-color-saturation:100%;
+--system-icon-style:round;
+}
+
+/* Classic High Contrast */
+.theme-H.colorscheme-dark.visualcolors-standard {
+--desktop-background-image:none;
+--desktop-background-image-filter:opacity(1);
+--desktop-background-image-blend-mode:normal;
+--desktop-background-color:#000000;
+--desktop-text-background-color:#ffffff;
+--desktop-background-horizontal-alignment:center;
+--desktop-background-vertical-alignment:center;
+--desktop-background-size:cover;
+--desktop-background-no-horizontal-tiling:false;
+--desktop-background-no-vertical-tiling:false;
+--canvas-background-color:#000000;
+--canvas-secondary-background-color:#000000;
+--inactive-text-background-color:#afe313;
+--active-text-background-color:#f1d651;
+--canvas-text-background-color:#ffffff;
+--canvas-text-secondary-background-color:#ffffff;
+--highlight-background-color:#2eb4e6;
+--highlight-text-background-color:#000000;
+--hyperlink-background-color:#f1d651;
+--visited-hyperlink-background-color:#f1d651;
+--active-title-background-color:#733380;
+--active-title-text-background-color:#ffffff;
+--inactive-title-background-color:#00755e;
+--inactive-title-text-background-color:#ffffff;
+--custom-sans-serif-font:Roboto Flex;
+--custom-serif-font:Roboto Serif;
+--custom-rounded-font:Rubik;
+--custom-monospace-font:Inconsolata;
+--border-radius:5px;
+--icon-filter:opacity(1);
+--icon-filter-hover:opacity(1);
+--icon-filter-duration:0ms;
+--icon-filter-delay:0ms;
+--system-acryllic-opacity:0.8;
+--system-generic-color-hue-shift:0;
+--system-generic-color-saturation:100%;
+--system-icon-style:round;
+}

@@ -1,0 +1,37 @@
+{
+	"@metadata": {
+		"authors": [
+			"Waki285"
+		]
+	},
+	"userprofilev2-desc": "ウィキベースの利用者プロフィールシステム。",
+	"userprofilev2-selectavatar": "アバター選択",
+	"userprofilev2-avatarchanged": "アバターが変更されました。",
+	"userprofilev2-avatardeleted": "アバターは削除されました。",
+	"userprofilev2-user-locked": "この利用者アカウントはグローバルに無効になっています。",
+	"userprofilev2-edit-profile": "プロフィールの編集",
+	"userprofilev2-apierror-forbidden": "Forbidden: このアバターを変更する権限がありません。",
+	"userprofilev2-apierror-nofile": "アップロードするファイルが提供されませんでした。",
+	"userprofilev2-apierror-ratelimited": "今は画像をアップロードできません。",
+	"userprofilev2-apierror-invalidusername": "このウィキには利用者名「$1」で登録された利用者はいません。",
+	"userprofilev2-about-me": "私について",
+	"userprofilev2-discord": "Discordユーザー名",
+	"userprofilev2-twitter": "Twitterユーザー名",
+	"userprofilev2-mastodon": "Mastodonユーザー名",
+	"userprofilev2-about-me-placeholder": "ここに自分のことを書きましょう。",
+	"userprofilev2-about-me-help": "あなた自身について教えてください。最大200文字。",
+	"userprofilev2-mastodon-help": "Mastodonユーザー名 (@を含む)",
+	"userprofilev2-twitter-help": "Twitterユーザー名 (@を含む)",
+	"userprofilev2-discord-help": "Discordユーザー名 (#を除く)",
+	"userprofilev2-showglobalgroups": "グローバルグループを表示しますか？",
+	"userprofilev2-showglobaleditcount": "グローバル編集回数を表示しますか？",
+	"userprofilev2-showglobalgroupshelp": "自分が所属しているグローバル利用者グループを表示 (誰でも閲覧可能)",
+	"userprofilev2-showglobaleditcounthelp": "CentralAuth からのグローバル編集回数を表示 (誰でも閲覧可能)",
+	"userprofilev2-edit": "編集",
+	"userprofilev2-edit-count": "<strong>$1</strong>回編集",
+	"userprofilev2-globaledit-count": "<strong>$1</strong>回編集 (グローバル)",
+	"userprofilev2-editavatar": "アバターを編集",
+	"userprofilev2-edit-back": "戻る",
+	"userprofilev2-deleteavatar": "アバター削除",
+	"userprofilev2-helptext": "このダイアログを使用して、利用者プロフィールの内容を変更します。"
+}

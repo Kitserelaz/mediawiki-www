@@ -1,0 +1,17 @@
+{
+	"@metadata": {
+		"authors": [
+			"Chinamoonroll"
+		]
+	},
+	"apihelp-query+wikidiscover-param-state": "Saring antuk CreateWiki mawit negari saking satunggil wiki",
+	"apihelp-query+wikidiscover-summary": "Polihin lis wiki ring CreateWiki wikifarm",
+	"randomwiki": "Wiki Ulah-aluh",
+	"wikidiscover": "Nemu wiki",
+	"wikidiscover-table-category": "Kategori",
+	"wikidiscover-table-established": "Kaadegang",
+	"wikidiscover-table-language": "Basa",
+	"wikidiscover-table-state": "Paindikan",
+	"wikidiscover-table-visibility": "Kacingakan",
+	"wikidiscover-table-wiki": "Aran Wiki"
+}

@@ -1,0 +1,12 @@
+{
+    admin off
+    email {$ACME_EMAIL}
+}
+import /etc/caddy/wiki.caddy
+https://counter.{$MW_DOMAIN} {
+    reverse_proxy counter:3000
+}
+# Explicit host list avoids unbounded on-demand issuance and DNS-provider dependencies.
+{$MW_PUBLIC_HOSTS} {
+    import wiki
+}

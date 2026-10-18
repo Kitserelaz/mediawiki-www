@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Kly",
+			"Lakejason0"
+		]
+	},
+	"simpleblogpage-desc": "具有評論和投票功能的部落格系統, [[Special:CreateBlogPost|建立部落格文章的特殊頁面]]和[[Special:ArticlesHome|用於列出部落格文章的特殊頁面]]",
+	"right-createblogpost": "[[Special:CreateBlogPost|新建部落格文章]]",
+	"action-createblogpost": "建立新的部落格文章"
+}

@@ -1,0 +1,1221 @@
+﻿/** Classic **/
+
+/* Icons – movement */
+.oo-ui-icon-arrowNext:before {
+	content:"arrow_forward";
+}
+
+.oo-ui-icon-arrowPrevious:before {
+	content:"arrow_back";
+}
+
+.oo-ui-icon-collapse:before {
+	content:"arrow_back_ios_new";
+	--icon-rotate:90deg;
+}
+
+.oo-ui-icon-downTriangle:before {
+	content:"arrow_drop_down";
+}
+
+.oo-ui-icon-draggable:before {
+	content:"drag_handler";
+}
+
+.oo-ui-icon-doubleChevronEnd:before {
+	content:"double_arrow";
+}
+
+.oo-ui-icon-doubleChevronStart:before {
+	content:"double_arrow";
+	--icon-rotate:180deg;
+}
+
+.oo-ui-icon-expand:before {
+	content:"arrow_back_ios_new";
+	--icon-rotate:-90deg;
+}
+
+.oo-ui-icon-move:before {
+	content:"open_with";
+}
+
+.oo-ui-icon-first:before {
+	content:"first_page";
+}
+
+.oo-ui-icon-last:before {
+	content:"last_page";
+}
+
+.oo-ui-icon-next:before {
+	content:"arrow_forward_ios";
+}
+
+.oo-ui-icon-previous:before {
+	content:"arrow_back_ios_new";
+}
+
+.oo-ui-icon-sortVertical:before {
+	content:"swap_vert";
+}
+
+.oo-ui-icon-upTriangle:before {
+	content:"arrow_drop_down";
+	--icon-rotate:180deg;
+}
+
+/* Icons – content */
+.oo-ui-icon-article:before {
+	content:"article";
+}
+
+.oo-ui-icon-articles:before {
+	content:"content_copy";
+}
+
+.oo-ui-icon-articleAdd:before {
+	content:"note_add";
+}
+
+.oo-ui-icon-articleCheck:before {
+	content:"upload_file";
+}
+
+.oo-ui-icon-articleDisambiguation:before {
+	content:"contact_page";
+}
+
+
+.oo-ui-icon-articleNotFound:before {
+	content:"request_page";
+}
+
+.oo-ui-icon-articleSearch:before {
+	content:"find_in_page";
+}
+
+.oo-ui-icon-articlesSearch:before {
+	content:"pageview";
+}
+
+.oo-ui-icon-articleRedirect:before {
+	content:"restore_page";
+}
+
+.oo-ui-icon-database:before {
+	content:"table_chart";
+}
+
+.oo-ui-icon-die:before {
+	content:"grid_view";
+}
+
+.oo-ui-icon-download:before {
+	content:"download";
+}
+
+.oo-ui-icon-folderPlaceholder:before {
+	content:"folder";
+}
+
+.oo-ui-icon-history:before {
+	content:"history";
+}
+
+.oo-ui-icon-info:before {
+	content:"info";
+}
+
+.oo-ui-icon-infoFilled:before {
+	content:"info";
+}
+
+.oo-ui-icon-qrCode:before {
+	content:"qr_code";
+}
+
+.oo-ui-icon-robot:before {
+	content:"smart_toy";
+}
+
+.oo-ui-icon-share:before {
+	content:"share";
+}
+
+.oo-ui-icon-specialPages:before {
+	content:"app_shortcut";
+}
+
+.oo-ui-icon-tag:before {
+	content:"local_offer";
+}
+
+
+.oo-ui-icon-upload:before {
+	content:"upload";
+}
+
+.oo-ui-icon-window:before {
+	content:"web_asset";
+}
+
+/* Icons – alerts */
+.oo-ui-icon-alert:before {
+	content:"warning";
+}
+
+.oo-ui-icon-bell:before {
+	content:"notifications";
+}
+
+.oo-ui-icon-bellOutline:before {
+	content:"notifications_none";
+}
+
+.oo-ui-icon-error:before {
+	content:"report";
+}
+
+.oo-ui-icon-message:before {
+	content:"email";
+}
+
+.oo-ui-icon-notice:before {
+	content:"error";
+}
+
+.oo-ui-icon-speechBubble:before {
+	content:"mode_comment";
+}
+.oo-ui-icon-speechBubbleAdd:before {
+	content:"comment_add";
+}
+.oo-ui-icon-speechBubbles:before {
+	content:"question_answer";
+}
+
+.oo-ui-icon-success:before {
+	content:"check_circle";
+}
+
+.oo-ui-icon-tray:before {
+	content:"inbox";
+}
+
+/* Icons - interactions */
+.oo-ui-icon-add:before {
+	content:"add";
+}
+
+.oo-ui-icon-browser:before {
+	content:"web";
+}
+
+.oo-ui-icon-cancel:before {
+	content:"block";
+}
+
+.oo-ui-icon-check:before {
+	content:"done";
+}
+
+.oo-ui-icon-checkAll:before {
+	content:"sweep";
+}
+
+.oo-ui-icon-clear:before {
+	content:"cancel";
+}
+
+.oo-ui-icon-clock:before {
+	content:"schedule";
+}
+
+.oo-ui-icon-close:before {
+	content:"close";
+}
+
+
+.oo-ui-icon-ellipsis:before {
+	content:"more_horiz";
+}
+
+.oo-ui-icon-verticalEllipsis:before {
+	content:"more_vert";
+}
+
+.oo-ui-icon-feedback:before {
+	content:"campaign";
+}
+
+.oo-ui-icon-funnel:before {
+	content:"filter_alt";
+}
+
+.oo-ui-icon-hand:before {
+	content:"front_hand";
+}
+
+.oo-ui-icon-heart:before {
+	content:"favorite";
+}
+
+.oo-ui-icon-help:before {
+	content:"help_outline";
+}
+.oo-ui-icon-helpNotice:before {
+	content:"help";
+}
+
+.oo-ui-icon-home:before {
+	content:"home";
+}
+
+.oo-ui-icon-key:before {
+	content:"key";
+}
+
+.oo-ui-icon-keyboard:before {
+	content:"keyboard_alt";
+}
+
+.oo-ui-icon-lightbulb:before {
+	content:"lightbulb";
+}
+
+.oo-ui-icon-logIn:before {
+	content:"login";
+}
+
+.oo-ui-icon-logOut:before {
+	content:"logout";
+}
+
+.oo-ui-icon-network:before {
+	content:"wifi";
+}
+
+.oo-ui-icon-networkOff:before {
+	content:"wifi_off";
+}
+
+.oo-ui-icon-newWindow:before {
+	content:"open_in_new";
+}
+
+.oo-ui-icon-pageSettings:before {
+	content:"settings_applications";
+}
+
+.oo-ui-icon-printer:before {
+	content:"print";
+}
+
+.oo-ui-icon-reload:before {
+	content:"refresh";
+}
+
+.oo-ui-icon-search:before {
+	content:"search";
+}
+
+.oo-ui-icon-settings:before {
+	content:"settings";
+}
+
+.oo-ui-icon-stopHand:before {
+	content:"front_hand";
+}
+.oo-ui-image-destructive.oo-ui-icon-stopHand:before {
+	content:"help";
+}
+
+.oo-ui-icon-subtract:before {
+	content:"remove";
+}
+
+/* Icons - moderation */
+.oo-ui-icon-bookmarkOutline:before {
+	content:"turned_in_not";
+}
+
+.oo-ui-icon-bookmark:before {
+	content:"bookmark";
+}
+
+.oo-ui-icon-block:before {
+	content:"remove_circle";
+}
+
+.oo-ui-icon-unBlock:before {
+	content:"check_circle";
+}
+
+.oo-ui-icon-flag:before {
+	content:"flag";
+}
+
+.oo-ui-icon-unFlag:before {
+	content:"outlined_flag";
+}
+
+.oo-ui-icon-lock:before {
+	content:"lock";
+}
+
+.oo-ui-icon-unLock:before {
+	content:"lock_open";
+}
+
+.oo-ui-icon-restore:before {
+	content:"restore";
+}
+
+.oo-ui-icon-star:before {
+	content:"star_border";
+}
+
+.oo-ui-icon-halfStar:before {
+	content:"star_half";
+}
+
+.oo-ui-icon-unStar:before {
+	content:"star";
+}
+
+.oo-ui-icon-trash:before {
+	content:"delete";
+}
+
+.oo-ui-icon-pushPin:before {
+	content:"push_pin";
+}
+
+.oo-ui-icon-ongoingConversation:before {
+	content:"sms";
+}
+
+/* Icons - editing-core */
+.oo-ui-icon-edit:before {
+	content:"edit";
+}
+
+.oo-ui-icon-editLock:before {
+	content:"lock";
+}
+
+.oo-ui-icon-editUndo:before {
+	content:"undo";
+}
+
+.oo-ui-icon-link:before {
+	content:"insert_link";
+}
+
+.oo-ui-icon-unLink:before {
+	content:"link_off";
+}
+
+.oo-ui-icon-linkExternal:before {
+	content:"open_in_new";
+}
+
+
+.oo-ui-icon-linkSecure:before {
+	content:"lock";
+}
+
+
+.oo-ui-icon-redo:before {
+	content:"redo";
+}
+
+
+.oo-ui-icon-undo:before {
+	content:"undo";
+}
+
+/* Icons - editing-styling */
+.oo-ui-icon-bigger:before {
+	content:"text_increase";
+}
+
+.oo-ui-icon-smaller:before {
+	content:"text_decrease";
+}
+
+.oo-ui-icon-subscript:before {
+	content:"subscript";
+}
+.oo-ui-icon-superscript:before {
+	content:"superscript";
+}
+.oo-ui-icon-bold:before {
+	content:"format_bold";
+}
+
+.oo-ui-icon-highlight:before {
+	content:"ink_highlighter";
+}
+
+.oo-ui-icon-italic:before {
+	content:"format_italic";
+}
+
+.oo-ui-icon-strikethrough:before {
+	content:"format_strikethrough";
+}
+
+.oo-ui-icon-underline:before {
+	content:"format_underlined";
+}
+
+.oo-ui-icon-textLanguage:before {
+	content:"translate";
+}
+
+
+.oo-ui-icon-textDirLTR:before {
+	content:"format_textdirection_l_to_r";
+}
+
+.oo-ui-icon-textDirRTL:before {
+	content:"format_textdirection_r_to_l";
+}
+
+.oo-ui-icon-textStyle:before {
+	content:"text_format";
+}
+
+/* Icons - editing-functions */
+.oo-ui-icon-function:before {
+	content:"function";
+}
+
+.oo-ui-icon-functionArgument:before {
+	content:"input_circle";
+	--icon-rotate:90deg;
+}
+
+.oo-ui-icon-instance:before {
+	content:"layers";
+	--icon-rotate:90deg;
+}
+
+.oo-ui-icon-literal:before {
+	content:"text_select_start";
+}
+
+/* Icons - editing-list */
+.oo-ui-icon-indent:before {
+	content:"format_indent_increase"
+}
+
+.oo-ui-icon-listBullet:before {
+	content:"format_list_bulleted"
+}
+
+.oo-ui-icon-listNumbered:before {
+	content:"format_list_numbered"
+}
+
+.oo-ui-icon-outdent:before {
+	content:"format_indent_decrease"
+}
+
+/* Icons - editing-advanced */
+.oo-ui-icon-alignCenter:before {
+	content:"format_align_center"
+}
+
+.oo-ui-icon-alignLeft:before {
+	content:"format_align_left"
+}
+
+.oo-ui-icon-alignRight:before {
+	content:"format_align_right"
+}
+
+.oo-ui-icon-attachment:before {
+	content:"attach_file"
+}
+
+.oo-ui-icon-calendar:before {
+	content:"event"
+}
+
+.oo-ui-icon-code:before {
+	content:"data_array"
+}
+
+.oo-ui-icon-copy:before {
+	content:"file_copy"
+}
+
+.oo-ui-icon-cut:before {
+	content:"content_cut"
+}
+
+.oo-ui-icon-hieroglyph:before {
+	content:"currency_rupee"
+}
+
+.oo-ui-icon-imageLayoutBasic:before {
+	content:"crop_original "
+}
+
+.oo-ui-icon-imageLayoutFrame:before {
+	content:"image"
+}
+
+.oo-ui-icon-imageLayoutFrameless:before {
+	content:"check_box_outline_black"
+}
+
+.oo-ui-icon-imageLayoutThumbnail:before {
+	content:"filter_frames"
+}
+
+.oo-ui-icon-labFlask:before {
+	content:"science"
+}
+
+.oo-ui-icon-language:before {
+	content:"translate"
+}
+
+.oo-ui-icon-layout:before {
+	content:"dashboard"
+}
+
+.oo-ui-icon-markup:before {
+	content:"code"
+}
+
+.oo-ui-icon-mathematics:before {
+	content:"functions"
+}
+
+.oo-ui-icon-mathematicsDisplayBlock:before {
+	content:"vertical_distribute"
+}
+
+.oo-ui-icon-mathematicsDisplayDefault:before {
+	content:"horizontal_distribute"
+}
+
+.oo-ui-icon-mathematicsDisplayInline:before {
+	content:"title"
+}
+
+.oo-ui-icon-newline:before {
+	content:"subdirectory_arrow_left"
+}
+
+.oo-ui-icon-noWikiText:before {
+	content:"code_off"
+}
+
+.oo-ui-icon-ocr:before {
+	content:"feed"
+}
+
+.oo-ui-icon-outline:before {
+	content:"drive_file_rename_outline"
+}
+
+.oo-ui-icon-palette:before {
+	content:"palette"
+}
+
+.oo-ui-icon-paste:before {
+	content:"content_paste"
+}
+
+.oo-ui-icon-puzzle:before {
+	content:"extension"
+}
+
+.oo-ui-icon-quotes:before {
+	content:"format_quote"
+}
+
+.oo-ui-icon-sandbox:before {
+	content:"edit_note"
+}
+
+.oo-ui-icon-searchCaseSensitive:before {
+	content:"text_fields"
+}
+
+.oo-ui-icon-searchDiacritics:before {
+	content:"font_download"
+}
+
+.oo-ui-icon-searchRegularExpression:before {
+	content:"emergency"
+}
+
+.oo-ui-icon-signature:before {
+	content:"draw"
+}
+
+.oo-ui-icon-specialCharacter:before {
+	content:"local_parking"
+}
+
+.oo-ui-icon-table:before {
+	content:"window"
+}
+
+.oo-ui-icon-tableAddColumnAfter:before {
+	content:"vertical_split"
+}
+
+.oo-ui-icon-tableAddColumnBefore:before {
+	content:"vertical_split";
+	--icon-rotate:180deg;
+}
+
+.oo-ui-icon-tableAddRowAfter:before {
+	content:"vertical_split";
+	--icon-rotate:90deg;
+}
+
+.oo-ui-icon-tableAddRowBefore:before {
+	content:"vertical_split";
+	--icon-rotate:-90deg;
+}
+
+.oo-ui-icon-tableCaption:before {
+	content:"subtitles";
+}
+
+.oo-ui-icon-tableMergeCells:before {
+	content:"pages";
+}
+
+.oo-ui-icon-tableMoveColumnAfter:before {
+	content:"space_dashboard";
+}
+
+.oo-ui-icon-tableMoveColumnBefore:before {
+	content:"space_dashboard";
+	--icon-rotate:180deg;
+}
+
+.oo-ui-icon-tableMoveRowAfter:before {
+	content:"space_dashboard";
+	--icon-rotate:90deg;
+}
+
+.oo-ui-icon-tableMoveRowBefore:before {
+	content:"space_dashboard";
+	--icon-rotate:-90deg;
+}
+
+.oo-ui-icon-templateAdd:before {
+	content:"post_add";
+}
+
+.oo-ui-icon-translation:before {
+	content:"translate";
+}
+
+.oo-ui-icon-wikiText:before {
+	content:"code";
+}
+
+/* Icons - editing citation */
+.oo-ui-icon-book:before {
+	content:"import_contacts";
+}
+
+.oo-ui-icon-journal:before {
+	content:"note";
+}
+
+.oo-ui-icon-newspaper:before {
+	content:"newspaper";
+}
+
+.oo-ui-icon-reference:before {
+	content:"book";
+}
+
+.oo-ui-icon-referenceExisting:before {
+	content:"collections_bookmark";
+}
+
+.oo-ui-icon-references:before {
+	content:"bookmarks";
+}
+
+/* Icons - media */
+.oo-ui-icon-camera:before {
+	content:"photo_camera";
+}
+
+.oo-ui-icon-chart:before {
+	content:"leaderboard";
+}
+
+.oo-ui-icon-exitFullscreen:before {
+	content:"fullscreen_exit";
+}
+
+.oo-ui-icon-fullScreen:before {
+	content:"fullscreen";
+}
+
+.oo-ui-icon-image:before {
+	content:"image";
+}
+.oo-ui-icon-imageAdd:before {
+	content:"add_photo_alternative";
+}
+
+.oo-ui-icon-imageBroken:before {
+	content:"compare";
+	--icon-rotate:90deg;
+}
+
+.oo-ui-icon-imageLock:before {
+	content:"wallpaper";
+}
+
+.oo-ui-icon-imageGallery:before {
+	content:"collections";
+}
+
+.oo-ui-icon-musicalScore:before {
+	content:"audiotrack";
+}
+
+.oo-ui-icon-pause:before {
+	content:"pause";
+}
+
+.oo-ui-icon-play:before {
+	content:"play_arrow";
+}
+
+.oo-ui-icon-stop:before {
+	content:"stop";
+}
+
+.oo-ui-icon-volumeDown:before {
+	content:"volume_down";
+}
+
+.oo-ui-icon-volumeOff:before {
+	content:"volume_off";
+}
+
+.oo-ui-icon-volumeUp:before {
+	content:"volume_up";
+}
+
+.oo-ui-icon-zoomIn:before {
+	content:"zoom_in";
+}
+
+.oo-ui-icon-zoomOut:before {
+	content:"zoom_out";
+}
+
+/* Icons - location */
+.oo-ui-icon-globe:before {
+	content:"language";
+}
+
+.oo-ui-icon-map:before {
+	content:"map";
+}
+
+.oo-ui-icon-mapPin:before {
+	content:"place";
+}
+
+.oo-ui-icon-mapPinAdd:before {
+	content:"add_loaction";
+}
+
+.oo-ui-icon-mapTrail:before {
+	content:"merge";
+}
+
+/* Icons - user */
+.oo-ui-icon-userAdd:before {
+	content:"person_add_alt";
+}
+
+.oo-ui-icon-userAnonymous:before {
+	content:"face";
+}
+
+.oo-ui-icon-userAvatar:before {
+	content:"person";
+}
+
+.oo-ui-icon-userAvatarOutline:before {
+	content:"person_outline";
+}
+
+.oo-ui-icon-userContributions:before {
+	content:"recent_actors";
+}
+
+.oo-ui-icon-userGroup:before {
+	content:"people";
+}
+
+.oo-ui-icon-userRights:before {
+	content:"manage_accounts";
+}
+
+.oo-ui-icon-userTalk:before {
+	content:"3p";
+}
+
+.oo-ui-icon-userTemporary:before {
+	content:"background_replace";
+}
+
+.oo-ui-icon-watchlist:before {
+	content:"alarm_on";
+}
+
+/* Icons - layout */
+.oo-ui-icon-menu:before {
+	content:"menu";
+}
+
+.oo-ui-icon-recentChanges:before {
+	content:"trending_up";
+}
+
+.oo-ui-icon-textFlow:before {
+	content:"format_align_left";
+}
+
+.oo-ui-icon-textSummary:before {
+	content:"drag_handler";
+}
+
+
+.oo-ui-icon-viewCompact:before {
+	content:"apps";
+}
+
+.oo-ui-icon-viewDetails:before {
+	content:"view_list";
+}
+
+/* Icons - accessibility */
+.oo-ui-icon-appearance:before {
+	content:"palette";
+}
+
+.oo-ui-icon-bright:before {
+	content:"brightness_7";
+}
+
+.oo-ui-icon-halfBright:before {
+	content:"brightness_6";
+}
+
+.oo-ui-icon-notBright:before {
+	content:"brightness_1";
+}
+
+.oo-ui-icon-eye:before {
+	content:"visibility";
+}
+
+.oo-ui-icon-eyeClosed:before {
+	content:"visibility_off";
+}
+
+.oo-ui-icon-moon:before {
+	content:"brightness_3";
+}
+
+.oo-ui-icon-largerText:before {
+	content:"title";
+	--icon-scale:2.5;
+}
+
+.oo-ui-icon-smallerText:before {
+	content:"title";
+	--icon-scale:1.5;
+}
+
+.oo-ui-icon-visionSimulator:before {
+	content:"vrpano";
+}
+
+/* Icons - wikimedia */
+.oo-ui-icon-logoCC:before {
+  -webkit-mask-image: url("OOUI/logo-CC.svg");
+  mask-image: url("OOUI/logo-CC.svg");
+/* Additional Styling */
+  background-color:currentColor;
+  -webkit-mask-size: contain;
+          mask-size: contain;
+  -webkit-mask-position: center center;
+          mask-position: center center;
+  -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+}
+
+.oo-ui-icon-logoMediaWiki:before {
+  -webkit-mask-image: url("OOUI/logo-MediaWiki.svg");
+  mask-image: url("OOUI/logo-MediaWiki.svg");
+/* Additional Styling */
+  background-color:currentColor;
+  -webkit-mask-size: contain;
+          mask-size: contain;
+  -webkit-mask-position: center center;
+          mask-position: center center;
+  -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+}
+
+.oo-ui-icon-logoMetaWiki:before {
+  -webkit-mask-image: url("OOUI/logo-MetaWiki.svg");
+  mask-image: url("OOUI/logo-MetaWiki.svg");
+/* Additional Styling */
+  background-color:currentColor;
+  -webkit-mask-size: contain;
+          mask-size: contain;
+  -webkit-mask-position: center center;
+          mask-position: center center;
+  -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+}
+
+.oo-ui-icon-logoWikibooks:before {
+  -webkit-mask-image: url("OOUI/logo-Wikibooks.svg");
+  mask-image: url("OOUI/logo-Wikibooks.svg");
+/* Additional Styling */
+  background-color:currentColor;
+  -webkit-mask-size: contain;
+          mask-size: contain;
+  -webkit-mask-position: center center;
+          mask-position: center center;
+  -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+}
+
+.oo-ui-icon-logoWikidata:before {
+  -webkit-mask-image: url("OOUI/logo-Wikidata.svg");
+  mask-image: url("OOUI/logo-Wikidata.svg");
+/* Additional Styling */
+  background-color:currentColor;
+  -webkit-mask-size: contain;
+          mask-size: contain;
+  -webkit-mask-position: center center;
+          mask-position: center center;
+  -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+}
+
+.oo-ui-icon-logoWikifunctions:before {
+  -webkit-mask-image: url("OOUI/logo-Wikifunctions.svg");
+  mask-image: url("OOUI/logo-Wikifunctions.svg");
+/* Additional Styling */
+  background-color:currentColor;
+  -webkit-mask-size: contain;
+          mask-size: contain;
+  -webkit-mask-position: center center;
+          mask-position: center center;
+  -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+}
+
+.oo-ui-icon-logoWikimedia:before {
+  -webkit-mask-image: url("OOUI/logo-Wikimedia.svg");
+  mask-image: url("OOUI/logo-Wikimedia.svg");
+/* Additional Styling */
+  background-color:currentColor;
+  -webkit-mask-size: contain;
+          mask-size: contain;
+  -webkit-mask-position: center center;
+          mask-position: center center;
+  -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+}
+
+.oo-ui-icon-logoWikimediaCommons:before {
+  -webkit-mask-image: url("OOUI/logo-WikimediaCommons.svg");
+  mask-image: url("OOUI/logo-WikimediaCommons.svg");
+/* Additional Styling */
+  background-color:currentColor;
+  -webkit-mask-size: contain;
+          mask-size: contain;
+  -webkit-mask-position: center center;
+          mask-position: center center;
+  -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+}
+
+.oo-ui-icon-logoWikimediaDiscovery:before {
+  -webkit-mask-image: url("OOUI/logo-WikimediaDiscovery.svg");
+  mask-image: url("OOUI/logo-WikimediaDiscovery.svg");
+/* Additional Styling */
+  background-color:currentColor;
+  -webkit-mask-size: contain;
+          mask-size: contain;
+  -webkit-mask-position: center center;
+          mask-position: center center;
+  -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+}
+
+.oo-ui-icon-logoWikinews:before {
+  -webkit-mask-image: url("OOUI/logo-Wikinews.svg");
+  mask-image: url("OOUI/logo-Wikinews.svg");
+/* Additional Styling */
+  background-color:currentColor;
+  -webkit-mask-size: contain;
+          mask-size: contain;
+  -webkit-mask-position: center center;
+          mask-position: center center;
+  -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+}
+
+.oo-ui-icon-logoWikipedia:before {
+  -webkit-mask-image: url("OOUI/logo-Wikipedia.svg");
+  mask-image: url("OOUI/logo-Wikipedia.svg");
+/* Additional Styling */
+  background-color:currentColor;
+  -webkit-mask-size: contain;
+          mask-size: contain;
+  -webkit-mask-position: center center;
+          mask-position: center center;
+  -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+}
+
+.oo-ui-icon-logoWikiquote:before {
+  -webkit-mask-image: url("OOUI/logo-Wikiquote.svg");
+  mask-image: url("OOUI/logo-Wikiquote.svg");
+/* Additional Styling */
+  background-color:currentColor;
+  -webkit-mask-size: contain;
+          mask-size: contain;
+  -webkit-mask-position: center center;
+          mask-position: center center;
+  -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+}
+
+.oo-ui-icon-logoWikisource:before {
+  -webkit-mask-image: url("OOUI/logo-Wikisource.svg");
+  mask-image: url("OOUI/logo-Wikisource.svg");
+/* Additional Styling */
+  background-color:currentColor;
+  -webkit-mask-size: contain;
+          mask-size: contain;
+  -webkit-mask-position: center center;
+          mask-position: center center;
+  -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+}
+
+.oo-ui-icon-logoWikispecies:before {
+  -webkit-mask-image: url("OOUI/logo-Wikispecies.svg");
+  mask-image: url("OOUI/logo-Wikispecies.svg");
+/* Additional Styling */
+  background-color:currentColor;
+  -webkit-mask-size: contain;
+          mask-size: contain;
+  -webkit-mask-position: center center;
+          mask-position: center center;
+  -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+}
+
+.oo-ui-icon-logoWikiversity:before {
+  -webkit-mask-image: url("OOUI/logo-Wikiversity.svg");
+  mask-image: url("OOUI/logo-Wikiversity.svg");
+/* Additional Styling */
+  background-color:currentColor;
+  -webkit-mask-size: contain;
+          mask-size: contain;
+  -webkit-mask-position: center center;
+          mask-position: center center;
+  -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+}
+
+.oo-ui-icon-logoWikivoyage:before {
+  -webkit-mask-image: url("OOUI/logo-Wikivoyage.svg");
+  mask-image: url("OOUI/logo-Wikivoyage.svg");
+/* Additional Styling */
+  background-color:currentColor;
+  -webkit-mask-size: contain;
+          mask-size: contain;
+  -webkit-mask-position: center center;
+          mask-position: center center;
+  -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+}
+
+.oo-ui-icon-logoWiktionary:before {
+  -webkit-mask-image: url("OOUI/logo-Wiktionary.svg");
+  mask-image: url("OOUI/logo-Wiktionary.svg");
+/* Additional Styling */
+  background-color:currentColor;
+  -webkit-mask-size: contain;
+          mask-size: contain;
+  -webkit-mask-position: center center;
+          mask-position: center center;
+  -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+}
+
+/* Indicators */
+.oo-ui-indicator-clear:before {
+	content:"cancel";
+	--icon-scale:1.5;
+}
+
+.oo-ui-indicator-up:before {
+	content:"keyboard_arrow_up";
+	--icon-scale:1.5;
+}
+
+.oo-ui-indicator-down:before {
+	content:"keyboard_arrow_down";
+	--icon-scale:1.5;
+}
+
+.oo-ui-indicator-required:before {
+	content:"emergency";
+	--icon-scale:1.5;
+}
+
+/* Extensive */
+.oo-ui-icon-pilcrow:before {
+	content:"format_paragraph";
+}
+
+.oo-ui-icon-wrapping:before {
+	content:"wrap_text";
+}
+
+.oo-ui-icon-gotoLine:before {
+	content:"menu_open";
+}
+
+.oo-ui-icon-topicCollapse:before {
+	content:"close_fullscreen";
+}
+
+.oo-ui-icon-topicExpand:before {
+	content:"open_in_full";
+}

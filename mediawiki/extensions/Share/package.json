@@ -1,0 +1,16 @@
+{
+	"name": "share",
+	"private": true,
+	"scripts": {
+		"lint:js": "eslint --cache .",
+		"lint:i18n": "banana-checker i18n/",
+		"test": "npm -s run lint:js && npm -s run lint:i18n"
+	},
+	"devDependencies": {
+		"eslint-config-wikimedia": "0.28.2",
+		"grunt-banana-checker": "0.13.0"
+	},
+	"eslintIgnore": [
+		"vendor/**"
+	]
+}

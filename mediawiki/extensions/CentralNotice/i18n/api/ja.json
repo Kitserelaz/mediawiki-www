@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Rrock9312",
+			"Shirayuki",
+			"SkyDaisy9",
+			"Yusuke1109"
+		]
+	},
+	"apierror-centralnotice-cdn-banner-not-found": "この項目のページが見つかりません",
+	"apihelp-centralnoticequerycampaign-example-1": " \"Plea_US\"キャンペーンを表示",
+	"apihelp-query+centralnoticelogs-param-user": "利用者名（省略可能）",
+	"apihelp-query+centralnoticelogs-example-1": "ログを表示する"
+}

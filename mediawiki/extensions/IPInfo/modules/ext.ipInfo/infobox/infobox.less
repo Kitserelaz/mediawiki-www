@@ -1,0 +1,54 @@
+@import 'mediawiki.skin.variables.less';
+@import '../variables.less';
+
+.ext-ipinfo-widget-property-source {
+	font-size: @ipinfo-property-source-font-size;
+	color: @color-subtle;
+	font-weight: normal;
+}
+
+.ext-ipinfo-collapsible-layout {
+	.ext-ipinfo-widget-properties {
+		display: flex;
+		flex-wrap: wrap;
+		// Offset padding of children elements at edges of container
+		margin: 0 -@ipinfo-widget-properties-left-right-margin -@ipinfo-padding -@ipinfo-widget-properties-left-right-margin;
+	}
+
+	.ext-ipinfo-widget-properties-col {
+		display: flex;
+		flex-direction: column;
+		// A somewhat arbitrary min-width set to ~30cpm
+		flex: 1 12em;
+		padding: 0 @ipinfo-widget-properties-left-right-margin;
+	}
+
+	// The disclaimer is always at the bottom of the column
+	.ext-ipinfo-widget-property-source {
+		margin-top: auto;
+		padding: 0 0 @ipinfo-padding @ipinfo-padding;
+	}
+}
+
+.mw-changelist-line-inner-unwatched .ext-ipinfo-button {
+	display: none;
+}
+
+.ext-ipinfo-block-links {
+	display: block;
+}
+
+// Set min-height as the height of the panel with all the headings + one line data.
+// see T306746#8010692
+.ext-ipinfo-panel-layout > :not( .mw-collapsed ) {
+	min-height: 22em;
+
+	// min-height set to fit the panel height
+	.oo-ui-pendingElement-pending {
+		min-height: 19em;
+	}
+
+	&.ext-ipinfo-contains-error {
+		min-height: auto;
+	}
+}

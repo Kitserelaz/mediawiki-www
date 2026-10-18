@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"Sabelöga"
+		]
+	},
+	"simpleblogpage-desc": "Bloggsystem med kommentarer och röstningsfunktioner, [[Special:CreateBlogPost|en specialsida för att skapa blogginlägg]] och [[Special:ArticlesHome|en specialsida för att lista blogg inlägg]]",
+	"right-createblogpost": "[[Special:CreateBlogPost|Skapa nya blogginlägg]]",
+	"action-createblogpost": "skapa nya blogginlägg"
+}

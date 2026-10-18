@@ -1,0 +1,36 @@
+{
+	"@metadata": {
+		"authors": [
+			"Ajeje Brazorf",
+			"Beta16",
+			"Executive",
+			"Lorem Ipsum",
+			"Ricordisamoa"
+		]
+	},
+	"apihelp-query+wikidiscover-example": "Mostra tutti gli wiki nel modulo.",
+	"apihelp-query+wikidiscover-param-limit": "Numero massimo di risultati da mostrare.",
+	"apihelp-query+wikidiscover-param-prop": "Informazione da restituire su una Wiki definita.",
+	"apihelp-query+wikidiscover-param-state": "Filtra in base ad uno stato definito da CreaWiki di una Wiki.",
+	"apihelp-query+wikidiscover-summary": "Ottieni una lista di wiki su una wikifarm CreateWiki.",
+	"randomwiki": "Reindirizzamento a un wiki casuale",
+	"randomwiki-header": "Scegli una categoria e una lingua di seguito e, dopo l'invio, verrai reindirizzato a un wiki casuale che soddisfa i criteri selezionati.",
+	"wikidiscover": "Scopri i wiki",
+	"wikidiscover-desc": "Consenti [[Special:WikiDiscover|scoprire wikis]] in un incubatore di Wiki con [[Special:CreateWiki|CreaWiki]].",
+	"wikidiscover-label-active": "Attivo",
+	"wikidiscover-label-any": "(qualsiasi)",
+	"wikidiscover-label-closed": "Chiuso",
+	"wikidiscover-label-deleted": "Cancellato",
+	"wikidiscover-label-inactive": "Inattivo",
+	"wikidiscover-label-locked": "Bloccato",
+	"wikidiscover-label-open": "Aperto",
+	"wikidiscover-label-private": "Privato",
+	"wikidiscover-label-public": "Pubblico",
+	"wikidiscover-table-category": "Categoria",
+	"wikidiscover-table-description": "Descrizione",
+	"wikidiscover-table-established": "Stabilito",
+	"wikidiscover-table-language": "Lingua",
+	"wikidiscover-table-state": "Stato",
+	"wikidiscover-table-visibility": "Visibilità",
+	"wikidiscover-table-wiki": "Nome wiki"
+}

@@ -1,0 +1,181 @@
+name: ${COMPOSE_PROJECT_NAME:-cloudwiki}
+x-farm: &farm
+  user: www-data
+  image: ${MW_IMAGE:-cloudwiki-php:local}
+  build:
+    context: .
+    dockerfile: docker/mediawiki/Dockerfile
+    target: php
+    args: {BUILDKIT_INLINE_CACHE: '1'}
+  environment: &farm-env
+    MW_DOCKER: '1'
+    MIRAHEZE_WIKI_VERSION: '1.45'
+    MW_ENV: ${MW_ENV:-development}
+    MW_DOMAIN: ${MW_DOMAIN:-localhost}
+    MW_BETA_DOMAIN: ${MW_BETA_DOMAIN:-beta.localhost}
+    MW_REALM: ${MW_REALM:-default}
+    MW_DB_HOST: database
+    MW_DB_USER: mediawiki
+    MW_MEMCACHED: memcached:11211
+    MW_REDIS: redis:6379
+    MW_ANALYTICS: ${MW_ANALYTICS:-0}
+    MW_NOTIFICATIONS: ${MW_NOTIFICATIONS:-0}
+    MW_CACHE_PURGE: ${MW_CACHE_PURGE:-0}
+    MW_CAPTCHA: ${MW_CAPTCHA:-0}
+    MW_EMAIL_ENABLED: ${MW_EMAIL_ENABLED:-1}
+    MW_LEGACY_BRANDING: ${MW_LEGACY_BRANDING:-1}
+    MW_SSL_REQUESTS: ${MW_SSL_REQUESTS:-0}
+    MW_SMTP_HOST: ${MW_SMTP_HOST:-mailpit}
+    MW_SMTP_PORT: ${MW_SMTP_PORT:-1025}
+    MW_SEARCH: ${MW_SEARCH:-0}
+    MW_REMOTE_REPOSITORIES: ${MW_REMOTE_REPOSITORIES:-0}
+    MW_UPLOAD_ROOT: ${MW_UPLOAD_ROOT:-/var/www/mediawiki/images}
+    MW_DUMP_DIRECTORY: ${MW_DUMP_DIRECTORY:-/var/www/dumps}
+  secrets:
+    - {source: farm, target: farm.json}
+    - {source: oauth-private, target: oauth-private.key}
+    - {source: oauth-public, target: oauth-public.key}
+  volumes:
+    - uploads:${MW_UPLOAD_ROOT:-/var/www/mediawiki/images}
+    - farm-cache:/var/www/mediawiki/cw_cache
+    - localization:/var/www/mediawiki/cache
+    - dumps:${MW_DUMP_DIRECTORY:-/var/www/dumps}
+  depends_on:
+    database: {condition: service_healthy}
+    redis: {condition: service_healthy}
+    memcached: {condition: service_started}
+  restart: unless-stopped
+  stop_grace_period: 60s
+services:
+  php:
+    <<: *farm
+    healthcheck:
+      test: [CMD, php, /opt/farm/health.php]
+      interval: 15s
+      timeout: 5s
+      start_period: 30s
+  web:
+    image: ${WEB_IMAGE:-cloudwiki-web:local}
+    build:
+      context: .
+      dockerfile: docker/mediawiki/Dockerfile
+      target: web
+    environment:
+      MW_DOMAIN: ${MW_DOMAIN:-localhost}
+      MW_BETA_DOMAIN: ${MW_BETA_DOMAIN:-beta.localhost}
+    ports: ['${HTTP_BIND:-127.0.0.1}:80:80', '${HTTP_BIND:-127.0.0.1}:443:443']
+    volumes:
+      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./docker/caddy/wiki.caddy:/etc/caddy/wiki.caddy:ro
+      - uploads:${MW_UPLOAD_ROOT:-/var/www/mediawiki/images}:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on: [php, counter]
+    restart: unless-stopped
+  worker:
+    <<: *farm
+    command: [php, /opt/farm/worker.php]
+  scheduler:
+    <<: *farm
+    command: [php, /opt/farm/scheduler.php]
+    volumes:
+      - uploads:${MW_UPLOAD_ROOT:-/var/www/mediawiki/images}
+      - farm-cache:/var/www/mediawiki/cw_cache
+      - localization:/var/www/mediawiki/cache
+      - dumps:${MW_DUMP_DIRECTORY:-/var/www/dumps}
+      - ./docker/maintenance.json:/etc/farm/maintenance.json:ro
+  init:
+    <<: *farm
+    user: root
+    profiles: [tools]
+    restart: 'no'
+    command: [php, /opt/farm/manage.php, fresh]
+    secrets:
+      - {source: farm, target: farm.json}
+      - {source: oauth-private, target: oauth-private.key}
+      - {source: oauth-public, target: oauth-public.key}
+      - admin-password
+      - db-root-password
+    environment:
+      <<: *farm-env
+      ADMIN_USER: ${ADMIN_USER:-Admin}
+      MW_MANAGEMENT: '1'
+    volumes:
+      - uploads:${MW_UPLOAD_ROOT:-/var/www/mediawiki/images}
+      - farm-cache:/var/www/mediawiki/cw_cache
+      - localization:/var/www/mediawiki/cache
+      - dumps:${MW_DUMP_DIRECTORY:-/var/www/dumps}
+      - ./backups:/backups
+      - counter:/snapshot/counter
+      - redis:/snapshot/redis
+      - caddy-data:/snapshot/caddy
+  database:
+    image: mariadb:11.4.10
+    environment:
+      MARIADB_ROOT_PASSWORD_FILE: /run/secrets/db-root-password
+    secrets: [db-root-password]
+    volumes: [database:/var/lib/mysql]
+    healthcheck:
+      test: [CMD, healthcheck.sh, --connect, --innodb_initialized]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+  redis:
+    image: redis:7.4.7-alpine
+    command: [redis-server, --appendonly, 'yes', --appendfsync, everysec]
+    volumes: [redis:/data]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+  memcached:
+    image: memcached:1.6.40-alpine
+    command: [memcached, -m, '128']
+    restart: unless-stopped
+  counter:
+    image: ${COUNTER_IMAGE:-cloudwiki-counter:local}
+    build: ./Moe-Counter
+    environment:
+      APP_PORT: '3000'
+      APP_SITE: https://counter.${MW_DOMAIN:-localhost}
+      DB_TYPE: ${COUNTER_DB_TYPE:-sqlite}
+      DB_URL: ${COUNTER_DB_URL:-}
+      DB_PATH: /app/data/count.db
+      DB_INTERVAL: '0'
+    volumes: [counter:/app/data]
+    restart: unless-stopped
+    stop_grace_period: 60s
+  mailpit:
+    image: axllent/mailpit:v1.27.8
+    profiles: [dev]
+    ports: ['127.0.0.1:8025:8025']
+  search:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.10.2
+    platform: ${SEARCH_PLATFORM:-linux/amd64}
+    profiles: [search]
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: 'false'
+      ES_JAVA_OPTS: -Xms512m -Xmx512m
+    volumes: [search:/usr/share/elasticsearch/data]
+    restart: unless-stopped
+secrets:
+  farm: {file: "${FARM_SECRETS_DIRECTORY:-./docker/secrets}/farm.json", name: farm.json}
+  oauth-private: {file: "${FARM_SECRETS_DIRECTORY:-./docker/secrets}/oauth-private.key", name: oauth-private.key}
+  oauth-public: {file: "${FARM_SECRETS_DIRECTORY:-./docker/secrets}/oauth-public.key", name: oauth-public.key}
+  admin-password: {file: "${FARM_SECRETS_DIRECTORY:-./docker/secrets}/admin-password", name: admin-password}
+  db-root-password: {file: "${FARM_SECRETS_DIRECTORY:-./docker/secrets}/db-root-password", name: db-root-password}
+volumes:
+  database:
+  redis:
+  uploads:
+  farm-cache:
+  localization:
+  dumps:
+  counter:
+  caddy-data:
+  caddy-config:
+  search:

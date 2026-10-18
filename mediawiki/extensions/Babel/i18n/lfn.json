@@ -1,0 +1,37 @@
+{
+	"@metadata": {
+		"authors": [
+			"Elefentiste",
+			"Purodha",
+			"Robin van der Vliet",
+			"StevenJ81"
+		]
+	},
+	"babel-url": "Project:Babel",
+	"babel-0": "Esta usor ave [[$1|no capas]] de [[$2|$3]].",
+	"babel-1": "Esta usor es [[$1|poca capas]] de [[$2|$3]].",
+	"babel-2": "Esta usor es [[$1|medial capas]] de [[$2|$3]].",
+	"babel-3": "Esta usor es [[$1|bon capas]] de [[$2|$3]].",
+	"babel-4": "Esta usor es [[$1|la plu perfeta capas]] de [[$2|$3]].",
+	"babel-5": "Esta usor es [[$1|profesal capas]] de [[$2|$3]].",
+	"babel-N": "Esta usor ave [[$2|$3]] se [[$1|lingua propre]].",
+	"babel-0-n": "Esta usor ave [[$1|no capas]] de [[$2|Lingua Franca Nova]].",
+	"babel-1-n": "Esta usor es [[$1|poca capas]] de [[$2|Lingua Franca Nova]].",
+	"babel-2-n": "Esta usor es [[$1|medial capas]] de [[$2|Lingua Franca Nova]].",
+	"babel-3-n": "Esta usor es [[$1|bon capas]] de [[$2|Lingua Franca Nova]].",
+	"babel-4-n": "Esta usor es [[$1|la plu perfeta capas]] de [[$2|Lingua Franca Nova]].",
+	"babel-5-n": "Esta usor es [[$1|profesal capas]] de [[$2|Lingua Franca Nova]].",
+	"babel-N-n": "Esta usor ave [[$2|Lingua Franca Nova]] se [[$1|lingua propre]].",
+	"babel-template": "Template:Usor $1",
+	"babel-footer": "Usores par lingua",
+	"babel-template-params-category": "Pajes cual usa babel con parametres nomida",
+	"communityconfiguration-babel-babelcategorynames-0-label": "Nivel 0",
+	"communityconfiguration-babel-babelcategorynames-1-label": "Nivel 1",
+	"communityconfiguration-babel-babelcategorynames-2-label": "Nivel 2",
+	"communityconfiguration-babel-babelcategorynames-3-label": "Nivel 3",
+	"communityconfiguration-babel-babelcategorynames-4-label": "Nivel 4",
+	"communityconfiguration-babel-babelcategorynames-5-label": "Nivel 5",
+	"communityconfiguration-babel-babelcategorynames-n-label": "Nivel N",
+	"communityconfiguration-babel-babelmaincategory-label": "Categoria xef",
+	"communityconfiguration-babel-babeluseuserlanguage-control-label": "Usa lingua de usor"
+}

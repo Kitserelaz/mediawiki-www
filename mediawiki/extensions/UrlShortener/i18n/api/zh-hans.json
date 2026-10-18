@@ -1,0 +1,20 @@
+{
+	"@metadata": {
+		"authors": [
+			"A Retired User",
+			"LittlePaw365",
+			"Liuxinyu970226",
+			"Stang",
+			"Xyb",
+			"予弦",
+			"神樂坂秀吉"
+		]
+	},
+	"apihelp-shortenurl-summary": "把较长的URL缩短为短URL。",
+	"apihelp-shortenurl-param-url": "要缩短的URL。",
+	"apihelp-shortenurl-param-qrcode": "获取二维码。链接的URL只在过长时才会缩短。",
+	"apihelp-shortenurl-example-1": "获取<kbd><nowiki>https://en.wikipedia.org/wiki/Arctica</nowiki></kbd>的短URL。",
+	"apihelp-shortenurl-example-2": "获取<kbd><nowiki>https://en.wikipedia.org/wiki/Arctica</nowiki></kbd>的二维码。",
+	"apierror-urlshortener-disabled": "不能创建新的短URL",
+	"apierror-urlshortener-permissiondenied": "您没有权限创建短URL"
+}

@@ -1,0 +1,54 @@
+{
+	"name": "CreateRedirect",
+	"version": "1.5.1",
+	"author": [
+		"[https://www.mediawiki.org/wiki/User:Digiku Marco Zafra]",
+		"Edward Chernenko"
+	],
+	"type": "specialpage",
+	"url": "https://www.mediawiki.org/wiki/Extension:CreateRedirect",
+	"descriptionmsg": "createredirect-desc",
+	"license-name": "GPL-3.0-or-later",
+	"requires": {
+		"MediaWiki": ">= 1.38.0"
+	},
+	"AutoloadClasses": {
+		"SpecialCreateRedirect": "SpecialCreateRedirect.php",
+		"CreateRedirectHooks": "CreateRedirectHooks.php"
+	},
+	"MessagesDirs": {
+		"CreateRedirect": [
+			"i18n"
+		]
+	},
+	"ExtensionMessagesFiles": {
+		"CreateRedirectAlias": "CreateRedirect.alias.php"
+	},
+	"HookHandlers": {
+		"main": {
+			"class": "CreateRedirectHooks"
+		}
+	},
+	"Hooks": {
+		"SidebarBeforeOutput": "main"
+	},
+	"SpecialPages": {
+		"CreateRedirect": {
+			"class": "SpecialCreateRedirect",
+			"services": [
+				"ContentHandlerFactory",
+				"PermissionManager"
+			]
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "modules",
+		"remoteExtPath": "CreateRedirect/modules"
+	},
+	"ResourceModules": {
+		"ext.createredirect": {
+			"styles": "ext.createredirect.css"
+		}
+	},
+	"manifest_version": 2
+}

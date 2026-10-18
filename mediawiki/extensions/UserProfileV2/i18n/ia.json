@@ -1,0 +1,38 @@
+{
+	"@metadata": {
+		"authors": [
+			"McDutchie"
+		]
+	},
+	"userprofilev2-desc": "Un systema de profilos de usator basate sur wiki.",
+	"userprofilev2-selectavatar": "Seliger avatar",
+	"userprofilev2-avatarchanged": "Avatar cambiate con successo.",
+	"userprofilev2-avatardeleted": "Avatar delite con successo.",
+	"userprofilev2-user-locked": "Iste conto de usator ha essite disactivate globalmente.",
+	"userprofilev2-edit-profile": "Modificar tu profilo",
+	"userprofilev2-apierror-forbidden": "Prohibite: tu non ha le permission de cambiar iste avatar.",
+	"userprofilev2-apierror-invalidpermission": "Prohibite: tu non ha le permission de modificar le profilo de $1",
+	"userprofilev2-apierror-nofile": "Necun file a incargar ha essite fornite.",
+	"userprofilev2-apierror-ratelimited": "Tu non pote incargar files in iste momento.",
+	"userprofilev2-apierror-invalidusername": "Necun usator con le nomine ‘$1’ es registrate sur iste wiki.",
+	"userprofilev2-about-me": "A proposito de me",
+	"userprofilev2-discord": "Nomine de usator Discord",
+	"userprofilev2-twitter": "Nomine de usator Twitter",
+	"userprofilev2-mastodon": "Nomine de usator Mastodon",
+	"userprofilev2-about-me-placeholder": "Scribe qualcosa sur te…",
+	"userprofilev2-about-me-help": "Parla nos de te. 200 characteres al maximo.",
+	"userprofilev2-mastodon-help": "Tu nomine de usator Mastodon, con le @",
+	"userprofilev2-twitter-help": "Tu nomine de usator Twitter, con le @",
+	"userprofilev2-discord-help": "Tu nomine de usator Discord, sin le #",
+	"userprofilev2-showglobalgroups": "Monstrar mi gruppos global?",
+	"userprofilev2-showglobaleditcount": "Monstrar mi numero global de modificationes?",
+	"userprofilev2-showglobalgroupshelp": "Monstrar le gruppos global del quales io face parte (essera visibile pro omnes)",
+	"userprofilev2-showglobaleditcounthelp": "Monstrar mi numero global de modificationes de CentralAuth (essera visibile pro omnes)",
+	"userprofilev2-edit": "Modificar",
+	"userprofilev2-edit-count": "$1 modificationes",
+	"userprofilev2-globaledit-count": "$1 modificationes global",
+	"userprofilev2-editavatar": "Modificar avatar",
+	"userprofilev2-edit-back": "Retornar",
+	"userprofilev2-deleteavatar": "Deler avatar",
+	"userprofilev2-helptext": "Usa iste dialogo pro cambiar le contento de tu profilo de usator."
+}

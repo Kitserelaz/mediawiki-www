@@ -1,0 +1,41 @@
+{
+	"@metadata": {
+		"authors": [
+			"StanProg",
+			"Vlad5250"
+		]
+	},
+	"action-createwiki": "създаване на уикита",
+	"createwiki": "Създаване на уики",
+	"createwiki-desc": "Разширение за лесно създаване на нови уикита на уикиферма.",
+	"createwiki-email-subject": "Вашето ново Miraheze уики ($1) е създадено",
+	"createwiki-error-dbexists": "'''ЗАБЕЛЕЖКА''': Вече съществува уики с този поддомейн.",
+	"createwiki-label-category": "Категория",
+	"createwiki-label-dbname": "Име на базата от данни",
+	"createwiki-label-language": "Език:",
+	"createwiki-label-private": "Отбелязване като скрито",
+	"createwiki-label-reason": "Обяснете фокуса или предназначението на това уики:",
+	"createwiki-label-sitename": "Име на сайта:",
+	"createwiki-success": "Уикито беше създадено успешно.",
+	"echo-category-title-wiki-creation": "Създаване на уики",
+	"echo-pref-tooltip-wiki-creation": "Уведоми ме когато моето уики е създадено.",
+	"notification-createwiki-wiki-creation-email-subject": "Вашето уики $1 е създадено!",
+	"notification-createwiki-wiki-creation-visitwiki-label": "Посетете уикито",
+	"notification-header-wiki-creation": "Вашето уики <strong>$1</strong> е създадено!",
+	"requestwiki-label-language": "Език:",
+	"requestwiki-label-private": "Отбелязване на това уики като лично?",
+	"requestwiki-label-sitename": "Как ще се казва това уики?",
+	"requestwiki-label-subdomain": "Изберете поддомейн за Вашето уики:",
+	"requestwiki-success": "Вашата уики заявка ($1) е успешно изпратена. Тя ще бъде разгледана в най-скоро време.",
+	"requestwikiqueue-request-label-action": "Какво искате да направите?",
+	"requestwikiqueue-request-label-comment": "Коментар:",
+	"requestwikiqueue-request-label-language": "Език",
+	"requestwikiqueue-request-label-requested-date": "Заявено в",
+	"requestwikiqueue-request-label-requester": "Заявител",
+	"requestwikiqueue-request-label-sitename": "Име на сайта",
+	"requestwikiqueue-request-label-status": "Състояние",
+	"requestwikiqueue-request-label-url": "URL",
+	"requestwikiqueue-request-label-visibility-all": "Публично видими",
+	"requestwikiqueue-request-label-visibility-delete": "Потребители с „createwiki-deleterequest“ права могат да преглеждат",
+	"right-createwiki": "Създаване на уикита"
+}

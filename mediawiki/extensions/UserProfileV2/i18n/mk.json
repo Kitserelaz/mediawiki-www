@@ -1,0 +1,39 @@
+{
+	"@metadata": {
+		"authors": [
+			"Bjankuloski06"
+		]
+	},
+	"prefs-profile": "Кориснички профил В2",
+	"userprofilev2-desc": "Систем за кориснички профили на основа на вики.",
+	"userprofilev2-selectavatar": "Избери аватар",
+	"userprofilev2-avatarchanged": "Аватарот е успешно сменет.",
+	"userprofilev2-avatardeleted": "Аватарот е успешно избришан.",
+	"userprofilev2-user-locked": "Оваа корисничка сметка е глобално оневозможена.",
+	"userprofilev2-edit-profile": "Уредете си го профилот",
+	"userprofilev2-apierror-forbidden": "Забрането: немате дозвола да го менувате овој аватар.",
+	"userprofilev2-apierror-invalidpermission": "Забрането: немате дозвола да го уредувате профилот на $1",
+	"userprofilev2-apierror-nofile": "Немате укажано податотека за подигање.",
+	"userprofilev2-apierror-ratelimited": "Во моментов не можете да подигате слики.",
+	"userprofilev2-apierror-invalidusername": "Нема корисник по име „$1“ на ова вики.",
+	"userprofilev2-about-me": "За мене",
+	"userprofilev2-discord": "Корисничко име на Дискорд",
+	"userprofilev2-twitter": "Корисничко име на Твитер",
+	"userprofilev2-mastodon": "Корисничко име на Мастодон",
+	"userprofilev2-about-me-placeholder": "Напишете нешто за себе...",
+	"userprofilev2-about-me-help": "Кажете нешто за себе. Највеќе 200 знаци.",
+	"userprofilev2-mastodon-help": "Вашето корисничко име на Мастодон, со @",
+	"userprofilev2-twitter-help": "Вашето корисничко име на Твитер, со @",
+	"userprofilev2-discord-help": "Вашето корисничко име на Дискорд, без #",
+	"userprofilev2-showglobalgroups": "Да се прикажуваат моите глобални групи?",
+	"userprofilev2-showglobaleditcount": "Да се прикажува мојот број на глобални уредувања?",
+	"userprofilev2-showglobalgroupshelp": "Прикажува глобални кориснички групи во кои членувам (ќе биде видливо за сите)",
+	"userprofilev2-showglobaleditcounthelp": "Прикажувај го бројот на моите глобални уредувања од CentralAuth (ќе биде видливо за сите)",
+	"userprofilev2-edit": "Уреди",
+	"userprofilev2-edit-count": "<strong>$1</strong> уредувања",
+	"userprofilev2-globaledit-count": "<strong>$1</strong> глобални уредувања",
+	"userprofilev2-editavatar": "Уреди аватар",
+	"userprofilev2-edit-back": "Назад",
+	"userprofilev2-deleteavatar": "Избриши аватар",
+	"userprofilev2-helptext": "Послужете се со овој дијалог за да ја измените содржината на вашиот кориснички профил."
+}

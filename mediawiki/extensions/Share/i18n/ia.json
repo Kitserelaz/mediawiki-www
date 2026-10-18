@@ -1,0 +1,31 @@
+{
+	"@metadata": {
+		"authors": [
+			"McDutchie"
+		]
+	},
+	"share": "Condivider",
+	"share-desc": "Adde un ''portlet'' al barra lateral que permitte al usatores facilemente condivider articulos wiki sur platteformas de medios social",
+	"share-header": "Condivider isto",
+	"share-email": "Condivider per e-mail",
+	"share-email-desc": "Permitte adder al barra lateral un ligamine pro condivider articulos per e-mail",
+	"share-facebook": "Condivider sur Facebook",
+	"share-facebook-desc": "Permitte adder al barra lateral un ligamine pro condivider articulos per Facebook",
+	"share-linkedin": "Condivider sur LinkedIn",
+	"share-linkedin-desc": "Permitte adder al barra lateral un ligamine pro condivider articulos per LinkedIn",
+	"share-pinterest": "Condivider sur Pinterest",
+	"share-reddit": "Condivider sur Reddit",
+	"share-reddit-desc": "Permitte adder al barra lateral un ligamine pro condivider articulos per Reddit",
+	"share-telegram": "Condivider sur Telegram",
+	"share-tumblr": "Condivider sur Tumblr",
+	"share-tumblr-desc": "Permitte adder al barra lateral un ligamine pro condivider articulos per Tumblr",
+	"share-twitter": "Condivider sur Twitter",
+	"share-twitter-desc": "Permitte adder al barra lateral un ligamine pro condivider articulos per Twitter",
+	"share-vk": "Condivider sur VK",
+	"share-weibo": "Condivider sur Weibo",
+	"share-whatsapp": "Condivider sur WhatsApp",
+	"share-sidebar-basicbuttons": "Usar le modo \"buttones basic\"?",
+	"share-preftoggle": "Disactivar le ligamines pro condivider in le barra lateral?",
+	"right-viewsharelinks": "Vider le ''portlet'' de condivider in le barra lateral",
+	"action-viewsharelinks": "vider le ''portlet'' de condivider in le barra lateral"
+}

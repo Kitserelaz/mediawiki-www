@@ -1,0 +1,71 @@
+{
+	"name": "InterwikiDispatcher",
+	"version": "1.4.3",
+
+	"author": [
+		"MarkusRost",
+		"alex4401"
+	],
+	"url": "https://mediawiki.org/wiki/Extension:InterwikiDispatcher",
+	"descriptionmsg": "interwikidispatcher-desc",
+	"license-name": "GPL-2.0-or-later",
+	"type": "other",
+
+	"requires": {
+		"MediaWiki": ">= 1.35.0",
+		"platform": {
+			"php": ">= 7.4"
+		}
+	},
+
+	"MessagesDirs": {
+		"InterwikiDispatcher": [
+			"i18n"
+		]
+	},
+
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\InterwikiDispatcher\\": "includes/"
+	},
+
+	"HookHandlers": {
+		"Main": {
+			"class": "MediaWiki\\Extension\\InterwikiDispatcher\\InterwikiDispatcherHooks",
+			"services": [
+				"MainConfig"
+			]
+		},
+		"SpecialInterwiki": {
+			"class": "MediaWiki\\Extension\\InterwikiDispatcher\\ExtensionInterwikiHooks",
+			"services": [
+				"MainConfig",
+				"InterwikiLookup"
+			]
+		}
+	},
+	"Hooks": {
+		"GetLocalURL": "Main",
+		"SpecialPageAfterExecute": "SpecialInterwiki"
+	},
+
+	"ResourceModules": {
+		"ext.interwikidispatcher.specialinterwiki": {
+			"styles": [
+				"ext.interwikidispatcher.specialinterwiki.css"
+			]
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "modules",
+		"remoteExtPath": "InterwikiDispatcher/modules"
+	},
+
+	"config_prefix": "wgIWD",
+	"config": {
+		"Prefixes": {
+			"value": []
+		}
+	},
+
+	"manifest_version": 2
+}

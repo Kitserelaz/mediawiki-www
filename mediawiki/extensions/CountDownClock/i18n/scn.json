@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Ajeje Brazorf"
+		]
+	},
+	"countDownClock-days": "$1 {{PLURAL:$1|Jornu|Jorna}}",
+	"countDownClock-hours": "$1 {{PLURAL:$1|Ura|Uri}}",
+	"countDownClock-minutes": "$1 {{PLURAL:$1|Minutu|Minuti}}",
+	"countDownClock-seconds": "$1 {{PLURAL:$1|Sicunnu|Sicunni}}"
+}

@@ -1,0 +1,37 @@
+{
+  "name": "CFCachePurge",
+  "version": "1.0.0",
+  "author": [
+    "You"
+  ],
+  "type": "specialpage",
+  "AutoloadNamespaces": {
+    "MediaWiki\\Extension\\CFCachePurge\\": "includes/"
+  },
+  "SpecialPages": {
+    "CFCachePurge": "MediaWiki\\Extension\\CFCachePurge\\SpecialCFCachePurge"
+  },
+  "AvailableRights": [
+    "cloudflarepurge"
+  ],
+  "GroupPermissions": {
+    "sysop": {
+      "cloudflarepurge": true
+    }
+  },
+  "config": {
+    "CFCachePurgeZoneId": {
+      "value": ""
+    },
+    "CFCachePurgeApiToken": {
+      "value": ""
+    }
+  },
+  "descriptionmsg": "cfcachepurge-desc",
+  "MessagesDirs": {
+    "CFCachePurge": [
+      "i18n"
+    ]
+  },
+  "manifest_version": 2
+}

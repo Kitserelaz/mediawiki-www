@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"DCLXVI",
+			"StanProg",
+			"Ted Masters"
+		]
+	},
+	"timeline-desc": "Добавя етикета <code>&lt;timeline&gt;</code> за създаване на времеви линии",
+	"timeline-invalidmap": "Невалидна карта на изображението, генерирана от EasyTimeline",
+	"timeline-tracking-category": "Страници, използващи Timeline",
+	"timeline-tracking-category-desc": "Страницата съдържа <code>&lt;timeline&gt;</code> таг"
+}

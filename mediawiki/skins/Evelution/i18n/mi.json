@@ -1,0 +1,30 @@
+{
+	"@metadata": {
+		"authors": [
+			"HoodWiki"
+		]
+	},
+  "skinname-evelution": "Evelution",
+  "evelution-skin-desc": "He Kiri i ahu mai i FandomDesktop me Windows 11",
+  "evelution.css": "/* All CSS here will be loaded for users of the Evelution skin */",
+  "evelution.js": "/* All JavaScript here will be loaded for users of the Evelution skin */",
+  "evelution-themes": "Kaupapa",
+  "evelution-explore": "Tirotiro",
+  "evelution-togglesize": "Takahuri rahinga",
+  "evelution-pages": "{{PLURAL:$1|Tuhinga|Tuhinga}}",
+  "evelution-files": "{{PLURAL:$1|Kōnae|Kōnae}}",
+  "evelution-edits": "{{PLURAL:$1|Whakatika|Whakatika}}",
+  "evelution-users": "{{PLURAL:$1|Kaiwhakamahi|Kaiwhakamahi}}",
+  "evelution-newfiles": "Kōnae",
+  "evelution-darkmode": "Aratau pouri",
+  "evelution-lightmode": "Aratau maama",
+  "evelution-support": "Tautoko tautoko",
+  "evelution-documentation": "Tuhinga",
+  "evelution-standard": "Paerewa",
+  "evelution-visual-style": "Kāhua tirohanga",
+  "evelution-visual-colours": "Tae tirohanga",
+  "evelution-color-colors": "Tae",
+  "evelution-color-pokemoncolors": "Tae Pokémon",
+  "evelution-activity-module": "{{Special:RecentChanges/days=30,limit=8,hidebots,hidelog,hideminor,namespace=0,hidecategorization}}",
+  "evelution-about-module-info": ""
+} 

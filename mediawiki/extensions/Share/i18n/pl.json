@@ -1,0 +1,24 @@
+{
+	"@metadata": {
+		"authors": [
+			"Rail"
+		]
+	},
+	"share": "Udostępnij",
+	"share-desc": "Dodaje z boku strony sekcję umożiwiającą użytkownikom proste udostępnianie artykułów z wiki w mediach społecznościowych",
+	"share-header": "Udostępnij artykuł",
+	"share-email": "Udostępnij przez e-mail",
+	"share-facebook": "Udostępnij na Facebooku",
+	"share-linkedin": "Udostępnij na LinkedInie",
+	"share-pinterest": "Udostępnij na Pintereście",
+	"share-reddit": "Udostępnij na Reddicie",
+	"share-telegram": "Udostępnij na Telegramie",
+	"share-tumblr": "Udostępnij na Tumblrze",
+	"share-twitter": "Udostępnij na Twitterze",
+	"share-vk": "Udostępnij na VK",
+	"share-weibo": "Udostępnij na Weibo",
+	"share-whatsapp": "Udostępnij na WhatsAppie",
+	"share-preftoggle": "Wyłączyć wyświetlanie linków udostępniania w pasku bocznym?",
+	"right-viewsharelinks": "Wyświetlanie paska udostępniania",
+	"action-viewsharelinks": "wyświetlania paska udostępniania"
+}

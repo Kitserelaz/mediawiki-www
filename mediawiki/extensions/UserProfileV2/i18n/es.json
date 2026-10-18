@@ -1,0 +1,31 @@
+{
+	"@metadata": {
+		"authors": [
+			"Galahad"
+		]
+	},
+	"prefs-profile": "UserProfileV2",
+	"userprofilev2-desc": "Un sistema de perfiles para MediaWiki",
+	"userprofilev2-selectavatar": "Selecciona el avatar",
+	"userprofilev2-avatarchanged": "Avatar cambiado exitosamente.",
+	"userprofilev2-avatardeleted": "Avatar eliminado exitosamente.",
+	"userprofilev2-user-locked": "Esta cuenta de usuario ha sido deshabilitada globalmente.",
+	"userprofilev2-edit-profile": "Edita tu perfil",
+	"userprofilev2-apierror-forbidden": "No tienes autorización para modificar este avatar",
+	"userprofilev2-apierror-nofile": "No se proporcionó ningún archivo para cargar.",
+	"userprofilev2-apierror-ratelimited": "No puedes cargar imágenes en este momento.",
+	"userprofilev2-apierror-invalidusername": "Ningún usuario registrado con el nombre de usuario '$1' en esta wiki.",
+	"userprofilev2-about-me": "Sobre mí",
+	"userprofilev2-discord": "Nombre de usuario en Discord",
+	"userprofilev2-twitter": "Nombre de usuario en Twitter",
+	"userprofilev2-mastodon": "Nombre de usuario en Mastodon",
+	"userprofilev2-about-me-placeholder": "Escribe algo sobre ti...",
+	"userprofilev2-about-me-help": "Cuéntanos sobre ti. Máximo 200 caracteres.",
+	"userprofilev2-mastodon-help": "Tu nombre de usuario en Mastodon, con @",
+	"userprofilev2-twitter-help": "Tu nombre de usuario en Twitter, con el @",
+	"userprofilev2-discord-help": "Tu nombre de usuario en Discord, sin el #",
+	"userprofilev2-showglobalgroups": "¿Mostrar mis grupos globales?",
+	"userprofilev2-showglobaleditcount": "¿Mostrar mi número de ediciones globales?",
+	"userprofilev2-showglobalgroupshelp": "Mostrar grupos de usuarios globales de los que formo parte (serán visibles para todos)",
+	"userprofilev2-showglobaleditcounthelp": "Mostrar mi recuento de ediciones globales de CentralAuth (será visible para todos)"
+}

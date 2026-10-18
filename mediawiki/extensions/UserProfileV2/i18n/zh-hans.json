@@ -1,0 +1,40 @@
+{
+	"@metadata": {
+		"authors": [
+			"Corn Pig",
+			"GuoPC",
+			"铁桶"
+		]
+	},
+	"userprofilev2-desc": "基于wiki的用户个人资料系统。",
+	"userprofilev2-selectavatar": "选择头像",
+	"userprofilev2-avatarchanged": "已成功更改头像。",
+	"userprofilev2-avatardeleted": "已成功删除头像。",
+	"userprofilev2-user-locked": "此用户账号已被全域禁用。",
+	"userprofilev2-edit-profile": "编辑您的个人资料",
+	"userprofilev2-apierror-forbidden": "禁止：您没有权限更改此头像。",
+	"userprofilev2-apierror-invalidpermission": "禁止：您没有权限编辑$1的个人资料",
+	"userprofilev2-apierror-nofile": "没有提供要上传的文件。",
+	"userprofilev2-apierror-ratelimited": "您当前不可以上传图片。",
+	"userprofilev2-apierror-invalidusername": "此wiki上尚无以用户名为“$1”注册的用户。",
+	"userprofilev2-about-me": "关于我",
+	"userprofilev2-discord": "Discord用户名",
+	"userprofilev2-twitter": "Twitter用户名",
+	"userprofilev2-mastodon": "Mastodon用户名",
+	"userprofilev2-about-me-placeholder": "写些关于您自己的事情…",
+	"userprofilev2-about-me-help": "告诉我们关于您的事情。（最多200个字符）",
+	"userprofilev2-mastodon-help": "您的Mastodon用户名（含@）",
+	"userprofilev2-twitter-help": "您的Twitter用户名（含@）",
+	"userprofilev2-discord-help": "您的Discord用户名（含#）",
+	"userprofilev2-showglobalgroups": "显示我的全域用户组？",
+	"userprofilev2-showglobaleditcount": "显示我的全域编辑次数？",
+	"userprofilev2-showglobalgroupshelp": "显示我所属的全域用户组（对所有人可见）",
+	"userprofilev2-showglobaleditcounthelp": "显示我来自CentralAuth的全域编辑次数（对所有人可见）",
+	"userprofilev2-edit": "编辑",
+	"userprofilev2-edit-count": "$1次编辑",
+	"userprofilev2-globaledit-count": "$1次全域编辑",
+	"userprofilev2-editavatar": "编辑头像",
+	"userprofilev2-edit-back": "返回",
+	"userprofilev2-deleteavatar": "删除头像",
+	"userprofilev2-helptext": "使用此对话框更改您个人资料的内容。"
+}

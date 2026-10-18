@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Mainframe98",
+			"McDutchie"
+		]
+	},
+	"countDownClock-desc": "Voegt een parserfunctie toe om een afteltijd weer te geven",
+	"countDownClock-invalidtime": "Geef een geldige endTime-parameter op",
+	"countDownClock-days": "$1 {{PLURAL:$1|dag|dagen}}",
+	"countDownClock-hours": "$1 {{PLURAL:$1|uur|uren}}",
+	"countDownClock-minutes": "$1 {{PLURAL:$1|minuut|minuten}}",
+	"countDownClock-seconds": "$1 {{PLURAL:$1|seconde|seconden}}",
+	"countDownClock-expired": "Verlopen"
+}

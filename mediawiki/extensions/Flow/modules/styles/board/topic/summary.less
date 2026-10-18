@@ -1,0 +1,26 @@
+@import '../../flow.colors.less';
+@import '../../flow.variables.less';
+@import 'mediawiki.mixins.less';
+
+.flow-topic-summary-container {
+	.flow-topic-summary,
+	.flow-ui-editTopicSummaryWidget {
+		border-top: @border-subtle;
+		margin-top: 0.5em;
+		padding-top: 0.5em;
+
+		.flow-topic-summary-author {
+			font-weight: bold;
+			color: @color-subtle;
+		}
+
+		.flow-topic-summary-content {
+			p {
+				&:last-of-type {
+					// Remove margin-bottom from last p in summary, to remove excess bottom whitespace
+					margin-bottom: 0;
+				}
+			}
+		}
+	}
+}

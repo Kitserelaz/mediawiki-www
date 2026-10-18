@@ -1,0 +1,31 @@
+{
+	"@metadata": {
+		"authors": [
+			"HoodWiki"
+		]
+	},
+  "skinname-evelution": "Evelution",
+  "evelution-skin-desc": "FandomDesktopとWindows 11をベースにしたスキン",
+  "evelution.css": "/* ここに記述したCSSはEvelution外装の利用者に影響します */",
+  "evelution.js": "/* ここにあるすべてのJavaScriptは、Evelution外装を使用している利用者に対して読み込まれます */",
+  "evelution-themes": "テーマ",
+  "evelution-explore": "探検",
+  "evelution-togglesize": "トグルサイズ",
+  "evelution-pages": "{{PLURAL:$1|論文|記事}}",
+  "evelution-files": "{{PLURAL:$1|ファイル|ファイル}}",
+  "evelution-edits": "{{PLURAL:$1|編集|編集}}",
+  "evelution-users": "{{PLURAL:$1|ユーザー|ユーザー}}",
+  "evelution-newfiles": "ファイル",
+  "evelution-darkmode": "ダークモード",
+  "evelution-lightmode": "ライトモード",
+  "evelution-support": "サポートサーバー",
+  "evelution-documentation": "ドキュメンテーション",
+  "evelution-standard": "スタンダード",
+  "evelution-visual-styles": "ビジュアルスタイル",
+  "evelution-visual-colors": "ビジュアルカラー",
+  "evelution-color-colors": "カラー",
+  "evelution-color-pokemoncolors": "ポケモンカラー",
+  "evelution-activity-module": "{{Special:RecentChanges/days=30,limit=8,hidebots,hidelog,hideminor,namespace=0,hidecategorization}}",
+  "evelution-about-module-info": "",
+  "evelution-designer-title": "CPEテーマデザイナー"
+}

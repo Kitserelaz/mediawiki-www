@@ -1,0 +1,101 @@
+/* Styles for banner sequence controls */
+@import 'mediawiki.mixins';
+@import 'mediawiki.skin.variables.less';
+
+@stepHandleWidth: 1.4em;
+
+.centralNoticeBannerSeqDays {
+	width: 10em;
+}
+
+.centralNoticeBannerSeqDaysLayout {
+	margin-top: 0.8em !important;
+}
+
+.centralNoticeBannerSeqDaysLayout .oo-ui-fieldLayout-header,
+.centralNoticeBannerSeqDaysLayout .oo-ui-fieldLayout-field {
+	width: inherit !important;
+	margin-right: 2em !important;
+}
+
+.centralNoticeBannerSeqBucketSeqContainer {
+	border-top: 1px solid @border-color-disabled;
+	margin: 1em 0 1em 0;
+	padding: 0.6em 0 0 0;
+}
+
+.centralNoticeBannerSeqSequenceContainer {
+	margin: 0.3em 0 1.1em 0;
+}
+
+.centralNoticeBannerSeqHelpContainer {
+	border-top: 1px solid @border-color-disabled;
+	margin-top: 1em;
+	padding-top: 1em;
+}
+
+.centralNoticeBannerSeqStep {
+	padding: 3px;
+	border-radius: 2px;
+}
+
+.centralNoticeBannerSeqStepError {
+	background-color: @background-color-neutral-subtle;
+}
+
+.centralNoticeBannerSeqBucketSeqTitle {
+	font-weight: bold;
+}
+
+.centralNoticeBannerSeqStepHandle {
+	width: @stepHandleWidth;
+	border-radius: 15px 0 0 15px;
+	height: 5em;
+	position: absolute;
+	background-size: contain;
+	background-position: center center;
+	background-repeat: no-repeat;
+}
+
+.centralNoticeBannerSeqStepHandleEnabled {
+	background-color: @background-color-neutral-subtle;
+	border-right: 1px solid @border-color-base;
+	background-image: url( drag-handle.svg );
+}
+
+.centralNoticeBannerSeqStepHandleDisabled {
+	background-color: @background-color-disabled;
+	border-right: 1px solid @border-color-inverted;
+	background-image: url( drag-handle-disabled.svg );
+}
+
+.centralNoticeBannerSeqStepLayout {
+	margin-left: @stepHandleWidth + 0.6em;
+}
+
+// Combined selector required to override default style
+.centralNoticeBannerSeqStep + .oo-ui-fieldsetLayout {
+	margin: 0.6em 0 0.6em 0;
+}
+
+// Needed for vertical alignment with labels on top in HorizontalLayout
+.centralNoticeBannerSeqStep .oo-ui-fieldLayout {
+	vertical-align: top;
+}
+
+// Width of widgets contained in banner sequence steps
+
+.centralNoticeBannerSeqBanner,
+.centralNoticeBannerSeqBannerLayout {
+	width: 25em;
+}
+
+.centralNoticeBannerSeqPageViews,
+.centralNoticeBannerSeqPageViewsLayout {
+	width: 10em;
+}
+
+.centralNoticeBannerSeqIdentifier,
+.centralNoticeBannerSeqIdentifierLayout {
+	width: 20em;
+}

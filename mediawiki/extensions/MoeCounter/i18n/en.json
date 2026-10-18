@@ -1,0 +1,7 @@
+{
+  "@metadata": {
+    "author": "you",
+    "description": "Messages for Moecounter extension"
+  },
+  "moecounter-desc": "Adds an integration for count.cloudwiki.us. Example usage: <moecounter theme=\"asoul\" scale=\"2\" padding=\"3\" num=\"{{#expr: floor(({{#time:U|now}} - {{#time:U|2026-01-16 00:00:00}}) / 86400) }}\" alt=\"Days since 2026-01-16\">index</moecounter>"
+}

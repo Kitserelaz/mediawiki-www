@@ -1,0 +1,478 @@
+<div class="evelution-floating-actions page-side-tools__wrapper">
+	<div class="evelution-floating-actions-container cpe-floating-button-group is-vertical page-side-tools">
+		<!-- Settings for Small Screens -->
+		<div class="cpe-dropdown site-settings overflow-actions" cpe-orient="land">			
+			<div class="cpe-floating-button is-unaccented site-settings page-side-tool" cpe-tooltip="{{msg-preferences}}">
+				<span class="cpe-icon material-icons">
+					settings
+				</span>
+			</div>
+
+			<div class="cpe-dropdown__content cpe-site-setings is-left-aligned is-not-scrollable">					
+				 <ul class="cpe-list">
+					<li class="cpe-floating-button-group is-vertical">
+						<button class="cpe-floating-button is-unaccented toggle-size page-side-tool content-size-toggle" onclick="ToggleWidth()" cpe-tooltip="{{msg-evelution-togglesize}}">
+							<span class="cpe-icon material-icons wide-off">
+								open_in_full
+							</span>
+							<span class="cpe-icon material-icons wide-on">
+								close_fullscreen
+							</span>
+						</button>
+						<button class="cpe-floating-button is-unaccented accent-toggle page-side-tool" onclick="ToggleAccent()" cpe-tooltip="{{msg-evelution-toggleaccent}}">
+							<span class="cpe-icon material-icons">
+								<span class="accented-off">
+									invert_colors
+								</span>
+								<span class="accented-on">
+									invert_colors_off
+								</span>
+							</span>
+						</button>
+						<button class="cpe-floating-button is-unaccented font-toggle page-side-tool" onclick="ToggleSerifFont()" cpe-tooltip="{{msg-evelution-togglefont}}">
+							<span class="cpe-icon font-icon">
+								<span style="font-family:Roboto Serif, serif" class="serif-off">
+									A
+								</span>
+								<span style="font-family:Roboto Flex, sans-serif" class="serif-on">
+									A
+								</span>
+							</span>
+						</button>
+					</li>
+				</ul>
+			</div>
+		</div>
+		<!-- Contrast Modes -->
+		<div class="cpe-dropdown contrast-modes" cpe-orient="land">				
+			<div class="cpe-floating-button is-unaccented contrast-modes page-side-tool" cpe-tooltip="{{msg-evelution-contrast-modes}}">
+				<span class="cpe-icon material-icons">
+					contrast
+				</span>
+			</div>
+			<div class="cpe-dropdown__content cpe-visual-appearance">					
+				 <ul class="cpe-list cpe-contrast-range">
+					<li>
+						<input type="range" min="0" max="13" value="1" class="contrastratio" onchange="SliderContrastMode()"></input>
+					</li>
+				 </ul>
+				 <hr>
+				 <ul class="cpe-list is-linked cpe-contrast-modes has-icons">						
+					<li data-contrast-mode="auto" title="{{msg-evelution-designer-auto}}">
+						<a onclick="contrastmode('auto')">
+							<span class="cpe-icon material-icons darkmode-off">brightness_auto</span>
+							<span class="cpe-icon material-icons darkmode-on">hdr_auto</span>
+						</a>
+					</li>
+					<li data-contrast-mode="low" title="Low">
+						<a onclick="contrastmode('low')">
+							<span class="cpe-icon material-icons darkmode-off">brightness_7</span>
+							<span class="cpe-icon material-icons darkmode-on">brightness_1</span>
+						</a>
+					</li>
+					<li data-contrast-mode="med-low" title="Medium-Low">
+						<a onclick="contrastmode('med-low')">
+							<span class="cpe-icon material-icons darkmode-off">brightness_6</span>
+							<span class="cpe-icon material-icons darkmode-on">brightness_2</span>
+						</a>
+					</li>
+					<li data-contrast-mode="med" title="Medium">
+						<a onclick="contrastmode('med')">
+							<span class="cpe-icon material-icons darkmode-off">brightness_5</span>
+							<span class="cpe-icon material-icons darkmode-on">brightness_3</span>
+						</a>
+					</li>
+					<li data-contrast-mode="med-hi" title="Medium-High">
+						<a onclick="contrastmode('med-hi')">
+							<span class="cpe-icon material-icons">brightness_4</span>
+						</a>
+					</li>
+					<li data-contrast-mode="hi" title="High">
+						<a onclick="contrastmode('hi')">
+							<span class="cpe-icon material-icons darkmode-off">brightness_3</span>
+							<span class="cpe-icon material-icons darkmode-on">brightness_5</span>
+						</a>
+					</li>
+					<li data-contrast-mode="hi-vhi" title="High-Very High">
+						<a onclick="contrastmode('hi-vhi')">
+							<span class="cpe-icon material-icons darkmode-off">brightness_2</span>
+							<span class="cpe-icon material-icons darkmode-on">brightness_6</span>
+						</a>
+					</li>
+					<li data-contrast-mode="vhi" title="Very High">
+						<a onclick="contrastmode('vhi')">
+							<span class="cpe-icon material-icons darkmode-off">brightness_1</span>
+							<span class="cpe-icon material-icons darkmode-on">brightness_7</span>
+						</a>
+					</li>
+				</ul>
+			</div>
+		</div>
+		<!-- Color Modes -->
+		<div class="cpe-dropdown color-modes color-management-on" cpe-orient="land">				
+			<div class="cpe-floating-button is-unaccented color-modes page-side-tool" cpe-tooltip="{{msg-evelution-colormodes}}">
+				<span class="cpe-icon material-icons">
+					hdr_auto
+				</span>
+			</div>
+			<div class="cpe-dropdown__content cpe-visual-appearance">
+				<ul class="cpe-list is-linked cpe-device-themes has-icons">
+					<li data-device-theme="auto" title="{{msg-evelution-designer-auto}}">
+						<a onclick="colortheme('match-parent','auto')">
+							<span class="cpe-icon material-icons">brightness_auto</span>
+						</a>
+					</li>
+					<li data-device-theme="auto-dark" title="{{msg-evelution-designer-auto}} ({{msg-evelution-darkmode}})">
+						<a onclick="colortheme('match-parent','auto-dark')">
+							<span class="cpe-icon material-icons">hdr_auto</span>
+						</a>
+					</li>
+					<li data-device-theme="light" title="{{msg-evelution-lightmode}}">
+						<a onclick="colortheme('match-parent','light')">
+							<span class="cpe-icon material-icons">light_mode</span>
+						</a>
+					</li>
+					<li data-device-theme="dark" title="{{msg-evelution-darkmode}}">
+						<a onclick="colortheme('match-parent','dark')">
+							<span class="cpe-icon material-icons">dark_mode</span>
+						</a>
+					</li>
+				</ul>
+				<hr>
+				 <ul class="cpe-list cpe-colorhue-range">
+					<li class="slider-with-icon">
+						<datalist id="colorhues" class="is-hidden">
+							<option value="0"    label="0deg">
+							<option value="60"   label="60deg">
+							<option value="120"  label="120deg">
+							<option value="180"  label="180deg">
+							<option value="240"  label="240deg">
+							<option value="300"  label="300deg">
+							<option value="360"  label="360deg">
+						</datalist>
+						<span class="cpe-icon material-icons">palette</span>
+						<input type="range" min="0" max="360" value="0" step="5" class="colorhue" list="colorhues" onchange="SliderColorHue()"></input>
+					</li>
+					<li class="slider-with-icon">
+						<datalist id="colorsats" class="is-hidden">
+							<option value="0"    label="0%">
+							<option value="25"   label="25%">
+							<option value="50"   label="50%">
+							<option value="75"   label="75%">
+							<option value="100"  label="100%">
+						</datalist>
+						<span class="cpe-icon material-icons">tonality</span>
+						<input type="range" min="0" max="100" value="100" step="5" class="colorsat" list="colorsats" onchange="SliderColorSaturation()"></input>
+					</li>
+				 </ul>
+				<hr>
+				<ul class="cpe-list is-linked cpe-color-styles has-icons">
+					<li data-color-style="standard" title="{{msg-evelution-standard}}">
+						<a onclick="colortheme('standard')">
+							<span class="cpe-icon material-icons darkdevice-off">brightness_auto</span>
+							<span class="cpe-icon material-icons lightdevice-off">hdr_auto</span>
+						</a>
+					</li>
+					<li data-color-style="colorscale" title="{{msg-evelution-colorstyle-colorscale}}">
+						<a onclick="colortheme('colorscale')">
+							<span class="cpe-icon material-icons darkdevice-off" style="--icon-rotate:-90deg;">gradient</span>
+							<span class="cpe-icon material-icons lightdevice-off" style="--icon-rotate:90deg;">gradient</span>
+						</a>
+					</li>
+					<li data-color-style="hottemperature" title="{{msg-evelution-colorstyle-hottemperature}}">
+						<a onclick="colortheme('hottemperature')">
+							<span class="cpe-icon material-icons darkdevice-off">thermostat</span>
+							<span class="cpe-icon material-icons lightdevice-off" style="--icon-rotate:180deg;">thermostat</span>
+						</a>
+					</li>
+					<li data-color-style="coldtemperature" title="{{msg-evelution-colorstyle-coldtemperature}}">
+						<a onclick="colortheme('coldtemperature')">
+							<span class="cpe-icon material-icons darkdevice-off">ac_unit</span>
+							<span class="cpe-icon material-icons lightdevice-off">storm</span>
+						</a>
+					</li>
+				</ul>
+				<ul class="cpe-list is-linked cpe-solo-modes has-icons">
+					<li data-solo-mode="duo">
+						<a onclick="colortheme('match-parent','match-parent','match-parent', 'match-parent', 'duo')">
+							<span>Duo</span>
+						</a>
+					</li>
+					<li data-solo-mode="solo">
+						<a onclick="colortheme('match-parent','match-parent','match-parent', 'match-parent', 'solo')">
+							<span>Solo</span>
+						</a>
+					</li>
+				</ul>
+			</div>
+		</div>
+		<!-- Styles -->
+		<div class="cpe-dropdown styles" cpe-orient="land">				
+			<div class="cpe-floating-button is-unaccented styles page-side-tool" cpe-tooltip="{{msg-evelution-visual-appearance}}">
+				<span class="cpe-icon material-icons">
+					format_paint
+				</span>
+			</div>
+			<div class="cpe-dropdown__content cpe-visual-appearance forced-colors-styles">					
+				 <ul class="cpe-list is-linked cpe-visual-modes has-icons is-single-row forced-colors-off">						
+					<li data-visual-mode="threeD" title="{{msg-evelution-3D}}">
+						<a onclick="VisualMode('threeD')">
+							<span class="cpe-icon cpe-icon-small material-icons standard-display cpe-icon-badge">emergency</span>
+							<span class="cpe-icon material-icons">deployed_code</span>
+						</a>
+					</li>
+					<li data-visual-mode="standard" title="{{msg-evelution-standard}}">
+						<a onclick="VisualMode('standard')">
+							<span class="cpe-icon cpe-icon-small material-icons lite-display cpe-icon-badge">emergency</span>
+							<span class="cpe-icon material-icons">opacity</span>
+						</a>
+					</li>
+					<li data-visual-mode="lite" title="Lite">
+						<a onclick="VisualMode('lite')">
+							<span class="cpe-icon material-icons">square</span>
+						</a>
+					</li>
+					<li data-visual-mode="contrast" title="{{msg-evelution-contrast}}">
+						<a onclick="VisualMode('contrast')">
+							<span class="cpe-icon material-icons">contrast</span>
+						</a>
+					</li>
+				</ul>
+				<hr class="forced-colors-off">
+				 <ul class="cpe-list is-linked cpe-visual-styles has-icons">						
+					<li data-visual-style="standard" title="{{msg-evelution-standard}}">
+						<a onclick="VisualStyle('standard')">
+							<span class="cpe-icon material-icons threeD-on">deployed_code</span>
+							<span class="cpe-icon material-icons standard-on">build</span>
+							<span class="cpe-icon material-icons lite-on">square</span>
+							<span class="cpe-icon material-icons contrast-on">contrast</span>
+						</a>
+					</li>
+
+
+					<li data-visual-style="custom_1" class="custom base-visual-style" title="{{msg-evelution-style-custom}} 1">
+						<a onclick="VisualStyle('custom_1')">
+							1
+						</a>
+					</li>
+					<li data-visual-style="custom_2" class="custom"  title="{{msg-evelution-style-custom}} 2">
+						<a onclick="VisualStyle('custom_2')">
+							2
+						</a>
+					</li>
+					<li data-visual-style="custom_3" class="custom"  title="{{msg-evelution-style-custom}} 3">
+						<a onclick="VisualStyle('custom_3')">
+							3
+						</a>
+					</li>
+					<li data-visual-style="custom_4" class="custom"  title="{{msg-evelution-style-custom}} 4">
+						<a onclick="VisualStyle('custom_4')">
+							4
+						</a>
+					</li>
+
+
+				</ul>
+			</div>
+		</div>
+		<!-- Colors -->
+		<div class="cpe-dropdown colors forced-colors-off" cpe-orient="land">				
+			<div class="cpe-floating-button is-unaccented colors page-side-tool" cpe-tooltip="{{msg-evelution-visual-colors}}">
+				<span class="cpe-icon material-icons">
+					palette
+				</span>
+			</div>
+			<div class="cpe-dropdown__content cpe-visual-appearance">					
+				<ul class="cpe-list is-linked cpe-color-schemes has-icons">
+					<li data-color-scheme="auto" title="{{msg-evelution-designer-auto}}">
+						<a onclick="ColorScheme('auto')">
+							<span class="cpe-icon material-icons">brightness_auto</span>
+						</a>
+					</li>
+					<li data-color-scheme="auto-dark" title="{{msg-evelution-designer-auto}} ({{msg-evelution-darkmode}})">
+						<a onclick="ColorScheme('auto-dark')">
+							<span class="cpe-icon material-icons">hdr_auto</span>
+						</a>
+					</li>
+					<li data-color-scheme="light" title="{{msg-evelution-lightmode}}">
+						<a onclick="ColorScheme('light')">
+							<span class="cpe-icon material-icons">light_mode</span>
+						</a>
+					</li>
+					<li data-color-scheme="dark" title="{{msg-evelution-darkmode}}">
+						<a onclick="ColorScheme('dark')">
+							<span class="cpe-icon material-icons">dark_mode</span>
+						</a>
+					</li>
+				</ul>
+				<hr class="fcm-off">
+				 <ul class="cpe-list is-linked fcm-off cpe-visual-colors has-icons">						
+					<li data-visual-color="standard" title="{{msg-evelution-standard}}">
+						<a onclick="VisualColor('standard')">
+							<span class="cpe-icon material-icons">build</span>
+						</a>
+					</li>
+					<li data-visual-color="nocolormanagement" title="{{msg-evelution-nocolormanagement}}">
+						<a onclick="VisualColor('nocolormanagement')">
+							<span class="cpe-icon cpe-icon-small material-icons dcm-limited cpe-icon-badge">emergency</span>
+							<span class="cpe-icon material-icons">invert_colors_off</span>
+						</a>
+					</li>
+				</ul>
+			</div>
+		</div>
+		<!-- Disabled Color Management Modes -->
+		<div class="cpe-dropdown dcm-modes color-management-off" cpe-orient="land">
+			<div class="cpe-floating-button is-unaccented dcm-toggle page-side-tool" cpe-tooltip="{{msg-evelution-dcmmodes}}">
+				<span class="cpe-icon material-icons">
+					colorize
+				</span>
+			</div>
+			<div class="cpe-dropdown__content cpe-visual-appearance">
+				<ul class="cpe-list is-linked cpe-dcm-types has-icons is-single-row">
+					<li data-dcm-type="auto" title="{{msg-evelution-designer-auto}}">
+						<a onclick="SetDCM('auto','match-parent')">
+							<span class="cpe-icon material-icons">brightness_auto</span>
+						</a>
+					</li>
+					<li data-dcm-type="auto-reversi" title="{{msg-evelution-designer-auto}} ({{msg-evelution-colorstyle-reversi}})">
+						<a onclick="SetDCM('auto-reversi','match-parent')">
+							<span class="cpe-icon material-icons">hdr_auto</span>
+						</a>
+					</li>
+					<li data-dcm-type="standard" title="{{msg-evelution-standard}}">
+						<a onclick="SetDCM('standard','match-parent')">
+							<span class="cpe-icon material-icons">bedtime_off</span>
+						</a>
+					</li>
+					<li data-dcm-type="reversi" title="{{msg-evelution-colorstyle-reversi}}">
+						<a onclick="SetDCM('reversi','match-parent')">
+							<span class="cpe-icon material-icons">bedtime</span>
+						</a>
+					</li>
+				</ul>
+				<hr>
+				<ul class="cpe-list is-linked cpe-dcm-modes has-icons">
+					<li data-dcm-mode="standard" title="{{msg-evelution-standard}}">
+						<a onclick="SetDCM('match-parent','standard')">
+							<span class="cpe-icon material-icons">build</span>
+						</a>
+					</li>
+					<li data-dcm-mode="lite" title="Lite">
+						<a onclick="SetDCM('match-parent','lite')">
+							<span class="cpe-icon material-icons">square</span>
+						</a>
+					</li>
+					<li data-dcm-mode="general" title="{{msg-evelution-style-general}}">
+						<a onclick="SetDCM('match-parent','general')">
+							<span class="cpe-icon material-icons">computer</span>
+						</a>
+					</li>
+					<li data-dcm-mode="basic" title="{{msg-evelution-style-basic}}">
+						<a onclick="SetDCM('match-parent','basic')">
+							<span class="cpe-icon material-icons">invert_colors</span>
+						</a>
+					</li>
+					<li data-dcm-mode="simple" title="{{msg-evelution-style-simple}}">
+						<a onclick="SetDCM('match-parent','simple')">
+							<span class="cpe-icon material-icons">brush</span>
+						</a>
+					</li>
+					<li data-dcm-mode="classic" title="{{msg-evelution-style-classic}}">
+						<a onclick="SetDCM('match-parent','classic')">
+							<span class="cpe-icon material-icons">filter_b_and_w</span>
+						</a>
+					</li>
+					<li data-dcm-mode="contrast" title="{{msg-evelution-contrast}}">
+						<a onclick="SetDCM('match-parent','contrast')">
+							<span class="cpe-icon material-icons">contrast</span>
+						</a>
+					</li>
+					<li data-dcm-mode="retro" title="{{msg-evelution-color-retro}}">
+						<a onclick="SetDCM('match-parent','retro')">
+							<span class="cpe-icon material-icons">smart_toy</span>
+						</a>
+					</li>
+					<li data-dcm-mode="custom_1" class="custom" title="{{msg-evelution-style-custom}} 1">
+						<a onclick="SetDCM('match-parent','custom_1')">
+							1
+						</a>
+					</li>
+					<li data-dcm-mode="custom_2" class="custom" title="{{msg-evelution-style-custom}} 2">
+						<a onclick="SetDCM('match-parent','custom_2')">
+							2
+						</a>
+					</li>
+					<li data-dcm-mode="custom_3" class="custom" title="{{msg-evelution-style-custom}} 3">
+						<a onclick="SetDCM('match-parent','custom_3')">
+							3
+						</a>
+					</li>
+					<li data-dcm-mode="custom_4" class="custom" title="{{msg-evelution-style-custom}} 4">
+						<a onclick="SetDCM('match-parent','custom_4')">
+							4
+						</a>
+					</li>
+				</ul>
+			</div>
+		</div>
+		<!-- Themes -->
+		<div class="cpe-dropdown themes color-management-on forced-colors-off" cpe-orient="land">
+			<div class="cpe-floating-button is-unaccented themes page-side-tool" cpe-tooltip="{{msg-evelution-themes}}">
+				<span class="cpe-icon material-icons">
+					brush
+				</span>
+			</div>
+			<div class="cpe-dropdown__content cpe-visual-appearance">
+				<ul class="cpe-list is-linked cpe-themes has-icons">
+					<li data-theme-change="theme-A">
+						<a class="ThemeA" onclick="ToggleTheme('A')">
+							A
+						</a>
+					</li>
+					<li data-theme-change="theme-B">
+						<a class="ThemeB" onclick="ToggleTheme('B')">
+							B
+						</a>
+					</li>
+					<li data-theme-change="theme-C">
+						<a class="ThemeC" onclick="ToggleTheme('C')">
+							C
+						</a>
+					</li>
+					<li data-theme-change="theme-D">
+						<a class="ThemeD" onclick="ToggleTheme('D')">
+							D
+						</a>
+					</li>
+					<li data-theme-change="theme-E">
+						<a class="ThemeE" onclick="ToggleTheme('E')">
+							E
+						</a>
+					</li>
+					<li data-theme-change="theme-F">
+						<a class="ThemeF" onclick="ToggleTheme('F')">
+							F
+						</a>
+					</li>
+					<li data-theme-change="theme-G">
+						<a class="ThemeG" onclick="ToggleTheme('G')">
+							G
+						</a>
+					</li>
+					<li data-theme-change="theme-H">
+						<a class="ThemeH" onclick="ToggleTheme('H')">
+							H
+						</a>
+					</li>
+
+				</ul>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="evelution-floating-actions floats-to-right extra-actions page-side-tools__wrapper">
+	<div class="evelution-floating-actions-container cpe-floating-button-group is-vertical page-side-tools">
+	</div>
+</div>

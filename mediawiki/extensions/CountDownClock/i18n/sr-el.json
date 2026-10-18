@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Zoranzoki21"
+		]
+	},
+	"countDownClock-desc": "Dodaje funkciju raščlanjivanja za prikaz vremena odbrojavanja",
+	"countDownClock-invalidtime": "Pružite važeći endTime parametar",
+	"countDownClock-days": "$1 {{PLURAL:$1|dan|dana}}",
+	"countDownClock-hours": "$1 {{PLURAL:$1|sat|sata|sati}}",
+	"countDownClock-minutes": "$1 {{PLURAL:$1|minut|minuta}}",
+	"countDownClock-seconds": "$1 {{PLURAL:$1|sekund|sekunde|sekundi}}",
+	"countDownClock-expired": "Isteklo"
+}

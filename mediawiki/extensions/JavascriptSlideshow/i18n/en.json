@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": []
+	},
+	"javascriptslideshow-desc": "Create a slideshow from multiple included div elements",
+	"javascriptslideshow-invalid-parameter": "Invalid value $2 for parameter $1 (May be one of: $3). ",
+	"javascriptslideshow-invalid-num-parameter": "Parameter $1 must be a number"
+}

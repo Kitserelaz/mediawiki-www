@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Nokeoo"
+		]
+	},
+	"countDownClock-days": "$1 {{PLURAL: $1|Diena|Dienos}}",
+	"countDownClock-hours": "$1 {{PLURAL:$1|Valanda|Valandos}}",
+	"countDownClock-minutes": "$1 {{PLURAL:$1|Minutė|Minutės}}",
+	"countDownClock-seconds": "$1 {{PLURAL:$1|Sekundė|Sekundės}}",
+	"countDownClock-expired": "Baigėsi"
+}

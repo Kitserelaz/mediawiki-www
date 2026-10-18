@@ -1,0 +1,29 @@
+@import '../../../flow.colors.less';
+@import '../../../flow.variables.less';
+
+.flow-ui-anonWarningWidget {
+	// Hide when not active
+	display: none;
+
+	&-active {
+		background: #36c;
+		padding: 0.6em;
+		color: @color-inverted;
+		display: block;
+		line-height: 1.42857em;
+		margin-bottom: 0.5em;
+
+		> .oo-ui-iconWidget.oo-ui-iconElement.oo-ui-iconElement-icon {
+			position: absolute;
+		}
+
+		> .oo-ui-labelWidget {
+			padding-left: 2em;
+		}
+
+		a {
+			color: @color-inverted;
+			font-weight: bold;
+		}
+	}
+}

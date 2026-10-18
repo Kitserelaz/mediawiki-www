@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"NikosLikomitros",
+			"Nikosgranturismogt"
+		]
+	},
+	"apihelp-flow+view-post-summary": "Προβολή ανάρτησης.",
+	"apihelp-flow+view-post-param-postId": "Αναγνωριστικό της ανάρτησης για προβολή.",
+	"apihelp-flow+view-post-history-summary": "Προβολή του ιστορικού αναθεωρήσεων για μια ανάρτηση.",
+	"apihelp-flow+view-topic-summary": "Προβολή ενός θέματος."
+}

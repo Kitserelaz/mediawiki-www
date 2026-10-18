@@ -1,0 +1,17 @@
+{
+	"@metadata": {
+		"authors": [
+			"Mirws",
+			"Rachmat04",
+			"Stevannus rua",
+			"Veracious"
+		]
+	},
+	"action-urlshortener-create-url": "membuat URL pendek",
+	"right-urlshortener-create-url": "Buat URL pendek",
+	"urlshortener-approved-domains": "Pranala ke {{PLURAL:$1|domain|domain}} dapat dipersingkat: $2.",
+	"urlshortener-toolbox": "Lihat URL pendek",
+	"urlshortener-toolbox-qrcode": "Unduh kode QR",
+	"urlshortener-url-input-label": "URL",
+	"urlshortener-qrcode-downloaded": "Kode QR telah diunduh sebagai berkas SVG"
+}

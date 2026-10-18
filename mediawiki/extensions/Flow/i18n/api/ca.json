@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"Eduardo Martinez",
+			"Toniher",
+			"Vriullop"
+		]
+	},
+	"apihelp-flow+view-post-history-example-1": "Recuperar les revisions d'un apunt de [[Topic:S2tycnas4hcucw8w]] en text wiki",
+	"apihelp-flow+view-topic-history-example-1": "Veure les revisions de les entrades a [[Topic:S2tycnas4hcucw8w]] com wikitext",
+	"apihelp-flow+view-topiclist-param-offset-dir": "Direcció d'ordenació dels temes.",
+	"apihelp-flow-parsoid-utils-param-content": "Contingut per convertir."
+}

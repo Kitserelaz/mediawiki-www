@@ -1,0 +1,31 @@
+{
+	"@metadata": {
+		"authors": [
+			"HoodWiki"
+		]
+	},
+  "skinname-evelution": "Evelution",
+  "evelution-skin-desc": "مظهر قائم على FandomDesktop و Windows 11",
+  "evelution.css": "/* الأنماط المتراصة CSS المعروضة هنا ستؤثر على مستخدمي واجهة Evelution */",
+  "evelution.js": "/* أي جافاسكريبت هنا سيتم تحميلها للمستخدمين الذين يستعملون واجهة Evelution */",
+  "evelution-themes": "ثيمات",
+  "evelution-explore": "يكتشف",
+  "evelution-togglesize": "تبديل الحجم",
+  "evelution-pages": "{{PLURAL:$1|مقالة | مقالات}}",
+  "evelution-files": "{{PLURAL:$1|ملف | ملفات}}",
+  "evelution-edits": "{{PLURAL:$1|تحرير | تعديلات}}",
+  "evelution-users": "{{PLURAL:$1|مستخدم | مستخدمون}}",
+  "evelution-newfiles": "الملفات",
+  "evelution-darkmode": "الوضع الداكن",
+  "evelution-lightmode": "الوضع الخفيف",
+  "evelution-support": "خادم الدعم",
+  "evelution-documentation": "توثيق",
+  "evelution-standard": "معيار",
+  "evelution-visual-styles": "الأنماط المرئية",
+  "evelution-visual-colors": "الألوان المرئية",
+  "evelution-color-colors": "الألوان",
+  "evelution-color-pokemoncolors": "Pokémonالألوان",
+  "evelution-activity-module": "{{Special:RecentChanges/days=30,limit=8,hidebots,hidelog,hideminor,namespace=0,hidecategorization}}",
+  "evelution-about-module-info": ""
+
+}

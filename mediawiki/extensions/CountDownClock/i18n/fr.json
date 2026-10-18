@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Gomoko",
+			"Verdy p"
+		]
+	},
+	"countDownClock-desc": "Ajouter une fonction à l’analyseur pour afficher un temps de compte à rebours",
+	"countDownClock-invalidtime": "Veuillez fournir un paramètre d’heure de fin (« endTime ») valide",
+	"countDownClock-days": "$1 jour{{PLURAL:$1||s}}",
+	"countDownClock-hours": "$1 heure{{PLURAL:$1||s}}",
+	"countDownClock-minutes": "$1 minute{{PLURAL:$1||s}}",
+	"countDownClock-seconds": "$1 seconde{{PLURAL:$1||s}}",
+	"countDownClock-expired": "Expiré"
+}

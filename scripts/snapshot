@@ -1,0 +1,25 @@
+#!/bin/sh
+# Stop all writers before taking a coordinated database/files/queue snapshot.
+set -eu
+cd "$(dirname "$0")/.."
+farmEnvFile=''
+if [ "${1:-}" = --env-file ]; then
+    [ "$#" -ge 3 ] || { echo 'Usage: scripts/snapshot --env-file FILE NAME'; exit 1; }
+    farmEnvFile=$2
+    shift 2
+fi
+compose() {
+    if [ -n "$farmEnvFile" ]; then docker compose --env-file "$farmEnvFile" "$@";
+    else docker compose "$@"; fi
+}
+[ "$#" = 1 ] || { echo 'Usage: scripts/snapshot NAME'; exit 1; }
+case "$1" in *[!a-zA-Z0-9_-]*|'') echo 'Use letters, digits, underscores or hyphens'; exit 1;; esac
+compose stop web php worker scheduler counter redis
+# Keep writers stopped on failure so an operator can inspect a partial backup.
+compose run --rm --no-deps init php /opt/farm/manage.php backup "/backups/$1"
+mkdir -p "backups/$1/secrets"
+snapshotSecretsDir=$(compose config --format json | python3 -c 'import json,sys;from pathlib import Path;print(Path(json.load(sys.stdin)["secrets"]["farm"]["file"]).parent)')
+cp "$snapshotSecretsDir/farm.json" "$snapshotSecretsDir/oauth-private.key" "$snapshotSecretsDir/oauth-public.key" "backups/$1/secrets/"
+chmod -R go-rwx "backups/$1"
+compose up -d redis counter php worker scheduler web
+printf 'Snapshot saved to backups/%s; copy it off-host.\n' "$1"

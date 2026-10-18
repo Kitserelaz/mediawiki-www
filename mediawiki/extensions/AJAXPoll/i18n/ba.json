@@ -1,0 +1,34 @@
+{
+	"@metadata": {
+		"authors": [
+			"Alfiya55",
+			"Sagan",
+			"Аҡҡашҡа",
+			"З. ӘЙЛЕ",
+			"Ләйсән"
+		]
+	},
+	"ajaxpoll-desc": "<code>&lt;poll&gt;</code> тамғаһы ярҙамында AJAX нигеҙендә тауыш биреү мөмкинлеге бар",
+	"ajaxpoll-tracking-category": "Тауыш биреү бите",
+	"ajaxpoll-tracking-category-desc": "Биттә <code>&lt;һораулама&gt;</code> бар.",
+	"ajaxpoll-vote-update": "Тауышығыҙ яңыртылды.",
+	"ajaxpoll-vote-add": "Тауышығыҙ иҫәпкә алынды.",
+	"ajaxpoll-vote-error": "Тауышығыҙҙы иҫәпкә алғанда хата килеп сыҡты, ҡабатлап ҡарағыҙ.",
+	"ajaxpoll-percent-votes": "Барлыҡ тауыштың $1%",
+	"ajaxpoll-your-vote": "Һеҙ $3 $4 «$1» өсөн тауыш бирҙегеҙ. Түбәндә бирелгән яуаптарҙы һайлап, фекерегеҙҙе үҙгәртә алаһығыҙ.",
+	"ajaxpoll-no-vote": "Зинһар, түбәндә тауыш бирегеҙ.",
+	"ajaxpoll-no-vote-results-after-voting": "Зинһар, түбәндә тауыш бирегеҙ.\nҺеҙ тауыш биргәндән һуң, һөҙөмтәләр күрһәтелер.",
+	"ajaxpoll-info": "$2 тауыш биреү башланған ваҡыттан алып {{PLURAL:$1|$1 тауыш бирелде}}.",
+	"ajaxpoll-submitting": "Зинһар, көтөгөҙ, тауышығыҙ эшкәртелә.",
+	"ajaxpoll-vote-permission": "Тауыш биреү хоҡуғығыҙ юҡ.",
+	"ajaxpoll-view-results-permission": "Һеҙ был һорауламаның һөҙөмтәләрен ҡарай алмайһығыҙ.",
+	"ajaxpoll-view-results-before-vote-permission": "Һеҙ был һорауламаның һөҙөмтәләрен тауыш бирмәйенсә ҡарай алмайһығыҙ.",
+	"ajaxpoll-revoke-vote": "Тауышымды кире алырға теләйем",
+	"ajaxpoll-vote-revoked": "Тауышығыҙ кире алынды.",
+	"right-ajaxpoll-vote": "AJAX нигеҙендә һорауламала тауыш бирегеҙ.",
+	"right-ajaxpoll-view-results": "AJAX нигеҙендә һораулама һөҙөмтәләрен ҡарарға мөмкин",
+	"right-ajaxpoll-view-results-before-vote": "Тауыш биреү алдынан AJAX нигеҙендә һораулама һөҙөмтәләрен ҡарарға мөмкин",
+	"action-ajaxpoll-vote": "AJAX нигеҙендә һораулама буйынса тауыш биреү.",
+	"action-ajaxpoll-view-results": "AJAX нигеҙендә һораулама һөҙөмтәләрен ҡарарға мөмкин",
+	"action-ajaxpoll-view-results-before-vote": "тауыш биреү алдынан AJAX нигеҙендә һораулама һөҙөмтәләрен ҡарау"
+}

@@ -1,0 +1,22 @@
+{
+	"@metadata": {
+		"authors": [
+			"Amire80",
+			"לואיקה"
+		]
+	},
+	"tiff-desc": "טיפול בהצגת קובצי TIFF במצב תמונה",
+	"tiff_no_metadata": "לא ניתן לקבל מטא־נתונים מ־TIFF",
+	"tiff_page_error": "מספר הדף אינו בטווח",
+	"tiff_too_many_embed_files": "יש יותר מדי קבצים מוטבעים בתמונה.",
+	"tiff_sourcefile_too_large": "הרזולוציה של קובץ המקור גדולה מדי.\nלא תיווצר תמונה ממוזערת.",
+	"tiff_targetfile_too_large": "הרזולוציה של קובץ היעד גדולה מדי.\nלא תיווצר תמונה ממוזערת.",
+	"tiff_file_too_large": "הקובץ שהועלה היה גדול מדי ונדחה.",
+	"tiff_out_of_service": "לא ניתן לעבד את הקובץ שהועלה.\nחבילת ImageMagick אינה זמינה.",
+	"tiff_too_much_meta": "מטא־נתונים צורכים יותר מדי נפח.",
+	"tiff_error_cached": "ניתן לעבד את הקובץ הזה רק אחרי מרווח ההטמנה.",
+	"tiff_size_error": "גודל הקובץ שדווח לא תואם לגודל הקובץ בפועל.",
+	"tiff_script_detected": "הקובץ שהועלה מכיל סקריפטים.",
+	"tiff_bad_file": "הקובץ שהועלה מכיל שגיאות: $1",
+	"tiff_invalid_file": "הקובץ שהועלה אינו קובץ TIFF תקין."
+}

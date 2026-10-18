@@ -1,0 +1,12 @@
+# Isolated rehearsal only: never requests a public certificate.
+{
+    admin off
+    local_certs
+}
+import /etc/caddy/wiki.caddy
+https://counter.{$MW_DOMAIN} {
+    reverse_proxy counter:3000
+}
+{$MW_PUBLIC_HOSTS} {
+    import wiki
+}

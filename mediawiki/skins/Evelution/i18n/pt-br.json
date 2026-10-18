@@ -1,0 +1,32 @@
+{
+	"@metadata": {
+		"authors": [
+			"HoodWiki"
+		]
+	},
+  "skinname-evelution": "Evelution",
+  "evelution-skin-desc": "Uma pele baseada no Fandom Desktop e Windows 11",
+  "evelution.css": "/* Todos os CSS aqui serão carregados para usuários do tema Evelution */",
+  "evelution.js": "/* Todos JavaScript aqui colocado será carregado para usuários do tema Evelution */",
+  "evelution-themes": "Temas",
+  "evelution-explore": "Explorar",
+  "evelution-togglesize": "Tamanho do alternador",
+  "evelution-pages": "{{PLURAL:$1| Página| Páginas}}",
+  "evelution-files": "{{PLURAL:$1| Arquivo| Arquivos}}",
+  "evelution-edits": "{{PLURAL:$1| Editar| Edita}}",
+  "evelution-users": "{{PLURAL:$1| Usuário| Usuários}}",
+  "evelution-newfiles": "Novos Arquivos",
+  "evelution-darkmode": "Modo escuro",
+  "evelution-lightmode": "Modo luz",
+  "evelution-support": "Servidor de suporte",
+  "evelution-documentation": "Documentação",
+  "evelution-standard": "Padrão",
+  "evelution-visual-styles": "Estilos visuais",
+  "evelution-visual-colors": "Cores visuais",
+  "evelution-color-colors": "Cores",
+  "evelution-color-pokemoncolors": "Cores Pokémon",
+  "evelution-activity-module": "{{Special:RecentChanges/days=30,limit=8,hidebots,hidelog,hideminor,namespace=0,hidecategorization}}",
+  "evelution-about-module-info": "",
+  "evelution-designer-title": "Designer de temas CPE",
+  "evelution-colorstyle-reversi": "Invertidas"
+}

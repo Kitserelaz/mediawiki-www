@@ -1,0 +1,15 @@
+# Used only by jobchron.py's disposable project; no HTTP services are started.
+services:
+  init:
+    environment:
+      MW_JOBCHRON_TEST_ISOLATED: '1'
+    volumes:
+      - ./docker/tests/jobchron.php:/opt/jobchron-test.php:ro
+  jobchron:
+    environment:
+      MW_JOBCHRON_POLICY: /etc/farm/jobchron-test-policy.json
+    volumes:
+      - ./docker/tests/jobchron-policy.json:/etc/farm/jobchron-test-policy.json:ro
+networks:
+  default:
+    internal: true

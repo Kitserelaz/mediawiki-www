@@ -1,0 +1,10 @@
+{
+  "limits": {
+    "attempts": {"*": 3},
+    "claimTTL": {
+      "*": 3600,
+      "DataDumpGenerateJob": 86400,
+      "webVideoTranscode": 86400
+    }
+  }
+}

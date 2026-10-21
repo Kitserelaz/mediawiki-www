@@ -1,0 +1,49 @@
+{
+	"name": "wikimedia/jobrunner",
+	"description": "Continuously process a MediaWiki jobqueue with Redis",
+	"license": "GPL-2.0-or-later",
+	"authors": [
+		{
+			"name": "Aaron Schulz",
+			"email": "aschulz@wikimedia.org"
+		}
+	],
+	"support": {
+		"issues": "https://phabricator.wikimedia.org/tag/wmf-jobqueue/"
+	},
+	"require": {
+		"php": ">=8.2",
+		"ext-mbstring": "*",
+		"ext-posix": "*",
+		"ext-pcntl": "*",
+		"ext-redis": "*",
+		"ext-sockets": "*",
+		"wikimedia/ip-utils": "^6.0.0"
+	},
+	"require-dev": {
+		"mediawiki/mediawiki-codesniffer": "52.0.0",
+		"mediawiki/mediawiki-phan-config": "0.20.0",
+		"mediawiki/minus-x": "2.0.1",
+		"php-parallel-lint/php-console-highlighter": "1.0.0",
+		"php-parallel-lint/php-parallel-lint": "1.4.0"
+	},
+	"scripts": {
+		"test": [
+			"parallel-lint redisJobChronService redisJobRunnerService . --exclude vendor",
+			"@phpcs",
+			"phan --allow-polyfill-parser --long-progress-bar",
+			"minus-x check ."
+		],
+		"fix": [
+			"minus-x fix .",
+			"phpcbf"
+		],
+		"phpcs": "phpcs -sp",
+		"phan": "phan -d . --long-progress-bar"
+	},
+	"config": {
+		"allow-plugins": {
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		}
+	}
+}

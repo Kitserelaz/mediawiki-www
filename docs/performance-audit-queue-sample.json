@@ -1,0 +1,15 @@
+{
+  "method": "Exact pushBlobs/popAndAcquireBlob Lua extracted from checkout; disposable network-isolated Redis; no farm data",
+  "delayed": {
+    "pop_after_release": null,
+    "delayed_remaining": 1,
+    "overdue_count": 1,
+    "ready_count": 0
+  },
+  "unacknowledged_control": {
+    "first_pop": "immediate-payload",
+    "second_pop_with_later_timestamp": null,
+    "claimed_remaining": 1
+  },
+  "limitations": "Exercises queue storage operations, not a full MediaWiki job lifecycle. Repository configuration review establishes absence of maintenance service."
+}

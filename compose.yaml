@@ -75,6 +75,24 @@ services:
   worker:
     <<: *farm
     command: [php, /opt/farm/worker.php]
+  jobchron:
+    # Queue maintenance needs Redis, not database credentials or farm data mounts.
+    image: ${JOBCHRON_IMAGE:-${MW_IMAGE:-cloudwiki-php:local}}
+    user: www-data
+    command: [php, /opt/farm/jobchron.php]
+    environment:
+      MW_REDIS: redis:6379
+    depends_on:
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, php, /opt/farm/jobchron-health.php]
+      interval: 15s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    restart: unless-stopped
+    stop_signal: SIGTERM
+    stop_grace_period: 60s
   scheduler:
     <<: *farm
     command: [php, /opt/farm/scheduler.php]

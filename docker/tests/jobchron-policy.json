@@ -1,0 +1,6 @@
+{
+  "limits": {
+    "attempts": {"*": 2},
+    "claimTTL": {"*": 5}
+  }
+}

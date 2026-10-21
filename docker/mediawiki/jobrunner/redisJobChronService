@@ -1,0 +1,20 @@
+#!/usr/bin/env php
+<?php
+
+if ( PHP_SAPI !== 'cli' ) {
+	die( "This is not a valid entry point.\n" );
+}
+
+require __DIR__ . '/src/RedisJobChronService.php';
+
+RedisJobService::checkEnvironment();
+
+error_reporting( E_ALL );
+ini_set( 'display_errors', 1 );
+
+// Run the server...
+set_time_limit( 0 );
+ini_set( 'memory_limit', '256M' );
+RedisJobChronService::init(
+	getopt( '', [ 'config-file::', 'help', 'verbose' ] )
+)->main();

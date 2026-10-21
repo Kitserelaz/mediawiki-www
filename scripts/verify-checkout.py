@@ -10,6 +10,15 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 def main():
+    jobrunner = ROOT / 'docker/mediawiki/jobrunner'
+    provenance = json.loads((jobrunner / 'SOURCE.json').read_text())
+    for name, digest in provenance['files'].items():
+        if hashlib.sha256((jobrunner / name).read_bytes()).hexdigest() != digest:
+            raise RuntimeError('Pinned jobrunner source changed: ' + name)
+    locked = json.loads((ROOT / 'mediawiki/composer.lock').read_text())
+    iputils = next(p for p in locked['packages'] if p['name'] == 'wikimedia/ip-utils')
+    if iputils['version'] != '6.0.1':
+        raise RuntimeError('Revalidate jobchron compatibility with the new ip-utils version')
     entries = subprocess.check_output(['git', 'ls-files', '--stage', '-z'], cwd=ROOT).split(b'\0')
     links = [entry.split(b'\t', 1)[1].decode() for entry in entries if entry.startswith(b'160000 ')]
     if links:

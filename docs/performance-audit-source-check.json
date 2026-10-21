@@ -1,0 +1,38 @@
+[
+  {
+    "path": "extensions/WikiDiscover/includes/Api/ApiQueryWikiDiscover.php",
+    "checkout_sha256": "2bc02712b2ede8b2cd324537bb72a417f7b97d633c63cf183c3b0d6e26c3761d",
+    "live_sha256": "2bc02712b2ede8b2cd324537bb72a417f7b97d633c63cf183c3b0d6e26c3761d",
+    "match": true
+  },
+  {
+    "path": "extensions/WikiDiscover/includes/WikiDiscoverWikisPager.php",
+    "checkout_sha256": "92969befbffa1caf0d249967adc65d520b570fc21118752c2b6947db016d963d",
+    "live_sha256": "92969befbffa1caf0d249967adc65d520b570fc21118752c2b6947db016d963d",
+    "match": true
+  },
+  {
+    "path": "extensions/WikiDiscover/includes/HookHandlers/Main.php",
+    "checkout_sha256": "0f1b071854f73d6706fb4e54247a4793296ea7db26a3de93918235151b97262b",
+    "live_sha256": "0f1b071854f73d6706fb4e54247a4793296ea7db26a3de93918235151b97262b",
+    "match": true
+  },
+  {
+    "path": "extensions/WikiDiscover/includes/Specials/SpecialRandomWiki.php",
+    "checkout_sha256": "5943a4ca76aae6aa00041814ecca91b24617a77a0bffb104f2bc4a3dc9045a13",
+    "live_sha256": "5943a4ca76aae6aa00041814ecca91b24617a77a0bffb104f2bc4a3dc9045a13",
+    "match": true
+  },
+  {
+    "path": "extensions/CreateWiki/includes/Helpers/RemoteWiki.php",
+    "checkout_sha256": "c4b1f1b2af9f71b23a5036d84b2199a21be56d790ca2443e7830f69d983df6b7",
+    "live_sha256": "c4b1f1b2af9f71b23a5036d84b2199a21be56d790ca2443e7830f69d983df6b7",
+    "match": true
+  },
+  {
+    "path": "includes/JobQueue/JobQueueRedis.php",
+    "checkout_sha256": "29f772dc793742004b38c3897db567d03e681ce55609b01d5ef572c1d39e6b0c",
+    "live_sha256": "29f772dc793742004b38c3897db567d03e681ce55609b01d5ef572c1d39e6b0c",
+    "match": true
+  }
+]

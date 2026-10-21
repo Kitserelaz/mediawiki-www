@@ -1,0 +1,86 @@
+{
+  "stack": "cloudwiki-upgrade-restore1462",
+  "image": "cloudwiki-php:upgrade-clean-20261018-amd64",
+  "notes": [
+    "Local small-sample observations; not production capacity or stable percentile estimates.",
+    "Separate curl processes/connections; includes local proxy/TLS and background-stack contention.",
+    "No writes requested; anonymous GETs can populate ordinary application caches."
+  ],
+  "serial": {
+    "main_page": {
+      "requests": 8,
+      "status_codes": [
+        200
+      ],
+      "ttfb_median_ms": 58.04,
+      "ttfb_p95_ms": 215.03,
+      "ttfb_max_ms": 215.03,
+      "response_bytes": [
+        37996,
+        37997
+      ]
+    },
+    "siteinfo": {
+      "requests": 8,
+      "status_codes": [
+        200
+      ],
+      "ttfb_median_ms": 27.3,
+      "ttfb_p95_ms": 48.38,
+      "ttfb_max_ms": 48.38,
+      "response_bytes": [
+        1698
+      ]
+    },
+    "discover": {
+      "requests": 8,
+      "status_codes": [
+        200
+      ],
+      "ttfb_median_ms": 32.17,
+      "ttfb_p95_ms": 48.19,
+      "ttfb_max_ms": 48.19,
+      "response_bytes": [
+        2819
+      ]
+    },
+    "discover_descriptions": {
+      "requests": 8,
+      "status_codes": [
+        200
+      ],
+      "ttfb_median_ms": 40.61,
+      "ttfb_p95_ms": 53.93,
+      "ttfb_max_ms": 53.93,
+      "response_bytes": [
+        1838
+      ]
+    },
+    "static_logo": {
+      "requests": 8,
+      "status_codes": [
+        200
+      ],
+      "ttfb_median_ms": 5.59,
+      "ttfb_p95_ms": 6.75,
+      "ttfb_max_ms": 6.75,
+      "response_bytes": [
+        11347
+      ]
+    }
+  },
+  "main_page_concurrency_5": {
+    "requests": 15,
+    "status_codes": [
+      200
+    ],
+    "ttfb_median_ms": 161.69,
+    "ttfb_p95_ms": 263.36,
+    "ttfb_max_ms": 263.36,
+    "response_bytes": [
+      37996,
+      37997
+    ],
+    "elapsed_s": 0.65
+  }
+}

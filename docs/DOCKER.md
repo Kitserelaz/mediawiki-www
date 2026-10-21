@@ -46,6 +46,52 @@ The app database user has database-level privileges for `*wiki`/`*wikibeta`, `wi
 
 Moe-Counter uses `DB_PATH=/app/data/count.db`; outside Docker its original `count.db` default is retained. Use one counter replica: SQLite and the process-local read/update queue do not provide distributed increments. MongoDB remains available through Compose variables `COUNTER_DB_TYPE=mongodb` and `COUNTER_DB_URL` (mapped to the app's `DB_TYPE` and `DB_URL`), but adding replicas still requires atomic database increments.
 
+## Redis queue maintenance
+
+`worker` executes ready jobs and provisions new wikis. The separate `jobchron` service
+runs Wikimedia's pinned `redisJobChronService` to release delayed jobs, recycle expired
+claims, abandon jobs that exhaust their attempts, and prune old abandoned records.
+Both services must run for a complete Redis queue lifecycle. Chron connects only to
+this stack's internal Redis; it has no farm secrets, database credentials or upload mounts.
+
+The unmodified upstream subset and license are in `docker/mediawiki/jobrunner`.
+`SOURCE.json` records commit `09f30782077b6101871fa95715f7181391d20486` and file hashes,
+checked by `scripts/verify-checkout.py`. The adapter uses `wikimedia/ip-utils` 6.0.1
+from the existing MediaWiki Composer lock. No dependencies are resolved at startup.
+
+The baked policy is `docker/mediawiki/jobchron-policy.json`: three total attempts,
+a one-hour ordinary claim timeout, and one day for `DataDumpGenerateJob` and
+`webVideoTranscode`. Choose per-type timeouts longer than legitimate job execution;
+these are not execution time limits. Recovery provides at-least-once execution and
+can repeat work after an interrupted acknowledgement. Review long-running custom
+jobs and make their side effects safe to retry. To override the policy, mount a JSON
+file into `jobchron` and set its `MW_JOBCHRON_POLICY` to that container path. Keep one
+chron replica per stack. Leave `daemonized=true` in the Redis queue configuration.
+
+Run `docker compose logs jobchron` and `docker compose ps jobchron` to inspect it.
+The health check requires a successful maintenance pass within 120 seconds, rather
+than merely a live process. Repeated Redis failures eventually make it unhealthy;
+Docker restarts an exited service, but does not restart it solely for being unhealthy.
+Monitor unhealthy status and overdue/claimed/abandoned job counts. Snapshot tooling
+stops chron alongside the worker before backing up Redis.
+The service explicitly uses `SIGTERM` for shutdown because the PHP-FPM base image's
+default `SIGQUIT` is not handled by the chron daemon.
+
+For an existing queue, inspect old claims before first startup: chron can immediately
+retry expired claims or abandon those already at the attempt limit. A record's age
+alone does not establish that its work is safe to repeat. Keep the previous image
+tag for rollback; stop chron to suspend maintenance without deleting queued work.
+
+`JOBCHRON_IMAGE` optionally selects a separate tested PHP image for chron, allowing
+an independent rollout while existing web/worker containers retain their images.
+It defaults to `MW_IMAGE`. Keep either image pinned in deployment configuration.
+After rebuilding the PHP image, start the service with
+`docker compose up -d --no-deps jobchron` (Redis must already be healthy). The isolated
+acceptance check is `python3 docker/tests/jobchron.py --image YOUR_PHP_IMAGE`; it creates
+and removes its own private project/volumes and tests actual MediaWiki NullJobs,
+delayed release, claim recovery after SIGKILL, retry exhaustion, Redis restart,
+heartbeat failure/recovery and graceful shutdown. It never targets an existing farm.
+
 ## Initialization, jobs, and optional services
 
 `init` is explicit and rerunnable. A successful fresh seed is recorded; repeating it does not reset accounts or data. On a partial failure fix the cause and rerun. Ordinary startup never updates schemas. Fresh initialization also persists ManageWiki default permissions and namespaces, so metadata rebuilds preserve edit/upload access. The separate bootstrap config loads extension schemas without requiring a working farm cache. `scripts/farm update` explicitly updates every registered wiki and rebuilds metadata. Take a backup first.

@@ -22,7 +22,7 @@ def queue(wiki, enqueue=False):
     if enqueue: args.append('--enqueue')
     return int(compose(*args).splitlines()[-1])
 try:
-    compose('stop','worker','scheduler')
+    compose('stop','worker','jobchron','scheduler')
     before = {wiki:queue(wiki, True) for wiki in wikis}
     assert all(size >= 1 for size in before.values()), before
     compose('restart','redis')
@@ -35,4 +35,4 @@ try:
     else: raise AssertionError('Worker did not drain existing/new wiki test jobs')
     print('Redis restart preserved queued jobs; worker drained existing and newly created wiki queues.')
 finally:
-    compose('up','-d','worker','scheduler')
+    compose('up','-d','worker','jobchron','scheduler')

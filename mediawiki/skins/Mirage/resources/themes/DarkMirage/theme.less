@@ -1,0 +1,222 @@
+// Stylings for the DarkMirage theme of Mirage.
+// Basically: dark mode, but not as convenient as a real dark mode.
+@import 'mediawiki.mixins';
+@import '../../mirage.less/mirage.variables';
+
+@mirage-default-border-color-dark: @mirage-color-base30;
+@mirage-default-border-dark:  @border-width-base solid @mirage-default-border-color-dark;
+@mirage-header-underline-dark: 3px solid @mirage-color-base20;
+
+blockquote {
+	border-left: 3px solid @mirage-color-base30;
+}
+
+body {
+	background-color: @mirage-color-base0;
+}
+
+pre,
+code,
+.mw-code {
+	background-color: @mirage-color-base10;
+	color: @mirage-color-base100;
+	border: @mirage-default-border;
+}
+
+#mirage-fixed-header {
+	background-color: @mirage-color-base10;
+	box-shadow: 1px 1px 3px @mirage-color-base30;
+}
+
+#mirage-top-header {
+	background-color: @mirage-color-base10--lighten;
+	box-shadow: 1px 0 3px @mirage-color-base30;
+}
+
+.skin-mirage-content-container {
+	background-color: @mirage-color-base10;
+	box-shadow: 1px 1px 3px @mirage-color-base30;
+}
+
+footer.mw-footer {
+	background-color: @mirage-color-base10;
+	box-shadow: 0 -1px 3px @mirage-color-base30;
+}
+
+.mw-wordmark-container .mw-logo-wordmark {
+	color: @mirage-color-base100;
+}
+
+.skin-mirage-dropdown-list {
+	background-color: @mirage-color-base10;
+	box-shadow: 0 2px 2px 0 rgba( 0, 0, 0, 0.75 );
+
+	.skin-mirage-dropdown-list-anchor {
+		&::before {
+			border-bottom-color: @mirage-color-base70;
+		}
+
+		&::after {
+			border-bottom-color: @mirage-color-base10;
+		}
+	}
+
+	li {
+		&:hover {
+			& > *:not( .skin-mirage-dropdown-list ),
+			& > a:focus {
+				background: @mirage-color-base20;
+			}
+		}
+
+		& > a:not( .new ) {
+			color: @mirage-color-base90;
+
+			&:active {
+				color: @mirage-color-base100;
+			}
+		}
+	}
+}
+
+#contentSub,
+#contentSub2 {
+	color: @mirage-color-base80;
+}
+
+.toc,
+.toccolours,
+#filetoc {
+	border: 1px solid @mirage-default-border-color-dark;
+	background-color: @mirage-color-base10--lighten;
+}
+
+#module-site-tools {
+	& > ul > li {
+		border: 1px solid @mirage-color-base90;
+		border-right: 0;
+
+		& > :not( .skin-mirage-ooui-icon-no-label ) {
+			color: @mirage-color-base90;
+		}
+
+		&:hover {
+			background-color: rgba( 255, 255, 255, 0.15 );
+			border: 1px solid @mirage-color-base90--lighten;
+			border-right: 0;
+
+			& > :not( .skin-mirage-ooui-icon-no-label ) {
+				color: @mirage-color-base90--lighten;
+			}
+		}
+
+		&:active {
+			border: 1px solid @mirage-color-base100;
+
+			& > :not( .skin-mirage-ooui-icon-no-label ) {
+				color: @mirage-color-base100;
+			}
+		}
+
+		&:last-child {
+			border-right: 1px solid @mirage-color-base90;
+
+			&:hover {
+				border-right: 1px solid @mirage-color-base90--lighten;
+			}
+		}
+	}
+}
+
+// Data table style.
+.mw-datatable {
+	th,
+	tr:hover td {
+		background-color: @mirage-color-base10--lighten;
+	}
+
+	td {
+		background-color: @mirage-color-base0;
+	}
+}
+
+.wikitable {
+	background-color: @mirage-color-base10;
+	color: @mirage-color-base90;
+
+	tr {
+		th,
+		td {
+			border-right: @mirage-default-border-dark;
+			border-bottom: @mirage-default-border-dark;
+
+			&:first-child {
+				border-left: @mirage-default-border-dark;
+			}
+		}
+
+		&:first-child {
+			th,
+			td {
+				border-top: @mirage-default-border-dark;
+			}
+		}
+	}
+
+	& > tr > th,
+	& > * > tr > th {
+		background-color: @mirage-color-base20;
+	}
+}
+
+.messagebox,
+.errorbox,
+.warningbox,
+.successbox {
+	color: @mirage-color-base100;
+}
+
+.messagebox {
+	background-color: @mirage-color-base20;
+}
+
+// From legacy.less
+li span.deleted,
+span.history-deleted {
+	color: @mirage-color-base70;
+}
+
+// From typography.less
+html,
+body {
+	color: @mirage-color-base90;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	color: @mirage-color-base100;
+}
+
+h1,
+h2,
+.right-rail-module h3 {
+	border-bottom: @mirage-header-underline-dark;
+}
+
+hr {
+	border: @mirage-header-underline-dark;
+}
+
+figcaption,
+.thumbinner .thumbcaption {
+	color: @mirage-color-base70;
+}
+
+// For search.less
+#searchform #simpleSearch #searchInput {
+	background-color: @mirage-color-base10;
+}

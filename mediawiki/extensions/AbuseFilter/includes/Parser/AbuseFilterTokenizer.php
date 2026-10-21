@@ -72,16 +72,7 @@ class AbuseFilterTokenizer {
 		'rlike', 'irlike', 'regex', 'if', 'then', 'else', 'end',
 	];
 
-	/**
-	 * @var BagOStuff
-	 */
-	private $cache;
-
-	/**
-	 * @param BagOStuff $cache
-	 */
-	public function __construct( BagOStuff $cache ) {
-		$this->cache = $cache;
+	public function __construct( private readonly BagOStuff $cache ) {
 	}
 
 	/**
@@ -92,15 +83,16 @@ class AbuseFilterTokenizer {
 	 * @internal
 	 */
 	public function getCacheKey( $code ) {
-		return $this->cache->makeGlobalKey( __CLASS__, self::CACHE_VERSION, crc32( $code ) );
+		return $this->cache->makeGlobalKey( 'abusefilter-tokens',
+			__CLASS__, self::CACHE_VERSION, crc32( $code )
+		);
 	}
 
 	/**
 	 * Get the tokens for the given code.
 	 *
 	 * @param string $code
-	 * @return array[]
-	 * @phan-return array<int,array{0:AFPToken,1:int}>
+	 * @return array<int,array{0:AFPToken,1:int}>
 	 */
 	public function getTokens( string $code ): array {
 		return $this->cache->getWithSetCallback(
@@ -114,8 +106,7 @@ class AbuseFilterTokenizer {
 
 	/**
 	 * @param string $code
-	 * @return array[]
-	 * @phan-return array<int,array{0:AFPToken,1:int}>
+	 * @return array<int,array{0:AFPToken,1:int}>
 	 */
 	private function tokenize( string $code ): array {
 		$tokens = [];
@@ -142,11 +133,11 @@ class AbuseFilterTokenizer {
 
 		// Read past comments
 		while ( preg_match( self::COMMENT_START_RE, $code, $matches, 0, $offset ) ) {
-			if ( strpos( $code, '*/', $offset ) === false ) {
-				throw new UserVisibleException(
-					'unclosedcomment', $offset, [] );
+			$pos = strpos( $code, '*/', $offset );
+			if ( $pos === false ) {
+				throw new UserVisibleException( 'unclosedcomment', $offset, [] );
 			}
-			$offset = strpos( $code, '*/', $offset ) + 2;
+			$offset = $pos + 2;
 		}
 
 		// Spaces
@@ -187,7 +178,7 @@ class AbuseFilterTokenizer {
 			if ( preg_match( self::BASE_CHARS_RES[$base], $input ) ) {
 				$num = $base !== 10 ? base_convert( $input, $base, 10 ) : $input;
 				$offset += strlen( $token );
-				return ( strpos( $input, '.' ) !== false )
+				return str_contains( $input, '.' )
 					? new AFPToken( AFPToken::TFLOAT, floatval( $num ), $start )
 					: new AFPToken( AFPToken::TINT, intval( $num ), $start );
 			}

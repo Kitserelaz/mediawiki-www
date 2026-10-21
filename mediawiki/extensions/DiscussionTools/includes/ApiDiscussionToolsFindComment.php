@@ -12,18 +12,13 @@ use Wikimedia\ParamValidator\ParamValidator;
 
 class ApiDiscussionToolsFindComment extends ApiBase {
 
-	private ThreadItemStore $threadItemStore;
-	private TitleFormatter $titleFormatter;
-
 	public function __construct(
 		ApiMain $main,
 		string $name,
-		ThreadItemStore $threadItemStore,
-		TitleFormatter $titleFormatter
+		private readonly ThreadItemStore $threadItemStore,
+		private readonly TitleFormatter $titleFormatter,
 	) {
 		parent::__construct( $main, $name );
-		$this->threadItemStore = $threadItemStore;
-		$this->titleFormatter = $titleFormatter;
 	}
 
 	/**
@@ -65,7 +60,7 @@ class ApiDiscussionToolsFindComment extends ApiBase {
 						$byHeading = $this->threadItemStore->findNewestRevisionsByHeading(
 							$heading, $articleId, $title->getTitleValue()
 						);
-					} catch ( PageNeverHadThreadsException $e ) {
+					} catch ( PageNeverHadThreadsException ) {
 						$this->dieWithError( [ 'apierror-discussiontools-findcomment-pagenevertalk' ] );
 					}
 					foreach ( $byHeading as $item ) {
@@ -103,7 +98,6 @@ class ApiDiscussionToolsFindComment extends ApiBase {
 	 *
 	 * @param DatabaseThreadItem $item Thread item
 	 * @param string $matchedBy How the thread item was matched (id, name or heading)
-	 * @return array
 	 */
 	private function getValue( DatabaseThreadItem $item, string $matchedBy ): array {
 		$title = Title::castFromPageReference( $item->getPage() );

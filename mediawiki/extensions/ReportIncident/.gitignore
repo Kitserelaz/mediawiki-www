@@ -1,0 +1,8 @@
+/composer.lock
+/vendor
+/node_modules
+.eslintcache
+/coverage
+.nyc_output
+/tests/selenium/log
+/.stylelintcache

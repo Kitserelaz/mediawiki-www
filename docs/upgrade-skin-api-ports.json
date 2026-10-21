@@ -1,0 +1,421 @@
+[
+  {
+    "path": "mediawiki/skins/Anisa/includes/AnisaTemplate.php",
+    "changes": [
+      "Html",
+      "Linker",
+      "Sanitizer"
+    ],
+    "before_sha256": "5744896f195a0b2158b1f0842705ea9570b2092737c038f1aec16b850400f2ea",
+    "after_sha256": "9ad2e6a2fc1190a131448e4cd62ff531005595af6b1a52a50adacde0a3598db9"
+  },
+  {
+    "path": "mediawiki/skins/BlueSky/includes/BlueSkyTemplate.php",
+    "changes": [
+      "Html",
+      "Linker",
+      "Sanitizer",
+      "SpecialPage",
+      "Title"
+    ],
+    "before_sha256": "ccb4b7bbc9f6465c55af96ff0ac7aa63f5d9f4231b375e8b3d5f697904afa208",
+    "after_sha256": "62ec4716fa5a4da1297fb4e8379bf9656e910f69447ca77517bd3d70feb8878d"
+  },
+  {
+    "path": "mediawiki/skins/DuskToDawn/includes/DuskToDawnTemplate.php",
+    "changes": [
+      "Html",
+      "Linker",
+      "Sanitizer"
+    ],
+    "before_sha256": "7be46ad56945c35c8c9ad95c473cbf0fe2c59ac113df9faaf7be4c542cd23d4f",
+    "after_sha256": "0a795647dcab414aed2da784672267c5c31811126555011b159c815047c120b2"
+  },
+  {
+    "path": "mediawiki/skins/Evelution/SkinEvelution.php",
+    "changes": [
+      "SpecialPage",
+      "Title"
+    ],
+    "before_sha256": "156f8708cfcf241d601bd059b8afd69f31b5b051a63af20bf5d366c58233fccd",
+    "after_sha256": "d02c20f480370ddaa4749d9bf8fd1ad391a674bb9167b93ab03f3f05db367673"
+  },
+  {
+    "path": "mediawiki/skins/Eveskin/EveTemplate.php",
+    "changes": [
+      "Html",
+      "Linker",
+      "Sanitizer",
+      "hook container"
+    ],
+    "before_sha256": "ccaddb68663c821d70143eecd8f6bad0d3413037f0971a81b056682ab017f082",
+    "after_sha256": "e2202c6a5ad858bcea2e3fc81892de227a8e5faa509aa2c5d0a41be6eb96998b"
+  },
+  {
+    "path": "mediawiki/skins/Foreground/includes/ForegroundTemplate.php",
+    "changes": [
+      "Linker",
+      "Sanitizer"
+    ],
+    "before_sha256": "4264eb22aae343ba54918654701ce7cf2f184128b75773c8e793bc5dda34bf09",
+    "after_sha256": "75937edc6d54bcc7934e5e164fed7747f28d8cb81acedd82fecdc581047c0b08"
+  },
+  {
+    "path": "mediawiki/skins/Gamepress/includes/GamepressSkinNavigationService.php",
+    "changes": [
+      "Title"
+    ],
+    "before_sha256": "d1d4d0cbcfe4d397014317a24e0db81cd19de7061b352610680ce1dc179e87a8",
+    "after_sha256": "9df5f2e172ca1dee037b1414930ec226783a27832fc4fb0199af4953fd464188"
+  },
+  {
+    "path": "mediawiki/skins/Gamepress/includes/GamepressTemplate.php",
+    "changes": [
+      "Html",
+      "Linker",
+      "Sanitizer"
+    ],
+    "before_sha256": "f9e0255785e83923917211f446db40de83e6a3435191fb02da2a27e556ecd600",
+    "after_sha256": "dcf4a90390dc9dd0138970fe3d299293e75b0026f00dc1729f0b32fa1a522bd9"
+  },
+  {
+    "path": "mediawiki/skins/HasSomeColours/includes/HasSomeColoursTemplate.php",
+    "changes": [
+      "Html",
+      "Linker",
+      "Sanitizer"
+    ],
+    "before_sha256": "01ffa74bc1dab960cd16f72d79eeab48ea36a00770e73ce72395869078100711",
+    "after_sha256": "d9a7a06c65ad427f4dacc86e62054fb22c7489ca0fd0bc0d5865a745bf1a29b4"
+  },
+  {
+    "path": "mediawiki/skins/Mask/includes/MaskTemplate.php",
+    "changes": [
+      "Html",
+      "Linker",
+      "Sanitizer",
+      "SpecialPage",
+      "Title"
+    ],
+    "before_sha256": "69130adab6898646d9ae461c33b99a3e08eff642da036ae2b87c84128a8b3973",
+    "after_sha256": "f6fa9c78a4498f0cb9a4f2fef34c5e49af39f78c2a0d8bd848e76a2896f6aea1"
+  },
+  {
+    "path": "mediawiki/skins/Medik/includes/MedikTemplate.php",
+    "changes": [
+      "Html",
+      "Linker",
+      "RequestContext",
+      "Sanitizer",
+      "TemplateParser",
+      "hook container"
+    ],
+    "before_sha256": "828af8c2d712a823734f23c5862c15c723fd9aae4e67a18b5c085cec6512ff57",
+    "after_sha256": "1c9873d1b965cd093fd617af562a2a3e1463839095f27e527d28796e8f6e410b"
+  },
+  {
+    "path": "mediawiki/skins/Medik/includes/SkinMedik.php",
+    "changes": [
+      "RequestContext"
+    ],
+    "before_sha256": "3ecc35a7d3fd8a4922f165105a96d6818c884a14e187c47aa6c5dcd024a91abf",
+    "after_sha256": "7a11a74f7a1697408c4527478dad6ac1a2deaa58e6ff066e7f7307d303567662"
+  },
+  {
+    "path": "mediawiki/skins/Metrolook/SkinMetrolookHooks.php",
+    "changes": [
+      "RequestContext"
+    ],
+    "before_sha256": "ddd9faa101c44878de4b5934a9e5ee8bb824af9595986fe49d12c428badf8917",
+    "after_sha256": "1b202619a4c4da79a586382b6c004b31908dd14f2789a27b9ac34d4ad1720556"
+  },
+  {
+    "path": "mediawiki/skins/Metrolook/MetrolookTemplate.php",
+    "changes": [
+      "Linker",
+      "Sanitizer",
+      "SpecialPage"
+    ],
+    "before_sha256": "ea4eac8f5d92371c285dfb07464a97c29bcfb3d8d708d6fac18c9bc675fa6f23",
+    "after_sha256": "102da80dda89e80d3f473fb4b0774b22a544807dd241b36705ad9618878568a6"
+  },
+  {
+    "path": "mediawiki/skins/Monaco/includes/MonacoSidebar.php",
+    "changes": [
+      "Html",
+      "RequestContext",
+      "Title"
+    ],
+    "before_sha256": "1f951fcb0ffc7907f6ce0407383db7412192a8e3c6258f889be235cc172b7302",
+    "after_sha256": "56e72fab5e7ed794f8b508d5bc882b7b9e380f9a7d9fd62b2dd3d69703722e3c"
+  },
+  {
+    "path": "mediawiki/skins/Monaco/includes/MonacoTemplate.php",
+    "changes": [
+      "Html",
+      "Linker",
+      "SpecialPage",
+      "Title"
+    ],
+    "before_sha256": "a9d11ed753f1314e912029d030e3761f50d6150dc89232fabd016f18bdfcef2b",
+    "after_sha256": "34c5bfaff3b9f8985875aa8731f1aec8c1e580f6123353531f48b5c6f0e1c77f"
+  },
+  {
+    "path": "mediawiki/skins/Monaco/includes/MonacoHooks.php",
+    "changes": [
+      "Html",
+      "OutputPage",
+      "RequestContext"
+    ],
+    "before_sha256": "9535fb41f98aa0536c714aa1bd1be58c6e164d7be6ac46e26fe7518d350c0f64",
+    "after_sha256": "8e45c16d4f9f82057be7f7cc5968a6d732c54fd62458169a7979adcac02e4dbd"
+  },
+  {
+    "path": "mediawiki/skins/Monaco/includes/SkinMonaco.php",
+    "changes": [
+      "RequestContext",
+      "SpecialPage",
+      "Title"
+    ],
+    "before_sha256": "7f74bb36de803abdafb284cf4639e026d59fb4232922950edb405585fd1a27da",
+    "after_sha256": "4b529e05574f819ca40a6f9c56ae78bda54d7ffb194ecfbdfba794eb8304212a"
+  },
+  {
+    "path": "mediawiki/skins/Nimbus/includes/SkinNimbus.php",
+    "changes": [
+      "Html",
+      "Linker",
+      "Sanitizer",
+      "Title"
+    ],
+    "before_sha256": "4ea235b2963c42666f4499704ba6aa46d8b31aff8fb7b91d68c7f36526fae503",
+    "after_sha256": "34f2f8d5894a9950eec4de8c1629483577502078501f9a9c72a7d269a52630ba"
+  },
+  {
+    "path": "mediawiki/skins/Nimbus/includes/NimbusTemplate.php",
+    "changes": [
+      "Html",
+      "Linker",
+      "Sanitizer",
+      "SpecialPage",
+      "Title"
+    ],
+    "before_sha256": "df31d05013b22855619facf379f9447f7be8ce250978cddc94183c3e825793c7",
+    "after_sha256": "ae39976248e2dfa9fc8c2264edb396620af9c0ebea3f8ad2ef3d2f11b6386009"
+  },
+  {
+    "path": "mediawiki/skins/Pivot/Pivot.skin.php",
+    "changes": [
+      "Linker",
+      "Sanitizer"
+    ],
+    "before_sha256": "ccf8abc686c9dfb0f6789340519ea13edd87c97d244d1df5b0361fdfbc6e69e4",
+    "after_sha256": "9d4e2f3823127ca4192f0b155dcbbdbce051d9576e3e5415b011bee2b08de70b"
+  },
+  {
+    "path": "mediawiki/skins/Truglass/includes/TruglassTemplate.php",
+    "changes": [
+      "Html",
+      "Linker",
+      "Sanitizer"
+    ],
+    "before_sha256": "87ed941e05cb0edec601c7923989be9dba8a3d5021908a22a800b2b1ad97e0d2",
+    "after_sha256": "78335a5190c0b9afa6d03aa24d7e495caafa26a41fc6777784526a9887f178e0"
+  },
+  {
+    "path": "mediawiki/skins/Tweeki/includes/Hooks.php",
+    "changes": [
+      "Html",
+      "Linker",
+      "OutputPage",
+      "Sanitizer",
+      "Title"
+    ],
+    "before_sha256": "0162b77bda3363225b9be22dda8d89ed0b8561319aa098c147ab840aab536d66",
+    "after_sha256": "0265262e55e4bc1b1155bdc4e5f0ae55ccb46d25ac63a25afe7adc0ebbcbd34d"
+  },
+  {
+    "path": "mediawiki/skins/Tweeki/includes/TweekiTemplate.php",
+    "changes": [
+      "Html",
+      "Linker",
+      "ParserOptions",
+      "SpecialPage",
+      "Title"
+    ],
+    "before_sha256": "640796e2f01b65374d8880f2e91c4cda71d99887460b9ed1fbbac21b02752015",
+    "after_sha256": "634dae5d2248e28a0724195d1b0f701b7e8fdf53ade73787d452666b1c27e32d"
+  },
+  {
+    "path": "mediawiki/skins/WMAU/template.php",
+    "changes": [
+      "Html"
+    ],
+    "before_sha256": "32f72763180c542bd719298ced85203161043d956be33f67e07076ece2347796",
+    "after_sha256": "04a78df5eb778729529093b20c6d4fc55601f6595a25363e7c7bfc5aafca6a22"
+  },
+  {
+    "path": "mediawiki/skins/WMAU/includes/SkinWMAU.php",
+    "changes": [
+      "Html",
+      "Linker",
+      "SpecialPage",
+      "Title"
+    ],
+    "before_sha256": "4a3ee00fa49ae57c2f974e1d81a23c60b8697ec3dec9acfbcb4ea2c5993fabbc",
+    "after_sha256": "3de33f225031df2b580583e6c96db187c81dd08cb9aa171b94c7c13e55c69bc5"
+  },
+  {
+    "path": "mediawiki/skins/erudite/Erudite.skin.php",
+    "changes": [
+      "Html",
+      "ParserOptions",
+      "Sanitizer"
+    ],
+    "before_sha256": "025fde718d91a7a1e70fde4e620a3bc98b34cbd2724f67e11b9b70f47cd69d39",
+    "after_sha256": "55779edd5e5ea2d25157061b875c86edca372aa10f1ce63f792d79bbdb494a43"
+  },
+  {
+    "path": "mediawiki/skins/chameleon/tests/phpunit/Util/MockupFactory.php",
+    "changes": [
+      "Title"
+    ],
+    "before_sha256": "ad568ac65541dcfc3899895e638f7269216d3f053f576cf3f8bc5ca3fe9cc3a3",
+    "after_sha256": "71d6a5d5a872709f0a395c966d49d1cd768677e732857a21cb967808c8eca30f"
+  },
+  {
+    "path": "mediawiki/skins/chameleon/src/IdRegistry.php",
+    "changes": [
+      "Html",
+      "qualified Html"
+    ],
+    "before_sha256": "177dc94f0d442d24e0cd2dc9786411870f61f5c26b88a74ea257d5f8d18aaa0b",
+    "after_sha256": "c0a78fc52a4c07917dd8f8dc7ee4ce38ec7ae0b304df6531ec7a7bbab721724d"
+  },
+  {
+    "path": "mediawiki/skins/chameleon/src/Chameleon.php",
+    "changes": [
+      "OutputPage",
+      "Sanitizer",
+      "qualified Title"
+    ],
+    "before_sha256": "4eb5dd79d855f5de76eb2cfa594a2dd0ad56f6c82f71d0a8aa15dc559588f248",
+    "after_sha256": "0a4e9256c2a595ce08beab19cd996add15c266da440f3f3c47c939f567897ebe"
+  },
+  {
+    "path": "mediawiki/skins/chameleon/src/Components/Container.php",
+    "changes": [
+      "qualified Html"
+    ],
+    "before_sha256": "1e35e83ac552b9904caa3030736fce7601a9cc0430ce644f954dea448a2d4724",
+    "after_sha256": "441918e1f52bec0497c15949ccab79fa71cfaec5a098bc7d6d586af3383ff193"
+  },
+  {
+    "path": "mediawiki/skins/chameleon/src/Components/NavbarHorizontal.php",
+    "changes": [
+      "qualified Html"
+    ],
+    "before_sha256": "b314878b1266b6d5aa034799640babf19436bff7ed47f84dfbd01d0c81dc93d8",
+    "after_sha256": "ace158dda6093352e64b75710d98552827e1dc3f313d5982233fd2945ab1ed6a"
+  },
+  {
+    "path": "mediawiki/skins/chameleon/src/Components/PageTools.php",
+    "changes": [
+      "Title"
+    ],
+    "before_sha256": "ee6a337d0f3dd114bfe194d0c7b4b1be19dc2fa49bbf714b28ca8b39e3def028",
+    "after_sha256": "efe6d859072cf916dc73f2aeef4a9359577c471c41de7edd22973b9e3540b875"
+  },
+  {
+    "path": "mediawiki/skins/chameleon/src/Components/SearchBar.php",
+    "changes": [
+      "Linker",
+      "qualified Html"
+    ],
+    "before_sha256": "9323e64066306b4345ad9b1e5e23938f1d10eda3b10b11a9c71ca864e2852ee7",
+    "after_sha256": "e962825e2399098f3c754932a0f19ded36fcfc3f137d1ec6ca6b0c7279163757"
+  },
+  {
+    "path": "mediawiki/skins/chameleon/src/Components/Menu.php",
+    "changes": [
+      "Sanitizer"
+    ],
+    "before_sha256": "14a031b64eaac847595f88336330e4bc730a71f7590a77d04420bc69c9d76962",
+    "after_sha256": "2e7f11c7b2eb304f8f6a422e5bc378323468e1575eebb0e30665159addb9176c"
+  },
+  {
+    "path": "mediawiki/skins/chameleon/src/Components/Logo.php",
+    "changes": [
+      "Linker"
+    ],
+    "before_sha256": "99f1493ccb42357f68b13bbb99580e99deb68586a5199605528aac30d5eb8591",
+    "after_sha256": "19f45a4cdebe17537598c83a5c48233e18ea21a081bd4ac724d4e7ed906ce424"
+  },
+  {
+    "path": "mediawiki/skins/chameleon/src/Components/Indicators.php",
+    "changes": [
+      "qualified Sanitizer"
+    ],
+    "before_sha256": "d436492e4e11767f93716081b8303c4268bfea04389680bc777b0cde6eac201f",
+    "after_sha256": "e981da7e39cfbad5cc51ad4e38550ebb89b652c1880b4df4bdeca0338945673d"
+  },
+  {
+    "path": "mediawiki/skins/chameleon/src/Components/NewtalkNotifier.php",
+    "changes": [
+      "qualified Html"
+    ],
+    "before_sha256": "2c8474f9eb9472db9c4e24dae877e5aa2fe4e64ebff230cee69800259f189772",
+    "after_sha256": "bfb9fe2f9a6eb3ced5324d458704bddf22af92869fd2f0773de528b947eed8c2"
+  },
+  {
+    "path": "mediawiki/skins/chameleon/src/Components/NavMenu.php",
+    "changes": [
+      "Linker",
+      "Sanitizer",
+      "qualified Html"
+    ],
+    "before_sha256": "295843b9fb3a08fe833a41394f07298fa8aa485c8101f98acd0af2c57ee129b2",
+    "after_sha256": "40f1cfa024d53c87acb3849e66d8ea154194f28dbad01118bf6e7e174977a1f1"
+  },
+  {
+    "path": "mediawiki/skins/chameleon/src/Components/NavbarHorizontal/PageTools.php",
+    "changes": [
+      "qualified Html"
+    ],
+    "before_sha256": "d7e44d95a6fc59b8dfb8d1e2256c62874f92ec1701b7d936bb254b19fba05e64",
+    "after_sha256": "b836bc55caa621b0c63b08cdd38b56cc2efce62ad560bb1c3ed06a817e9394e7"
+  },
+  {
+    "path": "mediawiki/skins/chameleon/src/Components/NavbarHorizontal/Toolbox.php",
+    "changes": [
+      "Linker"
+    ],
+    "before_sha256": "d229417da812461b78ab3453512aae8abf702859b28174ded0fe89e479256e0d",
+    "after_sha256": "7d9419b705f035d361271e996454a31eb797f8d9080b33984ed64020e52cd0a9"
+  },
+  {
+    "path": "mediawiki/skins/chameleon/src/Components/NavbarHorizontal/PersonalTools.php",
+    "changes": [
+      "qualified Html",
+      "qualified Title"
+    ],
+    "before_sha256": "64d31e46cfe8234d9fb7255bdab07a7b25d91a7d7caa1af17b1be0e024130a51",
+    "after_sha256": "dc7f09079d681b33fa8d48f2d36834728661277f04a33b7e50d3b30e4361e00a"
+  },
+  {
+    "path": "mediawiki/skins/chameleon/src/Menu/Menu.php",
+    "changes": [
+      "Sanitizer"
+    ],
+    "before_sha256": "2c0673afc63f3392525e9cc34d0f6a478b49534b3f6fdff40dd9583e197229f6",
+    "after_sha256": "99b450a750e4ea57163992d935919860dcc78cef60528362e8ce92300672bbb2"
+  },
+  {
+    "path": "mediawiki/skins/chameleon/src/Menu/MenuFromLines.php",
+    "changes": [
+      "Title"
+    ],
+    "before_sha256": "9bd33ca1dace9fcd75c667e15eacec4272fcb7a7d6b667101a62c93b16aa6e30",
+    "after_sha256": "115acad529d1faa75f4b1db86382c62e4e231216e9ba415dabc02c6bac52fe15"
+  }
+]

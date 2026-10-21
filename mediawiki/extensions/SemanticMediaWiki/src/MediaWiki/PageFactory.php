@@ -1,0 +1,96 @@
+<?php
+
+namespace SMW\MediaWiki;
+
+use MediaWiki\Title\Title;
+use RuntimeException;
+use SMW\MediaWiki\Page\ConceptPage;
+use SMW\MediaWiki\Page\PropertyPage;
+use SMW\Property\DeclarationExaminerFactory;
+use SMW\Services\ServicesFactory as ApplicationFactory;
+use SMW\Store;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 3.0
+ *
+ * @author mwjames
+ */
+class PageFactory {
+
+	/**
+	 * @since 3.0
+	 */
+	public function __construct( private readonly Store $store ) {
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function newPageFromTitle( Title $title ): PropertyPage|ConceptPage {
+		if ( $title->getNamespace() === SMW_NS_PROPERTY ) {
+			return $this->newPropertyPage( $title );
+		} elseif ( $title->getNamespace() === SMW_NS_CONCEPT ) {
+			return $this->newConceptPage( $title );
+		}
+
+		throw new RuntimeException( 'Not supported page instance for namespace ' . $title->getNamespace() );
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function newPropertyPage( Title $title ): PropertyPage {
+		$applicationFactory = ApplicationFactory::getInstance();
+		$settings = $applicationFactory->getSettings();
+
+		$propertyPage = new PropertyPage(
+			$title,
+			$this->store,
+			new DeclarationExaminerFactory()
+		);
+
+		$propertyPage->setOption(
+			'SMW_EXTENSION_LOADED',
+			defined( 'SMW_EXTENSION_LOADED' )
+		);
+
+		$propertyPage->setOption(
+			'pagingLimit',
+			$settings->dotGet( 'smwgPagingLimit.property' )
+		);
+
+		$propertyPage->setOption(
+			'smwgPropertyListLimit',
+			$settings->get( 'smwgPropertyListLimit' )
+		);
+
+		$propertyPage->setOption(
+			'smwgMaxPropertyValues',
+			$settings->get( 'smwgMaxPropertyValues' )
+		);
+
+		return $propertyPage;
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function newConceptPage( Title $title ): ConceptPage {
+		$conceptPage = new ConceptPage( $title, $this->store );
+		$settings = ApplicationFactory::getInstance()->getSettings();
+
+		$conceptPage->setOption(
+			'SMW_EXTENSION_LOADED',
+			defined( 'SMW_EXTENSION_LOADED' )
+		);
+
+		$conceptPage->setOption(
+			'pagingLimit',
+			$settings->dotGet( 'smwgPagingLimit.concept' )
+		);
+
+		return $conceptPage;
+	}
+
+}

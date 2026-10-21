@@ -18,7 +18,7 @@
 const Canvas = require( './ui/mmv.ui.canvas.js' );
 const CanvasButtons = require( './ui/mmv.ui.canvasButtons.js' );
 const MetadataPanel = require( './ui/mmv.ui.metadataPanel.js' );
-const ThumbnailWidthCalculator = require( './mmv.ThumbnailWidthCalculator.js' );
+const { ThumbnailWidthCalculator } = require( 'mmv.common' );
 const UiElement = require( './ui/mmv.ui.js' );
 
 /** Proxy for a Dialog. Initialises and attaches the dialog upon first use. */
@@ -109,13 +109,13 @@ class LightboxInterface extends UiElement {
 		this.buttons = new CanvasButtons( this.$preDiv, this.$closeButton, this.$fullscreenButton );
 		this.canvas = new Canvas( this.$innerWrapper, this.$imageWrapper, this.$wrapper );
 
-		/** @property {DialogProxy|ReuseDialog} */
+		/** @type {DialogProxy|ReuseDialog} */
 		this.fileReuse = new DialogProxy( 'mmv-reuse-open', ( req ) => {
 			const { ReuseDialog } = req( 'mmv.ui.reuse' );
 			this.fileReuse = new ReuseDialog( this.$preDiv, this.buttons.$download );
 			return this.fileReuse;
 		} );
-		/** @property {DialogProxy|DownloadDialog} */
+		/** @type {DialogProxy|DownloadDialog} */
 		this.downloadDialog = new DialogProxy( 'mmv-download-open', ( req ) => {
 			const { DownloadDialog } = req( 'mmv.ui.reuse' );
 			this.downloadDialog = new DownloadDialog( this.$preDiv, this.buttons.$download );
@@ -476,11 +476,12 @@ class LightboxInterface extends UiElement {
 	}
 
 	/**
-	 * Updates the next and prev buttons
+	 * Updates the next and prev buttons as well as the current image number indicator
 	 *
-	 * @param {boolean} showPrevNext Show prev/next button
+	 * @param {number} currentIndex Current image index
+	 * @param {number} imageCount Image count
 	 */
-	updateControls( showPrevNext ) {
+	updateControls( currentIndex, imageCount ) {
 		const prevNextTop = `${ ( this.$imageWrapper.height() - 60 ) / 2 }px`;
 
 		if ( this.isFullscreen ) {
@@ -489,8 +490,16 @@ class LightboxInterface extends UiElement {
 			this.$postDiv.css( 'top', this.$imageWrapper.height() );
 		}
 
+		this.buttons.$prev.toggleClass( 'mw-mmv-prev-image-loop', currentIndex === 0 );
+		this.buttons.$next.toggleClass( 'mw-mmv-next-image-loop', currentIndex === imageCount - 1 );
 		this.buttons.setOffset( prevNextTop );
-		this.buttons.$nav.toggle( showPrevNext );
+		this.buttons.$nav.toggle( imageCount > 1 );
+		this.buttons.$currentImageNumber.show().text(
+			mw.msg( 'multimediaviewer-current-image-number',
+				mw.language.convertNumber( currentIndex + 1 ),
+				mw.language.convertNumber( imageCount )
+			)
+		);
 	}
 
 	/**

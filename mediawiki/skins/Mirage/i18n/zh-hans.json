@@ -1,0 +1,42 @@
+{
+	"@metadata": {
+		"authors": [
+			"Lakejason0",
+			"LittlePaw365",
+			"Wuqianye"
+		]
+	},
+	"mirage-skin-desc": "Mirage是一款专注于用右侧面板显示内容的响应式皮肤",
+	"mirage-community-messages-header": "社区留言",
+	"mirage-interface-messages-module-edit-this-message": "编辑留言",
+	"mirage-page-actions": "页面操作",
+	"mirage-jumptonavigation": "跳到导航",
+	"mirage-jumptocontent": "跳转到内容",
+	"mirage-action-addsection": "添加话题",
+	"mirage-userpage": "{{GENDER:$1|用户}}页",
+	"mirage-footer-places": "地方",
+	"mirage-footer-feeds": "源",
+	"mirage-footer-info": "页面信息",
+	"mirage-expand-submenu": "显示子菜单项目",
+	"mirage-talkpage": "讨论页",
+	"mirage-user-tools": "使用工具",
+	"mirage-no-new-messages": "您没有新消息。",
+	"mirage-notifications": "通知",
+	"mirage-page-tools": "页面工具",
+	"mirage-hidden-categories": "隐藏分类",
+	"mirage-recent-changes-module": "最近更改",
+	"mirage-more": "更多",
+	"mirage-more-recent-changes": "查看更多改动",
+	"mirage-toggle-right-rail": "切换右侧栏",
+	"prefs-mirage-max-width-label": "Mirage内容宽度：",
+	"prefs-mirage-max-width": "总是应用最大页面宽度",
+	"prefs-mirage-partial-max-width": "仅对文章应用最大页面宽度",
+	"prefs-mirage-no-max-width": "禁用最大页面宽度",
+	"prefs-mirage-show-right-rail": "显示右侧栏",
+	"prefs-mirage-toc": "目录的位置：",
+	"prefs-mirage-toc-legacy": "在条目正文内显示目录",
+	"prefs-mirage-toc-hybrid": "在条目正文及右侧栏模块中显示目录",
+	"prefs-mirage-toc-right-rail-only": "在右侧栏模块中显示目录",
+	"mirage-toggle-toc": "开关目录",
+	"mirage-wordmark-file-warning": "此文件目前被用作Mirage皮肤的文字标志（Wordmark）。"
+}

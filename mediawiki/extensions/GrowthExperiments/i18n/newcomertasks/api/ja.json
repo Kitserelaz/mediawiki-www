@@ -1,0 +1,24 @@
+{
+	"@metadata": {
+		"authors": [
+			"Afaz",
+			"Kokage si",
+			"Omotecho",
+			"もなー(偽物)"
+		]
+	},
+	"apihelp-query+growthtasks-summary": "新規参加者にお勧めの編集タスクを見る。",
+	"apihelp-query+growthtasks-extended-description": "新規利用者が取り組むのに適した、簡単な問題を含む記事をいくつかお勧めします。",
+	"apihelp-query+growthtasks-param-tasktypes": "タスクの種類を指定して結果をしぼりこみます。すべてのお勧めを見るには、空欄にしておきます。",
+	"apihelp-query+growthtasks-param-topics": "お勧め記事はどんな主題がよいか、指定します。",
+	"apihelp-query+growthtasks-param-limit": "お勧めしてほしいタスクの上限を指定します。",
+	"apihelp-query+growthtasks-param-debug": "出力結果にデータのバグ処理を含めます。",
+	"apihelp-query+growthtasks-example-1": "現在の利用者にお勧めするタスクは、文章の編集タイプを選びます。",
+	"apihelp-query+growthtasks-example-2": "現在の利用者に対して、お勧めタスクといっしょにそのページの詳細情報を出力します。",
+	"apihelp-query+growthnextsuggestedtasktype-summary": "利用者が次に試すタスクの種類の候補を取得します。",
+	"apihelp-query+growthnextsuggestedtasktype-param-activetasktype": "利用者が現在取り組んでいるタスクの種類。",
+	"apierror-growthexperiments-addimage-handler-reason-wrongtype": "「reasons」パラメータに採用する値は「画像を追加」関連の一連のプラグイン・データ、すなわち$1です",
+	"apierror-growthexperiments-addimage-handler-reason-invaliditem": "「reasons」パラメータに対する項目「$1」は次のは無効ですので、次のいずれかを選んでください：$2",
+	"apierror-growthexperiments-addlink-handler-notfound": "おすすめリンクの記録がありません",
+	"apierror-growthexperiments-addlink-handler-wrongtargets": "予想外のおすすめリンク先： $1"
+}

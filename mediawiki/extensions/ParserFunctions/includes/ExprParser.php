@@ -172,8 +172,8 @@ class ExprParser {
 	/**
 	 * Evaluate a mathematical expression
 	 *
-	 * The algorithm here is based on the infix to RPN algorithm given in
-	 * http://montcs.bloomu.edu/~bobmon/Information/RPN/infix2rpn.shtml
+	 * The algorithm here is based on the infix to RPN algorithm by Robert Montante:
+	 * https://web.archive.org/web/20100417210626/http://montcs.bloomu.edu/~bobmon/Information/RPN/infix2rpn.shtml
 	 * It's essentially the same as Dijkstra's shunting yard algorithm.
 	 * @param string $expr
 	 * @return string
@@ -443,8 +443,8 @@ class ExprParser {
 				if ( count( $stack ) < 2 ) {
 					throw new ExprError( 'missing_operand', self::NAMES[$op] );
 				}
-				$right = (double)array_pop( $stack );
-				$left = (double)array_pop( $stack );
+				$right = (float)array_pop( $stack );
+				$left = (float)array_pop( $stack );
 				if ( !$right ) {
 					throw new ExprError( 'division_by_zero', self::NAMES[$op] );
 				}

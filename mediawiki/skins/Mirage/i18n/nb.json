@@ -1,0 +1,42 @@
+{
+	"@metadata": {
+		"authors": [
+			"Jon Harald Søby"
+		]
+	},
+	"mirage-skin-desc": "Mirage er ei responsiv drakt som fokuserer på å vise innhold med en skinne på høyre side",
+	"mirage.css": "/* CSS i denne fila vil gjelde alle som bruker drakta Mirage */",
+	"mirage.js": "/* Javascript i denne fila vil gjelde for brukere av drakta Mirage */",
+	"mirage-community-messages-header": "Meldinger til nettsamfunnet",
+	"mirage-interface-messages-module-edit-this-message": "Rediger denne beskjeden",
+	"mirage-page-actions": "Sidehandlinger",
+	"mirage-jumptonavigation": "Til navigasjon",
+	"mirage-jumptocontent": "Til innhold",
+	"mirage-action-addsection": "Legg til emne",
+	"mirage-userpage": "{{GENDER:$1|Brukerside}}",
+	"mirage-footer-places": "Steder",
+	"mirage-footer-feeds": "Matinger",
+	"mirage-footer-info": "Sideinformasjon",
+	"mirage-expand-submenu": "Vis oppføringene i undermenyen",
+	"mirage-talkpage": "Diskusjonsside",
+	"mirage-user-tools": "Brukerverktøy",
+	"mirage-no-new-messages": "Du har ingen nye beskjeder.",
+	"mirage-notifications": "Varsler",
+	"mirage-page-tools": "Sideverktøy",
+	"mirage-hidden-categories": "Skjulte kategorier",
+	"mirage-recent-changes-module": "Siste endringer",
+	"mirage-more": "Mer",
+	"mirage-more-recent-changes": "Se flere endringer",
+	"mirage-toggle-right-rail": "Vis/skjul høyre skinne",
+	"prefs-mirage-max-width-label": "Innholdsbredde i Mirage:",
+	"prefs-mirage-max-width": "Bruk alltid maksimal sidebredde",
+	"prefs-mirage-partial-max-width": "Bruk maksimal sidebredde kun i artikler",
+	"prefs-mirage-no-max-width": "Slå av maksimal sidebredde",
+	"prefs-mirage-show-right-rail": "Vis høyre skinne",
+	"prefs-mirage-toc": "Innholdsfortegnelsens plassering:",
+	"prefs-mirage-toc-legacy": "Vis innholdsfortegnelsen i artikkelteksten",
+	"prefs-mirage-toc-hybrid": "Vis innholdsfortegnelsen i artikkelteksten og som en modul i høyre skinne",
+	"prefs-mirage-toc-right-rail-only": "Vis innholdsfortegnelsen som modul i høyre skinne",
+	"mirage-toggle-toc": "Vis/skjul innholdsfortegnelsen",
+	"mirage-wordmark-file-warning": "Denne fila brukes for tiden som logotyp for Mirage-drakta."
+}

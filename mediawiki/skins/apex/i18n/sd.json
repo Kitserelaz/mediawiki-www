@@ -1,0 +1,20 @@
+{
+	"@metadata": {
+		"authors": [
+			"Aursani",
+			"Mehtab ahmed"
+		]
+	},
+	"apex-desc": "ويڪٽر جو جديد نسخو تازي ڏيک ۽ ڪيترن ئي استعمال جي بھترين سان",
+	"apex-action-addsection": "موضوع شامل ڪريو",
+	"apex-action-delete": "ڊاهيو",
+	"apex-action-move": "چوريو",
+	"apex-action-protect": "تحفظيو",
+	"apex-action-undelete": "اڻ‌ڊاهيو",
+	"apex-action-unprotect": "تحفظ بدلايو",
+	"apex-view-create": "سرجيو",
+	"apex-view-edit": "سنواريو",
+	"apex-view-history": "سوانح ڏسو",
+	"apex-view-view": "پڙهو",
+	"apex-view-viewsource": "ذريعو ڏسو"
+}

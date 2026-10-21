@@ -1,0 +1,24 @@
+{
+	"@metadata": {
+		"authors": [
+			"Kareyac",
+			"StanProg",
+			"Ted Masters",
+			"Vlad5250",
+			"Лорд Бъмбъри"
+		]
+	},
+	"score-deprecated-category": "Страници, използващи непрепоръчителни атрибути за партитура",
+	"score-deprecated-category-desc": "Страниците използват опции от разширението Score, които са непрепоръчителни. Такива са: ''override_audio'', ''override_ogg'' и ''override_midi''.",
+	"score-error-category": "Страници с грешки при визуализирането на партитура",
+	"score-error-category-desc": "Грешка при визуализирането на партитурата.",
+	"score-page": "Страница $1",
+	"score-use-category": "Страници с партитура",
+	"score-use-category-desc": "Страниците използват разширението [[:mw:Extension:Score|Score]].",
+	"score-visualeditor-mwscoredialog-card-audio": "Аудио",
+	"score-visualeditor-mwscoredialog-lang": "Език",
+	"score-visualeditor-mwscoredialog-title": "Нотен запис",
+	"datatypes-type-musical-notation": "Музикална нотация",
+	"wikibase-listdatatypes-musical-notation-head": "Музикална нотация",
+	"wikibase-listdatatypes-musical-notation-body": "Буквално поле за данни за музикална партитура, написана в LilyPond нотация"
+}

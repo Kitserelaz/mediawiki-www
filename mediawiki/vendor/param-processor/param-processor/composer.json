@@ -1,0 +1,60 @@
+{
+	"name": "param-processor/param-processor",
+	"type": "library",
+	"description": "Parameter processing library",
+	"keywords": [
+		"ParamProcessor",
+		"Validator",
+		"MediaWiki",
+		"SMW",
+		"Semantic MediaWiki",
+		"Parameters",
+		"Validation",
+		"Declarative"
+	],
+	"homepage": "https://github.com/JeroenDeDauw/ParamProcessor",
+	"license": "GPL-2.0-or-later",
+	"authors": [
+		{
+			"name": "Jeroen De Dauw",
+			"email": "jeroendedauw@gmail.com",
+			"homepage": "https://EntropyWins.wtf",
+			"role": "Developer"
+		}
+	],
+	"require": {
+		"php": ">=8.1",
+		"data-values/data-values": "~3.0|~2.0|~1.0",
+		"data-values/interfaces": "~1.0|~0.2.0|~0.1.4",
+		"data-values/common": "~1.0|~0.4.0|~0.3.0",
+		"data-values/validators": "~1.0|~0.1.1"
+	},
+	"require-dev": {
+		"phpunit/phpunit": "~9.6"
+	},
+	"autoload": {
+		"psr-4": {
+			"ParamProcessor\\": "src"
+		},
+		"files": [
+			"DefaultConfig.php"
+		]
+	},
+	"autoload-dev": {
+		"psr-4": {
+			"ParamProcessor\\Tests\\": "tests"
+		}
+	},
+	"extra": {
+		"branch-alias": {
+			"dev-master": "1.x-dev"
+		}
+	},
+	"scripts": {
+		"test": [
+			"composer validate --no-interaction",
+			"vendor/bin/phpunit"
+		],
+		"phpunit": "phpunit -c phpunit.xml.dist"
+	}
+}

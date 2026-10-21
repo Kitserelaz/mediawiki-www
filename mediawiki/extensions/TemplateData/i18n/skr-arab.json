@@ -37,6 +37,7 @@
 	"templatedata-modal-button-delparam": "پیرامیٹر دی معلومات ہٹاؤ",
 	"templatedata-modal-button-done": "مکمل",
 	"templatedata-modal-button-saveparam": "بچاؤ",
+	"templatedata-modal-button-discard": "مُکاؤ",
 	"templatedata-modal-current-language": "حالیہ زبان: $1",
 	"templatedata-modal-format-block": "پابندی لاؤ",
 	"templatedata-modal-format-inline": "ان لائن",
@@ -51,5 +52,10 @@
 	"templatedata-modal-title-choose-language": "زبان چݨو",
 	"templatedata-modal-title-language": "زبان",
 	"templatedata-modal-title-paramorder": "ترتیب پیرامیٹر",
-	"templatedata-modal-title-templatedesc": "وضاحت سانچہ ($1)"
+	"templatedata-modal-title-templatedesc": "وضاحت سانچہ ($1)",
+	"templatedata-category-browser-header": "ونکیاں",
+	"templatedata-category-switch-button": "براؤز",
+	"templatedata-category-browser-loadmore": "ٻئے لوڈ کرو",
+	"templatedata-category-categories": "ٻیاں ونکیاں",
+	"templatedata-category-no-cats": "کوئی وی کائنی۔"
 }

@@ -1,0 +1,19 @@
+@import 'mediawiki.skin.variables.less';
+@import '../../utils/mixins.less';
+
+.ext-growthExperiments-NewImpact {
+	&__section-title.ext-growthExperiments-increaseSpecificity {
+		// Use same margin from desktop vector
+		margin-top: 0.3em;
+		// REVIEW: available tokens?
+		font-size: 1em;
+	}
+
+	&__contributions-link {
+		.disabled-visited();
+	}
+
+	&__articles-list {
+		padding: @spacing-75 0;
+	}
+}

@@ -1,12 +1,7 @@
 <?php
 
-// phpcs:disable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
-
 namespace Flow;
 
-use Article;
-use ChangesList;
-use EnhancedChangesList;
 use Exception;
 use Flow\Collection\PostCollection;
 use Flow\Data\Listener\RecentChangesListener;
@@ -18,7 +13,9 @@ use Flow\Hooks\HookRunner;
 use Flow\Import\OptInController;
 use Flow\Model\UUID;
 use Flow\SpamFilter\AbuseFilter;
-use LogEntry;
+use MediaWiki\Actions\Hook\InfoActionHook;
+use MediaWiki\Actions\Hook\UnwatchArticleHook;
+use MediaWiki\Actions\Hook\WatchArticleHook;
 use MediaWiki\Api\Hook\ApiFeedContributions__feedItemHook;
 use MediaWiki\CheckUser\CheckUser\Pagers\AbstractCheckUserPager;
 use MediaWiki\Config\Config;
@@ -26,46 +23,29 @@ use MediaWiki\Content\Content;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Deferred\DeferredUpdates;
+use MediaWiki\Exception\MWExceptionHandler;
 use MediaWiki\Extension\AbuseFilter\Variables\VariableHolder;
 use MediaWiki\Extension\BetaFeatures\BetaFeatures;
 use MediaWiki\Extension\GuidedTour\GuidedTourLauncher;
-use MediaWiki\Extension\Notifications\Hooks\BeforeDisplayOrangeAlertHook;
-use MediaWiki\Extension\Notifications\Model\Event;
 use MediaWiki\Feed\FeedItem;
-use MediaWiki\Hook\AbortEmailNotificationHook;
 use MediaWiki\Hook\CategoryViewer__doCategoryQueryHook;
 use MediaWiki\Hook\CategoryViewer__generateLinkHook;
-use MediaWiki\Hook\ChangesListInitRowsHook;
-use MediaWiki\Hook\ChangesListInsertArticleLinkHook;
-use MediaWiki\Hook\ContribsPager__reallyDoQueryHook;
-use MediaWiki\Hook\ContributionsLineEndingHook;
-use MediaWiki\Hook\DeletedContribsPager__reallyDoQueryHook;
-use MediaWiki\Hook\DeletedContributionsLineEndingHook;
-use MediaWiki\Hook\EnhancedChangesList__getLogTextHook;
-use MediaWiki\Hook\EnhancedChangesListModifyBlockLineDataHook;
-use MediaWiki\Hook\EnhancedChangesListModifyLineDataHook;
-use MediaWiki\Hook\ImportHandleToplevelXMLTagHook;
-use MediaWiki\Hook\InfoActionHook;
-use MediaWiki\Hook\IRCLineURLHook;
 use MediaWiki\Hook\MovePageCheckPermissionsHook;
 use MediaWiki\Hook\MovePageIsValidMoveHook;
-use MediaWiki\Hook\OldChangesListRecentChangesLineHook;
 use MediaWiki\Hook\PageMoveCompletingHook;
-use MediaWiki\Hook\SkinTemplateNavigation__UniversalHook;
-use MediaWiki\Hook\SpecialWatchlistGetNonRevisionTypesHook;
 use MediaWiki\Hook\TitleMoveStartingHook;
 use MediaWiki\Hook\TitleSquidURLsHook;
-use MediaWiki\Hook\UnwatchArticleHook;
-use MediaWiki\Hook\WatchArticleHook;
-use MediaWiki\Hook\WatchlistEditorBeforeFormRenderHook;
-use MediaWiki\Hook\WatchlistEditorBuildRemoveLineHook;
-use MediaWiki\Hook\WhatLinksHerePropsHook;
 use MediaWiki\Html\FormOptions;
 use MediaWiki\Html\Html;
+use MediaWiki\Import\Hook\ImportHandleToplevelXMLTagHook;
+use MediaWiki\Import\WikiImporter;
+use MediaWiki\Language\MessageLocalizer;
+use MediaWiki\Logging\LogEntry;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Message\Message;
 use MediaWiki\Output\Hook\BeforePageDisplayHook;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Page\Article;
 use MediaWiki\Page\Hook\Article__MissingArticleConditionsHook;
 use MediaWiki\Page\Hook\ArticleConfirmDeleteHook;
 use MediaWiki\Page\Hook\ArticleDeleteCompleteHook;
@@ -73,11 +53,22 @@ use MediaWiki\Page\Hook\ArticleDeleteHook;
 use MediaWiki\Page\Hook\ArticleUndeleteHook;
 use MediaWiki\Page\Hook\RevisionUndeletedHook;
 use MediaWiki\Page\Hook\ShowMissingArticleHook;
-use MediaWiki\Pager\ContribsPager;
-use MediaWiki\Pager\DeletedContribsPager;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Pager\IndexPager;
+use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Permissions\Hook\GetUserPermissionsErrorsHook;
 use MediaWiki\Preferences\Hook\GetPreferencesHook;
+use MediaWiki\RCFeed\Hook\IRCLineURLHook;
+use MediaWiki\RecentChanges\ChangesList;
+use MediaWiki\RecentChanges\EnhancedChangesList;
+use MediaWiki\RecentChanges\Hook\ChangesListInitRowsHook;
+use MediaWiki\RecentChanges\Hook\ChangesListInsertArticleLinkHook;
+use MediaWiki\RecentChanges\Hook\EnhancedChangesList__getLogTextHook;
+use MediaWiki\RecentChanges\Hook\EnhancedChangesListModifyBlockLineDataHook;
+use MediaWiki\RecentChanges\Hook\EnhancedChangesListModifyLineDataHook;
+use MediaWiki\RecentChanges\Hook\OldChangesListRecentChangesLineHook;
+use MediaWiki\RecentChanges\OldChangesList;
+use MediaWiki\RecentChanges\RecentChange;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\ResourceLoader\Hook\ResourceLoaderGetConfigVarsHook;
 use MediaWiki\ResourceLoader\Hook\ResourceLoaderRegisterModulesHook;
@@ -85,7 +76,18 @@ use MediaWiki\ResourceLoader\ResourceLoader;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Search\Hook\SearchableNamespacesHook;
+use MediaWiki\Skin\Hook\SkinTemplateNavigation__UniversalHook;
+use MediaWiki\Skin\Skin;
+use MediaWiki\Skin\SkinTemplate;
 use MediaWiki\SpecialPage\Hook\ChangesListSpecialPageQueryHook;
+use MediaWiki\Specials\Hook\ContribsPager__reallyDoQueryHook;
+use MediaWiki\Specials\Hook\ContributionsLineEndingHook;
+use MediaWiki\Specials\Hook\DeletedContribsPager__reallyDoQueryHook;
+use MediaWiki\Specials\Hook\DeletedContributionsLineEndingHook;
+use MediaWiki\Specials\Hook\WatchlistEditorBeforeFormRenderHook;
+use MediaWiki\Specials\Hook\WatchlistEditorBuildRemoveLineHook;
+use MediaWiki\Specials\Pager\ContribsPager;
+use MediaWiki\Specials\Pager\DeletedContribsPager;
 use MediaWiki\Status\Status;
 use MediaWiki\Storage\Hook\ArticleEditUpdateNewTalkHook;
 use MediaWiki\Title\Title;
@@ -94,17 +96,8 @@ use MediaWiki\User\Options\Hook\SaveUserOptionsHook;
 use MediaWiki\User\User;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\WikiMap\WikiMap;
-use MessageLocalizer;
-use MWException;
-use MWExceptionHandler;
-use OldChangesList;
-use RecentChange;
-use Skin;
-use SkinTemplate;
 use stdClass;
-use WikiImporter;
 use Wikimedia\Rdbms\SelectQueryBuilder;
-use WikiPage;
 use XMLReader;
 
 class Hooks implements
@@ -120,7 +113,6 @@ class Hooks implements
 	ChangesListSpecialPageQueryHook,
 	SkinTemplateNavigation__UniversalHook,
 	Article__MissingArticleConditionsHook,
-	SpecialWatchlistGetNonRevisionTypesHook,
 	UserGetReservedNamesHook,
 	ResourceLoaderGetConfigVarsHook,
 	ContribsPager__reallyDoQueryHook,
@@ -128,12 +120,9 @@ class Hooks implements
 	ContributionsLineEndingHook,
 	DeletedContributionsLineEndingHook,
 	ApiFeedContributions__feedItemHook,
-	AbortEmailNotificationHook,
-	BeforeDisplayOrangeAlertHook,
 	ArticleEditUpdateNewTalkHook,
 	InfoActionHook,
 	IRCLineURLHook,
-	WhatLinksHerePropsHook,
 	ShowMissingArticleHook,
 	WatchArticleHook,
 	UnwatchArticleHook,
@@ -206,7 +195,7 @@ class Hooks implements
 			ExtensionRegistry::getInstance()->isLoaded( 'GuidedTour' )
 		) {
 			// Activate tour
-			GuidedTourLauncher::launchTourByCookie( 'flowOptIn', 'newTopic' );
+			GuidedTourLauncher::launchTourByCookie( $out, 'flowOptIn', 'newTopic' );
 
 			// Destroy Flow cookie
 			$out->getRequest()->response()->setCookie( 'Flow_optIn_guidedTour', '', time() - 3600 );
@@ -352,16 +341,11 @@ class Hooks implements
 		&$classes = null,
 		$topicOnly = false
 	) {
-		$source = $rc->getAttribute( 'rc_source' );
-		if ( $source === null ) {
-			$rcType = (int)$rc->getAttribute( 'rc_type' );
-			if ( $rcType !== RC_FLOW ) {
-				return true;
-			}
-		} elseif ( $source !== RecentChangesListener::SRC_FLOW ) {
+		if ( $rc->getAttribute( 'rc_source' ) !== RecentChangesListener::SRC_FLOW ) {
 			return true;
 		}
 
+		$line = false;
 		set_error_handler( new RecoverableErrorHandler, -1 );
 		try {
 			/** @var Formatter\ChangesListQuery $query */
@@ -376,7 +360,7 @@ class Hooks implements
 			/** @var Formatter\ChangesListFormatter $formatter */
 			$formatter = Container::get( 'formatter.changeslist' );
 			$line = $formatter->format( $row, $changesList, $topicOnly );
-		} catch ( PermissionException $pe ) {
+		} catch ( PermissionException ) {
 			// It is expected that some rows won't be formatted because the current user
 			// doesn't have permission to see some of the data they contain.
 			return false;
@@ -423,6 +407,7 @@ class Hooks implements
 			return true;
 		}
 
+		$logTextLinks = false;
 		set_error_handler( new RecoverableErrorHandler, -1 );
 		try {
 			/** @var Formatter\ChangesListQuery $query */
@@ -506,7 +491,7 @@ class Hooks implements
 				$formatter->getFlags( $row, $changesList )
 			);
 			$classes[] = 'mw-changeslist-src-mw-edit';
-		} catch ( PermissionException $e ) {
+		} catch ( PermissionException ) {
 			return false;
 		}
 
@@ -519,13 +504,7 @@ class Hooks implements
 	 * @return bool
 	 */
 	private static function isFlow( $rc ) {
-		$source = $rc->getAttribute( 'rc_source' );
-		if ( $source === null ) {
-			$rcType = (int)$rc->getAttribute( 'rc_type' );
-			return $rcType === RC_FLOW;
-		} else {
-			return $source === RecentChangesListener::SRC_FLOW;
-		}
+		return $rc->getAttribute( 'rc_source' ) === RecentChangesListener::SRC_FLOW;
 	}
 
 	public static function onSpecialCheckUserGetLinksFromRow( AbstractCheckUserPager $pager, $row, &$links ) {
@@ -698,15 +677,6 @@ class Hooks implements
 	}
 
 	/**
-	 * Adds Flow entries to watchlists
-	 *
-	 * @param array &$types Type array to modify
-	 */
-	public function onSpecialWatchlistGetNonRevisionTypes( &$types ) {
-		$types[] = RC_FLOW;
-	}
-
-	/**
 	 * Make sure no user can register a flow-*-usertext username, to avoid
 	 * confusion with a real user when we print e.g. "Suppressed" instead of a
 	 * username. Additionally reserve the username used to add a revision on
@@ -758,7 +728,7 @@ class Hooks implements
 			/** @var Formatter\ContributionsFormatter $formatter */
 			$formatter = Container::get( 'formatter.contributions' );
 			$line = $formatter->format( $row, $pager );
-		} catch ( PermissionException $e ) {
+		} catch ( PermissionException ) {
 			$line = false;
 		} catch ( Exception $e ) {
 			wfDebugLog( 'Flow', __METHOD__ . ': Failed formatting contribution ' .
@@ -817,7 +787,7 @@ class Hooks implements
 			/** @var Formatter\FeedItemFormatter $formatter */
 			$formatter = Container::get( 'formatter.contributions.feeditem' );
 			$result = $formatter->format( $row, $ctx );
-		} catch ( PermissionException $e ) {
+		} catch ( PermissionException ) {
 			return false;
 		} catch ( Exception $e ) {
 			wfDebugLog( 'Flow', __METHOD__ . ': Failed formatting contribution ' .
@@ -959,62 +929,6 @@ class Hooks implements
 	}
 
 	/**
-	 * Abort notifications regarding occupied pages coming from the RecentChange class.
-	 * Flow has its own notifications through Echo.
-	 *
-	 * Also don't notify for actions made by the talk page manager.
-	 *
-	 * @param User $editor
-	 * @param Title $title
-	 * @param RecentChange $rc
-	 * @return bool false to abort email notification
-	 */
-	public function onAbortEmailNotification( $editor, $title, $rc ) {
-		if ( $title->getContentModel() === CONTENT_MODEL_FLOW_BOARD ) {
-			// Since we are aborting the notification we need to manually update the watchlist
-			$config = RequestContext::getMain()->getConfig();
-			if ( $config->get( 'EnotifWatchlist' ) || $config->get( 'ShowUpdatedMarker' ) ) {
-				MediaWikiServices::getInstance()->getWatchedItemStore()->updateNotificationTimestamp(
-					$editor,
-					$title,
-					wfTimestampNow()
-				);
-			}
-			return false;
-		}
-
-		if ( !$editor instanceof UserIdentity ) {
-			return true;
-		}
-
-		if ( self::isTalkpageManagerUser( $editor ) ) {
-			return false;
-		}
-
-		return true;
-	}
-
-	/**
-	 * Suppress all Echo notifications generated by the Talk page manager user
-	 *
-	 * @param Event $event
-	 * @return bool
-	 */
-	public static function onBeforeEchoEventInsert( Event $event ) {
-		$agent = $event->getAgent();
-
-		if ( $agent === null ) {
-			return true;
-		}
-
-		if ( self::isTalkpageManagerUser( $agent ) ) {
-			return false;
-		}
-
-		return true;
-	}
-
-	/**
 	 * Suppress the 'You have new messages!' indication when a change to a
 	 * user talk page is done by the talk page manager user.
 	 *
@@ -1036,45 +950,8 @@ class Hooks implements
 	 * @param UserIdentity $user
 	 * @return bool
 	 */
-	private static function isTalkpageManagerUser( UserIdentity $user ) {
+	public static function isTalkpageManagerUser( UserIdentity $user ) {
 		return $user->getName() === FLOW_TALK_PAGE_MANAGER_USER;
-	}
-
-	/**
-	 * Don't send email notifications that are imported from LiquidThreads.  It will
-	 * still be in their web notifications (if enabled), but they will never be
-	 * notified via email (regardless of batching settings) for this particular
-	 * notification.
-	 * @param User $user
-	 * @param Event $event
-	 * @return bool
-	 */
-	public static function onEchoAbortEmailNotification( User $user, Event $event ) {
-		$extra = $event->getExtra();
-		return !isset( $extra['lqtThreadId'] );
-	}
-
-	/**
-	 * Hides the orange alert indicating 'You have a new message'
-	 * when the user reads flow-topic replies.
-	 *
-	 * @param User $user
-	 * @param Title $title
-	 * @return bool true to show the alert, false to hide(abort) the alert
-	 */
-	public function onBeforeDisplayOrangeAlert( User $user, Title $title ) {
-		if ( $title->getNamespace() === NS_TOPIC ) {
-			/** @var Data\ObjectManager $storage */
-			$storage = Container::get( 'storage.workflow' );
-			$uuid = WorkflowLoaderFactory::uuidFromTitle( $title );
-			/** @var Model\Workflow $workflow */
-			$workflow = $storage->get( $uuid );
-			if ( $workflow && $user->getTalkPage()->equals( $workflow->getOwnerTitle() ) ) {
-				return false;
-			}
-		}
-
-		return true;
 	}
 
 	public function onInfoAction( $ctx, &$pageinfo ) {
@@ -1155,27 +1032,6 @@ class Hooks implements
 		}
 	}
 
-	public function onWhatLinksHereProps( $row, $title, $target, &$props ) {
-		set_error_handler( new RecoverableErrorHandler, -1 );
-		try {
-			/** @var ReferenceClarifier $clarifier */
-			$clarifier = Container::get( 'reference.clarifier' );
-			$newProps = $clarifier->getWhatLinksHereProps( $row, $title, $target );
-
-			$props = array_merge( $props, $newProps );
-		} catch ( Exception $e ) {
-			wfDebugLog( 'Flow', sprintf(
-				'%s: Failed formatting WhatLinksHere for %s to %s',
-				__METHOD__,
-				$title->getFullText(),
-				$target->getFullText()
-			) );
-			MWExceptionHandler::logException( $e );
-		} finally {
-			restore_error_handler();
-		}
-	}
-
 	/**
 	 * Add topiclist sortby to preferences.
 	 *
@@ -1205,7 +1061,7 @@ class Hooks implements
 	}
 
 	/**
-	 * @param User $user
+	 * @param UserIdentity $user
 	 * @param WikiPage $page
 	 * @param Status &$status
 	 * @return bool
@@ -1235,7 +1091,7 @@ class Hooks implements
 	/**
 	 * Don't watch a non-existing flow topic
 	 *
-	 * @param User $user
+	 * @param UserIdentity $user
 	 * @param WikiPage $page
 	 * @param Status &$status
 	 * @param string|null $expiry
@@ -1248,7 +1104,7 @@ class Hooks implements
 	/**
 	 * Don't unwatch a non-existing flow topic
 	 *
-	 * @param User $user
+	 * @param UserIdentity $user
 	 * @param WikiPage $page
 	 * @param Status &$status
 	 * @return bool
@@ -1333,7 +1189,7 @@ class Hooks implements
 		}
 		try {
 			$uuid = WorkflowLoaderFactory::uuidFromTitle( $title );
-		} catch ( InvalidInputException $e ) {
+		} catch ( InvalidInputException ) {
 			wfDebugLog( 'Flow', __METHOD__ . ': Invalid title ' . $title->getPrefixedText() );
 			return;
 		}
@@ -1346,7 +1202,7 @@ class Hooks implements
 			return;
 		}
 
-		$htmlCache = MediaWikiServices::getInstance()->getHtmlCacheUpdater();
+		$htmlCache = MediaWikiServices::getInstance()->getHTMLCacheUpdater();
 		$urls = array_merge(
 			$urls,
 			$htmlCache->getUrls( $workflow->getOwnerTitle() )
@@ -1394,7 +1250,7 @@ class Hooks implements
 			$uuid = WorkflowLoaderFactory::uuidFromTitle( $title );
 			$collection = PostCollection::newFromId( $uuid );
 			$revision = $collection->getLastRevision();
-		} catch ( Exception $e ) {
+		} catch ( Exception ) {
 			wfWarn( __METHOD__ . ': Failed to locate revision for: ' . $title->getDBkey() );
 			return;
 		}
@@ -1420,7 +1276,7 @@ class Hooks implements
 			try {
 				$uuid = WorkflowLoaderFactory::uuidFromTitlePair( NS_TOPIC, $id );
 				$queries[] = [ 'rev_type_id' => $uuid ];
-			} catch ( Exception $e ) {
+			} catch ( Exception ) {
 				// invalid id
 				unset( $watchlistInfo[NS_TOPIC][$id] );
 			}
@@ -1614,7 +1470,7 @@ class Hooks implements
 					}
 				}
 
-				$hcu = MediaWikiServices::getInstance()->getHtmlCacheUpdater();
+				$hcu = MediaWikiServices::getInstance()->getHTMLCacheUpdater();
 				$hcu->purgeTitleUrls( $topicTitles, $hcu::PURGE_INTENT_TXROUND_REFLECTED );
 			} );
 		}
@@ -1633,9 +1489,10 @@ class Hooks implements
 			// location and rendered it doesn't throw an error about the wrong title
 			Container::get( 'factory.loader.workflow' )->pageMoveInProgress();
 
-			$title = Title::newFromLinkTarget( $revisionRecord->getPageAsLinkTarget() );
+			$title = Title::newFromPageIdentity( $revisionRecord->getPage() );
 
 			// Reassociate the Flow board associated with this undeleted revision.
+			/** @var BoardMover $boardMover */
 			$boardMover = Container::get( 'board_mover' );
 			$boardMover->move( intval( $oldPageId ), $title );
 		}
@@ -1717,8 +1574,9 @@ class Hooks implements
 		$emptyContent = $services->getContentHandlerFactory()
 			->getContentHandler( CONTENT_MODEL_FLOW_BOARD )->makeEmptyContent();
 		$contentRenderer = $services->getContentRenderer();
-		$parserOutput = $contentRenderer->getParserOutput( $emptyContent, $article->getTitle() );
-		$article->getContext()->getOutput()->addParserOutput( $parserOutput );
+		$parserOptions = ParserOptions::newFromAnon();
+		$parserOutput = $contentRenderer->getParserOutput( $emptyContent, $article->getTitle(), null, $parserOptions );
+		$article->getContext()->getOutput()->addParserOutput( $parserOutput, $parserOptions );
 
 		return false;
 	}
@@ -1946,7 +1804,11 @@ class Hooks implements
 				$dbr->expr( 'workflow_id', '>', $rcTimeLimit->getBinary() )
 			] )
 			->andWhere( $userWhere )
-			->groupBy( [ 'r.rev_type_id', 'tree_orig_user_ip' ] )
+			->groupBy( [
+				'r.rev_type_id',
+				'tree_orig_user_ip',
+				'tree_orig_user_id',
+			] )
 			->caller( __METHOD__ )
 			->fetchResultSet();
 
@@ -2101,15 +1963,10 @@ class Hooks implements
 		$name, &$tables, &$fields, &$conds,
 		&$query_options, &$join_conds, $opts
 	) {
-		try {
-			$hidePageEdits = $opts->getValue( 'hidepageedits' );
-		} catch ( MWException $e ) {
-			// If not set, assume they should be hidden.
-			$hidePageEdits = true;
-		}
+		$hidePageEdits = $opts->getValue( 'hidepageedits' );
 		if ( $hidePageEdits ) {
 			$dbr = MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase();
-			$conds[] = $dbr->expr( 'rc_type', '!=', RC_FLOW );
+			$conds[] = $dbr->expr( 'rc_source', '!=', RecentChangesListener::SRC_FLOW );
 		}
 	}
 

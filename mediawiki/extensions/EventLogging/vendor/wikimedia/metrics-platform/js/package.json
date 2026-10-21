@@ -1,0 +1,37 @@
+{
+	"name": "@wikimedia/metrics-platform",
+	"version": "0.1.0",
+	"description": "Client libraries for Wikimedia analytics instrumentation",
+	"main": "index.js",
+	"scripts": {
+		"test": "qunit ./test/unit/ && npm run lint",
+		"lint": "eslint --cache .",
+		"doc": "jsdoc -c jsdoc.json",
+		"coverage": "nyc qunit ./test/unit/",
+		"build": "esbuild build/index.js --bundle --outfile=dist/metrics-platform.js"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://gitlab.wikimedia.org/repos/data-engineering/metrics-platform"
+	},
+	"keywords": [
+		"analytics",
+		"metrics",
+		"wikimedia"
+	],
+	"license": "GPL-2.0+",
+	"devDependencies": {
+		"esbuild": "^0.21.4",
+		"eslint-config-wikimedia": "^0.28.0",
+		"jsdoc": "^4.0.3",
+		"jsdoc-wmf-theme": "^1.1.0",
+		"nyc": "^15.1.0",
+		"qunit": "^2.21.0",
+		"sinon": "^18.0.0"
+	},
+	"files": [
+		"src/*.js",
+		"index.js",
+		"dist/*.js"
+	]
+}

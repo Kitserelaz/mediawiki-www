@@ -31,16 +31,12 @@
 	 * @return {jQuery.Promise}
 	 */
 	FlowBoardComponentInteractiveEventsMixin.UI.events.interactiveHandlers.collapserCollapsibleToggle = function ( event ) {
-		var $target = $( this ).closest( '.flow-element-collapsible' ),
+		const $target = $( this ).closest( '.flow-element-collapsible' ),
 			$deferred = $.Deferred(),
 			updateTitle = function ( element, state ) {
-				var titleDataAttribute = state + '-title',
-					$element = $( element ),
-					title = $element.data( titleDataAttribute );
-
-				if ( title ) {
-					$element.attr( 'title', title );
-				}
+				const $element = $( element );
+				// In case the correct title cannot be found the wrong one must be removed
+				$element.attr( 'title', $element.data( state + '-title' ) || null );
 			};
 
 		// Ignore clicks on links inside of collapsible areas
@@ -53,19 +49,16 @@
 			return $deferred.resolve().promise();
 		}
 
-		if ( $target.is( '.flow-element-collapsed' ) ) {
-			$target.removeClass( 'flow-element-collapsed' ).addClass( 'flow-element-expanded' );
-			updateTitle( this, 'expanded' );
-		} else {
-			$target.addClass( 'flow-element-collapsed' ).removeClass( 'flow-element-expanded' );
-			updateTitle( this, 'collapsed' );
-		}
+		const expand = $target.is( '.flow-element-collapsed' );
+		$target.toggleClass( 'flow-element-collapsed', !expand )
+			.toggleClass( 'flow-element-expanded', expand );
+		updateTitle( this, expand ? 'expanded' : 'collapsed' );
 
 		return $deferred.resolve().promise();
 	};
 
 	// @todo remove these data-flow handler forwarder callbacks when data-mwui handlers are implemented
-	$( [ 'close', 'prevOrClose', 'nextOrSubmit', 'prev', 'next' ] ).each( function ( i, fn ) {
+	$( [ 'close', 'prevOrClose', 'nextOrSubmit', 'prev', 'next' ] ).each( ( i, fn ) => {
 		// Assigns each handler with the prefix 'modal', eg. 'close' becomes 'modalClose'
 		FlowBoardComponentInteractiveEventsMixin.UI.events.interactiveHandlers[ 'modal' + fn.charAt( 0 ).toUpperCase() + fn.slice( 1 ) ] = function ( event ) {
 			event.preventDefault();

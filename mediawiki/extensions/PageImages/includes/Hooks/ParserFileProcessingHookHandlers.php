@@ -3,23 +3,23 @@
 namespace PageImages\Hooks;
 
 use Exception;
-use File;
-use FormatMetadata;
 use MediaWiki\Config\Config;
 use MediaWiki\Context\DerivativeContext;
-use MediaWiki\Hook\ParserAfterTidyHook;
-use MediaWiki\Hook\ParserModifyImageHTMLHook;
+use MediaWiki\FileRepo\File\File;
+use MediaWiki\FileRepo\RepoGroup;
 use MediaWiki\Hook\ParserTestGlobalsHook;
 use MediaWiki\Http\HttpRequestFactory;
 use MediaWiki\Linker\LinksMigration;
 use MediaWiki\MainConfigNames;
+use MediaWiki\Media\FormatMetadata;
 use MediaWiki\Page\PageReference;
+use MediaWiki\Parser\Hook\ParserAfterTidyHook;
+use MediaWiki\Parser\Hook\ParserModifyImageHTMLHook;
 use MediaWiki\Parser\Parser;
 use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Title\TitleFactory;
 use PageImages\PageImageCandidate;
 use PageImages\PageImages;
-use RepoGroup;
 use RuntimeException;
 use Wikimedia\ObjectCache\WANObjectCache;
 use Wikimedia\Rdbms\IConnectionProvider;
@@ -48,30 +48,15 @@ class ParserFileProcessingHookHandlers implements
 {
 	private const CANDIDATE_REGEX = '/<!--MW-PAGEIMAGES-CANDIDATE-([0-9]+)-->/';
 
-	protected Config $config;
-	private RepoGroup $repoGroup;
-	private WANObjectCache $mainWANObjectCache;
-	private HttpRequestFactory $httpRequestFactory;
-	private IConnectionProvider $connectionProvider;
-	private TitleFactory $titleFactory;
-	private LinksMigration $linksMigration;
-
 	public function __construct(
-		Config $config,
-		RepoGroup $repoGroup,
-		WANObjectCache $mainWANObjectCache,
-		HttpRequestFactory $httpRequestFactory,
-		IConnectionProvider $connectionProvider,
-		TitleFactory $titleFactory,
-		LinksMigration $linksMigration
+		protected Config $config,
+		private readonly RepoGroup $repoGroup,
+		private readonly WANObjectCache $mainWANObjectCache,
+		private readonly HttpRequestFactory $httpRequestFactory,
+		private readonly IConnectionProvider $connectionProvider,
+		private readonly TitleFactory $titleFactory,
+		private readonly LinksMigration $linksMigration,
 	) {
-		$this->config = $config;
-		$this->repoGroup = $repoGroup;
-		$this->mainWANObjectCache = $mainWANObjectCache;
-		$this->httpRequestFactory = $httpRequestFactory;
-		$this->connectionProvider = $connectionProvider;
-		$this->titleFactory = $titleFactory;
-		$this->linksMigration = $linksMigration;
 	}
 
 	/**
@@ -95,11 +80,6 @@ class ParserFileProcessingHookHandlers implements
 	/**
 	 * ParserModifyImageHTML hook. Save candidate images, and mark them with a
 	 * comment so that we can later tell if they were in the lead section.
-	 *
-	 * @param Parser $parser
-	 * @param File $file
-	 * @param array $params
-	 * @param string &$html
 	 */
 	public function onParserModifyImageHTML(
 		Parser $parser,
@@ -107,8 +87,7 @@ class ParserFileProcessingHookHandlers implements
 		array $params,
 		string &$html
 	): void {
-		$page = $parser->getPage();
-		if ( !$page || !$this->processThisTitle( $page ) ) {
+		if ( !$this->processThisTitle( $parser->getPage() ) ) {
 			return;
 		}
 
@@ -217,15 +196,11 @@ class ParserFileProcessingHookHandlers implements
 
 	/**
 	 * Adds $image to $parserOutput extension data.
-	 *
-	 * @param PageImageCandidate $image
-	 * @param ParserOutput $parserOutput
-	 * @return int
 	 */
 	private function addPageImageCandidateToParserOutput(
 		PageImageCandidate $image,
 		ParserOutput $parserOutput
-	) {
+	): int {
 		$images = $parserOutput->getExtensionData( 'pageImages' ) ?: [];
 		$images[] = $image->jsonSerialize();
 		$parserOutput->setExtensionData( 'pageImages', $images );
@@ -234,12 +209,8 @@ class ParserFileProcessingHookHandlers implements
 
 	/**
 	 * Returns true if data for this title should be saved
-	 *
-	 * @param PageReference $pageReference
-	 *
-	 * @return bool
 	 */
-	private function processThisTitle( PageReference $pageReference ) {
+	private function processThisTitle( PageReference $pageReference ): bool {
 		static $flipped = null;
 		$flipped ??= array_flip( $this->config->get( 'PageImagesNamespaces' ) );
 
@@ -250,11 +221,8 @@ class ParserFileProcessingHookHandlers implements
 	 * Estimates image size as displayed if not explicitly provided. We don't follow the core size
 	 * calculation algorithm precisely because it's not required and editor's intentions are more
 	 * important than the precise number.
-	 *
-	 * @param array[] &$params
-	 * @param File $file
 	 */
-	private function calcWidth( array &$params, File $file ) {
+	private function calcWidth( array &$params, File $file ): void {
 		if ( isset( $params['handler']['width'] ) ) {
 			return;
 		}
@@ -276,17 +244,17 @@ class ParserFileProcessingHookHandlers implements
 	}
 
 	/**
-	 * Returns score for image, the more the better, if it is less than zero,
+	 * Return score for image, the more the better, if it is less than zero,
 	 * the image shouldn't be used for anything
 	 *
 	 * @param PageImageCandidate $image Associative array describing an image
 	 * @param int $position Image order on page
-	 *
 	 * @return float
 	 */
-	protected function getScore( PageImageCandidate $image, $position ) {
+	protected function getScore( PageImageCandidate $image, int $position ) {
+		$classes = preg_split( '/\s+/', $image->getFrameClass(), -1, PREG_SPLIT_NO_EMPTY );
 		// Exclude images with class="notpageimage"
-		if ( preg_match( '/(?:^|\s)notpageimage(?=\s|$)/', $image->getFrameClass() ) ) {
+		if ( in_array( 'notpageimage', $classes ) ) {
 			return -1000;
 		}
 
@@ -306,6 +274,12 @@ class ParserFileProcessingHookHandlers implements
 		$ratio = intval( $this->getRatio( $image ) * 10 );
 		$score += $this->scoreFromTable( $ratio, $pageImagesScores['ratio'] );
 
+		// T91683: Prefer images with class="pageimage". We're simply adding to the current score rather than returning
+		// earlier, so that the algorithm still helps decide which image to use when multiple have this class.
+		if ( in_array( 'pageimage', $classes ) ) {
+			$score += 1000;
+		}
+
 		$denylist = $this->getDenylist();
 		if ( isset( $denylist[$image->getFileName()] ) ) {
 			$score = -1000;
@@ -315,15 +289,14 @@ class ParserFileProcessingHookHandlers implements
 	}
 
 	/**
-	 * Returns score based on table of ranges
+	 * Return score based on table of ranges
 	 *
 	 * @param int $value The number that the various bounds are compared against
 	 * to calculate the score
 	 * @param float[] $scores Table of scores for different ranges of $value
-	 *
 	 * @return float
 	 */
-	protected function scoreFromTable( $value, array $scores ) {
+	protected function scoreFromTable( int $value, array $scores ) {
 		$lastScore = 0;
 
 		// The loop stops at the *first* match, and therefore *requires* the input array keys to be
@@ -350,7 +323,7 @@ class ParserFileProcessingHookHandlers implements
 	 * @param string $fileName Name of the image file
 	 * @return bool
 	 */
-	protected function isImageFree( $fileName ) {
+	protected function isImageFree( string $fileName ): bool {
 		$file = $this->repoGroup->findFile( $fileName );
 		if ( $file ) {
 			// Process copyright metadata from CommonsMetadata, if present.
@@ -366,7 +339,7 @@ class ParserFileProcessingHookHandlers implements
 	 * @param File $file File to fetch metadata from
 	 * @return array
 	 */
-	protected function fetchFileMetadata( $file ) {
+	protected function fetchFileMetadata( File $file ): array {
 		$format = new FormatMetadata;
 		$context = new DerivativeContext( $format->getContext() );
 		// we don't care about the language, and specifying singleLanguage is slightly faster
@@ -378,10 +351,9 @@ class ParserFileProcessingHookHandlers implements
 	}
 
 	/**
-	 * Returns width/height ratio of an image as displayed or 0 if not available
+	 * Return width/height ratio of an image as displayed or 0 if not available
 	 *
 	 * @param PageImageCandidate $image
-	 *
 	 * @return float|int
 	 */
 	protected function getRatio( PageImageCandidate $image ) {
@@ -391,12 +363,12 @@ class ParserFileProcessingHookHandlers implements
 	}
 
 	/**
-	 * Returns a list of images denylisted from influencing this extension's output
+	 * Return a list of images denylisted from influencing this extension's output
 	 *
 	 * @return int[] Flipped associative array in format "image BDB key" => int
 	 * @throws Exception
 	 */
-	protected function getDenylist() {
+	protected function getDenylist(): array {
 		return $this->mainWANObjectCache->getWithSetCallback(
 			$this->mainWANObjectCache->makeKey( 'pageimages-denylist' ),
 			$this->config->get( 'PageImagesDenylistExpiry' ),
@@ -429,14 +401,13 @@ class ParserFileProcessingHookHandlers implements
 	}
 
 	/**
-	 * Returns list of images linked by the given denylist page
+	 * Return list of images linked by the given denylist page
 	 *
 	 * @param string|false $dbName Database name or false for current database
 	 * @param string $page
-	 *
 	 * @return string[]
 	 */
-	private function getDbDenylist( $dbName, $page ) {
+	private function getDbDenylist( $dbName, string $page ): array {
 		$title = $this->titleFactory->newFromText( $page );
 		if ( !$title || !$title->canExist() ) {
 			return [];
@@ -463,18 +434,18 @@ class ParserFileProcessingHookHandlers implements
 	}
 
 	/**
-	 * Returns list of images on given remote denylist page.
+	 * Return list of images on given remote denylist page.
+	 *
 	 * Not quite 100% bulletproof due to localised namespaces and so on.
 	 * Though if you beat people if they add bad entries to the list... :)
 	 *
 	 * @param string $url
-	 *
 	 * @return string[]
 	 */
-	private function getUrlDenylist( $url ) {
+	private function getUrlDenylist( string $url ): array {
 		$list = [];
 		$text = $this->httpRequestFactory->get( $url, [ 'timeout' => 3 ], __METHOD__ );
-		$fileExtensions = $this->config->get( 'FileExtensions' );
+		$fileExtensions = $this->config->get( MainConfigNames::FileExtensions );
 		$regex = '/\[\[:([^|\#]*?\.(?:' . implode( '|', $fileExtensions ) . '))/i';
 
 		if ( $text && preg_match_all( $regex, $text, $matches ) ) {

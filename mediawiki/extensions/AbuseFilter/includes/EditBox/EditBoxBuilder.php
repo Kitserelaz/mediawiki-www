@@ -5,9 +5,9 @@ namespace MediaWiki\Extension\AbuseFilter\EditBox;
 use MediaWiki\Extension\AbuseFilter\AbuseFilterPermissionManager;
 use MediaWiki\Extension\AbuseFilter\KeywordsManager;
 use MediaWiki\Html\Html;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Permissions\Authority;
-use MessageLocalizer;
 use OOUI\ButtonWidget;
 use OOUI\DropdownInputWidget;
 use OOUI\FieldLayout;
@@ -106,9 +106,6 @@ abstract class EditBoxBuilder {
 		return $output;
 	}
 
-	/**
-	 * @return DropdownInputWidget
-	 */
 	private function getSuggestionsDropdown(): DropdownInputWidget {
 		$rawDropdown = $this->keywordsManager->getBuilderValues();
 
@@ -162,8 +159,6 @@ abstract class EditBoxBuilder {
 	/**
 	 * Get an additional widget that "controls" the editor, and is placed next to it
 	 * Precondition: the user has full rights.
-	 *
-	 * @return Widget
 	 */
 	protected function getEditorControls(): Widget {
 		return new ButtonWidget(

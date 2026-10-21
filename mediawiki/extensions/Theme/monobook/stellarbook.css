@@ -1,0 +1,608 @@
+/*
+** MediaWiki 'StellarBook' style sheet for CSS2-capable browsers.
+**
+** @date 22 January 2023
+** @license http://www.gnu.org/copyleft/gpl.html GNU General Public License 2.0 or later
+** @note Some CSS selectors are prefixed with "body " to override skins.monobook.mobile styles, which
+** apparently in MediaWiki 1.35(+) load _after_ this file and without that selector, those styles
+** would overwrite our styles defined here.
+*/
+.mw-body {
+	background: #313439;
+	border: solid 1px #5b5865;
+	color: #fff;
+	margin-left: 12.5em;
+	margin-right: 1em;
+	padding-top: 0;
+}
+
+#bodyContent {
+	padding: 0 6em 0 4em;
+}
+
+body {
+	/* @embed */
+	background: #000 url( stellarbook/headbg.jpg ) 0 0 repeat-x;
+	color: #fff;
+}
+
+/**
+ * Suppress the default background image.
+ */
+#globalWrapper {
+	background-image: none;
+}
+
+/* general styles */
+table {
+	font-size: 100%;
+	background: #404043;
+	color: #fff;
+}
+
+body a {
+	text-decoration: none;
+	color: #a5a5ec;
+	background: none;
+}
+
+body a:visited {
+	color: #ae8c7e;
+}
+
+body a:active {
+	color: #faa700;
+}
+
+body a:hover {
+	text-decoration: underline;
+}
+
+body a.stub {
+	color: #b65b6d;
+}
+
+body a.new,
+body #p-personal a.new {
+	color: #fabd23;
+}
+
+body a.new:visited,
+body #p-personal a.new:visited {
+	color: #a28b56;
+}
+
+/* Structural Elements */
+body h1,
+body h2,
+body h3,
+body h4,
+body h5,
+body h6 {
+	color: #818895;
+}
+
+body h5 {
+	font-size: 100%;
+}
+
+body h6 {
+	font-size: 80%;
+}
+
+li {
+	margin-bottom: 0.3em; /* @todo CHECKME */
+}
+
+dd {
+	margin-left: 2em; /* @todo CHECKME: still needed? */
+}
+
+legend {
+	background: #313439;
+}
+
+abbr,
+acronym,
+.explain {
+	background: none;
+	border-bottom: 1px dotted #000;
+	color: #000;
+}
+
+code {
+	background-color: #404043;
+	/* Let's have the color be something else than #000
+	 * to at least _slightly_ improve the readability... */
+	color: #818895;
+}
+
+pre,
+.mw-code {
+	background-color: #404043;
+	border-color: #a6a8c8;
+	color: #fff;
+	line-height: 1.1em;
+}
+
+/* Some space under the headers in the content area */
+#bodyContent h1,
+#bodyContent h2 {
+	margin-bottom: 0.6em;
+}
+
+#bodyContent h3,
+#bodyContent h4,
+#bodyContent h5 {
+	margin-bottom: 0.3em;
+}
+
+.firstHeading {
+	font-size: 2.5em;
+	margin: 1em 0 0.1em 1em;
+	border: none;
+}
+
+/* success and error messages */
+.errorbox,
+.successbox {
+	border: 2px solid;
+	color: #000;
+	float: left;
+	margin-bottom: 2em;
+}
+
+.errorbox {
+	background-color: #fff2f2;
+	border-color: red;
+}
+
+.successbox {
+	background-color: #dfd;
+	border-color: green;
+}
+
+/* Categories */
+body .catlinks {
+	background-color: #404043;
+}
+
+/* Table of Contents */
+body #toc,
+body .toc,
+body .mw-warning,
+body .toccolours {
+	background-color: #404043;
+}
+
+/* Numbers like 1.2, 2.5, etc. in the ToC */
+body .tocnumber {
+	color: #a5a5ec;
+}
+
+/* [show]/[hide] label in the ToC */
+body .toctogglelabel {
+	color: #a5a5ec;
+}
+
+/* Page history styling */
+body #pagehistory li.selected {
+	background-color: #404043;
+}
+/* text color for the currently selected row */
+body #pagehistory li.selected span:not( .mw-plusminus-pos ):not( .mw-plusminus-neg ) {
+	color: #fff;
+}
+/* minor/bot edit indicator letters in page histories */
+body #pagehistory li abbr {
+	color: #fff;
+}
+
+/*
+** Diff rendering
+*/
+table.diff,
+td.diff-otitle,
+td.diff-ntitle {
+	background-color: #404043;
+}
+
+td.diff-addedline {
+	background: rgb( 0, 100, 0 );
+	font-size: smaller;
+}
+
+td.diff-addedline .diffchange {
+	background: transparent !important;
+}
+
+td.diff-deletedline {
+	background: #bc8f29;
+	font-size: smaller;
+}
+
+td.diff-context {
+	background: #404043;
+	color: #fff;
+	font-size: smaller;
+}
+
+span.diffchange {
+	color: red;
+	font-weight: bold;
+}
+
+/*
+** keep the whitespace in front of the ^=, hides rule from Konqueror
+** this is CSS3, the validator doesn't like it when validating as CSS2
+*/
+#bodyContent a.external[href ^="https://"],
+.link-https {
+	/* @embed */
+	background-image: url( stellarbook/lock_icon.png );
+	padding-right: 18px;
+}
+
+#bodyContent a.external[ href^='mailto:' ],
+.link-mailto {
+	/* @embed */
+	background-image: url( stellarbook/mail_icon.png );
+}
+
+#bodyContent a.external[ href^='news:' ] {
+	/* @embed */
+	background-image: url( stellarbook/news_icon.png );
+}
+#bodyContent a.external[href ^="ftp://"],
+.link-ftp {
+	/* @embed */
+	background-image: url( stellarbook/file_icon.gif );
+}
+#bodyContent a.external[href ^="irc://"],
+#bodyContent a.external[href ^="ircs://"],
+.link-irc {
+	/* @embed */
+	background-image: url( stellarbook/discussionitem_icon.png );
+}
+
+#bodyContent a.external[ href$='.ogg' ],
+#bodyContent a.external[ href$='.OGG' ],
+#bodyContent a.external[ href$='.mid' ],
+#bodyContent a.external[ href$='.MID' ],
+#bodyContent a.external[ href$='.midi' ],
+#bodyContent a.external[ href$='.MIDI' ],
+#bodyContent a.external[ href$='.mp3' ],
+#bodyContent a.external[ href$='.MP3' ],
+#bodyContent a.external[ href$='.wav' ],
+#bodyContent a.external[ href$='.WAV' ],
+#bodyContent a.external[ href$='.wma' ],
+#bodyContent a.external[ href$='.WMA' ],
+.link-audio {
+	/* @embed */
+	background-image: url( stellarbook/audio.png );
+}
+
+#bodyContent a.external[ href$='.ogm' ],
+#bodyContent a.external[ href$='.OGM' ],
+#bodyContent a.external[ href$='.avi' ],
+#bodyContent a.external[ href$='.AVI' ],
+#bodyContent a.external[ href$='.mpeg' ],
+#bodyContent a.external[ href$='.MPEG' ],
+#bodyContent a.external[ href$='.mpg' ],
+#bodyContent a.external[ href$='.MPG' ],
+.link-video {
+	/* @embed */
+	background-image: url( stellarbook/video.png );
+}
+
+/* Interwiki styling */
+#bodyContent a.extiw,
+#bodyContent a.extiw:active {
+	color: #47aec9;
+}
+/* External links */
+#bodyContent a.external {
+	color: #47aec9;
+}
+
+/*
+** general portlet styles (elements in the quickbar)
+*/
+body .portlet h3 {
+	background: transparent;
+	padding: 0 1em 0 0.5em;
+	display: inline;
+	height: 1em;
+	text-transform: lowercase;
+	font-size: 120%;
+	font-weight: bold;
+	white-space: nowrap;
+}
+
+body .portlet h4 {
+	font-size: 95%;
+	font-weight: normal;
+	white-space: nowrap;
+}
+
+body .portlet h6 {
+	background: #ffae2e;
+	border: 1px solid #2f6fab;
+	border-style: solid solid none solid;
+	padding: 0 1em 0 1em;
+	text-transform: lowercase;
+	display: block;
+	font-size: 1em;
+	height: 1.2em;
+	font-weight: normal;
+	white-space: nowrap;
+}
+
+body.skin--responsive .pBody, /* MW 1.39+ */
+body .pBody /* MW 1.35(-1.38?) */ {
+	background-color: #313439;
+	border: none;
+	color: #fff;
+}
+
+/*
+** Search portlet
+*/
+#searchInput {
+	background-color: #bdc1c7;
+}
+
+/*
+** the personal toolbar
+*/
+body.skin--responsive #p-personal li a,
+body #p-personal li a {
+	color: #133146;
+}
+
+/*
+** the page-related actions- page/talk, edit etc.
+** the "body.skin--responsive" selectors are for MW 1.39+,
+** the others are for 1.35(-1.38?)
+*/
+body.skin--responsive #p-cactions li,
+body #p-cactions li {
+	background: #313439;
+	border-color: #000;
+}
+
+body.skin--responsive #p-cactions li a,
+body #p-cactions li a {
+	background-color: #313439;
+	color: #a0a7c4;
+	padding-left: 0.8em;
+}
+
+body.skin--responsive #p-cactions li.selected,
+body #p-cactions li.selected {
+	padding: 0 0 0.2em 0;
+}
+
+body.skin--responsive #p-cactions li.selected a,
+body.skin--responsive #p-cactions li a:hover,
+body #p-cactions li.selected a,
+body #p-cactions li a:hover {
+	background-color: transparent;
+}
+
+/*
+** footer
+*/
+#footer {
+	background-color: #191a1e;
+	font-size: 75%;
+	margin: 4em 0 1em 0;
+	padding: 0.4em 0 1.2em 0;
+}
+
+/* Gallery stuff -- no idea if this is needed -- @todo FIXME/CHECKME */
+.gallerybox {
+	margin: 2px;
+	width: 150px;
+}
+
+/* Added/removed bytes in Special:RecentChanges, page histories, etc. */
+.mw-plusminus-pos {
+	color: #00d000;
+}
+
+.mw-plusminus-neg,
+.previewnote {
+	color: #e00000;
+}
+
+/* Note on preview page */
+.previewnote {
+	text-align: center;
+}
+
+/* Classes for Exif data display */
+table.mw_metadata th {
+	background-color: #404043;
+}
+
+table.mw_metadata td {
+	background-color: transparent;
+}
+
+/* File history table on File: pages */
+table.filehistory {
+	background-color: transparent;
+	color: #a5a5ec;
+}
+
+table.filehistory th {
+	background-color: transparent;
+}
+
+/* filetoc */
+ul#filetoc {
+	background-color: #404043;
+}
+
+/* Arrow image for the "Filter revisions" menu on page histories */
+.oo-ui-icon-expand,
+.mw-ui-icon-expand::before,
+.oo-ui-icon-collapse,
+.mw-ui-icon-collapse::before {
+	filter: invert( 100% );
+}
+
+/* Login & signup form fixes */
+div#userloginForm {
+	background-color: transparent;
+}
+
+#mw-createaccount-join { /* "Join {{SITENAME}}" button */
+	box-shadow: none;
+}
+
+.mw-ui-vform > div label,
+.mw-body-content div.mw-number-text {
+	color: #fff;
+}
+
+.mw-body-content div.mw-number-text h3 {
+	color: #818895;
+}
+
+/* TablePager */
+table.mw-datatable tr:hover td,
+table.mw-datatable td {
+	background-color: transparent;
+}
+
+table.mw-datatable th {
+	color: #000;
+}
+
+/* Navigation arrows */
+table.TablePager_nav {
+	background: transparent;
+}
+
+/* Special:AllMessages */
+table.mw-allmessages-table {
+	background: transparent;
+}
+
+/* Special:RecentChanges - the collapsible box explaining the acronyms */
+.mw-changeslist-legend {
+	background-color: transparent;
+}
+
+/** Social tools */
+#profile-top,
+.profile-info {
+	background-color: transparent !important;
+}
+
+/* personal info on profiles + activity feed on profiles + Special:UserActivity */
+div.profile-info-container div,
+div.profile-info-container b,
+div.item,
+div.user-home-links-container h2 {
+	color: #fff;
+}
+
+/* user board on profile pages */
+div.user-board-message-from {
+	background-color: transparent;
+	border-bottom: 1px solid #e2e2e2;
+}
+
+/* navigation menu on Special:TopUsers */
+div.top-fan-nav h1 {
+	color: #818895;
+}
+
+/* Special:GiveGift - make highlighted gift's description readable */
+.g-give-all-highlight {
+	color: #000;
+}
+
+/** BlogPage */
+/* Labels on Special:CreateBlogPost */
+.create-title {
+	color: #818895;
+}
+
+/** Comments */
+div.c-form-title {
+	color: #818895;
+}
+
+/** FanBoxes */
+/* Special:TopUserboxes */
+div.top-fanbox-users table,
+div.fanbox-pop-up-box table,
+div.fanbox-pop-up-box-profile table /* fanboxes on users' profiles */ {
+	background-color: transparent;
+}
+
+div.fanbox-nav h2 {
+	color: #818895;
+}
+
+/** LinkFilter */
+/* Special:LinksHome */
+div.links-home-date,
+div.link-item-desc {
+	color: #818895;
+}
+
+/* Special:LinkSubmit */
+.link-submit-title {
+	color: #818895;
+}
+
+/** PictureGame */
+/* Picture game title */
+.imgTitle {
+	color: #818895;
+}
+
+/* "Previous Game" module below the "Submitted By" box */
+.voteStats h1 {
+	color: #818895;
+}
+
+/* New picture game creation screen */
+.pick-game-welcome-message {
+	/* Like below (for PollNY's Special:CreatePoll), maybe not ideal
+	 * but still acceptable enough...
+	 */
+	color: #000;
+}
+
+.imageOneUpload h1,
+.imageTwoUpload h1,
+.uploadTitle h1,
+.uploadedImages h1 {
+	color: #818895;
+}
+
+/** PollNY */
+/* Special:CreatePoll */
+.create-poll-top {
+	/* Maybe it'd be better to turn the background-color transparent?
+	 * But this'll do well enough to make the text readable.
+	 */
+	color: #000;
+}
+
+/* Special:ViewPoll */
+div.view-poll-top-links a,
+div.view-poll-text,
+div.view-poll-user-name {
+	color: #a5a5ec;
+}
+
+div.view-poll-navigation h2 {
+	color: #818895;
+}

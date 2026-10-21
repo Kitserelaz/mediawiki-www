@@ -12,11 +12,11 @@ use MediaWiki\Interwiki\InterwikiLookup;
 use MediaWiki\MainConfigNames;
 use MediaWiki\Message\Message;
 use MediaWiki\Permissions\PermissionManager;
+use MediaWiki\Skin\SkinFactory;
 use MediaWiki\User\Options\UserOptionsLookup;
 use Miraheze\ManageWiki\FormFields\HTMLTypedSelectField;
 use Miraheze\ManageWiki\Helpers\Factories\PermissionsFactory;
 use Miraheze\ManageWiki\Traits\MatrixHandlerTrait;
-use SkinFactory;
 use function array_combine;
 use function array_filter;
 use function array_flip;
@@ -35,12 +35,11 @@ class TypesBuilder {
 
 	use MatrixHandlerTrait;
 
-	public const CONSTRUCTOR_OPTIONS = [
+	public const array CONSTRUCTOR_OPTIONS = [
 		MainConfigNames::AllowUserCssPrefs,
 		MainConfigNames::DisableLangConversion,
 		MainConfigNames::EnableEmail,
 		MainConfigNames::EnableUserEmail,
-		MainConfigNames::EnableUserEmailMuteList,
 		MainConfigNames::EnotifMinorEdits,
 		MainConfigNames::EnotifRevealEditorAddress,
 		MainConfigNames::EnotifUserTalk,
@@ -61,7 +60,7 @@ class TypesBuilder {
 		private readonly PermissionManager $permissionManager,
 		private readonly SkinFactory $skinFactory,
 		private readonly UserOptionsLookup $userOptionsLookup,
-		private readonly ServiceOptions $options
+		private readonly ServiceOptions $options,
 	) {
 		$options->assertRequiredOptions( self::CONSTRUCTOR_OPTIONS );
 	}
@@ -173,7 +172,8 @@ class TypesBuilder {
 					'default' => $value ?? $options['overridedefault'],
 				];
 
-				if ( !$disabled ) {
+				// Allow disable the dropdown if option labels are too long
+				if ( !$disabled && ( $options['dropdown'] ?? true ) ) {
 					$configs['dropdown'] = true;
 				}
 				break;
@@ -256,10 +256,6 @@ class TypesBuilder {
 						$excludedPrefs[] = 'disablemail';
 						$excludedPrefs[] = 'email-allow-new-users';
 						$excludedPrefs[] = 'ccmeonemails';
-
-						if ( !$this->options->get( MainConfigNames::EnableUserEmailMuteList ) ) {
-							$excludedPrefs[] = 'email-blacklist';
-						}
 					}
 
 					if ( !$this->options->get( MainConfigNames::EnotifWatchlist ) ) {
@@ -411,6 +407,7 @@ class TypesBuilder {
 			case 'user':
 				$configs = [
 					'type' => 'user',
+					'excludetemp' => true,
 					'exists' => true,
 					'default' => $value ?? $options['overridedefault'],
 				];
@@ -418,6 +415,7 @@ class TypesBuilder {
 			case 'users':
 				$configs = [
 					'type' => 'usersmultiselect',
+					'excludetemp' => true,
 					'exists' => true,
 					'default' => implode( "\n", $value ?? $options['overridedefault'] ),
 				];

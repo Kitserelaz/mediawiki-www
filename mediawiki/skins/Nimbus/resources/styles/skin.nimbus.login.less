@@ -1,0 +1,41 @@
+#wiki-login:not( .mw-skin-nimbus-button ) {
+	margin: 12px 0 0 0;
+	float: right;
+	padding: 0 5px 0 10px;
+	line-height: 17px;
+	color: #fff;
+	font-size: 11px;
+
+	a {
+		margin: 0 10px 0 0;
+	}
+}
+
+#login-message {
+	float: left;
+	margin: 1px 10px 0;
+
+	a {
+		margin: 0 2px;
+		font-size: 11px;
+		text-decoration: underline;
+
+		&:hover {
+			color: #333;
+		}
+	}
+}
+
+/* This literally exists only for Echo support, namely to position the
+ * "Profile" and "Log out?" buttons displayed to a registered user correctly when Echo is installed
+ */
+#mw-skin-nimbus-button-container {
+	display: inline-block;
+	position: relative;
+	/* Calculated using the patented "It Looks Good To Me™" method of determining an element's proper position */
+	top: -10px;
+}
+
+#mw-skin-nimbus-button-container.mw-skin-nimbus-no-echo {
+	top: 0;
+}

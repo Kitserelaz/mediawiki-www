@@ -1,0 +1,87 @@
+<?php
+
+namespace SMW\MediaWiki\Specials\Admin\Alerts;
+
+use MediaWiki\Html\Html;
+use SMW\Localizer\Message;
+use SMW\MediaWiki\Specials\Admin\TaskHandler;
+use SMW\SQLStore\SQLStore;
+use SMW\Store;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since   3.2
+ *
+ * @author mwjames
+ */
+class OutdatedEntitiesMaxCountThresholdMaintenanceAlertTaskHandler extends TaskHandler {
+
+	/**
+	 * Defines the threshold for a max count of outdated entities that triggers
+	 * an alert.
+	 */
+	const MAXCOUNT_THRESHOLD = 20000;
+
+	/**
+	 * @since 3.2
+	 */
+	public function __construct( private readonly Store $store ) {
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * {@inheritDoc}
+	 */
+	public function getHtml() {
+		$count = $this->fetchCount();
+
+		if ( $count < self::MAXCOUNT_THRESHOLD ) {
+			return '';
+		}
+
+		return $this->buildHTML( $count );
+	}
+
+	private function fetchCount(): int {
+		$connection = $this->store->getConnection( 'mw.db' );
+
+		$row = $connection->newSelectQueryBuilder()
+			->select( [ 'count' => 'COUNT(smw_id)' ] )
+			->from( SQLStore::ID_TABLE )
+			->where( [ 'smw_iw' => SMW_SQL3_SMWDELETEIW ] )
+			->caller( __METHOD__ )
+			->fetchRow();
+
+		return $row !== false ? (int)$row->count : 0;
+	}
+
+	private function buildHTML( int $count ) {
+		$html = Html::rawElement(
+			'fieldset',
+			[
+				'class' => "smw-admin-alerts-section-legend"
+			],
+			Html::rawElement(
+				'legend',
+				[
+					'class' => "smw-admin-alerts-section-legend"
+				],
+				$this->msg( "smw-admin-maintenancealerts-outdatedentitiesmaxcount-alert-title" )
+			) .	Html::rawElement(
+				'p',
+				[],
+				$this->msg( [ 'smw-admin-maintenancealerts-outdatedentitiesmaxcount-alert', $count, self::MAXCOUNT_THRESHOLD ], Message::PARSE )
+			)
+		);
+
+		return Html::rawElement(
+			'div',
+			[
+				'class' => 'smw-admin-alerts smw-admin-alerts-outdates-entities'
+			],
+			$html
+		);
+	}
+
+}

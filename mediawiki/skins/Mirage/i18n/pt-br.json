@@ -1,0 +1,37 @@
+{
+	"@metadata": {
+		"authors": [
+			"Eduardo Addad de Oliveira",
+			"Eduardoaddad",
+			"Gustavo.moraes"
+		]
+	},
+	"mirage-skin-desc": "Mirage é um tema responsivo que se concentra na exibição de conteúdo com uma grade à direita",
+	"mirage-community-messages-header": "Mensagens da comunidade",
+	"mirage-interface-messages-module-edit-this-message": "Editar esta mensagem",
+	"mirage-page-actions": "Ações da página",
+	"mirage-jumptonavigation": "Ir para navegação",
+	"mirage-jumptocontent": "Ir para o conteúdo",
+	"mirage-action-addsection": "Adicionar tópico",
+	"mirage-userpage": "Página de {{GENDER:$1|usuário}}",
+	"mirage-footer-places": "Lugares",
+	"mirage-footer-feeds": "Feeds",
+	"mirage-footer-info": "Informações da página",
+	"mirage-expand-submenu": "Mostra as entradas para o submenu",
+	"mirage-talkpage": "Página de discussão",
+	"mirage-user-tools": "Ferramentas do usuário",
+	"mirage-no-new-messages": "Você não tem novas mensagens.",
+	"mirage-notifications": "Notificações",
+	"mirage-page-tools": "Ferramentas de páginas",
+	"mirage-hidden-categories": "Categorias ocultas",
+	"mirage-recent-changes-module": "Mudanças recentes",
+	"mirage-more": "Mais",
+	"mirage-more-recent-changes": "Veja mais mudanças",
+	"mirage-toggle-right-rail": "Alternar barra lateral",
+	"prefs-mirage-max-width-label": "Largura do conteúdo da miragem:",
+	"prefs-mirage-max-width": "Sempre aplicar a largura máxima da página",
+	"prefs-mirage-partial-max-width": "Aplicar a largura máxima da página apenas a artigos",
+	"prefs-mirage-no-max-width": "Desativar a largura máxima da página",
+	"prefs-mirage-show-right-rail": "Mostrar a barra da direita",
+	"mirage-wordmark-file-warning": "Este arquivo está atualmente em uso como o Wordmark para o tema do Mirage."
+}

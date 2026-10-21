@@ -1,0 +1,25 @@
+{
+	"@metadata": {
+		"authors": [
+			"Dbc334",
+			"Eleassar"
+		]
+	},
+	"globalusage": "Globalna uporaba datoteke",
+	"globalusage-for": "Globalna uporaba za »$1«",
+	"globalusage-filename": "Ime datoteke:",
+	"globalusage-desc": "[[Special:GlobalUsage|Posebna stran]] za ogled globalne uporabe datoteke",
+	"globalusage-ok": "Iskanje",
+	"globalusage-text": "Iskanje globalne uporabe datoteke",
+	"globalusage-no-results": "[[:$1]] se v drugih vikijih ne uporablja.",
+	"globalusage-on-wiki": "Uporaba na $2",
+	"globalusage-of-file": "To datoteko uporabljajo tudi naslednji vikiji:",
+	"globalusage-more": "Oglejte si [[{{#Special:GlobalUsage}}/$1|globalno uporabo]] te datoteke.",
+	"globalusage-filterlocal": "Ne prikaži lokalne uporabe",
+	"mostgloballylinkedfiles": "Globalno najbolj povezane datoteke",
+	"mostgloballylinkedfiles-summary": "Seznam datotek, ki so v vseh vikijih vključene največkrat. Za enakovreden seznam, ki upošteva samo uporabo v projektu {{SITENAME}} glejte [[{{#special:MostLinkedFiles}}]].",
+	"globallywantedfiles": "Globalno želelene datoteke",
+	"globallywantedfiles-summary": "Seznam datotek, ki so v vseh vikijih vključene največkrat, čeprav ne obstajajo. Za enakovreden seznam, ki upošteva samo uporabo v projektu {{SITENAME}} glejte [[{{#special:WantedFiles}}]]. Na tem seznamu je lahko napačno navedena uporaba datotek iz vikijev, ki razlikujejo med velikimi in malimi črkami.",
+	"globallywantedfiles-foreign-repo": "<strong>Opozorilo:</strong> Ta viki uporablja zunanjo shrambo datotek. Datoteke iz zunanje shrambe, ki se uporabljajo, bodo na tem seznamu prikazane kot prečrtane modre povezave, kljub temu da obstajajo.",
+	"globalusage-header": "Ta stran prikazuje, kje v drugih vikijih je datoteka uporabljena. Ta podatek lahko poiščete tudi na dnu opisne strani datoteke."
+}

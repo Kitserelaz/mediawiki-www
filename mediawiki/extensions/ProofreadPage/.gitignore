@@ -1,0 +1,11 @@
+*~
+*.kate-swp
+.*.swp
+.htaccess
+/node_modules/
+/modules/lib/.foreign/
+/vendor/
+/composer.lock
+.eslintcache
+/tests/selenium/log
+/.stylelintcache

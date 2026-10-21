@@ -1,22 +1,6 @@
 <?php
-
-namespace MediaWiki\Extension\PdfHandler;
-
-use File;
-use ImageHandler;
-use MediaTransformError;
-use MediaTransformOutput;
-use MediaWiki\Context\IContextSource;
-use MediaWiki\MediaWikiServices;
-use MediaWiki\PoolCounter\PoolCounterWorkViaCallback;
-use ThumbnailImage;
-use TransformParameterError;
-
 /**
  * Copyright © 2007 Martin Seidel (Xarax) <jodeldi@gmx.de>
- *
- * Inspired by djvuhandler from Tim Starling
- * Modified and written by Xarax
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,6 +18,25 @@ use TransformParameterError;
  * http://www.gnu.org/copyleft/gpl.html
  */
 
+namespace MediaWiki\Extension\PdfHandler;
+
+use MediaWiki\Config\Config;
+use MediaWiki\Context\IContextSource;
+use MediaWiki\FileRepo\File\File;
+use MediaWiki\Media\ImageHandler;
+use MediaWiki\Media\MediaHandlerState;
+use MediaWiki\Media\MediaTransformError;
+use MediaWiki\Media\MediaTransformOutput;
+use MediaWiki\Media\ThumbnailImage;
+use MediaWiki\Media\TransformParameterError;
+use MediaWiki\MediaWikiServices;
+use MediaWiki\PoolCounter\PoolCounterWorkViaCallback;
+use MediaWiki\Shell\Shell;
+
+/**
+ * Inspired by djvuhandler from Tim Starling
+ * Modified and written by Xarax
+ */
 class PdfHandler extends ImageHandler {
 	/**
 	 * Keep in sync with pdfhandler.messages in extension.json
@@ -62,58 +65,52 @@ class PdfHandler extends ImageHandler {
 	 */
 	private const STATE_DIMENSION_INFO = 'pdfDimensionInfo';
 
-	/**
-	 * @param File $file
-	 * @return bool
-	 */
+	private readonly Config $config;
+
+	public function __construct() {
+		$this->config = MediaWikiServices::getInstance()->getMainConfig();
+	}
+
+	/** @inheritDoc */
 	public function mustRender( $file ) {
 		return true;
 	}
 
-	/**
-	 * @param File $file
-	 * @return bool
-	 */
+	/** @inheritDoc */
 	public function isMultiPage( $file ) {
 		return true;
 	}
 
-	/**
-	 * @param string $name
-	 * @param string $value
-	 * @return bool
-	 */
+	/** @inheritDoc */
 	public function validateParam( $name, $value ) {
-		if ( $name === 'page' && trim( $value ) !== (string)intval( $value ) ) {
+		if ( $name === 'page' ) {
 			// Extra junk on the end of page, probably actually a caption
 			// e.g. [[File:Foo.pdf|thumb|Page 3 of the document shows foo]]
-			return false;
+			return is_int( $value ) ||
+				( is_string( $value ) && ctype_digit( trim( $value ) ) );
 		}
-		if ( in_array( $name, [ 'width', 'height', 'page' ] ) ) {
-			return ( $value > 0 );
-		}
-		return false;
+		return in_array( $name, [ 'width', 'height', 'page', 'physicalWidth', 'physicalHeight' ] ) &&
+			(int)$value > 0;
 	}
 
 	/**
 	 * @param array $params
-	 * @return bool|string
+	 * @return string|false
 	 */
 	public function makeParamString( $params ) {
-		$page = $params['page'] ?? 1;
-		if ( !isset( $params['width'] ) ) {
+		$width = $params['physicalWidth'] ?? $params['width'] ?? null;
+		if ( !$width ) {
 			return false;
 		}
-		return "page{$page}-{$params['width']}px";
+		$page = trim( $params['page'] ?? '1' );
+		return "page{$page}-{$width}px";
 	}
 
 	/**
 	 * @param string $str
-	 * @return array|bool
+	 * @return array{width: string, page: string}|false
 	 */
 	public function parseParamString( $str ) {
-		$m = [];
-
 		if ( preg_match( '/^page(\d+)-(\d+)px$/', $str, $m ) ) {
 			return [ 'width' => $m[2], 'page' => $m[1] ];
 		}
@@ -121,10 +118,7 @@ class PdfHandler extends ImageHandler {
 		return false;
 	}
 
-	/**
-	 * @param array $params
-	 * @return array
-	 */
+	/** @inheritDoc */
 	public function getScriptParams( $params ) {
 		return [
 			'width' => $params['width'],
@@ -133,7 +127,7 @@ class PdfHandler extends ImageHandler {
 	}
 
 	/**
-	 * @return array
+	 * @return array<string,string>
 	 */
 	public function getParamMap() {
 		return [
@@ -162,8 +156,6 @@ class PdfHandler extends ImageHandler {
 	 * @return MediaTransformError|MediaTransformOutput|ThumbnailImage|TransformParameterError
 	 */
 	public function doTransform( $image, $dstPath, $dstUrl, $params, $flags = 0 ) {
-		global $wgPdfProcessor, $wgPdfPostProcessor, $wgPdfHandlerDpi, $wgPdfHandlerJpegQuality;
-
 		if ( !$this->normaliseParams( $image, $params ) ) {
 			return new TransformParameterError( $params );
 		}
@@ -208,15 +200,20 @@ class PdfHandler extends ImageHandler {
 			return $this->doThumbError( $width, $height, 'filemissing' );
 		}
 
-		$cmd = '(' . wfEscapeShellArg(
-			$wgPdfProcessor,
+		$pdfProcessor = $this->config->get( 'PdfProcessor' );
+		$pdfPostProcessor = $this->config->get( 'PdfPostProcessor' );
+		$dpi = $this->config->get( 'PdfHandlerDpi' );
+		$jpegQuality = $this->config->get( 'PdfHandlerJpegQuality' );
+
+		$cmd = '(' . Shell::escape(
+			$pdfProcessor,
 			"-sDEVICE=jpeg",
 			"-sOutputFile=-",
 			"-sstdout=%stderr",
 			"-dFirstPage={$page}",
 			"-dLastPage={$page}",
 			"-dSAFER",
-			"-r{$wgPdfHandlerDpi}",
+			"-r{$dpi}",
 			// CropBox defines the region that the PDF viewer application is expected to display or print.
 			"-dUseCropBox",
 			"-dBATCH",
@@ -224,30 +221,30 @@ class PdfHandler extends ImageHandler {
 			"-q",
 			$srcPath
 		);
-		$cmd .= " | " . wfEscapeShellArg(
-			$wgPdfPostProcessor,
+		$cmd .= " | " . Shell::escape(
+			$pdfPostProcessor,
+			"-",
 			"-depth",
 			"8",
 			"-quality",
-			$wgPdfHandlerJpegQuality,
+			$jpegQuality,
 			"-resize",
 			(string)$width,
-			"-",
 			$dstPath
 		);
 		$cmd .= ")";
 
 		wfDebug( __METHOD__ . ": $cmd\n" );
-		$retval = '';
-		$err = wfShellExecWithStderr( $cmd, $retval );
+		$err = Shell::command()->unsafeParams( $cmd )->execute();
+		$retval = $err->getExitCode();
 
 		$removed = $this->removeBadFile( $dstPath, $retval );
 
 		if ( $retval != 0 || $removed ) {
 			wfDebugLog( 'thumbnail',
 				sprintf( 'thumbnail failed on %s: error %d "%s" from "%s"',
-				wfHostname(), $retval, trim( $err ), $cmd ) );
-			return new MediaTransformError( 'thumbnail_error', $width, $height, $err );
+				wfHostname(), $retval, trim( $err->getStderr() ), $cmd ) );
+			return new MediaTransformError( 'thumbnail_error', $width, $height, $err->getStderr() );
 		}
 
 		return new ThumbnailImage( $image, $dstUrl, $dstPath, [
@@ -258,23 +255,41 @@ class PdfHandler extends ImageHandler {
 	}
 
 	/**
-	 * @param \MediaHandlerState $state
+	 * @inheritDoc
+	 */
+	public function normaliseParams( $image, &$params ) {
+		// Copy-paste from TransformationalImageHandler::normaliseParams()
+		// Probably should be trait or subclass.
+		if ( !parent::normaliseParams( $image, $params ) ) {
+			return false;
+		}
+		$srcWidth = $image->getWidth( $params['page'] );
+		$srcHeight = $image->getHeight( $params['page'] );
+		$params['physicalWidth'] = $this->getSteppedThumbWidth(
+			$image, $params['physicalWidth'], $srcWidth, $srcHeight
+		);
+		$params['physicalHeight'] = File::scaleHeight( $srcWidth, $srcHeight, $params['physicalWidth'] );
+		return true;
+	}
+
+	/**
+	 * @param MediaHandlerState $state
 	 * @param string $path
 	 * @return PdfImage
 	 */
 	private function getPdfImage( $state, $path ) {
 		$pdfImg = $state->getHandlerState( self::STATE_PDF_IMAGE );
 		if ( !$pdfImg ) {
-			$pdfImg = new PdfImage( $path );
+			$pdfImg = new PdfImage( $path, $this->config );
 			$state->setHandlerState( self::STATE_PDF_IMAGE, $pdfImg );
 		}
 		return $pdfImg;
 	}
 
 	/**
-	 * @param \MediaHandlerState $state
+	 * @param MediaHandlerState $state
 	 * @param string $path
-	 * @return array|bool
+	 * @return array{width?: int, height?: int, metadata: array}
 	 */
 	public function getSizeAndMetadata( $state, $path ) {
 		$metadata = $this->getPdfImage( $state, $path )->retrieveMetaData();
@@ -289,26 +304,23 @@ class PdfHandler extends ImageHandler {
 	/**
 	 * @param string $ext
 	 * @param string $mime
-	 * @param null $params
-	 * @return array
+	 * @param array|null $params
+	 * @return array{0: string, 1: ?string}
 	 */
 	public function getThumbType( $ext, $mime, $params = null ) {
-		global $wgPdfOutputExtension;
 		static $mime;
+		$outputExtension = $this->config->get( 'PdfOutputExtension' );
 
-		if ( !isset( $mime ) ) {
+		if ( $mime === null ) {
 			$magic = MediaWikiServices::getInstance()->getMimeAnalyzer();
-			$mime = $magic->guessTypesForExtension( $wgPdfOutputExtension );
+			$mime = $magic->guessTypesForExtension( $outputExtension );
 		}
-		return [ $wgPdfOutputExtension, $mime ];
+		return [ $outputExtension, $mime ];
 	}
 
-	/**
-	 * @param File $file
-	 * @return bool|int
-	 */
-	public function isFileMetadataValid( $file ) {
-		$data = $file->getMetadataItems( [ 'mergedMetadata', 'pages' ] );
+	/** @inheritDoc */
+	public function isFileMetadataValid( $image ) {
+		$data = $image->getMetadataItems( [ 'mergedMetadata', 'pages' ] );
 		if ( !isset( $data['pages'] ) ) {
 			return self::METADATA_BAD;
 		}
@@ -322,8 +334,8 @@ class PdfHandler extends ImageHandler {
 
 	/**
 	 * @param File $image
-	 * @param bool|IContextSource $context Context to use (optional)
-	 * @return bool|array
+	 * @param IContextSource|false $context Context to use (optional)
+	 * @return array<string,array[]>|false
 	 */
 	public function formatMetadata( $image, $context = false ) {
 		$mergedMetadata = $image->getMetadataItem( 'mergedMetadata' );
@@ -359,12 +371,9 @@ class PdfHandler extends ImageHandler {
 		return false;
 	}
 
-	/**
-	 * @param File $image
-	 * @return bool|int
-	 */
-	public function pageCount( File $image ) {
-		$info = $this->getDimensionInfo( $image );
+	/** @inheritDoc */
+	public function pageCount( File $file ) {
+		$info = $this->getDimensionInfo( $file );
 
 		return $info ? $info['pageCount'] : false;
 	}
@@ -372,7 +381,7 @@ class PdfHandler extends ImageHandler {
 	/**
 	 * @param File $image
 	 * @param int $page
-	 * @return array|bool
+	 * @return array{width: int, height: int}|false
 	 */
 	public function getPageDimensions( File $image, $page ) {
 		// MW starts pages at 1, as they are stored here
@@ -388,7 +397,7 @@ class PdfHandler extends ImageHandler {
 
 	/**
 	 * @param File $file
-	 * @return bool|mixed
+	 * @return array{pageCount: int, dimensionsByPage: array<int,array{width: int, height: int}>}|false
 	 */
 	protected function getDimensionInfo( File $file ) {
 		$info = $file->getHandlerState( self::STATE_DIMENSION_INFO );
@@ -399,7 +408,15 @@ class PdfHandler extends ImageHandler {
 				$cache::TTL_MONTH,
 				static function () use ( $file ) {
 					$data = $file->getMetadataItems( PdfImage::ITEMS_FOR_PAGE_SIZE );
-					if ( !$data || !isset( $data['Pages'] ) ) {
+					// Pages (uppercase P) is the integer count of number of pages
+					// pages (lowercase p) is an array of size info per page
+					if (
+						!$data ||
+						!isset( $data['Pages'] ) ||
+						// The pages list is stored separately in external storage.
+						// Be sure not to cache any transient failures retrieving them.
+						( !isset( $data['pages'] ) && !isset( $data['Page size'] ) )
+					) {
 						return false;
 					}
 
@@ -417,11 +434,7 @@ class PdfHandler extends ImageHandler {
 		return $info;
 	}
 
-	/**
-	 * @param File $image
-	 * @param int $page
-	 * @return bool
-	 */
+	/** @inheritDoc */
 	public function getPageText( File $image, $page ) {
 		$pageTexts = $image->getMetadataItem( 'text' );
 		if ( !is_array( $pageTexts ) || !isset( $pageTexts[$page - 1] ) ) {
@@ -444,6 +457,7 @@ class PdfHandler extends ImageHandler {
 		];
 	}
 
+	/** @inheritDoc */
 	public function useSplitMetadata() {
 		return true;
 	}

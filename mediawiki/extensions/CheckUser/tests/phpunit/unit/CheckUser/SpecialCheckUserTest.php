@@ -1,9 +1,10 @@
 <?php
 
-namespace MediaWiki\CheckUser\Tests\Unit\CheckUser;
+namespace MediaWiki\Extension\CheckUser\Tests\Unit\CheckUser;
 
-use MediaWiki\CheckUser\CheckUser\SpecialCheckUser;
-use MediaWiki\Config\Config;
+use MediaWiki\Config\HashConfig;
+use MediaWiki\Extension\CheckUser\CheckUser\SpecialCheckUser;
+use MediaWiki\Extension\CheckUser\Tests\SpecialCheckUserTestTrait;
 use MediaWiki\Html\FormOptions;
 use MediaWiki\Tests\Unit\MockServiceDependenciesTrait;
 use MediaWikiUnitTestCase;
@@ -13,11 +14,12 @@ use Wikimedia\TestingAccessWrapper;
 
 /**
  * @group CheckUser
- * @covers \MediaWiki\CheckUser\CheckUser\SpecialCheckUser
+ * @covers \MediaWiki\Extension\CheckUser\CheckUser\SpecialCheckUser
  */
 class SpecialCheckUserTest extends MediaWikiUnitTestCase {
 
 	use MockServiceDependenciesTrait;
+	use SpecialCheckUserTestTrait;
 
 	private function setUpObjectInTestingAccessWrapper(): TestingAccessWrapper {
 		return TestingAccessWrapper::newFromObject( $this->setUpObject() );
@@ -61,22 +63,15 @@ class SpecialCheckUserTest extends MediaWikiUnitTestCase {
 
 	/** @dataProvider provideCheckReason */
 	public function testCheckReason( $config, $reason, $expected ) {
-		// Create a mock Config that returns $config for the key CheckUserForceSummary
-		$mockConfig = $this->createMock( Config::class );
-		$mockConfig->expects( $this->once() )
-			->method( 'get' )
-			->with( 'CheckUserForceSummary' )
-			->willReturn( $config );
-		$mockConfig->expects( $this->never() )
-			->method( 'has' );
-		// Create a SpecialCheckUser that only mocks getConfig to return the mocked
-		// config that is created above.
+		// Create a SpecialCheckUser that only mocks getConfig to return the config
 		$specialCheckUser = $this->setUpMockBuilder()
 			->onlyMethods( [ 'getConfig' ] )
 			->getMock();
 		$specialCheckUser->expects( $this->once() )
 			->method( 'getConfig' )
-			->willReturn( $mockConfig );
+			->willReturn( new HashConfig( [
+				'CheckUserForceSummary' => $config,
+			] ) );
 		// Add the reason to the FormOptions.
 		$specialCheckUser = TestingAccessWrapper::newFromObject( $specialCheckUser );
 		$specialCheckUser->opts = new FormOptions();
@@ -94,7 +89,7 @@ class SpecialCheckUserTest extends MediaWikiUnitTestCase {
 			'Empty reason with wgCheckUserForceSummary as false' => [ false, '', true ],
 			'Non-empty reason with wgCheckUserForceSummary as false' => [ false, 'Test Reason', true ],
 			'Empty reason with wgCheckUserForceSummary as true' => [ true, '', false ],
-			'Non-empty reason with wgCheckUserForceSummary as true' => [ true, 'Test Reason', true ]
+			'Non-empty reason with wgCheckUserForceSummary as true' => [ true, 'Test Reason', true ],
 		];
 	}
 }

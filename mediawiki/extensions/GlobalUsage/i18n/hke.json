@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Muisha wiki hke"
+		]
+	},
+	"globalusage": "Ko wangakolesa afishiye",
+	"globalusage-on-wiki": "Kolesa ro ku $2",
+	"globalusage-of-file": "Asawiki sosikulikire sinakolesa afishiye ino",
+	"globalusage-more": "Lola [[{{#Special:GlobalUsage}}/$1|kushe angoleso ngulukulu]] y'afishiye ino"
+}

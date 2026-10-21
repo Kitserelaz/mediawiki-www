@@ -1,0 +1,116 @@
+<?php
+
+namespace SMW\Tests\Integration\Query\ResultPrinters;
+
+use MediaWiki\MediaWikiServices;
+use SMW\Tests\SMWIntegrationTestCase;
+use SMW\Tests\Utils\UtilityFactory;
+
+/**
+ * @group semantic-mediawiki-integration
+ * @group Database
+ * @group medium
+ *
+ * @license GPL-2.0-or-later
+ * @since 2.2
+ *
+ * @author mwjames
+ */
+class ResultPrinterIntegrationTest extends SMWIntegrationTestCase {
+
+	private $subjects = [];
+	private $pageCreator;
+
+	private $stringBuilder;
+	private $stringValidator;
+
+	protected function setUp(): void {
+		parent::setUp();
+
+		$utilityFactory = UtilityFactory::getInstance();
+
+		$this->pageCreator = $utilityFactory->newPageCreator();
+		$this->stringBuilder = $utilityFactory->newStringBuilder();
+		$this->stringValidator = $utilityFactory->newValidatorFactory()->newStringValidator();
+	}
+
+	protected function tearDown(): void {
+		UtilityFactory::getInstance()->newPageDeleter()->doDeletePoolOfPages( $this->subjects );
+		parent::tearDown();
+	}
+
+	/**
+	 * @see #755
+	 * @query {{#ask: [[Modification date::+]]|limit=0|searchlabel= }}
+	 */
+	public function testLimitNullWithEmptySearchlabel() {
+		$titleFactory = MediaWikiServices::getInstance()->getTitleFactory();
+
+		foreach ( [ 'Foo', 'Bar', 'テスト' ] as $title ) {
+
+			$this->pageCreator
+				->createPage( $titleFactory->newFromText( $title ) )
+				->doEdit( '[[Category:LimitNullForEmptySearchlabel]]' );
+
+			$this->subjects[] = $this->pageCreator->getPage();
+		}
+
+		$this->stringBuilder
+			->addString( '{{#ask:' )
+			->addString( '[[Modification date::+]][[Category:LimitNullForEmptySearchlabel]]' )
+			->addString( '|limit=0' )
+			->addString( '|searchlabel=' )
+			->addString( '}}' );
+
+		$this->pageCreator
+			->createPage( $titleFactory->newFromText( __METHOD__ ) )
+			->doEdit( $this->stringBuilder->getString() );
+
+		$this->subjects[] = $this->pageCreator->getPage();
+
+		$parserOutput = $this->pageCreator->getEditInfo()->getOutput();
+
+		$this->assertStringNotContainsString(
+			'[[Special:Ask/-5B-5BModification-20date::+-5D-5D-5B-5BCategory:LimitNullForEmptySearchlabel-5D-5D/searchlabel=/offset=0|]]',
+			$parserOutput->getContentHolderText()
+		);
+	}
+
+	/**
+	 * @see #755
+	 * @query {{#ask: [[Modification date::+]]|limit=0|searchlabel=do something }}
+	 */
+	public function testLimitNullWithDescriptiveSearchlabel() {
+		$titleFactory = MediaWikiServices::getInstance()->getTitleFactory();
+
+		foreach ( [ 'Foo', 'Bar', 'テスト' ] as $title ) {
+
+			$this->pageCreator
+				->createPage( $titleFactory->newFromText( $title ) )
+				->doEdit( '[[Category:LimitNullForNotEmptySearchlabel]]' );
+
+			$this->subjects[] = $this->pageCreator->getPage();
+		}
+
+		$this->stringBuilder
+			->addString( '{{#ask:' )
+			->addString( '[[Modification date::+]][[Category:LimitNullForNotEmptySearchlabel]]' )
+			->addString( '|limit=0' )
+			->addString( '|searchlabel=do something' )
+			->addString( '}}' );
+
+		$this->pageCreator
+			->createPage( $titleFactory->newFromText( __METHOD__ ) )
+			->doEdit( $this->stringBuilder->getString() );
+
+		$this->subjects[] = $this->pageCreator->getPage();
+
+		$parserOutput = $this->pageCreator->getEditInfo()->getOutput();
+
+		$this->assertStringContainsString(
+			'do something',
+			$parserOutput->getContentHolderText()
+		);
+	}
+
+}

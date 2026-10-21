@@ -1,0 +1,17 @@
+services:
+  init:
+    environment:
+      MW_TEST_SUITE_ISOLATED: '1'
+      MW_TEST_DB_ADMIN_PASSWORD_FILE: /run/secrets/db-root-password
+      MW_CONFIG_FILE: /opt/upstream-settings.php
+      PHPUNIT_WIKI: testwiki
+      MEDIAWIKI_HAS_INTEGRATION_TESTS: 'true'
+    volumes:
+      - ./docker/tests/upstream-settings.php:/opt/upstream-settings.php:ro
+      - ./docker/tests/upstream-reset.php:/opt/upstream-reset.php:ro
+      - ./docker/tests/upstream-phpunit.xml:/var/www/mediawiki/phpunit-upgrade.xml:ro
+      - ./mediawiki/phpunit.xml:/var/www/mediawiki/phpunit.xml
+      - ./mediawiki/phpunit.xml.template:/var/www/mediawiki/phpunit.xml.template:ro
+      - ./mediawiki/tests:/var/www/mediawiki/tests:ro
+      - ./mediawiki/extensions/CreateWiki/tests:/var/www/mediawiki/extensions/CreateWiki/tests:ro
+      - ./mediawiki/extensions/ManageWiki/tests:/var/www/mediawiki/extensions/ManageWiki/tests:ro

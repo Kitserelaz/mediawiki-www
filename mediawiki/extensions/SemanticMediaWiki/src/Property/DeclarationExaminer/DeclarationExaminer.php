@@ -1,0 +1,84 @@
+<?php
+
+namespace SMW\Property\DeclarationExaminer;
+
+use SMW\DataItems\Property;
+use SMW\Property\DeclarationExaminer as IDeclarationExaminer;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 3.1
+ *
+ * @author mwjames
+ */
+abstract class DeclarationExaminer implements IDeclarationExaminer {
+
+	protected IDeclarationExaminer $declarationExaminer;
+
+	/**
+	 * @var array[]
+	 */
+	protected $messages = [];
+
+	/**
+	 * @since 3.1
+	 *
+	 * @param DeclarationExaminer $declarationExaminer
+	 */
+	public function __construct( IDeclarationExaminer $declarationExaminer ) {
+		$this->declarationExaminer = $declarationExaminer;
+	}
+
+	/**
+	 * @see DeclarationExaminer::getSemanticData
+	 *
+	 * {@inheritDoc}
+	 */
+	public function getSemanticData() {
+		return $this->declarationExaminer->getSemanticData();
+	}
+
+	/**
+	 * @see DeclarationExaminer::getMessages
+	 *
+	 * {@inheritDoc}
+	 */
+	public function getMessages(): array {
+		return $this->messages;
+	}
+
+	/**
+	 * @since 3.1
+	 *
+	 * @return string
+	 */
+	public function getMessagesAsString(): string|false {
+		return json_encode( $this->messages );
+	}
+
+	/**
+	 * @see DeclarationExaminer::isLocked
+	 *
+	 * {@inheritDoc}
+	 */
+	public function isLocked() {
+		return $this->declarationExaminer->isLocked();
+	}
+
+	/**
+	 * @see \SMW\Property\Annotator::check
+	 *
+	 * {@inheritDoc}
+	 */
+	public function check( Property $property ): void {
+		$this->declarationExaminer->check( $property );
+		$this->messages = array_merge( $this->messages, $this->declarationExaminer->getMessages() );
+		$this->validate( $property );
+	}
+
+	/**
+	 * @since 3.1
+	 */
+	abstract protected function validate( Property $property ): void;
+
+}

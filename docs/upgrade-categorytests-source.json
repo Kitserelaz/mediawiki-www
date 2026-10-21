@@ -1,0 +1,7 @@
+{
+  "component": "mediawiki/extensions/CategoryTests",
+  "baseline": "29a42faa1e7e5d4d2d1e26677e8f7a4a0d23643e",
+  "target": "a1d46e632aff226cacd30283763f793eec7a0d16",
+  "preserved_changes": [],
+  "dependency_status": "No runtime Composer packages or component lock; uses core platform dependencies"
+}

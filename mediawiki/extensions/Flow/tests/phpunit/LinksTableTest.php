@@ -324,7 +324,13 @@ class LinksTableTest extends PostRevisionTestCase {
 	/**
 	 * @dataProvider provideReferenceDiff
 	 */
-	public function testReferenceDiff( array $old, array $new, array $expectedAdded, array $expectedRemoved, array $globals = [] ) {
+	public function testReferenceDiff(
+		array $old,
+		array $new,
+		array $expectedAdded,
+		array $expectedRemoved,
+		array $globals = []
+	) {
 		$this->overrideConfigValues( $globals );
 		[ $workflow, $revision, $title ] = $this->getBlandTestObjects();
 
@@ -407,14 +413,13 @@ class LinksTableTest extends PostRevisionTestCase {
 		$title = static::getTestTitle();
 		$reflectionWorkflow = new \ReflectionObject( $workflow );
 		$reflectionProperty = $reflectionWorkflow->getProperty( 'title' );
-		$reflectionProperty->setAccessible( true );
 		$reflectionProperty->setValue( $workflow, $title );
 
 		$references = $this->expandReferences( $workflow, $revision, $references );
 		$parserOutput = new ParserOutput;
 
 		// Clear the LinksUpdate to allow clean testing
-		foreach ( array_keys( $expectedItems ) as $fieldName ) {
+		foreach ( $expectedItems as $fieldName => $_ ) {
 			$parserOutput->$fieldName = [];
 		}
 

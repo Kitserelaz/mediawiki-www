@@ -1,0 +1,16 @@
+{
+	"@metadata": {
+		"authors": [
+			"Anakmalaysia",
+			"LNDDYL",
+			"Liangent",
+			"Mark85296341",
+			"SunAfterRain",
+			"Winston Sung",
+			"Wrightbus"
+		]
+	},
+	"spl3-desc": "新增用於建立子頁面清單的標籤 <code>&lt;splist /&gt;</code>",
+	"spl3_debug": "不明的選項 $1 的設定值",
+	"spl3_nosubpages": "$1 沒有子頁面可以顯示"
+}

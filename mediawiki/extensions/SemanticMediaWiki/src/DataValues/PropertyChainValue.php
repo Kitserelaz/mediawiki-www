@@ -1,0 +1,217 @@
+<?php
+
+namespace SMW\DataValues;
+
+use MediaWiki\Html\Html;
+use SMW\DataItems\Blob;
+use SMW\DataItems\DataItem;
+use SMW\DataValueFactory;
+
+/**
+ * @private
+ *
+ * @license GPL-2.0-or-later
+ * @since 2.5
+ *
+ * @author mwjames
+ */
+class PropertyChainValue extends StringValue {
+
+	/**
+	 * DV identifier
+	 */
+	const TYPE_ID = '__pchn';
+
+	/**
+	 * @var PropertyValue[]
+	 */
+	private $propertyValues = [];
+
+	/**
+	 * @var PropertyValue
+	 */
+	private $lastPropertyChainValue;
+
+	/**
+	 * @param string $typeid
+	 */
+	public function __construct( $typeid = '' ) {
+		parent::__construct( self::TYPE_ID );
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * @param string $value
+	 *
+	 * @return bool
+	 */
+	public static function isChained( $value ): bool {
+		return strpos( $value, '.' ) !== false;
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * @return PropertyValue
+	 */
+	public function getLastPropertyChainValue() {
+		return $this->lastPropertyChainValue;
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * @return PropertyValue[]
+	 */
+	public function getPropertyChainValues(): array {
+		return $this->propertyValues;
+	}
+
+	/**
+	 * @see DataValue::getShortWikiText
+	 */
+	public function setCaption( $caption ): void {
+		$this->m_caption = $caption;
+
+		if ( $this->lastPropertyChainValue !== null ) {
+			$this->lastPropertyChainValue->setCaption( $caption );
+		}
+	}
+
+	/**
+	 * @see DataValue::getShortWikiText
+	 */
+	public function getShortWikiText( $linker = null ): string {
+		if ( $this->lastPropertyChainValue !== null ) {
+			return $this->lastPropertyChainValue->getShortWikiText( $linker ) . $this->doHintPropertyChainMembers();
+		}
+
+		return '';
+	}
+
+	/**
+	 * @see DataValue::getLongWikiText
+	 */
+	public function getLongWikiText( $linker = null ): string {
+		if ( $this->lastPropertyChainValue !== null ) {
+			return $this->lastPropertyChainValue->getLongWikiText( $linker ) . $this->doHintPropertyChainMembers();
+		}
+
+		return '';
+	}
+
+	/**
+	 * @see DataValue::getShortHTMLText
+	 */
+	public function getShortHTMLText( $linker = null ): string {
+		if ( $this->lastPropertyChainValue !== null ) {
+			return $this->lastPropertyChainValue->getShortHTMLText( $linker ) . $this->doHintPropertyChainMembers();
+		}
+
+		return '';
+	}
+
+	/**
+	 * @see DataValue::getLongHTMLText
+	 */
+	public function getLongHTMLText( $linker = null ): string {
+		if ( $this->lastPropertyChainValue !== null ) {
+			return $this->lastPropertyChainValue->getLongHTMLText( $linker ) . $this->doHintPropertyChainMembers();
+		}
+
+		return '';
+	}
+
+	/**
+	 * @see DataValue::getWikiValue
+	 */
+	public function getWikiValue(): string {
+		return $this->lastPropertyChainValue !== null ? $this->lastPropertyChainValue->getWikiValue() : '';
+	}
+
+	/**
+	 * @see PropertyValue::isVisible
+	 */
+	public function isVisible(): bool {
+		return $this->isValid() && ( $this->lastPropertyChainValue->getDataItem()->isUserDefined() || $this->lastPropertyChainValue->getDataItem()->getLabel() !== '' );
+	}
+
+	/**
+	 * @see DataValue::loadDataItem()
+	 *
+	 * @param $dataItem DataItem
+	 *
+	 * @return bool
+	 */
+	protected function loadDataItem( DataItem $dataItem ): bool {
+		if ( !$dataItem instanceof Blob ) {
+			return false;
+		}
+
+		$this->m_caption = false;
+		$this->m_dataitem = $dataItem;
+
+		$this->initPropertyChain( $dataItem->getString() );
+
+		return true;
+	}
+
+	/**
+	 * @see DataValue::parseUserValue
+	 * @note called by DataValue::setUserValue
+	 *
+	 * @param string $value
+	 */
+	protected function parseUserValue( $value ): void {
+		if ( $value === '' ) {
+			$this->addErrorMsg( 'smw_emptystring' );
+		}
+
+		if ( !$this->isChained( $value ) ) {
+			$this->addErrorMsg( 'smw-datavalue-propertychain-missing-chain-indicator' );
+		}
+
+		$this->initPropertyChain( $value );
+
+		$this->m_dataitem = new Blob( $value );
+	}
+
+	private function initPropertyChain( $value ): void {
+		$chain = explode( '.', $value );
+
+		// Get the last which represents the final output
+		// Foo.Bar.Foobar.Baz
+		$last = array_pop( $chain );
+
+		// @phan-suppress-next-line PhanTypeMismatchProperty
+		$this->lastPropertyChainValue = DataValueFactory::getInstance()->newPropertyValueByLabel( $last );
+
+		if ( !$this->lastPropertyChainValue->isValid() ) {
+			$this->addError( $this->lastPropertyChainValue->getErrors() );
+			return;
+		}
+
+		$this->lastPropertyChainValue->copyOptions( $this->getOptions() );
+
+		// Generate a forward list from the remaining property labels
+		// Foo.Bar.Foobar
+		foreach ( $chain as $value ) {
+			$propertyValue = DataValueFactory::getInstance()->newPropertyValueByLabel( $value );
+
+			if ( !$propertyValue->isValid() ) {
+				continue;
+			}
+
+			$propertyValue->copyOptions( $this->getOptions() );
+
+			// @phan-suppress-next-line PhanTypeMismatchProperty
+			$this->propertyValues[] = $propertyValue;
+		}
+	}
+
+	private function doHintPropertyChainMembers() {
+		return Html::rawElement( 'span', [ 'title' => $this->m_dataitem, 'class' => 'smw-chain-marker' ], '⠉' );
+	}
+
+}

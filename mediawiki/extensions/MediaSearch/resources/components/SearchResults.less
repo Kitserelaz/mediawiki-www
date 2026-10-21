@@ -1,0 +1,149 @@
+@import 'mediawiki.mixins';
+@import './../mediasearch-variables.less';
+
+.sdms-search-results {
+	.flex-display();
+	.flex-wrap( nowrap );
+	margin: @sdms-margin-horizontal-base 0 @sdms-spacing-base;
+
+	// The "list" part of search results should always fill all available space.
+	&__list-wrapper {
+		.flex( 1, 1, auto );
+
+		// Without this, the &__list flex container will render as one long row
+		// rather than a grid layout in IE11.
+		width: 100%;
+
+		// When QuickView is open...
+		&--collapsed {
+			margin-right: @sdms-spacing-base;
+			width: 55%;
+		}
+	}
+
+	// By default lists will display results in a single column.
+	&__list {
+		place-content: flex-start flex-start;
+
+		&--video,
+		&--image {
+			.flex-display();
+			.flex-wrap( wrap );
+			gap: @sdms-spacing-base;
+			max-width: 100%;
+		}
+
+		// Video results are displayed as tiles/cards with a uniform size
+		.sdms-video-result {
+			// Video components can grow but shouldn't shrink below their
+			// flex-basis.
+			.flex( 1, 0, 260px );
+		}
+
+		.sdms-image-result {
+			.flex( 1, 1, auto);
+			// The mixin above adds justify-content: space-between, which we
+			// don't want and can't override in the ImageResult.less file
+			// without increasing specificity, so here's this:
+			justify-content: center;
+
+			// The final item should never grow wider, to avoid the case of a
+			// small or portrait-oriented image taking up an entire row.
+			&:last-child {
+				flex-grow: 0;
+			}
+		}
+
+		// When QuickView is closed...
+		// This is implied when the class isn't there, but writing the style
+		// inside this :not selector would require an additional ruleset for
+		// when QuickView is open.
+		&:not( .sdms-search-results__list--collapsed ) {
+			.sdms-image-result {
+				// On larger screens, we need to limit the growth of portrait
+				// oriented images to avoid overly-stretching them.
+				// The wmui tablet breakpoint won't quite cut it here - this
+				// starts to break down on iPad-size screens, with gaps at the
+				// end of rows.
+				@media screen and ( min-width: 770px ) {
+					&--portrait {
+						flex-grow: 0;
+					}
+				}
+
+				// If there are 3 or fewer image results, don't let them grow within the
+				// flex container and limit them to 33% width. This will ensure they're all
+				// on the same row and that we'll avoid having one overly-stretched image.
+				&--limit-size {
+					flex-grow: 0;
+					max-width: 33%;
+				}
+			}
+		}
+	}
+
+	// The "details" part of search result (container for QuickView) is
+	// collapsed by default, but can expand to 50% or a set max-width, whichever
+	// is smaller
+	&__details {
+		.flex( 0, 0, auto );
+		max-width: @max-width-base;
+		width: 0%;
+
+		&--expanded {
+			.flex( 0, 0, 45% );
+			background-color: @background-color-interactive-subtle;
+			-webkit-overflow-scrolling: touch;
+			height: 100vh;
+			// Add a scrollbar if content extends below viewport bottom.
+			overflow-y: auto;
+			position: sticky;
+			top: 0;
+		}
+	}
+
+	&__details-dialog {
+		background-color: @background-color-base;
+	}
+
+	&__quickview-placeholder {
+		.sdms-spinner {
+			// QuickView will be full-height and window is scrolled to the top
+			// of the panel when it's opened. This margin-top of 50vh will
+			// effectively vertically center the spinner.
+			margin-top: 50vh;
+			padding: 0;
+		}
+	}
+
+	// Visually highlight current QuickView result.
+	.sdms-search-result--highlighted {
+		&.sdms-image-result,
+		&.sdms-video-result {
+			border: solid 2px @border-color-progressive;
+		}
+	}
+}
+
+.sdms-load-more.cdx-button {
+	display: block;
+	margin: 24px auto 0;
+}
+
+.sdms-pagination {
+	display: flex;
+	justify-content: center;
+
+	button {
+		margin-right: 16px;
+		background: none;
+		border: transparent;
+		padding: 0;
+		color: @accent-color-base;
+		cursor: pointer;
+
+		&:hover {
+			text-decoration: underline;
+		}
+	}
+}

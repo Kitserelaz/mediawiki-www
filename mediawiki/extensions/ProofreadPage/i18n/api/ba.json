@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"З. ӘЙЛЕ"
+		]
+	},
+	"apihelp-query+proofread-summary": "Ошо биттәрҙе мөхәррирләүҙең ағымдағы торошо тураһындағы мәғлүмәтте ҡайтара",
+	"apihelp-query+proofread-example-1": "Биттәрҙе мөхәррирләү өсөн мәғлүмәтте 250 исем киңлегендә ҡайтарырға",
+	"apihelp-query+proofreadinfo-summary": "ProofreadPage киңәйтеү көйләүе тураһында мәғлүмәтте ҡайтарырға",
+	"apihelp-query+proofreadinfo-param-prop": "Төҙәтеүҙең ниндәй үҙенсәлектәрен ҡайтарырға:",
+	"apihelp-query+proofreadinfo-example-1": "Мәғлүмәтте ғәҙәттәгесә ҡайтарырға",
+	"apihelp-query+proofreadinfo-example-3": "Исемдәр киңлеге тураһында мәғлүмәтте ҡайтарырға"
+}

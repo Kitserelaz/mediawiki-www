@@ -1,0 +1,43 @@
+{
+	"name": "CategoryExplorer",
+	"author": [],
+	"url": "https://www.mediawiki.org/wiki/Extension:CategoryExplorer",
+	"descriptionmsg": "categoryexplorer-desc",
+	"license-name": "GPL-2.0-or-later",
+	"requires": {
+		"MediaWiki": ">= 1.38.0"
+	},
+	"ConfigRegistry": {
+		"categoryexplorer": "GlobalVarConfig::newInstance"
+	},
+	"SpecialPages": {},
+	"APIModules": {},
+	"MessagesDirs": {
+		"categoryexplorer": [
+			"i18n"
+		]
+	},
+	"ExtensionMessagesFiles": {
+		"CategoryExplorerAlias": "CategoryExplorer.alias.php"
+	},
+	"AutoloadNamespaces": {
+		"CategoryExplorer\\": "includes/"
+	},
+	"TestAutoloadNamespaces": {
+		"CategoryExplorer\\Tests\\": "tests/phpunit"
+	},
+	"ResourceModules": {},
+	"ResourceFileModulePaths": {
+		"localBasePath": "",
+		"remoteExtPath": "CategoryExplorer"
+	},
+	"Hooks": {
+		"SkinAfterPortlet": "CategoryExplorer\\Hooks::onSkinAfterPortlet"
+	},
+	"config": {},
+	"DefaultUserOptions": {},
+	"ServiceWiringFiles": [
+		"includes/ServiceWiring.php"
+	],
+	"manifest_version": 2
+}

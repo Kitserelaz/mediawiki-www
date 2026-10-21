@@ -1,0 +1,142 @@
+<?php
+
+namespace SMW\Importer;
+
+use Onoi\MessageReporter\MessageReporter;
+use Onoi\MessageReporter\MessageReporterAware;
+use SMW\Utils\CliMsgFormatter;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 2.5
+ *
+ * @author mwjames
+ */
+class Importer implements MessageReporterAware {
+
+	private ?MessageReporter $messageReporter = null;
+
+	/**
+	 * @var bool
+	 */
+	private $isEnabled = true;
+
+	/**
+	 * @var int|bool
+	 */
+	private $reqVersion = false;
+
+	private ?string $importer = null;
+
+	/**
+	 * @since 2.5
+	 */
+	public function __construct(
+		private readonly ContentIterator $contentIterator,
+		private readonly ContentCreator $contentCreator,
+	) {
+	}
+
+	/**
+	 * @see MessageReporterAware::setMessageReporter
+	 *
+	 * @since 2.5
+	 *
+	 * @param MessageReporter $messageReporter
+	 */
+	public function setMessageReporter( MessageReporter $messageReporter ): void {
+		$this->messageReporter = $messageReporter;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param bool $isEnabled
+	 */
+	public function isEnabled( $isEnabled ): void {
+		$this->isEnabled = $isEnabled;
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * @param int|bool $reqVersion
+	 */
+	public function setReqVersion( $reqVersion ): void {
+		$this->reqVersion = $reqVersion;
+	}
+
+	/**
+	 * @since 4.0
+	 */
+	public function setImporter( string $importer ): void {
+		$this->importer = $importer;
+	}
+
+	/**
+	 * @since 2.5
+	 */
+	public function runImport() {
+		if ( $this->isEnabled === false ) {
+			return $this->messageReporter->reportMessage( "\nImport support was not enabled (or skipped), stopping the task.\n" );
+		}
+
+		if ( $this->reqVersion === false ) {
+			return $this->messageReporter->reportMessage( "\nRequired import version is missing, stopping the task.\n" );
+		}
+
+		foreach ( $this->contentIterator as $key => $contents ) {
+			$this->messageReporter->reportMessage( "\nImporting from $key ...\n" );
+
+			foreach ( $contents as $importContents ) {
+				if ( $this->importer ) {
+					$importContents->setImportPerformer( $this->importer );
+				}
+
+				if ( $importContents->getVersion() !== $this->reqVersion ) {
+					$this->messageReporter->reportMessage( "   ... version mismatch, abort import for $key\n" );
+					break;
+				}
+
+				$this->doImport( $importContents );
+			}
+
+			$this->messageReporter->reportMessage( "   ... done.\n" );
+		}
+
+		$cliMsgFormatter = new CliMsgFormatter();
+
+		if ( $this->contentIterator->getErrors() !== [] ) {
+			$this->messageReporter->reportMessage(
+				"\n" . $cliMsgFormatter->oneCol( 'Import failed on:' ) .
+				$cliMsgFormatter->wordWrap( $this->contentIterator->getErrors() )
+			);
+		}
+	}
+
+	private function doImport( ImportContents $importContents ): void {
+		$cliMsgFormatter = new CliMsgFormatter();
+
+		if ( $importContents->getErrors() === [] ) {
+			$this->contentCreator->setMessageReporter( $this->messageReporter );
+			$this->contentCreator->create( $importContents );
+		}
+
+		$errors = $importContents->getErrors();
+		$count = count( $errors );
+
+		foreach ( $errors as $k => $error ) {
+
+			if ( is_array( $error ) ) {
+				$error = implode( ', ', $error );
+			}
+
+			$prefix = $k == ( $count - 1 ) ? '└' : '├';
+
+			$this->messageReporter->reportMessage(
+				$cliMsgFormatter->oneCol( "$prefix $error", 7 )
+			);
+		}
+	}
+
+}

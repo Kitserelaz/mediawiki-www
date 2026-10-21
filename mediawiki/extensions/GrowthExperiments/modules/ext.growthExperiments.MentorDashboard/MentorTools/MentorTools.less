@@ -1,0 +1,82 @@
+@import 'mediawiki.skin.variables.less';
+@import '../../utils/mixins.less';
+@import '../styles/variables.less';
+
+/* stylelint-disable selector-class-pattern */
+/* stylelint-disable selector-max-id */
+// .growthexperiments-mentor-dashboard-container is here only to make the resulting selector
+// specific enough for browsers to prefer rules that are here.
+.growthexperiments-mentor-dashboard-container .growthexperiments-mentor-dashboard-module-mentor-tools {
+	position: relative;
+
+	#growthexperiments-mentor-dashboard-module-mentor-tools-cog-menu {
+		position: absolute;
+		top: 10px;
+		right: 10px;
+	}
+
+	h4 {
+		color: @color-subtle;
+	}
+
+	.oo-ui-dropdownWidget {
+		display: block;
+		padding-top: 10px;
+	}
+
+	#growthexperiments-mentor-dashboard-module-mentor-tools-status-away-message {
+		color: @color-subtle;
+		.rel-font-size( @parentFontSize: 14px, @targetFontSize: 13px );
+	}
+
+	.growthexperiments-mentor-dashboard-module-mentor-tools-mentor-weight {
+		position: relative;
+		margin-bottom: 1em;
+
+		#growthexperiments-mentor-dashboard-module-mentor-tools-mentor-weight-info-icon {
+			padding: 0;
+			margin: 0;
+			float: right;
+		}
+	}
+
+	.growthexperiments-mentor-dashboard-module-mentor-tools-message {
+		.growthexperiments-mentor-dashboard-module-mentor-tools-mentor-message-headline-container {
+			h4 {
+				display: inline-block;
+				margin: 0;
+			}
+
+			.oo-ui-buttonWidget {
+				opacity: @opacity-icon-subtle;
+				float: right;
+			}
+		}
+
+		#growthexperiments-mentor-dashboard-module-mentor-tools-message-content {
+			margin-top: 14px;
+			margin-bottom: 20px;
+			margin-left: 20px;
+			padding-left: 12px;
+			border-left: 4px @border-style-base @border-color-base;
+		}
+	}
+
+	.growthexperiments-mentor-dashboard-module-mentor-tools-other-actions {
+		// to get out of padding set to the module's container div and be able to apply background-color edge-to-edge
+		margin: 0 @mentorDashboardModulePadding * -1 @mentorDashboardModulePadding * -1;
+		padding: @mentorDashboardModulePadding;
+		background-color: @background-color-growth-subtle;
+		/* stylelint-disable-next-line no-descending-specificity */
+		h4 {
+			padding-top: 17px;
+		}
+
+		.growthexperiments-mentor-dashboard-module-mentor-tools-claim-mentee-footer {
+			margin-bottom: 0;
+			color: @color-subtle;
+			.rel-font-size( @parentFontSize: 14px, @targetFontSize: 13px );
+		}
+	}
+}
+/* stylelint-enable */

@@ -19,11 +19,17 @@
  */
 
 use MediaWiki\Extension\Math\MathNativeMML;
+use MediaWiki\Json\FormatJson;
 use MediaWiki\Maintenance\Maintenance;
 
+// @codeCoverageIgnoreStart
 require_once __DIR__ . '/../../../maintenance/Maintenance.php';
+// @codeCoverageIgnoreEnd
 
 class FixNativeReferences extends Maintenance {
+
+	private const REFERENCE_PATH = __DIR__ . '/../tests/phpunit/integration/WikiTexVC/data/reference.json';
+	private const RNG_PATH = __DIR__ . '/../tests/phpunit/integration/WikiTexVC/mathml4-core.rng';
 
 	public function __construct() {
 		parent::__construct();
@@ -35,17 +41,17 @@ class FixNativeReferences extends Maintenance {
 	 * @throws \MediaWiki\Maintenance\MaintenanceFatalError
 	 */
 	public function execute() {
-		$file = file_get_contents( __DIR__ . "/../tests/phpunit/unit/WikiTexVC/data/reference.json" );
+		$file = file_get_contents( self::REFERENCE_PATH );
 		$json = json_decode( $file, true );
 		$success = true;
 		$allEntries = [];
 		foreach ( $json as $entry ) {
-			$success = $success && MathNativeMML::renderReferenceEntry( $entry );
+			$success = $success &&
+				MathNativeMML::renderReferenceEntry( $entry, null, null, null, self::RNG_PATH );
 			$allEntries[] = $entry;
 		}
-
-		$jsonData = json_encode( $allEntries, JSON_PRETTY_PRINT );
-		file_put_contents( __DIR__ . "/../tests/phpunit/unit/WikiTexVC/data/reference.json", $jsonData );
+		file_put_contents( self::REFERENCE_PATH, FormatJson::encode( $allEntries, "\t", FormatJson::ALL_OK )
+			. "\n" );
 		if ( !$success ) {
 			$this->fatalError( "Some entries were skipped. Please investigate.\n" );
 		}
@@ -54,5 +60,7 @@ class FixNativeReferences extends Maintenance {
 
 }
 
+// @codeCoverageIgnoreStart
 $maintClass = FixNativeReferences::class;
 require_once RUN_MAINTENANCE_IF_MAIN;
+// @codeCoverageIgnoreEnd

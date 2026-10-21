@@ -1,0 +1,10 @@
+--- a/mediawiki/extensions/CodeEditor/modules/jquery.codeEditor.js
++++ b/mediawiki/extensions/CodeEditor/modules/jquery.codeEditor.js
+@@ -377,7 +377,6 @@
+ 					// The options to enable
+ 					context.codeEditor.setOptions( {
+ 						enableBasicAutocompletion: true,
+-						enableLiveAutocompletion: true,
+ 						enableSnippets: true,
+ 						theme: inDarkMode ? 'ace/theme/monokai' : 'ace/theme/textmate'
+ 					} );

@@ -1,0 +1,341 @@
+<?php
+
+namespace SMW\MediaWiki\Specials\Ask;
+
+use MediaWiki\Html\Html;
+use MediaWiki\Title\Title;
+use SMW\Query\Query;
+use SMW\Query\QueryLinker;
+use SMW\Query\QueryResult;
+use SMW\Utils\HtmlTabs;
+use SMW\Utils\UrlArgs;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since   3.0
+ *
+ * @author mwjames
+ */
+class HtmlForm {
+
+	private array $parameters = [];
+
+	private string $queryString = '';
+
+	private ?Query $query = null;
+
+	private array $callbacks = [];
+
+	private bool $isEditMode = true;
+
+	private bool $isBorrowedMode = false;
+
+	private bool $isPostSubmit = false;
+
+	/**
+	 * @since 3.0
+	 */
+	public function __construct( private readonly Title $title ) {
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function setParameters( array $parameters ): void {
+		$this->parameters = $parameters;
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function setQueryString( string $queryString ): void {
+		$this->queryString = $queryString;
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function setQuery( ?Query $query = null ): void {
+		$this->query = $query;
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function setCallbacks( array $callbacks ): void {
+		$this->callbacks = $callbacks;
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function isEditMode( bool $isEditMode ): void {
+		$this->isEditMode = $isEditMode;
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function isBorrowedMode( bool $isBorrowedMode ): void {
+		$this->isBorrowedMode = $isBorrowedMode;
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function isPostSubmit( bool $isPostSubmit ): void {
+		$this->isPostSubmit = $isPostSubmit;
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function getForm(
+		UrlArgs $urlArgs,
+		// phpcs:ignore MediaWiki.Usage.NullableType.ExplicitNullableTypes -- false positive
+		QueryResult|string|null $queryResult = null,
+		array $queryLog = []
+	): string {
+		$html = $this->buildHTML( $urlArgs, $queryResult, $queryLog );
+
+		if ( $this->isPostSubmit ) {
+			$params = [
+				'action' => $this->title->getLocalUrl( '#search' ),
+				'name' => 'ask',
+				'method' => 'post'
+			];
+		} else {
+			$params = [
+				'action' => $GLOBALS['wgScript'],
+				'name' => 'ask',
+				'method' => 'get'
+			];
+		}
+
+		return Html::rawElement( 'form', $params, $html );
+	}
+
+	private function buildHTML(
+		UrlArgs $urlArgs,
+		// phpcs:ignore MediaWiki.Usage.NullableType.ExplicitNullableTypes -- false positive
+		QueryResult|string|null $queryResult = null,
+		array $queryLog = []
+	): string {
+		$navigation = '';
+		$queryLink = null;
+		$isFromCache = false;
+		$infoText = '';
+
+		if ( $queryLog !== [] ) {
+			$infoText = '<h3>' . wfMessage( 'smw-ask-extra-query-log' )->escaped() . '</h3>';
+			$infoText .= Html::element( 'pre', [], json_encode( $queryLog, JSON_PRETTY_PRINT ) );
+		}
+
+		if ( $queryResult instanceof QueryResult ) {
+			$navigation = NavigationLinksWidget::navigationLinks(
+				$this->title,
+				$urlArgs,
+				$queryResult->getCount(),
+				$queryResult->hasFurtherResults()
+			);
+
+			$isFromCache = $queryResult->isFromCache();
+
+			if ( $this->query !== null ) {
+				$queryLink = QueryLinker::get( $this->query, $this->parameters );
+			} else {
+				$query = $queryResult->getQuery();
+				$queryLink = QueryLinker::get( $query, $this->parameters );
+			}
+		}
+
+		$html = '';
+		$hideForm = false;
+		$urlArgs->set( 'eq', 'yes' );
+
+		$htmlTabs = new HtmlTabs();
+		$htmlTabs->setGroup( 'ask' );
+		$htmlTabs->setActiveTab( 'smw-askt-result' );
+
+		if ( $this->isEditMode ) {
+			$html = $this->editElements( $urlArgs );
+			$hideForm = true;
+		}
+
+		$isEmpty = $queryLink === null;
+		$editLink = $this->title->getLocalURL( (string)$urlArgs );
+
+		// Submit
+		$html .= LinksWidget::resultSubmitLink(
+			$hideForm
+		);
+
+		if ( !$this->isEditMode && !$isEmpty ) {
+			$htmlTabs->tab(
+				'smw-askt-edit',
+				LinksWidget::editLink( $editLink ),
+				[
+					'hide' => $this->isBorrowedMode,
+					'class' => 'edit-action'
+				]
+			);
+		} elseif ( !$isEmpty ) {
+			$htmlTabs->tab(
+				'smw-askt-compact',
+				LinksWidget::hideLink( $editLink ),
+				[
+					'hide' => $this->isBorrowedMode,
+					'class' => 'compact-action'
+				]
+			);
+		}
+
+		$htmlTabs->tab(
+			'smw-askt-result',
+			wfMessage( 'smw-ask-tab-result' )->escaped(),
+			[
+				'hide' => $isEmpty,
+				'class' => $isFromCache ? ' result-cache' : ''
+			]
+		);
+
+		$links = [];
+
+		$htmlTabs->tab(
+			'smw-askt-code',
+			wfMessage( 'smw-ask-tab-code' )->escaped(),
+			[
+				'hide' => $this->isBorrowedMode || $isEmpty
+			]
+		);
+
+		$code = '';
+
+		if ( isset( $this->callbacks['code_handler'] ) && is_callable( $this->callbacks['code_handler'] ) ) {
+			$code = $this->callbacks['code_handler']();
+		}
+
+		$htmlTabs->content(
+			'smw-askt-code',
+			'<div style="margin-top:15px; margin-bottom:15px;">' .
+			LinksWidget::embeddedCodeBlock( $code, true ) . '</div>'
+		);
+
+		if ( !isset( $this->parameters['source'] ) || $this->parameters['source'] === '' ) {
+			$debugLink = LinksWidget::debugLink( $this->title, $urlArgs, $isEmpty, true );
+
+			$htmlTabs->tab(
+				'smw-askt-debug',
+				$debugLink,
+				[
+					'hide' => $debugLink === '' || !$this->isEditMode,
+					'class' => 'smw-tab-right'
+				]
+			);
+		}
+
+		if ( isset( $this->callbacks['borrowed_msg_handler'] ) && is_callable( $this->callbacks['borrowed_msg_handler'] ) ) {
+			$this->callbacks['borrowed_msg_handler']( $links, $infoText );
+		}
+
+		$basicLinks = NavigationLinksWidget::basicLinks(
+			$navigation,
+			$queryLink
+		);
+
+		$htmlTabs->content( 'smw-askt-result', $basicLinks );
+
+		if ( !$isEmpty ) {
+			$htmlTabs->tab(
+				'smw-askt-extra',
+				wfMessage( 'smw-ask-tab-extra' )->escaped(),
+				[
+					'class' => 'smw-tab-right'
+				]
+			);
+
+			// @phan-suppress-next-line PhanRedundantCondition
+			if ( is_array( $links ) ) {
+
+				// External source cannot disable the cache
+				if ( isset( $this->parameters['source'] ) && $this->parameters['source'] !== '' ) {
+					$isFromCache = false;
+				}
+
+				$noCacheLink = LinksWidget::noQCacheLink( $this->title, $urlArgs, $isFromCache );
+				if ( $noCacheLink !== '' ) {
+					$links[] = $noCacheLink;
+				}
+
+				if ( $links !== [] ) {
+					$infoText .= '<h3>' . wfMessage( 'smw-ask-extra-other' )->escaped() . '</h3>';
+					$infoText .= '<ul><li>' . implode( '</li><li>', $links ) . '</li></ul>';
+				}
+			} else {
+				$infoText .= $links;
+			}
+
+			$htmlTabs->content(
+				'smw-askt-extra',
+				'<div style="margin-top:15px;margin-bottom:20px;">' . $infoText . '</div>'
+			);
+		}
+
+		$html .= $htmlTabs->buildHTML(
+			[
+				'id' => 'search',
+				'class' => $this->isEditMode ? 'smw-ask-search-edit' . ( $isEmpty ? ' empty-result' : '' ) : 'smw-ask-search-compact'
+			]
+		);
+
+		return $html;
+	}
+
+	private function editElements( UrlArgs $urlArgs ): string {
+		$html = '';
+
+		$html .= Html::hidden( 'title', $this->title->getPrefixedDBKey() );
+		$html .= Html::hidden( '_action', 'submit' );
+
+		// Table for main query and printouts.
+		$html .= Html::rawElement(
+			'div',
+			[
+				'id' => 'query',
+				'class' => 'smw-ask-query'
+			],
+			QueryInputWidget::table(
+				$this->queryString,
+				$urlArgs->get( 'po', '' )
+			)
+		);
+
+		// Format selection
+		$html .= Html::rawElement(
+			'div',
+			[
+				'id' => 'format',
+				'class' => "smw-ask-format"
+			],
+			''
+		);
+
+		// Other options fieldset
+		$html .= Html::rawElement(
+			'div',
+			[
+				'id' => 'options',
+				'class' => 'smw-ask-options'
+			],
+			ParametersWidget::fieldset(
+				$this->title,
+				$this->parameters
+			)
+		);
+
+		$urlArgs->set( 'eq', 'no' );
+
+		return $html;
+	}
+
+}

@@ -1,0 +1,118 @@
+{
+	"before": {
+		"name": "nl_newsletters",
+		"columns": [
+			{
+				"name": "nl_id",
+				"type": "integer",
+				"options": { "notnull": true, "unsigned": true, "autoincrement": true }
+			},
+			{
+				"name": "nl_name",
+				"type": "string",
+				"options": { "notnull": true, "length": 64 }
+			},
+			{
+				"name": "nl_desc",
+				"type": "blob",
+				"options": { "notnull": false, "length": 65530 }
+			},
+			{
+				"name": "nl_main_page_id",
+				"type": "integer",
+				"options": { "notnull": true, "unsigned": true }
+			},
+			{
+				"name": "nl_active",
+				"type": "mwtinyint",
+				"options": { "notnull": true, "length": 1, "default": 1 }
+			},
+			{
+				"name": "nl_subscriber_count",
+				"type": "integer",
+				"options": { "notnull": true, "default": 0 }
+			}
+		],
+		"indexes": [
+			{
+				"name": "nl_name",
+				"columns": [ "nl_name" ],
+				"unique": true
+			},
+			{
+				"name": "nl_main_page_active",
+				"columns": [ "nl_main_page_id", "nl_active" ],
+				"unique": true
+			},
+			{
+				"name": "nl_active",
+				"columns": [ "nl_active" ],
+				"unique": false
+			},
+			{
+				"name": "nl_active_subscriber_name",
+				"columns": [ "nl_active", "nl_subscriber_count", "nl_name" ],
+				"unique": false
+			}
+		],
+		"pk": [ "nl_id" ]
+	},
+	"after": {
+		"name": "nl_newsletters",
+		"columns": [
+			{
+				"name": "nl_id",
+				"type": "integer",
+				"options": { "notnull": true, "unsigned": true, "autoincrement": true }
+			},
+			{
+				"name": "nl_name",
+				"type": "string",
+				"options": { "notnull": true, "length": 64 }
+			},
+			{
+				"name": "nl_desc",
+				"type": "blob",
+				"options": { "notnull": false, "length": 65530 }
+			},
+			{
+				"name": "nl_main_page_id",
+				"type": "integer",
+				"options": { "notnull": true, "unsigned": true }
+			},
+			{
+				"name": "nl_active",
+				"type": "mwtinyint",
+				"options": { "notnull": true, "length": 1, "default": 1 }
+			},
+			{
+				"name": "nl_subscriber_count",
+				"type": "integer",
+				"options": { "notnull": true, "default": 0 }
+			}
+		],
+		"indexes": [
+			{
+				"name": "nl_name",
+				"columns": [ "nl_name" ],
+				"unique": false
+			},
+			{
+				"name": "nl_main_page_active",
+				"columns": [ "nl_main_page_id", "nl_active" ],
+				"unique": false
+			},
+			{
+				"name": "nl_active",
+				"columns": [ "nl_active" ],
+				"unique": false
+			},
+			{
+				"name": "nl_active_subscriber_name",
+				"columns": [ "nl_active", "nl_subscriber_count", "nl_name" ],
+				"unique": false
+			}
+		],
+		"pk": [ "nl_id" ]
+	}
+}

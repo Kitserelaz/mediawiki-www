@@ -1,0 +1,10 @@
+{
+	"extends": "stylelint-config-wikimedia",
+	"rules": {
+		"selector-class-pattern": "^(cdx|sdms|sd)-",
+		"unit-disallowed-list": null,
+		"declaration-property-unit-disallowed-list": null,
+		"@stylistic/declaration-colon-space-after": null,
+		"@stylistic/indentation": null
+	}
+}

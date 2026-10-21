@@ -1,0 +1,92 @@
+ Network cloudwiki-upstream-portable_default Creating 
+ Network cloudwiki-upstream-portable_default Creating 
+ Network cloudwiki-upstream-portable_default Created 
+ Network cloudwiki-upstream-portable_default Created 
+ Container cloudwiki-upstream-portable-redis-1 Creating 
+ Container cloudwiki-upstream-portable-memcached-1 Creating 
+ Container cloudwiki-upstream-portable-database-1 Creating 
+ Container cloudwiki-upstream-portable-memcached-1 Created 
+ Container cloudwiki-upstream-portable-redis-1 Created 
+ Container cloudwiki-upstream-portable-database-1 Created 
+ Container cloudwiki-upstream-portable-database-1 Starting 
+ Container cloudwiki-upstream-portable-memcached-1 Starting 
+ Container cloudwiki-upstream-portable-redis-1 Starting 
+ Container cloudwiki-upstream-portable-database-1 Started 
+ Container cloudwiki-upstream-portable-memcached-1 Started 
+ Container cloudwiki-upstream-portable-redis-1 Started 
+ Container cloudwiki-upstream-portable-database-1 Waiting 
+ Container cloudwiki-upstream-portable-memcached-1 Waiting 
+ Container cloudwiki-upstream-portable-redis-1 Waiting 
+ Container cloudwiki-upstream-portable-memcached-1 Healthy 
+ Container cloudwiki-upstream-portable-database-1 Healthy 
+ Container cloudwiki-upstream-portable-redis-1 Healthy 
+ Container cloudwiki-upstream-portable-init-run-f5647bc56c33 Creating 
+ Container cloudwiki-upstream-portable-init-run-f5647bc56c33 Created 
+Already initialized; use update for schema changes.
+ Container cloudwiki-upstream-portable-init-run-594be8869736 Creating 
+ Container cloudwiki-upstream-portable-init-run-594be8869736 Created 
+Reserved upstream-test databases and metadata caches reset.
+ Container cloudwiki-upstream-portable-init-run-b6393bc7361b Creating 
+ Container cloudwiki-upstream-portable-init-run-b6393bc7361b Created 
+MediaWiki 1.46.2 Updater
+
+Your composer.lock file is up to date with current dependencies!
+Going to run database updates for testwiki
+Depending on the size of your database this may take a while!
+Skipped 77 updates that were already applied.
+Purging caches...
+Done in 0.3 s.
+ Container cloudwiki-upstream-portable-init-run-b2a48d9bd7b8 Creating 
+ Container cloudwiki-upstream-portable-init-run-b2a48d9bd7b8 Created 
+Using PHP 8.4.26
+Generating PHPUnit config
+Config already up-to-date.
+ Container cloudwiki-upstream-portable-init-run-62a544bd0003 Creating 
+ Container cloudwiki-upstream-portable-init-run-62a544bd0003 Created 
+Using PHP 8.4.26
+Running with MediaWiki settings because there might be integration tests
+PHPUnit 9.6.34 by Sebastian Bergmann and contributors.
+
+...............................................................  63 / 237 ( 26%)
+............................................................... 126 / 237 ( 53%)
+............................................................... 189 / 237 ( 79%)
+................................................                237 / 237 (100%)
+
+Detected 19 tests where the duration exceeded the global maximum duration (0.100).
+
+ # Duration Test
+-------------------------------------------------------------------------------------------------------------------------
+ 1    1.420 Miraheze\CreateWiki\Tests\Services\WikiManagerFactoryTest::testDeleteRecreate
+ 2    0.802 Miraheze\CreateWiki\Tests\Services\WikiManagerFactoryTest::testRenameSuccess
+ 3    0.696 Miraheze\CreateWiki\Tests\Maintenance\ManageInactiveWikisTest::testExecuteRemovedWikiIneligible
+ 4    0.642 Miraheze\CreateWiki\Tests\Maintenance\ManageInactiveWikisTest::testExecuteRemovedWiki
+ 5    0.634 Miraheze\CreateWiki\Tests\Maintenance\ManageInactiveWikisTest::testExecuteClosedWiki
+ 6    0.552 Miraheze\CreateWiki\Tests\Services\WikiManagerFactoryTest::testDeleteIneligible
+ 7    0.477 Miraheze\CreateWiki\Tests\Services\WikiManagerFactoryTest::testCreateSuccess
+ 8    0.462 Miraheze\CreateWiki\Tests\Maintenance\ManageInactiveWikisTest::testExecuteClosedWikiAlreadyInactiveIneligible
+ 9    0.448 Miraheze\CreateWiki\Tests\Maintenance\ManageInactiveWikisTest::testExecuteActiveWiki
+10    0.437 Miraheze\CreateWiki\Tests\Maintenance\ManageInactiveWikisTest::testExecuteInactiveWiki
+-------------------------------------------------------------------------------------------------------------------------
+      0.000
+       └─── seconds
+
+There are 9 additional slow tests that are not listed here.
+
+Time: 00:10.214, Memory: 68.50 MB
+
+OK (237 tests, 570 assertions)
+ Container cloudwiki-upstream-portable-redis-1 Stopping 
+ Container cloudwiki-upstream-portable-memcached-1 Stopping 
+ Container cloudwiki-upstream-portable-database-1 Stopping 
+ Container cloudwiki-upstream-portable-redis-1 Stopped 
+ Container cloudwiki-upstream-portable-redis-1 Removing 
+ Container cloudwiki-upstream-portable-redis-1 Removed 
+ Container cloudwiki-upstream-portable-memcached-1 Stopped 
+ Container cloudwiki-upstream-portable-memcached-1 Removing 
+ Container cloudwiki-upstream-portable-memcached-1 Removed 
+ Container cloudwiki-upstream-portable-database-1 Stopped 
+ Container cloudwiki-upstream-portable-database-1 Removing 
+ Container cloudwiki-upstream-portable-database-1 Removed 
+ Network cloudwiki-upstream-portable_default Removing 
+ Network cloudwiki-upstream-portable_default Removed 
+Complete CreateWiki/ManageWiki upstream suite passed in the reserved test project.

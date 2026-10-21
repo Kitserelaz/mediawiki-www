@@ -1,0 +1,192 @@
+<?php
+
+namespace SMW\SQLStore\Lookup;
+
+use RuntimeException;
+use SMW\DataItems\Property;
+use SMW\DataItems\WikiPage;
+use SMW\Enum;
+use SMW\IteratorFactory;
+use SMW\Iterators\AppendIterator;
+use SMW\RequestOptions;
+use SMW\Store;
+
+/**
+ * Find all entities related to a change propagation (only expected
+ * to be used by `ChangePropagationDispatchJob`).
+ *
+ * @license GPL-2.0-or-later
+ * @since 3.0
+ *
+ * @author mwjames
+ */
+class ChangePropagationEntityLookup {
+
+	private bool $isTypePropagation = false;
+
+	/**
+	 * @since 3.0
+	 */
+	public function __construct(
+		private readonly Store $store,
+		private readonly IteratorFactory $iteratorFactory,
+	) {
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param bool $isTypePropagation
+	 *
+	 * @return void
+	 */
+	public function isTypePropagation( $isTypePropagation ): void {
+		$this->isTypePropagation = (bool)$isTypePropagation;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param Property|WikiPage $entity
+	 *
+	 * @return AppendIterator
+	 * @throws RuntimeException
+	 */
+	public function findAll( $entity ) {
+		if ( $entity instanceof Property ) {
+			return $this->findByProperty( $entity );
+		} elseif ( $entity instanceof WikiPage ) {
+			return $this->findByCategory( $entity );
+		}
+
+		throw new RuntimeException( 'Cannot match the entity type.' );
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param Property $property
+	 *
+	 * @return AppendIterator
+	 */
+	public function findByProperty( Property $property ) {
+		$dataItems = [];
+		$appendIterator = $this->iteratorFactory->newAppendIterator();
+		$requestOptions = $this->newSuspendedCacheWarmupOptions();
+
+		$res = $this->store->getAllPropertySubjects(
+			$property,
+			$requestOptions
+		);
+
+		$appendIterator->add(
+			$res
+		);
+
+		// Select any remaining references that are hidden or have been left out
+		// during an update
+		$appendIterator->add(
+			$this->fetchOtherReferencesOnTypePropagation( $property )
+		);
+
+		$dataItems = $this->store->getPropertySubjects(
+			new Property( Property::TYPE_ERROR ),
+			$property->getCanonicalDiWikiPage(),
+			$requestOptions
+		);
+
+		$appendIterator->add(
+			$dataItems
+		);
+
+		return $appendIterator;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param WikiPage $category
+	 *
+	 * @return AppendIterator
+	 */
+	public function findByCategory( WikiPage $category ) {
+		$appendIterator = $this->iteratorFactory->newAppendIterator();
+		$requestOptions = $this->newSuspendedCacheWarmupOptions();
+
+		$property = new Property( '_INST' );
+
+		$appendIterator->add(
+			$this->store->getPropertySubjects( $property, $category, $requestOptions )
+		);
+
+		// Only direct antecedents
+		$dataItems = $this->store->getPropertyValues(
+			$category,
+			new Property( '_SUBC' )
+		);
+
+		foreach ( $dataItems as $dataItem ) {
+			$appendIterator->add(
+				$this->store->getPropertySubjects( $property, $dataItem, $requestOptions )
+			);
+		}
+
+		return $appendIterator;
+	}
+
+	/**
+	 * The dispatch only serialises subject hashes into chunked job params and
+	 * never resolves per-item id/sortkey caches, so keep the result set lazy and
+	 * skip warmUpCache, which would otherwise materialise the entire subject set
+	 * at once for a heavily used property or category (#4344).
+	 */
+	private function newSuspendedCacheWarmupOptions(): RequestOptions {
+		$requestOptions = new RequestOptions();
+		$requestOptions->setOption( Enum::SUSPEND_CACHE_WARMUP, true );
+
+		return $requestOptions;
+	}
+
+	private function fetchOtherReferencesOnTypePropagation( Property $property ) {
+		// Find other references only on a type propagation (which causes a
+		// change of table/id assignments) for entity references
+		if ( !$this->isTypePropagation ) {
+			return [];
+		}
+
+		$connection = $this->store->getConnection( 'mw.db' );
+		$pid = $this->store->getObjectIds()->getSMWPropertyID( $property );
+
+		$dataItemTables = $this->store->getPropertyTableInfoFetcher()->getDefaultDataItemTables();
+		$idList = [];
+
+		// Matches may temporary create duplicates in regrads to
+		// Store::getAllPropertySubjects but it will be dealt with by the
+		// deduplication in the ChangePropagationUpdateJob
+		foreach ( $dataItemTables as $tableName ) {
+
+			// Select any references that are hidden or remained active
+			$rows = $connection->newSelectQueryBuilder()
+				->select( [
+					's_id'
+				] )
+				->from( $tableName )
+				->where( [
+					'p_id' => $pid
+				] )
+				->caller( __METHOD__ )
+				->fetchResultSet();
+
+			foreach ( $rows as $row ) {
+				$idList[] = $row->s_id;
+			}
+		}
+
+		if ( $idList === [] ) {
+			return $idList;
+		}
+
+		return $this->store->getObjectIds()->getDataItemsFromList( $idList );
+	}
+
+}

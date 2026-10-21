@@ -1,0 +1,3 @@
+ Container cloudwiki-upgrade-recovery1462-init-run-5799960d606f Creating 
+ Container cloudwiki-upgrade-recovery1462-init-run-5799960d606f Created 
+MediaWiki SMTP message captured by local Mailpit.

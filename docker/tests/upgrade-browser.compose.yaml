@@ -1,0 +1,10 @@
+# Docker Desktop does not publish ports on a container with only internal
+# networks. Give the local proxy a frontend while PHP/workers stay isolated.
+services:
+  php:
+    environment:
+      MW_EXCEPTION_DEBUG: '1'
+  web:
+    networks: [default, upgrade-browser]
+networks:
+  upgrade-browser: {}

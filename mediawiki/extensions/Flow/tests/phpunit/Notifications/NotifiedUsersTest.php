@@ -107,18 +107,11 @@ class NotifiedUsersTest extends PostRevisionTestCase {
 		$users = [];
 		foreach ( $events as $event ) {
 			$iterator = NotificationController::getUsersToNotifyForEvent( $event );
-			foreach ( $iterator as $user ) {
-				$users[] = $user;
-			}
+			array_push( $users, ...iterator_to_array( $iterator ) );
 		}
 
 		// convert user objects back into user ids to simplify assertion
-		$users = array_map(
-			static function ( $user ) {
-				return $user->getId();
-			},
-			$users
-		);
+		$users = array_map( static fn ( $user ) => $user->getId(), $users );
 
 		$this->assertContains( $notifiedUser->getId(), $users );
 		$this->assertNotContains( $notNotifiedUser->getId(), $users );
@@ -179,7 +172,6 @@ class NotifiedUsersTest extends PostRevisionTestCase {
 		$secondPost = $topicTitle->reply( $topicWorkflow, $agent, 'lorem ipsum', 'wikitext' );
 		$newId = UUID::getComparisonUUID( (int)$secondPost->getPostId()->getTimestamp( TS_UNIX ) + 2 );
 		$reflection = new \ReflectionProperty( $secondPost, 'postId' );
-		$reflection->setAccessible( true );
 		$reflection->setValue( $secondPost, $newId );
 		$this->store( $secondPost );
 

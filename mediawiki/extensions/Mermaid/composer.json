@@ -1,0 +1,48 @@
+{
+	"name": "mediawiki/mermaid",
+	"type": "mediawiki-extension",
+	"description": "Provides a parser function to generate diagrams and charts with the help of the mermaid script language",
+	"keywords": [
+		"mediawiki",
+		"mermaid",
+		"parser function"
+	],
+	"homepage": "https://github.com/SemanticMediaWiki/Mermaid",
+	"license": "GPL-2.0-or-later",
+	"authors": [
+		{
+			"name": "James Hong Kong",
+			"role": "Developer"
+		},
+		{
+			"name": "Tyler Gibson",
+			"role": "Developer"
+		}
+	],
+	"require": {
+		"php": ">=7.4",
+		"composer/installers": "^2.2.0|^1.0.1"
+	},
+	"extra": {
+		"branch-alias": {
+			"dev-master": "4.x-dev"
+		}
+	},
+	"config": {
+		"process-timeout": 0,
+		"allow-plugins": {
+			"composer/installers": true
+		}
+	},
+	"scripts":{
+		"test": [
+			"@phpunit"
+		],
+		"test-coverage": [
+			"@phpunit-coverage"
+		],
+		"phpunit": "php ../../tests/phpunit/phpunit.php -c phpunit.xml.dist",
+		"phpunit-coverage": "php ../../tests/phpunit/phpunit.php -c phpunit.xml.dist --testdox --coverage-text --coverage-html coverage/php --coverage-clover coverage/php/coverage.xml",
+		"phpdbg": "phpdbg -qrr ../../tests/phpunit/phpunit.php -c phpunit.xml.dist"
+	}
+}

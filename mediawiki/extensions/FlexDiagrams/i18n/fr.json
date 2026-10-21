@@ -1,0 +1,25 @@
+{
+	"@metadata": {
+		"authors": [
+			"Gomoko",
+			"Mahabarata",
+			"Verdy p"
+		]
+	},
+	"flexdiagrams-desc": "Modification et création de diagrammes",
+	"editdiagram": "Modifier le diagramme",
+	"flexdiagrams-edit-title": "Modifier le diagramme : $1",
+	"flexdiagrams-creatediagram": "Créer le diagramme",
+	"flexdiagrams-viewdiagram": "Afficher le diagramme",
+	"flexdiagrams-linkingpages": "Les pages suivantes renvoient vers ce diagramme : $1",
+	"flexdiagrams-drawio-saveinfo": "Veuillez enregistrer le diagramme dans l’interface de modification avant de presser le bouton « $1 ».",
+	"flexdiagrams-edit-code": "Code :",
+	"flexdiagrams-edit-preview": "Aperçu :",
+	"flexdiagrams-embedding-unsupported": "Les pages de diagramme ne peuvent pas être incluses.",
+	"flexdiagrams-gantt-zoomlevel": "Niveau de zoom :",
+	"flexdiagrams-gantt-hours": "Heures",
+	"flexdiagrams-gantt-days": "Jours",
+	"flexdiagrams-gantt-weeks": "Semaines",
+	"flexdiagrams-gantt-months": "Mois",
+	"flexdiagrams-gantt-years": "Années"
+}

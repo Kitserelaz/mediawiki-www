@@ -1,0 +1,3 @@
+ Container cloudwiki-upgrade-rollback1462-init-run-c89d19055f4a Creating 
+ Container cloudwiki-upgrade-rollback1462-init-run-c89d19055f4a Created 
+Verified image: MediaWiki 1.45.1, PHP 8.3.30, farm version 1.45.

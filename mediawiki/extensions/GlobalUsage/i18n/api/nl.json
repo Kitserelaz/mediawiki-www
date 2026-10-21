@@ -1,0 +1,22 @@
+{
+	"@metadata": {
+		"authors": [
+			"Duckson32",
+			"Mainframe98",
+			"Mar(c)",
+			"Mbch331",
+			"McDutchie",
+			"Siebrand"
+		]
+	},
+	"apihelp-query+globalusage-summary": "Retourneert het globale gebruik voor een bepaalde afbeelding.",
+	"apihelp-query+globalusage-param-prop": "Welke eigenschappen moeten worden teruggestuurd:",
+	"apihelp-query+globalusage-paramvalue-prop-url": "Voegt url toe.",
+	"apihelp-query+globalusage-paramvalue-prop-pageid": "Voegt pagina-ID toe.",
+	"apihelp-query+globalusage-paramvalue-prop-namespace": "Voegt naamruimte-ID toe.",
+	"apihelp-query+globalusage-param-limit": "Hoeveel koppelingen er moeten worden geretourneerd.",
+	"apihelp-query+globalusage-param-filterlocal": "Lokaal gebruik van dit bestand filteren.",
+	"apihelp-query+globalusage-param-namespace": "Beperk resultaten tot deze naamruimten.",
+	"apihelp-query+globalusage-param-site": "Beperk resultaten tot deze sites.",
+	"apihelp-query+globalusage-example-1": "Laat zien waar [[:File:Example.jpg]] gebruikt wordt"
+}

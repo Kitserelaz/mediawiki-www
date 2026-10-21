@@ -1,0 +1,384 @@
+<?php
+
+namespace SMW\MediaWiki\Specials\SearchByProperty;
+
+use MediaWiki\Html\Html;
+use MediaWiki\Linker\Linker;
+use MediaWiki\Message\Message;
+use SMW\DataItems\Error;
+use SMW\DataItems\Property;
+use SMW\DataItems\WikiPage;
+use SMW\DataTypeRegistry;
+use SMW\DataValueFactory;
+use SMW\DataValues\DataValue;
+use SMW\DataValues\StringValue;
+use SMW\Formatters\Infolink;
+use SMW\MediaWiki\Renderer\HtmlFormRenderer;
+use SMW\ProcessingErrorMsgHandler;
+use SMW\Store;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since   2.1
+ *
+ * @author Denny Vrandecic
+ * @author Daniel Herzig
+ * @author Markus Kroetzsch
+ * @author mwjames
+ */
+class PageBuilder {
+
+	/**
+	 * @var Linker
+	 */
+	private $linker;
+
+	/**
+	 * @since 2.1
+	 */
+	public function __construct(
+		private readonly HtmlFormRenderer $htmlFormRenderer,
+		private readonly PageRequestOptions $pageRequestOptions,
+		private readonly QueryResultLookup $queryResultLookup,
+		private readonly Store $store,
+	) {
+		$this->linker = smwfGetLinker();
+	}
+
+	/**
+	 * Build a message in the renderer's language so the form labels match the
+	 * surrounding form's language (`HtmlFormRenderer` is constructed with the
+	 * page's content language by default) rather than defaulting to the user
+	 * language.
+	 */
+	private function msg( string $key, ...$params ): Message {
+		return wfMessage( $key, ...$params )
+			->inLanguage( $this->htmlFormRenderer->getLanguage() );
+	}
+
+	/**
+	 * Encode attacker-influenced text (reflected property/value input and the
+	 * error messages derived from it) before it is placed into the HTML output.
+	 * The result flows into `Xml::tags()`/`addParagraph()`, which do not escape,
+	 * and validation error text can carry unescaped user input (e.g. via the
+	 * `Message::encode()` range roundtrip), so it must be treated as untrusted.
+	 */
+	private function escapeMessage( string $text ): string {
+		return htmlspecialchars( $text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8' );
+	}
+
+	/**
+	 * @since 2.1
+	 */
+	public function getHtml(): string {
+		$this->pageRequestOptions->initialize();
+
+		[ $resultMessage, $resultList, $resultCount ] = $this->getResultHtml();
+
+		if ( ( $resultList === '' || $resultList === null ) &&
+			$this->pageRequestOptions->property->getDataItem() instanceof Property &&
+			$this->pageRequestOptions->valueString === '' ) {
+			[ $resultMessage, $resultList, $resultCount ] = $this->tryToFindAtLeastOnePropertyTableReferenceFor(
+				$this->pageRequestOptions->property->getDataItem()
+			);
+		}
+
+		if ( $resultList === '' || $resultList === null ) {
+			$resultList = $this->msg( 'smw_result_noresults' )->escaped();
+		}
+
+		$pageDescription = Html::rawElement(
+			'p',
+			[ 'class' => 'smw-sp-searchbyproperty-description' ],
+			$this->msg( 'smw-sp-searchbyproperty-description' )->parse()
+		);
+
+		$resultListHeader = Html::element(
+			'h2',
+			[],
+			$this->msg( 'smw-sp-searchbyproperty-resultlist-header' )->text()
+		);
+
+		return $pageDescription . $this->getHtmlForm( $resultMessage, $resultCount ) . $resultListHeader . $resultList;
+	}
+
+	private function getHtmlForm( $resultMessage, $resultCount ) {
+		// Precaution to avoid any inline breakage caused by a div element
+		// within a paragraph (e.g Highlighter content)
+		$resultMessage = str_replace( 'div', 'span', $resultMessage ?? '' );
+
+		$html = $this->htmlFormRenderer
+			->setName( 'searchbyproperty' )
+			->withFieldset()
+			->addParagraph( $resultMessage )
+			->addPaging(
+				$this->pageRequestOptions->limit,
+				$this->pageRequestOptions->offset,
+				$resultCount )
+			->addHorizontalRule()
+			->addInputField(
+				$this->msg( 'smw_sbv_property' )->text(),
+				'property',
+				$this->pageRequestOptions->propertyString,
+				'smw-property-input' )
+			->addNonBreakingSpace()
+			->addInputField(
+				$this->msg( 'smw_sbv_value' )->text(),
+				'value',
+				$this->pageRequestOptions->valueString,
+				'smw-value-input' )
+			->addNonBreakingSpace()
+			->addSubmitButton( $this->msg( 'smw_sbv_submit' )->text() )
+			->getForm();
+
+		return $html;
+	}
+
+	private function getResultHtml(): array {
+		$resultList = '';
+		$resultMessage = '';
+
+		if ( $this->pageRequestOptions->propertyString === '' || !$this->pageRequestOptions->propertyString ) {
+			return [ $this->msg( 'smw_sbv_docu' )->text(), '', 0 ];
+		}
+
+		// #1728
+		if ( !$this->pageRequestOptions->property->isValid() ) {
+			$errors = ProcessingErrorMsgHandler::getMessagesAsString( $this->pageRequestOptions->property->getErrors() );
+			return [ $this->escapeMessage( $errors ), '', 0 ];
+		}
+
+		if ( $this->pageRequestOptions->valueString !== '' && !$this->pageRequestOptions->value->isValid() ) {
+			$errors = ProcessingErrorMsgHandler::getMessagesAsString( $this->pageRequestOptions->value->getErrors() );
+			return [ $this->escapeMessage( $errors ), '', 0 ];
+		}
+
+		// Find out where the subject is used in connection with a query
+		if ( $this->isAskQueryLinksRelatedRequest() ) {
+			$exactResults = $this->queryResultLookup->doQueryLinksReferences( $this->pageRequestOptions );
+			$exactCount = count( $exactResults );
+			$resultList = $this->makeResultList( $exactResults, $this->pageRequestOptions->limit, true );
+			return [ str_replace( '_', ' ', $resultMessage ), $resultList, $exactCount ];
+		}
+
+		$exactResults = $this->queryResultLookup->doQuery( $this->pageRequestOptions );
+		$exactCount = count( $exactResults );
+
+		if ( $this->canQueryNearbyResults( $exactCount ) ) {
+			return $this->getNearbyResults( $exactResults, $exactCount );
+		}
+
+		if ( $this->pageRequestOptions->valueString === '' ) {
+			$resultMessageKey = 'smw-sp-searchbyproperty-nonvaluequery';
+		} else {
+			$resultMessageKey = 'smw-sp-searchbyproperty-valuequery';
+		}
+
+		$resultMessage = $this->msg(
+			$resultMessageKey,
+			$this->pageRequestOptions->property->getShortHTMLText( $this->linker ),
+			$this->escapeMessage( (string)$this->pageRequestOptions->value->getWikiValue() ) )->text();
+
+		if ( $exactCount > 0 ) {
+			$resultList = $this->makeResultList( $exactResults, $this->pageRequestOptions->limit, true );
+		}
+
+		return [ str_replace( '_', ' ', $resultMessage ?? '' ), $resultList, $exactCount ];
+	}
+
+	private function getNearbyResults( array $exactResults, int $exactCount ): array {
+		$resultList = '';
+
+		$greaterResults = $this->queryResultLookup->doQueryForNearbyResults(
+			$this->pageRequestOptions,
+			$exactCount,
+			true
+		);
+
+		$smallerResults = $this->queryResultLookup->doQueryForNearbyResults(
+			$this->pageRequestOptions,
+			$exactCount,
+			false
+		);
+
+		// Calculate how many greater and smaller results should be displayed
+		$greaterCount = count( $greaterResults );
+		$smallerCount = count( $smallerResults );
+
+		if ( ( $greaterCount + $smallerCount + $exactCount ) > $this->pageRequestOptions->limit ) {
+			$lhalf = round( ( $this->pageRequestOptions->limit - $exactCount ) / 2 );
+
+			if ( $lhalf < $greaterCount ) {
+				if ( $lhalf < $smallerCount ) {
+					$smallerCount = $lhalf;
+					$greaterCount = $lhalf;
+				} else {
+					$greaterCount = $this->pageRequestOptions->limit - ( $exactCount + $smallerCount );
+				}
+			} else {
+				$smallerCount = $this->pageRequestOptions->limit - ( $exactCount + $greaterCount );
+			}
+		}
+
+		if ( ( $greaterCount + $smallerCount + $exactCount ) == 0 ) {
+			return [ '', $resultList, 0 ];
+		}
+
+		$resultMessage = $this->msg(
+			'smw_sbv_displayresultfuzzy',
+			$this->pageRequestOptions->property->getShortHTMLText( $this->linker ),
+			// This value is htmlspecialchars-escaped, so strip_tags first to keep
+			// the plain caption rather than rendering the date <time> markup as
+			// a literal &lt;time&gt;.
+			htmlspecialchars( strip_tags( $this->pageRequestOptions->value->getShortHTMLText( $this->linker ) ) )
+		)->text();
+
+		$resultList .= $this->makeResultList( $smallerResults, $smallerCount, false );
+
+		if ( $exactCount == 0 ) {
+			$resultList .= "&#160;<em><strong><small>" . $this->msg( 'parentheses' )
+				->rawParams( $this->pageRequestOptions->value->getLongHTMLText() )
+				->escaped() . "</small></strong></em>";
+		} else {
+			$resultList .= $this->makeResultList( $exactResults, $exactCount, true, true );
+		}
+
+		$resultList .= $this->makeResultList( $greaterResults, $greaterCount, true );
+
+		return [ $resultMessage, $resultList, $greaterCount + $exactCount ];
+	}
+
+	/**
+	 * Creates the HTML for a bullet list with all the results of the set
+	 * query. Values can be highlighted to show exact matches among nearby
+	 * ones.
+	 */
+	private function makeResultList( array $results, $number, bool $first, bool $highlight = false ): string {
+		if ( $number > 0 ) {
+			$results = $first ?
+				array_slice( $results, 0, $number ) :
+				array_slice( $results, $number );
+		}
+
+		$html = '';
+
+		foreach ( $results as $result ) {
+
+			$outputFormat = $result[0]->getOutputFormat();
+			$result[0]->setOutputFormat( $outputFormat ?: 'LOCL' );
+
+			$listitem = $result[0]->getLongHTMLText( $this->linker );
+
+			if ( $this->canShowSearchByPropertyLink( $result[0] ) ) {
+
+				// Copy the instance for the InfoLinker
+				$res = clone $result[0];
+				$res->setOutputFormat( '' );
+
+				$value = $res instanceof StringValue && $res->getLength() < 72 ? $res->getWikiValue() : mb_substr( $res->getWikiValue(), 0, 72 );
+
+				$listitem .= '&#160;&#160;' . Infolink::newPropertySearchLink(
+					'+',
+					$this->pageRequestOptions->propertyString,
+					$value
+				)->getHTML( $this->linker );
+			} elseif ( $result[0]->getTypeID() === '_wpg' ) {
+
+				// Add browsing link for wikipage results
+				// Note: non-wikipage results are possible using inverse properties
+				$listitem .= '&#160;&#160;' . Infolink::newBrowsingLink(
+					'+',
+					$result[0]->getLongWikiText()
+				)->getHTML( $this->linker );
+			}
+
+			// Show value if not equal to the value that was searched
+			// or if the current results are to be highlighted:
+			if ( array_key_exists( 1, $result ) &&
+				( $result[1] instanceof DataValue ) &&
+				( !$result[1]->getDataItem() instanceof Error ) &&
+				( !$this->pageRequestOptions->value->getDataItem()->equals( $result[1]->getDataItem() )
+					|| $highlight ) ) {
+
+				$outputFormat = $result[1]->getOutputFormat();
+				$result[1]->setOutputFormat( $outputFormat ?: 'LOCL' );
+
+				$listitem .= "&#160;<em><small>" . $this->msg( 'parentheses' )
+					->rawParams( $result[1]->getLongHTMLText( $this->linker ) )
+					->escaped() . "</small></em>";
+			}
+
+			// Highlight values
+			if ( $highlight ) {
+				$listitem = "<strong>$listitem</strong>";
+			}
+
+			$html .= "<li>$listitem</li>";
+		}
+
+		return "<ul>$html</ul>";
+	}
+
+	private function canQueryNearbyResults( int $exactCount ): bool {
+		return $exactCount < ( $this->pageRequestOptions->limit / 3 ) && $this->pageRequestOptions->nearbySearch && $this->pageRequestOptions->valueString !== '';
+	}
+
+	private function canShowSearchByPropertyLink( DataValue $dataValue ): bool {
+		$dataTypeClass = DataTypeRegistry::getInstance()->getDataTypeClassById(
+			$dataValue->getTypeID()
+		);
+
+		return $this->pageRequestOptions->value instanceof $dataTypeClass && $this->pageRequestOptions->valueString === '';
+	}
+
+	private function tryToFindAtLeastOnePropertyTableReferenceFor( Property $property ): array {
+		$resultList = '';
+		$resultMessage = '';
+		$resultCount = 0;
+		$extra = '';
+
+		$dataItem = $this->store->getPropertyTableIdReferenceFinder()->tryToFindAtLeastOneReferenceForProperty(
+			$property
+		);
+
+		if ( !$dataItem instanceof WikiPage ) {
+			$resultMessage = 'No reference found.';
+			return [ $resultMessage, $resultList, $resultCount ];
+		}
+
+		// In case the item has already been marked as deleted but is yet pending
+		// for removal
+		if ( $dataItem->getInterWiki() === ':smw-delete' ) {
+			$resultMessage = 'Item reference "' . $dataItem->getSubobjectName() . '" has already been marked for removal.';
+			$dataItem = new WikiPage( $dataItem->getDBKey(), $dataItem->getNamespace() );
+		}
+
+		$dataValue = DataValueFactory::getInstance()->newDataValueByItem(
+			$dataItem
+		);
+
+		$outputFormat = $dataValue->getOutputFormat();
+		$dataValue->setOutputFormat( $outputFormat ?: 'LOCL' );
+
+		if ( $dataValue->isValid() ) {
+			// $resultMessage = 'Item reference for a zero-marked property.';
+			$resultList = $dataValue->getShortHtmlText( $this->linker ) . ' ' . $extra;
+			$resultCount++;
+
+			$resultList .= '&#160;&#160;' . Infolink::newBrowsingLink(
+				'+',
+				$dataValue->getLongWikiText()
+			)->getHTML( $this->linker );
+		}
+
+		return [ $resultMessage, $resultList, $resultCount ];
+	}
+
+	private function isAskQueryLinksRelatedRequest(): bool {
+		return $this->pageRequestOptions->property !== '' &&
+			$this->pageRequestOptions->property->getDataItem()->getKey() === '_ASK' &&
+			$this->pageRequestOptions->value->isValid() &&
+			strpos( $this->pageRequestOptions->value->getWikiValue(), '_QUERY' ) === false;
+	}
+
+}

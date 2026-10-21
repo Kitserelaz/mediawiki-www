@@ -1,0 +1,5 @@
+{
+  "historical_bad_index_rejected": true,
+  "diagnostic": "RuntimeError: Case-colliding tracked paths: mediawiki/extensions/OATHAuth/maintenance/DisableOATHAuthForUser.php / mediawiki/extensions/OATHAuth/maintenance/disableOATHAuthForUser.php",
+  "corrected_index_passed": true
+}

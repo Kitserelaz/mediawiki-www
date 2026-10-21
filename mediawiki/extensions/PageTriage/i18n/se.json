@@ -1,0 +1,22 @@
+{
+	"@metadata": {
+		"authors": [
+			"Kimberli Mäkäräinen (WMNO)",
+			"Yupik"
+		]
+	},
+	"pagetriage-categories": "$1 {{PLURAL:$1|kategoriija}}",
+	"pagetriage-no-categories": "Ii oktage kategoriija",
+	"pagetriage-filter-username": "Geavaheaddjinamma",
+	"pagetriage-filter-ns-all": "Buot",
+	"pagetriage-filter-stat-all": "Buot",
+	"pagetriage-filter-stat-no-categories": "Ii oktage kategoriija",
+	"pagetriage-filter-stat-namespace": "Nammagomuvuohta",
+	"pagetriage-button-add-parameters": "Lasit paramehteriid",
+	"pagetriage-button-send-a-note": "Sádde dieđu",
+	"pagetriage-tags-title": "Lasit gilkoriid",
+	"pagetriage-info-problem-blocked": "Hehttejuvvon geavaheaddji",
+	"pagetriage-toolbar-learn-more": "Lassedieđut »",
+	"pagetriage-toolbar-close": "Gidde",
+	"pagetriage-thank-link": "{{GENDER:$1|{{GENDER:$2|Giitte}}}}"
+}

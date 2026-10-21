@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"GuoPC",
+			"Liuxinyu970226"
+		]
+	},
+	"kartographer-wv-group": "组：",
+	"kartographer-wv-warning-external-source-title": "外部数据来源",
+	"kartographer-wv-warning-external-source-message": "此内容由外部托管，所以启用它会将您的IP地址与其他数据分享给地图提供商。",
+	"kartographer-wv-warning-external-source-agree": "我明白",
+	"kartographer-wv-warning-external-source-disagree": "取消"
+}

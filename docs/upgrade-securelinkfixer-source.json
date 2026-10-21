@@ -1,0 +1,50 @@
+{
+  "component": "mediawiki/extensions/SecureLinkFixer",
+  "baseline": "a8fc113a09fe14c7a8445fbe19b258a8f7697c52",
+  "target": "dc632b01fb4158cdf3c290e2dced0fbe9b2eebff",
+  "preserved_changes": [
+    {
+      "path": ".eslintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".gitignore",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".gitreview",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".phan/config.php",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".phpcs.xml",
+      "change": "local-deletion"
+    },
+    {
+      "path": "Gruntfile.js",
+      "change": "local-deletion"
+    },
+    {
+      "path": "package-lock.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "package.json",
+      "change": "local-deletion"
+    }
+  ],
+  "dependency_status": {
+    "old_runtime_requirements": {},
+    "new_runtime_requirements": {},
+    "has_lock": false,
+    "has_vendor": false,
+    "status": "runtime-requirements-unchanged"
+  },
+  "baseline_proof": {
+    "matched_runtime_and_manifest_files": 8,
+    "method": "Exact Git blobs for all installed non-test, non-vendor PHP and extension.json"
+  }
+}

@@ -1,4 +1,4 @@
-const { EditorSelection, EditorView } = require( 'ext.CodeMirror.v6.lib' );
+const { EditorSelection, EditorView } = require( 'ext.CodeMirror.lib' );
 
 /**
  * [jQuery.textSelection]{@link jQuery.fn.textSelection} implementation for CodeMirror.
@@ -63,7 +63,7 @@ class CodeMirrorTextSelection {
 	 * @return {number[]|number}
 	 * @stable to call
 	 */
-	getCaretPosition( options ) {
+	getCaretPosition( options = {} ) {
 		if ( !options.startAndEnd ) {
 			return this.view.state.selection.main.head;
 		}
@@ -126,9 +126,7 @@ class CodeMirrorTextSelection {
 	 * @stable to call
 	 */
 	replaceSelection( value ) {
-		this.view.dispatch(
-			this.view.state.replaceSelection( value )
-		);
+		this.view.dispatch( this.view.state.replaceSelection( value ) );
 		return this.$cmDom;
 	}
 
@@ -140,7 +138,7 @@ class CodeMirrorTextSelection {
 	 * [EditorState.changeByRange](https://codemirror.net/docs/ref/#state.EditorState.changeByRange)
 	 * when there are multiple selections.
 	 *
-	 * @todo Add support for 'ownline' and 'splitlines' options.
+	 * @todo Add support for 'ownline' option, and complete support for 'selectPeri'.
 	 *
 	 * @param {Object} options
 	 * @param {string} [options.pre] The text to insert before the cursor/selection.
@@ -149,15 +147,38 @@ class CodeMirrorTextSelection {
 	 * @param {boolean} [options.replace=false] If there is a selection, replace it with peri
 	 *   instead of leaving it alone.
 	 * @param {boolean} [options.selectPeri=true] Select the peri text if it was inserted.
+	 * @param {boolean} [options.splitlines=false] If multiple lines are selected, encapsulate
+	 *  each line individually.
 	 * @param {number} [options.selectionStart] Position to start selection at.
 	 * @param {number} [options.selectionEnd=options.selectionStart] Position to end selection at.
 	 * @return {jQuery}
 	 * @stable to call
 	 */
 	encapsulateSelection( options ) {
+		// The transactionFilter in CodeMirror already prevents document changes.
+		// Prevent selection changes that assume document changes that don't happen.
+		if ( this.view.state.readOnly ) {
+			return this.$cmDom;
+		}
+
 		let selectedText,
 			isSample = false;
+		options = Object.assign( {
+			pre: '',
+			peri: '',
+			post: '',
+			replace: false,
+			selectPeri: true,
+			splitlines: false,
+			selectionStart: undefined,
+			selectionEnd: undefined
+		}, options );
 
+		/**
+		 * Check if the selected text is the same as the insert text.
+		 *
+		 * @ignore
+		 */
 		const checkSelectedText = () => {
 			if ( !selectedText ) {
 				selectedText = options.peri;
@@ -165,12 +186,12 @@ class CodeMirrorTextSelection {
 			} else if ( options.replace ) {
 				selectedText = options.peri;
 			} else {
-				while ( selectedText.charAt( selectedText.length - 1 ) === ' ' ) {
+				while ( selectedText.endsWith( ' ' ) ) {
 					// Exclude ending space char
 					selectedText = selectedText.slice( 0, -1 );
 					options.post += ' ';
 				}
-				while ( selectedText.charAt( 0 ) === ' ' ) {
+				while ( selectedText.startsWith( ' ' ) ) {
 					// Exclude prepending space char
 					selectedText = selectedText.slice( 1 );
 					options.pre = ' ' + options.pre;
@@ -184,14 +205,20 @@ class CodeMirrorTextSelection {
 		if ( options.selectionStart !== undefined ) {
 			this.setSelection( {
 				start: options.selectionStart,
-				end: options.selectionEnd || options.selectionStart
+				end: options.selectionEnd
 			} );
 		}
 
 		selectedText = this.getSelection();
-		const [ startPos ] = this.getCaretPosition( { startAndEnd: true } );
+		const [ startPos, endPos ] = this.getCaretPosition( { startAndEnd: true } );
 		checkSelectedText();
-		const insertText = options.pre + selectedText + options.post;
+		let insertText = options.pre + selectedText + options.post;
+		const lines = selectedText.split( '\n' );
+		if ( options.splitlines ) {
+			insertText = lines.map(
+				( line ) => line.length ? options.pre + line + options.post : ''
+			).join( '\n' );
+		}
 
 		/**
 		 * Use CodeMirror's API when there are multiple selections.
@@ -214,11 +241,17 @@ class CodeMirrorTextSelection {
 
 		this.replaceSelection( insertText );
 
-		if ( isSample && options.selectPeri ) {
-			this.setSelection( {
-				start: startPos + options.pre.length,
-				end: startPos + options.pre.length + selectedText.length
-			} );
+		// Leave resultant selection untouched for 'selectPeri' and 'splitlines' options.
+		// TODO: jQuery.textSelection should probably have the same behaviour.
+		if ( options.selectPeri && ( isSample || options.splitlines ) ) {
+			let start = startPos + options.pre.length;
+			let end = startPos + options.pre.length + selectedText.length;
+			if ( options.splitlines && selectedText.includes( '\n' ) ) {
+				start = startPos;
+				end = endPos + ( options.pre.length + options.post.length ) *
+					lines.filter( Boolean ).length;
+			}
+			this.setSelection( { start, end } );
 		} else {
 			this.setSelection( {
 				start: startPos + insertText.length

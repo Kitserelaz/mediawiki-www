@@ -55,11 +55,12 @@ class PostRevisionStorage extends RevisionStorage {
 
 		if ( $trees ) {
 			$dbw = $this->dbFactory->getDB( DB_PRIMARY );
-			$dbw->newInsertQueryBuilder()
+			$queryBuilder = $dbw->newInsertQueryBuilder()
 				->insertInto( $this->joinTable() )
 				->rows( $this->preprocessNestedSqlArray( $trees ) )
-				->caller( __METHOD__ )
-				->execute();
+				->caller( __METHOD__ );
+			DbStorage::maybeSetInsertIgnore( $queryBuilder );
+			$queryBuilder->execute();
 		}
 
 		// If this is a brand new root revision it needs to be added to the tree
@@ -107,7 +108,6 @@ class PostRevisionStorage extends RevisionStorage {
 	 * this doesn't delete the whole post, it just deletes the revision.
 	 * The post will *always* exist in the tree structure, its just a tree
 	 * and we aren't going to re-parent its children;
-	 * @param array $row
 	 */
 	protected function removeRelated( array $row ) {
 		$this->dbFactory->getDB( DB_PRIMARY )->newDeleteQueryBuilder()

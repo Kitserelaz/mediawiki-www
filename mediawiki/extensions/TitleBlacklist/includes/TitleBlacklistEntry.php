@@ -14,7 +14,6 @@ use MediaWiki\Extension\AntiSpoof\AntiSpoof;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Parser\CoreParserFunctions;
 use MediaWiki\Registration\ExtensionRegistry;
-use Wikimedia\AtEase\AtEase;
 
 /**
  * @ingroup Extensions
@@ -104,6 +103,19 @@ class TitleBlacklistEntry {
 			return false;
 		}
 
+		if ( isset( $this->mParams['moveonly'] ) && $action != 'move' ) {
+			return false;
+		}
+		if ( isset( $this->mParams['newaccountonly'] ) && $action != 'new-account' ) {
+			return false;
+		}
+		if ( !isset( $this->mParams['noedit'] ) && $action == 'edit' ) {
+			return false;
+		}
+		if ( isset( $this->mParams['reupload'] ) && $action == 'upload' ) {
+			// Special:Upload also checks 'create' permissions when not reuploading
+			return false;
+		}
 		if ( $action === 'new-account' && !$this->filtersNewAccounts() ) {
 			return false;
 		}
@@ -136,32 +148,14 @@ class TitleBlacklistEntry {
 			}
 		}
 
-		AtEase::suppressWarnings();
-		// @phan-suppress-next-line SecurityCheck-ReDoS
-		$match = preg_match(
+		// @phan-suppress-next-next-line SecurityCheck-ReDoS
+		// phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
+		$match = @preg_match(
 			"/^(?:{$this->mRegex})$/us" . ( isset( $this->mParams['casesensitive'] ) ? '' : 'i' ),
 			$title
 		);
-		AtEase::restoreWarnings();
 
-		if ( $match ) {
-			if ( isset( $this->mParams['moveonly'] ) && $action != 'move' ) {
-				return false;
-			}
-			if ( isset( $this->mParams['newaccountonly'] ) && $action != 'new-account' ) {
-				return false;
-			}
-			if ( !isset( $this->mParams['noedit'] ) && $action == 'edit' ) {
-				return false;
-			}
-			if ( isset( $this->mParams['reupload'] ) && $action == 'upload' ) {
-				// Special:Upload also checks 'create' permissions when not reuploading
-				return false;
-			}
-			return true;
-		}
-
-		return false;
+		return (bool)$match;
 	}
 
 	/**
@@ -256,7 +250,7 @@ class TitleBlacklistEntry {
 	}
 
 	/**
-	 * @return string Custom message for this entry
+	 * @return string|null Custom message for this entry
 	 */
 	public function getCustomMessage() {
 		return $this->mParams['errmsg'] ?? null;

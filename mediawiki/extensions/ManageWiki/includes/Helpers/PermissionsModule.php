@@ -2,17 +2,21 @@
 
 namespace Miraheze\ManageWiki\Helpers;
 
+use MediaWiki\Config\ServiceOptions;
 use MediaWiki\User\ActorStoreFactory;
 use MediaWiki\User\UserGroupManagerFactory;
-use Miraheze\CreateWiki\Services\CreateWikiDataFactory;
+use Miraheze\ManageWiki\ConfigNames;
+use Miraheze\ManageWiki\Helpers\Factories\DataStoreFactory;
 use Miraheze\ManageWiki\Helpers\Factories\ModuleFactory;
 use Miraheze\ManageWiki\Helpers\Utils\DatabaseUtils;
 use Miraheze\ManageWiki\IModule;
+use Miraheze\ManageWiki\Traits\ConfigHelperTrait;
 use stdClass;
 use Wikimedia\Message\ITextFormatter;
 use Wikimedia\Message\MessageValue;
 use Wikimedia\Rdbms\Platform\ISQLPlatform;
 use function array_diff;
+use function array_diff_key;
 use function array_keys;
 use function array_merge;
 use function array_unique;
@@ -27,6 +31,17 @@ use function sort;
 
 class PermissionsModule implements IModule {
 
+	use ConfigHelperTrait;
+
+	public const array CONSTRUCTOR_OPTIONS = [
+		ConfigNames::PermissionsAdditionalAddGroups,
+		ConfigNames::PermissionsAdditionalAddGroupsSelf,
+		ConfigNames::PermissionsAdditionalRemoveGroups,
+		ConfigNames::PermissionsAdditionalRemoveGroupsSelf,
+		ConfigNames::PermissionsAdditionalRights,
+		ConfigNames::SiteConfiguration,
+	];
+
 	private array $changes = [];
 	private array $errors = [];
 	private array $logParams = [];
@@ -37,13 +52,16 @@ class PermissionsModule implements IModule {
 	private ?string $log = null;
 
 	public function __construct(
-		private readonly CreateWikiDataFactory $dataFactory,
 		private readonly DatabaseUtils $databaseUtils,
+		private readonly DataStoreFactory $dataStoreFactory,
 		private readonly ActorStoreFactory $actorStoreFactory,
 		private readonly UserGroupManagerFactory $userGroupManagerFactory,
 		private readonly ITextFormatter $textFormatter,
-		private readonly string $dbname
+		private readonly ServiceOptions $options,
+		private readonly string $dbname,
 	) {
+		$options->assertRequiredOptions( self::CONSTRUCTOR_OPTIONS );
+
 		$dbr = $this->databaseUtils->getGlobalReplicaDB();
 		$perms = $dbr->newSelectQueryBuilder()
 			->select( ISQLPlatform::ALL_ROWS )
@@ -363,13 +381,6 @@ class PermissionsModule implements IModule {
 			}
 
 			$live = $this->livePermissions[$group];
-			if ( empty( $live['permissions'] ) ) {
-				$this->errors[] = [
-					'managewiki-error-emptygroup' => [],
-				];
-				continue;
-			}
-
 			$builtTable = [
 				'perm_permissions' => json_encode( $live['permissions'] ),
 				'perm_addgroups' => json_encode( $live['addgroups'] ),
@@ -427,8 +438,8 @@ class PermissionsModule implements IModule {
 		}
 
 		if ( $this->dbname !== ModuleFactory::DEFAULT_DBNAME ) {
-			$data = $this->dataFactory->newInstance( $this->dbname );
-			$data->resetWikiData( isNewChanges: true );
+			$dataStore = $this->dataStoreFactory->newInstance( $this->dbname );
+			$dataStore->resetWikiData( isNewChanges: true );
 		}
 	}
 
@@ -455,6 +466,130 @@ class PermissionsModule implements IModule {
 				$userGroupManager->removeUserFromGroup( $remoteUser, $group );
 			}
 		}
+	}
+
+	/**
+	 * Build cached permissions data from live and additional config.
+	 * @return array{}|non-empty-associative-array<string,array>
+	 */
+	public function getCachedData( bool $isPrivate ): array {
+		$additionalRights = (array)$this->getRemoteConfigIfNeeded(
+			$this->options, $this->dbname,
+			ConfigNames::PermissionsAdditionalRights
+		);
+
+		$additionalAddGroups = (array)$this->getRemoteConfigIfNeeded(
+			$this->options, $this->dbname,
+			ConfigNames::PermissionsAdditionalAddGroups
+		);
+
+		$additionalRemoveGroups = (array)$this->getRemoteConfigIfNeeded(
+			$this->options, $this->dbname,
+			ConfigNames::PermissionsAdditionalRemoveGroups
+		);
+
+		$additionalAddGroupsSelf = (array)$this->getRemoteConfigIfNeeded(
+			$this->options, $this->dbname,
+			ConfigNames::PermissionsAdditionalAddGroupsSelf
+		);
+
+		$additionalRemoveGroupsSelf = (array)$this->getRemoteConfigIfNeeded(
+			$this->options, $this->dbname,
+			ConfigNames::PermissionsAdditionalRemoveGroupsSelf
+		);
+
+		if ( $isPrivate ) {
+			$additionalRights['*']['read'] = false;
+			$additionalRights['sysop']['read'] = true;
+		}
+
+		$cache = [];
+		foreach ( $this->listAll() as $group => $live ) {
+			$cache[$group] = [
+				'permissions' => $this->applyAdditionalRights(
+					$live['permissions'] ?? [],
+					$additionalRights[$group] ?? []
+				),
+				'addgroups' => $this->normalizeList( array_merge(
+					$live['addgroups'] ?? [],
+					$additionalAddGroups[$group] ?? []
+				) ),
+				'removegroups' => $this->normalizeList( array_merge(
+					$live['removegroups'] ?? [],
+					$additionalRemoveGroups[$group] ?? []
+				) ),
+				'addself' => $this->normalizeList( array_merge(
+					$live['addself'] ?? [],
+					$additionalAddGroupsSelf[$group] ?? []
+				) ),
+				'removeself' => $this->normalizeList( array_merge(
+					$live['removeself'] ?? [],
+					$additionalRemoveGroupsSelf[$group] ?? []
+				) ),
+				'autopromote' => $live['autopromote'] ?? null,
+			];
+		}
+
+		// Add config-only groups (not in ManageWiki)
+		$union = $additionalRights +
+			$additionalAddGroups +
+			$additionalRemoveGroups +
+			$additionalAddGroupsSelf +
+			$additionalRemoveGroupsSelf;
+
+		// Drop anything already in cache and normalize
+		$missing = array_diff_key( $union, $cache );
+		$allConfigGroups = $this->normalizeList( array_keys( $missing ) );
+		foreach ( $allConfigGroups as $group ) {
+			$rightsOverlay = $additionalRights[$group] ?? [];
+			$cache[$group] = [
+				'permissions' => $this->applyAdditionalRights( [], $rightsOverlay ),
+				'addgroups' => $this->normalizeList( $additionalAddGroups[$group] ?? [] ),
+				'removegroups' => $this->normalizeList( $additionalRemoveGroups[$group] ?? [] ),
+				'addself' => $this->normalizeList( $additionalAddGroupsSelf[$group] ?? [] ),
+				'removeself' => $this->normalizeList( $additionalRemoveGroupsSelf[$group] ?? [] ),
+				'autopromote' => null,
+			];
+		}
+
+		return $cache;
+	}
+
+	/**
+	 * Overlay additional rights on top of a base list.
+	 * Truthy => add; explicit false => remove. Others ignored.
+	 */
+	private function applyAdditionalRights( array $base, array $overlay ): array {
+		if ( !$overlay ) {
+			return $this->normalizeList( $base );
+		}
+
+		$add = [];
+		$remove = [];
+		foreach ( $overlay as $right => $bool ) {
+			if ( $bool ) {
+				$add[] = $right;
+				continue;
+			}
+
+			if ( $bool === false ) {
+				$remove[] = $right;
+			}
+		}
+
+		$merged = array_merge( $base, $add );
+		$merged = array_diff( $merged, $remove );
+		return $this->normalizeList( $merged );
+	}
+
+	/**
+	 * Unique + sorted list for stable comparisons and output.
+	 * @return list<mixed>
+	 */
+	private function normalizeList( array $list ): array {
+		$list = array_values( array_unique( $list ) );
+		sort( $list );
+		return $list;
 	}
 
 	private function moveUsersFromGroup( string $group ): void {

@@ -1,0 +1,23 @@
+{
+	"@metadata": {
+		"authors": [
+			"Ostrzyciel",
+			"Polskacafe"
+		]
+	},
+	"apihelp-ratepage-summary": "Pozwala ocenić stronę i pobiera oceny użytkowników dla danej strony. Należy podać jeden z dwóch argumentów: pageid lub pagetitle.",
+	"apihelp-ratepage-param-pageid": "ID strony",
+	"apihelp-ratepage-param-pagetitle": "Tytuł strony",
+	"apihelp-ratepage-param-answer": "Ocena strony (domyślnie od 1 do 5 włącznie, może zostać zmienione w konfiguracji)",
+	"apihelp-ratepage-param-contest": "Identyfikator konkursu",
+	"apihelp-ratepage-example-1": "Pobierz aktualne oceny strony Example,",
+	"apihelp-ratepage-example-2": "Oceń stronę Example na 2.",
+	"apihelp-query+pagerating-summary": "Zwraca informacje o ocenach strony i uprawnieniach do głosowania tego użytkownika.",
+	"apihelp-query+pagerating-param-contest": "Identyfikator konkursu",
+	"apierror-ratepage-contest-id-too-long": "Identyfikator konkursu jest za długi. Limit to 255 znaków.",
+	"apierror-ratepage-contest-id-allowed-chars": "Identyfikator konkursu musi składać się tylko z liter łacińskich i cyfr, nie są dozwolone żadne inne znaki.",
+	"apierror-ratepage-contest-not-exists": "Konkurs $1 nie istnieje.",
+	"apierror-ratepage-page-not-exists": "Podana strona nie istnieje.",
+	"apierror-ratepage-cannot-vote-in-contest": "Nie masz uprawnień, by głosować w tym konkursie.",
+	"apierror-ratepage-invalid-answer": "Podano nieprawidłową wartość oceny. Ocena powinna być większa lub równa $1 oraz mniejsza lub równa $2."
+}

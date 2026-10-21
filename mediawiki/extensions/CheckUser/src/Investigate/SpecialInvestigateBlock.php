@@ -1,12 +1,14 @@
 <?php
 
-namespace MediaWiki\CheckUser\Investigate;
+namespace MediaWiki\Extension\CheckUser\Investigate;
 
 use Exception;
 use MediaWiki\Api\ApiMain;
 use MediaWiki\Block\BlockPermissionCheckerFactory;
+use MediaWiki\Block\BlockUser;
 use MediaWiki\Block\BlockUserFactory;
-use MediaWiki\CheckUser\Investigate\Utilities\EventLogger;
+use MediaWiki\Exception\PermissionsError;
+use MediaWiki\Extension\CheckUser\Investigate\Utilities\EventLogger;
 use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\Linker\Linker;
 use MediaWiki\MainConfigNames;
@@ -20,45 +22,27 @@ use MediaWiki\User\UserFactory;
 use MediaWiki\User\UserNameUtils;
 use OOUI\FieldLayout;
 use OOUI\Widget;
-use PermissionsError;
 use Wikimedia\IPUtils;
 
 class SpecialInvestigateBlock extends FormSpecialPage {
-	private BlockUserFactory $blockUserFactory;
-	private BlockPermissionCheckerFactory $blockPermissionCheckerFactory;
-	private PermissionManager $permissionManager;
-	private TitleFormatter $titleFormatter;
-	private UserFactory $userFactory;
-	private EventLogger $eventLogger;
-
 	private array $blockedUsers = [];
 
 	private bool $noticesFailed = false;
 
-	/**
-	 * @param BlockUserFactory $blockUserFactory
-	 * @param BlockPermissionCheckerFactory $blockPermissionCheckerFactory
-	 * @param PermissionManager $permissionManager
-	 * @param TitleFormatter $titleFormatter
-	 * @param UserFactory $userFactory
-	 * @param EventLogger $eventLogger
-	 */
 	public function __construct(
-		BlockUserFactory $blockUserFactory,
-		BlockPermissionCheckerFactory $blockPermissionCheckerFactory,
-		PermissionManager $permissionManager,
-		TitleFormatter $titleFormatter,
-		UserFactory $userFactory,
-		EventLogger $eventLogger
+		private readonly BlockUserFactory $blockUserFactory,
+		private readonly BlockPermissionCheckerFactory $blockPermissionCheckerFactory,
+		private readonly PermissionManager $permissionManager,
+		private readonly TitleFormatter $titleFormatter,
+		private readonly UserFactory $userFactory,
+		private readonly EventLogger $eventLogger,
 	) {
-		parent::__construct( 'InvestigateBlock', 'checkuser' );
+		parent::__construct( 'InvestigateBlock' );
+	}
 
-		$this->blockUserFactory = $blockUserFactory;
-		$this->blockPermissionCheckerFactory = $blockPermissionCheckerFactory;
-		$this->permissionManager = $permissionManager;
-		$this->titleFormatter = $titleFormatter;
-		$this->userFactory = $userFactory;
-		$this->eventLogger = $eventLogger;
+	/** @inheritDoc */
+	public function getRestriction(): string {
+		return 'checkuser';
 	}
 
 	/**
@@ -96,7 +80,7 @@ class SpecialInvestigateBlock extends FormSpecialPage {
 	 */
 	public function getFormFields() {
 		$this->getOutput()->addModules( [
-			'ext.checkUser'
+			'ext.checkUser',
 		] );
 		$this->getOutput()->addModuleStyles( [
 			'mediawiki.widgets.TagMultiselectWidget.styles',
@@ -134,12 +118,12 @@ class SpecialInvestigateBlock extends FormSpecialPage {
 					count( explode( "\n", $users ) ) > $maxBlocks
 				) {
 					// Show a warning message if the number of users provided exceeds the limit.
-					$htmlForm->addHeaderHtml( new FieldLayout(
+					$htmlForm->addHeaderHtml( (string)new FieldLayout(
 						new Widget( [] ),
 						[
 							'classes' => [ 'mw-htmlform-ooui-header-warnings' ],
 							'warnings' => [
-								$this->msg( 'checkuser-investigateblock-warning-users-truncated', $maxBlocks )->parse()
+								$this->msg( 'checkuser-investigateblock-warning-users-truncated', $maxBlocks )->parse(),
 							],
 						]
 					) );
@@ -149,9 +133,16 @@ class SpecialInvestigateBlock extends FormSpecialPage {
 			},
 		];
 
+		$fields['DisableAccountCreation'] = [
+			'type' => 'check',
+			'label-message' => 'checkuser-investigateblock-account-creation-label',
+			'default' => true,
+			'section' => 'actions',
+		];
+
 		if (
 			$this->blockPermissionCheckerFactory
-				->newBlockPermissionChecker( null, $this->getUser() )
+				->newChecker( $this->getUser() )
 				->checkEmailPermissions()
 		) {
 			$fields['DisableEmail'] = [
@@ -171,14 +162,25 @@ class SpecialInvestigateBlock extends FormSpecialPage {
 			];
 		}
 
-		$fields['Reblock'] = [
-			'type' => 'check',
-			'label-message' => 'checkuser-investigateblock-reblock-label',
-			'default' => false,
-			// The following message key is generated:
-			// * checkuser-investigateblock-actions
-			'section' => 'actions',
-		];
+		if ( $this->getConfig()->get( MainConfigNames::EnableMultiBlocks ) ) {
+			$fields['NewBlock'] = [
+				'type' => 'check',
+				'label-message' => 'checkuser-investigateblock-newblock-label',
+				'default' => false,
+				// The following message key is generated:
+				// * checkuser-investigateblock-actions
+				'section' => 'actions',
+			];
+		} else {
+			$fields['Reblock'] = [
+				'type' => 'check',
+				'label-message' => 'checkuser-investigateblock-reblock-label',
+				'default' => false,
+				// The following message key is generated:
+				// * checkuser-investigateblock-actions
+				'section' => 'actions',
+			];
+		}
 
 		$fields['Reason'] = [
 			'type' => 'selectandother',
@@ -189,6 +191,24 @@ class SpecialInvestigateBlock extends FormSpecialPage {
 			// The following message key is generated:
 			// * checkuser-investigateblock-reason
 			'section' => 'reason',
+		];
+
+		$suggestedDurations = $this->getLanguage()->getBlockDurations();
+		$defaultExpiry = $this->msg( 'checkuser-investigateblock-expiry-default' );
+
+		$fields['Expiry'] = [
+			'type' => 'expiry',
+			'required' => true,
+			'options' => $suggestedDurations,
+			'default' => $defaultExpiry->text(),
+			'section' => 'expiry',
+		];
+
+		$fields['HardBlock'] = [
+			'type' => 'check',
+			'label-message' => 'checkuser-investigateblock-hardblock-label',
+			'default' => false,
+			'section' => 'options',
 		];
 
 		$pageNoticeClass = 'ext-checkuser-investigate-block-notice';
@@ -213,17 +233,23 @@ class SpecialInvestigateBlock extends FormSpecialPage {
 			'section' => 'options',
 		];
 
-		$fields['UserPageNotice'] = [
-			'type' => 'check',
-			'label-message' => 'checkuser-investigateblock-notice-user-page-label',
-			'default' => false,
-			'section' => 'options',
-		];
-		$fields['UserPageNoticePosition'] = array_merge(
-			$pageNoticePosition,
-			[ 'default' => 'prependtext' ]
-		);
-		$fields['UserPageNoticeText'] = $pageNoticeText;
+		// Check for SocialProfile being installed (T390774)
+		// Using the wAvatar class existence check as a proxy because as of
+		// early April 2025 SocialProfile lacks an extension.json entry point, which
+		// thus prevents using ExtensionRegistry to check if SP is installed
+		if ( !class_exists( 'wAvatar' ) ) {
+			$fields['UserPageNotice'] = [
+				'type' => 'check',
+				'label-message' => 'checkuser-investigateblock-notice-user-page-label',
+				'default' => false,
+				'section' => 'options',
+			];
+			$fields['UserPageNoticePosition'] = array_merge(
+				$pageNoticePosition,
+				[ 'default' => 'prependtext' ]
+			);
+			$fields['UserPageNoticeText'] = $pageNoticeText;
+		}
 
 		$fields['TalkPageNotice'] = [
 			'type' => 'check',
@@ -273,7 +299,7 @@ class SpecialInvestigateBlock extends FormSpecialPage {
 		$targets = explode( "\n", $targets );
 		// Get an array of booleans indicating whether each target is an IP address. If the array contains both true and
 		// false, then the 'Targets' parameter contains both IPs and usernames. Otherwise it does not.
-		$areTargetsIPs = array_map( [ IPUtils::class, 'isIPAddress' ], $targets );
+		$areTargetsIPs = array_map( IPUtils::isIPAddress( ... ), $targets );
 		return in_array( true, $areTargetsIPs, true ) && in_array( false, $areTargetsIPs, true );
 	}
 
@@ -313,7 +339,7 @@ class SpecialInvestigateBlock extends FormSpecialPage {
 		if ( $this->checkForIPsAndUsersInTargetsParam( $data['Targets'] ) && !$data['Confirm'] ) {
 			return [
 				'checkuser-investigateblock-warning-ips-and-users-in-targets',
-				'checkuser-investigateblock-warning-confirmaction'
+				'checkuser-investigateblock-warning-confirmaction',
 			];
 		}
 
@@ -323,6 +349,7 @@ class SpecialInvestigateBlock extends FormSpecialPage {
 		// as required and as such the validation will be done by HTMLForm.
 		$reason = $data['Reason'][0];
 
+		$enableMulti = $this->getConfig()->get( MainConfigNames::EnableMultiBlocks );
 		foreach ( $targets as $target ) {
 			$isIP = IPUtils::isIPAddress( $target );
 
@@ -333,7 +360,15 @@ class SpecialInvestigateBlock extends FormSpecialPage {
 				}
 			}
 
-			$expiry = $isIP ? '1 week' : 'indefinite';
+			$expiry = $data['Expiry'];
+
+			if ( $enableMulti ) {
+				$conflictMode = $data['NewBlock']
+					? BlockUser::CONFLICT_NEW : BlockUser::CONFLICT_FAIL;
+			} else {
+				$conflictMode = $data['Reblock']
+					? BlockUser::CONFLICT_REBLOCK : BlockUser::CONFLICT_FAIL;
+			}
 
 			$status = $this->blockUserFactory->newBlockUser(
 				$target,
@@ -341,18 +376,19 @@ class SpecialInvestigateBlock extends FormSpecialPage {
 				$expiry,
 				$reason,
 				[
-					'isHardBlock' => !$isIP,
-					'isCreateAccountBlocked' => true,
+					'isHardBlock' => $data['HardBlock'] ?? false,
+					'isCreateAccountBlocked' => $data['DisableAccountCreation'] ?? true,
 					'isAutoblocking' => true,
 					'isEmailBlocked' => $data['DisableEmail'] ?? false,
 					'isUserTalkEditBlocked' => $data['DisableUTEdit'] ?? false,
 				]
-			)->placeBlock( $data['Reblock'] );
+			)->placeBlock( $conflictMode );
 
 			if ( $status->isOK() ) {
 				$this->blockedUsers[] = $target;
 
-				if ( $data['UserPageNotice'] ) {
+				// Check for SocialProfile being installed (T390774)
+				if ( !class_exists( 'wAvatar' ) && $data['UserPageNotice'] ) {
 					$this->addNoticeToPage(
 						$this->getTargetPage( NS_USER, $target ),
 						$data['UserPageNoticeText'],
@@ -381,7 +417,7 @@ class SpecialInvestigateBlock extends FormSpecialPage {
 		] );
 
 		if ( $blockedUsersCount === 0 ) {
-			return [ 'checkuser-investigateblock-failure' ];
+			return [ 'checkuser-investigateblock-failure' . ( $enableMulti ? '-multi' : '' ) ];
 		}
 
 		return true;
@@ -438,7 +474,7 @@ class SpecialInvestigateBlock extends FormSpecialPage {
 
 		try {
 			$api->execute();
-		} catch ( Exception $e ) {
+		} catch ( Exception ) {
 			$this->noticesFailed = true;
 		}
 	}
@@ -467,7 +503,7 @@ class SpecialInvestigateBlock extends FormSpecialPage {
 		$out->addHtml( $blockedMessage );
 
 		if ( $this->noticesFailed ) {
-			$failedNoticesMessage = $this->msg( 'checkuser-investigateblock-notices-failed' );
+			$failedNoticesMessage = $this->msg( 'checkuser-investigateblock-notices-failed' )->parse();
 			$out->addHtml( $failedNoticesMessage );
 		}
 	}

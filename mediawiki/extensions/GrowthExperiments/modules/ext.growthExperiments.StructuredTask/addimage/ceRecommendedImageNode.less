@@ -1,0 +1,144 @@
+@import 'mediawiki.skin.variables.less';
+@import '../../utils/variables.less';
+@import '../../utils/mixins';
+
+.mw-ge-recommendedImage {
+	position: relative;
+
+	// the extra specificity is to make it win over figure[typeof~='mw:File/Thumb']
+	// in resources/skins.minerva.base.styles/content/tablet/common.less
+	&.ve-ce-mwBlockImageNode.ve-ce-mwBlockImageNode {
+		margin-bottom: 16px;
+		// Should be in sync with MAX_IMAGE_DISPLAY_WIDTH in AddImageArticleTarget.
+		max-width: 500px;
+	}
+
+	.mw-ge-recommendedImage-loading-overlay {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		z-index: 1;
+		background-color: @background-color-growth-apparent;
+		transition: background-color 300ms ease-out;
+		pointer-events: none;
+
+		&--image-shown {
+			background-color: @background-color-transparent;
+		}
+	}
+
+	&-imageWrapper {
+		position: relative;
+		display: block;
+		min-height: 4em; // make sure the details button doesn't cover the entire image
+		text-align: center;
+	}
+
+	.mw-ge-recommendedImage-detailsButton {
+		pointer-events: auto;
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		padding: 8px;
+		color: @color-inverted;
+		background: rgba( 0, 0, 0, 0.5 );
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		.rel-font-size-and-line-height( @parentFontSize: 16px, @targetFontSize: 13px, @targetLineHeight: 19.5px );
+	}
+
+	.mw-ge-recommendedImage-detailsIcon {
+		margin-right: 8px;
+		background-size: 16px;
+		// Invert icon color from black to white
+		-webkit-filter: invert( 100% );
+		filter: invert( 100% );
+	}
+
+	.mw-ge-recommendedImageCaption-warning {
+		margin-top: 4px;
+		margin-bottom: 38px;
+		.rel-font-size-and-line-height( @parentFontSize: 16px, @targetFontSize: 14.8px, @targetLineHeight: 22px );
+	}
+
+	.mw-ge-recommendedImageCaption {
+		margin-top: 4px;
+	}
+}
+
+// Desktop styles are nested for additional specificity to win over styles set via "figure[typeof~='mw:File/Thumb'] >"
+.mw-ge-structuredTaskDesktopArticleTarget {
+	.mw-ge-recommendedImage {
+		display: flex;
+		flex-direction: column;
+		padding: 7px 8px;
+		border: @border-subtle;
+		background-color: @background-color-base;
+
+		&:not( [ typeof~='mw:Error' ] ) > a::after {
+			content: unset;
+		}
+
+		.image {
+			.ve-ce-mwBlockImageNode-thumbimage {
+				box-sizing: border-box;
+				margin: 0;
+			}
+		}
+
+		&-detailsButton,
+		&-header,
+		.mw-ge-recommendedImageCaption {
+			.rel-font-size-and-line-height( @parentFontSize: 14px, @targetFontSize: 14px, @targetLineHeight: 20px );
+		}
+
+		&-header {
+			font-weight: bold;
+			color: @color-base;
+			display: flex;
+			align-items: center;
+			margin-bottom: 8px;
+			justify-content: space-between;
+
+			// Override width from figure[typeof~='mw:File/Thumb'] > *:first-child > span:first-child
+			.mw-ge-recommendedImage-deleteButton:first-child {
+				width: auto;
+			}
+		}
+	}
+
+	.mw-ge-recommendedImageCaption {
+		border: @border-width-thick @border-style-base @border-color-subtle;
+		padding: 0;
+		border-radius: @border-radius-base;
+
+		&::before {
+			content: unset;
+		}
+
+		// Same as mobile but needs to win over figure[typeof~='mw:File/Thumb'] > figcaption
+		&--with-placeholder {
+			background-color: @background-color-progressive-subtle;
+			border-color: @border-color-progressive;
+		}
+
+		// TODO: This class should probably called `--with-error`.
+		&--with-warning {
+			border-color: @border-color-error;
+		}
+	}
+
+	.mw-ge-recommendedImageCaption-warning {
+		position: relative;
+		margin: 6px 0;
+		text-align: left;
+
+		.oo-ui-iconElement-icon {
+			left: 0;
+		}
+	}
+}

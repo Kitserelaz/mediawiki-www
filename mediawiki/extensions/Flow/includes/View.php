@@ -2,7 +2,6 @@
 
 namespace Flow;
 
-use Article;
 use Flow\Block\AbstractBlock;
 use Flow\Block\Block;
 use Flow\Block\TopicBlock;
@@ -15,9 +14,11 @@ use Flow\Model\Workflow;
 use MediaWiki\Context\ContextSource;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Html\Html;
+use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Message\Message;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Page\Article;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Title\Title;
 
@@ -133,9 +134,6 @@ class View extends ContextSource {
 			$out->addModuleStyles( $this->actions->getValue( $action, 'moduleStyles' ) );
 		} else {
 			$out->addModuleStyles( [
-				'mediawiki.ui',
-				'mediawiki.ui.button',
-				'mediawiki.ui.input',
 				'mediawiki.ui.icon',
 				'mediawiki.special.changeslist',
 				'mediawiki.interface.helpers.styles',
@@ -254,15 +252,13 @@ class View extends ContextSource {
 			];
 		}
 
-		if ( isset( $topicListBlock ) && isset( $parameters['topiclist'] ) ) {
+		if ( $topicListBlock !== null && isset( $parameters['topiclist'] ) ) {
 			$apiResponse['toc'] = $topicListBlock->renderTocApi(
-				// @phan-suppress-next-line PhanTypeArraySuspiciousNullable,PhanTypePossiblyInvalidDimOffset
 				$apiResponse['blocks']['topiclist'],
 				$parameters['topiclist']
 			);
 		}
 
-		// @phan-suppress-next-line PhanTypePossiblyInvalidDimOffset
 		if ( count( $apiResponse['blocks'] ) === 0 ) {
 			throw new InvalidActionException( "No blocks accepted action: $action", 'invalid-action' );
 		}
@@ -309,7 +305,7 @@ class View extends ContextSource {
 		// Add JSON blob for OOUI widgets
 		$out->addJsConfigVars( 'wgFlowData', $jsonBlobResponse );
 		$out->addJsConfigVars( 'wgEditSubmitButtonLabelPublish',
-			$config->get( 'EditSubmitButtonLabelPublish' ) );
+			$config->get( MainConfigNames::EditSubmitButtonLabelPublish ) );
 
 		$renderedBlocks = [];
 		foreach ( $apiResponse['blocks'] as $block ) {

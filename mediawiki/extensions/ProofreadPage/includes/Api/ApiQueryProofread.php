@@ -1,0 +1,82 @@
+<?php
+
+namespace ProofreadPage\Api;
+
+use MediaWiki\Api\ApiQueryBase;
+use ProofreadPage\Context;
+
+/**
+ * @license GPL-2.0-or-later
+ */
+class ApiQueryProofread extends ApiQueryBase {
+	/** @var string[] */
+	private $qualityLevelCategoryCache = [];
+
+	/**
+	 * Executes query and formats data
+	 */
+	public function execute() {
+		$context = Context::getDefaultContext();
+		$pages = $this->getPageSet()->getGoodPages();
+		$result = $this->getResult();
+
+		$pageNamespaceId = $context->getPageNamespaceId();
+		$pageQualityLevelLookup = $context->getPageQualityLevelLookup();
+		$pageQualityLevelLookup->prefetchQualityLevelForTitles( $pages );
+
+		foreach ( $pages as $pageId => $title ) {
+			if ( $title->getNamespace() === $pageNamespaceId ) {
+				$pageQualityLevel = $pageQualityLevelLookup->getQualityLevelForPageTitle( $title );
+				if ( $pageQualityLevel === null ) {
+					continue;
+				}
+
+				$val = [
+					'quality' => $pageQualityLevel,
+					'quality_text' => $this->getQualityLevelCategory( $pageQualityLevel )
+				];
+				$result->addValue( [ 'query', 'pages', $pageId ], 'proofread', $val );
+			}
+		}
+	}
+
+	/**
+	 * @param int $level
+	 * @return string
+	 */
+	private function getQualityLevelCategory( $level ) {
+		if ( !array_key_exists( $level, $this->qualityLevelCategoryCache ) ) {
+			$messageName = "proofreadpage_quality{$level}_category";
+			$category = $this->msg( $messageName )->inContentLanguage()->text();
+			$this->qualityLevelCategoryCache[$level] = $category;
+		}
+		return $this->qualityLevelCategoryCache[$level];
+	}
+
+	/**
+	 * @param array $params [optional] Parameters (unused parameter)
+	 * @see ApiQueryBase::getCacheMode()
+	 * @return string
+	 */
+	public function getCacheMode( $params ) {
+		return 'public';
+	}
+
+	/**
+	 * @see ApiBase::getAllowedParams()
+	 * @return array
+	 */
+	public function getAllowedParams() {
+		return [];
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	protected function getExamplesMessages() {
+		return [
+			'action=query&generator=allpages&gapnamespace=250&prop=proofread'
+				=> 'apihelp-query+proofread-example-1',
+		];
+	}
+}

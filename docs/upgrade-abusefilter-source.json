@@ -1,0 +1,178 @@
+{
+  "component": "mediawiki/extensions/AbuseFilter",
+  "baseline": "4a045a7365ce84eacce46f3623c56f446bf14c71",
+  "target": "7e4b0301acd53e8b10a3231f90b778c8b98e4de2",
+  "preserved_changes": [
+    {
+      "path": ".eslintignore",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".eslintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".gitignore",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".gitreview",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".phan/config.php",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".phpcs.xml",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".stylelintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "Gruntfile.js",
+      "change": "local-deletion"
+    },
+    {
+      "path": "i18n/api/fi.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/api/ja.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/api/lb.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/be-tarask.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/br.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/brx.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/cs.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/fi.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/fr.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/gl.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/he.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/hr.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/id.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/io.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ja.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ko.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/lzh.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ms.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ps.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/pt-br.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ru.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/sr-el.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/th.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/uk.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/vi.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/yue-hant.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "modules/.eslintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "modules/ve-abusefilter/.eslintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "package-lock.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "package.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "tests/selenium/.eslintrc.json",
+      "change": "local-deletion"
+    }
+  ],
+  "dependency_status": {
+    "old_runtime_requirements": {
+      "wikimedia/equivset": "^1.7.0"
+    },
+    "new_runtime_requirements": {
+      "wikimedia/equivset": "^1.7.0"
+    },
+    "has_lock": false,
+    "has_vendor": false,
+    "status": "runtime-requirements-unchanged"
+  },
+  "baseline_proof": {
+    "matched_runtime_and_manifest_files": 176,
+    "method": "Exact Git blobs for all installed non-test, non-vendor PHP and extension.json"
+  }
+}

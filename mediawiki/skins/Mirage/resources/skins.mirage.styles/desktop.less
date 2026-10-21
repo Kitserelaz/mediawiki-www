@@ -1,0 +1,55 @@
+@import '../mirage.less/mirage.variables';
+@import 'mediawiki.mixins.less';
+
+.skin-mirage-limit-content-width {
+	&,
+	&-selectively {
+		#mw-navigation,
+		.skin-mirage-content-container {
+			margin-left: auto;
+			margin-right: auto;
+		}
+	}
+}
+
+#mirage-right-rail {
+	// Align the right rail with the h1, which differs one pixel, regardless of the value of 1rem.
+	margin-top: ~'calc( 1rem + 1px )';
+	width: @right-rail-space;
+	float: left;
+	top: @fixed-header-content-height;
+	.position-sticky();
+	// Hide the right rail by default, unless the page has a right rail.
+	display: none;
+}
+
+.skin-mirage-page-with-right-rail {
+	#mirage-right-rail-checkbox:checked ~ .skin-mirage-content-container {
+		#mirage-right-rail {
+			display: block;
+		}
+
+		#content {
+			margin-right: @right-rail-space + @standard-margin;
+			padding-right: 1rem;
+		}
+
+		.mediawiki-content-container {
+			margin-right: -@right-rail-space - @standard-margin;
+			float: left;
+			width: 100%;
+		}
+	}
+
+	&.skin-mirage-limit-content-width {
+		&,
+		&-selectively {
+			#mirage-right-rail-checkbox:checked {
+				~ .skin-mirage-content-container,
+				~ #mw-navigation {
+					max-width: @max-content-width-with-right-rail;
+				}
+			}
+		}
+	}
+}

@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": [
+			"Jon Harald Søby"
+		]
+	},
+	"perpagelanguage-desc": "Gjør at grensesnittspråket matcher sideinnholdsspråket",
+	"perpagelanguage-label": "Sett språk"
+}

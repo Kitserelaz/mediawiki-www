@@ -1,0 +1,41 @@
+{
+	"@metadata": {
+		"authors": [
+			"A.R.Rostamzade",
+			"Alifakoor",
+			"Alireza",
+			"Alirezaaa",
+			"Arash.pt",
+			"Armin1392",
+			"Beginneruser",
+			"Bersam",
+			"Calak",
+			"Dalba",
+			"Ebraminio",
+			"Huji",
+			"Ladsgroup",
+			"Mahan",
+			"Mahdiz",
+			"Mjbmr",
+			"Nojan Madinehi",
+			"Pouyana",
+			"Reza1615",
+			"Rtemis",
+			"Shirayuki",
+			"Taha",
+			"Zolo",
+			"ZxxZxxZ",
+			"درفش کاویانی"
+		]
+	},
+	"wikibasecirrus-search-bad-entity-type": "نوع موجود بد: $1",
+	"special-entitieswithoutdescription": "هستارهای بدون توصیف",
+	"wikibasecirrus-entitieswithoutdescription-legend": "دریافت فهرست هستارهای بدون توصیف",
+	"special-entitieswithoutlabel": "هستارهای بدون برچسب",
+	"wikibasecirrus-entitieswithoutlabel-legend": "دریافت فهرست هستارهای بدون برچسب",
+	"wikibasecirrus-entitieswithoutlabel-label-language": "کد زبان:",
+	"wikibasecirrus-entitieswithoutlabel-label-type": "نوع:",
+	"wikibasecirrus-entitieswithoutlabel-submit": "یافتن",
+	"wikibasecirrus-entitieswithoutlabel-invalid-language": "«$1» یک کد زبان نامعتبر است.",
+	"wikibasecirrus-entitieswithoutlabel-invalid-type": "\"$1\" به دلیل نوع ورودی قابل پذیرش نیست"
+}

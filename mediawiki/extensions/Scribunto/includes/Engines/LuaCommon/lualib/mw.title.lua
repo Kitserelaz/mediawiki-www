@@ -47,6 +47,18 @@ local function lt( a, b )
 	return a.text < b.text
 end
 
+local function getFileInfo( file )
+	data = php.getFileInfo( file )
+	return setmetatable( data, {
+		__index = function( t, key )
+			if key == 'metadata' then
+				data.metadata = php.getFileMetadata( file )
+				return data.metadata
+			end
+		end
+	} )
+end
+
 local function makeTitleObject( data )
 	if not data then
 		return nil
@@ -277,7 +289,7 @@ local function makeTitleObject( data )
 			end
 			if k == 'file' then
 				if data.file == nil then
-					data.file = php.getFileInfo( data.prefixedText )
+					data.file = getFileInfo( data.prefixedText )
 				end
 				return data.file or nil
 			end
@@ -313,6 +325,10 @@ local function makeTitleObject( data )
 					data.categories = php.getCategories( data.prefixedText )
 				end
 				return data.categories
+			end
+
+			if data[k] == nil then
+				data[k] = php.getAttributeValue( data.prefixedText, k )
 			end
 
 			return data[k]
@@ -353,6 +369,35 @@ function title.setupInterface( options )
 	mw.title = title
 
 	package.loaded['mw.title'] = title
+end
+
+function title.newBatch( list, defaultNamespace )
+	local batchObj = {}
+	local titleList = list
+
+	local lookupOptions = { existence = false }
+	function batchObj:lookupExistence()
+		lookupOptions.existence = true
+		return batchObj
+	end
+
+	function batchObj:getTitles()
+		local result = {}
+		if lookupOptions.existence then
+			local titleData = php.newBatchLookupExistence( list, defaultNamespace )
+			for i, v in pairs( titleData ) do
+				result[i] = makeTitleObject( v )
+			end
+		else
+			for i, v in pairs( list ) do
+				checkTypeForIndex( i, v, 'string' )
+				result[i] = mw.title.new( v, defaultNamespace )
+			end
+		end
+		return result
+	end
+
+	return batchObj
 end
 
 function title.new( text_or_id, defaultNamespace )

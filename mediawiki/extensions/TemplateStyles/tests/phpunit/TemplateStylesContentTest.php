@@ -5,6 +5,7 @@ use MediaWiki\Content\CssContent;
 use MediaWiki\Content\WikitextContent;
 use MediaWiki\Extension\TemplateStyles\TemplateStylesContent;
 use MediaWiki\MainConfigNames;
+use MediaWiki\Tests\Content\TextContentTest;
 
 /**
  * @group TemplateStyles
@@ -16,9 +17,7 @@ class TemplateStylesContentTest extends TextContentTest {
 		parent::setUp();
 
 		$this->overrideConfigValues( [
-			MainConfigNames::TextModelsToParse => [
-				'sanitized-css',
-			],
+			MainConfigNames::TextModelsToParse => [ 'sanitized-css' ],
 			'TemplateStylesMaxStylesheetSize' => 1024000,
 		] );
 	}
@@ -144,7 +143,7 @@ class TemplateStylesContentTest extends TextContentTest {
 		// phpcs:enable
 	}
 
-	public static function dataEquals() {
+	public static function provideDataEquals() {
 		return [
 			[ new TemplateStylesContent( 'hallo' ), null, false ],
 			[ new TemplateStylesContent( 'hallo' ), new TemplateStylesContent( 'hallo' ), true ],
@@ -155,7 +154,7 @@ class TemplateStylesContentTest extends TextContentTest {
 	}
 
 	/**
-	 * @dataProvider dataEquals
+	 * @dataProvider provideDataEquals
 	 */
 	public function testEquals( Content $a, ?Content $b = null, $equal = false ) {
 		$this->assertEquals( $equal, $a->equals( $b ) );

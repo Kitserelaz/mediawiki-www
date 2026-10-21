@@ -8,71 +8,44 @@ use MediaWiki\Parser\Parser;
 use MediaWiki\Parser\ParserFactory;
 use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Revision\RevisionLookup;
+use MediaWiki\Search\SearchEngineFactory;
 use MediaWiki\SpecialPage\FormSpecialPage;
 use MediaWiki\Title\Title;
-use SearchEngineFactory;
 
 class SpecialCiteThisPage extends FormSpecialPage {
 
-	/**
-	 * @var Parser
-	 */
-	private $citationParser;
+	private Parser $citationParser;
+	private ?Title $title = null;
 
-	/**
-	 * @var Title|bool
-	 */
-	protected $title = false;
-
-	/** @var SearchEngineFactory */
-	private $searchEngineFactory;
-
-	/** @var RevisionLookup */
-	private $revisionLookup;
-
-	/** @var ParserFactory */
-	private $parserFactory;
-
-	/**
-	 * @param SearchEngineFactory $searchEngineFactory
-	 * @param RevisionLookup $revisionLookup
-	 * @param ParserFactory $parserFactory
-	 */
 	public function __construct(
-		SearchEngineFactory $searchEngineFactory,
-		RevisionLookup $revisionLookup,
-		ParserFactory $parserFactory
+		private readonly SearchEngineFactory $searchEngineFactory,
+		private readonly RevisionLookup $revisionLookup,
+		private readonly ParserFactory $parserFactory,
 	) {
 		parent::__construct( 'CiteThisPage' );
-		$this->searchEngineFactory = $searchEngineFactory;
-		$this->revisionLookup = $revisionLookup;
-		$this->parserFactory = $parserFactory;
 	}
 
-	/**
-	 * @param string $par
-	 */
+	/** @inheritDoc */
 	public function execute( $par ) {
 		$this->setHeaders();
 		$this->addHelpLink( 'Extension:CiteThisPage' );
 		parent::execute( $par );
+		if ( $par !== null && $par !== '' ) {
+			$this->title = Title::newFromText( $par );
+		}
 		if ( $this->title instanceof Title ) {
 			$id = $this->getRequest()->getInt( 'id' );
 			$this->showCitations( $this->title, $id );
 		}
 	}
 
-	/**
-	 * @param HTMLForm $form
-	 */
+	/** @inheritDoc */
 	protected function alterForm( HTMLForm $form ) {
 		$form->setMethod( 'get' );
 		$form->setFormIdentifier( 'titleform' );
 	}
 
-	/**
-	 * @return array
-	 */
+	/** @inheritDoc */
 	protected function getFormFields() {
 		return [
 			'page' => [
@@ -160,9 +133,13 @@ class SpecialCiteThisPage extends FormSpecialPage {
 		);
 
 		$this->getOutput()->addModuleStyles( 'ext.citeThisPage' );
-		$this->getOutput()->addParserOutputContent( $ret, [
+		$this->getOutput()->addParserOutputContent( $ret, $parserOptions, [
 			'enableSectionEditLinks' => false,
 		] );
+		$tocData = $ret->getTOCData();
+		if ( $tocData !== null ) {
+			$this->getOutput()->setTOCData( $tocData );
+		}
 	}
 
 	/**
@@ -199,6 +176,7 @@ class SpecialCiteThisPage extends FormSpecialPage {
 		$parserOptions = ParserOptions::newFromContext( $this->getContext() );
 		$parserOptions->setDateFormat( 'default' );
 		$parserOptions->setInterfaceMessage( true );
+		$parserOptions->setIsMessage( true );
 		return $parserOptions;
 	}
 
@@ -224,12 +202,7 @@ class SpecialCiteThisPage extends FormSpecialPage {
 			/* $linestart = */ false
 		);
 
-		return Parser::stripOuterParagraph( $ret->getText( [
-			'enableSectionEditLinks' => false,
-			// This will be inserted into the output of another parser, so there will actually be a wrapper
-			'unwrap' => true,
-			'wrapperDivClass' => '',
-		] ) );
+		return Parser::stripOuterParagraph( $ret->getRawText() );
 	}
 
 	/** @inheritDoc */

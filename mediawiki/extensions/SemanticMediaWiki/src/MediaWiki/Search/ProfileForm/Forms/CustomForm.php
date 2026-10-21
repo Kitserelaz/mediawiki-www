@@ -1,0 +1,157 @@
+<?php
+
+namespace SMW\MediaWiki\Search\ProfileForm\Forms;
+
+use MediaWiki\Request\WebRequest;
+use SMW\DataItems\Property;
+use SMW\MediaWiki\Search\ProfileForm\FormsBuilder;
+
+/**
+ * @private
+ *
+ * @license GPL-2.0-or-later
+ * @since 3.0
+ *
+ * @author mwjames
+ */
+class CustomForm {
+
+	private Field $field;
+
+	private bool $isActiveForm = false;
+
+	private array $parameters = [];
+
+	private array $fieldCounter = [];
+
+	private array $html5TypeMap = [
+		'_txt' => 'text',
+		'_uri' => 'url',
+		'_dat' => 'date',
+		'_tel' => 'tel',
+		'_ema' => 'email',
+		'_num' => 'number'
+	];
+
+	/**
+	 * @since 3.0
+	 */
+	public function __construct( private readonly WebRequest $request ) {
+		$this->field = new Field();
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function getParameters(): array {
+		return $this->parameters;
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function isActiveForm( bool $isActiveForm ): void {
+		$this->isActiveForm = $isActiveForm;
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function makeFields( array $definition ): string {
+		$fields = [];
+		$this->parameters = [];
+		$nameList = [];
+
+		foreach ( $definition as $property ) {
+			$options = [];
+
+			// Simple list, or does a property have some options?
+			if ( is_array( $property ) ) {
+				foreach ( $property as $p => $options ) {
+					$property = $p;
+				}
+			}
+
+			// Transforms (Foo bar -> foobar), better URL query conformity
+			$name = FormsBuilder::toLowerCase( $property );
+			$value = '';
+
+			// Field with the same name should only appear once in a form
+			if ( isset( $nameList[$name] ) ) {
+				continue;
+			}
+
+			// Each form definition may contain properties that are also defined
+			// in other forms therefore count its member position so that only
+			// values for the active form are fetched. The counter is used as
+			// positioning for the value array index.
+			if ( !isset( $this->fieldCounter[$name] ) ) {
+				$this->fieldCounter[$name] = 0;
+			} else {
+				$this->fieldCounter[$name]++;
+			}
+
+			// Find request related value for the active form
+			if ( $this->isActiveForm ) {
+				$vals = $this->request->getArray( $name, [] );
+
+				$i = $this->fieldCounter[$name];
+				$value = $vals[$i] ?? '';
+				$this->parameters[$name] = $value;
+			}
+
+			$nameList[$name] = true;
+			$fields[] = $this->makeField( $name, $property, $value, $options );
+		}
+
+		return implode( '', $fields );
+	}
+
+	private function makeField( string $name, string $property, $value, $options ): string {
+		$display = $this->isActiveForm ? 'inline-block' : 'none';
+		$options = !is_array( $options ) ? [] : $options;
+
+		if ( !isset( $options['placeholder'] ) ) {
+			$options['placeholder'] = "$property ...";
+		}
+
+		if ( !isset( $options['class'] ) ) {
+			$options['class'] = "";
+		}
+
+		if ( isset( $options['autocomplete'] ) && $options['autocomplete'] ) {
+			$options['class'] .= " smw-propertyvalue-input autocomplete-arrow";
+		}
+
+		if ( isset( $options['type'] ) ) {
+			$type = $options['type'];
+		} else {
+			$typeID = Property::newFromUserLabel( $property )->findPropertyValueType();
+			$type = 'text';
+
+			if ( isset( $this->html5TypeMap[$typeID] ) ) {
+				$type = $this->html5TypeMap[$typeID];
+			}
+		}
+
+		// Numeric names are not useful and may have been caused by an invalid
+		// JSON array/object definition
+		if ( is_numeric( $name ) ) {
+			$options[] = 'disabled';
+		}
+
+		$attributes = [
+			'name' => $name,
+			'value' => $value,
+			'type'  => $type,
+			'display' => $display,
+			'placeholder' => $options['placeholder'],
+			'data-property' => $property,
+			'title' => $property,
+			'multifield' => true,
+		] + $options;
+
+		return $this->field->create( 'input', $attributes );
+	}
+
+}

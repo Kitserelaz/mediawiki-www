@@ -22,10 +22,8 @@
 	"oathauth-ui-no-module": "Yoqilmagan",
 	"oathauth-ui-manage": "Boshqarish",
 	"oathmanage": "Ikki faktorli autentifikatsiyani boshqarish",
-	"oathauth-ui-not-enabled-modules": "Muqobil metodga almashtirish",
 	"oathauth-enable-generic": "Yoqish",
 	"oathauth-disable-generic": "Oʻchirish",
-	"oathauth-disable-method-warning-button-label": "Tasdiqlash va davom etish",
 	"oathauth-invalidrequest": "Yaroqsiz soʻrov",
 	"oathauth-notifications-disable-help": "Yordam"
 }

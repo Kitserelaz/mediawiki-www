@@ -1,0 +1,25 @@
+@import 'mediawiki.skin.variables.less';
+@import 'mediawiki.mixins';
+@import '../utils/variables.less';
+
+.mw-ge-suggestionGroupWidget {
+	&-headerRow {
+		display: flex;
+		flex-wrap: wrap;
+		place-content: center space-between;
+		padding: 0.5em 0;
+
+		&-select-all {
+			display: flex;
+		}
+
+		h4&-header {
+			flex-direction: column;
+			text-align: center;
+			justify-content: center;
+			display: flex;
+			font-size: @headerFontSize;
+			color: @color-base;
+		}
+	}
+}

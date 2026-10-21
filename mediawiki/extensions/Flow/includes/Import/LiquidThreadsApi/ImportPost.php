@@ -17,10 +17,6 @@ class ImportPost extends PageRevisionedObject implements IImportPost {
 	 */
 	protected $apiResponse;
 
-	/**
-	 * @param ImportSource $source
-	 * @param array $apiResponse
-	 */
 	public function __construct( ImportSource $source, array $apiResponse ) {
 		parent::__construct( $source, $apiResponse['rootid'] );
 		$this->apiResponse = $apiResponse;
@@ -139,7 +135,11 @@ class ImportPost extends PageRevisionedObject implements IImportPost {
 	 * @param string $signatureUsername Username extracted from signature
 	 * @return ScriptedImportRevision Generated top import revision
 	 */
-	protected function createSignatureClarificationRevision( IObjectRevision $lastRevision, $authorUsername, $signatureUsername ) {
+	protected function createSignatureClarificationRevision(
+		IObjectRevision $lastRevision,
+		string $authorUsername,
+		string $signatureUsername
+	): ScriptedImportRevision {
 		$wikitextForLastRevision = $lastRevision->getText();
 		$newWikitext = $wikitextForLastRevision;
 
@@ -155,11 +155,9 @@ class ImportPost extends PageRevisionedObject implements IImportPost {
 		);
 
 		$newWikitext .= "\n\n{{{$templateName}|$arguments}}";
-		$clarificationRevision = new ScriptedImportRevision(
+		return new ScriptedImportRevision(
 			$this, $this->importSource->getScriptUser(), $newWikitext, $lastRevision
 		);
-
-		return $clarificationRevision;
 	}
 
 	public function getObjectKey() {

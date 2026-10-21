@@ -9,41 +9,49 @@ namespace Miraheze\ManageWiki;
  */
 class ConfigNames {
 
-	public const Extensions = 'ManageWikiExtensions';
+	public const string CacheDirectory = 'ManageWikiCacheDirectory';
 
-	public const ExtensionsDefault = 'ManageWikiExtensionsDefault';
+	public const string CacheType = 'ManageWikiCacheType';
 
-	public const ForceSidebarLinks = 'ManageWikiForceSidebarLinks';
+	public const string Extensions = 'ManageWikiExtensions';
 
-	public const HandledUnknownContentModels = 'ManageWikiHandledUnknownContentModels';
+	public const string ExtensionsDefault = 'ManageWikiExtensionsDefault';
 
-	public const HelpUrl = 'ManageWikiHelpUrl';
+	public const string ForceSidebarLinks = 'ManageWikiForceSidebarLinks';
 
-	public const ModulesEnabled = 'ManageWikiModulesEnabled';
+	public const string HandledUnknownContentModels = 'ManageWikiHandledUnknownContentModels';
 
-	public const NamespacesAdditional = 'ManageWikiNamespacesAdditional';
+	public const string HelpUrl = 'ManageWikiHelpUrl';
 
-	public const NamespacesDisallowedNames = 'ManageWikiNamespacesDisallowedNames';
+	public const string ModulesEnabled = 'ManageWikiModulesEnabled';
 
-	public const PermissionsAdditionalAddGroups = 'ManageWikiPermissionsAdditionalAddGroups';
+	public const string NamespacesAdditional = 'ManageWikiNamespacesAdditional';
 
-	public const PermissionsAdditionalAddGroupsSelf = 'ManageWikiPermissionsAdditionalAddGroupsSelf';
+	public const string NamespacesDisallowedNames = 'ManageWikiNamespacesDisallowedNames';
 
-	public const PermissionsAdditionalRemoveGroups = 'ManageWikiPermissionsAdditionalRemoveGroups';
+	public const string PermissionsAdditionalAddGroups = 'ManageWikiPermissionsAdditionalAddGroups';
 
-	public const PermissionsAdditionalRemoveGroupsSelf = 'ManageWikiPermissionsAdditionalRemoveGroupsSelf';
+	public const string PermissionsAdditionalAddGroupsSelf = 'ManageWikiPermissionsAdditionalAddGroupsSelf';
 
-	public const PermissionsAdditionalRights = 'ManageWikiPermissionsAdditionalRights';
+	public const string PermissionsAdditionalRemoveGroups = 'ManageWikiPermissionsAdditionalRemoveGroups';
 
-	public const PermissionsDefaultPrivateGroup = 'ManageWikiPermissionsDefaultPrivateGroup';
+	public const string PermissionsAdditionalRemoveGroupsSelf = 'ManageWikiPermissionsAdditionalRemoveGroupsSelf';
 
-	public const PermissionsDisallowedGroups = 'ManageWikiPermissionsDisallowedGroups';
+	public const string PermissionsAdditionalRights = 'ManageWikiPermissionsAdditionalRights';
 
-	public const PermissionsDisallowedRights = 'ManageWikiPermissionsDisallowedRights';
+	public const string PermissionsDefaultPrivateGroup = 'ManageWikiPermissionsDefaultPrivateGroup';
 
-	public const PermissionsPermanentGroups = 'ManageWikiPermissionsPermanentGroups';
+	public const string PermissionsDisallowedGroups = 'ManageWikiPermissionsDisallowedGroups';
 
-	public const Settings = 'ManageWikiSettings';
+	public const string PermissionsDisallowedRights = 'ManageWikiPermissionsDisallowedRights';
 
-	public const UseCustomDomains = 'ManageWikiUseCustomDomains';
+	public const string PermissionsPermanentGroups = 'ManageWikiPermissionsPermanentGroups';
+
+	public const string Servers = 'ManageWikiServers';
+
+	public const string Settings = 'ManageWikiSettings';
+
+	public const string SiteConfiguration = 'ManageWikiSiteConfiguration';
+
+	public const string UseCustomDomains = 'ManageWikiUseCustomDomains';
 }

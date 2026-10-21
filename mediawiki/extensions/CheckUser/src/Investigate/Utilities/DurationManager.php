@@ -1,6 +1,6 @@
 <?php
 
-namespace MediaWiki\CheckUser\Investigate\Utilities;
+namespace MediaWiki\Extension\CheckUser\Investigate\Utilities;
 
 use DateInterval;
 use DateTime;
@@ -42,7 +42,7 @@ class DurationManager {
 			$interval = new DateInterval( $duration );
 			$now = DateTime::createFromFormat( 'U', (string)MWTimestamp::time() );
 			return MWTimestamp::convert( TS_MW, $now->sub( $interval ) );
-		} catch ( Exception $e ) {
+		} catch ( Exception ) {
 			return '';
 		}
 	}
@@ -63,7 +63,7 @@ class DurationManager {
 			// @phan-suppress-next-line PhanNoopNew
 			new DateInterval( $value );
 			return true;
-		} catch ( Exception $e ) {
+		} catch ( Exception ) {
 			return false;
 		}
 	}

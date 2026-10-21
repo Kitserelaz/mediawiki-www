@@ -2,12 +2,14 @@
 
 namespace MediaWiki\Extension\Thanks\Storage;
 
-use DatabaseLogEntry;
-use ManualLogEntry;
-use MediaWiki\CheckUser\Hooks;
+use InvalidArgumentException;
+use MediaWiki\CheckUser\Services\CheckUserInsert;
 use MediaWiki\Config\ServiceOptions;
 use MediaWiki\Extension\Thanks\Storage\Exceptions\InvalidLogType;
 use MediaWiki\Extension\Thanks\Storage\Exceptions\LogDeleted;
+use MediaWiki\Logging\DatabaseLogEntry;
+use MediaWiki\Logging\ManualLogEntry;
+use MediaWiki\MediaWikiServices;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\User\ActorNormalization;
 use MediaWiki\User\User;
@@ -20,20 +22,15 @@ use Wikimedia\Rdbms\IConnectionProvider;
  */
 class LogStore {
 
-	protected IConnectionProvider $conn;
-	protected ActorNormalization $actorNormalization;
 	public const CONSTRUCTOR_OPTIONS = [ 'ThanksLogging', 'ThanksAllowedLogTypes' ];
-	protected ServiceOptions $serviceOptions;
 
 	public function __construct(
-		IConnectionProvider $conn,
-		ActorNormalization $actorNormalization,
-		ServiceOptions $serviceOptions
+		protected readonly IConnectionProvider $conn,
+		protected readonly ActorNormalization $actorNormalization,
+		protected readonly ExtensionRegistry $extensionRegistry,
+		protected readonly ServiceOptions $serviceOptions,
 	) {
-		$this->conn = $conn;
-		$this->actorNormalization = $actorNormalization;
 		$serviceOptions->assertRequiredOptions( self::CONSTRUCTOR_OPTIONS );
-		$this->serviceOptions = $serviceOptions;
 	}
 
 	/**
@@ -43,6 +40,11 @@ class LogStore {
 	 *                         when checking for duplicate thanks
 	 */
 	public function thank( User $user, User $recipient, string $uniqueId ): void {
+		if ( $user->isTemp() ) {
+			throw new InvalidArgumentException(
+				'Temporary accounts may not thank other users.'
+			);
+		}
 		if ( !$this->serviceOptions->get( 'ThanksLogging' ) ) {
 			return;
 		}
@@ -54,10 +56,11 @@ class LogStore {
 		$logId = $logEntry->insert();
 		$logEntry->publish( $logId, 'udp' );
 
-		if ( ExtensionRegistry::getInstance()->isLoaded( 'CheckUser' ) ) {
-			$recentChange = $logEntry->getRecentChange();
+		if ( $this->extensionRegistry->isLoaded( 'CheckUser' ) ) {
 			// TODO: This should be done in a separate hook handler
-			Hooks::updateCheckUserData( $recentChange );
+			/** @var CheckUserInsert $checkUserInsert */
+			$checkUserInsert = MediaWikiServices::getInstance()->get( 'CheckUserInsert' );
+			$checkUserInsert->updateCheckUserData( $logEntry->getRecentChange( $logId ) );
 		}
 	}
 

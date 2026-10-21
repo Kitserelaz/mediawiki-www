@@ -3,11 +3,13 @@
 namespace MediaWiki\Extension\OATHAuth\HTMLForm;
 
 use MediaWiki\Context\IContextSource;
-use MediaWiki\Extension\OATHAuth\IModule;
+use MediaWiki\Extension\OATHAuth\Module\IModule;
+use MediaWiki\Extension\OATHAuth\OATHAuthModuleRegistry;
 use MediaWiki\Extension\OATHAuth\OATHUser;
 use MediaWiki\Extension\OATHAuth\OATHUserRepository;
 use MediaWiki\HTMLForm\OOUIHTMLForm;
 use MediaWiki\Logger\LoggerFactory;
+use MediaWiki\Status\Status;
 use OOUI\FieldsetLayout;
 use OOUI\HtmlSnippet;
 use OOUI\Layout;
@@ -15,75 +17,41 @@ use OOUI\PanelLayout;
 use OOUI\Widget;
 use Psr\Log\LoggerInterface;
 
-abstract class OATHAuthOOUIHTMLForm extends OOUIHTMLForm implements IManageForm {
-	/**
-	 * @var OATHUser
-	 */
-	protected $oathUser;
-	/**
-	 * @var OATHUserRepository
-	 */
-	protected $oathRepo;
-	/**
-	 * @var IModule
-	 */
-	protected $module;
+abstract class OATHAuthOOUIHTMLForm extends OOUIHTMLForm {
 
-	/**
-	 * @var LoggerInterface
-	 */
-	protected $logger;
+	protected LoggerInterface $logger;
 
-	/**
-	 * @var Layout|null
-	 */
-	protected $layoutContainer = null;
+	protected ?Layout $layoutContainer = null;
 
 	/**
 	 * Make the form-wrapper panel padded
-	 * @var bool
 	 */
-	protected $panelPadded = true;
+	protected bool $panelPadded = true;
 
 	/**
 	 * Make the form-wrapper panel framed
-	 * @var bool
 	 */
-	protected $panelFramed = true;
+	protected bool $panelFramed = true;
 
-	/**
-	 * Initialize the form
-	 *
-	 * @param OATHUser $oathUser
-	 * @param OATHUserRepository $oathRepo
-	 * @param IModule $module
-	 * @param IContextSource $context
-	 */
 	public function __construct(
-		OATHUser $oathUser,
-		OATHUserRepository $oathRepo,
-		IModule $module,
-		IContextSource $context
+		protected readonly OATHUser $oathUser,
+		protected readonly OATHUserRepository $oathRepo,
+		protected readonly IModule $module,
+		IContextSource $context,
+		protected readonly OATHAuthModuleRegistry $moduleRegistry,
 	) {
-		$this->oathUser = $oathUser;
-		$this->oathRepo = $oathRepo;
-		$this->module = $module;
 		$this->logger = $this->getLogger();
 
 		parent::__construct( $this->getDescriptors(), $context, "oathauth" );
 	}
 
-	/**
-	 * @inheritDoc
-	 */
-	public function show( $layout = null ) {
+	/** @inheritDoc */
+	public function show( $layout = null ): Status|bool {
 		$this->layoutContainer = $layout;
 		return parent::show();
 	}
 
-	/**
-	 * @inheritDoc
-	 */
+	/** @inheritDoc */
 	public function displayForm( $submitResult ) {
 		if ( !$this->layoutContainer instanceof Layout ) {
 			parent::displayForm( $submitResult );
@@ -95,10 +63,7 @@ abstract class OATHAuthOOUIHTMLForm extends OOUIHTMLForm implements IManageForm 
 		) );
 	}
 
-	/**
-	 * @return array
-	 */
-	protected function getDescriptors() {
+	protected function getDescriptors(): array {
 		return [];
 	}
 
@@ -106,11 +71,9 @@ abstract class OATHAuthOOUIHTMLForm extends OOUIHTMLForm implements IManageForm 
 		return LoggerFactory::getInstance( 'authentication' );
 	}
 
-	/**
-	 * @inheritDoc
-	 */
+	/** @inheritDoc */
 	protected function wrapFieldSetSection( $legend, $section, $attributes, $isRoot ) {
-		// to get a user visible effect, wrap the fieldset into a framed panel layout
+		// to get a user-visible effect, wrap the fieldset into a framed panel layout
 		$layout = new PanelLayout( [
 			'expanded' => false,
 			'infusable' => false,
@@ -132,11 +95,7 @@ abstract class OATHAuthOOUIHTMLForm extends OOUIHTMLForm implements IManageForm 
 		return $layout;
 	}
 
-	/**
-	 * @param array $formData
-	 * @return array|bool
-	 */
-	abstract public function onSubmit( array $formData );
+	abstract public function onSubmit( array $formData ): Status|bool|array|string;
 
-	abstract public function onSuccess();
+	abstract public function onSuccess(): void;
 }

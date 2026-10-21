@@ -28,6 +28,7 @@ use MediaWiki\Extension\AbuseFilter\Parser\AbuseFilterTokenizer;
 use MediaWiki\Extension\AbuseFilter\Parser\AFPTreeParser;
 use MediaWiki\Extension\AbuseFilter\Parser\Exception\UserVisibleException;
 use MediaWiki\Extension\AbuseFilter\Parser\SyntaxChecker;
+use MediaWikiUnitTestCase;
 use Psr\Log\NullLogger;
 use Wikimedia\ObjectCache\EmptyBagOStuff;
 use Wikimedia\Stats\NullStatsdDataFactory;
@@ -47,7 +48,7 @@ use Wikimedia\Stats\NullStatsdDataFactory;
  * @covers \MediaWiki\Extension\AbuseFilter\Parser\AFPToken
  * @covers \MediaWiki\Extension\AbuseFilter\Parser\AFPData
  */
-class SyntaxCheckerTest extends \MediaWikiUnitTestCase {
+class SyntaxCheckerTest extends MediaWikiUnitTestCase {
 	/**
 	 * @param string $excep The expected exception or an empty string
 	 * @param string $expr The expression to test
@@ -93,8 +94,6 @@ class SyntaxCheckerTest extends \MediaWikiUnitTestCase {
 
 	/**
 	 * Data provider for testArity
-	 *
-	 * @return array
 	 */
 	public static function provideArity(): array {
 		return [
@@ -120,8 +119,6 @@ class SyntaxCheckerTest extends \MediaWikiUnitTestCase {
 
 	/**
 	 * Data provider for testFunctionName
-	 *
-	 * @return array
 	 */
 	public static function provideFunctionName(): array {
 		return [
@@ -144,8 +141,6 @@ class SyntaxCheckerTest extends \MediaWikiUnitTestCase {
 
 	/**
 	 * Data provider for testAssign
-	 *
-	 * @return array
 	 */
 	public static function provideAssign(): array {
 		// array assignments need to lookup first, so error will differ.
@@ -191,8 +186,6 @@ class SyntaxCheckerTest extends \MediaWikiUnitTestCase {
 
 	/**
 	 * Data provider for testLookup
-	 *
-	 * @return array
 	 */
 	public static function provideLookup(): array {
 		return [
@@ -223,8 +216,6 @@ class SyntaxCheckerTest extends \MediaWikiUnitTestCase {
 
 	/**
 	 * Data provider for testModeDiffer
-	 *
-	 * @return array
 	 */
 	public static function provideModeDiffer(): array {
 		$testSketches = [
@@ -260,8 +251,6 @@ class SyntaxCheckerTest extends \MediaWikiUnitTestCase {
 
 	/**
 	 * Data provider for testModeAgree
-	 *
-	 * @return array
 	 */
 	public static function provideModeAgree(): array {
 		$testSketches = [
@@ -306,8 +295,6 @@ class SyntaxCheckerTest extends \MediaWikiUnitTestCase {
 
 	/**
 	 * Data provider for testUnusedVars
-	 *
-	 * @return array
 	 */
 	public static function provideUnusedVars(): array {
 		return [

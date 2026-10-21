@@ -2,18 +2,19 @@
 namespace MediaWiki\IPInfo\Tests\Integration\Special;
 
 use Closure;
-use DOMDocument;
-use DOMNode;
-use HtmlFormatter\HtmlFormatter;
 use MediaWiki\Context\RequestContext;
+use MediaWiki\Exception\PermissionsError;
+use MediaWiki\Exception\UserBlockedError;
+use MediaWiki\IPInfo\HookHandler\PreferencesHandler;
 use MediaWiki\IPInfo\Rest\Presenter\DefaultPresenter;
 use MediaWiki\IPInfo\Special\SpecialIPInfo;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Request\FauxRequest;
-use PermissionsError;
-use SpecialPageTestBase;
-use UserBlockedError;
-use Wikimedia\Parsoid\Utils\DOMCompat;
+use MediaWiki\Tests\Specials\SpecialPageTestBase;
+use Wikimedia\Parsoid\Core\DOMCompat;
+use Wikimedia\Parsoid\DOM\Document;
+use Wikimedia\Parsoid\DOM\Node;
+use Wikimedia\Parsoid\Ext\DOMUtils;
 
 /**
  * @covers \MediaWiki\IPInfo\Special\SpecialIPInfo
@@ -27,7 +28,6 @@ class SpecialIPInfoTest extends SpecialPageTestBase {
 		$this->markTestSkippedIfExtensionNotLoaded( 'CheckUser' );
 		$this->overrideConfigValues( [
 			'IPInfoEnableSpecialIPInfo' => true,
-			'IPInfoIpoidUrl' => false,
 			'IPInfoGeoLite2Prefix' => realpath( __DIR__ . '/../../../fixtures' ) . '/maxmind/GeoLite2-',
 		] );
 		$this->setGroupPermissions( [
@@ -118,7 +118,7 @@ class SpecialIPInfoTest extends SpecialPageTestBase {
 
 		$this->getServiceContainer()
 			->getUserOptionsManager()
-			->setOption( $performer->getUser(), 'ipinfo-use-agreement', '1' );
+			->setOption( $performer->getUser(), PreferencesHandler::IPINFO_USE_AGREEMENT, '1' );
 
 		[ $html ] = $this->executeSpecialPage(
 			$tempUser->getName(),
@@ -127,7 +127,7 @@ class SpecialIPInfoTest extends SpecialPageTestBase {
 			$performer
 		);
 
-		$doc = self::parseHtml( $html );
+		$doc = DOMUtils::parseHTML( $html );
 
 		$this->assertNull( DOMCompat::querySelector( $doc, '.ext-ipinfo-special-ipinfo__table' ) );
 		$this->assertCount(
@@ -150,7 +150,7 @@ class SpecialIPInfoTest extends SpecialPageTestBase {
 			$performer
 		);
 
-		$doc = self::parseHtml( $html );
+		$doc = DOMUtils::parseHTML( $html );
 
 		$this->assertNull( DOMCompat::querySelector( $doc, '.ext-ipinfo-special-ipinfo__table' ) );
 		$this->assertNotNull( DOMCompat::querySelector( $doc, 'input[name=wpAcceptAgreement]' ) );
@@ -175,9 +175,9 @@ class SpecialIPInfoTest extends SpecialPageTestBase {
 
 		$postSubmitPref = $this->getServiceContainer()
 			->getUserOptionsLookup()
-			->getBoolOption( $performer->getUser(), 'ipinfo-use-agreement' );
+			->getBoolOption( $performer->getUser(), PreferencesHandler::IPINFO_USE_AGREEMENT );
 
-		$doc = self::parseHtml( $html );
+		$doc = DOMUtils::parseHTML( $html );
 
 		$this->assertTrue( $postSubmitPref );
 		$this->assertNotNull( DOMCompat::querySelector( $doc, '.ext-ipinfo-special-ipinfo__table' ) );
@@ -192,7 +192,7 @@ class SpecialIPInfoTest extends SpecialPageTestBase {
 
 		$this->getServiceContainer()
 			->getUserOptionsManager()
-			->setOption( $performer->getUser(), 'ipinfo-use-agreement', '1' );
+			->setOption( $performer->getUser(), PreferencesHandler::IPINFO_USE_AGREEMENT, '1' );
 
 		[ $html ] = $this->executeSpecialPage(
 			self::$tempUserWithEdits->getUser()->getName(),
@@ -201,7 +201,7 @@ class SpecialIPInfoTest extends SpecialPageTestBase {
 			$performer
 		);
 
-		$doc = self::parseHtml( $html );
+		$doc = DOMUtils::parseHTML( $html );
 
 		$this->assertNotNull( DOMCompat::querySelector( $doc, '.ext-ipinfo-special-ipinfo__table' ) );
 		$this->assertCount(
@@ -230,7 +230,7 @@ class SpecialIPInfoTest extends SpecialPageTestBase {
 
 		$this->getServiceContainer()
 			->getUserOptionsManager()
-			->setOption( $performer->getUser(), 'ipinfo-use-agreement', '1' );
+			->setOption( $performer->getUser(), PreferencesHandler::IPINFO_USE_AGREEMENT, '1' );
 
 		$req = new FauxRequest( $requestParams );
 
@@ -241,7 +241,7 @@ class SpecialIPInfoTest extends SpecialPageTestBase {
 			$performer
 		);
 
-		$doc = self::parseHtml( $html );
+		$doc = DOMUtils::parseHTML( $html );
 
 		$this->assertNotNull( DOMCompat::querySelector( $doc, '.ext-ipinfo-special-ipinfo__table' ) );
 		$this->assertCount(
@@ -253,10 +253,10 @@ class SpecialIPInfoTest extends SpecialPageTestBase {
 	}
 
 	public static function provideResults(): iterable {
-		yield 'no sorting' => [
+		yield 'no sorting (so default of IP descending)' => [
 			[],
-			[ '721', '174' ],
-			[ 'DoD Network Information Center', 'Cogent Communications' ]
+			[ '174', '721' ],
+			[ 'Cogent Communications', 'DoD Network Information Center' ]
 		];
 		yield 'sorted by organization, ascending' => [
 			[
@@ -266,34 +266,101 @@ class SpecialIPInfoTest extends SpecialPageTestBase {
 			[ '174', '721' ],
 			[ 'Cogent Communications', 'DoD Network Information Center' ]
 		];
+		yield 'sorted by organization, descending' => [
+			[
+				'wpSortDirection' => 'desc',
+				'wpSortField' => 'organization'
+			],
+			[ '721', '174' ],
+			[ 'DoD Network Information Center', 'Cogent Communications' ]
+		];
 	}
 
 	/**
 	 * Convenience function to retrieve the ASN stored in the table.
-	 * @param DOMDocument $doc The DOM document to retrieve data from.
+	 * @param Document $doc The DOM document to retrieve data from.
 	 * @return string[] Contents of the table cells holding the ASN.
 	 */
-	private static function getAsns( DOMDocument $doc ): array {
+	private static function getAsns( Document $doc ): array {
+		$nodes = (array)DOMCompat::querySelectorAll(
+			$doc,
+			".ext-ipinfo-special-ipinfo__table > tbody > tr > td:nth-of-type(3)"
+		);
+
+		return array_map( static fn ( Node $node ) => $node->textContent, $nodes );
+	}
+
+	/**
+	 * Convenience function to retrieve the organization names stored in the table.
+	 * @param Document $doc The DOM document to retrieve data from.
+	 * @return string[] Contents of the table cells holding the organization name.
+	 */
+	private static function getOrganizations( Document $doc ): array {
 		$nodes = (array)DOMCompat::querySelectorAll(
 			$doc,
 			".ext-ipinfo-special-ipinfo__table > tbody > tr > td:nth-of-type(4)"
 		);
 
-		return array_map( fn ( DOMNode $node ) => $node->textContent, $nodes );
+		return array_map( static fn ( Node $node ) => $node->textContent, $nodes );
 	}
 
-	/**
-	 * Convenience function to retrieve the organization names stored in the table.
-	 * @param DOMDocument $doc The DOM document to retrieve data from.
-	 * @return string[] Contents of the table cells holding the organization name.
-	 */
-	private static function getOrganizations( DOMDocument $doc ): array {
-		$nodes = (array)DOMCompat::querySelectorAll(
-			$doc,
-			".ext-ipinfo-special-ipinfo__table > tbody > tr > td:nth-of-type(5)"
+	public function testShouldRejectIPLookupWithoutRight(): void {
+		$performer = $this->getMutableTestUser()->getAuthority();
+
+		$this->setGroupPermissions( [
+			'user' => [
+				'ipinfo' => true,
+				DefaultPresenter::IPINFO_VIEW_BASIC_RIGHT => true,
+			],
+		] );
+
+		$this->getServiceContainer()
+			->getUserOptionsManager()
+			->setOption( $performer->getUser(), PreferencesHandler::IPINFO_USE_AGREEMENT, '1' );
+
+		[ $html ] = $this->executeSpecialPage(
+			'127.0.0.1',
+			new FauxRequest(),
+			'qqx',
+			$performer
 		);
 
-		return array_map( fn ( DOMNode $node ) => $node->textContent, $nodes );
+		$doc = DOMUtils::parseHTML( $html );
+
+		$this->assertNull( DOMCompat::querySelector( $doc, '.ext-ipinfo-special-ipinfo__table' ) );
+		$this->assertStringContainsString( '(ipinfo-special-ipinfo-no-right-ip)', $html );
+	}
+
+	public function testShouldShowResultsForIPLookupWithRight(): void {
+		$performer = $this->getMutableTestUser( [ 'ipinfo-viewer' ] )->getAuthority();
+
+		$this->setGroupPermissions( [
+			'ipinfo-viewer' => [
+				'ipinfo' => true,
+				DefaultPresenter::IPINFO_VIEW_BASIC_RIGHT => true,
+				DefaultPresenter::IPINFO_VIEW_FULL_RIGHT => true,
+				'ipinfo-view-arbitrary-ip' => true,
+			],
+		] );
+
+		$this->getServiceContainer()
+			->getUserOptionsManager()
+			->setOption( $performer->getUser(), PreferencesHandler::IPINFO_USE_AGREEMENT, '1' );
+
+		[ $html ] = $this->executeSpecialPage(
+			'214.78.120.5',
+			new FauxRequest(),
+			'qqx',
+			$performer
+		);
+
+		$doc = DOMUtils::parseHTML( $html );
+
+		$this->assertNotNull( DOMCompat::querySelector( $doc, '.ext-ipinfo-special-ipinfo__table' ) );
+		$this->assertCount(
+			1,
+			DOMCompat::querySelectorAll( $doc, '.ext-ipinfo-special-ipinfo__table > tbody > tr' )
+		);
 	}
 
 	/**
@@ -307,7 +374,7 @@ class SpecialIPInfoTest extends SpecialPageTestBase {
 
 		$this->getServiceContainer()
 			->getUserOptionsManager()
-			->setOption( $performer->getUser(), 'ipinfo-use-agreement', '1' );
+			->setOption( $performer->getUser(), PreferencesHandler::IPINFO_USE_AGREEMENT, '1' );
 
 		$targetNameProvider = $targetNameProvider->bindTo( $this );
 		$userName = $targetNameProvider();
@@ -318,22 +385,19 @@ class SpecialIPInfoTest extends SpecialPageTestBase {
 			$performer
 		);
 
-		$doc = self::parseHtml( $html );
-		$errors = (array)DOMCompat::querySelectorAll( $doc, '[role=alert]' );
+		$doc = DOMUtils::parseHTML( $html );
 
 		$this->assertNull( DOMCompat::querySelector( $doc, '.ext-ipinfo-special-ipinfo__table' ) );
-		$this->assertSame( "($errorMessageKey: $userName)", $errors[1]->textContent );
+		$this->assertStringContainsString(
+			"($errorMessageKey: $userName)",
+			$html
+		);
 	}
 
 	public static function provideInvalidUsers(): iterable {
-		// phpcs:disable Squiz.Scope.StaticThisUsage.Found
+		// phpcs:disable Squiz.Scope.StaticThisUsage.Found,MediaWiki.Usage.StaticClosure.StaticClosure
 		yield 'named user' => [
 			fn (): string => $this->getTestUser()->getUserIdentity()->getName(),
-			'htmlform-user-not-valid'
-		];
-
-		yield 'anonymous user' => [
-			fn (): string => '127.0.0.1',
 			'htmlform-user-not-valid'
 		];
 
@@ -344,18 +408,8 @@ class SpecialIPInfoTest extends SpecialPageTestBase {
 					->getTempUserCreator()
 					->acquireAndStashName( $req->getSession() );
 			},
-			'htmlform-user-not-exists'
+			'htmlform-user-not-valid'
 		];
 		// phpcs:enable
-	}
-
-	/**
-	 * Convenience function to parse an HTML fragment into a full PHP DOMDocument instance.
-	 * @param string $html
-	 * @return DOMDocument
-	 */
-	private static function parseHtml( string $html ): DOMDocument {
-		$html = HtmlFormatter::wrapHTML( $html );
-		return ( new HtmlFormatter( $html ) )->getDoc();
 	}
 }

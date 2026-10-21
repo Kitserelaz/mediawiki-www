@@ -1,5 +1,5 @@
 /**
- * Specialized layout forked from and similar to {@see OO.ui.BookletLayout}, but to synchronize the
+ * Specialized layout forked from and similar to {@link OO.ui.BookletLayout}, but to synchronize the
  * sidebar and content pane of the transclusion dialog.
  *
  * Also owns the outline controls.
@@ -278,7 +278,7 @@ ve.ui.MWTwoPaneTransclusionDialogLayout.prototype.removePages = function ( pages
 	this.stackLayout.getItems().forEach( ( page ) => {
 		const pageName = page.getName();
 
-		if ( pagesNamesToRemove.indexOf( pageName ) !== -1 ) {
+		if ( pagesNamesToRemove.includes( pageName ) ) {
 			pagesToRemove.push( page );
 			delete this.pages[ pageName ];
 			if ( this.currentPageName === pageName ) {
@@ -289,7 +289,7 @@ ve.ui.MWTwoPaneTransclusionDialogLayout.prototype.removePages = function ( pages
 		}
 
 		// Move the selection from a removed top-level part to another, but not to a parameter
-		if ( pageName.indexOf( '/' ) === -1 ) {
+		if ( !pageName.includes( '/' ) ) {
 			if ( !isCurrentPageRemoved ) {
 				// The last part before the removed one
 				prevSelectionCandidate = pageName;
@@ -369,8 +369,8 @@ ve.ui.MWTwoPaneTransclusionDialogLayout.prototype.refreshControls = function () 
 	}
 
 	this.outlineControlsWidget.setButtonsEnabled( {
-		canMoveUp: canMoveUp,
-		canMoveDown: canMoveDown,
-		canBeDeleted: canBeDeleted
+		canMoveUp,
+		canMoveDown,
+		canBeDeleted
 	} );
 };

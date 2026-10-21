@@ -1,0 +1,19 @@
+{
+	"@metadata": {
+		"authors": [
+			"Afalau",
+			"Ceirios",
+			"Lloffiwr",
+			"Robin Owain"
+		]
+	},
+	"comments-comment": "Sylw",
+	"comments-voted-label": "Wedi pleidleisio",
+	"comments-loading": "Wrthi'n llwytho...",
+	"comments-reply-to": "Ateb {{GENDER:$2|$1}}",
+	"comments-cancel-reply": "Canslo",
+	"comments-delete-warning": "Ydych chi'n siwr eich bod am ddileu'r sylw hwn?",
+	"comments-sort-by-date": "Trefnu yn ôl dyddiad",
+	"comments-reply": "Ateb",
+	"comments-score-text": "Sgor"
+}

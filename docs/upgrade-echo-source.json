@@ -1,0 +1,203 @@
+{
+  "component": "mediawiki/extensions/Echo",
+  "baseline": "c9b2631d99e9121ac6589bc006ad73b9bba36955",
+  "target": "1e7c7b940d111d95fb946942dbf2d95f1e91f68c",
+  "preserved_changes": [
+    {
+      "path": "i18n/api/be-tarask.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/api/ne.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/api/sh-latn.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ar.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/be-tarask.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/be.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/bn.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/br.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/cbk-zam.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/cs.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/de.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/el.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/es.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/et.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/fa.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/fr.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/gl.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/hi.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ia.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/id.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/isv-latn.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/it.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/kea.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ko.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ku-latn.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/lb.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ml.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ms.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ne.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/pl.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ps.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ro.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ru.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/sh-latn.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/sjd.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/sl.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/sr-ec.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/sv.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/tok.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/tr.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/vi.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/zh-hant.json",
+      "change": "local-source-edit"
+    }
+  ],
+  "dependency_status": "Uses core dependencies; matching target npm lock retains or exceeds all existing local dev dependency overrides",
+  "baseline_proof": {
+    "matched": 131,
+    "baseline": "c9b2631d99e9121ac6589bc006ad73b9bba36955",
+    "required": 131
+  },
+  "dev_dependency_migrations": [
+    {
+      "package": "@wdio/junit-reporter",
+      "local": "9.21.0",
+      "target": "9.23.2"
+    },
+    {
+      "package": "@wdio/local-runner",
+      "local": "9.23.0",
+      "target": "9.31.7"
+    },
+    {
+      "package": "@wdio/spec-reporter",
+      "local": "9.20.0",
+      "target": "9.23.2"
+    },
+    {
+      "package": "svgo",
+      "local": "3.3.3",
+      "target": "3.3.5"
+    }
+  ]
+}

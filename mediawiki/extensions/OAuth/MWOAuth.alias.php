@@ -132,6 +132,14 @@ $specialPageAliases['nl'] = [
 	'OAuthListConsumers' => [ 'OAuthLijstGebruikers' ],
 ];
 
+/** Slovak (slovenčina) */
+$specialPageAliases['sk'] = [
+	'OAuthConsumerRegistration' => [ 'RegistráciaAplikácieOAuth' ],
+	'OAuthManageConsumers' => [ 'SprávaAplikáciíOAuth' ],
+	'OAuthListConsumers' => [ 'ZoznamAplikáciíOAuth' ],
+	'OAuthManageMyGrants' => [ 'SprávaPripojenýchAplikácií' ],
+];
+
 /** Serbian Cyrillic (српски (ћирилица)) */
 $specialPageAliases['sr-ec'] = [
 	'OAuthConsumerRegistration' => [ 'OAuth_регистрација_апликације', 'OAuth_регистрација' ],
@@ -168,7 +176,16 @@ $specialPageAliases['yi'] = [
 	'OAuthManageMyGrants' => [ 'פארוואלטן_פראיעקטן' ],
 ];
 
-/** Simplified Chinese (中文（简体）‎) */
+/** Chinese (中文) */
+$specialPageAliases['zh'] = [
+	'OAuthConsumerRegistration' => [ 'OAuthConsumerRegistration' ],
+	'OAuthManageConsumers' => [ 'OAuthManageConsumers' ],
+	'OAuthListConsumers' => [ 'OAuthListConsumers' ],
+	'OAuthManageMyGrants' => [ 'OAuthManageMyGrants' ],
+	'OAuth' => [ 'OAuth' ],
+];
+
+/** Simplified Chinese (中文（简体）) */
 $specialPageAliases['zh-hans'] = [
 	'OAuthConsumerRegistration' => [ 'OAuth应用程序注册', 'OAuth注册' ],
 	'OAuthManageConsumers' => [ 'OAuth应用程序管理', 'OAuth管理' ],
@@ -176,7 +193,7 @@ $specialPageAliases['zh-hans'] = [
 	'OAuthManageMyGrants' => [ 'OAuth应用程序授权', 'OAuth授权' ],
 ];
 
-/** Traditional Chinese (中文（繁體）‎) */
+/** Traditional Chinese (中文（繁體）) */
 $specialPageAliases['zh-hant'] = [
 	'OAuthConsumerRegistration' => [ 'OAuth應用程式註冊', 'OAuth註冊' ],
 	'OAuthManageConsumers' => [ 'OAuth應用程式管理', 'OAuth管理' ],

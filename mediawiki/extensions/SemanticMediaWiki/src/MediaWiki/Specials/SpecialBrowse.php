@@ -1,0 +1,243 @@
+<?php
+
+namespace SMW\MediaWiki\Specials;
+
+use MediaWiki\Html\Html;
+use MediaWiki\Html\TemplateParser;
+use MediaWiki\SpecialPage\SpecialPage;
+use SMW\DataValueFactory;
+use SMW\Encoder;
+use SMW\Formatters\Infolink;
+use SMW\Localizer\Message;
+use SMW\MediaWiki\Specials\Browse\FieldBuilder;
+use SMW\MediaWiki\Specials\Browse\HtmlBuilder;
+use SMW\MediaWiki\Specials\Browse\ValueFormatter;
+use SMW\SerializerFactory;
+use SMW\Settings;
+use SMW\Store;
+
+/**
+ * A factbox view on one specific article, showing all the Semantic data about it
+ *
+ * @license GPL-2.0-or-later
+ * @since 1.6
+ *
+ * @author mwjames
+ */
+class SpecialBrowse extends SpecialPage {
+
+	/**
+	 * @since 7.0.0
+	 */
+	public function __construct(
+		private readonly Store $store,
+		private readonly Settings $settings,
+		private readonly SerializerFactory $serializerFactory
+	) {
+		// MediaWiki 1.46 deprecated the SpecialPage constructor flags; the
+		// page stays transcludable via the isIncludable() override below.
+		parent::__construct( 'Browse' );
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function isIncludable(): bool {
+		return true;
+	}
+
+	/**
+	 * @see SpecialPage::execute
+	 *
+	 * @param string $query string
+	 */
+	public function execute( $query ): void {
+		$this->setHeaders();
+		$webRequest = $this->getRequest();
+
+		// get the GET parameters
+		$articletext = $webRequest->getVal( 'article' );
+
+		if ( $webRequest->getText( 'cl', '' ) !== '' ) {
+			$query = Infolink::decodeCompactLink( 'cl:' . $webRequest->getText( 'cl' ) );
+		} else {
+			$query = Infolink::decodeCompactLink( $query );
+		}
+
+		$isEmptyRequest = $query === null && ( $webRequest->getVal( 'article' ) === '' || $webRequest->getVal( 'article' ) === null );
+
+		// @see Infolink::encodeParameters
+		if ( $query === null && $this->getRequest()->getCheck( 'x' ) ) {
+			$query = $this->getRequest()->getVal( 'x' );
+		}
+
+		// Auto-generated link is marked with a leading :
+		if ( is_string( $query ) && $query !== '' && $query[0] === ':' ) {
+			$articletext = Encoder::unescape( $query );
+		} elseif ( $articletext === null ) {
+			$articletext = $query;
+		}
+
+		$dataValue = DataValueFactory::getInstance()->newDataValueByType(
+			'_wpg',
+			$articletext ?? false
+		);
+
+		$out = $this->getOutput();
+		$out->setHTMLTitle( $dataValue->getWikiValue() );
+
+		$out->addModuleStyles( [
+			'ext.smw.factbox.styles',
+			'ext.smw.browse.styles',
+			'mediawiki.codex.messagebox.styles'
+		] );
+
+		$out->addModules( [
+			'ext.smw.browse',
+			'ext.smw.tooltip'
+		] );
+
+		$templateParser = new TemplateParser( __DIR__ . '/../../../templates' );
+		$data = $this->getTemplateData( $webRequest, $dataValue, $isEmptyRequest );
+		$out->addHTML( $templateParser->processTemplate( 'SpecialBrowse', $data ) );
+
+		/** @todo Move RDF link into factbox like how bottom factboxes are */
+		$this->addExternalHelpLinks( $dataValue );
+	}
+
+	private function getTemplateData( $webRequest, $dataValue, bool $isEmptyRequest ): array {
+		$data = [];
+		if ( $isEmptyRequest && !$this->including() ) {
+			$data['html-output'] = Message::get( 'smw-browse-intro', Message::TEXT, Message::USER_LANGUAGE );
+			$data['data-form'] = FieldBuilder::getQueryFormData();
+			return $data;
+		}
+
+		if ( !$dataValue->isValid() ) {
+			$error = '';
+			foreach ( $dataValue->getErrors() as $err ) {
+				$error .= Message::decode( $err, Message::TEXT, Message::USER_LANGUAGE );
+			}
+			// The decoded error carries request-controlled text (the invalid
+			// subject) and `Message::encode` can re-introduce angle brackets
+			// past its `strip_tags`, so escape before it enters the raw box.
+			$data['html-output'] = Html::errorBox(
+				Message::get(
+					[ 'smw-browse-invalid-subject', htmlspecialchars( $error, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8' ) ],
+					Message::TEXT,
+					Message::USER_LANGUAGE
+				),
+				'',
+				'smw-error-browse'
+			);
+			if ( !$this->including() ) {
+				$data['data-form'] = FieldBuilder::getQueryFormData( $webRequest->getVal( 'article', '' ) );
+			}
+			return $data;
+		}
+
+		$dataItem = $dataValue->getDataItem();
+
+		$htmlBuilder = $this->newHtmlBuilder(
+			$webRequest,
+			$dataItem,
+			$this->store,
+			$this->settings
+		);
+
+		if ( $webRequest->getVal( 'format' ) === 'json' ) {
+			$semanticDataSerializer = $this->serializerFactory->newSemanticDataSerializer();
+			$res = $semanticDataSerializer->serialize(
+				$this->store->getSemanticData( $dataItem )
+			);
+
+			$this->getOutput()->disable();
+			header( 'Content-type: ' . 'application/json' . '; charset=UTF-8' );
+			echo json_encode( $res, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+		}
+
+		if ( $webRequest->getVal( 'output' ) === 'legacy' || !$htmlBuilder->getOption( 'api' ) ) {
+			$data['html-output'] = $htmlBuilder->legacy();
+			return $data;
+		}
+
+		// Ajax/API is doing the data fetch
+		return $htmlBuilder->getPlaceholderData();
+	}
+
+	private function newHtmlBuilder( $webRequest, $dataItem, Store $store, Settings $settings ): HtmlBuilder {
+		$htmlBuilder = new HtmlBuilder(
+			$store,
+			$dataItem,
+			new ValueFormatter( $store )
+		);
+
+		$htmlBuilder->setOptions(
+			[
+				'dir' => $webRequest->getVal( 'dir' ),
+				'lang' => $webRequest->getVal( 'lang', $this->getLanguage()->getCode() ),
+				'group' => $webRequest->getVal( 'group' ),
+				'printable' => $webRequest->getVal( 'printable' ),
+				'offset' => $webRequest->getVal( 'offset' ),
+				'including' => $this->including(),
+				'showInverse' => $settings->isFlagSet( 'smwgBrowseFeatures', SMW_BROWSE_SHOW_INVERSE ),
+				'showAll' => $settings->isFlagSet( 'smwgBrowseFeatures', SMW_BROWSE_SHOW_INCOMING ),
+				'showGroup' => $settings->isFlagSet( 'smwgBrowseFeatures', SMW_BROWSE_SHOW_GROUP ),
+				'showSort' => $settings->isFlagSet( 'smwgBrowseFeatures', SMW_BROWSE_SHOW_SORTKEY ),
+				'api' => $settings->isFlagSet( 'smwgBrowseFeatures', SMW_BROWSE_USE_API ),
+
+				// WebRequest::getGPCVal/getVal doesn't understand `.` as in
+				// `valuelistlimit.out`
+
+				'valuelistlimit.out' => $webRequest->getVal(
+					'valuelistlimit-out',
+					$settings->dotGet( 'smwgPagingLimit.browse.valuelist.outgoing' )
+				),
+				'valuelistlimit.in' => $webRequest->getVal(
+					'valuelistlimit-in',
+					$settings->dotGet( 'smwgPagingLimit.browse.valuelist.incoming' )
+				),
+			]
+		);
+
+		return $htmlBuilder;
+	}
+
+	private function addExternalHelpLinks( $dataValue ): void {
+		if ( $this->getRequest()->getVal( 'printable' ) === 'yes' ) {
+			return;
+		}
+
+		if ( $dataValue->isValid() ) {
+			$dataItem = $dataValue->getDataItem();
+
+			$title = SpecialPage::getTitleFor( 'ExportRDF', $dataItem->getTitle()->getPrefixedText() );
+
+			$this->getOutput()->setIndicators( [
+				'browse' => Html::rawElement(
+					'div',
+					[
+						'class' => 'smw-page-indicator-rdflink'
+					],
+					Html::rawElement(
+						'a',
+						[
+							'href' => $title->getLocalUrl( 'syntax=rdf' )
+						],
+						'RDF'
+					)
+				)
+			] );
+		}
+
+		$this->addHelpLink( $this->msg( 'smw-specials-browse-helplink' )->text(), true );
+	}
+
+	/**
+	 * @see SpecialPage::getGroupName
+	 */
+	protected function getGroupName(): string {
+		return 'smw_group/search';
+	}
+
+}

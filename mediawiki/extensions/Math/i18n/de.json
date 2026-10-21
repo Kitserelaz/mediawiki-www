@@ -76,6 +76,7 @@
 	"math_invalidresponse": "$1: Ungültige Antwort („$3“) von Server „$2“:",
 	"math_invalidxml": "MathML oder SVG ist ungültiges XML.",
 	"math_mathoid_error": "Konvertierungsfehler. Der Server („$1“) hat berichtet: „$2“",
+	"math_other_error": "Anderer Fehler: $1",
 	"math-status-introduction": "Diese Seite zeigt Informationen über {{PLURAL:$1|den aktivierten Math-Renderingsmodus|die aktivierten Math-Renderingsmodi}} an.\n\n{{PLURAL:$1|Der folgende Renderingsmodus ist|Die folgenden Renderingsmodi sind}} aktiviert.",
 	"math_syntax_error": "Syntaxfehler",
 	"math_timeout": "$1 Zeitüberschreitung von „$2“",
@@ -119,5 +120,7 @@
 	"math-wikibase-special-form-button": "Information anfordern",
 	"math-wikibase-special-error-header": "Fehler",
 	"math-wikibase-special-error-invalid-argument": "Die angegebene Wikibase-ID ist nicht vorhanden.",
-	"math-wikibase-special-error-unknown": "Fehler beim Holen der Daten von Wikibase."
+	"math-wikibase-special-error-unknown": "Fehler beim Holen der Daten von Wikibase.",
+	"math-editpage-insert-inline": "Mathematische Formel (inline)",
+	"math-editpage-insert-block": "Mathematische Formel (Block)"
 }

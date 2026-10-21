@@ -1,0 +1,65 @@
+<?php
+
+namespace SMW\Exporter\ResourceBuilders;
+
+use SMW\DataItems\DataItem;
+use SMW\DataItems\Property;
+use SMW\Export\ExpData;
+
+/**
+ * @private
+ *
+ * @license GPL-2.0-or-later
+ * @since 2.5
+ *
+ * @author mwjames
+ */
+class PredefinedPropertyValueResourceBuilder extends PropertyValueResourceBuilder {
+
+	/**
+	 * @since 2.5
+	 *
+	 * {@inheritDoc}
+	 */
+	public function isResourceBuilderFor( Property $property ): bool {
+		return !$property->isUserDefined();
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * {@inheritDoc}
+	 */
+	public function addResourceValue( ExpData $expData, Property $property, DataItem $dataItem ): void {
+		$diSubject = $expData->getSubject()->getDataItem();
+
+		if ( $diSubject === null ) {
+			return;
+		}
+
+		$expNsResource = $this->exporter->getSpecialPropertyResource(
+			$property->getKey(),
+			$diSubject->getNamespace()
+		);
+
+		$expElement = $this->exporter->newExpElement(
+			$dataItem
+		);
+
+		if ( $expElement === null || $expNsResource === null ) {
+			return;
+		}
+
+		$expData->addPropertyObjectValue(
+			$expNsResource,
+			$expElement
+		);
+
+		$this->addResourceHelperValue(
+			$expData,
+			$property,
+			$dataItem
+		);
+	}
+
+}

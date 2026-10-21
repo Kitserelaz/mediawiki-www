@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Joxemai",
+			"Theklan"
+		]
+	},
+	"configuredpages": "Berrikuspenerako zehaztapenak dituzten orriak",
+	"configuredpages-list": "Orrialde honek webgunearen lehenetsitako onespen-ezarpen desberdinak izan ditzaten konfiguratutako orriak zerrendatzen ditu.\nEzarpen batzuek irakurleei bistaratzen den bertsioa alda dezakete edo berrikusi behar ez duten aldaketak nork egin ditzaketen gehiago mugatu dezakete.",
+	"configuredpages-none": "Ez dago orririk zerranda honetan.",
+	"configuredpages-config": "Konfigurazioa",
+	"configuredpages-def-draft": "azken bertsioa",
+	"configuredpages-def-stable": "argitaraturiko bertsioa"
+}

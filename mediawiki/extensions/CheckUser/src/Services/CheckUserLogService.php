@@ -1,10 +1,11 @@
 <?php
 
-namespace MediaWiki\CheckUser\Services;
+namespace MediaWiki\Extension\CheckUser\Services;
 
 use LogicException;
 use MediaWiki\CommentFormatter\CommentFormatter;
 use MediaWiki\CommentStore\CommentStore;
+use MediaWiki\Config\ServiceOptions;
 use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\Parser\Sanitizer;
 use MediaWiki\Title\Title;
@@ -23,35 +24,20 @@ use Wikimedia\Timestamp\ConvertibleTimestamp;
  */
 class CheckUserLogService {
 
-	private IConnectionProvider $dbProvider;
-	private CommentStore $commentStore;
-	private CommentFormatter $commentFormatter;
-	private LoggerInterface $logger;
-	private ActorStore $actorStore;
-	private UserIdentityLookup $userIdentityLookup;
+	public const CONSTRUCTOR_OPTIONS = [
+		'CheckUserLogMaxRangeToShowInLog',
+	];
 
-	/**
-	 * @param IConnectionProvider $dbProvider
-	 * @param CommentStore $commentStore
-	 * @param CommentFormatter $commentFormatter
-	 * @param LoggerInterface $logger
-	 * @param ActorStore $actorStore
-	 * @param UserIdentityLookup $userIdentityLookup
-	 */
 	public function __construct(
-		IConnectionProvider $dbProvider,
-		CommentStore $commentStore,
-		CommentFormatter $commentFormatter,
-		LoggerInterface $logger,
-		ActorStore $actorStore,
-		UserIdentityLookup $userIdentityLookup
+		private readonly IConnectionProvider $dbProvider,
+		private readonly CommentStore $commentStore,
+		private readonly CommentFormatter $commentFormatter,
+		private readonly LoggerInterface $logger,
+		private readonly ActorStore $actorStore,
+		private readonly UserIdentityLookup $userIdentityLookup,
+		private readonly ServiceOptions $options,
 	) {
-		$this->dbProvider = $dbProvider;
-		$this->commentStore = $commentStore;
-		$this->commentFormatter = $commentFormatter;
-		$this->logger = $logger;
-		$this->actorStore = $actorStore;
-		$this->userIdentityLookup = $userIdentityLookup;
+		$this->options->assertRequiredOptions( self::CONSTRUCTOR_OPTIONS );
 	}
 
 	/**
@@ -66,7 +52,12 @@ class CheckUserLogService {
 	 * @return void
 	 */
 	public function addLogEntry(
-		UserIdentity $user, string $logType, string $targetType, string $target, string $reason, int $targetID = 0
+		UserIdentity $user,
+		string $logType,
+		string $targetType,
+		string $target,
+		string $reason,
+		int $targetID = 0
 	) {
 		if ( $targetType == 'ip' ) {
 			[ $rangeStart, $rangeEnd ] = IPUtils::parseRange( $target );
@@ -91,7 +82,7 @@ class CheckUserLogService {
 			'cul_target_text' => trim( $target ),
 			'cul_target_hex' => $targetHex,
 			'cul_range_start' => $rangeStart,
-			'cul_range_end' => $rangeEnd
+			'cul_range_end' => $rangeEnd,
 		];
 
 		$plaintextReason = $this->getPlaintextReason( $reason );
@@ -102,7 +93,14 @@ class CheckUserLogService {
 
 		DeferredUpdates::addCallableUpdate(
 			static function () use (
-				$data, $timestamp, $reason, $plaintextReason, $fname, $dbw, $commentStore, $logger
+				$data,
+				$timestamp,
+				$reason,
+				$plaintextReason,
+				$fname,
+				$dbw,
+				$commentStore,
+				$logger
 			) {
 				try {
 					$data += $commentStore->insert( $dbw, 'cul_reason', $reason );
@@ -111,7 +109,7 @@ class CheckUserLogService {
 						->insertInto( 'cu_log' )
 						->row(
 							[
-								'cul_timestamp' => $dbw->timestamp( $timestamp )
+								'cul_timestamp' => $dbw->timestamp( $timestamp ),
 							] + $data
 						)
 						->caller( $fname )
@@ -136,8 +134,11 @@ class CheckUserLogService {
 	public function getPlaintextReason( $reason ) {
 		return Sanitizer::stripAllTags(
 			$this->commentFormatter->formatBlock(
-				$reason, Title::newFromText( 'Special:CheckUserLog' ),
-				false, false, false
+				$reason,
+				Title::newFromText( 'Special:CheckUserLog' ),
+				false,
+				false,
+				false
 			)
 		);
 	}
@@ -152,32 +153,57 @@ class CheckUserLogService {
 		$result = $this->verifyTarget( $target );
 		if ( is_array( $result ) ) {
 			$dbr = $this->dbProvider->getReplicaDatabase();
-			switch ( count( $result ) ) {
-				case 1:
-					return [
-						$dbr->expr( 'cul_target_hex', '=', $result[0] )
-							->orExpr(
-								$dbr->expr( 'cul_range_end', '>=', $result[0] )
-									->and( 'cul_range_start', '<=', $result[0] )
-							)
-					];
-				case 2:
-					return [
-						$dbr->orExpr( [
-							$dbr->expr( 'cul_target_hex', '>=', $result[0] )
-								->and( 'cul_target_hex', '<=', $result[1] ),
-							$dbr->expr( 'cul_range_end', '>=', $result[0] )
-								->and( 'cul_range_start', '<=', $result[1] ),
-						] )
-					];
-				default:
-					throw new LogicException(
-						"Array returned from ::verifyTarget had the wrong number of items."
+
+			$targetHexSearchExpr = match ( count( $result ) ) {
+				1 => $dbr->expr( 'cul_target_hex', '=', $result[0] ),
+				2 => $dbr->expr( 'cul_target_hex', '>=', $result[0] )
+					->and( 'cul_target_hex', '<=', $result[1] ),
+				default => throw new LogicException(
+					"Array returned from ::verifyTarget had the wrong number of items."
+				),
+			};
+
+			$rangeSearchExpr = match ( count( $result ) ) {
+				1 => $dbr->expr( 'cul_range_end', '>=', $result[0] )
+					->and( 'cul_range_start', '<=', $result[0] ),
+				2 => $dbr->expr( 'cul_range_end', '>=', $result[0] )
+					->and( 'cul_range_start', '<=', $result[1] ),
+			};
+
+			// Exclude ranges above those defined as the max in
+			// $wgCheckUserLogMaxRangeToShowInLog, unless the target is a range
+			// above that defined maximum
+			$maxRangeToShowInResultsConfig = $this->options->get( 'CheckUserLogMaxRangeToShowInLog' );
+			if ( $maxRangeToShowInResultsConfig !== false ) {
+				if ( IPUtils::isIPv6( $target ) ) {
+					$maxRangeToShowInResults = $maxRangeToShowInResultsConfig['IPv6'];
+				} else {
+					$maxRangeToShowInResults = $maxRangeToShowInResultsConfig['IPv4'];
+				}
+
+				$ipParts = explode( '/', IPUtils::sanitizeIP( $target ) );
+				if ( count( $ipParts ) === 1 || $ipParts[1] >= $maxRangeToShowInResults ) {
+					[ $minRangeStart, $maxRangeEnd ] = IPUtils::parseRange(
+						$ipParts[0] . '/' . $maxRangeToShowInResults
 					);
+
+					if ( $minRangeStart !== false ) {
+						$rangeSearchExpr = $rangeSearchExpr
+							->and( 'cul_range_start', '>=', $minRangeStart );
+					}
+
+					if ( $maxRangeEnd !== false ) {
+						$rangeSearchExpr = $rangeSearchExpr
+							->and( 'cul_range_end', '<=', $maxRangeEnd );
+					}
+				}
 			}
+
+			return [
+				$dbr->orExpr( [ $targetHexSearchExpr, $rangeSearchExpr ] ),
+			];
 		} elseif ( is_int( $result ) ) {
 			return [
-				'cul_type' => [ 'userips', 'useredits', 'investigate' ],
 				'cul_target_id' => $result,
 			];
 		}

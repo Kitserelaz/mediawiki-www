@@ -14,7 +14,7 @@ use MediaWiki\Context\IContextSource;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Extension\DiscussionTools\CommentParser;
 use MediaWiki\Extension\DiscussionTools\CommentUtils;
-use MediaWiki\Extension\DiscussionTools\ContentThreadItemSet;
+use MediaWiki\Extension\DiscussionTools\ContentThreadItemSetStatus;
 use MediaWiki\Linker\LinkTarget;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\OutputPage;
@@ -22,14 +22,14 @@ use MediaWiki\Page\ParserOutputAccess;
 use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\Revision\RevisionRecord;
+use MediaWiki\Status\Status;
 use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleValue;
 use MediaWiki\User\UserIdentity;
-use RuntimeException;
 use Wikimedia\Assert\Assert;
-use Wikimedia\Parsoid\Core\ResourceLimitExceededException;
-use Wikimedia\Parsoid\Utils\DOMCompat;
-use Wikimedia\Parsoid\Utils\DOMUtils;
+use Wikimedia\NormalizedException\NormalizedException;
+use Wikimedia\Parsoid\Core\DOMCompat;
+use Wikimedia\Parsoid\Ext\DOMUtils;
 use Wikimedia\Rdbms\IDBAccessObject;
 
 class HookUtils {
@@ -40,8 +40,6 @@ class HookUtils {
 	public const TOPICSUBSCRIPTION = 'topicsubscription';
 	public const AUTOTOPICSUB = 'autotopicsub';
 	public const VISUALENHANCEMENTS = 'visualenhancements';
-	public const VISUALENHANCEMENTS_REPLY = 'visualenhancements_reply';
-	public const VISUALENHANCEMENTS_PAGEFRAME = 'visualenhancements_pageframe';
 
 	/**
 	 * @var string[] List of all sub-features. Will be used to generate:
@@ -55,9 +53,7 @@ class HookUtils {
 		self::SOURCEMODETOOLBAR,
 		self::TOPICSUBSCRIPTION,
 		self::AUTOTOPICSUB,
-		self::VISUALENHANCEMENTS,
-		self::VISUALENHANCEMENTS_REPLY,
-		self::VISUALENHANCEMENTS_PAGEFRAME,
+		self::VISUALENHANCEMENTS
 	];
 
 	/**
@@ -65,13 +61,22 @@ class HookUtils {
 	 *  - Feature override global: $wgDiscussionTools_FEATURE
 	 */
 	public const CONFIGS = [
-		self::VISUALENHANCEMENTS,
-		self::VISUALENHANCEMENTS_REPLY,
-		self::VISUALENHANCEMENTS_PAGEFRAME,
+		self::VISUALENHANCEMENTS
 	];
 
 	public const FEATURES_CONFLICT_WITH_GADGET = [
 		self::REPLYTOOL,
+		self::TOPICSUBSCRIPTION,
+	];
+
+	public const FEATURES_DEPENDENCIES = [
+		self::SOURCEMODETOOLBAR => [
+			self::REPLYTOOL,
+			self::NEWTOPICTOOL,
+		],
+		self::AUTOTOPICSUB => [
+			self::TOPICSUBSCRIPTION,
+		]
 	];
 
 	private const CACHED_PAGE_PROPS = [
@@ -117,14 +122,11 @@ class HookUtils {
 	 *        May be set to false for batch operations to avoid flooding the cache.
 	 *        Otherwise, it should be set to the name of the calling method (__METHOD__),
 	 *        so we can track what is causing parser cache writes.
-	 *
-	 * @return ContentThreadItemSet
-	 * @throws ResourceLimitExceededException
 	 */
 	public static function parseRevisionParsoidHtml(
 		RevisionRecord $revRecord,
 		$updateParserCacheFor
-	): ContentThreadItemSet {
+	): ContentThreadItemSetStatus {
 		$services = MediaWikiServices::getInstance();
 		$mainConfig = $services->getMainConfig();
 		$parserOutputAccess = $services->getParserOutputAccess();
@@ -133,7 +135,15 @@ class HookUtils {
 		// ParserOutputAccess would look it up by namespace+title in replica.
 		$pageRecord = $services->getPageStore()->getPageById( $revRecord->getPageId() ) ?:
 			$services->getPageStore()->getPageById( $revRecord->getPageId(), IDBAccessObject::READ_LATEST );
-		Assert::postcondition( $pageRecord !== null, 'Revision had no page' );
+		if ( !$pageRecord ) {
+			throw new NormalizedException(
+				"PageRecord for page {page} revision {revision} not found",
+				[
+					'page' => $revRecord->getPageId(),
+					'revision' => $revRecord->getId(),
+				]
+			);
+		}
 
 		$parserOptions = ParserOptions::newFromAnon();
 		$parserOptions->setUseParsoid();
@@ -148,18 +158,16 @@ class HookUtils {
 			$parserOptions,
 			$revRecord,
 			// Don't flood the parser cache
-			$updateParserCacheFor ? 0 : ParserOutputAccess::OPT_NO_UPDATE_CACHE
+			[ ParserOutputAccess::OPT_NO_UPDATE_CACHE => !$updateParserCacheFor ],
 		);
 
 		if ( !$status->isOK() ) {
-			[ 'message' => $key, 'params' => $params ] = $status->getErrors()[0];
-			// XXX: HtmlOutputRendererHelper checks for a resource limit exceeded message as well,
-			// maybe we shouldn't be catching that so low down.  Re-throw for callers.
+			// This is currently the only expected failure, make the caller handle it
 			if ( $status->hasMessage( 'parsoid-resource-limit-exceeded' ) ) {
-				throw new ResourceLimitExceededException( $params[0] ?? '' );
+				return ContentThreadItemSetStatus::wrap( $status );
 			}
-			$message = wfMessage( $key, ...$params );
-			throw new RuntimeException( $message->inLanguage( 'en' )->useDatabase( false )->text() );
+			// Any other failures indicate a software bug, so throw an exception
+			throw new NormalizedException( ...Status::wrap( $status )->getPsr3MessageAndContext() );
 		}
 
 		$parserOutput = $status->getValue();
@@ -176,7 +184,7 @@ class HookUtils {
 		/** @var CommentParser $parser */
 		$parser = $services->getService( 'DiscussionTools.CommentParser' );
 		$title = TitleValue::newFromPage( $revRecord->getPage() );
-		return $parser->parse( $container, $title );
+		return ContentThreadItemSetStatus::newGood( $parser->parse( $container, $title ) );
 	}
 
 	/**
@@ -204,7 +212,7 @@ class HookUtils {
 				try {
 					return $gadgetsRepo->getGadget( $gadgetName )
 						->isEnabled( $user );
-				} catch ( \InvalidArgumentException $e ) {
+				} catch ( \InvalidArgumentException ) {
 					return false;
 				}
 			}
@@ -218,7 +226,6 @@ class HookUtils {
 	 * @param UserIdentity $user
 	 * @param string|null $feature Feature to check for (one of static::FEATURES)
 	 *  Null will check for any DT feature.
-	 * @return bool
 	 */
 	public static function isFeatureAvailableToUser( UserIdentity $user, ?string $feature = null ): bool {
 		$services = MediaWikiServices::getInstance();
@@ -268,7 +275,6 @@ class HookUtils {
 	 * @param UserIdentity $user
 	 * @param string|null $feature Feature to check for (one of static::FEATURES)
 	 *  Null will check for any DT feature.
-	 * @return bool
 	 */
 	public static function isFeatureEnabledForUser( UserIdentity $user, ?string $feature = null ): bool {
 		if ( !static::isFeatureAvailableToUser( $user, $feature ) ) {
@@ -303,7 +309,6 @@ class HookUtils {
 	 * @param Title $title
 	 * @param string|null $feature Feature to check for (one of static::FEATURES)
 	 *  Null will check for any DT feature.
-	 * @return bool
 	 */
 	public static function isAvailableForTitle( Title $title, ?string $feature = null ): bool {
 		// Only wikitext pages (e.g. not Flow boards, special pages)
@@ -365,7 +370,6 @@ class HookUtils {
 	 * @param OutputPage $output
 	 * @param string|null $feature Feature to check for (one of static::FEATURES)
 	 *  Null will check for any DT feature.
-	 * @return bool
 	 */
 	public static function isFeatureEnabledForOutput( OutputPage $output, ?string $feature = null ): bool {
 		// Only show on normal page views (not history etc.), and in edit mode for previews
@@ -400,14 +404,6 @@ class HookUtils {
 			return false;
 		}
 
-		// Subfeatures are disabled if the main feature is disabled
-		if ( (
-			$feature === static::VISUALENHANCEMENTS_REPLY ||
-			$feature === static::VISUALENHANCEMENTS_PAGEFRAME
-		) && !self::isFeatureEnabledForOutput( $output, static::VISUALENHANCEMENTS ) ) {
-			return false;
-		}
-
 		// ?dtenable=1 overrides all user and title checks
 		$queryEnable = $output->getRequest()->getRawVal( 'dtenable' ) ?:
 			// Extra hack for parses from API, where this parameter isn't passed to derivative requests
@@ -439,11 +435,14 @@ class HookUtils {
 				$feature === static::NEWTOPICTOOL ||
 				$feature === static::SOURCEMODETOOLBAR ||
 				// Even though mobile ignores user preferences, TOPICSUBSCRIPTION must
-				// still be disabled if the user isn't registered.
-				( $feature === static::TOPICSUBSCRIPTION && $output->getUser()->isNamed() ) ||
-				$feature === static::VISUALENHANCEMENTS ||
-				$feature === static::VISUALENHANCEMENTS_REPLY ||
-				$feature === static::VISUALENHANCEMENTS_PAGEFRAME;
+				// still be disabled if the user isn't registered, or
+				// if Echo is disabled
+				(
+					$feature === static::TOPICSUBSCRIPTION &&
+					$output->getUser()->isNamed() &&
+					ExtensionRegistry::getInstance()->isLoaded( 'Echo' )
+				) ||
+				$feature === static::VISUALENHANCEMENTS;
 		}
 
 		return static::isFeatureEnabledForUser( $output->getUser(), $feature );
@@ -518,7 +517,7 @@ class HookUtils {
 			// Only in talk namespaces, not including other namespaces that isAvailableForTitle() allows
 			$title->isTalkPage() &&
 			// Only if the subject page or the user exists (T288319, T312560)
-			static::pageSubjectExists( $title ) &&
+			( $title->exists() || static::pageSubjectExists( $title ) ) &&
 			// The default display will probably be more useful for links to old revisions of deleted
 			// pages (existing pages are already excluded in shouldShowNewSectionTab())
 			$req->getIntOrNull( 'oldid' ) === null &&

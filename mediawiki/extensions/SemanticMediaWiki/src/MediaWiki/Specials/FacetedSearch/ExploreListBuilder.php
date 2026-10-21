@@ -1,0 +1,88 @@
+<?php
+
+namespace SMW\MediaWiki\Specials\FacetedSearch;
+
+use MediaWiki\Html\Html;
+use MediaWiki\Title\Title;
+use SMW\Localizer\Message;
+use SMW\Localizer\MessageLocalizerTrait;
+use SMW\Utils\UrlArgs;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since   3.2
+ *
+ * @author mwjames
+ */
+class ExploreListBuilder {
+
+	use MessageLocalizerTrait;
+
+	/**
+	 * @since 3.2
+	 */
+	public function __construct( private Profile $profile ) {
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @param Title $title
+	 *
+	 * @return string
+	 */
+	public function buildHTML( Title $title ): string {
+		$queryList = $this->profile->get( 'exploration.query_list', [] );
+		$profileName = $this->profile->getProfileName();
+		$html = '';
+
+		foreach ( $queryList as $link ) {
+			$urlArgs = new UrlArgs();
+			$urlArgs->set( 'q', $link['query'] );
+			$urlArgs->set( 'profile', $profileName );
+
+			$description = '';
+
+			if ( isset( $link['description'] ) ) {
+				$description = Html::rawElement(
+					'span',
+					[
+						'style' => 'margin-left:10px;'
+					],
+					$this->msg( [ 'smw-parse', $link['description'] ], Message::PARSE )
+				);
+			}
+
+			$html .= Html::rawElement(
+				'li',
+				[],
+				Html::rawElement(
+					'a',
+					[
+						'href' => $title->getLocalUrl( (string)$urlArgs )
+					],
+					$link['label']
+				) . $description
+			);
+		}
+
+		if ( $html === '' ) {
+			return '';
+		}
+
+		return Html::rawElement(
+			'div',
+			[
+				'class' => 'explore-section'
+			],
+			$this->msg( 'smw-facetedsearch-explore-intro' ) . Html::rawElement(
+				'ul',
+				[
+					'class' => 'explore-list'
+				],
+				$html
+			)
+		);
+	}
+
+}

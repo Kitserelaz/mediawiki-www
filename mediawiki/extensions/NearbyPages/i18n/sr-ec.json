@@ -1,0 +1,18 @@
+{
+	"@metadata": {
+		"authors": [
+			"BadDog",
+			"Milicevic01",
+			"Aca"
+		]
+	},
+	"nearby": "Странице о темама близу вас",
+	"nearby-pages-distance": "{{PLURAL:$1|$1 km}}",
+	"nearby-pages-distance-meters": "{{PLURAL:$1|$1 m}}",
+	"nearby-pages-error-guidance": "Освежи локацију.",
+	"nearby-pages-title": "У близини",
+	"nearby-pages-info-heading": "Места око вас",
+	"nearby-pages-info-description": "Можете читати занимљиве странице {{SITENAME}} о местима у Вашој близини",
+	"nearby-pages-info-show-random": "Прикажи случајне странице",
+	"nearby-pages-info-show-button": "Прикажи странице у близини"
+}

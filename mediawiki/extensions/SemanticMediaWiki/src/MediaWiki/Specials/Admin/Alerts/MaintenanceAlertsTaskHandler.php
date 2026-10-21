@@ -1,0 +1,59 @@
+<?php
+
+namespace SMW\MediaWiki\Specials\Admin\Alerts;
+
+use MediaWiki\Html\Html;
+use SMW\MediaWiki\Specials\Admin\TaskHandler;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since   3.2
+ *
+ * @author mwjames
+ */
+class MaintenanceAlertsTaskHandler extends TaskHandler {
+
+	/**
+	 * @since 3.2
+	 */
+	public function __construct( private readonly array $taskHandlers = [] ) {
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * {@inheritDoc}
+	 */
+	public function getName(): string {
+		return 'maintenancealerts';
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * {@inheritDoc}
+	 */
+	public function getHtml(): string {
+		$contents = '';
+
+		foreach ( $this->taskHandlers as $taskHandler ) {
+
+			$taskHandler->setFeatureSet(
+				$this->featureSet
+			);
+
+			$contents .= $taskHandler->getHtml();
+		}
+
+		if ( $contents === '' ) {
+			return '';
+		}
+
+		return Html::rawElement(
+			'p',
+			[],
+			$this->msg( 'smw-admin-maintenancealerts-section-intro' )
+		) . $contents;
+	}
+
+}

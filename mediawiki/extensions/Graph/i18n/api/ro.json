@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"NGC 54",
+			"Paloi Sciurala"
+		]
+	},
+	"apihelp-graph-param-title": "Titlul pagini cu graficul",
+	"apierror-graph-invalid": "Graficul nu este valid.",
+	"apierror-graph-missing": "Niciun grafic găsit."
+}

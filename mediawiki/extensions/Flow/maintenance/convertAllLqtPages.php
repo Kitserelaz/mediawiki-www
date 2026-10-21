@@ -40,10 +40,26 @@ class ConvertAllLqtPages extends Maintenance {
 			'option can be set to attempt to map threads to topics that have already been ' .
 			'imported to prevent doubles.' );
 		$this->addOption( 'debug', 'Include debug information with progress report' );
+		$this->addOption( 'dryrun', 'Show what would be converted, but do not make any changes.' );
+		$this->addOption( 'ignoreflowreadonly', 'Ignore $wgFlowReadOnly if set, allowing boards to be created.' );
+		$this->addOption( 'convertempty', 'Convert pages even if they have no threads.' );
+		$this->addOption( 'insert-ignore', 'Ignore duplicate key insert errors.' );
 		$this->requireExtension( 'Flow' );
 	}
 
 	public function execute() {
+		global $wgFlowReadOnly;
+
+		if ( $wgFlowReadOnly ) {
+			if ( $this->getOption( 'ignoreflowreadonly', false ) ) {
+				// Make Flow writable for the duration of the script
+				$wgFlowReadOnly = false;
+			} else {
+				$this->error( 'Flow is in read-only mode. Use --ignoreflowreadonly to continue.' );
+				return;
+			}
+		}
+
 		$logfile = $this->getOption( 'logfile' );
 		if ( $logfile ) {
 			$sourceStore = new FileImportSourceStore( $logfile );
@@ -89,9 +105,12 @@ class ConvertAllLqtPages extends Maintenance {
 		);
 
 		$titles = $this->buildIterator( $logger, $dbw );
+		$dryRun = $this->getOption( 'dryrun', false );
+		$convertEmpty = $this->getOption( 'convertempty', false );
 
 		$logger->info( "Starting full wiki LQT conversion of all LiquidThreads pages" );
-		$converter->convertAll( $titles );
+		$converter->convertAll( $titles, $dryRun, $convertEmpty );
+
 		$logger->info( "Finished conversion" );
 	}
 

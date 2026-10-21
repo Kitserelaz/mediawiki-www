@@ -1,0 +1,22 @@
+{
+	"@metadata": {
+		"authors": [
+			"Ahrada2016",
+			"Maammee"
+		]
+	},
+	"growthexperiments-addlink-onboarding-content-intro-body-example-label": "Hima fakkeenyaa",
+	"growthexperiments-structuredtask-onboarding-dialog-label-skip-all": "Hunda irra darbi",
+	"growthexperiments-structuredtask-onboarding-dialog-title": "Seensa",
+	"growthexperiments-structuredtask-onboarding-dialog-progress": "$1 keessaa $2",
+	"growthexperiments-structuredtask-onboarding-dialog-dismiss-checkbox": "Irradeebitee hin agarsiisiin",
+	"growthexperiments-structuredtask-onboarding-dialog-label-next": "Seensa tarsadarkaa ittaanu",
+	"growthexperiments-structuredtask-onboarding-dialog-label-previous": "Tarsadarkaa seensa darbee",
+	"growthexperiments-structuredtask-onboarding-dialog-get-started-button": "Jalqabi",
+	"newcomertasksinfo": "Hojii Dhufaarotaa",
+	"newcomertasksinfo-no-data": "Daataan tajaajilu hin jiru.",
+	"newcomertasksinfo-table-header-task-type": "Gosa hojii",
+	"newcomertasksinfo-table-header-task-type-id": "WE",
+	"newcomertasksinfo-table-header-task-count": "Lakkaa'uu",
+	"growthexperiments-structuredtask-ve-machine-suggestions-mode-submit-button": "Galchuu..."
+}

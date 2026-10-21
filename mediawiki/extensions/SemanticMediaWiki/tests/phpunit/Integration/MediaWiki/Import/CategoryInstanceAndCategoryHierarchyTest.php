@@ -1,0 +1,104 @@
+<?php
+
+namespace SMW\Tests\Integration\MediaWiki\Import;
+
+use MediaWiki\MediaWikiServices;
+use SMW\DataItems\Property;
+use SMW\Tests\SMWIntegrationTestCase;
+use SMW\Tests\Utils\ByPageSemanticDataFinder;
+use SMW\Tests\Utils\UtilityFactory;
+
+/**
+ * @group SMW
+ * @group SMWExtension
+ * @group semantic-mediawiki-import
+ * @group mediawiki-database
+ * @group Database
+ * @group medium
+ *
+ * @license GPL-2.0-or-later
+ * @since 1.9.1
+ *
+ * @author mwjames
+ */
+class CategoryInstanceAndCategoryHierarchyTest extends SMWIntegrationTestCase {
+
+	private $importedTitles = [];
+	private $runnerFactory;
+	private $titleValidator;
+	private $semanticDataValidator;
+
+	protected function setUp(): void {
+		parent::setUp();
+
+		$this->runnerFactory  = UtilityFactory::getInstance()->newRunnerFactory();
+		$this->titleValidator = UtilityFactory::getInstance()->newValidatorFactory()->newTitleValidator();
+		$this->semanticDataValidator = UtilityFactory::getInstance()->newValidatorFactory()->newSemanticDataValidator();
+
+		$importRunner = $this->runnerFactory->newXmlImportRunner(
+			__DIR__ . '/' . 'Fixtures/' . 'CategoryInstanceAndCategoryHierarchyTest-Mw-1-19-7.xml'
+		);
+
+		if ( !$importRunner->setVerbose( true )->run() ) {
+			$importRunner->reportFailedImport();
+			$this->markTestIncomplete( 'Test was marked as incomplete because the data import failed' );
+		}
+	}
+
+	protected function tearDown(): void {
+		$pageDeleter = UtilityFactory::getInstance()->newPageDeleter();
+		$pageDeleter->doDeletePoolOfPages( $this->importedTitles );
+
+		parent::tearDown();
+	}
+
+	public function testCategoryHierarchies() {
+		$this->importedTitles = [
+			'Category:Regression test',
+			'Category:Regression test category',
+			'Category:Regression test sub category',
+			'Category:Regression test sub sub category',
+			'CategoryInstanceAndCategoryHierarchyRegressionTest/WithSubpage',
+			'CategoryInstanceAndCategoryHierarchyRegressionTest/WithSubpage/WithSubSubpage',
+			'CategoryInstanceAndCategoryHierarchyRegressionTest'
+		];
+
+		$this->titleValidator->assertThatTitleIsKnown( $this->importedTitles );
+
+		$title = MediaWikiServices::getInstance()->getTitleFactory()->newFromText( 'CategoryInstanceAndCategoryHierarchyRegressionTest' );
+
+		// _INST values are formatted via WikiPageValue::getWikiValue() which
+		// returns the prefixed form (`Category:X`) for __sin typed values.
+		// Before #6875, imported-page categorizations were not stored at all
+		// so this assertion ran vacuously; declarative HookHandlers correctly
+		// store them, so the expected list now uses the production-formatted
+		// prefixed strings the validator actually compares against.
+		$expectedCategoryAsWikiValue = [
+			'property' => new Property( '_INST' ),
+			'propertyValues' => [
+				'Category:Regression test',
+				'Category:Regression test category',
+				'Category:Regression test sub category',
+				'Category:Regression test sub sub category',
+				'Category:Category regression test'
+			]
+		];
+
+		$semanticDataFinder = new ByPageSemanticDataFinder;
+		$semanticDataFinder->setTitle( $title )->setStore( $this->getStore() );
+
+		$semanticDataBatches = [
+			$semanticDataFinder->fetchFromOutput(),
+			$semanticDataFinder->fetchFromStore()
+		];
+
+		foreach ( $semanticDataBatches as $semanticData ) {
+
+			$this->semanticDataValidator->assertThatCategoriesAreSet(
+				$expectedCategoryAsWikiValue,
+				$semanticData
+			);
+		}
+	}
+
+}

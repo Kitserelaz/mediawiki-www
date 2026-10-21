@@ -36,9 +36,7 @@ class TopKIndex extends FeatureIndex {
 		$this->options = $options + [
 			'limit' => 500,
 			'order' => 'DESC',
-			'create' => static function () {
-				return false;
-			},
+			'create' => static fn () => false,
 			'shallow' => null,
 		];
 		$this->options['order'] = strtoupper( $this->options['order'] );
@@ -126,7 +124,7 @@ class TopKIndex extends FeatureIndex {
 			} else {
 				$startPos = $offset + 1;
 			}
-		} elseif ( $dir === 'rev' ) {
+		} else {
 			$startPos = $offset - $limit;
 			if ( $includeOffset ) {
 				$startPos++;
@@ -142,8 +140,6 @@ class TopKIndex extends FeatureIndex {
 				}
 				$startPos = 0;
 			}
-		} else {
-			$startPos = 0;
 		}
 
 		return [ $startPos, $limit ];

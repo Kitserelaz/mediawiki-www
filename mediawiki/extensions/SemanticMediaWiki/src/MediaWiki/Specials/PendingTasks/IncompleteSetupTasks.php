@@ -1,0 +1,91 @@
+<?php
+
+namespace SMW\MediaWiki\Specials\PendingTasks;
+
+use MediaWiki\Html\Html;
+use SMW\Localizer\Message;
+use SMW\SetupFile;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since   3.2
+ *
+ * @author mwjames
+ */
+class IncompleteSetupTasks {
+
+	/**
+	 * @since 3.2
+	 */
+	public function __construct( private ?SetupFile $setupFile = null ) {
+		if ( $this->setupFile === null ) {
+			$this->setupFile = new SetupFile();
+		}
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @return string
+	 */
+	public function getTitle(): string {
+		return 'smw-pendingtasks-tab-setup';
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @return string
+	 */
+	public function getHtml(): string {
+		$incompleteTasks = $this->setupFile->findIncompleteTasks();
+		$count = $this->setupFile->get( SetupFile::PREVIOUS_VERSION ) !== null ? 2 : 1;
+
+		$html = '';
+
+		if ( $incompleteTasks !== [] ) {
+			$html = Html::rawElement(
+				'p',
+				[
+					'style' => 'margin-top:10px;color:#888'
+				],
+				Message::get( [ 'smw-pendingtasks-setup-intro', $count ], Message::PARSE, Message::USER_LANGUAGE )
+			) . $this->buildList( $incompleteTasks );
+		}
+
+		return $html;
+	}
+
+	private function buildList( array $messages ) {
+		$html = '';
+
+		foreach ( $messages as $message ) {
+			$html .= Html::rawElement( 'li', [], Message::get( $message, Message::PARSE ) );
+		}
+
+		$html = Html::rawElement(
+			'fieldset',
+			[],
+			Html::rawElement(
+				'legend',
+				[],
+				Message::get( "smw-pendingtasks-setup-tasks" )
+			) . Html::rawElement(
+				'div',
+				[
+					'class' => 'plainlinks'
+				],
+				"<ul>$html</ul>"
+			)
+		);
+
+		return Html::rawElement(
+			'div',
+			[
+				'class' => 'smw-pending-task'
+			],
+			$html
+		);
+	}
+
+}

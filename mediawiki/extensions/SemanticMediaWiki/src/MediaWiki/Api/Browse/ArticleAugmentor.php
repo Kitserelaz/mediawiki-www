@@ -1,0 +1,53 @@
+<?php
+
+namespace SMW\MediaWiki\Api\Browse;
+
+use MediaWiki\Title\TitleFactory;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 3.0
+ *
+ * @author mwjames
+ */
+class ArticleAugmentor {
+
+	/**
+	 * @since 3.0
+	 */
+	public function __construct( private readonly TitleFactory $titleFactory ) {
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function augment( array &$res, array $parameters ): ?array {
+		if ( !isset( $res['query'] ) && $res['query'] === [] ) {
+			return null;
+		}
+
+		if ( isset( $parameters['fullText'] ) || isset( $parameters['fullURL'] ) ) {
+
+			foreach ( $res['query'] as $key => &$value ) {
+
+				$title = $this->titleFactory->newFromID( $value['id'] );
+
+				if ( isset( $parameters['fullText'] ) ) {
+					$value['fullText'] = $title->getFullText();
+				}
+
+				if ( isset( $parameters['fullURL'] ) ) {
+					$value['fullURL'] = $title->getFullURL();
+				}
+			}
+		}
+
+		// Remove the internal ID, no external consumer should rely on it
+		foreach ( $res['query'] as $key => &$value ) {
+			unset( $value['id'] );
+		}
+
+		return $res;
+	}
+
+}

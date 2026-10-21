@@ -8,10 +8,9 @@ use MediaWiki\Api\ApiFormatBase;
 use MediaWiki\Api\ApiPageSet;
 use MediaWiki\Api\ApiResult;
 use MediaWiki\Content\TextContent;
-use MediaWiki\Extension\EventLogging\EventLogging;
 use MediaWiki\Extension\TemplateData\TemplateDataBlob;
 use MediaWiki\MediaWikiServices;
-use MediaWiki\Registration\ExtensionRegistry;
+use MediaWiki\Status\Status;
 use Wikimedia\ParamValidator\ParamValidator;
 
 /**
@@ -19,7 +18,6 @@ use Wikimedia\ParamValidator\ParamValidator;
  * Format JSON only.
  * @license GPL-2.0-or-later
  * @ingroup API
- * @emits error.code templatedata-corrupt
  * @todo Support continuation (see I1a6e51cd)
  */
 class ApiTemplateData extends ApiBase {
@@ -88,7 +86,11 @@ class ApiTemplateData extends ApiBase {
 			}
 
 			foreach ( $titles as $titleId => $title ) {
-				$resp[ $titleId ] = [ 'title' => $title, 'notemplatedata' => true ];
+				$resp[ $titleId ] = [
+					'title' => $title,
+					'notemplatedata' => true,
+					'ns' => $title->getNamespace()
+				];
 			}
 		}
 
@@ -111,9 +113,11 @@ class ApiTemplateData extends ApiBase {
 				$status = $tdb->getStatus();
 
 				if ( !$status->isOK() ) {
-					$this->dieWithError(
-						[ 'apierror-templatedata-corrupt', intval( $row->pp_page ), $status->getMessage() ]
-					);
+					$this->dieWithError( [
+						'apierror-templatedata-corrupt',
+						intval( $row->pp_page ),
+						Status::wrap( $status )->getMessage()
+					] );
 				}
 
 				if ( $langCode !== false ) {
@@ -138,7 +142,10 @@ class ApiTemplateData extends ApiBase {
 				if ( $includeMissingTitles ) {
 					unset( $resp[$row->pp_page]['notemplatedata'] );
 				} else {
-					$resp[ $row->pp_page ] = [ 'title' => $titles[ $row->pp_page ] ];
+					$resp[ $row->pp_page ] = [
+						'title' => $titles[ $row->pp_page ],
+						'ns' => $titles[ $row->pp_page ]->getNamespace()
+					];
 				}
 				$resp[$row->pp_page] += (array)$data;
 			}
@@ -156,28 +163,13 @@ class ApiTemplateData extends ApiBase {
 				}
 
 				$content = $wikiPageFactory->newFromTitle( $pageInfo['title'] )->getContent();
+				if ( !$content ) {
+					continue;
+				}
 				$text = $content instanceof TextContent
 					? $content->getText()
 					: $content->getTextForSearchIndex();
 				$resp[$pageId]['params'] = $this->getRawParams( $text );
-			}
-		}
-
-		// TODO tracking will only be implemented temporarily to answer questions on
-		// template usage for the Technical Wishes topic area see T258917
-		if ( ExtensionRegistry::getInstance()->isLoaded( 'EventLogging' ) ) {
-			foreach ( $resp as $pageInfo ) {
-				EventLogging::submit(
-					'eventlogging_TemplateDataApi',
-					[
-						'$schema' => '/analytics/legacy/templatedataapi/1.0.0',
-						'event' => [
-							'template_name' => $wikiPageFactory->newFromTitle( $pageInfo['title'] )
-								->getTitle()->getDBkey(),
-							'has_template_data' => !isset( $pageInfo['notemplatedata'] ),
-						],
-					]
-				);
 			}
 		}
 

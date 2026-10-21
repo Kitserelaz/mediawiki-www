@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Dani",
+			"Tacsipacsi"
+		]
+	},
+	"forcepreview": "$1 (használd először az előnézetet)",
+	"forcepreview-desc": "Előnézet kötelezése a szerkesztők számára",
+	"right-forcepreviewexempt": "lap mentése az előnézet megtekintése nélkül"
+}

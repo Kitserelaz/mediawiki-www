@@ -1,0 +1,23 @@
+{
+	"@metadata": {
+		"authors": [
+			"555",
+			"Hamilton Abreu"
+		]
+	},
+	"apihelp-query+imageforpage-summary": "Pré-compõe e fornece os URL para as imagens, para uma determinada página do espaço nominal \"Página:\".",
+	"apihelp-query+imageforpage-param-prop": "Que tipos de imagens ou propriedades de imagens devem ser devolvidos, para uma determinada página do espaço nominal \"Página:\".",
+	"apierror-proofreadpage-invalidindex": "Título de índice \"$1\" inválido.",
+	"apihelp-query+proofread-summary": "Devolve informações sobre o estado de revisão atual das páginas fornecidas.",
+	"apihelp-query+proofread-example-1": "Devolver o estado de revisão de páginas do espaço nominal 250",
+	"apihelp-query+proofreadinfo-summary": "Devolver informações sobre a configuração da extensão ProofreadPage.",
+	"apihelp-query+proofreadinfo-param-prop": "Propriedades de revisão a serem obtidas:\n;namespaces:Informação sobre os espaços nominais \"{{ns:Page}}\" e \"{{ns:Index}}\".\n;qualitylevels:Lista dos níveis de qualidade de revisão.",
+	"apihelp-query+proofreadinfo-example-1": "Devolver informação padrão",
+	"apihelp-query+proofreadinfo-example-3": "Devolver informações do espaço nominal",
+	"apihelp-query+proofreadpagesinindex-summary": "Listar as páginas de um índice específico",
+	"apihelp-query+proofreadpagesinindex-param-limit": "Limitar quantas páginas serão devolvidas",
+	"apihelp-query+proofreadpagesinindex-param-pageid": "O identificador da página de índice para a qual obter páginas",
+	"apihelp-query+proofreadpagesinindex-param-prop": "Que propriedades de cada página obter",
+	"apihelp-query+proofreadpagesinindex-param-title": "O título da página de índice para a qual obter páginas",
+	"apihelp-query+proofreadpagesinindex-example-1": "Devolver informação padrão"
+}

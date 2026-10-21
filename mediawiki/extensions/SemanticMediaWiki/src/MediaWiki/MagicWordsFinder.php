@@ -1,0 +1,81 @@
+<?php
+
+namespace SMW\MediaWiki;
+
+use MediaWiki\Parser\MagicWordFactory;
+use MediaWiki\Parser\ParserOutput;
+use SMW\Services\ServicesFactory as ApplicationFactory;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 2.0
+ *
+ * @author mwjames
+ */
+class MagicWordsFinder {
+
+	/**
+	 * @since 2.0
+	 */
+	public function __construct(
+		private ?ParserOutput $parserOutput = null,
+		private readonly ?MagicWordFactory $magicWordFactory = null,
+	) {
+	}
+
+	/**
+	 * @since 2.0
+	 *
+	 * @param ParserOutput $parserOutput
+	 *
+	 * @return self
+	 */
+	public function setOutput( ParserOutput $parserOutput ): static {
+		$this->parserOutput = $parserOutput;
+		return $this;
+	}
+
+	/**
+	 * Find the magic word and have it removed from the text
+	 *
+	 * @since 2.0
+	 *
+	 * @param $magicWord
+	 * @param &$text
+	 *
+	 * @return string
+	 */
+	public function findMagicWordInText( $magicWord, &$text ) {
+		if ( $this->magicWordFactory->get( $magicWord )->matchAndRemove( $text ) ) {
+			return $magicWord;
+		}
+
+		return '';
+	}
+
+	/**
+	 * @since 2.0
+	 *
+	 * @param array $words
+	 */
+	public function pushMagicWordsToParserOutput( array $words ) {
+		if ( ApplicationFactory::getInstance()->getSettings()->get( 'smwgSetParserCacheTimestamp' ) ) {
+			$this->parserOutput->setCacheTime( wfTimestampNow() );
+		}
+
+		// Filter empty lines
+		$words = array_values( array_filter( $words ) );
+		if ( $words !== [] ) {
+			return $this->parserOutput->setExtensionData( 'smwmagicwords', $words );
+		}
+	}
+
+	/**
+	 * @since 2.0
+	 *
+	 * @return array
+	 */
+	public function getMagicWords() {
+		return $this->parserOutput->getExtensionData( 'smwmagicwords' );
+	}
+}

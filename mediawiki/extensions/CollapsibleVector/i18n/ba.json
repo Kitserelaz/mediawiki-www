@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Sagan",
+			"Азат Хәлилов",
+			"З. ӘЙЛЕ"
+		]
+	},
+	"collapsiblevector": "«Вектор» темаһы өсөн яҡшыртылған интерфейс",
+	"collapsiblevector-desc": "«Вектор» темаһын биҙәү өсөн ҡатнашыусыларҙың интерфейсын яҡшырта",
+	"collapsiblevector-collapsiblenav-preference": "«Вектор» темаһы биҙәлешендә ҡабырғалағы менюҙа блоктарҙы йәшерергә рөхсәт итә",
+	"collapsiblevector-collapsiblenav-more": "Күберәк телдәр",
+	"collapsiblevector-noexperiments-preference": "Эксперименталь мөмкинлектәр тәҡдим итмәҫкә"
+}

@@ -2,7 +2,7 @@
 
 namespace WikiOasis\WikiOasisMagic;
 
-use ErrorPageError;
+use MediaWiki\Exception\ErrorPageError;
 use MediaWiki\Html\Html;
 use MediaWiki\Message\Message;
 use MediaWiki\HTMLForm\HTMLForm;
@@ -10,7 +10,7 @@ use MediaWiki\SpecialPage\SpecialPage;
 use Miraheze\CreateWiki\ConfigNames;
 use Miraheze\CreateWiki\Services\CreateWikiDatabaseUtils;
 use Miraheze\CreateWiki\Services\RemoteWikiFactory;
-use ManualLogEntry;
+use MediaWiki\Logging\ManualLogEntry;
 
 class SpecialChangeDomain extends SpecialPage {
 
@@ -21,7 +21,7 @@ class SpecialChangeDomain extends SpecialPage {
 		CreateWikiDatabaseUtils $databaseUtils,
 		RemoteWikiFactory $remoteWikiFactory
 	) {
-		parent::__construct( 'ChangeDomain', 'managewiki-restricted' );
+		parent::__construct( 'ChangeDomain' );
 
 		$this->databaseUtils = $databaseUtils;
 		$this->remoteWikiFactory = $remoteWikiFactory;
@@ -182,4 +182,8 @@ class SpecialChangeDomain extends SpecialPage {
 	protected function getGroupName(): string {
 		return 'wikimanage';
 	}
+	public function getRestriction(): string {
+		return 'managewiki-restricted';
+	}
+
 }

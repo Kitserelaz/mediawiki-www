@@ -4,27 +4,32 @@ namespace Miraheze\ManageWiki\Helpers\Factories;
 
 use MediaWiki\Config\ServiceOptions;
 use MediaWiki\JobQueue\JobQueueGroupFactory;
+use MediaWiki\Language\LocalisationCache;
 use MediaWiki\Title\NamespaceInfo;
-use Miraheze\CreateWiki\Services\CreateWikiDataFactory;
 use Miraheze\ManageWiki\Helpers\NamespacesModule;
 use Miraheze\ManageWiki\Helpers\Utils\DatabaseUtils;
+use Psr\Log\LoggerInterface;
 
 class NamespacesFactory {
 
 	public function __construct(
-		private readonly CreateWikiDataFactory $dataFactory,
 		private readonly DatabaseUtils $databaseUtils,
+		private readonly DataStoreFactory $dataStoreFactory,
+		private readonly LoggerInterface $logger,
 		private readonly JobQueueGroupFactory $jobQueueGroupFactory,
+		private readonly LocalisationCache $localisationCache,
 		private readonly NamespaceInfo $namespaceInfo,
-		private readonly ServiceOptions $options
+		private readonly ServiceOptions $options,
 	) {
 	}
 
 	public function newInstance( string $dbname ): NamespacesModule {
 		return new NamespacesModule(
-			$this->dataFactory,
 			$this->databaseUtils,
+			$this->dataStoreFactory,
 			$this->jobQueueGroupFactory,
+			$this->localisationCache,
+			$this->logger,
 			$this->namespaceInfo,
 			$this->options,
 			$dbname

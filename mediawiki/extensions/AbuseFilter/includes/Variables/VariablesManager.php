@@ -5,12 +5,13 @@ namespace MediaWiki\Extension\AbuseFilter\Variables;
 use LogicException;
 use MediaWiki\Extension\AbuseFilter\KeywordsManager;
 use MediaWiki\Extension\AbuseFilter\Parser\AFPData;
+use MediaWiki\Extension\AbuseFilter\ServiceNames;
 
 /**
  * Service that allows manipulating a VariableHolder
  */
 class VariablesManager {
-	public const SERVICE_NAME = 'AbuseFilterVariablesManager';
+	public const SERVICE_NAME = ServiceNames::VariablesManager;
 	/**
 	 * Used in self::getVar() to determine what to do if the requested variable is missing. See
 	 * the docs of that method for an explanation.
@@ -19,28 +20,15 @@ class VariablesManager {
 	public const GET_STRICT = 1;
 	public const GET_BC = 2;
 
-	/** @var KeywordsManager */
-	private $keywordsManager;
-	/** @var LazyVariableComputer */
-	private $lazyComputer;
-
-	/**
-	 * @param KeywordsManager $keywordsManager
-	 * @param LazyVariableComputer $lazyComputer
-	 */
 	public function __construct(
-		KeywordsManager $keywordsManager,
-		LazyVariableComputer $lazyComputer
+		private readonly KeywordsManager $keywordsManager,
+		private readonly LazyVariableComputer $lazyComputer
 	) {
-		$this->keywordsManager = $keywordsManager;
-		$this->lazyComputer = $lazyComputer;
 	}
 
 	/**
 	 * Checks whether any deprecated variable is stored with the old name, and replaces it with
 	 * the new name. This should normally only happen when a DB dump is retrieved from the DB.
-	 *
-	 * @param VariableHolder $holder
 	 */
 	public function translateDeprecatedVars( VariableHolder $holder ): void {
 		$deprecatedVars = $this->keywordsManager->getDeprecatedVariables();
@@ -91,20 +79,16 @@ class VariablesManager {
 		}
 
 		// The variable is not set.
-		switch ( $mode ) {
-			case self::GET_STRICT:
-				throw new UnsetVariableException( $varName );
-			case self::GET_LAX:
-				return new AFPData( AFPData::DUNDEFINED );
-			case self::GET_BC:
-				// Old behaviour, which can sometimes lead to unexpected results (e.g.
-				// `edit_delta < -5000` will match any non-edit action).
-				return new AFPData( AFPData::DNULL );
-			default:
-				// @codeCoverageIgnoreStart
-				throw new LogicException( "Mode '$mode' not recognized." );
-				// @codeCoverageIgnoreEnd
-		}
+		return match ( $mode ) {
+			self::GET_STRICT => throw new UnsetVariableException( $varName ),
+			self::GET_LAX => new AFPData( AFPData::DUNDEFINED ),
+			// Old behaviour, which can sometimes lead to unexpected results (e.g.
+			// `edit_delta < -5000` will match any non-edit action).
+			self::GET_BC => new AFPData( AFPData::DNULL ),
+			// @codeCoverageIgnoreStart
+			default => throw new LogicException( "Mode '$mode' not recognized." )
+			// @codeCoverageIgnoreEnd
+		};
 	}
 
 	/**
@@ -153,8 +137,6 @@ class VariablesManager {
 	/**
 	 * Compute all vars which need DB access. Useful for vars which are going to be saved
 	 * cross-wiki or used for offline analysis.
-	 *
-	 * @param VariableHolder $holder
 	 */
 	public function computeDBVars( VariableHolder $holder ): void {
 		static $dbTypes = [
@@ -163,9 +145,6 @@ class VariablesManager {
 			'links-from-wikitext-or-database',
 			'load-recent-authors',
 			'page-age',
-			'revision-age-by-id',
-			'revision-age-by-title',
-			'previous-revision-age',
 			'get-page-restrictions',
 			'user-editcount',
 			'user-emailconfirm',
@@ -173,8 +152,9 @@ class VariablesManager {
 			'user-rights',
 			'user-age',
 			'user-block',
-			'revision-text-by-id',
-			'content-model-by-id',
+			'revision-age',
+			'revision-text',
+			'content-model',
 		];
 
 		/** @var LazyLoadedVariable[] $missingVars */

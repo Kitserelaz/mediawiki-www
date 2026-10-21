@@ -1,0 +1,113 @@
+{
+	"name": "NearbyPages",
+	"version": "1.0.0",
+	"url": "https://www.mediawiki.org/wiki/Extension:NearbyPages",
+	"descriptionmsg": "nearby-pages-desc",
+	"license-name": "GPL-2.0-or-later",
+	"type": "specialpage",
+	"AutoloadNamespaces": {
+		"NearbyPages\\": "includes/"
+	},
+	"requires": {
+		"MediaWiki": ">= 1.43"
+	},
+	"MessagesDirs": {
+		"NearbyPages": [
+			"i18n"
+		]
+	},
+	"config": {
+		"NearbyRange": {
+			"value": 10000
+		},
+		"NearbyRandomButton": {
+			"value": true
+		},
+		"NearbyPagesNamespaces": {
+			"value": [
+				0
+			]
+		},
+		"NearbyPagesUrl": {
+			"value": "https://en.wikipedia.org/w/api.php"
+		},
+		"NearbyPagesWikidataCompatibility": {
+			"value": false
+		}
+	},
+	"SpecialPages": {
+		"Nearby": "NearbyPages\\SpecialNearby"
+	},
+	"ExtensionMessagesFiles": {
+		"NearbyAliases": "NearbyPages.alias.php"
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "",
+		"remoteExtPath": "NearbyPages"
+	},
+	"ResourceModules": {
+		"ext.nearby.styles": {
+			"styles": "resources/ext.nearby.styles/index.less"
+		},
+		"ext.nearby.scripts": {
+			"dependencies": [
+				"ext.nearby.images",
+				"vue",
+				"@wikimedia/codex",
+				"mediawiki.router",
+				"mediawiki.api"
+			],
+			"messages": [
+				"nearby-pages-info-heading",
+				"nearby-pages-info-description",
+				"nearby-pages-info-show-random",
+				"nearby-pages-info-show-button",
+				"nearby-pages-distance",
+				"nearby-pages-distance-meters",
+				"nearby-pages-requirements",
+				"nearby-pages-requirements-guidance",
+				"nearby-pages-error",
+				"nearby-pages-error-guidance",
+				"nearby-pages-noresults",
+				"nearby-pages-noresults-guidance",
+				"nearby-pages-location-unavailable",
+				"nearby-pages-permission-denied"
+			],
+			"localBasePath": "resources/ext.nearby.scripts",
+			"remoteExtPath": "NearbyPages",
+			"packageFiles": [
+				"index.js",
+				{
+					"name": "config.json",
+					"config": [
+						"NearbyPagesUrl",
+						"NearbyPagesWikidataCompatibility",
+						"NearbyPagesNamespaces",
+						"NearbyRange",
+						"NearbyRandomButton"
+					]
+				},
+				{
+					"name": "icons.json",
+					"callback": "MediaWiki\\ResourceLoader\\CodexModule::getIcons",
+					"callbackParam": [
+						"cdxIconMapPin"
+					]
+				},
+				"locationProvider.js",
+				"api.js",
+				"App.vue",
+				"PageList.vue"
+			]
+		},
+		"ext.nearby.images": {
+			"class": "MediaWiki\\ResourceLoader\\ImageModule",
+			"useDataURI": false,
+			"selector": ".{name}",
+			"images": {
+				"mw-vue-nearby__image": "resources/ext.nearby.images/article-illustration.svg"
+			}
+		}
+	},
+	"manifest_version": 2
+}

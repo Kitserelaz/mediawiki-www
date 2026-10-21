@@ -2,12 +2,14 @@
 
 namespace MediaWiki\IPInfo\Test\Integration\Rest\Handler;
 
-use ArrayUtils;
+use MediaWiki\Block\Restriction\ActionRestriction;
 use MediaWiki\Context\RequestContext;
+use MediaWiki\IPInfo\HookHandler\PreferencesHandler;
 use MediaWiki\IPInfo\Info\BlockInfo;
 use MediaWiki\IPInfo\Rest\Handler\RevisionHandler;
 use MediaWiki\IPInfo\Rest\Presenter\DefaultPresenter;
 use MediaWiki\IPInfo\Test\Integration\RestHandler\HandlerTestCase;
+use MediaWiki\MainConfigNames;
 use MediaWiki\Page\PageIdentity;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Permissions\UltimateAuthority;
@@ -16,8 +18,10 @@ use MediaWiki\Rest\Handler;
 use MediaWiki\Rest\LocalizedHttpException;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Revision\RevisionRecord;
+use MediaWiki\User\Options\StaticUserOptionsLookup;
 use MediaWiki\User\UserFactory;
 use MediaWiki\User\UserIdentityValue;
+use Wikimedia\ArrayUtils\ArrayUtils;
 use Wikimedia\Message\MessageValue;
 
 /**
@@ -55,12 +59,14 @@ class RevisionHandlerTest extends HandlerTestCase {
 			$services->getService( 'IPInfoInfoManager' ),
 			$services->getRevisionLookup(),
 			$services->getPermissionManager(),
-			$services->getUserOptionsLookup(),
 			$services->getUserFactory(),
 			$services->getJobQueueGroup(),
 			$services->getLanguageFallback(),
 			$services->getUserIdentityUtils(),
-			$services->get( 'IPInfoTempUserIPLookup' )
+			$services->get( 'IPInfoTempUserIPLookup' ),
+			$services->get( 'IPInfoPermissionManager' ),
+			$services->getReadOnlyMode(),
+			$services->getHookContainer()
 		);
 	}
 
@@ -169,8 +175,9 @@ class RevisionHandlerTest extends HandlerTestCase {
 		$this->executeWithUser( $request, $user );
 	}
 
-	public function testShouldDenyAccessForAdminIfBetaFeatureDisabled(): void {
+	public function testShouldDenyAccessForAdminIfBetaFeatureDisabledWithoutTempAccounts(): void {
 		$this->markTestSkippedIfExtensionNotLoaded( 'BetaFeatures' );
+		$this->disableAutoCreateTempUser();
 		$this->expectExceptionObject(
 			new LocalizedHttpException(
 				new MessageValue( 'ipinfo-rest-access-denied' ),
@@ -180,7 +187,7 @@ class RevisionHandlerTest extends HandlerTestCase {
 
 		$user = $this->getTestSysop()->getAuthority();
 		$this->setUserOptions( $user, [
-			'ipinfo-use-agreement' => 1
+			PreferencesHandler::IPINFO_USE_AGREEMENT => 1
 		] );
 
 		$request = self::getRequestData();
@@ -249,92 +256,114 @@ class RevisionHandlerTest extends HandlerTestCase {
 
 	public static function provideErrorCases(): iterable {
 		yield 'anonymous user without permission' => [
-			fn () => self::$anonUser,
-			fn () => self::$revRecordByAnonUser,
+			static fn () => self::$anonUser,
+			static fn () => self::$revRecordByAnonUser,
 			self::VALID_CSRF_TOKEN,
 			[],
 			[ 'ipinfo-rest-access-denied', 401 ]
 		];
 
 		yield 'regular user without permission' => [
-			fn () => self::$regularUser,
-			fn () => self::$revRecordByAnonUser,
+			static fn () => self::$regularUser,
+			static fn () => self::$revRecordByAnonUser,
 			self::VALID_CSRF_TOKEN,
 			[],
 			[ 'ipinfo-rest-access-denied', 403 ]
 		];
 
 		yield 'user with correct permissions but without accepted agreement' => [
-			fn () => self::$testSysop,
-			fn () => self::$revRecordByAnonUser,
+			static fn () => self::$testSysop,
+			static fn () => self::$revRecordByAnonUser,
 			self::VALID_CSRF_TOKEN,
 			[ 'ipinfo-beta-feature-enable' => 1 ],
 			[ 'ipinfo-rest-access-denied', 403 ]
 		];
 
 		yield 'blocked user with correct permissions and accepted agreement' => [
-			fn () => self::$blockedSysop,
-			fn () => self::$revRecordByAnonUser,
+			static fn () => self::$blockedSysop,
+			static fn () => self::$revRecordByAnonUser,
 			self::VALID_CSRF_TOKEN,
-			[ 'ipinfo-beta-feature-enable' => 1, 'ipinfo-use-agreement' => 1 ],
+			[ 'ipinfo-beta-feature-enable' => 1, PreferencesHandler::IPINFO_USE_AGREEMENT => 1 ],
 			[ 'ipinfo-rest-access-denied', 403 ]
 		];
 
 		yield 'missing CSRF token' => [
-			fn () => self::$testSysop,
-			fn () => self::$revRecordByAnonUser,
+			static fn () => self::$testSysop,
+			static fn () => self::$revRecordByAnonUser,
 			null,
-			[ 'ipinfo-beta-feature-enable' => 1, 'ipinfo-use-agreement' => 1 ],
+			[ 'ipinfo-beta-feature-enable' => 1, PreferencesHandler::IPINFO_USE_AGREEMENT => 1 ],
 			[ 'rest-badtoken-missing', 403 ]
 		];
 
 		yield 'mismatched CSRF token' => [
-			fn () => self::$testSysop,
-			fn () => self::$revRecordByAnonUser,
+			static fn () => self::$testSysop,
+			static fn () => self::$revRecordByAnonUser,
 			'some-bad-token',
-			[ 'ipinfo-beta-feature-enable' => 1, 'ipinfo-use-agreement' => 1 ],
+			[ 'ipinfo-beta-feature-enable' => 1, PreferencesHandler::IPINFO_USE_AGREEMENT => 1 ],
 			[ 'rest-badtoken', 403 ]
 		];
 
 		yield 'missing revision' => [
-			fn () => self::$testSysop,
-			fn () => null,
+			static fn () => self::$testSysop,
+			static fn () => null,
 			self::VALID_CSRF_TOKEN,
-			[ 'ipinfo-beta-feature-enable' => 1, 'ipinfo-use-agreement' => 1 ],
+			[ 'ipinfo-beta-feature-enable' => 1, PreferencesHandler::IPINFO_USE_AGREEMENT => 1 ],
 			[ 'rest-nonexistent-revision', 404 ]
 		];
 
 		yield 'revision for restricted page' => [
-			fn () => self::$testSysop,
-			fn () => self::$revRecordForRestrictedPage,
+			static fn () => self::$testSysop,
+			static fn () => self::$revRecordForRestrictedPage,
 			self::VALID_CSRF_TOKEN,
-			[ 'ipinfo-beta-feature-enable' => 1, 'ipinfo-use-agreement' => 1 ],
+			[ 'ipinfo-beta-feature-enable' => 1, PreferencesHandler::IPINFO_USE_AGREEMENT => 1 ],
 			[ 'rest-revision-permission-denied-revision', 403 ]
 		];
 
 		yield 'revision with deleted author' => [
-			fn () => self::$testSysop,
-			fn () => self::$deletedRevRecord,
+			static fn () => self::$testSysop,
+			static fn () => self::$deletedRevRecord,
 			self::VALID_CSRF_TOKEN,
-			[ 'ipinfo-beta-feature-enable' => 1, 'ipinfo-use-agreement' => 1 ],
+			[ 'ipinfo-beta-feature-enable' => 1, PreferencesHandler::IPINFO_USE_AGREEMENT => 1 ],
 			[ 'ipinfo-rest-revision-no-author', 403 ]
 		];
 
 		yield 'revision with registered author' => [
-			fn () => self::$testSysop,
-			fn () => self::$revRecordByNamedUser,
+			static fn () => self::$testSysop,
+			static fn () => self::$revRecordByNamedUser,
 			self::VALID_CSRF_TOKEN,
-			[ 'ipinfo-beta-feature-enable' => 1, 'ipinfo-use-agreement' => 1 ],
+			[ 'ipinfo-beta-feature-enable' => 1, PreferencesHandler::IPINFO_USE_AGREEMENT => 1 ],
 			[ 'ipinfo-rest-revision-registered', 404 ]
 		];
 
 		yield 'revision with imported author' => [
-			fn () => self::$testSysop,
-			fn () => self::$revRecordByImportedUser,
+			static fn () => self::$testSysop,
+			static fn () => self::$revRecordByImportedUser,
 			self::VALID_CSRF_TOKEN,
-			[ 'ipinfo-beta-feature-enable' => 1, 'ipinfo-use-agreement' => 1 ],
+			[ 'ipinfo-beta-feature-enable' => 1, PreferencesHandler::IPINFO_USE_AGREEMENT => 1 ],
 			[ 'ipinfo-rest-revision-invalid-ip', 404 ]
 		];
+	}
+
+	public function testShouldHandleSiteInReadOnlyMode() {
+		$this->setService( 'UserOptionsLookup', new StaticUserOptionsLookup(
+			[
+				self::$testSysop->getUser()->getName() => [
+					'ipinfo-beta-feature-enable' => 1,
+					PreferencesHandler::IPINFO_USE_AGREEMENT => 1
+				]
+			]
+		) );
+
+		$request = self::getRequestData( self::$revRecordByAnonUser->getId() );
+
+		$this->expectExceptionObject(
+			new LocalizedHttpException(
+				new MessageValue( 'readonlytext', [ 'Maintenance' ] ),
+				503
+			)
+		);
+		$this->overrideConfigValue( MainConfigNames::ReadOnly, 'Maintenance' );
+		$this->executeWithUser( $request, self::$testSysop );
 	}
 
 	/**
@@ -360,7 +389,7 @@ class RevisionHandlerTest extends HandlerTestCase {
 		$user = $this->getMutableTestUser( $groups )->getAuthority();
 		$this->setUserOptions( $user, [
 			'ipinfo-beta-feature-enable' => 1,
-			'ipinfo-use-agreement' => 1
+			PreferencesHandler::IPINFO_USE_AGREEMENT => 1
 		] );
 
 		$blockInfo = new BlockInfo();
@@ -371,6 +400,7 @@ class RevisionHandlerTest extends HandlerTestCase {
 
 		$geoData = $body['info'][0]['data']['ipinfo-source-geoip2'];
 
+		$this->assertSame( 'ipv4', $body['info'][0]['data']['ipinfo-source-ipversion']['version'] );
 		$this->assertSame( 200, $response->getStatusCode() );
 		$this->assertSame( $revRecord->getUser()->getName(), $body['info'][0]['subject'] );
 		$this->assertSame( 'United States', $geoData['countryNames']['en'] );
@@ -415,8 +445,8 @@ class RevisionHandlerTest extends HandlerTestCase {
 		];
 
 		$revisions = [
-			'revision by anonymous user' => fn () => self::$revRecordByAnonUser,
-			'revision by temporary user' => fn () => self::$revRecordByTempUser
+			'revision by anonymous user' => static fn () => self::$revRecordByAnonUser,
+			'revision by temporary user' => static fn () => self::$revRecordByTempUser
 		];
 
 		$tempUserConfig = [
@@ -425,5 +455,35 @@ class RevisionHandlerTest extends HandlerTestCase {
 		];
 
 		return ArrayUtils::cartesianProduct( $groups, $revisions, $tempUserConfig );
+	}
+
+	public function testAccessAllowedForPartiallyBlockedUser(): void {
+		$performer = $this->getTestUser( [ 'sysop' ] )->getAuthority();
+		$this->setUserOptions( $performer, [
+			'ipinfo-beta-feature-enable' => 1,
+			PreferencesHandler::IPINFO_USE_AGREEMENT => 1
+		] );
+
+		$blockStatus = $this->getServiceContainer()
+			->getBlockUserFactory()
+			->newBlockUser(
+				$performer->getUser(),
+				$this->getTestSysop()->getAuthority(),
+				'infinity',
+				'',
+				[],
+				[ new ActionRestriction( 0, 'move' ) ]
+			)
+			->placeBlock();
+		$this->assertStatusGood( $blockStatus, 'Block was not placed' );
+
+		$revRecord = self::$revRecordByAnonUser;
+
+		$request = self::getRequestData( $revRecord->getId() );
+		$response = $this->executeWithUser( $request, $performer );
+		$body = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertSame( $revRecord->getUser()->getName(), $body['info'][0]['subject'] );
 	}
 }

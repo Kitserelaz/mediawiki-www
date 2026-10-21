@@ -1,0 +1,7 @@
+{
+  "component": "mediawiki/extensions/FlaggedRevs",
+  "baseline": "806cba8a74d24a3c96a1071ba62d8a0ccd65a1eb",
+  "target": "49e5261349d8b5318bbb95635701f4aec59da48b",
+  "preserved_changes": [],
+  "dependency_status": "requires-lock-regeneration"
+}

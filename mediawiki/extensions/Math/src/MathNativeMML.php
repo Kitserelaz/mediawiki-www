@@ -8,13 +8,15 @@
 
 namespace MediaWiki\Extension\Math;
 
+use DOMDocument;
+use DOMElement;
+use DOMNode;
+use DOMXPath;
 use MediaWiki\Config\Config;
 use MediaWiki\Extension\Math\InputCheck\LocalChecker;
 use MediaWiki\Extension\Math\WikiTexVC\MMLnodes\MMLmath;
 use MediaWiki\HookContainer\HookContainer;
 use MediaWiki\MediaWikiServices;
-use MediaWiki\SpecialPage\SpecialPage;
-use MediaWiki\Title\Title;
 use StatusValue;
 use Wikimedia\ObjectCache\WANObjectCache;
 
@@ -36,22 +38,64 @@ class MathNativeMML extends MathMathML {
 		array &$entry,
 		?MathConfig $mathConfig = null,
 		?HookContainer $hookContainer = null,
-		?Config $config = null ): bool {
+		?Config $config = null,
+		?string $rngFile = null ): bool {
 		$mathConfig ??= Math::getMathConfig();
 		$hookContainer ??= MediaWikiServices::getInstance()->getHookContainer();
 		$config ??= MediaWikiServices::getInstance()->getMainConfig();
-		$renderer = new MathNativeMML( $entry['input'], $entry['params'], WANObjectCache::newEmpty(), $mathConfig );
+		$renderer = new MathNativeMML(
+			$entry['input'], $entry['params'] ?? [], WANObjectCache::newEmpty(), $mathConfig );
 		$renderer->setRawError( true );
 		$renderer->setHookContainer( $hookContainer );
 		$renderer->setMainConfig( $config );
-		$renderer->setChecker( new LocalChecker( WANObjectCache::newEmpty(), $entry['input'], 'tex' ) );
+		$renderer->setChecker( new LocalChecker( WANObjectCache::newEmpty(), $renderer->getTex(), 'tex' ) );
 		$result = $renderer->render();
 		$entry['output'] = $renderer->getMathml();
 		if ( !$result ) {
 			$entry['skipped'] = true;
 			$entry['error'] = $renderer->getLastError();
 		}
+		if ( $rngFile !== null ) {
+			$validation = $renderer->validateSchema( $rngFile );
+			if ( $validation ) {
+				$entry['core-validation'] = $validation;
+			} else {
+				unset( $entry['core-validation'] );
+			}
+		}
 		return $result;
+	}
+
+	/**
+	 * Adds hyperlinks to MathML elements using <mrow> with href and title attributes
+	 * @param string $qid Identifier for symbol mapping
+	 * @param string $mathml Input MathML HTML content
+	 * @return string Modified MathML
+	 */
+	private function addLinksToMathML( string $qid, string $mathml ): string {
+		$services = MediaWikiServices::getInstance();
+		$connector = $services->getService( 'Math.WikibaseConnector' );
+		$language = $services->getContentLanguageCode()->toString();
+		$qmap = $connector->getUrlFromSymbol( $qid, $language );
+		$dom = new DOMDocument();
+		$dom->loadXML( $mathml );
+		$xpath = new DOMXPath( $dom );
+		$xpath->registerNamespace( 'mathml', 'http://www.w3.org/1998/Math/MathML' );
+		$linkableElements = $xpath->query( '//mathml:mi | //mathml:mo | //mathml:mtext' );
+		foreach ( $linkableElements as $linkableElement ) {
+			$textValue = $linkableElement->textContent;
+			if ( empty( $qmap[$textValue]['url'] ) ) {
+				continue;
+			}
+			// Links will be migrated to anchor tags: T415005
+			$mrow = $dom->createElementNS( 'http://www.w3.org/1998/Math/MathML', 'mrow' );
+			$mrow->setAttribute( 'href', $qmap[$textValue]['url'] );
+			$mrow->setAttribute( 'title', $qmap[$textValue]['title'] );
+			$parent = $linkableElement->parentNode;
+			$parent->replaceChild( $mrow, $linkableElement );
+			$mrow->appendChild( $linkableElement );
+		}
+		return $dom->saveXML();
 	}
 
 	public function getMainConfig(): Config {
@@ -74,18 +118,25 @@ class MathNativeMML extends MathMathML {
 		if ( $this->getID() !== '' ) {
 			$attributes['id'] = $this->getID();
 		}
-		if ( $config->get( 'MathEnableFormulaLinks' ) &&
-			isset( $this->params['qid'] ) &&
-			preg_match( '/Q\d+/', $this->params['qid'] ) ) {
-			$titleObj = Title::newFromLinkTarget( SpecialPage::getTitleValueFor( 'MathWikibase' ) );
-			$attributes['href'] = $titleObj->getLocalURL( [ 'qid' => $this->params['qid'] ] );
-		}
 		if ( $this->getMathStyle() == 'display' ) {
 			$attributes['display'] = 'block';
+			$attributes['class'] .= ' mwe-math-element-block';
+		} else {
+			$attributes['class'] .= ' mwe-math-element-inline';
 		}
-		$root = new MMLmath( "", $attributes );
-
-		$this->setMathml( $root->encapsulateRaw( $presentation ?? '' ) );
+		if ( ( $this->params['class'] ?? '' ) === 'mathjax_ignore' ) {
+			$attributes['class'] .= ' mathjax_ignore';
+		}
+		$mathElement = (string)new MMLmath( "", $attributes, $presentation ?? '' );
+		if ( isset( $this->params['qid'] ) &&
+			preg_match( '/^Q\d+$/', $this->params['qid'] ) &&
+			$config->get( "MathEnableFormulaLinks" ) ) {
+			$this->setMathml( $this->addLinksToMathML(
+				$this->params['qid'],
+				$mathElement ) );
+		} else {
+			$this->setMathml( $mathElement );
+		}
 		return StatusValue::newGood();
 	}
 
@@ -106,6 +157,7 @@ class MathNativeMML extends MathMathML {
 		return false;
 	}
 
+	/** @inheritDoc */
 	public function writeCache() {
 		return true;
 	}
@@ -120,5 +172,38 @@ class MathNativeMML extends MathMathML {
 
 	private function setChecker( LocalChecker $checker ) {
 		$this->checker = $checker;
+	}
+
+	/**
+	 * Validates the schema of the current MathML document against a Relax NG schema file.
+	 *
+	 * @param string $relaxNGFile The path to the Relax NG (.rng) file used for validation.
+	 * @return array An array containing the validation errors.
+	 */
+	private function validateSchema( string $relaxNGFile ): array {
+		$doc = new DOMDocument();
+		$doc->loadXML( $this->mathml );
+		$this->removeHtmlAttributes( $doc );
+
+		libxml_use_internal_errors( true );
+		libxml_clear_errors();
+
+		$doc->relaxNGValidate( $relaxNGFile );
+
+		return array_count_values( array_map( static fn ( $error ) => $error->message, libxml_get_errors() ) );
+	}
+
+	private function removeHtmlAttributes( DOMNode $n ): void {
+		$htmlAttributes = [ 'style', 'class' ];
+		if ( $n instanceof DOMElement && $n->hasAttributes() ) {
+			foreach ( $n->attributes as $attr ) {
+				if ( str_starts_with( $attr->name, 'data' ) || in_array( $attr->name, $htmlAttributes ) ) {
+					$n->removeAttribute( $attr->name );
+				}
+			}
+		}
+		foreach ( $n->childNodes as $child ) {
+			$this->removeHtmlAttributes( $child );
+		}
 	}
 }

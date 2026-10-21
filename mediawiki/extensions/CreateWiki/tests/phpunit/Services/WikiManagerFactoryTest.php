@@ -2,9 +2,10 @@
 
 namespace Miraheze\CreateWiki\Tests\Services;
 
-use FatalError;
 use MediaWiki\Config\ConfigException;
+use MediaWiki\Exception\FatalError;
 use MediaWiki\MainConfigNames;
+use MediaWiki\WikiMap\WikiMap;
 use MediaWikiIntegrationTestCase;
 use Miraheze\CreateWiki\ConfigNames;
 use Miraheze\CreateWiki\Services\CreateWikiDatabaseUtils;
@@ -12,14 +13,11 @@ use Miraheze\CreateWiki\Services\RemoteWikiFactory;
 use Miraheze\CreateWiki\Services\WikiManagerFactory;
 use Wikimedia\Rdbms\LBFactoryMulti;
 use function array_merge;
-use function version_compare;
-use function wfLoadConfiguration;
 use function wfMessage;
 use function wfTimestamp;
 use const DBO_DEBUG;
 use const DBO_DEFAULT;
 use const MW_INSTALL_PATH;
-use const MW_VERSION;
 use const TS_MW;
 use const TS_UNIX;
 
@@ -34,36 +32,33 @@ class WikiManagerFactoryTest extends MediaWikiIntegrationTestCase {
 	protected function setUp(): void {
 		parent::setUp();
 
-		$sqlPath = '/maintenance/tables-generated.sql';
-		if ( version_compare( MW_VERSION, '1.44', '>=' ) ) {
-			$sqlPath = '/sql/mysql/tables-generated.sql';
-		}
-
 		$this->overrideConfigValues( [
 			ConfigNames::DatabaseClusters => [ 'c1', 'c2' ],
 			ConfigNames::DatabaseSuffix => 'test',
 			ConfigNames::SQLFiles => [
-				MW_INSTALL_PATH . $sqlPath,
+				MW_INSTALL_PATH . '/sql/mysql/tables-generated.sql',
 			],
 		] );
 
 		$db = $this->getServiceContainer()->getDatabaseFactory()->create( 'mysql', [
 			'host' => $this->getConfVar( MainConfigNames::DBserver ),
 			'user' => 'root',
+			'password' => getenv( 'MW_TEST_DB_ADMIN_PASSWORD_FILE' ) ?
+				trim( file_get_contents( getenv( 'MW_TEST_DB_ADMIN_PASSWORD_FILE' ) ) ) : '',
 		] );
 
 		if ( $db === null ) {
 			return;
 		}
 
-		$db->begin();
-		$db->query( "GRANT ALL PRIVILEGES ON `createwikitest`.* TO 'wikiuser'@'localhost';" );
-		$db->query( "GRANT ALL PRIVILEGES ON `createwikiprivatetest`.* TO 'wikiuser'@'localhost';" );
-		$db->query( "GRANT ALL PRIVILEGES ON `deletewikitest`.* TO 'wikiuser'@'localhost';" );
-		$db->query( "GRANT ALL PRIVILEGES ON `recreatewikitest`.* TO 'wikiuser'@'localhost';" );
-		$db->query( "GRANT ALL PRIVILEGES ON `renamewikitest`.* TO 'wikiuser'@'localhost';" );
-		$db->query( "FLUSH PRIVILEGES;" );
-		$db->commit();
+		$db->begin( __METHOD__ );
+		$db->query( "GRANT ALL PRIVILEGES ON `createwikitest`.* TO 'wikiuser'@'localhost';", __METHOD__ );
+		$db->query( "GRANT ALL PRIVILEGES ON `createwikiprivatetest`.* TO 'wikiuser'@'localhost';", __METHOD__ );
+		$db->query( "GRANT ALL PRIVILEGES ON `deletewikitest`.* TO 'wikiuser'@'localhost';", __METHOD__ );
+		$db->query( "GRANT ALL PRIVILEGES ON `recreatewikitest`.* TO 'wikiuser'@'localhost';", __METHOD__ );
+		$db->query( "GRANT ALL PRIVILEGES ON `renamewikitest`.* TO 'wikiuser'@'localhost';", __METHOD__ );
+		$db->query( 'FLUSH PRIVILEGES;', __METHOD__ );
+		$db->commit( __METHOD__ );
 	}
 
 	public function addDBDataOnce(): void {
@@ -74,19 +69,13 @@ class WikiManagerFactoryTest extends MediaWikiIntegrationTestCase {
 			->insertInto( 'cw_wikis' )
 			->ignore()
 			->row( [
-				'wiki_dbname' => 'wikidb',
+				'wiki_dbname' => WikiMap::getCurrentWikiId(),
 				'wiki_dbcluster' => 'c1',
 				'wiki_sitename' => 'TestWiki',
 				'wiki_language' => 'en',
 				'wiki_private' => 0,
 				'wiki_creation' => $dbw->timestamp(),
-				'wiki_category' => 'uncategorised',
-				'wiki_closed' => 0,
-				'wiki_deleted' => 0,
-				'wiki_locked' => 0,
-				'wiki_inactive' => 0,
-				'wiki_inactive_exempt' => 0,
-				'wiki_url' => 'http://127.0.0.1:9412',
+				'wiki_category' => 'test',
 			] )
 			->caller( __METHOD__ )
 			->execute();
@@ -126,7 +115,7 @@ class WikiManagerFactoryTest extends MediaWikiIntegrationTestCase {
 		$this->assertInstanceOf( WikiManagerFactory::class, $factory );
 		$this->assertFalse( $factory->exists() );
 
-		$factory = $this->getFactoryService()->newInstance( 'wikidb' );
+		$factory = $this->getFactoryService()->newInstance( WikiMap::getCurrentWikiId() );
 		$this->assertInstanceOf( WikiManagerFactory::class, $factory );
 		$this->assertTrue( $factory->exists() );
 	}
@@ -186,6 +175,7 @@ class WikiManagerFactoryTest extends MediaWikiIntegrationTestCase {
 	 * @covers ::rename
 	 */
 	public function testRenameErrors(): void {
+		$this->setupLBFactory();
 		$wikiManager = $this->getFactoryService()->newInstance( 'createwikitest' );
 
 		$error = 'Can not rename createwikitest to renamewiki because: ';
@@ -204,7 +194,6 @@ class WikiManagerFactoryTest extends MediaWikiIntegrationTestCase {
 
 	/**
 	 * @covers ::compileTables
-	 * @covers ::recache
 	 * @covers ::rename
 	 */
 	public function testRenameSuccess(): void {
@@ -263,7 +252,6 @@ class WikiManagerFactoryTest extends MediaWikiIntegrationTestCase {
 	/**
 	 * @covers ::compileTables
 	 * @covers ::delete
-	 * @covers ::recache
 	 */
 	public function testDeleteEligible(): void {
 		$this->setupLBFactory();
@@ -329,7 +317,7 @@ class WikiManagerFactoryTest extends MediaWikiIntegrationTestCase {
 		) );
 
 		return $wikiManager->create(
-			'TestWiki', 'en', $private, 'uncategorised',
+			'TestWiki', 'en', $private, 'test',
 			$testUser->getName(), $testSysop->getName(),
 			'Test', []
 		);
@@ -341,11 +329,18 @@ class WikiManagerFactoryTest extends MediaWikiIntegrationTestCase {
 	}
 
 	private function setupLBFactory(): void {
-		wfLoadConfiguration();
+		$sections = [];
+		$rows = $this->getServiceContainer()->get( 'CreateWikiDatabaseUtils' )
+			->getGlobalReplicaDB()->newSelectQueryBuilder()
+			->select( [ 'wiki_dbname', 'wiki_dbcluster' ] )->from( 'cw_wikis' )
+			->caller( __METHOD__ )->fetchResultSet();
+		foreach ( $rows as $row ) {
+			$sections[$row->wiki_dbname] = $row->wiki_dbcluster;
+		}
 		$this->overrideConfigValue( MainConfigNames::LBFactoryConf, [
 			'class' => LBFactoryMulti::class,
 			'secret' => $this->getConfVar( MainConfigNames::SecretKey ),
-			'sectionsByDB' => $this->getConfVar( 'WikiInitialize' )->wikiDBClusters,
+			'sectionsByDB' => $sections,
 			'sectionLoads' => [
 				'DEFAULT' => [
 					'c1' => 0,
@@ -360,6 +355,8 @@ class WikiManagerFactoryTest extends MediaWikiIntegrationTestCase {
 			'serverTemplate' => [
 				'dbname' => $this->getConfVar( MainConfigNames::DBname ),
 				'user' => 'root',
+				'password' => getenv( 'MW_TEST_DB_ADMIN_PASSWORD_FILE' ) ?
+					trim( file_get_contents( getenv( 'MW_TEST_DB_ADMIN_PASSWORD_FILE' ) ) ) : '',
 				'type' => 'mysql',
 				'flags' => DBO_DEFAULT | DBO_DEBUG,
 			],

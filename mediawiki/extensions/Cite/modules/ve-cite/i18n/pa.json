@@ -24,10 +24,7 @@
 	"cite-ve-dialog-reference-options-group-placeholder": "ਆਮ ਹਵਾਲੇ",
 	"cite-ve-dialog-reference-options-section": "ਚੋਣਾਂ",
 	"cite-ve-dialog-reference-title": "ਹਵਾਲਾ",
-	"cite-ve-dialog-reference-title-add-details": "ਹਵਾਲੇ ਵਿੱਚ ਵੇਰਵੇ ਸ਼ਾਮਲ ਕਰੋ",
-	"cite-ve-dialog-reference-title-edit-details": "ਵਾਧੂ ਵੇਰਵਿਆਂ ਦੀ ਸੋਧ ਕਰੋ",
 	"cite-ve-dialog-reference-useexisting-tool": "ਮੁੜ-ਵਰਤੋਂ",
-	"cite-ve-dialog-reference-useexisting-long-tool": "ਇਸ ਹਵਾਲੇ ਦੀ ਮੁੜ ਵਰਤੋਂ ਕਰੋ",
 	"cite-ve-dialog-referenceslist-contextitem-description-general": "ਆਮ ਹਵਾਲਿਆਂ ਦੀ ਸੂਚੀ",
 	"cite-ve-dialog-referenceslist-title": "ਹਵਾਲਾ ਸੂਚੀ",
 	"cite-ve-dialogbutton-citation-educationpopup-title": "ਹਵਾਲੇ",
@@ -38,5 +35,7 @@
 	"cite-ve-reference-input-placeholder": "ਮੌਜੂਦਾ ਹਵਾਲੇ ਵਿੱਚ ਖੋਜ ਕਰੋ",
 	"cite-ve-referenceslist-isempty-default": "ਇਸ ਸੂਚੀ ਵਿੱਚ ਸ਼ਾਮਿਲ ਕਰਨ ਲਈ ਇਸ ਸਫ਼ੇ ਉੱਤੇ ਕੋਈ ਹਵਾਲੇ ਨਹੀਂ ਹਨ।",
 	"cite-ve-toolbar-group-label": "ਹਵਾਲਾ",
-	"cite-ve-othergroup-item": "$1 ਹਵਾਲਾ"
+	"cite-ve-othergroup-item": "$1 ਹਵਾਲਾ",
+	"cite-ve-dialog-reference-title-add-details": "ਹਵਾਲੇ ਵਿੱਚ ਵੇਰਵੇ ਸ਼ਾਮਲ ਕਰੋ",
+	"cite-ve-dialog-reference-title-edit-details": "ਵਾਧੂ ਵੇਰਵਿਆਂ ਦੀ ਸੋਧ ਕਰੋ"
 }

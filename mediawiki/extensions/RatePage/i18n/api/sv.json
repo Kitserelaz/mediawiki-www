@@ -1,0 +1,22 @@
+{
+	"@metadata": {
+		"authors": [
+			"Sabelöga"
+		]
+	},
+	"apihelp-ratepage-summary": "Låter användare rösta på en sida och hämtar betyg för en sida. Kräver att man anger en av två parametrar: pageid eller pagetitle.",
+	"apihelp-ratepage-param-pageid": "Sid-ID",
+	"apihelp-ratepage-param-pagetitle": "Sidtitel",
+	"apihelp-ratepage-param-answer": "Användares sidbetyg (från 1 till 5 ingår som standard, kan ändras i konfigurationsinställningarna)",
+	"apihelp-ratepage-param-contest": "Tävlingsidentifierare",
+	"apihelp-ratepage-example-1": "Hämta nuvarande betyg för sidan Exempel,",
+	"apihelp-ratepage-example-2": "Betygsätt sidan Exempel med betyget 2.",
+	"apihelp-query+pagerating-summary": "Returnerar röster på den här sidan och den här användarens röstningsbehörigheter.",
+	"apihelp-query+pagerating-param-contest": "Tävlingsidentifierare",
+	"apierror-ratepage-contest-id-too-long": "Tävlings-ID:ts längd övergår begränsningen på 255 tecken.",
+	"apierror-ratepage-contest-id-allowed-chars": "Tävlings-ID får bara innehålla siffror och latinska bokstäver, inga andra tecken tillåtna.",
+	"apierror-ratepage-contest-not-exists": "Tävlingen $1 finns inte.",
+	"apierror-ratepage-page-not-exists": "Den angivna sidan finns inte.",
+	"apierror-ratepage-cannot-vote-in-contest": "Du har inte behörighet att rösta i den här tävlingen.",
+	"apierror-ratepage-invalid-answer": "Ett ogiltigt svar har angetts. Svaret borde vara större än eller lika mycket som $1 och mindre än eller lika mycket som $2."
+}

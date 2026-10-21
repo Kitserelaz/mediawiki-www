@@ -1,0 +1,199 @@
+{
+	"name": "Network",
+
+	"version": "3.0.0",
+
+	"author": [
+		"[https://www.entropywins.wtf/mediawiki Jeroen De Dauw]",
+		"[https://professional.wiki/ Professional Wiki]"
+	],
+
+	"url": "https://professional.wiki/en/extension/network",
+
+	"descriptionmsg": "network-desc",
+
+	"license-name": "GPL-2.0-or-later",
+
+	"type": "parserhook",
+
+	"requires": {
+		"MediaWiki": ">= 1.39.0"
+	},
+
+	"config": {
+		"PageNetworkOptions": {
+			"value": {
+				"layout": {
+					"randomSeed": 42
+				},
+				"physics": {
+					"barnesHut": {
+						"gravitationalConstant": -5000,
+						"damping": 0.242
+					}
+				},
+				"nodes": {
+					"color": {
+						"background": "white",
+						"highlight": {
+							"background": "white"
+						}
+					},
+					"borderWidth": 0,
+					"shape": "image",
+					"size": 10,
+					"shapeProperties": {
+						"useBorderWithImage": true
+					}
+				},
+				"groups": {
+					"bluelink": {
+						"image": "resources/lib/ooui/themes/wikimediaui/images/icons/article-rtl-progressive.svg"
+					},
+					"redlink": {
+						"image": "resources/lib/ooui/themes/wikimediaui/images/icons/articleNotFound-ltr.svg",
+						"color": {
+							"border": "#ba0000",
+							"highlight": {
+								"border": "#ba0000"
+							}
+						},
+						"font": {
+							"color": "#ba0000"
+						}
+					},
+					"externallink": {
+						"image": "resources/lib/ooui/themes/wikimediaui/images/icons/linkExternal-ltr-progressive.svg",
+						"color": {
+							"border": "grey",
+							"highlight": {
+								"border": "grey"
+							}
+						},
+						"font": {
+							"color": "grey"
+						}
+					}
+				}
+			},
+			"merge_strategy": "array_replace_recursive"
+		},
+		"PageNetworkExcludeTalkPages": {
+			"value": true
+		},
+		"PageNetworkExcludedNamespaces": {
+			"value": [ 2, 4, 8, 12 ]
+		},
+		"PageNetworkEnableDisplayTitle": {
+			"value": true
+		},
+		"PageNetworkLabelMaxLength": {
+			"value": 20
+		}
+	},
+
+	"MessagesDirs": {
+		"Network": [
+			"i18n"
+		]
+	},
+
+	"ExtensionMessagesFiles": {
+		"NetworkParserFunction": "i18n/_MagicWords.php",
+		"NetworkAlias": "i18n/Network.i18n.alias.php"
+	},
+
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\Network\\": "src",
+		"MediaWiki\\Extension\\Network\\Tests\\": "tests/php"
+	},
+
+	"Hooks": {
+		"ParserFirstCallInit": "MediaWiki\\Extension\\Network\\EntryPoints\\NetworkFunction::onParserFirstCallInit"
+	},
+
+	"SpecialPages": {
+		"Network": "MediaWiki\\Extension\\Network\\EntryPoints\\SpecialNetwork"
+	},
+
+	"ResourceFileModulePaths": {
+		"localBasePath": "/",
+		"remoteExtPath": "Network"
+	},
+
+	"ResourceModules": {
+		"ext.network": {
+			"dependencies": [
+				"mediawiki.api",
+				"mediawiki.Title",
+				"mediawiki.jqueryMsg"
+			],
+			"scripts": [
+				"resources/lib/vis-network.js",
+
+				"resources/js/PageExclusionManager.js",
+				"resources/js/NetworkData.js",
+				"resources/js/ApiConnectionsBuilder.js",
+				"resources/js/ApiPageConnectionRepo.js",
+				"resources/js/Network.js",
+				"resources/js/index.js"
+			],
+			"styles": [
+				"resources/network.css"
+			],
+			"messages": [
+				"network-aria"
+			],
+			"targets": [ "desktop", "mobile" ]
+		},
+		"ext.network.special": {
+			"dependencies": [
+				"mediawiki.Title",
+				"oojs-ui-core",
+				"oojs-ui-widgets"
+			],
+			"scripts": [
+				"resources/js/SpecialForm.js"
+			],
+			"messages": [
+				"htmlform-submit",
+				"pagenetwork-pages-field-label",
+				"pagenetwork-pages-field-help",
+				"pagenetwork-exclude-field-label",
+				"pagenetwork-exclude-field-help",
+				"pagenetwork-excludedNamespaces-field-label",
+				"pagenetwork-excludedNamespaces-field-help",
+				"pagenetwork-class-field-label",
+				"pagenetwork-class-field-help",
+				"pagenetwork-options-field-label",
+				"pagenetwork-options-field-help",
+				"pagenetwork-enableDisplayTitle-field-label",
+				"pagenetwork-enableDisplayTitle-field-help",
+				"pagenetwork-labelMaxLength-field-label",
+				"pagenetwork-labelMaxLength-field-help",
+				"pagenetwork-basic-tab-label",
+				"pagenetwork-advanced-tab-label"
+			],
+			"targets": [ "desktop", "mobile" ]
+		}
+	},
+
+	"QUnitTestModule": {
+		"localBasePath": "tests/js",
+		"remoteExtPath": "Network/tests/js",
+		"scripts": [
+			"stub/index.js",
+			"stub/Cats.js",
+			"stub/MultiPage.js",
+
+			"MultiPageConnectionsTest.js",
+			"PageBlacklistTest.js",
+			"SinglePageConnectionsTest.js"
+		],
+		"dependencies": [
+			"ext.network"
+		]
+	},
+
+	"manifest_version": 2
+}

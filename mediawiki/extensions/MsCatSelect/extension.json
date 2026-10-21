@@ -1,0 +1,66 @@
+{
+	"manifest_version": 2,
+	"name": "MsCatSelect",
+	"version": "8.1",
+	"author": [
+		"[mailto:wiki@ratin.de Martin Schwindl]",
+		"[mailto:wiki@keyler-consult.de Martin Keyler]",
+		"[https://www.mediawiki.org/wiki/User:Sophivorus Felipe Schenone]"
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:MsCatSelect",
+	"descriptionmsg": "mscs-desc",
+	"license-name": "GPL-2.0-or-later",
+	"type": "parserhook",
+	"requires": {
+		"MediaWiki": ">= 1.43.0"
+	},
+	"MessagesDirs": {
+		"MsCatSelect": [
+			"i18n"
+		]
+	},
+	"AutoloadClasses": {
+		"MsCatSelect": "src/MsCatSelect.php"
+	},
+	"ResourceModules": {
+		"ext.MsCatSelect": {
+			"scripts": "js/MsCatSelect.js",
+			"styles": "css/MsCatSelect.css",
+			"messages": [
+				"mscs-title",
+				"mscs-untercat",
+				"mscs-untercat-hinw",
+				"mscs-warnnocat",
+				"mscs-cats",
+				"mscs-add",
+				"mscs-go",
+				"mscs-created",
+				"mscs-sortkey"
+			],
+			"dependencies": "jquery.chosen"
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "resources",
+		"remoteExtPath": "MsCatSelect/resources"
+	},
+	"Hooks": {
+		"ResourceLoaderGetConfigVars": "MsCatSelect::onResourceLoaderGetConfigVars",
+		"EditPage::showEditForm:initial": "MsCatSelect::onShowEditFormInitial",
+		"EditPage::attemptSave": "MsCatSelect::onAttemptSave"
+	},
+	"config": {
+		"MSCS_MainCategories": {
+			"value": []
+		},
+		"MSCS_UseNiceDropdown": {
+			"value": true
+		},
+		"MSCS_WarnNoCategories": {
+			"value": false
+		},
+		"MSCS_WarnNoCategoriesException": {
+			"value": []
+		}
+	}
+}

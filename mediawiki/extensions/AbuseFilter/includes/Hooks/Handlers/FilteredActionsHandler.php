@@ -6,25 +6,30 @@ use MediaWiki\Api\ApiMessage;
 use MediaWiki\Content\Content;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Deferred\DeferredUpdates;
-use MediaWiki\Extension\AbuseFilter\BlockedDomainFilter;
+use MediaWiki\Extension\AbuseFilter\BlockedDomains\IBlockedDomainFilter;
 use MediaWiki\Extension\AbuseFilter\EditRevUpdater;
 use MediaWiki\Extension\AbuseFilter\FilterRunnerFactory;
 use MediaWiki\Extension\AbuseFilter\VariableGenerator\VariableGeneratorFactory;
 use MediaWiki\Hook\EditFilterMergedContentHook;
 use MediaWiki\Hook\TitleMoveHook;
-use MediaWiki\Hook\UploadStashFileHook;
-use MediaWiki\Hook\UploadVerifyUploadHook;
 use MediaWiki\Logger\LoggerFactory;
-use MediaWiki\Page\Hook\ArticleDeleteHook;
+use MediaWiki\Page\Hook\PageDeleteHook;
+use MediaWiki\Page\ProperPageIdentity;
+use MediaWiki\Permissions\Authority;
 use MediaWiki\Permissions\PermissionManager;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Status\Status;
 use MediaWiki\Storage\Hook\ParserOutputStashForEditHook;
 use MediaWiki\Title\Title;
+use MediaWiki\Title\TitleFactory;
+use MediaWiki\Upload\Hook\UploadStashFileHook;
+use MediaWiki\Upload\Hook\UploadVerifyUploadHook;
+use MediaWiki\Upload\UploadBase;
+use MediaWiki\User\TempUser\TempUserConfig;
 use MediaWiki\User\User;
-use UploadBase;
+use MediaWiki\User\UserFactory;
+use StatusValue;
 use Wikimedia\Stats\IBufferingStatsdDataFactory;
-use WikiPage;
 
 /**
  * Handler for actions that can be filtered
@@ -32,44 +37,23 @@ use WikiPage;
 class FilteredActionsHandler implements
 	EditFilterMergedContentHook,
 	TitleMoveHook,
-	ArticleDeleteHook,
+	PageDeleteHook,
 	UploadVerifyUploadHook,
 	UploadStashFileHook,
 	ParserOutputStashForEditHook
 {
-	/** @var IBufferingStatsdDataFactory */
-	private $statsDataFactory;
-	/** @var FilterRunnerFactory */
-	private $filterRunnerFactory;
-	/** @var VariableGeneratorFactory */
-	private $variableGeneratorFactory;
-	/** @var EditRevUpdater */
-	private $editRevUpdater;
-	private PermissionManager $permissionManager;
-	private BlockedDomainFilter $blockedDomainFilter;
 
-	/**
-	 * @param IBufferingStatsdDataFactory $statsDataFactory
-	 * @param FilterRunnerFactory $filterRunnerFactory
-	 * @param VariableGeneratorFactory $variableGeneratorFactory
-	 * @param EditRevUpdater $editRevUpdater
-	 * @param BlockedDomainFilter $blockedDomainFilter
-	 * @param PermissionManager $permissionManager
-	 */
 	public function __construct(
-		IBufferingStatsdDataFactory $statsDataFactory,
-		FilterRunnerFactory $filterRunnerFactory,
-		VariableGeneratorFactory $variableGeneratorFactory,
-		EditRevUpdater $editRevUpdater,
-		BlockedDomainFilter $blockedDomainFilter,
-		PermissionManager $permissionManager
+		private readonly IBufferingStatsdDataFactory $statsDataFactory,
+		private readonly FilterRunnerFactory $filterRunnerFactory,
+		private readonly VariableGeneratorFactory $variableGeneratorFactory,
+		private readonly EditRevUpdater $editRevUpdater,
+		private readonly IBlockedDomainFilter $blockedDomainFilter,
+		private readonly PermissionManager $permissionManager,
+		private readonly TitleFactory $titleFactory,
+		private readonly UserFactory $userFactory,
+		private readonly TempUserConfig $tempUserConfig,
 	) {
-		$this->statsDataFactory = $statsDataFactory;
-		$this->filterRunnerFactory = $filterRunnerFactory;
-		$this->variableGeneratorFactory = $variableGeneratorFactory;
-		$this->editRevUpdater = $editRevUpdater;
-		$this->blockedDomainFilter = $blockedDomainFilter;
-		$this->permissionManager = $permissionManager;
 	}
 
 	/**
@@ -205,18 +189,21 @@ class FilteredActionsHandler implements
 	/**
 	 * @inheritDoc
 	 */
-	public function onArticleDelete( WikiPage $wikiPage, User $user, &$reason, &$error, Status &$status, $suppress ) {
+	public function onPageDelete(
+		ProperPageIdentity $page, Authority $deleter, string $reason, StatusValue $status, bool $suppress
+	) {
 		if ( $suppress ) {
 			// Don't filter suppressions, T71617
 			return true;
 		}
-		$builder = $this->variableGeneratorFactory->newRunGenerator( $user, $wikiPage->getTitle() );
+		$user = $this->userFactory->newFromAuthority( $deleter );
+		$title = $this->titleFactory->newFromPageIdentity( $page );
+		$builder = $this->variableGeneratorFactory->newRunGenerator( $user, $title );
 		$vars = $builder->getDeleteVars( $reason );
-		$runner = $this->filterRunnerFactory->newRunner( $user, $wikiPage->getTitle(), $vars, 'default' );
+		$runner = $this->filterRunnerFactory->newRunner( $user, $title, $vars, 'default' );
 		$filterResult = $runner->run();
 
 		$status->merge( $filterResult );
-		$error = $filterResult->isOK() ? '' : $filterResult->getHTML();
 
 		return $filterResult->isOK();
 	}
@@ -307,6 +294,14 @@ class FilteredActionsHandler implements
 	 * @inheritDoc
 	 */
 	public function onParserOutputStashForEdit( $page, $content, $output, $summary, $user ) {
+		// If temporary accounts are enabled, we can't reuse stashed filter matches for unregistered
+		// performers, as the actual save attempt would result in a new temporary account being created,
+		// thereby changing some of the input variables and potentially leading to a different outcome.
+		// (T402298)
+		if ( !$user->isRegistered() && $this->tempUserConfig->isEnabled() ) {
+			return;
+		}
+
 		// XXX: This makes the assumption that this method is only ever called for the main slot.
 		// Which right now holds true, but any more fancy MCR stuff will likely break here...
 		$slot = SlotRecord::MAIN;

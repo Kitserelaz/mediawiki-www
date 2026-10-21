@@ -1,0 +1,331 @@
+<?php
+
+namespace SMW\SQLStore;
+
+use MediaWiki\JobQueue\JobFactory;
+use MediaWiki\Title\TitleFactory;
+use SMW\Cache\InMemoryLruCache;
+use SMW\InMemoryPoolCache;
+use SMW\Listener\ChangeListener\ChangeRecord;
+use SMW\MediaWiki\Job;
+use SMW\SQLStore\TableBuilder\FieldType;
+use SMW\Store;
+use SMW\Utils\Flag;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 2.1
+ *
+ * @author mwjames
+ */
+class RedirectStore {
+
+	const TABLE_NAME = 'smw_fpt_redi';
+
+	private Flag $equalitySupport;
+
+	private bool $isCommandLineMode = false;
+
+	/**
+	 * @since 2.1
+	 */
+	public function __construct(
+		private readonly Store $store,
+		private readonly TitleFactory $titleFactory,
+		private readonly JobFactory $jobFactory,
+		private ?InMemoryLruCache $cache = null,
+	) {
+		if ( $this->cache === null ) {
+			$this->cache = InMemoryPoolCache::getInstance()->getPoolCacheById( 'sql.store.redirect.infostore' );
+		}
+		$this->equalitySupport = new Flag( 0 );
+	}
+
+	/**
+	 * @since 3.1
+	 *
+	 * @param bool $isCommandLineMode
+	 */
+	public function setCommandLineMode( $isCommandLineMode ): void {
+		$this->isCommandLineMode = (bool)$isCommandLineMode;
+	}
+
+	/**
+	 * @since 3.1
+	 *
+	 * @param int $equalitySupport
+	 */
+	public function setEqualitySupport( int $equalitySupport ): void {
+		$this->equalitySupport = new Flag( $equalitySupport );
+	}
+
+	/**
+	 * This method applies changes from when the `Settings` change listener
+	 * receives change events from `Settings:set`.
+	 *
+	 * @since 3.2
+	 *
+	 * @param string $key
+	 * @param ChangeRecord $changeRecord
+	 */
+	public function applyChangesFromListener( string $key, ChangeRecord $changeRecord ): void {
+		if ( $key === 'smwgQEqualitySupport' ) {
+			$this->setEqualitySupport( $changeRecord->get( $key ) );
+		}
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param string $title DB key
+	 * @param int $namespace
+	 *
+	 * @return bool
+	 */
+	public function isRedirect( $title, $namespace ): bool {
+		return $this->findRedirect( $title, $namespace ) != 0;
+	}
+
+	/**
+	 * Returns an id for a redirect if no redirect is found 0 is returned
+	 *
+	 * @since 2.1
+	 *
+	 * @param string $title DB key
+	 * @param int $namespace
+	 *
+	 * @return int
+	 */
+	public function findRedirect( $title, $namespace ) {
+		$hash = $this->makeHash(
+			$title,
+			$namespace
+		);
+
+		if ( $this->cache->contains( $hash ) ) {
+			return $this->cache->fetch( $hash );
+		}
+
+		$id = $this->select( $title, $namespace );
+
+		$this->cache->save( $hash, $id );
+
+		return $id;
+	}
+
+	/**
+	 * @since 2.1
+	 *
+	 * @param int $id
+	 * @param string $title
+	 * @param int $namespace
+	 */
+	public function addRedirect( $id, $title, $namespace ): void {
+		$this->insert( $id, $title, $namespace );
+
+		$hash = $this->makeHash(
+			$title,
+			$namespace
+		);
+
+		$this->cache->save( $hash, $id );
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param string $id
+	 * @param string $title
+	 * @param int $namespace
+	 */
+	public function updateRedirect( $id, $title, $namespace ): void {
+		$this->deleteRedirect( $title, $namespace );
+
+		if ( !$this->canCreateUpdateJobs() || $this->equalitySupport->is( SMW_EQ_NONE ) ) {
+			return;
+		}
+
+		// Entries that refer to old target may in fact refer to subject,
+		// but we don't know which: schedule affected pages for update
+		$propertyTables = $this->store->getPropertyTables();
+		$connection = $this->store->getConnection( 'mw.db' );
+		$jobs = [];
+
+		foreach ( $propertyTables as $proptable ) {
+
+			// Can be skipped safely
+			if ( $proptable->getName() == self::TABLE_NAME ) {
+				continue;
+			}
+
+			$query = [
+				'from' => [],
+				'fields' => [],
+				'condition' => [],
+				'options' => [],
+				'join' => [],
+			];
+
+			$query['condition'] = [ 'p_id' => $id ];
+
+			$query['from'] = [ $proptable->getName() ];
+			if ( $proptable->usesIdSubject() ) {
+				$query['from'][] = SQLStore::ID_TABLE;
+				$query['join'] = [ SQLStore::ID_TABLE => [ 'INNER JOIN', 's_id=smw_id' ] ];
+				$query['fields'] = [ 't' => 'smw_title', 'ns' => 'smw_namespace' ];
+			} else {
+				$query['fields'] = [ 't' => 's_title', 'ns' => 's_namespace' ];
+			}
+			$query['options'] = [ 'DISTINCT' ];
+
+			if ( $namespace === SMW_NS_PROPERTY && !$proptable->isFixedPropertyTable() ) {
+				$this->findUpdateJobs( $connection, $query, $jobs );
+			}
+
+			foreach ( $proptable->getFields( $this->store ) as $fieldName => $fieldType ) {
+
+				if ( $fieldType !== FieldType::FIELD_ID ) {
+					continue;
+				}
+
+				$query['condition'] = [ $fieldName => $id ];
+				$this->findUpdateJobs( $connection, $query, $jobs );
+			}
+		}
+
+		// Generally, redirect updates can be lazily run during the online processing
+		$immediateMode = false;
+
+		// #4082, #4323
+		// If possible allow an immediate execution but ensure that no section
+		// transaction is open and causes the redirect update to run before the
+		// initial transaction which otherwise could cause data inconsistencies
+		if (
+			$this->isCommandLineMode &&
+			!$connection->inSectionTransaction( SQLStore::UPDATE_TRANSACTION ) ) {
+			$immediateMode = true;
+		}
+
+		foreach ( $jobs as $job ) {
+			/** @var Job $job */
+			if ( $immediateMode ) {
+				$job->run();
+			} else {
+				$job->lazyPush();
+			}
+		}
+	}
+
+	/**
+	 * @since 2.1
+	 *
+	 * @param string $title
+	 * @param int $namespace
+	 */
+	public function deleteRedirect( $title, $namespace ): void {
+		$this->delete( $title, $namespace );
+
+		$hash = $this->makeHash(
+			$title,
+			$namespace
+		);
+
+		$this->cache->delete( $hash );
+	}
+
+	private function select( $title, $namespace ): int {
+		$connection = $this->store->getConnection( 'mw.db' );
+
+		$row = $connection->newSelectQueryBuilder()
+			->select( [ 'o_id' ] )
+			->from( self::TABLE_NAME )
+			->where( [ 's_title' => $title, 's_namespace' => $namespace ] )
+			->caller( __METHOD__ )
+			->fetchRow();
+
+		return $row !== false && isset( $row->o_id ) ? (int)$row->o_id : 0;
+	}
+
+	private function insert( $id, $title, $namespace ): void {
+		$connection = $this->store->getConnection( 'mw.db' );
+
+		$row = $connection->newSelectQueryBuilder()
+			->select( [ 'o_id' ] )
+			->from( self::TABLE_NAME )
+			->where( [ 's_title' => $title, 's_namespace' => $namespace, 'o_id' => $id ] )
+			->caller( __METHOD__ )
+			->fetchRow();
+
+		// Found a match, avoid duplicates!
+		if ( $row !== false ) {
+			return;
+		}
+
+		// Only allow one active redirection from source to target
+		$this->delete( $title, $namespace );
+
+		$connection->newInsertQueryBuilder()
+			->insertInto( self::TABLE_NAME )
+			->row( [
+				's_title'     => $title,
+				's_namespace' => $namespace,
+				'o_id'        => $id,
+			] )
+			->caller( __METHOD__ )
+			->execute();
+	}
+
+	private function delete( $title, $namespace ): void {
+		$connection = $this->store->getConnection( 'mw.db' );
+
+		$connection->newDeleteQueryBuilder()
+			->deleteFrom( self::TABLE_NAME )
+			->where( [ 's_title' => $title, 's_namespace' => $namespace ] )
+			->caller( __METHOD__ )
+			->execute();
+	}
+
+	private function canCreateUpdateJobs(): bool {
+		return $this->store->getOption( Store::OPT_CREATE_UPDATE_JOB, true ) && $this->store->getOption( 'smwgEnableUpdateJobs' );
+	}
+
+	private function findUpdateJobs( $connection, array $query, &$jobs ): void {
+		$queryBuilder = $connection->newSelectQueryBuilder()
+			->select( $query['fields'] )
+			->from( $query['from'][0] )
+			->where( $query['condition'] )
+			->caller( __METHOD__ );
+
+		if ( in_array( SQLStore::ID_TABLE, $query['from'], true ) ) {
+			$queryBuilder->join( SQLStore::ID_TABLE, null, [ 's_id=smw_id' ] );
+		}
+
+		if ( in_array( 'DISTINCT', $query['options'], true ) ) {
+			$queryBuilder->distinct();
+		}
+
+		$res = $queryBuilder->fetchResultSet();
+
+		foreach ( $res as $row ) {
+			$title = $this->titleFactory->makeTitleSafe( $row->ns, $row->t );
+
+			if ( $title !== null ) {
+				$jobs[] = $this->jobFactory->newJob(
+					'smw.update',
+					[
+						'namespace' => $title->getNamespace(),
+						'title' => $title->getDBkey(),
+						'origin' => 'RedirectStore',
+					]
+				);
+			}
+		}
+
+		$res->free();
+	}
+
+	private function makeHash( $title, $namespace ): string {
+		return "$title#$namespace";
+	}
+
+}

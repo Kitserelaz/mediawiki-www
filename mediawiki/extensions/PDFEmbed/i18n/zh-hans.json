@@ -1,0 +1,16 @@
+{
+	"@metadata": {
+		"authors": [
+			"Lakejason0",
+			"铁桶"
+		]
+	},
+	"action-embed_pdf": "嵌入PDF",
+	"pdfembed": "PDF嵌入",
+	"pdfembed_description": "PDF文件的媒体处理程序扩展。",
+	"embed_pdf_no_permission": "您没有权限嵌入PDF文件。",
+	"embed_pdf_blank_file": "用于嵌入PDF的URL或文件路径为空。",
+	"embed_pdf_invalid_file": "指定的URL或文件路径不存在。",
+	"embed_pdf_invalid_user": "指定了一个无效用户来允许测试嵌入此PDF。",
+	"right-embed_pdf": "将PDF嵌入页面"
+}

@@ -1,0 +1,36 @@
+{
+	"@metadata": {
+		"authors": [
+			"Acamicamacaraca",
+			"BadDog",
+			"Kizule",
+			"Milicevic01",
+			"Obsuser",
+			"Zoranzoki21",
+			"Сербијана",
+			"Aca"
+		]
+	},
+	"newsletter-desc": "Опис",
+	"newsletter-subtitlelinks-unsubscribe": "одјави се",
+	"newsletter-subtitlelinks-subscribe": "пријави се",
+	"newsletter-subtitlelinks-announce": "огласи",
+	"newsletter-subtitlelinks-manage": "управљај",
+	"newsletters": "Билтени",
+	"newsletter-view-mainpage": "Главна страна:",
+	"newsletter-view-description": "Опис:",
+	"newsletter-announce-button": "Огласи",
+	"newsletter-announce-submit": "Огласи",
+	"newsletter-subscribe-button-label": "Да",
+	"newsletter-unsubscribe-button-label": "Не",
+	"echo-category-title-newsletter": "Билтени",
+	"right-newsletter-delete": "Брисање билтенâ",
+	"action-newsletter-delete": "избриши билтене",
+	"right-newsletter-manage": "Додавање или уклањање објављивачâ или претплатникâ са билтенâ",
+	"action-newsletter-manage": "управљај билтенима",
+	"right-newsletter-restore": "Враћање билтена",
+	"action-newsletter-restore": "врати билтен",
+	"log-name-newsletter": "Дневник билтена",
+	"log-action-filter-newsletter": "Врста радње:",
+	"newsletter-ch-apierror": "Грешка при чувању странице: $1"
+}

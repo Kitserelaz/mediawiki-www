@@ -26,7 +26,7 @@ case "${1:-help}" in
     compose up -d --wait database memcached
     compose run --rm --no-deps init php /opt/farm/manage.php restore "$@" ;;
   backup) shift; compose run --rm --no-deps init php /opt/farm/manage.php backup "$@" ;;
-  update|refresh|list)
+  preflight|update|refresh|list)
     action=$1; shift
     compose run --rm init php /opt/farm/manage.php "$action" "$@" ;;
   logs) shift; compose logs -f "$@" ;;
@@ -39,5 +39,5 @@ case "${1:-help}" in
     mkdir -p docker/secrets
     compose cp web:/data/caddy/pki/authorities/local/root.crt docker/secrets/local-ca.crt ;;
   smoke) exec python3 docker/tests/smoke.py ;;
-  *) printf '%s\n' 'Usage: scripts/farm [--env-file FILE] setup|setup-production --domain DOMAIN|build|init|init-production|up|update|refresh|list|snapshot NAME|backup /backups/NAME|restore /backups/NAME|logs|stop|certificate|smoke' ;;
+  *) printf '%s\n' 'Usage: scripts/farm [--env-file FILE] setup|setup-production --domain DOMAIN|build|init|init-production|up|preflight|update|refresh|list|snapshot [--keep-stopped] NAME|backup /backups/NAME|restore /backups/NAME|logs|stop|certificate|smoke' ;;
 esac

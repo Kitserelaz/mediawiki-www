@@ -1,0 +1,189 @@
+<?php
+
+namespace SMW\ParserFunctions;
+
+use MediaWiki\Html\Html;
+use MediaWiki\Parser\Parser;
+use MediaWiki\Title\Title;
+use SMW\DataItems\Concept;
+use SMW\DataItems\Property;
+use SMW\Formatters\Infolink;
+use SMW\Formatters\MessageFormatter;
+use SMW\ParserData;
+use SMW\PostProcHandler;
+use SMW\Query\Query;
+use SMW\Query\QueryProcessor;
+use SMW\Services\ServicesFactory as ApplicationFactory;
+
+/**
+ * Class that provides the {{#concept}} parser function
+ *
+ * @license GPL-2.0-or-later
+ * @since   1.9
+ *
+ * @author Markus Krötzsch
+ * @author Jeroen De Dauw
+ * @author mwjames
+ */
+class ConceptParserFunction {
+
+	private ?PostProcHandler $postProcHandler = null;
+
+	/**
+	 * @since 1.9
+	 */
+	public function __construct(
+		private readonly ParserData $parserData,
+		private readonly MessageFormatter $messageFormatter,
+	) {
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param PostProcHandler $postProcHandler
+	 */
+	public function setPostProcHandler( PostProcHandler $postProcHandler ): void {
+		$this->postProcHandler = $postProcHandler;
+	}
+
+	/**
+	 * Parse parameters, return concept information box and update the
+	 * ParserOutput with the concept object
+	 *
+	 * @since 1.9
+	 *
+	 * @param array $rawParams
+	 *
+	 * @return string|null
+	 */
+	public function parse( array $rawParams ) {
+		$this->parserData->getOutput()->addModuleStyles( [
+			'ext.smw.styles',
+			'mediawiki.codex.messagebox.styles'
+		] );
+
+		$title = $this->parserData->getTitle();
+		$property = new Property( '_CONC' );
+
+		if ( !( $title->getNamespace() === SMW_NS_CONCEPT ) ) {
+			return $this->messageFormatter->addFromKey( 'smw_no_concept_namespace' )->getHtml();
+		} elseif ( count( $this->parserData->getSemanticData()->getPropertyValues( $property ) ) > 0 ) {
+			return $this->messageFormatter->addFromKey( 'smw_multiple_concepts' )->getHtml();
+		}
+
+		// Remove parser object from parameters array
+		if ( isset( $rawParams[0] ) && $rawParams[0] instanceof Parser ) {
+			array_shift( $rawParams );
+		}
+
+		// Use first parameter as concept (query) string
+		$conceptQuery = array_shift( $rawParams );
+
+		// Use second parameter, if any as a description
+		$conceptDocu = array_shift( $rawParams );
+
+		$query = $this->buildQuery( $conceptQuery );
+
+		$conceptQueryString = $query->getDescription()->getQueryString();
+
+		$this->parserData->getSemanticData()->addPropertyObjectValue(
+			$property,
+			new Concept(
+				$conceptQueryString,
+				$conceptDocu,
+				$query->getDescription()->getQueryFeatures(),
+				$query->getDescription()->getSize(),
+				$query->getDescription()->getDepth()
+			)
+		);
+
+		$this->messageFormatter
+			->addFromArray( $query->getErrors() )
+			->addFromArray( $this->parserData->getErrors() );
+
+		if ( $this->postProcHandler !== null ) {
+			$this->postProcHandler->addCheck( $query );
+		}
+
+		$this->addQueryProfile( $query );
+
+		$this->parserData->copyToParserOutput();
+
+		if ( $this->messageFormatter->exists() ) {
+			return $this->messageFormatter->getHtml();
+		}
+
+		return $this->createHtml( $title, $conceptQueryString, $conceptDocu );
+	}
+
+	private function createHtml( Title $title, $queryString, $documentation ): string {
+		$message = '';
+
+		if ( wfMessage( 'smw-concept-introductory-message' )->exists() ) {
+			$message = Html::noticeBox(
+				wfMessage( 'smw-concept-introductory-message', $title->getText() )->text(),
+				'plainlinks'
+			);
+		}
+
+		return $message . Html::rawElement( 'div', [ 'class' => 'smwfact' ],
+			Html::rawElement( 'span', [ 'class' => 'smwfactboxhead' ],
+				wfMessage( 'smw_concept_description', $title->getText() )->text() ) .
+			Html::rawElement( 'span', [ 'class' => 'smwrdflink' ], $this->getRdfLink( $title )->getWikiText() ) .
+			Html::element( 'br', [] ) .
+			Html::element( 'p', [ 'class' => 'concept-documenation' ], $documentation ?: '' ) .
+			Html::rawElement( 'pre', [], str_replace( '[', '&#91;', $queryString ) ) .
+			Html::element( 'br', [] )
+		);
+	}
+
+	private function getRdfLink( Title $title ): Infolink {
+		// The caption is a static i18n message and this Infolink is only ever rendered
+		// as wikitext (getRdfLink()->getWikiText()), where the caption is link display
+		// text, not raw HTML. Phan flags the caption via Infolink's HTML-output sink,
+		// which this call path never reaches.
+		// @phan-suppress-next-line SecurityCheck-XSS
+		return Infolink::newInternalLink(
+			wfMessage( 'smw_viewasrdf' )->text(),
+			$title->getPageLanguage()->getNsText( NS_SPECIAL ) . ':ExportRDF/' . $title->getPrefixedText(), 'rdflink'
+		);
+	}
+
+	private function buildQuery( $conceptQueryString ) {
+		$rawParams = [ $conceptQueryString ];
+
+		[ $query, ] = QueryProcessor::getQueryAndParamsFromFunctionParams(
+			$rawParams,
+			SMW_OUTPUT_WIKI,
+			QueryProcessor::CONCEPT_DESC,
+			false
+		);
+
+		return $query;
+	}
+
+	private function addQueryProfile( Query $query ): void {
+		// If the smwgQueryProfiler is marked with FALSE then just don't create a profile.
+		if ( ApplicationFactory::getInstance()->getSettings()->get( 'smwgQueryProfiler' ) === false ) {
+			return;
+		}
+
+		$query->setContextPage(
+			$this->parserData->getSemanticData()->getSubject()
+		);
+
+		$profileAnnotatorFactory = ApplicationFactory::getInstance()
+			->getQueryFactory()
+			->newProfileAnnotatorFactory();
+
+		$descriptionProfileAnnotator = $profileAnnotatorFactory->newDescriptionProfileAnnotator(
+			$query
+		);
+
+		$descriptionProfileAnnotator->pushAnnotationsTo(
+			$this->parserData->getSemanticData()
+		);
+	}
+
+}

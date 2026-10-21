@@ -1,0 +1,50 @@
+{
+	"name": "OrphanedTalkPages",
+	"version": "1.5.0",
+	"author": [
+		"Mainframe98"
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:OrphanedTalkPages",
+	"descriptionmsg": "orphanedtalkpages-desc",
+	"namemsg": "orphanedtalkpages-extensionname",
+	"license-name": "MIT",
+	"type": "specialpage",
+	"requires": {
+		"MediaWiki": ">=1.41.0"
+	},
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\OrphanedTalkPages\\": "src/"
+	},
+	"MessagesDirs": {
+		"OrphanedTalkPages": [
+			"i18n"
+		]
+	},
+	"ExtensionMessagesFiles": {
+		"OrphanedTalkPagesAlias": "OrphanedTalkPages.alias.php"
+	},
+	"ConfigRegistry": {
+		"OrphanedTalkPages": "MediaWiki\\Config\\GlobalVarConfig::newInstance"
+	},
+	"SpecialPages": {
+		"OrphanedTalkPages": {
+			"class": "MediaWiki\\Extension\\OrphanedTalkPages\\Specials\\SpecialOrphanedTalkPages",
+			"services": [
+				"ConfigFactory"
+			]
+		}
+	},
+	"HookHandlers": {
+		"main": {
+			"class": "MediaWiki\\Extension\\OrphanedTalkPages\\OrphanedTalkPagesHooks"
+		}
+	},
+	"Hooks": {
+		"wgQueryPages": "main"
+	},
+	"config": {
+		"OrphanedTalkPagesExemptedNamespaces": [],
+		"OrphanedTalkPagesIgnoreUserTalk": true
+	},
+	"manifest_version": 1
+}

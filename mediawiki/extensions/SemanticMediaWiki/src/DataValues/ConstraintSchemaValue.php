@@ -1,0 +1,83 @@
+<?php
+
+namespace SMW\DataValues;
+
+use SMW\Constraint\Constraint;
+use SMW\DataItems\Property;
+use SMW\DataItems\WikiPage;
+use SMW\Property\SpecificationLookup;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 3.1
+ *
+ * @author mwjames
+ */
+class ConstraintSchemaValue extends WikiPageValue {
+
+	/**
+	 * DV identifier
+	 */
+	const TYPE_ID = '__cschema';
+
+	public function __construct(
+		$typeid,
+		private readonly SpecificationLookup $specificationLookup,
+	) {
+		parent::__construct( self::TYPE_ID );
+		$this->m_fixNamespace = SMW_NS_SCHEMA;
+	}
+
+	/**
+	 * @see WikiPageValue::parseUserValue
+	 *
+	 * @param string $value
+	 */
+	protected function parseUserValue( $value ): void {
+		parent::parseUserValue( $value );
+
+		$dataItem = $this->getDataItem();
+		$contextPage = $this->getContextPage();
+		$schema = null;
+		$error = [];
+
+		if ( !$dataItem instanceof WikiPage || $contextPage === null ) {
+			return;
+		}
+
+		$definitions = $this->specificationLookup->getSpecification(
+			$dataItem,
+			new Property( '_SCHEMA_DEF' )
+		);
+
+		foreach ( $definitions as $definition ) {
+			$schema = json_decode( $definition->getString(), true );
+		}
+
+		if ( $schema === null ) {
+			return;
+		}
+
+		$ns = $contextPage->getNamespace();
+
+		if ( $ns === NS_CATEGORY && $schema['type'] !== Constraint::CLASS_CONSTRAINT_SCHEMA ) {
+			$error = [ 'smw-constraint-schema-category-invalid-type', $value, Constraint::CLASS_CONSTRAINT_SCHEMA ];
+		} elseif ( $ns === SMW_NS_PROPERTY && $schema['type'] !== Constraint::PROPERTY_CONSTRAINT_SCHEMA ) {
+			$error = [ 'smw-constraint-schema-property-invalid-type', $value, Constraint::PROPERTY_CONSTRAINT_SCHEMA ];
+		}
+
+		if ( $error !== [] ) {
+			$this->addErrorMsg( $error );
+		}
+	}
+
+	/**
+	 * @see WikiPageValue::getWikiValue
+	 *
+	 * @return string
+	 */
+	public function getWikiValue(): string {
+		return $this->getPrefixedText();
+	}
+
+}

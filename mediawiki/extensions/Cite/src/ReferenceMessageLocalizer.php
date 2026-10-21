@@ -3,8 +3,8 @@
 namespace Cite;
 
 use MediaWiki\Language\Language;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\Message\Message;
-use MessageLocalizer;
 use Wikimedia\Message\MessageSpecifier;
 
 /**
@@ -14,10 +14,9 @@ use Wikimedia\Message\MessageSpecifier;
  */
 class ReferenceMessageLocalizer implements MessageLocalizer {
 
-	private Language $language;
-
-	public function __construct( Language $language ) {
-		$this->language = $language;
+	public function __construct(
+		private readonly Language $language,
+	) {
 	}
 
 	public function localizeSeparators( string $number ): string {

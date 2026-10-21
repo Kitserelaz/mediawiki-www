@@ -1,0 +1,20 @@
+{
+	"@metadata": {
+		"authors": [
+			"Ella Lachow",
+			"Malaalaa"
+		]
+	},
+	"growthexperiments-mentor-dashboard-mentee-overview-talk": "tobbiya",
+	"growthexperiments-mentor-dashboard-personalized-praise-title": "Galataa yedda",
+	"growthexperiments-mentor-dashboard-personalized-praise-page-counter": "$1ppe $2 galatettiya {{PLURAL:$2|zoriyagaa|zoriyageeta}}",
+	"growthexperiments-mentor-dashboard-personalized-praise-send-appreciation": "Galataa yedda",
+	"growthexperiments-mentor-dashboard-personalized-praise-settings-praiseworthy-metric-timeframe-48-hours": "Aadhida 48 saateta",
+	"growthexperiments-mentor-dashboard-personalized-praise-settings-praiseworthy-metric-timeframe-week": "Aadhida saaminttaa",
+	"growthexperiments-mentor-dashboard-personalized-praise-settings-praiseworthy-metric-timeframe-2-weeks": "Aadhida 2 saaminttatta",
+	"growthexperiments-mentor-dashboard-personalized-praise-settings-praiseworthy-metric-timeframe-month": "Aadhida aginaa",
+	"growthexperiments-mentor-dashboard-personalized-praise-settings-notifications-immediately": "Takkennan",
+	"growthexperiments-mentor-dashboard-personalized-praise-settings-notifications-daily": "Galla galla",
+	"growthexperiments-mentor-dashboard-personalized-praise-settings-notifications-monthly": "Aginan aginan",
+	"growthexperiments-mentor-dashboard-personalized-praise-settings-notifications-never": "Mulekka"
+}

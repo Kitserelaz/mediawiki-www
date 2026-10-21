@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": [
+			"Kareyac"
+		]
+	},
+	"perpagelanguage-desc": "Устанавливает язык интерфейса в соответствии с языком содержимого страницы",
+	"perpagelanguage-label": "Выберите язык"
+}

@@ -10,7 +10,6 @@ use MediaWiki\Http\HttpRequestFactory;
 use MediaWiki\MainConfigNames;
 use Psr\Log\LoggerInterface;
 use Wikimedia\TestingAccessWrapper;
-use Wikimedia\Timestamp\ConvertibleTimestamp;
 
 /** @covers \MediaWiki\Extension\EventLogging\EventLogging */
 class EventLoggingTest extends MediaWikiIntegrationTestCase {
@@ -22,8 +21,6 @@ class EventLoggingTest extends MediaWikiIntegrationTestCase {
 	private $mockEventBusFactory;
 	/** @var HttpRequestFactory */
 	private $mockHttpRequestFactory;
-	/** @var ConvertibleTimestamp */
-	private $timestamp;
 	/** @var LoggerInterface */
 	private $mockLogger;
 
@@ -107,7 +104,7 @@ class EventLoggingTest extends MediaWikiIntegrationTestCase {
 							'provide_values' => [
 								'agent_client_platform',
 								'agent_client_platform_family',
-								'page_namespace',
+								'page_namespace_id',
 								'page_title',
 								'page_wikidata_qid',
 							],
@@ -149,8 +146,6 @@ class EventLoggingTest extends MediaWikiIntegrationTestCase {
 		$this->setService( 'EventBus.EventBusFactory', function () {
 			return $this->mockEventBusFactory;
 		} );
-
-		$this->timestamp = TestingAccessWrapper::newFromClass( ConvertibleTimestamp::class );
 
 		$this->mockLogger = $this->createMock( LoggerInterface::class );
 		$this->setLogger( 'EventLogging', $this->mockLogger );
@@ -223,8 +218,7 @@ class EventLoggingTest extends MediaWikiIntegrationTestCase {
 		);
 
 		$this->assertSame( '/test/event/1.0.0', $result['$schema'] );
-		$this->assertMatchesRegularExpression( $this->timestamp->regexes['TS_ISO_8601'], $result['client_dt'] );
-		$this->assertStringEndsWith( 'Z', $result['client_dt'] );
+		$this->assertIsTimestamp( $result['client_dt'] );
 		$this->assertSame( $this->testHttpHost, $result['webHost'] );
 		$this->assertSame( $result['event']['field_a'], $this->legacyEvent['field_a'] );
 	}
@@ -255,11 +249,5 @@ class EventLoggingTest extends MediaWikiIntegrationTestCase {
 			'not.configured',
 			[ '$schema' => '/test/event/1.0.0' ]
 		);
-	}
-
-	public function testSubmitLoggerParameterDeprecated(): void {
-		$this->expectDeprecationAndContinue( '/\$logger parameter is deprecated/' );
-
-		EventLogging::submit( 'test.event', $this->newEvent, $this->mockLogger );
 	}
 }

@@ -1,5 +1,7 @@
 # Local verification — October 17, 2026
 
+> Historical baseline: this document records the pre-upgrade MediaWiki 1.45.1 / PHP 8.3 containerization checks. It does not establish acceptance of the current 1.46.2 / PHP 8.4 candidate. See [current upgrade status](UPGRADE-PROGRESS.md), [clean-checkout/AMD64 results](UPGRADE-BUILD-VERIFICATION.md), and the [upgrade/recovery runbook](CREATEWIKI-MANAGEWIKI-UPGRADE-RUNBOOK.md).
+
 These checks ran locally on Docker Desktop. ARM64 images run natively; AMD64 checks use emulation on the same ARM64 host. The operator confirmed that production is a new farm with no historical data. Production rehearsal uses reserved `farm.example.test` hostnames, loopback ports, private TLS and separate credentials. Public deployment remains separate.
 
 | Check | Result |

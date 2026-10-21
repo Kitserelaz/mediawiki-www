@@ -1,0 +1,15 @@
+{
+    "extra": {
+        "merge-plugin": {
+            "include": [
+                "extensions/AbuseFilter/composer.json",
+                "extensions/CreateWiki/composer.json",
+                "extensions/ManageWiki/composer.json"
+            ],
+            "merge-dev": false
+        }
+    },
+    "require": {
+        "mediawiki/semantic-media-wiki": "7.3.0"
+    }
+}

@@ -1,0 +1,22 @@
+{
+	"@metadata": {
+		"authors": [
+			"McDutchie"
+		]
+	},
+	"apihelp-ratepage-summary": "Permitte a un usator de votar in un pagina e obtener le evalutation de un pagina. Necessita specificar un del duo parametros: pageid o pagetitle.",
+	"apihelp-ratepage-param-pageid": "ID del pagina",
+	"apihelp-ratepage-param-pagetitle": "Titulo del pagina",
+	"apihelp-ratepage-param-answer": "Evalutation del pagina del usator (de 1 a 5 inclusive per predefinition, pote esser alterate per le parametros de configuration)",
+	"apihelp-ratepage-param-contest": "Identificator del concurso",
+	"apihelp-ratepage-example-1": "Obtener le evalutation currente pro le pagina Example.",
+	"apihelp-ratepage-example-2": "Evalutar le pagina Example con un 2.",
+	"apihelp-query+pagerating-summary": "Restitue le votos sur iste pagina e le permissiones de votar de iste usator.",
+	"apihelp-query+pagerating-param-contest": "Identificator del concurso",
+	"apierror-ratepage-contest-id-too-long": "Le longitude del ID de concurso excede le limite (255 characteres).",
+	"apierror-ratepage-contest-id-allowed-chars": "Le ID de concurso debe consister solmente de cifras e litteras latin. Altere characteres non es permittite.",
+	"apierror-ratepage-contest-not-exists": "Le concurso $1 non existe.",
+	"apierror-ratepage-page-not-exists": "Le pagina specificate non existe.",
+	"apierror-ratepage-cannot-vote-in-contest": "Tu non ha le permission de votar in iste concurso.",
+	"apierror-ratepage-invalid-answer": "Un responsa non valide ha essite specificate. Le responsa debe esser major de o equal a $1 e minor de o equal a $2."
+}

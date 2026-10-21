@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"Cabal"
+		]
+	},
+	"wbqc-constraintreport-status-bad-parameters": "ਮਾੜੇ ਮਾਪਦੰਡ",
+	"wbqc-badparameters-short": "ਮਾੜੇ ਮਾਪਦੰਡ",
+	"wbqc-constrainttypehelp-short": "ਮਦਦ"
+}

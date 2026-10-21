@@ -13,12 +13,12 @@ use Miraheze\ManageWiki\ICoreModule;
 
 class ModuleFactory {
 
-	public const CONSTRUCTOR_OPTIONS = [
+	public const array CONSTRUCTOR_OPTIONS = [
 		ConfigNames::ModulesEnabled,
 		MainConfigNames::DBname,
 	];
 
-	public const DEFAULT_DBNAME = 'default';
+	public const string DEFAULT_DBNAME = 'default';
 
 	private array $coreInstances = [];
 
@@ -28,7 +28,7 @@ class ModuleFactory {
 		private readonly NamespacesFactory $namespaces,
 		private readonly PermissionsFactory $permissions,
 		private readonly SettingsFactory $settings,
-		private readonly ServiceOptions $options
+		private readonly ServiceOptions $options,
 	) {
 		$options->assertRequiredOptions( self::CONSTRUCTOR_OPTIONS );
 	}

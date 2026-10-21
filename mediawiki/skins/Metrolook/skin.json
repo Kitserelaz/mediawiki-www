@@ -1,0 +1,235 @@
+{
+	"name": "Metrolook",
+	"namemsg": "skinname-metrolook",
+	"version": "7.0.0",
+	"author": [
+		"immewnity",
+		"Paladox",
+		"Craig Davison",
+		"lagleki"
+	],
+	"url": "https://www.mediawiki.org/wiki/Skin:Metrolook",
+	"descriptionmsg": "metrolook-desc",
+	"license-name": "GPL-2.0-or-later",
+	"type": "skin",
+	"requires": {
+		"MediaWiki": ">= 1.41.0"
+	},
+	"DefaultUserOptions": {
+		"skinmetrolook-collapsiblenav": 1
+	},
+	"ConfigRegistry": {
+		"metrolook": "GlobalVarConfig::newInstance"
+	},
+	"ValidSkinNames": {
+		"metrolook": "Metrolook"
+	},
+	"MessagesDirs": {
+		"Metrolook": [
+			"i18n"
+		]
+	},
+	"HookHandlers": {
+		"main": {
+			"class": "SkinMetrolookHooks",
+			"services": [
+				"MainConfig",
+				"UserOptionsLookup"
+			]
+		}
+	},
+	"Hooks": {
+		"BeforePageDisplay": "main",
+		"GetPreferences": "main",
+		"ResourceLoaderGetConfigVars": "main",
+		"MakeGlobalVariablesScript": "main"
+	},
+	"AutoloadClasses": {
+		"SkinMetrolookHooks": "SkinMetrolookHooks.php",
+		"SkinMetrolook": "SkinMetrolook.php",
+		"MetrolookTemplate": "MetrolookTemplate.php",
+		"Metrolook\\ResourceLoaderLessModule": "ResourceLoaderLessModule.php"
+	},
+	"ResourceModules": {
+		"skins.metrolook.interface": {
+			"targets": [ "desktop", "mobile" ],
+			"class": "MediaWiki\\ResourceLoader\\SkinModule",
+			"features": {
+				"content-links": true,
+				"content-media": true,
+				"interface-message-box": true,
+				"interface-category": true,
+				"content-tables": true,
+				"i18n-ordered-lists": true,
+				"i18n-all-lists-margins": true,
+				"i18n-headings": true,
+				"elements": true,
+				"interface": true,
+				"logo": true
+			}
+		},
+		"skins.metrolook.styles": {
+			"targets": [ "desktop", "mobile" ],
+			"styles": {
+				"screen.less": {
+					"media": "screen"
+				},
+				"screen-hd.less": {
+					"media": "screen and (min-width: 982px)"
+				}
+			}
+		},
+		"skins.metrolook.styles.custom": {
+			"targets": [ "desktop", "mobile" ],
+			"styles": {
+				"screen-custom.less": {
+					"media": "screen"
+				},
+				"screen-hd.less": {
+					"media": "screen and (min-width: 982px)"
+				}
+			}
+		},
+		"skins.metrolook.styles.experimental.print": {
+			"class": "Metrolook\\ResourceLoaderLessModule",
+			"targets": [ "desktop", "mobile" ],
+			"styles": [
+				"print.less"
+			]
+		},
+		"skins.metrolook.styles.mobile": {
+			"targets": [ "desktop", "mobile" ],
+			"styles": [
+				"components/mobile/mobile.less",
+				"components/tablet/tablet.less"
+			]
+		},
+		"skins.metrolook.styles.mobile.custom": {
+			"targets": [ "desktop", "mobile" ],
+			"styles": [
+				"components/mobile/mobile-custom.less",
+				"components/tablet/tablet-custom.less"
+			]
+		},
+		"skins.metrolook.styles.theme.custom": {
+			"targets": [ "desktop", "mobile" ],
+			"styles": [
+				"components/custom/theme.less"
+			]
+		},
+		"skins.metrolook.js": {
+			"scripts": [
+				"js/collapsibleTabs.js",
+				"js/metrolook.js",
+				"js/metrolook.search.js",
+				"js/vector.js",
+				"js/overthrow.js",
+				"js/fixed-header-scroll-fix.js"
+			],
+			"dependencies": [
+				"mediawiki.util"
+			]
+		},
+		"skins.metrolook.collapsibleNav": {
+			"scripts": [
+				"js/collapsibleNav.js"
+			],
+			"styles": [
+				"components/main/collapsibleNav.less"
+			],
+			"dependencies": [
+				"jquery.client",
+				"mediawiki.cookie"
+			]
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "",
+		"remoteSkinPath": "Metrolook"
+	},
+	"ResourceModuleSkinStyles": {
+		"metrolook": {
+			"jquery.tipsy": "skinStyles/jquery.tipsy.less",
+			"jquery.ui.core": [
+				"skinStyles/jquery.ui/jquery.ui.core.css",
+				"skinStyles/jquery.ui/jquery.ui.theme.css"
+			],
+			"jquery.ui.accordion": "skinStyles/jquery.ui/jquery.ui.accordion.css",
+			"jquery.ui.autocomplete": "skinStyles/jquery.ui/jquery.ui.autocomplete.css",
+			"jquery.ui.button": "skinStyles/jquery.ui/jquery.ui.button.css",
+			"jquery.ui.datepicker": "skinStyles/jquery.ui/jquery.ui.datepicker.css",
+			"jquery.ui.dialog": "skinStyles/jquery.ui/jquery.ui.dialog.css",
+			"jquery.ui.menu": "skinStyles/jquery.ui/jquery.ui.menu.css",
+			"jquery.ui.progressbar": "skinStyles/jquery.ui/jquery.ui.progressbar.css",
+			"jquery.ui.resizable": "skinStyles/jquery.ui/jquery.ui.resizable.css",
+			"jquery.ui.selectable": "skinStyles/jquery.ui/jquery.ui.selectable.css",
+			"jquery.ui.slider": "skinStyles/jquery.ui/jquery.ui.slider.css",
+			"jquery.ui.tabs": "skinStyles/jquery.ui/jquery.ui.tabs.css",
+			"jquery.ui.tooltips": "skinStyles/jquery.ui/jquery.ui.tooltips.css",
+			"+mediawiki.action.view.redirectPage": "skinStyles/mediawiki.action.view.redirectPage.less",
+			"+mediawiki.notification": "skinStyles/mediawiki.notification.less",
+			"+oojs-ui-core.styles": "skinStyles/ooui.less",
+			"mediawiki.special": "skinStyles/mediawiki.special.less"
+		}
+	},
+	"config": {
+		"MetrolookFeatures": {
+			"value": {
+				"collapsiblenav": {
+					"global": false,
+					"user": true
+				}
+			},
+			"merge_strategy": "array_plus_2d"
+		},
+		"MetrolookUseSimpleSearch": {
+			"value": true
+		},
+		"MetrolookUseIconWatch": {
+			"value": true
+		},
+		"MetrolookLogo": {
+			"value": true
+		},
+		"MetrolookSiteNameLogo": {
+			"value": false
+		},
+		"MetrolookSiteName": {
+			"value": true
+		},
+		"MetrolookSiteNameText": {
+			"value": false
+		},
+		"MetrolookSiteText": {
+			"value": ""
+		},
+		"MetrolookSearchBar": {
+			"value": true
+		},
+		"MetrolookDownArrow": {
+			"value": true
+		},
+		"MetrolookLine": {
+			"value": true
+		},
+		"MetrolookUploadButton": {
+			"value": true
+		},
+		"MetrolookMobile": {
+			"value": true
+		},
+		"MetrolookBartile": {
+			"value": true
+		},
+		"MetrolookDisableAvatar": {
+			"value": true
+		},
+		"MetrolookExperimentalPrintStyles": {
+			"value": true
+		},
+		"MetrolookPrintLogo": {
+			"value": false
+		}
+	},
+	"manifest_version": 2
+}

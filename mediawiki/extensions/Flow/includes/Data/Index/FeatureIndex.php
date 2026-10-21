@@ -85,7 +85,13 @@ abstract class FeatureIndex implements Index {
 	 * @param string $prefix Prefix to utilize for all cache keys
 	 * @param string[] $indexedColumns List of columns to index
 	 */
-	public function __construct( FlowObjectCache $cache, ObjectStorage $storage, ObjectMapper $mapper, $prefix, array $indexedColumns ) {
+	public function __construct(
+		FlowObjectCache $cache,
+		ObjectStorage $storage,
+		ObjectMapper $mapper,
+		$prefix,
+		array $indexedColumns
+	) {
 		$this->cache = $cache;
 		$this->storage = $storage;
 		$this->mapper = $mapper;
@@ -486,6 +492,9 @@ abstract class FeatureIndex implements Index {
 	protected function cacheKey( array $attributes ) {
 		global $wgFlowCacheVersion;
 		foreach ( $attributes as $key => $attr ) {
+			if ( $attr === null ) {
+				continue;
+			}
 			if ( $attr instanceof UUID ) {
 				$attributes[$key] = $attr->getAlphadecimal();
 			} elseif ( strlen( $attr ) === UUID::BIN_LEN && substr( $key, -3 ) === '_id' ) {

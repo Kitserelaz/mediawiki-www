@@ -1,0 +1,144 @@
+@import 'mediawiki.mixins';
+@import '../mediasearch-variables.less';
+
+.sdms-search-filters {
+	.flex-display();
+	.flex-wrap( wrap );
+	padding: @sdms-padding-vertical-base 0;
+
+	// set an initial height so that, even if there is no content (such
+	// as from the initial page load without filters), it already loads
+	// at the final height and there is no FOUC
+	min-height: 2.5em;
+	align-items: center;
+
+	.sd-select {
+		position: static;
+
+		@media screen and ( min-width: @min-width-breakpoint-desktop ) {
+			margin-right: 0;
+			position: relative;
+		}
+
+		&__content {
+			background-color: transparent;
+			border: @border-width-base @border-style-base @sdms-border-color-tool;
+			border-radius: @border-radius-base;
+			box-shadow: none;
+			color: @color-emphasized;
+
+			@media screen and ( min-width: @min-width-breakpoint-tablet ) {
+				font-size: 0.9em;
+				padding:
+ @sdms-padding-vertical-tool
+					@sdms-padding-end-dropdown
+					@sdms-padding-vertical-tool
+					@sdms-padding-horizontal-base;
+			}
+
+			&:hover {
+				background: @sdms-background-color-tool--hover;
+			}
+
+			&:focus {
+				box-shadow: @box-shadow-inset-small @box-shadow-color-progressive--focus;
+				border-color: @border-color-progressive--focus;
+				outline: @outline-base--focus;
+			}
+
+			&:active {
+				background-color: @sdms-background-color-tool--active;
+				border-color: @border-color-progressive--focus;
+				box-shadow: none;
+			}
+		}
+
+		// Styles for when a filter value has been selected.
+		&.sdms-search-filter--selected {
+			.sd-select__content {
+				color: @color-progressive;
+				font-weight: bold;
+
+				.sd-select__handle {
+					color: @color-progressive;
+				}
+			}
+		}
+
+		.sd-select__current-selection {
+			white-space: nowrap;
+		}
+	}
+
+	&__namespace {
+		transition: color @transition-duration-base;
+		font-weight: normal;
+		background-color: transparent;
+		border: @border-width-base @border-style-base @sdms-border-color-tool;
+		border-radius: @border-radius-base;
+		box-shadow: none;
+		min-height: @min-size-interactive-pointer;
+		white-space: nowrap;
+
+		@media screen and ( min-width: @min-width-breakpoint-tablet ) {
+			font-size: 0.9em;
+			padding:
+ @sdms-padding-vertical-tool
+				@sdms-padding-horizontal-base
+				@sdms-padding-vertical-tool
+				@sdms-padding-horizontal-base;
+		}
+
+		&--selected {
+			color: @color-progressive;
+			font-weight: bold;
+
+			&:hover {
+				color: @color-progressive;
+			}
+		}
+
+		&:hover {
+			background: @sdms-background-color-tool--hover;
+		}
+
+		&:active {
+			background-color: @sdms-background-color-tool--active;
+			border-color: @border-color-progressive--focus;
+			box-shadow: none;
+		}
+
+		&:focus {
+			box-shadow: @box-shadow-inset-small @box-shadow-color-progressive--focus;
+			border-color: @border-color-progressive--focus;
+			outline: @outline-base--focus;
+		}
+	}
+
+	.sdms-search-results-count {
+		.flex-display();
+		flex-shrink: 0;
+		// Send this element all the way to the right in the flex container.
+		margin-left: auto;
+		// Mimic filter spacing.
+		padding-left: 20px;
+
+		@media screen and ( min-width: @min-width-breakpoint-tablet ) {
+			font-size: 0.9em;
+		}
+	}
+
+	&__spacer {
+		flex: 1 1 auto;
+	}
+
+	&__clear {
+		&--no-js {
+			margin-right: @sdms-spacing-sm;
+
+			@media screen and ( min-width: @min-width-breakpoint-tablet ) {
+				font-size: 0.9em;
+			}
+		}
+	}
+}

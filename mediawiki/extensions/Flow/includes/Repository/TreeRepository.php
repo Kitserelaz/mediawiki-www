@@ -4,12 +4,13 @@ namespace Flow\Repository;
 
 use Flow\Data\FlowObjectCache;
 use Flow\Data\ObjectManager;
+use Flow\Data\Storage\DbStorage;
 use Flow\DbFactory;
 use Flow\Exception\DataModelException;
 use Flow\Model\UUID;
 use Wikimedia\Rdbms\DBQueryError;
 
-/*
+/**
  * In SQL
  *
  * CREATE TABLE flow_tree_node (
@@ -29,7 +30,7 @@ use Wikimedia\Rdbms\DBQueryError;
  * Not sure how to handle topic splits with caching yet, i can imagine
  * a number of potential race conditions for writing root paths and sub trees
  * during a topic split
-*/
+ */
 class TreeRepository {
 
 	/**
@@ -89,15 +90,16 @@ class TreeRepository {
 		$this->deleteSubtreeCache( $descendant, $path );
 
 		$dbw = $this->dbFactory->getDB( DB_PRIMARY );
-		$dbw->newInsertQueryBuilder()
+		$queryBuilder = $dbw->newInsertQueryBuilder()
 			->insertInto( $this->tableName )
 			->row( [
 				'tree_descendant_id' => $descendant->getBinary(),
 				'tree_ancestor_id' => $descendant->getBinary(),
 				'tree_depth' => 0,
 			] )
-			->caller( __METHOD__ )
-			->execute();
+			->caller( __METHOD__ );
+		DbStorage::maybeSetInsertIgnore( $queryBuilder );
+		$queryBuilder->execute();
 
 		$ok = true;
 		if ( $ancestor !== null ) {
@@ -112,6 +114,8 @@ class TreeRepository {
 					throw new DBQueryError( $dbw, 'Prevented execution of known bad query', 1137, '', __METHOD__ );
 				}
 
+				$insertOptions = DbStorage::useInsertIgnore() ? [ 'IGNORE' ] : [];
+
 				$dbw->insertSelect(
 					$this->tableName,
 					$this->tableName,
@@ -123,7 +127,8 @@ class TreeRepository {
 					[
 						'tree_descendant_id' => $ancestor->getBinary(),
 					],
-					__METHOD__
+					__METHOD__,
+					$insertOptions
 				);
 			} catch ( DBQueryError $e ) {
 				/*
@@ -146,15 +151,16 @@ class TreeRepository {
 						->fetchResultSet();
 
 					foreach ( $rows as $row ) {
-						$dbw->newInsertQueryBuilder()
+						$queryBuilder = $dbw->newInsertQueryBuilder()
 							->insertInto( $this->tableName )
 							->row( [
 								'tree_descendant_id' => $descendant->getBinary(),
 								'tree_ancestor_id' => $row->tree_ancestor_id,
 								'tree_depth' => $row->tree_depth + 1,
 							] )
-							->caller( __METHOD__ )
-							->execute();
+							->caller( __METHOD__ );
+						DbStorage::maybeSetInsertIgnore( $queryBuilder );
+						$queryBuilder->execute();
 					}
 				} else {
 					$ok = false;
@@ -178,8 +184,6 @@ class TreeRepository {
 
 	/**
 	 * Deletes a descendant from the tree repo.
-	 *
-	 * @param UUID $descendant
 	 */
 	public function delete( UUID $descendant ) {
 		$dbw = $this->dbFactory->getDB( DB_PRIMARY );
@@ -318,12 +322,13 @@ class TreeRepository {
 		// of caching our own value
 		$path = $this->findRootPath( $descendant );
 		if ( !$path ) {
-			throw new DataModelException( $descendant->getAlphadecimal() . ' has no root post. Probably is a root post.', 'process-data' );
+			throw new DataModelException(
+				$descendant->getAlphadecimal() . ' has no root post. Probably is a root post.',
+				'process-data'
+			);
 		}
 
-		$root = array_shift( $path );
-
-		return $root;
+		return array_shift( $path );
 	}
 
 	/**

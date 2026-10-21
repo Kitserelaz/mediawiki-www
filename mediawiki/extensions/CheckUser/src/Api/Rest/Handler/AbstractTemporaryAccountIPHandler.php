@@ -1,15 +1,15 @@
 <?php
 
-namespace MediaWiki\CheckUser\Api\Rest\Handler;
+namespace MediaWiki\Extension\CheckUser\Api\Rest\Handler;
 
-use JobQueueGroup;
 use MediaWiki\Block\BlockManager;
-use MediaWiki\CheckUser\Logging\TemporaryAccountLogger;
 use MediaWiki\Config\Config;
+use MediaWiki\Extension\CheckUser\Logging\TemporaryAccountLogger;
+use MediaWiki\Extension\CheckUser\Services\CheckUserPermissionManager;
+use MediaWiki\JobQueue\JobQueueGroup;
 use MediaWiki\Permissions\PermissionManager;
 use MediaWiki\Rest\LocalizedHttpException;
 use MediaWiki\User\ActorStore;
-use MediaWiki\User\Options\UserOptionsLookup;
 use MediaWiki\User\TempUser\TempUserConfig;
 use MediaWiki\User\UserNameUtils;
 use Wikimedia\IPUtils;
@@ -17,30 +17,36 @@ use Wikimedia\Message\MessageValue;
 use Wikimedia\ParamValidator\ParamValidator;
 use Wikimedia\ParamValidator\TypeDef\IntegerDef;
 use Wikimedia\Rdbms\IConnectionProvider;
+use Wikimedia\Rdbms\ReadOnlyMode;
 
 /**
  * Handle IP validation for endpoints that take an IP as a parameter
  */
 abstract class AbstractTemporaryAccountIPHandler extends AbstractTemporaryAccountHandler {
 
-	private TempUserConfig $tempUserConfig;
-
 	public function __construct(
 		Config $config,
 		JobQueueGroup $jobQueueGroup,
 		PermissionManager $permissionManager,
-		UserOptionsLookup $userOptionsLookup,
 		UserNameUtils $userNameUtils,
 		IConnectionProvider $dbProvider,
 		ActorStore $actorStore,
 		BlockManager $blockManager,
-		TempUserConfig $tempUserConfig
+		private readonly TempUserConfig $tempUserConfig,
+		CheckUserPermissionManager $checkUserPermissionsManager,
+		ReadOnlyMode $readOnlyMode,
 	) {
 		parent::__construct(
-			$config, $jobQueueGroup, $permissionManager, $userOptionsLookup, $userNameUtils, $dbProvider, $actorStore,
-			$blockManager
+			$config,
+			$jobQueueGroup,
+			$permissionManager,
+			$userNameUtils,
+			$dbProvider,
+			$actorStore,
+			$blockManager,
+			$checkUserPermissionsManager,
+			$readOnlyMode
 		);
-		$this->tempUserConfig = $tempUserConfig;
 	}
 
 	/**
@@ -87,8 +93,8 @@ abstract class AbstractTemporaryAccountIPHandler extends AbstractTemporaryAccoun
 				ParamValidator::PARAM_REQUIRED => false,
 				ParamValidator::PARAM_DEFAULT => $this->config->get( 'CheckUserMaximumRowCount' ),
 				IntegerDef::PARAM_MAX => $this->config->get( 'CheckUserMaximumRowCount' ),
-				IntegerDef::PARAM_MIN => 1
-			]
+				IntegerDef::PARAM_MIN => 1,
+			],
 		];
 	}
 }

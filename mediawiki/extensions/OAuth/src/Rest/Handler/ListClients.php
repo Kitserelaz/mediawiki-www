@@ -11,7 +11,7 @@ use MediaWiki\Rest\ResponseInterface;
 use MediaWiki\Rest\SimpleHandler;
 use Wikimedia\Message\MessageValue;
 use Wikimedia\ParamValidator\ParamValidator;
-use Wikimedia\Rdbms\ILoadBalancer;
+use Wikimedia\Rdbms\IConnectionProvider;
 use Wikimedia\Rdbms\IResultWrapper;
 use Wikimedia\Rdbms\SelectQueryBuilder;
 
@@ -49,17 +49,9 @@ class ListClients extends SimpleHandler {
 		'oauth2_is_confidential' => 'oarc_oauth2_is_confidential',
 	];
 
-	/**
-	 *
-	 * @var ILoadBalancer
-	 */
-	private $loadBalancer;
-
-	/**
-	 * @param ILoadBalancer $loadBalancer
-	 */
-	public function __construct( ILoadBalancer $loadBalancer ) {
-		$this->loadBalancer = $loadBalancer;
+	public function __construct(
+		private readonly IConnectionProvider $connProvider,
+	) {
 	}
 
 	/**
@@ -74,8 +66,7 @@ class ListClients extends SimpleHandler {
 	 * @throws LocalizedHttpException
 	 */
 	public function run(): ResponseInterface {
-		// @todo Inject this, when there is a good way to do that, see T239753
-		$user = RequestContext::getMain()->getUser();
+		$user = $this->getAuthority()->getUser();
 
 		$centralId = Utils::getCentralIdFromUserName( $user->getName() );
 		$responseFactory = $this->getResponseFactory();
@@ -119,7 +110,7 @@ class ListClients extends SimpleHandler {
 	 * @return array the results
 	 */
 	private function getDbResults( int $centralId ) {
-		$dbr = $this->loadBalancer->getConnection( DB_REPLICA );
+		$dbr = $this->connProvider->getReplicaDatabase( 'virtual-oauth' );
 
 		$params = $this->getValidatedParams();
 		$limit = $params['limit'];
@@ -161,14 +152,14 @@ class ListClients extends SimpleHandler {
 	private function processDbResults( $res ) {
 		$consumers = [];
 		$requestContext = RequestContext::getMain();
-		$user = $requestContext->getUser();
+		$user = $this->getAuthority()->getUser();
 
 		foreach ( $res as $row ) {
 
 			$consumer = [];
 
 			$cmrAc = ConsumerAccessControl::wrap(
-				Consumer::newFromRow( Utils::getCentralDB( DB_REPLICA ), $row ),
+				Consumer::newFromRow( Utils::getOAuthDB( DB_REPLICA ), $row ),
 				$requestContext
 			);
 

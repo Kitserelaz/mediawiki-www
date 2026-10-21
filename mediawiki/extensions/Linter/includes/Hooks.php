@@ -20,77 +20,59 @@
 
 namespace MediaWiki\Linter;
 
-use JobQueueGroup;
+use MediaWiki\Actions\Hook\InfoActionHook;
 use MediaWiki\Api\ApiQuerySiteinfo;
 use MediaWiki\Api\Hook\APIQuerySiteInfoGeneralInfoHook;
 use MediaWiki\Config\Config;
-use MediaWiki\Content\Content;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Deferred\DeferrableUpdate;
 use MediaWiki\Deferred\MWCallableUpdate;
-use MediaWiki\Hook\InfoActionHook;
-use MediaWiki\Hook\ParserLogLinterDataHook;
+use MediaWiki\JobQueue\JobQueueGroup;
 use MediaWiki\Linker\LinkRenderer;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\Output\Hook\BeforePageDisplayHook;
 use MediaWiki\Output\OutputPage;
-use MediaWiki\Page\Hook\RevisionFromEditCompleteHook;
-use MediaWiki\Page\Hook\WikiPageDeletionUpdatesHook;
+use MediaWiki\Page\Hook\PageDeletionDataUpdatesHook;
 use MediaWiki\Page\ParserOutputAccess;
 use MediaWiki\Page\WikiPageFactory;
+use MediaWiki\Parser\Hook\ParserLogLinterDataHook;
 use MediaWiki\Revision\RenderedRevision;
 use MediaWiki\Revision\RevisionRecord;
+use MediaWiki\Revision\SlotRecord;
+use MediaWiki\Skin\Skin;
+use MediaWiki\SpecialPage\Hook\WgQueryPagesHook;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Storage\Hook\RevisionDataUpdatesHook;
 use MediaWiki\Title\Title;
-use MediaWiki\User\UserIdentity;
-use Skin;
-use WikiPage;
+use Wikimedia\Stats\StatsFactory;
 
 class Hooks implements
 	APIQuerySiteInfoGeneralInfoHook,
 	BeforePageDisplayHook,
 	InfoActionHook,
 	ParserLogLinterDataHook,
-	RevisionFromEditCompleteHook,
-	WikiPageDeletionUpdatesHook,
-	RevisionDataUpdatesHook
+	PageDeletionDataUpdatesHook,
+	RevisionDataUpdatesHook,
+	WgQueryPagesHook
 {
-	private LinkRenderer $linkRenderer;
-	private JobQueueGroup $jobQueueGroup;
-	private WikiPageFactory $wikiPageFactory;
-	private ParserOutputAccess $parserOutputAccess;
-	private CategoryManager $categoryManager;
-	private TotalsLookup $totalsLookup;
-	private Database $database;
-	private bool $parseOnDerivedDataUpdates;
+	private readonly bool $parseOnDerivedDataUpdates;
 
 	/**
-	 * @param LinkRenderer $linkRenderer
-	 * @param JobQueueGroup $jobQueueGroup
-	 * @param WikiPageFactory $wikiPageFactory
-	 * @param ParserOutputAccess $parserOutputAccess
-	 * @param CategoryManager $categoryManager
-	 * @param TotalsLookup $totalsLookup
-	 * @param Database $database
+	 * This should match Parsoid's PageConfig::hasLintableContentModel()
 	 */
+	public const LINTABLE_CONTENT_MODELS = [ CONTENT_MODEL_WIKITEXT, 'proofread-page' ];
+
 	public function __construct(
-		LinkRenderer $linkRenderer,
-		JobQueueGroup $jobQueueGroup,
-		WikiPageFactory $wikiPageFactory,
-		ParserOutputAccess $parserOutputAccess,
-		CategoryManager $categoryManager,
-		TotalsLookup $totalsLookup,
-		Database $database,
+		private readonly LinkRenderer $linkRenderer,
+		private readonly JobQueueGroup $jobQueueGroup,
+		private readonly StatsFactory $statsFactory,
+		private readonly WikiPageFactory $wikiPageFactory,
+		private readonly ParserOutputAccess $parserOutputAccess,
+		private readonly CategoryManager $categoryManager,
+		private readonly TotalsLookup $totalsLookup,
+		private readonly Database $database,
 		Config $config
 	) {
-		$this->linkRenderer = $linkRenderer;
-		$this->jobQueueGroup = $jobQueueGroup;
-		$this->wikiPageFactory = $wikiPageFactory;
-		$this->parserOutputAccess = $parserOutputAccess;
-		$this->categoryManager = $categoryManager;
-		$this->totalsLookup = $totalsLookup;
-		$this->database = $database;
 		$this->parseOnDerivedDataUpdates = $config->get( 'LinterParseOnDerivedDataUpdate' );
 	}
 
@@ -128,63 +110,26 @@ class Hooks implements
 	}
 
 	/**
-	 * Hook: WikiPageDeletionUpdates
+	 * Hook: PageDeletionDataUpdates
 	 *
 	 * Remove entries from the linter table upon page deletion
 	 *
-	 * @param WikiPage $wikiPage
-	 * @param Content $content
-	 * @param array &$updates
+	 * @param Title $title
+	 * @param RevisionRecord $revision
+	 * @param DeferrableUpdate[] &$updates
+	 * @return bool|void
 	 */
-	public function onWikiPageDeletionUpdates( $wikiPage, $content, &$updates ) {
+	public function onPageDeletionDataUpdates( $title, $revision, &$updates ) {
 		// The article id of the title is set to 0 when the page is deleted so
 		// capture it before creating the callback.
-		$id = $wikiPage->getId();
-		$ns = $wikiPage->getNamespace();
+		$id = $revision->getPage()->getId();
+		$ns = $title->getNamespace();
 
 		$updates[] = new MWCallableUpdate( function () use ( $id, $ns ) {
 			$this->totalsLookup->updateStats(
 				$this->database->setForPage( $id, $ns, [] )
 			);
 		}, __METHOD__ );
-	}
-
-	/**
-	 * This should match Parsoid's PageConfig::hasLintableContentModel()
-	 */
-	public const LINTABLE_CONTENT_MODELS = [ CONTENT_MODEL_WIKITEXT, 'proofread-page' ];
-
-	/**
-	 * Hook: RevisionFromEditComplete
-	 *
-	 * Remove entries from the linter table upon page content model change away from wikitext
-	 *
-	 * @param WikiPage $wikiPage
-	 * @param RevisionRecord $newRevisionRecord
-	 * @param bool|int $originalRevId
-	 * @param UserIdentity $user
-	 * @param string[] &$tags
-	 */
-	public function onRevisionFromEditComplete(
-		$wikiPage, $newRevisionRecord, $originalRevId, $user, &$tags
-	) {
-		// This is just a stop-gap to deal with callers that aren't complying
-		// with the advertised hook signature.
-		if ( !is_array( $tags ) ) {
-			return;
-		}
-
-		if (
-			in_array( "mw-blank", $tags ) ||
-			( in_array( "mw-contentmodelchange", $tags ) &&
-			!in_array( $wikiPage->getContentModel(), self::LINTABLE_CONTENT_MODELS ) )
-		) {
-			$this->totalsLookup->updateStats(
-				$this->database->setForPage(
-					$wikiPage->getId(), $wikiPage->getNamespace(), []
-				)
-			);
-		}
 	}
 
 	/**
@@ -349,10 +294,23 @@ class Hooks implements
 			return;
 		}
 
+		LintUpdate::updateParserPerformanceStats(
+			$this->statsFactory,
+			$renderedRevision->getSlotParserOutput( SlotRecord::MAIN, [] ),
+			 /* this is legacy output: */
+			false
+		);
 		$updates[] = new LintUpdate(
+			$this->statsFactory,
 			$this->wikiPageFactory,
 			$this->parserOutputAccess,
 			$renderedRevision,
 		);
 	}
+
+	/** @inheritDoc */
+	public function onWgQueryPages( &$qp ): void {
+		$qp[] = [ SpecialLintTemplateErrors::class, 'LintTemplateErrors' ];
+	}
+
 }

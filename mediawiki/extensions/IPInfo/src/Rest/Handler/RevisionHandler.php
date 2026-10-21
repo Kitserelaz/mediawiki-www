@@ -2,75 +2,80 @@
 
 namespace MediaWiki\IPInfo\Rest\Handler;
 
-use JobQueueGroup;
+use MediaWiki\HookContainer\HookContainer;
 use MediaWiki\IPInfo\InfoManager;
+use MediaWiki\IPInfo\IPInfoPermissionManager;
 use MediaWiki\IPInfo\Rest\Presenter\DefaultPresenter;
 use MediaWiki\IPInfo\TempUserIPLookup;
-use MediaWiki\Languages\LanguageFallback;
+use MediaWiki\JobQueue\JobQueueGroup;
+use MediaWiki\Language\LanguageFallback;
 use MediaWiki\Permissions\PermissionManager;
-use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Revision\RevisionRecord;
-use MediaWiki\User\Options\UserOptionsLookup;
 use MediaWiki\User\UserFactory;
 use MediaWiki\User\UserIdentityUtils;
+use Wikimedia\Rdbms\ReadOnlyMode;
 
+/**
+ * @internal For use by IPInfo
+ */
 class RevisionHandler extends AbstractRevisionHandler {
-
-	private RevisionLookup $revisionLookup;
 
 	public function __construct(
 		InfoManager $infoManager,
-		RevisionLookup $revisionLookup,
+		private readonly RevisionLookup $revisionLookup,
 		PermissionManager $permissionManager,
-		UserOptionsLookup $userOptionsLookup,
 		UserFactory $userFactory,
 		DefaultPresenter $presenter,
 		JobQueueGroup $jobQueueGroup,
 		LanguageFallback $languageFallback,
 		UserIdentityUtils $userIdentityUtils,
 		TempUserIPLookup $tempUserIPLookup,
-		ExtensionRegistry $extensionRegistry
+		IPInfoPermissionManager $ipInfoPermissionManager,
+		ReadOnlyMode $readOnlyMode,
+		HookContainer $hookContainer
 	) {
 		parent::__construct(
 			$infoManager,
 			$permissionManager,
-			$userOptionsLookup,
 			$userFactory,
 			$presenter,
 			$jobQueueGroup,
 			$languageFallback,
 			$userIdentityUtils,
 			$tempUserIPLookup,
-			$extensionRegistry
+			$ipInfoPermissionManager,
+			$readOnlyMode,
+			$hookContainer
 		);
-		$this->revisionLookup = $revisionLookup;
 	}
 
 	public static function factory(
 		InfoManager $infoManager,
 		RevisionLookup $revisionLookup,
 		PermissionManager $permissionManager,
-		UserOptionsLookup $userOptionsLookup,
 		UserFactory $userFactory,
 		JobQueueGroup $jobQueueGroup,
 		LanguageFallback $languageFallback,
 		UserIdentityUtils $userIdentityUtils,
 		TempUserIPLookup $tempUserIPLookup,
-		?ExtensionRegistry $extensionRegistry = null
+		IPInfoPermissionManager $ipInfoPermissionManager,
+		ReadOnlyMode $readOnlyMode,
+		HookContainer $hookContainer
 	): self {
 		return new self(
 			$infoManager,
 			$revisionLookup,
 			$permissionManager,
-			$userOptionsLookup,
 			$userFactory,
 			new DefaultPresenter( $permissionManager ),
 			$jobQueueGroup,
 			$languageFallback,
 			$userIdentityUtils,
 			$tempUserIPLookup,
-			$extensionRegistry ?? ExtensionRegistry::getInstance()
+			$ipInfoPermissionManager,
+			$readOnlyMode,
+			$hookContainer
 		);
 	}
 

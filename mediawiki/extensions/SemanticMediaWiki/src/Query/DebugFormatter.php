@@ -1,0 +1,318 @@
+<?php
+
+namespace SMW\Query;
+
+use SMW\ProcessingErrorMsgHandler;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 2.0
+ *
+ * @author mwjames
+ * @author Markus Krötzsch
+ */
+class DebugFormatter {
+
+	const JSON_FORMAT = 'json';
+
+	private string $format = '';
+
+	private string $name = '';
+
+	/**
+	 * @since 3.0
+	 */
+	public function __construct(
+		private readonly ?string $type = '',
+		string $format = '',
+	) {
+		// Use a more expressive explain output
+		// https://dev.mysql.com/doc/refman/5.6/en/explain.html
+		// https://mariadb.com/kb/en/mariadb/explain-formatjson-in-mysql/
+		if ( $this->type === 'mysql' && $format === self::JSON_FORMAT ) {
+			$this->format = 'FORMAT=json';
+		}
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @param string $name
+	 */
+	public function setName( string $name ): void {
+		$this->name = $name;
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @return string
+	 */
+	public function getFormat(): string {
+		return $this->format;
+	}
+
+	/**
+	 * Generate textual debug output that shows an arbitrary list of informative
+	 * fields. Used for formatting query debug output.
+	 *
+	 * @note All strings given must be usable and safe in wiki and HTML
+	 * contexts.
+	 *
+	 * @param $entries array of name => value of informative entries to display
+	 * @param Query|null $query Query or null, if given add basic data about this query as well
+	 *
+	 * @return string
+	 */
+	public function buildHTML( array $entries, ?Query $query = null ): string {
+		if ( $query instanceof Query ) {
+			$preEntries = [];
+			$description = $query->getDescription();
+			$queryString = str_replace( '[', '&#91;', htmlspecialchars( $description->getQueryString() ?? '', ENT_QUOTES ) );
+
+			$preEntries['ASK Query'] = '<div class="smwpre">' . $queryString . '</div>';
+			$entries = array_merge( $preEntries, $entries );
+			$entries['Query Metrics'] = 'Query-Size:' . $description->getSize() . '<br />' .
+						'Query-Depth:' . $description->getDepth();
+			$errors = '';
+
+			$queryErrors = ProcessingErrorMsgHandler::normalizeAndDecodeMessages(
+				$query->getErrors()
+			);
+
+			foreach ( $queryErrors as $error ) {
+				$errors .= $this->escape( (string)$error ) . '<br />';
+			}
+
+			if ( $errors === '' ) {
+				$errors = 'None';
+			}
+
+			$entries['Errors and Warnings'] = $errors;
+		}
+
+		$style = '';
+		$result = '<div class="smw-debug-box">' .
+				  "<div class='smw-column-header'><big>Debug output <span style='float:right'>$this->name</span></big></div>";
+
+		foreach ( $entries as $header => $information ) {
+			$result .= "<div class='smw-column-header'>$header</div>";
+
+			if ( $information !== '' ) {
+				$result .= "$information";
+			}
+		}
+
+		$result .= '</div>';
+
+		return $result;
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * @param iterable $res
+	 *
+	 * @return string
+	 */
+	public function prettifyExplain( iterable $res ): string {
+		$output = '';
+
+		// https://dev.mysql.com/doc/refman/5.0/en/explain-output.html
+		if ( $this->type === 'mysql' ) {
+			$output .= '<div class="smwpre" style="word-break:normal;">' .
+			'<table class="" style="border-spacing: 5px;"><tr>' .
+			'<th style="text-align: left;">ID</th>' .
+			'<th style="text-align: left;">select_type</th>' .
+			'<th style="text-align: left;">table</th>' .
+			'<th style="text-align: left;">type</th>' .
+			'<th style="text-align: left;">possible_keys</th>' .
+			'<th style="text-align: left;">key</th>' .
+			'<th style="text-align: left;">key_len</th>' .
+			'<th style="text-align: left;">ref</th>' .
+			'<th style="text-align: left;">rows</th>' .
+			'<th style="text-align: left;">filtered</th>' .
+			'<th style="text-align: left;">Extra</th></tr>';
+
+			foreach ( $res as $row ) {
+
+				if ( isset( $row->EXPLAIN ) ) {
+					return '<div class="smwpre">' . $this->escape( $row->EXPLAIN ) . '</div>';
+				}
+
+				$possible_keys = $row->possible_keys;
+				$ref = $row->ref;
+
+				if ( strpos( $possible_keys ?? '', ',' ) !== false ) {
+					$possible_keys = implode( ', ', explode( ',', $possible_keys ) );
+				}
+
+				if ( strpos( $ref ?? '', ',' ) !== false ) {
+					$ref = implode( ', ', explode( ',', $ref ) );
+				}
+
+				$output .= "<tr style='vertical-align: top;'><td>" . $this->escape( $row->id ) .
+				"</td><td>" . $this->escape( $row->select_type ) .
+				"</td><td>" . $this->escape( $row->table ) .
+				"</td><td>" . $this->escape( $row->type ) .
+				"</td><td>" . $this->escape( $possible_keys ) .
+				"</td><td>" . $this->escape( $row->key ) .
+				"</td><td>" . $this->escape( $row->key_len ) .
+				"</td><td>" . $this->escape( $ref ) .
+				"</td><td>" . $this->escape( $row->rows ) .
+				"</td><td>" . $this->escape( $row->filtered ?? '' ) .
+				"</td><td>" . $this->escape( $row->Extra ) . "</td></tr>";
+			}
+
+			$output .= '</table></div>';
+		}
+
+		if ( $this->type === 'postgres' ) {
+			$output .= '<div class="smwpre">';
+
+			foreach ( $res as $row ) {
+				foreach ( $row as $key => $value ) {
+					// Escape < and & (leaving > intact) so the -> tree-branch
+					// substitution below still matches while markup is neutralised.
+					$safeValue = str_replace( [ '&', '<' ], [ '&amp;', '&lt;' ], $value ?? '' );
+					$output .= str_replace( [ ' ', '->' ], [ '&nbsp;', '└── ' ], $safeValue ) . '<br>';
+				}
+			}
+
+			$output .= '</div>';
+		}
+
+		if ( $this->type === 'sqlite' ) {
+			$output .= 'QUERY PLAN' . "<br>";
+			$plan = '';
+			$resArray = is_array( $res ) ? $res : iterator_to_array( $res, false );
+			$last = count( $resArray ) - 1;
+
+			foreach ( $resArray as $k => $row ) {
+
+				// https://www.sqlite.org/eqp.html notes "... output format did change
+				// substantially with the version 3.24.0 release ..."
+				if ( !isset( $row->id ) ) {
+					continue;
+				}
+
+				$marker = $k === $last ? '└──' : '├──';
+				$plan .= "<div style='margin-left:15px;'>$marker [" . $this->escape( $row->id ) . '] `' . $this->escape( $row->detail ) . "`</div>";
+			}
+
+			if ( $plan === '' ) {
+				$plan = 'The SQLite version doesn\'t support a query plan.';
+			}
+
+			$output .= $plan;
+		}
+
+		return $output;
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * @param string $sparql
+	 *
+	 * @return string
+	 */
+	public function prettifySPARQL( $sparql ): string {
+		$sparql = str_replace(
+			[
+				'[',
+				':',
+				' ',
+				'<',
+				'>'
+			],
+			[
+				'&#91;',
+				'&#x003A;',
+				'&#x0020;',
+				'&#x3C;',
+				'&#x3E;'
+			],
+			$sparql ?? ''
+		);
+
+		return '<div class="smwpre">' . $sparql . '</div>';
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * @param string $sql
+	 * @param string $alias
+	 *
+	 * @return string
+	 */
+	public function prettifySQL( $sql, $alias ): string {
+		$sql = $this->escape( $sql );
+		$matches = [];
+		$i = 0;
+
+		$sql = preg_replace_callback( '/NOT IN .*\)/', static function ( array $m ) use ( &$matches, &$i ): string {
+			$i++;
+
+			$string = str_replace( [ 'AND ((' ], [ "AND (<br>   (" ], $m[0] );
+
+			$matches["not_int$i"] = $string;
+			return "not_int$i";
+		}, $sql );
+
+		$sql = str_replace(
+			[
+				"SELECT DISTINCT",
+				"FROM",
+				"INNER JOIN",
+				"LEFT OUTER JOIN",
+				"LEFT JOIN",
+				"RIGHT JOIN",
+				"WHERE",
+				"ORDER BY",
+				"GROUP BY",
+				"LIMIT",
+				"OFFSET",
+				"AND $alias.smw_",
+				",$alias.smw_",
+				"AND (",
+				"))",
+				"(("
+			],
+			[
+				"SELECT DISTINCT<br>&nbsp;",
+				"<br>FROM<br>&nbsp;",
+				"<br>INNER JOIN<br>&nbsp;",
+				"<br>LEFT OUTER JOIN<br>&nbsp;",
+				"<br>LEFT JOIN<br>&nbsp;",
+				"<br>RIGHT JOIN<br>&nbsp;",
+				"<br>WHERE<br>&nbsp;",
+				"<br>ORDER BY<br>&nbsp;",
+				"<br>GROUP BY<br>&nbsp;",
+				"<br>LIMIT<br>&nbsp;",
+				"<br>OFFSET<br>&nbsp;",
+				"<br>&nbsp;&nbsp;AND $alias.smw_",
+				",<br>&nbsp;&nbsp;$alias.smw_",
+				"<br>&nbsp;&nbsp;&nbsp;AND (",
+				")<br>&nbsp;&nbsp;)",
+				"(<br>&nbsp;&nbsp;&nbsp;("
+			],
+			$sql
+		);
+
+		foreach ( $matches as $key => $value ) {
+			$sql = str_replace( $key, $value, $sql );
+		}
+
+		return '<div class="smwpre">' . $sql . '</div>';
+	}
+
+	/**
+	 * Escape a value for output in an HTML element-content context.
+	 */
+	private function escape( string|int|float|null $value ): string {
+		return htmlspecialchars( (string)( $value ?? '' ), ENT_QUOTES );
+	}
+
+}

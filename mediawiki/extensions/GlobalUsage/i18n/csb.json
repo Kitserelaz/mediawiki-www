@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Kaszeba",
+			"Kirsan",
+			"Terrus38",
+			"Orbitminis"
+		]
+	},
+	"globalusage": "Globalné wëkòrzistanié lopka",
+	"globalusage-on-wiki": "Wëzwëskanié na $2",
+	"globalusage-of-file": "Nen lopk je téż brëkòwóny w jinszich projektach wiki:",
+	"globalusage-more": "Pòkôżë [[{{#Special:GlobalUsage}}/$1|lëstã òglowégò brëkòwaniô]] négò lopka."
+}

@@ -1,26 +1,12 @@
 <?php
 /**
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 
 namespace MediaWiki\Extension\OATHAuth;
 
-use InvalidArgumentException;
-use MediaWiki\User\User;
-use ReflectionClass;
+use MediaWiki\Extension\OATHAuth\Key\AuthKey;
+use MediaWiki\User\UserIdentity;
 
 /**
  * Class representing a user from OATH's perspective
@@ -28,27 +14,21 @@ use ReflectionClass;
  * @ingroup Extensions
  */
 class OATHUser {
-	private User $user;
-	private int $centralId;
-
-	/** @var IAuthKey[] */
+	/** @var AuthKey[] */
 	private array $keys = [];
-	private ?IModule $module = null;
+
+	private ?string $userHandle = null;
 
 	/**
 	 * Constructor. Can't be called directly. Use OATHUserRepository::findByUser instead.
-	 * @param User $user
-	 * @param int $centralId
 	 */
-	public function __construct( User $user, int $centralId ) {
-		$this->user = $user;
-		$this->centralId = $centralId;
+	public function __construct(
+		private readonly UserIdentity $user,
+		private readonly int $centralId,
+	) {
 	}
 
-	/**
-	 * @return User
-	 */
-	public function getUser(): User {
+	public function getUser(): UserIdentity {
 		return $this->user;
 	}
 
@@ -59,10 +39,7 @@ class OATHUser {
 		return $this->centralId;
 	}
 
-	/**
-	 * @return string
-	 */
-	public function getIssuer() {
+	public function getIssuer(): string {
 		global $wgSitename, $wgOATHAuthAccountPrefix;
 
 		if ( $wgOATHAuthAccountPrefix !== false ) {
@@ -71,60 +48,69 @@ class OATHUser {
 		return $wgSitename;
 	}
 
-	/**
-	 * @return string
-	 */
-	public function getAccount() {
+	public function getAccount(): string {
 		return $this->user->getName();
 	}
 
 	/**
 	 * Get the key associated with this user.
 	 *
-	 * @return IAuthKey[]
+	 * @return AuthKey[]
 	 */
 	public function getKeys(): array {
 		return $this->keys;
 	}
 
 	/**
-	 * Set the key associated with this user.
-	 *
-	 * @param IAuthKey[] $keys
+	 * @param string $moduleName As in IModule::getName().
+	 * @return AuthKey[]
 	 */
-	public function setKeys( array $keys = [] ) {
-		$this->keys = [];
-		foreach ( $keys as $key ) {
-			$this->addKey( $key );
-		}
+	public function getKeysForModule( string $moduleName ): array {
+		return array_values(
+			array_filter(
+				$this->keys,
+				static fn ( AuthKey $key ) => $key->getModule() === $moduleName
+			)
+		);
+	}
+
+	public function getKeyById( int $id ): ?AuthKey {
+		$matchingKeys = array_values(
+			array_filter(
+				$this->keys,
+				static fn ( AuthKey $key ) => $key->getId() === $id
+			)
+		);
+		return $matchingKeys[0] ?? null;
+	}
+
+	public function removeKey( AuthKey $key ) {
+		$keyId = $key->getId();
+		$this->keys = array_values(
+			array_filter(
+				$this->keys,
+				static fn ( AuthKey $key ) => $key->getId() !== $keyId
+			)
+		);
 	}
 
 	/**
-	 * Adds single key to the key array
-	 *
-	 * @param IAuthKey $key
+	 * @param string $moduleName As in IModule::getName()
 	 */
-	public function addKey( IAuthKey $key ) {
-		$this->checkKeyTypeCorrect( $key );
+	public function removeKeysForModule( string $moduleName ): void {
+		$this->keys = array_values(
+			array_filter(
+				$this->keys,
+				static fn ( AuthKey $key ) => $key->getModule() !== $moduleName
+			)
+		);
+	}
+
+	/**
+	 * Adds a single key to the key array
+	 */
+	public function addKey( AuthKey $key ) {
 		$this->keys[] = $key;
-	}
-
-	/**
-	 * Gets the module instance associated with this user
-	 *
-	 * @return IModule|null
-	 */
-	public function getModule() {
-		return $this->module;
-	}
-
-	/**
-	 * Sets the module instance associated with this user
-	 *
-	 * @param IModule|null $module
-	 */
-	public function setModule( ?IModule $module = null ) {
-		$this->module = $module;
 	}
 
 	/**
@@ -139,24 +125,47 @@ class OATHUser {
 	 */
 	public function disable() {
 		$this->keys = [];
-		$this->module = null;
 	}
 
 	/**
-	 * All keys set for the user must be of the same type
-	 * @param IAuthKey $key
+	 * Get all the user's keys, but exclude special keys
+	 * @return AuthKey[]
 	 */
-	private function checkKeyTypeCorrect( IAuthKey $key ): void {
-		$newKeyClass = get_class( $key );
-		foreach ( $this->keys as $keyToTest ) {
-			if ( get_class( $keyToTest ) !== $newKeyClass ) {
-				$first = ( new ReflectionClass( $keyToTest ) )->getShortName();
-				$second = ( new ReflectionClass( $key ) )->getShortName();
+	public function getNonSpecialKeys(): array {
+		$moduleRegistry = OATHAuthServices::getInstance()->getModuleRegistry();
+		return array_values(
+			array_filter(
+				$this->keys,
+				static fn ( AuthKey $key ) => !$moduleRegistry->getModuleByKey( $key->getModule() )->isSpecial()
+			)
+		);
+	}
 
-				throw new InvalidArgumentException(
-					"User already has a key from a different two-factor module enabled ($first !== $second)"
-				);
-			}
-		}
+	/**
+	 * Returns a bool indicating whether a user has _any_ 2fa modules enabled
+	 * which are not considered "special" modules, as defined via IModule::isSpecial()
+	 */
+	public function userHasNonSpecialEnabledKeys(): bool {
+		return count( $this->getNonSpecialKeys() ) > 0;
+	}
+
+	/**
+	 * Get the user's WebAuthn User Handle value. The User Handle appears in each of the user's
+	 * WebAuthn keys, and is used to identify the user based on one of their WebAuthn keys.
+	 * See also OATHUserRepository::findByUserHandle().
+	 *
+	 * For more information about User Handles, see
+	 * https://developers.yubico.com/WebAuthn/WebAuthn_Developer_Guide/User_Handle.html
+	 */
+	public function getUserHandle(): ?string {
+		return $this->userHandle;
+	}
+
+	/**
+	 * Set the User Handle. This should only be used by OATHUserRepository.
+	 * @internal
+	 */
+	public function setUserHandle( ?string $userHandle ): void {
+		$this->userHandle = $userHandle;
 	}
 }

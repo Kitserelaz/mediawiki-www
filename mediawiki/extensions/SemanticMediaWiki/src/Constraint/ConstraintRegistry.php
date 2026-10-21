@@ -1,0 +1,116 @@
+<?php
+
+namespace SMW\Constraint;
+
+use MediaWiki\HookContainer\HookContainer;
+use SMW\Constraint\Constraints\MandatoryPropertiesConstraint;
+use SMW\Constraint\Constraints\MustExistsConstraint;
+use SMW\Constraint\Constraints\NamespaceConstraint;
+use SMW\Constraint\Constraints\NonNegativeIntegerConstraint;
+use SMW\Constraint\Constraints\NullConstraint;
+use SMW\Constraint\Constraints\ShapeConstraint;
+use SMW\Constraint\Constraints\SingleValueConstraint;
+use SMW\Constraint\Constraints\UniqueValueConstraint;
+use SMW\ConstraintFactory;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 3.1
+ *
+ * @author mwjames
+ */
+class ConstraintRegistry {
+
+	private ?HookContainer $hookContainer = null;
+
+	private array $constraints = [];
+
+	private array $instances = [];
+
+	private bool $hasViolation = false;
+
+	/**
+	 * @since 3.1
+	 */
+	public function __construct( private ConstraintFactory $constraintFactory ) {
+	}
+
+	/**
+	 * @since 7.0.0
+	 */
+	public function setHookContainer( HookContainer $hookContainer ): void {
+		$this->hookContainer = $hookContainer;
+	}
+
+	/**
+	 * @since 3.1
+	 *
+	 * @param string $key
+	 * @param Constraint|string $constraint
+	 */
+	public function registerConstraint( $key, $constraint ): void {
+		if ( $this->constraints === [] ) {
+			$this->initConstraints();
+		}
+
+		$this->constraints[$key] = $constraint;
+	}
+
+	/**
+	 * @since 3.1
+	 */
+	public function getConstraintKeys(): array {
+		if ( $this->constraints === [] ) {
+			$this->initConstraints();
+		}
+
+		return array_keys( $this->constraints );
+	}
+
+	/**
+	 * @since 3.1
+	 *
+	 * @param string $key
+	 *
+	 * @return Constraint
+	 */
+	public function getConstraintByKey( $key ) {
+		if ( $this->constraints === [] ) {
+			$this->initConstraints();
+		}
+
+		if ( isset( $this->constraints[$key] ) ) {
+			return $this->loadInstance( $this->constraints[$key] );
+		}
+
+		return $this->loadInstance( $this->constraints['null'] );
+	}
+
+	private function initConstraints(): void {
+		$this->constraints = [
+			'null' => NullConstraint::class,
+			'allowed_namespaces' => NamespaceConstraint::class,
+			'unique_value_constraint' => UniqueValueConstraint::class,
+			'single_value_constraint' => SingleValueConstraint::class,
+			'non_negative_integer' => NonNegativeIntegerConstraint::class,
+			'must_exists' => MustExistsConstraint::class,
+			'mandatory_properties' => MandatoryPropertiesConstraint::class,
+			'shape_constraint' => ShapeConstraint::class
+		];
+
+		$this->hookContainer->run( 'SMW::Constraint::initConstraints', [ $this ] );
+	}
+
+	private function loadInstance( $class ) {
+		if ( is_callable( $class ) ) {
+			return $class();
+		} elseif ( $class instanceof Constraint ) {
+			return $class;
+		} elseif ( !isset( $this->instances[$class] ) ) {
+			$this->instances[$class] = $this->constraintFactory->newConstraintByClass( $class );
+		}
+
+		return $this->instances[$class];
+	}
+
+}

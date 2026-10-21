@@ -1,0 +1,18 @@
+{
+	"@metadata": {
+		"authors": [
+			"Buehl",
+			"M1660661",
+			"Mugenpman",
+			"春春眠眠",
+			"背番号4のエース"
+		]
+	},
+	"action-embed_pdf": "PDFを埋め込む",
+	"pdfembed_description": "PDF ファイル用のメディア ハンドラー拡張機能。",
+	"embed_pdf_no_permission": "PDFファイルを埋め込む権限がありません。",
+	"embed_pdf_blank_file": "PDF を埋め込むために指定されたURLまたはファイルパスが空白です。",
+	"embed_pdf_invalid_file": "指定されたURLまたはファイルパスは存在しません。",
+	"embed_pdf_invalid_user": "この PDF を埋め込む権限テストに無効なユーザーが指定されました。",
+	"right-embed_pdf": "PDFをページに挿入"
+}

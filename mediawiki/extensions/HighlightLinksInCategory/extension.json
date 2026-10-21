@@ -1,0 +1,29 @@
+{
+	"name": "Highlight Links in Category",
+	"version": "0.9.0",
+	"author": [
+		"Brent Laabs"
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:HighlightLinksInCategory",
+	"descriptionmsg": "highlightlinksincategory-desc",
+	"license-name": "MIT",
+	"type": "other",
+	"MessagesDirs": {
+		"HighlightLinksInCategory": [
+			"i18n"
+		]
+	},
+	"AutoloadClasses": {
+		"HighlightLinksInCategory": "HighlightLinksInCategory.php"
+	},
+	"Hooks": {
+		"GetLinkColours": [
+			"HighlightLinksInCategory::onGetLinkColours"
+		]
+	},
+	"config": {
+		"HighlightLinksInCategory": { },
+		"HighlightLinksInCategoryFollowRedirects": false
+	},
+	"manifest_version": 1
+}

@@ -2,19 +2,21 @@
 
 namespace LoginNotify\Maintenance;
 
-use BatchRowIterator;
 use MediaWiki\Maintenance\LoggedUpdateMaintenance;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\User\User;
+use MediaWiki\Utils\BatchRowIterator;
 use MediaWiki\WikiMap\WikiMap;
 use RecursiveIteratorIterator;
 
+// @codeCoverageIgnoreStart
 $IP = getenv( 'MW_INSTALL_PATH' );
 if ( $IP === false ) {
 	$IP = __DIR__ . '/../../..';
 }
 
 require_once "$IP/maintenance/Maintenance.php";
+// @codeCoverageIgnoreEnd
 
 /**
  * Cleans up old preference values
@@ -129,5 +131,7 @@ class MigratePreferences extends LoggedUpdateMaintenance {
 	}
 }
 
+// @codeCoverageIgnoreStart
 $maintClass = MigratePreferences::class;
 require_once RUN_MAINTENANCE_IF_MAIN;
+// @codeCoverageIgnoreEnd

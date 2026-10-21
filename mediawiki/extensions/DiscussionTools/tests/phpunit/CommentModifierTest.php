@@ -3,12 +3,14 @@
 namespace MediaWiki\Extension\DiscussionTools\Tests;
 
 use MediaWiki\Extension\DiscussionTools\CommentModifier;
-use Wikimedia\Parsoid\Utils\DOMCompat;
-use Wikimedia\Parsoid\Utils\DOMUtils;
-use Wikimedia\Parsoid\Wt2Html\XMLSerializer;
+use Wikimedia\Parsoid\Core\DOMCompat;
+use Wikimedia\Parsoid\Ext\DOMUtils;
+use Wikimedia\Parsoid\Wt2Html\XHtmlSerializer;
 
 /**
+ * @group Standalone
  * @group DiscussionTools
+ *
  * @covers \MediaWiki\Extension\DiscussionTools\CommentModifier
  * @covers \MediaWiki\Extension\DiscussionTools\CommentUtils
  */
@@ -87,7 +89,7 @@ class CommentModifierTest extends IntegrationTestCase {
 
 		foreach ( $comments as $comment ) {
 			$linkNode = $doc->createElement( 'a' );
-			$linkNode->nodeValue = 'Reply';
+			$linkNode->textContent = 'Reply';
 			$linkNode->setAttribute( 'href', '#' );
 			CommentModifier::addReplyLink( $comment, $linkNode );
 		}
@@ -154,7 +156,7 @@ class CommentModifierTest extends IntegrationTestCase {
 
 		static::assertEquals(
 			$expected,
-			XMLSerializer::serialize( $container, [ 'innerXML' => true, 'smartQuote' => false ] )['html'],
+			XHtmlSerializer::serialize( $container, [ 'innerXML' => true, 'smartQuote' => false ] )['html'],
 			$msg
 		);
 	}
@@ -174,6 +176,24 @@ class CommentModifierTest extends IntegrationTestCase {
 			CommentModifier::appendSignatureWikitext( "Foo bar\n*A\n*B", ' ~~~~' ),
 			'List'
 		);
+	}
+
+	/**
+	 * @dataProvider providePrepareHtmlReply
+	 */
+	public function testPrepareHtmlReply( string $msg, string $html, string $expected ): void {
+		$doc = static::createDocument( '' );
+		$container = CommentModifier::prepareHtmlReply( $doc, $html );
+
+		static::assertEquals(
+			$expected,
+			XHtmlSerializer::serialize( $container, [ 'innerXML' => true, 'smartQuote' => false ] )['html'],
+			$msg
+		);
+	}
+
+	public static function providePrepareHtmlReply(): array {
+		return static::getJson( '../cases/prepareHtmlReply.json' );
 	}
 
 	/**

@@ -11,11 +11,9 @@ use MediaWiki\Extension\AbuseFilter\Filter\ExistingFilter;
 use MediaWiki\Extension\AbuseFilter\Hooks\AbuseFilterHookRunner;
 use MediaWiki\Extension\AbuseFilter\Parser\FilterEvaluator;
 use MediaWiki\Extension\AbuseFilter\Parser\RuleCheckerFactory;
-use MediaWiki\Extension\AbuseFilter\VariableGenerator\VariableGeneratorFactory;
 use MediaWiki\Extension\AbuseFilter\Variables\LazyVariableComputer;
 use MediaWiki\Extension\AbuseFilter\Variables\VariableHolder;
 use MediaWiki\Extension\AbuseFilter\Variables\VariablesManager;
-use MediaWiki\Extension\AbuseFilter\Watcher\Watcher;
 use MediaWiki\Status\Status;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
@@ -34,129 +32,47 @@ class FilterRunner {
 		'AbuseFilterConditionLimit',
 	];
 
-	/** @var AbuseFilterHookRunner */
-	private $hookRunner;
-	/** @var FilterProfiler */
-	private $filterProfiler;
-	/** @var ChangeTagger */
-	private $changeTagger;
-	/** @var FilterLookup */
-	private $filterLookup;
-	/** @var RuleCheckerFactory */
-	private $ruleCheckerFactory;
-	/** @var ConsequencesExecutorFactory */
-	private $consExecutorFactory;
-	/** @var AbuseLoggerFactory */
-	private $abuseLoggerFactory;
-	/** @var EmergencyCache */
-	private $emergencyCache;
-	/** @var Watcher[] */
-	private $watchers;
-	/** @var EditStashCache */
-	private $stashCache;
-	/** @var LoggerInterface */
-	private $logger;
-	/** @var VariablesManager */
-	private $varManager;
-	/** @var VariableGeneratorFactory */
-	private $varGeneratorFactory;
-	/** @var ServiceOptions */
-	private $options;
-
 	/**
 	 * @var FilterEvaluator
 	 */
 	private $ruleChecker;
 
 	/**
-	 * @var User The user who performed the action being filtered
-	 */
-	private $user;
-	/**
-	 * @var Title The title where the action being filtered was performed
-	 */
-	private $title;
-	/**
-	 * @var VariableHolder The variables for the current action
-	 */
-	private $vars;
-	/**
-	 * @var string The group of filters to check (as defined in $wgAbuseFilterValidGroups)
-	 */
-	private $group;
-	/**
 	 * @var string The action we're filtering
 	 */
 	private $action;
 
 	/**
-	 * @param AbuseFilterHookRunner $hookRunner
-	 * @param FilterProfiler $filterProfiler
-	 * @param ChangeTagger $changeTagger
-	 * @param FilterLookup $filterLookup
-	 * @param RuleCheckerFactory $ruleCheckerFactory
-	 * @param ConsequencesExecutorFactory $consExecutorFactory
-	 * @param AbuseLoggerFactory $abuseLoggerFactory
-	 * @param VariablesManager $varManager
-	 * @param VariableGeneratorFactory $varGeneratorFactory
-	 * @param EmergencyCache $emergencyCache
-	 * @param Watcher[] $watchers
-	 * @param EditStashCache $stashCache
-	 * @param LoggerInterface $logger
-	 * @param ServiceOptions $options
-	 * @param User $user
-	 * @param Title $title
-	 * @param VariableHolder $vars
-	 * @param string $group
 	 * @throws InvalidArgumentException If $group is invalid or the 'action' variable is unset
 	 */
 	public function __construct(
-		AbuseFilterHookRunner $hookRunner,
-		FilterProfiler $filterProfiler,
-		ChangeTagger $changeTagger,
-		FilterLookup $filterLookup,
-		RuleCheckerFactory $ruleCheckerFactory,
-		ConsequencesExecutorFactory $consExecutorFactory,
-		AbuseLoggerFactory $abuseLoggerFactory,
-		VariablesManager $varManager,
-		VariableGeneratorFactory $varGeneratorFactory,
-		EmergencyCache $emergencyCache,
-		array $watchers,
-		EditStashCache $stashCache,
-		LoggerInterface $logger,
-		ServiceOptions $options,
-		User $user,
-		Title $title,
-		VariableHolder $vars,
-		string $group
+		private readonly AbuseFilterHookRunner $hookRunner,
+		private readonly FilterProfiler $filterProfiler,
+		private readonly ChangeTagger $changeTagger,
+		private readonly FilterLookup $filterLookup,
+		private readonly RuleCheckerFactory $ruleCheckerFactory,
+		private readonly ConsequencesExecutorFactory $consExecutorFactory,
+		private readonly AbuseLoggerFactory $abuseLoggerFactory,
+		private readonly VariablesManager $varManager,
+		private readonly EmergencyCache $emergencyCache,
+		private readonly array $watchers,
+		private readonly EditStashCache $stashCache,
+		private readonly LoggerInterface $logger,
+		private readonly ServiceOptions $options,
+		private readonly User $user,
+		private readonly Title $title,
+		private VariableHolder $vars,
+		private readonly string $group
 	) {
-		$this->hookRunner = $hookRunner;
-		$this->filterProfiler = $filterProfiler;
-		$this->changeTagger = $changeTagger;
-		$this->filterLookup = $filterLookup;
-		$this->ruleCheckerFactory = $ruleCheckerFactory;
-		$this->consExecutorFactory = $consExecutorFactory;
-		$this->abuseLoggerFactory = $abuseLoggerFactory;
-		$this->varManager = $varManager;
-		$this->varGeneratorFactory = $varGeneratorFactory;
-		$this->emergencyCache = $emergencyCache;
-		$this->watchers = $watchers;
-		$this->stashCache = $stashCache;
-		$this->logger = $logger;
-
 		$options->assertRequiredOptions( self::CONSTRUCTOR_OPTIONS );
 		if ( !in_array( $group, $options->get( 'AbuseFilterValidGroups' ), true ) ) {
 			throw new InvalidArgumentException( "Group $group is not a valid group" );
 		}
-		$this->options = $options;
 
 		if ( !$vars->varIsSet( 'action' ) ) {
 			throw new InvalidArgumentException( "The 'action' variable is not set." );
 		}
-		$this->user = $user;
-		$this->title = $title;
-		$this->vars = $vars;
-		$this->group = $group;
+
 		$this->action = $vars->getComputedVariable( 'action' )->toString();
 	}
 
@@ -165,17 +81,11 @@ class FilterRunner {
 	 */
 	private function init() {
 		// Add vars from extensions
-		$this->hookRunner->onAbuseFilter_filterAction(
-			$this->vars,
-			$this->title
-		);
 		$this->hookRunner->onAbuseFilterAlterVariables(
 			$this->vars,
 			$this->title,
 			$this->user
 		);
-		$generator = $this->varGeneratorFactory->newGenerator( $this->vars );
-		$this->vars = $generator->addGenericVars()->getVariableHolder();
 		$this->ruleChecker = $this->ruleCheckerFactory->newRuleChecker( $this->vars );
 	}
 
@@ -221,9 +131,9 @@ class FilterRunner {
 		} );
 
 		// TODO: inject the action specifier to avoid this
-		$accountname = $this->varManager->getVar(
+		$accountName = $this->varManager->getVar(
 			$this->vars,
-			'accountname',
+			'account_name',
 			VariablesManager::GET_BC
 		)->toNative();
 		$spec = new ActionSpecifier(
@@ -231,7 +141,7 @@ class FilterRunner {
 			$this->title,
 			$this->user,
 			$this->user->getRequest()->getIP(),
-			$accountname
+			$accountName
 		);
 
 		// Tag the action if the condition limit was hit
@@ -311,8 +221,6 @@ class FilterRunner {
 
 	/**
 	 * Run all filters and return information about matches and profiling
-	 *
-	 * @return RunnerData
 	 */
 	private function checkAllFiltersInternal(): RunnerData {
 		// Ensure there's no extra time leftover
@@ -351,8 +259,7 @@ class FilterRunner {
 	 *
 	 * @param ExistingFilter $filter
 	 * @param bool $global
-	 * @return array [ status, time taken ]
-	 * @phan-return array{0:\MediaWiki\Extension\AbuseFilter\Parser\RuleCheckerStatus,1:float}
+	 * @return array{0:\MediaWiki\Extension\AbuseFilter\Parser\RuleCheckerStatus,1:float}
 	 */
 	private function checkFilter( ExistingFilter $filter, bool $global = false ): array {
 		$filterName = GlobalNameUtils::buildGlobalName( $filter->getID(), $global );
@@ -368,9 +275,6 @@ class FilterRunner {
 		return [ $status, $timeTaken ];
 	}
 
-	/**
-	 * @param RunnerData $data
-	 */
 	private function profileExecution( RunnerData $data ) {
 		$allFilters = $data->getAllFilters();
 		$matchedFilters = $data->getMatchedFilters();

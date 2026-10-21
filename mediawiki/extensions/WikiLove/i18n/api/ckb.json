@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"Épine"
+		]
+	},
+	"apihelp-wikilove-summary": "ویکیدیاری بدە بە بەکارھێنەرێکی تر.",
+	"apihelp-wikilove-example-1": "ناردنی ویکیدیاری بۆ [[User:Dummy]]",
+	"apiwarn-wikilove-notlogged": "کردارەکە لۆگ نەکرا"
+}

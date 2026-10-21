@@ -2,11 +2,11 @@
 
 namespace MediaWiki\Extension\AbuseFilter\View;
 
-use MediaWiki\Cache\LinkBatchFactory;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Extension\AbuseFilter\AbuseFilterPermissionManager;
 use MediaWiki\Extension\AbuseFilter\CentralDBManager;
 use MediaWiki\Extension\AbuseFilter\Filter\Flags;
+use MediaWiki\Extension\AbuseFilter\FilterLookup;
 use MediaWiki\Extension\AbuseFilter\FilterProfiler;
 use MediaWiki\Extension\AbuseFilter\Pager\AbuseFilterPager;
 use MediaWiki\Extension\AbuseFilter\Pager\GlobalAbuseFilterPager;
@@ -14,61 +14,32 @@ use MediaWiki\Extension\AbuseFilter\SpecsFormatter;
 use MediaWiki\Html\Html;
 use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\Linker\LinkRenderer;
+use MediaWiki\Page\LinkBatchFactory;
+use MediaWiki\Parser\ParserOptions;
 use OOUI;
-use StringUtils;
 use Wikimedia\Rdbms\IConnectionProvider;
+use Wikimedia\StringUtils\StringUtils;
 
 /**
  * The default view used in Special:AbuseFilter
  */
 class AbuseFilterViewList extends AbuseFilterView {
 
-	/** @var LinkBatchFactory */
-	private $linkBatchFactory;
-
-	/** @var IConnectionProvider */
-	private $dbProvider;
-
-	/** @var FilterProfiler */
-	private $filterProfiler;
-
-	/** @var SpecsFormatter */
-	private $specsFormatter;
-
-	/** @var CentralDBManager */
-	private $centralDBManager;
-
-	/**
-	 * @param LinkBatchFactory $linkBatchFactory
-	 * @param IConnectionProvider $dbProvider
-	 * @param AbuseFilterPermissionManager $afPermManager
-	 * @param FilterProfiler $filterProfiler
-	 * @param SpecsFormatter $specsFormatter
-	 * @param CentralDBManager $centralDBManager
-	 * @param IContextSource $context
-	 * @param LinkRenderer $linkRenderer
-	 * @param string $basePageName
-	 * @param array $params
-	 */
 	public function __construct(
-		LinkBatchFactory $linkBatchFactory,
-		IConnectionProvider $dbProvider,
+		private readonly LinkBatchFactory $linkBatchFactory,
+		private readonly IConnectionProvider $dbProvider,
 		AbuseFilterPermissionManager $afPermManager,
-		FilterProfiler $filterProfiler,
-		SpecsFormatter $specsFormatter,
-		CentralDBManager $centralDBManager,
+		private readonly FilterProfiler $filterProfiler,
+		private readonly SpecsFormatter $specsFormatter,
+		private readonly CentralDBManager $centralDBManager,
+		private readonly FilterLookup $filterLookup,
 		IContextSource $context,
 		LinkRenderer $linkRenderer,
 		string $basePageName,
 		array $params
 	) {
 		parent::__construct( $afPermManager, $context, $linkRenderer, $basePageName, $params );
-		$this->linkBatchFactory = $linkBatchFactory;
-		$this->dbProvider = $dbProvider;
-		$this->filterProfiler = $filterProfiler;
-		$this->specsFormatter = $specsFormatter;
 		$this->specsFormatter->setMessageLocalizer( $context );
-		$this->centralDBManager = $centralDBManager;
 	}
 
 	/**
@@ -100,19 +71,21 @@ class AbuseFilterViewList extends AbuseFilterView {
 					] )
 				]
 			] );
-			$out->addHTML( $buttons );
+			$out->addHTML( (string)$buttons );
 		}
 
 		$conds = [];
 		$deleted = $request->getVal( 'deletedfilters' );
-		$furtherOptions = $request->getArray( 'furtheroptions', [] );
-		'@phan-var array $furtherOptions';
+		$furtherOptions = $request->getArray( 'furtheroptions' ) ?? [];
 		// Backward compatibility with old links
 		if ( $request->getBool( 'hidedisabled' ) ) {
 			$furtherOptions[] = 'hidedisabled';
 		}
 		if ( $request->getBool( 'hideprivate' ) ) {
 			$furtherOptions[] = 'hideprivate';
+		}
+		if ( $request->getBool( 'hidesuppressed' ) ) {
+			$furtherOptions[] = 'hidesuppressed';
 		}
 		$defaultscope = 'all';
 		if ( $config->get( 'AbuseFilterCentralDB' ) !== null
@@ -152,19 +125,31 @@ class AbuseFilterViewList extends AbuseFilterView {
 			$conds['af_deleted'] = 0;
 			$conds['af_enabled'] = 1;
 		}
-		if ( in_array( 'hideprivate', $furtherOptions ) ) {
-			$conds['af_hidden'] = Flags::FILTER_PUBLIC;
+
+		$hidePrivate = in_array( 'hideprivate', $furtherOptions );
+		$hideSuppressed = in_array( 'hidesuppressed', $furtherOptions );
+
+		// Don't show private filters if they've been requested to be hidden
+		if ( $hidePrivate ) {
+			$dbr = $this->dbProvider->getReplicaDatabase();
+			$conds[] = $dbr->bitAnd( 'af_hidden', Flags::FILTER_HIDDEN ) . ' = 0';
+		}
+
+		// Don't show suppressed filters if they've been requested to be hidden
+		// or if we're searching with a query pattern and the user cannot view supressed filters
+		// (this would leak the rules of the filter if permitted).
+		if (
+			( $querypattern !== null && !$this->afPermManager->canViewSuppressed( $performer ) )
+			|| $hideSuppressed
+		) {
+			$dbr = $this->dbProvider->getReplicaDatabase();
+			$conds[] = $dbr->bitAnd( 'af_hidden', Flags::FILTER_SUPPRESSED ) . ' = 0';
 		}
 
 		if ( $scope === 'local' ) {
 			$conds['af_global'] = 0;
 		} elseif ( $scope === 'global' ) {
 			$conds['af_global'] = 1;
-		}
-
-		if ( !$this->afPermManager->canViewProtectedVariables( $performer ) ) {
-			$dbr = $this->dbProvider->getReplicaDatabase();
-			$conds[] = $dbr->bitAnd( 'af_hidden', Flags::FILTER_USES_PROTECTED_VARS ) . ' = 0';
 		}
 
 		if ( $searchmode !== null ) {
@@ -178,6 +163,7 @@ class AbuseFilterViewList extends AbuseFilterView {
 			}
 
 			if ( $error !== null ) {
+				$out->addModuleStyles( 'mediawiki.codex.messagebox.styles' );
 				$out->addHTML(
 					Html::rawElement(
 						'p',
@@ -189,6 +175,18 @@ class AbuseFilterViewList extends AbuseFilterView {
 				// Reset the conditions in case of error
 				$conds = [ 'af_deleted' => 0 ];
 				$searchmode = $querypattern = null;
+			}
+
+			// Viewers with the right to view private filters have access to the search
+			// function, which can query against protected filters and potentially expose PII.
+			// Remove protected filters from the query if the user doesn't have the right to search
+			// against them. This allows protected filters to be visible in the general list of
+			// filters at all other times.
+			// Filters with protected variables that have additional restrictions cannot be excluded using SQL
+			// but will be excluded in the AbuseFilterPager.
+			if ( !$this->afPermManager->canViewProtectedVariables( $performer, [] )->isGood() ) {
+				$dbr = $this->dbProvider->getReplicaDatabase();
+				$conds[] = $dbr->bitAnd( 'af_hidden', Flags::FILTER_USES_PROTECTED_VARS ) . ' = 0';
 			}
 		}
 
@@ -231,6 +229,7 @@ class AbuseFilterViewList extends AbuseFilterView {
 				$this->afPermManager,
 				$this->specsFormatter,
 				$this->centralDBManager,
+				$this->filterLookup,
 				$conds
 			);
 		} else {
@@ -240,6 +239,7 @@ class AbuseFilterViewList extends AbuseFilterView {
 				$this->linkBatchFactory,
 				$this->afPermManager,
 				$this->specsFormatter,
+				$this->filterLookup,
 				$conds,
 				$querypattern,
 				$searchmode
@@ -287,6 +287,7 @@ class AbuseFilterViewList extends AbuseFilterView {
 			'label-message' => 'abusefilter-list-options-further-options',
 			'flatlist' => true,
 			'options' => [
+				$this->msg( 'abusefilter-list-options-hidesuppressed' )->parse() => 'hidesuppressed',
 				$this->msg( 'abusefilter-list-options-hideprivate' )->parse() => 'hideprivate',
 				$this->msg( 'abusefilter-list-options-hidedisabled' )->parse() => 'hidedisabled',
 			],
@@ -338,7 +339,10 @@ class AbuseFilterViewList extends AbuseFilterView {
 			->prepareForm()
 			->displayForm( false );
 
-		$this->getOutput()->addParserOutputContent( $pager->getFullOutput() );
+		$this->getOutput()->addParserOutputContent(
+			$pager->getFullOutput(),
+			ParserOptions::newFromContext( $this->getContext() )
+		);
 	}
 
 	/**

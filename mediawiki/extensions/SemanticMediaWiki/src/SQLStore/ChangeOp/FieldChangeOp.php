@@ -1,0 +1,77 @@
+<?php
+
+namespace SMW\SQLStore\ChangeOp;
+
+use InvalidArgumentException;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 2.4
+ *
+ * @author mwjames
+ */
+class FieldChangeOp {
+
+	/**
+	 * @since 2.4
+	 */
+	public function __construct(
+		private array $changeOp = [],
+		private $type = null,
+	) {
+	}
+
+	/**
+	 * @since 2.4
+	 *
+	 * @param string $key
+	 * @param mixed $value
+	 */
+	public function set( $key, $value ): void {
+		$this->changeOp[$key] = $value;
+	}
+
+	/**
+	 * @since 2.4
+	 *
+	 * @param string $key
+	 *
+	 * @return bool
+	 */
+	public function has( $key ): bool {
+		return isset( $this->changeOp[$key] ) || array_key_exists( $key, $this->changeOp );
+	}
+
+	/**
+	 * @since 2.4
+	 *
+	 * @param string $key
+	 *
+	 * @return string
+	 * @throws InvalidArgumentException
+	 */
+	public function get( $key ) {
+		if ( $this->has( $key ) ) {
+			return $this->changeOp[$key];
+		}
+
+		throw new InvalidArgumentException( "{$key} is an unregistered field" );
+	}
+
+	/**
+	 * @since 2.4
+	 *
+	 * @return array
+	 */
+	public function getChangeOp(): array {
+		return $this->changeOp;
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function __toString(): string {
+		return json_encode( [ $this->type => $this->changeOp ] );
+	}
+
+}

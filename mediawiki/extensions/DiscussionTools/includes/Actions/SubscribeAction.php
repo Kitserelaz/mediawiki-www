@@ -2,31 +2,29 @@
 
 namespace MediaWiki\Extension\DiscussionTools\Actions;
 
-use Article;
-use ErrorPageError;
-use FormAction;
+use MediaWiki\Actions\FormAction;
 use MediaWiki\Context\IContextSource;
+use MediaWiki\Exception\ErrorPageError;
+use MediaWiki\Exception\UserNotLoggedIn;
 use MediaWiki\Extension\DiscussionTools\SubscriptionStore;
 use MediaWiki\Html\Html;
 use MediaWiki\HTMLForm\HTMLForm;
+use MediaWiki\Page\Article;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
-use UserNotLoggedIn;
 
 class SubscribeAction extends FormAction {
 
-	protected SubscriptionStore $subscriptionStore;
 	protected ?Title $subscriptionTitle = null;
 	protected ?string $subscriptionName = null;
 
 	public function __construct(
 		Article $page,
 		IContextSource $context,
-		SubscriptionStore $subscriptionStore
+		protected readonly SubscriptionStore $subscriptionStore,
 	) {
 		parent::__construct( $page, $context );
-		$this->subscriptionStore = $subscriptionStore;
 	}
 
 	/**

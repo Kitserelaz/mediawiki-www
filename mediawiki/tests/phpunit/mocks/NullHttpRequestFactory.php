@@ -25,6 +25,7 @@ class NullHttpRequestFactory extends HttpRequestFactory {
 			MainConfigNames::HTTPConnectTimeout => 1,
 			MainConfigNames::HTTPMaxTimeout => 2,
 			MainConfigNames::HTTPMaxConnectTimeout => 2,
+			MainConfigNames::HTTPUserAgentContact => 'https://contact.test',
 			MainConfigNames::LocalVirtualHosts => [],
 			MainConfigNames::LocalHTTPProxy => false,
 			]
@@ -43,7 +44,10 @@ class NullHttpRequestFactory extends HttpRequestFactory {
 	 * @throws AssertionFailedError always
 	 */
 	public function create( $url, array $options = [], $caller = __METHOD__ ) {
-		Assert::fail( "HTTP request blocked: $url by $caller. Use MockHttpTrait." );
+		$trace = NullHttpUtil::getFormattedTrace();
+		Assert::fail(
+			"HTTP request blocked: $url by $caller. Use MockHttpTrait.\n$trace"
+		);
 	}
 
 	/**

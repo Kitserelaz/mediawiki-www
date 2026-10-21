@@ -93,6 +93,7 @@ ve.init.mw.DesktopArticleTarget.static.toolbarGroups.push(
 	{
 		name: 'help',
 		align: 'after',
+		excludeFromTargetWidget: true,
 		type: 'mwHelpList',
 		icon: 'help',
 		indicator: null,
@@ -103,11 +104,13 @@ ve.init.mw.DesktopArticleTarget.static.toolbarGroups.push(
 	{
 		name: 'notices',
 		align: 'after',
+		excludeFromTargetWidget: true,
 		include: [ { group: 'notices' } ]
 	},
 	{
 		name: 'pageMenu',
 		align: 'after',
+		excludeFromTargetWidget: true,
 		type: 'list',
 		icon: 'menu',
 		indicator: null,
@@ -120,6 +123,7 @@ ve.init.mw.DesktopArticleTarget.static.toolbarGroups.push(
 	{
 		name: 'editMode',
 		align: 'after',
+		excludeFromTargetWidget: true,
 		type: 'list',
 		icon: 'edit',
 		title: ve.msg( 'visualeditor-mweditmode-tooltip' ),
@@ -130,6 +134,7 @@ ve.init.mw.DesktopArticleTarget.static.toolbarGroups.push(
 	{
 		name: 'save',
 		align: 'after',
+		excludeFromTargetWidget: true,
 		type: 'bar',
 		include: [ { group: 'save' } ]
 	}
@@ -181,17 +186,16 @@ ve.init.mw.DesktopArticleTarget.static.platformType = 'desktop';
  * @inheritdoc
  */
 ve.init.mw.DesktopArticleTarget.prototype.addSurface = function ( dmDoc, config ) {
+	const skinPadding = {
+		// Vector-2022 content area less padding, so popups can render too close
+		// to the edge of the text (T258501). The default of 10px is reduced to 3px.
+		// We still need a bit of padding to keep popups from touching the sidebar.
+		'vector-2022': 3,
+		monobook: -10
+	};
+	const skin = mw.config.get( 'skin' );
 	config = ve.extendObject( {
-		$overlayContainer: $(
-			document.querySelector( '[data-mw-ve-target-container]' ) ||
-			document.getElementById( 'content' )
-		),
-		// Vector-2022 content area has no padding itself, so popups render too close
-		// to the edge of the text (T258501). Use a negative value to allow popups to
-		// position slightly outside the content. Padding elsewhere means we are
-		// guaranteed 30px of space between the content and the edge of the viewport.
-		// Other skins pass 'undefined' to use the default padding of +10px.
-		overlayPadding: mw.config.get( 'skin' ) === 'vector-2022' ? -10 : undefined
+		overlayPadding: skin in skinPadding ? skinPadding[ skin ] : undefined
 	}, config );
 	return ve.init.mw.DesktopArticleTarget.super.prototype.addSurface.call( this, dmDoc, config );
 };
@@ -223,7 +227,7 @@ ve.init.mw.DesktopArticleTarget.prototype.setupToolbar = function ( surface ) {
 	const mode = surface.getMode(),
 		wasSetup = !!this.toolbar;
 
-	ve.track( 'trace.setupToolbar.enter', { mode: mode } );
+	ve.track( 'trace.setupToolbar.enter', { mode } );
 
 	// Parent method
 	ve.init.mw.DesktopArticleTarget.super.prototype.setupToolbar.call( this, surface );
@@ -233,25 +237,23 @@ ve.init.mw.DesktopArticleTarget.prototype.setupToolbar = function ( surface ) {
 	// Allow the toolbar to start floating now if necessary
 	this.onContainerScroll();
 
-	ve.track( 'trace.setupToolbar.exit', { mode: mode } );
+	ve.track( 'trace.setupToolbar.exit', { mode } );
 	if ( !wasSetup ) {
 		toolbar.$element
-			.addClass( 've-init-mw-desktopArticleTarget-toolbar-open' );
-		if ( !toolbar.isFloating() ) {
-			toolbar.$element.css( 'height', '' );
-		}
+			.addClass( 've-init-mw-desktopArticleTarget-toolbar-open' )
+			.css( 'height', '' );
 		this.toolbarSetupDeferred.resolve();
 
-		this.toolbarSetupDeferred.done( () => {
+		this.toolbarSetupDeferred.then( () => {
 			const newSurface = this.getSurface();
 			// Check the surface wasn't torn down while the toolbar was animating
 			if ( newSurface ) {
-				ve.track( 'trace.initializeToolbar.enter', { mode: mode } );
+				ve.track( 'trace.initializeToolbar.enter', { mode } );
 				this.getToolbar().initialize();
 				newSurface.getView().emit( 'position' );
 				newSurface.getContext().updateDimensions();
-				ve.track( 'trace.initializeToolbar.exit', { mode: mode } );
-				ve.track( 'trace.activate.exit', { mode: mode } );
+				ve.track( 'trace.initializeToolbar.exit', { mode } );
+				ve.track( 'trace.activate.exit', { mode } );
 			}
 		} );
 	}
@@ -395,13 +397,13 @@ ve.init.mw.DesktopArticleTarget.prototype.activate = function ( dataPromise ) {
 		this.toolbarSetupDeferred = ve.createDeferred();
 
 		$( 'html' ).addClass( 've-activating' );
-		ve.promiseAll( [ this.activatingDeferred, this.toolbarSetupDeferred ] ).done( () => {
+		ve.promiseAll( [ this.activatingDeferred, this.toolbarSetupDeferred ] ).then( () => {
 			if ( !this.suppressNormalStartupDialogs ) {
 				this.maybeShowWelcomeDialog();
 				this.maybeShowMetaDialog();
 			}
 			this.afterActivate();
-		} ).fail( () => {
+		}, () => {
 			$( 'html' ).removeClass( 've-activating' );
 		} );
 
@@ -424,7 +426,13 @@ ve.init.mw.DesktopArticleTarget.prototype.activate = function ( dataPromise ) {
  * Edit mode has finished activating
  */
 ve.init.mw.DesktopArticleTarget.prototype.afterActivate = function () {
-	$( 'html' ).removeClass( 've-activating' ).addClass( 've-active' );
+	// eslint-disable-next-line mediawiki/class-doc
+	$( 'html' )
+		// Remove ve-activating when loading for the first time,
+		// and when switching remove previous mode's class.
+		// All classes below must be removed in teardown
+		.removeClass( 've-activating ve-active-visual ve-active-source' )
+		.addClass( 've-active ve-active-' + this.getSurface().getMode() );
 
 	// Disable TemplateStyles in the original content
 	// (We do this here because toggling 've-active' class above hides it)
@@ -475,6 +483,9 @@ ve.init.mw.DesktopArticleTarget.prototype.setSurface = function ( surface ) {
  * @param {ve.ui.Surface} surface
  */
 ve.init.mw.DesktopArticleTarget.prototype.setupNewSection = function ( surface ) {
+	if ( surface.getMode() === 'visual' && this.section === 'new' ) {
+		throw new Error( 'Adding new section is not supported in visual mode' );
+	}
 	if ( surface.getMode() === 'source' && this.section === 'new' ) {
 		if ( !this.sectionTitle ) {
 			this.sectionTitle = new OO.ui.TextInputWidget( {
@@ -577,7 +588,7 @@ ve.init.mw.DesktopArticleTarget.prototype.teardown = function ( trackMechanism )
 	this.deactivatingDeferred = ve.createDeferred();
 	this.activating = false;
 	this.activatingDeferred.reject();
-	$( 'html' ).addClass( 've-deactivating' ).removeClass( 've-activated ve-active' );
+	$( 'html' ).addClass( 've-deactivating' ).removeClass( 've-activated ve-active ve-active-visual ve-active-source' );
 
 	this.emit( 'deactivate' );
 
@@ -670,10 +681,10 @@ ve.init.mw.DesktopArticleTarget.prototype.loadFail = function ( code, errorDetai
 
 	OO.ui.confirm( $confirmPromptMessage, {
 		actions: [
-			{ action: 'accept', label: OO.ui.msg( 'ooui-dialog-process-retry' ), flags: 'primary' },
-			{ action: 'reject', label: OO.ui.msg( 'ooui-dialog-message-reject' ), flags: 'safe' }
+			{ action: 'accept', label: ve.msg( 'ooui-dialog-process-retry' ), flags: 'primary' },
+			{ action: 'reject', label: ve.msg( 'ooui-dialog-message-reject' ), flags: 'safe' }
 		]
-	} ).done( ( confirmed ) => {
+	} ).then( ( confirmed ) => {
 		if ( confirmed ) {
 			// Retry load
 			this.load();
@@ -706,15 +717,7 @@ ve.init.mw.DesktopArticleTarget.prototype.surfaceReady = function () {
 
 	this.activating = false;
 
-	// TODO: mwTocWidget should probably live in a ve.ui.MWSurface subclass
-	if ( mw.config.get( 'wgVisualEditorConfig' ).enableTocWidget ) {
-		surface.mwTocWidget = new ve.ui.MWTocWidget( this.getSurface() );
-		surface.once( 'destroy', () => {
-			surface.mwTocWidget.$element.remove();
-		} );
-	}
-
-	const metaList = this.getSurface().getModel().getDocument().getMetaList();
+	const metaList = surface.getModel().getDocument().getMetaList();
 
 	metaList.connect( this, {
 		insert: 'onMetaItemInserted',
@@ -788,7 +791,7 @@ ve.init.mw.DesktopArticleTarget.prototype.onMetaItemRemoved = function ( metaIte
  * @param {ve.dm.MetaItem[]} categoryItems Array of category metaitems to display
  */
 ve.init.mw.DesktopArticleTarget.prototype.rebuildCategories = function ( categoryItems ) {
-	this.renderCategories( categoryItems ).done( ( $categories ) => {
+	this.renderCategories( categoryItems ).then( ( $categories ) => {
 		// Clone the existing catlinks for any specific properties which might
 		// be needed by the rest of the page. Also gives us a not-attached
 		// version, which we can pass to wikipage.categories as it requests.
@@ -836,6 +839,8 @@ ve.init.mw.DesktopArticleTarget.prototype.saveComplete = function ( data ) {
 			$( '#t-permalink' ).add( '#coll-download-as-rl' ).find( 'a' ).each( ( i, el ) => {
 				const permalinkUrl = new URL( el.href );
 				permalinkUrl.searchParams.set( 'oldid', data.newrevid );
+				// permalinkUrl is safe
+				// eslint-disable-next-line local/no-unsanitized-href
 				$( el ).attr( 'href', permalinkUrl.toString() );
 			} );
 		}
@@ -848,6 +853,7 @@ ve.init.mw.DesktopArticleTarget.prototype.saveComplete = function ( data ) {
 				wgRevisionId: data.newrevid
 			} );
 
+			mw.config.set( 'wgPostEdit', 'saved' );
 			// Actually fire the postEdit hook, now that the save is complete
 			require( 'mediawiki.action.view.postEdit' ).fireHook( 'saved' );
 		}
@@ -861,7 +867,7 @@ ve.init.mw.DesktopArticleTarget.prototype.serialize = function () {
 	// Parent method
 	const promise = ve.init.mw.DesktopArticleTarget.super.prototype.serialize.apply( this, arguments );
 
-	return promise.fail( ( error, response ) => {
+	return promise.then( null, ( error, response ) => {
 		const $errorMessages = this.extractErrorMessages( response );
 		OO.ui.alert( $errorMessages );
 
@@ -889,26 +895,23 @@ ve.init.mw.DesktopArticleTarget.prototype.onToolbarMetaButtonClick = function ()
  * 'Edit' and single edit tab are bound in mw.DesktopArticleTarget.init.
  */
 ve.init.mw.DesktopArticleTarget.prototype.setupSkinTabs = function () {
-	if ( this.isViewPage ) {
-		const namespaceNumber = mw.config.get( 'wgNamespaceNumber' );
-		const namespaceName = mw.config.get( 'wgCanonicalNamespace' );
-		const isTalkNamespace = mw.Title.isTalkNamespace( namespaceNumber );
-		// Title::getNamespaceKey()
-		let namespaceKey = namespaceName.toLowerCase() || 'main';
-		if ( namespaceKey === 'file' ) {
-			namespaceKey = 'image';
-		}
-		let namespaceTabId;
-		// SkinTemplate::buildContentNavigationUrls()
-		if ( isTalkNamespace ) {
-			namespaceTabId = 'ca-talk';
-		} else {
-			namespaceTabId = 'ca-nstab-' + namespaceKey;
-		}
-		// Allow instant switching back to view mode, without refresh
-		$( '#ca-view' ).add( '#' + namespaceTabId ).find( 'a' )
-			.on( 'click.ve-target', this.onViewTabClick.bind( this ) );
+	const namespaceNumber = mw.config.get( 'wgNamespaceNumber' );
+	const namespaceName = mw.config.get( 'wgCanonicalNamespace' );
+	const isTalkNamespace = mw.Title.isTalkNamespace( namespaceNumber );
+	// Title::getNamespaceKey()
+	let namespaceKey = namespaceName.toLowerCase() || 'main';
+	if ( namespaceKey === 'file' ) {
+		namespaceKey = 'image';
 	}
+	let namespaceTabId;
+	// SkinTemplate::buildContentNavigationUrls()
+	if ( isTalkNamespace ) {
+		namespaceTabId = 'ca-talk';
+	} else {
+		namespaceTabId = 'ca-nstab-' + namespaceKey;
+	}
+	$( '#ca-view' ).add( '#' + namespaceTabId ).find( 'a' )
+		.on( 'click.ve-target', this.onViewTabClick.bind( this ) );
 
 	// Used by Extension:GuidedTour
 	mw.hook( 've.skinTabSetupComplete' ).fire();
@@ -940,7 +943,7 @@ ve.init.mw.DesktopArticleTarget.prototype.teardownToolbar = function () {
 		this.toolbar.$element
 			.css( 'height', '0' )
 			.addClass( 've-init-mw-desktopArticleTarget-toolbar-close' );
-		this.toolbar.$element.one( 'transitionend', () => {
+		ve.waitForTransition( this.toolbar.$element, () => {
 			// Parent method
 			ve.init.mw.DesktopArticleTarget.super.prototype.teardownToolbar.call( this );
 			deferred.resolve();
@@ -1232,13 +1235,9 @@ ve.init.mw.DesktopArticleTarget.prototype.replacePageContent = function (
 			);
 		}
 
-		// Intentionally treated as HTML
+		// Intentionally treated as HTML (message is parsed)
 		// eslint-disable-next-line no-jquery/no-html
-		$( '#footer-info-lastmod' ).html( ' ' + mw.msg(
-			'lastmodifiedat',
-			lastModified.date,
-			lastModified.time
-		) );
+		$( '#footer-info-lastmod' ).html( ' ' + lastModified.message );
 	}
 
 	this.$originalCategories = null;
@@ -1460,19 +1459,24 @@ ve.init.mw.DesktopArticleTarget.prototype.switchToFallbackWikitextEditor = funct
 /**
  * @inheritdoc
  */
-ve.init.mw.DesktopArticleTarget.prototype.reloadSurface = function () {
+ve.init.mw.DesktopArticleTarget.prototype.reloadSurface = function ( newMode ) {
 	this.activating = true;
 	this.activatingDeferred = ve.createDeferred();
 
 	// Parent method
 	ve.init.mw.DesktopArticleTarget.super.prototype.reloadSurface.apply( this, arguments );
 
-	this.activatingDeferred.done( () => {
+	const promise = this.activatingDeferred.then( () => {
+		if ( newMode === 'source' ) {
+			mw.hook( 've.wikitextInteractive' ).fire();
+		}
+
 		this.updateHistoryState();
 		this.afterActivate();
 		this.setupTriggerListeners();
 	} );
 	this.toolbarSetupDeferred.resolve();
+	return promise;
 };
 
 /* Registration */

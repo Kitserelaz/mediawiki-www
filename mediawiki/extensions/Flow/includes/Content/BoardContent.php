@@ -53,10 +53,16 @@ class BoardContent extends AbstractContent {
 	 *
 	 * @param int $maxLength Maximum length of the summary text.
 	 *
-	 * @return string The summary text.
+	 * @return string|false The summary text.
 	 */
 	public function getTextForSummary( $maxLength = 250 ) {
-		return '[Flow board ' . $this->getWorkflowId()->getAlphadecimal() . ']';
+		$workflow = $this->getWorkflowId();
+		if ( !$workflow ) {
+			// This shouldn't happen but some Flow boards have no workflow
+			// due to ancient bugs, so don't crash
+			return '[Corrupt Flow board]';
+		}
+		return '[Flow board ' . $workflow->getAlphadecimal() . ']';
 	}
 
 	/**
@@ -70,8 +76,10 @@ class BoardContent extends AbstractContent {
 	 *    anything, really.
 	 *
 	 * @note Caller must be aware of content model!
+	 * @deprecated since 1.33; use ::getWorkflowId() instead.
 	 */
 	public function getNativeData() {
+		wfDeprecated( __METHOD__, '1.33' );
 		return $this->getWorkflowId();
 	}
 

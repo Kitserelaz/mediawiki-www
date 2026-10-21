@@ -16,21 +16,16 @@ use Wikibase\Lib\Formatters\SnakFormatter;
  * Formats can look like this: "text/html; disposition=diff"
  * or just "text/plain"
  */
-
 class MathFormatter implements ValueFormatter {
-
-	/**
-	 * @var string One of the SnakFormatter::FORMAT_... constants.
-	 */
-	private $format;
 
 	/**
 	 * Loads format to distinguish the type of formatting
 	 *
 	 * @param string $format One of the SnakFormatter::FORMAT_... constants.
 	 */
-	public function __construct( $format ) {
-		$this->format = $format;
+	public function __construct(
+		private readonly string $format,
+	) {
 	}
 
 	/**
@@ -54,7 +49,7 @@ class MathFormatter implements ValueFormatter {
 
 			// Intentionally fall back to MathML output in all other, possibly unknown cases.
 			default:
-				$renderer = new MathMathML( $tex );
+				$renderer = new MathNativeMML( $tex );
 
 				if ( $renderer->checkTeX() && $renderer->render() ) {
 					$html = $renderer->getHtmlOutput();

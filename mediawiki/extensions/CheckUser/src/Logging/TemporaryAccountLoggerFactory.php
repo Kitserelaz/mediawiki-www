@@ -1,11 +1,11 @@
 <?php
 
-namespace MediaWiki\CheckUser\Logging;
+namespace MediaWiki\Extension\CheckUser\Logging;
 
+use MediaWiki\Title\TitleFactory;
 use MediaWiki\User\ActorStore;
 use Psr\Log\LoggerInterface;
 use Wikimedia\Rdbms\IConnectionProvider;
-use Wikimedia\Rdbms\IDatabase;
 
 class TemporaryAccountLoggerFactory {
 
@@ -16,23 +16,12 @@ class TemporaryAccountLoggerFactory {
 	 */
 	private const DEFAULT_DEBOUNCE_DELAY = 24 * 60 * 60;
 
-	private ActorStore $actorStore;
-	private LoggerInterface $logger;
-	private IDatabase $dbw;
-
-	/**
-	 * @param ActorStore $actorStore
-	 * @param LoggerInterface $logger
-	 * @param IConnectionProvider $dbProvider
-	 */
 	public function __construct(
-		ActorStore $actorStore,
-		LoggerInterface $logger,
-		IConnectionProvider $dbProvider
+		private readonly ActorStore $actorStore,
+		private readonly LoggerInterface $logger,
+		private readonly IConnectionProvider $dbProvider,
+		private readonly TitleFactory $titleFactory,
 	) {
-		$this->actorStore = $actorStore;
-		$this->logger = $logger;
-		$this->dbw = $dbProvider->getPrimaryDatabase();
 	}
 
 	/**
@@ -45,8 +34,16 @@ class TemporaryAccountLoggerFactory {
 		return new TemporaryAccountLogger(
 			$this->actorStore,
 			$this->logger,
-			$this->dbw,
+			$this->dbProvider,
+			$this->titleFactory,
 			$delay
 		);
 	}
 }
+
+// @codeCoverageIgnoreStart
+/**
+ * @deprecated since 1.46
+ */
+class_alias( TemporaryAccountLoggerFactory::class, 'MediaWiki\\CheckUser\\Logging\\TemporaryAccountLoggerFactory' );
+// @codeCoverageIgnoreEnd

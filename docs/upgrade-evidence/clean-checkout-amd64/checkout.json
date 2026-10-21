@@ -1,0 +1,18 @@
+{
+  "tree": "a5d376c130e8d52d62d911ad2c997ed43a365b54",
+  "snapshot_commit": "028f51e7767078778431d686d8843ee07607a4b6",
+  "checkout": "/Volumes/1TB SSD mew/www/docker/private-backup/createwiki-managewiki-upgrade/clean-checkout-20261018-v3",
+  "original_index_unchanged": true,
+  "clean": true,
+  "no_object_alternates": true,
+  "tracked_file_count": 127567,
+  "collision_warnings": false,
+  "local_environment_and_production_secrets_absent": true,
+  "supplemental_vendored_build_inputs": 5973,
+  "build_input_tree_objects": {
+    "mediawiki": "c4bd044b64b9aec612233aac71859ce999981999",
+    "docker/mediawiki": "f7a4a76229d1c28a149a51e7c75bf7f07815fb53",
+    "Moe-Counter": "4fb84522c55cde65928ac8948a2c36d4cb752a1f",
+    ".dockerignore": "2d6d18f3490121efe5e7bca038bc82d78788b5b0"
+  }
+}

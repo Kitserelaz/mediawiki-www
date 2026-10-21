@@ -1,0 +1,26 @@
+{
+	"@metadata": {
+		"authors": [
+			"Dbc334",
+			"Eleassar"
+		]
+	},
+	"nimbus-desc": "Preobleka Nimbus",
+	"nimbus-advertise": "Oglašujte",
+	"nimbus-contribute": "Prispevajte",
+	"nimbus-didyouknow": "Ali ste vedeli",
+	"nimbus-editthispage": "Uredi stran",
+	"nimbus-featuredimage": "Izbrana slika",
+	"nimbus-featureduser": "Izbrani uporabnik",
+	"nimbus-login": "Prijava",
+	"nimbus-logout": "Odjava?",
+	"nimbus-more-actions": "Več dejanj",
+	"nimbus-more-wikis": "Več vikijev",
+	"nimbus-pages-can-be-edited": "Stran lahko urejate.<br />\n\nStran ni popolna? Je kar koli narobe?<br />\n\n<b>Spremenite jo!</b>",
+	"nimbus-profile": "Profil",
+	"nimbus-recent-contributors": "Nedavni prispevki k strani",
+	"nimbus-recent-contributors-info": "Naslednji ljudje so nedavno prispevali k tej strani.",
+	"nimbus-signup": "Registracija",
+	"nimbus-talkpage": "Pogovor o strani",
+	"nimbus-welcome": "{{GENDER:$2|Pozdravljeni}}, $1"
+}

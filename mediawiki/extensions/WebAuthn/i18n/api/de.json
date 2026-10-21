@@ -1,9 +1,0 @@
-{
-	"@metadata": {
-		"authors": []
-	},
-	"apihelp-webauthn-summary": "API-Modul zur Kommunikation zwischen Server und Client während des Registrierungs-Authentifizierungsprozesses.",
-	"apihelp-webauthn-param-func": "Name der gewünschten Funktion, die ausgeführt werden soll.",
-	"apihelp-webauthn-paramvalue-func-getauthinfo": "Authentifizierungsinformationen.",
-	"apihelp-webauthn-paramvalue-func-getregisterinfo": "Registrierungsinformationen."
-}

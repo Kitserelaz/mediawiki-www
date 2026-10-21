@@ -21,18 +21,17 @@
  */
 namespace MediaWiki\Extension\ReplaceText;
 
-use Job as JobParent;
 use MediaWiki\CommentStore\CommentStoreComment;
 use MediaWiki\Content\ContentHandler;
 use MediaWiki\Content\TextContent;
 use MediaWiki\Context\RequestContext;
+use MediaWiki\JobQueue\Job as JobParent;
 use MediaWiki\Page\MovePageFactory;
 use MediaWiki\Page\WikiPageFactory;
 use MediaWiki\Permissions\PermissionManager;
-use MediaWiki\Title\Title;
+use MediaWiki\RecentChanges\RecentChange;
 use MediaWiki\User\UserFactory;
 use MediaWiki\Watchlist\WatchlistManager;
-use RecentChange;
 use Wikimedia\ScopedCallback;
 
 /**
@@ -40,42 +39,30 @@ use Wikimedia\ScopedCallback;
  * - based on /includes/RefreshLinksJob.php
  */
 class Job extends JobParent {
-	private MovePageFactory $movePageFactory;
-	private PermissionManager $permissionManager;
-	private UserFactory $userFactory;
-	private WatchlistManager $watchlistManager;
-	private WikiPageFactory $wikiPageFactory;
-
 	/**
-	 * Constructor.
-	 * @param Title $title
-	 * @param array|bool $params Cannot be === true
+	 * @param string $command
+	 * @param array $params
 	 * @param MovePageFactory $movePageFactory
 	 * @param PermissionManager $permissionManager
 	 * @param UserFactory $userFactory
 	 * @param WatchlistManager $watchlistManager
 	 * @param WikiPageFactory $wikiPageFactory
 	 */
-	function __construct( $title, $params,
-		MovePageFactory $movePageFactory,
-		PermissionManager $permissionManager,
-		UserFactory $userFactory,
-		WatchlistManager $watchlistManager,
-		WikiPageFactory $wikiPageFactory
+	public function __construct( $command, $params,
+		private readonly MovePageFactory $movePageFactory,
+		private readonly PermissionManager $permissionManager,
+		private readonly UserFactory $userFactory,
+		private readonly WatchlistManager $watchlistManager,
+		private readonly WikiPageFactory $wikiPageFactory,
 	) {
-		parent::__construct( 'replaceText', $title, $params );
-		$this->movePageFactory = $movePageFactory;
-		$this->permissionManager = $permissionManager;
-		$this->userFactory = $userFactory;
-		$this->watchlistManager = $watchlistManager;
-		$this->wikiPageFactory = $wikiPageFactory;
+		parent::__construct( 'replaceText', $params );
 	}
 
 	/**
 	 * Run a replaceText job
 	 * @return bool success
 	 */
-	function run() {
+	public function run(): bool {
 		// T279090
 		$current_user = $this->userFactory->newFromId( $this->params['user_id'] );
 		if ( !$current_user->isRegistered() ) {
@@ -224,6 +211,7 @@ class Job extends JobParent {
 					$this->permissionManager->userHasRight( $current_user, 'autopatrol' ) ) {
 					$updater->setRcPatrolStatus( RecentChange::PRC_PATROLLED );
 				}
+				$updater->addTag( Hooks::TAG_NAME );
 				$updater->saveRevision( $edit_summary, $flags );
 			}
 		}

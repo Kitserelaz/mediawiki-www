@@ -1,5 +1,6 @@
 <?php
 
+use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
 
 /**
@@ -7,18 +8,17 @@ use MediaWiki\MediaWikiServices;
  * for organizing the rows), and a set of "items" (links)
  */
 class ALRow {
-	/** @var string */
-	public $name;
+	public string $name;
 	/** @var ALItem[] */
-	public $items;
+	public array $items;
 
-	function __construct( $name ) {
+	public function __construct( string $name ) {
 		$this->name = $name;
 		$this->items = [];
 	}
 
-	function addItem( $item, $next_item_label = null ) {
-		if ( $next_item_label == null ) {
+	public function addItem( ALItem $item, ?string $next_item_label = null ): void {
+		if ( $next_item_label === null ) {
 			$this->items[] = $item;
 			return;
 		}
@@ -31,12 +31,12 @@ class ALRow {
 		$this->items[] = $item;
 	}
 
-	function toString() {
+	public function toString(): string {
 		$config = MediaWikiServices::getInstance()->getConfigFactory()->makeConfig( 'AdminLinks' );
 
-		$content = "";
+		$content = '';
 		foreach ( $this->items as $i => $item ) {
-			if ( $item->text == '' ) {
+			if ( !isset( $item->text ) ) {
 				continue;
 			}
 			if ( $i > 0 ) {

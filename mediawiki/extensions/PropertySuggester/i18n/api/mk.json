@@ -1,0 +1,25 @@
+{
+	"@metadata": {
+		"authors": [
+			"Bjankuloski06"
+		]
+	},
+	"apihelp-wbsgetsuggestions-summary": "Приложнички модул за добивање на предлози за дополниителни својства што би се додале кон единица на Викибазата. Наменет е претежно за употреба во алатката Предлагач кога корисниците уредуваат единици на Викибазата.",
+	"apihelp-wbsgetsuggestions-example-1": "Дај предлози за единицата Q4",
+	"apihelp-wbsgetsuggestions-example-2": "Дај предлози за единицата Q4 од ранг 10 до 15",
+	"apihelp-wbsgetsuggestions-example-3": "Дај предлози за комбинацијата на својства P21 и P31",
+	"apihelp-wbsgetsuggestions-example-4": "Дај предлози за определниците што се користат со P21",
+	"apihelp-wbsgetsuggestions-example-5": "Дај предлози за наводи што се користат со P21",
+	"apihelp-wbsgetsuggestions-param-context": "Предмет, навод или определница.",
+	"apihelp-wbsgetsuggestions-param-continue": "Од каде да се продолжи со пребарувањето",
+	"apihelp-wbsgetsuggestions-param-entity": "Предложи својства за дадена единица, на основа на постоечки список на својства што ги има единицата.",
+	"apihelp-wbsgetsuggestions-param-include": "Кои предлози да се вклучат. По основно ќе се предлагаат само својства што можат да се додадат (незастарени, но сè уште неприсутни).",
+	"apihelp-wbsgetsuggestions-param-language": "Јазик за исходот.",
+	"apihelp-wbsgetsuggestions-param-limit": "Највеќе ставки во исходот.",
+	"apihelp-wbsgetsuggestions-param-properties": "Предложи дополнителни својства за дадениот список на својства.",
+	"apihelp-wbsgetsuggestions-param-search": "Пребарај го текстов.",
+	"apihelp-wbsgetsuggestions-param-size": "Укажете колку предлози да се дадат.",
+	"apihelp-wbsgetsuggestions-param-types": "Предлагање на дополнителни својства за дадениот список на видови (овие вредности се еднакви на оние што би се собрале преку classifyingPropertyIds ако се укаже единица во приложничкиот повик). Се кроисти заедно со параметарот за својства.",
+	"propertysuggester-wbsgetsuggestions-either-entity-or-properties": "Внесете или параметар „entity“ за назнака на единицата, или список на својства под „properties“",
+	"apihelp-wbsgetsuggestions-param-event": "Назнака која служи за врзување на одговарачките настани заведени на клиентска и опслужувачка страна."
+}

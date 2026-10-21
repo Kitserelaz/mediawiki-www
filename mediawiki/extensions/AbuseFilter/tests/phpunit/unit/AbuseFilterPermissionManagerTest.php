@@ -3,14 +3,19 @@
 namespace MediaWiki\Extension\AbuseFilter\Tests\Unit;
 
 use Generator;
+use LogicException;
 use MediaWiki\Block\DatabaseBlock;
-use MediaWiki\Config\ServiceOptions;
 use MediaWiki\Extension\AbuseFilter\AbuseFilterPermissionManager;
 use MediaWiki\Extension\AbuseFilter\Filter\AbstractFilter;
 use MediaWiki\Extension\AbuseFilter\Filter\Flags;
 use MediaWiki\Extension\AbuseFilter\Filter\MutableFilter;
+use MediaWiki\Extension\AbuseFilter\Filter\Specs;
+use MediaWiki\Extension\AbuseFilter\Hooks\AbuseFilterHookRunner;
+use MediaWiki\Extension\AbuseFilter\Parser\RuleCheckerFactory;
+use MediaWiki\Extension\AbuseFilter\Variables\AbuseFilterProtectedVariablesLookup;
+use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
-use MediaWiki\User\Options\StaticUserOptionsLookup;
+use MediaWiki\User\TempUser\TempUserConfig;
 use MediaWiki\User\UserIdentityValue;
 use MediaWikiUnitTestCase;
 
@@ -19,37 +24,30 @@ use MediaWikiUnitTestCase;
  */
 class AbuseFilterPermissionManagerTest extends MediaWikiUnitTestCase {
 	use MockAuthorityTrait;
+	use GetFilterEvaluatorTestTrait;
 
 	private function getPermMan(): AbuseFilterPermissionManager {
-		$userOptions = new StaticUserOptionsLookup(
-			[
-				'User1' => [
-					'abusefilter-protected-vars-view-agreement' => 1
-				],
-				'User2' => [
-					'abusefilter-protected-vars-view-agreement' => ''
-				],
-			]
-		);
+		$tempUserConfig = $this->createMock( TempUserConfig::class );
+		$extensionRegistry = $this->createMock( ExtensionRegistry::class );
+		$protectedVariablesLookup = $this->createMock( AbuseFilterProtectedVariablesLookup::class );
+		$protectedVariablesLookup->method( 'getAllProtectedVariables' )
+			->willReturn( [ 'user_unnamed_ip' ] );
+		$ruleCheckerFactory = $this->createMock( RuleCheckerFactory::class );
+		$ruleCheckerFactory->method( 'newRuleChecker' )->willReturn( $this->getFilterEvaluator() );
+		$hookRunner = $this->createMock( AbuseFilterHookRunner::class );
 		return new AbuseFilterPermissionManager(
-			new ServiceOptions(
-				AbuseFilterPermissionManager::CONSTRUCTOR_OPTIONS,
-				[
-					'AbuseFilterProtectedVariables' => [ 'user_unnamed_ip' ]
-				]
-			),
-			$userOptions
+			$tempUserConfig,
+			$extensionRegistry,
+			$protectedVariablesLookup,
+			$ruleCheckerFactory,
+			$hookRunner
 		);
 	}
 
-	public function provideCanEdit(): Generator {
-		$sitewideBlock = $this->createMock( DatabaseBlock::class );
-		$sitewideBlock->method( 'isSiteWide' )->willReturn( true );
-		yield 'blocked sitewide' => [ $sitewideBlock, [], false ];
+	public static function provideCanEdit(): Generator {
+		yield 'blocked sitewide' => [ true, [], false ];
 
-		$partialBlock = $this->createMock( DatabaseBlock::class );
-		$partialBlock->method( 'isSiteWide' )->willReturn( false );
-		yield 'partially blocked' => [ $partialBlock, [], false ];
+		yield 'partially blocked' => [ false, [], false ];
 
 		yield 'unblocked, no right' => [ null, [], false ];
 
@@ -57,13 +55,13 @@ class AbuseFilterPermissionManagerTest extends MediaWikiUnitTestCase {
 	}
 
 	/**
-	 * @param ?DatabaseBlock $block
-	 * @param array $rights
-	 * @param bool $expected
 	 * @dataProvider provideCanEdit
 	 */
-	public function testCanEdit( ?DatabaseBlock $block, array $rights, bool $expected ) {
+	public function testCanEdit( $block, array $rights, bool $expected ) {
 		if ( $block !== null ) {
+			$siteWide = $block;
+			$block = $this->createMock( DatabaseBlock::class );
+			$block->method( 'isSiteWide' )->willReturn( $siteWide );
 			$performer = $this->mockUserAuthorityWithBlock(
 				$this->mockRegisteredUltimateAuthority()->getUser(),
 				$block,
@@ -94,21 +92,17 @@ class AbuseFilterPermissionManagerTest extends MediaWikiUnitTestCase {
 		);
 	}
 
-	public function provideCanEditFilter(): Generator {
-		$localFilter = MutableFilter::newDefault();
-		$localFilter->setGlobal( false );
-		$globalFilter = MutableFilter::newDefault();
-		$globalFilter->setGlobal( true );
-		foreach ( $this->provideCanEdit() as $name => $editArgs ) {
+	public static function provideCanEditFilter(): Generator {
+		foreach ( self::provideCanEdit() as $name => $editArgs ) {
 			foreach ( self::provideCanEditGlobal() as $allowed => $globalArgs ) {
 				yield "can edit: $name; can edit global: $allowed; local filter" => [
-					$localFilter,
+					false,
 					$editArgs[0],
 					array_merge( $editArgs[1], $globalArgs[0] ),
 					$editArgs[2]
 				];
 				yield "can edit: $name; can edit global: $allowed; global filter" => [
-					$globalFilter,
+					true,
 					$editArgs[0],
 					array_merge( $editArgs[1], $globalArgs[0] ),
 					$editArgs[2] && $globalArgs[1]
@@ -118,19 +112,20 @@ class AbuseFilterPermissionManagerTest extends MediaWikiUnitTestCase {
 	}
 
 	/**
-	 * @param AbstractFilter $filter
-	 * @param ?DatabaseBlock $block
-	 * @param array $rights
-	 * @param bool $expected
 	 * @dataProvider provideCanEditFilter
 	 */
 	public function testCanEditFilter(
-		AbstractFilter $filter,
-		?DatabaseBlock $block,
+		$globalFilter,
+		$block,
 		array $rights,
 		bool $expected
 	) {
+		$filter = MutableFilter::newDefault();
+		$filter->setGlobal( $globalFilter );
 		if ( $block !== null ) {
+			$siteWide = $block;
+			$block = $this->createMock( DatabaseBlock::class );
+			$block->method( 'isSiteWide' )->willReturn( $siteWide );
 			$performer = $this->mockUserAuthorityWithBlock(
 				$this->mockRegisteredUltimateAuthority()->getUser(),
 				$block,
@@ -150,6 +145,32 @@ class AbuseFilterPermissionManagerTest extends MediaWikiUnitTestCase {
 		yield 'modify' => [ [ 'abusefilter-modify' ], true ];
 		yield 'private' => [ [ 'abusefilter-view-private' ], true ];
 		yield 'both' => [ [ 'abusefilter-modify', 'abusefilter-view-private' ], true ];
+	}
+
+	/** @dataProvider provideCanEditFilterWhenFilterIsSuppressed */
+	public function testCanEditFilterWhenFilterIsSuppressed( array $rights, bool $expected ) {
+		$filter = MutableFilter::newDefault();
+		$filter->setSuppressed( true );
+		$performer = $this->mockRegisteredAuthorityWithPermissions( $rights );
+
+		$this->assertSame(
+			$expected,
+			$this->getPermMan()->canEditFilter( $performer, $filter )
+		);
+	}
+
+	public static function provideCanEditFilterWhenFilterIsSuppressed(): array {
+		return [
+			'User has both viewsuppressed and suppressrevision' => [
+				[ 'abusefilter-modify', 'viewsuppressed', 'suppressrevision' ], true,
+			],
+			'User has suppressrevision' => [
+				[ 'abusefilter-modify', 'suppressrevision' ], true,
+			],
+			'User has viewsuppressed' => [
+				[ 'abusefilter-modify', 'viewsuppressed' ], false,
+			],
+		];
 	}
 
 	/**
@@ -187,6 +208,7 @@ class AbuseFilterPermissionManagerTest extends MediaWikiUnitTestCase {
 		$details = [ 0 => 'abusefilter-log-detail' ];
 		$private = [ 1 => 'abusefilter-log-private' ];
 		$protected = [ 2 => 'abusefilter-access-protected-vars' ];
+		$suppressed = [ 3 => 'viewsuppressed' ];
 
 		yield 'filter hidden, not privileged' => [ Flags::FILTER_HIDDEN, [], false ];
 		yield 'filter hidden, details only' => [ Flags::FILTER_HIDDEN, $details, false ];
@@ -197,6 +219,26 @@ class AbuseFilterPermissionManagerTest extends MediaWikiUnitTestCase {
 		yield 'filter protected, details only' => [ Flags::FILTER_USES_PROTECTED_VARS, $details, false ];
 		yield 'filter protected, protected logs only' => [ Flags::FILTER_USES_PROTECTED_VARS, $protected, false ];
 		yield 'filter protected, privileged' => [ Flags::FILTER_USES_PROTECTED_VARS, $details + $protected, true ];
+
+		yield "filter suppressed, not privileged" => [ Flags::FILTER_SUPPRESSED, [], false ];
+		yield "filter suppressed, details only" => [ Flags::FILTER_SUPPRESSED, $details, false ];
+		yield "filter suppressed, private logs only" => [ Flags::FILTER_SUPPRESSED, $private, false ];
+		yield "filter suppressed, protected only" => [ Flags::FILTER_SUPPRESSED, $protected, false ];
+		yield "filter suppressed, details and private logs" => [
+			Flags::FILTER_SUPPRESSED, $details + $private, false
+		];
+		yield "filter suppressed, details and protected logs" => [
+			Flags::FILTER_SUPPRESSED, $details + $protected, false
+		];
+		yield "filter suppressed, private and protected logs" => [
+			Flags::FILTER_SUPPRESSED, $private + $protected, false
+		];
+		yield "filter suppressed, all but viewsuppressed" => [
+			Flags::FILTER_SUPPRESSED, $details + $private + $protected, false
+		];
+		yield "filter suppressed, privileged" => [
+			Flags::FILTER_SUPPRESSED, $details + $private + $protected + $suppressed, true
+		];
 
 		$hiddenProtected = Flags::FILTER_HIDDEN | Flags::FILTER_USES_PROTECTED_VARS;
 		yield 'filter hidden and protected, not privileged' => [ $hiddenProtected, [], false ];
@@ -216,6 +258,30 @@ class AbuseFilterPermissionManagerTest extends MediaWikiUnitTestCase {
 			$hiddenProtected, $details + $private + $protected, true
 		];
 
+		$hiddenSuppressed = Flags::FILTER_HIDDEN | Flags::FILTER_SUPPRESSED;
+		yield 'filter hidden and suppressed, not privileged' => [ $hiddenSuppressed, [], false ];
+		yield 'filter hidden and suppressed, details only' => [ $hiddenSuppressed, $details, false ];
+		yield 'filter hidden and suppressed, private only' => [ $hiddenSuppressed, $private, false ];
+		yield 'filter hidden and suppressed, protected only' => [ $hiddenSuppressed, $protected, false ];
+		yield 'filter hidden and suppressed, details and private only' => [
+			$hiddenSuppressed, $details + $private, false
+		];
+		yield 'filter hidden and suppressed, details and protected only' => [
+			$hiddenSuppressed, $details + $protected, false
+		];
+		yield 'filter hidden and suppressed, private and protected only' => [
+			$hiddenSuppressed, $private + $protected, false
+		];
+		yield 'filter hidden and suppressed, all but viewsuppressed' => [
+			$hiddenSuppressed, $details + $private + $protected, false
+		];
+		yield 'filter hidden and suppressed, privileged' => [
+			$hiddenSuppressed, $details + $private + $protected + $suppressed, true
+		];
+		yield 'filter hidden and suppressed, suppressor without private access' => [
+			$hiddenSuppressed, $details + $protected + $suppressed, false
+		];
+
 		yield 'filter visible, not privileged' => [ Flags::FILTER_PUBLIC, [], false ];
 		yield 'filter visible, privileged' => [ Flags::FILTER_PUBLIC, $details, true ];
 	}
@@ -227,75 +293,126 @@ class AbuseFilterPermissionManagerTest extends MediaWikiUnitTestCase {
 	 * @dataProvider provideCanSeeLogDetailsForFilter
 	 */
 	public function testCanSeeLogDetailsForFilter( int $privacyLevel, array $rights, bool $expected ) {
+		$filter = new AbstractFilter(
+			new Specs( '/**/', '', 'Test filter', [], 'default' ),
+			new Flags( true, true, $privacyLevel, false ),
+			[]
+		);
 		$performer = $this->mockRegisteredAuthorityWithPermissions( $rights );
+
 		$this->assertSame(
 			$expected,
-			$this->getPermMan()->canSeeLogDetailsForFilter( $performer, $privacyLevel )
+			$this->getPermMan()->canSeeLogDetailsForFilter( $performer, $filter )
 		);
 	}
 
-	public function provideCanViewProtectedVariables(): Generator {
-		$block = $this->createMock( DatabaseBlock::class );
-		$block->method( 'isSiteWide' )->willReturn( true );
-		yield 'not privileged, blocked' => [ $block, [], false ];
-		yield 'not privileged, not blocked' => [ null, [], false ];
-		yield 'has right, blocked' => [ $block, [ 'abusefilter-access-protected-vars' ], false ];
-		yield 'has right, not blocked' => [ null, [ 'abusefilter-access-protected-vars' ], true ];
+	public static function provideCanViewProtectedVariablesInFilter(): Generator {
+		yield 'not privileged, blocked' => [ true, [], false ];
+		yield 'not privileged, not blocked' => [ false, [], false ];
+		yield 'has right, blocked' => [ true, [ 'abusefilter-access-protected-vars' ], false ];
+		yield 'has right, not blocked' => [ false, [ 'abusefilter-access-protected-vars' ], true ];
 	}
 
 	/**
-	 * @dataProvider provideCanViewProtectedVariables
+	 * @dataProvider provideCanViewProtectedVariablesInFilter
 	 */
-	public function testCanViewProtectedVariables( ?DatabaseBlock $block, array $rights, bool $expected ) {
-		if ( $block !== null ) {
+	public function testCanViewProtectedVariablesInFilter( $needsBlock, array $rights, bool $expected ) {
+		if ( $needsBlock ) {
+			$block = $this->createMock( DatabaseBlock::class );
+			$block->method( 'isSitewide' )->willReturn( true );
 			$performer = $this->mockUserAuthorityWithBlock(
 				$this->mockRegisteredUltimateAuthority()->getUser(),
 				$block,
 				$rights
 			);
 		} else {
+			$block = null;
 			$performer = $this->mockRegisteredAuthorityWithPermissions( $rights );
 		}
 
-		$this->assertSame(
-			$expected,
-			$this->getPermMan()->canViewProtectedVariables( $performer )
+		$filter = new AbstractFilter(
+			new Specs( '/**/', '', 'Test filter', [], 'default' ),
+			new Flags( true, true, Flags::FILTER_USES_PROTECTED_VARS, false ),
+			[]
 		);
+
+		$actualStatus = $this->getPermMan()->canViewProtectedVariablesInFilter( $performer, $filter );
+		if ( $expected ) {
+			$this->assertStatusGood( $actualStatus );
+			$this->assertSame( null, $actualStatus->getBlock() );
+			$this->assertSame( null, $actualStatus->getPermission() );
+		} else {
+			$this->assertStatusNotGood( $actualStatus );
+			if ( $block ) {
+				$this->assertSame( $block, $actualStatus->getBlock() );
+			} elseif ( !in_array( 'abusefilter-access-protected-vars', $rights ) ) {
+				$this->assertSame( 'abusefilter-access-protected-vars', $actualStatus->getPermission() );
+			} else {
+				$this->fail( 'Unsupported test case.' );
+			}
+		}
 	}
 
-	public function provideCanViewProtectedVariableValues(): Generator {
-		$userCheckedPreference = new UserIdentityValue( 1, 'User1' );
-		$userUncheckedPreference = new UserIdentityValue( 2, 'User2' );
-		yield 'can view protected variables, has checked preference' => [
-			[ 'abusefilter-access-protected-vars' ], $userCheckedPreference, true
-		];
-		yield 'can view protected variables, has not checked preference' => [
-			[ 'abusefilter-access-protected-vars' ], $userUncheckedPreference, false
-		];
-		yield 'cannot view protected variables, has checked preference' => [
-			[], $userCheckedPreference, false
-		];
-		yield 'cannot view protected variables, has not checked preference' => [
-			[], $userUncheckedPreference, false
-		];
-	}
-
-	/**
-	 * @dataProvider provideCanViewProtectedVariableValues
-	 */
-	public function testCanViewProtectedVariableValues( array $rights, UserIdentityValue $user, bool $expected ) {
-		$performer = $this->mockUserAuthorityWithPermissions( $user, $rights );
-		$this->assertSame(
-			$expected,
-			$this->getPermMan()->canViewProtectedVariableValues( $performer )
+	public function testCanViewProtectedVariablesInFilterWhenFilterIsPublic() {
+		$filter = new AbstractFilter(
+			new Specs( '/**/', '', 'Test filter', [], 'default' ),
+			new Flags( true, true, Flags::FILTER_PUBLIC, false ),
+			[]
 		);
+
+		// The ::canViewProtectedVariablesInFilter method should throw if the provided filter is public,
+		// as code should check if the filter is protected before checking protected restrictions on it.
+		$this->expectException( LogicException::class );
+		$this->getPermMan()->canViewProtectedVariablesInFilter( $this->mockRegisteredUltimateAuthority(), $filter );
 	}
 
-	public function provideTestGetUsedProtectedVariables(): Generator {
-		$userCheckedPreference = new UserIdentityValue( 1, 'User1' );
-		$userUncheckedPreference = new UserIdentityValue( 2, 'User2' );
+	public function testCanViewProtectedVariablesInFilterWhenResultCached() {
+		$filterWithoutAnyVariables = new AbstractFilter(
+			new Specs( '/**/', '', 'Test filter', [], 'default' ),
+			new Flags( true, true, Flags::FILTER_USES_PROTECTED_VARS, false ),
+			[]
+		);
+		$user = new UserIdentityValue( 1, 'User2' );
+		$permManager = $this->getPermMan();
+
+		// Call the method once with a user who can access protected variables, which should set the cache
+		// for this filter and performer.
+		$performer = $this->mockUserAuthorityWithPermissions( $user, [ 'abusefilter-access-protected-vars' ] );
+		$this->assertStatusGood( $permManager->canViewProtectedVariablesInFilter(
+			$performer, $filterWithoutAnyVariables
+		) );
+
+		// Call the method once again after changing the performer to no longer have the rights needed,
+		// but still have the same user ID. This is done to test that the cached result is used instead
+		// of checking again. It is fine for this to happen as this is an instance cache, so situation should
+		// not happen in real production code.
+		$performer = $this->mockUserAuthorityWithPermissions( $user, [] );
+		$this->assertStatusGood( $permManager->canViewProtectedVariablesInFilter(
+			$performer, $filterWithoutAnyVariables
+		) );
+
+		// Call the method once more, but use a different filter which has a different set of variables
+		// and expect that this causes a cache miss and then a fatal status.
+		$filterWithUserUnnamedIp = new AbstractFilter(
+			new Specs( 'user_unnamed_ip = "1.2.3.4"', '', 'Test filter', [], 'default' ),
+			new Flags( true, true, Flags::FILTER_USES_PROTECTED_VARS, false ),
+			[]
+		);
+		$performer = $this->mockUserAuthorityWithPermissions( $user, [] );
+		$statusFromThirdCall = $permManager->canViewProtectedVariablesInFilter(
+			$performer, $filterWithUserUnnamedIp
+		);
+		$this->assertStatusNotGood( $statusFromThirdCall );
+		$this->assertSame( 'abusefilter-access-protected-vars', $statusFromThirdCall->getPermission() );
+	}
+
+	public static function provideTestGetUsedProtectedVariables(): Generator {
 		yield 'uses protected variables' => [
 			[ 'user_unnamed_ip', 'user_name' ], [ 'user_unnamed_ip' ]
+		];
+		yield 'uses protected variables with duplicates in parameter' => [
+			[ 'user_unnamed_ip', 'user_name', 'user_unnamed_ip', 'user_name', 'user_unnamed_ip' ],
+			[ 'user_unnamed_ip' ],
 		];
 		yield 'no protected variables' => [
 			[ 'user_name' ], []
@@ -351,6 +468,74 @@ class AbuseFilterPermissionManagerTest extends MediaWikiUnitTestCase {
 		$this->assertSame(
 			$expected,
 			$this->getPermMan()->getForbiddenVariables( $performer, $data[ 'usedVars' ] )
+		);
+	}
+
+	public static function provideCanViewSuppressed(): Generator {
+		yield 'blocked sitewide' => [ true, [], false ];
+
+		yield 'partially blocked' => [ false, [], false ];
+
+		yield 'unblocked, no right' => [ null, [], false ];
+
+		yield 'blocked sitewide with right' => [ true, [ 'viewsuppressed' ], false ];
+
+		yield 'success' => [ null, [ 'viewsuppressed' ], true ];
+	}
+
+	/**
+	 * @dataProvider provideCanViewSuppressed
+	 */
+	public function testCanViewSuppressed( $block, array $rights, bool $expected ) {
+		if ( $block !== null ) {
+			$siteWide = $block;
+			$block = $this->createMock( DatabaseBlock::class );
+			$block->method( 'isSiteWide' )->willReturn( $siteWide );
+			$performer = $this->mockUserAuthorityWithBlock(
+				$this->mockRegisteredUltimateAuthority()->getUser(),
+				$block,
+				$rights
+			);
+		} else {
+			$performer = $this->mockRegisteredAuthorityWithPermissions( $rights );
+		}
+		$this->assertSame(
+			$expected,
+			$this->getPermMan()->canViewSuppressed( $performer )
+		);
+	}
+
+	public static function provideCanSuppress(): Generator {
+		yield 'blocked sitewide' => [ true, [], false ];
+
+		yield 'partially blocked' => [ false, [], false ];
+
+		yield 'unblocked, no right' => [ null, [], false ];
+
+		yield 'blocked sitewide with right' => [ true, [ 'suppressrevision' ], false ];
+
+		yield 'success' => [ null, [ 'suppressrevision' ], true ];
+	}
+
+	/**
+	 * @dataProvider provideCanSuppress
+	 */
+	public function testCanSuppress( $block, array $rights, bool $expected ) {
+		if ( $block !== null ) {
+			$siteWide = $block;
+			$block = $this->createMock( DatabaseBlock::class );
+			$block->method( 'isSiteWide' )->willReturn( $siteWide );
+			$performer = $this->mockUserAuthorityWithBlock(
+				$this->mockRegisteredUltimateAuthority()->getUser(),
+				$block,
+				$rights
+			);
+		} else {
+			$performer = $this->mockRegisteredAuthorityWithPermissions( $rights );
+		}
+		$this->assertSame(
+			$expected,
+			$this->getPermMan()->canSuppress( $performer )
 		);
 	}
 
@@ -463,5 +648,4 @@ class AbuseFilterPermissionManagerTest extends MediaWikiUnitTestCase {
 			$this->getPermMan()->canUseTestTools( $performer )
 		);
 	}
-
 }

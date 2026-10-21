@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"McDutchie",
+			"Metalhead64"
+		]
+	},
+	"createdpageslist": "Liste der erstellten Seiten",
+	"createdpageslist-desc": "Ergänzt die Seite [[Special:CreatedPagesList]], die alle Artikel auflistet, die von dem ausgewählten Autor erstellt wurden",
+	"createdpageslist-notfound": "Benutzer nicht gefunden.",
+	"createdpageslist-username": "Benutzer",
+	"createdpageslist-submit": "Suchen",
+	"createdpageslist-summary": "Diese Spezialseite listet alle Artikel auf (z.&nbsp;B. Seiten im Inhaltsnamensraum), die von dem angegebenen Benutzer erstellt wurden."
+}

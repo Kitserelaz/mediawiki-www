@@ -11,18 +11,12 @@ use MediaWiki\MediaWikiServices;
 use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Title\Title;
 
+/**
+ * @property LuaSandboxInterpreter|null $interpreter
+ */
 class LuaSandboxEngine extends LuaEngine {
 	/** @var array */
-	public $options;
-	/** @var bool */
-	public $loaded = false;
-	/** @var array */
 	protected $lineCache = [];
-
-	/**
-	 * @var LuaSandboxInterpreter
-	 */
-	protected $interpreter;
 
 	/** @inheritDoc */
 	public function getPerformanceCharacteristics() {
@@ -35,12 +29,12 @@ class LuaSandboxEngine extends LuaEngine {
 	public function getSoftwareInfo( array &$software ) {
 		try {
 			LuaSandboxInterpreter::checkLuaSandboxVersion();
-		} catch ( LuaInterpreterNotFoundError $e ) {
+		} catch ( LuaInterpreterNotFoundError ) {
 			// They shouldn't be using this engine if the extension isn't
 			// loaded. But in case they do for some reason, let's not have
 			// Special:Version fatal.
 			return;
-		} catch ( LuaInterpreterBadVersionError $e ) {
+		} catch ( LuaInterpreterBadVersionError ) {
 			// @phan-suppress-previous-line PhanPluginDuplicateCatchStatementBody
 			// Same for if the extension is too old.
 			return;
@@ -49,9 +43,9 @@ class LuaSandboxEngine extends LuaEngine {
 		$versions = LuaSandbox::getVersionInfo();
 		$software['[https://www.mediawiki.org/wiki/LuaSandbox LuaSandbox]'] =
 			$versions['LuaSandbox'];
-		$software['[http://www.lua.org/ Lua]'] = str_replace( 'Lua ', '', $versions['Lua'] );
+		$software['[https://www.lua.org/ Lua]'] = str_replace( 'Lua ', '', $versions['Lua'] );
 		if ( isset( $versions['LuaJIT'] ) ) {
-			$software['[http://luajit.org/ LuaJIT]'] = str_replace( 'LuaJIT ', '', $versions['LuaJIT'] );
+			$software['[https://luajit.org/ LuaJIT]'] = str_replace( 'LuaJIT ', '', $versions['LuaJIT'] );
 		}
 	}
 
@@ -87,7 +81,7 @@ class LuaSandboxEngine extends LuaEngine {
 
 		$logs = $this->getLogBuffer();
 		if ( $logs !== '' ) {
-			$ret['scribunto-limitreport-logs'] = $logs;
+			$ret['scribunto-limitreport-logs'] = $this->fixTruncation( $logs );
 		}
 
 		if ( $t < 1.0 ) {
@@ -191,9 +185,9 @@ class LuaSandboxEngine extends LuaEngine {
 		$percentMsg->exists();
 
 		if ( $isHTML ) {
-			$report .= Html::openElement( 'tr' ) .
-				Html::rawElement( 'th', [ 'colspan' => 2 ], $keyMsg->parse() ) .
-				Html::closeElement( 'tr' ) .
+			$report .= Html::rawElement( 'tr', [],
+					Html::rawElement( 'th', [ 'colspan' => 2 ], $keyMsg->parse() )
+				) .
 				Html::openElement( 'tr' ) .
 				Html::openElement( 'td', [ 'colspan' => 2 ] ) .
 				Html::openElement( 'table' );
@@ -253,6 +247,7 @@ class LuaSandboxEngine extends LuaEngine {
 		return $this->lineCache['mw.lua'][$lineNum - 1];
 	}
 
+	/** @inheritDoc */
 	protected function newInterpreter() {
 		return new LuaSandboxInterpreter( $this, $this->options );
 	}

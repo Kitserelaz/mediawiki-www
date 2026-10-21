@@ -1,0 +1,130 @@
+@import 'mediawiki.skin.variables.less';
+
+// Global MediaInfo variables
+// ---------------------------------------------------------
+// Use semantic variable names from Codex design tokens in the code when it
+// makes sense to do so. Otherwise, create a new extension-specific semantic
+// variable here.
+// See https://doc.wikimedia.org/codex/latest/design-tokens/overview.html
+
+// Colors
+// ---------------------------------------------------------
+// https://design.wikimedia.org/style-guide/visual-style_colors.html
+
+@wbmi-box-shadow-color: #54595d;
+
+@wbmi-background-color-pending-stripe: #ddd;
+
+// Border
+// ---------------------------------------------------------
+@wbmi-border-panel--target: 2px solid @border-color-progressive;
+@wbmi-border-color-panel--active: @border-color-progressive--active;
+@wbmi-border-color-base--lighter: @border-color-subtle;
+
+// Sizes
+// ---------------------------------------------------------
+@wbmi-size-icon-inner: unit( 20 / 16 / 0.8, em );
+
+// Spacing
+// ---------------------------------------------------------
+@wbmi-spacing-base: 1rem;
+@wbmi-spacing-sm: @wbmi-spacing-base / 2;
+@wbmi-spacing-xs: @wbmi-spacing-base / 4;
+@wbmi-spacing-hairline: 3px;
+
+// Typography
+// ---------------------------------------------------------
+@wbmi-font-size-medium: 1em;
+@wbmi-font-size-sm: 0.8em;
+
+@wbmi-font-size-browser: 16; // assumed browser default of `16px`
+@wbmi-font-size-base: 0.875 / 1em; // equals `14px` at browser default of `16px`
+
+// State
+// ---------------------------------------------------------
+@edit-mode: wbmi-entityview-editable;
+
+// Line thingys
+//---------------------------------------------------------
+@wbmi-border-color-line: #979797;
+@wbmi-offset-line: 1rem;
+
+// Mixins
+// ---------------------------------------------------------
+.wbmi-bullet-separator() {
+	color: @color-emphasized;
+	content: '\2022'; // &bull;
+	cursor: initial;
+	display: inline-block;
+	padding: 0 10px;
+	text-decoration: none;
+};
+
+.wbmi-vertical-line() {
+	border-left: 1px solid @wbmi-border-color-line;
+	content: '';
+	height: ~'calc( 100% - 1.5rem )'; // ~ is required to disable LESS auto-calculation...
+	left: -( @wbmi-offset-line );
+	position: absolute;
+	top: 0;
+};
+
+.wbmi-horizontal-line() {
+	border-bottom: 1px solid @wbmi-border-color-line;
+	content: '';
+	height: 1em;
+	left: -( @wbmi-offset-line );
+	position: absolute;
+	width: @wbmi-spacing-base;
+};
+
+.wbmi-max-container-width() {
+	@media screen and ( min-width: @min-width-breakpoint-desktop ) {
+		box-sizing: border-box;
+		max-width: 800px;
+	}
+};
+
+// Taken from OOUI.
+.wbmi-visually-hidden() {
+	display: block;
+	position: absolute;
+	clip: rect( 1px, 1px, 1px, 1px );
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	border: 0;
+	padding: 0;
+	overflow: hidden;
+}
+
+.wbmi-animation( @value ) {
+	-webkit-animation: @value;
+	animation: @value;
+}
+
+.wbmi-pending-state() {
+	background-color: @wbmi-background-color-pending-stripe;
+	background-image: linear-gradient( 135deg, @background-color-base 25%, transparent 25%, transparent 50%, @background-color-base 50%, @background-color-base 75%, transparent 75%, transparent );
+	// Support Safari 3.1-3.6, iOS Safari 5.1: Needs to be property of its own.
+	background-size: @wbmi-size-icon-inner @wbmi-size-icon-inner;
+	.wbmi-animation( wbmi-pending-stripes 650ms linear infinite );
+
+	.wbmi-pending-stripes-frames() {
+		0% {
+			background-position: -@wbmi-size-icon-inner 0;
+		}
+
+		100% {
+			background-position: 0 0;
+		}
+	}
+
+	@-webkit-keyframes wbmi-pending-stripes {
+		.wbmi-pending-stripes-frames;
+	}
+
+	@keyframes wbmi-pending-stripes {
+		.wbmi-pending-stripes-frames;
+	}
+}

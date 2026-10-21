@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Universal Omega"
+		]
+	},
+	"action-embed_pdf": "{{doc-action|embed_pdf}}",
+	"pdfembed": "{{name}}",
+	"pdfembed_description": "{{desc|name=PDFEmbed|url=https://www.mediawiki.org/wiki/Extension:PDFEmbed}}",
+	"embed_pdf_no_permission": "Insufficient permission error message.",
+	"embed_pdf_blank_file": "Blank file error message.",
+	"embed_pdf_invalid_file": "Invalid file error message.",
+	"embed_pdf_invalid_user": "Invalid user error message.",
+	"right-embed_pdf": "{{doc-right|embed_pdf}}"
+}

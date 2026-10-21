@@ -1,0 +1,11 @@
+--- a/mediawiki/extensions/CodeEditor/modules/jquery.codeEditor.less
++++ b/mediawiki/extensions/CodeEditor/modules/jquery.codeEditor.less
+@@ -35,7 +35,7 @@
+ 	clear: both;
+ 	width: 100%;
+ 	background-color: @background-color-neutral-subtle;
+-	border-bottom: 1px solid @border-color-subtle;
++	border-top: 1px solid @border-color-subtle;
+ 	display: table;
+ }
+ 

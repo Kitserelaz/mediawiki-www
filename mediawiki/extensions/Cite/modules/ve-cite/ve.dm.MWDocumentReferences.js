@@ -5,6 +5,8 @@
  * @license MIT
  */
 
+const MWGroupReferences = require( './ve.dm.MWGroupReferences.js' );
+
 /**
  * A facade providing a simplified and safe interface to Cite `ref` and
  * `references` tags in a document.
@@ -27,7 +29,7 @@ ve.dm.MWDocumentReferences = function VeDmMWDocumentReferences( doc ) {
 	this.cachedByGroup = {};
 
 	doc.getInternalList().connect( this, { update: 'updateGroups' } );
-	this.updateAllGroups();
+	this.updateGroups( this.getListGroupNames() );
 };
 
 /* Inheritance */
@@ -47,24 +49,17 @@ OO.mixinClass( ve.dm.MWDocumentReferences, OO.EventEmitter );
  */
 ve.dm.MWDocumentReferences.static.refsForDoc = function ( doc ) {
 	let docRefs;
+	// Only use cache if we're working with the full document.
 	if ( !doc.getOriginalDocument() ) {
-		// Only use cache if we're working with the full document.
-		docRefs = doc.getStorage( 'document-references-store' );
+		docRefs = doc.extCiteDocumentReferences;
 	}
 	if ( docRefs === undefined ) {
 		docRefs = new ve.dm.MWDocumentReferences( doc );
 	}
 	if ( !doc.getOriginalDocument() ) {
-		doc.setStorage( 'document-references-store', docRefs );
+		doc.extCiteDocumentReferences = docRefs;
 	}
 	return docRefs;
-};
-
-/**
- * @private
- */
-ve.dm.MWDocumentReferences.prototype.updateAllGroups = function () {
-	this.updateGroups( this.getAllGroupNames() );
 };
 
 /**
@@ -73,17 +68,10 @@ ve.dm.MWDocumentReferences.prototype.updateAllGroups = function () {
  *  this transaction
  */
 ve.dm.MWDocumentReferences.prototype.updateGroups = function ( groupsChanged ) {
-	groupsChanged.forEach( ( groupName ) => this.updateGroup( groupName ) );
-};
-
-/**
- * @private
- * @param {string[]} groupName Name of the reference group which needs to be
- *  updated, with prefix
- */
-ve.dm.MWDocumentReferences.prototype.updateGroup = function ( groupName ) {
-	const nodeGroup = this.doc.getInternalList().getNodeGroup( groupName );
-	this.cachedByGroup[ groupName ] = ve.dm.MWGroupReferences.static.makeGroupRefs( nodeGroup );
+	groupsChanged.forEach( ( groupName ) => {
+		const nodeGroup = this.doc.getInternalList().getNodeGroup( groupName );
+		this.cachedByGroup[ groupName ] = MWGroupReferences.static.makeGroupRefs( nodeGroup );
+	} );
 };
 
 /**
@@ -92,15 +80,22 @@ ve.dm.MWDocumentReferences.prototype.updateGroup = function ( groupName ) {
  */
 ve.dm.MWDocumentReferences.prototype.getGroupRefs = function ( groupName ) {
 	return this.cachedByGroup[ groupName.startsWith( 'mwReference/' ) ? groupName : 'mwReference/' + groupName ] ||
-		new ve.dm.MWGroupReferences();
+		new MWGroupReferences();
 };
 
-ve.dm.MWDocumentReferences.prototype.getAllGroupNames = function () {
+/**
+ * @return {string[]} List group names with the "mwReference/" prefix
+ */
+ve.dm.MWDocumentReferences.prototype.getListGroupNames = function () {
 	return Object.keys( this.doc.getInternalList().getNodeGroups() );
 };
 
+/**
+ * @return {boolean}
+ */
 ve.dm.MWDocumentReferences.prototype.hasRefs = function () {
-	return this.getAllGroupNames().some( ( groupName ) => !this.getGroupRefs( groupName ).isEmpty() );
+	return Object.values( this.doc.getInternalList().getNodeGroups() )
+		.some( ( group ) => !group.isEmpty() );
 };
 
 /**
@@ -122,14 +117,4 @@ ve.dm.MWDocumentReferences.static.contentLangDigits = function ( num ) {
 	return numString.split( '' ).map( ( numChar ) => digitLookup[ numChar ] ).join( '' );
 };
 
-/**
- * @deprecated Should be refactored to store formatted index numbers as a simple
- *  property on each CE ref node after document transaction.
- * @param {string} groupName Ref group without prefix
- * @param {string} listKey Ref key with prefix
- * @return {string} Rendered index number string which can be used as a footnote
- *  marker or reflist item number.
- */
-ve.dm.MWDocumentReferences.prototype.getIndexLabel = function ( groupName, listKey ) {
-	return this.getGroupRefs( groupName ).getIndexLabel( listKey );
-};
+module.exports = ve.dm.MWDocumentReferences;

@@ -1,0 +1,270 @@
+{
+	"name": "Tilesheets",
+	"version": "5.0.2",
+	"author": [
+		"[http://ftb.gamepedia.com/User:Jinbobo Jinbobo]",
+		"[http://ftb.gamepedia.com/User:Retep998 Peter Atashian]",
+		"[http://ftb.gamepedia.com/User:TheSatanicSanta Eli Foster]",
+		"Telshin",
+		"Noahm",
+		"Cameron Chunn",
+		"Alexia E. Smith"
+	],
+	"url": "http://help.gamepedia.com/Extension:Tilesheets",
+	"descriptionmsg": "tilesheets-desc",
+	"type": "parserhook",
+	"license-name": "MIT",
+	"AvailableRights": [
+		"edittilesheets",
+		"importtilesheets",
+		"translatetiles"
+	],
+	"GrantPermissions": {
+		"tilesheets": {
+			"edittilesheets": true,
+			"importtilesheets": true,
+			"translatetiles": true
+		}
+	},
+	"SpecialPages": {
+		"TileList": {
+			"class": "TileList",
+			"services": [
+				"DBLoadBalancer",
+				"PermissionManager"
+			]
+		},
+		"SheetList": {
+			"class": "SheetList",
+			"services": [
+				"DBLoadBalancer",
+				"PermissionManager"
+			]
+		},
+		"CreateTileSheet": {
+			"class": "CreateTileSheet",
+			"services": [
+				"DBLoadBalancer"
+			]
+		},
+		"TileManager": {
+			"class": "TileManager",
+			"services": [
+				"DBLoadBalancer"
+			]
+		},
+		"SheetManager": {
+			"class": "SheetManager",
+			"services": [
+				"DBLoadBalancer",
+				"UserGroupManager"
+			]
+		},
+		"TileTranslator": {
+			"class": "TileTranslator",
+			"services": [
+				"DBLoadBalancer"
+			]
+		},
+		"ViewTile": {
+			"class": "ViewTile",
+			"services": [
+				"DBLoadBalancer"
+			]
+		},
+		"WhatUsesThisTile": {
+			"class": "WhatUsesThisTile",
+			"services": [
+				"DBLoadBalancer"
+			]
+		}
+	},
+	"LogTypes": [
+		"tilesheet"
+	],
+	"LogActionsHandlers": {
+		"tilesheet/*": "LogFormatter"
+	},
+	"MessagesDirs": {
+		"Tilesheets": [
+			"i18n"
+		]
+	},
+	"ExtensionMessagesFiles": {
+		"SpecialTilesheets": "Tilesheets.alias.php",
+		"TilesheetsMagic": "Tilesheets.i18n.magic.php"
+	},
+	"AutoloadClasses": {
+		"Tilesheets": "Tilesheets.body.php",
+		"TilesheetsError": "Tilesheets.body.php",
+		"TilesheetsHooks": "Tilesheets.hooks.php",
+		"WhatUsesThisTileHooks": "hooks/WhatUsesThisTileHooks.php",
+		"LoadExtensionSchemaUpdatesHookHandler": "hooks/LoadExtensionSchemaUpdatesHookHandler.php",
+		"TileList": "special/TileList.php",
+		"SheetList": "special/SheetList.php",
+		"CreateTileSheet": "special/CreateTileSheet.php",
+		"TileManager": "special/TileManager.php",
+		"SheetManager": "special/SheetManager.php",
+		"TileTranslator": "special/TileTranslator.php",
+		"ViewTile": "special/ViewTile.php",
+		"WhatUsesThisTile": "special/WhatUsesThisTile.php",
+		"TilesheetsQuerySheetsApi": "api/TilesheetsQuerySheetsApi.php",
+		"TilesheetsQueryTilesApi": "api/TilesheetsQueryTilesApi.php",
+		"TilesheetsQueryTranslationsApi": "api/TilesheetsQueryTranslationsApi.php",
+		"TilesheetsQueryTileUsagesApi": "api/TilesheetsQueryTileUsagesApi.php",
+		"TilesheetsAddTilesApi": "api/TilesheetsAddTilesApi.php",
+		"TilesheetsDeleteSheetApi": "api/TilesheetsDeleteSheetApi.php",
+		"TilesheetsAddSheetApi": "api/TilesheetsAddSheetApi.php",
+		"TilesheetsDeleteTilesApi": "api/TilesheetsDeleteTilesApi.php",
+		"TilesheetsEditTileApi": "api/TilesheetsEditTileApi.php",
+		"TilesheetsEditSheetApi": "api/TilesheetsEditSheetApi.php",
+		"TilesheetsDeleteTranslationApi": "api/TilesheetsDeleteTranslationApi.php",
+		"TilesheetsTranslateTileApi": "api/TilesheetsTranslateTileApi.php"
+	},
+	"APIModules": {
+		"addtiles": {
+			"class": "TilesheetsAddTilesApi",
+			"services": [
+				"DBLoadBalancer",
+				"PermissionManager"
+			]
+		},
+		"deletesheet": {
+			"class": "TilesheetsDeleteSheetApi",
+			"services": [
+				"DBLoadBalancer",
+				"PermissionManager"
+			]
+			},
+		"createsheet": {
+			"class": "TilesheetsAddSheetApi",
+			"services": [
+				"DBLoadBalancer",
+				"PermissionManager"
+			]
+		},
+		"deletetiles": {
+			"class": "TilesheetsDeleteTilesApi",
+			"services": [
+				"DBLoadBalancer",
+				"PermissionManager"
+			]
+		},
+		"edittile": {
+			"class": "TilesheetsEditTileApi", 
+			"services": [
+				"DBLoadBalancer",
+				"PermissionManager"
+			]
+		},
+		"editsheet": {
+			"class": "TilesheetsEditSheetApi",
+			"services": [
+				"DBLoadBalancer",
+				"PermissionManager"
+			]
+		},
+		"deletetranslation": {
+			"class": "TilesheetsDeleteTranslationApi",
+			"services": [
+				"DBLoadBalancer",
+				"PermissionManager"
+			]
+		},
+		"translatetile": {
+			"class": "TilesheetsTranslateTileApi", 
+			"services": [
+				"DBLoadBalancer",
+				"PermissionManager"
+			]
+		}
+	},
+	"APIListModules": {
+		"tilesheets": {
+			"class": "TilesheetsQuerySheetsApi",
+			"services": [
+				"DBLoadBalancer"
+			]
+		},
+		"tiles": {
+			"class": "TilesheetsQueryTilesApi",
+			"services": [
+				"DBLoadBalancer"
+			]
+		},
+		"tiletranslations": {
+			"class": "TilesheetsQueryTranslationsApi",
+			"services": [
+				"DBLoadBalancer"
+			]
+		},
+		"tileusages": {
+			"class": "TilesheetsQueryTileUsagesApi",
+			"services": [
+				"DBLoadBalancer"
+			]
+		}
+	},
+	"ResourceModules": {
+		"ext.tilesheets": {
+			"styles": "css/tilesheets.css",
+			"position": "top"
+		},
+		"ext.tilesheets.special": {
+			"styles": "css/tilesheets.special.css",
+			"position": "top"
+		},
+		"ext.tilesheets.viewtile": {
+			"scripts": "js/tilesheets.viewtile.js"
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "/",
+		"remoteExtPath": "Tilesheets"
+	},
+	"HookHandlers": {
+		"main": {
+			"class": "TilesheetsHooks",
+			"services": [
+				"DBLoadBalancer"
+			]
+		},
+		"WhatUsesThisTileHooks": {
+			"class": "WhatUsesThisTileHooks",
+			"services": [
+				"DBLoadBalancer"
+			]
+		},
+		"LoadExtensionSchemaUpdatesHookHandler": {
+			"class": "LoadExtensionSchemaUpdatesHookHandler"
+		}
+	},
+	"Hooks": {
+		"BeforePageDisplay": "main",
+		"EditPage::showEditForm:initial": "main",
+		"ParserFirstCallInit": "main",
+		"LoadExtensionSchemaUpdates": "LoadExtensionSchemaUpdatesHookHandler",
+		"OreDictOutput": "main",
+		"PageDeleteComplete": "WhatUsesThisTileHooks",
+		"PageUndeleteComplete": "WhatUsesThisTileHooks",
+		"PageMoveComplete": "WhatUsesThisTileHooks",
+		"PageSaveComplete": "WhatUsesThisTileHooks"
+	},
+	"TrackingCategories": [
+		"tilesheet-invalid-sheet-category",
+		"tilesheet-invalid-size-category",
+		"tilesheet-missing-image-category",
+		"tilesheet-missing-item-category",
+		"tilesheet-no-mod-provided-category",
+		"tilesheet-no-mod-provided-easy-category"
+	],
+	"config": {
+		"ShowExceptionDetails": {
+			"value": true
+		},
+		"TilesheetsDebug": {
+			"value": false
+		}
+	},
+	"manifest_version": 2
+}

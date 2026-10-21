@@ -1,0 +1,76 @@
+<?php
+
+namespace SMW\Deserializers;
+
+use Deserializers\Deserializer;
+use OutOfBoundsException;
+use SMW\Export\ExpData;
+use SMW\Exporter\Element\ExpElement;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 2.2
+ *
+ * @author mwjames
+ */
+class ExpDataDeserializer implements Deserializer {
+
+	/**
+	 * @see Deserializers::deserialize
+	 *
+	 * @since 2.2
+	 *
+	 * @throws OutOfBoundsException
+	 */
+	public function deserialize( $serialization ): ?ExpData {
+		$expData = null;
+
+		if ( isset( $serialization['version'] ) && $serialization['version'] !== 0.1 ) {
+			throw new OutOfBoundsException( 'Serializer/Deserializer version does not match, please update your data' );
+		}
+
+		if ( isset( $serialization['subject'] ) ) {
+			$expData = $this->newExpData( $serialization['subject'] );
+		}
+
+		if ( !$expData instanceof ExpData ) {
+			throw new OutOfBoundsException( 'ExpData could not be created probably due to an invalid subject' );
+		}
+
+		$this->doDeserialize( $serialization, $expData );
+
+		return $expData;
+	}
+
+	private function newExpData( array $subject ): ExpData {
+		// @phan-suppress-next-line PhanTypeMismatchArgumentSuperType
+		return new ExpData( ExpElement::newFromSerialization( $subject ) );
+	}
+
+	private function doDeserialize( array $serialization, ExpData $expData ): void {
+		foreach ( $serialization['data'] as $data ) {
+
+			$property = ExpElement::newFromSerialization( $data['property'] );
+
+			foreach ( $data['children'] as $child ) {
+				$expData->addPropertyObjectValue(
+					// @phan-suppress-next-line PhanTypeMismatchArgumentSuperType
+					$property,
+					$this->doDeserializeChild( $child )
+				);
+			}
+		}
+	}
+
+	private function doDeserializeChild( array $serialization ) {
+		if ( !isset( $serialization['subject'] ) ) {
+			return ExpElement::newFromSerialization( $serialization );
+		}
+
+		$element = $this->newExpData( $serialization['subject'] );
+		$this->doDeserialize( $serialization, $element );
+
+		return $element;
+	}
+
+}

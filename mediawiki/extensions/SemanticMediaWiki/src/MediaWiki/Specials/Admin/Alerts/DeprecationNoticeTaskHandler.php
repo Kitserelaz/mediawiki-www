@@ -1,0 +1,266 @@
+<?php
+
+namespace SMW\MediaWiki\Specials\Admin\Alerts;
+
+use MediaWiki\Html\Html;
+use SMW\Localizer\Message;
+use SMW\MediaWiki\Specials\Admin\OutputFormatter;
+use SMW\MediaWiki\Specials\Admin\TaskHandler;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since   3.0
+ *
+ * @author mwjames
+ */
+class DeprecationNoticeTaskHandler extends TaskHandler {
+
+	/**
+	 * @since 3.0
+	 */
+	public function __construct(
+		private readonly OutputFormatter $outputFormatter,
+		private array $deprecationNoticeList = [],
+	) {
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * {@inheritDoc}
+	 */
+	public function getName(): string {
+		return 'deprecationnotices';
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * {@inheritDoc}
+	 */
+	public function getHtml(): string {
+		$html = '';
+
+		// Push `smw` to the top
+		uksort( $this->deprecationNoticeList, static function ( $a, $b ): int {
+			return (int)( $b === 'smw' );
+		} );
+
+		foreach ( $this->deprecationNoticeList as $section => $deprecationNoticeList ) {
+			$html .= $this->buildSection( $section, $deprecationNoticeList );
+		}
+
+		if ( $html === '' ) {
+			return '';
+		}
+
+		$explanation = [];
+
+		foreach ( [ 'notice', 'replacement', 'removal' ] as $key ) {
+			$explanation[] = Html::rawElement(
+				'li',
+				[],
+				$this->msg( "smw-admin-deprecation-notice-title-$key-explanation" )
+			);
+		}
+
+		$explanation = Html::rawElement(
+			'fieldset',
+			[
+				'class' => "smw-admin-deprecation-notice-section-legend"
+			],
+			Html::rawElement(
+				'legend',
+				[
+					'class' => "smw-admin-deprecation-notice-section-legend"
+				],
+				$this->msg( "smw-admin-deprecation-notice-section-legend" )
+			) . '<ul>' . implode( '', $explanation ) . '</ul>'
+		);
+
+		return Html::rawElement(
+			'div',
+			[
+				'class' => 'smw-admin-deprecation'
+			],
+			Html::rawElement(
+				'p',
+				[
+					'class' => 'plainlinks'
+				],
+				$this->msg( 'smw-admin-deprecation-notice-docu' )
+			) . $explanation . $html
+		);
+	}
+
+	private function buildSection( int|string $section, array $deprecationNoticeList ): string {
+		$noticeConfigList = [];
+		$replacementConfigList = [];
+		$removedConfigList = [];
+		$html = '';
+
+		if ( isset( $deprecationNoticeList['notice'] ) ) {
+			$noticeConfigList = $deprecationNoticeList['notice'];
+		}
+
+		if ( isset( $deprecationNoticeList['replacement'] ) ) {
+			$replacementConfigList = $deprecationNoticeList['replacement'];
+		}
+
+		if ( isset( $deprecationNoticeList['removal'] ) ) {
+			$removedConfigList = $deprecationNoticeList['removal'];
+		}
+
+		$sectionList = $this->buildList(
+			$section,
+			$noticeConfigList,
+			$replacementConfigList,
+			$removedConfigList
+		);
+
+		if ( $sectionList === [] ) {
+			return '';
+		}
+
+		$html .= Html::rawElement(
+			'legend',
+			[
+				'class' => "$section-admin-deprecation-notice-section"
+			],
+			$this->msg( "$section-admin-deprecation-notice-section" )
+		);
+
+		return Html::rawElement(
+			'fieldset',
+			[
+				'class' => "$section-admin-deprecation-section"
+			],
+			$html . implode( '', $sectionList )
+		);
+	}
+
+	/**
+	 * @return list<mixed>
+	 */
+	private function buildList( int|string $section, $noticeConfigList, $replacementConfigList, $removedConfigList ): array {
+		$noticeList = [];
+		$list = [];
+
+		// Replacements
+		foreach ( $replacementConfigList as $setting => $value ) {
+			if ( $setting === 'options' ) {
+				$list[] = $this->createItems( "$section-admin-deprecation-notice-config-replacement", $value );
+			} elseif ( isset( $GLOBALS[$setting] ) && strpos( $value, 'smwg' ) !== false ) {
+				$list[] = $this->createItem( [ "$section-admin-deprecation-notice-config-replacement", '$' . $setting, '$' . $value ] );
+			} elseif ( isset( $GLOBALS[$setting] ) ) {
+				$list[] = $this->createItem( [ "$section-admin-deprecation-notice-config-replacement-other", '$' . $setting, $value ] );
+			}
+		}
+
+		$mList = $this->mergeList( "$section-admin-deprecation-notice-title-replacement", $list );
+		if ( $mList !== null ) {
+			$noticeList[] = $mList;
+		}
+
+		// Changes
+		foreach ( $noticeConfigList as $setting => $value ) {
+			if ( $setting === 'options' ) {
+				$list[] = $this->createItems( "$section-admin-deprecation-notice-config-notice", $value );
+			} elseif ( isset( $GLOBALS[$setting] ) ) {
+				$list[] = $this->createItem( [ "$section-admin-deprecation-notice-config-notice", '$' . $setting, $value ] );
+			}
+		}
+
+		$mList = $this->mergeList( "$section-admin-deprecation-notice-title-notice", $list );
+		if ( $mList !== null ) {
+			$noticeList[] = $mList;
+		}
+
+		// Removals
+		foreach ( $removedConfigList as $setting => $msg ) {
+			if ( isset( $GLOBALS[$setting] ) ) {
+				$list[] = $this->createItem( [ "$section-admin-deprecation-notice-config-removal", '$' . $setting, $msg ] );
+			}
+		}
+
+		$mList = $this->mergeList( "$section-admin-deprecation-notice-title-removal", $list );
+		if ( $mList !== null ) {
+			$noticeList[] = $mList;
+		}
+
+		return $noticeList;
+	}
+
+	private function mergeList( string $title, array &$list ): ?string {
+		$items = implode( '', $list );
+		if ( $list === [] || $items === '' ) {
+			return null;
+		}
+
+		$html = Html::rawElement(
+			'h3',
+			[],
+			$this->msg( $title )
+		) . Html::rawElement(
+			'ul',
+			[
+				'style' => 'margin-bottom:10px;'
+			],
+			$items
+		);
+
+		$list = [];
+
+		return $html;
+	}
+
+	private function createItems( string $message, $values ): string {
+		$list = [];
+
+		if ( !is_array( $values ) ) {
+			return '';
+		}
+
+		foreach ( $values as $setting => $options ) {
+
+			if ( !is_array( $options ) ) {
+				continue;
+			}
+
+			$opt = [];
+
+			foreach ( $options as $option => $v ) {
+				if ( $this->hasOption( $setting, $option ) ) {
+					$opt[] = $this->createItem(
+						[
+							$message . '-option-list',
+							$option,
+							$v
+						]
+					);
+				}
+			}
+
+			if ( $opt !== [] ) {
+				$list[] = $this->createItem(
+					[
+						$message . '-option',
+						'$' . $setting,
+						count( $opt )
+					]
+				) . '<ul>' . implode( '', $opt ) . '</ul>';
+			}
+		}
+
+		return implode( '', $list );
+	}
+
+	private function hasOption( int|string $setting, int|string $option ): bool {
+		return isset( $GLOBALS[$setting][$option] ) || ( is_array( $GLOBALS[$setting] ) && array_search( $option, $GLOBALS[$setting] ) );
+	}
+
+	private function createItem( array $message ): string {
+		return Html::rawElement( 'li', [], $this->msg( $message, Message::PARSE ) );
+	}
+
+}

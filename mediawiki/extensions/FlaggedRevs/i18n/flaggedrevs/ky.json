@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Bosogo",
+			"Growingup"
+		]
+	},
+	"editor": "Түзөтүүчү",
+	"flaggedrevs-hidereviewed-hide": "Жашыруу",
+	"flaggedrevs-hidereviewed-show": "Көрсөтүү",
+	"group-editor": "Түзөтүүчүлөр",
+	"group-editor-member": "{{GENDER:$1|түзөтүүчү}}",
+	"revreview-restriction-any": "каалаган",
+	"revreview-restriction-none": "жок"
+}

@@ -1,0 +1,24 @@
+/* Styles for print view and printing */
+
+.mw-jump-link,
+#toc,
+#catlinks,
+#top-container,
+#bottom-container,
+#tools-bottom,
+#siteSub,
+.mw-cite-backlink,
+.printfooter {
+	display: none;
+}
+
+body {
+	font-family: 'Linux Biolinum', sans-serif;
+	text-align: justify;
+}
+
+/* Make links boring black instead of blue and underlined */
+a {
+	color: #000;
+	text-decoration: none;
+}

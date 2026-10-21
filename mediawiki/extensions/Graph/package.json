@@ -1,0 +1,23 @@
+{
+	"name": "Graph",
+	"version": "0.0.0",
+	"private": true,
+	"description": "Build tools for the Graph-MediaWiki extension.",
+	"scripts": {
+		"test:unit": "jest tests/jest --silent",
+		"test": "grunt test && npm run test:unit"
+	},
+	"devDependencies": {
+		"browserify": "^16.2.3",
+		"eslint-config-wikimedia": "0.28.2",
+		"grunt": "1.6.1",
+		"grunt-banana-checker": "0.13.0",
+		"grunt-eslint": "24.3.0",
+		"grunt-stylelint": "0.20.1",
+		"jest": "27.4.7",
+		"jquery.splitter": "^0.27.1",
+		"mw-graph-shared": "^0.6.0",
+		"stylelint-config-wikimedia": "0.17.2",
+		"vega": "5.32.0"
+	}
+}

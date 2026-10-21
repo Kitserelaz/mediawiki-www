@@ -1,0 +1,207 @@
+<?php
+
+namespace SMW\SPARQLStore\RepositoryConnectors;
+
+use SMW\Exporter\Serializer\TurtleSerializer;
+use SMW\SPARQLStore\Exception\BadHttpEndpointResponseException;
+use SMW\SPARQLStore\QueryEngine\RepositoryResult;
+use SMW\SPARQLStore\QueryEngine\XmlResponseParser;
+
+/**
+ * Specific modifications of the SPARQL database implementation for 4Store.
+ *
+ * @license GPL-2.0-or-later
+ * @since 1.6
+ *
+ * @author Markus Krötzsch
+ */
+class FourstoreRepositoryConnector extends GenericRepositoryConnector {
+
+	/**
+	 * Execute a SPARQL query and return an RepositoryResult object
+	 * that contains the results. Compared to GenericHttpDatabaseConnector::doQuery(),
+	 * this also supports the parameter "restricted=1" which 4Store provides
+	 * to enforce strict resource bounds on query answering. The method also
+	 * checks if these bounds have been met, and records this in the query
+	 * result.
+	 *
+	 * @note The restricted option in 4Store mainly enforces the given soft
+	 * limit more strictly. To disable/configure it, simply change the soft
+	 * limit settings of your 4Store server.
+	 *
+	 * @param $sparql string with the complete SPARQL query (SELECT or ASK)
+	 *
+	 * @return RepositoryResult
+	 * @throws BadHttpEndpointResponseException
+	 */
+	public function doQuery( string $sparql ): RepositoryResult {
+		if ( $this->repositoryClient->getQueryEndpoint() === '' ) {
+			throw new BadHttpEndpointResponseException( BadHttpEndpointResponseException::ERROR_NOSERVICE, $sparql, 'not specified' );
+		}
+
+		$defaultGraph = $this->repositoryClient->getDefaultGraph();
+
+		$parameterString = "query=" . urlencode( $sparql ) . "&restricted=1" .
+			( ( $defaultGraph !== '' ) ? '&default-graph-uri=' . urlencode( $defaultGraph ) : '' );
+
+		$request = $this->httpRequestFactory->create(
+			$this->repositoryClient->getQueryEndpoint(),
+			array_merge( $this->getBaseOptions(), [
+				'method' => 'POST',
+				'postData' => $parameterString,
+			] ),
+			__METHOD__
+		);
+
+		$request->setHeader( 'Accept', 'application/sparql-results+xml,application/xml;q=0.8' );
+
+		$status = $request->execute();
+		$this->lastErrorCode = $request->getStatus();
+
+		if ( $status->isOK() ) {
+			$xmlResponseParser = new XmlResponseParser();
+			$result = $xmlResponseParser->parse( $request->getContent() );
+		} else {
+			$this->mapHttpRequestError(
+				$request->getStatus(),
+				$this->repositoryClient->getQueryEndpoint(),
+				$sparql
+			);
+			$result = new RepositoryResult();
+			$result->setErrorCode( RepositoryResult::ERROR_UNREACHABLE );
+		}
+
+		foreach ( $result->getComments() as $comment ) {
+			if ( strpos( $comment, 'warning: hit complexity limit' ) === 0 ||
+				 strpos( $comment, 'some results have been dropped' ) === 0 ) {
+				$result->setErrorCode( RepositoryResult::ERROR_INCOMPLETE );
+			} // else debug_zval_dump($comment);
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Complex SPARQL Update delete operations are not supported in 4Store
+	 * as of v1.1.3, hence this implementation uses a less efficient method
+	 * for accomplishing this.
+	 *
+	 * @param $propertyName string Turtle name of marking property
+	 * @param $objectName string Turtle name of marking object/value
+	 * @param $extraNamespaces array (associative) of namespaceId => namespaceUri
+	 *
+	 * @return bool stating whether the operations succeeded
+	 */
+	public function deleteContentByValue( $propertyName, $objectName, $extraNamespaces = [] ): bool {
+		$affectedObjects = $this->select( '*', "?s $propertyName $objectName", [], $extraNamespaces );
+		$success = ( $affectedObjects->getErrorCode() == RepositoryResult::ERROR_NOERROR );
+
+		foreach ( $affectedObjects as $expElements ) {
+			if ( count( $expElements ) > 0 ) {
+				$turtleName = TurtleSerializer::getTurtleNameForExpElement( reset( $expElements ) );
+				$success = $this->delete( "$turtleName ?p ?o", "$turtleName ?p ?o", $extraNamespaces ) && $success;
+			}
+		}
+
+		return $success;
+	}
+
+	/**
+	 * Execute a HTTP-based SPARQL POST request according to
+	 * http://www.w3.org/2009/sparql/docs/http-rdf-update/.
+	 * The method throws exceptions based on
+	 * GenericHttpDatabaseConnector::mapHttpRequestError(). If errors occur and this
+	 * method does not throw anything, then an empty result with an error
+	 * code is returned.
+	 *
+	 * This method is specific to 4Store since it uses POST parameters that
+	 * are not given in the specification.
+	 *
+	 * @param $payload string Turtle serialization of data to send
+	 *
+	 * @return bool
+	 * @throws BadHttpEndpointResponseException
+	 */
+	public function doHttpPost( $payload ): bool {
+		if ( $this->repositoryClient->getDataEndpoint() === '' ) {
+			throw new BadHttpEndpointResponseException( BadHttpEndpointResponseException::ERROR_NOSERVICE, "SPARQL POST with data: $payload", 'not specified' );
+		}
+
+		$defaultGraph = $this->repositoryClient->getDefaultGraph();
+
+		$parameterString = "data=" . urlencode( $payload ) . '&graph=' .
+			( ( $defaultGraph !== '' ) ? urlencode( $defaultGraph ) : 'default' ) .
+			'&mime-type=application/x-turtle';
+
+		$request = $this->httpRequestFactory->create(
+			$this->repositoryClient->getDataEndpoint(),
+			array_merge( $this->getBaseOptions(), [
+				'method' => 'POST',
+				'postData' => $parameterString,
+			] ),
+			__METHOD__
+		);
+
+		$status = $request->execute();
+		$this->lastErrorCode = $request->getStatus();
+
+		if ( $status->isOK() ) {
+			return true;
+		}
+
+		$this->mapHttpRequestError(
+			$request->getStatus(),
+			$this->repositoryClient->getDataEndpoint(),
+			$payload
+		);
+
+		return false;
+	}
+
+	/**
+	 * @see GenericHttpDatabaseConnector::doUpdate
+	 *
+	 * @note 4store 1.1.4 breaks on update if charset is set in the Content-Type header
+	 *
+	 * @since 2.0
+	 *
+	 * @param string $sparql
+	 *
+	 * @return bool
+	 * @throws BadHttpEndpointResponseException
+	 */
+	public function doUpdate( string $sparql ): bool {
+		if ( $this->repositoryClient->getUpdateEndpoint() === '' ) {
+			throw new BadHttpEndpointResponseException( BadHttpEndpointResponseException::ERROR_NOSERVICE, $sparql, 'not specified' );
+		}
+
+		$parameterString = "update=" . urlencode( $sparql );
+
+		$request = $this->httpRequestFactory->create(
+			$this->repositoryClient->getUpdateEndpoint(),
+			array_merge( $this->getBaseOptions(), [
+				'method' => 'POST',
+				'postData' => $parameterString,
+			] ),
+			__METHOD__
+		);
+
+		$request->setHeader( 'Content-Type', 'application/x-www-form-urlencoded' );
+
+		$status = $request->execute();
+		$this->lastErrorCode = $request->getStatus();
+
+		if ( $status->isOK() ) {
+			return true;
+		}
+
+		$this->mapHttpRequestError(
+			$request->getStatus(),
+			$this->repositoryClient->getUpdateEndpoint(),
+			$sparql
+		);
+
+		return false;
+	}
+
+}

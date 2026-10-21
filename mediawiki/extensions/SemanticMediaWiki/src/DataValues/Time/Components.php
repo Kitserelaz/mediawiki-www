@@ -1,0 +1,68 @@
+<?php
+
+namespace SMW\DataValues\Time;
+
+/**
+ * @private
+ *
+ * @license GPL-2.0-or-later
+ * @since 3.0
+ *
+ * @author mwjames
+ */
+class Components {
+
+	/**
+	 * @var array
+	 */
+	public static $months = [
+		'January',
+		'February',
+		'March',
+		'April',
+		'May',
+		'June',
+		'July',
+		'August',
+		'September',
+		'October',
+		'November',
+		'December'
+	];
+
+	/**
+	 * @var array
+	 */
+	public static $monthsShort = [
+		'Jan',
+		'Feb',
+		'Mar',
+		'Apr',
+		'May',
+		'Jun',
+		'Jul',
+		'Aug',
+		'Sep',
+		'Oct',
+		'Nov',
+		'Dec'
+	];
+
+	/**
+	 * @since 3.0
+	 */
+	public function __construct( private array $components = [] ) {
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function get( $key ) {
+		if ( isset( $this->components[$key] ) ) {
+			return $this->components[$key];
+		}
+
+		return false;
+	}
+
+}

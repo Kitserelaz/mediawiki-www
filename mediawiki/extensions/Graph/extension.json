@@ -1,0 +1,202 @@
+{
+	"name": "Graph",
+	"author": [
+		"Dan Andreescu",
+		"Yuri Astrakhan",
+		"Frédéric Bolduc"
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:Graph",
+	"descriptionmsg": "graph-desc",
+	"license-name": "MIT",
+	"type": "parserhook",
+	"requires": {
+		"MediaWiki": ">= 1.43"
+	},
+	"MessagesDirs": {
+		"Graph": [
+			"i18n",
+			"i18n/api"
+		]
+	},
+	"AutoloadNamespaces": {
+		"Graph\\": "includes/"
+	},
+	"APIModules": {
+		"graph": {
+			"class": "Graph\\ApiGraph",
+			"services": [
+				"ParserFactory",
+				"MainWANObjectCache",
+				"WikiPageFactory"
+			]
+		}
+	},
+	"ResourceModules": {
+		"ext.graph.styles": {
+			"class": "MediaWiki\\ResourceLoader\\LessVarFileModule",
+			"lessMessages": [
+				"graph-load",
+				"graph-vega-old-browser",
+				"graph-ve-vega-error-no-render"
+			],
+			"styles": [
+				"styles/common.less"
+			]
+		},
+		"ext.graph.loader": {
+			"scripts": [
+				"modules/graph-loader.js"
+			],
+			"dependencies": [
+				"mediawiki.api"
+			]
+		},
+		"ext.graph.render": {
+			"packageFiles": [
+				"modules/ext.graph.render/main.js",
+				{
+					"name": "modules/ext.graph.render/domains.json",
+					"config": [
+						"GraphAllowedDomains",
+						"GraphAllowHttp"
+					]
+				},
+				"modules/ext.graph.render/sanitizeUrl.js",
+				"modules/ext.graph.render/mapSchema.js",
+				"lib/vega/vega.js"
+			]
+		},
+		"ext.graph.sandbox.styles": {
+			"styles": [
+				"styles/sandbox.css"
+			]
+		},
+		"ext.graph.sandbox": {
+			"scripts": [
+				"lib/jquery.splitter/jquery.splitter.js",
+				"modules/graph.sandbox.js"
+			],
+			"styles": [
+				"lib/jquery.splitter/jquery.splitter.css"
+			],
+			"messages": [
+				"graph-outdated-schema"
+			],
+			"dependencies": [
+				"ext.graph.render",
+				"oojs-ui-core",
+				"mediawiki.confirmCloseWindow"
+			]
+		},
+		"ext.graph.visualEditor": {
+			"scripts": [
+				"modules/ve-graph/ve.ce.MWGraphNode.js",
+				"modules/ve-graph/ve.dm.MWGraphModel.js",
+				"modules/ve-graph/ve.dm.MWGraphNode.js",
+				"modules/ve-graph/ve.ui.MWGraphDialog.js",
+				"modules/ve-graph/ve.ui.MWGraphDialogTool.js"
+			],
+			"styles": [
+				"modules/ve-graph/ve.ce.MWGraphNode.css",
+				"modules/ve-graph/ve.ui.MWGraphIcons.css"
+			],
+			"dependencies": [
+				"oojs-ui.styles.icons-editing-advanced",
+				"ext.graph.render",
+				"ext.visualEditor.mwcore",
+				"ext.visualEditor.mwimage.core",
+				"mediawiki.widgets.Table"
+			],
+			"messages": [
+				"graph-ve-dialog-button-tooltip",
+				"graph-ve-dialog-edit-field-graph-type",
+				"graph-ve-dialog-edit-field-raw-json",
+				"graph-ve-dialog-edit-height",
+				"graph-ve-dialog-edit-json-invalid",
+				"graph-ve-dialog-edit-padding-auto",
+				"graph-ve-dialog-edit-padding-bottom",
+				"graph-ve-dialog-edit-padding-left",
+				"graph-ve-dialog-edit-padding-right",
+				"graph-ve-dialog-edit-padding-top",
+				"graph-ve-dialog-edit-page-data",
+				"graph-ve-dialog-edit-page-general",
+				"graph-ve-dialog-edit-page-raw",
+				"graph-ve-dialog-edit-size-field",
+				"graph-ve-dialog-edit-size-table-unit",
+				"graph-ve-dialog-edit-title",
+				"graph-ve-dialog-edit-type-area",
+				"graph-ve-dialog-edit-type-bar",
+				"graph-ve-dialog-edit-type-line",
+				"graph-ve-dialog-edit-type-unknown",
+				"graph-ve-dialog-edit-width",
+				"graph-ve-dialog-edit-unknown-graph-type-warning",
+				"graph-ve-empty-graph",
+				"graph-ve-no-spec",
+				"graph-ve-vega-error",
+				"graph-ve-vega-error-no-render"
+			]
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "",
+		"remoteExtPath": "Graph"
+	},
+	"QUnitTestModule": {
+		"localBasePath": "",
+		"remoteExtPath": "Graph",
+		"scripts": [
+			"modules/ve-graph/tests/ext.graph.visualEditor.test.js"
+		],
+		"dependencies": [
+			"ext.graph.render",
+			"ext.graph.visualEditor",
+			"test.VisualEditor"
+		]
+	},
+	"LateJSConfigVarNames": [
+		"wgGraphSpecs"
+	],
+	"Hooks": {
+		"ParserFirstCallInit": "main",
+		"OutputPageParserOutput": "main"
+	},
+	"HookHandlers": {
+		"main": {
+			"class": "Graph\\Hooks"
+		}
+	},
+	"attributes": {
+		"VisualEditor": {
+			"PluginModules": [
+				"ext.graph.visualEditor"
+			]
+		}
+	},
+	"config": {
+		"GraphAllowedDomains": {
+			"value": [],
+			"description": "List of allowed domains as a map of protocol -> array of domains. Allowed standard protocols: http, https. Allowed custom protocols are listed in https://www.mediawiki.org/wiki/Extension:Graph/Guide#External_data"
+		},
+		"GraphAllowHttp": {
+			"value": false,
+			"description": "Allow http protocol for external data. This increases the attack surface, use with caution."
+		},
+		"GraphDefaultVegaVer": {
+			"value": 2,
+			"description": "Default Vega version for graph specs which do not specify a version. Obsolete, will be removed soon."
+		}
+	},
+	"TrackingCategories": [
+		"graph-tracking-category",
+		"graph-obsolete-category",
+		"graph-broken-category"
+	],
+	"SpecialPages": {
+		"GraphSandbox": "Graph\\Sandbox"
+	},
+	"ExtensionMessagesFiles": {
+		"GraphAliases": "Graph.alias.php"
+	},
+	"ForeignResourcesDir": "lib",
+	"manifest_version": 2
+}

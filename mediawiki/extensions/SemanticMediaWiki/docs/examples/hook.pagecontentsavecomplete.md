@@ -1,0 +1,101 @@
+
+## PageContentSaveComplete hook
+
+[#2974](https://github.com/SemanticMediaWiki/SemanticMediaWiki/issues/2974) Creating subobjects using the `PageContentSaveComplete` hook
+
+```php
+use MediaWiki\MediaWikiServices;
+use MediaWiki\Parser\ParserOutput;
+use SMW\Services\ServicesFactory as ApplicationFactory;
+use SMW\DataItems\Container;
+use SMW\DataItems\Property;
+use SMW\DataItems\WikiPage;
+use SMW\DataModel\ContainerSemanticData;
+use SMW\DataValueFactory;
+
+MediaWikiServices::getInstance()->getHookContainer()->register( 'PageContentSaveComplete', function( $wikiPage, $user, $content, $summary, $isMinor, $isWatch, $section, $flags, $revision, $status, $baseRevId, $undidRevId ) {
+
+        $applicationFactory = ApplicationFactory::getInstance();
+        $mwCollaboratorFactory = $applicationFactory->newMwCollaboratorFactory();
+
+        /**
+         * Initialize the ParserOuput object
+         */
+        $editInfo = $mwCollaboratorFactory->newEditInfo(
+                $wikiPage,
+                $revision,
+                $user
+        );
+
+        $editInfo->fetchEditInfo();
+
+        $parserOutput = $editInfo->getOutput();
+
+        if ( !$parserOutput instanceof ParserOutput ) {
+                return true;
+        }
+
+        $parserData = $applicationFactory->newParserData(
+                $wikiPage->getTitle(),
+                $parserOutput
+        );
+
+        // Subject Foo ...
+        $subject = $parserData->getSubject();
+
+        // Contains the wikitext, JSON or whatever is stored for this content model
+        $nativeData = $content->getNativeData();
+
+        // Identify the content as unique
+        $subobjectName = '_MYCUSTOMPREFIX' . md5( $nativeData );
+
+        $subject = new WikiPage(
+                $subject->getDBkey(),
+                $subject->getNamespace(),
+                $subject->getInterwiki(),
+                $subobjectName
+        );
+
+        // Build the subobject by using a separate container object
+        $containerSemanticData = new ContainerSemanticData(
+                $subject
+        );
+
+        /**
+         * Start doing all the work required after this
+         */
+
+        // If one knows the details you can add it directly
+        $containerSemanticData->addPropertyObjectValue(
+                new Property( 'PropertyIWantToUse' ),
+                new WikiPage( 'SomeTextItem', NS_MAIN )
+        );
+
+        // If you don't know the type, use the DataValueFactory (see available methods)
+        $dataValue = DataValueFactory::getInstance()->newDataValueByText(
+           'AnotherPropertyIWantToUse',
+           '123'
+        );
+
+        $containerSemanticData->addDataValue(
+                $dataValue
+        );
+
+        /**
+         * Done
+         */
+
+        // This part is used to add the subobject the the main subject
+        // Page: Foo -> gets a _MYCUSTOMPREFIX.... attached
+        $parserData->getSemanticData()->addPropertyObjectValue(
+                new Property( Property::TYPE_SUBOBJECT ),
+                new Container( $containerSemanticData )
+        );
+
+        $parserData->copyToParserOutput();
+
+        return true;
+
+} );
+
+```

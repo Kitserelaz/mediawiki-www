@@ -3,5 +3,7 @@
 		"authors": [
 			"Kambai Akau"
 		]
-	}
+	},
+	"checkuser-ip-auto-reveal-on-dialog-default-action": "Lyang",
+	"checkuser-ip-auto-reveal-on-dialog-select-label": "Labeang:"
 }

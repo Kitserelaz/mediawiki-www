@@ -1,0 +1,28 @@
+{
+	"@metadata": {
+		"authors": [
+			"Jeeputer"
+		]
+	},
+	"ratePage-vote-title": "امتیاز به مقاله",
+	"ratePage-vote-info": "رأی شما: $1.",
+	"ratePage-vote-average-info": "میانگین: $1 ($2).",
+	"ratePage-caption-4": "خوب",
+	"action-ratepage-contests-edit": "ویرایش یک رقابت",
+	"right-ratepage-contests-view-list": "مشاهدهٔ فهرست رقابت‌ها",
+	"right-ratepage-contests-view-details": "مشاهدهٔ جزئیات رقابت",
+	"ratePage-contest-enabled": "'''فعال'''",
+	"ratePage-contests-list-enabled": "وضعیت",
+	"ratePage-contests-list-description": "توضیحات",
+	"ratePage-contest-home": "خانه",
+	"ratePage-edit-token-not-match": "ویرایش ذخیره نشد. لطفاً دوباره سعی کنید.",
+	"ratePage-edit-description": "توضیحات",
+	"ratePage-edit-save": "ذخیره",
+	"ratePage-results-list-page": "صفحه",
+	"ratePage-results-list-avg": "امتیاز متوسط",
+	"ratePage-no-such-contest": "خطا: رقابت «$1» موجود نیست.",
+	"ratePage-deleted-page": "(صفحهٔ حذف‌شده)",
+	"ratePage-property-average-alias": "امتیاز متوسط",
+	"group-*": "(همه)",
+	"ratepage-contests-invalid-path": "عمل درخواست‌شده نامعتبر است."
+}

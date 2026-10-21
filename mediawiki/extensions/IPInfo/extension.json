@@ -7,7 +7,12 @@
 	"descriptionmsg": "ipinfo-desc",
 	"manifest_version": 2,
 	"requires": {
-		"MediaWiki": ">= 1.43"
+		"MediaWiki": ">= 1.46"
+	},
+	"suggests": {
+		"extensions": {
+			"IPReputation": "*"
+		}
 	},
 	"MessagesDirs": {
 		"IPInfo": [
@@ -25,8 +30,32 @@
 		"MediaWiki\\IPInfo\\Maintenance\\InfoManager": "maintenance/InfoManager.php"
 	},
 	"TestAutoloadNamespaces": {
-		"MediaWiki\\IPInfo\\Test\\Integration\\": "tests/phpunit/integration",
-		"MediaWiki\\IPInfo\\Test\\Unit\\": "tests/phpunit/unit"
+		"MediaWiki\\IPInfo\\Test\\Integration\\": "tests/phpunit/integration/",
+		"MediaWiki\\IPInfo\\Test\\Unit\\": "tests/phpunit/unit/"
+	},
+	"QUnitTestModule": {
+		"localBasePath": "",
+		"remoteExtPath": "IPInfo",
+		"packageFiles": [
+			"tests/qunit/index.js",
+			"tests/qunit/utils.js",
+			"tests/qunit/ext.ipInfo/infobox/widget.test.js",
+			"tests/qunit/ext.ipInfo/rest.test.js",
+			"modules/ext.ipInfo/popup/init.js",
+			"tests/qunit/ext.ipInfo/popup/init.test.js",
+			"modules/ext.ipInfo/infobox/widget.js",
+			"modules/ext.ipInfo/widget.js",
+			"modules/ext.ipInfo/rest.js",
+			"modules/ext.ipInfo/log.js"
+		],
+		"dependencies": [
+			"mediawiki.qunit-testrunner",
+			"mediawiki.base",
+			"mediawiki.router",
+			"mediawiki.widgets",
+			"ext.ipInfo",
+			"sinonjs"
+		]
 	},
 	"ServiceWiringFiles": [
 		"src/ServiceWiring.php"
@@ -35,14 +64,27 @@
 		"ipinfo",
 		"ipinfo-view-basic",
 		"ipinfo-view-full",
-		"ipinfo-view-log"
+		"ipinfo-view-log",
+		"ipinfo-view-arbitrary-ip"
 	],
+	"GroupPermissions": {
+		"sysop": {
+			"ipinfo-view-arbitrary-ip": true
+		}
+	},
 	"RevokePermissions": {
 		"no-ipinfo": {
 			"ipinfo": true,
 			"ipinfo-view-basic": true,
 			"ipinfo-view-full": true,
-			"ipinfo-view-log": true
+			"ipinfo-view-log": true,
+			"ipinfo-view-arbitrary-ip": true
+		}
+	},
+	"RateLimits": {
+		"ipinfo-ip-lookup": {
+			"&can-bypass": true,
+			"user": [ 100, 86400 ]
 		}
 	},
 	"DefaultUserOptions": {
@@ -56,12 +98,14 @@
 				"IPInfoInfoManager",
 				"RevisionLookup",
 				"PermissionManager",
-				"UserOptionsLookup",
 				"UserFactory",
 				"JobQueueGroup",
 				"LanguageFallback",
 				"UserIdentityUtils",
-				"IPInfoTempUserIPLookup"
+				"IPInfoTempUserIPLookup",
+				"IPInfoPermissionManager",
+				"ReadOnlyMode",
+				"HookContainer"
 			],
 			"factory": "MediaWiki\\IPInfo\\Rest\\Handler\\RevisionHandler::factory"
 		},
@@ -72,14 +116,34 @@
 				"IPInfoInfoManager",
 				"ArchivedRevisionLookup",
 				"PermissionManager",
-				"UserOptionsLookup",
 				"UserFactory",
 				"JobQueueGroup",
 				"LanguageFallback",
 				"UserIdentityUtils",
-				"IPInfoTempUserIPLookup"
+				"IPInfoTempUserIPLookup",
+				"IPInfoPermissionManager",
+				"ReadOnlyMode",
+				"HookContainer"
 			],
 			"factory": "MediaWiki\\IPInfo\\Rest\\Handler\\ArchivedRevisionHandler::factory"
+		},
+		{
+			"path": "/ipinfo/v0/norevision/{username}",
+			"method": "POST",
+			"services": [
+				"IPInfoInfoManager",
+				"PermissionManager",
+				"UserFactory",
+				"JobQueueGroup",
+				"LanguageFallback",
+				"UserIdentityUtils",
+				"IPInfoTempUserIPLookup",
+				"IPInfoPermissionManager",
+				"ReadOnlyMode",
+				"IPInfoAnonymousUserIPLookup",
+				"HookContainer"
+			],
+			"factory": "MediaWiki\\IPInfo\\Rest\\Handler\\NoRevisionHandler::factory"
 		},
 		{
 			"path": "/ipinfo/v0/log/{id}",
@@ -88,13 +152,16 @@
 				"IPInfoInfoManager",
 				"DBLoadBalancerFactory",
 				"PermissionManager",
-				"UserOptionsLookup",
 				"UserFactory",
 				"JobQueueGroup",
 				"LanguageFallback",
 				"UserIdentityUtils",
 				"UserIdentityLookup",
-				"IPInfoTempUserIPLookup"
+				"IPInfoTempUserIPLookup",
+				"IPInfoAnonymousUserIPLookup",
+				"IPInfoPermissionManager",
+				"ReadOnlyMode",
+				"HookContainer"
 			],
 			"factory": "MediaWiki\\IPInfo\\Rest\\Handler\\LogHandler::factory"
 		}
@@ -104,7 +171,8 @@
 		"SpecialContributionsBeforeMainOutput": "infobox",
 		"GetPreferences": "preferences",
 		"GetBetaFeaturePreferences": "betaFeature",
-		"SaveUserOptions": "preferences",
+		"GlobalPreferencesSetGlobalPreferences": "globalpreferences",
+		"LocalUserOptionsStoreSave": "preferences",
 		"LoadExtensionSchemaUpdates": "schema",
 		"SpecialPageBeforeExecute": "infobox",
 		"SpecialPage_initList": "special-page"
@@ -113,23 +181,33 @@
 		"popup": {
 			"class": "MediaWiki\\IPInfo\\HookHandler\\PopupHandler",
 			"services": [
-				"PermissionManager",
-				"UserOptionsLookup"
+				"IPInfoPermissionManager"
 			]
 		},
 		"infobox": {
 			"class": "MediaWiki\\IPInfo\\HookHandler\\InfoboxHandler",
 			"services": [
-				"UserOptionsLookup",
-				"TempUserConfig"
+				"TempUserConfig",
+				"ExtensionRegistry",
+				"IPInfoPermissionManager"
 			]
 		},
 		"preferences": {
 			"class": "MediaWiki\\IPInfo\\HookHandler\\PreferencesHandler",
 			"services": [
-				"PermissionManager",
-				"UserOptionsLookup",
+				"IPInfoPermissionManager",
 				"UserGroupManager",
+				"UserOptionsManager",
+				"ExtensionRegistry",
+				"IPInfoLoggerFactory"
+			]
+		},
+		"globalpreferences": {
+			"class": "MediaWiki\\IPInfo\\HookHandler\\GlobalPreferencesHandler",
+			"services": [
+				"ExtensionRegistry",
+				"UserGroupManager",
+				"UserOptionsManager",
 				"IPInfoLoggerFactory"
 			]
 		},
@@ -137,7 +215,7 @@
 			"class": "MediaWiki\\IPInfo\\HookHandler\\BetaFeaturePreferencesHandler",
 			"services": [
 				"MainConfig",
-				"PermissionManager"
+				"IPInfoPermissionManager"
 			]
 		},
 		"schema": {
@@ -175,6 +253,7 @@
 			"dependencies": [
 				"mediawiki.api",
 				"mediawiki.htmlform",
+				"mediawiki.jqueryMsg",
 				"oojs-ui-core",
 				"oojs-ui-widgets",
 				"oojs-ui.styles.icons-content",
@@ -183,10 +262,10 @@
 				"mediawiki.user"
 			],
 			"messages": [
-				"ipinfo-source-geoip2",
+				"ipinfo-help-text",
+				"ipinfo-learn-more-link",
 				"ipinfo-infobox-title",
 				"ipinfo-property-label-location",
-				"ipinfo-property-label-isp",
 				"ipinfo-property-label-asn",
 				"ipinfo-property-label-organization",
 				"ipinfo-property-label-connectiontype",
@@ -231,6 +310,7 @@
 				"ipinfo-property-value-proxytype-islegitimateproxy",
 				"ipinfo-property-value-proxytype-istorexitnode",
 				"ipinfo-property-value-proxytype-ishostingprovider",
+				"ipinfo-property-value-risk-adfraud",
 				"ipinfo-property-value-risk-callbackproxy",
 				"ipinfo-property-value-risk-geomismatch",
 				"ipinfo-property-value-risk-loginbruteforce",
@@ -257,7 +337,8 @@
 				"ipinfo-widget-error-default",
 				"ipinfo-widget-error-no-data",
 				"ipinfo-widget-error-wrong-ip",
-				"ipinfo-widget-error-ip-no-edits",
+				"ipinfo-widget-error-ip-no-contributions",
+				"ipinfo-infobox-temporary-account-help",
 				"ipinfo-infobox-use-terms",
 				"ipinfo-preference-use-agreement",
 				"ipinfo-infobox-submit-agreement",
@@ -270,7 +351,8 @@
 				"ipinfo-active-blocks-url-text",
 				"ipinfo-blocklist-url-text",
 				"ipinfo-value-deleted-edits",
-				"ipinfo-deleted-edits-url-text"
+				"ipinfo-deleted-edits-url-text",
+				"ipinfo-popup-link-text"
 			]
 		},
 		"ext.ipInfo.styles": {
@@ -292,10 +374,6 @@
 		"IPInfoGeoIP2EnterprisePath": {
 			"value": false,
 			"description": "Path to the directory containing the GeoIP2 Enterprise and Anonymous IP database file; should contain the trailing slash"
-		},
-		"IPInfoIpoidUrl": {
-			"description": "Base URL for calling the ipoid API to retrieve data about an IP address",
-			"value": false
 		},
 		"IPInfoMaxDistinctIPResults": {
 			"description": "The maximum number of distinct IP addresses to show on Special:IPInfo",

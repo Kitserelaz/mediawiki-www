@@ -1,0 +1,54 @@
+<div class="lemma-widget">
+	<ul v-if="!inEditMode" class="lemma-widget_lemma-list">
+		<li v-for="lemma in lemmaList" class="lemma-widget_lemma">
+			<span class="lemma-widget_lemma-value" :lang="lemma.language">{{lemma.value}}</span>
+			<span class="lemma-widget_lemma-language">{{lemma.language}}</span>
+		</li>
+	</ul>
+	<div v-else class="lemma-widget_edit-area">
+		<ul class="lemma-widget_lemma-list">
+			<li v-for="(lemma, lemmaIndex) in lemmaList" class="lemma-widget_lemma-edit-box">
+				<label :for="'lexeme-lemma-' + lemmaIndex + '-value'" class="lemma-widget_lemma-value-label">
+					{{message('wikibaselexeme-lemma-field-lemma-label')}}
+				</label>
+				<input :id="'lexeme-lemma-' + lemmaIndex + '-value'"
+					size="1"
+					class="lemma-widget_lemma-value-input"
+					v-model="lemma.value"
+					:disabled="isSaving"
+				>
+				<label :for="'lexeme-lemma-' + lemmaIndex + '-language'" class="lemma-widget_lemma-language-label">
+					{{message('wikibaselexeme-lemma-field-language-label')}}
+				</label>
+				<input :id="'lexeme-lemma-' + lemmaIndex + '-language'"
+					size="1"
+					class="lemma-widget_lemma-language-input"
+					v-model="lemma.language"
+					:disabled="isSaving"
+					:class="{
+						'lemma-widget_lemma-language-input_redundant-language':
+							isRedundantLanguage(lemma.language)
+					}"
+					:aria-invalid="isRedundantLanguage(lemma.language)">
+				<button class="lemma-widget_lemma-remove"
+					v-on:click="remove(lemma)"
+					:disabled="isSaving"
+					:title="message('wikibase-remove')">
+					&times;
+				</button>
+			</li>
+			<li>
+				<button type="button"
+					class="lemma-widget_add"
+					v-on:click="add"
+					:disabled="isSaving"
+					:title="message('wikibase-add')">
+					+
+				</button>
+			</li>
+		</ul>
+		<div v-if="hasRedundantLanguage" class="lemma-widget_redundant-language-warning">
+			<p>{{message('wikibaselexeme-lemma-redundant-language')}}</p>
+		</div>
+	</div>
+</div>

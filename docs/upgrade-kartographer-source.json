@@ -1,0 +1,7 @@
+{
+  "component": "mediawiki/extensions/Kartographer",
+  "baseline": "127b9223a82623ab43ddc2f5fbfe56ec53869b7b",
+  "target": "a9d7df0091ef963c5e9582be2c8e022a7831c121",
+  "preserved_changes": [],
+  "dependency_status": "Regenerated development lock on PHP 8.4; no runtime dependencies; Composer audit --locked found no advisories or abandoned packages"
+}

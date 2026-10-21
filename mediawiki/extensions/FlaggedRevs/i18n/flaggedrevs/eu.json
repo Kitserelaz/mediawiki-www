@@ -1,0 +1,40 @@
+{
+	"@metadata": {
+		"authors": [
+			"An13sa",
+			"Bengoa",
+			"Joxemai",
+			"Kobazulo",
+			"Subi",
+			"Unai Fdz. de Betoño",
+			"Xabier Armendaritz",
+			"පසිඳු කාවින්ද"
+		]
+	},
+	"editor": "Editorea",
+	"flaggedrevs": "Markatutako Berrikuspenak",
+	"flaggedrevs-pref-UI": "Oinarrizko interfazea:",
+	"flaggedrevs-pref-UI-0": "Erabili xehetasunezko kaxak orrien onespen-egoera erakusteko",
+	"flaggedrevs-pref-UI-1": "Erabili ikono txikiak eta testu minimala orrien onespen-egoera erakusteko",
+	"flaggedrevs-prefs-watch": "Aldatzen ditudan orrialdeak nire segimendu zerrendara gehitu",
+	"flaggedrevs-hidereviewed-hide": "Erakutsi",
+	"flaggedrevs-hidereviewed-show": "Ezkutatu",
+	"group-editor": "Editoreak",
+	"group-editor-member": "{{GENDER:$1|editorea}}",
+	"group-reviewer": "Berrikusleak",
+	"grouppage-editor": "{{ns:project}}:Editorea",
+	"revreview-diff-toggle-show": "erakutsi aldaketa horiek",
+	"revreview-diff-toggle-hide": "ezkutatu aldaketa horiek",
+	"review-logentry-id": "berrikuspena: $2",
+	"revreview-accuracy": "Zehaztasuna",
+	"revreview-current": "Ikusteke dauden aldaketak",
+	"revreview-draft-title": "Ikuskatzeke dauden aldaketak orri honetan ageri dira",
+	"revreview-submitedit": "Bidali aldaketak",
+	"revreview-toggle-title": "erakutsi/ezkutatu xehetasunak",
+	"revreview-revnotfound": "Ezin izan da eskatzen ari zaren orrialdearen berrikuspen zaharra aurkitu. Mesedez, egiaztatu orrialde honetara iristeko erabili duzun URLa.",
+	"right-movestable": "Mugitu argitaratutako orrialdeak",
+	"revreview-def-draft": "azken",
+	"revreview-restriction-none": "bat ere ez",
+	"tooltip-ca-current": "Ikusi orrialde hau egiteke dauden aldaketekin",
+	"flaggedrevs-protect-none": "Lankide guztiak baimendu"
+}

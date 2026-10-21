@@ -1,0 +1,75 @@
+<?xml version="1.0"?>
+<ruleset>
+	<!-- This rule set includes all rules from the MediaWiki rule set, see
+		https://github.com/wikimedia/mediawiki-tools-codesniffer/blob/master/MediaWiki/ruleset.xml
+		-->
+	<rule ref="./vendor/mediawiki/mediawiki-codesniffer/MediaWiki" />
+
+	<!-- The function comment sniff is way to rigorous about way to many details that need
+		exceptions:
+		* It complains about missing documentation on fully self-explanatory function headers
+		  with strict type hints.
+		* It complains about missing documentation if there is a proper @see tag.
+		* It complains about duplicate spaces in "@param <type>  $<var>", but removing these
+		  doesn't make the code easier to read.
+		* It does not understand "@param <type> [$optional,…]. -->
+	<rule ref="MediaWiki.Commenting.FunctionComment">
+		<severity>0</severity>
+	</rule>
+
+	<!-- We disagree with the idea of certain characters making comments "illegal" and blocking
+		patches from being merged. This behaves especially bad on code examples. -->
+	<rule ref="MediaWiki.Commenting.IllegalSingleLineComment">
+		<severity>0</severity>
+	</rule>
+
+	<!-- Even if we encourage to use a space in "function ()", we don't think this sniff should
+		block patches from being merged. -->
+	<rule ref="MediaWiki.WhiteSpace.SpaceAfterClosure">
+		<severity>0</severity>
+	</rule>
+
+	<!-- Even if we encourage to use spaces in comments, we don't think this sniff should block
+		patches from being merged. -->
+	<rule ref="MediaWiki.WhiteSpace.SpaceBeforeSingleLineComment">
+		<severity>0</severity>
+	</rule>
+
+	<!-- NOTE: We purposely decided against additional Generic.CodeAnalysis.… sniffs, because they
+		all have possible exceptions, and are not meant to block patches from being merged. -->
+
+	<!-- Disallows any content outside of <?php … ?> tags. -->
+	<rule ref="Generic.Files.InlineHTML" />
+
+	<rule ref="Generic.Files.LineLength">
+		<properties>
+			<!-- The inherited "lineLimit" from the base MediaWiki rule set is 120. -->
+			<property name="absoluteLineLimit" value="140" />
+		</properties>
+	</rule>
+
+	<!-- NOTE: Never add the Generic.Metrics.… sniffs to this generic rule set, because these are
+		not about "code style", and the exact limits are highly disputable. -->
+
+	<rule ref="MediaWiki.NamingConventions.LowerCamelFunctionsName">
+		<!-- Exclude test methods like "testGivenInvalidInput_methodThrowsException". -->
+		<exclude-pattern>tests*Test*\.php</exclude-pattern>
+	</rule>
+
+	<!-- NOTE: We can not use the Squiz.Arrays.ArrayBracketSpacing sniff because it conflicts with
+		the MediaWiki style that encourages to use spaces inside brackets, see
+		https://www.mediawiki.org/wiki/Manual:Coding_conventions/JavaScript#Whitespace -->
+
+	<!-- Makes sure control structures like if ( … ), for ( …; …; … ) etc. properly use spaces. -->
+	<rule ref="Squiz.ControlStructures.ControlSignature" />
+
+	<rule ref="Squiz.Functions.GlobalFunction" />
+
+	<!-- NOTE: Do not add the Squiz.Strings.DoubleQuoteUsage sniff. Even if we encourage to prefer
+		single quotes, we don't think double quotes should block patches from being merged. -->
+
+	<arg name="extensions" value="php" />
+	<arg name="encoding" value="UTF-8" />
+
+	<file>.</file>
+</ruleset>

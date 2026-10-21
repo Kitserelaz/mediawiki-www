@@ -1,0 +1,21 @@
+{
+	"@metadata": {
+		"authors": [
+			"Crochet.david",
+			"Gomoko",
+			"Grondin",
+			"IAlex",
+			"Thibaut120094",
+			"Verdy p"
+		]
+	},
+	"multiboilerplate-desc": "Permet de sélectionner un contenu standard à intégrer dans un panneau déroulant en haut du formulaire de modification d’une page.",
+	"multiboilerplate-legend": "Sélectionner un contenu standard",
+	"multiboilerplate-submit": "Charger",
+	"boilerplates": "Contenus standards",
+	"multiboilerplate-special-pagetext": "Ces modèles peuvent être préchargés lors de la création de pages. (<span class=plainlinks>[{{fullurl:Cette page n’existe pas|action=edit}} démo]</span>)",
+	"multiboilerplate-special-define-in-localsettings": "Les contenus standards sont définis dans LocalSettings.",
+	"multiboilerplate-special-define-in-interface": "Les contenus standards sont définis dans [[MediaWiki:Multiboilerplate]].",
+	"multiboilerplate-special-no-boilerplates": "Aucun contenu standard définit nulle part.",
+	"multiboilerplate-nonexistant-page": "La page de contenu standard n’existe pas : « $1 »"
+}

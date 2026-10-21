@@ -6,12 +6,12 @@
 			"Valepert"
 		]
 	},
-	"ipinfo-infobox-title": "Informazioni IP",
+	"ipinfo-infobox-title": "Informazioni IP per $1",
 	"ipinfo-property-label-location": "Località",
 	"ipinfo-property-label-ipversion": "Versione",
 	"ipinfo-property-label-connectiontype": "Metodo di connessione",
 	"ipinfo-property-label-connectiontypes": "Tipi di connessione",
-	"ipinfo-property-label-usercount": "Utenti su questo IP",
+	"ipinfo-property-label-usercount": "Dispositivi unici su Internet",
 	"ipinfo-property-value-usertype-government": "Governo",
 	"ipinfo-property-value-usertype-school": "Scuola",
 	"ipinfo-property-value-proxytype-ispublicproxy": "Proxy pubblico",
@@ -22,17 +22,20 @@
 	"ipinfo-active-blocks-url-text": "Registri",
 	"ipinfo-property-no-data": "Non disponibile",
 	"ipinfo-widget-error-default": "Non è stato possibile recuperare le informazioni sull'IP.",
-	"ipinfo-preference-use-agreement": "Accetto di utilizzare queste informazioni a scopi di patrolling e lotta ai vandalismi.",
+	"ipinfo-preference-use-agreement": "Accetto di utilizzare queste informazioni a scopi di patrolling e lotta ai vandalismi",
 	"ipinfo-beta-feature-title": "Informazioni IP",
 	"ipinfo-beta-feature-description": "Lo strumento Informazioni IP ha l'obiettivo di fornire informazioni essenziali riguardo gli indirizzi IP per aiutarli nei loro compiti. Queste informazioni sono accessibili dalla pagina Speciale:Contributi dell'indirizzo IP. Una versione ridotta di queste informazioni è disponibile in un popup accanto agli indirizzi IP nelle pagine [[Special:Log|Registri]],  [[Special:Contributions|Contributi]] e [[Special:RecentChanges|Ultime modifiche]].",
 	"prefs-ipinfo": "Informazioni su IP",
+	"ipinfo-change-access-level-enable-globally": "{{GENDER:$1|attivato globalmente}}",
+	"ipinfo-change-access-level-disable-globally": "{{GENDER:$1|disattivato globalmente}}",
 	"log-action-filter-ipinfo-change_access": "Strumento abilitato o disabilitato",
 	"ipinfo-value-deleted-edits": "{{PLURAL:$1|$1 modifica cancellata|$1 modifiche cancellate|0=Nessuna modifica cancellata}}",
 	"ipinfo-special-ipinfo": "Informazioni IP",
 	"ipinfo-deleted-edits-url-text": "Contributi cancellati",
 	"ipinfo-special-ipinfo-table-caption": "Informazioni IP per $1",
-	"ipinfo-special-ipinfo-target": "Nome utente di destinazione:",
+	"ipinfo-special-ipinfo-target": "Nome utente o indirizzo IP di destinazione:",
 	"ipinfo-special-ipinfo-user-tool-links": "Per $1",
 	"ipinfo-special-ipinfo-column-ip": "IP",
-	"ipinfo-special-ipinfo-no-results": "Non sono disponibili informazioni IP per $1."
+	"ipinfo-special-ipinfo-no-results": "Non sono disponibili informazioni IP per $1.",
+	"ipinfo-special-ipinfo-table-caption-ip": "Informazioni IP per $1"
 }

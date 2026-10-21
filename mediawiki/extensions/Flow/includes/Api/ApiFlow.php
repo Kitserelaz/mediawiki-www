@@ -3,6 +3,7 @@
 namespace Flow\Api;
 
 use Flow\Container;
+use Flow\Exception\InvalidInputException;
 use Flow\Hooks\HookRunner;
 use MediaWiki\Api\ApiBase;
 use MediaWiki\Api\ApiMain;
@@ -97,7 +98,11 @@ class ApiFlow extends ApiBase {
 		if ( $module->needsPage() ) {
 			$module->setPage( $this->getPage( $params ) );
 		}
-		$module->execute();
+		try {
+			$module->execute();
+		} catch ( InvalidInputException $e ) {
+			$this->dieWithError( $e->getMessageObject(), null, null, 400 );
+		}
 		( new HookRunner( MediaWikiServices::getInstance()->getHookContainer() ) )->onAPIFlowAfterExecute( $module );
 	}
 
@@ -132,7 +137,6 @@ class ApiFlow extends ApiBase {
 			}
 		}
 
-		// @phan-suppress-next-line PhanTypeMismatchReturnNullable T240141
 		return $page;
 	}
 
@@ -153,7 +157,7 @@ class ApiFlow extends ApiBase {
 	public function isWriteMode() {
 		// We can't use extractRequestParams() here because getHelpFlags() calls this function,
 		// and we'd error out because the submodule parameter isn't set.
-		$moduleName = $this->getMain()->getVal( 'submodule' );
+		$moduleName = $this->getMain()->getVal( 'submodule' ) ?? '';
 		$module = $this->moduleManager->getModule( $moduleName, 'submodule' );
 		return $module && $module->isWriteMode();
 	}

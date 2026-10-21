@@ -4,20 +4,17 @@ namespace MediaWiki\Extension\Thanks;
 
 use MediaWiki\Api\ApiMain;
 use MediaWiki\Api\ApiUsageException;
+use MediaWiki\Html\Html;
 use MediaWiki\HTMLForm\HTMLForm;
-use MediaWiki\Linker\Linker;
+use MediaWiki\Linker\LinkRenderer;
 use MediaWiki\Request\DerivativeRequest;
 use MediaWiki\SpecialPage\FormSpecialPage;
+use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Status\Status;
 use MediaWiki\User\UserFactory;
 use MediaWiki\User\UserRigorOptions;
 
 class SpecialThanks extends FormSpecialPage {
-
-	/**
-	 * API result
-	 */
-	protected array $result;
 
 	/**
 	 * 'rev' for revision, 'log' for log entry, or 'flow' for Flow comment,
@@ -30,16 +27,12 @@ class SpecialThanks extends FormSpecialPage {
 	 */
 	protected ?string $id;
 
-	private UserFactory $userFactory;
-
-	public function __construct( UserFactory $userFactory ) {
+	public function __construct(
+		private readonly LinkRenderer $linkRenderer,
+		private readonly UserFactory $userFactory,
+	) {
 		parent::__construct( 'Thanks' );
-		$this->userFactory = $userFactory;
 		$this->id = null;
-	}
-
-	public function doesWrites(): bool {
-		return true;
 	}
 
 	/**
@@ -75,7 +68,8 @@ class SpecialThanks extends FormSpecialPage {
 		}
 
 		$this->type = 'rev';
-		if ( !( ctype_digit( $par ) ) ) { // Revision ID is not an integer.
+		if ( !( ctype_digit( $par ) ) ) {
+			// Revision ID is not an integer.
 			$this->id = '0';
 			return;
 		}
@@ -93,7 +87,7 @@ class SpecialThanks extends FormSpecialPage {
 				'id' => 'mw-thanks-form-id',
 				'name' => 'id',
 				'type' => 'hidden',
-				'default' => $this->id ?? ''
+				'default' => $this->id ?? '',
 			],
 			'type' => [
 				'id' => 'mw-thanks-form-type',
@@ -122,7 +116,7 @@ class SpecialThanks extends FormSpecialPage {
 			// * thanks-confirmation-special-log
 			$msgKey = 'thanks-confirmation-special-' . $this->type;
 		}
-		return '<p>' . $this->msg( $msgKey )->escaped() . '</p>';
+		return Html::element( 'p', [], $this->msg( $msgKey )->text() );
 	}
 
 	/**
@@ -131,14 +125,15 @@ class SpecialThanks extends FormSpecialPage {
 	 */
 	protected function alterForm( HTMLForm $form ) {
 		if ( $this->type === null
-			|| ( in_array( $this->type, [ 'rev', 'log', ] ) && $this->id === '0' )
+			|| ( in_array( $this->type, [ 'rev', 'log' ] ) && $this->id === '0' )
 		) {
 			$form->suppressDefaultSubmit( true );
 		} else {
-			$form->setSubmitText( $this->msg( 'thanks-submit' )->escaped() );
+			$form->setSubmitTextMsg( 'thanks-submit' );
 		}
 	}
 
+	/** @inheritDoc */
 	protected function getDisplayFormat(): string {
 		return 'ooui';
 	}
@@ -159,23 +154,25 @@ class SpecialThanks extends FormSpecialPage {
 				'source' => 'specialpage',
 				'token' => $this->getOutput()->getCsrfTokenSet()->getToken(),
 			];
+			$msgKey = 'thanks-thanked-notice';
 		} else {
 			$requestData = [
 				'action' => 'flowthank',
 				'postid' => $data['id'],
 				'token' => $this->getOutput()->getCsrfTokenSet()->getToken(),
 			];
+			$msgKey = 'flow-thanks-thanked-notice';
 		}
 
 		$request = new DerivativeRequest(
 			$this->getRequest(),
 			$requestData,
-			true // posted
+			true
 		);
 
 		$api = new ApiMain(
 			$request,
-			true // enable write mode
+			true
 		);
 
 		try {
@@ -184,29 +181,32 @@ class SpecialThanks extends FormSpecialPage {
 			return Status::wrap( $e->getStatusValue() );
 		}
 
-		$this->result = $api->getResult()->getResultData( [ 'result' ] );
-		return Status::newGood();
-	}
-
-	/**
-	 * Display a message to the user.
-	 */
-	public function onSuccess() {
+		$result = $api->getResult()->getResultData( [ 'result' ] );
 		$sender = $this->getUser();
-		$recipient = $this->userFactory->newFromName( $this->result['recipient'], UserRigorOptions::RIGOR_NONE );
-		$link = Linker::userLink( $recipient->getId(), $recipient->getName() );
+		$recipient = $this->userFactory->newFromName( $result['recipient'], UserRigorOptions::RIGOR_NONE );
+		'@phan-var \MediaWiki\User\User $recipient';
+		$link = $this->linkRenderer->makeUserLink( $recipient, $this->getContext() );
 
-		if ( in_array( $this->type, [ 'rev', 'log' ] ) ) {
-			$msgKey = 'thanks-thanked-notice';
-		} else {
-			$msgKey = 'flow-thanks-thanked-notice';
-		}
+		// Display a message to the user.
 		$msg = $this->msg( $msgKey )
 			->rawParams( $link )
 			->params( $recipient->getName(), $sender->getName() );
-		$this->getOutput()->addHTML( $msg->parse() );
+		$out = $this->getOutput();
+		$out->addHTML( $msg->parse() );
+		if ( $this->type === 'rev' ) {
+			$out->addReturnTo( SpecialPage::getTitleFor( 'Diff', $data['id'] ) );
+		} elseif ( $this->type === 'log' ) {
+			$out->addReturnTo( SpecialPage::getTitleFor( 'Redirect', 'logid/' . $data['id'] ) );
+		}
+		return Status::newGood();
 	}
 
+	/** @inheritDoc */
+	public function doesWrites(): bool {
+		return true;
+	}
+
+	/** @inheritDoc */
 	public function isListed(): bool {
 		return false;
 	}

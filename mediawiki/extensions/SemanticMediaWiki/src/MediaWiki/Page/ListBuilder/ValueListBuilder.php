@@ -1,0 +1,517 @@
+<?php
+
+namespace SMW\MediaWiki\Page\ListBuilder;
+
+use Iterator;
+use MediaWiki\Context\RequestContext;
+use MediaWiki\Html\Html;
+use MediaWiki\Navigation\PagerNavigationBuilder;
+use SMW\DataItems\DataItem;
+use SMW\DataItems\Property;
+use SMW\DataItems\Time;
+use SMW\DataValueFactory;
+use SMW\DataValues\DataValue;
+use SMW\Formatters\Infolink;
+use SMW\Formatters\PageLister;
+use SMW\Localizer\Message;
+use SMW\MediaWiki\Collator;
+use SMW\Query\Language\SomeProperty;
+use SMW\RequestOptions;
+use SMW\Services\ServicesFactory as ApplicationFactory;
+use SMW\Store;
+use SMW\Utils\HtmlDivTable;
+use SMW\Utils\Pager;
+use Traversable;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 3.0
+ *
+ * @author mwjames
+ */
+class ValueListBuilder {
+
+	/**
+	 * Query-array keys the cursor-style pager renderer should NOT echo back
+	 * into the generated next/prev URLs; the renderer supplies its own
+	 * `after`/`before` and the legacy boundary/offset params would otherwise
+	 * leak forward into cursor URLs.
+	 */
+	private const PAGINATION_QUERY_KEYS = [ 'after', 'before', 'offset', 'from', 'until', 'filter' ];
+
+	private int $pagingLimit = 0;
+
+	private null|int|string $filterCount = null;
+
+	private int $maxPropertyValues = 3;
+
+	private string $languageCode = 'en';
+
+	private bool $isRTL = false;
+
+	private bool $localTimeOffset = false;
+
+	/**
+	 * @since 3.0
+	 */
+	public function __construct( private readonly Store $store ) {
+	}
+
+	/**
+	 * @since 3.1
+	 */
+	public function getFilterCount(): null|int|string {
+		return $this->filterCount;
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function setPagingLimit( int $pagingLimit ): void {
+		$this->pagingLimit = $pagingLimit;
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function setLanguageCode( string $languageCode ): void {
+		$this->languageCode = $languageCode;
+	}
+
+	/**
+	 * @since 3.1
+	 */
+	public function isRTL( bool $isRTL ): void {
+		$this->isRTL = $isRTL;
+	}
+
+	/**
+	 * @since 3.1
+	 */
+	public function applyLocalTimeOffset( mixed $localTimeOffset ): void {
+		$this->localTimeOffset = (bool)$localTimeOffset;
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function setMaxPropertyValues( int $maxPropertyValues ): void {
+		$this->maxPropertyValues = $maxPropertyValues;
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function createHtml( Property $property, DataItem $dataItem, array $query = [] ): string {
+		$limit = isset( $query['limit'] ) ? (int)$query['limit'] : 0;
+		$offset = isset( $query['offset'] ) ? (int)$query['offset'] : 0;
+		$after = (int)( $query['after'] ?? 0 );
+		$before = (int)( $query['before'] ?? 0 );
+		$from = (string)( $query['from'] ?? '' );
+		$until = (string)( $query['until'] ?? '' );
+		$filter = (string)( $query['filter'] ?? '' );
+
+		$this->filterCount = null;
+
+		// limit==0: configuration setting to disable this completely
+		if ( $limit < 1 ) {
+			return '';
+		}
+
+		$dataItems = [];
+		$isValueSearch = false;
+
+		$cursorMode = self::shouldUseCursorPagination(
+			$filter,
+			$after,
+			$before,
+			$offset,
+			$from,
+			$until
+		);
+
+		if ( $filter !== '' ) {
+			// `PageLister::getRequestOptions` accepts `string|int` for
+			// `$from`/`$until`; the string form is what the cursor and
+			// search-form code paths produce.
+			$options = PageLister::getRequestOptions( $limit, $from, $until );
+			$options->setOffset( $offset );
+			$dataItems = $this->filterByValue( $property, $filter, $options );
+			$isValueSearch = true;
+		} elseif ( $cursorMode ) {
+			$options = new RequestOptions();
+			$options->limit = $limit;
+			$options->sort = true;
+			$options->ascending = true;
+			$options->setOption( RequestOptions::CURSOR_MODE, true );
+			if ( $after > 0 ) {
+				$options->setCursorAfter( $after );
+			} elseif ( $before > 0 ) {
+				$options->setCursorBefore( $before );
+			}
+			$dataItems = $this->store->getAllPropertySubjects( $property, $options );
+		} else {
+			$options = PageLister::getRequestOptions( $limit, $from, $until );
+			$options->setOffset( $offset );
+			$dataItems = $this->store->getAllPropertySubjects( $property, $options );
+		}
+
+		if ( $dataItems instanceof Traversable ) {
+			$dataItems = iterator_to_array( $dataItems );
+		}
+
+		if ( !$options->ascending ) {
+			$dataItems = array_reverse( $dataItems );
+		}
+
+		$result = '';
+
+		if ( count( $dataItems ) < 1 && !$isValueSearch ) {
+			return $result;
+		}
+
+		$title = $dataItem->getTitle();
+		$title->setFragment( '#SMWResults' );
+
+		$dataValue = DataValueFactory::getInstance()->newDataValueByItem(
+			$property
+		);
+
+		// Allow the DV formatter to access a specific language code
+		$dataValue->setOption(
+			DataValue::OPT_USER_LANGUAGE,
+			$this->languageCode
+		);
+
+		$titleText = htmlspecialchars( $dataValue->getWikiValue() );
+		$resultCount = count( $dataItems );
+
+		$topic = $isValueSearch ? 'smw-property-page-list-search-count' : 'smw-property-page-list-count';
+
+		$navNote = Html::rawElement(
+			'div',
+			[
+				'class' => 'smw-page-nav-note'
+			],
+			Message::get(
+				[ $topic, ( $resultCount < $limit ? $resultCount : $limit ), $filter ],
+				Message::PARSE,
+				$this->languageCode
+			) . Html::rawElement(
+				'div',
+				[],
+				''
+			)
+		);
+
+		$objectList = $this->createValueList(
+			$property,
+			$dataItem,
+			$dataItems,
+			$limit,
+			$until
+		);
+
+		if ( $cursorMode ) {
+			$isFirstPage = !$options->hasCursor();
+			$navBuilder = new PagerNavigationBuilder( RequestContext::getMain() );
+			$navBuilder
+				->setPage( $title )
+				->setLinkQuery( [ 'limit' => $limit ] + array_diff_key( $query, array_flip( self::PAGINATION_QUERY_KEYS ) ) )
+				->setLimitLinkQueryParam( 'limit' )
+				->setCurrentLimit( $limit )
+				->setPrevTooltipMsg( 'prevn-title' )
+				->setNextTooltipMsg( 'nextn-title' )
+				->setLimitTooltipMsg( 'shown-title' );
+
+			$isBackward = $options->getCursorBefore() !== null;
+			$isAtEnd = !$options->getCursorHasMore();
+			$showPrev = $isBackward ? !$isAtEnd : true;
+			$showNext = $isBackward ? true : !$isAtEnd;
+
+			if ( $showPrev && !$isFirstPage && $options->getFirstCursor() !== null ) {
+				$navBuilder->setPrevLinkQuery( [ 'before' => (string)$options->getFirstCursor() ] );
+			}
+
+			if ( $showNext && $options->getLastCursor() !== null ) {
+				$navBuilder->setNextLinkQuery( [ 'after' => (string)$options->getLastCursor() ] );
+			}
+
+			$paginationHtml = $navBuilder->getHtml();
+		} else {
+			// Legacy path: strip the cursor params introduced by this PR so
+			// they do not echo as `&after=0&before=0` into offset URLs.
+			$legacyQuery = array_diff_key( $query, array_flip( [ 'after', 'before' ] ) );
+			$paginationHtml = Pager::pagination( $title, $limit, $offset, $resultCount, $legacyQuery );
+		}
+
+		$navContainer = Html::rawElement(
+			'div',
+			[
+				'class' => 'smw-page-nav-container'
+			],
+			Html::rawElement(
+				'div',
+				[
+					'class' => 'smw-page-nav-left'
+				],
+				$paginationHtml
+			) . Html::rawElement(
+				'div',
+				[
+					'class' => 'smw-page-nav-right'
+				],
+				Pager::filter( $title, $limit, $offset, $filter )
+			)
+		);
+
+		$result .= Html::rawElement(
+			'div',
+			[
+				'class' => 'smw-page-navigation'
+			],
+			$navContainer . $navNote
+		) . $objectList;
+
+		return Html::rawElement(
+			'a',
+			[ 'name' => 'SMWResults' ],
+			''
+		) . Html::rawElement(
+			'div',
+			[ 'id' => 'mw-pages' ],
+			$result
+		);
+	}
+
+	private function createValueList( Property $property, DataItem $dataItem, $diWikiPages, int $limit, $until ): string {
+		if ( $diWikiPages instanceof Iterator ) {
+			$diWikiPages = iterator_to_array( $diWikiPages );
+		}
+
+		$ac = count( $diWikiPages );
+		// $contentLanguage = Localizer::getInstance()->getContentLanguage();
+		$title = $dataItem->getTitle();
+
+		if ( $ac > $limit ) {
+			if ( $until !== '' ) {
+				$start = 1;
+			} else {
+				$start = 0;
+				$ac -= 1;
+			}
+		} else {
+			$start = 0;
+		}
+
+		$html = '';
+		$prev_start_char = 'None';
+
+		$dataValueFactory = DataValueFactory::getInstance();
+
+		$requestOptions = new RequestOptions();
+		$requestOptions->setLimit( $this->maxPropertyValues );
+		$requestOptions->setLookahead( 1 );
+
+		$prefetchItemLookup = $this->store->service( 'PrefetchItemLookup' );
+
+		$requestOptions->setOption( $prefetchItemLookup::HASH_INDEX, true );
+
+		$propertyValues = $prefetchItemLookup->getPropertyValues(
+			$diWikiPages,
+			$property,
+			$requestOptions
+		);
+
+		for ( $index = $start; $index < $ac; $index++ ) {
+			$diWikiPage = $diWikiPages[$index];
+			$hash = $diWikiPage->getHash();
+
+			$dvWikiPage = $dataValueFactory->newDataValueByItem( $diWikiPage, null );
+			$values = [];
+
+			$sortKey = $this->store->getWikiPageSortKey( $diWikiPage );
+			$start_char = Collator::singleton()->getFirstLetter( $sortKey );
+
+			// Header for index letters
+			if ( $start_char != $prev_start_char ) {
+				$html .= HtmlDivTable::row(
+					HtmlDivTable::cell(
+						'<div id="' . htmlspecialchars( $start_char ) . '">' . htmlspecialchars( $start_char ) . "</div>",
+						[
+							'class' => "header-title"
+						]
+					) . HtmlDivTable::cell(
+						'<div></div>',
+						[
+							'class' => "header-title"
+						]
+					),
+					[
+						'class' => "header-row"
+					]
+				);
+				$prev_start_char = $start_char;
+			}
+
+			if ( isset( $propertyValues[$hash] ) ) {
+				$values = $propertyValues[$hash];
+			}
+
+			// May return an iterator
+			if ( $values instanceof Iterator ) {
+				$values = iterator_to_array( $values );
+			}
+
+			$i = 0;
+			$pvCells = '';
+
+			foreach ( $values as $di ) {
+				if ( $i != 0 ) {
+					$pvCells .= ', ';
+				}
+				$i++;
+
+				if ( $i < $this->maxPropertyValues + 1 ) {
+					$dataValue = $dataValueFactory->newDataValueByItem( $di, $property );
+
+					$dataValue->setOption(
+						$dataValue::OPT_USER_LANGUAGE,
+						$this->languageCode
+					);
+
+					$outputFormat = $dataValue->getOutputFormat();
+
+					if ( $outputFormat === false ) {
+						$outputFormat = 'LOCL';
+					}
+
+					if ( $di instanceof Time && $this->localTimeOffset ) {
+						$outputFormat .= '#TO';
+					}
+
+					$dataValue->setOutputFormat( $outputFormat );
+
+					$pvCells .= $dataValue->getShortHTMLText( smwfGetLinker() ) . $dataValue->getInfolinkText( SMW_OUTPUT_HTML, smwfGetLinker() );
+				} else {
+					$searchlink = Infolink::newInversePropertySearchLink( '…', $dvWikiPage->getWikiValue(), $title->getText() );
+					$pvCells .= $searchlink->getHTML( smwfGetLinker() );
+				}
+			}
+
+			// Property name
+			$searchlink = Infolink::newBrowsingLink( '+', $dvWikiPage->getWikiValue() );
+			$html .= HtmlDivTable::row(
+				HtmlDivTable::cell(
+					$dvWikiPage->getShortHTMLText( smwfGetLinker() ) . '&#160;' . $searchlink->getHTML( smwfGetLinker() ),
+					[
+						'class' => "smwpropname",
+						'data-list-index' => $index
+					]
+				) . HtmlDivTable::cell(
+					$pvCells,
+					[
+						'class' => "smwprops"
+					]
+				),
+				[
+					'class' => "value-row"
+				]
+			);
+		}
+
+		return HtmlDivTable::table(
+			$html,
+			[
+				'class' => "smw-property-page-results",
+				'style' => "width: 100%;"
+			] + ( $this->isRTL ? [ 'dir' => 'rtl' ] : [] )
+		);
+	}
+
+	private function filterByValue( Property $property, $value, RequestOptions $options ): array {
+		$queryFactory = ApplicationFactory::getInstance()->getQueryFactory();
+		$queryParser = $queryFactory->newQueryParser();
+
+		$description = $queryParser->getQueryDescription(
+			$queryParser->createCondition( $property, $value )
+		);
+
+		if ( $queryParser->getErrors() !== [] ) {
+			return [];
+		}
+
+		// Make sure that no subproperty is included while executing the
+		// query
+		if ( $description instanceof SomeProperty ) {
+			$description->setHierarchyDepth( 0 );
+		}
+
+		$query = $queryFactory->newQuery( $description );
+		$query->setLimit( $options->limit );
+		$query->setOffset( $options->offset );
+
+		// We are not sorting via the backend as an ORDER BY will cause a
+		// SQL filesort and means for a large pool of value assignments a
+		// slow query
+		$res = $this->store->getQueryResult( $query );
+		$results = $res->getResults();
+
+		$sort = [];
+		$collator = Collator::singleton();
+
+		foreach ( $results as $result ) {
+
+			$firstLetter = $collator->getFirstLetter(
+				$this->store->getWikiPageSortKey( $result )
+			);
+
+			$sort[$firstLetter . '#' . $result->getHash()] = $result;
+		}
+
+		// Sort on the spot via PHP, which should be enough for the search
+		// and match functionality
+		ksort( $sort );
+		$this->filterCount = $res->getCount() + $options->offset;
+
+		if ( $res->hasFurtherResults() ) {
+			$this->filterCount = ( $this->filterCount - 1 ) . '+';
+		}
+
+		return array_values( $sort );
+	}
+
+	/**
+	 * Decides whether the no-filter branch should render cursor-style
+	 * pagination (`?after=`/`?before=`) or stay on the legacy offset/boundary
+	 * path. Extracted to a static helper so it can be unit-tested without
+	 * spinning up the full lookup; the predicate is the most regression-
+	 * prone part of the cursor flow.
+	 *
+	 * @since 7.0.0
+	 *
+	 * @param string $filter Value of `?filter=`; empty string for the no-filter branch.
+	 * @param int $after Value of `?after=`; 0 when not set.
+	 * @param int $before Value of `?before=`; 0 when not set.
+	 * @param int $offset Value of `?offset=`; 0 when not set.
+	 * @param string $from Value of `?from=`; empty string when not set.
+	 * @param string $until Value of `?until=`; empty string when not set.
+	 */
+	public static function shouldUseCursorPagination(
+		string $filter,
+		int $after,
+		int $before,
+		int $offset,
+		string $from,
+		string $until
+	): bool {
+		if ( $filter !== '' ) {
+			return false;
+		}
+		if ( $after > 0 || $before > 0 ) {
+			return true;
+		}
+		return $offset === 0 && $from === '' && $until === '';
+	}
+
+}

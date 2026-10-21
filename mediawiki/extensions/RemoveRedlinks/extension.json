@@ -1,0 +1,30 @@
+{
+  "name": "RemoveRedlinks",
+  "version": "1.1.0",
+  "author": ["Malte Ahrholdt", "Collei"],
+  "license-name": "GPL-2.0-or-later",
+  "url": "https://www.mediawiki.org/wiki/Extension:RemoveRedlinks",
+  "descriptionmsg": "removeredlinks-desc",
+  "type": "parser",
+  "requires": {
+    "MediaWiki": ">= 1.39.0"
+  },
+  "MessagesDirs": {
+    "RemoveRedlinks": ["i18n"]
+  },
+  "AutoloadClasses": {
+    "RemoveRedlinks": "includes/RemoveRedlinks.php"
+  },
+  "Hooks": {
+    "HtmlPageLinkRendererEnd": "RemoveRedlinks::onHtmlPageLinkRendererEnd",
+    "ParserOptionsRegister": "RemoveRedlinks::onParserOptionsRegister"
+  },
+  "config_prefix": "wg",
+	"config": {
+		"RemoveRedLinksAlsoLoggedInUsers": {
+			"value": false,
+			"description": "Remove red links also for logged-in users, instead of only for unregistered users"
+		}
+  },
+  "manifest_version": 1
+}

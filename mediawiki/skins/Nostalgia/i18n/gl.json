@@ -1,0 +1,23 @@
+{
+	"@metadata": {
+		"authors": [
+			"Elisardojm",
+			"Toliño"
+		]
+	},
+	"nostalgia-desc": "Unha aparencia para amosar o aspecto da Wikipedia en 2001",
+	"skinname-nostalgia": "Morriña",
+	"nostalgia.css": "/* O CSS colocado aquí afectará aos usuarios da aparencia Morriña */",
+	"nostalgia.js": "/* O código JavaScript colocado aquí cargarase para os usuarios que utilicen a aparencia Morriña */",
+	"nostalgia-articlepage": "Ver a páxina de contido",
+	"nostalgia-create-this-page": "Crear esta páxina",
+	"nostalgia-deletethispage": "Borrar esta páxina",
+	"nostalgia-editthispage": "Editar esta páxina",
+	"nostalgia-newmessageslink": "mensaxes novas",
+	"nostalgia-newmessagesdifflink": "diferenzas coa revisión anterior",
+	"nostalgia-projectpage": "Ver a páxina do proxecto",
+	"nostalgia-protectthispage": "Protexer esta páxina",
+	"nostalgia-talkpage": "Conversar sobre esta páxina",
+	"nostalgia-unprotectthispage": "Cambiar a protección desta páxina",
+	"nostalgia-userpage": "Ver a páxina {{GENDER:{{BASEPAGENAME}}|do usuario|da usuaria}}"
+}

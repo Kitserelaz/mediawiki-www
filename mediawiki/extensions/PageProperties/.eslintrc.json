@@ -1,0 +1,30 @@
+{
+	"root": true,
+	"extends": [
+		"wikimedia/client-es6",
+		"wikimedia/mediawiki",
+		"wikimedia/jquery"
+	],
+	"rules": {
+		"block-scoped-var": "off",
+		"camelcase": "off",
+		"no-redeclare": "off",
+		"no-undef": "off",
+		"no-var": "off",
+		"prefer-const": "off",
+		"no-fallthrough": "warn",
+		"no-async-func": "off",
+		"no-jquery/no-class-state": "warn",
+		"no-jquery/no-event-shorthand": "warn",
+		"no-jquery/no-global-selector": "warn",
+		"no-jquery/no-in-array": "warn",
+		"no-jquery/no-parse-html-literal": "warn",
+		"no-jquery/no-sizzle": "warn",
+		"no-jquery/variable-pattern": "warn",
+		"es-x/no-async-functions": "off",
+		"no-jquery/no-done-fail": "warn"
+	},
+	"parserOptions": {
+		"ecmaVersion": 8
+	}
+}

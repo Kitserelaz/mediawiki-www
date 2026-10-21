@@ -1,0 +1,21 @@
+{
+	"@metadata": {
+		"authors": [
+			"Element303",
+			"Gomoko",
+			"IAlex",
+			"Jean-Frédéric",
+			"McDutchie",
+			"PieRRoMaN",
+			"Sherbrooke",
+			"Urhixidur",
+			"Verdy p"
+		]
+	},
+	"collapsiblevector-extensionname": "CollapsibleVector",
+	"collapsiblevector": "Améliorations de l’IU pour Vector",
+	"collapsiblevector-desc": "Améliore l’interface utilisateur lors de l’utilisation de l’habillage Vecteur",
+	"collapsiblevector-collapsiblenav-preference": "Activer le repli des éléments de la barre latérale de navigation dans l’habillage Vector",
+	"collapsiblevector-collapsiblenav-more": "Plus de langues",
+	"collapsiblevector-noexperiments-preference": "M'exclure des expériences de nouvelles fonctionnalités"
+}

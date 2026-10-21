@@ -1,13 +1,13 @@
 const {
+	Command,
 	EditorSelection,
 	EditorView,
-	Prec,
 	StateEffect,
 	StateEffectType,
 	StateField,
 	keymap,
 	showPanel
-} = require( 'ext.CodeMirror.v6.lib' );
+} = require( 'ext.CodeMirror.lib' );
 const CodeMirrorPanel = require( './codemirror.panel.js' );
 
 /**
@@ -67,21 +67,10 @@ class CodeMirrorGotoLine extends CodeMirrorPanel {
 	 * @inheritDoc
 	 */
 	get extension() {
-		// Use Prec.highest to ensure that this keymap is used before the default searchKeymap.
-		return Prec.highest(
-			keymap.of( {
-				key: 'Mod-Alt-g',
-				run: ( view ) => {
-					this.view = view;
-					const effects = [ this.toggleEffect.of( true ) ];
-					if ( !this.view.state.field( this.panelStateField, false ) ) {
-						effects.push( StateEffect.appendConfig.of( [ this.panelStateField ] ) );
-					}
-					this.view.dispatch( { effects } );
-					return true;
-				}
-			} )
-		);
+		return keymap.of( {
+			key: 'Mod-Alt-g',
+			run: this.openPanel.bind( this )
+		} );
 	}
 
 	/**
@@ -118,6 +107,43 @@ class CodeMirrorGotoLine extends CodeMirrorPanel {
 	}
 
 	/**
+	 * Open the go-to line panel.
+	 *
+	 * @type {Command}
+	 * @return {boolean}
+	 */
+	openPanel( view ) {
+		this.view = view;
+		const effects = [ this.toggleEffect.of( true ) ];
+		if ( !this.view.state.field( this.panelStateField, false ) ) {
+			effects.push( StateEffect.appendConfig.of( [ this.panelStateField ] ) );
+		}
+		this.view.dispatch( { effects } );
+		/**
+		 * Fired when the go-to line panel is opened or closed.
+		 *
+		 * @event ext.CodeMirror.gotoLine
+		 * @internal
+		 */
+		mw.hook( 'ext.CodeMirror.gotoLine' ).fire();
+		return true;
+	}
+
+	/**
+	 * Close the go-to line panel.
+	 *
+	 * @param {StateEffect[]} effects Additional effects to apply when closing the panel.
+	 */
+	closePanel( effects = [] ) {
+		this.view.dispatch( { effects: [
+			this.toggleEffect.of( false ),
+			...effects
+		] } );
+		this.view.focus();
+		mw.hook( 'ext.CodeMirror.gotoLine' ).fire();
+	}
+
+	/**
 	 * Respond to keydown events.
 	 *
 	 * @param {KeyboardEvent} event
@@ -125,8 +151,7 @@ class CodeMirrorGotoLine extends CodeMirrorPanel {
 	onKeydown( event ) {
 		if ( event.key === 'Escape' ) {
 			event.preventDefault();
-			this.view.dispatch( { effects: this.toggleEffect.of( false ) } );
-			this.view.focus();
+			this.closePanel();
 		} else if ( event.key === 'Enter' ) {
 			event.preventDefault();
 			this.go();
@@ -159,14 +184,10 @@ class CodeMirrorGotoLine extends CodeMirrorPanel {
 		const selection = EditorSelection.cursor(
 			docLine.from + Math.max( 0, Math.min( col, docLine.length ) )
 		);
-		this.view.dispatch( {
-			effects: [
-				this.toggleEffect.of( false ),
-				EditorView.scrollIntoView( selection.from, { y: 'center' } )
-			],
-			selection
-		} );
-		this.view.focus();
+		this.view.dispatch( { selection } );
+		this.closePanel( [
+			EditorView.scrollIntoView( selection.from, { y: 'center' } )
+		] );
 	}
 }
 

@@ -1,0 +1,16 @@
+{
+	"@metadata": {
+		"authors": [
+			"Pacha Tchernof",
+			"Tzeenchist"
+		]
+	},
+	"apihelp-ratepage-summary": "Позволяет пользователю голосовать на странице и получать рейтинг страницы. Требуется указать один из двух параметров: pageid или pagetitle.",
+	"apihelp-ratepage-param-pageid": "ID страницы",
+	"apihelp-ratepage-param-pagetitle": "Название страницы",
+	"apierror-ratepage-contest-id-too-long": "Длина ID конкурса превышает ограничение (255 символов).",
+	"apierror-ratepage-contest-id-allowed-chars": "ID конкурса должен состоять только из цифр и латинских букв, другие символы не допускаются.",
+	"apierror-ratepage-contest-not-exists": "Конкурс $1 не существует.",
+	"apierror-ratepage-page-not-exists": "Указанная страница не существует.",
+	"apierror-ratepage-cannot-vote-in-contest": "У вас нет прав для голосования в этом конкурсе."
+}

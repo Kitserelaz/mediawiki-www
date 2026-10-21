@@ -1,0 +1,45 @@
+{
+	"name": "PerPageLanguage",
+	"version": "1.0.0",
+	"author": [
+		"WikiWorks team",
+		"Vedmaka Wakalaka"
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:PerPageLanguage",
+	"descriptionmsg": "perpagelanguage-desc",
+	"license-name": "GPL-2.0-or-later",
+	"requires": {
+		"MediaWiki": ">= 1.42"
+	},
+	"type": "other",
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\PerPageLanguage\\": "src/"
+	},
+	"Hooks": {
+		"SkinTemplateNavigation::Universal": "main",
+		"UserGetLanguageObject": "main"
+	},
+	"HookHandlers": {
+		"main": {
+			"class": "MediaWiki\\Extension\\PerPageLanguage\\Hooks",
+			"services": [
+				"LanguageFactory",
+				"LanguageConverterFactory",
+				"PermissionManager",
+				"UserOptionsLookup"
+			]
+		}
+	},
+	"config": {
+		"PerPageLanguageIgnoreUserSetting": {
+			"value": false,
+			"description": "If to ignore user setting for a language"
+		}
+	},
+	"MessagesDirs": {
+		"PerPageLanguage": [
+			"i18n"
+		]
+	},
+	"manifest_version": 2
+}

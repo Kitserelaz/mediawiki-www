@@ -1,6 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
+			"Aca",
 			"Amire80",
 			"Ans",
 			"Arjunaraoc",
@@ -28,6 +29,7 @@
 			"Sayak Sarkar",
 			"Shirayuki",
 			"Siebrand",
+			"Stjn",
 			"Tacsipacsi",
 			"Trevor Parscal",
 			"UV",
@@ -36,8 +38,7 @@
 			"Woytecr",
 			"Yejianfei",
 			"Zoranzoki21",
-			"Ата",
-			"Stjn"
+			"Ата"
 		]
 	},
 	"accesskey-ca-ve-edit": "{{doc-accesskey}}",
@@ -48,6 +49,7 @@
 	"accesskey-ca-editsource-local": "{{doc-accesskey}}",
 	"accesskey-ca-createsource": "{{doc-accesskey}}",
 	"accesskey-ca-createsource-local": "{{doc-accesskey}}",
+	"collabpad-disabled": "Message shown on Special:CollabPad when the CollabPad feature is disabled.",
 	"collabpad-doctitle": "Name of CollabPad special page with a document subtitle",
 	"collabpad-import-subtitle": "Subtitle of CollabPad page, linking to the page the content was imported from",
 	"collabpad": "{{doc-special|CollabPad}}",
@@ -271,6 +273,7 @@
 	"visualeditor-educationpopup-dismiss": "Text on dismiss button shown on the educational popups drawing user attention to specific tools.",
 	"visualeditor-expandable-less": "Label for collapsing an expanded region.\n{{identical|Less}}",
 	"visualeditor-expandable-more": "Label for expanding a collapsed region.\n{{identical|More}}",
+	"visualeditor-expandableerror-toggle": "Hidden accessibility label for the collapse/expand button shown in an expandable error message",
 	"visualeditor-feedback-defaultmessage": "Default message text for the feedback dialog.\n\nParameters:\n* $1 - URL of the page\n{{Identical|URL}}",
 	"visualeditor-formatdropdown-format-mw-heading1": "Item in the MediaWiki formatting dropdown for a level 1 heading (page title).\n{{Related|Visualeditor-formatdropdown}}\n{{Identical|Page title}}",
 	"visualeditor-formatdropdown-format-mw-heading2": "Item in the MediaWiki formatting dropdown for a level 2 heading (section).\n{{Related|Visualeditor-formatdropdown}}\n{{Identical|Heading}}",
@@ -278,6 +281,7 @@
 	"visualeditor-formatdropdown-format-mw-heading4": "Item in the MediaWiki formatting dropdown for a level 4 heading (sub-section)\n{{Related|Visualeditor-formatdropdown}}",
 	"visualeditor-formatdropdown-format-mw-heading5": "Item in the MediaWiki formatting dropdown for a level 5 heading (sub-section)\n{{Related|Visualeditor-formatdropdown}}",
 	"visualeditor-formatdropdown-format-mw-heading6": "Item in the MediaWiki formatting dropdown for a level 6 heading (sub-section)\n{{Related|Visualeditor-formatdropdown}}",
+	"visualeditor-fullpage-switch-label": "Label for button that switches to full page editing mode.",
 	"visualeditor-generating-wikitext-progress": "Label for progress bar shown while generating wikitext.",
 	"visualeditor-includes-noinclude-start": "Label of the context item for an opening <code>&lt;noinclude></code> tag.",
 	"visualeditor-includes-noinclude-end": "Label of the context item for a closing <code>&lt;/noinclude></code> tag.",
@@ -289,6 +293,7 @@
 	"visualeditor-includes-includeonly-description": "Additional explanation for a pair of <code>&lt;includeonly>&lt;/includeonly></code> tags. This is followed by the content of the tags.",
 	"visualeditor-includes-documentation": "Link to documentation displayed below each of these messages:\n* {{msg-mw|visualeditor-includes-noinclude-description}}\n* {{msg-mw|visualeditor-includes-onlyinclude-description}}\n* {{msg-mw|visualeditor-includes-includeonly-description}}",
 	"visualeditor-languages-tool": "Tool for opening the languages links section of the meta dialog.\n{{Identical|Language}}",
+	"visualeditor-linkcontext-uneditable": "Message shown in the link context menu when the link target can't be edited (the 'Edit' button is not displayed).",
 	"visualeditor-linkinspector-button-link-external": "Button label for entering an link to an external site.",
 	"visualeditor-linkinspector-button-link-internal": "Prompt users' with assitive technologies to search an internal page",
 	"visualeditor-linkinspector-convert-link-isbn": "Button label for converting a simple link to a ISBN magic link.",
@@ -394,6 +399,7 @@
 	"visualeditor-loaderror-wrongmode": "Error message shown when loading the editor.\n\nParameters:\n* $1 and $2: names for editing modes (not translateable)",
 	"visualeditor-settings-tool": "Text of tool in the toolbar the lets users set specific page settings.\n{{Identical|Page settings}}",
 	"visualeditor-special-characters-group-other": "Label of the special character group shown if the wiki has visualeditor-quick-access-characters.json set up.",
+	"visualeditor-template-sandbox-subpage": "{{notranslate}}\nSub-page of template where sandbox testing is done by convention on the wiki.",
 	"visualeditor-template-tools-definition.json": "{{notranslate}}\n{{ignored}}\n\nJSON object mapping context items to templates. See ve.ui.MWDefinedTransclusionContextItem.js.",
 	"visualeditor-templatesused-tool": "Label of toolbar tool that shows templates used on this page.",
 	"visualeditor-title-error": "Error displayed when a page title is invalid.",

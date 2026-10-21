@@ -8,6 +8,7 @@ use MediaWiki\Extension\AbuseFilter\Filter\Flags;
 use MediaWiki\Extension\AbuseFilter\Filter\LastEditInfo;
 use MediaWiki\Extension\AbuseFilter\Filter\MutableFilter;
 use MediaWiki\Extension\AbuseFilter\Filter\Specs;
+use MediaWiki\User\UserIdentityValue;
 use MediaWikiUnitTestCase;
 
 /**
@@ -29,11 +30,33 @@ class MutableFilterTest extends MediaWikiUnitTestCase {
 			new Specs( 'rules', 'comments', 'name', [], 'group' ),
 			new Flags( true, true, true, true ),
 			$fakeActions,
-			new LastEditInfo( 42, 'User', '12345' )
+			new LastEditInfo( UserIdentityValue::newRegistered( 42, "User" ), '12345' )
 		);
 
 		$filter->$setter( $value );
 		$this->assertSame( $value, $filter->$getter() );
+	}
+
+	/**
+	 * This has to be separate test as the testSetters does the exact check and the LastEditInfo
+	 * still holds userId and userName as separate properties.
+	 * @todo refactor LastEditInfo to hold UserIdentity instead of id/name pair. @see T395323
+	 */
+	public function testUserIdentitySetterAndGetter() {
+		$existingIdentity = UserIdentityValue::newRegistered( 42, 'User' );
+		$updatedIdentity = UserIdentityValue::newRegistered( 12, 'sysop' );
+
+		$fakeActions = 'strlen';
+		$filter = new MutableFilter(
+			new Specs( 'rules', 'comments', 'name', [], 'group' ),
+			new Flags( true, true, true, true ),
+			$fakeActions,
+			new LastEditInfo( UserIdentityValue::newRegistered( 42, "User" ), '12345' )
+		);
+
+		$this->assertTrue( $filter->getUserIdentity()->equals( $existingIdentity ) );
+		$filter->setUserIdentity( $updatedIdentity );
+		$this->assertTrue( $filter->getUserIdentity()->equals( $updatedIdentity ) );
 	}
 
 	/**
@@ -52,8 +75,6 @@ class MutableFilterTest extends MediaWikiUnitTestCase {
 			'protected' => [ true, 'setProtected', 'isProtected' ],
 			'global' => [ false, 'setGlobal', 'isGlobal' ],
 			'actions' => [ [ 'foo' => [] ], 'setActions', 'getActions' ],
-			'user ID' => [ 163, 'setUserID', 'getUserID' ],
-			'username' => [ 'Sysop', 'setUserName', 'getUserName' ],
 			'timestamp' => [ '123456', 'setTimestamp', 'getTimestamp' ],
 			'id' => [ 123, 'setID', 'getID' ],
 			'hit count' => [ 456, 'setHitCount', 'getHitCount' ],
@@ -66,7 +87,7 @@ class MutableFilterTest extends MediaWikiUnitTestCase {
 			new Specs( 'rules', 'comments', 'name', [], 'group' ),
 			new Flags( true, true, true, true ),
 			[ 'foo' => [] ],
-			new LastEditInfo( 42, 'User', '12345' )
+			new LastEditInfo( UserIdentityValue::newRegistered( 42, "User" ), '12345' )
 		);
 		$this->expectException( LogicException::class );
 		$filter->setActionsNames( [ 'x' ] );
@@ -77,7 +98,7 @@ class MutableFilterTest extends MediaWikiUnitTestCase {
 			new Specs( 'rules', 'comments', 'name', [ 'x' ], 'group' ),
 			new Flags( true, false, true, false ),
 			[ 'foobar' => [] ],
-			new LastEditInfo( 111, 'User', '4563681' ),
+			new LastEditInfo( UserIdentityValue::newRegistered( 111, "User" ), '4563681' ),
 			42,
 			12345,
 			true
@@ -103,5 +124,44 @@ class MutableFilterTest extends MediaWikiUnitTestCase {
 
 		// TODO Enable
 		// $this->assertSame( $baseFilter->getActions(), $actual->getActions(), 'actions' );
+	}
+
+	public function testSetSuppressed() {
+		// Create a Flags instance with an initial privacy level that does not include suppressed.
+		$initialPrivacy = Flags::FILTER_HIDDEN | Flags::FILTER_USES_PROTECTED_VARS;
+		$flags = new Flags( true, false, $initialPrivacy, false );
+		$filter = new MutableFilter(
+			new Specs( 'rules', 'comments', 'name', [ 'foo' ], 'group' ),
+			$flags,
+			'strlen',
+			new LastEditInfo( UserIdentityValue::newRegistered( 42, "User" ), '12345' )
+		);
+
+		// Initially, suppressed should be false.
+		$this->assertFalse( $filter->getFlags()->getSuppressed(), 'Initially suppressed should be false' );
+		$this->assertSame(
+			$initialPrivacy,
+			$filter->getFlags()->getPrivacyLevel(),
+			'Privacy level initially without suppressed'
+		);
+
+		// Set suppressed to true.
+		$filter->setSuppressed( true );
+		$this->assertTrue( $filter->getFlags()->getSuppressed(), 'Suppressed should be true after setting' );
+		$expectedPrivacy = Flags::FILTER_SUPPRESSED | Flags::FILTER_HIDDEN | Flags::FILTER_USES_PROTECTED_VARS;
+		$this->assertSame(
+			$expectedPrivacy,
+			$filter->getFlags()->getPrivacyLevel(),
+			'Privacy level should include suppressed flag'
+		);
+
+		// Now, set suppressed back to false.
+		$filter->setSuppressed( false );
+		$this->assertFalse( $filter->getFlags()->getSuppressed(), 'Suppressed should be false after resetting' );
+		$this->assertSame(
+			$initialPrivacy,
+			$filter->getFlags()->getPrivacyLevel(),
+			'Privacy level should return to initial value'
+		);
 	}
 }

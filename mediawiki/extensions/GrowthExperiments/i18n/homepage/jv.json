@@ -1,0 +1,23 @@
+{
+	"@metadata": {
+		"authors": [
+			"Diki Ananta",
+			"NoiX180",
+			"Sumbukompor"
+		]
+	},
+	"growthexperiments-homepage-specialpage-title": "{{GENDER:$1|Rahayu}}, {{bidi:$1}}!",
+	"growthexperiments-homepage-email-button-unconfirmed": "Pranala anyar",
+	"growthexperiments-homepage-email-button-confirmed": "Pilalan",
+	"growthexperiments-homepage-startediting-header": "Wiwit mbesut",
+	"growthexperiments-homepage-startediting-dialog-intro-back": "Wurung",
+	"growthexperiments-homepage-startediting-dialog-intro-topic-description-header": "Saring miturut topik",
+	"growthexperiments-homepage-startediting-dialog-difficulty-back": "Balik",
+	"growthexperiments-homepage-startediting-dialog-difficulty-forward-mobile": "Rampung",
+	"growthexperiments-homepage-startediting-dialog-difficulty-forward-noactivate": "Rampung",
+	"growthexperiments-homepage-startediting-dialog-difficulty-level-easy-label": "Gampang",
+	"growthexperiments-homepage-startediting-dialog-difficulty-level-medium-label": "Sedhengan",
+	"growthexperiments-homepage-startediting-dialog-difficulty-level-hard-label": "Angèl",
+	"growthexperiments-homepage-mentorship-question-subject": "Pitakoning [[User:$1|$1]]",
+	"growthexperiments-homepage-mentorship-question-subject-with-title": "Pitakoning [[User:$1|$1]] ing [[$2]]"
+}

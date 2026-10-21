@@ -20,7 +20,9 @@
 
 use MediaWiki\Maintenance\Maintenance;
 
+// @codeCoverageIgnoreStart
 require_once __DIR__ . '/../../../maintenance/Maintenance.php';
+// @codeCoverageIgnoreEnd
 
 class MathGenerateSql extends Maintenance {
 	private const AVAILABLE_DIALECTS = [ 'mysql', 'postgres', 'sqlite' ];
@@ -36,7 +38,7 @@ class MathGenerateSql extends Maintenance {
 				$target = "$sqlPath/$dialect/$table.sql";
 				$this->output( "Writing '$target'.\n" );
 				$this->loadWithArgv( [ "--json=$file", "--type=$dialect", "--sql=$target" ] );
-				$child = $this->runChild( 'GenerateSchemaSql' );
+				$child = $this->createChild( GenerateSchemaSql::class );
 				$child->execute();
 			}
 		}
@@ -44,5 +46,7 @@ class MathGenerateSql extends Maintenance {
 	}
 }
 
+// @codeCoverageIgnoreStart
 $maintClass = MathGenerateSql::class;
 require_once RUN_MAINTENANCE_IF_MAIN;
+// @codeCoverageIgnoreEnd

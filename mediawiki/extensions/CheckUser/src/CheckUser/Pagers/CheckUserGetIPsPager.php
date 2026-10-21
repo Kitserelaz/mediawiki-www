@@ -1,14 +1,15 @@
 <?php
 
-namespace MediaWiki\CheckUser\CheckUser\Pagers;
+namespace MediaWiki\Extension\CheckUser\CheckUser\Pagers;
 
 use LogicException;
 use MediaWiki\Block\DatabaseBlock;
-use MediaWiki\CheckUser\CheckUser\SpecialCheckUser;
-use MediaWiki\CheckUser\Services\CheckUserLogService;
-use MediaWiki\CheckUser\Services\CheckUserLookupUtils;
-use MediaWiki\CheckUser\Services\TokenQueryManager;
+use MediaWiki\Block\DatabaseBlockStore;
 use MediaWiki\Context\IContextSource;
+use MediaWiki\Extension\CheckUser\CheckUser\SpecialCheckUser;
+use MediaWiki\Extension\CheckUser\Services\CheckUserLogService;
+use MediaWiki\Extension\CheckUser\Services\CheckUserLookupUtils;
+use MediaWiki\Extension\CheckUser\Services\TokenQueryManager;
 use MediaWiki\Extension\TorBlock\TorExitNodes;
 use MediaWiki\Html\FormOptions;
 use MediaWiki\Html\Html;
@@ -18,6 +19,7 @@ use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\SpecialPage\SpecialPageFactory;
 use MediaWiki\User\CentralId\CentralIdLookup;
 use MediaWiki\User\Options\UserOptionsLookup;
+use MediaWiki\User\TempUser\TempUserConfig;
 use MediaWiki\User\UserFactory;
 use MediaWiki\User\UserGroupManager;
 use MediaWiki\User\UserIdentity;
@@ -27,24 +29,6 @@ use Wikimedia\Rdbms\IConnectionProvider;
 
 class CheckUserGetIPsPager extends AbstractCheckUserPager {
 
-	/**
-	 * @param FormOptions $opts
-	 * @param UserIdentity $target
-	 * @param string $logType
-	 * @param TokenQueryManager $tokenQueryManager
-	 * @param UserGroupManager $userGroupManager
-	 * @param CentralIdLookup $centralIdLookup
-	 * @param IConnectionProvider $dbProvider
-	 * @param SpecialPageFactory $specialPageFactory
-	 * @param UserIdentityLookup $userIdentityLookup
-	 * @param CheckUserLogService $checkUserLogService
-	 * @param UserFactory $userFactory
-	 * @param CheckUserLookupUtils $checkUserLookupUtils
-	 * @param UserOptionsLookup $userOptionsLookup
-	 * @param IContextSource|null $context
-	 * @param LinkRenderer|null $linkRenderer
-	 * @param ?int $limit
-	 */
 	public function __construct(
 		FormOptions $opts,
 		UserIdentity $target,
@@ -59,22 +43,42 @@ class CheckUserGetIPsPager extends AbstractCheckUserPager {
 		UserFactory $userFactory,
 		CheckUserLookupUtils $checkUserLookupUtils,
 		UserOptionsLookup $userOptionsLookup,
+		DatabaseBlockStore $blockStore,
+		TempUserConfig $tempUserConfig,
 		?IContextSource $context = null,
 		?LinkRenderer $linkRenderer = null,
-		?int $limit = null
+		?int $limit = null,
 	) {
-		parent::__construct( $opts, $target, $logType, $tokenQueryManager, $userGroupManager, $centralIdLookup,
-			$dbProvider, $specialPageFactory, $userIdentityLookup, $checkUserLogService, $userFactory,
-			$checkUserLookupUtils, $userOptionsLookup, $context, $linkRenderer, $limit );
+		parent::__construct(
+			$opts,
+			$target,
+			$logType,
+			$tokenQueryManager,
+			$userGroupManager,
+			$centralIdLookup,
+			$dbProvider,
+			$specialPageFactory,
+			$userIdentityLookup,
+			$checkUserLogService,
+			$userFactory,
+			$checkUserLookupUtils,
+			$userOptionsLookup,
+			$blockStore,
+			$tempUserConfig,
+			$context,
+			$linkRenderer,
+			$limit
+		);
 		$this->checkType = SpecialCheckUser::SUBTYPE_GET_IPS;
 	}
 
 	/** @inheritDoc */
 	public function formatRow( $row ): string {
 		$lang = $this->getLanguage();
-		$ip = IPUtils::prettifyIP( $row->ip );
+		$ip = IPUtils::prettifyIP( IPUtils::formatHex( $row->ip_hex ) );
 		$templateParams = [];
-		$templateParams['ipLink'] = $this->getSelfLink( $ip,
+		$templateParams['ipLink'] = $this->getSelfLink(
+			$ip,
 			[
 				'user' => $ip,
 				'reason' => $this->opts->getValue( 'reason' ),
@@ -91,7 +95,8 @@ class CheckUserGetIPsPager extends AbstractCheckUserPager {
 		}
 
 		if ( IPUtils::isValidIPv6( $ip ) ) {
-			$templateParams['ip64Link'] = $this->getSelfLink( '/64',
+			$templateParams['ip64Link'] = $this->getSelfLink(
+				'/64',
 				[
 					'user' => $ip . '/64',
 					'reason' => $this->opts->getValue( 'reason' ),
@@ -124,7 +129,7 @@ class CheckUserGetIPsPager extends AbstractCheckUserPager {
 	 * @return string
 	 */
 	protected function getIPBlockInfo( string $ip ): string {
-		$block = DatabaseBlock::newFromTarget( null, $ip );
+		$block = $this->blockStore->newFromTarget( null, $ip );
 		if ( $block instanceof DatabaseBlock ) {
 			return $this->getBlockFlag( $block );
 		} elseif (
@@ -223,44 +228,38 @@ class CheckUserGetIPsPager extends AbstractCheckUserPager {
 
 	/** @inheritDoc */
 	protected function groupResultsByIndexField( array $results ): array {
-		// Group rows that have the same 'ip' and 'ip_hex' value.
-		$resultsGroupedByIPAndIPHex = [];
+		// Group rows that have the same 'ip_hex' value.
+		$resultsGroupedByIPHex = [];
 		foreach ( $results as $row ) {
-			if ( !array_key_exists( $row->ip, $resultsGroupedByIPAndIPHex ) ) {
-				$resultsGroupedByIPAndIPHex[$row->ip] = [];
+			if ( !array_key_exists( $row->ip_hex, $resultsGroupedByIPHex ) ) {
+				$resultsGroupedByIPHex[$row->ip_hex] = [];
 			}
-			if ( !array_key_exists( $row->ip_hex, $resultsGroupedByIPAndIPHex[$row->ip] ) ) {
-				$resultsGroupedByIPAndIPHex[$row->ip][$row->ip_hex] = [];
-			}
-			$resultsGroupedByIPAndIPHex[$row->ip][$row->ip_hex][] = $row;
+			$resultsGroupedByIPHex[$row->ip_hex][] = $row;
 		}
-		// Combine the rows that have the same 'ip' and 'ip_hex' value.
+		// Combine the rows that have the same 'ip_hex' value.
 		$groupedResults = [];
 		$indexField = $this->getIndexField();
-		foreach ( $resultsGroupedByIPAndIPHex as $ip => $ipHexArray ) {
-			foreach ( $ipHexArray as $ipHex => $rows ) {
-				$combinedRow = [
-					'ip' => $ip,
-					'ip_hex' => $ipHex,
-					'count' => 0,
-					'first' => '',
-					'last' => '',
-				];
-				foreach ( $rows as $row ) {
-					$combinedRow['count'] += $row->count;
-					if ( $row->first && ( $combinedRow['first'] > $row->first || !$combinedRow['first'] ) ) {
-						$combinedRow['first'] = $row->first;
-					}
-					if ( $row->last && ( $combinedRow['last'] < $row->last || !$combinedRow['last'] ) ) {
-						$combinedRow['last'] = $row->last;
-					}
+		foreach ( $resultsGroupedByIPHex as $ipHex => $rows ) {
+			$combinedRow = [
+				'ip_hex' => $ipHex,
+				'count' => 0,
+				'first' => '',
+				'last' => '',
+			];
+			foreach ( $rows as $row ) {
+				$combinedRow['count'] += $row->count;
+				if ( $row->first && ( $combinedRow['first'] > $row->first || !$combinedRow['first'] ) ) {
+					$combinedRow['first'] = $row->first;
 				}
-				$combinedRow = (object)$combinedRow;
-				if ( array_key_exists( $combinedRow->$indexField, $groupedResults ) ) {
-					$groupedResults[$combinedRow->$indexField][] = $combinedRow;
-				} else {
-					$groupedResults[$combinedRow->$indexField] = [ $combinedRow ];
+				if ( $row->last && ( $combinedRow['last'] < $row->last || !$combinedRow['last'] ) ) {
+					$combinedRow['last'] = $row->last;
 				}
+			}
+			$combinedRow = (object)$combinedRow;
+			if ( array_key_exists( $combinedRow->$indexField, $groupedResults ) ) {
+				$groupedResults[$combinedRow->$indexField][] = $combinedRow;
+			} else {
+				$groupedResults[$combinedRow->$indexField] = [ $combinedRow ];
 			}
 		}
 		return $groupedResults;
@@ -285,9 +284,9 @@ class CheckUserGetIPsPager extends AbstractCheckUserPager {
 
 		// Apply index, group by IP / IP hex, and filter results to just the target user.
 		$queryInfo['options']['USE INDEX'] = [
-			$table => $this->checkUserLookupUtils->getIndexName( $this->xfor, $table )
+			$table => $this->checkUserLookupUtils->getIndexName( $this->xfor, $table ),
 		];
-		$queryInfo['options']['GROUP BY'] = [ 'ip', 'ip_hex' ];
+		$queryInfo['options']['GROUP BY'] = 'ip_hex';
 		$queryInfo['conds']['actor_user'] = $this->target->getId();
 
 		return $queryInfo;
@@ -297,14 +296,14 @@ class CheckUserGetIPsPager extends AbstractCheckUserPager {
 	protected function getQueryInfoForCuChanges(): array {
 		$queryInfo = [
 			'fields' => [
-				'ip' => 'cuc_ip',
 				'ip_hex' => 'cuc_ip_hex',
 				'count' => 'COUNT(*)',
 				'first' => 'MIN(cuc_timestamp)',
 				'last' => 'MAX(cuc_timestamp)',
 			],
 			'tables' => [ 'cu_changes', 'actor_cuc_actor' => 'actor' ],
-			'conds' => [],
+			// If the IP hex is null, then it was not stored for the event and so we can display nothing
+			'conds' => [ $this->getDatabase()->expr( 'cuc_ip_hex', '!=', null ) ],
 			'join_conds' => [ 'actor_cuc_actor' => [ 'JOIN', 'actor_cuc_actor.actor_id=cuc_actor' ] ],
 			'options' => [],
 		];
@@ -315,14 +314,14 @@ class CheckUserGetIPsPager extends AbstractCheckUserPager {
 	protected function getQueryInfoForCuLogEvent(): array {
 		return [
 			'fields' => [
-				'ip' => 'cule_ip',
 				'ip_hex' => 'cule_ip_hex',
 				'count' => 'COUNT(*)',
 				'first' => 'MIN(cule_timestamp)',
 				'last' => 'MAX(cule_timestamp)',
 			],
 			'tables' => [ 'cu_log_event', 'actor_cule_actor' => 'actor' ],
-			'conds' => [],
+			// If the IP hex is null, then it was not stored for the event and so we can display nothing
+			'conds' => [ $this->getDatabase()->expr( 'cule_ip_hex', '!=', null ) ],
 			'join_conds' => [ 'actor_cule_actor' => [ 'JOIN', 'actor_cule_actor.actor_id=cule_actor' ] ],
 			'options' => [],
 		];
@@ -332,14 +331,14 @@ class CheckUserGetIPsPager extends AbstractCheckUserPager {
 	protected function getQueryInfoForCuPrivateEvent(): array {
 		return [
 			'fields' => [
-				'ip' => 'cupe_ip',
 				'ip_hex' => 'cupe_ip_hex',
 				'count' => 'COUNT(*)',
 				'first' => 'MIN(cupe_timestamp)',
 				'last' => 'MAX(cupe_timestamp)',
 			],
 			'tables' => [ 'cu_private_event', 'actor_cupe_actor' => 'actor' ],
-			'conds' => [],
+			// If the IP hex is null, then it was not stored for the event and so we can display nothing
+			'conds' => [ $this->getDatabase()->expr( 'cupe_ip_hex', '!=', null ) ],
 			'join_conds' => [ 'actor_cupe_actor' => [ 'JOIN', 'actor_cupe_actor.actor_id=cupe_actor' ] ],
 			'options' => [],
 		];

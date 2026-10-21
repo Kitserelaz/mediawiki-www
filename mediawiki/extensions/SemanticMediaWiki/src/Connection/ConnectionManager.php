@@ -1,0 +1,118 @@
+<?php
+
+namespace SMW\Connection;
+
+use RuntimeException;
+use SMW\SetupCheck;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 2.1
+ *
+ * @author mwjames
+ */
+class ConnectionManager {
+
+	/**
+	 * @var bool|null
+	 */
+	private static $isConnectable;
+
+	/**
+	 * By design this variable is static to ensure that ConnectionProvider
+	 * instances are only initialized once per request.
+	 */
+	private static array $connectionProviders = [];
+
+	/**
+	 * @since 2.1
+	 *
+	 * @param int|string|null $id
+	 *
+	 * @return mixed
+	 * @throws RuntimeException
+	 */
+	public function getConnection( $id = null ) {
+		$id = strtolower( (string)$id );
+
+		if ( self::$isConnectable === null ) {
+			self::$isConnectable = $this->isConnectable();
+		}
+
+		if ( isset( self::$connectionProviders[$id] ) ) {
+			return self::$connectionProviders[$id]->getConnection();
+		}
+
+		throw new RuntimeException( "{$id} is not registered as connection provider" );
+	}
+
+	/**
+	 * @since 2.1
+	 */
+	public function releaseConnections(): void {
+		foreach ( self::$connectionProviders as $connectionProvider ) {
+			$connectionProvider->releaseConnection();
+		}
+	}
+
+	/**
+	 * @since 2.1
+	 *
+	 * @param int|string $id
+	 * @param ConnectionProvider $connectionProvider
+	 */
+	public function registerConnectionProvider( $id, ConnectionProvider $connectionProvider ): void {
+		self::$connectionProviders[strtolower( (string)$id )] = $connectionProvider;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param int|string $id
+	 * @param callable $callback
+	 */
+	public function registerCallbackConnection( $id, callable $callback ): void {
+		self::$connectionProviders[strtolower( (string)$id )] = new class( $callback ) implements ConnectionProvider {
+			private $connection = null;
+
+			public function __construct( private $callback ) {
+			}
+
+			public function getConnection() {
+				if ( $this->connection === null ) {
+					$this->connection = ( $this->callback )();
+				}
+
+				return $this->connection;
+			}
+
+			public function releaseConnection(): void {
+				$this->connection = null;
+			}
+		};
+	}
+
+	private function isConnectable(): bool {
+		if ( defined( 'SMW_VERSION' ) && defined( 'SMW_EXTENSION_LOADED' ) ) {
+			return true;
+		}
+
+		// #4150
+		// If `SMW_VERSION` is not defined then it means someone tried to
+		// establish a connection via SMW despite the fact that SMW wasn't setup
+		// correctly.
+		$setupCheck = SetupCheck::newFromDefaults();
+
+		if ( !$setupCheck->hasError() ) {
+			return true;
+		}
+
+		// Allow to figure out which program caused the issue
+		$setupCheck->setTraceString(
+			( new RuntimeException() )->getTraceAsString()
+		);
+
+		$setupCheck->showErrorAndAbort( $setupCheck->isCli() );
+	}
+
+}

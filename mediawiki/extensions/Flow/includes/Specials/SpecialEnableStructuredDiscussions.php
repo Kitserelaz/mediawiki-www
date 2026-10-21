@@ -6,6 +6,7 @@ use Flow\Container;
 use Flow\Import\Converter;
 use Flow\Import\EnableFlow\EnableFlowWikitextConversionStrategy;
 use Flow\Import\SourceStore\NullImportSourceStore;
+use MediaWiki\Exception\MWExceptionHandler;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\SpecialPage\FormSpecialPage;
@@ -34,10 +35,15 @@ class SpecialEnableStructuredDiscussions extends FormSpecialPage {
 	protected $page = '';
 
 	public function __construct() {
-		parent::__construct( 'EnableStructuredDiscussions', 'flow-create-board' );
+		parent::__construct( 'EnableStructuredDiscussions' );
 
 		$this->loaderFactory = Container::get( 'factory.loader.workflow' );
 		$this->occupationController = Container::get( 'occupation_controller' );
+	}
+
+	/** @inheritDoc */
+	public function getRestriction(): string {
+		return 'flow-create-board';
 	}
 
 	public function execute( $par ) {
@@ -123,7 +129,7 @@ class SpecialEnableStructuredDiscussions extends FormSpecialPage {
 			try {
 				$converter->convert( $title );
 			} catch ( \Exception $e ) {
-				\MWExceptionHandler::logException( $e );
+				MWExceptionHandler::logException( $e );
 				$status->fatal( 'flow-error-external', $e->getMessage() );
 			}
 

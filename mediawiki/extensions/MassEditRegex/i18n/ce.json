@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Умар"
+		]
+	},
+	"masseditregex-replacetxt": "Хийца оцуьнца:",
+	"masseditregex-num-changes": "$1: $2 {{PLURAL:$2|хийцам}}",
+	"masseditregex-hint-headmatch": "ЦхьаьнадогӀуш",
+	"masseditregex-hint-headreplace": "Хийцар",
+	"masseditregex-hint-headeffect": "Хилам",
+	"masseditregex-js-jobdone": "Йуьззина",
+	"masseditregex-js-working": "Кечйар... ($1 left)",
+	"masseditregex-js-pagenotexist": "«$1» йац"
+}

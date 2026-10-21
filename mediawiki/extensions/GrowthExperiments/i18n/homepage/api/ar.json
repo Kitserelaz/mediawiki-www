@@ -1,0 +1,29 @@
+{
+	"@metadata": {
+		"authors": [
+			"Dyolf77 (WMF)",
+			"Michel Bakni",
+			"ديفيد",
+			"Meno25"
+		]
+	},
+	"apihelp-homepagequestionstore-summary": "{{GENDER:|احصل|احصلي}} على أسئلة منسقة منشورة عبر وحدات لوحة {{GENDER:|المستخدم|المستخدمة}}",
+	"apihelp-homepagequestionstore-param-questionformat": "التنسيق لإرجاع الأسئلة، مثل HTML.",
+	"apihelp-homepagequestionstore-param-storage": "موقع تخزين الأسئلة.",
+	"apihelp-homepagequestionstore-param-userid": "معرف المستخدم للحصول على أسئلة من أجله.",
+	"growthexperiments-homepage-questionstore-noquestionsfound": "لم يُعثر على أسئلة.",
+	"apihelp-growthsetmentor-summary": "تعيين مرشدي المستخدمين. سيتم نشر التغييرات علنا.",
+	"apihelp-growthsetmentor-param-mentee": "اسم المستخدم للمُرشَد(ة)",
+	"apihelp-growthsetmentor-param-mentor": "اسم المستخدم للمُرشِد(ة)",
+	"apihelp-growthsetmentor-param-reason": "سبب التغيير",
+	"apihelp-query+growthimagesuggestiondata-summary": "جلب مقترن [https://www.mediawiki.org/wiki/wikitech:Add_Image ببيانات اقتراح الصور]، إذا كان ذلك متاحًا",
+	"apihelp-query+growthimagesuggestiondata-param-tasktype": "معرّف نوع المهمة (لتحديد ما إذا كان سيتم جلب البيانات لتوصيات الصور ذات المستوى الأعلى أو على مستوى القسم)",
+	"growthexperiments-homepage-imagesuggestiondata-not-in-config": "لم يتم العثور على معرف نوع المهمة '$1' في إعدادات الويكي.",
+	"apihelp-growthinvalidateimagerecommendation-summary": "إلغاء اقتراح صورة.",
+	"apihelp-growthinvalidateimagerecommendation-extended-description": "سيؤدي استدعاء واجهة برمجة التطبيقات هذه إلى:\n\n* إعادة تعيين [https://www.mediawiki.org/wiki/wikitech:Add_Image \"hasrecommendation:image\" weighted tag] للمقالة، بحيث لا يتم إرجاع المقالة بعد الآن في نتائج البحث عن اقتراحات الصور.\n\n* إضافة المقالة إلى ذاكرة تخزين مؤقتة قصيرة العمر، والتي يستشيرها ImageRecommendationFilter الخاص بامتداد [https://www.mediawiki.org/wiki/Extension:GrowthExperiments GrowthExperiments] لتحديد ما إذا كان يجب استبعاد المقالة من قائمة التعديلات المقترحة للمستخدم عند الوصول إليها على [[Special:Homepage]] أو عبر واجهة برمجة التطبيقات [[Special:ApiHelp/query+growthtasks|action=query&list=growthtasks]].\n\n* إنشاء حدث وإرساله إلى EventGate إلى [https://schema.wikimedia.org/#!/secondary/jsonschema/mediawiki/page/image-suggestions-feedback image-suggestion-feedback stream]. يسمح هذا بإجراء تحسينات في خط أنابيب اقتراح الصور، حيث يمكن للكود الموجود في خط الأنابيب مراعاة تعليقات المستخدم عند إنشاء التوصيات.\n\nقراءة إضافية: [https://www.mediawiki.org/wiki/Special:MyLanguage/Growth/Personalized_first_day/Structured_tasks/Add_an_image mediawiki.org]",
+	"apihelp-growthinvalidateimagerecommendation-param-tasktype": "نوع المهمة (المستوى الأعلى أو مستوى القسم)",
+	"apihelp-growthinvalidateimagerecommendation-param-title": "عنوان المقالة الخاصة بمهمة اقتراح الصورة",
+	"apihelp-growthinvalidateimagerecommendation-param-filename": "اسم المِلَفّ، دون البادئة، لاقتراح الصورة، على سبيل المثال <kbd>Foo.jpg</kbd>",
+	"apihelp-growthinvalidateimagerecommendation-param-sectiontitle": "عنوان القسم الذي يوصى له بصورة، على سبيل المثال <kbd>التاريخ</kbd>",
+	"apihelp-growthinvalidateimagerecommendation-param-sectionnumber": "الفِهْرِس القائم على 1 للقسم الذي يوصى له بصورة، على سبيل المثال <kbd>3</kbd>"
+}

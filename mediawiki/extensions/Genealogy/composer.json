@@ -1,0 +1,61 @@
+{
+	"name": "samwilson/mediawiki-extensions-genealogy",
+	"description": "A MediaWiki extension that adds a parser function to assist with linking between genealogical records",
+	"homepage": "https://www.mediawiki.org/wiki/Extension:Genealogy",
+	"type": "mediawiki-extension",
+	"license": "GPL-3.0-or-later",
+	"keywords": [
+		"genealogy",
+		"family history",
+		"MediaWiki"
+	],
+	"authors": [
+		{
+			"name": "Sam Wilson",
+			"email": "sam@samwilson.id.au",
+			"homepage": "https://samwilson.id.au",
+			"role": "developer"
+		}
+	],
+	"support": {
+		"issues": "https://phabricator.wikimedia.org/project/board/2912/",
+		"irc": "irc://irc.libera.chat/mediawiki",
+		"source": "https://gerrit.wikimedia.org/r/mediawiki/extensions/Genealogy"
+	},
+	"autoload": {
+		"psr-4": {
+			"MediaWiki\\Extension\\Genealogy\\": "src/"
+		}
+	},
+	"require": {
+		"ext-intl": "*"
+	},
+	"require-dev": {
+		"mediawiki/mediawiki-codesniffer": "45.0.0",
+		"mediawiki/mediawiki-phan-config": "0.14.0",
+		"mediawiki/minus-x": "1.1.3",
+		"php-parallel-lint/php-console-highlighter": "1.0.0",
+		"php-parallel-lint/php-parallel-lint": "1.4.0"
+	},
+	"scripts": {
+		"test": [
+			"parallel-lint . --exclude node_modules --exclude vendor",
+			"@phpcs",
+			"minus-x check ."
+		],
+		"fix": [
+			"minus-x fix .",
+			"phpcbf"
+		],
+		"phan": "phan -d . --long-progress-bar",
+		"phpcs": "phpcs -sp --cache"
+	},
+	"extra": {
+		"installer-name": "Genealogy"
+	},
+	"config": {
+		"allow-plugins": {
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		}
+	}
+}

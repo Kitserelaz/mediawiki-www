@@ -2,13 +2,13 @@
 
 namespace Flow\Formatter;
 
-use ChangesList;
 use Flow\Conversion\Utils;
 use Flow\Exception\FlowException;
 use Flow\Model\Anchor;
 use Flow\Model\PostRevision;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Html\Html;
+use MediaWiki\RecentChanges\ChangesList;
 
 class ContributionsFormatter extends AbstractFormatter {
 	protected function getHistoryType() {
@@ -46,7 +46,7 @@ class ContributionsFormatter extends AbstractFormatter {
 
 		$flags = '';
 		if ( $isNewPage ) {
-			$flags .= ChangesList::flag( 'newpage' ) . ' ';
+			$flags .= ChangesList::flag( 'newpage', $ctx ) . ' ';
 		}
 
 		// Put it all together
@@ -57,7 +57,7 @@ class ContributionsFormatter extends AbstractFormatter {
 			$separator .
 			$flags .
 			$this->getTitleLink( $data, $row, $ctx ) .
-			( Utils::htmlToPlaintext( $description ) ? $separator . $description : '' ) .
+			( Utils::htmlToPlaintext( $description, $ctx->getLanguage() ) ? $separator . $description : '' ) .
 			$this->getHideUnhide( $data, $row, $ctx );
 	}
 
@@ -73,7 +73,6 @@ class ContributionsFormatter extends AbstractFormatter {
 			return '';
 		}
 
-		// @phan-suppress-next-line PhanUndeclaredMethod Phan doesn't infer $row->revision is PostRevision
 		$type = $row->revision->isTopicTitle() ? 'topic' : 'post';
 
 		if ( isset( $data['actions']['hide'] ) ) {

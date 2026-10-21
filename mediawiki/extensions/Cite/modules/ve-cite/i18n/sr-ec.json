@@ -1,6 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
+			"Aca",
 			"Acamicamacaraca",
 			"BadDog",
 			"Kizule",
@@ -11,13 +12,13 @@
 			"Rancher",
 			"Srdjan m",
 			"Милан Јелисавчић",
-			"Сербијана",
-			"Aca"
+			"Сербијана"
 		]
 	},
 	"visualeditor-cite-tool-name-book": "Књига",
 	"visualeditor-cite-tool-name-journal": "Часопис",
 	"visualeditor-cite-tool-name-news": "Вести",
+	"visualeditor-cite-tool-name-map": "Мапа",
 	"visualeditor-cite-tool-name-web": "Веб-сајт",
 	"cite-ve-changedesc-ref-group-both": "Група референци промењена из „$1” у „$2”",
 	"cite-ve-changedesc-ref-group-from": "Група референци промењена из „$1” у општу групу",
@@ -31,19 +32,23 @@
 	"cite-ve-citationneeded-description": "Уредник је указао на то да је овој тврдњи потребна референца ка поузданом извору.",
 	"cite-ve-citationneeded-reason": "Разлог:",
 	"cite-ve-citationneeded-title": "Потребна је референца",
+	"cite-ve-dialog-reference-editing-add-details": "Додајете детаље следећој референци:",
+	"cite-ve-dialog-reference-editing-edit-details": "Уређујете детаље следеће референце:",
+	"cite-ve-dialog-reference-editing-reused-short": "Употребљена {{PLURAL:$1|једном|2=два пута|$1 пута}}",
 	"cite-ve-dialog-reference-editing-reused": "Овај извор се користи {{PLURAL:$1|1=једном|2=два пута|$1 пут|$1 пута}} на овој страници.",
 	"cite-ve-dialog-reference-editing-reused-long": "Овај извор се користи {{PLURAL:$1|једном|2=два пута|$1 пута}} на овој страници. Промене направљене овде примењиваће се на свим местима где се он поново користи.",
-	"cite-ve-dialog-reference-editing-extends": "Ово је реферисање на постојећу референцу.",
 	"cite-ve-dialog-reference-options-group-label": "Користи ову групу",
 	"cite-ve-dialog-reference-options-group-placeholder": "Опште референце",
 	"cite-ve-dialog-reference-options-responsive-label": "Прилагодљиви распоред колона",
 	"cite-ve-dialog-reference-options-section": "Опције",
 	"cite-ve-dialog-reference-placeholder": "Овде напишите или налепите референцу или уметните шаблон за референце.",
 	"cite-ve-dialog-reference-title": "Извор",
-	"cite-ve-dialog-reference-title-add-details": "Додај детаље референци",
-	"cite-ve-dialog-reference-title-edit-details": "Уреди додатне детаље",
+	"cite-ve-dialog-reference-add-details-button": "Додај детаље",
+	"cite-ve-dialog-subreference-help-dialog-title": "Детаљи",
+	"cite-ve-dialog-subreference-help-dialog-link-label": "Сазнајте више о додавању детаља референци",
+	"cite-ve-dialog-subreference-change-all-checkbox-label": "Уредите све ($1) употребе ових детаља.",
+	"cite-ve-dialog-reference-title-details": "Детаљи",
 	"cite-ve-dialog-reference-useexisting-tool": "Поновно коришћење",
-	"cite-ve-dialog-reference-useexisting-long-tool": "Употреби референцу поново",
 	"cite-ve-dialog-referenceslist-contextitem-description-general": "Списак општих референци",
 	"cite-ve-dialog-referenceslist-contextitem-description-named": "Списак референци за групу: „$1”",
 	"cite-ve-dialog-referenceslist-title": "Списак референци",
@@ -60,5 +65,6 @@
 	"cite-ve-referenceslist-missingref-in-list": "Ова референца је дефинисана у шаблону или другом генерисаном блоку и за сада може да се прегледа само у изворном режиму.",
 	"cite-ve-referenceslist-missingreflist": "Овај списак референци је генерисао шаблон.",
 	"cite-ve-toolbar-group-label": "Референца",
-	"cite-ve-othergroup-item": "$1 извор"
+	"cite-ve-othergroup-item": "$1 извор",
+	"cite-ve-dialog-reference-useexisting-long-tool": "Употреби референцу поново"
 }

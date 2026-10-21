@@ -1,0 +1,218 @@
+{
+	"manifest_version": 2,
+	"name": "Phonos",
+	"author": [
+		"[https://meta.wikimedia.org/wiki/Community_Tech#Team Wikimedia Community Tech Team]"
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:Phonos",
+	"version": "0.1.0",
+	"license-name": "GPL-2.0-or-later",
+	"namemsg": "phonos",
+	"descriptionmsg": "phonos-desc",
+	"type": "parserhook",
+	"requires": {
+		"MediaWiki": ">= 1.43"
+	},
+	"suggests": {
+		"extensions": {
+			"TimedMediaHandler": ">= 0.6.0"
+		}
+	},
+	"TrackingCategories": [
+		"phonos-tracking-category",
+		"phonos-error-category"
+	],
+	"config": {
+		"PhonosEngine": {
+			"value": "espeak",
+			"description": "Backend TTS provider to use"
+		},
+		"PhonosApiEndpointLarynx": {
+			"value": "https://larynx-tts.wmcloud.org/api/tts",
+			"description": "API endpoint for the Larynx engine"
+		},
+		"PhonosApiEndpointGoogle": {
+			"value": "https://texttospeech.googleapis.com/v1/",
+			"description": "API endpoint for the Google engine"
+		},
+		"PhonosApiKeyGoogle": {
+			"value": "",
+			"description": "API key for the Google Cloud Text-to-speech API"
+		},
+		"PhonosApiProxy": {
+			"value": false,
+			"description": "HTTP proxy to use for API requests"
+		},
+		"PhonosFileBackend": {
+			"value": false,
+			"description": "Which backend to use for file caching"
+		},
+		"PhonosFileBackendDirectory": {
+			"value": false,
+			"description": "Custom public directory to store persisted Phonos audio"
+		},
+		"PhonosEspeak": {
+			"value": "/usr/bin/espeak",
+			"description": "Path to the eSpeak executable"
+		},
+		"PhonosLame": {
+			"value": "/usr/bin/lame",
+			"description": "Path to the Lame executable used for converting WAV to MP3"
+		},
+		"PhonosPath": {
+			"value": false,
+			"description": "Relative URL path to where Phonos files are publicly available"
+		},
+		"PhonosWikibaseUrl": {
+			"value": "https://www.wikidata.org/wiki/",
+			"description": "Wikibase URL"
+		},
+		"PhonosWikibaseProperties": {
+			"value": {
+				"wikibasePronunciationAudioProp": "P443",
+				"wikibaseLangNameProp": "P407",
+				"wikibaseIETFLangTagProp": "P305",
+				"wikibaseIPATranscriptionProp": "P898"
+			},
+			"description": "Wikibase properties for the Wikibase API"
+		},
+		"PhonosIPARenderingEnabled": {
+			"value": true,
+			"description": "Enable rendering of IPA"
+		},
+		"PhonosFileExpiry": {
+			"value": "30",
+			"description": "Time in days after which files should expire, if the backend supports the 'X-Delete-At' header."
+		},
+		"PhonosInlineAudioPlayerMode": {
+			"value": false,
+			"description": "Only play audio files"
+		}
+	},
+	"MessagesDirs": {
+		"Phonos": [
+			"i18n"
+		]
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "modules",
+		"remoteExtPath": "Phonos/modules"
+	},
+	"ResourceModules": {
+		"ext.phonos.init": {
+			"packageFiles": [
+				"ext.phonos.init.js"
+			]
+		},
+		"ext.phonos": {
+			"packageFiles": [
+				"ext.phonos.js",
+				"PhonosButton.js"
+			],
+			"styles": [
+				"PhonosButton.js.less"
+			],
+			"messages": [
+				"phonos",
+				"phonos-desc",
+				"phonos-purge-needed-error",
+				"phonos-purge-needed-error-link",
+				"phonos-audio-conversion-error",
+				"phonos-directory-error",
+				"phonos-empty-file-error",
+				"phonos-engine-error",
+				"phonos-file-not-audio",
+				"phonos-file-not-found",
+				"phonos-inline-audio-player-mode",
+				"phonos-invalid-title",
+				"phonos-ipa-too-long",
+				"phonos-param-error",
+				"phonos-rendering-disabled",
+				"phonos-storage-error",
+				"phonos-unsupported-language",
+				"phonos-unsupported-language-with-suggestions",
+				"phonos-wikibase-api-error",
+				"phonos-wikibase-invalid-entity-lexeme",
+				"phonos-wikibase-no-ipa",
+				"phonos-wikibase-not-found"
+			],
+			"dependencies": [
+				"ext.phonos.icons.js",
+				"oojs-ui-widgets.styles",
+				"oojs-ui.styles.icons-media",
+				"ext.phonos.styles",
+				"ext.phonos.init",
+				"mediawiki.api",
+				"mediawiki.jqueryMsg",
+				"oojs-ui-core"
+			]
+		},
+		"ext.phonos.icons.js": {
+			"class": "MediaWiki\\ResourceLoader\\OOUIIconPackModule",
+			"useDataURI": false,
+			"icons": [
+				"reload"
+			]
+		},
+		"ext.phonos.styles": {
+			"styles": [
+				"Phonos.less"
+			],
+			"skinStyles": {
+				"monobook": [
+					"skins/monobook.less"
+				],
+				"minerva": [
+					"skins/minerva.less"
+				],
+				"timeless": [
+					"skins/timeless.less"
+				]
+			}
+		},
+		"ext.phonos.icons": {
+			"class": "MediaWiki\\ResourceLoader\\OOUIIconPackModule",
+			"useDataURI": false,
+			"icons": [
+				"volumeUp",
+				"volumeOff"
+			]
+		}
+	},
+	"ExtensionMessagesFiles": {
+		"PhonosMagic": "Phonos.i18n.php"
+	},
+	"Hooks": {
+		"ParserFirstCallInit": "PhonosHooks"
+	},
+	"HookHandlers": {
+		"PhonosHooks": {
+			"class": "MediaWiki\\Extension\\Phonos\\Phonos",
+			"services": [
+				"RepoGroup",
+				"Phonos.Engine",
+				"Phonos.Wikibase",
+				"StatsdDataFactory",
+				"JobQueueGroup",
+				"LinkRenderer",
+				"MainConfig"
+			]
+		}
+	},
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\Phonos\\": "includes/"
+	},
+	"JobClasses": {
+		"phonosIPAFilePersist": {
+			"class": "MediaWiki\\Extension\\Phonos\\Job\\PhonosIPAFilePersistJob",
+			"services": [
+				"Phonos.Engine",
+				"StatsdDataFactory"
+			],
+			"needsPage": false
+		}
+	},
+	"ServiceWiringFiles": [
+		"includes/ServiceWiring.php"
+	]
+}

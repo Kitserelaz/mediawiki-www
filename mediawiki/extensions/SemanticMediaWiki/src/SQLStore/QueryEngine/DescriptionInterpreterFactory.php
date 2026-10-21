@@ -1,0 +1,94 @@
+<?php
+
+namespace SMW\SQLStore\QueryEngine;
+
+use SMW\Services\ServicesFactory as ApplicationFactory;
+use SMW\SQLStore\QueryEngine\DescriptionInterpreters\ClassDescriptionInterpreter;
+use SMW\SQLStore\QueryEngine\DescriptionInterpreters\ConceptDescriptionInterpreter;
+use SMW\SQLStore\QueryEngine\DescriptionInterpreters\DisjunctionConjunctionInterpreter;
+use SMW\SQLStore\QueryEngine\DescriptionInterpreters\DispatchingDescriptionInterpreter;
+use SMW\SQLStore\QueryEngine\DescriptionInterpreters\NamespaceDescriptionInterpreter;
+use SMW\SQLStore\QueryEngine\DescriptionInterpreters\SomePropertyInterpreter;
+use SMW\SQLStore\QueryEngine\DescriptionInterpreters\ThingDescriptionInterpreter;
+use SMW\SQLStore\QueryEngine\DescriptionInterpreters\ValueDescriptionInterpreter;
+use SMW\Store;
+use SMW\Utils\CircularReferenceGuard;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 2.4
+ *
+ * @author mwjames
+ */
+class DescriptionInterpreterFactory {
+
+	/**
+	 * @since 2.4
+	 */
+	public function __construct(
+		private readonly Store $store,
+		private readonly CircularReferenceGuard $circularReferenceGuard,
+	) {
+	}
+
+	/**
+	 * @since 2.4
+	 *
+	 * @param ConditionBuilder $conditionBuilder
+	 *
+	 * @return DispatchingDescriptionInterpreter
+	 */
+	public function newDispatchingDescriptionInterpreter( ConditionBuilder $conditionBuilder ): DispatchingDescriptionInterpreter {
+		$pplicationFactory = ApplicationFactory::getInstance();
+		$dispatchingDescriptionInterpreter = new DispatchingDescriptionInterpreter();
+
+		$fulltextSearchTableFactory = new FulltextSearchTableFactory();
+
+		$valueMatchConditionBuilder = $fulltextSearchTableFactory->newValueMatchConditionBuilderByType(
+			$this->store
+		);
+
+		$dispatchingDescriptionInterpreter->addDefaultInterpreter(
+			new ThingDescriptionInterpreter( $conditionBuilder )
+		);
+
+		$dispatchingDescriptionInterpreter->addInterpreter(
+			new SomePropertyInterpreter( $this->store, $conditionBuilder, $valueMatchConditionBuilder )
+		);
+
+		$dispatchingDescriptionInterpreter->addInterpreter(
+			new DisjunctionConjunctionInterpreter( $conditionBuilder )
+		);
+
+		$dispatchingDescriptionInterpreter->addInterpreter(
+			new NamespaceDescriptionInterpreter( $this->store, $conditionBuilder )
+		);
+
+		$dispatchingDescriptionInterpreter->addInterpreter(
+			new ClassDescriptionInterpreter( $this->store, $conditionBuilder )
+		);
+
+		$dispatchingDescriptionInterpreter->addInterpreter(
+			new ValueDescriptionInterpreter( $this->store, $conditionBuilder )
+		);
+
+		$conceptDescriptionInterpreter = new ConceptDescriptionInterpreter(
+			$this->store,
+			$conditionBuilder,
+			$this->circularReferenceGuard
+		);
+
+		$conceptDescriptionInterpreter->setQueryParser(
+			$pplicationFactory->getQueryFactory()->newQueryParser(
+				$pplicationFactory->getSettings()->get( 'smwgQConceptFeatures' )
+			)
+		);
+
+		$dispatchingDescriptionInterpreter->addInterpreter(
+			$conceptDescriptionInterpreter
+		);
+
+		return $dispatchingDescriptionInterpreter;
+	}
+
+}

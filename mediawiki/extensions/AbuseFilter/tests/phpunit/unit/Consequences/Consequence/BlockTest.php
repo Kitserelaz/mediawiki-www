@@ -7,14 +7,17 @@ use MediaWiki\Block\BlockUser;
 use MediaWiki\Block\BlockUserFactory;
 use MediaWiki\Block\DatabaseBlock;
 use MediaWiki\Block\DatabaseBlockStore;
+use MediaWiki\Block\UnblockUser;
+use MediaWiki\Block\UnblockUserFactory;
 use MediaWiki\Extension\AbuseFilter\Consequences\Consequence\Block;
 use MediaWiki\Extension\AbuseFilter\Consequences\Parameters;
 use MediaWiki\Extension\AbuseFilter\FilterUser;
+use MediaWiki\Language\MessageLocalizer;
+use MediaWiki\Permissions\Authority;
 use MediaWiki\Status\Status;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityValue;
 use MediaWikiUnitTestCase;
-use MessageLocalizer;
 use Psr\Log\NullLogger;
 
 /**
@@ -35,7 +38,6 @@ class BlockTest extends MediaWikiUnitTestCase {
 	/**
 	 * This helper is needed because for reverts we check that the blocker is our filter user, so we want
 	 * to always use the same object.
-	 * @return FilterUser
 	 */
 	private function getFilterUser(): FilterUser {
 		$filterUser = $this->createMock( FilterUser::class );
@@ -62,7 +64,7 @@ class BlockTest extends MediaWikiUnitTestCase {
 	 */
 	public function testExecute( UserIdentity $target, bool $result ) {
 		$expiry = '1 day';
-		$params = $this->provideGetMessageParameters( $target )->current()[0];
+		$params = $this->getLocalFilterParams( $target );
 		$blockUser = $this->createMock( BlockUser::class );
 		$blockUser->expects( $this->once() )
 			->method( 'placeBlockUnsafe' )
@@ -84,6 +86,7 @@ class BlockTest extends MediaWikiUnitTestCase {
 			$expiry,
 			$preventsTalkEdit = true,
 			$blockUserFactory,
+			$this->createNoOpMock( UnblockUserFactory::class ),
 			$this->createMock( DatabaseBlockStore::class ),
 			$this->getFilterUser(),
 			$this->getMsgLocalizer(),
@@ -95,18 +98,32 @@ class BlockTest extends MediaWikiUnitTestCase {
 	/**
 	 * @dataProvider provideGetMessageParameters
 	 */
-	public function testGetMessage( Parameters $params ) {
+	public function testGetMessage( callable $params ) {
+		$params = $params( $this );
 		$block = new Block(
 			$params,
 			'0',
 			false,
 			$this->createMock( BlockUserFactory::class ),
+			$this->createMock( UnblockUserFactory::class ),
 			$this->createMock( DatabaseBlockStore::class ),
 			$this->createMock( FilterUser::class ),
 			$this->getMsgLocalizer(),
 			new NullLogger()
 		);
 		$this->doTestGetMessage( $block, $params, 'abusefilter-blocked-display' );
+	}
+
+	private function getUnblockUserFactory( $unblockCalls, $success = true ) {
+		$status = Status::newGood();
+		$status->setOK( $success );
+		$unblockUser = $this->createMock( UnblockUser::class );
+		$unblockUser->expects( $unblockCalls )->method( 'unblockUnsafe' )
+			->willReturn( $status );
+		$unblockUserFactory = $this->createMock( UnblockUserFactory::class );
+		$unblockUserFactory->method( 'newRemoveBlock' )
+			->willReturn( $unblockUser );
+		return $unblockUserFactory;
 	}
 
 	public function testRevert() {
@@ -118,37 +135,42 @@ class BlockTest extends MediaWikiUnitTestCase {
 		$blockByFilter->method( 'getBy' )->willReturn( $filterUser->getUserIdentity()->getId() );
 
 		$store = $this->createMock( DatabaseBlockStore::class );
-		$store->expects( $this->once() )->method( 'newFromTarget' )
-			->with( 'Foobar' )->willReturn( $blockByFilter );
-		$store->expects( $this->once() )->method( 'deleteBlock' )
-			->with( $blockByFilter )->willReturn( true );
+		$store->expects( $this->once() )->method( 'newListFromTarget' )
+			->with( 'Foobar' )->willReturn( [ $blockByFilter ] );
 		$block = new Block(
 			$params,
 			'0',
 			false,
 			$this->createNoopMock( BlockUserFactory::class ),
+			$this->getUnblockUserFactory( $this->once() ),
 			$store,
 			$filterUser,
 			$this->getMsgLocalizer(),
 			new NullLogger()
 		);
-		$this->assertTrue( $block->revert( $this->createMock( UserIdentity::class ), '' ) );
+		$this->assertTrue( $block->revert( $this->createMock( Authority::class ), '' ) );
 	}
 
 	public function testRevert_notBlocked() {
 		$params = $this->createMock( Parameters::class );
 		$params->method( 'getUser' )->willReturn( new UserIdentityValue( 1, 'Foobar' ) );
+
+		$store = $this->createMock( DatabaseBlockStore::class );
+		$store->expects( $this->once() )->method( 'newListFromTarget' )
+			->with( 'Foobar' )->willReturn( [] );
+
 		$block = new Block(
 			$params,
 			'0',
 			false,
 			$this->createNoopMock( BlockUserFactory::class ),
-			$this->createMock( DatabaseBlockStore::class ),
+			$this->getUnblockUserFactory( $this->never() ),
+			$store,
 			$this->createNoopMock( FilterUser::class ),
 			$this->getMsgLocalizer(),
 			new NullLogger()
 		);
-		$this->assertFalse( $block->revert( $this->createMock( UserIdentity::class ), '' ) );
+		$this->assertFalse( $block->revert( $this->createMock( Authority::class ), '' ) );
 	}
 
 	public function testRevert_notBlockedByAF() {
@@ -160,19 +182,20 @@ class BlockTest extends MediaWikiUnitTestCase {
 		$notAFBlock->method( 'getBy' )->willReturn( $filterUser->getUserIdentity()->getId() + 1 );
 
 		$store = $this->createMock( DatabaseBlockStore::class );
-		$store->expects( $this->once() )->method( 'newFromTarget' )
-			->with( 'Foobar' )->willReturn( $notAFBlock );
+		$store->expects( $this->once() )->method( 'newListFromTarget' )
+			->with( 'Foobar' )->willReturn( [ $notAFBlock ] );
 		$block = new Block(
 			$params,
 			'0',
 			false,
 			$this->createNoopMock( BlockUserFactory::class ),
+			$this->getUnblockUserFactory( $this->never() ),
 			$store,
 			$filterUser,
 			$this->getMsgLocalizer(),
 			new NullLogger()
 		);
-		$this->assertFalse( $block->revert( $this->createMock( UserIdentity::class ), '' ) );
+		$this->assertFalse( $block->revert( $this->createMock( Authority::class ), '' ) );
 	}
 
 	public function testRevert_couldNotUnblock() {
@@ -184,21 +207,20 @@ class BlockTest extends MediaWikiUnitTestCase {
 		$blockByFilter->method( 'getBy' )->willReturn( $filterUser->getUserIdentity()->getId() );
 
 		$store = $this->createMock( DatabaseBlockStore::class );
-		$store->expects( $this->once() )->method( 'newFromTarget' )
-			->with( 'Foobar' )->willReturn( $blockByFilter );
-		$store->expects( $this->once() )->method( 'deleteBlock' )
-			->with( $blockByFilter )->willReturn( false );
+		$store->expects( $this->once() )->method( 'newListFromTarget' )
+			->with( 'Foobar' )->willReturn( [ $blockByFilter ] );
 		$block = new Block(
 			$params,
 			'0',
 			false,
 			$this->createNoopMock( BlockUserFactory::class ),
+			$this->getUnblockUserFactory( $this->once(), false ),
 			$store,
 			$filterUser,
 			$this->getMsgLocalizer(),
 			new NullLogger()
 		);
-		$this->assertFalse( $block->revert( $this->createMock( UserIdentity::class ), '' ) );
+		$this->assertFalse( $block->revert( $this->createMock( Authority::class ), '' ) );
 	}
 
 }

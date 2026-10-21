@@ -1,0 +1,7 @@
+name: Code Style
+
+on: [ push, pull_request, workflow_dispatch ]
+
+jobs:
+  test-php:
+    uses: Liquipedia/CI-templates/.github/workflows/.php-ci.yml@main

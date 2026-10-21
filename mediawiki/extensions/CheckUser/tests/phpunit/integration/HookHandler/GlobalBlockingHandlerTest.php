@@ -1,23 +1,21 @@
 <?php
 
-namespace MediaWiki\CheckUser\Tests\Integration\HookHandler;
+namespace MediaWiki\Extension\CheckUser\Tests\Integration\HookHandler;
 
-use MediaWiki\CheckUser\HookHandler\GlobalBlockingHandler;
-use MediaWiki\CheckUser\Tests\Integration\CheckUserCommonTraitTest;
+use MediaWiki\Extension\CheckUser\HookHandler\GlobalBlockingHandler;
+use MediaWiki\Extension\CheckUser\Tests\Integration\CheckUserCommonTestTrait;
 use MediaWiki\Extension\GlobalBlocking\GlobalBlock;
 use MediaWiki\MainConfigNames;
-use MediaWiki\User\UserIdentity;
-use MediaWiki\User\UserIdentityValue;
 use MediaWikiIntegrationTestCase;
 
 /**
- * @covers \MediaWiki\CheckUser\HookHandler\GlobalBlockingHandler
+ * @covers \MediaWiki\Extension\CheckUser\HookHandler\GlobalBlockingHandler
  * @group Database
  * @group CheckUser
  */
 class GlobalBlockingHandlerTest extends MediaWikiIntegrationTestCase {
 
-	use CheckUserCommonTraitTest;
+	use CheckUserCommonTestTrait;
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -36,29 +34,36 @@ class GlobalBlockingHandlerTest extends MediaWikiIntegrationTestCase {
 		);
 	}
 
-	private function getMockGlobalBlockInstance( UserIdentity $target ): GlobalBlock {
+	private function getMockGlobalBlockInstance( $target ): GlobalBlock {
 		$globalBlock = $this->createMock( GlobalBlock::class );
-		$globalBlock->method( 'getTargetUserIdentity' )
+		$globalBlock->method( 'getTargetName' )
 			->willReturn( $target );
 		return $globalBlock;
 	}
 
-	private function commonTestRetroactiveAutoblockWhenNoIpsFound( GlobalBlock $globalBlock ) {
+	private function commonTestRetroactiveAutoblockWhenNoIpsFound( GlobalBlock $globalBlock ): void {
 		$ips = [];
 		$returnValue = $this->getObjectUnderTest()->onGlobalBlockingGetRetroactiveAutoblockIPs(
-			$globalBlock, 100, $ips
+			$globalBlock,
+			100,
+			$ips
 		);
 		$this->assertCount( 0, $ips );
 		$this->assertTrue( $returnValue );
 	}
 
+	public function testRetroactiveAutoblockWhenNoDefinedTarget() {
+		$globalBlock = $this->getMockGlobalBlockInstance( '' );
+		$this->commonTestRetroactiveAutoblockWhenNoIpsFound( $globalBlock );
+	}
+
 	public function testRetroactiveAutoblockWhenNoCentralIdExists() {
-		$globalBlock = $this->getMockGlobalBlockInstance( UserIdentityValue::newAnonymous( 'UnknownUser1' ) );
+		$globalBlock = $this->getMockGlobalBlockInstance( 'UnknownUser1' );
 		$this->commonTestRetroactiveAutoblockWhenNoIpsFound( $globalBlock );
 	}
 
 	public function testRetroactiveAutoblockWhenNoActionsInCentralIndexes() {
-		$globalBlock = $this->getMockGlobalBlockInstance( $this->getTestUser()->getUserIdentity() );
+		$globalBlock = $this->getMockGlobalBlockInstance( $this->getTestUser()->getUserIdentity()->getName() );
 		$this->commonTestRetroactiveAutoblockWhenNoIpsFound( $globalBlock );
 	}
 }

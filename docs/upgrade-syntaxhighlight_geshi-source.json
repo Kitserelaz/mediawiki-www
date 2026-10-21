@@ -1,0 +1,102 @@
+{
+  "component": "mediawiki/extensions/SyntaxHighlight_GeSHi",
+  "baseline": "7cafca308319b611fe159fa6391e6eec83c3b121",
+  "target": "584394d4bbba0ccf74a0f66168638131a9874c1a",
+  "preserved_changes": [
+    {
+      "path": ".eslintignore",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".eslintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".gitignore",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".gitreview",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".phan/config.php",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".phpcs.xml",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".stylelintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "Gruntfile.js",
+      "change": "local-deletion"
+    },
+    {
+      "path": "composer.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/az.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/be.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/es.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/hu.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/qqq.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/sk.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/sr-ec.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/tr.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "modules/.eslintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "modules/ve-syntaxhighlight/.eslintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "package-lock.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "package.json",
+      "change": "local-deletion"
+    }
+  ],
+  "dependency_status": {
+    "old_runtime_requirements": {},
+    "new_runtime_requirements": {},
+    "has_lock": false,
+    "has_vendor": false,
+    "status": "runtime-requirements-unchanged"
+  },
+  "baseline_proof": {
+    "matched_runtime_and_manifest_files": 12,
+    "method": "Exact Git blobs for all installed non-test, non-vendor PHP and extension.json"
+  }
+}

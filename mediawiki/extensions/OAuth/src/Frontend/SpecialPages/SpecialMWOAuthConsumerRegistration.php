@@ -5,27 +5,13 @@ namespace MediaWiki\Extension\OAuth\Frontend\SpecialPages;
 /**
  * (c) Aaron Schulz 2013, GPL
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 
-use ErrorPageError;
 use InvalidArgumentException;
-use LogEventsList;
-use LogPage;
-use MediaWiki\Context\IContextSource;
+use MediaWiki\Exception\ErrorPageError;
+use MediaWiki\Exception\PermissionsError;
+use MediaWiki\Exception\UserBlockedError;
 use MediaWiki\Extension\OAuth\Backend\Consumer;
 use MediaWiki\Extension\OAuth\Backend\Utils;
 use MediaWiki\Extension\OAuth\Control\ConsumerAccessControl;
@@ -37,6 +23,8 @@ use MediaWiki\HTMLForm\Field\HTMLHiddenField;
 use MediaWiki\HTMLForm\Field\HTMLRestrictionsField;
 use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\Json\FormatJson;
+use MediaWiki\Logging\LogEventsList;
+use MediaWiki\Logging\LogPage;
 use MediaWiki\Message\Message;
 use MediaWiki\Permissions\GrantsInfo;
 use MediaWiki\Permissions\GrantsLocalization;
@@ -44,59 +32,72 @@ use MediaWiki\Permissions\PermissionManager;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Status\Status;
 use MediaWiki\User\User;
+use MediaWiki\Utils\MWRestrictions;
+use MediaWiki\Utils\UrlUtils;
 use MediaWiki\WikiMap\WikiMap;
-use MediaWiki\Xml\Xml;
-use MWRestrictions;
-use PermissionsError;
 use stdClass;
-use UserBlockedError;
-use Wikimedia\Rdbms\IDatabase;
+use Wikimedia\Rdbms\IReadableDatabase;
+use Wikimedia\Timestamp\TimestampFormat;
 
 /**
  * Page that has registration request form and consumer update form
  */
 class SpecialMWOAuthConsumerRegistration extends SpecialPage {
-	private PermissionManager $permissionManager;
-	private GrantsInfo $grantsInfo;
-	private GrantsLocalization $grantsLocalization;
-
 	public function __construct(
-		PermissionManager $permissionManager,
-		GrantsInfo $grantsInfo,
-		GrantsLocalization $grantsLocalization
+		private readonly PermissionManager $permissionManager,
+		private readonly GrantsInfo $grantsInfo,
+		private readonly GrantsLocalization $grantsLocalization,
+		private readonly UrlUtils $urlUtils,
 	) {
 		parent::__construct( 'OAuthConsumerRegistration' );
-		$this->permissionManager = $permissionManager;
-		$this->grantsInfo = $grantsInfo;
-		$this->grantsLocalization = $grantsLocalization;
 	}
 
+	/** @inheritDoc */
 	public function doesWrites() {
 		return true;
 	}
 
+	/** @inheritDoc */
 	public function userCanExecute( User $user ) {
 		return $user->isEmailConfirmed();
 	}
 
+	/** @inheritDoc */
 	public function displayRestrictionError() {
 		throw new PermissionsError( null, [ 'mwoauthconsumerregistration-need-emailconfirmed' ] );
 	}
 
+	/** @inheritDoc */
 	public function execute( $par ) {
+		$this->setHeaders();
+		$this->getOutput()->disallowUserJs();
+		$this->addHelpLink( 'Help:OAuth' );
+
+		if ( !Utils::isCentralWiki() ) {
+			$this->getOutput()->addWikiMsg( 'mwoauth-consumers-central-wiki' );
+			$wiki = WikiMap::getWiki( Utils::getCentralWiki() ?: WikiMap::getCurrentWikiId() );
+			if ( $wiki ) {
+				$this->getOutput()->addHTML( Html::element( 'a', [
+					// Cross-wiki, so don't localize
+					'href' => $wiki->getUrl( 'Special:OAuthConsumerRegistration' . ( $par !== null ? "/$par" : '' ) ),
+				], $this->msg( 'mwoauth-consumers-central-wiki-go', $wiki->getDisplayName() )->text() ) );
+			}
+			return;
+		}
+
 		$this->requireNamedUser( 'mwoauth-named-account-required-reason' );
+
 		$this->checkPermissions();
 
 		$request = $this->getRequest();
 		$user = $this->getUser();
-		$lang = $this->getLanguage();
 		$centralUserId = Utils::getCentralIdFromLocalUser( $user );
 
 		// Redirect to HTTPs if attempting to access this page via HTTP.
 		// Proposals and updates to consumers can involve sending new secrets.
 		if ( $this->getConfig()->get( 'MWOAuthSecureTokenTransfer' )
-			&& $request->detectProtocol() == 'http'
-			&& substr( wfExpandUrl( '/', PROTO_HTTPS ), 0, 8 ) === 'https://'
+			&& $request->getProtocol() === 'http'
+			&& str_starts_with( $this->urlUtils->expand( '/', PROTO_HTTPS ) ?? '', 'https://' )
 		) {
 			$redirUrl = str_replace( 'http://', 'https://', $request->getFullRequestURL() );
 			$this->getOutput()->redirect( $redirUrl );
@@ -104,10 +105,7 @@ class SpecialMWOAuthConsumerRegistration extends SpecialPage {
 			return;
 		}
 
-		$this->setHeaders();
-		$this->getOutput()->disallowUserJs();
 		$this->getOutput()->addModules( 'mediawiki.special' );
-		$this->addHelpLink( 'Help:OAuth' );
 
 		$block = $user->getBlock();
 		if ( $block ) {
@@ -138,13 +136,13 @@ class SpecialMWOAuthConsumerRegistration extends SpecialPage {
 				$allWikis = Utils::getAllWikiNames();
 				$showGrants = $this->grantsInfo->getValidGrants();
 				if ( $subPage === 'oauth2' ) {
-					$this->proposeOAuth( Consumer::OAUTH_VERSION_2, $user, $allWikis, $lang, $showGrants );
+					$this->proposeOAuth( Consumer::OAUTH_VERSION_2, $user, $allWikis, $showGrants );
 					break;
 				} elseif ( $subPage === 'oauth1a' ) {
-					$this->proposeOAuth( Consumer::OAUTH_VERSION_1, $user, $allWikis, $lang, $showGrants );
+					$this->proposeOAuth( Consumer::OAUTH_VERSION_1, $user, $allWikis, $showGrants );
 					break;
 				} else {
-					$this->getOutput()->redirect( 'Special:OAuthConsumerRegistration/propose' );
+					$this->getOutput()->redirect( $this->getPageTitle( 'propose' )->getLocalURL() );
 				}
 				break;
 			case 'update':
@@ -152,7 +150,7 @@ class SpecialMWOAuthConsumerRegistration extends SpecialPage {
 					throw new PermissionsError( 'mwoauthupdateownconsumer' );
 				}
 
-				$dbr = Utils::getCentralDB( DB_REPLICA );
+				$dbr = Utils::getOAuthDB( DB_REPLICA );
 				$cmrAc = ConsumerAccessControl::wrap(
 				Consumer::newFromKey( $dbr, $subPage ), $this->getContext() );
 				if ( !$cmrAc ) {
@@ -169,7 +167,7 @@ class SpecialMWOAuthConsumerRegistration extends SpecialPage {
 				}
 				$oldSecretKey = $cmrAc->getDAO()->getSecretKey();
 
-				$dbw = Utils::getCentralDB( DB_PRIMARY );
+				$dbw = Utils::getOAuthDB( DB_PRIMARY );
 				$control = new ConsumerSubmitControl( $this->getContext(), [], $dbw );
 				$form = HTMLForm::factory( 'ooui',
 					$control->registerValidators( [
@@ -223,7 +221,7 @@ class SpecialMWOAuthConsumerRegistration extends SpecialPage {
 					$this->getContext()
 				);
 				$form->setSubmitCallback(
-					static function ( array $data, IContextSource $context ) use ( $control ) {
+					static function ( array $data ) use ( $control ) {
 						$control->setInputParameters( $data );
 						return $control->submit();
 					}
@@ -236,14 +234,12 @@ class SpecialMWOAuthConsumerRegistration extends SpecialPage {
 				$status = $form->show();
 				if ( $status instanceof Status && $status->isOK() ) {
 					/** @var Consumer $cmr */
-					// @phan-suppress-next-line PhanTypeArraySuspiciousNullable
 					$cmr = $status->value['result']['consumer'];
 					$this->getOutput()->addWikiMsg( 'mwoauthconsumerregistration-updated' );
 					$curSecretKey = $cmr->getSecretKey();
 					// token reset?
 					if ( $oldSecretKey !== $curSecretKey ) {
 						if ( $cmr->getOwnerOnly() ) {
-							// @phan-suppress-next-line PhanTypeArraySuspiciousNullable
 							$accessToken = $status->value['result']['accessToken'];
 							if ( $cmr->getOAuthVersion() === Consumer::OAUTH_VERSION_2 ) {
 								// If we just add raw AT to the page, it would go 3000px wide
@@ -276,7 +272,7 @@ class SpecialMWOAuthConsumerRegistration extends SpecialPage {
 					$out = $this->getOutput();
 					// Show all of the status updates
 					$logPage = new LogPage( 'mwoauthconsumer' );
-					$out->addHTML( Xml::element( 'h2', null, $logPage->getName()->text() ) );
+					$out->addHTML( Html::element( 'h2', [], $logPage->getName()->text() ) );
 					LogEventsList::showLogExtract( $out, 'mwoauthconsumer', '', '', [
 						'conds'  => [
 							'ls_field' => 'OAuthConsumer',
@@ -297,7 +293,7 @@ class SpecialMWOAuthConsumerRegistration extends SpecialPage {
 				}
 				# Every 30th view, prune old deleted items
 				if ( mt_rand( 0, 29 ) == 0 ) {
-					Utils::runAutoMaintenance( Utils::getCentralDB( DB_PRIMARY ) );
+					Utils::runAutoMaintenance( Utils::getOAuthDB( DB_PRIMARY ) );
 				}
 				break;
 			default:
@@ -350,7 +346,7 @@ class SpecialMWOAuthConsumerRegistration extends SpecialPage {
 		} else {
 			$listLinks[] = $this->msg( 'mwoauthconsumerregistration-list' )->escaped();
 		}
-		if ( $subPage && $action == 'update' ) {
+		if ( $subPage && $action === 'update' ) {
 			$listLinks[] = $this->getLinkRenderer()->makeKnownLink(
 				SpecialPage::getTitleFor( 'OAuthListConsumers', "view/$subPage" ),
 				$this->msg( 'mwoauthconsumer-consumer-view' )->text()
@@ -372,11 +368,11 @@ class SpecialMWOAuthConsumerRegistration extends SpecialPage {
 	}
 
 	/**
-	 * @param IDatabase $db
+	 * @param IReadableDatabase $db
 	 * @param stdClass $row
 	 * @return string
 	 */
-	public function formatRow( IDatabase $db, $row ) {
+	public function formatRow( IReadableDatabase $db, $row ) {
 		$cmrAc = ConsumerAccessControl::wrap(
 			Consumer::newFromRow( $db, $row ), $this->getContext() );
 		$cmrKey = $cmrAc->getConsumerKey();
@@ -395,7 +391,7 @@ class SpecialMWOAuthConsumerRegistration extends SpecialPage {
 		$links = $this->getLanguage()->pipeList( $links );
 
 		$time = htmlspecialchars( $this->getLanguage()->timeanddate(
-			wfTimestamp( TS_MW, $cmrAc->getRegistration() ), true ) );
+			wfTimestamp( TimestampFormat::MW, $cmrAc->getRegistration() ), true ) );
 
 		$stageKey = Consumer::$stageNames[$cmrAc->getStage()];
 		$encStageKey = htmlspecialchars( $stageKey );
@@ -434,12 +430,12 @@ class SpecialMWOAuthConsumerRegistration extends SpecialPage {
 		];
 
 		$r = "<li class='mw-mwoauthconsumerregistration-{$encStageKey}'>";
+		$r .= "<span class='mw-mwoauth-stage-icon'></span> ";
 		$r .= "<span>$time (<strong>{$links}</strong>)</span>";
-		$r .= "<table class='mw-mwoauthconsumerregistration-body' " .
-			"cellspacing='1' cellpadding='3' border='1' width='100%'>";
+		$r .= "<table class='mw-mwoauthconsumerregistration-body mw-datatable'>";
 		foreach ( $data as $msg => $encValue ) {
 			$r .= '<tr>' .
-				'<td><strong>' . $this->msg( $msg )->escaped() . '</strong></td>' .
+				'<th>' . $this->msg( $msg )->escaped() . '</th>' .
 				'<td width=\'90%\'>' . $encValue . '</td>' .
 				'</tr>';
 		}
@@ -450,15 +446,22 @@ class SpecialMWOAuthConsumerRegistration extends SpecialPage {
 		return $r;
 	}
 
+	/** @inheritDoc */
 	protected function getGroupName() {
 		return 'users';
 	}
 
-	private function proposeOAuth( int $oauthVersion, User $user, $allWikis, $lang, $showGrants ) {
+	/**
+	 * @param int $oauthVersion
+	 * @param User $user
+	 * @param string[] $allWikis
+	 * @param array $showGrants
+	 */
+	private function proposeOAuth( int $oauthVersion, User $user, $allWikis, $showGrants ) {
 		if ( !in_array( $oauthVersion, [ Consumer::OAUTH_VERSION_1, Consumer::OAUTH_VERSION_2 ] ) ) {
 			throw new InvalidArgumentException( 'Invalid OAuth version' );
 		}
-		$dbw = Utils::getCentralDB( DB_PRIMARY );
+		$dbw = Utils::getOAuthDB( DB_PRIMARY );
 		$control = new ConsumerSubmitControl( $this->getContext(), [], $dbw );
 
 		$grantNames = $this->grantsLocalization->getGrantDescriptionsWithClasses(
@@ -616,7 +619,7 @@ class SpecialMWOAuthConsumerRegistration extends SpecialPage {
 			]
 		];
 		$formDescriptor = array_filter( $formDescriptor,
-			fn ( $field ) => !isset( $field['oauthVersion'] ) || $field['oauthVersion'] === $oauthVersion
+			static fn ( $field ) => !isset( $field['oauthVersion'] ) || $field['oauthVersion'] === $oauthVersion
 		);
 
 		$form = HTMLForm::factory( 'ooui',
@@ -624,7 +627,7 @@ class SpecialMWOAuthConsumerRegistration extends SpecialPage {
 			$this->getContext()
 		);
 		$form->setSubmitCallback(
-			function ( array $data, IContextSource $context ) use ( $control ) {
+			function ( array $data ) use ( $control ) {
 				// adapt form to controller
 				$data = $this->fillDefaultFields( $data );
 
@@ -651,10 +654,8 @@ class SpecialMWOAuthConsumerRegistration extends SpecialPage {
 		$status = $form->show();
 		if ( $status instanceof Status && $status->isOK() ) {
 			/** @var Consumer $cmr */
-			// @phan-suppress-next-line PhanTypeArraySuspiciousNullable
 			$cmr = $status->value['result']['consumer'];
 			if ( $cmr->getOwnerOnly() ) {
-				// @phan-suppress-next-line PhanTypeArraySuspiciousNullable
 				$accessToken = $status->value['result']['accessToken'];
 				if ( $oauthVersion === Consumer::OAUTH_VERSION_1 ) {
 					$this->getOutput()->addWikiMsg(
@@ -714,6 +715,7 @@ class SpecialMWOAuthConsumerRegistration extends SpecialPage {
 
 		// 'callbackUrl' must be present,
 		// otherwise SubmitControl::validateFields() fails.
+		// @phan-suppress-next-line PhanTypeInvalidDimOffset
 		if ( $form['ownerOnly'] && !isset( $form['callbackUrl'] ) ) {
 			$form['callbackUrl'] = '';
 		}

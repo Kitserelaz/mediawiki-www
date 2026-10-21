@@ -1,22 +1,5 @@
 <?php
 
-namespace MediaWiki\Extension\Thanks\Api;
-
-use Flow\Container;
-use Flow\Conversion\Utils;
-use Flow\Exception\FlowException;
-use Flow\Model\PostRevision;
-use Flow\Model\UUID;
-use MediaWiki\Api\ApiBase;
-use MediaWiki\Api\ApiMain;
-use MediaWiki\Extension\Notifications\Model\Event;
-use MediaWiki\Extension\Thanks\Storage\LogStore;
-use MediaWiki\Permissions\PermissionManager;
-use MediaWiki\Title\Title;
-use MediaWiki\User\User;
-use MediaWiki\User\UserFactory;
-use Wikimedia\ParamValidator\ParamValidator;
-
 /**
  * API module to send Flow thanks notifications
  *
@@ -27,19 +10,36 @@ use Wikimedia\ParamValidator\ParamValidator;
  * @ingroup Extensions
  */
 
-class ApiFlowThank extends ApiThank {
+namespace MediaWiki\Extension\Thanks\Api;
 
-	private UserFactory $userFactory;
+use Flow\Container;
+use Flow\Conversion\Utils;
+use Flow\Exception\FlowException;
+use Flow\Model\PostRevision;
+use Flow\Model\UUID;
+use MediaWiki\Api\ApiBase;
+use MediaWiki\Api\ApiMain;
+use MediaWiki\Extension\Thanks\Storage\LogStore;
+use MediaWiki\Notification\NotificationService;
+use MediaWiki\Notification\RecipientSet;
+use MediaWiki\Notification\Types\WikiNotification;
+use MediaWiki\Permissions\PermissionManager;
+use MediaWiki\Title\Title;
+use MediaWiki\User\User;
+use MediaWiki\User\UserFactory;
+use Wikimedia\ParamValidator\ParamValidator;
+
+class ApiFlowThank extends ApiThank {
 
 	public function __construct(
 		ApiMain $main,
-		$action,
+		string $action,
 		PermissionManager $permissionManager,
 		LogStore $storage,
-		UserFactory $userFactory
+		private readonly NotificationService $notifications,
+		private readonly UserFactory $userFactory,
 	) {
 		parent::__construct( $main, $action, $permissionManager, $storage );
-		$this->userFactory = $userFactory;
 	}
 
 	public function execute() {
@@ -51,7 +51,7 @@ class ApiFlowThank extends ApiThank {
 
 		try {
 			$postId = UUID::create( $params['postid'] );
-		} catch ( FlowException $e ) {
+		} catch ( FlowException ) {
 			$this->dieWithError( 'thanks-error-invalidpostid', 'invalidpostid' );
 		}
 
@@ -68,16 +68,17 @@ class ApiFlowThank extends ApiThank {
 		$rootPost = $data['root'];
 		$workflowId = $rootPost->getPostId();
 		$rawTopicTitleText = Utils::htmlToPlaintext(
-			Container::get( 'templating' )->getContent( $rootPost, 'topic-title-html' )
+			Container::get( 'templating' )->getContent( $rootPost, 'topic-title-html' ),
+			$this->getLanguage()
 		);
 		// Truncate the title text to prevent issues with database storage.
 		$topicTitleText = $this->getLanguage()->truncateForDatabase( $rawTopicTitleText, 200 );
 		$pageTitle = $this->getPageTitleFromRootPost( $rootPost );
-		$this->dieOnUserBlockedFromTitle( $user, $pageTitle );
+		$this->dieOnUserBlockedFromPage( $user, $pageTitle );
 
 		/** @var PostRevision $post */
 		$post = $data['post'];
-		$postText = Utils::htmlToPlaintext( $post->getContent() );
+		$postText = Utils::htmlToPlaintext( $post->getContent(), $this->getLanguage() );
 		$postText = $this->getLanguage()->truncateForDatabase( $postText, 200 );
 
 		$topicTitle = $this->getTopicTitleFromRootPost( $rootPost );
@@ -94,6 +95,11 @@ class ApiFlowThank extends ApiThank {
 		);
 	}
 
+	/**
+	 * @param User $user
+	 * @param UUID $id
+	 * @return mixed
+	 */
 	private function userAlreadySentThanksForId( User $user, UUID $id ) {
 		return $user->getRequest()->getSessionData( "flow-thanked-{$id->getAlphadecimal()}" );
 	}
@@ -108,14 +114,13 @@ class ApiFlowThank extends ApiThank {
 
 		try {
 			$data = $rootPostLoader->getWithRoot( $postId );
-		} catch ( FlowException $e ) {
+		} catch ( FlowException ) {
 			$this->dieWithError( 'thanks-error-invalidpostid', 'invalidpostid' );
 		}
 
 		if ( $data['post'] === null ) {
 			$this->dieWithError( 'thanks-error-invalidpostid', 'invalidpostid' );
 		}
-		// @phan-suppress-next-line PhanTypeMismatchReturnNullable T240141
 		return $data;
 	}
 
@@ -178,20 +183,17 @@ class ApiFlowThank extends ApiThank {
 			return;
 		}
 
-		// Create the notification via Echo extension
-		Event::create( [
-			'type' => 'flow-thank',
-			'title' => $pageTitle,
-			'extra' => [
+		// Create the notification
+		$this->notifications->notify(
+			new WikiNotification( 'flow-thank', $pageTitle, $user, [
 				'post-id' => $postId->getAlphadecimal(),
 				'workflow' => $workflowId->getAlphadecimal(),
-				'thanked-user-id' => $recipient->getId(),
 				'topic-title' => $topicTitleText,
 				'excerpt' => $postTextExcerpt,
 				'target-page' => $topicTitle->getArticleID(),
-			],
-			'agent' => $user,
-		] );
+			] ),
+			new RecipientSet( $recipient )
+		);
 
 		// And mark the thank in session for a cheaper check to prevent duplicates (T48690).
 		$user->getRequest()->setSessionData( "flow-thanked-{$postId->getAlphadecimal()}", true );
@@ -200,6 +202,7 @@ class ApiFlowThank extends ApiThank {
 		$this->logThanks( $user, $recipient, $uniqueId );
 	}
 
+	/** @inheritDoc */
 	public function getAllowedParams() {
 		return [
 			'postid' => [

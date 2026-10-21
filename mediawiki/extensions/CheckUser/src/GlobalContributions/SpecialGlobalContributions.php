@@ -1,32 +1,42 @@
 <?php
 
-namespace MediaWiki\CheckUser\GlobalContributions;
+namespace MediaWiki\Extension\CheckUser\GlobalContributions;
 
-use ErrorPageError;
 use MediaWiki\Block\DatabaseBlockStore;
-use MediaWiki\CheckUser\Services\CheckUserLookupUtils;
+use MediaWiki\Html\Html;
 use MediaWiki\Permissions\PermissionManager;
+use MediaWiki\SpecialPage\ContributionsRangeTrait;
 use MediaWiki\SpecialPage\ContributionsSpecialPage;
+use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Title\NamespaceInfo;
+use MediaWiki\User\CentralId\CentralIdLookup;
 use MediaWiki\User\Options\UserOptionsLookup;
+use MediaWiki\User\User;
 use MediaWiki\User\UserFactory;
+use MediaWiki\User\UserGroupAssignmentService;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityLookup;
 use MediaWiki\User\UserNamePrefixSearch;
 use MediaWiki\User\UserNameUtils;
-use OOUI\HtmlSnippet;
-use OOUI\MessageWidget;
-use PermissionsError;
-use UserBlockedError;
 use Wikimedia\IPUtils;
 use Wikimedia\Rdbms\IConnectionProvider;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * @ingroup SpecialPage
  */
 class SpecialGlobalContributions extends ContributionsSpecialPage {
-	private CheckUserLookupUtils $lookupUtils;
-	private GlobalContributionsPagerFactory $pagerFactory;
+
+	use ContributionsRangeTrait;
+
+	/**
+	 * Prometheus timing metric name tracking the execution time of Special:GlobalContributions.
+	 */
+	public const GLOBAL_CONTRIBUTIONS_EXECUTE_DURATION_METRIC_NAME =
+		'checkuser_globalcontributions_execute_duration_seconds';
+
+	private const BASE_HELP_URL = 'https://www.mediawiki.org/wiki/Special:MyLanguage/Help:';
+
 	private ?GlobalContributionsPager $pager = null;
 
 	public function __construct(
@@ -39,8 +49,10 @@ class SpecialGlobalContributions extends ContributionsSpecialPage {
 		UserFactory $userFactory,
 		UserIdentityLookup $userIdentityLookup,
 		DatabaseBlockStore $blockStore,
-		CheckUserLookupUtils $lookupUtils,
-		GlobalContributionsPagerFactory $pagerFactory
+		UserGroupAssignmentService $userGroupAssignmentService,
+		private readonly CentralIdLookup $centralIdLookup,
+		private readonly GlobalContributionsPagerFactory $pagerFactory,
+		private readonly StatsFactory $statsFactory,
 	) {
 		parent::__construct(
 			$permissionManager,
@@ -52,17 +64,17 @@ class SpecialGlobalContributions extends ContributionsSpecialPage {
 			$userFactory,
 			$userIdentityLookup,
 			$blockStore,
+			$userGroupAssignmentService,
 			'GlobalContributions'
 		);
-		$this->lookupUtils = $lookupUtils;
-		$this->pagerFactory = $pagerFactory;
 	}
 
 	/**
 	 * @inheritDoc
+	 * @codeCoverageIgnore Merely declarative
 	 */
-	public function requiresUnblock() {
-		return true;
+	public function isIncludable() {
+		return false;
 	}
 
 	/**
@@ -73,20 +85,15 @@ class SpecialGlobalContributions extends ContributionsSpecialPage {
 			'type' => 'user',
 			'default' => str_replace( '_', ' ', $target ),
 			'label' => $this->msg( 'checkuser-global-contributions-target-label' )->text(),
+			'placeholder' => $this->msg( 'checkuser-global-contributions-target-placeholder' )->text(),
 			'name' => 'target',
 			'id' => 'mw-target-user-or-ip',
 			'size' => 40,
 			'autofocus' => $target === '',
 			'section' => 'contribs-top',
-			'validation-callback' => function ( $target ) {
-				if ( !$this->lookupUtils->isValidIPOrRange( $target ) ) {
-					return $this->msg( 'checkuser-global-contributions-target-error-no-ip' );
-				}
-				return true;
-			},
 			'ipallowed' => true,
 			'iprange' => true,
-			'iprangelimits' => $this->lookupUtils->getRangeLimit(),
+			'iprangelimits' => $this->getQueryableRangeLimit( $this->getConfig() ),
 			'required' => true,
 		];
 	}
@@ -95,66 +102,55 @@ class SpecialGlobalContributions extends ContributionsSpecialPage {
 	 * @inheritDoc
 	 */
 	public function execute( $par ) {
-		// These checks are the same as in AbstractTemporaryAccountHandler.
-		if (
-			!$this->permissionManager->userHasRight(
-				$this->getAuthority()->getUser(),
-				'checkuser-temporary-account-no-preference'
-			)
-		) {
-			// The user must have the 'checkuser-temporary-account' right.
-			if (
-				!$this->permissionManager->userHasRight(
-					$this->getAuthority()->getUser(),
-					'checkuser-temporary-account'
-				)
-			) {
-				throw new PermissionsError( 'checkuser-temporary-account' );
-			}
+		$this->requireLogin();
 
-			// The user must also have enabled the preference.
-			if (
-				!$this->userOptionsLookup->getOption(
-					$this->getAuthority()->getUser(),
-					'checkuser-temporary-account-enable'
-				)
-			) {
-				throw new ErrorPageError(
-					$this->msg( 'checkuser-global-contributions-permission-error-title' ),
-					$this->msg( 'checkuser-global-contributions-permission-error-description' )
-				);
-			}
-		}
-
-		$block = $this->getAuthority()->getBlock();
-		if ( $block ) {
-			throw new UserBlockedError(
-				$block,
-				$this->getAuthority()->getUser(),
-				$this->getLanguage(),
-				$this->getRequest()->getIP()
-			);
-		}
+		$start = hrtime( true );
 
 		parent::execute( $par );
 
+		// Setting $overrideBaseUrl=true is needed to prevent addHelpLink()
+		// from trying to encode the anchor character (#)
+		$this->addHelpLink(
+			self::BASE_HELP_URL . 'Extension:CheckUser#Special:GlobalContributions_usage',
+			true
+		);
+
 		$target = $this->opts['target'] ?? null;
-		if (
-			$target &&
-			!$this->lookupUtils->isValidIPOrRange( $target ) &&
-			!IPUtils::isIPAddress( $target )
+
+		if ( $target === null ) {
+			$message = $this->msg( 'checkuser-global-contributions-summary' )
+				->numParams( $this->getMaxAgeForMessage() )
+				->parse();
+			$this->getOutput()->prependHTML( "<div class='mw-specialpage-summary'>\n$message\n</div>" );
+		} elseif (
+			IPUtils::isValidRange( $target ) &&
+			!$this->isQueryableRange( $target, $this->getConfig() )
 		) {
-			$this->getOutput()->setSubtitle(
-				new MessageWidget( [
-					'type' => 'error',
-					'label' => new HtmlSnippet(
-						$this->msg( 'checkuser-global-contributions-target-error-no-ip-banner', $target )->parse()
-					)
-				] )
-			);
-		} else {
+			// Valid range, but outside CIDR limit.
+			$limits = $this->getQueryableRangeLimit( $this->getConfig() );
+			$limit = $limits[ IPUtils::isIPv4( $target ) ? 'IPv4' : 'IPv6' ];
+			$this->getOutput()->addWikiMsg( 'sp-contributions-outofrange', $limit );
+		} elseif ( $this->isQueryableRange( $target, $this->getConfig() ) ) {
 			$this->getOutput()->addJsConfigVars( 'wgIPRangeTarget', $target );
 		}
+
+		$time = hrtime( true ) - $start;
+
+		$this->statsFactory->getTiming( self::GLOBAL_CONTRIBUTIONS_EXECUTE_DURATION_METRIC_NAME )
+			->observeNanoseconds( $time );
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	protected function modifyFields( &$fields ) {
+		$fields['namespace']['include'] = $this->namespaceInfo->getCommonNamespaces();
+
+		// Some of these tags may be disabled on external wikis via `$wgSoftwareTags`
+		// but any tag returned here is guaranteed to be consistent on any wiki it
+		// is enabled on
+		$fields['tagfilter']['useAllTags'] = false;
+		$fields['tagfilter']['activeOnly'] = false;
 	}
 
 	/**
@@ -208,22 +204,96 @@ class SpecialGlobalContributions extends ContributionsSpecialPage {
 		return 'checkuser-global-contributions-results-title';
 	}
 
+	/**
+	 * @return float The max age of contributions in days rounded to the nearest whole number
+	 */
+	private function getMaxAgeForMessage() {
+		return round( $this->getConfig()->get( 'CUDMaxAge' ) / 86400 );
+	}
+
 	/** @inheritDoc */
 	protected function contributionsSub( $userObj, $targetName ) {
 		$contributionsSub = parent::contributionsSub( $userObj, $targetName );
 
-		// Add subtitle text describing that the data shown is limited to wgCUDMaxAge seconds ago. The count should
+		// A subtitle text describing that the data shown is limited to wgCUDMaxAge seconds ago. The count should
 		// be in days, as this makes it easier to translate the message.
-		$contributionsSub .= $this->msg( 'checkuser-global-contributions-subtitle' )
-			->numParams( round( $this->getConfig()->get( 'CUDMaxAge' ) / 86400 ) )
-			->parse();
+		// Also, it reminds that the user might not have rights to view contributions on some wikis but it
+		// applies only to checks for IP addresses and ranges.
+		$limitMsg = $this->msg( 'checkuser-global-contributions-subtitle' );
+
+		// Allow linking to relevant tools to surface more global contributions (T380562).
+		if ( IPUtils::isValidRange( $targetName ) ) {
+			$toolsMsg = $this->msg( 'checkuser-global-contributions-ip-range-tools' );
+		} elseif ( IPUtils::isIPAddress( $userObj->getName() ) ) {
+			$toolsMsg = $this->msg( 'checkuser-global-contributions-anon-tools' );
+		} else {
+			$toolsMsg = $this->msg( 'checkuser-global-contributions-registered-user-tools' );
+
+			// Viewing contributions by account name requires no special permissions, so we can
+			// show a simpler message, without the reminder about some wikis being potentially skipped.
+			$limitMsg = $this->msg( 'checkuser-global-contributions-subtitle-account' );
+		}
+
+		$contributionsSub .= Html::element( 'br' );
+		$contributionsSub .= $limitMsg
+			->numParams(
+				$this->getMaxAgeForMessage(),
+				GlobalContributionsPager::REVISION_COUNT_LIMIT
+			)->parse();
+
+		if ( $toolsMsg && !$toolsMsg->isDisabled() ) {
+			$contributionsSub .= Html::element( 'br' );
+			$contributionsSub .= $toolsMsg
+				->params( $userObj->getName() )
+				->numParams( $this->getMaxAgeForMessage() )
+				->parse();
+		}
 
 		return $contributionsSub;
 	}
 
-	/** @inheritDoc */
-	public function shouldShowBlockLogExtract( UserIdentity $target ): bool {
-		return parent::shouldShowBlockLogExtract( $target ) &&
-			$this->lookupUtils->isValidIPOrRange( $target->getName() );
+	/**
+	 * Prevent the base ContributionsSpecialPage class from generating the unregistered user
+	 * message, as this is referring to the local user. Instead, GlobalContributionsPager will
+	 * check against the central (global) account and manage its own message visibility.
+	 *
+	 * @inheritDoc
+	 */
+	protected function addContributionsSubWarning( $userObj ) {
+	}
+
+	/**
+	 * Don't render the action links, as they refer to the local account instead of the global one
+	 *
+	 * @inheritDoc
+	 */
+	protected function shouldDisplayActionLinks( User $userObj ): bool {
+		return false;
+	}
+
+	/**
+	 * Don't show the account information, as it refers to the local account instead of the global one
+	 *
+	 * @inheritDoc
+	 */
+	protected function shouldDisplayAccountInformation( User $userObj ): bool {
+		return false;
+	}
+
+	/**
+	 * Replace the local user link with a link to the global user account
+	 *
+	 * @inheritDoc
+	 */
+	protected function getUserLink( User $userObj ): string {
+		$target = $userObj->getName();
+		if ( $this->centralIdLookup->centralIdFromName( $target, $this->getAuthority() ) ) {
+			return $this->getLinkRenderer()->makeLink(
+				SpecialPage::getTitleFor( 'CentralAuth', $target ),
+				$target
+			);
+		} else {
+			return $target;
+		}
 	}
 }

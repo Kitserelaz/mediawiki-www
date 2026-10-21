@@ -1,0 +1,39 @@
+<?php
+
+namespace SMW\DataValues\ValueFormatters;
+
+use RuntimeException;
+use SMW\DataValues\DataValue;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 2.4
+ *
+ * @author mwjames
+ */
+class NoValueFormatter extends DataValueFormatter {
+
+	/**
+	 * @since 2.4
+	 *
+	 * {@inheritDoc}
+	 */
+	public function isFormatterFor( DataValue $dataValue ): bool {
+		// @phan-suppress-next-line PhanRedundantCondition
+		return $dataValue instanceof DataValue;
+	}
+
+	/**
+	 * @since 2.4
+	 *
+	 * {@inheritDoc}
+	 */
+	public function format( $type, $linker = null ) {
+		if ( !$this->dataValue instanceof DataValue ) {
+			throw new RuntimeException( "The formatter is missing a valid DataValue object" );
+		}
+
+		return $this->dataValue->getDataItem()->getSerialization();
+	}
+
+}

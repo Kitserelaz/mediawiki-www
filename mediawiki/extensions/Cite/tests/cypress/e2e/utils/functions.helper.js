@@ -1,5 +1,3 @@
-import querystring from 'querystring';
-
 export function clickUntilVisible( clickElement, expectedSelector, timeout = 5000 ) {
 	const timeoutTime = Date.now() + timeout;
 
@@ -22,7 +20,8 @@ export function getTestString( prefix = '' ) {
 }
 
 export function visitTitle( title, query = {} ) {
-	cy.visit( `/index.php?title=${ encodeURIComponent( title ) }&${ querystring.stringify( query ) }` );
+	const queryString = new URLSearchParams( query ).toString();
+	cy.visit( `/index.php?title=${ encodeURIComponent( title ) }&${ queryString }` );
 }
 
 export function waitForMWLoader() {
@@ -45,6 +44,19 @@ export function waitForModuleReady( moduleName ) {
 		);
 }
 
+export function isModuleRegistered( moduleName ) {
+	// This method waits until the ResourceLoader register is available, then
+	// checks for the existence of a module but without waiting for that module to
+	// be ready.
+	cy.window()
+		.should( 'have.property', 'mw' )
+		.and( 'have.property', 'loader' )
+		.and( 'have.property', 'getModuleNames' );
+	return cy.window().then(
+		( win ) => win.mw.loader.getModuleNames().includes( moduleName )
+	);
+}
+
 export function editPage( title, wikiText ) {
 	visitTitle( '' );
 	waitForMWLoader();
@@ -52,7 +64,7 @@ export function editPage( title, wikiText ) {
 		await win.mw.loader.using( 'mediawiki.api' );
 		const response = await new win.mw.Api().postWithEditToken( {
 			action: 'edit',
-			title: title,
+			title,
 			text: wikiText,
 			formatversion: '2'
 		} );
@@ -68,25 +80,10 @@ export function loginAsAdmin() {
 	cy.get( '#wpLoginAttempt' ).click();
 }
 
+// Read Mode Helpers
 export function getReference( num ) {
 	return cy.get( `#mw-content-text .reference:nth-of-type(${ num })` );
 
-}
-
-export function getCiteSubBacklink( num ) {
-	return cy.get( `.mw-cite-backlink sup:nth-of-type(${ num }) a` );
-}
-
-export function getCiteMultiBacklink( num ) {
-	return cy.get( `.references li:nth-of-type(${ num }) .mw-cite-up-arrow-backlink` );
-}
-
-export function getCiteSingleBacklink( num ) {
-	return cy.get( `.references li:nth-of-type(${ num }) .mw-cite-backlink a` );
-}
-
-export function getFragmentFromLink( linkElement ) {
-	return linkElement.invoke( 'attr', 'href' ).then( ( href ) => href.split( '#' )[ 1 ] );
 }
 
 export function backlinksIdShouldMatchFootnoteId( supIndex, backlinkIndex, rowNumber ) {

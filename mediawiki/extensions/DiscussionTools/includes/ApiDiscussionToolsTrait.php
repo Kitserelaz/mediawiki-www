@@ -15,8 +15,8 @@ use MediaWiki\Title\Title;
 use MediaWiki\User\TempUser\TempUserCreator;
 use MediaWiki\User\User;
 use MediaWiki\User\UserFactory;
-use Wikimedia\Parsoid\Utils\DOMCompat;
-use Wikimedia\Parsoid\Utils\DOMUtils;
+use Wikimedia\Parsoid\Core\DOMCompat;
+use Wikimedia\Parsoid\Ext\DOMUtils;
 
 /**
  * Random methods we want to share between API modules.
@@ -140,7 +140,6 @@ trait ApiDiscussionToolsTrait {
 
 	/**
 	 * @see VisualEditorParsoidClientFactory
-	 * @return ParsoidClient
 	 */
 	protected function getParsoidClient(): ParsoidClient {
 		return $this->parsoidClientFactory->createParsoidClient(

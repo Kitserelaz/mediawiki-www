@@ -1,0 +1,91 @@
+<?xml version="1.0"?>
+<ruleset>
+	<!--  START Copied from wikibase-codesniffer T268828	-->
+
+	<rule ref="./vendor/mediawiki/mediawiki-codesniffer/MediaWiki" />
+
+	<!-- The function comment sniff is too rigorous about too many details that need
+		exceptions:
+		* It complains about missing documentation on fully self-explanatory function headers
+		  with strict type hints.
+		* It complains about missing documentation if there is a proper @see tag.
+		* It complains about duplicate spaces in "@param <type>  $<var>", but removing these
+		  doesn't make the code easier to read.
+		* It does not understand "@param <type> [$optional,…]. -->
+	<rule ref="MediaWiki.Commenting.FunctionComment">
+		<severity>0</severity>
+	</rule>
+
+	<!-- Even if we encourage to use spaces in comments, we don't think this sniff should block
+		patches from being merged. -->
+	<rule ref="MediaWiki.WhiteSpace.SpaceBeforeSingleLineComment">
+		<severity>0</severity>
+	</rule>
+
+	<!-- Disallows any content outside of <?php … ?> tags. -->
+	<rule ref="Generic.Files.InlineHTML" />
+
+	<rule ref="Generic.Files.LineLength">
+		<properties>
+			<property name="lineLimit" value="140" />
+		</properties>
+
+		<properties>
+			<!-- The inherited "lineLimit" from the base MediaWiki rule set is 100. -->
+			<property name="absoluteLineLimit" value="140" />
+		</properties>
+	</rule>
+
+	<rule ref="Generic.Metrics.NestingLevel" />
+
+	<!--  END Copied from wikibase-codesniffer T268828	-->
+
+	<rule ref="MediaWiki.Commenting.PhpunitAnnotations.NotClassTrait">
+		<exclude-pattern>DispatchingQueryBuilderTest\.php</exclude-pattern>
+	</rule>
+
+	<!--  START Copied from wikibase-codesniffer T268828	-->
+
+	<rule ref="MediaWiki.NamingConventions.LowerCamelFunctionsName">
+		<!-- Exclude test methods like "testGivenInvalidInput_methodThrowsException". -->
+		<exclude-pattern>tests*Test*\.php</exclude-pattern>
+	</rule>
+
+	<!--  END Copied from wikibase-codesniffer T268828	-->
+
+	<rule ref="Mediawiki.Classes.FullQualifiedClassName">
+		<!-- FIXME: Add use statements, some class name conflicts -->
+		<exclude-pattern>DescriptionsField\.php</exclude-pattern>
+		<exclude-pattern>ElasticTermResult\.php</exclude-pattern>
+		<exclude-pattern>EntityResultSet\.php</exclude-pattern>
+		<exclude-pattern>EntityResultType\.php</exclude-pattern>
+		<exclude-pattern>EntitySearchElasticTest\.php</exclude-pattern>
+		<exclude-pattern>EntitySearchProfiles\.php</exclude-pattern>
+		<exclude-pattern>LabelsField\.php</exclude-pattern>
+		<exclude-pattern>SearchEntitiesIntegrationTest\.php</exclude-pattern>
+		<exclude-pattern>TermLookupSearcher\.php</exclude-pattern>
+		<exclude-pattern>WikibasePrefixSearcher\.php</exclude-pattern>
+		<exclude-pattern>WikibaseSearch\.entitytypes\.php</exclude-pattern>
+	</rule>
+
+	<!--  START Copied from wikibase-codesniffer T268828	-->
+
+	<rule ref="Squiz.Functions.GlobalFunction" />
+
+	<!-- NOTE: Do not add the Squiz.Strings.DoubleQuoteUsage sniff. Even if we encourage to prefer
+		single quotes, we don't think double quotes should block patches from being merged. -->
+
+	<!-- Enforces one empty line before and after each method in a class. -->
+	<rule ref="Squiz.WhiteSpace.FunctionSpacing">
+		<properties>
+			<!-- The sniffs default is two empty lines. -->
+			<property name="spacing" value="1" />
+		</properties>
+	</rule>
+
+	<arg name="extensions" value="php" />
+	<arg name="encoding" value="UTF-8" />
+	<!--  END Copied from wikibase-codesniffer T268828	-->
+
+	<file>.</file>
+</ruleset>

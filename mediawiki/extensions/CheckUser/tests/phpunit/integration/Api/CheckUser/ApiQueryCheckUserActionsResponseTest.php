@@ -1,13 +1,13 @@
 <?php
 
-namespace MediaWiki\CheckUser\Tests\Integration\Api\CheckUser;
+namespace MediaWiki\Extension\CheckUser\Tests\Integration\Api\CheckUser;
 
-use LogEntryBase;
-use LogPage;
-use ManualLogEntry;
-use MediaWiki\CheckUser\Api\ApiQueryCheckUser;
-use MediaWiki\CheckUser\Services\ApiQueryCheckUserResponseFactory;
+use MediaWiki\Extension\CheckUser\Api\ApiQueryCheckUser;
+use MediaWiki\Extension\CheckUser\Services\ApiQueryCheckUserResponseFactory;
 use MediaWiki\Json\FormatJson;
+use MediaWiki\Logging\LogEntryBase;
+use MediaWiki\Logging\LogPage;
+use MediaWiki\Logging\ManualLogEntry;
 use MediaWiki\User\UserIdentityValue;
 use MediaWikiIntegrationTestCase;
 use Wikimedia\Rdbms\IReadableDatabase;
@@ -15,7 +15,7 @@ use Wikimedia\Rdbms\SelectQueryBuilder;
 use Wikimedia\TestingAccessWrapper;
 
 /**
- * @covers \MediaWiki\CheckUser\Api\CheckUser\ApiQueryCheckUserActionsResponse
+ * @covers \MediaWiki\Extension\CheckUser\Api\CheckUser\ApiQueryCheckUserActionsResponse
  * @group Database
  */
 class ApiQueryCheckUserActionsResponseTest extends MediaWikiIntegrationTestCase {
@@ -24,7 +24,7 @@ class ApiQueryCheckUserActionsResponseTest extends MediaWikiIntegrationTestCase 
 		$mockApiQueryCheckUser = $this->createMock( ApiQueryCheckUser::class );
 		$mockApiQueryCheckUser->method( 'extractRequestParams' )
 			->willReturn( [
-				'request' => 'actions', 'target' => 'Test', 'reason' => '', 'timecond' => '-3 months', 'limit' => '50'
+				'request' => 'actions', 'target' => 'Test', 'reason' => '', 'timecond' => '-3 months', 'limit' => '50',
 			] );
 		/** @var ApiQueryCheckUserResponseFactory $responseFactory */
 		$responseFactory = $this->getServiceContainer()->get( 'ApiQueryCheckUserResponseFactory' );
@@ -78,7 +78,7 @@ class ApiQueryCheckUserActionsResponseTest extends MediaWikiIntegrationTestCase 
 			'Normal log parameters' => [
 				[ '4::target' => 'Testing', '5::noredir' => '0' ],
 				LogEntryBase::makeParamBlob( [ '4::target' => 'Testing', '5::noredir' => '0' ] ),
-			]
+			],
 		];
 	}
 

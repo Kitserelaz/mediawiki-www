@@ -1,0 +1,47 @@
+{
+  "status": "passed-build-and-isolated-runtime-verification",
+  "date": "2026-10-18",
+  "platform": "linux/amd64",
+  "execution": "AMD64 emulation on ARM64 Docker Desktop",
+  "source_tree": "a5d376c130e8d52d62d911ad2c997ed43a365b54",
+  "tracked_files": 127567,
+  "images": {
+    "php": {
+      "tag": "cloudwiki-php:upgrade-clean-20261018-amd64",
+      "id": "sha256:9a34a313317dff3c59fd24069c16976e6b29dd6e7962e68ce466db6a4e80e994",
+      "architecture": "amd64",
+      "os": "linux"
+    },
+    "web": {
+      "tag": "cloudwiki-web:upgrade-clean-20261018-amd64",
+      "id": "sha256:041fa67c731a881fc2d5152f83f7558275711f0cdade11e4fcd5d4d650364a4d",
+      "architecture": "amd64",
+      "os": "linux"
+    },
+    "counter": {
+      "tag": "cloudwiki-counter:upgrade-clean-20261018-amd64",
+      "id": "sha256:d19bfbc915762b70cc0e53b4901960adfa5b3f3df939a362e81c08bbd59f8ec0",
+      "architecture": "amd64",
+      "os": "linux"
+    }
+  },
+  "php_version": "8.4.26",
+  "php_files_linted": 33836,
+  "hash_verified_future_php_skips": 1,
+  "runtime_checks": {
+    "oathauth-dependencies": "passed",
+    "webauthn-dependencies": "passed",
+    "architecture": "passed",
+    "elastica": "passed",
+    "php-lint": "passed",
+    "web-assets": "passed",
+    "counter-unit": "passed",
+    "counter-shutdown": "passed"
+  },
+  "counter_tests": 13,
+  "known_observations": [
+    "WebAuthn thecodingmachine/safe emits PHP 8.4 implicit-nullability deprecation notices; dependency autoload succeeds."
+  ],
+  "release_acceptance": "incomplete: final catalogue/skin, remaining legacy query and final farm gates remain separate requirements",
+  "production_deployed": false
+}

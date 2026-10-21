@@ -1,0 +1,17 @@
+{
+	"@metadata": {
+		"authors": [
+			"ToJack",
+			"ZulfiqorF"
+		]
+	},
+	"tooltip-pt-homepage": "Оғоза",
+	"growthexperiments-homepage-email-changelink": "тағйир",
+	"growthexperiments-homepage-startediting-dialog-difficulty-forward-mobile": "Иҷро шуд",
+	"growthexperiments-homepage-suggestededits-tasktype-label-links": "Пайвандҳоро миёни мақолаҳо илова намудан",
+	"growthexperiments-homepage-suggestededits-difficulty-filter-label-easy": "Осон",
+	"growthexperiments-homepage-suggestededits-difficulty-filter-label-medium": "Миёна",
+	"growthexperiments-homepage-suggestededits-difficulty-filter-label-hard": "Сахт",
+	"growthexperiments-homepage-suggestededits-difficulty-filters-close": "Иҷро шуд",
+	"growthexperiments-homepage-suggestededits-error-description": "Лутфан, баъдтар бори дигар кӯшиш намоед."
+}

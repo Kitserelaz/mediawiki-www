@@ -1,0 +1,83 @@
+{
+	"name": "Eveskin",
+	"version":"1.0",
+	"author": [
+		"Gabriel Wicke",
+		"Trevton",
+		"..."
+	],
+	"url": "https://www.mediawiki.org/wiki/Skin:Eveskin",
+	"descriptionmsg": "Eveskin for mediawiki",
+	"namemsg": "skinname-Eveskin",
+	"license-name": "GPL-2.0+",
+	"type": "skin",
+	"requires": {
+		"MediaWiki": ">= 1.25.0"
+	},
+	"ValidSkinNames": {
+		"eveskin": {
+			"class": "SkinTemplate",
+			"args": [
+				{
+					"name": "eveskin",
+					"template": "EveTemplate",
+					"styles": [
+						"skins.eve.styles"
+					]
+				}
+			]
+		}
+	},
+	"SkinOOUIThemes": {
+		"eveskin": "Apex"
+	},
+	"MessagesDirs": {
+		"eveskin": [
+			"i18n"
+		]
+	},
+	"ResourceModules": {
+		"skins.eve.styles": {
+			"class": "MediaWiki\\ResourceLoader\\SkinModule",
+			"features": {
+				"content-media": true,
+				"content-links": true,
+				"elements": true,
+				"logo": true,
+				"interface": true
+			},
+			"styles": {
+				"legacy.css": true,
+				"main.css": {
+					"media": "screen"
+				},
+				"a11y.less": true
+			}
+		}
+	},
+	"ConfigRegistry": {
+		"eveskin": "GlobalVarConfig::newInstance"
+	},
+	"config": {
+		"EveUseTwoButtonsSearchForm": {
+			"value": false,
+			"description": ""
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "",
+		"remoteSkinPath": "eveskin"
+	},
+	"ResourceModuleSkinStyles": {
+		"eveskin": {
+			"+ext.echo.styles.badge": "skinStyles/ext.echo.styles.badge.less",
+			"+mediawiki.action.view.redirectPage": "skinStyles/mediawiki.action.view.redirectPage.css",
+			"+mediawiki.special.preferences.styles": "skinStyles/mediawiki.special.preferences.styles.less",
+			"+mediawiki.notification": "skinStyles/mediawiki.notification.less"
+		}
+	},
+	"AutoloadClasses": {
+		"EveTemplate": "EveTemplate.php"
+	},
+	"manifest_version": 1
+}

@@ -41,28 +41,35 @@ class AccessTokenRepository extends DatabaseRepository implements AccessTokenRep
 	 *
 	 * @param ClientEntityInterface|ClientEntity $clientEntity
 	 * @param ScopeEntityInterface[] $scopes
-	 * @param string|int|null $userIdentifier
+	 * @param ?string $userIdentifier
 	 * @return AccessTokenEntityInterface
 	 * @throws OAuthServerException
 	 */
-	public function getNewToken( ClientEntityInterface $clientEntity,
-		array $scopes, $userIdentifier = null ) {
-		return new AccessTokenEntity( $clientEntity, $scopes,
-			$this->issuer, $userIdentifier );
+	public function getNewToken(
+		ClientEntityInterface $clientEntity,
+		array $scopes,
+		?string $userIdentifier = null
+	): AccessTokenEntityInterface {
+		return new AccessTokenEntity(
+			$clientEntity,
+			$scopes,
+			$this->issuer,
+			$userIdentifier
+		);
 	}
 
 	/**
 	 * Persists a new access token to permanent storage.
 	 *
-	 * @param AccessTokenEntityInterface|AccessTokenEntity $accessTokenEntity
-	 *
 	 * @throws UniqueTokenIdentifierConstraintViolationException
 	 */
-	public function persistNewAccessToken( AccessTokenEntityInterface $accessTokenEntity ) {
+	public function persistNewAccessToken( AccessTokenEntityInterface $accessTokenEntity ): void {
 		if ( $this->identifierExists( $accessTokenEntity->getIdentifier() ) ) {
 			throw UniqueTokenIdentifierConstraintViolationException::create();
 		}
 
+		/** @var AccessTokenEntity $accessTokenEntity */
+		'@phan-var AccessTokenEntity $accessTokenEntity';
 		$data = $this->getDbDataFromTokenEntity( $accessTokenEntity );
 
 		$this->getDB( DB_PRIMARY )->newInsertQueryBuilder()
@@ -74,10 +81,8 @@ class AccessTokenRepository extends DatabaseRepository implements AccessTokenRep
 
 	/**
 	 * Revoke an access token.
-	 *
-	 * @param string $tokenId
 	 */
-	public function revokeAccessToken( $tokenId ) {
+	public function revokeAccessToken( string $tokenId ): void {
 		if ( $this->identifierExists( $tokenId ) ) {
 			$this->getDB( DB_PRIMARY )->newUpdateQueryBuilder()
 				->update( $this->getTableName() )
@@ -95,7 +100,7 @@ class AccessTokenRepository extends DatabaseRepository implements AccessTokenRep
 	 *
 	 * @return bool Return true if this token has been revoked
 	 */
-	public function isAccessTokenRevoked( $tokenId ) {
+	public function isAccessTokenRevoked( string $tokenId ): bool {
 		$row = $this->getDB()->newSelectQueryBuilder()
 			->select( static::FIELD_REVOKED )
 			->from( $this->getTableName() )
@@ -142,7 +147,7 @@ class AccessTokenRepository extends DatabaseRepository implements AccessTokenRep
 		return false;
 	}
 
-	private function getDbDataFromTokenEntity( AccessTokenEntity $accessTokenEntity ) {
+	private function getDbDataFromTokenEntity( AccessTokenEntity $accessTokenEntity ): array {
 		$expiry = $accessTokenEntity->getExpiryDateTime()->getTimestamp();
 		if ( $expiry > 9223371197536780800 ) {
 			$expiry = 'infinity';

@@ -1,0 +1,16 @@
+{
+	"@metadata": {
+		"authors": [
+			"BerryAVGN",
+			"Deltaspace"
+		]
+	},
+	"action-embed_pdf": "вставлять PDF-файлы",
+	"pdfembed": "Встраивание PDF",
+	"pdfembed_description": "Расширение обработчика мультимедиа для файлов PDF.",
+	"embed_pdf_no_permission": "У вас нет разрешения на встраивание PDF-файлов.",
+	"embed_pdf_blank_file": "URL-адрес или путь к файлу, указанный для встраивания PDF-файла, пуст.",
+	"embed_pdf_invalid_file": "Указанный URL-адрес или путь к файлу не существует.",
+	"embed_pdf_invalid_user": "Для проверки разрешения на встраивание этого PDF-файла был указан недопустимый пользователь.",
+	"right-embed_pdf": "Встраивание PDF-файлов в страницы"
+}

@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Nokeoo"
+		]
+	},
+	"action-embed_pdf": "įterpti PDF",
+	"pdfembed_description": "Medijos tvarkyklės plėtinys PDF failams.",
+	"embed_pdf_no_permission": "Neturite teisės įterpti PDF failų.",
+	"right-embed_pdf": "Įterpti PDF į puslapius"
+}

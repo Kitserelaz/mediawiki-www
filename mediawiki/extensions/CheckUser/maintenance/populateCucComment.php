@@ -18,15 +18,17 @@
  * @file
  */
 
-namespace MediaWiki\CheckUser\Maintenance;
+namespace MediaWiki\Extension\CheckUser\Maintenance;
 
 use MediaWiki\Maintenance\LoggedUpdateMaintenance;
 
+// @codeCoverageIgnoreStart
 $IP = getenv( 'MW_INSTALL_PATH' );
 if ( $IP === false ) {
 	$IP = __DIR__ . '/../../..';
 }
 require_once "$IP/maintenance/Maintenance.php";
+// @codeCoverageIgnoreEnd
 
 /**
  * Maintenance script for filling up cuc_comment_id.
@@ -89,7 +91,7 @@ class PopulateCucComment extends LoggedUpdateMaintenance {
 			return true;
 		}
 
-		if ( !$dbw->fieldExists( 'cu_changes', 'cuc_comment' ) ) {
+		if ( !$dbw->fieldExists( 'cu_changes', 'cuc_comment', __METHOD__ ) ) {
 			$this->output( "cuc_comment has already been dropped.\n" );
 			return true;
 		}
@@ -148,5 +150,7 @@ class PopulateCucComment extends LoggedUpdateMaintenance {
 	}
 }
 
+// @codeCoverageIgnoreStart
 $maintClass = PopulateCucComment::class;
 require_once RUN_MAINTENANCE_IF_MAIN;
+// @codeCoverageIgnoreEnd

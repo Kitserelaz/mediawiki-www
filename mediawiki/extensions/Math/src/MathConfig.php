@@ -40,7 +40,7 @@ class MathConfig {
 	public const MODE_NATIVE_JAX = 'mathjax';
 
 	/** @var string[] a list of all supported rendering modes */
-	private const SUPPORTED_MODES = [
+	public const SUPPORTED_MODES = [
 		self::MODE_SOURCE,
 		self::MODE_LATEXML,
 		self::MODE_MATHML,
@@ -59,21 +59,11 @@ class MathConfig {
 		self::MODE_NATIVE_JAX => 9
 	];
 
-	private ServiceOptions $options;
-	private ExtensionRegistry $registry;
-
-	/**
-	 * @param ServiceOptions $options
-	 * @param ExtensionRegistry $registry
-	 */
 	public function __construct(
-		ServiceOptions $options,
-		ExtensionRegistry $registry
-
+		private readonly ServiceOptions $options,
+		private readonly ExtensionRegistry $registry,
 	) {
 		$options->assertRequiredOptions( self::CONSTRUCTOR_OPTIONS );
-		$this->options = $options;
-		$this->registry = $registry;
 	}
 
 	/**

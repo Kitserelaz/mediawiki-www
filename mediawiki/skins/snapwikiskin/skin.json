@@ -1,0 +1,101 @@
+{
+  "name": "Snap! Wiki Skin",
+  "namemsg": "snapwikiskin",
+  "author": ["R4356th", "GrahamSH"],
+  "descriptionmsg": "snapwikiskin-desc",
+  "license-name": "GPL-3.0-or-later",
+  "type": "skin",
+  "version": "5.0.0",
+  "url": "https://www.mediawiki.org/wiki/Skin:Snap!_Wiki_Skin",
+  "requires": {
+    "MediaWiki": ">= 1.42.0"
+  },
+  "AutoloadNamespaces": {
+    "Snapwikiskin\\": "includes/"
+  },
+  "config": {
+    "SnapwikiskinSearchHost": {
+      "value": "",
+      "description": "Override default search API. Can be used with $wgDisableTextSearch and $wgSearchForwardUrl to mimic user experience on production."
+    },
+    "SnapwikiskinUseWvuiSearch": {
+      "value": true
+    },
+    "SnapwikiskinWvuiSearchOptions": {
+      "value": {
+        "showThumbnail": false,
+        "showDescription": false
+      }
+    }
+  },
+  "ValidSkinNames": {
+    "snapwikiskin": {
+      "class": "SkinMustache",
+      "args": [
+        {
+          "name": "snapwikiskin",
+          "templateDirectory": "templates/minified/",
+          "scripts": ["skins.snapwikiskin.search"],
+          "styles": ["skins.snapwikiskin"],
+          "messages": [
+            "navigation-heading",
+            "comma-separator",
+            "personaltools",
+            "powersearch-legend",
+            "tagline",
+            "views",
+            "snapwikiskin-nav-items"
+          ],
+          "responsive": true
+        }
+      ]
+    }
+  },
+  "MessagesDirs": {
+    "snapwikiskin": ["i18n"]
+  },
+  "ResourceModules": {
+    "skins.snapwikiskin.search": {
+      "dependencies": ["mediawiki.Uri", "mediawiki.codex.typeaheadSearch"],
+      "es6": true,
+      "packageFiles": [
+        "resources/skins.snapwikiskin.search/skins.snapwikiskin.search.js",
+        "resources/skins.snapwikiskin.search/App.vue",
+        {
+          "name": "resources/skins.snapwikiskin.search/config.json",
+          "callback": "Snapwikiskin\\Hooks::getSnapwikiskinWvuiSearchResourceLoaderConfig"
+        }
+      ],
+      "messages": ["searchbutton", "searchresults", "searchsuggest-containing"]
+    },
+    "skins.snapwikiskin": {
+      "class": "MediaWiki\\ResourceLoader\\SkinModule",
+      "features": {
+        "content-parser-output": true,
+        "content-media": true,
+        "content-tables": true,
+        "content-links": true,
+        "i18n-ordered-lists": true,
+        "i18n-all-lists-margins": true,
+        "i18n-headings": true,
+        "interface-category": true,
+        "interface-message-box": true,
+        "normalize": false
+      },
+      "styles": {
+        "resources/screen.css": {
+          "media": "screen"
+        }
+      }
+    }
+  },
+  "RawHtmlMessages": ["snapwikiskin-nav-items"],
+  "ResourceFileModulePaths": {
+    "localBasePath": "",
+    "remoteSkinPath": "snapwikiskin"
+  },
+  "ResourceModuleSkinStyles": {
+    "snapwikiskin": {}
+  },
+  "manifest_version": 2
+}

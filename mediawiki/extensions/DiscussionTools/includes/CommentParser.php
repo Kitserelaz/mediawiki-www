@@ -13,7 +13,7 @@ use MediaWiki\Extension\DiscussionTools\ThreadItem\ContentCommentItem;
 use MediaWiki\Extension\DiscussionTools\ThreadItem\ContentHeadingItem;
 use MediaWiki\Extension\DiscussionTools\ThreadItem\ContentThreadItem;
 use MediaWiki\Language\Language;
-use MediaWiki\Languages\LanguageConverterFactory;
+use MediaWiki\Language\LanguageConverterFactory;
 use MediaWiki\Title\MalformedTitleException;
 use MediaWiki\Title\TitleParser;
 use MediaWiki\Title\TitleValue;
@@ -21,10 +21,11 @@ use MediaWiki\Utils\MWTimestamp;
 use RuntimeException;
 use Wikimedia\Assert\Assert;
 use Wikimedia\IPUtils;
+use Wikimedia\Parsoid\Core\DOMCompat;
 use Wikimedia\Parsoid\DOM\Element;
 use Wikimedia\Parsoid\DOM\Node;
 use Wikimedia\Parsoid\DOM\Text;
-use Wikimedia\Parsoid\Utils\DOMCompat;
+use Wikimedia\Parsoid\Ext\DOMUtils;
 use Wikimedia\Timestamp\TimestampException;
 
 // TODO consider making timestamp parsing not a returned function
@@ -36,11 +37,6 @@ class CommentParser {
 	 * Note that this is not a hard limit on the length of signatures we detect.
 	 */
 	private const SIGNATURE_SCAN_LIMIT = 100;
-
-	private Config $config;
-	private Language $language;
-	private LanguageConverterFactory $languageConverterFactory;
-	private TitleParser $titleParser;
 
 	/** @var string[] */
 	private array $dateFormat;
@@ -56,25 +52,13 @@ class CommentParser {
 	private Element $rootNode;
 	private TitleValue $title;
 
-	/**
-	 * @param Config $config
-	 * @param Language $language Content language
-	 * @param LanguageConverterFactory $languageConverterFactory
-	 * @param LanguageData $languageData
-	 * @param TitleParser $titleParser
-	 */
 	public function __construct(
-		Config $config,
-		Language $language,
-		LanguageConverterFactory $languageConverterFactory,
+		private readonly Config $config,
+		private readonly Language $language,
+		private readonly LanguageConverterFactory $languageConverterFactory,
 		LanguageData $languageData,
-		TitleParser $titleParser
+		private readonly TitleParser $titleParser,
 	) {
-		$this->config = $config;
-		$this->language = $language;
-		$this->languageConverterFactory = $languageConverterFactory;
-		$this->titleParser = $titleParser;
-
 		$data = $languageData->getLocalData();
 		$this->dateFormat = $data['dateFormat'];
 		$this->digits = $data['digits'];
@@ -89,7 +73,6 @@ class CommentParser {
 	 *
 	 * @param Element $rootNode Root node of content to parse
 	 * @param TitleValue $title Title of the page being parsed
-	 * @return ContentThreadItemSet
 	 */
 	public function parse( Element $rootNode, TitleValue $title ): ContentThreadItemSet {
 		$this->rootNode = $rootNode;
@@ -112,14 +95,13 @@ class CommentParser {
 	 *
 	 * @param ?Node $node Node after which to start searching
 	 *   (if null, start at the beginning of the document).
-	 * @return Node
 	 */
 	private function nextInterestingLeafNode( ?Node $node ): Node {
 		$rootNode = $this->rootNode;
 		$treeWalker = new TreeWalker(
 			$rootNode,
 			NodeFilter::SHOW_ELEMENT | NodeFilter::SHOW_TEXT,
-			static function ( $n ) use ( $node, $rootNode ) {
+			static function ( $n ) use ( $node ) {
 				// Skip past the starting node and its descendants
 				if ( $n === $node || $n->parentNode === $node ) {
 					return NodeFilter::FILTER_REJECT;
@@ -153,9 +135,10 @@ class CommentParser {
 	 * @return string Regular expression
 	 */
 	private static function regexpAlternateGroup( array $values ): string {
-		return '(' . implode( '|', array_map( static function ( string $x ) {
-			return preg_quote( $x, '/' );
-		}, $values ) ) . ')';
+		return '(' . implode( '|', array_map(
+			static fn ( string $val ) => preg_quote( $val, '/' ),
+			$values
+		) ) . ')';
 	}
 
 	/**
@@ -166,9 +149,10 @@ class CommentParser {
 	 * @return string[] Message values
 	 */
 	private function getMessages( string $contLangVariant, array $messages ): array {
-		return array_map( function ( string $key ) use ( $contLangVariant ) {
-			return $this->contLangMessages[$contLangVariant][$key];
-		}, $messages );
+		return array_map(
+			fn ( string $key ) => $this->contLangMessages[$contLangVariant][$key],
+			$messages
+		);
 	}
 
 	/**
@@ -390,11 +374,8 @@ class CommentParser {
 			$matchingGroups, $untransformDigits, $localTimezone, $tzAbbrs, $contLangVariant
 		) {
 			if ( is_array( $match[0] ) ) {
-				// Strip PREG_OFFSET_CAPTURE data
-				unset( $match['offset'] );
-				$match = array_map( static function ( array $tuple ) {
-					return $tuple[0];
-				}, $match );
+				/** Undo the effect of PREG_OFFSET_CAPTURE from {@link findTimestamp} */
+				$match = array_column( $match, 0 );
 			}
 			$year = 0;
 			$monthIdx = 0;
@@ -502,7 +483,7 @@ class CommentParser {
 			try {
 				// @phan-suppress-next-line PhanNoopNew
 				new MWTimestamp( $date->format( 'c' ) );
-			} catch ( TimestampException $ex ) {
+			} catch ( TimestampException ) {
 				return null;
 			}
 
@@ -522,14 +503,15 @@ class CommentParser {
 	 */
 	public function getLocalTimestampRegexps(): array {
 		$langConv = $this->languageConverterFactory->getLanguageConverter( $this->language );
-		return array_map( function ( $contLangVariant ) {
-			return $this->getTimestampRegexp(
+		return array_map(
+			fn ( $contLangVariant ) => $this->getTimestampRegexp(
 				$contLangVariant,
 				$this->dateFormat[$contLangVariant],
 				'[' . implode( '', $this->digits[$contLangVariant] ) . ']',
 				$this->timezones[$contLangVariant]
-			);
-		}, $langConv->getVariants() );
+			),
+			$langConv->getVariants()
+		);
 	}
 
 	/**
@@ -542,28 +524,28 @@ class CommentParser {
 	 */
 	private function getLocalTimestampParsers(): array {
 		$langConv = $this->languageConverterFactory->getLanguageConverter( $this->language );
-		return array_map( function ( $contLangVariant ) {
-			return $this->getTimestampParser(
+		return array_map(
+			fn ( $contLangVariant ) => $this->getTimestampParser(
 				$contLangVariant,
 				$this->dateFormat[$contLangVariant],
 				$this->digits[$contLangVariant],
 				$this->localTimezone,
 				$this->timezones[$contLangVariant]
-			);
-		}, $langConv->getVariants() );
+			),
+			$langConv->getVariants()
+		);
 	}
 
 	/**
 	 * Given a link node (`<a>`), if it's a link to a user-related page, return their username.
 	 *
-	 * @param Element $link
 	 * @return array|null Array, or null:
 	 * - string 'username' Username
 	 * - string|null 'displayName' Display name (link text if link target was in the user namespace)
 	 */
 	private function getUsernameFromLink( Element $link ): ?array {
 		// Selflink: use title of current page
-		if ( DOMCompat::getClassList( $link )->contains( 'mw-selflink' ) ) {
+		if ( DOMUtils::hasClass( $link, 'mw-selflink' ) ) {
 			$title = $this->title;
 		} else {
 			$titleString = CommentUtils::getTitleFromUrl( $link->getAttribute( 'href' ) ?? '', $this->config ) ?? '';
@@ -675,9 +657,7 @@ class CommentParser {
 						$user = $this->getUsernameFromLink( $node );
 						if ( $user ) {
 							// Accept the first link to the user namespace, then only accept links to that user
-							if ( $sigUsername === null ) {
-								$sigUsername = $user['username'];
-							}
+							$sigUsername ??= $user['username'];
 							if ( $user['username'] === $sigUsername ) {
 								$lastLinkNode = $node;
 								if ( $user['displayName'] ) {
@@ -721,7 +701,6 @@ class CommentParser {
 	 * Callback for TreeWalker that will skip over nodes where we don't want to detect
 	 * comments (or section headings).
 	 *
-	 * @param Node $node
 	 * @return int Appropriate NodeFilter constant
 	 */
 	public static function acceptOnlyNodesAllowingComments( Node $node ): int {
@@ -739,9 +718,8 @@ class CommentParser {
 			) {
 				return NodeFilter::FILTER_REJECT;
 			}
-			$classList = DOMCompat::getClassList( $node );
 			// Don't attempt to parse blocks marked 'mw-notalk'
-			if ( $classList->contains( 'mw-notalk' ) ) {
+			if ( DOMUtils::hasClass( $node, 'mw-notalk' ) ) {
 				return NodeFilter::FILTER_REJECT;
 			}
 			// Don't detect comments within references. We can't add replies to them without bungling up
@@ -749,7 +727,7 @@ class CommentParser {
 			if (
 				// <ol class="references"> is the only reliably consistent thing between the two parsers
 				$tagName === 'ol' &&
-				DOMCompat::getClassList( $node )->contains( 'references' )
+				DOMUtils::hasClass( $node, 'references' )
 			) {
 				return NodeFilter::FILTER_REJECT;
 			}
@@ -809,10 +787,7 @@ class CommentParser {
 				$nodes[] = $previousSibling->firstChild;
 
 				// If the entity is preceded by more text, do this again
-				if (
-					$previousSibling->previousSibling &&
-					$previousSibling->previousSibling instanceof Text
-				) {
+				if ( $previousSibling->previousSibling instanceof Text ) {
 					$offset += strlen( $previousSibling->previousSibling->nodeValue ?? '' );
 					$node = $previousSibling->previousSibling;
 				} else {
@@ -873,7 +848,6 @@ class CommentParser {
 	 * @param Node[] $sigNodes
 	 * @param array $match
 	 * @param Text $node
-	 * @return ImmutableRange
 	 */
 	private function adjustSigRange( array $sigNodes, array $match, Text $node ): ImmutableRange {
 		$firstSigNode = end( $sigNodes );
@@ -906,7 +880,7 @@ class CommentParser {
 		$treeWalker = new TreeWalker(
 			$this->rootNode,
 			NodeFilter::SHOW_ELEMENT | NodeFilter::SHOW_TEXT,
-			[ static::class, 'acceptOnlyNodesAllowingComments' ]
+			static::acceptOnlyNodesAllowingComments( ... )
 		);
 		while ( $node = $treeWalker->nextNode() ) {
 			if ( $node instanceof Element && preg_match( '/^h([1-6])$/i', $node->tagName, $match ) ) {
@@ -1207,7 +1181,7 @@ class CommentParser {
 	private function parseTitle( string $titleString ): ?TitleValue {
 		try {
 			return $this->titleParser->parseTitle( $titleString );
-		} catch ( MalformedTitleException $err ) {
+		} catch ( MalformedTitleException ) {
 			return null;
 		}
 	}
@@ -1219,7 +1193,6 @@ class CommentParser {
 	 * If the node represents a single-page transclusion, this will return an array containing a
 	 * single string.
 	 *
-	 * @param Element $node
 	 * @return array<string|null>
 	 */
 	private function getTransclusionTitles( Element $node ): array {
@@ -1233,7 +1206,7 @@ class CommentParser {
 				isset( $part['template']['target']['href'] )
 			) {
 				$parsoidHref = $part['template']['target']['href'];
-				Assert::precondition( substr( $parsoidHref, 0, 2 ) === './', "href has valid format" );
+				Assert::precondition( str_starts_with( $parsoidHref, './' ), 'href has valid format' );
 				$out[] = rawurldecode( substr( $parsoidHref, 2 ) );
 			} else {
 				$out[] = null;
@@ -1246,9 +1219,6 @@ class CommentParser {
 	/**
 	 * Given a transclusion's first node (e.g. returned by CommentUtils::getTranscludedFromElement()),
 	 * return a range starting before the node and ending after the transclusion's last node.
-	 *
-	 * @param Element $startNode
-	 * @return ImmutableRange
 	 */
 	private function getTransclusionRange( Element $startNode ): ImmutableRange {
 		$endNode = $startNode;
@@ -1296,7 +1266,6 @@ class CommentParser {
 	 * @param ContentThreadItem $threadItem
 	 * @param ContentThreadItemSet $previousItems
 	 * @param bool $legacy Generate legacy ID, not needed in JS implementation
-	 * @return string
 	 */
 	private function computeId(
 		ContentThreadItem $threadItem, ContentThreadItemSet $previousItems, bool $legacy = false

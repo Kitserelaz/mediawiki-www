@@ -12,7 +12,6 @@
 	"ipinfo-infobox-title": "Informacije o IP adresi",
 	"ipinfo-property-label-location": "Lokacija",
 	"ipinfo-property-label-ipversion": "Inačica",
-	"ipinfo-property-label-isp": "Pružatelj internetskih usluga",
 	"ipinfo-property-label-organization": "Organizacija",
 	"ipinfo-property-label-connectiontype": "Način spajanja",
 	"ipinfo-property-label-usertype": "Vlasnik veze",
@@ -52,9 +51,9 @@
 	"ipinfo-widget-error-default": "Informacije o IP adresi ne mogu biti dohvaćene.",
 	"ipinfo-widget-error-no-data": "Za ovu IP adresu nema podataka iz $1.",
 	"ipinfo-widget-error-wrong-ip": "Navedena IP adresa ne odgovara evidenciji ili izmjeni.",
-	"ipinfo-widget-error-ip-no-edits": "Informacije o ovoj IP adresi ne mogu biti dohvaćene jer s nje nema uređivanja na ovom wikiju.",
+	"ipinfo-widget-error-ip-no-contributions": "Informacije o ovoj IP adresi ne mogu biti dohvaćene jer s nje nema uređivanja na ovom wikiju.",
 	"ipinfo-preference-enable": "Prikaži alat za informacije o IP adresi za neregistrirane suradnike na stranici Posebno: Doprinosi.",
-	"ipinfo-preference-use-agreement": "Slažem se s uporabom ovih informacija za ophođenje i antivandalizam.",
+	"ipinfo-preference-use-agreement": "Slažem se s uporabom ovih informacija za ophođenje i antivandalizam",
 	"ipinfo-preference-agreement-error": "Prije slaganja s uvjetima morate omogućiti alat za informacije o IP adresa.",
 	"ipinfo-infobox-use-terms": "Da bi prikazao pojedinosti poput lokacije, posredničkog poslužitelja (proxyja) te koliko uređaja dijeli ovu IP adresu, alat za informacije o IP adresi rabi bazu podataka MaxMind.",
 	"ipinfo-infobox-submit-agreement": "Omogući alat za informacije o IP adresama",
@@ -67,7 +66,6 @@
 	"ipinfo-rest-log-nonexistent": "Zapis ne postoji u evidenciji",
 	"ipinfo-rest-log-registered": "Nije moguće pribaviti informacije o IP adresama za evidencije registriranih suradnika",
 	"ipinfo-rest-log-denied": "Vaš suradnički račun nema pristup pregledu izvođača unosa u evidenciju ili samog unosa u evidenciju",
-	"ipinfo-source-geoip2": "Ovdje prikazane informacije potječu iz MaxMindovih baza podataka GeoIP2. Moguće je da nisu u potpunosti točne.",
 	"ipinfo-beta-feature-title": "Informacije o IP adresi",
 	"ipinfo-beta-feature-description": "Cilj alata je pribaviti ophoditeljima važne informacije o IP adresama kako bi im pomogao u njihovu radu. Ove će informacije biti dostupne na stranicama doprinosa (Posebno:Doprinosi). Skraćena verzija ovih informacija bit će dostupna u skočnom prozoru pored IP adresa na stranicama [[Special:Log|evidencija]], [[Special:Contributions|doprinosa]], i [[Special:RecentChanges|nedavnih promjena]].",
 	"ipinfo-value-ipversion-ipv4": "IPv4",
@@ -80,5 +78,7 @@
 	"ipinfo-change-access-level-disable": "{{GENDER:$1|onemogućuje}}",
 	"logentry-ipinfo-change_access": "$1 sebi $4 pristup informacijama o IP-adresama",
 	"ipinfo-property-tooltip-asn": "Jedinstveni mrežni identifikator dodijeljen regiji te organizacijama kao što su vlade i davatelji internetskih usluga",
-	"ipinfo-blocklist-url-text": "Popis blokiranja"
+	"ipinfo-blocklist-url-text": "Popis blokiranja",
+	"ipinfo-special-ipinfo": "Podaci o IP adresi",
+	"ipinfo-popup-link-text": "Potpuni zapis o IP adresi"
 }

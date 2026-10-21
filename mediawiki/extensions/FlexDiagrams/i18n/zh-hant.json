@@ -1,0 +1,23 @@
+{
+	"@metadata": {
+		"authors": [
+			"Kly"
+		]
+	},
+	"flexdiagrams-desc": "編輯與建立圖表",
+	"editdiagram": "編輯圖表",
+	"flexdiagrams-edit-title": "編輯圖表：$1",
+	"flexdiagrams-creatediagram": "建立圖表",
+	"flexdiagrams-viewdiagram": "查看圖表",
+	"flexdiagrams-linkingpages": "以下頁面連結到此圖表：$1",
+	"flexdiagrams-drawio-saveinfo": "請在按下「$1」按鈕前，儲存在編輯介面的圖表。",
+	"flexdiagrams-edit-code": "代碼：",
+	"flexdiagrams-edit-preview": "預覽：",
+	"flexdiagrams-embedding-unsupported": "圖表頁面無法內嵌。",
+	"flexdiagrams-gantt-zoomlevel": "縮放層級：",
+	"flexdiagrams-gantt-hours": "時",
+	"flexdiagrams-gantt-days": "日",
+	"flexdiagrams-gantt-weeks": "週",
+	"flexdiagrams-gantt-months": "月",
+	"flexdiagrams-gantt-years": "年"
+}

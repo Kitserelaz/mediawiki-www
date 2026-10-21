@@ -1,5 +1,8 @@
 <?php
- use MediaWiki\User\UserOptionsLookup;
+ 
+use MediaWiki\Title\Title;
+use MediaWiki\SpecialPage\SpecialPage;
+use MediaWiki\User\UserOptionsLookup;
  use MediaWiki\MediaWikiServices;
  use MediaWiki\Hook\OutputPageBodyAttributesHook;
 

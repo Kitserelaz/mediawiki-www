@@ -2,7 +2,7 @@
 
 namespace Miraheze\ManageWiki\Jobs;
 
-use Job;
+use MediaWiki\JobQueue\Job;
 use Miraheze\ManageWiki\Helpers\Utils\DatabaseUtils;
 use stdClass;
 use Wikimedia\Rdbms\IDatabase;
@@ -17,7 +17,7 @@ use const NS_MAIN;
  */
 class NamespaceMigrationJob extends Job {
 
-	public const JOB_NAME = 'NamespaceMigrationJob';
+	public const string JOB_NAME = 'NamespaceMigrationJob';
 
 	private readonly string $action;
 	private readonly string $dbname;
@@ -30,7 +30,7 @@ class NamespaceMigrationJob extends Job {
 
 	public function __construct(
 		array $params,
-		private readonly DatabaseUtils $databaseUtils
+		private readonly DatabaseUtils $databaseUtils,
 	) {
 		parent::__construct( self::JOB_NAME, $params );
 
@@ -46,7 +46,7 @@ class NamespaceMigrationJob extends Job {
 	}
 
 	/** @inheritDoc */
-	public function run(): bool {
+	public function run(): true {
 		$dbw = $this->databaseUtils->getRemoteWikiPrimaryDB( $this->dbname );
 
 		if ( $this->action === 'delete' ) {

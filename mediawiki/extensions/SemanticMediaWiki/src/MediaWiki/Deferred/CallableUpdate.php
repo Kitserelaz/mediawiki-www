@@ -1,0 +1,252 @@
+<?php
+
+namespace SMW\MediaWiki\Deferred;
+
+use Closure;
+use Exception;
+use MediaWiki\Deferred\DeferrableUpdate;
+use MediaWiki\Deferred\DeferredUpdates;
+use Psr\Log\LoggerAwareTrait;
+use Throwable;
+use Wikimedia\Assert\Assert;
+
+/**
+ * @see MWCallableUpdate
+ *
+ * @license GPL-2.0-or-later
+ * @since 2.4
+ */
+class CallableUpdate implements DeferrableUpdate {
+
+	use LoggerAwareTrait;
+
+	/**
+	 * @var Closure|callable
+	 */
+	protected $callback;
+
+	protected bool $isDeferrableUpdate = true;
+
+	protected bool $isCommandLineMode = false;
+
+	private bool $isPending = false;
+
+	private string|array $origin = '';
+
+	private static array $pendingUpdates = [];
+
+	private bool $catchExceptionAndRethrow = false;
+
+	/**
+	 * @since 2.4
+	 */
+	public function __construct( ?callable $callback = null ) {
+		if ( $callback === null ) {
+			$callback = [ $this, 'emptyCallback' ];
+		}
+
+		$this->callback = $callback;
+	}
+
+	/**
+	 * @see https://www.mediawiki.org/wiki/Manual:$wgCommandLineMode
+	 * Indicates whether MW is running in command-line mode.
+	 *
+	 * @since 2.5
+	 */
+	public function isCommandLineMode( bool $isCommandLineMode ): void {
+		$this->isCommandLineMode = $isCommandLineMode;
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function setCallback( callable $callback ): void {
+		$this->callback = $callback;
+	}
+
+	/**
+	 * @note Unit/Integration tests in MW 1.26- showed ambiguous behaviour when
+	 * run in deferred mode because not all MW operations were supporting late
+	 * execution.
+	 *
+	 * @since 3.0
+	 */
+	public function isDeferrableUpdate( bool $isDeferrableUpdate ): void {
+		$this->isDeferrableUpdate = $isDeferrableUpdate;
+	}
+
+	/**
+	 * @note MW 1.34+ showed a behaviour where exceptions during a deferred update
+	 * weren't logged and reported hereby allowing errors to go unnoticed forcing
+	 * a possible rollback without a chance to investigate missing data updates.
+	 *
+	 * @since 3.1
+	 */
+	public function catchExceptionAndRethrow( bool $catchExceptionAndRethrow ): void {
+		$this->catchExceptionAndRethrow = $catchExceptionAndRethrow;
+	}
+
+	/**
+	 * @note If wgCommandLineMode = true (e.g. MW is in CLI mode) then
+	 * DeferredUpdates::addUpdate pushes updates directly into execution mode
+	 * which may not be desirable for all update processes therefore hold on to it
+	 * by using an internal waitableUpdate list and release them at convenience.
+	 *
+	 * @since 2.4
+	 */
+	public function markAsPending( bool $isPending = false ): void {
+		$this->isPending = $isPending;
+	}
+
+	/**
+	 * @since 2.5
+	 */
+	public function setOrigin( string|array $origin ): void {
+		$this->origin = $origin;
+	}
+
+	/**
+	 * @see DeferrableCallback::getOrigin
+	 *
+	 * @since 2.5
+	 */
+	public function getOrigin(): string|false {
+		if ( is_string( $this->origin ) ) {
+			$this->origin = [ $this->origin ];
+		}
+
+		return json_encode( $this->origin );
+	}
+
+	/**
+	 * Release all pending updates into MediaWiki's DeferredUpdates stack.
+	 * @since 2.4
+	 */
+	public static function releasePendingUpdates(): void {
+		foreach ( self::$pendingUpdates as $update ) {
+			DeferredUpdates::addUpdate( $update );
+		}
+
+		self::$pendingUpdates = [];
+	}
+
+	/**
+	 * Clear all pending updates without executing them. Useful for tests.
+	 * @since 4.2
+	 */
+	public static function clearPendingUpdates(): void {
+		Assert::precondition( defined( 'MW_PHPUNIT_TEST' ), 'This method should only be called in tests' );
+		self::$pendingUpdates = [];
+	}
+
+	/**
+	 * @see DeferrableUpdate::doUpdate
+	 *
+	 * @since 2.4
+	 */
+	public function doUpdate(): void {
+		if ( $this->catchExceptionAndRethrow ) {
+			$this->attemptUpdate();
+		} else {
+			$this->runUpdate();
+		}
+
+		$this->logger->info(
+			'DeferrableUpdate Update completed: {origin}',
+			[
+				'method' => __METHOD__,
+				'role' => 'developer',
+				'origin' => $this->getOrigin(),
+			]
+		);
+	}
+
+	/**
+	 * @since 2.5
+	 */
+	public function pushUpdate(): void {
+		if ( $this->isPending && $this->isDeferrableUpdate ) {
+			$this->logger->info(
+				'DeferrableUpdate Push: {origin} (as pending DeferredCallableUpdate)',
+				[
+					'method' => __METHOD__,
+					'role' => 'developer',
+					'origin' => $this->getOrigin(),
+				]
+			);
+
+			self::$pendingUpdates[] = $this;
+			return;
+		}
+
+		if ( !$this->isCommandLineMode && $this->isDeferrableUpdate ) {
+			$this->registerUpdate( $this );
+			return;
+		}
+
+		$this->doUpdate();
+	}
+
+	protected function registerUpdate( $update ): void {
+		$this->logger->info(
+			'DeferrableUpdate Added: {ctx}',
+			[
+				'method' => __METHOD__,
+				'role' => 'developer',
+				'ctx' => $this->loggableContext()
+			]
+		);
+
+		DeferredUpdates::addUpdate( $update );
+	}
+
+	protected function loggableContext(): array {
+		return [ 'origin' => $this->origin ];
+	}
+
+	protected function emptyCallback(): void {
+		$this->logger->info(
+			'DeferrableUpdate Empty callback!',
+			[
+				'role' => 'developer',
+				'method' => __METHOD__
+			]
+		);
+	}
+
+	/**
+	 * @throws Exception|Throwable
+	 */
+	private function attemptUpdate(): void {
+		$e = null;
+
+		try {
+			$this->runUpdate();
+		} catch ( Exception | Throwable $e ) {
+		}
+
+		if ( $e === null ) {
+			return;
+		}
+
+		$error = [
+			'type' => $this->getOrigin(),
+			'message' => $e->getMessage(),
+			'trace' => $e->getTraceAsString()
+		];
+
+		// Log and re-throw
+		$this->logger->error(
+			"Deferred update {type} failed: {message}\n{trace}",
+			[ 'role' => 'production' ] + $error
+		);
+
+		throw $e;
+	}
+
+	private function runUpdate(): void {
+		( $this->callback )();
+	}
+
+}

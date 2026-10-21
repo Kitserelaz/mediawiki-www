@@ -1,0 +1,94 @@
+<?php
+
+namespace SMW\MediaWiki\Specials\Admin\Alerts;
+
+use MediaWiki\Html\Html;
+use SMW\Localizer\Message;
+use SMW\MediaWiki\Specials\Admin\TaskHandler;
+use SMW\SQLStore\SQLStore;
+use SMW\Store;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since   3.2
+ *
+ * @author mwjames
+ */
+class ByNamespaceInvalidEntitiesMaintenanceAlertTaskHandler extends TaskHandler {
+
+	private array $namespacesWithSemanticLinks = [];
+
+	/**
+	 * @since 3.2
+	 */
+	public function __construct( private readonly Store $store ) {
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @param array $namespacesWithSemanticLinks
+	 */
+	public function setNamespacesWithSemanticLinks( array $namespacesWithSemanticLinks ): void {
+		$this->namespacesWithSemanticLinks = $namespacesWithSemanticLinks;
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * {@inheritDoc}
+	 */
+	public function getHtml() {
+		$count = $this->fetchCount();
+
+		if ( $count == 0 ) {
+			return '';
+		}
+
+		return $this->buildHTML( $count );
+	}
+
+	private function fetchCount(): int {
+		$connection = $this->store->getConnection( 'mw.db' );
+
+		$row = $connection->newSelectQueryBuilder()
+			->select( [ 'count' => 'COUNT(smw_id)' ] )
+			->from( SQLStore::ID_TABLE )
+			->where( [
+				'smw_namespace NOT IN (' . $connection->makeList( array_keys( $this->namespacesWithSemanticLinks ) ) . ')'
+			] )
+			->caller( __METHOD__ )
+			->fetchRow();
+
+		return $row !== false ? (int)$row->count : 0;
+	}
+
+	private function buildHTML( int $count ) {
+		$html = Html::rawElement(
+			'fieldset',
+			[
+				'class' => "smw-admin-alerts-section-legend"
+			],
+			Html::rawElement(
+				'legend',
+				[
+					'class' => "smw-admin-alerts-section-legend"
+				],
+				$this->msg( "smw-admin-maintenancealerts-invalidentities-alert-title" )
+			) .	Html::rawElement(
+				'p',
+				[],
+				$this->msg( [ 'smw-admin-maintenancealerts-invalidentities-alert', $count ], Message::PARSE )
+			)
+		);
+
+		return Html::rawElement(
+			'div',
+			[
+				'class' => 'smw-admin-alerts smw-admin-alerts-invalid-entities'
+			],
+			$html
+		);
+	}
+
+}

@@ -1,8 +1,8 @@
 {
 	"@metadata": {
 		"authors": [
-			"Къарачайлы",
-			"Woytecr"
+			"Woytecr",
+			"Къарачайлы"
 		]
 	},
 	"discussiontools-autotopicsubpopup-body": "Ким болса да бу сюзюуге джангы билдириу джиберсе, билдириу {{GENDER:|аллыкъсыз}}. Джарашдырыуларыгъызны болушлугъу бла билдириу параметрлеригизни этерге боллукъсуз.",
@@ -29,12 +29,12 @@
 	"discussiontools-emptystate-title-user": "{{PAGENAME}} {{GENDER:{{PAGENAME}}|бла}} сюзюу башлагъыз",
 	"discussiontools-emptystate-title-user-anon": "Бу сюзюу бетге {{GENDER:|хош келигиз}}",
 	"discussiontools-emptystate-title-user-temp": "{{PAGENAME}} {{GENDER:{{PAGENAME}}|бла}} сюзюу башлагъыз",
-	"discussiontools-error-comment-conflict": "{{GENDER:|Сизни}} бла бир заманда башха бириси оюмун джазгъаны ючюн, сизни оюмугъуз къошулалмады. Тилейбиз, джангыдан сынагъыз неда эм ахыр оюмланы кёргюзюр ючюн бетни джангыдан джюклегиз.",
+	"discussiontools-error-comment-conflict": "{{GENDER:|Сизни}} бла бир заманда башха бириси оюмун джазгъаны ючюн, сизни оюмугъуз къошулалмады. Тилейбиз, джангыдан сынагъыз неда эм ахыр оюмланы кёргюзюр ючюн бетни джангыртыгъыз.",
 	"discussiontools-error-comment-disappeared": "Бетде {{GENDER:|сиз}} джууаб берген оюм табылмады. Кетерилирге неда башха бетге кёчюрюлюрге боллукъду.",
-	"discussiontools-error-comment-disappeared-reload": "Тилейбиз, бетни джангыдан {{GENDER:|джюклегиз}} эмда джангыдан сынагъыз.",
+	"discussiontools-error-comment-disappeared-reload": "Тилейбиз, бетни джангыдан {{GENDER:|джангыртыгъыз}} эмда джангыдан сынагъыз.",
 	"discussiontools-error-comment-is-transcluded": "\"{{int:discussiontools-replylink}}\" джибериу бу оюймгъа джууаб берир ючюн хайырланалмаз. Джууаблар ючюн, \"$1\" басыб бютеу бетни редакторун {{GENDER:|хайырланыгъыз}}.",
 	"discussiontools-error-comment-is-transcluded-title": "\"{{int:discussiontools-replylink}}\" джибериу, башха бетден джюкленнгени ючюн бу оюмгъа джууаб берир ючюн хайырландырылмаз. Джууаблар ючюн, былайгъа бир {{GENDER:|ётюгюз}}: [[$1]].",
-	"discussiontools-error-comment-not-saved": "Оюумугъуз бетни эм ахыр версиясында басмаланалмады. Эм ахыр тюрлениулени кёрюр ючюн, джазылгъан халдагъы оюмугъузну копия этигиз эмда ызындан бетни джангыдан джюклер ючюн браузерни {{GENDER:|хайырланыгъыз}}.",
+	"discussiontools-error-comment-not-saved": "Оюумугъуз бетни эм ахыр версиясында басмаланалмады. Эм ахыр тюрлениулени кёрюр ючюн, джазылгъан халдагъы оюмугъузну копия этигиз эмда ызындан бетни джангыртыр ючюн браузерни {{GENDER:|хайырланыгъыз}}.",
 	"discussiontools-error-lint": "Вики-текстни файлындагъы халат себебли, бу бетдеги оюмлагъа джууаб берилалмайды. Бу халат бла байламлы [$1 билгини окъуб] хапарлы болургъа, [$2 бери джибериб] болушлукъ излерге неда [$3 бютеу бет редакторну ачыб] халатны {{GENDER:|тюзетирге боллукъсуз}}.",
 	"discussiontools-error-noswitchtove": "Ай медет, джазгъан оюмугъузда <b>$1</b>эсленнгени себебли, къарам режимге кёчюу {{GENDER:|джукълатылгъанды}}. [https://www.mediawiki.org/wiki/Special:MyLanguage/Help:DiscussionTools/Reply_tool_visual_mode_limitations Аслам билир ючюн].",
 	"discussiontools-error-noswitchtove-extension": "кенгериу неда белгилеу синтаксис",
@@ -65,7 +65,7 @@
 	"discussiontools-newtopicssubscription-notify-subscribed-title": "{{GENDER:|Сиз}} джаздырылдыгъыз!",
 	"discussiontools-newtopicssubscription-notify-unsubscribed-body": "Мындан ары бу бетде джангы темала башлансала, {{GENDER:|сен}} билдириуле аллыкъ тюлсе.",
 	"discussiontools-newtopicssubscription-notify-unsubscribed-title": "{{GENDER:|Сиз}} абонентликден чыкъдыгъыз.",
-	"discussiontools-notification-added-topic-header": "$2 атлы хайырланыучу <strong>$3</strong> бетде \"<strong>$4</strong>\" теманы къурады.",
+	"discussiontools-notification-added-topic-header": "Джангы тема \"<strong>$4</strong>\", $1 джанындан <strong>$3</strong> бетинде {{GENDER:$2|болдурулду}}.",
 	"discussiontools-notification-added-topic-header-bundled": "\"<strong>$2</strong>\" бетде {{PLURAL:$1|Bir|$1|100=99+}} джангы тема.",
 	"discussiontools-notification-added-topic-view": "Теманы кёргюз",
 	"discussiontools-notification-removed-topic-body": "Мындан ары бу {{PLURAL:$1|теманы|темаланы}} юсюнден билдириу {{GENDER:|алмазгъа болурсуз}}.",
@@ -185,9 +185,9 @@
 	"tag-discussiontools-description": "DiscussionTools хайырланыб этилген тюзетиу",
 	"tag-discussiontools-edit": "Тюзетилген оюм",
 	"tag-discussiontools-edit-description": "Хайырланыучу DiscussionTools бла болгъан оюмну тюзетди",
-	"tag-discussiontools-newtopic": "[{{int:discussiontools-replywidget-newtopic-link}} Джангы тема]",
+	"tag-discussiontools-newtopic": "Джангы тема",
 	"tag-discussiontools-newtopic-description": "Хайырланыучу, DiscussionTools бла бетге джангы тема къошду",
-	"tag-discussiontools-reply": "[{{int:discussiontools-replywidget-reply-link}} Джууаб]",
+	"tag-discussiontools-reply": "Джууаб",
 	"tag-discussiontools-reply-description": "Хайырланыучу DiscussionTools бла оюмгъа джууаб берди",
 	"tag-discussiontools-source-description": "DiscussionTools къайнакъ режимде эди",
 	"tag-discussiontools-source-enhanced-description": "TartışmaAraçları адыр панель бла кенгерилген къайнакъ режимде эди",

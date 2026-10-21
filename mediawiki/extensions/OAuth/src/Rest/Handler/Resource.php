@@ -2,6 +2,7 @@
 
 namespace MediaWiki\Extension\OAuth\Rest\Handler;
 
+use Exception;
 use GuzzleHttp\Psr7\ServerRequest;
 use MediaWiki\Extension\OAuth\Backend\MWOAuthException;
 use MediaWiki\Extension\OAuth\ResourceServer;
@@ -10,9 +11,7 @@ use MediaWiki\Extension\OAuth\UserStatementProvider;
 use MediaWiki\Json\FormatJson;
 use MediaWiki\Rest\Handler;
 use MediaWiki\Rest\HttpException;
-use MWException;
 use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
 use Wikimedia\ParamValidator\ParamValidator;
 
 /**
@@ -21,14 +20,10 @@ use Wikimedia\ParamValidator\ParamValidator;
  */
 class Resource extends Handler {
 
-	/**
-	 * (string) TYPE_PROFILE constant to specify the profile type of the resource.
-	 */
+	/** @var string Specify the profile type of the resource. */
 	private const TYPE_PROFILE = 'profile';
 
-	/**
-	 * (string) TYPE_SCOPES constant to specify the scopes type of the resource.
-	 */
+	/** @var string Specify the scopes type of the resource. */
 	private const TYPE_SCOPES = 'scopes';
 
 	/** @var ResourceServer */
@@ -76,18 +71,16 @@ class Resource extends Handler {
 			$this->getRequest()->getHeader( 'authorization' )
 		);
 
-		$callback = [ $this, 'doExecuteProtected' ];
+		$callback = [ $this, 'getByType' ];
 		return $this->resourceServer->verify( $request, $response, $callback );
 	}
 
 	/**
-	 * @param ServerRequestInterface $request
 	 * @param ResponseInterface $response
-	 * @throws HttpException
 	 * @return ResponseInterface
-	 * @throws MWOAuthException
+	 * @throws HttpException
 	 */
-	public function doExecuteProtected( $request, $response ) {
+	public function getByType( $response ) {
 		$type = $this->getRequest()->getPathParam( 'type' );
 
 		switch ( $type ) {
@@ -119,7 +112,7 @@ class Resource extends Handler {
 
 		try {
 			$profile = $userStatementProvider->getUserProfile();
-		} catch ( MWException $ex ) {
+		} catch ( Exception $ex ) {
 			throw new HttpException( $ex->getMessage(), $ex->getCode() );
 		}
 
@@ -152,6 +145,7 @@ class Resource extends Handler {
 		return $response;
 	}
 
+	/** @inheritDoc */
 	public function getParamSettings() {
 		return [
 			'type' => [

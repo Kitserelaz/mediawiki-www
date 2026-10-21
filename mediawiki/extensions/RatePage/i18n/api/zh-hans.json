@@ -1,0 +1,23 @@
+{
+	"@metadata": {
+		"authors": [
+			"CrownedWharf566",
+			"列维劳德",
+			"沈澄心"
+		]
+	},
+	"apihelp-ratepage-summary": "让用户可以为页面投票，获取页面的评分。这需要指定两个参数中的一个：页面 id 或页面标题。",
+	"apihelp-ratepage-param-pageid": "页面 ID",
+	"apihelp-ratepage-param-pagetitle": "页面标题",
+	"apihelp-ratepage-param-answer": "用户页面评分 (默认总共有从 1 分到 5 分，可以通过结构设置修改)",
+	"apihelp-ratepage-param-contest": "竞赛标识符",
+	"apihelp-ratepage-example-1": "获取例子页面目前的评分.",
+	"apihelp-ratepage-example-2": "给例子页面评 2 分。",
+	"apihelp-query+pagerating-summary": "返回此页面的投票和此用户的投票权限。",
+	"apihelp-query+pagerating-param-contest": "竞赛标识符",
+	"apierror-ratepage-contest-id-too-long": "竞赛ID长度超出限制（255个字符）。",
+	"apierror-ratepage-contest-id-allowed-chars": "竞赛ID只能由数字和拉丁字母组成，不允许使用其他字符。",
+	"apierror-ratepage-contest-not-exists": "竞赛$1不存在。",
+	"apierror-ratepage-page-not-exists": "指定的页面不存在。",
+	"apierror-ratepage-cannot-vote-in-contest": "您没有权限在此竞赛中投票。"
+}

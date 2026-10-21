@@ -5,6 +5,7 @@ namespace Flow\Data;
 use Flow\DbFactory;
 use Flow\Exception\NoIndexException;
 use Flow\Model\UUID;
+use MediaWiki\Exception\MWExceptionHandler;
 use MediaWiki\Json\FormatJson;
 
 /**
@@ -75,7 +76,7 @@ class ObjectLocator {
 	 * array_map, maintaining order and key relationship between input $queries
 	 * and $result.
 	 *
-	 * @param array $queries
+	 * @param array[] $queries
 	 * @param array $options
 	 * @return array[]
 	 */
@@ -101,7 +102,7 @@ class ObjectLocator {
 					. json_encode( $options ) . ' : '
 					. json_encode( array_map( 'get_class', $this->indexes ) )
 				);
-				\MWExceptionHandler::logException( $e );
+				MWExceptionHandler::logException( $e );
 			} else {
 				wfDebugLog( 'FlowDebug', __METHOD__ . ': ' . $e->getMessage() );
 			}
@@ -228,7 +229,7 @@ class ObjectLocator {
 	 * Determining if a find() has not yet been resolved may be useful so that
 	 * additional data may be loaded at once.
 	 *
-	 * @param string|int $id Id to get()
+	 * @param UUID $id Id to get()
 	 * @return bool
 	 */
 	public function got( $id ) {
@@ -242,7 +243,7 @@ class ObjectLocator {
 	 * Determining if a find() has not yet been resolved may be useful so that
 	 * additional data may be loaded at once.
 	 *
-	 * @param array $objectIds Ids to getMulti()
+	 * @param UUID[] $objectIds Ids to getMulti()
 	 * @return bool
 	 */
 	public function gotMulti( array $objectIds ) {

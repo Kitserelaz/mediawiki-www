@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Albinus",
+			"Manik Soren",
+			"Ramjit Tudu",
+			"ᱤᱧ ᱢᱟᱛᱟᱞ"
+		]
+	},
+	"globalusage": "ᱡᱮᱜᱮᱛ ᱡᱟᱠᱟᱛ ᱨᱮᱫ ᱵᱮᱵᱷᱟᱨᱟᱜ",
+	"globalusage-ok": "ᱥᱮᱸᱫᱽᱨᱟ",
+	"globalusage-on-wiki": "$2 ᱨᱮ ᱵᱮᱵᱷᱟᱨ",
+	"globalusage-of-file": "ᱱᱚᱶᱟ ᱨᱮᱫᱠᱚ ᱵᱮᱵᱷᱟᱨᱟᱠᱟᱫ ᱣᱤᱠᱤᱠᱚ :",
+	"globalusage-more": "ᱱᱚᱶᱟ ᱨᱮᱫ ᱨᱮᱱᱟᱜ [[{{#Special:GlobalUsage}}/$1|ᱵᱟᱹᱲᱛᱤ ᱡᱮᱜᱮᱛ ᱵᱮᱵᱷᱟᱨ]] ᱧᱮᱞ ᱢᱮ ᱾"
+}

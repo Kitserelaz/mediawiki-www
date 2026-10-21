@@ -1,0 +1,22 @@
+{
+	"@metadata": {
+		"authors": [
+			"Gomoko",
+			"Grondin",
+			"Shirayuki",
+			"Thibaut120094",
+			"Toliño",
+			"Urhixidur",
+			"Verdy p"
+		]
+	},
+	"lastmodified-desc": "Génère des horodatages de dernière modification pour les pages",
+	"lastmodified": "Dernière modification",
+	"lastmodified-title-tag": "Afficher l’historique des versions pour cet article.",
+	"lastmodified-seconds": "Dernière mise à jour il y a $1 seconde{{PLURAL:$1||s}}",
+	"lastmodified-minutes": "Dernière mise à jour il y a $1 minute{{PLURAL:$1||s}}",
+	"lastmodified-hours": "Dernière mise à jour il y a $1 heure{{PLURAL:$1||s}}",
+	"lastmodified-days": "Dernière mise à jour il y a $1 jour{{PLURAL:$1||s}}",
+	"lastmodified-months": "Dernière mise à jour il y a $1 mois{{PLURAL:$1|}}",
+	"lastmodified-years": "Dernière modification il y a $1 an{{PLURAL:$1||s}}"
+}

@@ -100,7 +100,7 @@ ve.ui.MWMetaDialog.prototype.getAllWidgets = function () {
 				const widget = item.fieldWidget;
 				// we can recheck the value
 				widgetList.push( {
-					widget: widget,
+					widget,
 					name: pageName + '/' + fieldsetIndex + '/' + itemIndex,
 					hasChildren: widget.items !== undefined
 				} );
@@ -200,7 +200,7 @@ ve.ui.MWMetaDialog.prototype.getActionProcess = function ( action ) {
 	if ( action === 'done' ) {
 		return new OO.ui.Process( () => {
 			surfaceModel.applyStaging();
-			this.close( { action: action } );
+			this.close( { action } );
 		} );
 	}
 
@@ -213,8 +213,7 @@ ve.ui.MWMetaDialog.prototype.getActionProcess = function ( action ) {
 /**
  * @inheritdoc
  */
-ve.ui.MWMetaDialog.prototype.getSetupProcess = function ( data ) {
-	data = data || {};
+ve.ui.MWMetaDialog.prototype.getSetupProcess = function ( data = {} ) {
 	return ve.ui.MWMetaDialog.super.prototype.getSetupProcess.call( this, data )
 		.next( () => {
 			const surfaceModel = this.getFragment().getSurface(),
@@ -227,7 +226,7 @@ ve.ui.MWMetaDialog.prototype.getSetupProcess = function ( data ) {
 				selectWidget.findItemFromData( page ).setDisabled( isSource );
 			} );
 
-			if ( isSource && visualOnlyPages.indexOf( data.page || 'categories' ) !== -1 ) {
+			if ( isSource && visualOnlyPages.includes( data.page || 'categories' ) ) {
 				data.page = 'templatesUsed';
 			}
 
@@ -235,7 +234,7 @@ ve.ui.MWMetaDialog.prototype.getSetupProcess = function ( data ) {
 			surfaceModel.pushStaging();
 
 			const config = {
-				data: data,
+				data,
 				isReadOnly: this.isReadOnly()
 			};
 
@@ -269,8 +268,7 @@ ve.ui.MWMetaDialog.prototype.getSetupProcess = function ( data ) {
 /**
  * @inheritdoc
  */
-ve.ui.MWMetaDialog.prototype.getReadyProcess = function ( data ) {
-	data = data || {};
+ve.ui.MWMetaDialog.prototype.getReadyProcess = function ( data = {} ) {
 	return ve.ui.MWMetaDialog.super.prototype.getReadyProcess.call( this, data )
 		.next( () => {
 			if ( data.page && this.bookletLayout.getPage( data.page ) ) {
@@ -282,8 +280,7 @@ ve.ui.MWMetaDialog.prototype.getReadyProcess = function ( data ) {
 /**
  * @inheritdoc
  */
-ve.ui.MWMetaDialog.prototype.getTeardownProcess = function ( data ) {
-	data = data || {};
+ve.ui.MWMetaDialog.prototype.getTeardownProcess = function ( data = {} ) {
 	return ve.ui.MWMetaDialog.super.prototype.getTeardownProcess.call( this, data )
 		.first( () => {
 			// Let each page tear itself down ('languages' page doesn't need this yet)

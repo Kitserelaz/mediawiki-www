@@ -1,10 +1,10 @@
 <?php
 
-namespace MediaWiki\CheckUser\Services;
+namespace MediaWiki\Extension\CheckUser\Services;
 
-use MediaWiki\CheckUser\ClientHints\ClientHintsData;
-use MediaWiki\CheckUser\ClientHints\ClientHintsLookupResults;
-use MediaWiki\CheckUser\ClientHints\ClientHintsReferenceIds;
+use MediaWiki\Extension\CheckUser\ClientHints\ClientHintsData;
+use MediaWiki\Extension\CheckUser\ClientHints\ClientHintsLookupResults;
+use MediaWiki\Extension\CheckUser\ClientHints\ClientHintsReferenceIds;
 use Wikimedia\Rdbms\IReadableDatabase;
 
 /**
@@ -12,13 +12,9 @@ use Wikimedia\Rdbms\IReadableDatabase;
  * a ClientHintsReferenceIds object of reference IDs.
  */
 class UserAgentClientHintsLookup {
-	private IReadableDatabase $dbr;
-
-	/**
-	 * @param IReadableDatabase $dbr
-	 */
-	public function __construct( IReadableDatabase $dbr ) {
-		$this->dbr = $dbr;
+	public function __construct(
+		private readonly IReadableDatabase $dbr,
+	) {
 	}
 
 	/**
@@ -42,7 +38,9 @@ class UserAgentClientHintsLookup {
 			->table( 'cu_useragent_clienthints_map' )
 			// The results list can be used to generate the WHERE condition.
 			->where( $this->dbr->makeWhereFrom2d(
-				$referenceIdsToClientHintIds, 'uachm_reference_type', 'uachm_reference_id'
+				$referenceIdsToClientHintIds,
+				'uachm_reference_type',
+				'uachm_reference_id'
 			) )
 			->caller( __METHOD__ )
 			->fetchResultSet();
@@ -55,6 +53,7 @@ class UserAgentClientHintsLookup {
 
 		// Fill out the results list with the associated uach_id values
 		// for each reference ID provided in the first parameter to this method.
+		/** @var int[] $clientHintIds */
 		$clientHintIds = [];
 		foreach ( $res as $row ) {
 			$clientHintIds[] = $row->uachm_uach_id;
@@ -65,9 +64,10 @@ class UserAgentClientHintsLookup {
 		// of the SQL query.
 		$clientHintIds = array_unique( $clientHintIds );
 
-		$uniqueClientHintsDataCombinations = $this->generateUniqueClientHintsIdCombinations(
+		$uniqueClientHintsIdCombinations = $this->generateUniqueClientHintsIdCombinations(
 			$referenceIdsToClientHintIds
 		);
+		'@phan-var array<int,array<int,int>> &$referenceIdsToClientHintIds';
 
 		// Get all the data for the uach_id values that were collected in the first query.
 		$clientHintsRows = $this->dbr->newSelectQueryBuilder()
@@ -78,23 +78,27 @@ class UserAgentClientHintsLookup {
 			->fetchResultSet();
 
 		// Make an array of Client Hints data database rows for each uach_id.
+		/** @var array<int,array{uach_name: string, uach_value: string}> $clientHintsRowsAsArray */
 		$clientHintsRowsAsArray = [];
 		foreach ( $clientHintsRows as $row ) {
 			$clientHintsRowsAsArray[$row->uach_id] = [
-				'uach_name' => $row->uach_name, 'uach_value' => $row->uach_value
+				'uach_name' => $row->uach_name, 'uach_value' => $row->uach_value,
 			];
 		}
 
-		foreach ( $uniqueClientHintsDataCombinations as &$clientHintsData ) {
-			$clientHintRowIdsForReferenceId = array_intersect_key(
-				$clientHintsRowsAsArray,
-				array_flip( $clientHintsData )
-			);
-			$clientHintsData = ClientHintsData::newFromDatabaseRows( $clientHintRowIdsForReferenceId );
-		}
+		/** @var array<int,ClientHintsData> $clientHintsDataObjects */
+		$clientHintsDataObjects = array_map(
+			static fn ( array $clientHintsIds ) => ClientHintsData::newFromDatabaseRows(
+				array_intersect_key(
+					$clientHintsRowsAsArray,
+					array_flip( $clientHintsIds )
+				)
+			),
+			$uniqueClientHintsIdCombinations
+		);
 
 		// Return the results in a result wrapper to make the results easier to use by the callers.
-		return new ClientHintsLookupResults( $referenceIdsToClientHintIds, $uniqueClientHintsDataCombinations );
+		return new ClientHintsLookupResults( $referenceIdsToClientHintIds, $clientHintsDataObjects );
 	}
 
 	/**
@@ -102,9 +106,9 @@ class UserAgentClientHintsLookup {
 	 * ::getClientHintsByReferenceIds.
 	 *
 	 * @param ClientHintsReferenceIds $referenceIds The reference IDs passed to ::getClientHintsByReferenceIds
-	 * @return array The first results array which is a two-dimensional map where the first
-	 *   dimension keys is the reference type, the second dimension keys is the reference ID,
-	 *   and the values is initially an empty array.
+	 * @return array<int,array<int,int[]>> The first results array which is a two-dimensional
+	 *   map where the first dimension keys is the reference type, the second dimension keys
+	 *   is the reference ID, and the values is initially an empty array.
 	 */
 	private function prepareFirstResultsArray( ClientHintsReferenceIds $referenceIds ): array {
 		$referenceIdsToClientHintIds = [];
@@ -129,12 +133,14 @@ class UserAgentClientHintsLookup {
 	 * first argument to reference the key associated with
 	 * the array in the newly generated second results array.
 	 *
-	 * @param array &$referenceIdsToClientHintIds The first results list currently under construction
-	 * @return array The unique combinations of uach_ids as values with integer keys.
+	 * @param array<int,array<int,int[]>> &$referenceIdsToClientHintIds The first results list
+	 *   currently under construction
+	 * @return array<int,int[]> The unique combinations of uach_ids as values with integer keys.
 	 */
 	private function generateUniqueClientHintsIdCombinations( array &$referenceIdsToClientHintIds ): array {
 		// Generate an two-dimensional array of all the uach_ids
 		// grouped by their reference ID.
+		/** @var array<int,int[]> $clientHintIdCombinations */
 		$clientHintIdCombinations = [];
 		foreach ( $referenceIdsToClientHintIds as &$referenceIdsForMapId ) {
 			foreach ( $referenceIdsForMapId as &$clientHintsIds ) {
@@ -155,6 +161,8 @@ class UserAgentClientHintsLookup {
 			foreach ( $referenceIdsForMapId as &$clientHintsIds ) {
 				// Update the $referenceIdsToClientHintIds array to now reference the integer key
 				// for this array of uach_ids in $uniqueClientHintsDataCombinations.
+				// This changes $referenceIdsToClientHintIds from array<int,array<int,int[]>> to
+				// array<int,array<int,int>>.
 				$clientHintsIds = array_search( $clientHintsIds, $clientHintIdCombinations );
 			}
 		}

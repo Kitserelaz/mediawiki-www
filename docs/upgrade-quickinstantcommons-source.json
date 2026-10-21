@@ -1,0 +1,7 @@
+{
+  "component": "mediawiki/extensions/QuickInstantCommons",
+  "baseline": "9b08f21688e6c8ca252e069231929701f5a00da3",
+  "target": "b9969b18950c51e6f9a676b885fcd101815075df",
+  "preserved_changes": [],
+  "dependency_status": "No runtime Composer packages or component lockfile; uses core platform dependencies"
+}

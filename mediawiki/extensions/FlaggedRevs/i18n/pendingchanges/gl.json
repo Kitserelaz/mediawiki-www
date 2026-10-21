@@ -1,0 +1,34 @@
+{
+	"@metadata": {
+		"authors": [
+			"Toliño"
+		]
+	},
+	"pendingchanges": "Páxinas con cambios pendentes",
+	"pendingchanges-legend": "Listar as páxinas revisadas con revisións sen revisar",
+	"pendingchanges-list": "Esta páxina lista as páxinas [[{{MediaWiki:Validationpage}}|revisadas]] que teñen edicións pendentes.",
+	"pendingchanges-none": "Actualmente non hai páxinas que reúnan eses criterios.",
+	"pendingchanges-hours": "$1 {{PLURAL:$1|hora|horas}}",
+	"pendingchanges-days": "$1 {{PLURAL:$1|día|días}}",
+	"pendingchanges-recent": "menos dunha hora",
+	"pendingchanges-category": "Categoría:",
+	"pendingchanges-limit": "Límite:",
+	"pendingchanges-edit-tag": "Editar a etiqueta:",
+	"pendingchanges-edit-tag-any": "Calquera etiqueta",
+	"pendingchanges-onwatchlist": "Páxinas na miña lista de vixilancia",
+	"pendingchanges-stable": "A versión estable móstrase por defecto",
+	"pendingchanges-diff": "Revisar",
+	"pendingchanges-size": "Tamaño máximo (en bytes):",
+	"pendingchanges-unwatched": "sen vixiar",
+	"pendingchanges-table-caption": "Cambios pendentes",
+	"pendingchanges-table-page": "Páxina",
+	"pendingchanges-table-size": "Tamaño",
+	"pendingchanges-table-pending-since": "Desde",
+	"pendingchanges-table-quality": "Calidade",
+	"pendingchanges-table-watching": "Vixiantes activos",
+	"pendingchanges-table-history": "Historial",
+	"pendingchanges-table-review": "Revisar",
+	"pendingchanges-table-revision-history": "Historial",
+	"pendingchanges-table-footer": "Nestes intres, hai {{PLURAL:$2|$1 cambio pendente|$1 cambios pendentes}}",
+	"pendingchanges-filter-submit-button-text": "Filtrar os cambios pendentes"
+}

@@ -1,6 +1,6 @@
 'use strict';
 
-/*
+/**
  * VisualEditor user interface MWCitationDialog class.
  *
  * @copyright 2011-2018 VisualEditor Team's Cite sub-team and others; see AUTHORS.txt
@@ -25,6 +25,9 @@ ve.ui.MWCitationDialog = function VeUiMWCitationDialog( config ) {
 	this.inDialog = '';
 };
 
+const MWReferenceModel = require( './ve.dm.MWReferenceModel.js' );
+const MWReferenceNode = require( './ve.dm.MWReferenceNode.js' );
+
 /* Inheritance */
 
 OO.inheritClass( ve.ui.MWCitationDialog, ve.ui.MWTransclusionDialog );
@@ -43,7 +46,7 @@ ve.ui.MWCitationDialog.static.name = 'cite';
 ve.ui.MWCitationDialog.prototype.getReferenceNode = function () {
 	const selectedNode = this.getFragment().getSelectedNode();
 
-	if ( selectedNode instanceof ve.dm.MWReferenceNode ) {
+	if ( selectedNode instanceof MWReferenceNode ) {
 		return selectedNode;
 	}
 
@@ -54,26 +57,20 @@ ve.ui.MWCitationDialog.prototype.getReferenceNode = function () {
  * @override
  */
 ve.ui.MWCitationDialog.prototype.getSelectedNode = function () {
+	const surface = this.getFragment().getSurface();
 	const referenceNode = this.getReferenceNode();
+	const internalItem = ( this.referenceModel && this.referenceModel.findInternalItem( surface ) ) ||
+		( referenceNode && referenceNode.getInternalItem() );
 
-	if ( referenceNode ) {
-		const branches = referenceNode.getInternalItem().getChildren();
-		const leaves = branches &&
-			branches.length === 1 &&
-			branches[ 0 ].canContainContent() &&
-			branches[ 0 ].getChildren();
-		const transclusionNode = leaves &&
-			leaves.length === 1 &&
-			leaves[ 0 ] instanceof ve.dm.MWTransclusionNode &&
-			leaves[ 0 ];
-
-		// Only use the selected node if it is the same template as this dialog expects
-		if ( transclusionNode && transclusionNode.isSingleTemplate( this.citationTemplate ) ) {
-			return transclusionNode;
-		}
+	if ( !internalItem ) {
+		return null;
 	}
 
-	return null;
+	// Only use the node if it is the same template as this dialog expects
+	return ve.ui.MWCitationDialog.static.getTransclusionNodeWithTemplate(
+		internalItem,
+		this.citationTemplate
+	);
 };
 
 /**
@@ -91,6 +88,11 @@ ve.ui.MWCitationDialog.prototype.initialize = function ( data ) {
 
 /**
  * @override
+ * @param {Object} [data={}]
+ * @param {string} [data.inDialog]
+ * @param {string|string[]} [data.template]
+ * @param {string} [data.title]
+ * @param {ve.dm.MWReferenceModel} [data.refToEdit] Open the dialog to edit a specific reference
  */
 ve.ui.MWCitationDialog.prototype.getSetupProcess = function ( data ) {
 	return ve.ui.MWCitationDialog.super.prototype.getSetupProcess.call( this, data )
@@ -99,7 +101,7 @@ ve.ui.MWCitationDialog.prototype.getSetupProcess = function ( data ) {
 			this.inDialog = data.inDialog;
 			this.citationTemplate = data.template;
 			this.citationTitle = data.title;
-
+			this.referenceModel = data.refToEdit;
 			this.trackedCitationInputChange = false;
 		} )
 		.next( () => {
@@ -107,11 +109,16 @@ ve.ui.MWCitationDialog.prototype.getSetupProcess = function ( data ) {
 
 			// Initialization
 			this.referenceNode = this.getReferenceNode();
-			if ( this.referenceNode ) {
-				this.referenceModel = ve.dm.MWReferenceModel.static.newFromReferenceNode(
+			if ( !this.referenceModel && this.referenceNode ) {
+				this.referenceModel = MWReferenceModel.static.newFromReferenceNode(
 					this.referenceNode
 				);
 			}
+
+			// T367910: Temporarily disable Citoid's replace feature when the ReferenceList
+			// is selected
+			const canReplace = this.getFragment().getSurface().getSelectedNode() instanceof MWReferenceNode;
+			this.actions.setAbilities( { replace: canReplace } );
 		} );
 };
 
@@ -167,9 +174,8 @@ ve.ui.MWCitationDialog.prototype.getActionProcess = function ( action ) {
 				if ( !this.referenceModel ) {
 					// Collapse returns a new fragment, so update this.fragment
 					this.fragment = this.getFragment().collapseToEnd();
-					this.referenceModel = new ve.dm.MWReferenceModel( doc );
-					this.referenceModel.insertInternalItem( surfaceModel );
-					this.referenceModel.insertReferenceNode( this.getFragment() );
+					this.referenceModel = new MWReferenceModel( doc );
+					this.referenceModel.insertIntoFragment( this.getFragment() );
 				}
 
 				const item = this.referenceModel.findInternalItem( surfaceModel );
@@ -206,7 +212,7 @@ ve.ui.MWCitationDialog.prototype.getActionProcess = function ( action ) {
 				);
 				this.referenceModel.updateInternalItem( surfaceModel );
 
-				this.close( { action: action } );
+				this.close( { action } );
 			} ).always( deferred.resolve );
 
 			return deferred;
@@ -241,6 +247,32 @@ ve.ui.MWCitationDialog.prototype.onInputChange = function () {
 	}
 };
 
-/* Registration */
+/**
+ * Get the TransclusionNode from an InternalItem if it's a single transclusion
+ * that fits a certain template.
+ *
+ * @param {ve.dm.InternalItemNode} internalItem
+ * @param {string|string[]} template
+ * @return {?ve.dm.MWTransclusionNode} null when there's no fitting single transclusion node
+ */
+ve.ui.MWCitationDialog.static.getTransclusionNodeWithTemplate = function (
+	internalItem,
+	template
+) {
+	const branches = internalItem.getChildren();
+	const leaves = branches.length === 1 &&
+		branches[ 0 ].canContainContent() &&
+		branches[ 0 ].getChildren();
+	const node = leaves &&
+		leaves.length === 1 &&
+		leaves[ 0 ];
+	if ( node instanceof ve.dm.MWTransclusionNode &&
+		node.isSingleTemplate( template )
+	) {
+		return node;
+	}
 
-ve.ui.windowFactory.register( ve.ui.MWCitationDialog );
+	return null;
+};
+
+module.exports = ve.ui.MWCitationDialog;

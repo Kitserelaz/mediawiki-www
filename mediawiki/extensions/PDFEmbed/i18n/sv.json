@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Sabelöga"
+		]
+	},
+	"action-embed_pdf": "inbäddade PDF:er",
+	"pdfembed": "Inbädda PDF",
+	"pdfembed_description": "Mediehanterartillägg för PDF-filer.",
+	"embed_pdf_no_permission": "Du har inte behörighet att bädda in PDF-filer.",
+	"embed_pdf_blank_file": "Webbadressen eller sökvägen för att bädda in en PDF är tom.",
+	"embed_pdf_invalid_file": "Den angivna webbadressen eller sökvägen finns inte.",
+	"embed_pdf_invalid_user": "En ogiltig användare har angivits för behörighetstest för att bädda in denna PDF.",
+	"right-embed_pdf": "Bädda in PDF:er på sidor"
+}

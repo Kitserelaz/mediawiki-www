@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Beta16"
+		]
+	},
+	"flexdiagrams-linkingpages": "Le seguenti pagine hanno un collegamento a questo diagramma: $1",
+	"flexdiagrams-edit-code": "Codice:",
+	"flexdiagrams-gantt-zoomlevel": "Livello di ingrandimento:",
+	"flexdiagrams-gantt-hours": "Ore",
+	"flexdiagrams-gantt-days": "Giorni",
+	"flexdiagrams-gantt-weeks": "Settimane",
+	"flexdiagrams-gantt-months": "Mesi",
+	"flexdiagrams-gantt-years": "Anni"
+}

@@ -1,0 +1,58 @@
+{
+  "buildx.build.provenance": {
+    "builder": {
+      "id": ""
+    },
+    "buildType": "https://mobyproject.org/buildkit@v1",
+    "materials": [
+      {
+        "uri": "pkg:docker/node@22.22.0-bookworm-slim?digest=sha256:dd9d21971ec4395903fa6143c2b9267d048ae01ca6d3ea96f16cb30df6187d94\u0026platform=linux%2Famd64",
+        "digest": {
+          "sha256": "dd9d21971ec4395903fa6143c2b9267d048ae01ca6d3ea96f16cb30df6187d94"
+        }
+      }
+    ],
+    "invocation": {
+      "configSource": {
+        "entryPoint": "Dockerfile"
+      },
+      "parameters": {
+        "frontend": "dockerfile.v0",
+        "locals": [
+          {
+            "name": "context"
+          },
+          {
+            "name": "dockerfile"
+          }
+        ],
+        "root": {
+          "configSource": {
+            "path": "Dockerfile"
+          },
+          "request": {
+            "args": {
+              "vcs:localdir:context": "Moe-Counter",
+              "vcs:localdir:dockerfile": "Moe-Counter",
+              "vcs:revision": "028f51e7767078778431d686d8843ee07607a4b6",
+              "vcs:source": "/var/folders/19/1g7tg4ln6yl5rn3jxcrllwdm0000gn/T/farm-clean-export-_m_nfheq/candidate.git"
+            }
+          }
+        },
+        "compatibilityVersion": 30
+      },
+      "environment": {
+        "dockerfileVersion": "1.27.0",
+        "platform": "linux/arm64"
+      }
+    }
+  },
+  "buildx.build.ref": "desktop-linux/desktop-linux/lumaz6b0g13k63dn9ojtswhs6",
+  "containerimage.descriptor": {
+    "mediaType": "application/vnd.oci.image.index.v1+json",
+    "digest": "sha256:d19bfbc915762b70cc0e53b4901960adfa5b3f3df939a362e81c08bbd59f8ec0",
+    "size": 856
+  },
+  "containerimage.digest": "sha256:d19bfbc915762b70cc0e53b4901960adfa5b3f3df939a362e81c08bbd59f8ec0",
+  "image.name": "docker.io/library/cloudwiki-counter:upgrade-clean-20261018-amd64"
+}

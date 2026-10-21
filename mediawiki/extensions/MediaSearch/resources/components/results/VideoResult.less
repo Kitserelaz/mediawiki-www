@@ -1,0 +1,98 @@
+@import 'mediawiki.mixins';
+@import '../../mediasearch-variables.less';
+
+// Base element is an anchor tag for the sake of keyboard navigation.
+.sdms-video-result {
+	.flex-display();
+	.flex-wrap( nowrap );
+	border-radius: @border-radius-base;
+	border: @border-width-base @border-style-base @sdms-border-color-result;
+	box-sizing: border-box;
+	color: @color-progressive;
+	flex-direction: column;
+
+	// Natural max-width of this component. This is needed to ensure that, if
+	// there are only 1 or 2 components on a wide row, the PHP version of those
+	// components aren't stretched too wide. This is important for 2 reasons:
+	//  1. It just looks bad.
+	//  2. The JS version will set a max-width less than or equal to the
+	//     figure below, and we want to avoid a noticeable decrease in width
+	//     when the JS UI loads.
+	max-width: 401.5px;
+	transition-property: box-shadow, outline;
+	transition-duration: @transition-duration-base;
+
+	// Title is a heading element inside of a link, but we want this to look
+	// and behave like link text
+	&__title {
+		color: @color-progressive;
+		transition: color @transition-duration-base;
+	}
+
+	&__body {
+		.flex-display();
+		.flex( 1, 0, auto );
+		flex-direction: column;
+		padding: @sdms-spacing-sm;
+
+		& .sdms-video-result__title {
+			line-height: @line-height-xx-small;
+			margin-top: 0;
+			padding-top: 0;
+		}
+	}
+
+	&:hover &__title {
+		color: @color-progressive--active;
+	}
+
+	&:hover,
+	&:focus {
+		.sdms-result-box-shadow();
+		text-decoration: none;
+	}
+
+	// Extra prominence on focus using outline, for users navigating via keyboard
+	&:focus {
+		outline: solid 2px @border-color-progressive--focus;
+		outline-offset: -2px;
+	}
+
+	&__thumbnail {
+		background-color: #000;
+		object-fit: contain;
+		height: 150px;
+		width: 100%;
+	}
+
+	&__duration {
+		border-radius: @border-radius-base;
+		color: @color-subtle;
+		display: inline-block;
+		background-color: #eaecf0;
+		font-weight: normal;
+		padding: 0 @sdms-spacing-xs;
+		margin-right: @sdms-spacing-sm;
+
+		.cdx-icon {
+			color: inherit;
+		}
+
+		&__text {
+			vertical-align: middle;
+		}
+	}
+
+	&__mime {
+		color: @color-subtle;
+		font-weight: normal;
+	}
+
+	&__icon {
+		.cdx-mixin-css-icon(
+			@cdx-icon-play,
+			@color-subtle,
+			@size-icon-small
+		);
+	}
+}

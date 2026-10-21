@@ -1,0 +1,76 @@
+@import 'mediawiki.skin.variables.less';
+@import '../../utils/mixins.less';
+
+.ge-addlink-mwSaveDialog {
+	.ge-addlink-mwSaveDialog-summaryTable {
+		width: 100%;
+		border-collapse: collapse;
+
+		caption {
+			margin-top: 4px;
+			margin-bottom: 16px;
+			text-align: left;
+			font-weight: normal;
+			color: @color-base;
+			.rel-font-size-and-line-height( @parentFontSize: 14px, @targetFontSize: 16px, @targetLineHeight: 23px );
+		}
+
+		tr {
+			border-bottom: @border-width-base @border-style-base #eaecf0;
+		}
+
+		th {
+			padding: 0 0 12px 0;
+			text-align: left;
+			font-weight: normal;
+			color: @color-subtle;
+			.rel-font-size-and-line-height( @parentFontSize: 14px, @targetFontSize: 13px, @targetLineHeight: 20px );
+
+			&:last-child {
+				text-align: right;
+			}
+
+			.ve-ui-mwMobileSaveDialog& {
+				.rel-font-size-and-line-height( @parentFontSize: 16px, @targetFontSize: 13px, @targetLineHeight: 20px );
+			}
+
+			.oo-ui-icon-robot-black {
+				margin-right: 10px;
+			}
+
+			.aligner {
+				vertical-align: middle;
+			}
+		}
+	}
+
+	.ge-addlink-mwSaveDialog-table-data {
+		padding: 0;
+		text-align: left;
+		color: @color-base;
+		.rel-font-size-and-line-height( @parentFontSize: 14px, @targetFontSize: 14px, @targetLineHeight: 27px );
+
+		&:last-child {
+			text-align: right;
+		}
+
+		.ve-ui-mwMobileSaveDialog& {
+			.rel-font-size-and-line-height( @parentFontSize: 16px, @targetFontSize: 16px, @targetLineHeight: 32px );
+		}
+
+		.oo-ui-icon-link,
+		.oo-ui-icon-subtract {
+			// close to @color-subtle
+			opacity: @opacity-icon-subtle;
+		}
+
+		.oo-ui-icon-link {
+			min-width: 16px;
+			min-height: 16px;
+			width: 1.14285714em;
+			height: 1.14285714em;
+			margin-left: 6px;
+			margin-right: 6px;
+		}
+	}
+}

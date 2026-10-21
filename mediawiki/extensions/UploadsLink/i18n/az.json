@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Nemoralis"
+		]
+	},
+	"uploadslink-desc": "Şəxsi alətlər menyusuna cari istifadəçinin yükləmə siyahısına keçid və yan panel Alətlər menyusuna müvafiq istifadəçinin yükləmə siyahısına keçid əlavə edir.",
+	"uploadslink-portlet-label": "Yükləmələr",
+	"tooltip-pt-uploads": "Yüklədiyiniz faylların siyahısı",
+	"uploadslink-toobox-label": "{{GENDER:$1|İstifadəçi}} yükləmələri",
+	"tooltip-tb-uploads": "Bu {{GENDER:$1|istifadəçinin}} yüklədikləri"
+}

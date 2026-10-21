@@ -8,8 +8,10 @@ use Flow\Model\UUID;
 use LightnCandy\LightnCandy;
 use LightnCandy\SafeString;
 use MediaWiki\Context\RequestContext;
+use MediaWiki\Diff\DifferenceEngine;
 use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\RecentChanges\ChangesList;
 use MediaWiki\Title\Title;
 use MediaWiki\Utils\MWTimestamp;
 use OOUI\IconWidget;
@@ -110,7 +112,7 @@ class TemplateHelper {
 
 		/** @var callable $renderer */
 		$renderer = require $filenames['compiled'];
-		$this->renderers[$templateName] = static function ( $args, array $scopes = [] ) use ( $templateName, $renderer ) {
+		$this->renderers[$templateName] = static function ( $args, array $scopes = [] ) use ( $renderer ) {
 			return $renderer( $args, $scopes );
 		};
 		return $this->renderers[$templateName];
@@ -227,7 +229,7 @@ class TemplateHelper {
 	 * @return SafeString|null
 	 */
 	protected static function timestamp( $timestamp ) {
-		global $wgLang;
+		$lang = RequestContext::getMain()->getLanguage();
 
 		if ( !$timestamp ) {
 			return null;
@@ -241,8 +243,8 @@ class TemplateHelper {
 			'timestamp',
 			[
 				'time_iso' => $timestamp,
-				'time_ago' => $wgLang->getHumanTimestamp( $ts ),
-				'time_readable' => $wgLang->userTimeAndDate(
+				'time_ago' => $lang->getHumanTimestamp( $ts ),
+				'time_readable' => $lang->userTimeAndDate(
 					$timestamp,
 					RequestContext::getMain()->getUser()
 				),
@@ -409,7 +411,8 @@ class TemplateHelper {
 	 * @return SafeString
 	 */
 	public static function showCharacterDifference( $old, $new ) {
-		return new SafeString( \ChangesList::showCharacterDifference( (int)$old, (int)$new ) );
+		$ctx = RequestContext::getMain();
+		return new SafeString( ChangesList::showCharacterDifference( (int)$old, (int)$new, $ctx ) );
 	}
 
 	/**
@@ -497,9 +500,8 @@ class TemplateHelper {
 	 */
 	public static function l10n( ...$args ) {
 		$options = array_pop( $args );
-		$str = array_shift( $args );
-
-		return wfMessage( $str )->params( $args )->text();
+		// @phan-suppress-next-line PhanParamTooFewUnpack
+		return wfMessage( ...$args )->text();
 	}
 
 	/**
@@ -509,8 +511,8 @@ class TemplateHelper {
 	 */
 	public static function l10nParse( ...$args ) {
 		$options = array_pop( $args );
-		$str = array_shift( $args );
-		return new SafeString( wfMessage( $str, $args )->parse() );
+		// @phan-suppress-next-line PhanParamTooFewUnpack
+		return new SafeString( wfMessage( ...$args )->parse() );
 	}
 
 	/**
@@ -551,7 +553,7 @@ class TemplateHelper {
 	 * @return SafeString
 	 */
 	public static function diffRevision( $data ) {
-		$differenceEngine = new \DifferenceEngine();
+		$differenceEngine = new DifferenceEngine();
 		$notice = '';
 		if ( $data['diff_content'] === '' ) {
 			$notice .= '<div class="mw-diff-empty">' .
@@ -584,7 +586,7 @@ class TemplateHelper {
 	}
 
 	public static function diffUndo( $diffContent ) {
-		$differenceEngine = new \DifferenceEngine();
+		$differenceEngine = new DifferenceEngine();
 		$notice = '';
 		if ( $diffContent === '' ) {
 			$notice = '<div class="mw-diff-empty">' .

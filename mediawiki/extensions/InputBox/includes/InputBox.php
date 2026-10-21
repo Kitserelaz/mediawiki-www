@@ -23,8 +23,6 @@ class InputBox {
 
 	/* Fields */
 
-	/** @var Config */
-	private $config;
 	/** @var Parser */
 	private $mParser;
 	/** @var string */
@@ -33,6 +31,8 @@ class InputBox {
 	private $mWidth = 50;
 	/** @var ?string */
 	private $mPreload = null;
+	/** @var ?string */
+	private $mPreloadTitle = null;
 	/** @var ?array */
 	private $mPreloadparams = null;
 	/** @var ?string */
@@ -78,6 +78,10 @@ class InputBox {
 	/** @var string */
 	private $mDir = '';
 	/** @var string */
+	private $mSearchEngine = '';
+	/** @var string One of 'image', 'video', 'audio', 'page', or 'other'. */
+	private string $mSearchType = '';
+	/** @var string */
 	private $mSearchFilter = '';
 	/** @var string */
 	private $mTour = '';
@@ -88,13 +92,14 @@ class InputBox {
 
 	/**
 	 * @param Config $config
+	 * @param ExtensionRegistry $extensionRegistry
 	 * @param Parser $parser
 	 */
 	public function __construct(
-		Config $config,
+		private readonly Config $config,
+		private readonly ExtensionRegistry $extensionRegistry,
 		$parser
 	) {
-		$this->config = $config;
 		$this->mParser = $parser;
 		// Default value for dir taken from the page language (bug 37018)
 		$this->mDir = $this->mParser->getTargetLanguage()->getDir();
@@ -106,7 +111,7 @@ class InputBox {
 		] );
 	}
 
-	public function render() {
+	public function render(): string {
 		// Handle various types
 		switch ( $this->mType ) {
 			case 'create':
@@ -167,6 +172,14 @@ class InputBox {
 	}
 
 	/**
+	 * Get space-separated list of classes for the search forms.
+	 */
+	private function getSearchFormClasses(): string {
+		return $this->getFormLinebreakClasses()
+			. ( $this->mSearchEngine ? ' inputbox-searchengine-set' : ' inputbox-searchengine-not-set' );
+	}
+
+	/**
 	 * Get common classes, that could be added and depend on, if
 	 * a line break between a button and an input field is added or not.
 	 *
@@ -208,8 +221,8 @@ class InputBox {
 		$htmlOut .= Html::openElement( 'form',
 			[
 				'name' => 'searchbox',
-				'class' => 'searchbox' . $this->getFormLinebreakClasses(),
-				'action' => SpecialPage::getTitleFor( 'Search' )->getLocalUrl(),
+				'class' => 'searchbox' . $this->getSearchFormClasses(),
+				'action' => $this->buildSearchActionUrl(),
 			] + $idArray
 		);
 
@@ -230,6 +243,10 @@ class InputBox {
 
 		if ( $this->mSearchFilter !== '' ) {
 			$htmlOut .= Html::hidden( 'searchfilter', $this->mSearchFilter );
+		}
+
+		if ( $this->mSearchType !== '' && $this->mSearchEngine === 'MediaSearch' ) {
+			$htmlOut .= Html::hidden( 'type', $this->mSearchType );
 		}
 
 		if ( $this->mTour !== '' ) {
@@ -370,8 +387,8 @@ class InputBox {
 				'name' => 'bodySearch' . $id,
 				'id' => 'bodySearch' . $id,
 				'class' => 'bodySearch' .
-					( $this->mInline ? ' mw-inputbox-inline' : '' ) . $this->getFormLinebreakClasses(),
-				'action' => SpecialPage::getTitleFor( 'Search' )->getLocalUrl(),
+					( $this->mInline ? ' mw-inputbox-inline' : '' ) . $this->getSearchFormClasses(),
+				'action' => $this->buildSearchActionUrl(),
 			]
 		);
 		$htmlOut .= Html::openElement( 'div',
@@ -455,6 +472,9 @@ class InputBox {
 		if ( $this->mPreload !== null ) {
 			$htmlOut .= Html::hidden( 'preload', $this->mPreload );
 		}
+		if ( $this->mPreloadTitle !== null ) {
+			$htmlOut .= Html::hidden( 'preloadtitle', $this->mPreloadTitle );
+		}
 		if ( is_array( $this->mPreloadparams ) ) {
 			foreach ( $this->mPreloadparams as $preloadparams ) {
 				$htmlOut .= Html::hidden( 'preloadparams[]', $preloadparams );
@@ -475,7 +495,6 @@ class InputBox {
 		if ( $this->mMinor !== null ) {
 			$htmlOut .= Html::hidden( 'minor', $this->mMinor );
 		}
-		// @phan-suppress-next-line PhanSuspiciousValueComparison False positive
 		if ( $this->mType === 'comment' ) {
 			$htmlOut .= Html::hidden( 'section', 'new' );
 			if ( $this->mUseDT ) {
@@ -671,6 +690,7 @@ class InputBox {
 			'type' => 'mType',
 			'width' => 'mWidth',
 			'preload' => 'mPreload',
+			'preloadtitle' => 'mPreloadTitle',
 			'page' => 'mPage',
 			'editintro' => 'mEditIntro',
 			'useve' => 'mUseVE',
@@ -692,6 +712,8 @@ class InputBox {
 			'inline' => 'mInline',
 			'prefix' => 'mPrefix',
 			'dir' => 'mDir',
+			'searchengine' => 'mSearchEngine',
+			'searchtype' => 'mSearchType',
 			'searchfilter' => 'mSearchFilter',
 			'tour' => 'mTour',
 			'arialabel' => 'mTextBoxAriaLabel'
@@ -803,6 +825,35 @@ REGEX;
 	}
 
 	/**
+	 * Get the URL for Special:Search or Special:MediaSearch.
+	 *
+	 * @return string Local URL of the search page.
+	 */
+	private function buildSearchActionUrl(): string {
+		// If MediaSearch isn't installed then use Special:Search.
+		if ( !$this->extensionRegistry->isLoaded( 'MediaSearch' ) ) {
+			return SpecialPage::getTitleFor( 'Search' )->getLocalUrl();
+		}
+
+		// If it is installed, optionally use it.
+		if ( in_array( $this->mSearchEngine, [ 'Search', 'MediaSearch' ] ) ) {
+			// Use the provided `searchengine=` parameter if it's valid.
+			$searchSpecialPage = $this->mSearchEngine;
+		} else {
+			// Otherwise, the use search-special-page preference.
+			$searchSpecialPage = $this->config->get( 'DefaultUserOptions' )['search-special-page'] ?? 'Search';
+			if ( $this->mParser->getUserIdentity()->isRegistered() ) {
+				$this->mParser->getOutput()->addModules( [ 'ext.inputBox' ] );
+				$this->mParser->getOutput()->setJsConfigVar( 'SpecialSearchPages', [
+					'Search' => SpecialPage::getTitleFor( 'Search' )->getFullText(),
+					'MediaSearch' => SpecialPage::getTitleFor( 'MediaSearch' )->getFullText(),
+				] );
+			}
+		}
+		return SpecialPage::getTitleFor( $searchSpecialPage )->getLocalUrl();
+	}
+
+	/**
 	 * Factory method to help build submit button.
 	 *
 	 * @param array $defaultAttr
@@ -819,7 +870,7 @@ REGEX;
 		return Html::element( 'input', $defaultAttr );
 	}
 
-	private function bgColorStyle() {
+	private function bgColorStyle(): string {
 		if ( $this->mBGColor !== 'transparent' ) {
 			// Define color to avoid flagging linting warnings.
 			// https://phabricator.wikimedia.org/T369619

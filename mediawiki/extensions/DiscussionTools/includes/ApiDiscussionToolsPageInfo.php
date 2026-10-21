@@ -12,30 +12,23 @@ use MediaWiki\Extension\DiscussionTools\ThreadItem\ContentHeadingItem;
 use MediaWiki\Extension\DiscussionTools\ThreadItem\ContentThreadItem;
 use MediaWiki\Extension\VisualEditor\VisualEditorParsoidClientFactory;
 use MediaWiki\Revision\RevisionLookup;
+use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Title\Title;
 use Wikimedia\ParamValidator\ParamValidator;
-use Wikimedia\Parsoid\Core\ResourceLimitExceededException;
 use Wikimedia\Parsoid\DOM\Element;
 use Wikimedia\Parsoid\DOM\Text;
-use Wikimedia\Parsoid\Utils\DOMUtils;
+use Wikimedia\Parsoid\Ext\DOMUtils;
 
 class ApiDiscussionToolsPageInfo extends ApiBase {
-
-	private CommentParser $commentParser;
-	private VisualEditorParsoidClientFactory $parsoidClientFactory;
-	private RevisionLookup $revisionLookup;
 
 	public function __construct(
 		ApiMain $main,
 		string $name,
-		VisualEditorParsoidClientFactory $parsoidClientFactory,
-		CommentParser $commentParser,
-		RevisionLookup $revisionLookup
+		private readonly VisualEditorParsoidClientFactory $parsoidClientFactory,
+		private readonly CommentParser $commentParser,
+		private readonly RevisionLookup $revisionLookup,
 	) {
 		parent::__construct( $main, $name );
-		$this->parsoidClientFactory = $parsoidClientFactory;
-		$this->commentParser = $commentParser;
-		$this->revisionLookup = $revisionLookup;
 	}
 
 	/**
@@ -55,8 +48,13 @@ class ApiDiscussionToolsPageInfo extends ApiBase {
 		}
 
 		if ( isset( $prop['threaditemshtml'] ) ) {
-			$excludeSignatures = $params['excludesignatures'];
-			$result['threaditemshtml'] = static::getThreadItemsHtml( $threadItemSet, $excludeSignatures );
+			$flags = $params['threaditemsflags'] ?? [];
+			$excludeSignatures = $params['excludesignatures'] || in_array( 'excludesignatures', $flags );
+			$noReplies = in_array( 'noreplies', $flags );
+			$extraActivity = in_array( 'activity', $flags );
+			$result['threaditemshtml'] = static::getThreadItemsHtml(
+				$threadItemSet, $excludeSignatures, $noReplies, $extraActivity
+			);
 		}
 
 		$this->getResult()->addValue( null, $this->getModuleName(), $result );
@@ -112,11 +110,17 @@ class ApiDiscussionToolsPageInfo extends ApiBase {
 			return new ContentThreadItemSet;
 		}
 
-		try {
-			return HookUtils::parseRevisionParsoidHtml( $revision, __METHOD__ );
-		} catch ( ResourceLimitExceededException $e ) {
-			$this->dieWithException( $e );
+		$this->checkTitleUserPermissions( $title, 'read' );
+
+		if ( !$revision->audienceCan( RevisionRecord::DELETED_TEXT, RevisionRecord::FOR_PUBLIC ) ) {
+			$this->dieWithError( [ 'apierror-missingcontent-revid', $revision->getId() ], 'missingcontent' );
 		}
+
+		$status = HookUtils::parseRevisionParsoidHtml( $revision, __METHOD__ );
+		if ( !$status->isOK() ) {
+			$this->dieStatus( $status );
+		}
+		return $status->getValueOrThrow();
 	}
 
 	/**
@@ -148,7 +152,10 @@ class ApiDiscussionToolsPageInfo extends ApiBase {
 	/**
 	 * Get thread items HTML for a ContentThreadItemSet
 	 */
-	private static function getThreadItemsHtml( ContentThreadItemSet $threadItemSet, bool $excludeSignatures ): array {
+	private static function getThreadItemsHtml(
+		ContentThreadItemSet $threadItemSet,
+		bool $excludeSignatures, bool $noReplies, bool $extraActivity
+	): array {
 		// This function assumes that the start of the ranges associated with
 		// HeadingItems are going to be at the start of their associated
 		// heading node (`<h2>^heading</h2>`), i.e. in the position generated
@@ -173,9 +180,10 @@ class ApiDiscussionToolsPageInfo extends ApiBase {
 				array_unshift( $threads, $fakeHeading );
 			}
 		}
-		$output = array_map( static function ( ContentThreadItem $item ) use ( $excludeSignatures ) {
-			return $item->jsonSerialize( true, static function ( array &$array, ContentThreadItem $item ) use (
-				$excludeSignatures
+		$output = array_map( static function ( ContentThreadItem $item )
+			use ( $excludeSignatures, $noReplies, $extraActivity ) {
+			return $item->jsonSerialize( !$noReplies, static function ( array &$array, ContentThreadItem $item ) use (
+				$excludeSignatures, $noReplies, $extraActivity
 			) {
 				if ( $item instanceof ContentCommentItem && $excludeSignatures ) {
 					$array['html'] = $item->getBodyHTML( true );
@@ -183,11 +191,41 @@ class ApiDiscussionToolsPageInfo extends ApiBase {
 					$array['html'] = $item->getHTML();
 				}
 
+				if ( $item instanceof ContentHeadingItem ) {
+					$array['commentCount'] = $item->getCommentCount();
+					$array['authorCount'] = count( $item->getAuthorsBelow() );
+					$latestReply = $item->getLatestReply();
+					if ( $latestReply ) {
+						$array['latestReplyTimestamp'] = static::formatItemTimestamp( $latestReply );
+						if ( $extraActivity ) {
+							$array['latestReply'] = $latestReply->jsonSerialize( false );
+							$array['latestReply']['timestamp'] = $array['latestReplyTimestamp'];
+							unset( $array['latestReply']['replies'] );
+						}
+					} else {
+						$array['latestReplyTimestamp'] = null;
+						if ( $extraActivity ) {
+							$array['latestReply'] = null;
+						}
+					}
+					if ( $extraActivity ) {
+						$oldestReply = $item->getOldestReply();
+						if ( $oldestReply ) {
+							$array['oldestReply'] = $oldestReply->jsonSerialize( false );
+							$array['oldestReply']['timestamp'] = static::formatItemTimestamp( $oldestReply );
+							unset( $array['oldestReply']['replies'] );
+						} else {
+							$array['oldestReply'] = null;
+						}
+					}
+				}
+
 				if ( $item instanceof CommentItem ) {
-					// We want timestamps to be consistently formatted in API
-					// output instead of varying based on comment time
-					// (T315400). The format used here is equivalent to 'Y-m-d\TH:i:s\Z'
-					$array['timestamp'] = wfTimestamp( TS_ISO_8601, $item->getTimestamp()->getTimestamp() );
+					$array['timestamp'] = static::formatItemTimestamp( $item );
+				}
+
+				if ( $noReplies ) {
+					unset( $array['replies'] );
 				}
 			} );
 		}, $threads );
@@ -235,7 +273,10 @@ class ApiDiscussionToolsPageInfo extends ApiBase {
 						// This probably means that there's a wrapping node
 						// e.g. <div>foo\n==heading==\nbar</div>
 						$endOffset += $endContainer->length;
-					} elseif ( $endContainer instanceof Element && $endContainer->tagName === 'section' ) {
+					} elseif (
+						$endContainer instanceof Element &&
+						strtolower( $endContainer->tagName ) === 'section'
+					) {
 						// if we're in sections, make sure we're selecting the
 						// end of the previous section
 						$endOffset = $endContainer->childNodes->length;
@@ -268,6 +309,15 @@ class ApiDiscussionToolsPageInfo extends ApiBase {
 	}
 
 	/**
+	 * We want timestamps to be consistently formatted in API output instead
+	 * of varying based on comment time(T315400). The format used here is
+	 * equivalent to 'Y-m-d\TH:i:s\Z'
+	 */
+	private static function formatItemTimestamp( CommentItem $item ): string {
+		return wfTimestamp( TS_ISO_8601, $item->getTimestamp()->getTimestamp() );
+	}
+
+	/**
 	 * @inheritDoc
 	 */
 	public function getAllowedParams() {
@@ -287,7 +337,19 @@ class ApiDiscussionToolsPageInfo extends ApiBase {
 				],
 				ApiBase::PARAM_HELP_MSG_PER_VALUE => [],
 			],
-			'excludesignatures' => false,
+			'threaditemsflags' => [
+				ParamValidator::PARAM_REQUIRED => false,
+				ParamValidator::PARAM_ISMULTI => true,
+				ParamValidator::PARAM_TYPE => [
+					'noreplies',
+					'activity',
+					'excludesignatures'
+				],
+				ApiBase::PARAM_HELP_MSG_PER_VALUE => [],
+			],
+			'excludesignatures' => [
+				ParamValidator::PARAM_DEPRECATED => true
+			],
 		];
 	}
 

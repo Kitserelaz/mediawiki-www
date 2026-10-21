@@ -2,10 +2,11 @@
 
 namespace MediaWiki\Extension\AbuseFilter\View;
 
-use DifferenceEngine;
 use MediaWiki\Content\TextContent;
 use MediaWiki\Context\IContextSource;
+use MediaWiki\Diff\DifferenceEngine;
 use MediaWiki\Extension\AbuseFilter\AbuseFilterPermissionManager;
+use MediaWiki\Extension\AbuseFilter\AbuseFilterPermissionStatus;
 use MediaWiki\Extension\AbuseFilter\Filter\ClosestFilterVersionNotFoundException;
 use MediaWiki\Extension\AbuseFilter\Filter\FilterNotFoundException;
 use MediaWiki\Extension\AbuseFilter\Filter\FilterVersionNotFoundException;
@@ -36,37 +37,18 @@ class AbuseFilterViewDiff extends AbuseFilterView {
 	 * @var int|null The ID of the filter
 	 */
 	private $filter;
-	/**
-	 * @var SpecsFormatter
-	 */
-	private $specsFormatter;
-	/**
-	 * @var FilterLookup
-	 */
-	private $filterLookup;
 
-	/**
-	 * @param AbuseFilterPermissionManager $afPermManager
-	 * @param SpecsFormatter $specsFormatter
-	 * @param FilterLookup $filterLookup
-	 * @param IContextSource $context
-	 * @param LinkRenderer $linkRenderer
-	 * @param string $basePageName
-	 * @param array $params
-	 */
 	public function __construct(
 		AbuseFilterPermissionManager $afPermManager,
-		SpecsFormatter $specsFormatter,
-		FilterLookup $filterLookup,
+		private readonly SpecsFormatter $specsFormatter,
+		private readonly FilterLookup $filterLookup,
 		IContextSource $context,
 		LinkRenderer $linkRenderer,
 		string $basePageName,
 		array $params
 	) {
 		parent::__construct( $afPermManager, $context, $linkRenderer, $basePageName, $params );
-		$this->specsFormatter = $specsFormatter;
 		$this->specsFormatter->setMessageLocalizer( $this->getContext() );
-		$this->filterLookup = $filterLookup;
 	}
 
 	/**
@@ -91,7 +73,7 @@ class AbuseFilterViewDiff extends AbuseFilterView {
 			] );
 		}
 
-		$backlinks = new OOUI\HorizontalLayout( [ 'items' => array_values( $links ) ] );
+		$backlinks = (string)new OOUI\HorizontalLayout( [ 'items' => array_values( $links ) ] );
 		$out->addHTML( $backlinks );
 
 		if ( $show ) {
@@ -124,7 +106,7 @@ class AbuseFilterViewDiff extends AbuseFilterView {
 					'items' => $buttons,
 					'classes' => [ 'mw-abusefilter-history-buttons' ]
 				] );
-				$out->addHTML( $buttons );
+				$out->addHTML( (string)$buttons );
 			}
 		}
 	}
@@ -150,6 +132,13 @@ class AbuseFilterViewDiff extends AbuseFilterView {
 			return false;
 		}
 
+		if ( !$this->afPermManager->canViewSuppressed( $this->getAuthority() ) &&
+			( $this->oldVersion->isSuppressed() || $this->newVersion->isSuppressed() )
+		) {
+			$this->getOutput()->addWikiMsg( 'abusefilter-history-error-suppressed' );
+			return false;
+		}
+
 		if ( !$this->afPermManager->canViewPrivateFilters( $this->getAuthority() ) &&
 			( $this->oldVersion->isHidden() || $this->newVersion->isHidden() )
 		) {
@@ -157,11 +146,54 @@ class AbuseFilterViewDiff extends AbuseFilterView {
 			return false;
 		}
 
-		if ( !$this->afPermManager->canViewProtectedVariables( $this->getAuthority() ) &&
-			( $this->oldVersion->isProtected() || $this->newVersion->isProtected() )
-		) {
-			$this->getOutput()->addWikiMsg( 'abusefilter-history-error-protected' );
-			return false;
+		if ( $this->oldVersion->isProtected() || $this->newVersion->isProtected() ) {
+			$oldPermissionStatus = AbuseFilterPermissionStatus::newGood();
+			if ( $this->oldVersion->isProtected() ) {
+				$oldPermissionStatus = $this->afPermManager->canViewProtectedVariablesInFilter(
+					$this->getAuthority(), $this->oldVersion
+				);
+			}
+
+			$newPermissionStatus = AbuseFilterPermissionStatus::newGood();
+			if ( $this->newVersion->isProtected() ) {
+				$newPermissionStatus = $this->afPermManager->canViewProtectedVariablesInFilter(
+					$this->getAuthority(), $this->newVersion
+				);
+			}
+
+			if ( !$newPermissionStatus->isGood() || !$oldPermissionStatus->isGood() ) {
+				if ( $oldPermissionStatus->getPermission() || $newPermissionStatus->getPermission() ) {
+					$permission = $oldPermissionStatus->getPermission();
+					if ( !$permission ) {
+						$permission = $newPermissionStatus->getPermission();
+					}
+
+					$this->getOutput()->addWikiMsg( $this->msg(
+						'abusefilter-history-error-protected-due-to-permission',
+						$this->msg( "action-$permission" )->plain()
+					) );
+					return false;
+				}
+
+				// Add any messages in the status after a generic error message.
+				$additional = '';
+				foreach ( $oldPermissionStatus->getMessages() as $message ) {
+					$additional .= $this->msg( $message )->parseAsBlock();
+				}
+				if ( $additional === '' ) {
+					// Only add the error messages for the new version if no messages were present for the old
+					// version. This is done to avoid duplicate error messages that were relevant to both
+					// the old and new version.
+					foreach ( $newPermissionStatus->getMessages() as $message ) {
+						$additional .= $this->msg( $message )->parseAsBlock();
+					}
+				}
+
+				$this->getOutput()->addWikiMsg(
+					$this->msg( 'abusefilter-history-error-protected' )->rawParams( $additional )
+				);
+				return false;
+			}
 		}
 
 		try {
@@ -170,7 +202,7 @@ class AbuseFilterViewDiff extends AbuseFilterView {
 				$this->filter,
 				FilterLookup::DIR_NEXT
 			)->getHistoryID();
-		} catch ( ClosestFilterVersionNotFoundException $_ ) {
+		} catch ( ClosestFilterVersionNotFoundException ) {
 			$this->nextHistoryId = null;
 		}
 
@@ -201,7 +233,7 @@ class AbuseFilterViewDiff extends AbuseFilterView {
 			$dir = $spec === 'prev' ? FilterLookup::DIR_PREV : FilterLookup::DIR_NEXT;
 			try {
 				$filterObj = $this->filterLookup->getClosestVersion( $other->getHistoryID(), $this->filter, $dir );
-			} catch ( ClosestFilterVersionNotFoundException $_ ) {
+			} catch ( ClosestFilterVersionNotFoundException ) {
 				$t = $this->getTitle( "history/$this->filter/item/" . $other->getHistoryID() );
 				$this->getOutput()->redirect( $t->getFullURL() );
 				return null;
@@ -215,7 +247,7 @@ class AbuseFilterViewDiff extends AbuseFilterView {
 				} elseif ( $spec === 'cur' ) {
 					$filterObj = $this->filterLookup->getLastHistoryVersion( $this->filter );
 				}
-			} catch ( FilterNotFoundException | FilterVersionNotFoundException $_ ) {
+			} catch ( FilterNotFoundException | FilterVersionNotFoundException ) {
 			}
 		}
 

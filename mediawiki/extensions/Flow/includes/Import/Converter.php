@@ -4,12 +4,13 @@ namespace Flow\Import;
 
 use Flow\Exception\FlowException;
 use MediaWiki\Content\WikitextContent;
+use MediaWiki\Exception\MWExceptionHandler;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Page\Article;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
-use MWExceptionHandler;
 use Psr\Log\LoggerInterface;
 use Traversable;
 use Wikimedia\Rdbms\IDBAccessObject;
@@ -102,12 +103,14 @@ class Converter {
 	 * Converts multiple pages into Flow boards
 	 *
 	 * @param Traversable<Title>|array $titles
+	 * @param bool $dryRun If true, will not make any changes
+	 * @param bool $convertEmpty Convert pages with no threads
 	 */
-	public function convertAll( $titles ) {
+	public function convertAll( $titles, $dryRun = false, $convertEmpty = false ) {
 		/** @var Title $title */
 		foreach ( $titles as $title ) {
 			try {
-				$this->convert( $title );
+				$this->convert( $title, $dryRun, $convertEmpty );
 			} catch ( \Exception $e ) {
 				MWExceptionHandler::logException( $e );
 				$this->logger->error( "Exception while importing: {$title}" );
@@ -120,9 +123,11 @@ class Converter {
 	 * Converts a page into a Flow board
 	 *
 	 * @param Title $title
+	 * @param bool $dryRun If true, will not make any changes
+	 * @param bool $convertEmpty Convert pages with no threads
 	 * @throws FlowException
 	 */
-	public function convert( Title $title ) {
+	public function convert( Title $title, $dryRun = false, $convertEmpty = false ) {
 		/*
 		 * $title is the title we're currently considering to import.
 		 * It could be a page we need to import, but could also e.g.
@@ -138,7 +143,21 @@ class Converter {
 			throw new FlowException( "Not allowed to convert: {$title}" );
 		}
 
-		$this->doConversion( $title, $movedFrom );
+		if ( !$convertEmpty ) {
+			$article = new Article( $title );
+			$pager = new \LqtDiscussionPager( $article, \TalkpageView::LQT_NEWEST_CHANGES );
+			$pager->setLimit( 1 );
+			if ( !$pager->getNumRows() ) {
+				$this->logger->info( "Skipping {$title} as it has no LiquidThreads content" );
+				return;
+			}
+		}
+
+		if ( !$dryRun ) {
+			$this->doConversion( $title, $movedFrom );
+		} else {
+			$this->logger->info( "Dry run: Would convert $title" );
+		}
 	}
 
 	/**
@@ -225,6 +244,8 @@ class Converter {
 				'log_type' => 'move',
 				'log_actor' => $this->user->getActorId()
 			] )
+			// Ugly hack for some 2015 brokenness on ptwikibooks (T402549)
+			->where( 'log_title != page_title' )
 			->caller( __METHOD__ )
 			->orderBy( 'log_timestamp', SelectQueryBuilder::SORT_DESC )
 			->fetchRow();

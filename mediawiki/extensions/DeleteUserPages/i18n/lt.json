@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Homo",
+			"Naktis",
+			"Nokeoo"
+		]
+	},
+	"deleteuserpages-desc": "Leisti naudotojas ištrinti savo naudotojo puslapius",
+	"action-delete-rootuserpages": "ištrinti savo naudotojo ir naudotojo aptarimo puslapį",
+	"right-delete-rootuserpages": "Ištrinti savo naudotojo ir naudotojo aptarimo puslapį",
+	"action-delete-usersubpages": "ištrinti savo naudotojo puslapius",
+	"right-delete-usersubpages": "Ištrinti savo naudotojo puslapio polapius"
+}

@@ -1,0 +1,544 @@
+{
+	"name": "ProofreadPage",
+	"author": [
+		"ThomasV",
+		"Thomas Pellissier Tanon"
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:Proofread_Page",
+	"descriptionmsg": "proofreadpage_desc",
+	"license-name": "GPL-2.0-or-later",
+	"type": "other",
+	"requires": {
+		"MediaWiki": ">= 1.46"
+	},
+	"GroupPermissions": {
+		"user": {
+			"pagequality": true,
+			"pagequality-validate": true
+		}
+	},
+	"GrantPermissions": {
+		"editpage": {
+			"pagequality": true,
+			"pagequality-validate": true
+		}
+	},
+	"AvailableRights": [
+		"pagequality",
+		"pagequality-admin",
+		"pagequality-validate"
+	],
+	"DefaultUserOptions": {
+		"proofreadpage-animation-time": 0,
+		"proofreadpage-zoom-factor": 1.2,
+		"proofreadpage-pagelist-use-visual-mode": "1",
+		"proofreadpage-after-save-action": "do-nothing",
+		"proofreadpage-show-dialog-before-every-save": 1
+	},
+	"SpecialPages": {
+		"IndexPages": {
+			"class": "\\ProofreadPage\\Special\\SpecialProofreadPages",
+			"services": [
+				"SearchEngineFactory"
+			]
+		},
+		"PagesWithoutScans": "\\ProofreadPage\\Special\\SpecialPagesWithoutScans"
+	},
+	"APIListModules": {
+		"proofreadpagesinindex": {
+			"class": "ProofreadPage\\Api\\ApiQueryPagesInIndex"
+		}
+	},
+	"APIMetaModules": {
+		"proofreadinfo": "\\ProofreadPage\\Api\\ApiQueryProofreadInfo"
+	},
+	"APIPropModules": {
+		"proofread": "\\ProofreadPage\\Api\\ApiQueryProofread",
+		"imageforpage": "\\ProofreadPage\\Api\\ApiQueryImageForPage",
+		"defaultcontentforpage": {
+			"class": "\\ProofreadPage\\Api\\ApiQueryDefaultContentForPage",
+			"services": [
+				"ContentHandlerFactory"
+			]
+		}
+	},
+	"ContentHandlers": {
+		"proofread-page": "\\ProofreadPage\\Page\\PageContentHandler",
+		"proofread-index": "\\ProofreadPage\\Index\\IndexContentHandler"
+	},
+	"TrackingCategories": [
+		"proofreadpage_quality0_category",
+		"proofreadpage_quality1_category",
+		"proofreadpage_quality2_category",
+		"proofreadpage_quality3_category",
+		"proofreadpage_quality4_category",
+		"proofreadpage_nosuch_index_category",
+		"proofreadpage_nosuch_file_for_index_category"
+	],
+	"MessagesDirs": {
+		"ProofreadPage": [
+			"i18n",
+			"i18n/api"
+		]
+	},
+	"ExtensionMessagesFiles": {
+		"ProofreadPageAlias": "ProofreadPage.alias.php",
+		"ProofreadPageMagic": "ProofreadPage.i18n.php"
+	},
+	"AutoloadNamespaces": {
+		"ProofreadPage\\": "includes/"
+	},
+	"AutoloadClasses": {
+		"FixProofreadPagePagesContentModel": "maintenance/fixProofreadPagePagesContentModel.php",
+		"FixProofreadIndexPagesContentModel": "maintenance/fixProofreadIndexPagesContentModel.php"
+	},
+	"TestAutoloadClasses": {
+		"ProofreadPage\\FileProviderMock": "tests/phpunit/FileProviderMock.php",
+		"ProofreadPage\\Page\\IndexForPageLookupMock": "tests/phpunit/Page/IndexForPageLookupMock.php",
+		"ProofreadPage\\Page\\PageQualityLevelLookupMock": "tests/phpunit/Page/PageQualityLevelLookupMock.php",
+		"ProofreadPage\\Index\\IndexContentLookupMock": "tests/phpunit/Index/IndexContentLookupMock.php",
+		"ProofreadPage\\Index\\IndexQualityStatsLookupMock": "tests/phpunit/Index/IndexQualityStatsLookupMock.php",
+		"ProofreadPageTestCase": "tests/phpunit/ProofreadPageTestCase.php",
+		"ProofreadPage\\Scribunto\\IndexAndPageLibraryTestBase": "tests/phpunit/Scribunto/IndexAndPageLibraryTestBase.php",
+		"ProofreadPage\\Scribunto\\ProofreadPageLibraryTestBase": "tests/phpunit/Scribunto/ProofreadPageLibraryTestBase.php"
+	},
+	"ForeignResourcesDir": "modules/lib",
+	"ResourceModules": {
+		"ext.proofreadpage.base": {
+			"styles": "ext.proofreadpage.base.less"
+		},
+		"ext.proofreadpage.page": {
+			"styles": "page/ext.proofreadpage.page.css"
+		},
+		"ext.proofreadpage.page.edit.styles": {
+			"styles": [
+				"ext.proofreadpage.base.less",
+				"page/ext.proofreadpage.page.css",
+				"page/ext.proofreadpage.page.edit.less",
+				"page/PageQualityInputWidget.less"
+			]
+		},
+		"ext.proofreadpage.page.edit": {
+			"packageFiles": [
+				"page/ext.proofreadpage.page.edit.js",
+				"page/OpenseadragonController.js",
+				"page/PageQualityInputWidget.js"
+			],
+			"styles": [
+				"ext.proofreadpage.base.less",
+				"page/ext.proofreadpage.page.edit.less",
+				"page/PageQualityInputWidget.less"
+			],
+			"dependencies": [
+				"ext.proofreadpage.base",
+				"ext.proofreadpage.page",
+				"ext.proofreadpage.page.edit.styles",
+				"ext.proofreadpage.openseadragon",
+				"mediawiki.user",
+				"user.options",
+				"jquery.textSelection",
+				"ext.proofreadpage.icons",
+				"oojs-ui-widgets",
+				"oojs-ui.styles.icons-media"
+			],
+			"messages": [
+				"proofreadpage_quality0_category",
+				"proofreadpage_quality1_category",
+				"proofreadpage_quality2_category",
+				"proofreadpage_quality3_category",
+				"proofreadpage_quality4_category",
+				"proofreadpage_quality0_summary",
+				"proofreadpage_quality1_summary",
+				"proofreadpage_quality2_summary",
+				"proofreadpage_quality3_summary",
+				"proofreadpage_quality4_summary",
+				"proofreadpage-section-tools",
+				"proofreadpage-group-zoom",
+				"proofreadpage-group-other",
+				"proofreadpage-button-reset-zoom-label",
+				"proofreadpage-button-rotate-left-label",
+				"proofreadpage-button-rotate-right-label",
+				"proofreadpage-button-toggle-layout-label",
+				"proofreadpage-button-toggle-visibility-label",
+				"proofreadpage-button-zoom-in-label",
+				"proofreadpage-button-zoom-out-label",
+				"proofreadpage-openseadragon-no-image-found",
+				"proofreadpage-preferences-showheaders-label"
+			]
+		},
+		"ext.proofreadpage.page.navigation": {
+			"skinStyles": {
+				"vector": "page/ext.proofreadpage.page.navigation.vector.less",
+				"vector-2022": "page/ext.proofreadpage.page.navigation.vector-2022.less"
+			}
+		},
+		"ext.proofreadpage.article": {
+			"styles": "article/ext.proofreadpage.article.css"
+		},
+		"ext.proofreadpage.index": {
+			"styles": "index/ext.proofreadpage.index.css",
+			"scripts": "index/ext.proofreadpage.index.js",
+			"dependencies": [
+				"oojs-ui-core",
+				"mediawiki.widgets.CategoryMultiselectWidget"
+			]
+		},
+		"ext.proofreadpage.openseadragon": {
+			"packageFiles": [
+				"lib/openseadragon/openseadragon.js"
+			]
+		},
+		"ext.proofreadpage.index.pagelist": {
+			"localBasePath": "modules/index.pagelist",
+			"styles": [
+				"styles/dialog.less",
+				"styles/index.css"
+			],
+			"packageFiles": [
+				"init.js",
+				"PagelistInputWidget.Dialog.js",
+				"PagelistInputWidget.ImagePanel.js",
+				"PagelistInputWidget.js",
+				"PagelistInputWidget.MainPanel.js",
+				"PagelistInputWidget.Model.js",
+				"PagelistInputWidget.PagelistPreview.js",
+				"PagelistInputWidget.WikitextDialogModel.js",
+				"PagelistInputWidget.VisualDialogModel.js",
+				"PagelistInputWidget.DialogModel.js",
+				"PagelistInputWidget.WikitextFormPanel.js",
+				"PagelistInputWidget.VisualFormPanel.js",
+				"PagelistInputWidget.TopPanel.js",
+				"PagelistInputWidget.PageNumberInputWidget.js",
+				"PagelistInputWidget.Parameters.js"
+			],
+			"messages": [
+				"proofreadpage-pagelist-dialog-cancel",
+				"proofreadpage-pagelist-dialog-discard-changes",
+				"proofreadpage-pagelist-dialog-insertchanges",
+				"proofreadpage-pagelist-dialog-title",
+				"proofreadpage-pagelist-dialog-unsaved-progress",
+				"proofreadpage-pagelist-dialog-unsaved-progress-title",
+				"proofreadpage-pagelist-dialog-update-button",
+				"proofreadpage-pagelist-display-number",
+				"proofreadpage-pagelist-imageurlnotfound",
+				"proofreadpage-pagelist-input-preview-button",
+				"proofreadpage-pagelist-parsing-error-empty-page-numbering",
+				"proofreadpage-pagelist-parsing-error-morethanone",
+				"proofreadpage-pagelist-parsing-error-pagelistnotdetected",
+				"proofreadpage-pagelist-parsing-error-php",
+				"proofreadpage-pagelist-parsing-error-unknown",
+				"proofreadpage-pagelist-parsing-error-network-issues",
+				"proofreadpage-pagelist-scan-number",
+				"proofreadpage-pagelist-type",
+				"proofreadpage-preferences-pagelist-use-visual-mode",
+				"proofreadpage-pagelist-assignedpagenumber",
+				"proofreadpage-pagelist-dialog-update-button",
+				"proofreadpage-pagelist-dialog-visual-config-not-found-message",
+				"proofreadpage-pagelist-dialog-visual-form-panel-label-range",
+				"proofreadpage-pagelist-dialog-wikitext-help",
+				"proofreadpage-pagelist-dialog-help-invisible-label",
+				"proofreadpage-pagelist-dialog-visual-form-panel-label-single",
+				"proofreadpage-pagelist-dialog-visual-help",
+				"proofreadpage-pagelist-dialog-visual-number-field-disabled-but-active",
+				"proofreadpage-pagelist-dialog-visual-page-number-input-label",
+				"proofreadpage-pagelist-dialog-visual-page-number-type-input-label",
+				"proofreadpage-pagelist-dialog-visual-single-page-toggle-label"
+			],
+			"dependencies": [
+				"ext.proofreadpage.openseadragon",
+				"oojs-ui-core",
+				"oojs-ui-widgets",
+				"oojs-ui-windows",
+				"ext.proofreadpage.icons",
+				"oojs-ui.styles.icons-interactions",
+				"oojs-ui.styles.icons-content",
+				"oojs-ui.styles.icons-media"
+			]
+		},
+		"ext.proofreadpage.special.indexpages": {
+			"styles": "special/indexpages/ext.proofreadpage.special.indexpages.css",
+			"dependencies": [
+				"ext.proofreadpage.base"
+			]
+		},
+		"ext.proofreadpage.page.editinsequence": {
+			"localBasePath": "modules/page.editinsequence",
+			"styles": [
+				"styles/index.less"
+			],
+			"packageFiles": [
+				"index.js",
+				"Toolbar.js",
+				"EditInSequence.js",
+				"PagelistModel.js",
+				"PageNavTools.js",
+				"PageModel.js",
+				"SaveTool.js",
+				"SaveOptionsTool.js",
+				"SaveOptionsModel.js",
+				"SaveOptionsDialog.js",
+				"PreviewTool.js",
+				"PreviewWidget.js",
+				"PageStatusTools.js",
+				"EditorController.js",
+				"OpenseadragonController.js",
+				"PageSelectionWidget.js",
+				"PageSelectionFilter.js",
+				"PageSelectionLayout.js",
+				"PageSelectionTool.js"
+			],
+			"dependencies": [
+				"ext.proofreadpage.page.edit",
+				"mediawiki.action.view.postEdit",
+				"mediawiki.user",
+				"user.options",
+				"oojs",
+				"oojs-ui",
+				"oojs-ui-core",
+				"oojs-ui-widgets",
+				"oojs-ui-windows",
+				"oojs-ui-toolbars",
+				"mediawiki.page.preview",
+				"oojs-ui.styles.icons-content",
+				"oojs-ui.styles.icons-movement",
+				"oojs-ui.styles.icons-accessibility",
+				"oojs-ui.styles.icons-interactions",
+				"oojs-ui.styles.icons-alerts",
+				"ext.proofreadpage.icons.pagelevel"
+			],
+			"messages": [
+				"savechanges",
+				"publishchanges",
+				"summary",
+				"minoredit",
+				"watchthis",
+				"prp-editinsequence-save-settings-dialog-primary-button-title",
+				"prp-editinsequence-save-dialog-title",
+				"prp-editinsequence-save-settings-dialog-title",
+				"prp-editinsequence-save-next-action-label",
+				"prp-editinsequence-save-next-action-do-nothing",
+				"prp-editinsequence-save-next-action-go-to-next",
+				"prp-editinsequence-save-next-action-go-to-prev",
+				"prp-editinsequence-unsaved-edit-message",
+				"prp-editinsequence-show-dialog-toggle-label",
+				"prp-editinsequence-editsummary-placeholder",
+				"prp-editinsequence-http-error-pagelist",
+				"prp-editinsequence-pagination-does-not-exist",
+				"prp-editinsequence-could-not-save-edit",
+				"prp-editinsequence-unknown-error",
+				"prp-editinsequence-http-error-page",
+				"prp-editinsequence-error",
+				"prp-editinsequence-preview",
+				"prp-editinsequence-page-filter-label-all",
+				"prp-editinsequence-page-filter-redlink",
+				"prp-editinsequence-page-selection-label",
+				"prp-editinsequence-page-selection-widget-label",
+				"prp-edit-in-sequence-preview-api-error",
+				"prp-edit-in-sequence-preview-http-error"
+			]
+		},
+		"ext.proofreadpage.icons": {
+			"class": "MediaWiki\\ResourceLoader\\ImageModule",
+			"selectorWithoutVariant": ".oo-ui-icon-{name}",
+			"selectorWithVariant": ".oo-ui-image-{variant}.oo-ui-icon-{name}",
+			"variants": {
+				"progressive": {
+					"color": "#36c"
+				}
+			},
+			"images": {
+				"zoomReset": {
+					"file": "page/images/zoomReset.svg"
+				},
+				"headerFooter": {
+					"file": "page/images/headerFooter.svg",
+					"variants": [
+						"progressive"
+					]
+				},
+				"switchLayout": {
+					"file": "page/images/switchLayout.svg",
+					"variants": [
+						"progressive"
+					]
+				}
+			}
+		},
+		"ext.proofreadpage.icons.pagelevel": {
+			"class": "MediaWiki\\ResourceLoader\\ImageModule",
+			"selectorWithoutVariant": ".oo-ui-icon-{name}",
+			"selectorWithVariant": ".oo-ui-image-{variant}.oo-ui-icon-{name}",
+			"images": {
+				"pagequality-level0": {
+					"file": "page/images/pagequality-level0.svg"
+				},
+				"pagequality-level1": {
+					"file": "page/images/pagequality-level1.svg"
+				},
+				"pagequality-level2": {
+					"file": "page/images/pagequality-level2.svg"
+				},
+				"pagequality-level3": {
+					"file": "page/images/pagequality-level3.svg"
+				},
+				"pagequality-level4": {
+					"file": "page/images/pagequality-level4.svg"
+				}
+			}
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "modules",
+		"remoteExtPath": "ProofreadPage/modules"
+	},
+	"QUnitTestModule": {
+		"localBasePath": "tests/qunit",
+		"packageFiles": [
+			"index.js",
+			"TestPagelistModel.js",
+			"PagelistModel.test.js",
+			"PageModel.test.js"
+		],
+		"dependencies": [
+			"ext.proofreadpage.page.editinsequence"
+		]
+	},
+	"Hooks": {
+		"MediaWikiServices": "ProofreadPageInitHooks",
+		"ParserFirstCallInit": "ProofreadPageHooks",
+		"GetBetaFeaturePreferences": "ProofreadPage\\ProofreadPage::onGetBetaFeaturePreferences",
+		"BeforePageDisplay": "ProofreadPageHooks",
+		"GetLinkColours": "ProofreadPageHooks",
+		"ImageOpenShowImageInlineBefore": "ProofreadPageHooks",
+		"LoadExtensionSchemaUpdates": "schema",
+		"OutputPageParserOutput": "ProofreadPageHooks",
+		"wgQueryPages": "ProofreadPageHooks",
+		"GetPreferences": "ProofreadPageHooks",
+		"CanonicalNamespaces": "ProofreadPageHooks",
+		"SkinTemplateNavigation::Universal": "ProofreadPageHooks",
+		"ContentHandlerDefaultModelFor": "ProofreadPageHooks",
+		"EditFormPreloadText": "ProofreadPageHooks",
+		"MultiContentSave": "ProofreadPageHooks",
+		"InfoAction": "ProofreadPageHooks",
+		"ListDefinedTags": "ProofreadPageHooks",
+		"ChangeTagsListActive": "ProofreadPageHooks",
+		"RecentChange_save": "ProofreadPageHooks",
+		"ScribuntoExternalLibraries": "ScribuntoHooks",
+		"ScribuntoExternalLibraryPaths": "ScribuntoHooks",
+		"GetDoubleUnderscoreIDs": "ProofreadPageHooks",
+		"CodeMirrorGetMode": "CodeMirrorHooks",
+		"ResourceLoaderRegisterModules": "ProofreadPageHooks",
+		"ParserTestGlobals": "ProofreadPageHooks"
+	},
+	"HookHandlers": {
+		"ProofreadPageHooks": {
+			"class": "ProofreadPage\\ProofreadPage",
+			"services": [
+				"MainConfig"
+			]
+		},
+		"ProofreadPageInitHooks": {
+			"class": "ProofreadPage\\ProofreadPageInit"
+		},
+		"ScribuntoHooks": {
+			"class": "ProofreadPage\\ScribuntoHooks"
+		},
+		"CodeMirrorHooks": {
+			"class": "ProofreadPage\\CodeMirrorHooks"
+		},
+		"schema": {
+			"class": "ProofreadPage\\SchemaHooks"
+		}
+	},
+	"attributes": {
+		"Cite": {
+			"AllowedContentModels": [
+				"proofread-page"
+			]
+		},
+		"VisualEditor": {
+			"PluginModules": [
+				"ext.proofreadpage.ve.node.pages"
+			]
+		},
+		"ParserMigration": {
+			"AllowedContentModels": [
+				"proofread-page",
+				"proofread-index"
+			]
+		}
+	},
+	"ConfigRegistry": {
+		"proofreadpage": "MediaWiki\\Config\\GlobalVarConfig::newInstance"
+	},
+	"config": {
+		"ProofreadPageNamespaceIds": {
+			"value": [],
+			"description": "Array that contain the ids of namespaces used by ProofreadPage"
+		},
+		"ProofreadPagePageSeparator": {
+			"value": "&#32;",
+			"description": "The separator between transcluded pages"
+		},
+		"ProofreadPagePageJoiner": {
+			"value": "-",
+			"description": "A character which causes words split over different pages to be joined"
+		},
+		"ProofreadPagePageSeparatorPlaceholder": {
+			"value": "__PAGESEPARATOR__",
+			"description": "Placeholder to mark the position of the page separator"
+		},
+		"ProofreadPageUseStatusChangeTags": {
+			"value": false,
+			"description": "Use the new change tags for page statuses"
+		},
+		"ProofreadPageEnableEditInSequence": {
+			"value": false,
+			"description": "Enable edit in sequence in Page: pages"
+		},
+		"ProofreadPageBookNamespaces": {
+			"value": [
+				0
+			],
+			"description": "Namespaces that are considered as book namespaces, mainspace is considered as book namespace by default"
+		},
+		"ProofreadPageUseParsoid": {
+			"value": false,
+			"description": "Feature flag to use parsoid as the extension tag parser"
+		}
+	},
+	"ParsoidModules": [
+		{
+			"name": "ProofreadPage",
+			"tags": [
+				{
+					"name": "pagequality",
+					"handler": "ProofreadPage\\Parser\\ParsoidPagequalityTagParser"
+				},
+				{
+					"name": "pagelist",
+					"handler": "ProofreadPage\\Parser\\ParsoidPagelistTagParser"
+				},
+				{
+					"name": "pages",
+					"handler": "ProofreadPage\\Parser\\ParsoidPagesTagParser"
+				},
+				{
+					"name": "pageseparator",
+					"handler": "ProofreadPage\\Parser\\ParsoidPagesTagParser"
+				}
+			],
+			"domProcessors": [
+				{
+					"class": "ProofreadPage\\Parser\\DOMProcessor",
+					"services": [
+						"MainConfig"
+					]
+				}
+			]
+		}
+	],
+	"callback": "ProofreadPage\\ProofreadPage::onRegistration",
+	"load_composer_autoloader": true,
+	"manifest_version": 2
+}

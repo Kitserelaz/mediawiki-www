@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"Toliño"
+		]
+	},
+	"lst-desc": "Engade as funcións <code>#lst</code> e <code>#lstx</code>, así como a etiqueta <code>&lt;section&gt;</code>, ademais de permitir a transclusión das seccións marcadas dun texto",
+	"lst-invalid-section-category": "Páxinas que transclúen seccións inexistentes",
+	"lst-invalid-section-category-desc": "A páxina usa unha función analizadora #lst ou #lsth que fai referencia a unha sección que non existe na páxina indicada."
+}

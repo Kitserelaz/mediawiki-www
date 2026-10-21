@@ -1,0 +1,243 @@
+<?php
+
+namespace SMW\Elastic\Indexer\Replication;
+
+use RuntimeException;
+use SMW\DataItems\Property;
+use SMW\DataItems\Time;
+use SMW\Elastic\Connection\Client as ElasticClient;
+use SMW\Elastic\QueryEngine\FieldMapper;
+use SMW\SQLStore\EntityStore\EntityIdManager;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 3.0
+ *
+ * @author mwjames
+ */
+class ReplicationStatus {
+
+	/**
+	 * @var ElasticClient
+	 */
+	private $elasticClient;
+
+	private FieldMapper $fieldMapper;
+
+	/**
+	 * @since 3.0
+	 */
+	public function __construct( private readonly ElasticClient $connection ) {
+		$this->fieldMapper = new FieldMapper();
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param string $key
+	 *
+	 * @return string
+	 * @throws RuntimeException
+	 */
+	public function get( $key, ...$args ) {
+		if ( $key === 'associated_revision' ) {
+			$key = 'getAssociatedRev';
+		}
+
+		if ( !is_callable( [ $this, $key ] ) ) {
+			throw new RuntimeException( "`$key` as accessor is unknown!" );
+		}
+
+		// @phan-suppress-next-line PhanParamTooFewUnpack
+		return $this->{$key}( ...$args );
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param int $id
+	 *
+	 * @return bool
+	 */
+	private function exists( $id ) {
+		$params = [
+			'index' => $this->connection->getIndexName( ElasticClient::TYPE_DATA ),
+			'id'    => $id,
+		];
+
+		return $this->connection->exists( $params );
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param string $id
+	 *
+	 * @return mixed[]
+	 */
+	private function modification_date_associated_revision( $id ): array {
+		$params = [
+			'index' => $this->connection->getIndexName( ElasticClient::TYPE_DATA ),
+			'id'    => $id,
+		];
+
+		if ( !$this->connection->exists( $params ) ) {
+			return [ 'modification_date' => false, 'associated_revision' => 0 ];
+		}
+
+		$pid = $this->fieldMapper->getPID( EntityIdManager::$special_ids['_MDAT'] );
+		$field = $this->fieldMapper->getField( new Property( '_MDAT' ) );
+
+		$doc = $this->connection->get( $params + [ '_source_includes' => [ "$pid.$field", "subject.rev_id" ] ] );
+
+		if ( isset( $doc['_source'][$pid][$field] ) ) {
+			$date = end( $doc['_source'][$pid][$field] );
+			$modification_date = Time::newFromJD( $date, Time::CM_GREGORIAN, Time::PREC_YMDT );
+		} else {
+			$modification_date = false;
+		}
+
+		if ( isset( $doc['_source']['subject']['rev_id'] ) ) {
+			$associated_revision = $doc['_source']['subject']['rev_id'];
+		} else {
+			$associated_revision = 0;
+		}
+
+		return [ 'modification_date' => $modification_date, 'associated_revision' => $associated_revision ];
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param string $id
+	 *
+	 * @throws RuntimeException
+	 */
+	public function getModificationDate( $id ): false|Time {
+		$params = [
+			'index' => $this->connection->getIndexName( ElasticClient::TYPE_DATA ),
+			'id'    => $id,
+		];
+
+		if ( !$this->connection->exists( $params ) ) {
+			return false;
+		}
+
+		$pid = $this->fieldMapper->getPID( EntityIdManager::$special_ids['_MDAT'] );
+		$field = $this->fieldMapper->getField( new Property( '_MDAT' ) );
+
+		$doc = $this->connection->get( $params + [ '_source_includes' => [ "$pid.$field" ] ] );
+
+		if ( !isset( $doc['_source'][$pid][$field] ) ) {
+			return false;
+		}
+
+		$dataItem = Time::newFromJD(
+			end( $doc['_source'][$pid][$field] ),
+			Time::CM_GREGORIAN,
+			Time::PREC_YMDT
+		);
+
+		return $dataItem;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param int $id
+	 *
+	 * @return int
+	 */
+	public function getAssociatedRev( $id ) {
+		$params = [
+			'index' => $this->connection->getIndexName( ElasticClient::TYPE_DATA ),
+			'id'    => $id,
+		];
+
+		if ( !$this->connection->exists( $params ) ) {
+			return 0;
+		}
+
+		$doc = $this->connection->get( $params + [ '_source_includes' => [ "subject.rev_id" ] ] );
+
+		if ( !isset( $doc['_source']['subject']['rev_id'] ) ) {
+			return 0;
+		}
+
+		return $doc['_source']['subject']['rev_id'];
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	private function refresh_interval(): ?string {
+		$refresh_interval = null;
+
+		$settings = $this->connection->getSettings(
+			[
+				'index' => $this->connection->getIndexName( ElasticClient::TYPE_DATA )
+			]
+		);
+
+		foreach ( $settings as $key => $value ) {
+			if ( isset( $value['settings']['index']['refresh_interval'] ) ) {
+				$refresh_interval = $value['settings']['index']['refresh_interval'];
+			}
+		}
+
+		return $refresh_interval;
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	private function last_update(): string {
+		$pid = $this->fieldMapper->getPID( EntityIdManager::$special_ids['_MDAT'] );
+		$field = $this->fieldMapper->getField( new Property( '_MDAT' ) );
+
+		$params = $this->fieldMapper->exists( "$pid.$field" );
+
+		$body = [
+			'_source' => [ "$pid.$field", "subject" ],
+			'size'    => 1,
+			'query'   => $params,
+			'sort'    => [ "$pid.$field" => [ 'order' => 'desc' ] ]
+		];
+
+		$params = [
+			'index' => $this->connection->getIndexName( ElasticClient::TYPE_DATA ),
+			'body'  => $body
+		];
+
+		[ $res, $errors ] = $this->connection->search( $params );
+		$time = null;
+
+		foreach ( $res as $result ) {
+
+			if ( !isset( $result['hits'] ) ) {
+				continue;
+			}
+
+			foreach ( $result['hits'] as $key => $value ) {
+				foreach ( $value as $k => $v ) {
+					if ( $k === '_source' ) {
+						$time = Time::newFromJD(
+							end( $v[$pid][$field] ),
+							Time::CM_GREGORIAN,
+							Time::PREC_YMDT
+						);
+					}
+				}
+			}
+		}
+
+		if ( $time !== null ) {
+			$time = $time->asDateTime()->format( 'Y-m-d H:i:s' );
+		} else {
+			$time = '0000-00-00 00:00:00';
+		}
+
+		return $time;
+	}
+
+}

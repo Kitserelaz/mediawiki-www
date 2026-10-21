@@ -4,29 +4,21 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Math\WikiTexVC\Nodes;
 
+use MediaWiki\Extension\Math\WikiTexVC\MMLnodes\MMLbase;
+
 class Declh extends TexNode {
 
-	/** @var string */
-	private $fname;
-	/** @var TexArray */
-	private $arg;
-
-	public function __construct( string $fname, TexArray $arg ) {
+	public function __construct(
+		private readonly string $fname,
+		private readonly TexArray $arg,
+	) {
 		parent::__construct( $fname, $arg );
-		$this->fname = $fname;
-		$this->arg = $arg;
 	}
 
-	/**
-	 * @return string
-	 */
 	public function getFname(): string {
 		return $this->fname;
 	}
 
-	/**
-	 * @return TexArray
-	 */
 	public function getArg(): TexArray {
 		return $this->arg;
 	}
@@ -42,7 +34,7 @@ class Declh extends TexNode {
 	}
 
 	/** @inheritDoc */
-	public function renderMML( $arguments = [], &$state = [] ) {
+	public function toMMLTree( array $arguments = [], array &$state = [] ): MMLbase {
 		return $this->parseToMML( $this->fname, $arguments, null );
 	}
 
@@ -53,10 +45,7 @@ class Declh extends TexNode {
 		}
 
 		$identifier = parent::extractIdentifiers( $args );
-		if ( isset( $identifier[0] ) ) {
-			return [ implode( '', $identifier ) ];
-		}
-		return $identifier;
+		return $identifier ? [ implode( '', $identifier ) ] : [];
 	}
 
 	/** @inheritDoc */

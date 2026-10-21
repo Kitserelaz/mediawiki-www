@@ -1,0 +1,40 @@
+{
+	"@metadata": {
+		"authors": [
+			"Gomoko",
+			"Goombiis",
+			"SleaY",
+			"Verdy p",
+			"Mahabarata"
+		]
+	},
+	"phonos": "Phonos",
+	"phonos-desc": "Fournit la fonctionnalité de vocalisation du texte pour une gamme de langues",
+	"phonos-error-category": "Pages avec des erreurs de rendu de Phonos",
+	"phonos-error-category-desc": "Une erreur s'est produite lors du rendu de Phonos.",
+	"phonos-audio-conversion-error": "Échec de conversion de l’audio en MP3 :\n$1",
+	"phonos-directory-error": "Échec de création du répertoire de stockage « $1 »",
+	"phonos-engine-error": "Échec de génération du fichier audio à l’aide du moteur « $1 » :\n$2",
+	"phonos-storage-error": "Échec de stockage du fichier audio dans sa destination finale :\n$1",
+	"phonos-purge-needed-error": "Impossible de lire le son.",
+	"phonos-purge-needed-error-link": "Actualisez la page et essayez à nouveau.",
+	"phonos-tracking-category": "Pages utilisant l'extension Phonos",
+	"phonos-tracking-category-desc": "Ces pages utilisent l’extension [https://www.mediawiki.org/wiki/Extension:Phonos Phonos] .",
+	"phonos-invalid-title": "Le fichier audio « $1 » a un titre non valide.",
+	"phonos-file-not-found": "Fichier audio « [$1 $2] » introuvable.",
+	"phonos-file-not-audio": "Le fichier « [[$1|$2]] » n’est pas un fichier audio.",
+	"phonos-player-aria-description": "Lecture audio",
+	"phonos-aria-error": "Impossible de jouer l’audio",
+	"phonos-ipa-too-long": "Transcription en alphabet phonétique international trop longue à rendre.",
+	"phonos-wikibase-api-error": "Impossible de récupérer l’entité de Wikibase : $1",
+	"phonos-wikibase-invalid-entity-lexeme": "Entité ou lexème invalide : $1",
+	"phonos-wikibase-not-found": "Aucun audio trouvé pour l’élément Wikibase : $1",
+	"phonos-wikibase-no-ipa": "Aucune transcription en alphabet phonétique international trouvée.",
+	"phonos-empty-file-error": "L’audio généré semble être vide. La transcription donnée en alphabet phonétique international (API) peut ne pas être valide ou n’est pas prise en charge par le moteur. L’utilisation du paramètre « $1 » peut aider.",
+	"phonos-param-error": "Soit une transcription en alphabet phonétique international, soit un fichier, soit un élément Wikibase doit être fourni.",
+	"phonos-rendering-disabled": "Le rendu des transcriptions en alphabet phonétique international est actuellement désactivé.",
+	"phonos-unsupported-language": "La langue « $1 » n’est pas prise en charge par Phonos.",
+	"phonos-unsupported-language-with-suggestions": "La langue « $1 » n’est pas prise en charge par Phonos. Les langues suivantes, éventuellement apparentées, sont prises en charge : $2.",
+	"phonos-inline-audio-player-mode": "Seul un fichier audio ou un élément Wikibase avec une propriété ($1) de prononciation auditive peut être fourni quand on est dans le mode de lecteur audio en ligne.",
+	"phonos-attribution-icon": "ⓘ"
+}

@@ -1,0 +1,551 @@
+<?php
+
+namespace SMW\Tests;
+
+use SMW\DataValueFactory;
+use SMW\Elastic\ElasticStore;
+use SMW\Listener\EventListener\EventHandler;
+use SMW\Services\ServicesFactory as ApplicationFactory;
+use SMW\SPARQLStore\TurtleTriplesBuilder;
+use SMW\Tests\Utils\JSONScript\ApiTestCaseProcessor;
+use SMW\Tests\Utils\JSONScript\JsonTestCaseFileHandler;
+use SMW\Tests\Utils\JSONScript\ParserHtmlTestCaseProcessor;
+use SMW\Tests\Utils\JSONScript\ParserTestCaseProcessor;
+use SMW\Tests\Utils\JSONScript\QueryTestCaseInterpreter;
+use SMW\Tests\Utils\JSONScript\QueryTestCaseProcessor;
+use SMW\Tests\Utils\JSONScript\RdfTestCaseProcessor;
+use SMW\Tests\Utils\JSONScript\SpecialPageTestCaseProcessor;
+use SMW\Tests\Utils\MwApiFactory;
+use SMW\Tests\Utils\Runners\RunnerFactory;
+use SMW\Tests\Utils\Validators\ValidatorFactory;
+
+/**
+ * It is provided for external extensions that seek a simple way of creating tests
+ * with (or without) Semantic MediaWiki integration in mind.
+ *
+ * @group semantic-mediawiki
+ * @group Database
+ * @group medium
+ *
+ * @license GPL-2.0-or-later
+ * @since 3.1
+ *
+ * @author mwjames
+ */
+abstract class JSONScriptServicesTestCaseRunner extends JSONScriptTestCaseRunner {
+
+	protected ValidatorFactory $validatorFactory;
+	protected RunnerFactory $runnerFactory;
+	private MwApiFactory $apiFactory;
+
+	/**
+	 * @see JSONScriptTestCaseRunner::$deletePagesOnTearDown
+	 */
+	protected bool $deletePagesOnTearDown = true;
+
+	/**
+	 * Defines set of assertation services to be available by the runner
+	 */
+	protected array $defaultAssertionTypes = [
+		'parser',
+		'parser-html',
+		'special'
+	];
+
+	protected function setUp(): void {
+		parent::setUp();
+
+		$utilityFactory = $this->testEnvironment->getUtilityFactory();
+
+		$this->runnerFactory = $utilityFactory->newRunnerFactory();
+		$this->validatorFactory = $utilityFactory->newValidatorFactory();
+		$this->apiFactory = $utilityFactory->newMwApiFactory();
+
+		$this->testEnvironment->resetPoolCacheById( TurtleTriplesBuilder::POOLCACHE_ID );
+
+		// Make sure LocalSettings don't interfere with the default settings
+		$this->testEnvironment->withConfiguration(
+			[
+				'smwgQueryResultCacheType' => false,
+				'smwgQFilterDuplicates' => false,
+				'smwgExportResourcesAsIri' => false,
+				'smwgCompactLinkSupport' => false,
+				'smwgEnabledFulltextSearch' => false,
+				'smwgSparqlReplicationPropertyExemptionList' => [],
+				'smwgPageSpecialProperties' => [ '_MDAT' ],
+				'smwgFieldTypeFeatures' => [],
+				// Pin smwgDVFeatures to the extension.json default minus
+				// `number-value-usespaces` so JSON test cases that don't
+				// override the key see a stable baseline regardless of
+				// LocalSettings.php (#6586). Expressed in the new string-array
+				// form to avoid the LegacyConstantNormalizer deprecation path.
+				// Keep this list in sync with extension.json's `DVFeatures`
+				// default — adding a new flag there means adding it here too.
+				'smwgDVFeatures' => [
+					'provider-redirect',
+					'monolingual-langcode',
+					'pattern-validation',
+					'wpv-display-title',
+					'time-calendar-model',
+					'preferred-label',
+					'provider-link-hint',
+				],
+				'smwgCacheUsage' => [
+					'api.browse' => false
+				] + $GLOBALS['smwgCacheUsage'],
+				// MW 1.37 defaults to html5 fragment mode. Force legacy mode for consistency.
+				'wgFragmentMode' => [ 'legacy', 'html5' ],
+			]
+		);
+	}
+
+	protected function runTestAssertionForType( string $type ): bool {
+		return in_array( $type, $this->defaultAssertionTypes );
+	}
+
+	/**
+	 * @see JSONScriptTestCaseRunner::runTestCaseFile
+	 */
+	protected function runTestCaseFile( JsonTestCaseFileHandler $jsonTestCaseFileHandler ): void {
+		$this->checkEnvironmentToSkipCurrentTest( $jsonTestCaseFileHandler );
+
+		// Setup
+		$this->prepareTest( $jsonTestCaseFileHandler );
+
+		// Before test execution
+		$this->doRunBeforeTest( $jsonTestCaseFileHandler );
+
+		// For some reason there are some random failures where
+		// the instance hasn't reset the cache in time to fetch the
+		// property definition
+		$eventDispatcher = EventHandler::getInstance()->getEventDispatcher();
+
+		$eventDispatcher->dispatch( 'exporter.reset' );
+		$eventDispatcher->dispatch( 'query.comparator.reset' );
+
+		// Run test cases
+		if ( $this->runTestAssertionForType( 'parser' ) ) {
+			$this->doRunParserTests( $jsonTestCaseFileHandler );
+		}
+
+		if ( $this->runTestAssertionForType( 'parser-html' ) ) {
+			$this->doRunParserHtmlTests( $jsonTestCaseFileHandler );
+		}
+
+		if ( $this->runTestAssertionForType( 'special' ) ) {
+			$this->doRunSpecialTests( $jsonTestCaseFileHandler );
+		}
+
+		if ( $this->runTestAssertionForType( 'rdf' ) ) {
+			$this->doRunRdfTests( $jsonTestCaseFileHandler );
+		}
+
+		if ( $this->runTestAssertionForType( 'query' ) ) {
+			$this->doRunQueryStackTests( $jsonTestCaseFileHandler );
+		}
+
+		if ( $this->runTestAssertionForType( 'api' ) ) {
+			$this->doRunApiTests( $jsonTestCaseFileHandler );
+		}
+	}
+
+	/**
+	 * @see JSONScriptTestCaseRunner::getPermittedSettings
+	 */
+	protected function getPermittedSettings(): array {
+		parent::getPermittedSettings();
+
+		$elasticsearchConfig = function ( $val ) {
+			if ( $this->getStore() instanceof ElasticStore ) {
+				$config = $this->getStore()->getConnection( 'elastic' )->getConfig();
+
+				foreach ( $val as $key => $value ) {
+					$config->set( $key, array_merge( $config->get( $key ), $value ) );
+				}
+
+				return $config->toArray();
+			}
+		};
+
+		$this->registerConfigValueCallback( 'smwgElasticsearchConfig', $elasticsearchConfig );
+
+		// Config isolation causes NamespaceInfo to not access the `MainConfig`
+		// therefore reset the services so that it copies the changed setting.
+		// https://github.com/wikimedia/mediawiki/commit/7ada64684e6477be44405dedbfdb0d96242f2e73
+		$capitalLinks = function ( $val ) {
+			$this->testEnvironment->resetMediaWikiService( 'NamespaceInfo' );
+			return $val;
+		};
+
+		$this->registerConfigValueCallback( 'wgCapitalLinks', $capitalLinks );
+
+		return [
+			'smwgNamespacesWithSemanticLinks',
+			'smwgPageSpecialProperties',
+			'smwgNamespace',
+			'smwgExportBCNonCanonicalFormUse',
+			'smwgExportBCAuxiliaryUse',
+			'smwgExportResourcesAsIri',
+			'smwgQMaxSize',
+			'smwgQMaxDepth',
+			'smwStrictComparators',
+			'smwgQSubpropertyDepth',
+			'smwgQSubcategoryDepth',
+			'smwgQConceptCaching',
+			'smwgMaxNonExpNumber',
+			'smwgDVFeatures',
+			'smwgEnabledQueryDependencyLinksStore',
+			'smwgEnabledFulltextSearch',
+			'smwgFulltextDeferredUpdate',
+			'smwgFulltextSearchIndexableDataTypes',
+			'smwgFixedProperties',
+			'smwgPropertyZeroCountDisplay',
+			'smwgQueryResultCacheType',
+			'smwgQFilterDuplicates',
+			'smwgQueryProfiler',
+			'smwgEntityCollation',
+			'smwgSparqlQFeatures',
+			'smwgQExpensiveThreshold',
+			'smwgQExpensiveExecutionLimit',
+			'smwgFieldTypeFeatures',
+			'smwgCreateProtectionRight',
+			'smwgParserFeatures',
+			'smwgCategoryFeatures',
+			'smwgDefaultOutputFormatters',
+			'smwgCompactLinkSupport',
+			'smwgCacheUsage',
+			'smwgQSortFeatures',
+			'smwgQMaxInlineLimit',
+			'smwgElasticsearchConfig',
+			'smwgDefaultNumRecurringEvents',
+			'smwgMandatorySubpropertyParentTypeInheritance',
+			'smwgPlainList',
+			'smwgMaxPropertyValues',
+
+			// MW related
+			'wgLanguageCode',
+			'wgContLang',
+			'wgLang',
+			'wgCapitalLinks',
+			'wgAllowDisplayTitle',
+			'wgRestrictDisplayTitle',
+			'wgSearchType',
+			'wgEnableUploads',
+			'wgFileExtensions',
+			'wgDefaultUserOptions',
+			'wgThumbLimits',
+			'wgLocalTZoffset'
+		];
+	}
+
+	private function prepareTest( JsonTestCaseFileHandler $jsonTestCaseFileHandler ) {
+		foreach ( $this->getPermittedSettings() as $key ) {
+			$this->changeGlobalSettingTo(
+				$key,
+				$jsonTestCaseFileHandler->getSettingsFor( $key, $this->getConfigValueCallback( $key ) )
+			);
+		}
+
+		// This ensures that if content is created in the NS_MEDIAWIKI namespace
+		// and an object relies on the MediaWikiNsContentReader then it uses the DB
+		ApplicationFactory::clear();
+		ApplicationFactory::getInstance()->getMediaWikiNsContentReader()->skipMessageCache();
+		DataValueFactory::getInstance()->clear();
+
+		if ( $jsonTestCaseFileHandler->hasSetting( 'smwgFieldTypeFeatures' ) ) {
+			$this->doRunTableSetupBeforeContentCreation();
+		}
+
+		// #2135
+		// On some occasions (e.g. fixed properties) and to setup the correct
+		// table schema, run the creation once before the content is created
+		$pageList = $jsonTestCaseFileHandler->getPageCreationSetupList();
+
+		if ( $jsonTestCaseFileHandler->hasSetting( 'smwgFixedProperties' ) ) {
+			foreach ( $pageList as $page ) {
+				if ( isset( $page['namespace'] ) && $page['namespace'] === 'SMW_NS_PROPERTY' ) {
+					$this->createPagesFrom( [ $page ] );
+				}
+			}
+
+			$this->doRunTableSetupBeforeContentCreation();
+		}
+
+		$this->createPagesFrom(
+			$pageList,
+			NS_MAIN
+		);
+	}
+
+	private function doRunTableSetupBeforeContentCreation( $pageList = null ) {
+		if ( $pageList !== null ) {
+			$this->createPagesFrom( $pageList );
+		}
+
+		$maintenanceRunner = $this->runnerFactory->newMaintenanceRunner( 'setupStore' );
+		$maintenanceRunner->setQuiet();
+		$maintenanceRunner->run();
+	}
+
+	private function doRunBeforeTest( JsonTestCaseFileHandler $jsonTestCaseFileHandler ) {
+		foreach ( $jsonTestCaseFileHandler->findTasksBeforeTestExecutionByType( 'maintenance-run' ) as $runner => $options ) {
+
+			$maintenanceRunner = $this->runnerFactory->newMaintenanceRunner( $runner );
+			$maintenanceRunner->setQuiet();
+
+			$maintenanceRunner->setOptions(
+				(array)$options
+			);
+
+			$maintenanceRunner->run();
+
+			if ( isset( $options['quiet'] ) && $options['quiet'] === false ) {
+				print_r( $maintenanceRunner->getOutput() );
+			}
+		}
+
+		foreach ( $jsonTestCaseFileHandler->findTasksBeforeTestExecutionByType( 'job-run' ) as $jobType ) {
+			$jobQueueRunner = $this->runnerFactory->newJobQueueRunner( $jobType );
+			$jobQueueRunner->run();
+		}
+
+		$this->testEnvironment->executePendingDeferredUpdates();
+	}
+
+	private function doRunParserTests( JsonTestCaseFileHandler $jsonTestCaseFileHandler ) {
+		$testCases = $jsonTestCaseFileHandler->findTestCasesByType( 'parser' );
+
+		if ( $testCases === [] ) {
+			return;
+		}
+
+		$parserTestCaseProcessor = new ParserTestCaseProcessor(
+			$this->getStore(),
+			$this->validatorFactory->newSemanticDataValidator(),
+			$this->validatorFactory->newIncomingSemanticDataValidator( $this->getStore() ),
+			$this->validatorFactory->newStringValidator()
+		);
+
+		$parserTestCaseProcessor->setDebugMode(
+			$jsonTestCaseFileHandler->getDebugMode()
+		);
+
+		foreach ( $testCases as $case ) {
+
+			if ( $jsonTestCaseFileHandler->requiredToSkipFor( $case, $this->connectorId ) ) {
+				continue;
+			}
+
+			$parserTestCaseProcessor->process( $case );
+		}
+	}
+
+	private function doRunParserHtmlTests( JsonTestCaseFileHandler $jsonTestCaseFileHandler ) {
+		$testCases = $jsonTestCaseFileHandler->findTestCasesByType( 'parser-html' );
+
+		if ( $testCases === [] ) {
+			return;
+		}
+
+		$parserHtmlTestCaseProcessor = new ParserHtmlTestCaseProcessor(
+			$this->validatorFactory->newHtmlValidator()
+		);
+
+		if ( !$parserHtmlTestCaseProcessor->canUse() ) {
+			$this->markTestIncomplete(
+				'The required resource for the ParserHtmlTestCaseProcessor/HtmlValidator is not available.'
+			);
+		}
+
+		foreach ( $testCases as $case ) {
+
+			if ( $jsonTestCaseFileHandler->requiredToSkipFor( $case, $this->connectorId ) ) {
+				continue;
+			}
+
+			$parserHtmlTestCaseProcessor->process( $case );
+		}
+	}
+
+	private function doRunSpecialTests( JsonTestCaseFileHandler $jsonTestCaseFileHandler ) {
+		$testCases = $jsonTestCaseFileHandler->findTestCasesByType( 'special' );
+
+		if ( $testCases === [] ) {
+			return;
+		}
+
+		// A test case may set `wgSearchType` (e.g. to `SMWSearch`) via the
+		// settings block, which TestConfig applies as a $GLOBALS write. MediaWiki's
+		// SearchEngineConfig copies `wgSearchType` into a ServiceOptions snapshot at
+		// construction, so a value snapshotted earlier in the run (the test bootstrap
+		// defaults it to SearchEngineDummy) would otherwise mask the override. Reset
+		// the config and the factory that consumes it so Special:Search resolves the
+		// configured engine instead of the stale default.
+		$this->testEnvironment->resetMediaWikiService( 'SearchEngineConfig' );
+		$this->testEnvironment->resetMediaWikiService( 'SearchEngineFactory' );
+
+		$specialPageTestCaseProcessor = new SpecialPageTestCaseProcessor(
+			$this->getStore(),
+			$this->validatorFactory->newStringValidator()
+		);
+
+		$specialPageTestCaseProcessor->setDebugMode(
+			$jsonTestCaseFileHandler->getDebugMode()
+		);
+
+		$specialPageTestCaseProcessor->setTestCaseLocation(
+			$this->getTestCaseLocation()
+		);
+
+		foreach ( $testCases as $case ) {
+
+			if ( $jsonTestCaseFileHandler->requiredToSkipFor( $case, $this->connectorId ) ) {
+				continue;
+			}
+
+			$specialPageTestCaseProcessor->process( $case );
+		}
+	}
+
+	private function doRunRdfTests( JsonTestCaseFileHandler $jsonTestCaseFileHandler ) {
+		$testCases = $jsonTestCaseFileHandler->findTestCasesByType( 'rdf' );
+
+		if ( $testCases === [] ) {
+			return;
+		}
+
+		$rdfTestCaseProcessor = new RdfTestCaseProcessor(
+			$this->getStore(),
+			$this->validatorFactory->newStringValidator(),
+			$this->runnerFactory
+		);
+
+		$rdfTestCaseProcessor->setDebugMode(
+			$jsonTestCaseFileHandler->getDebugMode()
+		);
+
+		foreach ( $testCases as $case ) {
+			$rdfTestCaseProcessor->process( $case );
+		}
+	}
+
+	private function doRunQueryStackTests( JsonTestCaseFileHandler $jsonTestCaseFileHandler ) {
+		// Set query parser late to ensure that expected settings are adjusted
+		// (language etc.) because the __construct relies on the context language
+		$queryParser = ApplicationFactory::getInstance()->getQueryFactory()->newQueryParser();
+
+		$i = 0;
+		$count = 0;
+
+		$this->doRunQueryTests( $jsonTestCaseFileHandler, $queryParser, $i, $count );
+		$this->doRunConceptTests( $jsonTestCaseFileHandler, $queryParser, $i, $count );
+		$this->doRunFormatTests( $jsonTestCaseFileHandler, $queryParser, $i, $count );
+
+		// Avoid tests being marked as risky when all cases were skipped
+		if ( $i == 0 && $count > 0 ) {
+			$this->markTestSkipped( 'Skipped all assertions for: ' . $this->getName() );
+		}
+	}
+
+	private function doRunQueryTests( JsonTestCaseFileHandler $jsonTestCaseFileHandler, $queryParser, &$i, &$count ) {
+		$testCases = $jsonTestCaseFileHandler->findTestCasesByType( 'query' );
+		$count += count( $testCases );
+
+		if ( $testCases === [] ) {
+			return;
+		}
+
+		$queryTestCaseProcessor = $this->newQueryTestCaseProcessor( $queryParser, $jsonTestCaseFileHandler );
+
+		foreach ( $testCases as $case ) {
+
+			if ( $jsonTestCaseFileHandler->requiredToSkipFor( $case, $this->connectorId ) ) {
+				continue;
+			}
+
+			$queryTestCaseProcessor->processQueryCase( new QueryTestCaseInterpreter( $case ) );
+			$i++;
+		}
+	}
+
+	private function doRunConceptTests( JsonTestCaseFileHandler $jsonTestCaseFileHandler, $queryParser, &$i, &$count ) {
+		$testCases = $jsonTestCaseFileHandler->findTestCasesByType( 'concept' );
+		$count += count( $testCases );
+
+		if ( $testCases === [] ) {
+			return;
+		}
+
+		$queryTestCaseProcessor = $this->newQueryTestCaseProcessor( $queryParser, $jsonTestCaseFileHandler );
+
+		foreach ( $testCases as $case ) {
+			$queryTestCaseProcessor->processConceptCase( new QueryTestCaseInterpreter( $case ) );
+			$i++;
+		}
+	}
+
+	private function doRunFormatTests( JsonTestCaseFileHandler $jsonTestCaseFileHandler, $queryParser, &$i, &$count ) {
+		$testCases = $jsonTestCaseFileHandler->findTestCasesByType( 'format' );
+		$count += count( $testCases );
+
+		if ( $testCases === [] ) {
+			return;
+		}
+
+		$queryTestCaseProcessor = $this->newQueryTestCaseProcessor( $queryParser, $jsonTestCaseFileHandler );
+
+		foreach ( $testCases as $case ) {
+
+			if ( $jsonTestCaseFileHandler->requiredToSkipFor( $case, $this->connectorId ) ) {
+				continue;
+			}
+
+			$queryTestCaseProcessor->processFormatCase( new QueryTestCaseInterpreter( $case ) );
+			$i++;
+		}
+	}
+
+	private function newQueryTestCaseProcessor(
+		$queryParser,
+		JsonTestCaseFileHandler $jsonTestCaseFileHandler
+	): QueryTestCaseProcessor {
+		$queryTestCaseProcessor = new QueryTestCaseProcessor(
+			$this->getStore(),
+			$this->validatorFactory->newQueryResultValidator(),
+			$this->validatorFactory->newStringValidator(),
+			$this->validatorFactory->newNumberValidator()
+		);
+
+		$queryTestCaseProcessor->setQueryParser( $queryParser );
+		$queryTestCaseProcessor->setDebugMode( $jsonTestCaseFileHandler->getDebugMode() );
+
+		return $queryTestCaseProcessor;
+	}
+
+	private function doRunApiTests( JsonTestCaseFileHandler $jsonTestCaseFileHandler ) {
+		$testCases = $jsonTestCaseFileHandler->findTestCasesByType( 'api' );
+
+		if ( $testCases === [] ) {
+			return;
+		}
+
+		$apiTestCaseProcessor = new ApiTestCaseProcessor(
+			$this->apiFactory,
+			$this->validatorFactory->newStringValidator()
+		);
+
+		$apiTestCaseProcessor->setTestCaseLocation(
+			$this->getTestCaseLocation()
+		);
+
+		foreach ( $testCases as $case ) {
+
+			if ( $jsonTestCaseFileHandler->requiredToSkipFor( $case, $this->connectorId ) ) {
+				continue;
+			}
+
+			$apiTestCaseProcessor->process( $case );
+		}
+	}
+
+}

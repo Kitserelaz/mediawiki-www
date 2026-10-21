@@ -1,0 +1,41 @@
+{
+	"@metadata": {
+		"authors": [
+			"Elisardojm",
+			"Toliño"
+		]
+	},
+	"extensions-skins": "Aparencias",
+	"group-autopatrolled-member": "{{GENDER:$1|patrulleiro automático|patrulleira automática}}",
+	"group-autopatrolled": "Patrulleiros automáticos",
+	"group-confirmed-member": "{{GENDER:$1|usuario confirmado|usuaria confirmada}}",
+	"group-confirmed": "Usuarios confirmados",
+	"group-member": "Membros",
+	"group-oversight-member": "{{GENDER:$1|supervisor|supervisora}}",
+	"group-oversight": "Supervisores",
+	"group-proxybot-member": "robot  proxy",
+	"group-proxybot": "Robot proxy",
+	"group-rollbacker-member": "{{GENDER:$1|revertedor|revertedora}}",
+	"group-rollbacker": "Revertedores",
+	"group-steward-member": "{{GENDER:$1|steward}}",
+	"group-steward": "Stewards",
+	"group-translationadmin-member": "{{GENDER:$1|administrador|administradora}} de tradución",
+	"group-translationadmin": "Administradores de tradución",
+	"group-translator-member": "{{GENDER:$1|tradutor|tradutora}}",
+	"group-translator": "Tradutores",
+	"group-wiki-creator-member": "{{GENDER:$1|creador de wikis|creadora de wikis}}",
+	"group-wiki-creator": "Creadores de wikis",
+	"group-wikimanager-member": "{{GENDER:$1|administrador|administradora}} da wiki",
+	"group-wikimanager": "Administradores de wikis",
+	"miraheze-categories": "Categorías",
+	"miraheze-donate": "Doar a Miraheze",
+	"miraheze-helpcenter": "Centroa de axuda de Miraheze",
+	"miraheze-requestwiki": "Solicitar unha wiki",
+	"restriction-delete": "Borrar",
+	"settings-media": "Multimedia",
+	"shared-repo-name-mirahezecommons": "Commons de Miraheze",
+	"sitematrix-others": "Outras wikis de Miraheze",
+	"sitematrix-summary": "Esta páxina especial lista tódalas wikis de Miraheze.",
+	"sitematrix": "Lista de wikis de Miraheze",
+	"termsofservice": "Termos de uso"
+}

@@ -1,0 +1,34 @@
+{
+	"@metadata": {
+		"authors": [
+			"AProdromou",
+			"Geraki",
+			"Giannaras99"
+		]
+	},
+	"growthexperiments-desc": "Αυτή η επέκταση περιέχει πειράματα που γίνονται από την ομάδα Ανάπτυξης",
+	"growthexperiments-config-validator-datatype-mismatch": "<code>$1</code> αναμένεται να είναι <code>$2</code>, αλλά είναι <code>$3</code>",
+	"growthexperiments-edit-config-last-edit": "[[$3]]: Τελευταία ενημέρωση από [[User:$1|$1]] $2.",
+	"growthexperiments-edit-config-last-edit-unknown-user": "[[$2]]: Τελευταία ενημέρωση από άγνωστο χρήστη $1",
+	"growthexperiments-edit-config-edit-summary": "Σύνοψη επεξεργασίας",
+	"growthexperiments-edit-config-config-changed": "Η ρύθμιση έχει αλλάξει. Ίσως χρειάζεται να περιμένετε λίγα λεπτά μέχρι να έχουν αποτέλεσμα οι αλλαγές.",
+	"growthexperiments-edit-config-help-panel": "Ρυθμίσεις Σελίδας βοήθειας",
+	"growthexperiments-edit-config-help-panel-post-on-top-true": "Πάνω μέρος της σελίδας",
+	"growthexperiments-edit-config-help-panel-post-on-top-false": "Κάτω μέρος της σελίδας",
+	"growthexperiments-edit-config-help-panel-view-more": "Σελίδα προορισμού για «Προβολή περισσότερων άρθρων βοήθειας»",
+	"growthexperiments-edit-config-help-panel-ask-mentor": "Που θα πρέπει να απευθύνονται οι ερωτήσεις από το πλαίσιο βοήθειας;",
+	"growthexperiments-edit-config-help-panel-ask-mentor-true": "Σελίδες συνομιλίας των Καθοδηγητών.",
+	"growthexperiments-edit-config-help-panel-ask-mentor-false": "Γραφείο βοήθειας",
+	"growthexperiments-edit-config-help-panel-links": "Σύνδεσμοι πλαισίου βοήθειας",
+	"growthexperiments-edit-config-homepage": "Αρχική σελίδα νεοεισερχόμενων",
+	"growthexperiments-edit-config-homepage-intro-links-create": "Σελίδα προορισμού για έναν σύνδεσμο σχετικά με τον τρόπο δημιουργίας ενός νέου άρθρου",
+	"growthexperiments-edit-config-homepage-intro-links-image": "Σελίδα προορισμού για έναν σύνδεσμο σχετικά με τον τρόπο προσθήκης εικόνων στον οπτικό επεξεργαστή",
+	"growthexperiments-edit-config-mentorship": "Καθοδήγηση",
+	"growthexperiments-edit-config-mentorship-enabled": "Είναι ενεργοποιημένες οι λειτουργίες καθοδήγησης;",
+	"growthexperiments-edit-config-mentorship-enabled-true": "Ναι",
+	"growthexperiments-edit-config-mentorship-enabled-false": "Όχι",
+	"growthexperiments-edit-config-newcomertasks": "Προτεινόμενες επεξεργασίες",
+	"growthexperiments-edit-config-newcomer-tasks-description": "Ορισμένοι τύποι προτεινόμενων επεξεργασιών εμφανίζονται μέσω προτύπων συντήρησης. Τα λήμματα που περιέχουν αυτά τα πρότυπα προστίθενται στη ροή. Για να δείτε πόσα λήμματα είναι διαθέσιμα για κάθε τύπο εργασίας, ανατρέξτε σε [[Special:NewcomerTasksInfo|αυτή τη σελίδα]].",
+	"growthexperiments-edit-config-newcomer-tasks-image-recommendation-maximum-tasks-per-day": "Ο μέγιστος αριθμός προτεινόμενων εργασιών \"Προσθήκη εικόνας σε ένα μη εικονογραφημένο άρθρο\" που μπορεί να ολοκληρώσει ένας νέος χρήστης καθημερινά.",
+	"growthexperiments-edit-config-newcomer-tasks-section-image-recommendation-maximum-tasks-per-day": "Ο μέγιστος αριθμός προτεινόμενων εργασιών \"Προσθήκη εικόνας σε ενότητα άρθρου\" που μπορεί να ολοκληρώσει ένας νέος χρήστης καθημερινά."
+}

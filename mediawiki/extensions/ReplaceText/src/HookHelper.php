@@ -10,12 +10,8 @@ use MediaWiki\Title\TitleArrayFromResult;
 use Wikimedia\Rdbms\IResultWrapper;
 
 class HookHelper {
-	private HookRunner $hookRunner;
+	private readonly HookRunner $hookRunner;
 
-	/**
-	 * Constructor.
-	 * @param HookContainer $hookContainer
-	 */
 	public function __construct( HookContainer $hookContainer ) {
 		$this->hookRunner = new HookRunner( $hookContainer );
 	}

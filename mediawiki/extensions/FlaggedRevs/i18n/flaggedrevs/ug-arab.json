@@ -1,0 +1,17 @@
+{
+	"@metadata": {
+		"authors": [
+			"Sahran"
+		]
+	},
+	"editor": "تەھرىرلىگۈچ",
+	"group-editor": "تەھرىرلىگۈچ",
+	"group-reviewer": "كۆزدىن كەچۈرگۈچى",
+	"revreview-accuracy": "توغرىلىقى",
+	"revreview-accuracy-4": "ئالاھىدىلىك",
+	"revreview-def-all": "خالىغان",
+	"revreview-def-stable": "مۇقىم نەشرى",
+	"revreview-restriction-any": "خالىغان",
+	"revreview-restriction-none": "يوق",
+	"flaggedrevs-protect-none": "ھەممە ئىشلەتكۈچىگە يول قوي"
+}

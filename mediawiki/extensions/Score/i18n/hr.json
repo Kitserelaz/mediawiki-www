@@ -1,0 +1,41 @@
+{
+	"@metadata": {
+		"authors": [
+			"Bugoslav",
+			"MaGa",
+			"Ponor"
+		]
+	},
+	"score-abcconversionerr": "Nije moguće pretvoriti ABC datoteku u LilyPond format:\n$1",
+	"score-audioconversionerr": "Nije moguće pretvoriti MIDI u MP3:\n$1",
+	"score-audiooverridenotfound": "Datoteka \"<nowiki> $1</nowiki> \" koji ste naveli s override_audio ne postoji.",
+	"score-audio-alt": "Reprodukcija zvuka nije podržana u vašem pregledniku. Možete $1.",
+	"score-audio-alt-link": "preuzmi zvukovnu datoteku",
+	"score-backend-error": "Nije moguće kopirati generirane datoteke na njihovo odredišno mjesto:\n$1",
+	"score-compilererr": "Nije moguće sastaviti ulaznu LilyPond datoteku:\n$1",
+	"score-deprecated-category": "Stranice koje rabe zastarjele atribute partitura",
+	"score-deprecated-category-desc": "Ove stranice rabe mogućnosti proširenja ''Score'' koje su zastarjele. \nTo su: \"override_audio\", \"override_ogg\" i \"override_midi\".",
+	"score-download-midi-file": "Preuzmi MIDI datoteku",
+	"score-download-source-file": "Preuzmi LilyPond datoteku",
+	"score-error-category": "Stranice s pogreškama u ispisu partitura",
+	"score-exec-disabled": "Glazbeni zapisi privremeno su onemogućeni.",
+	"score-gs-error": "Pogreška pri pokretanju Ghostscripta:\n$1",
+	"score-nocontent": "Nije moguće učitati datoteku $1 s poslužitelja.",
+	"score-page": "Stranica $1",
+	"score-readerr": "Nije moguće pročitati datoteku $1.",
+	"score-use-category": "Stranice koje rabe partiture",
+	"score-use-category-desc": "Ove stranice rabe proširenje ''[[:mw:Extension:Score|Score]]''.",
+	"score-visualeditor-mwscoredialog-audio": "Postavi zvukovnu datoteku (zadano se automatski izvodi)",
+	"score-visualeditor-mwscoredialog-card-advanced": "Napredno",
+	"score-visualeditor-mwscoredialog-card-audio": "Zvuk",
+	"score-visualeditor-mwscoredialog-lang": "Jezik",
+	"score-visualeditor-mwscoredialog-notelanguage": "Jezik nota",
+	"score-visualeditor-mwscoredialog-override-audio": "Rabi postojeću zvukovnu datoteku",
+	"score-visualeditor-mwscoredialog-override-audio-placeholder": "Ime postojeće zvukovne datoteke",
+	"score-visualeditor-mwscoredialog-override-midi": "Rabi postojeću MIDI datoteku",
+	"score-visualeditor-mwscoredialog-override-midi-placeholder": "Ime postojeće MIDI datoteke",
+	"score-visualeditor-mwscoredialog-raw": "Ovo je u cijelosti LilyPond datoteka",
+	"score-visualeditor-mwscoredialog-title": "Glazbeni zapis",
+	"datatypes-type-musical-notation": "Glazbeni zapis",
+	"wikibase-listdatatypes-musical-notation-head": "Glazbeni zapis"
+}

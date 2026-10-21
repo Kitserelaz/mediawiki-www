@@ -1,0 +1,40 @@
+{
+	"@metadata": {
+		"authors": [
+			"Alesaru",
+			"NGC 54",
+			"Paloi Sciurala"
+		]
+	},
+	"apihelp-growthstarmentee-summary": "Marcați sau demarcați un ucenic ca fiind cu stea de utilizatorul actual (stocat privat și nu în jurnal)",
+	"apihelp-growthstarmentee-param-gesaction": "Acțiunea de luat (<kbd>marcare</kbd> or <kbd>demarcare/kbd>)",
+	"apihelp-growthstarmentee-param-gesmentee": "Ucenic de (de)marcat",
+	"apihelp-query+growthstarredmentees-summary": "Obțineți lista ucenicilor marcați de către mentorul momentan autentificat",
+	"apihelp-growthsetmentorstatus-summary": "Setează starea curentă de mentor a utilizatorului ca activă/indisponibilă",
+	"apihelp-growthsetmentorstatus-param-gesstatus": "Stare nouă",
+	"apihelp-growthsetmentorstatus-param-gesbackindays": "Când se setează mentorul ca indisponibil(ă), trebuie să aibă lungimea stării de indisponibilitate (în zile)",
+	"apihelp-query+growthmentorstatus-summary": "Interoghează starea curentă de mentor a utilizatorului",
+	"apihelp-growthmentordashboardupdatedata-summary": "Programați o actualizare extraordinară a modulului de prezentare generală a ucenicilor pe pagina mentorului. Puteți programa numai o actualizare odată la două ore din motive de performanță.",
+	"apihelp-growthsetmenteestatus-summary": "Setează starea ucenicului (permite ucenicilor să activeze/dezactiveze modulul activității de mentor sau să renunțe cu totul, care șterge relația ucenic/mentor)",
+	"apihelp-growthsetmenteestatus-param-state": "Starea nouă a ucenicilor (avertizare: setând asta pentru a renunța va șterge permanent relația ucenic/mentor)",
+	"apihelp-growthsetmenteestatus-param-state-enabled": "Modulul activității de mentor este activat",
+	"apihelp-growthsetmenteestatus-param-state-disabled": "Modulul activității de mentor este pe deplin dezactivat. Astfel este setat normal de către software și utilizat pentru testarea A/B.",
+	"apihelp-growthsetmenteestatus-param-state-optout": "Ucenicul a renunțat la activitatea de mentor; relația ucenic/mentor va fi ștearsă, modulul activității de mentor va fi înlocuit cu o posibilitate de a se răzgândi",
+	"apihelp-query+growthmenteestatus-summary": "Solicită starea ucenicului utilizatorului curent; vezi documentația pentru action=growthsetmenteestatus pentru informații detaliate despre stări individuale.",
+	"apihelp-query+growthmentormentee-summary": "Obține toți ucenici atribuiți unui mentor dat",
+	"apihelp-query+growthmentormentee-param-gemmmentor": "Mentorul de la care să se solicite ucenici",
+	"apihelp-growthmanagementorlist-summary": "Administrează informații în lista structurată a mentorilor (de obicei stocată în [[MediaWiki:GrowthMentors.json]]). Acest modul poate fi utilizat atât de mentorii actuali, cât și de cei viitori, (pentru a se adăuga sau pentru a își schimba detaliile) și de administratori (pentru toți utilizatorii).",
+	"apihelp-growthmanagementorlist-param-geaction": "Acțiune",
+	"apihelp-growthmanagementorlist-param-message": "Mesaj introductiv (utilizează un șir gol pentru mesajul implicit al mentorului)",
+	"apihelp-growthmanagementorlist-param-weight": "Povară",
+	"apihelp-growthmanagementorlist-param-isaway": "Mentorul este plecat în prezent? Trebuie setat (implicit la false).",
+	"apihelp-growthmanagementorlist-param-awaytimestamp": "Până când este plecat mentorul? Maximul este de 1 an începând de astăzi. Ignorat, cu excepția cazului în care isaway este adevărat.",
+	"apihelp-growthmanagementorlist-param-summary": "Motivul pentru schimbare",
+	"apihelp-growthmanagementorlist-param-username": "Numele de utilizator al mentorului afectat de schimbare. Dacă nu este furnizat, va fi utilizat utilizatorul actualmente autentificat. Se poate utiliza numai de către utilizatorii privilegiați.",
+	"growthexperiments-api-managementors-error-no-away-timestamp": "Dacă isaway este adevărat, atunci trebuie furnizat awaytimestamp.",
+	"apihelp-growthinvalidatepersonalizedpraisesuggestion-summary": "Invalidează o sugestie pentru un ucenic demn de a fi lăudat în Modulul de laude personalizate de la pagina mentorului",
+	"apihelp-growthinvalidatepersonalizedpraisesuggestion-param-mentee": "Ucenic de invalidat",
+	"apihelp-growthinvalidatepersonalizedpraisesuggestion-param-reason": "Motivul pentru invalidarea sugestiei",
+	"apihelp-growthinvalidatepersonalizedpraisesuggestion-param-skipreason": "Omiteți motivul pentru a invalida sugestia.",
+	"apihelp-query+growthmentorlist-summary": "Listează toți mentorii"
+}

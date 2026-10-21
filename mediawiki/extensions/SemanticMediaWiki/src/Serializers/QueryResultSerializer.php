@@ -1,0 +1,292 @@
+<?php
+
+namespace SMW\Serializers;
+
+use MediaWiki\Title\Title;
+use OutOfBoundsException;
+use Serializers\DispatchableSerializer;
+use SMW\DataItems\DataItem;
+use SMW\DataValueFactory;
+use SMW\Query\PrintRequest;
+use SMW\Query\QueryResult;
+use SMW\Query\Result\ResultArray;
+
+/**
+ * Class for serializing DataItem and QueryResult objects to a context
+ * independent object consisting of arrays and associative arrays, which can
+ * be fed directly to json_encode, the MediaWiki API, and similar serializers.
+ *
+ * This class is distinct from SMWSerializer and the ExpData object
+ * it takes, in that here semantic context is lost.
+ *
+ * @ingroup Serializers
+ *
+ * @license GPL-2.0-or-later
+ * @since 1.7
+ *
+ * @author Jeroen De Dauw < jeroendedauw@gmail.com >
+ */
+class QueryResultSerializer implements DispatchableSerializer {
+
+	private static int $version = 2;
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param int $version
+	 */
+	public function version( $version ): void {
+		self::$version = (int)$version;
+	}
+
+	/**
+	 * @see SerializerInterface::serialize
+	 *
+	 * @since 1.9
+	 *
+	 * @return array
+	 * @throws OutOfBoundsException
+	 */
+	public function serialize( $queryResult ): array {
+		if ( !( $this->isSerializerFor( $queryResult ) ) ) {
+			throw new OutOfBoundsException( 'Object was not identified as a QueryResult instance' );
+		}
+
+		return $this->getSerializedQueryResult( $queryResult ) + [ 'serializer' => __CLASS__, 'version' => self::$version ];
+	}
+
+	/**
+	 * @see Serializers::isSerializerFor
+	 *
+	 * @since  1.9
+	 */
+	public function isSerializerFor( $queryResult ): bool {
+		return $queryResult instanceof QueryResult;
+	}
+
+	/**
+	 * Get the serialization for the provided data item.
+	 *
+	 * @since 1.7
+	 *
+	 * @param DataItem $dataItem
+	 *
+	 * @return array|string|int|float
+	 */
+	public static function getSerialization( DataItem $dataItem, $printRequest = null ): array|string|int|float {
+		switch ( $dataItem->getDIType() ) {
+			case DataItem::TYPE_WIKIPAGE:
+				// Support for a deserializable _rec type with 0.6
+				if ( $printRequest !== null && strpos( $printRequest->getTypeID(), '_rec' ) !== false ) {
+					$recordValue = DataValueFactory::getInstance()->newDataValueByItem(
+						$dataItem,
+						$printRequest->getProperty()
+					);
+
+					// A record that cannot be resolved (e.g. a monolingual text value
+					// without a container reference) carries an error item instead of
+					// the semantic data the loop below relies on.
+					if ( $recordValue->getDataItem()->getDIType() === DataItem::TYPE_ERROR ) {
+						$result = [];
+						break;
+					}
+
+					$recordDiValues = [];
+
+					foreach ( $recordValue->getPropertyDataItems() as $property ) {
+						$label = $property->getLabel();
+
+						$recordDiValues[$label] = [
+							'label'  => $label,
+							'key'    => $property->getKey(),
+							'typeid' => $property->findPropertyValueType(),
+							'item'   => []
+						];
+
+						foreach ( $recordValue->getDataItem()->getSemanticData()->getPropertyValues( $property ) as $value ) {
+
+							if ( $property->findPropertyValueType() === '_qty' ) {
+								$dataValue = DataValueFactory::getInstance()->newDataValueByItem( $value, $property );
+
+								$recordDiValues[$label]['item'][] = [
+									'value' => $dataValue->getNumber(),
+									'unit' => $dataValue->getUnit()
+								];
+							} else {
+								$recordDiValues[$label]['item'][] = self::getSerialization( $value );
+							}
+						}
+					}
+					$result = $recordDiValues;
+				} else {
+					$title = $dataItem->getTitle();
+
+					$wikiPageValue = DataValueFactory::getInstance()->newDataValueByItem(
+						$dataItem
+					);
+
+					$result = [
+						'fulltext' => $title->getFullText(),
+						'fullurl' => $title->getFullUrl(),
+						'namespace' => $title->getNamespace(),
+						'exists' => strval( $title->isKnown() ),
+						'displaytitle' => $wikiPageValue->getDisplayTitle()
+					];
+				}
+				break;
+			case DataItem::TYPE_NUMBER:
+				// dataitems and datavalues
+				// Quantity is a datavalue type that belongs to dataitem
+				// type number which means in order to identify the correct
+				// unit, we have re-factor the corresponding datavalue otherwise
+				// we will not be able to determine the unit
+				// (unit is part of the datavalue object)
+				if ( $printRequest !== null && $printRequest->getTypeID() === '_qty' ) {
+					$dataValue = DataValueFactory::getInstance()->newDataValueByItem( $dataItem, $printRequest->getProperty() );
+
+					$result = [
+						'value' => $dataValue->getNumber(),
+						'unit' => $dataValue->getUnit()
+					];
+				} else {
+					$result = $dataItem->getNumber();
+				}
+				break;
+			case DataItem::TYPE_GEO:
+				$result = $dataItem->getCoordinateSet();
+				break;
+			case DataItem::TYPE_TIME:
+				$result = [
+					'timestamp' => $dataItem->getMwTimestamp(),
+					'raw' => $dataItem->getSerialization()
+				];
+				break;
+			default:
+				$result = $dataItem->getSerialization();
+				break;
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Get the serialization for a QueryResult object.
+	 *
+	 * @since 1.7
+	 *
+	 * @param QueryResult $queryResult
+	 *
+	 * @return array
+	 */
+	public static function getSerializedQueryResult( QueryResult $queryResult ): array {
+		$results = [];
+		$printRequests = [];
+
+		foreach ( $queryResult->getPrintRequests() as $printRequest ) {
+			$printRequests[] = self::serialize_printrequest( $printRequest );
+		}
+
+		/**
+		 * @var DIWikiPage $diWikiPage
+		 * @var PrintRequest $printRequest
+		 */
+		foreach ( $queryResult->getResults() as $diWikiPage ) {
+
+			if ( $diWikiPage === null || !( $diWikiPage->getTitle() instanceof Title ) ) {
+				continue;
+			}
+
+			$result = [ 'printouts' => [] ];
+
+			foreach ( $queryResult->getPrintRequests() as $printRequest ) {
+				$resultArray = ResultArray::factory( $diWikiPage, $printRequest, $queryResult );
+
+				if ( $printRequest->getMode() === PrintRequest::PRINT_THIS ) {
+					$dataItems = $resultArray->getContent();
+					$di = array_shift( $dataItems );
+					if ( $di ) {
+						$result += self::getSerialization( $di, $printRequest );
+					}
+				} elseif ( $resultArray->getContent() !== [] ) {
+					$values = [];
+
+					foreach ( $resultArray->getContent() as $dataItem ) {
+						$values[] = self::getSerialization( $dataItem, $printRequest );
+					}
+					$result['printouts'][$printRequest->getLabel()] = $values;
+				} else {
+					// For those objects that are empty return an empty array
+					// to keep the output consistent
+					$result['printouts'][$printRequest->getLabel()] = [];
+				}
+			}
+
+			$id = $diWikiPage->getTitle()->getFullText();
+
+			/**
+			 * #3038
+			 *
+			 * Version 2: ... "results": { "Foo": {} ... }
+			 * Version 3: ... "results": [ { "Foo": {} } ... ]
+			 */
+			if ( self::$version >= 3 ) {
+				$results[] = [ $id => $result ];
+			} else {
+				$results[$id] = $result;
+			}
+		}
+
+		$serialization = [
+			'printrequests' => $printRequests,
+			'results' => $results,
+
+			// If we wanted to be able to deserialize a serialized QueryResult,
+			// we would need to following information as well.
+			// 'ask' => $queryResult->getQuery()->toArray()
+		];
+
+		return $serialization;
+	}
+
+	/**
+	 * @return mixed[]
+	 */
+	private static function serialize_printrequest( $printRequest ): array {
+		$serialized = [
+			'label'  => $printRequest->getLabel(),
+			'key'    => '',
+			'redi'   => '',
+			'typeid' => $printRequest->getTypeID(),
+			'mode'   => $printRequest->getMode(),
+			'format' => $printRequest->getOutputFormat()
+		];
+
+		$data = $printRequest->getData();
+
+		if ( $printRequest->isMode( PrintRequest::PRINT_CHAIN ) ) {
+			$serialized['chain'] = $data->getDataItem()->getString();
+			$serialized['key'] = $printRequest->getProperty()->getKey();
+		}
+
+		if ( !$printRequest->isMode( PrintRequest::PRINT_PROP ) ) {
+			return $serialized;
+		}
+
+		if ( $data === null ) {
+			return $serialized;
+		}
+
+		$serialized['redi'] = '';
+
+		// To match forwarded redirects
+		if ( !$data->getInceptiveProperty()->equals( $data->getDataItem() ) ) {
+			$serialized['redi'] = $data->getInceptiveProperty()->getKey();
+		}
+
+		// To match internal properties like _MDAT
+		$serialized['key'] = $printRequest->getProperty()->getKey();
+
+		return $serialized;
+	}
+
+}

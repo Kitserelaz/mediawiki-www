@@ -4,7 +4,7 @@ namespace MediaWiki\Extension\Math\Hooks;
 
 use MediaWiki\Extension\Math\MathRenderer;
 use MediaWiki\HookContainer\HookContainer;
-use MediaWiki\Parser\Parser;
+use MediaWiki\Revision\RevisionRecord;
 use stdClass;
 
 /**
@@ -12,22 +12,25 @@ use stdClass;
  * @internal
  */
 class HookRunner implements
-	MathFormulaPostRenderHook,
+	MathFormulaPostRenderRevisionHook,
 	MathRenderingResultRetrievedHook
 {
-	private HookContainer $hookContainer;
-
-	public function __construct( HookContainer $hookContainer ) {
-		$this->hookContainer = $hookContainer;
+	public function __construct(
+		private readonly HookContainer $hookContainer,
+	) {
 	}
 
 	/**
 	 * @inheritDoc
 	 */
-	public function onMathFormulaPostRender( Parser $parser, MathRenderer $renderer, string &$renderedMath ) {
+	public function onMathFormulaPostRenderRevision(
+		?RevisionRecord $revisionRecord,
+		MathRenderer $renderer,
+		string &$renderedMath
+	) {
 		return $this->hookContainer->run(
-			'MathFormulaPostRender',
-			[ $parser, $renderer, &$renderedMath ]
+			'MathFormulaPostRenderRevision',
+			[ $revisionRecord, $renderer, &$renderedMath ]
 		);
 	}
 

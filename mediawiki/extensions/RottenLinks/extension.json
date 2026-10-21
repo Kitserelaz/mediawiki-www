@@ -1,0 +1,114 @@
+{
+	"name": "RottenLinks",
+	"version": "2.1.1",
+	"author": [
+		"John Lewis",
+		"Paladox",
+		"Universal Omega"
+	],
+	"url": "https://github.com/miraheze/RottenLinks",
+	"descriptionmsg": "rottenlinks-desc",
+	"namemsg": "rottenlinks-extensionname",
+	"license-name": "GPL-3.0-or-later",
+	"type": "specialpage",
+	"requires": {
+		"MediaWiki": ">= 1.43.0",
+		"platform": {
+			"php": ">= 8.0"
+		}
+	},
+	"MessagesDirs": {
+		"RottenLinks": [
+			"i18n"
+		]
+	},
+	"ExtensionMessagesFiles": {
+		"RottenLinksAliases": "RottenLinksAliases.php",
+		"RottenLinksMagic": "RottenLinksMagic.php"
+	},
+	"AutoloadNamespaces": {
+		"Miraheze\\RottenLinks\\": "includes/",
+		"Miraheze\\RottenLinks\\Maintenance\\": "maintenance/"
+	},
+	"JobClasses": {
+		"RottenLinksJob": {
+			"class": "Miraheze\\RottenLinks\\Jobs\\RottenLinksJob",
+			"services": [
+				"ConfigFactory",
+				"ConnectionProvider"
+			],
+			"needsPage": false
+		}
+	},
+	"SpecialPages": {
+		"RottenLinks": {
+			"class": "Miraheze\\RottenLinks\\Specials\\SpecialRottenLinks",
+			"services": [
+				"ConnectionProvider"
+			]
+		}
+	},
+	"Hooks": {
+		"LinksUpdateComplete": {
+			"handler": "Main"
+		},
+		"LoadExtensionSchemaUpdates": {
+			"handler": "Installer"
+		},
+		"ParserFirstCallInit": {
+			"handler": "Main"
+		},
+		"ScribuntoExternalLibraries": {
+			"handler": "Scribunto"
+		}
+	},
+	"HookHandlers": {
+		"Installer": {
+			"class": "Miraheze\\RottenLinks\\HookHandlers\\Installer"
+		},
+		"Main": {
+			"class": "Miraheze\\RottenLinks\\HookHandlers\\Main",
+			"services": [
+				"ConnectionProvider",
+				"JobQueueGroupFactory"
+			]
+		},
+		"Scribunto": {
+			"class": "Miraheze\\RottenLinks\\HookHandlers\\Scribunto"
+		}
+	},
+	"config": {
+		"RottenLinksBadCodes": {
+			"description": "Array. Holds a list of HTTP codes that are considered bad.",
+			"value": [ "0", "400", "401", "403", "404", "405", "410", "502", "503", "504" ]
+		},
+		"RottenLinksCurlTimeout": {
+			"description": "Integer. Sets the timeout for cURL in seconds.",
+			"value": 30
+		},
+		"RottenLinksExcludeProtocols": {
+			"description": "Array. Holds a list of protocols that should not be checked for validity.",
+			"value": [ "tel", "mailto" ]
+		},
+		"RottenLinksExcludeWebsites": {
+			"description": "Array. List of websites to exclude checking of response codes for.",
+			"value": []
+		},
+		"RottenLinksExternalLinkTarget": {
+			"description": "String. Sets the external link target (_self for the current tab or _blank for a new tab).",
+			"value": "_self"
+		},
+		"RottenLinksHTTPProxy": {
+			"description": "String. Sets a proxy to use for requests.",
+			"value": ""
+		},
+		"RottenLinksUserAgent": {
+			"description": "String. Overrides the user-agent to use for requests. Defaults to 'RottenLinks, MediaWiki extension (https://github.com/miraheze/RottenLinks), running on <Wiki base URL>'.",
+			"value": ""
+		}
+	},
+	"ConfigRegistry": {
+		"RottenLinks": "MediaWiki\\Config\\GlobalVarConfig::newInstance"
+	},
+	"manifest_version": 2
+}

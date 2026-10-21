@@ -1,0 +1,48 @@
+<?php
+
+namespace SMW\MediaWiki\Template;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 3.1
+ *
+ * @author mwjames
+ */
+class TemplateSet {
+
+	/**
+	 * @since 3.1
+	 */
+	public function __construct( private array $templates = [] ) {
+	}
+
+	/**
+	 * @since 3.1
+	 *
+	 * @param Template $template
+	 */
+	public function addTemplate( Template $template ): void {
+		$this->templates[] = $template;
+	}
+
+	/**
+	 * @since 3.1
+	 *
+	 * @return string
+	 */
+	public function text(): string {
+		$text = '';
+
+		foreach ( $this->templates as $template ) {
+
+			if ( $template instanceof Template ) {
+				$text .= $template->text();
+			} else {
+				$text .= $template;
+			}
+		}
+
+		return $text;
+	}
+
+}

@@ -2,31 +2,33 @@
 
 namespace Cite\Hooks;
 
-use Cite\Cite;
-use MediaWiki\Config\Config;
-use MediaWiki\Hook\ParserAfterParseHook;
-use MediaWiki\Hook\ParserClearStateHook;
-use MediaWiki\Hook\ParserClonedHook;
-use MediaWiki\Hook\ParserFirstCallInitHook;
+use Cite\CiteFactory;
+use MediaWiki\Api\ApiQuerySiteinfo;
+use MediaWiki\Api\Hook\APIQuerySiteInfoGeneralInfoHook;
+use MediaWiki\Parser\Hook\ParserAfterParseHook;
+use MediaWiki\Parser\Hook\ParserClearStateHook;
+use MediaWiki\Parser\Hook\ParserFirstCallInitHook;
 use MediaWiki\Parser\Parser;
 use MediaWiki\Parser\StripState;
 
 /**
+ * Hook handlers for Cite's integration with the (legacy) MediaWiki parser.
+ *
  * @license GPL-2.0-or-later
  */
 class CiteParserHooks implements
+	APIQuerySiteInfoGeneralInfoHook,
 	ParserFirstCallInitHook,
 	ParserClearStateHook,
-	ParserClonedHook,
 	ParserAfterParseHook
 {
 
-	private CiteParserTagHooks $citeParserTagHooks;
+	private readonly CiteParserTagHooks $citeParserTagHooks;
 
 	public function __construct(
-		Config $config
+		private readonly CiteFactory $citeFactory,
 	) {
-		$this->citeParserTagHooks = new CiteParserTagHooks( $config );
+		$this->citeParserTagHooks = new CiteParserTagHooks( $citeFactory );
 	}
 
 	/**
@@ -44,16 +46,7 @@ class CiteParserHooks implements
 	 * @param Parser $parser
 	 */
 	public function onParserClearState( $parser ) {
-		$parser->extCite = null;
-	}
-
-	/**
-	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/ParserCloned
-	 *
-	 * @param Parser $parser
-	 */
-	public function onParserCloned( $parser ) {
-		$parser->extCite = null;
+		$this->citeFactory->destroyCiteForParser( $parser );
 	}
 
 	/**
@@ -64,11 +57,22 @@ class CiteParserHooks implements
 	 * @param StripState $stripState
 	 */
 	public function onParserAfterParse( $parser, &$text, $stripState ) {
-		if ( isset( $parser->extCite ) ) {
-			/** @var Cite $cite */
-			$cite = $parser->extCite;
-			$text .= $cite->checkRefsNoReferences( $parser, $parser->getOptions()->getIsSectionPreview() );
+		$cite = $this->citeFactory->peekCiteForParser( $parser );
+		if ( $cite !== null ) {
+			$text .= $cite->checkRefsNoReferences( $parser );
 		}
+	}
+
+	/**
+	 * Expose configs via action=query&meta=siteinfo
+	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/APIQuerySiteInfoGeneralInfo
+	 *
+	 * @param ApiQuerySiteinfo $module
+	 * @param array<string,mixed> &$results
+	 * @return void
+	 */
+	public function onAPIQuerySiteInfoGeneralInfo( $module, &$results ) {
+		$results['citeresponsivereferences'] = $module->getConfig()->get( 'CiteResponsiveReferences' );
 	}
 
 }

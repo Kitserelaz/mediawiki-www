@@ -1,0 +1,27 @@
+{
+  "component": "mediawiki/extensions/Scribunto",
+  "baseline": "5e410f6d30a7935e0f2361345a2b9118c4afa41a",
+  "target": "4afa3cd7894a9a31708a45091ef3fd82a98367bc",
+  "preserved_changes": [
+    {
+      "path": ".gitignore",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "Gruntfile.js",
+      "change": "local-source-edit"
+    }
+  ],
+  "dependency_status": "Review component Composer lock/vendor against target manifest before final verification",
+  "manual_resolutions": [
+    {
+      "path": "package-lock.json",
+      "before_sha256": "1a68937fb3724cb5494d2bf59615cf650c051adb2e9ae2f1796bcd6c7e9a63d2",
+      "resolution": "Use matching target dev dependency lock; installed package manifest matched the verified baseline exactly."
+    }
+  ],
+  "baseline_proof": {
+    "matched_runtime_and_manifest_files": 42,
+    "method": "Exact installed PHP implementation and manifest Git blobs before reviewed JS/lock resolutions"
+  }
+}

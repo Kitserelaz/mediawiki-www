@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": [
+			"WikiWorks team"
+		]
+	},
+	"perpagelanguage-desc": "Sets the interface language to match the page content language",
+	"perpagelanguage-label": "Set language"
+}

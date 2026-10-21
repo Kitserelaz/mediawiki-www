@@ -64,7 +64,7 @@ ve.dm.MWExtensionNode.static.getMatchRdfaTypes = function () {
 /**
  * @inheritdoc
  * @param {Node[]} domElements
- * @param {ve.dm.Converter} converter
+ * @param {ve.dm.ModelFromDomConverter} converter
  * @param {string} [type] Type to give dataElement, defaults to static.name
  */
 ve.dm.MWExtensionNode.static.toDataElement = function ( domElements, converter, type ) {
@@ -173,7 +173,7 @@ ve.dm.MWExtensionNode.static.describeChanges = function ( attributeChanges, attr
 		}
 		// Append attribute changes
 		// Parent method
-		Array.prototype.push.apply( descriptions, ve.dm.MWExtensionNode.super.static.describeChanges.call(
+		descriptions.push( ...ve.dm.MWExtensionNode.super.static.describeChanges.call(
 			this,
 			ve.ui.DiffElement.static.compareAttributes( attributeChanges.mw.from.attrs || {}, attributeChanges.mw.to.attrs || {} ),
 			attributes
@@ -184,9 +184,57 @@ ve.dm.MWExtensionNode.static.describeChanges = function ( attributeChanges, attr
 	return [];
 };
 
-ve.dm.MWExtensionNode.static.describeChange = function ( key ) {
+ve.dm.MWExtensionNode.static.describeChange = function ( key, change ) {
 	if ( key === 'body' ) {
-		// TODO: Produce a diff of the body, suitable to display in the sidebar.
+		if ( change.from && change.to ) {
+			const store = new ve.dm.HashValueStore();
+			const linearDiffer = new ve.DiffMatchPatch( store, store );
+			const trimNewlines = /^\n+|\n+$/g;
+			const linearDiff = linearDiffer.getCleanDiff(
+				change.from.replace( trimNewlines, '' ).split( '' ),
+				change.to.replace( trimNewlines, '' ).split( '' ),
+				{ keepOldText: false }
+			);
+			const div = document.createElement( 'div' );
+			linearDiff.forEach( ( diffSection, i ) => {
+				const [ type, data ] = diffSection;
+				const text = data.join( '' );
+				let el, nodeText;
+				switch ( type ) {
+					case ve.DiffMatchPatch.static.DIFF_DELETE:
+						el = document.createElement( 'del' );
+						nodeText = text;
+						break;
+					case ve.DiffMatchPatch.static.DIFF_INSERT:
+						el = document.createElement( 'ins' );
+						nodeText = text;
+						break;
+					case ve.DiffMatchPatch.static.DIFF_EQUAL: {
+						el = document.createElement( 'span' );
+						const lines = text.split( '\n' );
+						const filteredLines = [];
+						if ( lines.length === 1 ) {
+							nodeText = text;
+						} else {
+							if ( i !== 0 ) {
+								filteredLines.push( lines[ 0 ] );
+							}
+							if ( lines.length > 2 ) {
+								filteredLines.push( '…' );
+							}
+							if ( i !== linearDiff.length - 1 ) {
+								filteredLines.push( lines[ lines.length - 1 ] );
+							}
+							nodeText = filteredLines.join( '\n' );
+						}
+						break;
+					}
+				}
+				el.appendChild( document.createTextNode( nodeText ) );
+				div.appendChild( el );
+			} );
+			return [ div ];
+		}
 		return null;
 	}
 	// Parent method

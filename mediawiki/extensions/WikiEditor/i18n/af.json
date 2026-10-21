@@ -6,13 +6,13 @@
 			"Fwolff",
 			"Macofe",
 			"Naudefj",
+			"Rooiratel",
 			"Servien",
 			"පසිඳු කාවින්ද"
 		]
 	},
 	"wikieditor": "Uitgebreide teksverwerker vir wikiteks",
 	"wikieditor-desc": "Voorsien 'n uitbreibare wikiteks-verwerker en modules met bykomende funksies",
-	"wikieditor-wikitext-tab": "Wikiteks",
 	"wikieditor-toolbar": "Wysigingswerksbalk",
 	"wikieditor-toolbar-desc": "Wysigingsbalk met verhoogde bruikbaarheid",
 	"wikieditor-toolbar-preference": "Gebruik gevorderde redigeringsbalk",
@@ -44,6 +44,7 @@
 	"wikieditor-toolbar-tool-file-title": "Voeg lêer by",
 	"wikieditor-toolbar-file-target": "Lêernaam:",
 	"wikieditor-toolbar-file-caption": "Byskrif:",
+	"wikieditor-toolbar-file-alt-help-label": "(Wys hulp)",
 	"wikieditor-toolbar-file-size": "Grootte:",
 	"wikieditor-toolbar-file-float": "Uitlyning:",
 	"wikieditor-toolbar-file-default": "(standaard)",

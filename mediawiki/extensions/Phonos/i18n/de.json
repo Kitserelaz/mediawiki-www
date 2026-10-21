@@ -1,0 +1,35 @@
+{
+	"@metadata": {
+		"authors": [
+			"Brettchenweber",
+			"Nadjita"
+		]
+	},
+	"phonos-desc": "Bereitstellung von Text-to-Speech-Funktionen für eine Reihe von Sprachen",
+	"phonos-error-category": "Seiten mit Phonos-Rendering-Fehlern",
+	"phonos-error-category-desc": "Beim Rendern von Phonos ist ein Fehler aufgetreten.",
+	"phonos-audio-conversion-error": "Konvertieren von Audio in MP3 fehlgeschlagen:\n$1",
+	"phonos-directory-error": "Speicherverzeichnis $1 konnte nicht erstellt werden",
+	"phonos-engine-error": "Fehler beim Generieren der Audiodatei mit der $1-Engine:\n$2",
+	"phonos-storage-error": "Audiodatei konnte nicht am endgültigen Zielort gespeichert werden:\n$1",
+	"phonos-purge-needed-error": "Audio kann nicht wiedergegeben werden.",
+	"phonos-purge-needed-error-link": "Aktualisiere die Seite und versuche es erneut.",
+	"phonos-tracking-category": "Seiten, die die Phonos-Erweiterung verwenden",
+	"phonos-tracking-category-desc": "Diese Seite verwendet die Erweiterung [https://www.mediawiki.org/wiki/Extension:Phonos Phonos].",
+	"phonos-invalid-title": "Die Audiodatei „$1“ hat einen ungültigen Titel.",
+	"phonos-file-not-found": "Audiodatei „[$1 $2]“ nicht gefunden.",
+	"phonos-file-not-audio": "Die Datei „[[$1|$2]]“ ist keine Audiodatei.",
+	"phonos-player-aria-description": "Audio abspielen",
+	"phonos-aria-error": "Audio kann nicht abgespielt werden",
+	"phonos-ipa-too-long": "IPA ist zu lang zum Rendern.",
+	"phonos-wikibase-api-error": "Eintrag kann nicht von Wikibase abgerufen werden: $1",
+	"phonos-wikibase-invalid-entity-lexeme": "Ungültiges Objekt oder Lexem: $1",
+	"phonos-wikibase-not-found": "Kein Audio für Wikibase-Objekt gefunden: $1",
+	"phonos-wikibase-no-ipa": "Keine IPA-Transkription gefunden.",
+	"phonos-empty-file-error": "Das generierte Audio scheint leer zu sein. Der angegebene IPA ist möglicherweise ungültig oder wird von dieser Engine nicht unterstützt. Die Verwendung des Parameters „$1“ kann helfen.",
+	"phonos-param-error": "Es muss entweder IPA, eine Datei oder ein Wikibase-Objekt angegeben werden.",
+	"phonos-rendering-disabled": "IPA-Rendering ist derzeit deaktiviert.",
+	"phonos-unsupported-language": "Die Sprache $1 wird von Phonos nicht unterstützt.",
+	"phonos-unsupported-language-with-suggestions": "Die Sprache $1 wird von Phonos nicht unterstützt. Die folgenden, möglicherweise verwandten, Sprachen werden unterstützt: $2.",
+	"phonos-inline-audio-player-mode": "Im Inline-Audio-Player-Modus kann nur eine Audiodatei oder ein Wikibase-Element mit einer Aussprache-Audio-Eigenschaft ($1) bereitgestellt werden."
+}

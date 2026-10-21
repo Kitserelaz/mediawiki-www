@@ -1,14 +1,16 @@
 {
 	"@metadata": {
 		"authors": [
-			"Hamilton Abreu"
+			"BraunOBruno",
+			"Hamilton Abreu",
+			"Mansil alfalb",
+			"Maria Manuela Silva"
 		]
 	},
 	"ipinfo-desc": "Fornece informações sobre um endereço IP.",
 	"ipinfo-infobox-title": "Informações IP",
 	"ipinfo-property-label-location": "Localização",
 	"ipinfo-property-label-ipversion": "Versão",
-	"ipinfo-property-label-isp": "ISP",
 	"ipinfo-property-label-asn": "ASN",
 	"ipinfo-property-label-organization": "Organização",
 	"ipinfo-property-label-connectiontype": "Método de ligação",
@@ -19,7 +21,7 @@
 	"ipinfo-property-label-connectiontypes": "Tipos de ligação",
 	"ipinfo-property-label-tunneloperators": "Operador do túnel",
 	"ipinfo-property-label-proxies": "Servidores mandatários (''proxies'')",
-	"ipinfo-property-label-usercount": "Utilizadores neste IP",
+	"ipinfo-property-label-usercount": "Dispositivos únicos na Internet",
 	"ipinfo-property-value-connectiontype-cableordsl": "Cabo/DSL",
 	"ipinfo-property-value-connectiontype-cellular": "Telemóvel",
 	"ipinfo-property-value-connectiontype-corporate": "Corporativo",
@@ -59,7 +61,7 @@
 	"ipinfo-property-value-connectiontype-unknown": "Desconhecido",
 	"ipinfo-property-label-source": "Fonte",
 	"ipinfo-property-label-active-blocks": "Bloqueios ativos",
-	"ipinfo-property-tooltip-proxytypes": "Os ''proxies'' ocultam endereços IP. Em alguns casos isto acontece automaticamente, como para ''proxies'' residenciais ou corporativos, noutros casos é feito intencionalmente para mascarar a origem do endereço IP.",
+	"ipinfo-property-tooltip-proxytypes": "Os ''proxies'' ocultam os endereços de IP. Em alguns casos, isto acontece automaticamente, por exemplo, com os ''proxies'' residenciais ou corporativos. Em outros casos, os utilizadores utilizam intencionalmente os ''proxies'' para mascarar a origem do endereço de IP.",
 	"ipinfo-property-tooltip-connectiontype": "A tecnologia através da qual eles se estão a ligar à internet.",
 	"ipinfo-property-tooltip-usertype": "O tipo de entidade que detém a ligação à internet.",
 	"ipinfo-property-tooltip-behaviors": "Tipos específicos de atividade em que os dispositivos neste endereço IP se envolveram ou aos quais estiveram anteriormente associados.",
@@ -78,7 +80,7 @@
 	"ipinfo-widget-error-default": "Não foi possível obter as informações do IP.",
 	"ipinfo-widget-error-no-data": "Não há dados de $1 para este endereço IP.",
 	"ipinfo-widget-error-wrong-ip": "O endereço IP fornecido não coincidiu com o registo nem com a revisão.",
-	"ipinfo-widget-error-ip-no-edits": "Não é possível obter informações de IP para este endereço porque não foi feita nenhuma edição dele.",
+	"ipinfo-widget-error-ip-no-contributions": "Não é possível obter informações de IP para este endereço porque não foi feita nenhuma edição dele.",
 	"ipinfo-preference-enable": "Mostrar a ferramenta de informações de IP na página Special:Contributions de utilizadores não registados.",
 	"ipinfo-preference-use-agreement": "Concordo usar esta informação para o meu trabalho de patrulhamento e anti-vandalismo.",
 	"ipinfo-preference-agreement-error": "Tem de ativar a ferramenta de informações de IP antes de concordar com as respetivas condições de utilização.",
@@ -94,7 +96,6 @@
 	"ipinfo-rest-log-nonexistent": "A entrada de registo não existe",
 	"ipinfo-rest-log-registered": "Não é possível obter informações de IP para registos de utilizadores registados",
 	"ipinfo-rest-log-denied": "A sua conta não tem acesso para ver quem realizou a entrada do registo nem a própria entrada do registo em si",
-	"ipinfo-source-geoip2": "As informações mostradas aqui provêm das bases de dados GeoIP2 da MaxMind. Podem não ser completamente precisas.",
 	"ipinfo-beta-feature-title": "Informações IP",
 	"ipinfo-beta-feature-description": "A ferramenta de informações de IP visa equipar os patrulhadores com informações vitais sobre endereços IP, para auxiliá-los nas suas funções. Estas informações estarão acessíveis na página de contribuições do editor anónimo. Uma versão resumida destas informações estará disponível numa janela flutuante próxima dos endereços IP nas páginas de [[Special:Log|registo]], [[Special:Contributions|contribuições]] e [[Special:RecentChanges|mudanças recentes]].",
 	"prefs-ipinfo": "Informações IP",
@@ -125,5 +126,7 @@
 	"ipinfo-property-tooltip-asn": "Um identificador único para redes atribuídas a uma região e ainda a organizações como governos e ISPs",
 	"ipinfo-blocklist-url-text": "Lista de bloqueios",
 	"ipinfo-value-deleted-edits": "{{PLURAL:$1|$1 edição eliminada|$1 edições eliminadas|0=Nenhuma edição eliminada}}",
-	"ipinfo-deleted-edits-url-text": "Contribuições eliminadas"
+	"ipinfo-special-ipinfo-legend": "Pesquise informações de IP sobre todos os endereços IP usados por uma conta temporária. Um máximo de $1 {{PLURAL:$1|resultado será exibido|resultados serão exibidos}}.",
+	"ipinfo-deleted-edits-url-text": "Contribuições eliminadas",
+	"ipinfo-special-ipinfo-target": "Nome de usuário alvo:"
 }

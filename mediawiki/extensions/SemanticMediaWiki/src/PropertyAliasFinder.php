@@ -1,0 +1,210 @@
+<?php
+
+namespace SMW;
+
+use SMW\Localizer\Message;
+use Wikimedia\ObjectCache\BagOStuff;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 2.4
+ *
+ * @author mwjames
+ */
+class PropertyAliasFinder {
+
+	/**
+	 * Identifies the cache namespace
+	 */
+	const CACHE_NAMESPACE = 'smw:property:alias';
+
+	/**
+	 * Identifies the cache TTL (one week)
+	 */
+	const CACHE_TTL = 604800;
+
+	private BagOStuff $cache;
+
+	/**
+	 * Array with entries "property alias" => "property id"
+	 *
+	 * @var string[]
+	 */
+	private $propertyAliases = [];
+
+	/**
+	 * @var string[]
+	 */
+	private $propertyAliasesByMsgKey = [];
+
+	/**
+	 * @var string[]
+	 */
+	private array $canonicalPropertyAliases;
+
+	/**
+	 * @var string
+	 */
+	private $contentLanguageCode = 'en';
+
+	/**
+	 * @since 2.4
+	 *
+	 * @param BagOStuff $cache
+	 * @param array $propertyAliases
+	 * @param array $canonicalPropertyAliases
+	 */
+	public function __construct( BagOStuff $cache, array $propertyAliases = [], array $canonicalPropertyAliases = [] ) {
+		$this->cache = $cache;
+		$this->canonicalPropertyAliases = $canonicalPropertyAliases;
+
+		foreach ( $propertyAliases as $alias => $id ) {
+			$this->registerAliasByFixedLabel( $id, $alias );
+		}
+	}
+
+	/**
+	 * @since 3.1
+	 *
+	 * @param string $contentLanguageCode
+	 */
+	public function setContentLanguageCode( $contentLanguageCode ): void {
+		$this->contentLanguageCode = $contentLanguageCode;
+	}
+
+	/**
+	 * @since 2.4
+	 *
+	 * @return array
+	 */
+	public function getKnownPropertyAliases(): array {
+		return $this->propertyAliases;
+	}
+
+	/**
+	 * @since 2.4
+	 *
+	 * @return array
+	 */
+	public function getKnownPropertyAliasesWithMsgKey(): array {
+		return $this->propertyAliasesByMsgKey;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param string $languageCode
+	 *
+	 * @return array
+	 */
+	public function getKnownPropertyAliasesByLanguageCode( $languageCode = 'en' ): array {
+		$key = smwfCacheKey(
+			self::CACHE_NAMESPACE,
+			[
+				$languageCode,
+				$this->propertyAliasesByMsgKey
+			]
+		);
+
+		$propertyAliases = $this->cache->get( $key );
+		if ( $propertyAliases !== false ) {
+			return $propertyAliases;
+		}
+
+		$propertyAliases = [];
+
+		foreach ( $this->propertyAliasesByMsgKey as $msgKey => $id ) {
+			$propertyAliases[Message::get( $msgKey, Message::TEXT, $languageCode )] = $id;
+		}
+
+		$this->cache->set( $key, $propertyAliases, self::CACHE_TTL );
+
+		return $propertyAliases;
+	}
+
+	/**
+	 * Add a new alias label to an existing property ID. Note that every ID
+	 * should have a primary label.
+	 *
+	 * @param string $id string
+	 * @param string $label
+	 */
+	public function registerAliasByFixedLabel( $id, $label ): void {
+		$label = (string)$label;
+
+		// Prevent an extension to register an already known
+		// label
+		if ( isset( $this->canonicalPropertyAliases[$label] ) && $this->canonicalPropertyAliases[$label] !== $id ) {
+			return;
+		}
+
+		// Indicates an untranslated MW message key
+		if ( $label !== '' && $label[0] === '<' ) {
+			return;
+		}
+
+		$this->propertyAliases[$label] = $id;
+	}
+
+	/**
+	 * Register an alias using a message key to allow fetching localized
+	 * labels dynamically.
+	 *
+	 * @since 2.4
+	 *
+	 * @param string $id
+	 * @param string $msgKey
+	 */
+	public function registerAliasByMsgKey( $id, $msgKey ): void {
+		$this->propertyAliasesByMsgKey[$msgKey] = $id;
+
+		// Make sure the label is resolved and registered immediately
+		// for the content language
+		$this->registerAliasByFixedLabel(
+			$id,
+			Message::get( $msgKey, Message::TEXT, $this->contentLanguageCode )
+		);
+	}
+
+	/**
+	 * @since 2.4
+	 *
+	 * @param string $id
+	 *
+	 * @return int|string|false
+	 */
+	public function findCanonicalPropertyAliasById( $id ): int|string|false {
+		return array_search( $id, $this->canonicalPropertyAliases );
+	}
+
+	/**
+	 * @since 2.4
+	 *
+	 * @param string $id
+	 *
+	 * @return int|string|false
+	 */
+	public function findPropertyAliasById( $id ): int|string|false {
+		return array_search( $id, $this->propertyAliases );
+	}
+
+	/**
+	 * Find and return the ID for the pre-defined property of the given
+	 * local label. If the label does not belong to a pre-defined property,
+	 * return false.
+	 *
+	 * @param string $alias
+	 *
+	 * @return string|bool
+	 */
+	public function findPropertyIdByAlias( $alias ) {
+		if ( isset( $this->propertyAliases[$alias] ) ) {
+			return $this->propertyAliases[$alias];
+		} elseif ( isset( $this->canonicalPropertyAliases[$alias] ) ) {
+			return $this->canonicalPropertyAliases[$alias];
+		}
+
+		return false;
+	}
+
+}

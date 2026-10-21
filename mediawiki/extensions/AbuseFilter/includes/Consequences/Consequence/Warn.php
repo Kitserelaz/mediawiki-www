@@ -11,22 +11,15 @@ use MediaWiki\Session\Session;
  * Consequence that warns the user once, allowing the action on the second attempt.
  */
 class Warn extends Consequence implements HookAborterConsequence, ConsequencesDisablerConsequence {
-	/** @var Session */
-	private $session;
-	/** @var string */
-	private $message;
 	/** @var bool|null */
 	private $shouldWarn;
 
-	/**
-	 * @param Parameters $parameters
-	 * @param string $message
-	 * @param Session $session
-	 */
-	public function __construct( Parameters $parameters, string $message, Session $session ) {
+	public function __construct(
+		Parameters $parameters,
+		private readonly string $message,
+		private Session $session
+	) {
 		parent::__construct( $parameters );
-		$this->message = $message;
-		$this->session = $session;
 	}
 
 	/**
@@ -68,9 +61,6 @@ class Warn extends Consequence implements HookAborterConsequence, ConsequencesDi
 		];
 	}
 
-	/**
-	 * @return bool
-	 */
 	private function shouldBeWarned(): bool {
 		// Make sure the session is started prior to using it
 		$this->session->persist();
@@ -89,7 +79,6 @@ class Warn extends Consequence implements HookAborterConsequence, ConsequencesDi
 	/**
 	 * Generate a unique key to determine whether the user has already been warned.
 	 * We'll warn again if one of these changes: session, page, triggered filter, or action
-	 * @return string
 	 */
 	private function getWarnKey(): string {
 		$globalFilterName = GlobalNameUtils::buildGlobalName(

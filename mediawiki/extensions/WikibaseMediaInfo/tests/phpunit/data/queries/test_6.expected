@@ -1,0 +1,31 @@
+{
+    "bool": {
+        "must": [
+            {
+                "match_none": {}
+            }
+        ],
+        "filter": [
+            {
+                "bool": {
+                    "must": [
+                        {
+                            "match": {
+                                "template": {
+                                    "query": "Template:Foo"
+                                }
+                            }
+                        },
+                        {
+                            "terms": {
+                                "namespace": [
+                                    0
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+}

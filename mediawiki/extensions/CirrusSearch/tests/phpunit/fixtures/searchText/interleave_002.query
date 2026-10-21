@@ -1,0 +1,8 @@
+{
+    "query": "change completed unrelated variable",
+	"config": {
+		"CirrusSearchInterleaveConfig": {
+			"CirrusSearchReplicas": "0"
+		}
+	}
+}

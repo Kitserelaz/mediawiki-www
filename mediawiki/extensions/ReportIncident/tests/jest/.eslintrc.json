@@ -1,0 +1,33 @@
+{
+	"root": true,
+	"extends": [
+		"wikimedia/jquery",
+		"wikimedia/client-es6",
+		"wikimedia/mediawiki"
+	],
+	"rules": {
+		"compat/compat": "off",
+		"max-len": [
+			"error",
+			{
+				"code": 120,
+				"tabWidth": 4,
+				"ignorePattern": "^// eslint-.+",
+				"ignoreUrls": true,
+				"ignoreComments": false,
+				"ignoreRegExpLiterals": true,
+				"ignoreStrings": true,
+				"ignoreTemplateLiterals": true
+			}
+		],
+		"es-x/no-async-functions": "off"
+	},
+	"env": {
+		"jest": true,
+		"node": true,
+		"browser": true
+	},
+	"parserOptions": {
+		"ecmaVersion": 2022
+	}
+}

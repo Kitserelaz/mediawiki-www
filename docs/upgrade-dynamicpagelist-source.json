@@ -1,0 +1,7 @@
+{
+  "component": "mediawiki/extensions/DynamicPageList",
+  "baseline": "002dc30c07a884763a42455b38ac1ad1f92449b4",
+  "target": "e33cc5a5c1ae847cbb19922ecf5e88db382ccab6",
+  "preserved_changes": [],
+  "dependency_status": "No runtime Composer packages or component lock; uses core platform dependencies"
+}

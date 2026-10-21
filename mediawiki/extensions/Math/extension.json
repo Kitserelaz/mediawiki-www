@@ -6,14 +6,15 @@
 		"Moritz Schubotz",
 		"Derk-Jan Hartman",
 		"André Greiner-Petter",
-		"Johannes Stegmüller"
+		"Johannes Stegmüller",
+		"Frederik Hennecke"
 	],
 	"url": "https://www.mediawiki.org/wiki/Extension:Math",
 	"descriptionmsg": "math-desc",
 	"license-name": "GPL-2.0-or-later",
 	"type": "parserhook",
 	"requires": {
-		"MediaWiki": ">= 1.43"
+		"MediaWiki": ">= 1.46"
 	},
 	"AutoloadNamespaces": {
 		"MediaWiki\\Extension\\Math\\": "src/"
@@ -22,6 +23,7 @@
 		"DummyPropertyDataTypeLookup": "tests/phpunit/DummyPropertyDataTypeLookup.php",
 		"MediaWiki\\Extension\\Math\\Tests\\MathWikibaseConnectorTestFactory": "tests/phpunit/unit/MathWikibaseConnectorTestFactory.php",
 		"MediaWiki\\Extension\\Math\\Tests\\MathMockHttpTrait": "tests/phpunit/MathMockHttpTrait.php",
+		"MediaWiki\\Extension\\Math\\Tests\\HookIntegrationSetupTrait": "tests/phpunit/HookIntegrationSetupTrait.php",
 		"MediaWiki\\Extension\\Math\\WikiTexVC\\MMLmappings\\Util\\MMLTestUtilHTML": "tests/phpunit/unit/WikiTexVC/MMLTestUtilHTML.php",
 		"MediaWiki\\Extension\\Math\\WikiTexVC\\MMLmappings\\Util\\MMLTestUtil": "tests/phpunit/unit/WikiTexVC/MMLTestUtil.php",
 		"MediaWiki\\Extension\\Math\\WikiTexVC\\MMLmappings\\Util\\MMLComparator": "tests/phpunit/unit/WikiTexVC/MMLComparator.php"
@@ -39,6 +41,12 @@
 		"MediaWiki\\Extension\\Math\\Hooks::onExtensionFunctions"
 	],
 	"HookHandlers": {
+		"EditPageHooksHandler": {
+			"class": "MediaWiki\\Extension\\Math\\HookHandlers\\EditPageHooksHandler",
+			"services": [
+				"UserOptionsLookup"
+			]
+		},
 		"ParserHooksHandler": {
 			"class": "MediaWiki\\Extension\\Math\\HookHandlers\\ParserHooksHandler",
 			"services": [
@@ -70,6 +78,7 @@
 		}
 	},
 	"Hooks": {
+		"EditPage::showEditForm:initial": "EditPageHooksHandler",
 		"ParserFirstCallInit": "ParserHooksHandler",
 		"ParserAfterTidy": "ParserHooksHandler",
 		"ParserOptionsRegister": "ParserHooksHandler",
@@ -120,9 +129,13 @@
 			"description": "Fallback value for wbEntitySelector if wbRepo is not configured. See https://www.mediawiki.org/wiki/Manual:CORS for cross wiki communication.",
 			"value": "https://www.wikidata.org/w/api.php"
 		},
+		"MathTexMaxLength": {
+			"description": "Maximum string-length of a TeX expression for the Wikibase property type math. See Wikibase documentation on string-limits for other limits https://doc.wikimedia.org/Wikibase/master/php/docs_topics_options.html#autotoc_md317.",
+			"value": 400
+		},
 		"MathTexVCService": {
-			"description": "Determine which TexVC variant is used, currently available: 'mathoid', 'restbase' (default) and 'local'.",
-			"value": "restbase"
+			"description": "Determine which TexVC variant is used, currently available: 'mathoid', 'restbase' and 'local' (default).",
+			"value": "local"
 		},
 		"MathSvgRenderer": {
 			"description": "Determine which SVG rendering service is used. Currently available 'mathoid', 'restbase'.",
@@ -142,14 +155,17 @@
 		},
 		"MathUseInternalRestbasePath": {
 			"description": "Whether to allow to use of internal RESTBase path instead of $wgMathFullRestbaseURL. Set false if you want to use external RESTBase in any case.",
-			"value": true,
-			"public": true
+			"value": true
 		},
 		"MathInternalRestbaseURL": {
 			"value": null
 		},
 		"MathFullRestbaseURL": {
 			"value": "https://wikimedia.org/api/rest_"
+		},
+		"MathHTTPProxy": {
+			"description": "The HTTP proxy used for contacting RESTBase.",
+			"value": null
 		},
 		"MathConcurrentReqs": {
 			"value": 50
@@ -223,15 +239,31 @@
 	},
 	"ForeignResourcesDir": "modules",
 	"ResourceModules": {
+		"ext.math.editpage": {
+			"packageFiles": [
+				"ext.math.editpage.js"
+			],
+			"messages": [
+				"math-editpage-insert-inline",
+				"math-editpage-insert-block"
+			]
+		},
 		"ext.math.mathjax": {
 			"group": "ext.math",
 			"scripts": [
 				"ext.math.mathjax.js",
-				"mathjax/es5/tex-chtml.js"
+				"mathjax/startup.js"
 			]
 		},
 		"ext.math.styles": {
-			"styles": "ext.math.css"
+			"styles": [
+				"ext.math.css",
+				"ext.math.less"
+			]
+		},
+		"ext.math.polyfills": {
+			"scripts": "ext.math.polyfills.js",
+			"skipFunction": "ext.math.polyfills.skip.js"
 		},
 		"ext.math.popup": {
 			"packageFiles": "ext.math.popup.js",

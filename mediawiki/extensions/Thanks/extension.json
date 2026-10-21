@@ -11,7 +11,7 @@
 	"license-name": "MIT",
 	"type": "other",
 	"requires": {
-		"MediaWiki": ">= 1.43",
+		"MediaWiki": ">= 1.46",
 		"extensions": {
 			"Echo": "*"
 		}
@@ -32,6 +32,7 @@
 		"Thanks": {
 			"class": "MediaWiki\\Extension\\Thanks\\SpecialThanks",
 			"services": [
+				"LinkRenderer",
 				"UserFactory"
 			]
 		}
@@ -46,7 +47,8 @@
 		"thanks/*": {
 			"class": "MediaWiki\\Extension\\Thanks\\ThanksLogFormatter",
 			"services": [
-				"NamespaceInfo"
+				"NamespaceInfo",
+				"UserFactory"
 			]
 		}
 	},
@@ -55,9 +57,10 @@
 			"class": "MediaWiki\\Extension\\Thanks\\Api\\ApiCoreThank",
 			"services": [
 				"PermissionManager",
+				"ThanksLogStore",
+				"NotificationService",
 				"RevisionStore",
-				"UserFactory",
-				"ThanksLogStore"
+				"UserFactory"
 			]
 		}
 	},
@@ -188,21 +191,70 @@
 		},
 		"ThanksAllowedLogTypes": {
 			"value": [
+				"abusefilter",
 				"contentmodel",
 				"create",
 				"delete",
+				"gblrename",
+				"gblrights",
 				"import",
+				"massmessage/send",
 				"merge",
 				"move",
+				"newusers/create2",
 				"pagelang",
+				"pagetranslation",
 				"patrol",
 				"protect",
+				"renameuser",
+				"stable",
 				"tag",
 				"upload",
 				"managetags",
 				"rights/rights",
 				"lock"
 			]
+		}
+	},
+	"attributes": {
+		"Echo": {
+			"NotificationCategories": {
+				"edit-thank": {
+					"priority": 3,
+					"title": "echo-category-title-edit-thank",
+					"tooltip": "echo-pref-tooltip-edit-thank"
+				}
+			},
+			"Notifications": {
+				"edit-thank": {
+					"category": "edit-thank",
+					"group": "positive",
+					"section": "message",
+					"presentation-model": "MediaWiki\\Extension\\Thanks\\EchoCoreThanksPresentationModel",
+					"bundle": {
+						"web": true,
+						"expandable": true
+					}
+				},
+				"flow-thank": {
+					"category": "edit-thank",
+					"group": "positive",
+					"section": "message",
+					"presentation-model": "MediaWiki\\Extension\\Thanks\\EchoFlowThanksPresentationModel",
+					"bundle": {
+						"web": true,
+						"expandable": true
+					}
+				}
+			},
+			"NotificationIcons": {
+				"thanks": {
+					"path": {
+						"ltr": "Thanks/modules/userTalk-constructive-ltr.svg",
+						"rtl": "Thanks/modules/userTalk-constructive-rtl.svg"
+					}
+				}
+			}
 		}
 	},
 	"manifest_version": 2

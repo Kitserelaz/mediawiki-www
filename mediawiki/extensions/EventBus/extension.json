@@ -1,0 +1,128 @@
+{
+	"name": "EventBus",
+	"version": "0.5.0",
+	"author": [
+		"Eric Evans",
+		"Petr Pchelko",
+		"Marko Obrovac"
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:EventBus",
+	"descriptionmsg": "eventbus-desc",
+	"license-name": "GPL-2.0-or-later",
+	"requires": {
+		"MediaWiki": ">= 1.43"
+	},
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\EventBus\\": "includes/"
+	},
+	"config": {
+		"EnableEventBus": {
+			"value": "TYPE_NONE"
+		},
+		"EventServices": {
+			"value": {
+				"eventbus": {
+					"url": "http://localhost:3000/v1/events",
+					"timeout": 5
+				},
+				"eventgate": {
+					"url": "http://localhost:8192/v1/events",
+					"timeout": 5
+				}
+			}
+		},
+		"EventBusEnableRunJobAPI": {
+			"value": true
+		},
+		"EventServiceDefault": {
+			"value": "eventbus"
+		},
+		"EventBusMaxBatchByteSize": {
+			"value": 4194304
+		},
+		"EventBusStreamNamesMap": {
+			"value": {}
+		}
+	},
+	"MessagesDirs": {
+		"EventBus": [
+			"i18n"
+		]
+	},
+	"HookHandlers": {
+		"mediawiki_page_change": {
+			"class": "MediaWiki\\Extension\\EventBus\\HookHandlers\\MediaWiki\\PageChangeHooks",
+			"services": [
+				"EventBus.EventBusFactory",
+				"EventBus.StreamNameMapper",
+				"MainConfig",
+				"GlobalIdGenerator",
+				"UserGroupManager",
+				"TitleFormatter",
+				"WikiPageFactory",
+				"UserFactory",
+				"RevisionStore",
+				"ContentHandlerFactory",
+				"RedirectStore",
+				"PageStore"
+			]
+		},
+		"mediawiki_campaign_change": {
+			"class": "MediaWiki\\Extension\\EventBus\\HookHandlers\\MediaWiki\\CampaignChangeHooks",
+			"services": [
+				"EventBus.StreamNameMapper"
+			]
+		},
+		"main": {
+			"class": "MediaWiki\\Extension\\EventBus\\EventBusHooks"
+		}
+	},
+	"Hooks": {
+		"PageSaveComplete": [
+			"main",
+			"mediawiki_page_change"
+		],
+		"PageMoveComplete": [
+			"main",
+			"mediawiki_page_change"
+		],
+		"PageDelete": [
+			"mediawiki_page_change"
+		],
+		"PageDeleteComplete": [
+			"main",
+			"mediawiki_page_change"
+		],
+		"PageUndeleteComplete": [
+			"main",
+			"mediawiki_page_change"
+		],
+		"ArticleRevisionVisibilitySet": [
+			"main",
+			"mediawiki_page_change"
+		],
+		"ArticlePurge": "main",
+		"BlockIpComplete": "main",
+		"LinksUpdateComplete": "main",
+		"ArticleProtectComplete": "main",
+		"ChangeTagsAfterUpdateTags": "main",
+		"CentralNoticeCampaignChange": "mediawiki_campaign_change",
+		"RevisionRecordInserted": "main"
+	},
+	"RestRoutes": [
+		{
+			"path": "/eventbus/v0/internal/job/execute",
+			"method": "POST",
+			"class": "MediaWiki\\Extension\\EventBus\\Rest\\RunSingleJobHandler",
+			"services": [
+				"ReadOnlyMode",
+				"MainConfig",
+				"JobRunner"
+			]
+		}
+	],
+	"ServiceWiringFiles": [
+		"ServiceWiring.php"
+	],
+	"manifest_version": 2
+}

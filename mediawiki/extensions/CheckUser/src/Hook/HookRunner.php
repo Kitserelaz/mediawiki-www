@@ -1,12 +1,12 @@
 <?php
 
-namespace MediaWiki\CheckUser\Hook;
+namespace MediaWiki\Extension\CheckUser\Hook;
 
-use MediaWiki\CheckUser\CheckUser\Pagers\AbstractCheckUserPager;
 use MediaWiki\Context\IContextSource;
+use MediaWiki\Extension\CheckUser\CheckUser\Pagers\AbstractCheckUserPager;
 use MediaWiki\HookContainer\HookContainer;
+use MediaWiki\RecentChanges\RecentChange;
 use MediaWiki\User\UserIdentity;
-use RecentChange;
 use stdClass;
 
 class HookRunner implements
@@ -15,16 +15,16 @@ class HookRunner implements
 	CheckUserInsertChangesRowHook,
 	CheckUserInsertLogEventRowHook,
 	CheckUserInsertPrivateEventRowHook,
+	CheckUserSuggestedInvestigationsBeforeCaseCreatedHook,
+	CheckUserSuggestedInvestigationsGetSignalsHook,
+	CheckUserSuggestedInvestigationsOnDetailViewRenderHook,
+	CheckUserSuggestedInvestigationsSignalMatchHook,
 	SpecialCheckUserGetLinksFromRowHook
 {
 
-	private HookContainer $container;
-
-	/**
-	 * @param HookContainer $container
-	 */
-	public function __construct( HookContainer $container ) {
-		$this->container = $container;
+	public function __construct(
+		private readonly HookContainer $container,
+	) {
 	}
 
 	/** @inheritDoc */
@@ -52,7 +52,11 @@ class HookRunner implements
 
 	/** @inheritDoc */
 	public function onCheckUserInsertChangesRow(
-		string &$ip, &$xff, array &$row, UserIdentity $user, ?RecentChange $rc
+		string &$ip,
+		&$xff,
+		array &$row,
+		UserIdentity $user,
+		?RecentChange $rc
 	) {
 		$this->container->run(
 			'CheckUserInsertChangesRow',
@@ -62,7 +66,12 @@ class HookRunner implements
 
 	/** @inheritDoc */
 	public function onCheckUserInsertLogEventRow(
-		string &$ip, &$xff, array &$row, UserIdentity $user, int $id, ?RecentChange $rc
+		string &$ip,
+		&$xff,
+		array &$row,
+		UserIdentity $user,
+		int $id,
+		?RecentChange $rc
 	) {
 		$this->container->run(
 			'CheckUserInsertLogEventRow',
@@ -72,7 +81,11 @@ class HookRunner implements
 
 	/** @inheritDoc */
 	public function onCheckUserInsertPrivateEventRow(
-		string &$ip, &$xff, array &$row, UserIdentity $user, ?RecentChange $rc
+		string &$ip,
+		&$xff,
+		array &$row,
+		UserIdentity $user,
+		?RecentChange $rc
 	) {
 		$this->container->run(
 			'CheckUserInsertPrivateEventRow',
@@ -81,8 +94,51 @@ class HookRunner implements
 	}
 
 	/** @inheritDoc */
+	public function onCheckUserSuggestedInvestigationsBeforeCaseCreated( array $signals, array &$users ): void {
+		$this->container->run(
+			'CheckUserSuggestedInvestigationsBeforeCaseCreated',
+			[ $signals, &$users ],
+			[ 'abortable' => false ]
+		);
+	}
+
+	/** @inheritDoc */
+	public function onCheckUserSuggestedInvestigationsGetSignals( array &$signals ): void {
+		$this->container->run(
+			'CheckUserSuggestedInvestigationsGetSignals',
+			[ &$signals ],
+			[ 'abortable' => false ]
+		);
+	}
+
+	/** @inheritDoc */
+	public function onCheckUserSuggestedInvestigationsOnDetailViewRender( int $caseId, $output ): void {
+		$this->container->run(
+			'CheckUserSuggestedInvestigationsOnDetailViewRender',
+			[ $caseId, $output ],
+			[ 'abortable' => false ]
+		);
+	}
+
+	/** @inheritDoc */
+	public function onCheckUserSuggestedInvestigationsSignalMatch(
+		$userIdentity,
+		string $eventType,
+		array &$signalMatchResults,
+		array $extraData
+	): void {
+		$this->container->run(
+			'CheckUserSuggestedInvestigationsSignalMatch',
+			[ $userIdentity, $eventType, &$signalMatchResults, $extraData ],
+			[ 'abortable' => false ]
+		);
+	}
+
+	/** @inheritDoc */
 	public function onSpecialCheckUserGetLinksFromRow(
-		AbstractCheckUserPager $specialCheckUser, stdClass $row, array &$links
+		AbstractCheckUserPager $specialCheckUser,
+		stdClass $row,
+		array &$links
 	) {
 		$this->container->run(
 			'SpecialCheckUserGetLinksFromRow',
@@ -90,3 +146,10 @@ class HookRunner implements
 		);
 	}
 }
+
+// @codeCoverageIgnoreStart
+/**
+ * @deprecated since 1.46
+ */
+class_alias( HookRunner::class, 'MediaWiki\\CheckUser\\Hook\\HookRunner' );
+// @codeCoverageIgnoreEnd

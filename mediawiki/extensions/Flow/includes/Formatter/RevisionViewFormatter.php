@@ -2,13 +2,13 @@
 
 namespace Flow\Formatter;
 
-use ChangesList;
 use Flow\Model\Header;
 use Flow\Model\PostRevision;
 use Flow\Model\PostSummary;
 use Flow\Model\UUID;
 use Flow\UrlGenerator;
 use MediaWiki\Context\IContextSource;
+use MediaWiki\RecentChanges\ChangesList;
 use MediaWiki\Utils\MWTimestamp;
 
 class RevisionViewFormatter {
@@ -22,10 +22,6 @@ class RevisionViewFormatter {
 	 */
 	protected $serializer;
 
-	/**
-	 * @param UrlGenerator $urlGenerator
-	 * @param RevisionFormatter $serializer
-	 */
 	public function __construct( UrlGenerator $urlGenerator, RevisionFormatter $serializer ) {
 		$this->urlGenerator = $urlGenerator;
 		$this->serializer = $serializer;
@@ -97,7 +93,6 @@ class RevisionViewFormatter {
 			$links['single-view'] = $this->urlGenerator->postRevisionLink(
 				$title,
 				$workflowId,
-				// @phan-suppress-next-line PhanUndeclaredMethod Type not correctly inferred
 				$row->revision->getPostId(),
 				$row->revision->getRevisionId()
 			);

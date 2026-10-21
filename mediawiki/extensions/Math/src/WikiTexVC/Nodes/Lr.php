@@ -6,42 +6,28 @@ namespace MediaWiki\Extension\Math\WikiTexVC\Nodes;
 
 use MediaWiki\Extension\Math\WikiTexVC\MMLmappings\BaseMethods;
 use MediaWiki\Extension\Math\WikiTexVC\MMLmappings\TexConstants\TexClass;
+use MediaWiki\Extension\Math\WikiTexVC\MMLnodes\MMLbase;
 use MediaWiki\Extension\Math\WikiTexVC\MMLnodes\MMLmo;
 use MediaWiki\Extension\Math\WikiTexVC\MMLnodes\MMLmrow;
 
 class Lr extends TexNode {
 
-	/** @var string */
-	private $left;
-	/** @var string */
-	private $right;
-	/** @var TexArray */
-	private $arg;
-
-	public function __construct( string $left, string $right, TexArray $arg ) {
+	public function __construct(
+		private readonly string $left,
+		private readonly string $right,
+		private readonly TexArray $arg,
+	) {
 		parent::__construct( $left, $right, $arg );
-		$this->left = $left;
-		$this->right = $right;
-		$this->arg = $arg;
 	}
 
-	/**
-	 * @return string
-	 */
 	public function getLeft(): string {
 		return $this->left;
 	}
 
-	/**
-	 * @return string
-	 */
 	public function getRight(): string {
 		return $this->right;
 	}
 
-	/**
-	 * @return TexArray
-	 */
 	public function getArg(): TexArray {
 		return $this->arg;
 	}
@@ -57,7 +43,7 @@ class Lr extends TexNode {
 	}
 
 	/** @inheritDoc */
-	public function renderMML( $arguments = [], &$state = [] ) {
+	public function toMMLTree( $arguments = [], &$state = [] ): MMLbase {
 		// TBD  set attributes for right AND left correctly
 		$rightAttrs = [];
 		if ( $this->right == "." ) {
@@ -67,33 +53,18 @@ class Lr extends TexNode {
 		$bm = new BaseMethods();
 		$left = $bm->checkAndParseDelimiter( $this->left, $this, [], null, true,
 			TexClass::OPEN );
-		if ( !$left ) {
-			$moLeft = new MMLmo( TexClass::OPEN, [] );
-			$left = $moLeft->encapsulateRaw( $this->right );
+		if ( $left->isEmpty() ) {
+			$left = new MMLmo( TexClass::OPEN, [], $this->right );
 		}
 		$right = $bm->checkAndParseDelimiter( $this->right, $this, $rightAttrs, null, true,
 			TexClass::CLOSE );
-		if ( !$right ) {
-			$moRight = new MMLmo( TexClass::CLOSE, $rightAttrs );
-			$right = $moRight->encapsulateRaw( $this->right );
+		if ( $right->isEmpty() ) {
+			$right = new MMLmo( TexClass::CLOSE, $rightAttrs, $this->right );
 		}
 		// Don't apply outer ' inside the LR structure
 		unset( $state['deriv'] );
-		$inner = $this->getArg()->renderMML( [], $state );
-		$mrow = new MMLmrow( TexClass::INNER );
-		return $mrow->encapsulateRaw(
-			$left . $inner .
-			$right
-		);
-	}
-
-	private function mmlTranslate( string $input ): string {
-		switch ( trim( $input ) ) {
-			case "\\vert":
-				return "|";
-			default:
-				return $input;
-		}
+		$inner = $this->getArg()->toMMLTree( [], $state );
+		return new MMLmrow( TexClass::INNER, [], $left, $inner, $right );
 	}
 
 	/** @inheritDoc */

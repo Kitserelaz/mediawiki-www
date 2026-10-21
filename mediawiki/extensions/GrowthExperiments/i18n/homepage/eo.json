@@ -1,0 +1,23 @@
+{
+	"@metadata": {
+		"authors": [
+			"Jakub Fabijan",
+			"Luis Miguel Obando",
+			"Mirin",
+			"Spenĉjo"
+		]
+	},
+	"growthexperiments-homepage-email-button-noemail": "Aldoni retpoŝtan adreson",
+	"growthexperiments-homepage-email-button-confirmed": "Preferoj",
+	"growthexperiments-homepage-email-changelink": "ŝanĝi",
+	"growthexperiments-homepage-impact-article-link-tooltip": "Iri al artikolo",
+	"growthexperiments-homepage-impact-empty-pageviews-tooltip-button": "Komprenite",
+	"growthexperiments-tour-response-button-okay": "Komprenite",
+	"growthexperiments-homepage-recent-questions-archived": "enarkivigita",
+	"growthexperiments-homepage-mentorship-mentor-active-today": "{{GENDER:$1|Aktiva}} hodiaŭ",
+	"growthexperiments-homepage-mentorship-mentor-active-yesterday": "{{GENDER:$1|Aktiva}} hieraŭ",
+	"growthexperiments-homepage-mentorship-question-subject": "Demando de [[User:$1|$1]]",
+	"growthexperiments-specialimpact-title": "Efiko",
+	"growthexperiments-addlink-summary-copyrightwarning": "Per publikigo de la ŝanĝoj vi konsentas al la [https://foundation.wikimedia.org/wiki/Terms_of_Use Uzkondiĉoj] kaj konsentas disponebligi vian kontribuon laŭ la permesiloj [https://creativecommons.org/licenses/by-sa/3.0/deed.eo CC BY-SA 3.0] kaj [https://www.gnu.org/licenses/fdl-1.3.html GFDL 1.3].",
+	"growthexperiments-addlink-skip-accept": "Preterpasi ĉiujn"
+}

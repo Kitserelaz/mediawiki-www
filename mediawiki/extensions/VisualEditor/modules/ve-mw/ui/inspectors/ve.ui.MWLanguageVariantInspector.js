@@ -199,7 +199,7 @@ ve.ui.MWLanguageVariantInspector.prototype.initialize = function () {
 ve.ui.MWLanguageVariantInspector.prototype.getActionProcess = function ( action ) {
 	if ( action === 'remove' || action === 'insert' ) {
 		return new OO.ui.Process( () => {
-			this.close( { action: action } );
+			this.close( { action } );
 		} );
 	}
 	return ve.ui.MWLanguageVariantInspector.super.prototype.getActionProcess.call( this, action );
@@ -235,8 +235,7 @@ ve.ui.MWLanguageVariantInspector.prototype.getSetupProcess = function ( data ) {
 /**
  * @inheritdoc
  */
-ve.ui.MWLanguageVariantInspector.prototype.getTeardownProcess = function ( data ) {
-	data = data || {};
+ve.ui.MWLanguageVariantInspector.prototype.getTeardownProcess = function ( data = {} ) {
 	return ve.ui.MWLanguageVariantInspector.super.prototype.getTeardownProcess.call( this, data )
 		.first( () => {
 			const surfaceModel = this.getFragment().getSurface();
@@ -298,7 +297,7 @@ ve.ui.MWLanguageVariantDisabledInspector.static.title = OO.ui.deferMsg(
 
 ve.ui.MWLanguageVariantDisabledInspector.prototype.initialize = function () {
 	ve.ui.MWLanguageVariantDisabledInspector.super.prototype.initialize.call( this );
-	this.textTarget = this.createTextTarget( OO.ui.msg(
+	this.textTarget = this.createTextTarget( ve.msg(
 		'visualeditor-mwlanguagevariantinspector-disabled-placeholder'
 	) );
 	this.form.$element.append( this.textTarget.$element );
@@ -324,13 +323,8 @@ ve.ui.MWLanguageVariantDisabledInspector.prototype.getContentFromInspector = fun
 	const type = this.variantNode.getType();
 	variantInfo.disabled.t = this.getHtmlForDoc( this.textTargetDoc );
 	return [
-		{
-			type: type,
-			attributes: { variantInfo: variantInfo }
-		},
-		{
-			type: '/' + type
-		}
+		{ type, attributes: { variantInfo } },
+		{ type: '/' + type }
 	];
 };
 
@@ -405,13 +399,8 @@ ve.ui.MWLanguageVariantNameInspector.prototype.getContentFromInspector = functio
 	const type = this.variantNode.getType();
 	variantInfo.name.t = this.languageInput.getLang();
 	return [
-		{
-			type: type,
-			attributes: { variantInfo: variantInfo }
-		},
-		{
-			type: '/' + type
-		}
+		{ type, attributes: { variantInfo } },
+		{ type: '/' + type }
 	];
 };
 
@@ -444,7 +433,7 @@ ve.ui.MWLanguageVariantFilterInspector.static.title = OO.ui.deferMsg(
 
 ve.ui.MWLanguageVariantFilterInspector.prototype.initialize = function () {
 	ve.ui.MWLanguageVariantFilterInspector.super.prototype.initialize.call( this );
-	this.textTarget = this.createTextTarget( OO.ui.msg(
+	this.textTarget = this.createTextTarget( ve.msg(
 		'visualeditor-mwlanguagevariantinspector-filter-text-placeholder'
 	) );
 
@@ -452,7 +441,7 @@ ve.ui.MWLanguageVariantFilterInspector.prototype.initialize = function () {
 		allowArbitary: false,
 		allowDisplayInvalidTags: true,
 		allowedValues: ve.init.platform.getLanguageCodes().sort(),
-		placeholder: OO.ui.msg(
+		placeholder: ve.msg(
 			'visualeditor-mwlanguagevariantinspector-filter-langs-placeholder'
 		),
 		icon: 'language'
@@ -468,13 +457,13 @@ ve.ui.MWLanguageVariantFilterInspector.prototype.initialize = function () {
 	this.form.$element.append(
 		new OO.ui.FieldLayout( this.langWidget, {
 			align: 'top',
-			label: OO.ui.msg( 'visualeditor-mwlanguagevariantinspector-filter-langs-label' )
+			label: ve.msg( 'visualeditor-mwlanguagevariantinspector-filter-langs-label' )
 		} ).$element
 	);
 	this.form.$element.append(
 		new OO.ui.FieldLayout( this.textTarget, {
 			align: 'top',
-			label: OO.ui.msg( 'visualeditor-mwlanguagevariantinspector-filter-text-label' )
+			label: ve.msg( 'visualeditor-mwlanguagevariantinspector-filter-text-label' )
 		} ).$element
 	);
 };
@@ -501,13 +490,8 @@ ve.ui.MWLanguageVariantFilterInspector.prototype.getContentFromInspector = funct
 	variantInfo.filter.t = this.getHtmlForDoc( this.textTargetDoc );
 	variantInfo.filter.l = this.langWidget.getValue();
 	return [
-		{
-			type: type,
-			attributes: { variantInfo: variantInfo }
-		},
-		{
-			type: '/' + type
-		}
+		{ type, attributes: { variantInfo } },
+		{ type: '/' + type }
 	];
 };
 
@@ -563,7 +547,7 @@ ve.ui.MWLanguageVariantTwoWayInspector.prototype.initialize = function () {
 	this.form.$element.append( this.layout.$element );
 
 	this.addButton = new OO.ui.ButtonInputWidget( {
-		label: OO.ui.msg( 'visualeditor-mwlanguagevariantinspector-twoway-add-button' ),
+		label: ve.msg( 'visualeditor-mwlanguagevariantinspector-twoway-add-button' ),
 		icon: 'add'
 	} );
 	this.form.$element.append( this.addButton.$element );
@@ -601,14 +585,15 @@ ve.ui.MWLanguageVariantTwoWayInspector.prototype.createItem = function ( lang, c
 		dialogManager: this.manager.getSurface().getDialogs(),
 		dirInput: 'none'
 	} );
-	const textTarget = this.createTextTarget( OO.ui.msg(
+	const textTarget = this.createTextTarget( ve.msg(
 		'visualeditor-mwlanguagevariantinspector-twoway-text-placeholder'
 	) );
 	const clearButton = new OO.ui.ButtonInputWidget( {
 		icon: 'clear',
-		title: OO.ui.deferMsg(
+		label: OO.ui.deferMsg(
 			'visualeditor-mwlanguagevariantinspector-twoway-clear-button'
 		),
+		invisibleLabel: true,
 		framed: false
 	} );
 	const layout = new OO.ui.FieldLayout(
@@ -623,10 +608,10 @@ ve.ui.MWLanguageVariantTwoWayInspector.prototype.createItem = function ( lang, c
 		} ), {}
 	);
 	const item = {
-		languageInput: languageInput,
-		textTarget: textTarget,
-		clearButton: clearButton,
-		layout: layout
+		languageInput,
+		textTarget,
+		clearButton,
+		layout
 	};
 
 	// Initialize
@@ -645,13 +630,8 @@ ve.ui.MWLanguageVariantTwoWayInspector.prototype.getContentFromInspector = funct
 		t: this.getHtmlForDoc( item.textTargetDoc )
 	} ) );
 	return [
-		{
-			type: type,
-			attributes: { variantInfo: variantInfo }
-		},
-		{
-			type: '/' + type
-		}
+		{ type, attributes: { variantInfo } },
+		{ type: '/' + type }
 	];
 };
 
@@ -710,7 +690,7 @@ ve.ui.MWLanguageVariantOneWayInspector.prototype.initialize = function () {
 	this.form.$element.append( this.layout.$element );
 
 	this.addButton = new OO.ui.ButtonInputWidget( {
-		label: OO.ui.msg( 'visualeditor-mwlanguagevariantinspector-oneway-add-button' ),
+		label: ve.msg( 'visualeditor-mwlanguagevariantinspector-oneway-add-button' ),
 		icon: 'add'
 	} );
 	this.form.$element.append( this.addButton.$element );
@@ -745,21 +725,22 @@ ve.ui.MWLanguageVariantOneWayInspector.prototype.getSetupProcess = function ( da
  *  documents for this mapping item.
  */
 ve.ui.MWLanguageVariantOneWayInspector.prototype.createItem = function ( from, lang, to ) {
-	const fromTextTarget = this.createTextTarget( OO.ui.msg(
+	const fromTextTarget = this.createTextTarget( ve.msg(
 		'visualeditor-mwlanguagevariantinspector-oneway-from-text-placeholder'
 	) );
 	const languageInput = new ve.ui.LanguageInputWidget( {
 		dialogManager: this.manager.getSurface().getDialogs(),
 		dirInput: 'none'
 	} );
-	const toTextTarget = this.createTextTarget( OO.ui.msg(
+	const toTextTarget = this.createTextTarget( ve.msg(
 		'visualeditor-mwlanguagevariantinspector-oneway-to-text-placeholder'
 	) );
 	const clearButton = new OO.ui.ButtonInputWidget( {
 		icon: 'clear',
-		title: OO.ui.deferMsg(
+		label: OO.ui.deferMsg(
 			'visualeditor-mwlanguagevariantinspector-oneway-clear-button'
 		),
+		invisibleLabel: true,
 		framed: false
 	} );
 	const layout = new OO.ui.FieldLayout(
@@ -775,11 +756,11 @@ ve.ui.MWLanguageVariantOneWayInspector.prototype.createItem = function ( from, l
 		} ), {}
 	);
 	const item = {
-		fromTextTarget: fromTextTarget,
-		languageInput: languageInput,
-		toTextTarget: toTextTarget,
-		clearButton: clearButton,
-		layout: layout
+		fromTextTarget,
+		languageInput,
+		toTextTarget,
+		clearButton,
+		layout
 	};
 
 	// Initialize
@@ -800,13 +781,8 @@ ve.ui.MWLanguageVariantOneWayInspector.prototype.getContentFromInspector = funct
 		t: this.getHtmlForDoc( item.toTextTargetDoc )
 	} ) );
 	return [
-		{
-			type: type,
-			attributes: { variantInfo: variantInfo }
-		},
-		{
-			type: '/' + type
-		}
+		{ type, attributes: { variantInfo } },
+		{ type: '/' + type }
 	];
 };
 

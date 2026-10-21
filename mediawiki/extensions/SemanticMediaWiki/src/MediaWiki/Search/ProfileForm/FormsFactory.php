@@ -1,0 +1,68 @@
+<?php
+
+namespace SMW\MediaWiki\Search\ProfileForm;
+
+use MediaWiki\MediaWikiServices;
+use MediaWiki\Request\WebRequest;
+use SMW\Localizer\Localizer;
+use SMW\MediaWiki\Search\ProfileForm\Forms\CustomForm;
+use SMW\MediaWiki\Search\ProfileForm\Forms\NamespaceForm;
+use SMW\MediaWiki\Search\ProfileForm\Forms\OpenForm;
+use SMW\MediaWiki\Search\ProfileForm\Forms\SortForm;
+
+/**
+ * @private
+ *
+ * @license GPL-2.0-or-later
+ * @since 3.0
+ *
+ * @author mwjames
+ */
+class FormsFactory {
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param WebRequest $request
+	 *
+	 * @return OpenForm
+	 */
+	public function newOpenForm( WebRequest $request ): OpenForm {
+		return new OpenForm( $request );
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param WebRequest $request
+	 *
+	 * @return CustomForm
+	 */
+	public function newCustomForm( WebRequest $request ): CustomForm {
+		return new CustomForm( $request );
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param WebRequest $request
+	 *
+	 * @return SortForm
+	 */
+	public function newSortForm( WebRequest $request ): SortForm {
+		return new SortForm( $request );
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @return NamespaceForm
+	 */
+	public function newNamespaceForm(): NamespaceForm {
+		return new NamespaceForm(
+			MediaWikiServices::getInstance()->getNamespaceInfo(),
+			Localizer::getInstance()
+		);
+	}
+
+}

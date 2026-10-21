@@ -13,6 +13,8 @@ $cfg['directory_list'] = array_merge(
 	[
 		'vendor/mediawiki/lua-sandbox/stubs',
 		'../../extensions/CodeEditor',
+		'../../extensions/CodeMirror',
+		'../../extensions/Produnto',
 		'../../extensions/SyntaxHighlight_GeSHi',
 	]
 );
@@ -22,6 +24,8 @@ $cfg['exclude_analysis_directory_list'] = array_merge(
 	[
 		'vendor/mediawiki/lua-sandbox/stubs',
 		'../../extensions/CodeEditor',
+		'../../extensions/CodeMirror',
+		'../../extensions/Produnto',
 		'../../extensions/SyntaxHighlight_GeSHi',
 	]
 );

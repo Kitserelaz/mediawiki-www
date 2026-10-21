@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Eduaddad"
+		]
+	},
+	"rottenlinks": "Status dos links externos",
+	"rottenlinks-desc": "Mostra o [[Special:RottenLinks|estado de todos os links externos]] na wiki",
+	"rottenlinks-table-external": "Link externo",
+	"rottenlinks-table-response": "Resposta HTTP",
+	"rottenlinks-table-usage": "Uso de página",
+	"rottenlinks-showbad": "Mostrar somente links quebrados",
+	"rottenlinks-statistics": "Estatísticas de link quebrado",
+	"rottenlinks-stats": "Mostrar estatísticas do link"
+}

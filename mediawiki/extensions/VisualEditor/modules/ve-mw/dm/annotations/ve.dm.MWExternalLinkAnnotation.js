@@ -41,11 +41,19 @@ ve.dm.MWExternalLinkAnnotation.static.allowedRdfaTypes = null;
 
 ve.dm.MWExternalLinkAnnotation.static.toDataElement = function ( domElements, converter ) {
 	const domElement = domElements[ 0 ],
-		type = domElement.getAttribute( 'rel' ) || domElement.getAttribute( 'typeof' ) || domElement.getAttribute( 'property' ) || '',
-		types = type.trim().split( /\s+/ );
+		types = [
+			domElement.getAttribute( 'rel' ) || '',
+			domElement.getAttribute( 'typeof' ) || '',
+			domElement.getAttribute( 'property' ) || ''
+		].join( ' ' ).trim().split( /\s+/ );
+
+	if ( types.includes( 'mw:ExpandedAttrs' ) ) {
+		// Alienate links with template-generated attributes (T67362)
+		return null;
+	}
 
 	// If the link doesn't have a known RDFa type...
-	if ( types.indexOf( 'mw:ExtLink' ) === -1 && types.indexOf( 'mw:WikiLink/Interwiki' ) === -1 ) {
+	if ( !types.includes( 'mw:ExtLink' ) && !types.includes( 'mw:WikiLink/Interwiki' ) ) {
 		// ...when pasting: auto-convert it to the correct type (internal/external/span)
 		if ( converter.isFromClipboard() ) {
 			if ( domElement.hasAttribute( 'href' ) ) {
@@ -64,7 +72,7 @@ ve.dm.MWExternalLinkAnnotation.static.toDataElement = function ( domElements, co
 	// Parent method
 	const dataElement = ve.dm.MWExternalLinkAnnotation.super.static.toDataElement.apply( this, arguments );
 
-	dataElement.attributes.rel = type;
+	dataElement.attributes.rel = domElement.getAttribute( 'rel' );
 	return dataElement;
 };
 

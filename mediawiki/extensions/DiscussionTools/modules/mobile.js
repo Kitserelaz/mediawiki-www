@@ -36,9 +36,10 @@ function init( $container ) {
 		$( visualViewport ).on( 'resize', onViewportChangeThrottled );
 	}
 
-	// Mobile overflow menu
-
-	const $ledeContent = $container.find( '.mf-section-0' ).children( ':not( .ext-discussiontools-emptystate )' )
+	// Lede section button
+	// mf-section-0: Legacy parser
+	// data-mw-section-id: Parsoid
+	const $ledeContent = $container.find( '.mf-section-0, [data-mw-section-id="0"]' ).children( ':not( .ext-discussiontools-emptystate )' )
 		// On non-existent pages MobileFrontend wrapping isn't there
 		.add( $container.find( '.mw-talkpageheader' ) );
 	const $ledeButton = $container.find( '.ext-discussiontools-init-lede-button' );
@@ -50,7 +51,6 @@ function init( $container ) {
 			windowManager.addWindows( [ ledeSectionDialog ] );
 		}
 
-		// Lede section popup
 		OO.ui.infuse( $ledeButton ).on( 'click', () => {
 			mw.loader.using( 'oojs-ui-windows' ).then( () => {
 				windowManager.openWindow( 'ledeSection', { $content: $ledeContent } );
@@ -60,6 +60,7 @@ function init( $container ) {
 		mw.track( 'webuiactions_log.show', 'lede-button' );
 	}
 
+	// New topic button
 	// eslint-disable-next-line no-jquery/no-global-selector
 	const $newTopicWrapper = $( '.ext-discussiontools-init-new-topic' );
 
@@ -105,6 +106,8 @@ function init( $container ) {
 			);
 
 			observer.observe( $newTopicWrapper[ 0 ] );
+			// We only need to check once, since this is inside a scroll handler
+			setTimeout( () => observer.disconnect() );
 
 			lastScrollTop = scrollTop;
 			wasScrollDown = isScrollDown;
@@ -117,7 +120,7 @@ function init( $container ) {
 	// helpful way, and moving them around tends to break the stickiness of the "Add topic" button.
 	/* eslint-disable no-jquery/no-global-selector */
 	if (
-		$( '.catlinks' ).filter( '[data-mw="interface"]' ).length ||
+		$( '.catlinks' ).filter( '[data-mw-interface]' ).length ||
 		$( '#page-secondary-actions' ).children().length ||
 		$( '.return-link' ).length
 	) {

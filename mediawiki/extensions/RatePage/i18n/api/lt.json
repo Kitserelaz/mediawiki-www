@@ -1,0 +1,20 @@
+{
+	"@metadata": {
+		"authors": [
+			"Nokeoo"
+		]
+	},
+	"apihelp-ratepage-summary": "Leidžia naudotojui balsuoti už puslapį ir gauna puslapio įvertinimą. Reikia nurodyti vieną iš dviejų parametrų: pageid arba pagetitle.",
+	"apihelp-ratepage-param-pageid": "Puslapio ID",
+	"apihelp-ratepage-param-pagetitle": "Puslapio pavadinimas",
+	"apihelp-ratepage-param-contest": "Konkurso identifikatorius",
+	"apihelp-ratepage-example-1": "Gaunamas dabartinio puslapio Example įvertinimas.",
+	"apihelp-ratepage-example-2": "Puslapis Example įvertinamas 2.",
+	"apihelp-query+pagerating-param-contest": "Konkurso identifikatorius",
+	"apierror-ratepage-contest-id-too-long": "Konkurso ID ilgis viršija limitą (255 simboliai).",
+	"apierror-ratepage-contest-id-allowed-chars": "Konkurso ID turi būti sudarytas tik iš skaitmenų ir lotyniškų raidžių. Kiti simboliai neleidžiami.",
+	"apierror-ratepage-contest-not-exists": "Konkursas $1 neegzistuoja.",
+	"apierror-ratepage-page-not-exists": "Nurodytas puslapis neegzistuoja.",
+	"apierror-ratepage-cannot-vote-in-contest": "Jūs neturite teisės balsuoti šiame konkurse.",
+	"apierror-ratepage-invalid-answer": "Nurodytas neteisingas atsakymas. Atsakymas turėtų būti didesnis arba lygus $1 ir mažesnis arba lygus $2."
+}

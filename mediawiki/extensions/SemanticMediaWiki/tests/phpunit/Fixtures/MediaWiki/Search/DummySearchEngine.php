@@ -1,0 +1,17 @@
+<?php
+
+namespace SMW\Tests\Fixtures\MediaWiki\Search;
+
+use SearchEngine;
+
+/**
+ * @group semantic-mediawiki
+ *
+ * @license GPL-2.0-or-later
+ * @since 3.1
+ *
+ * @author mwjames
+ */
+class DummySearchEngine extends SearchEngine {
+
+}

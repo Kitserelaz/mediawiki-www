@@ -1,0 +1,31 @@
+<div>
+	<div class="mwe-pt-mark-helptext">
+		<%- mw.msg( 'pagetriage-mark-as-' + status + '-helptext' ) %>
+	</div>
+	<div id="mwe-pt-mark-as-<%- status %>">
+		<button id='mwe-pt-mark-as-<%- status %>-button'
+			class="<%- (status == "reviewed") ? "ui-button-green" : "ui-button-red" %>">
+			<%- mw.msg( "pagetriage-mark-as-" + status ) %>
+		</button>
+	</div>
+	<div id="mwe-pt-review-note">
+		<hr>
+		<div id="mwe-pt-review-note-title">
+			<% if( numRecipients === 1 ) { %>
+				<input id="mwe-pt-review-note-recipient" type="hidden" value="<%- noteRecipientRole %>"/>
+				<%- mw.msg( noteMessage, noteTarget ) %>
+			<% } else { %>
+				<%- mw.msg( "pagetriage-add-a-note-for-options-label" ) %>
+				<select id="mwe-pt-review-note-recipient">
+					<option disabled selected><%- mw.msg( "pagetriage-add-a-note-for-options-instruction-label" ) %></option>
+					<option value="reviewer"><%- mw.msg( "pagetriage-add-a-note-for-option-reviewer", previousReviewer ) %></option>
+					<option value="creator"><%- mw.msg( "pagetriage-add-a-note-for-option-creator", articleCreator ) %></option>
+				</select>
+			<% } %>
+		</div>
+		<textarea id="mwe-pt-review-note-input" placeholder="<%- mw.msg( notePlaceholder, noteTarget ) %>"></textarea>
+		<div id="mwe-pt-send-message">
+			<button id="mwe-pt-send-message-button" class="ui-button-white"><%- mw.msg( "pagetriage-button-send-a-note" ) %></button>
+		</div>
+	</div>
+</div>

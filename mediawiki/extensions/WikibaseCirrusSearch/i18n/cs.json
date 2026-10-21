@@ -1,0 +1,40 @@
+{
+	"@metadata": {
+		"authors": [
+			"Chmee2",
+			"Cvanca",
+			"Danny B.",
+			"DobyvatelCZ",
+			"Dvorapa",
+			"Fraxinus.cs",
+			"JAn Dudík",
+			"Jkjk",
+			"Littledogboy",
+			"Marek Pavlica",
+			"Matěj Grabovský",
+			"Matěj Suchánek",
+			"Mormegil",
+			"Paxt",
+			"Utar",
+			"Vks",
+			"Vogone"
+		]
+	},
+	"wikibasecirrus-desc": "Rozšíření Wikibase pro využití funkcionality CirrusSearch",
+	"wikibasecirrus-keywordfeature-unknown-language-code": "Klíčové slovo $1 obsahuje neznámý kód jazyka: $2",
+	"wikibasecirrus-keywordfeature-too-many-language-codes": "Klíčové slovo $1 poskytlo příliš mnoho kódů jazyků. Hledá se $2 z $3 {{PLURAL:$3|uvedeného jazyka|uvedených jazyků}}",
+	"wikibasecirrus-inlabel-no-query-provided": "Klíčové slovo inlabel dostalo prázdný vyhledávací řetězec",
+	"wikibasecirrus-search-bad-entity-type": "Chybný typ entity: $1",
+	"wikibasecirrus-haswbstatement-feature-no-valid-statements": "Klíčové slovo haswbstatement neobsahuje žádné platné výroky",
+	"wikibasecirrus-haslicense-feature-no-valid-arguments": "Klíčové slovo haslicense neobsahuje platné argumenty",
+	"wikibasecirrus-wbstatementquantity-feature-no-valid-statements": "Klíčové slovo wbstatementquantity neobsahuje žádné platné výroky",
+	"special-entitieswithoutdescription": "Entity bez popisu",
+	"wikibasecirrus-entitieswithoutdescription-legend": "Získat seznam entit bez popisu",
+	"special-entitieswithoutlabel": "Entity bez štítku",
+	"wikibasecirrus-entitieswithoutlabel-legend": "Získat seznam entit bez štítku",
+	"wikibasecirrus-entitieswithoutlabel-label-language": "Kód jazyka:",
+	"wikibasecirrus-entitieswithoutlabel-label-type": "Typ:",
+	"wikibasecirrus-entitieswithoutlabel-submit": "Najít",
+	"wikibasecirrus-entitieswithoutlabel-invalid-language": "„$1“ není platný kód jazyka.",
+	"wikibasecirrus-entitieswithoutlabel-invalid-type": "„$1“ není platný druh entity."
+}

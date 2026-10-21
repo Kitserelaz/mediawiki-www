@@ -1,0 +1,517 @@
+<?php
+/**
+ * @license GPL-2.0-or-later
+ * @file
+ */
+
+namespace MediaWiki\Extension\CentralAuth\GlobalGroup;
+
+use MediaWiki\Config\ServiceOptions;
+use MediaWiki\Extension\CentralAuth\CentralAuthAutomaticGlobalGroupManager;
+use MediaWiki\Extension\CentralAuth\CentralAuthDatabaseManager;
+use MediaWiki\Extension\CentralAuth\Config\CAMainConfigNames;
+use MediaWiki\Extension\CentralAuth\Hooks\CentralAuthHookRunner;
+use MediaWiki\Extension\CentralAuth\User\CentralAuthUser;
+use MediaWiki\HookContainer\HookContainer;
+use MediaWiki\HookContainer\HookRunner;
+use MediaWiki\Language\Language;
+use MediaWiki\Language\MessageLocalizer;
+use MediaWiki\Logging\ManualLogEntry;
+use MediaWiki\Page\PageIdentityValue;
+use MediaWiki\Permissions\Authority;
+use MediaWiki\Site\SiteLookup;
+use MediaWiki\Title\Title;
+use MediaWiki\User\RestrictedUserGroupChecker;
+use MediaWiki\User\RestrictedUserGroupCheckerFactory;
+use MediaWiki\User\UserGroupAssignmentServiceBase;
+use MediaWiki\User\UserGroupMembership;
+use MediaWiki\User\UserIdentity;
+use MediaWiki\User\UserIdentityValue;
+use MediaWiki\User\UserNameUtils;
+use MediaWiki\WikiMap\WikiMap;
+use Wikimedia\Message\MessageSpecifier;
+
+/**
+ * This class represents a service that provides high-level operations on user groups.
+ * It's similar to {@see UserGroupAssignmentService} in core, but for global groups.
+ * Contrary to the code in CentralAuthUser, this class is not interested in details of how
+ * user groups are stored, but rather in the business logic of assigning and removing groups.
+ *
+ * Therefore, it combines group management with logging and provides permission checks.
+ * Additionally, the method interfaces are designed to be suitable for calls from user-facing code.
+ *
+ * @since 1.45
+ */
+class GlobalGroupAssignmentService extends UserGroupAssignmentServiceBase {
+
+	/** @internal Only public for service wiring use. */
+	public const CONSTRUCTOR_OPTIONS = [
+		CAMainConfigNames::CentralAuthCentralWiki,
+	];
+
+	/** Name of the scope, as used to read from $wgRestrictedGroups */
+	public const RESTRICTION_SCOPE = 'centralauth';
+
+	private array $changeableGroupsCache = [];
+
+	public function __construct(
+		private readonly ServiceOptions $options,
+		private readonly Language $contentLanguage,
+		private readonly UserNameUtils $userNameUtils,
+		private readonly HookContainer $hookContainer,
+		private readonly SiteLookup $siteLookup,
+		private readonly RestrictedUserGroupCheckerFactory $restrictedGroupCheckerFactory,
+		private readonly GlobalGroupManager $globalGroupManager,
+		private readonly CentralAuthAutomaticGlobalGroupManager $automaticGroupManager,
+		private readonly CentralAuthDatabaseManager $databaseManager,
+		private readonly MessageLocalizer $messageLocalizer,
+	) {
+		parent::__construct( new HookRunner( $this->hookContainer ) );
+		$this->options->assertRequiredOptions( self::CONSTRUCTOR_OPTIONS );
+	}
+
+	/**
+	 * Checks whether the target user can have groups assigned at all.
+	 */
+	public function targetCanHaveUserGroups( CentralAuthUser $target ): bool {
+		// Don't assign groups to non-existing and temp. accounts
+		if ( !$target->exists() ) {
+			return false;
+		}
+		if ( $this->userNameUtils->isTemp( $target->getName() ) ) {
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Check whether the given user can change the target user's rights.
+	 */
+	public function userCanChangeRights( Authority $performer, CentralAuthUser $target ): bool {
+		if ( !$this->targetCanHaveUserGroups( $target ) ) {
+			return false;
+		}
+
+		$available = $this->getChangeableGroups( $performer, $target );
+		if ( $available['add'] || $available['remove'] ) {
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Returns the groups that the performer can add or remove from the target user.
+	 * The result of this function is cached for the duration of the request.
+	 * @return array [
+	 *   'add' => [ addablegroups ],
+	 *   'remove' => [ removablegroups ],
+	 *   'restricted' => [ groupname => [
+	 *     'condition-met' => bool,
+	 *     'ignore-condition' => bool,
+	 *     'message' => string
+	 *   ] ]
+	 *  ]
+	 * @phan-return array{add:list<string>,remove:list<string>,restricted:array<string,array>}
+	 */
+	public function getChangeableGroups(
+		Authority $performer,
+		UserIdentity|CentralAuthUser $target,
+		bool $evaluatePrivateConditionsForRestrictedGroups = true
+	): array {
+		// Perform condition checks against the local user identity
+		$target = $this->getUserIdentity( $target );
+
+		// In order not to run multiple hooks every time this method is called in a request,
+		// we cache the result based on performer and target.
+		$cacheKey = $performer->getUser()->getName() . ':' . $target->getName() . ':' .
+			( $evaluatePrivateConditionsForRestrictedGroups ? 'private' : 'public' );
+
+		if ( !isset( $this->changeableGroupsCache[$cacheKey] ) ) {
+			$this->changeableGroupsCache[$cacheKey] = $this->computeChangeableGroups(
+				$performer, $target, $evaluatePrivateConditionsForRestrictedGroups );
+		}
+		return $this->changeableGroupsCache[$cacheKey];
+	}
+
+	/**
+	 * Backend for {@see getChangeableGroups}, does actual computation without caching.
+	 */
+	private function computeChangeableGroups(
+		Authority $performer,
+		UserIdentity $target,
+		bool $evaluatePrivateConditionsForRestrictedGroups
+	): array {
+		if ( !$performer->isAllowed( 'globalgroupmembership' ) ) {
+			return [
+				'add' => [],
+				'remove' => [],
+				'restricted' => [],
+			];
+		}
+
+		$allGroups = $this->globalGroupManager->getDefinedGroups();
+		$automaticGroups = $this->automaticGroupManager->getAutomaticGlobalGroups();
+		$manualGroups = array_values( array_diff( $allGroups, $automaticGroups ) );
+
+		$restrictedGroups = array_fill_keys( $automaticGroups, [
+			// Assume the condition here is "the group is not automatic"
+			'condition-met' => false,
+			'ignore-condition' => false,
+			'message' => 'centralauth-globalgroupperms-automatic-group-reason',
+		] );
+
+		$restrictedGroupChecker = $this->getRestrictedGroupChecker( $target );
+
+		$cannotAdd = [];
+		foreach ( $manualGroups as $group ) {
+			if ( $restrictedGroupChecker->isGroupRestricted( $group ) ) {
+				$restrictedGroups[$group] = [
+					'condition-met' => $restrictedGroupChecker
+						->doPerformerAndTargetMeetConditionsForAddingToGroup(
+							$performer->getUser(),
+							$target,
+							$group,
+							$evaluatePrivateConditionsForRestrictedGroups
+						),
+					'ignore-condition' => $restrictedGroupChecker
+						->canPerformerIgnoreGroupRestrictions( $performer, $group ),
+				];
+				$canPerformerAdd = $restrictedGroupChecker->canPerformerAddTargetToGroup(
+					$performer, $target, $group, $evaluatePrivateConditionsForRestrictedGroups );
+				// If null was returned, keep the group in addable, as it's potentially addable
+				// Caller will be able to differentiate between true and null through the 'condition-met'
+				// value in $groups['restricted'][$group]
+				if ( $canPerformerAdd === false ) {
+					$cannotAdd[] = $group;
+				}
+			}
+		}
+
+		return [
+			'add' => array_values( array_diff( $manualGroups, $cannotAdd ) ),
+			'remove' => $manualGroups,
+			'restricted' => $restrictedGroups,
+		];
+	}
+
+	/**
+	 * Changes the user groups, ensuring that the performer has the necessary permissions
+	 * and that the changes are logged.
+	 *
+	 * @param Authority $performer
+	 * @param CentralAuthUser $target
+	 * @param list<string> $addGroups The groups to add (or change expiry of)
+	 * @param list<string> $removeGroups The groups to remove
+	 * @param array<string, ?string> $newExpiries Map of group name to new expiry (string timestamp or null
+	 *   for infinite). If a group is in $addGroups but not in this array, it won't expire.
+	 * @param string $reason
+	 * @param ?MessageSpecifier $automaticReason If any global groups are added or removed automatically
+	 *   as a result of the specified group changes, use this as additional reason text.
+	 * @param array $tags
+	 * @return array{0:string[],1:string[]} The groups actually added and removed
+	 */
+	public function saveChangesToUserGroups(
+		Authority $performer,
+		CentralAuthUser $target,
+		array $addGroups,
+		array $removeGroups,
+		array $newExpiries,
+		string $reason = '',
+		?MessageSpecifier $automaticReason = null,
+		array $tags = []
+	): array {
+		$oldGroups = $target->getGlobalGroupsWithExpiration();
+		$oldGroupMemberships = [];
+		foreach ( $oldGroups as $group => $expiration ) {
+			$oldGroupMemberships[$group] = new UserGroupMembership( $target->getId(), $group, $expiration );
+		}
+
+		$this->logAccessToPrivateConditions( $performer, $target, $addGroups, $newExpiries, $oldGroupMemberships );
+
+		$changeable = $this->getChangeableGroups( $performer, $target );
+		self::enforceChangeGroupPermissions( $addGroups, $removeGroups, $newExpiries,
+			$oldGroupMemberships, $changeable );
+
+		$anyChanged =
+			$this->adjustForAutomaticGlobalGroups( $target, $oldGroups, $addGroups, $removeGroups, $newExpiries );
+
+		// Remove groups, then add new ones/update expiries of existing ones
+		foreach ( $removeGroups as $group ) {
+			$target->removeFromGlobalGroups( $group );
+		}
+		foreach ( $addGroups as $group ) {
+			$expiry = $newExpiries[$group] ?? null;
+			$target->addToGlobalGroup( $group, $expiry );
+		}
+		$newGroups = $target->getGlobalGroupsWithExpiration();
+		$newGroupMemberships = [];
+		foreach ( $newGroups as $group => $expiration ) {
+			$newGroupMemberships[$group] = new UserGroupMembership( $target->getId(), $group, $expiration );
+		}
+
+		// Ensure that caches are cleared
+		$target->invalidateCache();
+
+		// Only add a log entry if something actually changed
+		if ( $oldGroups != $newGroups ) {
+			// Allow other extensions to respond to changes in global group membership
+			$caHookRunner = new CentralAuthHookRunner( $this->hookContainer );
+			$caHookRunner->onCentralAuthGlobalUserGroupMembershipChanged( $target, $oldGroups, $newGroups );
+			$this->addLogEntry(
+				$performer->getUser(),
+				$target,
+				$reason,
+				$anyChanged ? $automaticReason : null,
+				$tags,
+				$oldGroupMemberships,
+				$newGroupMemberships,
+			);
+		}
+
+		return [ $addGroups, $removeGroups ];
+	}
+
+	/**
+	 * Add a rights log entry for an action.
+	 * @param UserIdentity $performer
+	 * @param CentralAuthUser $target
+	 * @param string $reason
+	 * @param MessageSpecifier|null $automaticReason
+	 * @param string[] $tags Change tags for the log entry
+	 * @param array<string,UserGroupMembership> $oldUGMs Associative array of (group name => UserGroupMembership)
+	 * @param array<string,UserGroupMembership> $newUGMs Associative array of (group name => UserGroupMembership)
+	 */
+	private function addLogEntry( UserIdentity $performer, CentralAuthUser $target, string $reason,
+		?MessageSpecifier $automaticReason,
+		array $tags, array $oldUGMs, array $newUGMs
+	) {
+		ksort( $oldUGMs );
+		ksort( $newUGMs );
+		$oldUGMs = array_map( self::serialiseUgmForLog( ... ), $oldUGMs );
+		$oldGroups = array_keys( $oldUGMs );
+		$oldUGMs = array_values( $oldUGMs );
+		$newUGMs = array_map( self::serialiseUgmForLog( ... ), $newUGMs );
+		$newGroups = array_keys( $newUGMs );
+		$newUGMs = array_values( $newUGMs );
+
+		// Global group logs are stored on the central wiki, even if the change was made on another wiki (T416542)
+		$logWikiId = $this->options->get( CAMainConfigNames::CentralAuthCentralWiki )
+			?? WikiMap::getCurrentWikiId();
+		$site = $this->siteLookup->getSite( $logWikiId );
+		$reason = $this->getLogReason( $reason, $automaticReason, $site?->getLanguageCode() );
+
+		if ( $logWikiId === WikiMap::getCurrentWikiId() ) {
+			$logPerformer = $performer;
+			$logTarget = Title::makeTitle( NS_USER, $target->getName() );
+		} else {
+			// This should work if $logWikiId is the current wiki too, but it would require a lot more mocking in tests.
+			// There are no good APIs to do this cross-wiki, so we do manual database queries.
+			$logWikiDbr = $this->databaseManager->getLocalDB( DB_REPLICA, $logWikiId );
+			$logWikiUser = $logWikiDbr->newSelectQueryBuilder()
+				->from( 'user' )
+				->select( 'user_id' )
+				->where( [ 'user_name' => $performer->getName() ] )
+				->caller( __METHOD__ )
+				->fetchField();
+			$targetPage = str_replace( ' ', '_', $target->getName() );
+			$logWikiPage = $logWikiDbr
+				->newSelectQueryBuilder()
+				->from( 'page' )
+				->select( 'page_id' )
+				->where( [
+					'page_namespace' => NS_USER,
+					'page_title' => $targetPage,
+				] )
+				->caller( __METHOD__ )
+				->fetchField();
+			$logPerformer = new UserIdentityValue( $logWikiUser ?: 0, $performer->getName(), $logWikiId );
+			$logTarget = new PageIdentityValue( $logWikiPage ?: 0, NS_USER, $targetPage, $logWikiId );
+		}
+
+		$logEntry = new ManualLogEntry( 'gblrights', 'usergroups' );
+		$logEntry->setPerformer( $logPerformer );
+		$logEntry->setTarget( $logTarget );
+		$logEntry->setComment( $reason );
+		$logEntry->setParameters( [
+			'oldGroups' => $oldGroups,
+			'newGroups' => $newGroups,
+			'oldMetadata' => $oldUGMs,
+			'newMetadata' => $newUGMs,
+		] );
+		$logId = $logEntry->insert(
+			$this->databaseManager->getLocalDB( DB_PRIMARY, $logWikiId )
+		);
+		// These methods are only supported when inserting the log entry on the local wiki
+		if ( $logWikiId === WikiMap::getCurrentWikiId() ) {
+			$logEntry->addTags( $tags );
+			$logEntry->publish( $logId );
+		}
+	}
+
+	/**
+	 * Update the reason if any automatic global groups were changed.
+	 *
+	 * @param string $reason The given reason
+	 * @param ?MessageSpecifier $automaticReason Reason for global group changes, null if nothing changed
+	 * @return string The updated reason
+	 */
+	private function getLogReason(
+		string $reason,
+		?MessageSpecifier $automaticReason,
+		?string $languageCode
+	): string {
+		if ( $automaticReason ) {
+			if ( $reason ) {
+				$reason .= $this->messageLocalizer
+					->msg( 'semicolon-separator' )
+					->inLanguage( $languageCode ?? $this->contentLanguage )
+					->text();
+			}
+			$reason .= $this->messageLocalizer
+				->msg( $automaticReason )
+				->inLanguage( $languageCode ?? $this->contentLanguage )
+				->text();
+		}
+
+		return $reason;
+	}
+
+	/**
+	 * Serialise a UserGroupMembership object for storage in the log_params section
+	 * of the logging table. Only keeps essential data, removing redundant fields.
+	 */
+	private static function serialiseUgmForLog( UserGroupMembership $ugm ): array {
+		return [ 'expiry' => $ugm->getExpiry() ];
+	}
+
+	/**
+	 * Add or remove automatic global groups, or update expiries, based on:
+	 * - existing global groups
+	 * - existing local groups
+	 * - groups we are about to add
+	 * - groups we are about to remove
+	 * - groups whose expiries we are about to change
+	 *
+	 * @param CentralAuthUser $user
+	 * @param array<string,?string> $globalGroups Associative array of (group name => expiry),
+	 *   representing global groups that $user already has
+	 * @param string[] &$add Array of groups to add
+	 * @param string[] &$remove Array of groups to remove
+	 * @param array<string,?string> &$groupExpiries Associative array of (group name => expiry),
+	 *   containing only those groups that are to have new expiry values set
+	 * @return bool Whether any automatic global group memberships were changed
+	 */
+	private function adjustForAutomaticGlobalGroups(
+		CentralAuthUser $user,
+		array $globalGroups,
+		array &$add,
+		array &$remove,
+		array &$groupExpiries
+	): bool {
+		// Get the user's local groups and their expiries. If the user has the same group on
+		// multiple wikis, add the latest expiry (with null representing no expiry).
+		$userInfo = $user->queryAttached();
+		$localGroups = [];
+		foreach ( $userInfo as $info ) {
+			foreach ( $info['groupMemberships'] as $groupMembership ) {
+				$group = $groupMembership->getGroup();
+				$expiry = $groupMembership->getExpiry();
+				if ( $expiry === null ) {
+					$localGroups[$group] = null;
+				} elseif (
+					!array_key_exists( $group, $localGroups ) ||
+					( $localGroups[$group] !== null && $localGroups[$group] < $expiry )
+				) {
+					$localGroups[$group] = $expiry;
+				}
+			}
+		}
+
+		$addGroupsWithExpiries = array_intersect_key(
+			$groupExpiries,
+			array_fill_keys( $add, null )
+		);
+		$assignedGroups = array_diff_key(
+			array_merge( $globalGroups, $localGroups, $addGroupsWithExpiries ),
+			array_fill_keys( $remove, null )
+		);
+
+		return $this->automaticGroupManager->handleAutomaticGlobalGroups(
+			$assignedGroups,
+			$add,
+			$remove,
+			$groupExpiries
+		);
+	}
+
+	/**
+	 * @inheritDoc
+	 * @phan-param UserIdentity|CentralAuthUser $target (so that Phan catches the widened type)
+	 */
+	public function validateUserGroups(
+		Authority $performer,
+		UserIdentity|CentralAuthUser $target,
+		array $addGroups,
+		array $removeGroups,
+		array $newExpiries,
+		array $groupMemberships,
+	): array {
+		$target = $this->getUserIdentity( $target );
+		return parent::validateUserGroups(
+			$performer,
+			$target,
+			$addGroups,
+			$removeGroups,
+			$newExpiries,
+			$groupMemberships,
+		);
+	}
+
+	/**
+	 * @inheritDoc
+	 * @phan-param UserIdentity|CentralAuthUser $target (so that Phan catches the widened type)
+	 */
+	public function logAccessToPrivateConditions(
+		Authority $performer,
+		UserIdentity|CentralAuthUser $target,
+		array $addGroups,
+		array $newExpiries,
+		array $existingUGMs,
+	): void {
+		$target = $this->getUserIdentity( $target );
+		parent::logAccessToPrivateConditions(
+			$performer,
+			$target,
+			$addGroups,
+			$newExpiries,
+			$existingUGMs,
+		);
+	}
+
+	/** @inheritDoc */
+	protected function getKnownGroups( UserIdentity $target ): array {
+		return $this->globalGroupManager->getDefinedGroups();
+	}
+
+	/** @inheritDoc */
+	protected function getRestrictedGroupChecker( UserIdentity $target ): RestrictedUserGroupChecker {
+		// Read conditions from the central wiki, so that they are the same across the wiki farm
+		$centralWiki = $this->options->get( CAMainConfigNames::CentralAuthCentralWiki ) ?? false;
+		return $this->restrictedGroupCheckerFactory
+			->getRestrictedUserGroupChecker( $centralWiki, self::RESTRICTION_SCOPE );
+	}
+
+	/**
+	 * Returns a local identity user corresponding to the passed object.
+	 * If $user is instance of UserIdentity, return it.
+	 * Otherwise, find the local user on the current wiki with the same name. Attachment status is not checked.
+	 */
+	private function getUserIdentity( UserIdentity|CentralAuthUser $user ): UserIdentity {
+		if ( $user instanceof CentralAuthUser ) {
+			$localId = $user->getLocalId( WikiMap::getCurrentWikiId() ) ?? 0;
+			return new UserIdentityValue( $localId, $user->getName() );
+		}
+		return $user;
+	}
+}

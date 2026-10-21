@@ -1,0 +1,4 @@
+* {{#set: Imported from=owl:differentFrom|+display}}
+* {{#set: Property description=The property that determines that two given individuals are different.@en|+display}}
+
+[[Category:Imported vocabulary]] {{DISPLAYTITLE:owl:differentFrom}}

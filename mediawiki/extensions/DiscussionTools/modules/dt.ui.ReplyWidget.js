@@ -2,11 +2,12 @@ const controller = require( 'ext.discussionTools.init' ).controller,
 	utils = require( 'ext.discussionTools.init' ).utils,
 	ModeTabSelectWidget = require( './ModeTabSelectWidget.js' ),
 	ModeTabOptionWidget = require( './ModeTabOptionWidget.js' ),
-	contLangMessages = require( './contLangMessages.json' ),
 	licenseMessages = require( './licenseMessages.json' ),
 	featuresEnabled = mw.config.get( 'wgDiscussionToolsFeaturesEnabled' ) || {},
 	enable2017Wikitext = featuresEnabled.sourcemodetoolbar,
 	dtConf = require( 'ext.discussionTools.init' ).config;
+
+mw.messages.set( require( './contLangMessages.json' ) );
 
 require( './AbandonCommentDialog.js' );
 require( './AbandonTopicDialog.js' );
@@ -48,8 +49,17 @@ function ReplyWidget( commentController, commentDetails, config ) {
 	// Floating position for scroll back buttons: 'top', 'bottom', or null
 	this.floating = null;
 
-	this.$window = $( this.getElementWindow() );
-	this.onWindowScrollThrottled = OO.ui.throttle( this.onWindowScroll.bind( this ), 100 );
+	if ( window.IntersectionObserver ) {
+		const scrollPaddingTop = parseInt( $( document.documentElement ).css( 'scrollPaddingTop' ), 10 ) || 0;
+		const intersectionObserver = new IntersectionObserver(
+			this.onIntersection.bind( this ),
+			{
+				threshold: [ 0 ],
+				rootMargin: ( -scrollPaddingTop - 5 ) + 'px 0px -10px 0px'
+			}
+		);
+		intersectionObserver.observe( this.$element[ 0 ] );
+	}
 
 	const inputConfig = Object.assign(
 		{
@@ -285,7 +295,7 @@ function ReplyWidget( commentController, commentDetails, config ) {
 				.params( [
 					mw.util.getUrl( 'Special:Userlogin', returnTo ),
 					mw.util.getUrl( 'Special:Userlogin/signup', returnTo ),
-					contLangMessages[ 'tempuser-helppage' ]
+					mw.msg( 'tempuser-helppage' )
 				] )
 				.parseDom()
 		} );
@@ -449,13 +459,16 @@ ReplyWidget.prototype.clearStorage = function () {
 };
 
 /**
- * Handle window scroll events
+ * Handle change in intersection with viewport
+ *
+ * @param {IntersectionObserverEntry[]} entries
+ * @param {IntersectionObserver} observer
  */
-ReplyWidget.prototype.onWindowScroll = function () {
-	const rect = this.$element[ 0 ].getBoundingClientRect();
-	const viewportHeight = window.visualViewport ? visualViewport.height : this.viewportScrollContainer.clientHeight;
-	const floating = rect.bottom < 0 ? 'top' :
-		( rect.top > viewportHeight ? 'bottom' : null );
+ReplyWidget.prototype.onIntersection = function ( entries ) {
+	const entry = entries[ 0 ];
+
+	const rect = entry.boundingClientRect;
+	const floating = !entry.isIntersecting ? ( rect.top < 0 ? 'top' : 'bottom' ) : null;
 
 	if ( floating !== this.floating ) {
 		this.floating = floating;
@@ -475,17 +488,29 @@ ReplyWidget.prototype.onWindowScroll = function () {
 ReplyWidget.prototype.setPending = function ( pending ) {
 	this.pending = pending;
 	if ( pending ) {
-		this.replyButton.setDisabled( true );
 		this.cancelButton.setDisabled( true );
 		this.replyBodyWidget.setReadOnly( true );
 		this.replyBodyWidget.pushPending();
 	} else {
-		this.replyButton.setDisabled( false );
 		this.cancelButton.setDisabled( false );
 		this.replyBodyWidget.setReadOnly( false );
 		this.replyBodyWidget.popPending();
-		this.updateButtons();
 	}
+	this.updateButtons();
+};
+
+/**
+ * Display an error and prevent this reply from being saved.
+ *
+ * @param {string} code Error code
+ * @param {Object} data Error data
+ */
+ReplyWidget.prototype.setLoadingError = function ( code, data ) {
+	this.setSaveErrorMessage( code, data );
+	this.loadingFailed = true;
+	this.updateButtons();
+	// Hide mode switcher - not using setDisabled() because it has weird styles that make both buttons look selected
+	this.modeTabSelect.toggle( false );
 };
 
 ReplyWidget.prototype.saveEditMode = function ( mode ) {
@@ -517,11 +542,10 @@ ReplyWidget.prototype.onAdvancedToggleClick = function () {
 				selectFromIndex = titleText.length + '/* '.length + ' */ '.length;
 			}
 		} else {
-			// Same as summary.endsWith( defaultReplyTrail )
-			const defaultReplyTrail = '*/ ' + mw.msg( 'discussiontools-defaultsummary-reply' );
-			const endCommentIndex = summary.indexOf( defaultReplyTrail );
-			if ( endCommentIndex + defaultReplyTrail.length === summary.length ) {
-				selectFromIndex = endCommentIndex + 3;
+			const defaultReply = mw.msg( 'discussiontools-defaultsummary-reply' );
+			const defaultReplyTrail = '*/ ' + defaultReply;
+			if ( summary.endsWith( defaultReplyTrail ) ) {
+				selectFromIndex = summary.length - defaultReply.length;
 			}
 		}
 
@@ -633,8 +657,13 @@ ReplyWidget.prototype.setup = function ( data ) {
 			// in NewTopicController#onSectionTitleChange
 			summary = '';
 		} else {
-			const title = this.commentController.getThreadItem().getHeading().getLinkableTitle();
-			summary = ( title ? '/* ' + title + ' */ ' : '' ) +
+			let prefix = '';
+			if ( this.commentController.getThreadItem().getHeading().placeholderHeading ) {
+				prefix = '/* */ ';
+			} else if ( this.commentController.getThreadItem().getHeading().getLinkableTitle() !== '' ) {
+				prefix = '/* ' + this.commentController.getThreadItem().getHeading().getLinkableTitle() + ' */ ';
+			}
+			summary = prefix +
 				mw.msg( 'discussiontools-defaultsummary-reply' );
 		}
 	}
@@ -657,8 +686,6 @@ ReplyWidget.prototype.setup = function ( data ) {
 	}
 
 	mw.hook( 'wikipage.watchlistChange' ).add( this.onWatchToggleHandler );
-
-	this.$window[ 0 ].addEventListener( 'scroll', this.onWindowScrollThrottled, { passive: true } );
 
 	return this;
 };
@@ -747,7 +774,6 @@ ReplyWidget.prototype.teardown = function ( mode ) {
 		this.modeTabSelect.blur();
 	}
 	this.unbindBeforeUnloadHandler();
-	this.$window[ 0 ].removeEventListener( 'scroll', this.onWindowScrollThrottled );
 	mw.hook( 'wikipage.watchlistChange' ).remove( this.onWatchToggleHandler );
 
 	this.isTornDown = true;
@@ -789,15 +815,22 @@ ReplyWidget.prototype.onKeyDown = function ( e ) {
 		return false;
 	}
 
-	// VE surfaces already handle CTRL+Enter, but this will catch
-	// the plain surface, and the edit summary input.
-	// Require CTRL+Enter even on single line inputs per T326500.
 	if ( e.which === OO.ui.Keys.ENTER ) {
 		if ( e.ctrlKey || e.metaKey ) {
-			this.onReplyClick();
-			return false;
-		} else if ( e.target.tagName === 'INPUT' && !this.$bodyWrapper[ 0 ].contains( e.target ) && !this.replyButton.isDisabled() ) {
-			// The body wrapper can contain VE UI widgets that you may need to press enter within
+			// VE surfaces already handle CTRL+Enter, but this will catch
+			// the plain surface, and the edit summary input.
+			// Check we are in one of the form inputs, as the user can focus a link and
+			// press CTRL+Enter to open it in a new tab (T382401)
+			if ( this.$bodyWrapper[ 0 ].contains( e.target ) || e.target.tagName === 'INPUT' ) {
+				this.onReplyClick();
+				return false;
+			}
+		} else if (
+			// Require CTRL+Enter even on single line inputs per T326500.
+			e.target.tagName === 'INPUT' && !this.replyButton.isDisabled() &&
+			// Ignore the body wrapper as it can contain VE UI widgets that you may need to press enter within
+			!this.$bodyWrapper[ 0 ].contains( e.target )
+		) {
 			this.showEnterWarning();
 			return false;
 		}
@@ -881,7 +914,7 @@ ReplyWidget.prototype.preparePreview = function ( wikitext ) {
  * Update buttons when widget state has changed
  */
 ReplyWidget.prototype.updateButtons = function () {
-	this.replyButton.setDisabled( this.isEmpty() );
+	this.replyButton.setDisabled( this.pending || this.isEmpty() || this.loadingFailed );
 };
 
 /**
@@ -974,6 +1007,7 @@ ReplyWidget.prototype.updateNewCommentsWarning = function ( comments ) {
 	}
 	if ( !this.newCommentsWarning ) {
 		this.newCommentsShow = new OO.ui.ButtonWidget( {
+			label: mw.msg( 'discussiontools-replywidget-newcomments-button', mw.language.convertNumber( comments.length ) ),
 			flags: [ 'progressive' ]
 		} );
 		this.newCommentsClose = new OO.ui.ButtonWidget( {
@@ -993,9 +1027,6 @@ ReplyWidget.prototype.updateNewCommentsWarning = function ( comments ) {
 		this.$bodyWrapper.append( this.newCommentsWarning.$element );
 	}
 
-	this.newCommentsShow.setLabel(
-		mw.msg( 'discussiontools-replywidget-newcomments-button', mw.language.convertNumber( comments.length ) )
-	);
 	if ( !this.hideNewCommentsWarning ) {
 		this.newCommentsWarning.toggle( true );
 		setTimeout( () => {
@@ -1061,7 +1092,7 @@ ReplyWidget.prototype.createErrorMessage = function ( message ) {
  * @fires submit
  */
 ReplyWidget.prototype.onReplyClick = function () {
-	if ( this.pending || this.isEmpty() ) {
+	if ( this.pending || this.isEmpty() || this.loadingFailed ) {
 		return;
 	}
 

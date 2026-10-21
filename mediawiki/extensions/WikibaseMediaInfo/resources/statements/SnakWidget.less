@@ -1,0 +1,52 @@
+@import 'mediawiki.mixins';
+@import '../mediainfo-variables.less';
+
+.wbmi-snak,
+/* @todo BC: below selector no longer exist; can be removed 30 days after patch that introduced this comment */
+.wbmi-qualifier {
+	.flex-display();
+	.flex-wrap();
+	position: relative;
+
+	// this is a bit of a hack to deal with whitespace between the elements:
+	// there will be whitespace between the property, separator and value,
+	// but that whitespace should not be displayed (it's only to keep our
+	// html/template clean)
+	.wbmi-snak-value,
+	/* @todo BC: below selector no longer exist; can be removed 30 days after patch that introduced this comment */
+	.wbmi-qualifier-value {
+		.flex-display();
+	}
+
+	.wbmi-snak-value-separator,
+	/* @todo BC: below selector no longer exist; can be removed 30 days after patch that introduced this comment */
+	.wbmi-qualifier-value-separator {
+		white-space: pre;
+	}
+
+	.wbmi-snak-property {
+		.flex( 1, 1, 5em, 1 );
+
+		@media screen and ( max-width: @min-width-breakpoint-tablet ) {
+			.flex( 1, 1, 51%, 1 );
+		}
+	}
+
+	.wbmi-snak-value-input {
+		.flex( 2, 2, 10em, 2 );
+
+		@media screen and ( max-width: @min-width-breakpoint-tablet ) {
+			.flex( 1, 1, 51%, 2 );
+		}
+	}
+
+	.wbmi-snak-remove {
+		.flex( 0, 0, auto, 3 );
+	}
+
+	/* stylelint-disable-next-line selector-class-pattern */
+	& > .oo-ui-widget {
+		margin-right: 0.5em;
+		margin-bottom: 0.5em;
+	}
+}

@@ -4,32 +4,24 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Math\WikiTexVC\Nodes;
 
+use MediaWiki\Extension\Math\WikiTexVC\MMLmappings\TexConstants\TexClass;
+use MediaWiki\Extension\Math\WikiTexVC\MMLnodes\MMLbase;
 use MediaWiki\Extension\Math\WikiTexVC\MMLnodes\MMLmrow;
 use MediaWiki\Extension\Math\WikiTexVC\MMLnodes\MMLmtext;
 
 class Box extends TexNode {
 
-	/** @var string */
-	private $fname;
-	/** @var string */
-	private $arg;
-
-	public function __construct( string $fname, string $arg ) {
+	public function __construct(
+		private readonly string $fname,
+		private readonly string $arg,
+	) {
 		parent::__construct( $fname, $arg );
-		$this->fname = $fname;
-		$this->arg = $arg;
 	}
 
-	/**
-	 * @return string
-	 */
 	public function getFname(): string {
 		return $this->fname;
 	}
 
-	/**
-	 * @return string
-	 */
 	public function getArg(): string {
 		return $this->arg;
 	}
@@ -45,9 +37,7 @@ class Box extends TexNode {
 	}
 
 	/** @inheritDoc */
-	public function renderMML( $arguments = [], &$state = [] ) {
-		$mrow = new MMLmrow();
-		$mtext = new MMLmtext();
+	public function toMMLTree( array $arguments = [], array &$state = [] ): MMLbase {
 		$arg = $this->getArg();
 
 		if ( strlen( $arg ) >= 1 ) {
@@ -59,9 +49,8 @@ class Box extends TexNode {
 				$arg = "&#xA0;" . ltrim( $arg, " " );
 			}
 		}
-
-		return $mrow->encapsulateRaw(
-			$mtext->encapsulateRaw( $arg )
+		return new MMLmrow( TexClass::ORD, [],
+			new MMLmtext( "", [], $arg )
 		);
 	}
 

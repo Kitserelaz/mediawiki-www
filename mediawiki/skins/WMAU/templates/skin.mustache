@@ -1,0 +1,119 @@
+<header>
+	<div class="skin-wmau-container">
+		<h1 id="sitename">
+			<a href="{{url-mainpage}}" title="{{msg-sitetitle}}">
+				{{#data-logos}}
+					{{#wordmark}}
+						<img src="{{src}}" width="{{width}}" height="{{height}}" alt="{{msg-logo-wordmark-alt}}" />
+					{{/wordmark}}
+					{{^wordmark}}
+						{{msg-sitetitle}}
+					{{/wordmark}}
+				{{/data-logos}}
+			</a>
+		</h1>
+		<nav>
+			<ul class="skin-wmau-list-horizontal">
+				{{#array-header-menu}}
+					{{{.}}}
+				{{/array-header-menu}}
+			</ul>
+			{{#data-search-box}}
+				<form action="{{form-action}}" id="searchform">
+					<div class="skin-wmau-searchform-inner">
+						<input type="hidden" name="title" value="{{page-title}}" />
+						{{{html-input}}}
+						{{{html-button-search}}}
+					</div>
+				</form>
+			{{/data-search-box}}
+		</nav>
+	</div>
+</header>
+
+{{{html-site-notice}}}
+
+{{#is-user-registered}}
+	<aside class="skin-wmau-action-drawer">
+		<ul>
+			<li class="skin-wmau-feathericons-tool"><span>{{msg-toolbox}}</span></li>
+			{{#data-portlets}}
+				{{#data-views}}{{>portlet}}{{/data-views}}
+				{{#data-actions}}{{>portlet}}{{/data-actions}}
+				{{#data-variants}}{{>portlet}}{{/data-variants}}
+			{{/data-portlets}}
+			{{#data-portlets-sidebar}}
+				{{#array-portlets-rest}}
+					{{#.}}{{>portlet}}{{/.}}
+				{{/array-portlets-rest}}
+			{{/data-portlets-sidebar}}
+			{{#data-portlets}}
+				{{#data-user-interface-preferences}}{{>portlet}}{{/data-user-interface-preferences}}
+			{{/data-portlets}}
+			<div class="skin-wmau-drawer-section">
+				{{{html-recentchanges}}}
+			</div>
+			<div class="skin-wmau-drawer-section skin-wmau-user-menu">
+				{{#data-portlets}}
+					{{#data-user-menu}}{{>portlet}}{{/data-user-menu}}
+				{{/data-portlets}}
+			</div>
+		</ul>
+	</aside>
+	<div class="skin-wmau-notifications">
+		{{#data-portlets.data-notifications}}{{>portlet}}{{/data-portlets.data-notifications}}
+	</div>
+{{/is-user-registered}}
+
+<article class="mw-body skin-wmau-container">
+
+	{{#data-subject-page}}{{>icon-link}}{{/data-subject-page}}
+
+	<h1 class="skin-wmau-title firstHeading">
+		{{#page-title-url}}<a href="{{.}}">{{/page-title-url}}
+			{{#page-title-displaytitle}}{{{.}}}{{/page-title-displaytitle}}
+			{{^page-title-displaytitle}}
+				{{#page-title-ns}}<span class="skin-wmau-title-ns">{{.}}</span>{{/page-title-ns}}
+				<span class="skin-wmau-title-text">{{page-title-text}}</span>
+			{{/page-title-displaytitle}}
+		{{#page-title-url}}</a>{{/page-title-url}}
+	</h1>
+
+	{{{html-subtitle}}}
+
+	<div id="content">
+		<div id="mw-content-text">
+			{{{html-body-content}}}
+		</div>
+	</div>
+
+	{{{html-after-content}}}
+
+	{{#data-talk-page}}{{>icon-link}}{{/data-talk-page}}
+
+	{{#is-user-registered}}
+		{{{html-categories}}}
+	{{/is-user-registered}}
+
+</article>
+
+<footer>
+	<div class="skin-wmau-container">
+		<section class="skin-wmau-footer-top">
+			<div class="skin-wmau-wordmark">
+				{{#data-logos}}
+					{{#wordmark}}
+						<img src="{{src}}" width="{{width}}" height="{{height}}" alt="{{msg-logo-wordmark-alt}}" />
+					{{/wordmark}}
+				{{/data-logos}}
+			</div>
+			<div class="skin-wmau-footer-blurb">{{{html-footer-blurb}}}</div>
+		</section>
+		<ul class="skin-wmau-list-horizontal skin-wmau-footer-menu">
+			{{#array-footer-menu}}
+				{{{.}}}
+			{{/array-footer-menu}}
+		</ul>
+		<div class="skin-wmau-retrievedfrom">{{{html-retrievedfrom}}}</div>
+	</div>
+</footer>

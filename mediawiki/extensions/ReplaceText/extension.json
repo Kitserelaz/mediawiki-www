@@ -10,7 +10,7 @@
 	"descriptionmsg": "replacetext-desc",
 	"license-name": "GPL-2.0-or-later",
 	"requires": {
-		"MediaWiki": ">= 1.43"
+		"MediaWiki": ">= 1.46"
 	},
 	"type": "specialpage",
 	"GroupPermissions": {
@@ -28,6 +28,7 @@
 				"HookContainer",
 				"DBLoadBalancerFactory",
 				"ContentLanguage",
+				"JobFactory",
 				"JobQueueGroup",
 				"LinkRenderer",
 				"MovePageFactory",
@@ -37,9 +38,7 @@
 				"SearchEngineConfig",
 				"SlotRoleStore",
 				"UserFactory",
-				"UserOptionsLookup",
-				"WatchlistManager",
-				"WikiPageFactory"
+				"UserOptionsLookup"
 			]
 		}
 	},
@@ -64,6 +63,9 @@
 		"ext.ReplaceText": {
 			"scripts": [
 				"ext.ReplaceText.js"
+			],
+			"dependencies": [
+				"oojs-ui-core"
 			]
 		},
 		"ext.ReplaceTextStyles": {
@@ -84,6 +86,8 @@
 	},
 	"Hooks": {
 		"AdminLinks": "adminlinks",
+		"ChangeTagsListActive": "main",
+		"ListDefinedTags": "main",
 		"SpecialMovepageAfterMove": "main",
 		"UserGetReservedNames": "main"
 	},

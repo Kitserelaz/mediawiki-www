@@ -1,6 +1,6 @@
 <?php
 
-namespace MediaWiki\CheckUser\Investigate\Services;
+namespace MediaWiki\Extension\CheckUser\Investigate\Services;
 
 use LogicException;
 use Wikimedia\IPUtils;
@@ -14,14 +14,21 @@ class TimelineService extends ChangeService {
 	 *
 	 * @param string[] $targets The targets of the check
 	 * @param string[] $excludeTargets The targets to exclude from the check
+	 * @param bool $excludeTempAccounts Whether to ignore temporary accounts targets
 	 * @param string $start The start offset
 	 * @param int $limit The limit for the check
 	 * @return array
 	 */
-	public function getQueryInfo( array $targets, array $excludeTargets, string $start, int $limit ): array {
+	public function getQueryInfo(
+		array $targets,
+		array $excludeTargets,
+		bool $excludeTempAccounts,
+		string $start,
+		int $limit
+	): array {
 		// Split the targets into users and IP addresses, so that two queries can be made (one for the users and one
 		// for the IPs) and then unioned together.
-		$ipTargets = array_filter( $targets, [ IPUtils::class, 'isIPAddress' ] );
+		$ipTargets = array_filter( $targets, IPUtils::isIPAddress( ... ) );
 		$userTargets = array_diff( $targets, $ipTargets );
 
 		$dbr = $this->dbProvider->getReplicaDatabase();
@@ -34,16 +41,38 @@ class TimelineService extends ChangeService {
 			// query will not be run.
 			if ( count( $ipTargets ) ) {
 				$ipTargetsQuery = $this->getQueryBuilderForTable(
-					$table, $ipTargets, true, $excludeTargets, $start, $limit
+					$table,
+					$ipTargets,
+					true,
+					$excludeTargets,
+					$start,
+					$limit
 				);
 				if ( $ipTargetsQuery !== null ) {
+					if ( $excludeTempAccounts ) {
+						$ipTargetsQuery = $this->excludeTempAccountsFromQuery(
+							$dbr,
+							$ipTargetsQuery,
+							$table
+						);
+					}
+
 					$unionQueryBuilder->add( $ipTargetsQuery );
 					$hasValidQuery = true;
 				}
 			}
 			if ( count( $userTargets ) ) {
+				$newUserTargets = $excludeTempAccounts ?
+					$this->removeTempNamesFromArray( $userTargets ) :
+					$userTargets;
+
 				$userTargetsQuery = $this->getQueryBuilderForTable(
-					$table, $userTargets, false, $excludeTargets, $start, $limit
+					$table,
+					$newUserTargets,
+					false,
+					$excludeTargets,
+					$start,
+					$limit
 				);
 				if ( $userTargetsQuery !== null ) {
 					$unionQueryBuilder->add( $userTargetsQuery );
@@ -53,7 +82,26 @@ class TimelineService extends ChangeService {
 		}
 
 		if ( !$hasValidQuery ) {
-			throw new LogicException( 'Cannot get query info when $targets is empty or contains all invalid targets.' );
+			// Required to prevent an error when a single temp account is
+			// requested in the timeline while filtering out temp accounts
+			if ( $excludeTempAccounts &&
+				count( $ipTargets ) === 0 && count( $userTargets ) > 0 &&
+				$this->containsOnlyTempNames( $userTargets )
+			) {
+				// If the conditions are empty but user targets were provided,
+				// AND we were asked to skip temp accounts, it may be the case
+				// that all $userTargets refer to temp accounts.
+				//
+				// In that case, adding a dummy SELECT matching no rows to the
+				// UNION query is needed to prevent the query from failing
+				// (EXPLAIN for the resulting query is reported by the RDBMS as
+				// an "Impossible WHERE")
+				$unionQueryBuilder->add( $this->getDummyQueryBuilder() );
+			} else {
+				throw new LogicException(
+					'Cannot get query info when $targets is empty or contains all invalid targets.'
+				);
+			}
 		}
 
 		$derivedTable = $unionQueryBuilder->getSQL();
@@ -61,11 +109,48 @@ class TimelineService extends ChangeService {
 		return [
 			'tables' => [ 'a' => new Subquery( $derivedTable ) ],
 			'fields' => [
-				'namespace', 'title', 'timestamp', 'page_id', 'ip', 'xff', 'agent', 'id', 'user', 'user_text', 'actor',
-				'comment_text', 'comment_data', 'type', 'this_oldid', 'last_oldid', 'minor',
-				'log_type', 'log_action', 'log_params', 'log_deleted', 'log_id',
+				'namespace', 'title', 'timestamp', 'page_id', 'ip_hex', 'xff', 'agent', 'id',
+				'user', 'user_text', 'actor', 'comment_text', 'comment_data', 'type',
+				'this_oldid', 'last_oldid', 'minor', 'log_type', 'log_action', 'log_params',
+				'log_deleted', 'log_id',
 			],
 		];
+	}
+
+	private function getDummyQueryBuilder(): SelectQueryBuilder {
+		$fields = [
+			'namespace' => $this->castValueToType( 'Null', 'int' ),
+			'title' => $this->castValueToType( 'Null', 'text' ),
+			'timestamp' => $this->castValueToType( 'Null', 'timestampz' ),
+			'page_id' => $this->castValueToType( 'Null', 'int' ),
+			'ip_hex' => $this->castValueToType( 'Null', 'varchar' ),
+			'xff' => $this->castValueToType( 'Null', 'text' ),
+			'agent' => $this->castValueToType( 'Null', 'text' ),
+			'id' => $this->castValueToType( 'Null', 'int' ),
+			'user' => $this->castValueToType( 'Null', 'int' ),
+			'user_text' => $this->castValueToType( 'Null', 'varbinary' ),
+			'actor' => $this->castValueToType( 'Null', 'int' ),
+			'comment_text' => $this->castValueToType( 'Null', 'text' ),
+			'comment_data' => $this->castValueToType( 'Null', 'text' ),
+			'type' => $this->castValueToType( 'Null', 'int' ),
+			'this_oldid' => $this->castValueToType( 'Null', 'int' ),
+			'last_oldid' => $this->castValueToType( 'Null', 'int' ),
+			'minor' => $this->castValueToType( 'Null', 'int' ),
+			// Fields relevant to cu_log_event and cu_private_event
+			'log_type' => $this->castValueToType( 'Null', 'varbinary' ),
+			'log_action' => $this->castValueToType( 'Null', 'varbinary' ),
+			'log_params' => $this->castValueToType( 'Null', 'blob' ),
+			'log_deleted' => $this->castValueToType( 'Null', 'smallint' ),
+			'log_id' => $this->castValueToType( 'Null', 'int' ),
+		];
+
+		return $this->dbProvider->getReplicaDatabase()->newSelectQueryBuilder()
+			->select( $fields )
+			->from( 'cu_changes' )
+			->join( 'actor', null, 'actor_id=cuc_actor' )
+			->join( 'comment', null, 'comment_id=cuc_comment_id' )
+			->where( '1=0' )
+			->caller( __METHOD__ );
 	}
 
 	/**
@@ -83,7 +168,12 @@ class TimelineService extends ChangeService {
 	 *    be generated.
 	 */
 	private function getQueryBuilderForTable(
-		string $table, array $targets, bool $targetsAreIPs, array $excludeTargets, string $start, int $limit
+		string $table,
+		array $targets,
+		bool $targetsAreIPs,
+		array $excludeTargets,
+		string $start,
+		int $limit
 	): ?SelectQueryBuilder {
 		// Get the query builder for the table which has all table-specific information added but needs the
 		// table non-specific information added.
@@ -141,7 +231,7 @@ class TimelineService extends ChangeService {
 		// Common fields for all queries
 		$fields = [
 			'namespace' => 'cuc_namespace', 'title' => 'cuc_title', 'timestamp' => 'cuc_timestamp',
-			'page_id' => 'cuc_page_id', 'ip' => 'cuc_ip', 'xff' => 'cuc_xff', 'agent' => 'cuc_agent',
+			'page_id' => 'cuc_page_id', 'ip_hex' => 'cuc_ip_hex', 'xff' => 'cuc_xff', 'agent' => 'cuua_text',
 			'id' => 'cuc_id', 'user' => 'actor_user', 'user_text' => 'actor_name', 'actor' => 'cuc_actor',
 			'comment_text', 'comment_data', 'type' => 'cuc_type',
 		];
@@ -159,6 +249,7 @@ class TimelineService extends ChangeService {
 			->from( 'cu_changes' )
 			->join( 'actor', null, 'actor_id=cuc_actor' )
 			->join( 'comment', null, 'comment_id=cuc_comment_id' )
+			->leftJoin( 'cu_useragent', null, 'cuua_id = cuc_agent_id' )
 			->where( $targetsExpr )
 			->caller( __METHOD__ );
 		if ( $dbr->unionSupportsOrderAndLimit() ) {
@@ -188,7 +279,7 @@ class TimelineService extends ChangeService {
 		// Common fields for all queries
 		$fields = [
 			'namespace' => 'log_namespace', 'title' => 'log_title', 'timestamp' => 'cule_timestamp',
-			'page_id' => 'log_page', 'ip' => 'cule_ip', 'xff' => 'cule_xff', 'agent' => 'cule_agent',
+			'page_id' => 'log_page', 'ip_hex' => 'cule_ip_hex', 'xff' => 'cule_xff', 'agent' => 'cuua_text',
 			'id' => 'cule_id', 'user' => 'actor_user', 'user_text' => 'actor_name', 'actor' => 'cule_actor',
 			'comment_text', 'comment_data', 'type' => $this->castValueToType( (string)RC_LOG, 'smallint' ),
 		];
@@ -207,6 +298,7 @@ class TimelineService extends ChangeService {
 			->join( 'actor', null, 'actor_id=cule_actor' )
 			->join( 'logging', null, 'log_id=cule_log_id' )
 			->join( 'comment', null, 'comment_id=log_comment_id' )
+			->leftJoin( 'cu_useragent', null, 'cuua_id = cule_agent_id' )
 			->where( $targetsExpr )
 			->caller( __METHOD__ );
 		if ( $dbr->unionSupportsOrderAndLimit() ) {
@@ -225,7 +317,8 @@ class TimelineService extends ChangeService {
 	 *   could be generated.
 	 */
 	private function getPartialQueryBuilderForCuPrivateEvent(
-		array $targets, bool $targetsAreIPs
+		array $targets,
+		bool $targetsAreIPs
 	): ?SelectQueryBuilder {
 		$targetsExpr = $this->buildTargetExprMultiple( $targets, self::PRIVATE_LOG_EVENT_TABLE );
 		// Don't run the query if no targets are valid.
@@ -239,7 +332,7 @@ class TimelineService extends ChangeService {
 		// Common fields for all queries
 		$fields = [
 			'namespace' => 'cupe_namespace', 'title' => 'cupe_title', 'timestamp' => 'cupe_timestamp',
-			'page_id' => 'cupe_page', 'ip' => 'cupe_ip', 'xff' => 'cupe_xff', 'agent' => 'cupe_agent',
+			'page_id' => 'cupe_page', 'ip_hex' => 'cupe_ip_hex', 'xff' => 'cupe_xff', 'agent' => 'cuua_text',
 			'id' => 'cupe_id', 'user' => 'actor_user', 'user_text' => 'actor_name', 'actor' => 'cupe_actor',
 			'comment_text', 'comment_data', 'type' => $this->castValueToType( (string)RC_LOG, 'smallint' ),
 		];
@@ -260,6 +353,7 @@ class TimelineService extends ChangeService {
 			->select( $fields )
 			->from( 'cu_private_event' )
 			->join( 'comment', null, 'comment_id=cupe_comment_id' )
+			->leftJoin( 'cu_useragent', null, 'cuua_id = cupe_agent_id' )
 			->where( $targetsExpr )
 			->caller( __METHOD__ );
 		if ( $targetsAreIPs ) {
@@ -276,6 +370,25 @@ class TimelineService extends ChangeService {
 			$queryBuilder->orderBy( 'cupe_timestamp', SelectQueryBuilder::SORT_DESC );
 		}
 		return $queryBuilder;
+	}
+
+	/**
+	 * Determines whether a given list of usernames contains only temporary
+	 * account names.
+	 *
+	 * If the array is empty, returns true.
+	 *
+	 * @param string[] $userTargets An array of usernames
+	 * @return bool
+	 */
+	private function containsOnlyTempNames( array $userTargets ): bool {
+		foreach ( $userTargets as $target ) {
+			if ( !$this->tempUserConfig->isTempName( $target ) ) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	/**

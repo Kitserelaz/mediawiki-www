@@ -1,10 +1,10 @@
 <?php
 
-namespace MediaWiki\CheckUser\Tests\Unit\CheckUser\Pagers;
+namespace MediaWiki\Extension\CheckUser\Tests\Unit\CheckUser\Pagers;
 
-use MediaWiki\CheckUser\CheckUser\Pagers\CheckUserLogPager;
-use MediaWiki\CheckUser\Services\CheckUserLogService;
 use MediaWiki\CommentStore\CommentStore;
+use MediaWiki\Extension\CheckUser\CheckUser\Pagers\CheckUserLogPager;
+use MediaWiki\Extension\CheckUser\Services\CheckUserLogService;
 use MediaWiki\User\ActorStore;
 use MediaWikiUnitTestCase;
 use Wikimedia\Rdbms\IReadableDatabase;
@@ -13,14 +13,19 @@ use Wikimedia\TestingAccessWrapper;
 /**
  * @group CheckUser
  *
- * @covers \MediaWiki\CheckUser\CheckUser\Pagers\CheckUserLogPager
+ * @covers \MediaWiki\Extension\CheckUser\CheckUser\Pagers\CheckUserLogPager
  */
 class CheckUserLogPagerTest extends MediaWikiUnitTestCase {
-	private function commonGetPerformerSearchConds( string $initiatorName, $mockReturnValue ) {
+
+	/**
+	 * @return CheckUserLogPager
+	 */
+	private function commonGetPerformerSearchConds( string $initiatorName, ?int $mockReturnValue ) {
 		$objectUnderTest = $this->getMockBuilder( CheckUserLogPager::class )
 			->disableOriginalConstructor()
 			->onlyMethods( [] )
 			->getMock();
+		/** @var CheckUserLogPager $objectUnderTest */
 		$objectUnderTest = TestingAccessWrapper::newFromObject( $objectUnderTest );
 		$mockActorStore = $this->createMock( ActorStore::class );
 		$mockDbr = $this->createMock( IReadableDatabase::class );
@@ -58,7 +63,7 @@ class CheckUserLogPagerTest extends MediaWikiUnitTestCase {
 	public static function provideInitiatorNames() {
 		return [
 			'IP' => [ '127.0.0.1' ],
-			'User' => [ 'TestAccount' ]
+			'User' => [ 'TestAccount' ],
 		];
 	}
 
@@ -112,15 +117,15 @@ class CheckUserLogPagerTest extends MediaWikiUnitTestCase {
 				// $objectUnderTest->opts value for the test.
 				[ 'target' => '1.2.3.4', 'initiator' => '', 'reason' => '' ],
 				// The expected array for the 'options' array returned by ::getQueryInfo
-				[ 'USE INDEX' => [ 'cu_log' => 'cul_target_hex' ] ]
+				[ 'USE INDEX' => [ 'cu_log' => 'cul_target_hex' ] ],
 			],
 			'IP range specified as the target' => [
 				[ 'target' => '1.2.3.4/22', 'initiator' => '', 'reason' => '' ],
-				[ 'USE INDEX' => [ 'cu_log' => 'cul_target_hex' ] ]
+				[ 'USE INDEX' => [ 'cu_log' => 'cul_target_hex' ] ],
 			],
 			'User specified as the target' => [
 				[ 'target' => 'Testinguser', 'initiator' => '', 'reason' => '' ],
-				[]
+				[],
 			],
 		];
 	}

@@ -1,0 +1,40 @@
+{
+	"name": "mediawiki/proofread-page",
+	"type": "mediawiki-extension",
+	"description": "The ProofreadPage extension adds book proofreading capacity to MediaWiki. It can render a book either as a column of OCR text beside a column of scanned images, or broken into its logical organization (such as chapters or poems) using transclusion.",
+	"homepage": "https://www.mediawiki.org/wiki/Extension:ProofreadPage",
+	"license": "GPL-2.0-or-later",
+	"require": {
+		"composer/installers": "~1.0|~2.0"
+	},
+	"require-dev": {
+		"mediawiki/mediawiki-codesniffer": "51.0.1",
+		"mediawiki/mediawiki-phan-config": "0.20.0",
+		"mediawiki/minus-x": "2.0.1",
+		"php-parallel-lint/php-console-highlighter": "1.0.0",
+		"php-parallel-lint/php-parallel-lint": "1.4.0"
+	},
+	"scripts": {
+		"foreign-resources": "../../maintenance/run manageForeignResources --extension ProofreadPage",
+		"test": [
+			"parallel-lint . --exclude node_modules --exclude vendor",
+			"@phpcs",
+			"minus-x check ."
+		],
+		"fix": [
+			"minus-x fix .",
+			"phpcbf"
+		],
+		"phan": "phan -d . --long-progress-bar",
+		"phpcs": "phpcs -sp --cache"
+	},
+	"config": {
+		"allow-plugins": {
+			"composer/installers": true,
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		},
+		"audit": {
+			"block-insecure": false
+		}
+	}
+}

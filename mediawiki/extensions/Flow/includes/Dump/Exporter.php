@@ -2,7 +2,6 @@
 
 namespace Flow\Dump;
 
-use BatchRowIterator;
 use Exception;
 use Flow\Collection\PostSummaryCollection;
 use Flow\Container;
@@ -18,6 +17,7 @@ use Flow\Search\Iterators\AbstractIterator;
 use Flow\Search\Iterators\HeaderIterator;
 use Flow\Search\Iterators\TopicIterator;
 use MediaWiki\CommentStore\CommentStore;
+use MediaWiki\Export\WikiExporter;
 use MediaWiki\HookContainer\HookContainer;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\RevisionStore;
@@ -25,10 +25,10 @@ use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleParser;
 use MediaWiki\User\CentralId\CentralIdLookup;
 use MediaWiki\User\User;
+use MediaWiki\Utils\BatchRowIterator;
 use MediaWiki\WikiMap\WikiMap;
 use MediaWiki\Xml\Xml;
 use ReflectionProperty;
-use WikiExporter;
 use Wikimedia\Rdbms\IReadableDatabase;
 use Wikimedia\Timestamp\TimestampException;
 
@@ -112,16 +112,14 @@ class Exporter extends WikiExporter {
 			$limitNamespaces
 		);
 		$this->prevRevisionProperty = new ReflectionProperty( AbstractRevision::class, 'prevRevision' );
-		$this->prevRevisionProperty->setAccessible( true );
 
 		$this->changeTypeProperty = new ReflectionProperty( AbstractRevision::class, 'changeType' );
-		$this->changeTypeProperty->setAccessible( true );
 
 		try {
 			$this->lookup = MediaWikiServices::getInstance()
 				->getCentralIdLookupFactory()
 				->getLookup( 'CentralAuth' );
-		} catch ( \Throwable $unused ) {
+		} catch ( \Throwable ) {
 			$this->lookup = null;
 		}
 	}
@@ -144,7 +142,8 @@ class Exporter extends WikiExporter {
 			[
 				'xmlns' => "http://www.mediawiki.org/xml/flow-$version/",
 				'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance',
-				'xsi:schemaLocation' => "http://www.mediawiki.org/xml/flow-$version/ https://www.mediawiki.org/xml/flow-$version.xsd",
+				'xsi:schemaLocation' => "http://www.mediawiki.org/xml/flow-$version/ " .
+					"https://www.mediawiki.org/xml/flow-$version.xsd",
 				'version' => $version,
 				'xml:lang' => $wgLanguageCode
 			]
@@ -272,7 +271,7 @@ class Exporter extends WikiExporter {
 			$summary = $summaryCollection->getLastRevision();
 			'@phan-var PostSummary $summary';
 			$this->formatSummary( $summary );
-		} catch ( \Exception $e ) {
+		} catch ( \Exception ) {
 			// no summary - that's ok!
 		}
 

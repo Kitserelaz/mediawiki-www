@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"Kizule",
+			"Zoranzoki21"
+		]
+	},
+	"deleteuserpages-desc": "Daje mogućnost korisnicima da brišu sopstvene korisničke stranice",
+	"action-delete-rootuserpages": "obriši svoju korisničku stranicu i stranicu za razgovor",
+	"right-delete-rootuserpages": "Može brisati lične korisničke stranice i njihove stranice za razgovor",
+	"action-delete-usersubpages": "obriši podstranice lične korisničke stranice",
+	"right-delete-usersubpages": "Može brisati podstranice njihovih ličnih korisničkih stranica"
+}

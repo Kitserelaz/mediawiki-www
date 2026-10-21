@@ -1,0 +1,163 @@
+/*!
+ * This file is part of the Semantic MediaWiki Extension
+ * @see https://semantic-mediawiki.org/
+ *
+ * @section LICENSE
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
+ *
+ * Schema content related CSS
+ *
+ * @file
+ * @ingroup semantic-mediawiki
+ *
+ * @license GNU GPL v2+
+ * @since 3.1
+ *
+ * @author mwjames
+ */
+
+.smw-jsonview-button-group-right {
+    float: right;
+    margin-left: 10px;
+    margin-top: 0px;
+    margin-right: 0px;
+    clear: right;
+    display: inline-flex;
+}
+
+.smw-jsonview-button-group-left {
+    float: left;
+    margin-left: 10px;
+    margin-top: 0px;
+    margin-right: 0px;
+    clear: left;
+    display: inline-flex;
+    height: 28px;
+    text-align: center;
+}
+
+.smw-jsonview-button-group-left input {
+    margin: 4px;
+    padding: 1px;
+    padding-left: 3px;
+    border: 1px solid #ddd;
+    border-radius: 2px;
+}
+
+.smw-jsonview-search-label {
+    margin: auto;
+}
+
+.smw-jsonview-button {
+    cursor: pointer;
+    width: 40px;
+    height: 28px;
+    background-color: #337ab7;
+    border: none;
+    color: white;
+    padding: 0 14px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 20px;
+    font-family: monospace;
+    -webkit-transition-duration: 0.4s;
+    transition-duration: 0.4s;
+}
+
+.smw-jsonview-button:first-child {
+    border-radius: 2px 0 0 2px;
+    border-right: 1px solid #fff;
+}
+
+.smw-jsonview-button:last-child {
+    border-radius: 0 2px 2px 0;
+}
+
+.smw-jsonview-button:hover {
+    background-color: #008CBA;
+    color: white;
+}
+
+.smw-jsonview-button:focus {
+    outline:0;
+}
+
+.jsonview {
+    font-size: 12px;
+}
+
+.jsonview ul {
+    margin-bottom: 0px !important;
+}
+
+.jsonview .collapsible {
+    list-style: unset;
+}
+
+.jsonview ul {
+    list-style-type: none;
+    margin: 0 0 0 1px;
+    border-left: 1px dotted #ccc;
+    padding-left: 2em;
+}
+
+.smw-jsonview-clipboard {
+    background-image: url( assets/smw-icon-clipboard.svg );
+    background-repeat: no-repeat;
+    height: 12px;
+    width: 16px;
+    display: inline-block;
+    padding-top: 1px;
+    margin-top: 1px;
+}
+
+.smw-json-container ul, .json-document ul {
+    list-style-type: none;
+    list-style-image: none;
+}
+
+.smw-jsonview-menu {
+    display: block;
+    margin-top: 10px;
+    height: 28px;
+    background-color: #f6f6f6;
+    border-left: 1px solid #eaecf0;
+    border-top: 1px solid #eaecf0;
+    border-right: 1px solid #eaecf0;
+    position: -webkit-sticky; /* Safari */
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.smw-jsonview-menu + pre {
+    background-color: #fff;
+    margin-top:0px;
+}
+
+.smw-jsonview-menu .smw-jsonview-button {
+    border-radius: 0px;
+    color: #72777d;
+    background-color: #f6f6f6;
+}
+
+.smw-jsonview-menu .smw-jsonview-button:hover {
+    background-color: #ddd;
+}
+
+.smw-jsonview-menu .smw-jsonview-button:first-child {
+    border-right: 1px solid #f6f6f6;
+}

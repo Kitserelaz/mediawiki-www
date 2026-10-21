@@ -5,22 +5,28 @@ namespace MediaWiki\Extension\OAuth\Backend;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Deferred\AutoCommitUpdate;
 use MediaWiki\Deferred\DeferredUpdates;
+use MediaWiki\Exception\MWException;
 use MediaWiki\Extension\Notifications\Model\Event;
+use MediaWiki\Extension\OAuth\Control\ConsumerSubmitControl;
+use MediaWiki\Extension\OAuth\Control\SubmitControl;
 use MediaWiki\Extension\OAuth\Lib\OAuthSignatureMethodHmacSha1;
+use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Permissions\Authority;
 use MediaWiki\Request\WebRequest;
 use MediaWiki\Title\Title;
 use MediaWiki\User\CentralId\CentralIdLookup;
+use MediaWiki\User\CentralId\LocalIdLookup;
 use MediaWiki\User\User;
 use MediaWiki\WikiMap\WikiMap;
-use MWException;
 use Wikimedia\ObjectCache\BagOStuff;
 use Wikimedia\Rdbms\IDatabase;
+use Wikimedia\Rdbms\ILBFactory;
+use Wikimedia\Rdbms\IReadableDatabase;
 
 /**
  * Static utility functions for OAuth
  *
- * @file
  * @ingroup OAuth
  */
 class Utils {
@@ -28,13 +34,11 @@ class Utils {
 	 * @return bool
 	 */
 	public static function isCentralWiki() {
-		global $wgMWOAuthCentralWiki;
-
-		return ( WikiMap::getCurrentWikiId() === $wgMWOAuthCentralWiki );
+		return ( WikiMap::getCurrentWikiId() === self::getCentralWiki() );
 	}
 
 	/**
-	 * @return string|bool
+	 * @return string|false The Wiki ID or false (for local DB).
 	 */
 	public static function getCentralWiki() {
 		global $wgMWOAuthCentralWiki;
@@ -43,23 +47,54 @@ class Utils {
 	}
 
 	/**
-	 * @param int $index DB_PRIMARY/DB_REPLICA
-	 * @return IDatabase
+	 * Database connection of the OAuth's central wiki as specified
+	 * by $wgMWOAuthCentralWiki. This is different from ::getOAuthDB()
+	 * which is OAuth's database.
+	 *
+	 * This method, for example, is used for logging OAuth actions.
+	 * @see ConsumerSubmitControl::makeLogEntry()
+	 *
+	 * @return false|IDatabase
 	 */
-	public static function getCentralDB( $index ) {
+	public static function getCentralWikiDB() {
 		$lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
 
-		// T244415: Use the primary database if there were changes
-		if ( $index === DB_REPLICA && $lbFactory->hasOrMadeRecentPrimaryChanges() ) {
-			$index = DB_PRIMARY;
+		return $lbFactory->getMainLB( self::getCentralWiki() )->getConnection( DB_PRIMARY );
+	}
+
+	/**
+	 * Get the URL to be used as the issuer ('iss') claim in JWTs.
+	 */
+	public static function getJwtIssuer(): string {
+		$centralWiki = self::getCentralWiki() ?: WikiMap::getCurrentWikiId();
+		$wiki = WikiMap::getWiki( $centralWiki );
+		if ( !$wiki ) {
+			LoggerFactory::getInstance( 'OAuth' )->error( 'WikiMap not configured' );
+			return MediaWikiServices::getInstance()->getUrlUtils()->getCanonicalServer();
 		}
-		$wikiId = self::getCentralWiki();
-		if ( WikiMap::isCurrentWikiId( $wikiId ) ) {
-			$wikiId = false;
+		return $wiki->getCanonicalServer();
+	}
+
+	/**
+	 * OAuth's database as specified by the virtual domain setting. To
+	 * access the MediaWiki's central wiki, use getCentralWikiDB().
+	 *
+	 * @param int $index DB_PRIMARY/DB_REPLICA
+	 * @return IDatabase|IReadableDatabase
+	 */
+	public static function getOAuthDB( int $index ) {
+		/** @var ILBFactory $connProvider To support hasOrMadeRecentPrimaryChanges() */
+		$connProvider = MediaWikiServices::getInstance()->getConnectionProvider();
+		'@phan-var ILBFactory $connProvider';
+
+		// T244415: Use the primary database if there were changes
+		if ( $index === DB_PRIMARY ||
+			( $index === DB_REPLICA && $connProvider->hasOrMadeRecentPrimaryChanges() )
+		) {
+			return $connProvider->getPrimaryDatabase( 'virtual-oauth' );
 		}
 
-		return $lbFactory->getMainLB( $wikiId )->getConnection(
-			$index, [], $wikiId );
+		return $connProvider->getReplicaDatabase( 'virtual-oauth' );
 	}
 
 	/**
@@ -143,7 +178,7 @@ class Utils {
 	public static function hasOAuthHeaders( WebRequest $request ) {
 		$header = $request->getHeader( 'Authorization' );
 
-		return $header !== false && strpos( $header, 'OAuth ' ) === 0;
+		return $header !== false && str_starts_with( $header, 'OAuth ' );
 	}
 
 	/**
@@ -244,10 +279,10 @@ class Utils {
 		return $server;
 	}
 
-	public static function newMWOAuthDataStore() {
+	public static function newMWOAuthDataStore(): MWOAuthDataStore {
 		$lb = MediaWikiServices::getInstance()->getDBLoadBalancer();
-		$dbr = self::getCentralDB( DB_REPLICA );
-		$dbw = $lb->getServerCount() > 1 ? self::getCentralDB( DB_PRIMARY ) : null;
+		$dbr = self::getOAuthDB( DB_REPLICA );
+		$dbw = $lb->getServerCount() > 1 ? self::getOAuthDB( DB_PRIMARY ) : null;
 		return new MWOAuthDataStore( $dbr, $dbw, self::getSessionCache(), self::getNonceCache() );
 	}
 
@@ -260,97 +295,69 @@ class Utils {
 	 * @return string|bool Username, false if not found, empty string if name is hidden
 	 */
 	public static function getCentralUserNameFromId( $userId, $audience = false ) {
-		global $wgMWOAuthSharedUserIDs, $wgMWOAuthSharedUserSource;
-
-		// global ID required via hook
-		if ( $wgMWOAuthSharedUserIDs ) {
-			$lookup = MediaWikiServices::getInstance()
-				->getCentralIdLookupFactory()
-				->getLookup( $wgMWOAuthSharedUserSource );
-			$name = $lookup->nameFromCentralId(
-				$userId,
-				$audience === 'raw'
-					? CentralIdLookup::AUDIENCE_RAW
-					: ( $audience ?: CentralIdLookup::AUDIENCE_PUBLIC )
-			);
-			if ( $name === null ) {
-				$name = false;
-			}
-		} else {
-			$name = '';
-			$user = User::newFromId( $userId );
-			$permissionManager = MediaWikiServices::getInstance()->getPermissionManager();
-
-			if ( $audience === 'raw'
-				|| !$user->isHidden()
-				|| ( $audience instanceof User && $permissionManager->userHasRight( $audience, 'hideuser' ) )
-			) {
-				$name = $user->getName();
-			}
-		}
-
-		return $name;
+		return self::getCentralIdLookup()->nameFromCentralId(
+			$userId,
+			$audience === 'raw'
+				? CentralIdLookup::AUDIENCE_RAW
+				: ( $audience ?: CentralIdLookup::AUDIENCE_PUBLIC )
+		) ?? false;
 	}
 
 	/**
-	 * Given a central wiki user ID, get a local User object
+	 * Given a central wiki user ID, get a local User object.
+	 * No audience checks are done for the lookup.
 	 *
 	 * @param int $userId
 	 * @return User|false False if not found
 	 */
 	public static function getLocalUserFromCentralId( $userId ) {
-		global $wgMWOAuthSharedUserIDs, $wgMWOAuthSharedUserSource;
-
-		// global ID required via hook
-		if ( $wgMWOAuthSharedUserIDs ) {
-			$lookup = MediaWikiServices::getInstance()
-				->getCentralIdLookupFactory()
-				->getLookup( $wgMWOAuthSharedUserSource );
-			$user = $lookup->localUserFromCentralId( $userId );
-			if ( $user === null || !$lookup->isAttached( $user ) ) {
-				return false;
-			}
-			return User::newFromIdentity( $user );
+		$lookup = self::getCentralIdLookup();
+		$user = $lookup->localUserFromCentralId( $userId, CentralIdLookup::AUDIENCE_RAW );
+		if ( $user === null || !$lookup->isAttached( $user ) ) {
+			return false;
 		}
+		return User::newFromIdentity( $user );
+	}
 
-		return User::newFromId( $userId );
+	public static function getCentralIdLookup(): CentralIdLookup {
+		global $wgMWOAuthSharedUserSource;
+
+		return MediaWikiServices::getInstance()
+			->getCentralIdLookupFactory()
+			->getLookup( $wgMWOAuthSharedUserSource );
+	}
+
+	private static function usingCentralIds(): bool {
+		return !( self::getCentralIdLookup() instanceof LocalIdLookup );
 	}
 
 	/**
-	 * Given a local User object, get the user ID for that user on the central wiki
+	 * Given a local User object, get the user ID for that user on the central wiki.
+	 * No audience checks are done for the lookup.
 	 *
 	 * @param User $user
 	 * @return int|bool ID or false if not found
 	 */
 	public static function getCentralIdFromLocalUser( User $user ) {
-		global $wgMWOAuthSharedUserIDs, $wgMWOAuthSharedUserSource;
+		// T227688 do not rely on array auto-creation for non-stdClass
+		if ( !isset( $user->oAuthUserData ) ) {
+			$user->oAuthUserData = [];
+		}
 
-		// global ID required via hook
-		if ( $wgMWOAuthSharedUserIDs ) {
-			// T227688 do not rely on array auto-creation for non-stdClass
-			if ( !isset( $user->oAuthUserData ) ) {
-				$user->oAuthUserData = [];
-			}
-
-			if ( isset( $user->oAuthUserData['centralId'] ) ) {
-				$id = $user->oAuthUserData['centralId'];
-			} else {
-				$lookup = MediaWikiServices::getInstance()
-					->getCentralIdLookupFactory()
-					->getLookup( $wgMWOAuthSharedUserSource );
-				if ( !$lookup->isAttached( $user ) ) {
-					$id = false;
-				} else {
-					$id = $lookup->centralIdFromLocalUser( $user );
-					if ( $id === 0 ) {
-						$id = false;
-					}
-				}
-				// Process cache the result to avoid queries
-				$user->oAuthUserData['centralId'] = $id;
-			}
+		if ( isset( $user->oAuthUserData['centralId'] ) ) {
+			$id = $user->oAuthUserData['centralId'];
 		} else {
-			$id = $user->getId();
+			$lookup = self::getCentralIdLookup();
+			if ( !$lookup->isAttached( $user ) ) {
+				$id = false;
+			} else {
+				$id = $lookup->centralIdFromLocalUser( $user, CentralIdLookup::AUDIENCE_RAW );
+				if ( $id === 0 ) {
+					$id = false;
+				}
+			}
+			// Process cache the result to avoid queries
+			$user->oAuthUserData['centralId'] = $id;
 		}
 
 		return $id;
@@ -359,29 +366,11 @@ class Utils {
 	/**
 	 * Given a username, get the user ID for that user on the central wiki.
 	 * @param string $username
+	 * @param int|Authority $audience CentralIdLookup::AUDIENCE_* flag or user
 	 * @return int|bool ID or false if not found
 	 */
-	public static function getCentralIdFromUserName( $username ) {
-		global $wgMWOAuthSharedUserIDs, $wgMWOAuthSharedUserSource;
-
-		// global ID required via hook
-		if ( $wgMWOAuthSharedUserIDs ) {
-			$lookup = MediaWikiServices::getInstance()
-				->getCentralIdLookupFactory()
-				->getLookup( $wgMWOAuthSharedUserSource );
-			$id = $lookup->centralIdFromName( $username );
-			if ( $id === 0 ) {
-				$id = false;
-			}
-		} else {
-			$id = false;
-			$user = User::newFromName( $username );
-			if ( $user instanceof User && $user->getId() > 0 ) {
-				$id = $user->getId();
-			}
-		}
-
-		return $id;
+	public static function getCentralIdFromUserName( $username, $audience = CentralIdLookup::AUDIENCE_PUBLIC ) {
+		return self::getCentralIdLookup()->centralIdFromName( $username, $audience ) ?: false;
 	}
 
 	/**
@@ -410,9 +399,9 @@ class Utils {
 	 * @return string the (proto-relative, urlencoded) url of the central wiki's user talk page
 	 */
 	public static function getCentralUserTalk( $username ) {
-		global $wgMWOAuthCentralWiki, $wgMWOAuthSharedUserIDs;
+		global $wgMWOAuthCentralWiki;
 
-		if ( $wgMWOAuthSharedUserIDs ) {
+		if ( self::usingCentralIds() ) {
 			$url = WikiMap::getForeignURL(
 				$wgMWOAuthCentralWiki,
 				"User_talk:$username"
@@ -429,7 +418,7 @@ class Utils {
 	 */
 	public static function grantsAreValid( array $grants ) {
 		// Remove our special grants before calling the core method
-		$grants = array_diff( $grants, [ 'mwoauth-authonly', 'mwoauth-authonlyprivate' ] );
+		$grants = array_diff( $grants, SubmitControl::AUTH_ONLY_GRANTS );
 		return MediaWikiServices::getInstance()
 			->getGrantsInfo()
 			->grantsAreValid( $grants );
@@ -481,6 +470,18 @@ class Utils {
 	}
 
 	/**
+	 * Get the consumer ID from the given change tag name.
+	 * @param string $tagName
+	 * @return ?int Consumer ID, or null if the change tag doesn't look like one of ours
+	 */
+	public static function parseTagName( string $tagName ): ?int {
+		if ( preg_match( '/^OAuth CID: (\d+)$/', $tagName, $matches ) ) {
+			return (int)$matches[1];
+		}
+		return null;
+	}
+
+	/**
 	 * Check if a given change tag name should be reserved for this extension.
 	 * @param string $tagName
 	 * @return bool
@@ -495,7 +496,7 @@ class Utils {
 	 * Should be called on the central OAuth wiki.
 	 * @return User[]
 	 */
-	protected static function getOAuthAdmins() {
+	private static function getOAuthAdmins() {
 		global $wgOAuthGroupsToNotify;
 
 		if ( !$wgOAuthGroupsToNotify ) {

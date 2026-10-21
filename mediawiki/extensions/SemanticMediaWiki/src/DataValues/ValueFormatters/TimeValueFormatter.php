@@ -1,0 +1,501 @@
+<?php
+
+namespace SMW\DataValues\ValueFormatters;
+
+use Exception;
+use MediaWiki\Html\Html;
+use RuntimeException;
+use SMW\DataItems\Time;
+use SMW\DataValues\DataValue;
+use SMW\DataValues\Time\IntlTimeFormatter;
+use SMW\DataValues\TimeValue;
+use SMW\Localizer\Localizer;
+use SMW\MediaWiki\Outputs;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 2.4
+ *
+ * @author mwjames
+ * @author Markus Krötzsch
+ * @author Fabian Howahl
+ * @author Terry A. Hurlbut
+ */
+class TimeValueFormatter extends DataValueFormatter {
+
+	/**
+	 * @since 2.4
+	 *
+	 * {@inheritDoc}
+	 */
+	public function isFormatterFor( DataValue $dataValue ): bool {
+		return $dataValue instanceof TimeValue;
+	}
+
+	/**
+	 * @since 2.4
+	 *
+	 * {@inheritDoc}
+	 */
+	public function format( $type, $linker = null ) {
+		if ( !$this->dataValue instanceof TimeValue ) {
+			throw new RuntimeException( "The formatter is missing a valid TimeValue object" );
+		}
+
+		if (
+			$this->dataValue->isValid() &&
+			( $type === self::WIKI_SHORT || $type === self::HTML_SHORT ) ) {
+			$caption = ( $this->dataValue->getCaption() !== false ) ? $this->dataValue->getCaption() : $this->getPreferredCaption();
+			return $type === self::HTML_SHORT ? $this->wrapInTimeElement( $caption ) : $caption;
+		}
+
+		if (
+			$this->dataValue->isValid() &&
+			( $type === self::WIKI_LONG || $type === self::HTML_LONG ) ) {
+			$caption = $this->getPreferredCaption();
+			return $type === self::HTML_LONG ? $this->wrapInTimeElement( $caption ) : $caption;
+		}
+
+		// #1074
+		return $this->dataValue->getCaption() !== false ? $this->dataValue->getCaption() : '';
+	}
+
+	/**
+	 * Wrap a rendered date caption in a semantic <time> element carrying a
+	 * machine-readable ISO 8601 datetime, so HTML output exposes the date to
+	 * assistive technology and other consumers. Wiki output is left plain.
+	 *
+	 * BCE dates are returned unwrapped: the HTML <time> datetime attribute has
+	 * no representation for year 0 or negative years, which the partial ISO
+	 * string signals with a leading "-".
+	 */
+	private function wrapInTimeElement( string $caption ): string {
+		// The caption may already carry a <time> element (for example the
+		// deferred local-time conversion in getLocalizedFormat); don't nest a
+		// second one.
+		if ( str_contains( $caption, '<time' ) ) {
+			return $caption;
+		}
+
+		$datetime = $this->getPartialISO8601Date();
+
+		if ( $datetime === '' || $datetime[0] === '-' ) {
+			return $caption;
+		}
+
+		return Html::rawElement( 'time', [ 'datetime' => $datetime ], $caption );
+	}
+
+	/**
+	 * @private
+	 *
+	 * Compute a string representation that largely follows the ISO8601 standard
+	 * of representing dates. Large year numbers may have more than 4 digits,
+	 * which is not strictly conforming to the standard. The date includes year,
+	 * month, and day regardless of the input precision, but will only include
+	 * time when specified.
+	 *
+	 * Conforming to the 2000 version of ISO8601, year 1 BC(E) is represented
+	 * as "0000", year 2 BC(E) as "-0001" and so on.
+	 *
+	 * @since 2.4
+	 *
+	 * @param bool $mindefault determining whether values below the
+	 * precision of our input should be completed with minimal or maximal
+	 * conceivable values
+	 */
+	public function getISO8601Date( $mindefault = true ): string {
+		return $this->getISO8601DateInternal( $mindefault ? 'minimize' : 'maximize' );
+	}
+
+	/**
+	 * @private
+	 *
+	 * Compute a string representation as getISO8601Date but also cut off month and day
+	 * if missing
+	 */
+	public function getPartialISO8601Date(): string {
+		return $this->getISO8601DateInternal( 'cut' );
+	}
+
+	/**
+	 * @private
+	 *
+	 * Compute a string representation that largely follows the ISO8601 standard
+	 * of representing dates. Large year numbers may have more than 4 digits,
+	 * which is not strictly conforming to the standard. The date includes year,
+	 * month, and day regardless of the input precision, but will only include
+	 * time when specified.
+	 *
+	 * Conforming to the 2000 version of ISO8601, year 1 BC(E) is represented
+	 * as "0000", year 2 BC(E) as "-0001" and so on.
+	 *
+	 * @since 2.4
+	 */
+	private function getISO8601DateInternal( string $belowPrecisionHandling ): string {
+		$cut = $belowPrecisionHandling === 'cut';
+		$minimize = $belowPrecisionHandling === 'minimize';
+
+		/**
+		 * @var Time $dataItem
+		 */
+		$dataItem = $this->dataValue->getDataItemForCalendarModel( Time::CM_GREGORIAN );
+		$precision = $dataItem->getPrecision();
+
+		$result = $dataItem->getYear() > 0 ? '' : '-';
+		$result .= str_pad( $dataItem->getYear(), 4, "0", STR_PAD_LEFT );
+
+		$monthnum = $dataItem->getMonth();
+		if ( $precision < Time::PREC_YM ) {
+			if ( $cut ) {
+				return $result;
+			}
+			$monthnum = $minimize ? 1 : 12;
+		}
+		$result .= '-' . str_pad( (string)$monthnum, 2, "0", STR_PAD_LEFT );
+
+		$day = $dataItem->getDay();
+		if ( $precision < Time::PREC_YMD ) {
+			if ( $cut ) {
+				return $result;
+			}
+			$day = $minimize ? 1 : Time::getDayNumberForMonth( $monthnum, $dataItem->getYear(), Time::CM_GREGORIAN );
+		}
+		$result .= '-' . str_pad( (string)$day, 2, "0", STR_PAD_LEFT );
+
+		if ( $precision === Time::PREC_YMDT ) {
+			$result .= 'T' . $this->getTimeString();
+		}
+
+		return $result;
+	}
+
+	/**
+	 * @private
+	 *
+	 * Use MediaWiki's date and time formatting. It can't handle all inputs
+	 * properly, but has superior i18n support.
+	 *
+	 * @since 2.4
+	 *
+	 * @return string
+	 */
+	public function getMediaWikiDate() {
+		/**
+		 * @var Time $dataItem
+		 */
+		$dataItem = $this->dataValue->getDataItemForCalendarModel( Time::CM_GREGORIAN );
+		$precision = $dataItem->getPrecision();
+
+		$language = Localizer::getInstance()->getLanguage(
+			$this->dataValue->getOption( DataValue::OPT_USER_LANGUAGE )
+		);
+
+		// The MEDIAWIKI output format renders the date in the viewer's interface
+		// language, so the output is not cache-stable across languages.
+		$this->dataValue->recordUserLanguageOutput();
+
+		$year = $dataItem->getYear();
+
+		if ( $year < 0 || $year > 9999 ) {
+			$year = '0000';
+		}
+
+		$year = str_pad( $year, 4, "0", STR_PAD_LEFT );
+
+		if ( $precision <= Time::PREC_Y ) {
+			return $language->formatNumNoSeparators( $year );
+		}
+
+		$month = str_pad( $dataItem->getMonth(), 2, "0", STR_PAD_LEFT );
+		$day = str_pad( $dataItem->getDay(), 2, "0", STR_PAD_LEFT );
+
+		// date/timeanddate options:
+		// 1. Whether to adjust the time output according to the user
+		// configured offset ($timecorrection)
+		// 2. format, if it's false output the default one (default true)
+		// 3. timecorrection, the time offset as returned from
+		// Special:Preferences
+
+		if ( $precision <= Time::PREC_YMD ) {
+			return $language->date( "$year$month$day" . '000000', false, true, false );
+		}
+
+		$time = str_replace( ':', '', $this->getTimeString() );
+
+		return $language->timeanddate( "$year$month$day$time", false, true, false );
+	}
+
+	/**
+	 * @private
+	 *
+	 * @todo Internationalize the CE and BCE strings.
+	 *
+	 * Compute a suitable string to display the given date item.
+	 *
+	 * @note MediaWiki's date functions are not applicable for the range of
+	 * historic dates we support.
+	 *
+	 * @since 2.4
+	 */
+	public function getCaptionFromDataItem( Time $dataItem ): string {
+		// If the language code is empty then the content language code is used
+		$lang = Localizer::getInstance()->getLang(
+			Localizer::getInstance()->getContentLanguage()
+		);
+
+		// https://en.wikipedia.org/wiki/Anno_Domini
+		// "...placing the "AD" abbreviation before the year number ... BC is
+		// placed after the year number (for example: AD 2016, but 68 BC)..."
+		// Chicago Manual of Style 2010, pp. 476â€“7; Goldstein 2007, p. 6.
+
+		if ( $dataItem->getYear() > 0 ) {
+			$cestring = $dataItem->getEra() > 0 ? 'AD' : '';
+			$result = ( $cestring ? ( $cestring . ' ' ) : '' ) . number_format( $dataItem->getYear(), 0, '.', '' );
+		} else {
+			$result = number_format( -( $dataItem->getYear() ), 0, '.', '' ) . ' BC';
+		}
+
+		if ( $dataItem->getPrecision() >= Time::PREC_YM ) {
+			$result = $lang->getMonthLabelByNumber( $dataItem->getMonth() ) . " " . $result;
+		}
+
+		if ( $dataItem->getPrecision() >= Time::PREC_YMD ) {
+			$result = $dataItem->getDay() . " " . $result;
+		}
+
+		if ( $dataItem->getPrecision() >= Time::PREC_YMDT ) {
+			$result .= " " . $this->getTimeString();
+		}
+
+		$result .= $this->hintCalendarModel( $dataItem );
+
+		return $result;
+	}
+
+	/**
+	 * @private
+	 *
+	 * Return the time as a string. The time string has the format HH:MM:SS,
+	 * without any timezone information (see class documentation for details
+	 * on current timezone handling).
+	 * The parameter $default optionally specifies the value returned
+	 * if the date is valid but has no explicitly specified time. It can
+	 * also be set to false to detect this situation.
+	 *
+	 * @since  2.4
+	 *
+	 * @param string $default
+	 *
+	 * @return string
+	 */
+	public function getTimeString( $default = '00:00:00' ) {
+		/**
+		 * @var Time $dataItem
+		 */
+		$dataItem = $this->dataValue->getDataItemForCalendarModel( Time::CM_GREGORIAN );
+
+		if ( $dataItem->getPrecision() < Time::PREC_YMDT ) {
+			return $default;
+		}
+
+		return sprintf( "%02d", $dataItem->getHour() ) . ':' .
+			   sprintf( "%02d", $dataItem->getMinute() ) . ':' .
+			   sprintf( "%02d", $dataItem->getSecond() );
+	}
+
+	/**
+	 * @since 2.4
+	 *
+	 * @return string
+	 */
+	public function getCaptionFromFreeFormat( ?Time $dataItem = null ): string {
+		$language = Localizer::getInstance()->getLanguage(
+			$this->dataValue->getOption( DataValue::OPT_USER_LANGUAGE )
+		);
+
+		// Prehistory dates are not supported when using this output format
+		// Only match options encapsulated by [ ... ]
+		if (
+			$dataItem !== null &&
+			$dataItem->getYear() > Time::PREHISTORY &&
+			preg_match( "/\[([^\]]*)\]/", $this->dataValue->getOutputFormat(), $matches )
+		) {
+			// The free format renders month and day names in the viewer's
+			// interface language, so the output is not cache-stable across
+			// languages.
+			$this->dataValue->recordUserLanguageOutput();
+
+			$intlTimeFormatter = new IntlTimeFormatter( $dataItem, $language );
+
+			$caption = $intlTimeFormatter->format( $matches[1] );
+			if ( $intlTimeFormatter->containsValidDateFormatRule( $matches[1] ) ) {
+				$caption .= $this->hintCalendarModel( $dataItem );
+			}
+
+			return $caption;
+		}
+
+		return $this->getISO8601Date();
+	}
+
+	/**
+	 * @private
+	 *
+	 * @since 2.4
+	 */
+	public function getLocalizedFormat( ?Time $dataItem = null ): string {
+		if ( $dataItem === null ) {
+			return '';
+		}
+
+		if ( $dataItem->getYear() < Time::PREHISTORY ) {
+			return $this->getISO8601Date();
+		}
+
+		$outputFormat = $this->dataValue->getOutputFormat();
+		$formatFlag = IntlTimeFormatter::LOCL_DEFAULT;
+
+		if ( strpos( $outputFormat, 'TO' ) !== false ) {
+			$formatFlag = IntlTimeFormatter::LOCL_TIMEOFFSET;
+			$outputFormat = str_replace( '#TO', '', $outputFormat );
+		}
+
+		if ( strpos( $outputFormat, 'TZ' ) !== false ) {
+			$formatFlag |= IntlTimeFormatter::LOCL_TIMEZONE;
+			$outputFormat = str_replace( '#TZ', '', $outputFormat );
+		}
+
+		// #6820: for embedded (parser-cached) output, defer the viewing-user
+		// offset to the client. Render a wiki-local baseline and wrap it in a
+		// <time> element carrying the absolute UTC instant; only for a pure #TO value
+		// (no stored timezone) that actually has a time component.
+		$deferLocalTime =
+			$this->dataValue->getOption( DataValue::OPT_DEFER_LOCAL_TIME ) === true &&
+			( IntlTimeFormatter::LOCL_TIMEOFFSET & $formatFlag ) !== 0 &&
+			( IntlTimeFormatter::LOCL_TIMEZONE & $formatFlag ) === 0 &&
+			$dataItem->getPrecision() === Time::PREC_YMDT;
+
+		if ( $deferLocalTime ) {
+			$formatFlag = ( $formatFlag & ~IntlTimeFormatter::LOCL_TIMEOFFSET )
+				| IntlTimeFormatter::LOCL_WIKI_TIMEOFFSET;
+		}
+
+		$language = Localizer::getInstance()->getAnnotatedLanguageCodeFrom( $outputFormat );
+		if ( $language === false ) {
+			$language = $this->dataValue->getOption( DataValue::OPT_USER_LANGUAGE );
+
+			// Without an annotated language code the LOCL format renders the
+			// date in the viewer's interface language, so the output is not
+			// cache-stable across languages.
+			$this->dataValue->recordUserLanguageOutput();
+		}
+
+		$language = Localizer::getInstance()->getLanguage( $language );
+
+		$intlTimeFormatter = new IntlTimeFormatter(
+			$dataItem,
+			$language
+		);
+
+		// Avoid an exception on "DateTime::__construct(): Failed to parse time
+		// string (2147483647-01-01 00:00:0.0000000) at position 17 (0): Double
+		// time specification" for an annotation like [[Date::Jan 10000000000]]
+		try {
+			$timeText = $intlTimeFormatter->getLocalizedFormat( $formatFlag );
+
+			if ( $deferLocalTime ) {
+				Outputs::requireResource( 'ext.smw.localtime' );
+				$timeText = Html::rawElement(
+					'time',
+					[
+						'datetime' => $this->getISO8601Date() . 'Z',
+						'class' => 'smw-localtime',
+					],
+					$timeText
+				);
+			}
+
+			$localizedFormat = $timeText .
+				$this->hintTimeCorrection( $intlTimeFormatter->hasLocalTimeCorrection() ) .
+				$this->hintCalendarModel( $dataItem );
+		} catch ( Exception ) {
+			$localizedFormat = $this->getISO8601Date();
+		}
+
+		return $localizedFormat;
+	}
+
+	/**
+	 * Compute a suitable string to display this date, taking into account the
+	 * output format and the preferable calendar models for the data.
+	 *
+	 * @note MediaWiki's date functions are not applicable for the range
+	 * of historic dates we support.
+	 *
+	 * @return string
+	 */
+	protected function getPreferredCaption() {
+		/**
+		 * @var Time $dataItem
+		 */
+		$dataItem = $this->dataValue->getDataItem();
+		$format = strtoupper( $this->dataValue->getOutputFormat() );
+
+		if ( $format == 'ISO' || $this->dataValue->getOutputFormat() == '-' ) {
+			return $this->getISO8601Date();
+		} elseif ( $format == 'ISO-P' ) {
+			return $this->getPartialISO8601Date();
+		} elseif ( $format == 'MEDIAWIKI' ) {
+			return $this->getMediaWikiDate();
+		} elseif ( $format == 'SORTKEY' ) {
+			return $dataItem->getSortKey();
+		} elseif ( $format == 'JD' ) {
+			return $dataItem->getJD();
+		}
+
+		// Does the formatting require calendar conversion?
+		$model = $dataItem->getCalendarModel();
+
+		if (
+			( strpos( $format, 'JL' ) !== false ) ||
+			( $dataItem->getJD() < TimeValue::J1582 && strpos( $format, 'GR' ) === false ) ) {
+			$model = Time::CM_JULIAN;
+		} elseif ( strpos( $format, 'GR' ) !== false ) {
+			$model = Time::CM_GREGORIAN;
+		}
+
+		if ( strpos( $format, '-F[' ) !== false ) {
+			return $this->getCaptionFromFreeFormat( $this->dataValue->getDataItemForCalendarModel( $model ) );
+		} elseif ( strpos( $format, 'LOCL' ) !== false ) {
+			return $this->getLocalizedFormat( $this->dataValue->getDataItemForCalendarModel( $model ) );
+		} elseif ( $dataItem->getYear() > TimeValue::PREHISTORY && $dataItem->getPrecision() >= Time::PREC_YM ) {
+			// Do not convert between Gregorian and Julian if only
+			// year is given (years largely overlap in history, but
+			// assuming 1 Jan as the default date, the year number
+			// would change in conversion).
+			// Also do not convert calendars in prehistory: not
+			// meaningful (getDataItemForCalendarModel may return null).
+			return $this->getCaptionFromDataItem( $this->dataValue->getDataItemForCalendarModel( $model ) );
+		}
+
+		return $this->getCaptionFromDataItem( $dataItem );
+	}
+
+	private function hintTimeCorrection( $hasTimeCorrection ): string {
+		if ( $hasTimeCorrection ) {
+			return '&nbsp;' . Html::rawElement( 'sup', [ 'title' => 'ISO: ' . $this->getISO8601Date() ], 'ᴸ' );
+		}
+
+		return '';
+	}
+
+	private function hintCalendarModel( Time $dataItem ): string {
+		if ( $this->dataValue->hasFeature( SMW_DV_TIMEV_CM ) && $dataItem->getCalendarModel() !== Time::CM_GREGORIAN ) {
+			return ' ' . Html::rawElement( 'sup', [], $dataItem->getCalendarModelLiteral() );
+		}
+
+		return '';
+	}
+
+}

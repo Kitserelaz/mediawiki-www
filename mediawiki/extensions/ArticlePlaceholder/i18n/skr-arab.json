@@ -1,0 +1,24 @@
+{
+	"@metadata": {
+		"authors": [
+			"Saraiki"
+		]
+	},
+	"createtopicpage": "ورقہ بݨاؤ",
+	"articleplaceholder-abouttopic": "موضوع بارے",
+	"articleplaceholder-abouttopic-submit": "دستکاری",
+	"articleplaceholder-abouttopic-no-entity-error": "ایہ ٹھیک آئٹم آئی ڈی کائنی۔",
+	"articleplaceholder-abouttopic-create-article-title": "ہک نواں مضمون بݨاؤ",
+	"articleplaceholder-abouttopic-create-article-label": "مضمون دا عنوان",
+	"articleplaceholder-abouttopic-create-article-mandatory": "مضمون دا عنوان لازمی ہے۔",
+	"articleplaceholder-abouttopic-create-article-button": "ہک مضمون بݨاؤ",
+	"articleplaceholder-abouttopic-create-empty-article-button": "ہک نواں مضمون شروع کرو",
+	"articleplaceholder-abouttopic-translate-article-label": "ماخذ زبان:",
+	"articleplaceholder-abouttopic-translate-article-button": "مضمون دا ترجمہ کرو",
+	"articleplaceholder-abouttopic-create-article-submit-button": "جمع کرواؤ",
+	"articleplaceholder-abouttopic-lua-entity": "ہستی",
+	"articleplaceholder-abouttopic-lua-reference": "حوالہ",
+	"articleplaceholder-abouttopic-lua-identifier": "ٻاہرلے ماخذ",
+	"articleplaceholder-createpage-title": "خلقو $1",
+	"articleplaceholder-abouttopic-icon-title": "معلومات"
+}

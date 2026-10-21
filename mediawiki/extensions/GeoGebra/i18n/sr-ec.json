@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": [
+			"BadDog",
+			"Aca"
+		]
+	},
+	"geogebra-file-not-found": "Не могу да пронађем датотеку „$1”."
+}

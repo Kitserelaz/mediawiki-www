@@ -1,0 +1,28 @@
+{
+	"@metadata": {
+		"authors": [
+			"Korjaus1",
+			"Rönttönen",
+			"Samoasambia"
+		]
+	},
+	"mirage-community-messages-header": "Yhteisön viestit",
+	"mirage-interface-messages-module-edit-this-message": "Muokkaa tätä viestiä",
+	"mirage-page-actions": "Sivun toiminnot",
+	"mirage-jumptonavigation": "Hyppää navigaatioon",
+	"mirage-jumptocontent": "Hyppää sisältöön",
+	"mirage-action-addsection": "Lisää aihe",
+	"mirage-userpage": "{{GENDER:$1|Käyttäjäsivu}}",
+	"mirage-footer-places": "Paikat",
+	"mirage-footer-feeds": "Syötteet",
+	"mirage-footer-info": "Sivun tiedot",
+	"mirage-talkpage": "Keskustelusivu",
+	"mirage-user-tools": "Käyttäjätyökalut",
+	"mirage-no-new-messages": "Sinulla ei ole uusia viestejä.",
+	"mirage-notifications": "Ilmoitukset",
+	"mirage-page-tools": "Sivutyökalut",
+	"mirage-hidden-categories": "Piilotetut luokat",
+	"mirage-recent-changes-module": "Tuoreet muutokset",
+	"mirage-more": "Lisää",
+	"mirage-more-recent-changes": "Näytä lisää muutoksia"
+}

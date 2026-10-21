@@ -74,9 +74,27 @@ class Installer implements LoadExtensionSchemaUpdatesHook {
 
 		$updater->addExtensionUpdateOnVirtualDomain( [
 			'virtual-createwiki',
+			'addField',
+			'cw_wikis',
+			'wiki_inactive_exempt_expiry',
+			"$dir/patches/patch-cw_wikis-add-wiki_inactive_exempt_expiry.sql",
+			true,
+		] );
+
+		$updater->addExtensionUpdateOnVirtualDomain( [
+			'virtual-createwiki',
 			'modifyTable',
 			'cw_wikis',
 			"$dir/patches/patch-cw_wikis-update-smallint-to-tinyint.sql",
+			true,
+		] );
+
+		$updater->addExtensionUpdateOnVirtualDomain( [
+			'virtual-createwiki',
+			'addField',
+			'cw_wikis',
+			'wiki_closed_reason',
+			"$dir/patches/patch-cw_wikis-add-wiki_closed_reason.sql",
 			true,
 		] );
 
@@ -133,7 +151,5 @@ class Installer implements LoadExtensionSchemaUpdatesHook {
 			"$dir/patches/patch-cw_wikis-drop-wiki_settings.sql",
 			true,
 		] );
-
-		// $updater->addPostDatabaseUpdateMaintenance( PopulateCentralWiki::class );
 	}
 }

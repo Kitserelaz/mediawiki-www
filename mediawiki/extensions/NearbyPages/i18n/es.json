@@ -1,0 +1,21 @@
+{
+	"@metadata": {
+		"authors": [
+			"DiegoAmbrocio",
+			"Fewasser Traduce",
+			"Fitoschido",
+			"Geryescalier",
+			"Vivaelcelta"
+		]
+	},
+	"nearby": "Páginas sobre temas cercanos a ti",
+	"nearby-pages-desc": "Añade la página especial [[Special:Nearby|Cercanos]]",
+	"nearby-pages-distance": "{{PLURAL:$1|$1 km}}",
+	"nearby-pages-distance-meters": "{{PLURAL:$1|$1 m}}",
+	"nearby-pages-error-guidance": "Prueba a actualizar tu ubicación.",
+	"nearby-pages-requirements-guidance": "Prueba con otro navegador o activa JavaScript si lo has desactivado.",
+	"nearby-pages-title": "Cercanos",
+	"nearby-pages-info-heading": "Lugares cercanos a ti",
+	"nearby-pages-info-show-random": "Mostrar páginas aleatorias",
+	"nearby-pages-info-show-button": "Mostrar páginas cercanas"
+}

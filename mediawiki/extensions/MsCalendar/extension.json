@@ -1,0 +1,73 @@
+{
+	"name": "MsCalendar",
+	"version": "3.0",
+	"author": [
+		"[mailto:wiki@ratin.de Martin Schwindl]",
+		"[mailto:wiki@keyler-consult.de Martin Keyler]",
+		"[https://www.mediawiki.org/wiki/User:Sophivorus Felipe Schenone]",
+		"[https://www.mediawiki.org/wiki/User:Fraifrai Frédéric Souchon]",
+		"[https://www.mediawiki.org/wiki/User:BeneBane Patrick Dudics]"
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:MsCalendar",
+	"descriptionmsg": "msc-desc",
+	"license-name": "GPL-3.0-only",
+	"type": "parserhook",
+	"requires": {
+		"MediaWiki": ">= 1.39.0"
+	},
+	"MessagesDirs": {
+		"MsCalendar": [
+			"i18n"
+		]
+	},
+	"AutoloadClasses": {
+		"MsCalendar": "src/MsCalendar.php",
+		"ApiMsCalendarGetMonth": "src/ApiMsCalendarGetMonth.php",
+		"ApiMsCalendarSaveNew": "src/ApiMsCalendarSaveNew.php",
+		"ApiMsCalendarUpdate": "src/ApiMsCalendarUpdate.php",
+		"ApiMsCalendarRemove": "src/ApiMsCalendarRemove.php"
+	},
+	"ResourceModules": {
+		"ext.MsCalendar": {
+			"scripts": [
+				"js/jquery.calendario.js",
+				"js/MsCalendar.js"
+			],
+			"styles": "css/MsCalendar.css",
+			"messages": [
+				"msc-desc",
+				"msc-notfirstday",
+				"msc-change",
+				"msc-remove",
+				"msc-create",
+				"msc-cancel",
+				"msc-eventname",
+				"msc-eventdate",
+				"msc-eventduration",
+				"msc-eventyearly",
+				"msc-eventedit",
+				"msc-eventcreate",
+				"msc-today",
+				"msc-todaylabel",
+				"msc-months",
+				"msc-days"
+			],
+			"dependencies": "jquery.ui"
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "resources",
+		"remoteExtPath": "MsCalendar/resources"
+	},
+	"APIModules": {
+		"mscalendargetmonth": "ApiMsCalendarGetMonth",
+		"mscalendarsavenew": "ApiMsCalendarSaveNew",
+		"mscalendarupdate": "ApiMsCalendarUpdate",
+		"mscalendarremove": "ApiMsCalendarRemove"
+	},
+	"Hooks": {
+		"ParserFirstCallInit": "MsCalendar::setHook",
+		"LoadExtensionSchemaUpdates": "MsCalendar::updateDatabase"
+	},
+	"manifest_version": 2
+}

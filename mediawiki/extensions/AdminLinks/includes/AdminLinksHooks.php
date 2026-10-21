@@ -1,10 +1,10 @@
 <?php
+
+use MediaWiki\SpecialPage\SpecialPage;
+
 /**
  * Hook handler class
  */
-
-// phpcs:disable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
-
 class AdminLinksHooks implements
 	\MediaWiki\Hook\SkinTemplateNavigation__UniversalHook
 {
@@ -29,11 +29,14 @@ class AdminLinksHooks implements
 		}
 
 		$al = SpecialPage::getTitleFor( 'AdminLinks' );
+		$out = $skinTemplate->getOutput();
+		$out->addModules( [ 'ext.adminlinks' ] );
 		$href = $al->getLocalURL();
 		$adminLinksVals = [
 			'text' => $skinTemplate->msg( 'adminlinks' )->text(),
 			'href' => $href,
-			'active' => ( $href == $skinTemplate->getTitle()->getLocalURL() )
+			'active' => ( $href === $skinTemplate->getTitle()->getLocalURL() ),
+			'icon' => 'link'
 		];
 
 		// Find the location of the 'my preferences' link, and

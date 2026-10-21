@@ -1,0 +1,39 @@
+{
+	"name": "CustomSearchProfiles",
+	"author": [
+		"BlankEclair"
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:CustomSearchProfiles",
+	"descriptionmsg": "customsearchprofiles-desc",
+	"license-name": "GPL-2.0-or-later",
+	"type": "other",
+	"requires": {
+		"MediaWiki": ">= 1.35.0"
+	},
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\CustomSearchProfiles\\": "src/"
+	},
+	"config": {
+		"CustomSearchProfilesProfiles": {
+			"description": "New search profiles to be added before 'Everything' on Special:Search",
+			"value": {}
+		}
+	},
+	"ConfigRegistry": {
+		"CustomSearchProfiles": "GlobalVarConfig::newInstance"
+	},
+	"HookHandlers": {
+		"CustomSearchProfilesHooks": {
+			"class": "MediaWiki\\Extension\\CustomSearchProfiles\\Hooks"
+		}
+	},
+	"Hooks": {
+		"SpecialSearchProfiles": "CustomSearchProfilesHooks"
+	},
+	"MessagesDirs": {
+		"CustomSearchProfiles": [
+			"i18n"
+		]
+	},
+	"manifest_version": 2
+}

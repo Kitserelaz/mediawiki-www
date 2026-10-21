@@ -1,0 +1,41 @@
+{
+  "component": "mediawiki/extensions/AdminLinks",
+  "baseline": "4a66a151e3e6bff64b26efbf4491833549b025e5",
+  "target": "99898373d2c31a91163a277f38a8122bfeefe401",
+  "preserved_changes": [
+    {
+      "path": "composer.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ja.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ky.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/scn.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/shi.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/th.json",
+      "change": "local-source-edit"
+    }
+  ],
+  "dependency_status": "No runtime Composer dependencies; npm lock audit remains pending",
+  "baseline_proof": {
+    "matched": 11,
+    "required": 11,
+    "baseline": "4a66a151e3e6bff64b26efbf4491833549b025e5"
+  },
+  "manual_resolutions": [
+    "Target const declaration retains local message-directory discovery in Gruntfile",
+    "Use matching target npm lock; installed package manifest matched baseline"
+  ]
+}

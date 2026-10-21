@@ -1,0 +1,23 @@
+{
+	"@metadata": {
+		"authors": [
+			"Mainframe98",
+			"McDutchie"
+		]
+	},
+	"apihelp-ratepage-summary": "Laat een gebruiker over een pagina stemmen en verkrijgt de beoordeling van een pagina. Vereist één van de twee parameters: pageid of pagetitle.",
+	"apihelp-ratepage-param-pageid": "Pagina-ID",
+	"apihelp-ratepage-param-pagetitle": "Paginatitel",
+	"apihelp-ratepage-param-answer": "Paginabeoordeling van de gebruiker (standaard van 1 tot en met 5, maar dat kan in de instellingen worden gewijzigd)",
+	"apihelp-ratepage-param-contest": "Wedstrijd-ID",
+	"apihelp-ratepage-example-1": "Haal de huidige beoordeling op voor pagina Voorbeeld.",
+	"apihelp-ratepage-example-2": "De pagina ‘Example’ met een 2 beoordelen.",
+	"apihelp-query+pagerating-summary": "Retourneert de stemmen op deze pagina en de stemrechten van deze gebruiker.",
+	"apihelp-query+pagerating-param-contest": "Wedstrijd-ID",
+	"apierror-ratepage-contest-id-too-long": "De lengte van de wedstrijd-ID overschrijdt de grens (255 tekens).",
+	"apierror-ratepage-contest-id-allowed-chars": "Wedstrijd-ID mag alleen uit cijfers en Latijnse letters bestaan. Andere tekens zijn niet toegestaan.",
+	"apierror-ratepage-contest-not-exists": "Wedstrijd $1 bestaat niet.",
+	"apierror-ratepage-page-not-exists": "De opgegeven pagina bestaat niet.",
+	"apierror-ratepage-cannot-vote-in-contest": "U hebt geen toestemming om te stemmen in deze wedstrijd.",
+	"apierror-ratepage-invalid-answer": "Er is een ongeldig antwoord opgegeven. Het antwoord moet groter dan of gelijk zijn aan $1 en kleiner dan of gelijk aan $2."
+}

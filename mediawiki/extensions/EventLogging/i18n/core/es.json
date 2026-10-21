@@ -4,6 +4,9 @@
 			"Armando-Martin",
 			"Fitoschido",
 			"Ihojose",
+			"Karine Teh",
+			"Rousmery96",
+			"Virum Mundi",
 			"Vivaelcelta"
 		]
 	},
@@ -13,5 +16,7 @@
 	"eventlogging-code-sample-logging-on-server-side": "Registro PHP",
 	"eventlogging-code-sample-module-setup-json": "Configuración de extension.json para el registro de sucesos de JavaScript",
 	"eventlogging-code-sample-logging-on-client-side": "Registro JavaScript",
-	"eventlogging-error-move-source": "No se pueden renombrar las páginas de esquema"
+	"eventlogging-error-move-source": "No se pueden renombrar las páginas de esquema",
+	"namespaceinfo-description-ns470": "Espacio de nombres para esquemas que se utilizan para validar eventos analíticos",
+	"namespaceinfo-description-ns471": "Página de discusión para páginas en el espacio de nombres"
 }

@@ -22,6 +22,7 @@ use MediaWiki\WikiMap\WikiMap;
 use Psr\Log\LoggerInterface;
 use Wikimedia\Rdbms\IDBAccessObject;
 use Wikimedia\Rdbms\SelectQueryBuilder;
+use Wikimedia\TestingAccessWrapper;
 use Wikimedia\Timestamp\ConvertibleTimestamp;
 
 /**
@@ -58,6 +59,7 @@ use Wikimedia\Timestamp\ConvertibleTimestamp;
  * @covers \MediaWiki\Extension\AbuseFilter\FilterRunner
  * @covers \MediaWiki\Extension\AbuseFilter\Hooks\Handlers\FilteredActionsHandler
  * @covers \MediaWiki\Extension\AbuseFilter\VariableGenerator\RunVariableGenerator
+ * @covers \MediaWiki\Extension\AbuseFilter\Variables\LazyVariableComputer
  * @covers \MediaWiki\Extension\AbuseFilter\AbuseFilterPreAuthenticationProvider
  * @covers \MediaWiki\Extension\AbuseFilter\ChangeTags\ChangeTagger
  * @covers \MediaWiki\Extension\AbuseFilter\BlockAutopromoteStore
@@ -84,7 +86,7 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 	private $user;
 
 	// phpcs:disable Generic.Files.LineLength
-	/** @var array Filters that may be created, their key is the ID. */
+	/** @var array<int,array> Filters that may be created, their key is the ID. */
 	private const FILTERS = [
 		1 => [
 			'af_pattern' => 'added_lines irlike "foo"',
@@ -309,7 +311,7 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 			'actions' => []
 		],
 	];
-	// phpcs:enable Generic.Files.LineLength
+	// phpcs:enable
 
 	/**
 	 * @inheritDoc
@@ -448,6 +450,7 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 				throw new RuntimeException( "Could not create test page. $status" );
 			}
 			$page->clear();
+			TestingAccessWrapper::newFromObject( $page )->derivedDataUpdater = null;
 			$title->resetArticleID( -1 );
 		}
 
@@ -479,7 +482,10 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 			AbuseFilterServices::getVariableGeneratorFactory(),
 			AbuseFilterServices::getEditRevUpdater(),
 			AbuseFilterServices::getBlockedDomainFilter(),
-			$services->getPermissionManager()
+			$services->getPermissionManager(),
+			$services->getTitleFactory(),
+			$services->getUserFactory(),
+			$services->getTempUserConfig()
 		);
 		$hooksHandler->onEditFilterMergedContent( $context, $content, $status, $summary,
 			$this->user, false );
@@ -504,7 +510,7 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 	 * Executes an action to filter
 	 *
 	 * @param array $params Parameters of the action
-	 * @return Status
+	 * @return Status<int>
 	 */
 	private function doAction( $params ) {
 		$target = Title::newFromTextThrow( $params['target'] );
@@ -583,10 +589,15 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 	 */
 	private function getActionTags( $actionParams ) {
 		$dbw = $this->getDb();
+
+		// NOTE: Title::newFromTextThrow() can return a cached object containing
+		//       stale state (T398175). Use getters with IDBAccessObject::READ_LATEST
+		//       to work around that.
 		$title = Title::newFromTextThrow( $actionParams['target'] );
+
 		$store = $this->getServiceContainer()->getChangeTagsStore();
 		if ( $actionParams['action'] === 'edit' || $actionParams['action'] === 'stashedit' ) {
-			return $store->getTags( $dbw, null, $title->getLatestRevID() );
+			return $store->getTags( $dbw, null, $title->getLatestRevID( IDBAccessObject::READ_LATEST ) );
 		}
 
 		$logType = $actionParams['action'] === 'createaccount' ? 'newusers' : $actionParams['action'];
@@ -620,7 +631,6 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 	 */
 	private function checkConsequences( $result, $actionParams, $expectedConsequences ) {
 		$expectedErrors = [];
-		$testErrorMessage = false;
 		foreach ( $expectedConsequences as $consequence => $ids ) {
 			foreach ( $ids as $id ) {
 				$params = self::FILTERS[$id]['actions'][$consequence];
@@ -637,31 +647,18 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 						// Aborts the hook with 'abusefilter-blocked-display' error. Should block
 						// the user with expected duration and options.
 						$userBlock = $this->user->getBlock( false );
-
-						if ( !$userBlock ) {
-							$testErrorMessage = "User isn't blocked.";
-							break;
-						}
+						$this->assertNotNull( $userBlock, 'User should be blocked' );
 
 						$shouldPreventTalkEdit = $params[0] === 'blocktalk';
-						$edittalkCheck = $userBlock->appliesToUsertalk( $this->user->getTalkPage() ) ===
-							$shouldPreventTalkEdit;
-						if ( !$edittalkCheck ) {
-							$testErrorMessage = 'The expected block option "edittalk" options does not ' .
-								'match the actual one.';
-							break;
-						}
+						$preventsTalkEdit = $userBlock->appliesToUsertalk( $this->user->getTalkPage() );
+						$this->assertSame( $shouldPreventTalkEdit, $preventsTalkEdit, 'edittalk option should match' );
 
 						$expectedExpiry = BlockUser::parseExpiryInput( $params[2] );
 						$actualExpiry = $userBlock->getExpiry();
 						if ( !wfIsInfinity( $actualExpiry ) ) {
 							$actualExpiry = wfTimestamp( TS_MW, $actualExpiry );
 						}
-						if ( $expectedExpiry === false || $expectedExpiry !== $actualExpiry ) {
-							$testErrorMessage = "The expected block expiry ($expectedExpiry) does not " .
-								"match the actual one ($actualExpiry).";
-							break;
-						}
+						$this->assertSame( $expectedExpiry, $actualExpiry, 'Block expiry' );
 
 						$expectedErrors[] = 'abusefilter-blocked-display';
 						break;
@@ -669,22 +666,13 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 						// Aborts the hook with 'abusefilter-degrouped' error and degroups the user.
 						$expectedErrors[] = 'abusefilter-degrouped';
 						$ugm = MediaWikiServices::getInstance()->getUserGroupManager();
-						$groupCheck = !in_array( 'sysop', $ugm->getUserEffectiveGroups( $this->user ) );
-						if ( !$groupCheck ) {
-							$testErrorMessage = 'The user was not degrouped.';
-						}
+						$userGroups = $ugm->getUserEffectiveGroups( $this->user );
+						$this->assertNotContains( 'sysop', $userGroups, 'User should be degrouped' );
 						break;
 					case 'tag':
 						// Only adds tags, to be retrieved in change_tag table.
 						$appliedTags = $this->getActionTags( $actionParams );
-						$tagCheck = count( array_diff( $params, $appliedTags ) ) === 0;
-						if ( !$tagCheck ) {
-							$expectedTags = implode( ', ', $params );
-							$actualTags = implode( ', ', $appliedTags );
-
-							$testErrorMessage = "Expected the action to have the following tags: $expectedTags. " .
-								"Got the following instead: $actualTags.";
-						}
+						$this->assertSame( $params, $appliedTags, 'Change tags should match' );
 						break;
 					case 'throttle':
 						throw new UnexpectedValueException( 'Use self::testThrottleConsequence to test throttling' );
@@ -693,23 +681,17 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 						$expectedErrors[] = 'abusefilter-autopromote-blocked';
 						$value = AbuseFilterServices::getBlockAutopromoteStore()
 							->getAutoPromoteBlockStatus( $this->user );
-						if ( !$value ) {
-							$testErrorMessage = "The key for blocking autopromotion wasn't set.";
-						}
+						$this->assertNotSame( 0, $value, 'Blockautopromote should be set' );
 						break;
 					default:
 						throw new UnexpectedValueException( "Consequence not recognized: $consequence." );
-				}
-
-				if ( $testErrorMessage ) {
-					$this->fail( $testErrorMessage );
 				}
 			}
 		}
 
 		$actual = [];
 		foreach ( $result->getMessages() as $msg ) {
-			if ( strpos( $msg->getKey(), 'abusefilter' ) !== false ) {
+			if ( str_contains( $msg->getKey(), 'abusefilter' ) ) {
 				$actual[] = $msg->getKey();
 			}
 		}
@@ -1221,7 +1203,7 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 
 		// We just take a dump from a single filters, as they're all identical for the same action
 		$row = $this->getDb()->newSelectQueryBuilder()
-			->select( 'afl_var_dump, afl_ip' )
+			->select( 'afl_var_dump, afl_ip_hex' )
 			->from( 'abuse_filter_log' )
 			->orderBy( 'afl_timestamp', SelectQueryBuilder::SORT_DESC )
 			->caller( __METHOD__ )

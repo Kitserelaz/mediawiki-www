@@ -2,48 +2,33 @@
 
 namespace MediaWiki\Extension\ParserFunctions;
 
-use MediaWiki\Cache\LinkCache;
 use MediaWiki\Config\Config;
+use MediaWiki\FileRepo\RepoGroup;
 use MediaWiki\HookContainer\HookContainer;
-use MediaWiki\Languages\LanguageConverterFactory;
-use MediaWiki\Languages\LanguageFactory;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Language\LanguageConverterFactory;
+use MediaWiki\Language\LanguageFactory;
+use MediaWiki\Language\LanguageNameUtils;
+use MediaWiki\Page\LinkCache;
 use MediaWiki\Parser\Parser;
 use MediaWiki\SpecialPage\SpecialPageFactory;
-use RepoGroup;
 
 class Hooks implements
-	\MediaWiki\Hook\ParserFirstCallInitHook,
-	\MediaWiki\Hook\ParserTestGlobalsHook
+	\MediaWiki\Parser\Hook\ParserFirstCallInitHook,
+	\MediaWiki\Hook\ParserTestGlobalsHook,
+	\MediaWiki\Parser\Hook\ParserClearStateHook
 {
+	private readonly ParserFunctions $parserFunctions;
 
-	/** @var Config */
-	private $config;
-
-	/** @var ParserFunctions */
-	private $parserFunctions;
-
-	/**
-	 * @param Config $config
-	 * @param HookContainer $hookContainer
-	 * @param LanguageConverterFactory $languageConverterFactory
-	 * @param LanguageFactory $languageFactory
-	 * @param LanguageNameUtils $languageNameUtils
-	 * @param LinkCache $linkCache
-	 * @param RepoGroup $repoGroup
-	 * @param SpecialPageFactory $specialPageFactory
-	 */
 	public function __construct(
-		Config $config,
+		private readonly Config $config,
 		HookContainer $hookContainer,
 		LanguageConverterFactory $languageConverterFactory,
 		LanguageFactory $languageFactory,
 		LanguageNameUtils $languageNameUtils,
 		LinkCache $linkCache,
 		RepoGroup $repoGroup,
-		SpecialPageFactory $specialPageFactory
+		SpecialPageFactory $specialPageFactory,
 	) {
-		$this->config = $config;
 		$this->parserFunctions = new ParserFunctions(
 			$config,
 			$hookContainer,
@@ -65,6 +50,16 @@ class Hooks implements
 	 */
 	public function onParserTestGlobals( &$globals ) {
 		$globals['wgPFEnableStringFunctions'] = true;
+	}
+
+	/**
+	 * Resets the resource limit in ParserFunctions.
+	 * @param Parser $parser
+	 * @return true
+	 */
+	public function onParserClearState( $parser ): bool {
+		ParserFunctions::resetLimit( $parser );
+		return true;
 	}
 
 	/**

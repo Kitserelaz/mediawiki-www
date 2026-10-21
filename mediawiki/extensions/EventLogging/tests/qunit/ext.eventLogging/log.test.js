@@ -7,19 +7,27 @@ QUnit.module( 'ext.eventLogging/log', QUnit.newMwEnvironment( {
 	},
 	beforeEach: function () {
 		// Used by MetricsClient#addRequiredMetadata()
-		this.clock = this.sandbox.useFakeTimers( 1301648400000, 'Date' );
-		this.sandbox.stub( navigator, 'sendBeacon', function () {} );
-		this.sandbox.stub( mw.log, 'warn', function () {} );
-		this.sandbox.stub( mw.log, 'error', function () {} );
-
+		this.clock = this.sandbox.useFakeTimers( {
+			now: 1301648400000,
+			toFake: [ 'Date' ]
+		} );
+		this.sandbox.stub( navigator, 'sendBeacon', () => {} );
+		this.sandbox.stub( mw.log, 'warn', () => {} );
+		this.sandbox.stub( mw.log, 'error', () => {} );
 		this.originalOptions = mw.eventLog.setOptionsForTest( {
 			baseUrl: '/dummy/',
+			serviceUri: 'testUri',
 			schemasInfo: {
 				earthquake: 123,
 				// eruption events will be prepared for POSTing to EventGate.
 				eruption: '/analytics/legacy/eruption/1.0.0'
 			},
-			streamConfigs: false
+			streamConfigs: {
+				'test.stream': {},
+
+				// eslint-disable-next-line camelcase
+				eventlogging_eruption: {}
+			}
 		} );
 	},
 	afterEach: function () {
@@ -28,25 +36,25 @@ QUnit.module( 'ext.eventLogging/log', QUnit.newMwEnvironment( {
 	}
 } ) );
 
-QUnit.test( 'logEvent()', function ( assert ) {
+QUnit.test( 'logEvent()', ( assert ) => {
 	const eventData = {
 		epicenter: 'Valdivia',
 		magnitude: 9.5
 	};
 
-	return mw.eventLog.logEvent( 'earthquake', eventData ).then( function ( e ) {
+	return mw.eventLog.logEvent( 'earthquake', eventData ).then( ( e ) => {
 		assert.deepEqual( e.event, eventData, 'logEvent promise resolves with event' );
 		assert.strictEqual( e.revision, 123, 'logEvent gets the revision id from config' );
 	} );
 } );
 
-QUnit.test( 'logEvent() via submit()', function ( assert ) {
+QUnit.test( 'logEvent() via submit()', ( assert ) => {
 	const eventData = {
 		volcano: 'Nyiragongo',
 		Explosivity: 1
 	};
 
-	return mw.eventLog.logEvent( 'eruption', eventData ).then( function ( e ) {
+	return mw.eventLog.logEvent( 'eruption', eventData ).then( ( e ) => {
 		const expectedEventData = {
 			volcano: 'Nyiragongo',
 			Explosivity: 1
@@ -81,13 +89,13 @@ QUnit.test.each( 'checkUrlSize()', {
 		size: mw.eventLog.maxUrlSize + 1,
 		expected: 'Url exceeds maximum length'
 	}
-}, function ( assert, data ) {
+}, ( assert, data ) => {
 	const url = new Array( data.size + 1 ).join( 'x' );
 	const result = mw.eventLog.checkUrlSize( 'earthquake', url );
 	assert.deepEqual( result, data.expected );
 } );
 
-QUnit.test( 'logEvent() - reject large event data', function ( assert ) {
+QUnit.test( 'logEvent() - reject large event data', ( assert ) => {
 	const event = {
 		epicenter: 'Valdivia',
 		magnitude: 9.5,
@@ -95,12 +103,14 @@ QUnit.test( 'logEvent() - reject large event data', function ( assert ) {
 	};
 
 	mw.eventLog.logEvent( 'earthquake', event )
-		.done( function () {
-			assert.true( false, 'Expected an error' );
-		} )
-		.fail( function ( e, error ) {
-			assert.deepEqual( error, 'Url exceeds maximum length',
-				'logEvent promise resolves with error' );
-		} )
-		.always( assert.async() );
+		.then(
+			() => {
+				assert.true( false, 'Expected an error' );
+			},
+			( e, error ) => {
+				assert.deepEqual( error, 'Url exceeds maximum length',
+					'logEvent promise resolves with error' );
+			}
+		)
+		.then( assert.async() );
 } );

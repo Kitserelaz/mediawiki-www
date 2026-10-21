@@ -4,6 +4,7 @@ namespace MediaWiki\Extension\OAuth\Backend;
 
 use MediaWiki\Extension\OAuth\Lib\OAuthServer;
 use MediaWiki\Linker\Linker;
+use MediaWiki\MediaWikiServices;
 use MediaWiki\Message\Message;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\User\User;
@@ -77,7 +78,6 @@ class MWOAuthServer extends OAuthServer {
 		$this->checkCallback( $consumer, $callback );
 
 		$new_token = $this->data_store->new_request_token( $consumer, $callback );
-		// @phan-suppress-next-line PhanUndeclaredProperty Class uses AllowDynamicProperties for php8.2
 		$new_token->oauth_callback_confirmed = 'true';
 		return $new_token;
 	}
@@ -128,8 +128,17 @@ class MWOAuthServer extends OAuthServer {
 			return;
 		}
 
-		$reqCallback = wfParseUrl( $callback );
-		if ( $reqCallback === false ) {
+		$urlUtils = MediaWikiServices::getInstance()->getUrlUtils();
+
+		$reqCallback = $urlUtils->parse( $callback );
+		if ( $reqCallback === null ) {
+			throw new MWOAuthException( 'mwoauth-callback-not-oob-or-prefix', [
+				'consumer' => $consumer->getConsumerKey(),
+				'consumer_name' => $consumer->getName(),
+				'callback_url' => $callback,
+			] );
+		} elseif ( isset( $reqCallback['user'] ) || isset( $reqCallback['pass'] ) ) {
+			// T428324 no need for user/pass and it could be used to confuse URL parsing
 			throw new MWOAuthException( 'mwoauth-callback-not-oob-or-prefix', [
 				'consumer' => $consumer->getConsumerKey(),
 				'consumer_name' => $consumer->getName(),
@@ -137,7 +146,7 @@ class MWOAuthServer extends OAuthServer {
 			] );
 		}
 
-		$knownCallback = wfParseUrl( $consumer->getCallbackUrl() );
+		$knownCallback = $urlUtils->parse( $consumer->getCallbackUrl() ) ?? [];
 		$exactPath = array_key_exists( 'query', $knownCallback );
 
 		$match =
@@ -335,7 +344,7 @@ class MWOAuthServer extends OAuthServer {
 	 * @return string
 	 */
 	public function authorize( $consumerKey, $requestTokenKey, User $mwUser, $update ) {
-		$dbr = Utils::getCentralDB( DB_REPLICA );
+		$dbr = Utils::getOAuthDB( DB_REPLICA );
 		$consumer = Consumer::newFromKey( $dbr, $consumerKey );
 		return $consumer->authorize( $mwUser, $update, $consumer->getGrants(), $requestTokenKey );
 	}

@@ -1,0 +1,138 @@
+{
+	"name": "MatomoAnalytics",
+	"author": [
+		"John Lewis",
+		"Southparkfan",
+		"Universal Omega",
+		"Agent Isai"
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:MatomoAnalytics",
+	"version": "1.3.5",
+	"descriptionmsg": "matomoanalytics-desc",
+	"license-name": "GPL-3.0-or-later",
+	"type": "specialpage",
+	"requires": {
+		"MediaWiki": ">= 1.43.0"
+	},
+	"AvailableRights": [
+		"noanalytics",
+		"viewanalytics"
+	],
+	"GroupPermissions": {
+		"*": {
+			"viewanalytics": true
+		}
+	},
+	"MessagesDirs": {
+		"MatomoAnalytics": [
+			"i18n"
+		]
+	},
+	"ExtensionMessagesFiles": {
+		"MatomoAnalyticsAliases": "MatomoAnalyticsAliases.php"
+	},
+	"AutoloadNamespaces": {
+		"Miraheze\\MatomoAnalytics\\": "includes/",
+		"Miraheze\\MatomoAnalytics\\Maintenance\\": "maintenance/"
+	},
+	"SpecialPages": {
+		"Analytics": {
+			"class": "Miraheze\\MatomoAnalytics\\Specials\\SpecialAnalytics"
+		}
+	},
+	"Hooks": {
+		"CreateWikiCreation": {
+			"handler": "CreateWiki"
+		},
+		"CreateWikiDeletion": {
+			"handler": "CreateWiki"
+		},
+		"CreateWikiRename": {
+			"handler": "CreateWiki"
+		},
+		"LoadExtensionSchemaUpdates": {
+			"handler": "Installer"
+		},
+		"InfoAction": {
+			"handler": "Main"
+		},
+		"SkinAfterBottomScripts": {
+			"handler": "Main"
+		}
+	},
+	"HookHandlers": {
+		"CreateWiki": {
+			"class": "Miraheze\\MatomoAnalytics\\HookHandlers\\CreateWiki"
+		},
+		"Installer": {
+			"class": "Miraheze\\MatomoAnalytics\\HookHandlers\\Installer"
+		},
+		"Main": {
+			"class": "Miraheze\\MatomoAnalytics\\HookHandlers\\Main"
+		}
+	},
+	"ResourceModules": {
+		"ext.matomoanalytics.charts": {
+			"scripts": "ext.matomoanalytics.charts.js"
+		},
+		"ext.matomoanalytics.graphs": {
+			"scripts": "ext.matomoanalytics.graphs.js"
+		},
+		"ext.matomoanalytics.special": {
+			"styles": "ext.matomoanalytics.special.less"
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "modules",
+		"remoteExtPath": "MatomoAnalytics/modules"
+	},
+	"config": {
+		"MatomoAnalyticsDisableJS": {
+			"description": "Boolean. Whether or not to add Javascript tracking code to pages.",
+			"public": true,
+			"value": false
+		},
+		"MatomoAnalyticsDisableCookie": {
+			"description": "Boolean. Whether or not to disable cookies being set by Matomo.",
+			"public": true,
+			"value": false
+		},
+		"MatomoAnalyticsForceGetRequest": {
+			"description": "Boolean. Whether or not you want to foce GET requests which also disables beacon. Reverts back to Matomo v3 tracking behavior.",
+			"public": true,
+			"value": false
+		},
+		"MatomoAnalyticsGlobalID": {
+			"description": "Integer. If tracking more than one site, this is an ID to attach to all wikis for central aggregate statistics.",
+			"public": true,
+			"value": false
+		},
+		"MatomoAnalyticsServerURL": {
+			"description": "String. URL of the Matomo installation to use for API queries.",
+			"public": true,
+			"value": false
+		},
+		"MatomoAnalyticsSiteID": {
+			"description": "Integer. If not using database, the site number to add all monitoring to.",
+			"public": true,
+			"value": 1
+		},
+		"MatomoAnalyticsTokenAuth": {
+			"description": "String. The API token for authentication when making requests for data.",
+			"public": false,
+			"value": false
+		},
+		"MatomoAnalyticsUseDB": {
+			"description": "Boolean. Whether or not to use the database for tracking site IDs.",
+			"public": true,
+			"value": false
+		}
+	},
+	"ConfigRegistry": {
+		"MatomoAnalytics": "MediaWiki\\Config\\GlobalVarConfig::newInstance"
+	},
+	"DatabaseVirtualDomains": [
+		"virtual-matomoanalytics"
+	],
+	"manifest_version": 2
+}

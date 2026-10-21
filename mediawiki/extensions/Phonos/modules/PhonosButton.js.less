@@ -1,0 +1,16 @@
+@import 'mediawiki.skin.variables.less';
+
+.ext-phonos-error-popup {
+	.oo-ui-popupWidget-popup {
+		background-color: @background-color-error-subtle;
+		border-color: @border-color-error;
+	}
+
+	&.oo-ui-popupWidget-anchored-top .oo-ui-popupWidget-anchor::before {
+		border-bottom-color: @border-color-error;
+	}
+
+	&.oo-ui-popupWidget-anchored-top .oo-ui-popupWidget-anchor::after {
+		border-bottom-color: @background-color-error-subtle;
+	}
+}

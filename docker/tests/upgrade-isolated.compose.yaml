@@ -1,0 +1,4 @@
+# Match the disposable source rehearsal's network without mounting host sources.
+networks:
+  default:
+    internal: true

@@ -1,12 +1,12 @@
 <?php
 
-namespace MediaWiki\CheckUser\Tests\Integration\Maintenance;
+namespace MediaWiki\Extension\CheckUser\Tests\Integration\Maintenance;
 
-use MediaWiki\CheckUser\ClientHints\ClientHintsData;
-use MediaWiki\CheckUser\HookHandler\RecentChangeSaveHandler;
-use MediaWiki\CheckUser\Maintenance\PopulateCheckUserTablesWithSimulatedData;
-use MediaWiki\CheckUser\Tests\Integration\CheckUserCommonTraitTest;
 use MediaWiki\Context\RequestContext;
+use MediaWiki\Extension\CheckUser\ClientHints\ClientHintsData;
+use MediaWiki\Extension\CheckUser\HookHandler\RecentChangeSaveHandler;
+use MediaWiki\Extension\CheckUser\Maintenance\PopulateCheckUserTablesWithSimulatedData;
+use MediaWiki\Extension\CheckUser\Tests\Integration\CheckUserCommonTestTrait;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\Tests\Maintenance\MaintenanceBaseTestCase;
 use MediaWiki\User\User;
@@ -16,10 +16,10 @@ use Wikimedia\TestingAccessWrapper;
  * @group CheckUser
  * @group Database
  *
- * @covers \MediaWiki\CheckUser\Maintenance\PopulateCheckUserTablesWithSimulatedData
+ * @covers \MediaWiki\Extension\CheckUser\Maintenance\PopulateCheckUserTablesWithSimulatedData
  */
 class PopulateCheckUserTablesWithSimulatedDataTest extends MaintenanceBaseTestCase {
-	use CheckUserCommonTraitTest;
+	use CheckUserCommonTestTrait;
 
 	/** @inheritDoc */
 	protected function getMaintenanceClass() {
@@ -96,7 +96,10 @@ class PopulateCheckUserTablesWithSimulatedDataTest extends MaintenanceBaseTestCa
 	public static function provideRandomlyAssignXFFHeader() {
 		return [
 			'One IP to be used in XFF header' => [
-				[ 0.1, 0.8 ], [ '1.2.3.4', '1.2.3.5' ], '1.2.3.4', '1.2.3.5'
+				[ 0.1, 0.8 ],
+				[ '1.2.3.4', '1.2.3.5' ],
+				'1.2.3.4',
+				'1.2.3.5',
 			],
 		];
 	}
@@ -120,7 +123,9 @@ class PopulateCheckUserTablesWithSimulatedDataTest extends MaintenanceBaseTestCa
 
 	public static function provideGetNewIp() {
 		return [
-			'Three IPs' => [ [ '128.0.4.1', '127.0.0.1', '2001:0db8:85a3:0000:0000:8a2e:0370:7334' ] ],
+			'Three IPs' => [
+				[ '128.0.4.1', '127.0.0.1', '2001:0db8:85a3:0000:0000:8a2e:0370:7334' ],
+			],
 		];
 	}
 
@@ -212,9 +217,11 @@ class PopulateCheckUserTablesWithSimulatedDataTest extends MaintenanceBaseTestCa
 						"SM-G965U",
 						"Android",
 						"10.0.0",
-						'"Not/A)Brand";v="99", "Google Chrome";v="115", "Chromium";v="115"',
-						false
-					)
+						false,
+						null,
+						null,
+						null
+					),
 			] ],
 		];
 	}
@@ -293,15 +300,21 @@ class PopulateCheckUserTablesWithSimulatedDataTest extends MaintenanceBaseTestCa
 		$this->expectExceptionMessage( "Script will have exited." );
 		$objectUnderTest->execute();
 		$this->assertRowCount(
-			0, 'cu_changes', 'cuc_id',
+			0,
+			'cu_changes',
+			'cuc_id',
 			'No actions should be inserted to cu_changes.'
 		);
 		$this->assertRowCount(
-			0, 'cu_log_event', 'cule_id',
+			0,
+			'cu_log_event',
+			'cule_id',
 			'No actions should be inserted to cu_log_event.'
 		);
 		$this->assertRowCount(
-			0, 'cu_private_event', 'cupe_id',
+			0,
+			'cu_private_event',
+			'cupe_id',
 			'No actions should be inserted to cu_private_event.'
 		);
 	}

@@ -1,0 +1,54 @@
+@import 'mediawiki.mixins';
+@import './../../sd-base-variables.less';
+
+.sd-copy-text-layout {
+	&__text {
+		border-right: @border-base;
+		padding-right: 0.5em;
+	}
+
+	// Override some CDX button styles; the copy text button
+	// used here does not 100% line up with anything in the
+	// design system
+	&__button.cdx-button {
+		// don't truncate the button
+		flex-shrink: 0;
+		// ensure a small offset for the focus-state box shadow
+		padding: 2px;
+		// unset the min-height so that all lines of text have
+		// the same height
+		min-height: unset;
+
+		&:hover {
+			// CDX button hover styles have very high specificity
+			// but we need to ensure they don't apply here
+			/* stylelint-disable-next-line declaration-no-important */
+			background-color: transparent !important;
+		}
+	}
+
+	&--inline {
+		display: inline;
+	}
+
+	&--hide-overflow {
+		.flex-display();
+		// We want this item to be one line with an ellipsis to incicate
+		// text overflow. We need to set the max width of the entire
+		// element to 100% minus the width and margin of the list item
+		// icon.
+		max-width: calc( ~'100% - 20px - 0.5em' );
+
+		.sd-copy-text-layout__text {
+			// Since we don't get inline spacing because of the flex display,
+			// we need to add a margin to mimic that spacing.
+			margin-right: 0.25em;
+			overflow: hidden;
+			// The ellilpsis text overflow adds a little space to the right
+			// of the text, so decrease the padding-right accordingly.
+			// padding-right: 0.25em;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+	}
+}

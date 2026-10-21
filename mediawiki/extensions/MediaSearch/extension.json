@@ -1,0 +1,270 @@
+{
+	"name": "MediaSearch",
+	"author": [
+		"Anne Tomasevich",
+		"Cormac Parle",
+		"Eric Gardner",
+		"Mark Holmquist",
+		"Matthias Mullie"
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:MediaSearch",
+	"descriptionmsg": "mediasearch-desc",
+	"license-name": "GPL-2.0-or-later",
+	"type": "wikibase",
+	"requires": {
+		"MediaWiki": ">= 1.43"
+	},
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\MediaSearch\\": "src/"
+	},
+	"TestAutoloadNamespaces": {
+		"MediaWiki\\Extension\\MediaSearch\\Tests\\MediaWiki\\": "tests/phpunit/mediawiki/"
+	},
+	"ConfigRegistry": {
+		"MediaSearch": "GlobalVarConfig::newInstance"
+	},
+	"config": {
+		"MediaSearchExternalEntitySearchBaseUri": {
+			"description": "Url to API of Wikibase repository to use for autocomplete results, or leave empty to use local API. Set to `null` to disable autocomplete.",
+			"value": ""
+		},
+		"MediaSearchExternalSearchUri": {
+			"description": "Url to API of MediaWiki instance to use for search results, or leave empty to use local API.",
+			"value": ""
+		},
+		"MediaSearchAssessmentFilters": {
+			"description": "Optional Key/value pairs representing values for community assessment filter; values should be Wikidata statements in the format 'PXXX=Qxxx'.",
+			"value": ""
+		},
+		"MediaSearchAssessmentQuickviewLabels": {
+			"description": "Optional Key/value pairs representing possible Assessment values in file metadata and their corresponding labels",
+			"value": {
+				"valued": "mediasearch-filter-assessment-valued-image",
+				"quality": "mediasearch-filter-assessment-quality-image",
+				"featured": "mediasearch-filter-assessment-featured-image",
+				"potd": "mediasearch-filter-assessment-picture-of-the-day",
+				"poty": "mediasearch-filter-assessment-picture-of-the-year"
+			}
+		},
+		"MediaSearchTabOrder": {
+			"description": "Optional array of values defining search type tab order. Array elements can have values: image, audio, video, page, other",
+			"value": []
+		}
+	},
+	"Hooks": {
+		"GetPreferences": "main"
+	},
+	"HookHandlers": {
+		"main": {
+			"class": "MediaWiki\\Extension\\MediaSearch\\MediaSearchHooks"
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "",
+		"remoteExtPath": "MediaSearch"
+	},
+	"ResourceModules": {
+		"mediasearch.styles": {
+			"styles": [
+				"resources/components/base/AutocompleteSearchInput.less",
+				"resources/components/base/CopyTextLayout.less",
+				"resources/components/base/Dialog.less",
+				"resources/components/base/Player.less",
+				"resources/components/base/Select.less",
+				"resources/components/base/SelectMenu.less",
+				"resources/components/base/Image.less",
+				"resources/components/results/ImageResult.less",
+				"resources/components/results/VideoResult.less",
+				"resources/components/results/AudioResult.less",
+				"resources/components/results/PageResult.less",
+				"resources/components/results/OtherResult.less",
+				"resources/components/App.less",
+				"resources/components/SearchResults.less",
+				"resources/components/QuickView.less",
+				"resources/components/Spinner.less",
+				"resources/components/EmptyState.less",
+				"resources/components/NoResults.less",
+				"resources/components/EndOfResults.less",
+				"resources/components/SearchFilters.less",
+				"resources/components/DidYouMean.less",
+				"resources/components/NamespaceFilterDialog.less",
+				"resources/components/UserNotice.less",
+				"resources/components/SearchError.less"
+			]
+		},
+		"mediasearch": {
+			"packageFiles": [
+				"resources/init.js",
+				"resources/getLocationAgnosticMwApi.js",
+				"resources/ensureArray.js",
+				"resources/constants.js",
+				"resources/components/base/AutocompleteSearchInput.vue",
+				"resources/components/base/CopyTextLayout.vue",
+				"resources/components/base/Dialog.vue",
+				"resources/components/base/Select.vue",
+				"resources/components/base/SelectMenu.vue",
+				"resources/components/base/Observer.vue",
+				"resources/components/base/Image.vue",
+				"resources/components/base/Player.vue",
+				"resources/components/base/mixins/observer.js",
+				"resources/components/results/ImageResult.vue",
+				"resources/components/results/VideoResult.vue",
+				"resources/components/results/AudioResult.vue",
+				"resources/components/results/PageResult.vue",
+				"resources/components/results/OtherResult.vue",
+				"resources/components/App.vue",
+				"resources/components/SearchResults.vue",
+				"resources/components/QuickView.vue",
+				"resources/components/Spinner.vue",
+				"resources/components/EmptyState.vue",
+				"resources/components/NoResults.vue",
+				"resources/components/EndOfResults.vue",
+				"resources/components/DidYouMean.vue",
+				"resources/components/SearchError.vue",
+				"resources/components/SearchFilters.vue",
+				"resources/components/NamespaceFilterDialog.vue",
+				"resources/components/UserNotice.vue",
+				"resources/models/SearchFilter.js",
+				"resources/store/index.js",
+				"resources/store/state.js",
+				"resources/store/mutations.js",
+				"resources/store/getters.js",
+				"resources/store/actions.js",
+				"resources/mixins/autocompleteLookupHandler.js",
+				"resources/mixins/restoreHistoryHandler.js",
+				"resources/mixins/searchResult.js",
+				"resources/mixins/searchResultTimeBased.js",
+				"resources/plugins/eventLogger.js",
+				{
+					"name": "resources/data/searchOptions.json",
+					"callback": "MediaWiki\\Extension\\MediaSearch\\SearchOptions::getSearchOptions"
+				},
+				{
+					"name": "resources/components/icons.json",
+					"callback": "MediaWiki\\ResourceLoader\\CodexModule::getIcons",
+					"callbackParam": [
+						"cdxIconAlert",
+						"cdxIconCamera",
+						"cdxIconCheck",
+						"cdxIconClear",
+						"cdxIconClock",
+						"cdxIconClose",
+						"cdxIconError",
+						"cdxIconExpand",
+						"cdxIconImageLayoutFrameless",
+						"cdxIconInfoFilled",
+						"cdxIconLogoCC",
+						"cdxIconNext",
+						"cdxIconPageSettings",
+						"cdxIconPlay",
+						"cdxIconPrevious",
+						"cdxIconReference",
+						"cdxIconSearch",
+						"cdxIconUnLock",
+						"cdxIconUnStar",
+						"cdxIconVolumeUp",
+						"cdxIconUserAvatar",
+						"cdxIconWikiText"
+					]
+				}
+			],
+			"messages": [
+				"mediasearch-filter-sort-label",
+				"mediasearch-no-results",
+				"mediasearch-no-results-tips",
+				"mediasearch-end-of-results",
+				"mediasearch-tab-image",
+				"mediasearch-tab-audio",
+				"mediasearch-tab-video",
+				"mediasearch-tab-page",
+				"mediasearch-tab-other",
+				"mediasearch-empty-state",
+				"mediasearch-clear-title",
+				"mediasearch-input-label",
+				"mediasearch-input-placeholder",
+				"searchbutton",
+				"mediasearch-load-more-results",
+				"mediasearch-load-less-results",
+				"mediasearch-quickview-button-text",
+				"mediasearch-quickview-close-button-text",
+				"mediasearch-quickview-previous-button-text",
+				"mediasearch-quickview-next-button-text",
+				"mediasearch-category-info",
+				"mediasearch-copytextlayout-copy",
+				"mediasearch-copytextlayout-copy-fail",
+				"mediasearch-copytextlayout-copy-success",
+				"mediasearch-clear-filters",
+				"mediasearch-results-count",
+				"mediasearch-wordcount",
+				"mediasearch-image-size",
+				"mediasearch-did-you-mean",
+				"mediasearch-error-message",
+				"mediasearch-error-text",
+				"mediasearch-filter-namespace-label",
+				"mediasearch-filter-namespace-dialog-title",
+				"mediasearch-filter-namespace-dialog-progressive-action",
+				"mediasearch-filter-namespace-all",
+				"mediasearch-filter-namespace-discussion",
+				"mediasearch-filter-namespace-help",
+				"mediasearch-filter-namespace-custom",
+				"mediasearch-filter-assessment-valued-image",
+				"mediasearch-filter-assessment-quality-image",
+				"mediasearch-filter-assessment-featured-image",
+				"mediasearch-filter-assessment-picture-of-the-day",
+				"mediasearch-filter-assessment-picture-of-the-year",
+				"mediasearch-user-notice-title",
+				"mediasearch-user-notice-body",
+				"mediasearch-user-notice-dismiss",
+				"mediasearch-switch-special-search",
+				"mediasearch-filter-file-type",
+				"mediasearch-filter-assessment",
+				"mediasearch-filter-license",
+				"mediasearch-filter-size",
+				"mediasearch-dialog-close-button-label",
+				"size-bytes",
+				"size-kilobytes",
+				"size-megabytes",
+				"size-gigabytes",
+				"blanknamespace",
+				"comma-separator"
+			],
+			"dependencies": [
+				"mediasearch.styles",
+				"mediawiki.Uri",
+				"mediawiki.jqueryMsg",
+				"mediawiki.api",
+				"mediawiki.storage",
+				"mediawiki.ForeignApi",
+				"mediawiki.user",
+				"vue",
+				"vuex",
+				"web2017-polyfills",
+				"@wikimedia/codex"
+			]
+		}
+	},
+	"DefaultUserOptions": {
+		"sdms-specialsearch-default": 0,
+		"sdms-search-user-notice-dismissed": 0
+	},
+	"SpecialPages": {
+		"MediaSearch": {
+			"class": "MediaWiki\\Extension\\MediaSearch\\Special\\SpecialMediaSearch",
+			"services": [
+				"SearchEngineFactory",
+				"NamespaceInfo",
+				"UserOptionsManager",
+				"LinkRenderer"
+			]
+		}
+	},
+	"ExtensionMessagesFiles": {
+		"MediaSearchAlias": "MediaSearch.i18n.alias.php"
+	},
+	"MessagesDirs": {
+		"MediaSearch": [
+			"i18n"
+		]
+	},
+	"manifest_version": 2
+}

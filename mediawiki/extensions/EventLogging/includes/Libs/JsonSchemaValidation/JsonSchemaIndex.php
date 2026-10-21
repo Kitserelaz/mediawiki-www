@@ -74,9 +74,7 @@ class JsonSchemaIndex {
 	 * @param array $schemanode
 	 */
 	public function indexSubtree( $schemanode ) {
-		if ( !array_key_exists( 'type', $schemanode ) ) {
-			$schemanode['type'] = 'any';
-		}
+		$schemanode['type'] ??= 'any';
 		$nodetype = $schemanode['type'];
 		switch ( $nodetype ) {
 			case 'object':
@@ -112,7 +110,7 @@ class JsonSchemaIndex {
 			$idref = $node['$ref'];
 			try {
 				$node = $this->idtable[$idref];
-			} catch ( Exception $e ) {
+			} catch ( Exception ) {
 				throw new JsonSchemaException( 'jsonschema-badidref', $node['$ref'] );
 			}
 		}

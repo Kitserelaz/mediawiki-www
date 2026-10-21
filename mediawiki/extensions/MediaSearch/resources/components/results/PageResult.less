@@ -1,0 +1,39 @@
+@import 'mediawiki.mixins';
+@import '../../mediasearch-variables.less';
+
+.sdms-page-result {
+	border-bottom: @border-width-base @border-style-base @sdms-border-color-result;
+	max-width: @sdms-max-width-base;
+	padding: @sdms-spacing-base * 0.75 0;
+
+	&:last-child {
+		border-bottom: 0;
+	}
+
+	h3 {
+		margin: 0;
+		padding: 0;
+	}
+
+	p {
+		color: @color-subtle;
+		display: inline-block;
+		margin: 0;
+	}
+
+	//override mw h3 style
+	.sdms-page-result__title {
+		.flex-display();
+		align-items: baseline;
+
+		h3 {
+			margin-top: unset;
+		}
+	}
+
+	&__namespace {
+		background-color: @sdms-background-color-namespace-label;
+		margin-right: 0.5em;
+		padding: 0 0.5em;
+	}
+}

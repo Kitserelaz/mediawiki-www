@@ -1,0 +1,82 @@
+<?php
+
+namespace SMW\MediaWiki;
+
+use MediaWiki\Title\Title;
+use RuntimeException;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 2.1
+ *
+ * @author mwjames
+ */
+class DeepRedirectTargetResolver {
+
+	/**
+	 * Track titles to prevent circular references caused by double redirects
+	 * on the same title
+	 */
+	private array $recursiveResolverTracker = [];
+
+	/**
+	 * @since 2.1
+	 */
+	public function __construct( private readonly PageCreator $pageCreator ) {
+	}
+
+	/**
+	 * @since  2.1
+	 *
+	 * @param Title $title
+	 *
+	 * @return Title|null
+	 * @throws RuntimeException
+	 */
+	public function findRedirectTargetFor( Title $title ): ?Title {
+		return $this->doResolveRedirectTarget( $title );
+	}
+
+	protected function isValidRedirectTarget( $title ): bool {
+		return $title instanceof Title && $title->isValidRedirectTarget();
+	}
+
+	protected function isRedirect( $title ): bool {
+		return $title instanceof Title && $title->isRedirect();
+	}
+
+	private function doResolveRedirectTarget( Title $title ): ?Title {
+		$this->addToResolverTracker( $title );
+
+		if ( $this->isCircularByKnownRedirectTarget( $title ) ) {
+			throw new RuntimeException( "Circular redirect for {$title->getPrefixedDBkey()} detected." );
+		}
+
+		if ( $this->isRedirect( $title ) ) {
+			$title = $this->pageCreator->createPage( $title )->getRedirectTarget();
+
+			if ( $title instanceof Title ) {
+				$title = $this->doResolveRedirectTarget( $title );
+			}
+		}
+
+		if ( $this->isValidRedirectTarget( $title ) ) {
+			return $title;
+		}
+
+		throw new RuntimeException( "Redirect target is unresolvable" );
+	}
+
+	private function addToResolverTracker( Title $title ) {
+		if ( !isset( $this->recursiveResolverTracker[$title->getPrefixedDBkey()] ) ) {
+			$this->recursiveResolverTracker[$title->getPrefixedDBkey()] = 0;
+		}
+
+		return $this->recursiveResolverTracker[$title->getPrefixedDBkey()]++;
+	}
+
+	private function isCircularByKnownRedirectTarget( Title $title ): bool {
+		return isset( $this->recursiveResolverTracker[$title->getPrefixedDBkey()] ) && $this->recursiveResolverTracker[$title->getPrefixedDBkey()] > 1;
+	}
+
+}

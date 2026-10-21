@@ -4,10 +4,13 @@ namespace MediaWiki\Extension\ConfirmEdit\Auth;
 
 use MediaWiki\Auth\AuthenticationRequest;
 use MediaWiki\Auth\AuthManager;
+use MediaWiki\Extension\ConfirmEdit\CaptchaTriggers;
 use MediaWiki\Extension\ConfirmEdit\Hooks;
 
 /**
- * Generic captcha authentication request class. A captcha consist some data stored in the session
+ * Generic captcha authentication request class.
+ *
+ *  A captcha consists of some data stored in the session
  * (e.g. a question and its answer), an ID that references the data, and a solution.
  */
 class CaptchaAuthenticationRequest extends AuthenticationRequest {
@@ -36,14 +39,12 @@ class CaptchaAuthenticationRequest extends AuthenticationRequest {
 		return 'CaptchaAuthenticationRequest';
 	}
 
-	/**
-	 * @inheritDoc
-	 */
+	/** @inheritDoc */
 	public function loadFromSubmission( array $data ) {
 		$success = parent::loadFromSubmission( $data );
 		if ( $success ) {
-			// captchaId and captchaWord was set from the submission but captchaData was not.
-			$captcha = Hooks::getInstance();
+			// The captchaId and captchaWord were set from the submission, but captchaData was not.
+			$captcha = Hooks::getInstance( $this->getAction() );
 			$this->captchaData = $captcha->retrieveCaptcha( $this->captchaId );
 			if ( !$this->captchaData ) {
 				return false;
@@ -52,24 +53,26 @@ class CaptchaAuthenticationRequest extends AuthenticationRequest {
 		return $success;
 	}
 
-	/**
-	 * @inheritDoc
-	 */
-	public function getFieldInfo() {
-		$captcha = Hooks::getInstance();
-
-		// doesn't actually exist but *Captcha::getMessage will handle that
+	public function getAction(): string {
+		// generic action doesn't exist, but *Captcha::getMessage will handle that
 		$action = 'generic';
 		switch ( $this->action ) {
 			case AuthManager::ACTION_LOGIN:
-				$action = 'badlogin';
+				$action = CaptchaTriggers::BAD_LOGIN;
 				break;
 			case AuthManager::ACTION_CREATE:
-				$action = 'createaccount';
+				$action = CaptchaTriggers::CREATE_ACCOUNT;
 				break;
 		}
+		return $action;
+	}
 
-		$fields = [
+	/** @inheritDoc */
+	public function getFieldInfo() {
+		$action = $this->getAction();
+		$captcha = Hooks::getInstance( $action );
+
+		return [
 			'captchaId' => [
 				'type' => 'hidden',
 				'value' => $this->captchaId,
@@ -88,15 +91,11 @@ class CaptchaAuthenticationRequest extends AuthenticationRequest {
 				'help' => wfMessage( 'captcha-help' ),
 			],
 		];
-
-		return $fields;
 	}
 
-	/**
-	 * @inheritDoc
-	 */
+	/** @inheritDoc */
 	public function getMetadata() {
-		return ( Hooks::getInstance() )->describeCaptchaType();
+		return ( Hooks::getInstance( $this->getAction() ) )->describeCaptchaType( $this->getAction() );
 	}
 
 	/**

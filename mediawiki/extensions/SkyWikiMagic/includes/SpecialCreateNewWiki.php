@@ -2,7 +2,7 @@
 
 namespace WikiOasis\WikiOasisMagic;
 
-use ErrorPageError;
+use MediaWiki\Exception\ErrorPageError;
 use MediaWiki\Html\Html;
 use MediaWiki\Message\Message;
 use MediaWiki\SpecialPage\FormSpecialPage;
@@ -26,7 +26,7 @@ class SpecialCreateNewWiki extends FormSpecialPage {
 		CreateWikiValidator $validator,
 		WikiRequestManager $wikiRequestManager,
 	) {
-		parent::__construct( 'CreateNewWiki', 'createnewwiki' );
+		parent::__construct( 'CreateNewWiki' );
 
 		$this->databaseUtils = $databaseUtils;
 		$this->wikiManagerFactory = $wikiManagerFactory;
@@ -356,4 +356,8 @@ console.log(document.querySelector('#mw-input-wpcategory .oo-ui-dropdownWidget .
                         </script>
 		";
 	}
+	public function getRestriction(): string {
+		return 'createnewwiki';
+	}
+
 }

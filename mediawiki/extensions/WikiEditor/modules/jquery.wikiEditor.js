@@ -1,3 +1,5 @@
+const ResizingDragBar = require( './resizingdragbar/ResizingDragBar.js' );
+
 /**
  * This plugin provides a way to build a wiki-text editing user interface around a textarea.
  *
@@ -11,7 +13,7 @@
 /**
  * @private
  */
-var hasOwn = Object.prototype.hasOwnProperty,
+const hasOwn = Object.prototype.hasOwnProperty,
 
 	/**
 	 * Array of language codes.
@@ -20,7 +22,7 @@ var hasOwn = Object.prototype.hasOwnProperty,
 	 */
 	fallbackChain = ( function () {
 		// eslint-disable-next-line no-jquery/no-class-state
-		var isRTL = $( document.body ).hasClass( 'rtl' ),
+		const isRTL = $( document.body ).hasClass( 'rtl' ),
 			chain = mw.language.getFallbackLanguageChain();
 
 		// Do not fallback to 'en'
@@ -35,40 +37,6 @@ var hasOwn = Object.prototype.hasOwnProperty,
 	}() );
 
 /**
- * Helper function to mark the automatic message functionality in
- * the autoMsg and autoSafeMsg functions as deprecated.
- *
- * @private
- * @param {string} property
- * @param {string} key
- */
-function deprecateAutoMsg( property, key ) {
-	var searchParam = mw.config.get( 'wgSearchType' ) === 'CirrusSearch' ?
-		'insource:/' + property + 'Msg: \'' + key + '\'/' :
-		property + 'Msg: ' + key;
-	var searchUri = mw.config.get( 'wgServer' ) +
-		mw.util.getUrl(
-			'Special:Search',
-			{ search: searchParam, ns2: 1, ns8: 1 }
-		);
-	if ( searchUri.slice( 0, 2 ) === '//' ) {
-		searchUri = location.protocol + searchUri;
-	}
-
-	var messageMethod;
-	if ( property === 'html' || property === 'text' || property === 'title' ) {
-		messageMethod = 'mw.message( ' + JSON.stringify( key ) + ' ).parse()';
-	} else {
-		messageMethod = 'mw.msg( ' + JSON.stringify( key ) + ' )';
-	}
-	var deprecationMsg = mw.log.makeDeprecated(
-		'wikiEditor_autoMsg',
-		'WikiEditor: Use `' + property + ': ' + messageMethod + '` instead of `' + property + 'Msg: ' + JSON.stringify( key ) + '`.\nSearch: ' + searchUri
-	);
-	deprecationMsg();
-}
-
-/**
  * Global static object for wikiEditor that provides generally useful functionality to all modules and contexts.
  */
 $.wikiEditor = {
@@ -79,7 +47,8 @@ $.wikiEditor = {
 	 */
 	modules: {
 		toolbar: require( './jquery.wikiEditor.toolbar.js' ),
-		dialogs: require( './jquery.wikiEditor.dialogs.js' )
+		dialogs: require( './jquery.wikiEditor.dialogs.js' ),
+		resizingdragbar: require( './jquery.wikiEditor.resizingdragbar.js' )
 	},
 
 	/**
@@ -110,97 +79,13 @@ $.wikiEditor = {
 	 */
 	isRequired: function ( module, requirement ) {
 		if ( typeof module.req !== 'undefined' ) {
-			for ( var req in module.req ) {
+			for ( const req in module.req ) {
 				if ( module.req[ req ] === requirement ) {
 					return true;
 				}
 			}
 		}
 		return false;
-	},
-
-	/**
-	 * Provides a way to extract messages from objects. Wraps a mw.message( ... ).text() call.
-	 *
-	 * FIXME: This is a security nightmare. Only use is for the help toolbar panel. Inline the
-	 *        special need instead?
-	 * FIXME: Also, this is ludicrously complex. Just use mw.message().text() directly.
-	 *
-	 * @deprecated Since v0.5.4. Use mw.message() directly instead of <key>Msg
-	 *
-	 * @param {Object} object Object to extract messages from
-	 * @param {string} property String of name of property which contains the message. This should be the base name of the
-	 * property, which means that in the case of the object { this: 'that', fooMsg: 'bar' }, passing property as 'this'
-	 * would return the raw text 'that', while passing property as 'foo' would return the internationalized message
-	 * with the key 'bar'.
-	 * @return {string}
-	 */
-	autoMsg: function ( object, property ) {
-		// Accept array of possible properties, of which the first one found will be used
-		if ( typeof property === 'object' ) {
-			for ( var i in property ) {
-				if ( property[ i ] in object || property[ i ] + 'Msg' in object ) {
-					property = property[ i ];
-					break;
-				}
-			}
-		}
-		if ( property in object ) {
-			return object[ property ];
-		} else if ( property + 'Msg' in object ) {
-			var p = object[ property + 'Msg' ];
-			if ( Array.isArray( p ) && p.length >= 2 ) {
-				deprecateAutoMsg( property, p[ 0 ] );
-				return mw.message.apply( mw.message, p ).text();
-			} else {
-				deprecateAutoMsg( property, p );
-				// eslint-disable-next-line mediawiki/msg-doc
-				return mw.message( p ).text();
-			}
-		} else {
-			return '';
-		}
-	},
-
-	/**
-	 * Provides a way to extract messages from objects. Wraps a mw.message( ... ).escaped() call.
-	 *
-	 * FIXME: This is ludicrously complex. Just use mw.message().escaped() directly.
-	 *
-	 * @deprecated Since v0.5.4. Use mw.message() directly instead of <key>Msg
-	 *
-	 * @param {Object} object Object to extract messages from
-	 * @param {string} property String of name of property which contains the message. This should be the base name of the
-	 * property, which means that in the case of the object { this: 'that', fooMsg: 'bar' }, passing property as 'this'
-	 * would return the raw text 'that', while passing property as 'foo' would return the internationalized message
-	 * with the key 'bar'. This is then escaped.
-	 * @return {string}
-	 */
-	autoSafeMsg: function ( object, property ) {
-		// Accept array of possible properties, of which the first one found will be used
-		if ( typeof property === 'object' ) {
-			for ( var i in property ) {
-				if ( property[ i ] in object || property[ i ] + 'Msg' in object ) {
-					property = property[ i ];
-					break;
-				}
-			}
-		}
-		if ( property in object ) {
-			return object[ property ];
-		} else if ( property + 'Msg' in object ) {
-			var p = object[ property + 'Msg' ];
-			if ( Array.isArray( p ) && p.length >= 2 ) {
-				deprecateAutoMsg( property, p[ 0 ] );
-				return mw.message.apply( mw.message, p ).escaped();
-			} else {
-				deprecateAutoMsg( property, p );
-				// eslint-disable-next-line mediawiki/msg-doc
-				return mw.message( p ).escaped();
-			}
-		} else {
-			return '';
-		}
 	},
 
 	/**
@@ -213,8 +98,8 @@ $.wikiEditor = {
 	 * @return {Object}
 	 */
 	autoLang: function ( object ) {
-		for ( var i = 0; i < fallbackChain.length; i++ ) {
-			var key = fallbackChain[ i ];
+		for ( let i = 0; i < fallbackChain.length; i++ ) {
+			const key = fallbackChain[ i ];
 			if ( hasOwn.call( object, key ) ) {
 				return object[ key ];
 			}
@@ -233,24 +118,36 @@ $.wikiEditor = {
 	autoIcon: function ( icon, path ) {
 		path = path || $.wikiEditor.imgPath;
 
-		for ( var i = 0; i < fallbackChain.length; i++ ) {
-			var key = fallbackChain[ i ];
+		for ( let i = 0; i < fallbackChain.length; i++ ) {
+			const key = fallbackChain[ i ];
 			if ( icon && hasOwn.call( icon, key ) ) {
-				var src = icon[ key ];
+				let src = icon[ key ];
 
 				// Return a data URL immediately
-				if ( src.slice( 0, 5 ) === 'data:' ) {
+				if ( src.startsWith( 'data:' ) ) {
 					return src;
 				}
 
 				// Prepend path if src is not absolute
-				if ( src.slice( 0, 7 ) !== 'http://' && src.slice( 0, 8 ) !== 'https://' && src[ 0 ] !== '/' ) {
+				if ( !src.startsWith( 'http://' ) && !src.startsWith( 'https://' ) && !src.startsWith( '/' ) ) {
 					src = path + src;
 				}
 				return src;
 			}
 		}
 		return icon;
+	},
+
+	/**
+	 * Creates a ResizingDragBar instance.
+	 *
+	 * @param {Object} [config] Configuration options
+	 * @param {boolean} [config.isEW] Orientation of the drag bar, East-West (true) or North-South (false).
+	 * @param {boolean} [config.id] The element ID. If supplied, the size of the resized pane will be persisted to localStorage.
+	 * @return {ResizingDragBar}
+	 */
+	createResizingDragBar: function ( config ) {
+		return new ResizingDragBar( config );
 	}
 };
 
@@ -264,7 +161,7 @@ $.fn.wikiEditor = function () {
 
 	// The wikiEditor context is stored in the element's data, so when this function gets called again we can pick up right
 	// where we left off
-	var context = $( this ).data( 'wikiEditor-context' );
+	let context = $( this ).data( 'wikiEditor-context' );
 	// On first call, we need to set things up, but on all following calls we can skip right to the API handling
 	if ( !context ) {
 
@@ -303,18 +200,18 @@ $.fn.wikiEditor = function () {
 			 * or an object with members keyed with module names and valued with configuration objects.
 			 */
 			addModule: function ( ctx, data ) {
-				var modules = {};
+				let modules = {};
 				if ( typeof data === 'string' ) {
 					modules[ data ] = {};
 				} else if ( typeof data === 'object' ) {
 					modules = data;
 				}
-				for ( var module in modules ) {
+				for ( const module in modules ) {
 					// Check for the existence of an available module with a matching name and a create function
 					if ( typeof module === 'string' && typeof $.wikiEditor.modules[ module ] !== 'undefined' ) {
 						// Extend the context's core API with this module's own API calls
 						if ( 'api' in $.wikiEditor.modules[ module ] ) {
-							for ( var call in $.wikiEditor.modules[ module ].api ) {
+							for ( const call in $.wikiEditor.modules[ module ].api ) {
 								// Modules may not overwrite existing API functions - first come, first serve
 								if ( !( call in ctx.api ) ) {
 									ctx.api[ call ] = $.wikiEditor.modules[ module ].api[ call ];
@@ -369,16 +266,16 @@ $.fn.wikiEditor = function () {
 						return false;
 					}
 				}
-				var returnFromModules = true;
+				let returnFromModules = true;
 				// Pass the event around to all modules activated on this context
 
-				for ( var module in context.modules ) {
+				for ( const module in context.modules ) {
 					if (
 						module in $.wikiEditor.modules &&
 						'evt' in $.wikiEditor.modules[ module ] &&
 						name in $.wikiEditor.modules[ module ].evt
 					) {
-						var ret = $.wikiEditor.modules[ module ].evt[ name ]( context, event );
+						const ret = $.wikiEditor.modules[ module ].evt[ name ]( context, event );
 						if ( ret !== null ) {
 							// if 1 returns false, the end result is false
 							returnFromModules = returnFromModules && ret;
@@ -386,80 +283,6 @@ $.fn.wikiEditor = function () {
 					}
 				}
 				return returnFromModules;
-			},
-
-			/**
-			 * Adds a button to the UI
-			 *
-			 * @param {Object} options
-			 * @return {jQuery}
-			 */
-			addButton: function ( options ) {
-				// Ensure that buttons and tabs are visible
-				context.$controls.show();
-				context.$buttons.show();
-				return $( '<button>' )
-					.text( $.wikiEditor.autoMsg( options, 'caption' ) )
-					.on( 'click', options.action )
-					.appendTo( context.$buttons );
-			},
-
-			/**
-			 * Adds a view to the UI, which is accessed using a set of tabs. Views are mutually exclusive and by default a
-			 * wikitext view will be present. Only when more than one view exists will the tabs will be visible.
-			 *
-			 * @param {Object} options
-			 * @return {jQuery}
-			 */
-			addView: function ( options ) {
-				// Adds a tab
-				function addTab( opts ) {
-					// Ensure that buttons and tabs are visible
-					context.$controls.show();
-					context.$tabs.show();
-					// Return the newly appended tab
-					return $( '<div>' )
-						.attr( 'rel', 'wikiEditor-ui-view-' + opts.name )
-						.addClass( context.view === opts.name ? 'current' : null )
-						.append( $( '<a>' )
-							.attr( 'tabindex', 0 )
-							.on( 'mousedown', function () {
-								// No dragging!
-								return false;
-							} )
-							.on( 'click keydown', function ( event ) {
-								if (
-									event.type === 'click' ||
-									event.type === 'keydown' && event.key === 'Enter'
-								) {
-									context.$ui.find( '.wikiEditor-ui-view' ).hide();
-									context.$ui.find( '.' + $( this ).parent().attr( 'rel' ) ).show();
-									context.$tabs.find( 'div' ).removeClass( 'current' );
-									$( this ).parent().addClass( 'current' );
-									$( this ).trigger( 'blur' );
-									if ( 'init' in opts && typeof opts.init === 'function' ) {
-										opts.init( context );
-									}
-									event.preventDefault();
-									return false;
-								}
-							} )
-							.text( $.wikiEditor.autoMsg( opts, 'title' ) )
-						)
-						.appendTo( context.$tabs );
-				}
-				// Automatically add the previously not-needed wikitext tab
-				if ( !context.$tabs.children().length ) {
-					addTab( { name: 'wikitext', title: mw.message( 'wikieditor-wikitext-tab' ).parse() } );
-				}
-				// Add the tab for the view we were actually asked to add
-				addTab( options );
-				// Return newly appended view
-				// eslint-disable-next-line mediawiki/class-doc
-				return $( '<div>' )
-					.addClass( 'wikiEditor-ui-view wikiEditor-ui-view-' + options.name )
-					.hide()
-					.appendTo( context.$ui );
 			},
 
 			/**
@@ -495,12 +318,12 @@ $.fn.wikiEditor = function () {
 		 */
 
 		/* Preserving cursor and focus state, which will get lost due to wrapAll */
-		var hasFocus = context.$textarea.is( ':focus' );
-		var cursorPos = context.$textarea.textSelection( 'getCaretPosition', { startAndEnd: true } );
+		const hasFocus = context.$textarea.is( ':focus' );
+		const cursorPos = context.$textarea.textSelection( 'getCaretPosition', { startAndEnd: true } );
 		// Encapsulate the textarea with some containers for layout
 		context.$textarea
 			.wrapAll( $( '<div>' ).addClass( 'wikiEditor-ui' ) )
-			.wrapAll( $( '<div>' ).addClass( 'wikiEditor-ui-view wikiEditor-ui-view-wikitext' ) )
+			.wrapAll( $( '<div>' ).addClass( 'wikiEditor-ui-view' ) )
 			.wrapAll( $( '<div>' ).addClass( 'wikiEditor-ui-left' ) )
 			.wrapAll( $( '<div>' ).addClass( 'wikiEditor-ui-bottom' ) )
 			.wrapAll( $( '<div>' ).addClass( 'wikiEditor-ui-text' ) );
@@ -510,23 +333,13 @@ $.fn.wikiEditor = function () {
 		if ( hasFocus ) {
 			context.$textarea.trigger( 'focus' );
 			context.$textarea.textSelection( 'setSelection', { start: cursorPos[ 0 ], end: cursorPos[ 1 ] } );
+			context.$textarea.textSelection( 'scrollToCaretPosition' );
 		}
 
 		// Get references to some of the newly created containers
 		context.$ui = context.$textarea.parent().parent().parent().parent().parent();
 		context.$wikitext = context.$textarea.parent().parent().parent().parent();
-		// Add in tab and button containers
-		context.$wikitext.before(
-			$( '<div>' ).addClass( 'wikiEditor-ui-controls' ).append(
-				$( '<div>' ).addClass( 'wikiEditor-ui-tabs' ).hide(),
-				$( '<div>' ).addClass( 'wikiEditor-ui-buttons' )
-			),
-			$( '<div>' ).addClass( 'wikiEditor-ui-clear' )
-		);
-		// Get references to some of the newly created containers
-		context.$controls = context.$ui.find( '.wikiEditor-ui-buttons' ).hide();
-		context.$buttons = context.$ui.find( '.wikiEditor-ui-buttons' );
-		context.$tabs = context.$ui.find( '.wikiEditor-ui-tabs' );
+
 		// Clear all floating after the UI
 		context.$ui.after( $( '<div>' ).addClass( 'wikiEditor-ui-clear' ) );
 		// Attach a right container
@@ -539,7 +352,7 @@ $.fn.wikiEditor = function () {
 		// Setup the initial view
 		context.view = 'wikitext';
 		// Trigger the "resize" event anytime the window is resized
-		$( window ).on( 'resize', function ( event ) {
+		$( window ).on( 'resize', ( event ) => {
 			context.fn.trigger( 'resize', event );
 		} );
 	}
@@ -547,22 +360,22 @@ $.fn.wikiEditor = function () {
 	/* API Execution */
 
 	// Since javascript gives arguments as an object, we need to convert them so they can be used more easily
-	var args = $.makeArray( arguments );
+	const args = $.makeArray( arguments );
 
 	// Dynamically setup core extensions for modules that are required
 	if ( args[ 0 ] === 'addModule' && typeof args[ 1 ] !== 'undefined' ) {
-		var modulesArg = args[ 1 ];
+		let modulesArg = args[ 1 ];
 		if ( typeof modulesArg !== 'object' ) {
 			modulesArg = {};
 			modulesArg[ args[ 1 ] ] = '';
 		}
-		for ( var m in modulesArg ) {
+		for ( const m in modulesArg ) {
 			if ( m in $.wikiEditor.modules ) {
 				// Activate all required core extensions on context
-				for ( var extension in $.wikiEditor.extensions ) {
+				for ( const extension in $.wikiEditor.extensions ) {
 					if (
 						$.wikiEditor.isRequired( $.wikiEditor.modules[ m ], extension ) &&
-						context.extensions.indexOf( extension ) === -1
+						!context.extensions.includes( extension )
 					) {
 						context.extensions[ context.extensions.length ] = extension;
 						$.wikiEditor.extensions[ extension ]( context );
@@ -576,7 +389,7 @@ $.fn.wikiEditor = function () {
 	// There would need to be some arguments if the API is being called
 	if ( args.length > 0 ) {
 		// Handle API calls
-		var callArg = args.shift();
+		const callArg = args.shift();
 		if ( callArg in context.api ) {
 			context.api[ callArg ]( context, args[ 0 ] || {} );
 		}

@@ -1,0 +1,279 @@
+<?php
+/**
+ * @section LICENSE
+ * @license GPL-2.0-or-later
+ *
+ * @file
+ * @ingroup SpecialPage
+ */
+
+namespace MediaWiki\Extension\CentralAuth\Special;
+
+use MediaWiki\Context\IContextSource;
+use MediaWiki\Extension\CentralAuth\CentralAuthDatabaseManager;
+use MediaWiki\Extension\CentralAuth\GlobalRename\GlobalRenameRequest;
+use MediaWiki\Extension\CentralAuth\User\CentralAuthUser;
+use MediaWiki\Html\Html;
+use MediaWiki\Linker\LinkRenderer;
+use MediaWiki\Pager\TablePager;
+use MediaWiki\SpecialPage\SpecialPage;
+use MediaWiki\User\UserNameUtils;
+use MediaWiki\WikiMap\WikiMap;
+use stdClass;
+
+/**
+ * Paginated table of search results.
+ * @ingroup Pager
+ */
+class RenameQueueTablePager extends TablePager {
+
+	private UserNameUtils $userNameUtils;
+
+	/**
+	 * @var string
+	 */
+	protected $mPage;
+
+	/**
+	 * @var string[]|null
+	 */
+	protected $mFieldNames;
+
+	public function __construct(
+		IContextSource $context,
+		LinkRenderer $linkRenderer,
+		CentralAuthDatabaseManager $databaseManager,
+		UserNameUtils $userNameUtils,
+		string $page
+	) {
+		$this->setContext( $context );
+		$this->mPage = $page;
+		$this->mDb = $databaseManager->getCentralReplicaDB();
+		$this->userNameUtils = $userNameUtils;
+
+		$limit = $this->getRequest()->getInt( 'limit', 25 );
+		// Override default cap of 5000
+		$this->setLimit( min( 100, $limit ) );
+
+		if ( $this->showOpenRequests() ) {
+			$this->mDefaultDirection = self::DIR_ASCENDING;
+		} else {
+			$this->mDefaultDirection = self::DIR_DESCENDING;
+		}
+		parent::__construct( null, $linkRenderer );
+	}
+
+	protected function showOpenRequests(): bool {
+		return $this->mPage === SpecialGlobalRenameQueue::PAGE_OPEN_QUEUE;
+	}
+
+	protected function showClosedRequests(): bool {
+		return $this->mPage === SpecialGlobalRenameQueue::PAGE_CLOSED_QUEUE;
+	}
+
+	/** @inheritDoc */
+	public function getQueryInfo() {
+		return [
+			'tables' => 'renameuser_queue',
+			'fields' => [
+				'rq_id',
+				'rq_name',
+				'rq_wiki',
+				'rq_newname',
+				'rq_reason',
+				'rq_requested_ts',
+				'rq_status',
+				'rq_completed_ts',
+				# 'rq_deleted', not implemented yet
+				'rq_performer',
+				'rq_comments',
+				'rq_type',
+			],
+			'conds' => $this->getQueryInfoConds(),
+		];
+	}
+
+	/** @inheritDoc */
+	protected function getQueryInfoConds() {
+		$conds = [];
+
+		$username = $this->getRequest()->getText( 'username' );
+		$username = $this->userNameUtils->getCanonical( $username );
+		if ( $username ) {
+			$conds['rq_name'] = $username;
+		}
+
+		$newname = $this->getRequest()->getText( 'newname' );
+		$newname = $this->userNameUtils->getCanonical( $newname );
+		if ( $newname ) {
+			$conds['rq_newname'] = $newname;
+		}
+
+		$type = $this->getRequest()->getVal( 'type', 'all' );
+		if ( $type !== 'all' ) {
+			$conds['rq_type'] = $type;
+		}
+
+		if ( $this->showOpenRequests() ) {
+			$conds['rq_status'] = GlobalRenameRequest::PENDING;
+		} else {
+			$status = $this->getRequest()->getVal( 'status', 'all' );
+			$closedStatuses = [ GlobalRenameRequest::APPROVED, GlobalRenameRequest::REJECTED ];
+			if ( in_array( $status, $closedStatuses ) ) {
+				// User requested closed status - either approved or rejected
+				$conds['rq_status'] = $status;
+			} else {
+				// All closed requests
+				$conds[] = $this->mDb->expr( 'rq_status', '!=', GlobalRenameRequest::PENDING );
+			}
+		}
+
+		return $conds;
+	}
+
+	/**
+	 * @return array
+	 */
+	public function getIndexField() {
+		return [ [ parent::getIndexField(), 'rq_id' ] ];
+	}
+
+	/**
+	 * @param string $field
+	 * @return bool
+	 */
+	public function isFieldSortable( $field ) {
+		$sortable = false;
+		switch ( $field ) {
+			case 'rq_name':
+			case 'rq_wiki':
+			case 'rq_newname':
+			case 'rq_reason':
+			case 'rq_requested_ts':
+			case 'rq_status':
+			case 'rq_completed_ts':
+			case 'rq_performer':
+			case 'rq_type':
+				$sortable = true;
+		}
+		return $sortable;
+	}
+
+	/**
+	 * @param string $name The database field name
+	 * @param string|null $value The value retrieved from the database
+	 * @return string HTML to place inside table cell
+	 */
+	public function formatValue( $name, $value ) {
+		$formatted = htmlspecialchars( $value ?? '' );
+		switch ( $name ) {
+			case 'rq_requested_ts':
+			case 'rq_completed_ts':
+				$formatted = $this->formatDateTime( $value );
+				break;
+			case 'rq_name':
+			case 'rq_newname':
+				$title = SpecialPage::getTitleFor( 'CentralAuth', $value );
+				$formatted = $this->getLinkRenderer()->makeLink( $title, $value );
+				break;
+			case 'rq_performer':
+				$renamer = CentralAuthUser::newFromId( (int)$value );
+				$formatted = '<span class="plainlinks">' .
+					WikiMap::foreignUserLink(
+					$renamer->getHomeWiki(),
+					$renamer->getName(),
+					$renamer->getName()
+				) . '</span>';
+				break;
+			case 'rq_type':
+				$formatted = $this->formatTypeValue( (int)$value );
+				break;
+			case 'row_actions':
+				$formatted = $this->formatActionValue( $this->mCurrentRow );
+				break;
+		}
+		return $formatted;
+	}
+
+	/**
+	 * @param string $value
+	 * @return string Formatted table cell contents
+	 */
+	protected function formatDateTime( $value ) {
+		return htmlspecialchars(
+			$this->getLanguage()->userTimeAndDate( $value, $this->getUser() )
+		);
+	}
+
+	/**
+	 * @param int $type
+	 * @return string Formatted and translated table cell contents
+	 */
+	protected function formatTypeValue( $type ) {
+		return $type === GlobalRenameRequest::VANISH
+			? $this->msg( 'globalrenamequeue-type-vanish' )->text()
+			: $this->msg( 'globalrenamequeue-type-rename' )->text();
+	}
+
+	/**
+	 * @param stdClass $row
+	 * @return string Formatted table cell contents
+	 */
+	protected function formatActionValue( $row ) {
+		$target = SpecialGlobalRenameQueue::PAGE_PROCESS_REQUEST . '/' . $row->rq_id;
+		if ( $this->showOpenRequests() ) {
+			$label = 'globalrenamequeue-action-address';
+		} else {
+			$target .= '/' . SpecialGlobalRenameQueue::ACTION_VIEW;
+			$label = 'globalrenamequeue-action-view';
+		}
+		return Html::element( 'a',
+			[
+				'href' => SpecialPage::getTitleFor( 'GlobalRenameQueue', $target )->getFullURL(),
+			],
+			$this->msg( $label )->text()
+		);
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getDefaultSort() {
+		if ( $this->showOpenRequests() ) {
+			return 'rq_requested_ts';
+		} else {
+			return 'rq_completed_ts';
+		}
+	}
+
+	/**
+	 * @return string[]
+	 */
+	public function getFieldNames() {
+		if ( $this->mFieldNames === null ) {
+			$this->mFieldNames = [
+				'rq_name' => $this->msg( 'globalrenamequeue-column-rq-name' )->text(),
+				'rq_newname' => $this->msg( 'globalrenamequeue-column-rq-newname' )->text(),
+				'rq_wiki' => $this->msg( 'globalrenamequeue-column-rq-wiki' )->text(),
+				'rq_requested_ts' =>
+					$this->msg( 'globalrenamequeue-column-rq-requested-ts' )->text(),
+				'rq_type' => $this->msg( 'globalrenamequeue-column-rq-type' )->text(),
+				'row_actions' => $this->msg( 'globalrenamequeue-column-row-actions' )->text(),
+			];
+
+			if ( $this->showClosedRequests() ) {
+				// Remove action column
+				array_pop( $this->mFieldNames );
+
+				$this->mFieldNames += [
+					'rq_completed_ts' =>
+						$this->msg( 'globalrenamequeue-column-rq-completed-ts' )->text(),
+					'rq_status' => $this->msg( 'globalrenamequeue-column-rq-status' )->text(),
+					'rq_performer' => $this->msg( 'globalrenamequeue-column-rq-performer' )->text(),
+					'row_actions' => $this->msg( 'globalrenamequeue-column-row-actions' )->text(),
+				];
+			}
+		}
+		return $this->mFieldNames;
+	}
+}

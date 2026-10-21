@@ -1,0 +1,472 @@
+<?php
+
+namespace SMW\Parser;
+
+use MediaWiki\HookContainer\HookContainer;
+use MediaWiki\Title\Title;
+use SMW\DataItems\WikiPage;
+use SMW\DataModel\SemanticData;
+use SMW\DataValueFactory;
+use SMW\DataValues\DataValue;
+use SMW\MediaWiki\MagicWordsFinder;
+use SMW\MediaWiki\Outputs;
+use SMW\MediaWiki\RedirectTargetFinder;
+use SMW\MediaWiki\StripMarkerDecoder;
+use SMW\ParserData;
+use SMW\Services\ServicesFactory as ApplicationFactory;
+use SMW\Utils\Timer;
+
+/**
+ * Class collects all functions for wiki text parsing / processing that are
+ * relevant for SMW
+ *
+ * This class is contains all functions necessary for parsing wiki text before
+ * it is displayed or previewed while identifying SMW related annotations.
+ *
+ * @license GPL-2.0-or-later
+ * @since 1.9
+ *
+ * @author Markus Krötzsch
+ * @author Denny Vrandecic
+ * @author mwjames
+ */
+class InTextAnnotationParser {
+
+	private ?HookContainer $hookContainer = null;
+
+	/**
+	 * @since 7.0.0
+	 */
+	public function setHookContainer( HookContainer $hookContainer ): void {
+		$this->hookContainer = $hookContainer;
+	}
+
+	/**
+	 * Internal state for switching SMW link annotations off/on during parsing
+	 * ([[SMW::on]] and [[SMW:off]])
+	 */
+	const OFF = '[[SMW::off]]';
+	const ON = '[[SMW::on]]';
+
+	private ?AnnotationProcessor $annotationProcessor = null;
+
+	/**
+	 * @var ApplicationFactory
+	 */
+	private ApplicationFactory $applicationFactory;
+
+	private ?StripMarkerDecoder $stripMarkerDecoder = null;
+
+	/**
+	 * @var bool
+	 */
+	protected $isEnabledNamespace;
+
+	/**
+	 * Internal state for switching SMW link annotations off/on during parsing
+	 * ([[SMW::on]] and [[SMW:off]])
+	 *
+	 * @var bool
+	 */
+	protected $isAnnotation = true;
+
+	/**
+	 * @var bool|int
+	 */
+	private $isLinksInValues = false;
+
+	private bool $showErrors = true;
+
+	/**
+	 * @since 1.9
+	 */
+	public function __construct(
+		private ParserData $parserData,
+		private LinksProcessor $linksProcessor,
+		private MagicWordsFinder $magicWordsFinder,
+		private RedirectTargetFinder $redirectTargetFinder,
+	) {
+		$this->applicationFactory = ApplicationFactory::getInstance();
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * @param bool $isLinksInValues
+	 */
+	public function isLinksInValues( $isLinksInValues ): void {
+		$this->isLinksInValues = $isLinksInValues;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param bool $showErrors
+	 */
+	public function showErrors( $showErrors ): void {
+		$this->showErrors = (bool)$showErrors;
+	}
+
+	/**
+	 * @since 3.1
+	 *
+	 * @return SemanticData
+	 */
+	public function getSemanticData() {
+		return $this->parserData->getSemanticData();
+	}
+
+	/**
+	 * Parsing text before an article is displayed or previewed, strip out
+	 * semantic properties and add them to the ParserOutput object
+	 *
+	 * @since 1.9
+	 *
+	 * @param string &$text
+	 */
+	public function parse( &$text ): void {
+		$title = $this->parserData->getTitle();
+		Timer::start( __CLASS__ );
+
+		// Identifies the current parser run (especially when called recursively)
+		$this->parserData->getSubject()->setContextReference( 'intp:' . uniqid() );
+
+		$this->doStripMagicWordsFromText( $text );
+
+		$this->isEnabledNamespace = $this->isSemanticEnabledForNamespace( $title );
+
+		$this->addRedirectTargetAnnotationFromText(
+			$text
+		);
+
+		$this->annotationProcessor = new AnnotationProcessor(
+			$this->parserData->getSemanticData(),
+			DataValueFactory::getInstance()
+		);
+
+		// Obscure [/] to find a set of [[ :: ... ]] while those in-between are left for
+		// decoding in a post-processing so that the regex can split the text
+		// appropriately
+		if ( $this->isLinksInValues ) {
+			$text = LinksEncoder::findAndEncodeLinks( $text, $this );
+		}
+
+		$text = preg_replace_callback(
+			$this->getRegexpPattern( false ),
+			self::class . '::preprocess',
+			$text
+		);
+
+		$this->annotationProcessor->setCanAnnotate(
+			$this->parserData->canUse()
+		);
+
+		$this->hookContainer->run( 'SMW::Parser::AfterLinksProcessingComplete', [ &$text, $this->annotationProcessor ] );
+
+		// Ensure remaining encoded entities are decoded again
+		$text = LinksEncoder::removeLinkObfuscation( $text );
+
+		if ( $this->isEnabledNamespace ) {
+			$this->parserData->getOutput()->addModules( $this->getModules() );
+
+			if ( $this->parserData->variesByUserLanguage() ) {
+				$this->parserData->addExtraParserKey( 'userlang' );
+			}
+		}
+
+		$this->parserData->copyToParserOutput();
+
+		// Remove context
+		$this->annotationProcessor->release();
+
+		$this->parserData->addLimitReport(
+			'intext-parsertime',
+			Timer::getElapsedTime( __CLASS__, 3 )
+		);
+
+		Outputs::commitToParserOutput( $this->parserData->getOutput() );
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param string $text
+	 *
+	 * @return bool
+	 */
+	public static function hasMarker( $text ): bool {
+		return strpos( $text, self::OFF ) !== false || strpos( $text, self::ON ) !== false;
+	}
+
+	/**
+	 * @since 3.1
+	 *
+	 * @param string $text
+	 *
+	 * @return bool
+	 */
+	public static function hasPropertyLink( $text ): bool {
+		return strpos( $text, '::@@@' ) !== false;
+	}
+
+	/**
+	 * @since 2.4
+	 */
+	public static function decodeSquareBracket( string $text ): string {
+		return LinksEncoder::decodeSquareBracket( $text );
+	}
+
+	/**
+	 * @since 2.4
+	 */
+	public static function obfuscateAnnotation( string $text ): ?string {
+		return LinksEncoder::obfuscateAnnotation( $text );
+	}
+
+	/**
+	 * @since 2.4
+	 */
+	public static function removeAnnotation( string $text ): string {
+		return LinksEncoder::removeAnnotation( $text );
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param StripMarkerDecoder $stripMarkerDecoder
+	 */
+	public function setStripMarkerDecoder( StripMarkerDecoder $stripMarkerDecoder ): void {
+		$this->stripMarkerDecoder = $stripMarkerDecoder;
+	}
+
+	/**
+	 * @since 2.1
+	 *
+	 * @param Title|null $redirectTarget
+	 */
+	public function setRedirectTarget( ?Title $redirectTarget = null ): void {
+		$this->redirectTargetFinder->setRedirectTarget( $redirectTarget );
+	}
+
+	protected function addRedirectTargetAnnotationFromText( $text ): void {
+		if ( !$this->isEnabledNamespace ) {
+			return;
+		}
+
+		$this->redirectTargetFinder->findRedirectTargetFromText( $text );
+
+		$propertyAnnotatorFactory = $this->applicationFactory->singleton( 'PropertyAnnotatorFactory' );
+
+		$propertyAnnotator = $propertyAnnotatorFactory->newNullPropertyAnnotator(
+			$this->parserData->getSemanticData()
+		);
+
+		$redirectPropertyAnnotator = $propertyAnnotatorFactory->newRedirectPropertyAnnotator(
+			$propertyAnnotator,
+			$this->redirectTargetFinder
+		);
+
+		$redirectPropertyAnnotator->addAnnotation();
+	}
+
+	/**
+	 * Returns required resource modules
+	 *
+	 * @since 1.9
+	 *
+	 * @return array
+	 */
+	protected function getModules(): array {
+		return [
+			'ext.smw.styles'
+		];
+	}
+
+	/**
+	 * @see LinksProcessor::getRegexpPattern
+	 * @since 1.9
+	 *
+	 * @param bool $linksInValues
+	 *
+	 * @return string
+	 */
+	public function getRegexpPattern( $linksInValues = false ): string {
+		return LinksProcessor::getRegexpPattern( $linksInValues );
+	}
+
+	/**
+	 * @see linksProcessor::preprocess
+	 * @since 1.9
+	 *
+	 * @param array $semanticLink expects (linktext, properties, value|caption)
+	 *
+	 * @return string
+	 */
+	public function preprocess( array $semanticLink ) {
+		$semanticLinks = $this->linksProcessor->preprocess( $semanticLink );
+
+		if ( is_string( $semanticLinks ) ) {
+			return $semanticLinks;
+		}
+
+		return $this->process( $semanticLinks );
+	}
+
+	/**
+	 * @see linksProcessor::process
+	 * @since 1.9
+	 *
+	 * @param array $semanticLink expects (linktext, properties, value|caption)
+	 *
+	 * @return string
+	 */
+	protected function process( array $semanticLink ) {
+		$valueCaption = false;
+		$property = '';
+		$value = '';
+
+		$semanticLinks = $this->linksProcessor->process(
+			$semanticLink
+		);
+
+		$this->isAnnotation = $this->linksProcessor->isAnnotation();
+
+		if ( is_string( $semanticLinks ) ) {
+			return $semanticLinks;
+		}
+
+		[ $properties, $value, $valueCaption ] = $semanticLinks;
+
+		$subject = $this->parserData->getSubject();
+
+		// #1855
+		if ( substr( $value, 0, 3 ) === '@@@' ) {
+			$propertyLinkRenderer = new PropertyLinkRenderer( $this->parserData );
+			return $propertyLinkRenderer->render( $properties, $value, $valueCaption );
+		}
+
+		return $this->addPropertyValue( $subject, $properties, $value, $valueCaption );
+	}
+
+	/**
+	 * Adds property values to the ParserOutput instance
+	 *
+	 * @since 1.9
+	 *
+	 * @param $subject
+	 * @param array $properties
+	 * @param $value
+	 * @param $valueCaption
+	 *
+	 * @return string
+	 */
+	protected function addPropertyValue( ?WikiPage $subject, array $properties, $value, $valueCaption ): string {
+		$origValue = $value;
+
+		if ( $this->stripMarkerDecoder !== null ) {
+			$value = $this->stripMarkerDecoder->decode( $value );
+		}
+
+		// Add properties to the semantic container
+		foreach ( $properties as $property ) {
+			$dataValue = $this->annotationProcessor->newDataValueByText(
+				$property,
+				$value,
+				$valueCaption,
+				$subject
+			);
+
+			if (
+				$this->isEnabledNamespace &&
+				$this->isAnnotation &&
+				$this->parserData->canUse()
+			) {
+				$this->parserData->addDataValue( $dataValue );
+			}
+		}
+
+		$result = '';
+		// Return the wikitext or the unmodified text representation in case of
+		// a strip marker in order for the standard Parser to work its magic since
+		// we were only interested in the value for the annotation
+		if ( $origValue !== $value ) {
+			$result = $origValue;
+		} elseif ( isset( $dataValue ) ) {
+			$result = $dataValue->getShortWikitext( true );
+			$this->addFileUsage( $dataValue );
+		}
+
+		// If necessary add an error text
+		if ( ( $this->showErrors &&
+			$this->isEnabledNamespace && $this->isAnnotation ) &&
+			( isset( $dataValue ) && !$dataValue->isValid() )
+		) {
+			// Encode `:` to avoid a comment block and instead of the nowiki tag
+			// use &#58; as placeholder
+			$result = str_replace( ':', '&#58;', $result ) . $dataValue->getErrorText();
+		}
+
+		// The rendered output varies by the viewer's interface language when
+		// the value is invalid (the error message is localized) or when the
+		// value formatter reported user-language output (e.g. a localized
+		// unit-conversion tooltip). Record this so the `userlang` parser-cache
+		// key is added (see InTextAnnotationParser::parse()).
+		if ( isset( $dataValue ) &&
+			( !$dataValue->isValid() || $dataValue->hasUserLanguageOutput() )
+		) {
+			$this->parserData->markVariesByUserLanguage();
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Records a file referenced through a property value (e.g.
+	 * `[[Has file::File:Example.mp4]]`) as a dependency of the parsed page, so
+	 * the page shows up in the file's usage tracking. An embedded image already
+	 * registers this link through its `[[File:...]]` markup, but a non-image
+	 * file is rendered as a plain link whose dependency would otherwise be
+	 * missing (#6141).
+	 */
+	private function addFileUsage( DataValue $dataValue ): void {
+		$dataItem = $dataValue->getDataItem();
+
+		if (
+			$dataItem instanceof WikiPage &&
+			$dataItem->getNamespace() === NS_FILE &&
+			$dataItem->getInterwiki() === '' &&
+			$dataItem->getSubobjectName() === ''
+		) {
+			$this->parserData->getOutput()->addImage( $dataItem->getDBkey() );
+		}
+	}
+
+	/**
+	 * @return mixed[]
+	 */
+	protected function doStripMagicWordsFromText( &$text ): array {
+		$words = [];
+
+		$this->magicWordsFinder->setOutput( $this->parserData->getOutput() );
+
+		$magicWords = [
+			'SMW_NOFACTBOX',
+			'SMW_SHOWFACTBOX'
+		];
+
+		$this->hookContainer->run( 'SMW::Parser::BeforeMagicWordsFinder', [ &$magicWords ] );
+
+		foreach ( $magicWords as $magicWord ) {
+			$words[] = $this->magicWordsFinder->findMagicWordInText( $magicWord, $text );
+		}
+
+		$this->magicWordsFinder->pushMagicWordsToParserOutput( $words );
+
+		return $words;
+	}
+
+	private function isSemanticEnabledForNamespace( Title $title ) {
+		return $this->applicationFactory->getNamespaceExaminer()->isSemanticEnabled( $title->getNamespace() );
+	}
+
+}

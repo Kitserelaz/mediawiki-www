@@ -1,0 +1,34 @@
+ Container cloudwiki-upgrade-unit1462-init-run-2fc9f451dd2e Creating 
+ Container cloudwiki-upgrade-unit1462-init-run-2fc9f451dd2e Created 
+Using PHP 8.4.26
+Running with MediaWiki settings because there might be integration tests
+PHPUnit 9.6.34 by Sebastian Bergmann and contributors.
+
+...............................................................  63 / 237 ( 26%)
+............................................................... 126 / 237 ( 53%)
+............................................................... 189 / 237 ( 79%)
+................................................                237 / 237 (100%)
+
+Detected 19 tests where the duration exceeded the global maximum duration (0.100).
+
+ # Duration Test
+---------------------------------------------------------------------------------------------------------------
+ 1    3.453 Miraheze\CreateWiki\Tests\Services\WikiManagerFactoryTest::testDeleteRecreate
+ 2    2.191 Miraheze\CreateWiki\Tests\Maintenance\ManageInactiveWikisTest::testExecuteInactiveWiki
+ 3    2.152 Miraheze\CreateWiki\Tests\Services\WikiManagerFactoryTest::testRenameSuccess
+ 4    2.044 Miraheze\CreateWiki\Tests\Maintenance\ManageInactiveWikisTest::testExecuteClosedWiki
+ 5    1.769 Miraheze\CreateWiki\Tests\Maintenance\ManageInactiveWikisTest::testExecuteClosedWikiAlreadyInactive
+ 6    1.661 Miraheze\CreateWiki\Tests\Maintenance\ManageInactiveWikisTest::testExecuteActiveWiki
+ 7    1.476 Miraheze\CreateWiki\Tests\Services\WikiManagerFactoryTest::testDeleteIneligible
+ 8    1.440 Miraheze\CreateWiki\Tests\Services\WikiManagerFactoryTest::testCreatePrivate
+ 9    1.276 Miraheze\CreateWiki\Tests\Services\WikiManagerFactoryTest::testCreateSuccess
+10    0.963 Miraheze\CreateWiki\Tests\Maintenance\ManageInactiveWikisTest::testExecuteRemovedWikiIneligible
+---------------------------------------------------------------------------------------------------------------
+      0.000
+       └─── seconds
+
+There are 9 additional slow tests that are not listed here.
+
+Time: 00:23.627, Memory: 68.50 MB
+
+OK (237 tests, 570 assertions)

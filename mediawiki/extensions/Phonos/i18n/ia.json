@@ -1,0 +1,34 @@
+{
+	"@metadata": {
+		"authors": [
+			"McDutchie"
+		]
+	},
+	"phonos-desc": "Forni le functionalitate de vocalisation de texto pro un gamma de linguas",
+	"phonos-error-category": "Paginas con errores de rendition de Phonos",
+	"phonos-error-category-desc": "Un error occurreva durante le rendition de Phonos.",
+	"phonos-audio-conversion-error": "Error de conversion del audio in MP3:\n$1",
+	"phonos-directory-error": "Le creation del directorio de immagazinage $1 ha fallite.",
+	"phonos-engine-error": "Non poteva generar le file audio usante le motor $1:\n$2",
+	"phonos-storage-error": "Non poteva immagazinar le file audio in su destination final:\n$1",
+	"phonos-purge-needed-error": "Non pote reproducer audio.",
+	"phonos-purge-needed-error-link": "Refresca le pagina e tenta lo de novo.",
+	"phonos-tracking-category": "Paginas que usa le extension Phonos",
+	"phonos-tracking-category-desc": "Le pagina usa le extension [https://www.mediawiki.org/wiki/Extension:Phonos Phonos].",
+	"phonos-invalid-title": "Le file audio “$1” ha un titulo non valide.",
+	"phonos-file-not-found": "File audio “[$1 $2]” non trovate",
+	"phonos-file-not-audio": "Le file “[[$1|$2]]” non es un file audio.",
+	"phonos-player-aria-description": "Reproducer audio",
+	"phonos-aria-error": "Non pote reproducer audio",
+	"phonos-ipa-too-long": "IPA troppo longe pro visualisar.",
+	"phonos-wikibase-api-error": "Non pote recuperar le entitate de Wikibase: $1",
+	"phonos-wikibase-invalid-entity-lexeme": "Entitate o lexema non valide: $1",
+	"phonos-wikibase-not-found": "Nulle audio trovate pro le elemento Wikibase: $1",
+	"phonos-wikibase-no-ipa": "Necun transcription IPA trovate.",
+	"phonos-empty-file-error": "Le audio generate pare esser vacue. Le IPA date pote esser invalide, o le motor non lo supporta. Usar le parametro '$1' pote adjutar.",
+	"phonos-param-error": "Un IPA, un file, o un elemento de Wikibase debe esser fornite.",
+	"phonos-rendering-disabled": "Le rendition de transcriptiones in alphabeto phonetic international es actualmente disactivate.",
+	"phonos-unsupported-language": "Lingua $1 non es supportate per Phonos.",
+	"phonos-unsupported-language-with-suggestions": "Lingua $1 non es supportate per Phonos. Le sequente linguas possibilemente apparentate es supportate: $2.",
+	"phonos-inline-audio-player-mode": "Solmente un file audio, o un elemento Wikibase con un proprietate audio de pronunciation ($1), pote esser fornite quando se usa le reproductor audio integrate."
+}

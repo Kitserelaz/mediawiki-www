@@ -1,0 +1,192 @@
+@import 'mediawiki.mixins';
+@import '../mediasearch-variables.less';
+
+.sdms-quick-view {
+	box-sizing: border-box;
+	padding: @sdms-spacing-base * 1.5;
+	position: relative;
+
+	&__thumbnail-wrapper {
+		.flex-display();
+		align-items: center;
+		justify-content: center;
+
+		.sdms-spinner {
+			padding: 0;
+			width: auto;
+		}
+	}
+
+	&__thumbnail {
+		transition: opacity 200ms;
+		height: auto;
+		max-height: 60vh; // Ensure that portrait-orientation images don't become huge
+		max-width: 100%;
+		object-fit: contain;
+		opacity: 0;
+		width: 0;
+
+		&--loaded {
+			opacity: 1;
+			width: auto;
+		}
+
+		&--xsmall {
+			// 15px will align the top of the image with the controls.
+			padding: 15px 0;
+		}
+	}
+
+	&__body {
+		margin-top: @sdms-spacing-base;
+
+		.cdx-icon {
+			color: @sdms-icon-color--subtle;
+			margin-right: 4px;
+		}
+
+		h3 {
+			padding: 0;
+		}
+
+		p {
+			margin: 0.5em 0;
+		}
+	}
+
+	&__description {
+		// We really have no idea what we will find here; hopefully we can force it
+		// to fit...
+		> * {
+			max-width: 100%;
+		}
+	}
+
+	&__list-item {
+		// Use flexbox so the icons will act like bullets for multiline content.
+		.flex-display();
+		align-items: flex-start;
+
+		&--user {
+			// Get rid of formatting on markup inside username.
+			p {
+				margin: 0;
+			}
+		}
+
+		.cdx-icon {
+			// Mimic natural inline element spacing.
+			margin-right: 0.4em;
+		}
+	}
+
+	// Style CTA link to look like a button. See https://phabricator.wikimedia.org/T258110
+	// for details of this design decision.
+	&__cta {
+		transition-property: background-color, color, border-color, box-shadow;
+		transition-duration: @transition-duration-base;
+		background-color: @background-color-interactive-subtle;
+		border: @border-base;
+		border-radius: @border-radius-base;
+		color: @color-progressive;
+		display: inline-block;
+		font-weight: bold;
+		line-height: 1.4;
+		margin: @sdms-spacing-sm 0;
+		padding: 6px 12px;
+		text-decoration: none;
+		user-select: none;
+
+		&:hover {
+			background-color: @background-color-base;
+			border-color: @border-color-progressive--hover;
+			color: @color-progressive--hover;
+			text-decoration: none;
+		}
+
+		&:focus {
+			border-color: @border-color-progressive--focus;
+			box-shadow: @box-shadow-inset-small @box-shadow-color-progressive--focus;
+			outline: @outline-base--focus;
+			text-decoration: none;
+		}
+	}
+
+	&__button {
+		background-color: @background-color-base;
+		border: @border-width-base * 2 @border-style-base @border-color-transparent;
+		border-radius: 15px;
+		box-sizing: border-box;
+		cursor: pointer;
+		// Inline flex will keep the element round (no extra space after the
+		// icon span) but still inline.
+		display: inline-flex;
+		padding: 3px;
+
+		.cdx-icon {
+			color: @color-subtle;
+			transition: color @transition-duration-base;
+		}
+
+		&:hover,
+		&:focus {
+			.cdx-icon {
+				color: @color-base;
+			}
+		}
+
+		&:focus {
+			border-color: @border-color-progressive--focus;
+			outline: @outline-base--focus;
+		}
+
+		&__text {
+			.sdms-visually-hidden();
+		}
+	}
+
+	&__close-button {
+		left: @sdms-spacing-base;
+		position: absolute;
+		top: @sdms-spacing-base;
+	}
+
+	&__controls {
+		position: absolute;
+		right: @sdms-spacing-base;
+		top: @sdms-spacing-base;
+
+		.sdms-quick-view__button:first-child {
+			margin-right: (@sdms-spacing-base / 2);
+		}
+	}
+
+	&--dialog {
+		// Undo dialog boddy padding.
+		margin: 0 -@sdms-spacing-base;
+		padding: 0;
+
+		h3 {
+			margin: 0;
+			padding: 0 0 0.5em;
+		}
+
+		p {
+			margin: 0.5em 0 1em;
+		}
+
+		.sdms-quick-view__body {
+			padding: 0 @sdms-spacing-base * 1.5 @sdms-spacing-base * 1.5;
+		}
+
+		.sdms-quick-view__close-button {
+			left: (@sdms-spacing-base / 2);
+			top: (@sdms-spacing-base / 2);
+		}
+
+		.sdms-quick-view__controls {
+			right: (@sdms-spacing-base / 2);
+			top: (@sdms-spacing-base / 2);
+		}
+	}
+}

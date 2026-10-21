@@ -16,17 +16,23 @@ use MediaWiki\Content\JsonContentHandler;
 use MediaWiki\Content\Renderer\ContentParseParams;
 use MediaWiki\Html\Html;
 use MediaWiki\Parser\ParserOutput;
-use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\SyntaxHighlight\SyntaxHighlight;
 use MediaWiki\Title\Title;
-use MediaWiki\Xml\Xml;
 
 class JsonSchemaContentHandler extends JsonContentHandler {
 
-	public function __construct( $modelId = 'JsonSchema' ) {
+	private ?SyntaxHighlight $syntaxHighlight;
+
+	/** @inheritDoc */
+	public function __construct(
+		$modelId,
+		?SyntaxHighlight $syntaxHighlight
+	) {
 		parent::__construct( $modelId );
+		$this->syntaxHighlight = $syntaxHighlight;
 	}
 
+	/** @inheritDoc */
 	public function canBeUsedOn( Title $title ) {
 		return $title->inNamespace( NS_SCHEMA );
 	}
@@ -53,26 +59,27 @@ class JsonSchemaContentHandler extends JsonContentHandler {
 		$page = $cpoParams->getPage();
 		$revId = $cpoParams->getRevId();
 		parent::fillParserOutput( $content, $cpoParams, $parserOutput );
-		if ( $revId !== null && ExtensionRegistry::getInstance()->isLoaded( 'SyntaxHighlight' ) ) {
+		if ( $revId !== null && $this->syntaxHighlight ) {
 			$html = '';
 			foreach ( $content->getCodeSamples( $page->getDBkey(), $revId ) as $sample ) {
 				$lang = $sample['language'];
 				$code = $sample['code'];
-				$highlighted = SyntaxHighlight::highlight( $code, $lang )->getValue();
+				$highlighted = $this->syntaxHighlight->syntaxHighlight( $code, $lang )->getValue();
 				$html .= Html::element( 'h2',
 					[],
 					wfMessage( $sample['header'] )->text()
 				) . $highlighted;
 			}
 			// The glyph is '< >' from the icon font 'Entypo' (see ../modules).
-			$html = Xml::tags( 'div', [ 'class' => 'mw-json-schema-code-glyph' ], '&#xe714;' ) .
-				Xml::tags( 'div', [ 'class' => 'mw-json-schema-code-samples' ], $html );
+			$html = Html::rawElement( 'div', [ 'class' => 'mw-json-schema-code-glyph' ], '&#xe714;' ) .
+				Html::rawElement( 'div', [ 'class' => 'mw-json-schema-code-samples' ], $html );
 			$parserOutput->setIndicator( 'schema-code-samples', $html );
 			$parserOutput->addModules( [ 'ext.eventLogging.jsonSchema', 'ext.pygments' ] );
 			$parserOutput->addModuleStyles( [ 'ext.eventLogging.jsonSchema.styles' ] );
 		}
 	}
 
+	/** @inheritDoc */
 	protected function getContentClass() {
 		return JsonSchemaContent::class;
 	}

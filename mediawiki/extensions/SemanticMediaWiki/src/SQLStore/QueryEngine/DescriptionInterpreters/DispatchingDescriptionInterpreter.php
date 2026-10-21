@@ -1,0 +1,78 @@
+<?php
+
+namespace SMW\SQLStore\QueryEngine\DescriptionInterpreters;
+
+use InvalidArgumentException;
+use SMW\Query\Language\Description;
+use SMW\SQLStore\QueryEngine\DescriptionInterpreter;
+use SMW\SQLStore\QueryEngine\QuerySegment;
+
+/**
+ * @private
+ *
+ * @license GPL-2.0-or-later
+ * @since 2.2
+ *
+ * @author Jeroen De Dauw < jeroendedauw@gmail.com >
+ */
+class DispatchingDescriptionInterpreter implements DescriptionInterpreter {
+
+	/**
+	 * @var DescriptionInterpreter[]
+	 */
+	private array $interpreters = [];
+
+	private ?DescriptionInterpreter $defaultInterpreter = null;
+
+	/**
+	 * @param Description $description
+	 *
+	 * @return bool
+	 */
+	public function canInterpretDescription( Description $description ): bool {
+		foreach ( $this->interpreters as $interpreter ) {
+			if ( $interpreter->canInterpretDescription( $description ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * @param Description $description
+	 *
+	 * @return QuerySegment
+	 * @throws InvalidArgumentException
+	 */
+	public function interpretDescription( Description $description ) {
+		foreach ( $this->interpreters as $interpreter ) {
+			if ( $interpreter->canInterpretDescription( $description ) ) {
+				return $interpreter->interpretDescription( $description );
+			}
+		}
+
+		// Instead of throwing an exception we return a ThingDescriptionInterpreter
+		// for all unregistered/unknown descriptions
+		return $this->defaultInterpreter->interpretDescription( $description );
+	}
+
+	/**
+	 * @since  2.2
+	 *
+	 * @param DescriptionInterpreter $interpreter
+	 */
+	public function addInterpreter( DescriptionInterpreter $interpreter ): void {
+		$this->interpreters[] = $interpreter;
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * @param DescriptionInterpreter $defaultInterpreter
+	 */
+	public function addDefaultInterpreter( DescriptionInterpreter $defaultInterpreter ): void {
+		$this->defaultInterpreter = $defaultInterpreter;
+	}
+
+}

@@ -1,0 +1,32 @@
+/* stylelint-disable selector-max-id, selector-class-pattern */
+@import 'mediawiki.skin.variables.less';
+
+#ca-proofreadPagePrevLink.icon a {
+	.cdx-mixin-css-icon( @cdx-icon-previous, @color-base, @size-icon-small, false, center 55% );
+}
+
+#ca-proofreadPageNextLink.icon a {
+	.cdx-mixin-css-icon( @cdx-icon-next, @color-base, @size-icon-small, false, center 55% );
+}
+
+#ca-proofreadPageIndexLink.icon a {
+	.cdx-mixin-css-icon( @cdx-icon-collapse, @color-base, @size-icon-small, false, center 55% );
+}
+
+#ca-proofreadPagePrevLink,
+#ca-proofreadPageNextLink,
+#ca-proofreadPageIndexLink {
+	&.icon a {
+		width: 26px;
+
+		&:hover {
+			text-decoration: none;
+			border-bottom: @border-width-thick @border-style-base @border-color-interactive;
+		}
+
+		span {
+			// Hide the inner text, because the background images (the arrows) are displayed instead.
+			visibility: hidden;
+		}
+	}
+}

@@ -3,6 +3,7 @@
 namespace Miraheze\CreateWiki\Tests\Helpers;
 
 use MediaWiki\MainConfigNames;
+use MediaWiki\WikiMap\WikiMap;
 use MediaWikiIntegrationTestCase;
 use Miraheze\CreateWiki\ConfigNames;
 use Miraheze\CreateWiki\Exceptions\MissingWikiError;
@@ -26,6 +27,9 @@ class RemoteWikiTest extends MediaWikiIntegrationTestCase {
 
 		$this->overrideConfigValues( [
 			ConfigNames::DatabaseSuffix => 'test',
+			MainConfigNames::LocalDatabases => array_merge(
+				$this->getConfVar( MainConfigNames::LocalDatabases ), [ 'remotewikitest' ]
+			),
 			ConfigNames::UseClosedWikis => true,
 			ConfigNames::UseExperimental => true,
 			ConfigNames::UseInactiveWikis => true,
@@ -35,16 +39,18 @@ class RemoteWikiTest extends MediaWikiIntegrationTestCase {
 		$db = $this->getServiceContainer()->getDatabaseFactory()->create( 'mysql', [
 			'host' => $this->getConfVar( MainConfigNames::DBserver ),
 			'user' => 'root',
+			'password' => getenv( 'MW_TEST_DB_ADMIN_PASSWORD_FILE' ) ?
+				trim( file_get_contents( getenv( 'MW_TEST_DB_ADMIN_PASSWORD_FILE' ) ) ) : '',
 		] );
 
 		if ( $db === null ) {
 			return;
 		}
 
-		$db->begin();
-		$db->query( "GRANT ALL PRIVILEGES ON `remotewikitest`.* TO 'wikiuser'@'localhost';" );
-		$db->query( "FLUSH PRIVILEGES;" );
-		$db->commit();
+		$db->begin( __METHOD__ );
+		$db->query( "GRANT ALL PRIVILEGES ON `remotewikitest`.* TO 'wikiuser'@'localhost';", __METHOD__ );
+		$db->query( 'FLUSH PRIVILEGES;', __METHOD__ );
+		$db->commit( __METHOD__ );
 	}
 
 	public function addDBDataOnce(): void {
@@ -55,19 +61,13 @@ class RemoteWikiTest extends MediaWikiIntegrationTestCase {
 			->insertInto( 'cw_wikis' )
 			->ignore()
 			->row( [
-				'wiki_dbname' => 'wikidb',
+				'wiki_dbname' => WikiMap::getCurrentWikiId(),
 				'wiki_dbcluster' => 'c1',
 				'wiki_sitename' => 'TestWiki',
 				'wiki_language' => 'en',
 				'wiki_private' => 0,
 				'wiki_creation' => $dbw->timestamp(),
-				'wiki_category' => 'uncategorised',
-				'wiki_closed' => 0,
-				'wiki_deleted' => 0,
-				'wiki_locked' => 0,
-				'wiki_inactive' => 0,
-				'wiki_inactive_exempt' => 0,
-				'wiki_url' => 'http://127.0.0.1:9412',
+				'wiki_category' => 'test',
 			] )
 			->caller( __METHOD__ )
 			->execute();
@@ -93,7 +93,7 @@ class RemoteWikiTest extends MediaWikiIntegrationTestCase {
 	 * @covers \Miraheze\CreateWiki\Services\RemoteWikiFactory::newInstance
 	 */
 	public function testNewFactoryInstance(): void {
-		$factory = $this->getFactoryService()->newInstance( 'wikidb' );
+		$factory = $this->getFactoryService()->newInstance( WikiMap::getCurrentWikiId() );
 		$this->assertInstanceOf( RemoteWiki::class, $factory );
 	}
 
@@ -220,6 +220,27 @@ class RemoteWikiTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
+	 * @covers ::getInactiveExemptExpiry
+	 * @covers ::setInactiveExemptExpiry
+	 * @covers ::trackChange
+	 */
+	public function testSetInactiveExemptExpiry(): void {
+		$remoteWiki = $this->getFactoryService()->newInstance( 'remotewikitest' );
+		$this->assertNull( $remoteWiki->getInactiveExemptExpiry() );
+
+		$remoteWiki->setInactiveExemptExpiry( '1 year' );
+		$remoteWiki->commit();
+
+		$this->assertNotNull( $remoteWiki->getInactiveExemptExpiry() );
+		$this->assertNotSame( '1 year', $remoteWiki->getInactiveExemptExpiry() );
+
+		$remoteWiki->setInactiveExemptExpiry( 'indefinite' );
+		$remoteWiki->commit();
+
+		$this->assertSame( 'infinity', $remoteWiki->getInactiveExemptExpiry() );
+	}
+
+	/**
 	 * @covers ::isPrivate
 	 * @covers ::markPrivate
 	 * @covers ::markPublic
@@ -319,7 +340,7 @@ class RemoteWikiTest extends MediaWikiIntegrationTestCase {
 	 */
 	public function testSetCategory(): void {
 		$remoteWiki = $this->getFactoryService()->newInstance( 'remotewikitest' );
-		$this->assertSame( 'uncategorised', $remoteWiki->getCategory() );
+		$this->assertSame( 'test', $remoteWiki->getCategory() );
 
 		$remoteWiki->setCategory( 'test' );
 		$remoteWiki->commit();
@@ -502,7 +523,7 @@ class RemoteWikiTest extends MediaWikiIntegrationTestCase {
 
 		$wikiManager = $this->getWikiManagerFactory()->newInstance( $dbname );
 		$wikiManager->create(
-			'TestWiki', 'en', false, 'uncategorised',
+			'TestWiki', 'en', false, 'test',
 			$testUser->getName(), $testSysop->getName(),
 			'Test', []
 		);

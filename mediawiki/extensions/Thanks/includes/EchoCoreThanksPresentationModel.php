@@ -2,11 +2,12 @@
 
 namespace MediaWiki\Extension\Thanks;
 
-use DatabaseLogEntry;
-use LogEntry;
-use LogPage;
+use MediaWiki\Context\DerivativeContext;
 use MediaWiki\Extension\Notifications\Formatters\EchoEventPresentationModel;
 use MediaWiki\Language\RawMessage;
+use MediaWiki\Logging\DatabaseLogEntry;
+use MediaWiki\Logging\LogEntry;
+use MediaWiki\Logging\LogPage;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Parser\Sanitizer;
 use MediaWiki\Revision\RevisionRecord;
@@ -16,6 +17,7 @@ class EchoCoreThanksPresentationModel extends EchoEventPresentationModel {
 	/** @var LogEntry|bool|null */
 	private $logEntry;
 
+	/** @inheritDoc */
 	public function canRender() {
 		$hasTitle = (bool)$this->event->getTitle();
 		if ( $hasTitle && $this->getThankType() === 'log' ) {
@@ -29,10 +31,12 @@ class EchoCoreThanksPresentationModel extends EchoEventPresentationModel {
 		return $hasTitle;
 	}
 
+	/** @inheritDoc */
 	public function getIconType() {
 		return 'thanks';
 	}
 
+	/** @inheritDoc */
 	public function getHeaderMessage() {
 		$type = $this->getThankType();
 		if ( $this->isBundled() ) {
@@ -57,6 +61,7 @@ class EchoCoreThanksPresentationModel extends EchoEventPresentationModel {
 		}
 	}
 
+	/** @inheritDoc */
 	public function getCompactHeaderMessage() {
 		// The following message is used here:
 		// * notification-compact-header-edit-thank
@@ -65,6 +70,7 @@ class EchoCoreThanksPresentationModel extends EchoEventPresentationModel {
 		return $msg;
 	}
 
+	/** @inheritDoc */
 	public function getBodyMessage() {
 		$comment = $this->getRevOrLogComment();
 		if ( $comment !== '' ) {
@@ -105,6 +111,12 @@ class EchoCoreThanksPresentationModel extends EchoEventPresentationModel {
 			}
 			$services = MediaWikiServices::getInstance();
 			$formatter = $services->getLogFormatterFactory()->newFromEntry( $logEntry );
+
+			// Override the language of the log entry excerpt (T410339) - there is no easier way to do this
+			$context = new DerivativeContext( $formatter->context );
+			$context->setLanguage( $this->language );
+			$formatter->context = $context;
+
 			$excerpt = $formatter->getPlainActionText();
 			// Turn wikitext into plaintext
 			$excerpt = $services->getCommentFormatter()->format( $excerpt );
@@ -123,6 +135,7 @@ class EchoCoreThanksPresentationModel extends EchoEventPresentationModel {
 		}
 	}
 
+	/** @inheritDoc */
 	public function getPrimaryLink() {
 		$logId = $this->event->getExtraParam( 'logid' );
 		if ( $logId ) {
@@ -131,7 +144,7 @@ class EchoCoreThanksPresentationModel extends EchoEventPresentationModel {
 		} else {
 			$url = $this->event->getTitle()->getLocalURL( [
 				'oldid' => 'prev',
-				'diff' => $this->event->getExtraParam( 'revid' )
+				'diff' => $this->event->getExtraParam( 'revid' ),
 			] );
 			$label = 'notification-link-text-view-edit';
 		}
@@ -142,6 +155,7 @@ class EchoCoreThanksPresentationModel extends EchoEventPresentationModel {
 		];
 	}
 
+	/** @inheritDoc */
 	public function getSecondaryLinks() {
 		$pageLink = $this->getPageLink( $this->event->getTitle(), '', true );
 		if ( $this->isBundled() ) {

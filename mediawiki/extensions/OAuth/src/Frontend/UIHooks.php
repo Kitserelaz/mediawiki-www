@@ -2,52 +2,41 @@
 
 namespace MediaWiki\Extension\OAuth\Frontend;
 
-use MediaWiki\Cache\Hook\MessagesPreLoadHook;
 use MediaWiki\Context\DerivativeContext;
 use MediaWiki\Context\RequestContext;
+use MediaWiki\Exception\MWException;
 use MediaWiki\Extension\OAuth\Backend\Consumer;
 use MediaWiki\Extension\OAuth\Backend\Utils;
 use MediaWiki\Extension\OAuth\Control\ConsumerAccessControl;
-use MediaWiki\Extension\OAuth\Control\ConsumerSubmitControl;
-use MediaWiki\Extension\OAuth\Frontend\SpecialPages\SpecialMWOAuthConsumerRegistration;
-use MediaWiki\Extension\OAuth\Frontend\SpecialPages\SpecialMWOAuthManageConsumers;
-use MediaWiki\Hook\LoginFormValidErrorMessagesHook;
 use MediaWiki\Html\Html;
 use MediaWiki\HTMLForm\HTMLForm;
+use MediaWiki\Language\Hook\MessagesPreLoadHook;
 use MediaWiki\Parser\Sanitizer;
 use MediaWiki\Permissions\PermissionManager;
 use MediaWiki\Preferences\Hook\GetPreferencesHook;
-use MediaWiki\SpecialPage\Hook\SpecialPage_initListHook;
 use MediaWiki\SpecialPage\Hook\SpecialPageAfterExecuteHook;
 use MediaWiki\SpecialPage\Hook\SpecialPageBeforeFormDisplayHook;
 use MediaWiki\SpecialPage\SpecialPage;
+use MediaWiki\Specials\Hook\LoginFormValidErrorMessagesHook;
 use MediaWiki\User\User;
 use MediaWiki\WikiMap\WikiMap;
-use MWException;
 use OOUI\ButtonWidget;
+use Wikimedia\ArrayUtils\ArrayUtils;
 
 /**
  * Class containing GUI even handler functions for an OAuth environment
- *
- * @phpcs:disable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
  */
 class UIHooks implements
 	GetPreferencesHook,
 	LoginFormValidErrorMessagesHook,
 	MessagesPreLoadHook,
 	SpecialPageAfterExecuteHook,
-	SpecialPageBeforeFormDisplayHook,
-	SpecialPage_initListHook
+	SpecialPageBeforeFormDisplayHook
 {
 
-	/** @var PermissionManager */
-	private $permissionManager;
-
-	/**
-	 * @param PermissionManager $permissionManager
-	 */
-	public function __construct( PermissionManager $permissionManager ) {
-		$this->permissionManager = $permissionManager;
+	public function __construct(
+		private readonly PermissionManager $permissionManager,
+	) {
 	}
 
 	/**
@@ -57,7 +46,7 @@ class UIHooks implements
 	 * @throws MWException
 	 */
 	public function onGetPreferences( $user, &$preferences ) {
-		$dbr = Utils::getCentralDB( DB_REPLICA );
+		$dbr = Utils::getOAuthDB( DB_REPLICA );
 		$conds = [
 			'oaac_user_id' => Utils::getCentralIdFromLocalUser( $user ),
 		];
@@ -88,8 +77,10 @@ class UIHooks implements
 			],
 		];
 
-		if ( array_key_exists( 'usergroups', $preferences ) ) {
-			$preferences = wfArrayInsertAfter( $preferences, $prefInsert, 'usergroups' );
+		if ( array_key_exists( 'usergroups-disabled', $preferences ) ) {
+			$preferences = ArrayUtils::insertAfter( $preferences, $prefInsert, 'usergroups-disabled' );
+		} elseif ( array_key_exists( 'usergroups', $preferences ) ) {
+			$preferences = ArrayUtils::insertAfter( $preferences, $prefInsert, 'usergroups' );
 		} else {
 			$preferences += $prefInsert;
 		}
@@ -106,12 +97,12 @@ class UIHooks implements
 	 */
 	public function onMessagesPreLoad( $title, &$message, $code ) {
 		// Quick fail check
-		if ( substr( $title, 0, 15 ) !== 'Tag-OAuth_CID:_' ) {
+		if ( !str_starts_with( $title, 'Tag-OAuth_CID:_' ) ) {
 			return true;
 		}
 
 		// More expensive check
-		if ( !preg_match( '!^Tag-OAuth_CID:_(\d+)((?:-description)?)(?:/|$)!', $title, $m ) ) {
+		if ( !preg_match( '!^Tag-OAuth_CID:_(\d+)(-description|-helppage|)(?:/|$)!', $title, $m ) ) {
 			return true;
 		}
 
@@ -119,7 +110,7 @@ class UIHooks implements
 		$context = new DerivativeContext( RequestContext::getMain() );
 		$context->setLanguage( $code );
 
-		$dbr = Utils::getCentralDB( DB_REPLICA );
+		$dbr = Utils::getOAuthDB( DB_REPLICA );
 		$cmrAc = ConsumerAccessControl::wrap(
 			Consumer::newFromId( $dbr, (int)$m[1] ),
 			$context
@@ -129,14 +120,14 @@ class UIHooks implements
 			return true;
 		}
 
-		if ( $m[2] ) {
+		if ( $m[2] === '-description' ) {
 			$message = $cmrAc->escapeForWikitext( $cmrAc->getDescription() );
-		} else {
-			$target = SpecialPage::getTitleFor( 'OAuthListConsumers',
+		} elseif ( $m[2] === '-helppage' ) {
+			$message = SpecialPage::getTitleFor( 'OAuthListConsumers',
 				'view/' . $cmrAc->getConsumerKey()
-			);
-			$encName = $cmrAc->escapeForWikitext( $cmrAc->getNameAndVersion() );
-			$message = "[[$target|$encName]]";
+			)->getPrefixedText();
+		} else {
+			$message = $cmrAc->escapeForWikitext( $cmrAc->getNameAndVersion() );
 		}
 		return false;
 	}
@@ -221,61 +212,6 @@ class UIHooks implements
 			$form->addPreHtml( $form->msg( 'mwoauth-botpasswords-note', $url )->parseAsBlock() );
 		}
 		return true;
-	}
-
-	/**
-	 * @param array &$notifications
-	 * @param array &$notificationCategories
-	 * @param array &$icons
-	 */
-	public static function onBeforeCreateEchoEvent(
-		&$notifications, &$notificationCategories, &$icons
-	) {
-		global $wgOAuthGroupsToNotify;
-
-		if ( !Utils::isCentralWiki() ) {
-			return;
-		}
-
-		$notificationCategories['oauth-owner'] = [
-			'tooltip' => 'echo-pref-tooltip-oauth-owner',
-		];
-		$notificationCategories['oauth-admin'] = [
-			'tooltip' => 'echo-pref-tooltip-oauth-admin',
-			'usergroups' => $wgOAuthGroupsToNotify,
-		];
-
-		foreach ( ConsumerSubmitControl::$actions as $eventName ) {
-			// oauth-app-propose and oauth-app-update notifies admins of the app.
-			// oauth-app-approve, oauth-app-reject, oauth-app-disable and oauth-app-reenable
-			// notify owner of the change.
-			$notifications["oauth-app-$eventName"] =
-				EchoOAuthStageChangePresentationModel::getDefinition( $eventName );
-		}
-
-		$icons['oauth'] = [ 'path' => 'OAuth/resources/assets/echo-icon.png' ];
-	}
-
-	/**
-	 * @param array &$specialPages
-	 */
-	public function onSpecialPage_initList( &$specialPages ) {
-		if ( Utils::isCentralWiki() ) {
-			$specialPages['OAuthConsumerRegistration'] = [
-				'class' => SpecialMWOAuthConsumerRegistration::class,
-				'services' => [
-					'PermissionManager',
-					'GrantsInfo',
-					'GrantsLocalization',
-				],
-			];
-			$specialPages['OAuthManageConsumers'] = [
-				'class' => SpecialMWOAuthManageConsumers::class,
-				'services' => [
-					'GrantsLocalization',
-				],
-			];
-		}
 	}
 
 	/**

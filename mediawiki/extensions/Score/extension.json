@@ -1,0 +1,209 @@
+{
+	"name": "Score",
+	"version": "0.3.0",
+	"author": [
+		"Alexander Klauer",
+		"Étienne Beaulé"
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:Score",
+	"descriptionmsg": "score-desc",
+	"license-name": "GPL-3.0-or-later",
+	"type": "parserhook",
+	"requires": {
+		"MediaWiki": ">= 1.43"
+	},
+	"MessagesDirs": {
+		"Score": [
+			"i18n"
+		]
+	},
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\Score\\": "includes/"
+	},
+	"ResourceModules": {
+		"ext.score.visualEditor": {
+			"scripts": [
+				{
+					"name": "ve-score/MWScoreConfig.js",
+					"callback": "MediaWiki\\Extension\\Score\\ScoreVeConfig::makeScript"
+				},
+				"ve-score/ve.dm.MWScoreNode.js",
+				"ve-score/ve.ce.MWScoreNode.js",
+				"ve-score/ve.ui.MWScoreContextItem.js",
+				"ve-score/ve.ui.MWScoreDialog.js",
+				"ve-score/ve.ui.MWScoreDialogTool.js"
+			],
+			"styles": [
+				"ve-score/ve.ui.MWScoreContextItem.css",
+				"ve-score/ve.ui.MWScoreDialog.css"
+			],
+			"dependencies": [
+				"ext.visualEditor.mwcore",
+				"ext.score.visualEditor.icons"
+			],
+			"messages": [
+				"score-visualeditor-mwscoredialog-audio",
+				"score-visualeditor-mwscoredialog-card-advanced",
+				"score-visualeditor-mwscoredialog-card-audio",
+				"score-visualeditor-mwscoredialog-lang",
+				"score-visualeditor-mwscoredialog-lang-abc",
+				"score-visualeditor-mwscoredialog-lang-lilypond",
+				"score-visualeditor-mwscoredialog-notelanguage",
+				"score-visualeditor-mwscoredialog-override-audio",
+				"score-visualeditor-mwscoredialog-override-audio-placeholder",
+				"score-visualeditor-mwscoredialog-override-midi",
+				"score-visualeditor-mwscoredialog-override-midi-placeholder",
+				"score-visualeditor-mwscoredialog-raw",
+				"score-visualeditor-mwscoredialog-title"
+			]
+		},
+		"ext.score.visualEditor.icons": {
+			"class": "MediaWiki\\ResourceLoader\\ImageModule",
+			"selectorWithoutVariant": ".oo-ui-icon-{name}",
+			"selectorWithVariant": ".oo-ui-image-{variant}.oo-ui-icon-{name}",
+			"variants": {
+				"progressive": {
+					"color": "#36c"
+				},
+				"invert": {
+					"color": "#fff"
+				}
+			},
+			"images": {
+				"score": {
+					"file": "ve-score/score.svg",
+					"variants": [
+						"progressive"
+					]
+				}
+			}
+		},
+		"ext.score.popup": {
+			"packageFiles": [
+				"ext.score.popup/popup.js"
+			],
+			"styles": "ext.score.popup/popup.css",
+			"dependencies": [
+				"mediawiki.api"
+			],
+			"messages": [
+				"score-download-midi-file",
+				"score-download-source-file"
+			]
+		},
+		"ext.score.styles": {
+			"styles": [
+				"ext.score.styles.less"
+			]
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "modules",
+		"remoteExtPath": "Score/modules"
+	},
+	"Hooks": {
+		"ParserFirstCallInit": "main",
+		"SoftwareInfo": "main",
+		"WikibaseClientDataTypes": [
+			"MediaWiki\\Extension\\Score\\Hooks::onWikibaseClientDataTypes"
+		],
+		"WikibaseRepoDataTypes": [
+			"MediaWiki\\Extension\\Score\\Hooks::onWikibaseRepoDataTypes"
+		]
+	},
+	"HookHandlers": {
+		"main": {
+			"class": "MediaWiki\\Extension\\Score\\Hooks",
+			"services": [
+				"MainConfig"
+			]
+		}
+	},
+	"config": {
+		"ScoreTrim": {
+			"value": null,
+			"description": "Set to false to keep margins on the generated PNG files"
+		},
+		"ScoreUseSvg": {
+			"value": false,
+			"description": "Set to true to output SVG images with PNG fallback. Requires LilyPond version >= 2.23.82 with libcairo support"
+		},
+		"ScoreLilyPond": {
+			"value": "/usr/bin/lilypond"
+		},
+		"ScoreAbc2Ly": {
+			"value": "/usr/bin/abc2ly"
+		},
+		"ScoreFluidsynth": {
+			"value": "/usr/bin/fluidsynth"
+		},
+		"ScoreSoundfont": {
+			"value": "/usr/share/sounds/sf2/FluidR3_GM.sf2"
+		},
+		"ScoreLame": {
+			"value": "/usr/bin/lame"
+		},
+		"ScoreGhostscript": {
+			"value": "/usr/bin/gs"
+		},
+		"ScoreImageMagickConvert": {
+			"value": false,
+			"description": "Path to ImageMagick's convert command. If not set, will fallback to $wgImageMagickConvertCommand"
+		},
+		"ScoreEnvironment": {
+			"value": [],
+			"description": "A name/value map of environment variables to be passed to all shell commands"
+		},
+		"ScoreSafeMode": {
+			"value": true,
+			"description": "Must be set to false for LilyPond versions 2.23.12 or newer (safe mode was removed in 2.23.12 as it could no longer be guaranteed safe). For older versions, set this to true to enable LilyPond's safe mode (default). NOTE: if set to false, all inputs should be sanitized and/or trusted, and the LilyPond binary must be appropriately sandboxed."
+		},
+		"ScoreDisableExec": {
+			"value": false,
+			"description": "Set this to true to disable all new rendering of scores"
+		},
+		"ScoreLilyPondFakeVersion": {
+			"value": false,
+			"description": "Set this to a version string which will be used even if exec is disabled"
+		},
+		"ScorePath": {
+			"value": false
+		},
+		"ScoreDirectory": {
+			"value": false
+		},
+		"ScoreFileBackend": {
+			"value": false
+		},
+		"ScoreMaxLength": {
+			"value": 400
+		},
+		"ScoreOfferSourceDownload": {
+			"value": false,
+			"description": "Enable a UI for downloading .ly files generated by Score. This is insecure since .ly files may contain scripts which are executed when the file is rendered on the user's computer."
+		},
+		"MusicalNotationEnableWikibaseDataType": {
+			"value": false
+		},
+		"WikibaseMusicalNotationLineWidthInches": {
+			"value": 0
+		},
+		"ScoreDebugOutput": {
+			"value": false,
+			"description": "Show the full command output when a shell command fails"
+		}
+	},
+	"TrackingCategories": [
+		"score-deprecated-category",
+		"score-use-category",
+		"score-error-category"
+	],
+	"attributes": {
+		"VisualEditor": {
+			"PluginModules": [
+				"ext.score.visualEditor"
+			]
+		}
+	},
+	"manifest_version": 2
+}

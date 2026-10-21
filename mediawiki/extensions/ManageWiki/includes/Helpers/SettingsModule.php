@@ -3,8 +3,8 @@
 namespace Miraheze\ManageWiki\Helpers;
 
 use MediaWiki\Config\ServiceOptions;
-use Miraheze\CreateWiki\Services\CreateWikiDataFactory;
 use Miraheze\ManageWiki\ConfigNames;
+use Miraheze\ManageWiki\Helpers\Factories\DataStoreFactory;
 use Miraheze\ManageWiki\Helpers\Factories\InstallerFactory;
 use Miraheze\ManageWiki\Helpers\Utils\DatabaseUtils;
 use Miraheze\ManageWiki\IModule;
@@ -16,7 +16,7 @@ use function json_encode;
 
 class SettingsModule implements IModule {
 
-	public const CONSTRUCTOR_OPTIONS = [
+	public const array CONSTRUCTOR_OPTIONS = [
 		ConfigNames::Settings,
 	];
 
@@ -28,11 +28,11 @@ class SettingsModule implements IModule {
 	private ?string $log = null;
 
 	public function __construct(
-		private readonly CreateWikiDataFactory $dataFactory,
 		private readonly DatabaseUtils $databaseUtils,
+		private readonly DataStoreFactory $dataStoreFactory,
 		private readonly InstallerFactory $installerFactory,
 		private readonly ServiceOptions $options,
-		private readonly string $dbname
+		private readonly string $dbname,
 	) {
 		$options->assertRequiredOptions( self::CONSTRUCTOR_OPTIONS );
 
@@ -172,8 +172,8 @@ class SettingsModule implements IModule {
 			->caller( __METHOD__ )
 			->execute();
 
-		$data = $this->dataFactory->newInstance( $this->dbname );
-		$data->resetWikiData( isNewChanges: true );
+		$dataStore = $this->dataStoreFactory->newInstance( $this->dbname );
+		$dataStore->resetWikiData( isNewChanges: true );
 
 		if ( $this->scripts ) {
 			$mwInstaller = $this->installerFactory->getInstaller( $this->dbname );

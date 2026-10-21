@@ -1,0 +1,9 @@
+ Container cloudwiki-upgrade-restore1462-init-run-2c649eb3e165 Creating 
+ Container cloudwiki-upgrade-restore1462-init-run-2c649eb3e165 Created 
+Management acceptance phase passed: configure
+ Container cloudwiki-upgrade-restore1462-init-run-4a47cb5b83d5 Creating 
+ Container cloudwiki-upgrade-restore1462-init-run-4a47cb5b83d5 Created 
+Management acceptance phase passed: restore
+ Container cloudwiki-upgrade-restore1462-init-run-7a17ffeedbce Creating 
+ Container cloudwiki-upgrade-restore1462-init-run-7a17ffeedbce Created 
+Management acceptance phase passed: verify-restored

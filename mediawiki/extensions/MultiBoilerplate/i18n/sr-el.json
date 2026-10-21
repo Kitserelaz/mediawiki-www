@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": []
+	},
+	"multiboilerplate-submit": "Učitaj",
+	"boilerplates": "Opštenamensko",
+	"multiboilerplate-special-no-boilerplates": "Nema nigde definisanog opštenameskog.",
+	"multiboilerplate-nonexistant-page": "Opštenamenska stranica ne postoji: „$1”"
+}

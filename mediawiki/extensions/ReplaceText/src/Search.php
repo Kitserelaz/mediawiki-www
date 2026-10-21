@@ -23,21 +23,15 @@ use MediaWiki\Config\Config;
 use MediaWiki\Title\Title;
 use Wikimedia\Rdbms\IConnectionProvider;
 use Wikimedia\Rdbms\IExpression;
-use Wikimedia\Rdbms\IReadableDatabase;
 use Wikimedia\Rdbms\IResultWrapper;
 use Wikimedia\Rdbms\LikeValue;
 use Wikimedia\Rdbms\SelectQueryBuilder;
 
 class Search {
-	private Config $config;
-	private IConnectionProvider $loadBalancer;
-
 	public function __construct(
-		Config $config,
-		IConnectionProvider $loadBalancer
+		private readonly Config $config,
+		private readonly IConnectionProvider $loadBalancer,
 	) {
-		$this->config = $config;
-		$this->loadBalancer = $loadBalancer;
 	}
 
 	/**
@@ -45,13 +39,18 @@ class Search {
 	 * @param array $namespaces
 	 * @param string|null $category
 	 * @param string|null $prefix
-	 * @param int|null $pageLimit
+	 * @param int $pageLimit
 	 * @param bool $use_regex
 	 * @return IResultWrapper Resulting rows
 	 */
 	public function doSearchQuery(
-		$search, $namespaces, $category, $prefix, $pageLimit, $use_regex = false
-	) {
+		string $search,
+		array $namespaces,
+		?string $category,
+		?string $prefix,
+		int $pageLimit,
+		bool $use_regex = false
+	): IResultWrapper {
 		$dbr = $this->loadBalancer->getReplicaDatabase();
 		$queryBuilder = $dbr->newSelectQueryBuilder()
 			->select( [ 'page_id', 'page_namespace', 'page_title', 'old_text', 'slot_role_id' ] )
@@ -61,42 +60,34 @@ class Search {
 			->join( 'content', null, 'slot_content_id = content_id' )
 			->join( 'text', null, $dbr->buildIntegerCast( 'SUBSTR(content_address, 4)' ) . ' = old_id' );
 		if ( $use_regex ) {
-			$queryBuilder->where( self::regexCond( $dbr, 'old_text', $search ) );
+			$queryBuilder->where( $this->regexCond( 'old_text', $search ) );
 		} else {
 			$any = $dbr->anyString();
 			$queryBuilder->where( $dbr->expr( 'old_text', IExpression::LIKE, new LikeValue( $any, $search, $any ) ) );
 		}
 		$queryBuilder->andWhere( [ 'page_namespace' => $namespaces ] );
-		if ( $pageLimit === null || $pageLimit === '' ) {
-			$pageLimit = $this->config->get( 'ReplaceTextResultsLimit' );
-		}
 		self::categoryCondition( $category, $queryBuilder );
-		$this->prefixCondition( $prefix, $dbr, $queryBuilder );
+		$this->prefixCondition( $prefix, $queryBuilder );
 		return $queryBuilder->orderBy( [ 'page_namespace', 'page_title' ] )
 			->limit( $pageLimit )
 			->caller( __METHOD__ )
 			->fetchResultSet();
 	}
 
-	/**
-	 * @param string|null $category
-	 * @param SelectQueryBuilder $queryBuilder
-	 */
-	public static function categoryCondition( $category, SelectQueryBuilder $queryBuilder ) {
-		if ( strval( $category ) !== '' ) {
+	private static function categoryCondition( ?string $category, SelectQueryBuilder $queryBuilder ) {
+		if ( $category !== null && $category !== '' ) {
 			$category = Title::newFromText( $category )->getDbKey();
 			$queryBuilder->join( 'categorylinks', null, 'page_id = cl_from' )
-				->where( [ 'cl_to' => $category ] );
+				->join( 'linktarget', null, 'cl_target_id = lt_id' )
+				->where( [ 'lt_title' => $category ] );
 		}
 	}
 
-	/**
-	 * @param string|null $prefix
-	 * @param IReadableDatabase $dbr
-	 * @param SelectQueryBuilder $queryBuilder
-	 */
-	private function prefixCondition( $prefix, IReadableDatabase $dbr, SelectQueryBuilder $queryBuilder ) {
-		if ( strval( $prefix ) === '' ) {
+	private function prefixCondition(
+		?string $prefix,
+		SelectQueryBuilder $queryBuilder
+	): void {
+		if ( $prefix === null || $prefix === '' ) {
 			return;
 		}
 
@@ -104,18 +95,18 @@ class Search {
 		if ( $title !== null ) {
 			$prefix = $title->getDbKey();
 		}
+		$dbr = $this->loadBalancer->getReplicaDatabase();
 		$any = $dbr->anyString();
-		// @phan-suppress-next-line PhanTypeMismatchArgumentNullable $prefix is checked for null
 		$queryBuilder->where( $dbr->expr( 'page_title', IExpression::LIKE, new LikeValue( $prefix, $any ) ) );
 	}
 
 	/**
-	 * @param IReadableDatabase $dbr
 	 * @param string $column
 	 * @param string $regex
 	 * @return string query condition for regex
 	 */
-	public static function regexCond( $dbr, $column, $regex ) {
+	private function regexCond( string $column, string $regex ): string {
+		$dbr = $this->loadBalancer->getReplicaDatabase();
 		if ( $dbr->getType() == 'postgres' ) {
 			$cond = "$column ~ ";
 		} else {
@@ -130,35 +121,32 @@ class Search {
 	 * @param array $namespaces
 	 * @param string|null $category
 	 * @param string|null $prefix
-	 * @param int|null $pageLimit
+	 * @param int $pageLimit
 	 * @param bool $use_regex
 	 * @return IResultWrapper Resulting rows
 	 */
 	public function getMatchingTitles(
-		$str,
-		$namespaces,
-		$category,
-		$prefix,
-		$pageLimit,
-		$use_regex = false
-	) {
+		string $str,
+		array $namespaces,
+		?string $category,
+		?string $prefix,
+		int $pageLimit,
+		bool $use_regex = false
+	): IResultWrapper {
 		$dbr = $this->loadBalancer->getReplicaDatabase();
 		$queryBuilder = $dbr->newSelectQueryBuilder()
 			->select( [ 'page_title', 'page_namespace' ] )
 			->from( 'page' );
 		$str = str_replace( ' ', '_', $str );
 		if ( $use_regex ) {
-			$queryBuilder->where( self::regexCond( $dbr, 'page_title', $str ) );
+			$queryBuilder->where( $this->regexCond( 'page_title', $str ) );
 		} else {
 			$any = $dbr->anyString();
 			$queryBuilder->where( $dbr->expr( 'page_title', IExpression::LIKE, new LikeValue( $any, $str, $any ) ) );
 		}
 		$queryBuilder->andWhere( [ 'page_namespace' => $namespaces ] );
-		if ( $pageLimit === null || $pageLimit === '' ) {
-			$pageLimit = $this->config->get( 'ReplaceTextResultsLimit' );
-		}
 		self::categoryCondition( $category, $queryBuilder );
-		$this->prefixCondition( $prefix, $dbr, $queryBuilder );
+		$this->prefixCondition( $prefix, $queryBuilder );
 		return $queryBuilder->orderBy( [ 'page_namespace', 'page_title' ] )
 			->limit( $pageLimit )
 			->caller( __METHOD__ )
@@ -167,13 +155,13 @@ class Search {
 
 	/**
 	 * Do a replacement on a string.
-	 * @param string $text
-	 * @param string $search
-	 * @param string $replacement
-	 * @param bool $regex
-	 * @return string
 	 */
-	public static function getReplacedText( $text, $search, $replacement, $regex ) {
+	public static function getReplacedText(
+		string $text,
+		string $search,
+		string $replacement,
+		bool $regex
+	): string {
 		if ( $regex ) {
 			$escapedSearch = addcslashes( $search, '/' );
 			return preg_replace( "/$escapedSearch/Uu", $replacement, $text );
@@ -184,13 +172,13 @@ class Search {
 
 	/**
 	 * Do a replacement on a title.
-	 * @param Title $title
-	 * @param string $search
-	 * @param string $replacement
-	 * @param bool $regex
-	 * @return Title|null
 	 */
-	public static function getReplacedTitle( Title $title, $search, $replacement, $regex ) {
+	public static function getReplacedTitle(
+		Title $title,
+		string $search,
+		string $replacement,
+		bool $regex
+	): ?Title {
 		$oldTitleText = $title->getText();
 		$newTitleText = self::getReplacedText( $oldTitleText, $search, $replacement, $regex );
 		return Title::makeTitleSafe( $title->getNamespace(), $newTitleText );

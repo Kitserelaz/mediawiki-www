@@ -1,0 +1,35 @@
+{
+	"@metadata": {
+		"authors": [
+			"Nike"
+		]
+	},
+	"ratePage-desc": "Mahdollistaa käyttäjien arvioida sivuja ja määritellä kilpailuja.",
+	"ratePage-vote-error": "Jotakin meni vikaan ja ääntä ei voitu tallentaa.",
+	"ratePage-vote-title": "Arvioi artikkeli",
+	"ratePage-vote-info": "Äänesi: $1.",
+	"ratePage-vote-average-info": "Keskiarvo: $1 ($2).",
+	"ratePage-caption-1": "Kauhea",
+	"ratePage-caption-2": "No jaa...",
+	"ratePage-caption-3": "Ok",
+	"ratePage-caption-4": "Hyvä",
+	"ratePage-caption-5": "Mahtava!",
+	"ratePage-prompt": "Näät keskiarvon äänestämällä",
+	"ratePage-error-category": "Sivut, joissa on RatePage-virheitä",
+	"ratePage-missing-argument-page": "Virhe: pakollinen parametri ”page” puuttuu.",
+	"ratePage-page-does-not-exist": "Virhe: määriteltyä sivua ei ole olemassa.",
+	"ratePage-contests-list-enabled": "Tila",
+	"ratePage-contests-list-description": "Kuvaus",
+	"ratePage-edit-description": "Kuvaus",
+	"ratePage-edit-enabled": "Käytössä",
+	"ratePage-edit-allowed-to-vote": "Voi äänestää",
+	"ratePage-edit-allowed-to-see": "Voi nähdä tulokset",
+	"ratePage-edit-save": "Tallenna",
+	"ratePage-results-list-page": "Sivu",
+	"ratePage-results-list-avg": "Keskiarvoluokitus",
+	"ratePage-results-list-count": "Äänimäärä",
+	"ratePage-deleted-page": "(poistettu sivu)",
+	"group-*": "(kaikki)",
+	"ratePage-prompt-can-see": "Et ole vielä äänestänyt",
+	"ratePage-edit-export": "Vie tulokset"
+}

@@ -1,0 +1,103 @@
+<?php
+
+namespace SMW\Maintenance;
+
+use DateTimeZone;
+use SMW\MediaWiki\ExtendedDateTime;
+use SMW\Options;
+use SMW\Utils\File;
+use Throwable;
+
+/**
+ * @private
+ *
+ * @license GPL-2.0-or-later
+ * @since 2.4
+ *
+ * @author mwjames
+ */
+class ExceptionFileLogger {
+
+	private string $exceptionFile = '';
+
+	private int $exceptionCount = 0;
+
+	private array $exceptionLogMessages = [];
+
+	/**
+	 * @since 2.4
+	 */
+	public function __construct(
+		private $namespace = 'smw',
+		private ?File $file = null,
+	) {
+		if ( $this->file === null ) {
+			$this->file = new File();
+		}
+	}
+
+	/**
+	 * @since 2.4
+	 */
+	public function setOptions( Options $options ): void {
+		$dateTimeUtc = new ExtendedDateTime( 'now', new DateTimeZone( 'UTC' ) );
+		$this->exceptionFile = __DIR__ . "/../../../";
+
+		if ( $options->has( 'exception-log' ) ) {
+			$this->exceptionFile = $options->get( 'exception-log' );
+			if ( !str_ends_with( $this->exceptionFile, '/' ) ) {
+				$this->exceptionFile .= '/';
+			}
+		}
+
+		$this->exceptionFile .= $this->namespace . "-exceptions-" . $dateTimeUtc->format( 'Y-m-d' ) . ".log";
+	}
+
+	/**
+	 * @since 2.4
+	 */
+	public function getExceptionFile(): string|false {
+		return realpath( $this->exceptionFile );
+	}
+
+	/**
+	 * @since 2.4
+	 */
+	public function getExceptionCount(): int {
+		return $this->exceptionCount;
+	}
+
+	/**
+	 * @since 2.4
+	 */
+	public function recordException( int|string $id, Throwable $exception ): void {
+		$this->exceptionCount++;
+
+		$this->exceptionLogMessages[$id] = [
+			'msg' => $exception->getMessage(),
+			'trace' => $exception->getTraceAsString()
+		];
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function doWrite(): void {
+		foreach ( $this->exceptionLogMessages as $id => $exception ) {
+			$this->put( $id, $exception );
+		}
+
+		$this->exceptionLogMessages = [];
+		$this->exceptionCount = 0;
+	}
+
+	private function put( int|string $id, array $exception ): void {
+		$text = "\n======== EXCEPTION ======\n" .
+			"$id | " . $exception['msg'] . "\n\n" .
+			$exception['trace'] . "\n" .
+			"======== END ======" . "\n";
+
+		$this->file->write( $this->exceptionFile, $text, FILE_APPEND );
+	}
+
+}

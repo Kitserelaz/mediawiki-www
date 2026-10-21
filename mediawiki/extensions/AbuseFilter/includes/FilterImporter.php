@@ -11,6 +11,7 @@ use MediaWiki\Extension\AbuseFilter\Filter\LastEditInfo;
 use MediaWiki\Extension\AbuseFilter\Filter\MutableFilter;
 use MediaWiki\Extension\AbuseFilter\Filter\Specs;
 use MediaWiki\Json\FormatJson;
+use MediaWiki\User\UserIdentityValue;
 
 /**
  * This class allows encoding filters to (and decoding from) a string format that can be used
@@ -20,7 +21,7 @@ use MediaWiki\Json\FormatJson;
  * @note Callers should NOT rely on the output format, as it may vary
  */
 class FilterImporter {
-	public const SERVICE_NAME = 'AbuseFilterFilterImporter';
+	public const SERVICE_NAME = ServiceNames::FilterImporter;
 
 	public const CONSTRUCTOR_OPTIONS = [
 		'AbuseFilterValidGroups',
@@ -39,20 +40,11 @@ class FilterImporter {
 		'global'
 	];
 
-	/** @var ServiceOptions */
-	private $options;
-
-	/** @var ConsequencesRegistry */
-	private $consequencesRegistry;
-
-	/**
-	 * @param ServiceOptions $options
-	 * @param ConsequencesRegistry $consequencesRegistry
-	 */
-	public function __construct( ServiceOptions $options, ConsequencesRegistry $consequencesRegistry ) {
+	public function __construct(
+		private readonly ServiceOptions $options,
+		private readonly ConsequencesRegistry $consequencesRegistry
+	) {
 		$options->assertRequiredOptions( self::CONSTRUCTOR_OPTIONS );
-		$this->options = $options;
-		$this->consequencesRegistry = $consequencesRegistry;
 	}
 
 	/**
@@ -114,8 +106,7 @@ class FilterImporter {
 			),
 			$actions,
 			new LastEditInfo(
-				0,
-				'',
+				UserIdentityValue::newAnonymous( '' ),
 				''
 			)
 		);

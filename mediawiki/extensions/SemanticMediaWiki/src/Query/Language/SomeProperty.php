@@ -1,0 +1,207 @@
+<?php
+
+namespace SMW\Query\Language;
+
+use SMW\DataItems\Property;
+
+/**
+ * Description of a set of instances that have an attribute with some value
+ * that fits another (sub)description.
+ *
+ * Corresponds to existential quantification ("SomeValuesFrom" restriction) on
+ * properties in OWL. In conjunctive queries (OWL) and SPARQL (RDF), it is
+ * represented by using variables in the object part of such properties.
+ *
+ * @license GPL-2.0-or-later
+ * @since 1.6
+ *
+ * @author Markus Krötzsch
+ */
+class SomeProperty extends Description {
+
+	protected Description $description;
+
+	protected Property $property;
+
+	/**
+	 * @var int|null
+	 */
+	protected $hierarchyDepth;
+
+	public string $notConditionField;
+	public ?string $sourceChainMemberField = null;
+
+	/**
+	 * @since 1.6
+	 *
+	 * @param Property $property
+	 * @param Description $description
+	 */
+	public function __construct( Property $property, Description $description ) {
+		$this->property = $property;
+		$this->description = $description;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param int $hierarchyDepth
+	 */
+	public function setHierarchyDepth( $hierarchyDepth ): void {
+		if ( $hierarchyDepth > $GLOBALS['smwgQSubpropertyDepth'] ) {
+			$hierarchyDepth = $GLOBALS['smwgQSubpropertyDepth'];
+		}
+
+		$this->hierarchyDepth = $hierarchyDepth;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @return int|null
+	 */
+	public function getHierarchyDepth() {
+		return $this->hierarchyDepth;
+	}
+
+	/**
+	 * @see Description::getFingerprint
+	 * @since 2.5
+	 *
+	 * @return string
+	 */
+	public function getFingerprint(): string {
+		// Avoid a recursive tree
+		if ( $this->fingerprint !== null ) {
+			return $this->fingerprint;
+		}
+
+		$subDescription = $this->description;
+		$property = $this->property->getSerialization();
+
+		// Resolve property.chains and connect its members
+		while ( $subDescription instanceof SomeProperty ) {
+			$subDescription = $subDescription->getDescription();
+			$subDescription->setMembership( $property );
+		}
+
+		// During a recursive chain use the hash from a stored
+		// member to distinguish Foo.Bar.Foobar.Bam from Foo.Bar.Foobar
+		$membership = $this->getMembership() . $subDescription->getMembership();
+
+		$this->fingerprint = 'S:' . md5( $property . '|' . $membership . '|' . $this->description->getFingerprint() . $this->hierarchyDepth );
+		return $this->fingerprint;
+	}
+
+	/**
+	 * @return Property
+	 */
+	public function getProperty(): Property {
+		return $this->property;
+	}
+
+	/**
+	 * @since 1.6
+	 *
+	 * @return Description
+	 */
+	public function getDescription(): Description {
+		return $this->description;
+	}
+
+	/**
+	 * @since 1.6
+	 *
+	 * @return string
+	 */
+	public function getQueryString( $asValue = false ): string {
+		$subDescription = $this->description;
+
+		// Use the canonical label to ensure that conditions contain
+		// language indep. references
+		$propertyChainString = $this->property->getCanonicalLabel();
+		$propertyname = $propertyChainString;
+		$final = '';
+
+		while ( ( $propertyname !== '' ) && ( $subDescription instanceof SomeProperty ) ) { // try to use property chain syntax
+			$propertyname = $subDescription->getProperty()->getCanonicalLabel();
+
+			if ( $propertyname !== '' ) {
+				$propertyChainString .= '.' . $propertyname;
+				$subDescription = $subDescription->getDescription();
+			}
+		}
+
+		if ( $this->hierarchyDepth !== null ) {
+			$final = '|+depth=' . $this->hierarchyDepth;
+		}
+
+		if ( $asValue ) {
+			return '<q>[[' . $propertyChainString . '::' . $subDescription->getQueryString( true ) . $final . ']]</q>';
+		}
+
+		return '[[' . $propertyChainString . '::' . $subDescription->getQueryString( true ) . $final . ']]';
+	}
+
+	/**
+	 * @since 1.6
+	 *
+	 * @return bool
+	 */
+	public function isSingleton(): bool {
+		return false;
+	}
+
+	/**
+	 * @since 1.6
+	 *
+	 * @return int
+	 */
+	public function getSize(): int {
+		return 1 + $this->getDescription()->getSize();
+	}
+
+	/**
+	 * @since 1.6
+	 *
+	 * @return int
+	 */
+	public function getDepth(): int {
+		return 1 + $this->getDescription()->getDepth();
+	}
+
+	/**
+	 * @since 1.6
+	 *
+	 * @return int
+	 */
+	public function getQueryFeatures(): int {
+		return SMW_PROPERTY_QUERY | $this->description->getQueryFeatures();
+	}
+
+	/**
+	 * @since 1.6
+	 *
+	 * @return SomeProperty|ThingDescription
+	 */
+	public function prune( &$maxsize, &$maxdepth, &$log ): SomeProperty|ThingDescription {
+		if ( ( $maxsize <= 0 ) || ( $maxdepth <= 0 ) ) {
+			$log[] = $this->getQueryString();
+			return new ThingDescription();
+		}
+
+		$maxsize--;
+		$maxdepth--;
+
+		$result = new SomeProperty(
+			$this->property,
+			$this->description->prune( $maxsize, $maxdepth, $log )
+		);
+
+		$result->setHierarchyDepth( $this->getHierarchyDepth() );
+		$result->setPrintRequests( $this->getPrintRequests() );
+
+		return $result;
+	}
+
+}

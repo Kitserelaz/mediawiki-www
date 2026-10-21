@@ -1,10 +1,12 @@
 {
 	"@metadata": {
 		"authors": [
-			"CptViraj",
-			"Ashok Modhvadia"
+			"Ashok Modhvadia",
+			"CptViraj"
 		]
 	},
 	"ipinfo-property-label-location": "સ્થળ",
-	"ipinfo-property-label-edits": "યોગદાનો"
+	"ipinfo-property-label-edits": "યોગદાનો",
+	"ipinfo-change-access-level-enable-globally": "{{GENDER:$1| વૈશ્વિક સ્તરે સક્ષમ}}",
+	"ipinfo-change-access-level-disable-globally": "{{GENDER:$1| વૈશ્વિક સ્તરે અક્ષમ કરેલ}}"
 }

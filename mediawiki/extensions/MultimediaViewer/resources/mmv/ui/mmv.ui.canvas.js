@@ -15,8 +15,7 @@
  * along with MediaViewer.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const HtmlUtils = require( '../mmv.HtmlUtils.js' );
-const ThumbnailWidthCalculator = require( '../mmv.ThumbnailWidthCalculator.js' );
+const { HtmlUtils, ThumbnailWidthCalculator } = require( 'mmv.common' );
 const UiElement = require( './mmv.ui.js' );
 
 /**
@@ -34,13 +33,13 @@ class Canvas extends UiElement {
 		super( $container );
 
 		/**
-		 * @property {boolean}
+		 * @type {boolean}
 		 * @private
 		 */
 		this.dialogOpen = false;
 
 		/**
-		 * @property {ThumbnailWidthCalculator}
+		 * @type {ThumbnailWidthCalculator}
 		 * @private
 		 */
 		this.thumbnailWidthCalculator = new ThumbnailWidthCalculator();
@@ -48,7 +47,7 @@ class Canvas extends UiElement {
 		/**
 		 * Contains image.
 		 *
-		 * @property {jQuery}
+		 * @type {jQuery}
 		 */
 		this.$imageDiv = $( '<div>' )
 			.addClass( 'mw-mmv-image' );
@@ -58,7 +57,7 @@ class Canvas extends UiElement {
 		/**
 		 * Container of canvas and controls, needed for canvas size calculations.
 		 *
-		 * @property {jQuery}
+		 * @type {jQuery}
 		 * @private
 		 */
 		this.$imageWrapper = $imageWrapper;
@@ -66,7 +65,7 @@ class Canvas extends UiElement {
 		/**
 		 * Main container of image and metadata, needed to propagate events.
 		 *
-		 * @property {jQuery}
+		 * @type {jQuery}
 		 * @private
 		 */
 		this.$mainWrapper = $mainWrapper;
@@ -74,7 +73,7 @@ class Canvas extends UiElement {
 		/**
 		 * Raw metadata of current image, needed for canvas size calculations.
 		 *
-		 * @property {LightboxImage}
+		 * @type {LightboxImage}
 		 * @private
 		 */
 		this.imageRawMetadata = null;
@@ -266,28 +265,8 @@ class Canvas extends UiElement {
 	 * @param {string} error error message
 	 */
 	showError( error ) {
-		const canvasDimensions = this.getDimensions();
-		const thumbnailDimensions = this.getCurrentImageWidths();
-
-		// ** is bolding in Phabricator
-		const description = `**${ mw.msg( 'multimediaviewer-errorreport-privacywarning' ) }**
-
-
-Error details:
-
-error: ${ error }
-URL: ${ location.href }
-user agent: ${ navigator.userAgent }
-screen size: ${ screen.width }x${ screen.height }
-canvas size: ${ canvasDimensions.width }x${ canvasDimensions.height }
-image size: ${ this.imageRawMetadata.originalWidth }x${ this.imageRawMetadata.originalHeight }
-thumbnail size: CSS: ${ thumbnailDimensions.cssWidth }x${ thumbnailDimensions.cssHeight }, screen width: ${ thumbnailDimensions.screen }, real width: ${ thumbnailDimensions.real }`;
-		const errorUri = mw.msg( 'multimediaviewer-report-issue-url', encodeURIComponent( description ) );
-
 		const $retryLink = $( '<a>' ).addClass( 'mw-mmv-retry-link' ).text(
 			mw.msg( 'multimediaviewer-thumbnail-error-retry' ) );
-		const $reportLink = $( '<a>' ).attr( 'href', errorUri ).text(
-			mw.msg( 'multimediaviewer-thumbnail-error-report' ) );
 
 		this.$imageDiv.empty()
 			.addClass( 'error' )
@@ -300,8 +279,7 @@ thumbnail size: CSS: ${ thumbnailDimensions.cssWidth }x${ thumbnailDimensions.cs
 					$( '<div>' ).addClass( 'mw-mmv-error-description' ).append(
 						mw.msg( 'multimediaviewer-thumbnail-error-description',
 							HtmlUtils.jqueryToHtml( $retryLink ),
-							error,
-							HtmlUtils.jqueryToHtml( $reportLink )
+							error
 						)
 					)
 				)
@@ -364,7 +342,7 @@ thumbnail size: CSS: ${ thumbnailDimensions.cssWidth }x${ thumbnailDimensions.cs
 /**
  * Maximum blowup factor tolerated
  *
- * @property {number} MAX_BLOWUP_FACTOR
+ * @type {number}
  * @static
  */
 Canvas.MAX_BLOWUP_FACTOR = 11;

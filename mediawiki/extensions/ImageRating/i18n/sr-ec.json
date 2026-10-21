@@ -1,0 +1,18 @@
+{
+	"@metadata": {
+		"authors": [
+			"Acamicamacaraca",
+			"BadDog",
+			"Kizule",
+			"Milicevic01",
+			"Aca"
+		]
+	},
+	"imagerating-edit-summary": "{{PLURAL:$1|додај категорију: $2|додај категорије: $2}}",
+	"imagerating-popular-heading": "Популарне слике",
+	"imagerating-new-heading": "Нове слике",
+	"imagerating-best-heading": "Најбоље слике",
+	"imagerating-menu-title": "Мени",
+	"imagerating-categorytitle": "Категорије",
+	"action-rateimage": "категоризујете и оцењујете слике"
+}

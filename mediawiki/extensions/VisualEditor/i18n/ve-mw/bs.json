@@ -1,6 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
+			"Aca",
 			"BadDog",
 			"DzWiki",
 			"KWiki",
@@ -9,8 +10,7 @@
 			"Semso98",
 			"Srdjan m",
 			"Srđan",
-			"TMg",
-			"Aca"
+			"TMg"
 		]
 	},
 	"tooltip-ca-ve-edit": "Uredite ovu stranicu",
@@ -31,6 +31,7 @@
 	"visualeditor-changedesc-mwtransclusion": "Promijenjeni parametri šablona",
 	"visualeditor-desc": "Vizualni uređivač za MediaWiki",
 	"visualeditor-descriptionpagelink": "Project:Vizualni uređivač",
+	"visualeditor-dialog-extension-abandonedit": "Jeste li sigurni da želite zatvoriti ovaj dijaloški okvir bez čuvanja izmjena?",
 	"visualeditor-dialog-media-alttext-section": "Alternativni tekst",
 	"visualeditor-dialog-media-alttext-section-help": "Ovo možete koristiti kako biste napisali opis za osobe koje ne mogu vidjeti ovu stavku. Opis bi trebao biti toliko sadržajan da osobe mogu razumjeti svrhu i informaciju koje im pruža ova stavka. Ovo je od velikog značaja slijepim korisnicima i drugim osobama koje koriste softver za čitanje stavki s ekrana ili preglednike koji samo prikazuju tekst.",
 	"visualeditor-dialog-media-change-image": "Promijeni sliku",
@@ -183,6 +184,7 @@
 	"visualeditor-formatdropdown-format-mw-heading4": "Podnaslov 2",
 	"visualeditor-formatdropdown-format-mw-heading5": "Podnaslov 3",
 	"visualeditor-formatdropdown-format-mw-heading6": "Podnaslov 4",
+	"visualeditor-fullpage-switch-label": "Uredi cijelu stranicu",
 	"visualeditor-generating-wikitext-progress": "Pretvaram u wikitekst",
 	"visualeditor-languages-tool": "Jezici",
 	"visualeditor-linkinspector-button-link-external": "Vanjski sajt",
@@ -245,6 +247,8 @@
 	"visualeditor-mwpredialog-title": "Unaprijed formatirani obični tekst",
 	"visualeditor-mwsignature-tool": "Vaš potpis",
 	"visualeditor-preference-visualeditor": "Uključi vizualni uređivač",
+	"visualeditor-preference-newwikitexteditor-enable": "Koristi režim uređivanja wikiteksta unutar vizualnog uređivača umjesto prebacivanja na drugi uređivač",
+	"visualeditor-preference-newwikitexteditor-help": "Ponekad se naziva \"uređivač wikiteksta iz 2017.\"",
 	"visualeditor-preference-tabs": "Režim uređivanja:",
 	"visualeditor-preference-tabs-multi-tab": "Prikaži kartice oba uređivača",
 	"visualeditor-preference-tabs-prefer-ve": "Otvori vizualni uređivač kad god je moguće",

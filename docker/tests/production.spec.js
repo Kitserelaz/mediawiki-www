@@ -4,7 +4,16 @@ const path = require('node:path');
 test('fresh production administrator signs in across the configured farm', async ({ page }) => {
   test.skip(!process.env.PRODUCTION_TEST_DOMAIN, 'Explicit isolated production rehearsal only');
   const domain = process.env.PRODUCTION_TEST_DOMAIN;
+  const serverErrors = [];
+  page.on('response', response => {
+    if (response.status() >= 500) {
+      const url = new URL(response.url());
+      serverErrors.push(`${response.status()} ${url.hostname}${url.pathname}`);
+    }
+  });
   if (process.env.PRODUCTION_TEST_DEBUG) {
+    console.log('Production browser fixture started');
+    page.on('request', request => { const u = new URL(request.url()); console.log('Request', u.hostname, u.pathname); });
     page.on('response', response => { const u=new URL(response.url()); if (/Central|UserLogin/.test(u.pathname)) console.log(response.status(), u.hostname, u.pathname, response.headers()['x-centralauth-status'] || ''); });
     page.on('requestfailed', request => {const u=new URL(request.url()); console.log('Request failed',u.hostname,u.pathname,request.failure()?.errorText);});
   }
@@ -16,6 +25,7 @@ test('fresh production administrator signs in across the configured farm', async
     } else { await route.continue(); }
   });
   const password = fs.readFileSync(path.resolve(process.env.PRODUCTION_TEST_SECRETS, 'admin-password'), 'utf8').trim();
+  if (process.env.PRODUCTION_TEST_DEBUG) console.log('Rehearsal credentials loaded');
   const user = async () => {
     try { return await page.evaluate(async () => {
       const data = await (await fetch('/api.php?action=query&meta=userinfo&format=json', {cache:'no-store'})).json();
@@ -23,15 +33,19 @@ test('fresh production administrator signs in across the configured farm', async
     }); } catch { return null; }
   };
   await page.goto(`https://test.${domain}/wiki/Special:UserLogin`, {waitUntil:'domcontentloaded'});
+  if (process.env.PRODUCTION_TEST_DEBUG) console.log('Login page loaded');
   await page.locator('[name=wpName]').fill('Admin');
   await page.locator('[name=wpPassword]').fill(password);
   await page.locator('[name=wploginattempt]').click();
   await expect.poll(() => user(), {timeout:30000}).toBe('Admin');
+  if (process.env.PRODUCTION_TEST_DEBUG) console.log('Local login verified; waiting for edge login redirects');
   // Finish the login page's background edge-login redirects before navigating away.
   await page.waitForLoadState('networkidle');
+  if (process.env.PRODUCTION_TEST_DEBUG) console.log('Edge login requests completed');
   for (const wiki of ['meta','login','test']) {
     await page.goto(`https://${wiki}.${domain}/wiki/Main_Page`, {waitUntil:'domcontentloaded'});
     await expect.poll(() => user(), {timeout:15000, message:`Shared login on ${wiki}`}).toBe('Admin');
+    if (process.env.PRODUCTION_TEST_DEBUG) console.log('Shared login verified on', wiki);
   }
   expect([...outbound], 'Fresh production requested legacy external assets or integrations').toEqual([]);
   for (const cookie of (await page.context().cookies()).filter(c => /Session$/.test(c.name))) {
@@ -41,4 +55,5 @@ test('fresh production administrator signs in across the configured farm', async
   await page.getByRole('button', {name:'Log out', exact:true}).click();
   await page.goto(`https://meta.${domain}/wiki/Main_Page`, {waitUntil:'domcontentloaded'});
   await expect.poll(() => user(), {timeout:30000}).toBeNull();
+  expect(serverErrors, 'Production browser received server errors').toEqual([]);
 });

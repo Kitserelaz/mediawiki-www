@@ -4,8 +4,8 @@ namespace MediaWiki\Extension\AbuseFilter\Tests\Integration;
 
 use MediaWiki\Content\Content;
 use MediaWiki\Context\RequestContext;
-use MediaWiki\Extension\AbuseFilter\BlockedDomainFilter;
-use MediaWiki\Extension\AbuseFilter\BlockedDomainStorage;
+use MediaWiki\Extension\AbuseFilter\BlockedDomains\BlockedDomainFilter;
+use MediaWiki\Extension\AbuseFilter\BlockedDomains\IBlockedDomainStorage;
 use MediaWiki\Extension\AbuseFilter\EditRevUpdater;
 use MediaWiki\Extension\AbuseFilter\FilterRunner;
 use MediaWiki\Extension\AbuseFilter\FilterRunnerFactory;
@@ -16,22 +16,30 @@ use MediaWiki\Extension\AbuseFilter\VariableGenerator\VariableGeneratorFactory;
 use MediaWiki\Extension\AbuseFilter\Variables\VariableHolder;
 use MediaWiki\Extension\AbuseFilter\Variables\VariablesManager;
 use MediaWiki\Message\Message;
+use MediaWiki\Page\WikiPage;
+use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Permissions\PermissionManager;
+use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Status\Status;
 use MediaWiki\Title\Title;
+use MediaWiki\Title\TitleFactory;
+use MediaWiki\User\TempUser\TempUserConfig;
+use MediaWiki\User\User;
+use MediaWiki\User\UserFactory;
+use MediaWikiIntegrationTestCase;
 use Wikimedia\Stats\NullStatsdDataFactory;
 
 /**
  * @covers \MediaWiki\Extension\AbuseFilter\Hooks\Handlers\FilteredActionsHandler
  * @group Database
  */
-class FilteredActionsHandlerTest extends \MediaWikiIntegrationTestCase {
+class FilteredActionsHandlerTest extends MediaWikiIntegrationTestCase {
 
 	private array $blockedDomains = [ 'foo.com' => true ];
 
 	/**
 	 * @dataProvider provideOnEditFilterMergedContent
-	 * @covers \MediaWiki\Extension\AbuseFilter\BlockedDomainFilter
+	 * @covers \MediaWiki\Extension\AbuseFilter\BlockedDomains\BlockedDomainFilter
 	 */
 	public function testOnEditFilterMergedContent( $urlsAdded, $expected ) {
 		$this->overrideConfigValue( 'AbuseFilterEnableBlockedExternalDomain', true );
@@ -97,22 +105,22 @@ class FilteredActionsHandlerTest extends \MediaWikiIntegrationTestCase {
 
 		$variableGeneratorFactory = $this->createMock( VariableGeneratorFactory::class );
 		$variableGeneratorFactory->method( 'newRunGenerator' )
-			 ->willReturn( $variableGenerator );
+			->willReturn( $variableGenerator );
 
 		$editRevUpdater = $this->createMock( EditRevUpdater::class );
 
 		$variablesManager = $this->createMock( VariablesManager::class );
 		$variablesManager->method( 'getVar' )
-			->willReturnCallback( fn ( $unused, $vars ) => AFPData::newFromPHPVar( $urlsAdded ) );
+			->willReturnCallback( static fn ( $unused, $vars ) => AFPData::newFromPHPVar( $urlsAdded ) );
 
-		$blockedDomainStorage = $this->createMock( BlockedDomainStorage::class );
+		$blockedDomainStorage = $this->createMock( IBlockedDomainStorage::class );
 		$blockedDomainStorage->method( 'loadComputed' )
 			->willReturn( $this->blockedDomains );
 		$blockedDomainFilter = new BlockedDomainFilter( $variablesManager, $blockedDomainStorage );
 
 		$permissionManager = $this->createMock( PermissionManager::class );
 		$permissionManager->method( 'userHasRight' )
-			 ->willReturn( false );
+			->willReturn( false );
 
 		return new FilteredActionsHandler(
 			new NullStatsdDataFactory(),
@@ -120,7 +128,82 @@ class FilteredActionsHandlerTest extends \MediaWikiIntegrationTestCase {
 			$variableGeneratorFactory,
 			$editRevUpdater,
 			$blockedDomainFilter,
-			$permissionManager
+			$permissionManager,
+			$this->createMock( TitleFactory::class ),
+			$this->createMock( UserFactory::class ),
+			$this->createNoOpMock( TempUserConfig::class )
 		);
+	}
+
+	/**
+	 * @dataProvider provideParserOutputStashForEdit
+	 */
+	public function testParserOutputStashForEdit(
+		bool $isPerformerRegistered,
+		bool $tempAccountsEnabled,
+		bool $shouldRunFilters
+	): void {
+		$user = $this->createMock( User::class );
+		$user->method( 'isRegistered' )
+			->willReturn( $isPerformerRegistered );
+
+		$title = $this->createNoOpMock( Title::class );
+
+		$page = $this->createMock( WikiPage::class );
+		$page->method( 'getTitle' )
+			->willReturn( $title );
+
+		$content = $this->createNoOpMock( Content::class );
+		$summary = 'test';
+
+		$mockRunner = $this->createMock( FilterRunner::class );
+		$mockRunner->expects( $shouldRunFilters ? $this->once() : $this->never() )
+			->method( 'runForStash' );
+		$filterRunnerFactory = $this->createMock( FilterRunnerFactory::class );
+		$filterRunnerFactory->method( 'newRunner' )
+			->willReturn( $mockRunner );
+
+		$vars = new VariableHolder();
+
+		$variableGenerator = $this->createMock( RunVariableGenerator::class );
+		$variableGenerator->method( 'getStashEditVars' )
+			->with( $content, $summary, SlotRecord::MAIN, $page )
+			->willReturn( $vars );
+
+		$variableGeneratorFactory = $this->createMock( VariableGeneratorFactory::class );
+		$variableGeneratorFactory->method( 'newRunGenerator' )
+			->with( $user, $title )
+			->willReturn( $variableGenerator );
+
+		$tempUserConfig = $this->createMock( TempUserConfig::class );
+		$tempUserConfig->method( 'isEnabled' )
+			->willReturn( $tempAccountsEnabled );
+
+		$handler = new FilteredActionsHandler(
+			new NullStatsdDataFactory(),
+			$filterRunnerFactory,
+			$variableGeneratorFactory,
+			$this->createNoOpMock( EditRevUpdater::class ),
+			$this->createNoOpMock( BlockedDomainFilter::class ),
+			$this->createNoOpMock( PermissionManager::class ),
+			$this->createNoOpMock( TitleFactory::class ),
+			$this->createNoOpMock( UserFactory::class ),
+			$tempUserConfig
+		);
+
+		$handler->onParserOutputStashForEdit(
+			$page,
+			$content,
+			new ParserOutput(),
+			$summary,
+			$user
+		);
+	}
+
+	public static function provideParserOutputStashForEdit(): iterable {
+		yield 'registered performer, temporary accounts not enabled' => [ true, false, true ];
+		yield 'unregistered performer, temporary accounts not enabled' => [ false, false, true ];
+		yield 'registered performer, temporary accounts enabled' => [ true, true, true ];
+		yield 'unregistered performer, temporary accounts enabled' => [ false, true, false ];
 	}
 }

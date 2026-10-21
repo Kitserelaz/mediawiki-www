@@ -9,25 +9,18 @@ use MediaWikiUnitTestCase;
  * @covers \MediaWiki\Extension\Math\WikiTexVC\TexVC
  * @covers \MediaWiki\Extension\Math\WikiTexVC\Parser
  *
- * @group Stub
+ * @group Standalone
  */
 class ChemRegressionTest extends MediaWikiUnitTestCase {
-	/** @var TexVC */
-	private $texVC;
 	private const CHUNK_SIZE = 100;
 
 	private const FILEPATH = __DIR__ . '/chem-regression.json';
 
-	public static function setUpBeforeClass(): void {
+	public function setUp(): void {
 		if ( !file_exists( self::FILEPATH ) ) {
 			self::markTestSkipped( 'No test file found at specified path: ' . self::FILEPATH );
 		}
-		parent::setUpBeforeClass();
-	}
-
-	protected function setUp(): void {
 		parent::setUp();
-		$this->texVC = new TexVC();
 	}
 
 	/**

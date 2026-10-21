@@ -18,7 +18,7 @@ use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Title\Title;
-use UserOptionsUpdateJob;
+use MediaWiki\User\Options\UserOptionsUpdateJob;
 
 class TopicListBlock extends AbstractBlock {
 
@@ -291,7 +291,9 @@ class TopicListBlock extends AbstractBlock {
 				$workflowsByWorkflowId[$alphaWorkflowId] = $workflow;
 			}
 
-			return $response + $serializer->formatApi( $this->workflow, $topicRootRevisionsByWorkflowId, $workflowsByWorkflowId, $page );
+			return $response + $serializer->formatApi(
+				$this->workflow, $topicRootRevisionsByWorkflowId, $workflowsByWorkflowId, $page
+			);
 		}
 
 		/** @var TopicListQuery $query */
@@ -497,9 +499,6 @@ class TopicListBlock extends AbstractBlock {
 		} );
 	}
 
-	/**
-	 * @param OutputPage $out
-	 */
 	public function setPageTitle( OutputPage $out ) {
 		if ( $this->action !== 'new-topic' ) {
 			// Only new-topic should override page title, rest should default

@@ -2,63 +2,32 @@
 
 namespace MediaWiki\Extension\AbuseFilter\Consequences\Consequence;
 
-use ManualLogEntry;
 use MediaWiki\Extension\AbuseFilter\Consequences\Parameters;
 use MediaWiki\Extension\AbuseFilter\FilterUser;
 use MediaWiki\Extension\AbuseFilter\GlobalNameUtils;
 use MediaWiki\Extension\AbuseFilter\Variables\LazyLoadedVariable;
 use MediaWiki\Extension\AbuseFilter\Variables\UnsetVariableException;
 use MediaWiki\Extension\AbuseFilter\Variables\VariableHolder;
+use MediaWiki\Language\MessageLocalizer;
+use MediaWiki\Logging\ManualLogEntry;
+use MediaWiki\Permissions\Authority;
 use MediaWiki\Title\TitleValue;
 use MediaWiki\User\UserGroupManager;
-use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityUtils;
-use MessageLocalizer;
 
 /**
  * Consequence that removes all user groups from a user.
  */
 class Degroup extends Consequence implements HookAborterConsequence, ReversibleConsequence {
-	/**
-	 * @var VariableHolder
-	 * @todo This dependency is subpar
-	 */
-	private $vars;
-
-	/** @var UserGroupManager */
-	private $userGroupManager;
-
-	/** @var UserIdentityUtils */
-	private $userIdentityUtils;
-
-	/** @var FilterUser */
-	private $filterUser;
-
-	/** @var MessageLocalizer */
-	private $messageLocalizer;
-
-	/**
-	 * @param Parameters $params
-	 * @param VariableHolder $vars
-	 * @param UserGroupManager $userGroupManager
-	 * @param UserIdentityUtils $userIdentityUtils
-	 * @param FilterUser $filterUser
-	 * @param MessageLocalizer $messageLocalizer
-	 */
 	public function __construct(
 		Parameters $params,
-		VariableHolder $vars,
-		UserGroupManager $userGroupManager,
-		UserIdentityUtils $userIdentityUtils,
-		FilterUser $filterUser,
-		MessageLocalizer $messageLocalizer
+		private readonly VariableHolder $vars,
+		private readonly UserGroupManager $userGroupManager,
+		private readonly UserIdentityUtils $userIdentityUtils,
+		private readonly FilterUser $filterUser,
+		private readonly MessageLocalizer $messageLocalizer
 	) {
 		parent::__construct( $params );
-		$this->vars = $vars;
-		$this->userGroupManager = $userGroupManager;
-		$this->userIdentityUtils = $userIdentityUtils;
-		$this->filterUser = $filterUser;
-		$this->messageLocalizer = $messageLocalizer;
 	}
 
 	/**
@@ -77,7 +46,7 @@ class Degroup extends Consequence implements HookAborterConsequence, ReversibleC
 		try {
 			// No point in triggering a lazy-load, instead we compute it here if necessary
 			$groupsVar = $this->vars->getVarThrow( 'user_groups' );
-		} catch ( UnsetVariableException $_ ) {
+		} catch ( UnsetVariableException ) {
 			$groupsVar = null;
 		}
 		if ( $groupsVar === null || $groupsVar instanceof LazyLoadedVariable ) {
@@ -120,7 +89,7 @@ class Degroup extends Consequence implements HookAborterConsequence, ReversibleC
 	/**
 	 * @inheritDoc
 	 */
-	public function revert( UserIdentity $performer, string $reason ): bool {
+	public function revert( Authority $performer, string $reason ): bool {
 		$user = $this->parameters->getUser();
 		$currentGroups = $this->userGroupManager->getUserGroups( $user );
 		// Pull the user's original groups from the vars. This is guaranteed to be set, because we
@@ -148,7 +117,7 @@ class Degroup extends Consequence implements HookAborterConsequence, ReversibleC
 		// TODO Core should provide a logging method
 		$logEntry = new ManualLogEntry( 'rights', 'rights' );
 		$logEntry->setTarget( new TitleValue( NS_USER, $user->getName() ) );
-		$logEntry->setPerformer( $performer );
+		$logEntry->setPerformer( $performer->getUser() );
 		$logEntry->setComment( $reason );
 		$logEntry->setParameters( [
 			'4::oldgroups' => $currentGroups,

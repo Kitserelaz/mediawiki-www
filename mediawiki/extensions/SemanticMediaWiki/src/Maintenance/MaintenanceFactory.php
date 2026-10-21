@@ -1,0 +1,171 @@
+<?php
+
+namespace SMW\Maintenance;
+
+use MediaWiki\MediaWikiServices;
+use Onoi\MessageReporter\MessageReporter;
+use Onoi\MessageReporter\MessageReporterFactory;
+use SMW\Localizer\LocalMessageProvider;
+use SMW\Services\ServicesFactory as ApplicationFactory;
+use SMW\SQLStore\PropertyStatisticsStore;
+use SMW\Store;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 2.2
+ *
+ * @author mwjames
+ */
+class MaintenanceFactory {
+
+	/**
+	 * @since 2.2
+	 *
+	 * @return MaintenanceHelper
+	 */
+	public function newMaintenanceHelper(): MaintenanceHelper {
+		return new MaintenanceHelper();
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @param string $file
+	 * @param string $languageCode
+	 *
+	 * @return LocalMessageProvider
+	 */
+	public function newLocalMessageProvider( string $file, string $languageCode = 'en' ): LocalMessageProvider {
+		return new LocalMessageProvider( $file, $languageCode );
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * @param Store $store
+	 * @param callable|null $reporterCallback
+	 *
+	 * @return DataRebuilder
+	 */
+	public function newDataRebuilder( Store $store, $reporterCallback = null ): DataRebuilder {
+		$messageReporter = $this->newMessageReporter( $reporterCallback );
+		$applicationFactory = ApplicationFactory::getInstance();
+
+		$dataRebuilder = new DataRebuilder(
+			$store,
+			MediaWikiServices::getInstance()->getTitleFactory(),
+			$applicationFactory->newJobFactory()
+		);
+
+		$dataRebuilder->setMessageReporter(
+			$messageReporter
+		);
+
+		return $dataRebuilder;
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * @param Store $store
+	 * @param callable|null $reporterCallback
+	 *
+	 * @return ConceptCacheRebuilder
+	 */
+	public function newConceptCacheRebuilder( Store $store, $reporterCallback = null ): ConceptCacheRebuilder {
+		$conceptCacheRebuilder = new ConceptCacheRebuilder(
+			$store,
+			ApplicationFactory::getInstance()->getSettings()
+		);
+
+		$conceptCacheRebuilder->setMessageReporter(
+			$this->newMessageReporter( $reporterCallback )
+		);
+
+		return $conceptCacheRebuilder;
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * @param Store $store
+	 * @param callable|null $reporterCallback
+	 *
+	 * @return PropertyStatisticsRebuilder
+	 */
+	public function newPropertyStatisticsRebuilder( Store $store, $reporterCallback = null ): PropertyStatisticsRebuilder {
+		$propertyStatisticsStore = new PropertyStatisticsStore(
+			$store->getConnection( 'mw.db' )
+		);
+
+		$propertyStatisticsRebuilder = new PropertyStatisticsRebuilder(
+			$store,
+			$propertyStatisticsStore
+		);
+
+		$propertyStatisticsRebuilder->setMessageReporter(
+			$this->newMessageReporter( $reporterCallback )
+		);
+
+		return $propertyStatisticsRebuilder;
+	}
+
+	/**
+	 * @since 2.4
+	 *
+	 * @return rebuildPropertyStatistics
+	 */
+	public function newRebuildPropertyStatistics(): rebuildPropertyStatistics {
+		return new rebuildPropertyStatistics();
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @return DuplicateEntitiesDisposer
+	 */
+	public function newDuplicateEntitiesDisposer( Store $store, $reporterCallback = null ): DuplicateEntitiesDisposer {
+		$duplicateEntitiesDisposer = new DuplicateEntitiesDisposer(
+			$store,
+			ApplicationFactory::getInstance()->getObjectCache()
+		);
+
+		$duplicateEntitiesDisposer->setMessageReporter(
+			$this->newMessageReporter( $reporterCallback )
+		);
+
+		return $duplicateEntitiesDisposer;
+	}
+
+	/**
+	 * @since 2.4
+	 *
+	 * @param string $performer
+	 *
+	 * @return MaintenanceLogger
+	 */
+	public function newMaintenanceLogger( $performer ): MaintenanceLogger {
+		$maintenanceLogger = new MaintenanceLogger( $performer );
+		$maintenanceLogger->setMaxNameChars( $GLOBALS['wgMaxNameChars'] );
+
+		return $maintenanceLogger;
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function newMessageReporter( $reporterCallback = null ): MessageReporter {
+		$messageReporter = MessageReporterFactory::getInstance()->newObservableMessageReporter();
+		$messageReporter->registerReporterCallback( $reporterCallback );
+
+		return $messageReporter;
+	}
+
+	/**
+	 * @since 3.1
+	 */
+	public function newAutoRecovery( string $identifier ): AutoRecovery {
+		return new AutoRecovery( $identifier );
+	}
+
+}

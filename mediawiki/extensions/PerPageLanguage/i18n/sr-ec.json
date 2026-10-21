@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": [
+			"Kizule"
+		]
+	},
+	"perpagelanguage-desc": "Поставља језик интерфејса тако да се подудара са језиком садржаја странице",
+	"perpagelanguage-label": "Постави језик"
+}

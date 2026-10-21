@@ -1,0 +1,33 @@
+{
+	"@metadata": {
+		"authors": [
+			"Ajeje Brazorf",
+			"Beta16",
+			"Executive"
+		]
+	},
+	"analytics": "Analisi wiki",
+	"matomoanalytics-desc": "Integrare dati analitici da Matomo e MediaWiki",
+	"matomoanalytics-header": "Puoi usare le schede sotto per selezionare differenti statistiche da vedere che noi teniamo usando Matomo. Tutti i dati sono collezionati a partire da 30 giorni passati da ieri (aggiornato quotidianamente).",
+	"matomoanalytics-labels-browser": "Browsers",
+	"matomoanalytics-labels-continent": "Continenti",
+	"matomoanalytics-labels-country": "Nazione",
+	"matomoanalytics-labels-devices": "Dispositivi",
+	"matomoanalytics-labels-devices-info": "I dispositivi sono raggruppati per tipo e non per modello.",
+	"matomoanalytics-labels-os": "SO",
+	"matomoanalytics-labels-pastmonth": "Visite alla pagina nell'ultimo mese",
+	"matomoanalytics-labels-referrer": "Tipo di riferimento",
+	"matomoanalytics-labels-resolution": "Risoluzione dello schermo",
+	"matomoanalytics-labels-search": "Parole chiave del motore di ricerca",
+	"matomoanalytics-labels-showdata": "Mostra dati grezzi",
+	"matomoanalytics-labels-sitevisits": "Visite al tuo wiki",
+	"matomoanalytics-labels-social": "Riferimenti ai social network",
+	"matomoanalytics-labels-toppages": "Pagine più viste",
+	"matomoanalytics-labels-visitday": "Visualizzazioni al giorno",
+	"matomoanalytics-labels-visitduration": "Durata della visita",
+	"matomoanalytics-labels-visithour": "Ore",
+	"matomoanalytics-labels-visitpages": "Pagine visualizzate per visita",
+	"matomoanalytics-labels-visitpass": "Il tempo passato tra le visite",
+	"matomoanalytics-labels-website": "Riferimenti al sito web",
+	"right-noanalytics": "Non è tracciato usando Matomo"
+}

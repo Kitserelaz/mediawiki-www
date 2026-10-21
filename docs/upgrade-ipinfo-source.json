@@ -1,0 +1,152 @@
+{
+  "component": "mediawiki/extensions/IPInfo",
+  "baseline": "ba54cb0b5b1fa4da2d864574ddb97bea8978d2b6",
+  "target": "a68611dd86fdb766dde36b54909c6a8999f86e9f",
+  "preserved_changes": [
+    {
+      "path": "i18n/ar.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/az.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/be-tarask.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/br.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ce.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/da.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/es.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/et.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/fi.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/fr.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/gl.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/gu.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ko.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/lb.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ml.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/nb.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/nl.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/pl.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ps.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/pt-br.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/qqq.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ro.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ru.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/sk.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/sq.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/sr-ec.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/sr-el.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/tcy.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/th.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/uk.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/vi.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/zh-hans.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/zh-hant.json",
+      "change": "local-source-edit"
+    }
+  ],
+  "dependency_status": "Regenerated lock and runtime vendor: GeoIP2 3.4.0; no-dev Composer audit clean",
+  "baseline_proof": {
+    "component": "IPInfo",
+    "matched": 44,
+    "required": 44,
+    "baseline": "ba54cb0b5b1fa4da2d864574ddb97bea8978d2b6",
+    "target": "a68611dd86fdb766dde36b54909c6a8999f86e9f",
+    "repo": "/tmp/wiki-upgrade-audit/IPInfo-146"
+  },
+  "manual_resolutions": [
+    "Target ignore rules retain local stylelint cache exclusion",
+    "Use matching target npm lock; installed package manifest matched baseline exactly"
+  ]
+}

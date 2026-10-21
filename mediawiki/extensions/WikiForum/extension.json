@@ -1,0 +1,107 @@
+{
+	"name": "WikiForum",
+	"version": "2.7.0",
+	"author": [
+		"Michael Chlebek",
+		"Jack Phoenix",
+		"Adam Carter (UltrasonicNXT)"
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:WikiForum",
+	"descriptionmsg": "wikiforum-desc",
+	"license-name": "GPL-3.0-or-later",
+	"type": "other",
+	"requires": {
+		"MediaWiki": ">= 1.40.0"
+	},
+	"GroupPermissions": {
+		"forumadmin": {
+			"wikiforum-admin": true,
+			"wikiforum-moderator": true
+		},
+		"sysop": {
+			"wikiforum-admin": true,
+			"wikiforum-moderator": true
+		}
+	},
+	"AddGroups": {
+		"bureaucrat": [
+			"forumadmin"
+		]
+	},
+	"RemoveGroups": {
+		"bureaucrat": [
+			"forumadmin"
+		]
+	},
+	"AvailableRights": [
+		"wikiforum-admin",
+		"wikiforum-moderator"
+	],
+	"SpecialPages": {
+		"WikiForum": "SpecialWikiForum"
+	},
+	"LogTypes": [
+		"forum"
+	],
+	"LogActionsHandlers": {
+		"forum/*": "WikitextLogFormatter"
+	},
+	"MessagesDirs": {
+		"WikiForum": [
+			"i18n",
+			"i18n/api"
+		]
+	},
+	"ExtensionMessagesFiles": {
+		"WikiForumAlias": "includes/WikiForum.i18n.alias.php"
+	},
+	"APIModules": {
+		"wikiforum-admin-delete": "ApiWikiForumAdminDelete",
+		"wikiforum-set-thread-stickiness": "ApiWikiForumSetThreadStickiness",
+		"wikiforum-sort": "ApiWikiForumSort"
+	},
+	"AutoloadClasses": {
+		"ApiWikiForumAdminDelete": "includes/api/ApiWikiForumAdminDelete.php",
+		"ApiWikiForumSetThreadStickiness": "includes/api/ApiWikiForumSetThreadStickiness.php",
+		"ApiWikiForumSort": "includes/api/ApiWikiForumSort.php",
+		"MigrateOldWikiForumTimestampColumnsToNew": "maintenance/migrateOldWikiForumTimestampColumnsToNew.php",
+		"MigrateOldWikiForumUserColumnsToActor": "maintenance/migrateOldWikiForumUserColumnsToActor.php",
+		"WikiForumHooks": "includes/WikiForumHooks.php",
+		"WikiForumGui": "includes/WikiForumGui.php",
+		"WikiForum": "includes/WikiForum.php",
+		"SpecialWikiForum": "includes/specials/SpecialWikiForum.php",
+		"WFReply": "includes/WFReply.php",
+		"WFThread": "includes/WFThread.php",
+		"WFForum": "includes/WFForum.php",
+		"WFCategory": "includes/WFCategory.php"
+	},
+	"ResourceModules": {
+		"ext.wikiForum": {
+			"styles": "css/styles.css"
+		},
+		"ext.wikiForum.admin-links": {
+			"scripts": "js/ext.wikiForum.admin-links.js",
+			"dependencies": "mediawiki.api"
+		},
+		"ext.wikiForum.admin-sticky-links": {
+			"scripts": "js/ext.wikiForum.admin-sticky-links.js",
+			"dependencies": "mediawiki.api"
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "resources",
+		"remoteExtPath": "WikiForum/resources"
+	},
+	"Hooks": {
+		"ParserFirstCallInit": "WikiForumHooks::registerParserHooks",
+		"LoadExtensionSchemaUpdates": "WikiForumHooks::onLoadExtensionSchemaUpdates"
+	},
+	"CaptchaTriggers": {
+		"wikiforum": true
+	},
+	"config": {
+		"WikiForumAllowAnonymous": true,
+		"WikiForumLogInRC": true
+	},
+	"manifest_version": 1
+}

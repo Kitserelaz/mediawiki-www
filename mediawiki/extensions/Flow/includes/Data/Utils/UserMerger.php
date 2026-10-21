@@ -2,13 +2,13 @@
 
 namespace Flow\Data\Utils;
 
-use BatchRowIterator;
 use Flow\Data\ManagerGroup;
 use Flow\DbFactory;
 use Flow\Model\AbstractRevision;
 use Flow\Model\PostRevision;
 use Flow\Model\UUID;
 use Iterator;
+use MediaWiki\Utils\BatchRowIterator;
 
 class UserMerger {
 	/**
@@ -26,10 +26,6 @@ class UserMerger {
 	 */
 	protected $config;
 
-	/**
-	 * @param DbFactory $dbFactory
-	 * @param ManagerGroup $storage
-	 */
 	public function __construct( DbFactory $dbFactory, ManagerGroup $storage ) {
 		$this->dbFactory = $dbFactory;
 		$this->storage = $storage;

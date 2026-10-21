@@ -32,6 +32,7 @@
 			"Rxy",
 			"Ryoya3",
 			"Shirayuki",
+			"Shulmj",
 			"SkyDaisy9",
 			"Sou0012",
 			"Suchichi02",
@@ -48,7 +49,7 @@
 			"しぃ",
 			"ネイ",
 			"春春眠眠",
-			"Shulmj"
+			"Tensama0415"
 		]
 	},
 	"collabpad-doctitle": "CollabPad: $1",
@@ -276,6 +277,7 @@
 	"visualeditor-formatdropdown-format-mw-heading4": "小見出し 2",
 	"visualeditor-formatdropdown-format-mw-heading5": "小見出し 3",
 	"visualeditor-formatdropdown-format-mw-heading6": "小見出し 4",
+	"visualeditor-fullpage-switch-label": "ページ全体を編集",
 	"visualeditor-generating-wikitext-progress": "ウィキテキストを生成中",
 	"visualeditor-includes-noinclude-start": "抜粋から除外された内容の始まり",
 	"visualeditor-includes-noinclude-end": "抜粋から除外された内容の終わり",
@@ -387,7 +389,7 @@
 	"visualeditor-special-characters-group-other": "よく使われるもの",
 	"visualeditor-templatesused-tool": "テンプレート一覧",
 	"visualeditor-title-error": "無効なページ名です。",
-	"visualeditor-toload": "エディターを読み込んでいます。このメッセージが引き続き表示される場合、[$1 ページを再読み込み]してください。",
+	"visualeditor-toload": "エディターを読み込んでいます。このメッセージが引き続き表示される場合、[$1 ページを更新]してください。",
 	"visualeditor-tooltip-non-breaking-space": "改行しない半角スペース",
 	"visualeditor-version-label": "バージョン",
 	"visualeditor-wikitext-progress": "ウィキテキストを変換中",

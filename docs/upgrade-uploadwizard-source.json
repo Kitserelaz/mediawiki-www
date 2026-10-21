@@ -1,0 +1,7 @@
+{
+  "component": "mediawiki/extensions/UploadWizard",
+  "baseline": "fca2d2529f6a619bb22327043323d5d0e3ea8a76",
+  "target": "ff3d080aaff079b63499568e989e46094130e6b4",
+  "preserved_changes": [],
+  "dependency_status": "No runtime Composer packages or component lock; uses core platform dependencies"
+}

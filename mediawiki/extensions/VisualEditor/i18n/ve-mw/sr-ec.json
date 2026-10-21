@@ -1,6 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
+			"Aca",
 			"Acamicamacaraca",
 			"BadDog",
 			"Kizule",
@@ -14,8 +15,7 @@
 			"Zenfiric",
 			"Zoranzoki21",
 			"Милан Јелисавчић",
-			"Сербијана",
-			"Aca"
+			"Сербијана"
 		]
 	},
 	"collabpad-doctitle": "CollabPad: $1",
@@ -41,7 +41,7 @@
 	"visualeditor-backbutton-tooltip": "Вратите се",
 	"visualeditor-ca-createlocaldescriptionsource": "Додај локални опис (изворно)",
 	"visualeditor-ca-createsource": "Направи извор",
-	"visualeditor-ca-editlocaldescriptionsource": "Уреди извор локалног описа",
+	"visualeditor-ca-editlocaldescriptionsource": "Уреди локални опис (изворно)",
 	"visualeditor-ca-editsource": "Уреди извор",
 	"visualeditor-ca-editsource-section": "уреди извор",
 	"visualeditor-ca-editsource-section-hint": "Уреди извор одељка: $1",
@@ -142,7 +142,7 @@
 	"visualeditor-dialog-meta-settings-redirect-label": "Преусмери страницу на",
 	"visualeditor-dialog-meta-settings-redirect-placeholder": "Одредишна страница",
 	"visualeditor-dialog-meta-settings-redirect-statichelp": "Можете спречити да се ово преусмерење аутоматски ажурира када се страница на коју оно води премести, у врло ретком случају када је то потребно.",
-	"visualeditor-dialog-meta-settings-redirect-staticlabel": "Спречи ажурирање овог преусмеравања када се одредишна страница премести",
+	"visualeditor-dialog-meta-settings-redirect-staticlabel": "Статичко преусмерење.",
 	"visualeditor-dialog-meta-settings-section": "Подешавања странице",
 	"visualeditor-dialog-meta-settings-toc-default": "Ако је потребно",
 	"visualeditor-dialog-meta-settings-toc-disable": "Никад",
@@ -228,6 +228,7 @@
 	"visualeditor-formatdropdown-format-mw-heading4": "Поднаслов 2",
 	"visualeditor-formatdropdown-format-mw-heading5": "Поднаслов 3",
 	"visualeditor-formatdropdown-format-mw-heading6": "Поднаслов 4",
+	"visualeditor-fullpage-switch-label": "Уреди целу страницу",
 	"visualeditor-generating-wikitext-progress": "Генерисање викитекста",
 	"visualeditor-includes-noinclude-start": "Почетак садржаја који неће бити приказан при позиву шаблона",
 	"visualeditor-includes-noinclude-end": "Крај садржаја који неће бити приказан при позиву шаблона",
@@ -292,7 +293,7 @@
 	"visualeditor-mwpredialog-convert": "Стилизовање текста",
 	"visualeditor-mwpredialog-title": "Преформатиран обичан текст",
 	"visualeditor-mwsignature-tool": "Ваш потпис",
-	"visualeditor-preference-visualeditor": "Омогући Визуелни уређивач",
+	"visualeditor-preference-visualeditor": "Визуелни уређивач",
 	"visualeditor-preference-newwikitexteditor-enable": "Користи режим викитекста унутар Визуелног уређивача, уместо пређашњег уређивача викитекста",
 	"visualeditor-preference-newwikitexteditor-help": "Понекад се назива „уређивач викитекста из 2017. године”.",
 	"visualeditor-preference-tabs": "Режим уређивања:",
@@ -335,13 +336,13 @@
 	"visualeditor-special-characters-group-other": "Често коришћени",
 	"visualeditor-templatesused-tool": "Коришћени шаблони",
 	"visualeditor-title-error": "Неважећи наслов.",
-	"visualeditor-toload": "Уређивач ће се сада учитати. Ако и даље видите ову поруку након неколико секунди, [$1 поново учитајте страницу].",
+	"visualeditor-toload": "Уређивач ће се сада учитати. Ако и даље видите ову поруку након неколико секунди, [$1 освежите страницу].",
 	"visualeditor-tooltip-non-breaking-space": "Непреломни размак",
 	"visualeditor-version-label": "Верзија",
 	"visualeditor-wikitext-progress": "Претварање викитекста",
 	"visualeditor-wikitext-warning": "Користите визуелни уређивач — [[{{MediaWiki:visualeditor-wikitext-warning-link}}|викитекст]] овде не ради. У сваком тренутку можете да се пребаците на уређивање извора без губитка измена кликом на одговарајуће дугме.",
 	"visualeditor-wikitext-warning-title": "Откривено је означавање викитекста",
-	"visualeditor-wikitextconvert-title": "Претворити форматирање у викитекст?",
+	"visualeditor-wikitextconvert-title": "Форматирај у викитекст?",
 	"visualeditor-wikitextconvert-message": "Налепили сте садржај који садржи форматирање. Да ли желите да претворите ово форматирање у викитекст?",
 	"visualeditor-wikitextconvert-convert": "Претвори у викитекст"
 }

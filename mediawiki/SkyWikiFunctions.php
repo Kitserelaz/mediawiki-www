@@ -3,10 +3,10 @@
 use MediaWiki\Config\SiteConfiguration;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\MediaWikiServices;
-use MediaWiki\Registration\ExtensionProcessor;
 use MediaWiki\Registration\ExtensionRegistry;
 use Miraheze\ManageWiki\Helpers\Factories\ModuleFactory;
 use Wikimedia\Rdbms\IReadableDatabase;
+use Wikimedia\StaticArrayWriter;
 
 // Docker supplies these constants before the farm class is loaded.
 defined( 'FARM_DOMAINS' ) || define( 'FARM_DOMAINS', [ 'default' => [ 'cloudwiki.us' ], 'beta' => [ 'mirabeta.org', 'nexttide.org' ] ] );
@@ -73,9 +73,9 @@ class MirahezeFunctions {
 	];
 
 	public const MEDIAWIKI_VERSIONS = [
-		'alpha' => '1.44',
-		'beta' => '1.44',
-		'stable' => '1.43',
+		'alpha' => '1.46',
+		'beta' => '1.46',
+		'stable' => '1.46',
 	];
 
 	public const SUFFIXES = [
@@ -153,7 +153,10 @@ class MirahezeFunctions {
                     $suffix = str_ends_with( $name, 'wikibeta' ) ? 'wikibeta' : 'wiki';
                     $domain = self::DEFAULT_SERVER[$suffix === 'wikibeta' ? 'beta' : 'default'];
                     $databasesArray['databases'][$name]['d'] = $domain;
-                    $databasesArray['databases'][$name]['u'] = 'https://' . substr( $name, 0, -strlen( $suffix ) ) . '.' . $domain;
+                    $host = parse_url( $databasesArray['databases'][$name]['u'] ?? '', PHP_URL_HOST );
+                    if ( !$host || ( $host !== $domain && !str_ends_with( $host, '.' . $domain ) ) ) {
+                        $databasesArray['databases'][$name]['u'] = 'https://' . substr( $name, 0, -strlen( $suffix ) ) . '.' . $domain;
+                    }
                 }
             }
 		}
@@ -270,6 +273,9 @@ class MirahezeFunctions {
 		}
 
 		if ( $database !== null ) {
+			if ( !empty( $databases['u'] ) ) {
+				return $databases['u'];
+			}
 			if ( is_string( $database ) && $database !== 'default' ) {
 				foreach ( array_keys( self::SUFFIXES ) as $suffix ) {
 					if ( substr( $database, -strlen( $suffix ) ) === $suffix ) {
@@ -927,6 +933,44 @@ class MirahezeFunctions {
 		return count( array_intersect( $extensions, self::$activeExtensions ) ) === count( $extensions );
 	}
 
+	/** Build the name/path index without registering mutually exclusive extensions. */
+	public static function rebuildExtensionListCache(): void {
+		$paths = array_merge(
+			glob( self::MEDIAWIKI_DIRECTORY . '/extensions/*/extension*.json' ),
+			glob( self::MEDIAWIKI_DIRECTORY . '/skins/*/skin.json' )
+		);
+		$list = [];
+		foreach ( $paths as $path ) {
+			$manifest = json_decode( file_get_contents( $path ), true, 512, JSON_THROW_ON_ERROR );
+			if ( !isset( $manifest['name'] ) || !is_string( $manifest['name'] ) ) {
+				throw new RuntimeException( 'Missing component name in ' . $path );
+			}
+			$list[$manifest['name']] = $path;
+		}
+		if ( !is_dir( self::CACHE_DIRECTORY ) && !mkdir( self::CACHE_DIRECTORY, 0755, true ) ) {
+			throw new RuntimeException( 'Cannot create farm metadata directory' );
+		}
+		$tmp = tempnam( self::CACHE_DIRECTORY, 'extension-list-' );
+		if ( $tmp === false ) {
+			throw new RuntimeException( 'Cannot create extension index temporary file' );
+		}
+		$target = self::CACHE_DIRECTORY . '/extension-list.php';
+		try {
+			if ( file_put_contents( $tmp, StaticArrayWriter::write( $list, 'Farm component path index.' ) ) === false ||
+				!rename( $tmp, $target )
+			) {
+				throw new RuntimeException( 'Cannot publish extension index' );
+			}
+			if ( function_exists( 'opcache_invalidate' ) ) {
+				opcache_invalidate( $target, true );
+			}
+		} finally {
+			if ( file_exists( $tmp ) ) {
+				unlink( $tmp );
+			}
+		}
+	}
+
 	public function loadExtensions() {
 		global $wgDBname;
 
@@ -947,45 +991,9 @@ class MirahezeFunctions {
 		}
 
 		if ( !file_exists( self::CACHE_DIRECTORY . '/extension-list.php' ) ) {
-			if ( !is_dir( self::CACHE_DIRECTORY ) ) {
-				// Create directory since it doesn't exist
-				mkdir( self::CACHE_DIRECTORY );
-			}
-
-			$queue = array_fill_keys( array_merge(
-				glob( self::MEDIAWIKI_DIRECTORY . '/extensions/*/extension*.json' ),
-				glob( self::MEDIAWIKI_DIRECTORY . '/skins/*/skin.json' )
-			), true );
-
-			if ( $wikiDBname === 'stagingwiki' ) {
-				unset( $queue[ self::MEDIAWIKI_DIRECTORY . '/extensions/MatomoAnalytics/extension.json' ] );
-			} else {
-				unset( $queue[ self::MEDIAWIKI_DIRECTORY . '/extensions/MatomoAnalytics-test/extension.json' ] );
-			}
-		
-			$processor = new ExtensionProcessor();
-
-			foreach ( $queue as $path => $mtime ) {
-				$json = file_get_contents( $path );
-				$info = json_decode( $json, true );
-				$version = $info['manifest_version'] ?? 2;
-
-				$processor->extractInfo( $path, $info, $version );
-			}
-
-			$data = $processor->getExtractedInfo();
-
-			$list = array_column( $data['credits'], 'path', 'name' );
-
-			// Write the list to a PHP cache file
-			$phpContent = "<?php\n\n" .
-				"/**\n * Auto-generated extension list cache.\n */\n\n" .
-				'return ' . var_export( $list, true ) . ";\n";
-
-			file_put_contents( self::CACHE_DIRECTORY . '/extension-list.php', $phpContent, LOCK_EX );
-		} else {
-			$list = include self::CACHE_DIRECTORY . '/extension-list.php';
+			self::rebuildExtensionListCache();
 		}
+		$list = include self::CACHE_DIRECTORY . '/extension-list.php';
 
 		self::handleDisabledExtensions();
 
@@ -1124,31 +1132,6 @@ class MirahezeFunctions {
 				$name . '-wikis' => $databases['versions'][$version],
 			];
 		}
-	}
-
-	/**
-	 * @param string $wiki
-	 * @param IReadableDatabase $dbr
-	 * @param array &$cacheArray
-	 * @return void
-	 */
-	public static function onCreateWikiDataFactoryBuilder(
-		string $wiki,
-		IReadableDatabase $dbr,
-		array &$cacheArray
-	): void {
-		$row = $dbr->newSelectQueryBuilder()
-			->table( 'cw_wikis' )
-			->fields( [
-				 'wiki_deleted',
-				 'wiki_locked',
-			] )
-			->where( [ 'wiki_dbname' => $wiki ] )
-			->caller( __METHOD__ )
-			->fetchRow();
-
-		$cacheArray['states']['deleted'] = (bool)$row->wiki_deleted;
-		$cacheArray['states']['locked'] = (bool)$row->wiki_locked;
 	}
 
 	/**

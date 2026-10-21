@@ -18,7 +18,7 @@
 	"interwiki_prefix": "접두어",
 	"interwiki-prefix-label": "접두어:",
 	"interwiki_prefix_intro": "<code>[<nowiki />[접두어:문서 이름]]</code> 위키 링크에 쓰일 인터위키 접두어",
-	"interwiki_url_intro": "URL 서식. $1 자리에는 <code>[<nowiki />[접두어:<em>문서 이름</em>]]</code>에서의 <em>문서 이름</em>으로 바뀔 것입니다.",
+	"interwiki_url_intro": "URL 서식. 자리 표시자 $1의 자리에는 <code>[<nowiki />[접두어:<em>문서 이름</em>]]</code>에서의 <em>문서 이름</em>으로 바뀔 것입니다.",
 	"interwiki_local": "전달",
 	"interwiki-local-label": "전달",
 	"interwiki_local_0_intro": "이 인터위키 접두어를 사용한 외부 HTTP 요청에 대해 \"{{int:badtitle}}\" 오류 문서가 표시됩니다.",
@@ -56,7 +56,7 @@
 	"log-name-interwiki": "인터위키 테이블 기록",
 	"logentry-interwiki-iw_add": "$1님이 \"$4\" ($5) (끼워넣기: $6, 로컬: $7) 접두어를 인터위키 테이블에 {{GENDER:$2|추가했습니다}}",
 	"logentry-interwiki-iw_edit": "$1님이 인터위키 테이블의 \"$4\" ($5) (끼워넣기: $6, 로컬: $7) 접두어를 {{GENDER:$2|수정했습니다}}",
-	"logentry-interwiki-iw_delete": "$1님이 인터위키 테이블에서 \"$4\" 접두어를 {{GENDER:$2|삭제했습니다}}",
+	"logentry-interwiki-iw_delete": "$1님이 인터위키 테이블에서 \"$4\" 접두어를 {{GENDER:$2|제거했습니다}}",
 	"log-description-interwiki": "[[Special:Interwiki|인터위키 테이블]]이 바뀐 기록입니다.",
 	"right-interwiki": "인터위키 데이터 편집",
 	"action-interwiki": "이 인터위키 접두어 바꾸기",
@@ -66,7 +66,7 @@
 	"interwiki-local-description": "이 접두어들은 로컬상에 있습니다. 전역 설정과 중복되는 것은 전역 설정에 우선하여 적용됩니다.",
 	"interwiki-links": "인터위키 접두어",
 	"interwiki-language-links": "언어 접두어",
-	"interwiki-language-description": "이 접두어들은 언어 코드와 일치하며 , 문서에 추가되었을 때 \"{{int:otherlanguages}}\" 목록을 생성하는 데 쓰입니다.",
+	"interwiki-language-description": "이 접두어들은 언어 코드와 일치하며, 문서에 추가되었을 때 \"{{int:otherlanguages}}\" 목록을 생성하는 데 쓰입니다.",
 	"interwiki-global-language-links": "전역 언어 간 접두어",
-	"interwiki-global-language-description": "이러한 접두사는 정의된 언어 코드와 일치하며 문서에 추가될 때 \"{{int:otherlanguages}}\" 목록을 만드는 데 사용됩니다. 전역 설정에서 상속되므로 소스 위키에서만 편집할 수 있습니다. 전역 언어 간 정의는 로컬에서 덮어 씌워질 수 없습니다."
+	"interwiki-global-language-description": "이러한 접두사는 정의된 언어 코드와 일치하며 문서에 추가될 때 \"{{int:otherlanguages}}\" 목록을 만드는 데 사용됩니다. 전역 설정에서 상속되므로 원본 위키에서만 편집할 수 있습니다. 전역 언어 간 정의는 로컬에서 덮어 씌워질 수 없습니다."
 }

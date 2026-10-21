@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"Mansur"
+		]
+	},
+	"reportincident-dialog-violator-label": "{{GENDER:|Сез}} зарланырга теләгән кулланучы",
+	"reportincident-emaildialog-title": "Расланган электрон почта адресы таләп ителә",
+	"reportincident-emaildialog-close-button": "Кире алу",
+	"reportincident-emaildialog-content": "Безгә хисап яңартылуын күрсәтү яисә алга таба чаралар күрү өчен {{GENDER:|сезнең}} расланган электрон почта адресы кирәк. Хисап җибәргәнче, үзегезнең кулланучы хисап язмасы көйләүләрендә электрон почта адресыгызны өстәгез яки раслагыз.",
+	"reportincident-emaildialog-primary": "Көйләүләргә күчегез",
+	"reportincident-confirmedemail-required": "Инцидент турында хисап җибәрү өчен расланган электрон почта адресы кирәк."
+}

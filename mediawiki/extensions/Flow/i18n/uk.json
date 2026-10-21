@@ -1,6 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
+			"Ahonc",
 			"Andriykopanytsia",
 			"Base",
 			"DDPAT",
@@ -21,8 +22,7 @@
 			"Ата",
 			"Капитан Джон Шепард",
 			"Максим Підліснюк",
-			"Пан Хаунд",
-			"Ahonc"
+			"Пан Хаунд"
 		]
 	},
 	"content-model-flow-board": "Дошка структурованих обговорень",
@@ -81,6 +81,7 @@
 	"flow-hide-post-content": "Цей допис був прихований {{GENDER:$1|користувачем|користувачкою}} $1 ([$2 історія])",
 	"flow-hide-title-content": "Ця тема була прихована {{GENDER:$1|користувачем|користувачкою}} $1",
 	"flow-hide-header-content": "{{GENDER:$1|Приховано}} $2",
+	"flow-invalid-topic-did-you-mean": "Ви мали на увазі «[[$1]]»?",
 	"flow-delete-post-content": "Цей допис був вилучений {{GENDER:$1|користувачем|користувачкою}} $1 ([$2 история])",
 	"flow-delete-title-content": "$1 {{GENDER:$1|вилучив|вилучила}} цю тему",
 	"flow-delete-header-content": "{{GENDER:$1|Вилучено}} $2",
@@ -413,7 +414,7 @@
 	"action-flow-hide": "приховування тем і дописів у структурованих обговореннях",
 	"right-flow-hide": "Приховування тем і дописів у структурованих обговореннях",
 	"action-flow-lock": "позначення тем структурованих обговорень як вирішених",
-	"right-flow-lock": "позначення тем структурованих обговорень як вирішених",
+	"right-flow-lock": "Позначення тем структурованих обговорень як вирішених",
 	"action-flow-delete": "вилучення тем і дописів у структурованих обговореннях",
 	"right-flow-delete": "Вилучення тем і дописів у структурованих обговореннях",
 	"action-flow-edit-post": "редагування дописів інших користувачів у структурованих обговореннях",
@@ -440,9 +441,6 @@
 	"flow-terms-of-use-summarize": "Натискаючи кнопку «{{int:flow-topic-action-update-topic-summary}}», Ви погоджуєтеся з умовами використання цієї вікі.",
 	"flow-terms-of-use-lock-topic": "Натискаючи кнопку «{{int:flow-topic-action-lock-topic}}», Ви погоджуєтеся з умовами використання цієї вікі.",
 	"flow-terms-of-use-unlock-topic": "Натискаючи кнопку «{{int:flow-topic-action-unlock-topic}}», Ви погоджуєтеся з умовами використання цієї вікі.",
-	"flow-whatlinkshere-post": "із [$1 допису]",
-	"flow-whatlinkshere-header": "із [$1 опису]",
-	"flow-whatlinkshere-post-summary": "з [$1 підсумку]",
 	"structureddiscussions": "Структуровані обговорення",
 	"flow-special-desc": "Ця спеціальна сторінка перенаправляє на робочий процес структурованого обговорення або допис у структурованому обговоренні, згідно з UUID.",
 	"flow-special-type": "Тип",

@@ -1,17 +1,17 @@
 <?php
 
-namespace MediaWiki\CheckUser\Test\Integration\Logging;
+namespace MediaWiki\Extension\CheckUser\Test\Integration\Logging;
 
-use LogFormatterTestCase;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\MainConfigNames;
+use MediaWiki\Tests\Logging\LogFormatterTestCase;
 use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
 
 /**
  * @group CheckUser
  * @group Database
  *
- * @covers \MediaWiki\CheckUser\Logging\CheckUserPrivateEventLogFormatter
+ * @covers \MediaWiki\Extension\CheckUser\Logging\CheckUserPrivateEventLogFormatter
  */
 class CheckUserPrivateEventLogFormatterTest extends LogFormatterTestCase {
 
@@ -85,7 +85,7 @@ class CheckUserPrivateEventLogFormatterTest extends LogFormatterTestCase {
 					'action' => 'password-reset-email-sent',
 					'user_text' => 'Sysop',
 					'params' => [
-						'4::receiver' => 'UTSysop'
+						'4::receiver' => 'UTSysop',
 					],
 				],
 				'extra' => [
@@ -101,7 +101,7 @@ class CheckUserPrivateEventLogFormatterTest extends LogFormatterTestCase {
 					'action' => 'email-sent',
 					'user_text' => 'Sysop',
 					'params' => [
-						'4::hash' => '1234567890abcdef'
+						'4::hash' => '1234567890abcdef',
 					],
 				],
 				'extra' => [
@@ -141,7 +141,7 @@ class CheckUserPrivateEventLogFormatterTest extends LogFormatterTestCase {
 					'action' => 'migrated-cu_changes-log-event',
 					'user_text' => 'Sysop',
 					'params' => [
-						'4::actiontext' => 'Test plaintext action text [[test]]'
+						'4::actiontext' => 'Test plaintext action text [[test]]',
 					],
 				],
 				'extra' => [
@@ -150,10 +150,10 @@ class CheckUserPrivateEventLogFormatterTest extends LogFormatterTestCase {
 					'text' => 'Test plaintext action text test',
 					'api' => [
 						// Link is still present for the API, as API responses don't parse wikitext.
-						'actiontext' => 'Test plaintext action text [[test]]'
-					]
-				]
-			]
+						'actiontext' => 'Test plaintext action text [[test]]',
+					],
+				],
+			],
 		];
 	}
 
@@ -170,7 +170,7 @@ class CheckUserPrivateEventLogFormatterTest extends LogFormatterTestCase {
 	public static function provideLogDatabaseRowsForHiddenUser() {
 		return [
 			'User does not have suppress group' => [ false ],
-			'User has suppress group' => [ true ]
+			'User has suppress group' => [ true ],
 		];
 	}
 

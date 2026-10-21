@@ -8,6 +8,7 @@
 			"Vlad5250"
 		]
 	},
+	"collabpad-disabled": "CollabPad не е овозможен на ова вики.",
 	"collabpad-doctitle": "Соработна тетратка: $1",
 	"collabpad-import-subtitle": "Увезено од $1",
 	"collabpad": "Соработна тетратка",
@@ -229,6 +230,7 @@
 	"visualeditor-educationpopup-dismiss": "Јасно",
 	"visualeditor-expandable-less": "Помалку",
 	"visualeditor-expandable-more": "Повеќе",
+	"visualeditor-expandableerror-toggle": "Префрли видливост",
 	"visualeditor-feedback-defaultmessage": "URL: $1",
 	"visualeditor-formatdropdown-format-mw-heading1": "Наслов на страницата",
 	"visualeditor-formatdropdown-format-mw-heading2": "Заглавие",
@@ -236,6 +238,7 @@
 	"visualeditor-formatdropdown-format-mw-heading4": "Подзаглавие 2",
 	"visualeditor-formatdropdown-format-mw-heading5": "Подзаглавие 3",
 	"visualeditor-formatdropdown-format-mw-heading6": "Подзаглавие 4",
+	"visualeditor-fullpage-switch-label": "Уреди цела страница",
 	"visualeditor-generating-wikitext-progress": "Создавање на викитекст",
 	"visualeditor-includes-noinclude-start": "Почеток на содржината изземена од извадоци",
 	"visualeditor-includes-noinclude-end": "Крај на содржината изземена од извадоци",
@@ -247,6 +250,7 @@
 	"visualeditor-includes-includeonly-description": "Кога содржина од оваа страница се користи во друга, овде ќе се вклучи следнава дополнителна содржина:",
 	"visualeditor-includes-documentation": "[//www.mediawiki.org/wiki/Special:MyLanguage/Transclusion#Partial_transclusion Дознајте повеќе за делумното превметнување]",
 	"visualeditor-languages-tool": "Јазици",
+	"visualeditor-linkcontext-uneditable": "За жал, оваа врска засега може да се уредува само во изворен режим.",
 	"visualeditor-linkinspector-button-link-external": "Надворешно мреж. место",
 	"visualeditor-linkinspector-button-link-internal": "Пребарај внатрешни страници",
 	"visualeditor-linkinspector-convert-link-isbn": "Претвори во ISBN-врска",

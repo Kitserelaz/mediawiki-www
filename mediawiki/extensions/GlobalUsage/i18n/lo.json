@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Aefgh39622",
+			"Lookruk"
+		]
+	},
+	"globalusage": "ການໃຊ້ໄຟລ໌ທົ່ວໂລກ",
+	"globalusage-on-wiki": "ການໃຊ້ງານເທິງ $2",
+	"globalusage-of-file": "ວິກິອື່ນ ໆ ຕໍ່ໄປນີ້ໃຊ້ໄຟລ໌ນີ້:",
+	"globalusage-more": "ເບິ່ງ[[{{#Special:GlobalUsage}}/$1|ການນຳໃຊ້ໄຟລ໌ນີ້ທົ່ວໂລກ]]ຫຼາຍຂຶ້ນ"
+}

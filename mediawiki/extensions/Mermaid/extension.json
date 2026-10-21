@@ -1,0 +1,69 @@
+{
+	"name": "Mermaid",
+	"version": "4.0.0-alpha",
+	"author": [
+			"James Hong Kong",
+			"Tyler Gibson"
+	],
+	"url": "https://github.com/SemanticMediaWiki/Mermaid/",
+	"descriptionmsg": "mermaid-desc",
+	"license-name": "GPL-2.0-or-later",
+	"type": "parserhook",
+	"requires": {
+		"MediaWiki": ">= 1.39"
+	},
+	"ExtensionMessagesFiles": {
+		"MermaidMagic": "i18n/extra/Mermaid.magic.php"
+	},
+	"MessagesDirs": {
+		"Mermaid": [
+			"i18n"
+		]
+	},
+	"AutoloadNamespaces": {
+		"Mermaid\\": "src/"
+	},
+	"TestAutoloadNamespaces": {
+  		"Mermaid\\Tests\\": "tests/phpunit/Unit/",
+ 		"Mermaid\\Tests\\Integration\\": "tests/phpunit/Integration/"
+  	},
+	"ResourceModules": {
+		"ext.mermaid": {
+			"scripts": [
+				"resources/ext.mermaid.js",
+				"resources/mermaid.min.js"
+			],
+			"dependencies": [
+				"mediawiki.api"
+			],
+			"styles": [
+				"resources/styles/ext.mermaid.css"
+			],
+			"messages": [
+				"mermaid-desc"
+			],
+			"targets": [
+				"desktop",
+				"mobile"
+			]
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "",
+		"remoteExtPath": "Mermaid"
+	},
+	"ServiceWiringFiles": [
+		"src/ServiceWiring.php"
+	],
+	"Hooks" : {
+		"ParserFirstCallInit" : "Mermaid\\Hooks::onParserFirstCallInit",
+		"OutputPageParserOutput" : "Mermaid\\Hooks::onOutputPageParserOutput"
+	},
+	"config": {
+		"DefaultTheme": {
+			"value": "forest"
+		}
+	},
+	"config_prefix": "mermaidg",
+	"manifest_version": 2
+}

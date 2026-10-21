@@ -1,0 +1,7 @@
+{
+  "component": "mediawiki/extensions/PageForms",
+  "baseline": "41cf4f5b28a109ccd17c916389523b4efa3bb51e",
+  "target": "23d44d8f1743900e65ba48522450f6cde31af10e",
+  "preserved_changes": [],
+  "dependency_status": "Runtime dependencies satisfied by pinned root Composer packages; no component lock or runtime vendor tree"
+}

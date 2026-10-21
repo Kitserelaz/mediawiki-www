@@ -1,0 +1,431 @@
+<?php
+
+namespace SMW\SQLStore\EntityStore;
+
+use SMW\DataItems\DataItem;
+use SMW\DataItems\Property;
+use SMW\DataItems\WikiPage;
+use SMW\DataModel\SemanticData;
+use SMW\DataTypeRegistry;
+use SMW\Exception\DataItemException;
+use SMW\SQLStore\EntityStore\Exception\DataItemHandlerException;
+use SMW\SQLStore\SQLStore;
+use SMW\StoreFactory;
+
+/**
+ * This class provides a subclass of SemanticData that can store prefetched values
+ * from the SQL store, and unstub this data on demand when it is accessed.
+ *
+ * @license GPL-2.0-or-later
+ * @since 1.8
+ *
+ * @author Markus Krötzs
+ * @author mwjames
+ */
+class StubSemanticData extends SemanticData {
+
+	protected SQLStore $store;
+
+	/**
+	 * Stub property data that is not part of $mPropVals and $mProperties
+	 * yet. Entries use property keys as keys. The value is an array of
+	 * DBkey-arrays that define individual datavalues. The stubs will be
+	 * set up when first accessed.
+	 *
+	 * @since 1.8
+	 *
+	 * @var array
+	 */
+	protected $mStubPropVals = [];
+
+	/**
+	 * DIWikiPage object that is the subject of this container.
+	 * Subjects that are null are used to represent "internal objects"
+	 * only.
+	 *
+	 * @since 1.8
+	 */
+	protected WikiPage $mSubject;
+
+	/**
+	 * Whether SubSemanticData have been requested and added
+	 */
+	private bool $subSemanticDataInit = false;
+
+	/**
+	 * @since 1.8
+	 *
+	 * @param WikiPage $subject to which this data refers
+	 * @param SQLStore $store (the parent store)
+	 * @param bool $noDuplicates stating if duplicate data should be avoided
+	 */
+	public function __construct( WikiPage $subject, SQLStore $store, $noDuplicates = true ) {
+		$this->store = $store;
+		parent::__construct( $subject, $noDuplicates );
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @return bool
+	 */
+	public function isStub(): bool {
+		return true;
+	}
+
+	/**
+	 * Required to support php-serialization
+	 *
+	 * @since 2.3
+	 *
+	 * @return array
+	 */
+	public function __sleep(): array {
+		return [ 'mSubject', 'mPropVals', 'mProperties', 'subSemanticData', 'mStubPropVals', 'options', 'extensionData' ];
+	}
+
+	/**
+	 * @since 2.3
+	 */
+	public function __wakeup(): void {
+		$this->store = StoreFactory::getStore( SQLStore::class );
+	}
+
+	/**
+	 * Create a new StubSemanticData object that holds the data of a
+	 * given SemanticData object. Array assignments create copies in PHP
+	 * so the arrays are distinct in input and output object. The object
+	 * references are copied as references in a shallow way. This is
+	 * sufficient as the data items used there are immutable.
+	 *
+	 * @since 1.8
+	 *
+	 * @param $semanticData SemanticData
+	 * @param SQLStore $store
+	 *
+	 * @return StubSemanticData
+	 */
+	public static function newFromSemanticData( SemanticData $semanticData, SQLStore $store ): self {
+		$result = new self( $semanticData->getSubject(), $store );
+		$result->mPropVals = $semanticData->mPropVals;
+		$result->mProperties = $semanticData->mProperties;
+		$result->mHasVisibleProps = $semanticData->mHasVisibleProps;
+		$result->mHasVisibleSpecs = $semanticData->mHasVisibleSpecs;
+		$result->stubObject = $semanticData->stubObject;
+		$result->sequenceMap = $semanticData->sequenceMap;
+		$result->countMap = $semanticData->countMap;
+		return $result;
+	}
+
+	/**
+	 * @since 3.1
+	 *
+	 * @param int $sid
+	 * @param $sequenceMap
+	 */
+	public function setSequenceMap( $sid, $sequenceMap ): void {
+		$this->sequenceMap = is_array( $sequenceMap ) ? $sequenceMap : [];
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @param int $sid
+	 * @param $countMap
+	 */
+	public function setCountMap( $sid, $countMap ): void {
+		$this->countMap = is_array( $countMap ) ? $countMap : [];
+	}
+
+	/**
+	 * Get the array of all properties that have stored values.
+	 *
+	 * @since 1.8
+	 *
+	 * @return array of DIProperty objects
+	 */
+	public function getProperties(): array {
+		$this->unstubProperties();
+		return parent::getProperties();
+	}
+
+	/**
+	 * @see SemanticData::hasProperty
+	 * @since 2.5
+	 *
+	 * @param Property $property
+	 *
+	 * @return bool
+	 */
+	public function hasProperty( Property $property ): bool {
+		$this->unstubProperties();
+		return parent::hasProperty( $property );
+	}
+
+	/**
+	 * Get the array of all stored values for some property.
+	 *
+	 * @since 1.8
+	 *
+	 * @param Property $property
+	 *
+	 * @return array of DataItem
+	 */
+	public function getPropertyValues( Property $property ): array {
+		// we never have any data for inverses
+		if ( $property->isInverse() ) {
+			return [];
+		}
+
+		$key = $property->getKey();
+		if ( array_key_exists( $key, $this->mStubPropVals ) ) {
+			$this->unstubPropertyValues( $property );
+		}
+
+		return parent::getPropertyValues( $property );
+	}
+
+	/**
+	 * @see SemanticData::getSubSemanticData
+	 *
+	 * @note SubSemanticData are added only on request to avoid unnecessary DB
+	 * transactions
+	 *
+	 * @since 2.0
+	 */
+	public function getSubSemanticData(): array {
+		if ( $this->subSemanticDataInit ) {
+			return parent::getSubSemanticData();
+		}
+
+		$this->subSemanticDataInit = true;
+
+		foreach ( $this->getProperties() as $property ) {
+
+			// #619 Do not resolve subobjects for redirects
+			if ( !DataTypeRegistry::getInstance()->isSubDataType( $property->findPropertyValueType() ) ) {
+				continue;
+			}
+
+			if ( $this->isRedirect() ) {
+				continue;
+			}
+
+			$this->initSubSemanticData( $property );
+		}
+
+		return parent::getSubSemanticData();
+	}
+
+	/**
+	 * @see SemanticData::hasSubSemanticData
+	 *
+	 * @note This method will initialize SubSemanticData first if it wasn't done
+	 * yet to ensure data consistency
+	 *
+	 * @since 2.0
+	 */
+	public function hasSubSemanticData( $subobjectName = null ) {
+		if ( !$this->subSemanticDataInit ) {
+			$this->getSubSemanticData();
+		}
+
+		return parent::hasSubSemanticData( $subobjectName );
+	}
+
+	/**
+	 * @see SemanticData::findSubSemanticData
+	 *
+	 * @since 2.5
+	 */
+	public function findSubSemanticData( $subobjectName ) {
+		if ( !$this->subSemanticDataInit ) {
+			$this->getSubSemanticData();
+		}
+
+		return parent::findSubSemanticData( $subobjectName );
+	}
+
+	/**
+	 * Remove a value for a property identified by its DataItem object.
+	 * This method removes a property-value specified by the property and
+	 * dataitem. If there are no more property-values for this property it
+	 * also removes the property from the mProperties.
+	 *
+	 * @note There is no check whether the type of the given data item
+	 * agrees with the type of the property. Since property types can
+	 * change, all parts of SMW are prepared to handle mismatched data item
+	 * types anyway.
+	 *
+	 * @param $property DIProperty
+	 * @param $dataItem DataItem
+	 *
+	 * @since 1.8
+	 */
+	public function removePropertyObjectValue( Property $property, DataItem $dataItem ): void {
+		$this->unstubProperties();
+		$this->getPropertyValues( $property );
+		parent::removePropertyObjectValue( $property, $dataItem );
+	}
+
+	/**
+	 * Return true if there are any visible properties.
+	 *
+	 * @since 1.8
+	 *
+	 * @return bool
+	 */
+	public function hasVisibleProperties(): bool {
+		$this->unstubProperties();
+		return parent::hasVisibleProperties();
+	}
+
+	/**
+	 * Return true if there are any special properties that can
+	 * be displayed.
+	 *
+	 * @since 1.8
+	 *
+	 * @return bool
+	 */
+	public function hasVisibleSpecialProperties(): bool {
+		$this->unstubProperties();
+		return parent::hasVisibleSpecialProperties();
+	}
+
+	/**
+	 * Add data in abbreviated form so that it is only expanded if needed.
+	 * The property key is the DB key (string) of a property value, whereas
+	 * valuekeys is an array of DBkeys for the added value that will be
+	 * used to initialize the value if needed at some point. If there is
+	 * only one valuekey, a single string can be used.
+	 *
+	 * @since 1.8
+	 *
+	 * @param string $propertyKey
+	 * @param array|string $valueKeys
+	 */
+	public function addPropertyStubValue( $propertyKey, $valueKeys ): void {
+		$this->mStubPropVals[$propertyKey][] = $valueKeys;
+	}
+
+	/**
+	 * Delete all data other than the subject.
+	 *
+	 * @since 1.8
+	 */
+	public function clear(): void {
+		$this->mStubPropVals = [];
+		parent::clear();
+	}
+
+	/**
+	 * Process all mProperties that have been added as stubs.
+	 * Associated data may remain in stub form.
+	 *
+	 * @since 1.8
+	 */
+	protected function unstubProperties(): void {
+		foreach ( $this->mStubPropVals as $pkey => $values ) { // unstub property values only, the value lists are still kept as stubs
+			try {
+				$this->unstubProperty( $pkey );
+			} catch ( DataItemException ) {
+				// Likely cause: a property name from the DB is no longer valid.
+				// Do nothing; we could unset the data, but it will never be
+				// unstubbed anyway if there is no valid property DI for it.
+			}
+		}
+	}
+
+	/**
+	 * Unstub a single property from the stub data array. If available, an
+	 * existing object for that property might be provided, so we do not
+	 * need to make a new one. It is not checked if the object matches the
+	 * property name.
+	 *
+	 * @since 1.8
+	 *
+	 * @param string $propertyKey
+	 * @param Property|null $diProperty if available
+	 *
+	 * @throws DataItemException if property key is not valid
+	 * 	and $diProperty is null
+	 */
+	protected function unstubProperty( $propertyKey, $diProperty = null ): void {
+		if ( !array_key_exists( $propertyKey, $this->mProperties ) ) {
+			if ( $diProperty === null ) {
+				$diProperty = new Property( $propertyKey, false );
+			}
+
+			$this->mProperties[$propertyKey] = $diProperty;
+
+			if ( !$diProperty->isUserDefined() ) {
+				if ( $diProperty->isShown() ) {
+					$this->mHasVisibleSpecs = true;
+					$this->mHasVisibleProps = true;
+				}
+			} else {
+				$this->mHasVisibleProps = true;
+			}
+		}
+	}
+
+	protected function isRedirect(): bool {
+		return $this->store->getObjectIds()->isRedirect( $this->mSubject );
+	}
+
+	private function unstubPropertyValues( Property $property ): void {
+		// Not catching exception here; the
+		$this->unstubProperty( $property->getKey(), $property );
+		$propertyTypeId = $property->findPropertyValueType();
+
+		$propertyDiId = DataTypeRegistry::getInstance()->getDataItemByType( $propertyTypeId );
+		$diHandler = $this->store->getDataItemHandlerForDIType( $propertyDiId );
+
+		foreach ( $this->mStubPropVals[$property->getKey()] as $dbkeys ) {
+
+			try {
+				$dataItem = $diHandler->dataItemFromDBKeys( $dbkeys );
+			} catch ( DataItemHandlerException ) {
+				continue;
+			}
+
+			if ( $this->mNoDuplicates ) {
+				$this->mPropVals[$property->getKey()][md5( $dataItem->getHash() )] = $dataItem;
+			} else {
+				$this->mPropVals[$property->getKey()][] = $dataItem;
+			}
+		}
+
+		unset( $this->mStubPropVals[$property->getKey()] );
+	}
+
+	private function initSubSemanticData( Property $property ): void {
+		foreach ( $this->getPropertyValues( $property ) as $value ) {
+
+			if ( !$value instanceof WikiPage || $value->getSubobjectName() === '' ) {
+				continue;
+			}
+
+			// Ensure to hold a DBKEY reference to avoid something like:
+			// "... SMW\Exception\SubSemanticDataException from line 206 of
+			// SubSemanticData.php: Data for a subobject of Display_precision_of
+			// cannot be added to _PREC ..."
+			if ( $value->getNamespace() === SMW_NS_PROPERTY ) {
+				$value = new WikiPage(
+					$this->mSubject->getDBKey(),
+					SMW_NS_PROPERTY,
+					$value->getInterwiki(),
+					$value->getSubobjectName()
+				);
+			}
+
+			if ( $this->hasSubSemanticData( $value->getSubobjectName() ) ) {
+				continue;
+			}
+
+			$this->addSubSemanticData( $this->store->getSemanticData( $value ) );
+		}
+	}
+
+}

@@ -26,34 +26,33 @@
  * @license GPL-2.0-or-later
  */
 
-// phpcs:disable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
-// Need to be able to define ::onRecentChange_Save
-
 namespace MediaWiki\Extension\TorBlock;
 
 use MediaWiki\Block\AbstractBlock;
+use MediaWiki\Block\AutoblockExemptionList;
 use MediaWiki\Block\DatabaseBlock;
 use MediaWiki\Block\Hook\AbortAutoblockHook;
 use MediaWiki\Block\Hook\GetUserBlockHook;
 use MediaWiki\ChangeTags\Hook\ChangeTagsListActiveHook;
 use MediaWiki\ChangeTags\Hook\ListDefinedTagsHook;
 use MediaWiki\Extension\TorBlock\Hooks\HookRunner;
-use MediaWiki\Hook\OtherBlockLogLinkHook;
-use MediaWiki\Hook\RecentChange_saveHook;
 use MediaWiki\HookContainer\HookContainer;
 use MediaWiki\Html\Html;
 use MediaWiki\Permissions\Hook\GetUserPermissionsErrorsExpensiveHook;
+use MediaWiki\RecentChanges\Hook\RecentChange_saveHook;
+use MediaWiki\RecentChanges\RecentChange;
+use MediaWiki\Specials\Hook\OtherBlockLogLinkHook;
 use MediaWiki\Title\Title;
-use MediaWiki\User\Hook\AutopromoteConditionHook;
 use MediaWiki\User\Hook\GetAutoPromoteGroupsHook;
 use MediaWiki\User\Hook\UserCanSendEmailHook;
+use MediaWiki\User\Hook\UserRequirementsConditionHook;
 use MediaWiki\User\User;
-use RecentChange;
+use MediaWiki\User\UserIdentity;
 use Wikimedia\IPUtils;
 
 class Hooks implements
 	AbortAutoblockHook,
-	AutopromoteConditionHook,
+	UserRequirementsConditionHook,
 	GetUserPermissionsErrorsExpensiveHook,
 	GetAutoPromoteGroupsHook,
 	GetUserBlockHook,
@@ -64,7 +63,7 @@ class Hooks implements
 	OtherBlockLogLinkHook
 {
 
-	private HookRunner $hookRunner;
+	private readonly HookRunner $hookRunner;
 
 	public static function registerExtension() {
 		// Define new autopromote condition
@@ -72,7 +71,10 @@ class Hooks implements
 		define( 'APCOND_TOR', 'tor' );
 	}
 
-	public function __construct( HookContainer $hookContainer ) {
+	public function __construct(
+		private readonly AutoblockExemptionList $autoblockExemptionList,
+		HookContainer $hookContainer,
+	) {
 		$this->hookRunner = new HookRunner( $hookContainer );
 	}
 
@@ -83,7 +85,7 @@ class Hooks implements
 	 * @param string|null $action
 	 * @return bool
 	 */
-	private static function checkUserCan( User $user, $action = null ) {
+	private function checkUserCan( User $user, $action = null ) {
 		global $wgTorAllowedActions, $wgRequest;
 
 		if ( ( $action !== null && in_array( $action, $wgTorAllowedActions ) )
@@ -104,7 +106,8 @@ class Hooks implements
 		}
 
 		$ip = $wgRequest->getIP();
-		if ( DatabaseBlock::isExemptedFromAutoblocks( $ip ) ) {
+
+		if ( $this->autoblockExemptionList->isExempt( $ip ) ) {
 			wfDebugLog( 'torblock', "IP is excluded from autoblocks. Exempting from Tor Blocks." );
 
 			return true;
@@ -130,7 +133,7 @@ class Hooks implements
 		&$result
 	) {
 		global $wgRequest;
-		if ( !self::checkUserCan( $user, $action ) ) {
+		if ( !$this->checkUserCan( $user, $action ) ) {
 			wfDebugLog( 'torblock', "User detected as editing from Tor node. " .
 				"Adding Tor block to permissions errors." );
 
@@ -155,7 +158,7 @@ class Hooks implements
 	 */
 	public function onUserCanSendEmail( $user, &$hookErr ) {
 		global $wgRequest;
-		if ( !self::checkUserCan( $user ) ) {
+		if ( !$this->checkUserCan( $user ) ) {
 			wfDebugLog( 'torblock', "User detected as trying to send an email from Tor node. Preventing." );
 
 			// Allow site customization of blocked message.
@@ -256,21 +259,25 @@ class Hooks implements
 	}
 
 	/**
-	 * Check if a user is a Tor node if the wiki is configured
-	 * to autopromote on Tor status.
-	 *
-	 * @param string $type Condition being checked
-	 * @param array $args Arguments passed to the condition
-	 * @param User $user User being promoted
-	 * @param array &$result Will be filled with result of condition
-	 * @return bool
+	 * @inheritDoc
 	 */
-	public function onAutopromoteCondition( $type, $args, $user, &$result ) {
+	public function onUserRequirementsCondition(
+		string|int $type,
+		array $args,
+		UserIdentity $user,
+		bool $isPerformingRequest,
+		?bool &$result
+	): void {
 		if ( $type == APCOND_TOR ) {
+			if (
+				$user->getWikiId() !== UserIdentity::LOCAL ||
+				!$isPerformingRequest
+			) {
+				$result = false;
+				return;
+			}
 			$result = TorExitNodes::isExitNode();
 		}
-
-		return true;
 	}
 
 	/**
@@ -279,7 +286,7 @@ class Hooks implements
 	 * @param RecentChange $recentChange The change being saved
 	 * @return bool true
 	 */
-	public function onRecentChange_Save( $recentChange ) {
+	public function onRecentChange_save( $recentChange ) {
 		global $wgTorTagChanges;
 
 		if ( $wgTorTagChanges && TorExitNodes::isExitNode() ) {

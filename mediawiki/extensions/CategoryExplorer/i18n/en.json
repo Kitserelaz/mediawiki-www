@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": [
+			"Jdlrobson"
+		]
+	},
+	"categoryexplorer-desc": "Replicates the $wgUseCategoryBrowser configuration parameter that was removed in 1.38."
+}

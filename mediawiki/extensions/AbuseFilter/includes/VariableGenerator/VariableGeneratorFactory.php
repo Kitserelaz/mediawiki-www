@@ -3,18 +3,19 @@
 namespace MediaWiki\Extension\AbuseFilter\VariableGenerator;
 
 use MediaWiki\Extension\AbuseFilter\Hooks\AbuseFilterHookRunner;
+use MediaWiki\Extension\AbuseFilter\ServiceNames;
 use MediaWiki\Extension\AbuseFilter\TextExtractor;
 use MediaWiki\Extension\AbuseFilter\Variables\VariableHolder;
+use MediaWiki\FileRepo\RepoGroup;
 use MediaWiki\Page\WikiPageFactory;
+use MediaWiki\RecentChanges\RecentChange;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
 use MediaWiki\User\UserFactory;
-use RecentChange;
-use RepoGroup;
 use Wikimedia\Mime\MimeAnalyzer;
 
 class VariableGeneratorFactory {
-	public const SERVICE_NAME = 'AbuseFilterVariableGeneratorFactory';
+	public const SERVICE_NAME = ServiceNames::VariableGeneratorFactory;
 
 	/** @var AbuseFilterHookRunner */
 	private $hookRunner;

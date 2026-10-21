@@ -13,19 +13,17 @@
 namespace MediaWiki\Extension\EventLogging;
 
 use MediaWiki\Config\Config;
-use MediaWiki\Hook\CanonicalNamespacesHook;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\Hook\BeforePageDisplayHook;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Preferences\Hook\GetPreferencesHook;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\ResourceLoader as RL;
+use MediaWiki\Skin\Skin;
 use MediaWiki\User\Options\UserOptionsLookup;
 use MediaWiki\User\User;
-use Skin;
 
 class Hooks implements
-	CanonicalNamespacesHook,
 	BeforePageDisplayHook,
 	GetPreferencesHook
 {
@@ -76,9 +74,7 @@ class Hooks implements
 	public function onBeforePageDisplay( $out, $skin ): void {
 		$out->addModules( [ 'ext.eventLogging' ] );
 
-		if ( $this->userOptionsLookup->getIntOption( $out->getUser(), 'eventlogging-display-web' )
-			|| $this->userOptionsLookup->getIntOption( $out->getUser(), 'eventlogging-display-console' )
-		) {
+		if ( $this->userOptionsLookup->getIntOption( $out->getUser(), 'eventlogging-display-console' ) ) {
 			$out->addModules( 'ext.eventLogging.debug' );
 		}
 	}
@@ -136,19 +132,9 @@ class Hooks implements
 	 */
 	public function onGetPreferences( $user, &$preferences ): void {
 		// See 'ext.eventLogging.debug' module.
-		$preferences['eventlogging-display-web'] = [
-			'type' => 'api',
-		];
 		$preferences['eventlogging-display-console'] = [
 			'type' => 'api',
 		];
-	}
-
-	public function onCanonicalNamespaces( &$namespaces ): void {
-		if ( JsonSchemaHooks::isSchemaNamespaceEnabled() ) {
-			$namespaces[ NS_SCHEMA ] = 'Schema';
-			$namespaces[ NS_SCHEMA_TALK ] = 'Schema_talk';
-		}
 	}
 
 	/**

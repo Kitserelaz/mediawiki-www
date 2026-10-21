@@ -2,6 +2,9 @@
 
 namespace MediaWiki\Extension\AbuseFilter;
 
+use MediaWiki\Extension\AbuseFilter\BlockedDomains\BlockedDomainValidator;
+use MediaWiki\Extension\AbuseFilter\BlockedDomains\IBlockedDomainFilter;
+use MediaWiki\Extension\AbuseFilter\BlockedDomains\IBlockedDomainStorage;
 use MediaWiki\Extension\AbuseFilter\ChangeTags\ChangeTagger;
 use MediaWiki\Extension\AbuseFilter\ChangeTags\ChangeTagsManager;
 use MediaWiki\Extension\AbuseFilter\ChangeTags\ChangeTagValidator;
@@ -13,6 +16,7 @@ use MediaWiki\Extension\AbuseFilter\EditBox\EditBoxBuilderFactory;
 use MediaWiki\Extension\AbuseFilter\Hooks\AbuseFilterHookRunner;
 use MediaWiki\Extension\AbuseFilter\Parser\RuleCheckerFactory;
 use MediaWiki\Extension\AbuseFilter\VariableGenerator\VariableGeneratorFactory;
+use MediaWiki\Extension\AbuseFilter\Variables\AbuseFilterProtectedVariablesLookup;
 use MediaWiki\Extension\AbuseFilter\Variables\LazyVariableComputer;
 use MediaWiki\Extension\AbuseFilter\Variables\VariablesBlobStore;
 use MediaWiki\Extension\AbuseFilter\Variables\VariablesFormatter;
@@ -306,17 +310,35 @@ class AbuseFilterServices {
 
 	/**
 	 * @param ContainerInterface|null $services
-	 * @return BlockedDomainStorage
+	 * @return IBlockedDomainStorage
 	 */
-	public static function getBlockedDomainStorage( ?ContainerInterface $services = null ): BlockedDomainStorage {
-		return ( $services ?? MediaWikiServices::getInstance() )->get( BlockedDomainStorage::SERVICE_NAME );
+	public static function getBlockedDomainStorage( ?ContainerInterface $services = null ): IBlockedDomainStorage {
+		return ( $services ?? MediaWikiServices::getInstance() )->get( IBlockedDomainStorage::SERVICE_NAME );
 	}
 
 	/**
 	 * @param ContainerInterface|null $services
-	 * @return BlockedDomainFilter
+	 * @return IBlockedDomainFilter
 	 */
-	public static function getBlockedDomainFilter( ?ContainerInterface $services = null ): BlockedDomainFilter {
-		return ( $services ?? MediaWikiServices::getInstance() )->get( BlockedDomainFilter::SERVICE_NAME );
+	public static function getBlockedDomainFilter( ?ContainerInterface $services = null ): IBlockedDomainFilter {
+		return ( $services ?? MediaWikiServices::getInstance() )->get( IBlockedDomainFilter::SERVICE_NAME );
+	}
+
+	public static function getBlockedDomainValidator( ?ContainerInterface $services = null ): BlockedDomainValidator {
+		return ( $services ?? MediaWikiServices::getInstance() )->get( BlockedDomainValidator::SERVICE_NAME );
+	}
+
+	public static function getProtectedVariablesLookup(
+		?ContainerInterface $services = null
+	): AbuseFilterProtectedVariablesLookup {
+		$services ??= MediaWikiServices::getInstance();
+		return $services->get( AbuseFilterProtectedVariablesLookup::SERVICE_NAME );
+	}
+
+	public static function getLogDetailsLookup(
+		?ContainerInterface $services = null
+	): AbuseFilterLogDetailsLookup {
+		$services ??= MediaWikiServices::getInstance();
+		return $services->get( AbuseFilterLogDetailsLookup::SERVICE_NAME );
 	}
 }

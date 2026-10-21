@@ -88,7 +88,7 @@ ve.ce.MWReferenceNode.prototype.onTeardown = function () {
  */
 ve.ce.MWReferenceNode.prototype.onInternalListUpdate = function ( groupsChanged ) {
 	// Only update if this group has been changed
-	if ( groupsChanged.indexOf( this.model.getAttribute( 'listGroup' ) ) !== -1 ) {
+	if ( groupsChanged.includes( this.model.getAttribute( 'listGroup' ) ) ) {
 		this.update();
 	}
 };
@@ -129,12 +129,10 @@ ve.ce.MWReferenceNode.prototype.executeCommand = function () {
  * Update the rendering
  */
 ve.ce.MWReferenceNode.prototype.update = function () {
-	this.$text.html( this.model.getIndexLabel() );
+	this.$text.empty().append( this.model.getFormattedRefLinkLabel() );
 	this.$link
 		.attr( 'data-mw-group', this.model.getGroup() || null );
 	this.$element.toggleClass( 've-ce-mwReferenceNode-placeholder', !!this.model.getAttribute( 'placeholder' ) );
 };
 
-/* Registration */
-
-ve.ce.nodeFactory.register( ve.ce.MWReferenceNode );
+module.exports = ve.ce.MWReferenceNode;

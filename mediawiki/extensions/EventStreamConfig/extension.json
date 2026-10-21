@@ -1,0 +1,38 @@
+{
+	"name": "EventStreamConfig",
+	"author": [
+		"Andrew Otto"
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:EventStreamConfig",
+	"descriptionmsg": "eventstreamconfig-desc",
+	"license-name": "GPL-2.0-or-later",
+	"type": "other",
+	"requires": {
+		"MediaWiki": ">= 1.43"
+	},
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\EventStreamConfig\\": "includes/"
+	},
+	"MessagesDirs": {
+		"EventStreamConfig": [
+			"i18n"
+		]
+	},
+	"APIModules": {
+		"streamconfigs": "MediaWiki\\Extension\\EventStreamConfig\\ApiStreamConfigs"
+	},
+	"ServiceWiringFiles": [
+		"includes/ServiceWiring.php"
+	],
+	"config": {
+		"EventStreams": {
+			"value": {},
+			"description": "An associative array of stream configs keyed by a either static stream name string, or a regex that matches stream names for which the stream config should be used. Each stream config value must minimally specify its `schema_title` setting."
+		},
+		"EventStreamsDefaultSettings": {
+			"value": {},
+			"description": "Stream config default settings. Any setting here will be set in each entry in EventStreams if it is not set there already."
+		}
+	},
+	"manifest_version": 2
+}

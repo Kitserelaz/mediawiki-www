@@ -12,8 +12,8 @@ namespace MediaWiki\Extension\DiscussionTools\Hooks;
 use MediaWiki\ChangeTags\Hook\ChangeTagsListActiveHook;
 use MediaWiki\ChangeTags\Hook\ListDefinedTagsHook;
 use MediaWiki\Context\RequestContext;
-use MediaWiki\Hook\RecentChange_saveHook;
-use RecentChange;
+use MediaWiki\RecentChanges\Hook\RecentChange_saveHook;
+use MediaWiki\RecentChanges\RecentChange;
 
 class TagHooks implements
 	ChangeTagsListActiveHook,
@@ -51,8 +51,6 @@ class TagHooks implements
 	public function onListDefinedTags( &$tags ) {
 		$tags = array_merge( $tags, static::TAGS );
 	}
-
-	// phpcs:disable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
 
 	/**
 	 * Implements the RecentChange_save hook, to add an allowed set of changetags

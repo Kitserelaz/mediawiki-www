@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Nike"
+		]
+	},
+	"rottenlinks": "Ulkoisten linkkien tila",
+	"rottenlinks-desc": "Näyttää [[Special:RottenLinks|kaikkien ulkoisten linkkien tilan]] wikissä",
+	"rottenlinks-table-external": "Ulkoinen linkki",
+	"rottenlinks-table-response": "HTTP-vastaus",
+	"rottenlinks-table-usage": "Käyttö sivuilla",
+	"rottenlinks-showbad": "Näytä vain huonot linkit",
+	"rottenlinks-statistics": "Ulkoisten linkkien toimivuustilasto",
+	"rottenlinks-stats": "Näytä linkkitilastot"
+}

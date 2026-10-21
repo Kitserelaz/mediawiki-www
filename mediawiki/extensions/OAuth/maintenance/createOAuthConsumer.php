@@ -25,12 +25,13 @@ use MediaWiki\Extension\OAuth\Backend\Utils;
 use MediaWiki\Extension\OAuth\Control\ConsumerSubmitControl;
 use MediaWiki\Maintenance\Maintenance;
 use MediaWiki\User\User;
-use MWRestrictions;
+use MediaWiki\Utils\MWRestrictions;
 
 /**
  * @ingroup Maintenance
  */
 
+// @codeCoverageIgnoreStart
 if ( getenv( 'MW_INSTALL_PATH' ) ) {
 	$IP = getenv( 'MW_INSTALL_PATH' );
 } else {
@@ -38,11 +39,19 @@ if ( getenv( 'MW_INSTALL_PATH' ) ) {
 }
 
 require_once "$IP/maintenance/Maintenance.php";
+// @codeCoverageIgnoreEnd
 
 class CreateOAuthConsumer extends Maintenance {
 	public function __construct() {
 		parent::__construct();
 		$this->addDescription( "Create an OAuth consumer" );
+		$this->addOption(
+			'oauthVersion',
+			'OAuth version (' . Consumer::OAUTH_VERSION_1 . ' or ' . Consumer::OAUTH_VERSION_2 .
+				', default ' . Consumer::OAUTH_VERSION_1 . ')',
+			false,
+			true
+		);
 		$this->addOption( 'user', 'User to run the script as', true, true );
 		$this->addOption( 'name', 'Application name', true, true );
 		$this->addOption( 'description', 'Application description', true, true );
@@ -50,12 +59,28 @@ class CreateOAuthConsumer extends Maintenance {
 		$this->addOption( 'callbackUrl', 'Callback URL', true, true );
 		$this->addOption(
 			'callbackIsPrefix',
-			'Allow a consumer to specify a callback in requests',
-			true
+			'Allow a consumer to specify a callback in requests (OAuth 1 only)'
 		);
 		$this->addOption( 'grants', 'Grants', true, true, false, true );
 		$this->addOption( 'jsonOnSuccess', 'Output successful results as JSON' );
 		$this->addOption( 'approve', 'Accept the consumer' );
+		$this->addOption(
+			'ownerOnly',
+			'Make the consumer only usable by the given user; see ' .
+				'https://www.mediawiki.org/wiki/OAuth/Owner-only_consumers.'
+		);
+		$this->addOption(
+			'oauth2IsNotConfidential',
+			'Mark the client as *not* confidential (OAuth 2 only). By default, clients are confidential.'
+		);
+		$this->addOption(
+			'oauth2GrantTypes',
+			'The OAuth 2 grant types: authorization_code, refresh_token, and/or client_credentials.',
+			false,
+			true,
+			false,
+			true
+		);
 		$this->requireExtension( "OAuth" );
 	}
 
@@ -67,6 +92,25 @@ class CreateOAuthConsumer extends Maintenance {
 		if ( $user->getEmail() === '' ) {
 			$this->fatalError( 'User must have an email' );
 		}
+		$oauthVersion = (int)$this->getOption( 'oauthVersion', Consumer::OAUTH_VERSION_1 );
+		if ( !in_array( $oauthVersion, [ Consumer::OAUTH_VERSION_1, Consumer::OAUTH_VERSION_2 ], true ) ) {
+			$this->fatalError(
+				'Invalid oauthVersion, must be ' . Consumer::OAUTH_VERSION_1 .
+					' or ' . Consumer::OAUTH_VERSION_2 . '!'
+			);
+		}
+		if ( $oauthVersion === Consumer::OAUTH_VERSION_2 ) {
+			if ( $this->hasOption( 'callbackIsPrefix' ) ) {
+				$this->fatalError( 'callbackIsPrefix is only available in oauthVersion 1' );
+			}
+		} else {
+			if ( $this->hasOption( 'oauth2IsNotConfidential' ) ) {
+				$this->fatalError( 'oauth2IsNotConfidential is only available in oauthVersion 2' );
+			}
+			if ( $this->hasOption( 'oauth2GrantTypes' ) ) {
+				$this->fatalError( 'oauth2GrantTypes is only available in oauthVersion 2' );
+			}
+		}
 
 		$data = [
 			'action' => 'propose',
@@ -74,14 +118,13 @@ class CreateOAuthConsumer extends Maintenance {
 			'version'      => $this->getOption( 'version' ),
 			'description'  => $this->getOption( 'description' ),
 			'callbackUrl'  => $this->getOption( 'callbackUrl' ),
-			'oauthVersion' => 1,
+			'oauthVersion' => $oauthVersion,
 			'callbackIsPrefix' => $this->hasOption( 'callbackIsPrefix' ),
 			'grants' => '["' . implode( '","', $this->getOption( 'grants' ) ) . '"]',
 			'granttype' => 'normal',
-			'ownerOnly' => false,
-			// Only support OAuth 1 for now, but that requires valid values for OAuth 2 fields
-			'oauth2IsConfidential' => true,
-			'oauth2GrantTypes' => [ 'authorization_code', 'refresh_token' ],
+			'ownerOnly' => $this->hasOption( 'ownerOnly' ),
+			'oauth2IsConfidential' => !$this->hasOption( 'oauth2IsNotConfidential' ),
+			'oauth2GrantTypes' => $this->getOption( 'oauth2GrantTypes', [ 'authorization_code', 'refresh_token' ] ),
 			'email' => $user->getEmail(),
 			// All wikis
 			'wiki' => '*',
@@ -94,7 +137,7 @@ class CreateOAuthConsumer extends Maintenance {
 		$context = RequestContext::getMain();
 		$context->setUser( $user );
 
-		$dbw = Utils::getCentralDB( DB_PRIMARY );
+		$dbw = Utils::getOAuthDB( DB_PRIMARY );
 		$control = new ConsumerSubmitControl( $context, $data, $dbw );
 		$status = $control->submit();
 
@@ -103,7 +146,6 @@ class CreateOAuthConsumer extends Maintenance {
 		}
 
 		/** @var Consumer $cmr */
-		// @phan-suppress-next-line PhanTypeArraySuspiciousNullable
 		$cmr = $status->value['result']['consumer'];
 
 		if ( $this->hasOption( 'approve' ) ) {
@@ -140,5 +182,7 @@ class CreateOAuthConsumer extends Maintenance {
 	}
 }
 
+// @codeCoverageIgnoreStart
 $maintClass = CreateOAuthConsumer::class;
 require_once RUN_MAINTENANCE_IF_MAIN;
+// @codeCoverageIgnoreEnd

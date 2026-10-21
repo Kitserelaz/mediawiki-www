@@ -1,10 +1,11 @@
 <?php
 
-namespace MediaWiki\CheckUser\ClientHints;
+namespace MediaWiki\Extension\CheckUser\ClientHints;
 
 use JsonSerializable;
-use MediaWiki\CheckUser\Services\UserAgentClientHintsManager;
+use MediaWiki\Extension\CheckUser\Services\UserAgentClientHintsManager;
 use MediaWiki\Logger\LoggerFactory;
+use MediaWiki\Request\WebRequest;
 use TypeError;
 
 /**
@@ -12,7 +13,7 @@ use TypeError;
  */
 class ClientHintsData implements JsonSerializable {
 	public const HEADER_TO_CLIENT_HINTS_DATA_PROPERTY_NAME = [
-		"Sec-CH-UA" => "userAgent",
+		"Sec-CH-UA" => "brands",
 		"Sec-CH-UA-Arch" => "architecture",
 		"Sec-CH-UA-Bitness" => "bitness",
 		"Sec-CH-UA-Form-Factor" => "formFactor",
@@ -21,20 +22,11 @@ class ClientHintsData implements JsonSerializable {
 		"Sec-CH-UA-Model" => "model",
 		"Sec-CH-UA-Platform" => "platform",
 		"Sec-CH-UA-Platform-Version" => "platformVersion",
-		"Sec-CH-UA-WoW64" => "woW64"
+		"Sec-CH-UA-WoW64" => "woW64",
+		"x-is-browser" => "isBrowser",
+		"x-ja3n" => "ja3n",
+		"x-ja4h" => "ja4h",
 	];
-
-	private ?string $architecture;
-	private ?string $bitness;
-	private ?array $brands;
-	private ?string $formFactor;
-	private ?array $fullVersionList;
-	private ?bool $mobile;
-	private ?string $model;
-	private ?string $platform;
-	private ?string $platformVersion;
-	private ?string $userAgent;
-	private ?bool $woW64;
 
 	/**
 	 * @param string|null $architecture
@@ -46,33 +38,48 @@ class ClientHintsData implements JsonSerializable {
 	 * @param string|null $model
 	 * @param string|null $platform
 	 * @param string|null $platformVersion
-	 * @param string|null $userAgent
 	 * @param bool|null $woW64
+	 * @param int|null $isBrowser
+	 * @param string|null $ja3n
+	 * @param string|null $ja4h
 	 */
 	public function __construct(
-		?string $architecture,
-		?string $bitness,
-		?array $brands,
-		?string $formFactor,
-		?array $fullVersionList,
-		?bool $mobile,
-		?string $model,
-		?string $platform,
-		?string $platformVersion,
-		?string $userAgent,
-		?bool $woW64
+		private readonly ?string $architecture,
+		private readonly ?string $bitness,
+		private readonly ?array $brands,
+		private readonly ?string $formFactor,
+		private readonly ?array $fullVersionList,
+		private readonly ?bool $mobile,
+		private readonly ?string $model,
+		private readonly ?string $platform,
+		private readonly ?string $platformVersion,
+		private readonly ?bool $woW64,
+		private readonly ?int $isBrowser,
+		private readonly ?string $ja3n,
+		private readonly ?string $ja4h,
 	) {
-		$this->architecture = $architecture;
-		$this->bitness = $bitness;
-		$this->brands = $brands;
-		$this->formFactor = $formFactor;
-		$this->fullVersionList = $fullVersionList;
-		$this->mobile = $mobile;
-		$this->model = $model;
-		$this->platform = $platform;
-		$this->platformVersion = $platformVersion;
-		$this->userAgent = $userAgent;
-		$this->woW64 = $woW64;
+	}
+
+	/**
+	 * Given a string of JSON obtained by calling ClientHintsData::jsonSerialize, construct a ClientHintsData
+	 * object with the same data.
+	 */
+	public static function newFromSerialisedJsonArray( array $data ): self {
+		return new self(
+			$data['architecture'],
+			$data['bitness'],
+			$data['brands'],
+			$data['formFactor'],
+			$data['fullVersionList'],
+			$data['mobile'],
+			$data['model'],
+			$data['platform'],
+			$data['platformVersion'],
+			$data['woW64'],
+			$data['isBrowser'] ?? null,
+			$data['ja3n'] ?? null,
+			$data['ja4h'] ?? null
+		);
 	}
 
 	/**
@@ -81,11 +88,9 @@ class ClientHintsData implements JsonSerializable {
 	 *
 	 * @see UserAgentClientHintsManager::getBodyValidator
 	 *
-	 * @param array $data
-	 * @return ClientHintsData
 	 * @throws TypeError on invalid data (such as platformVersion being an array).
 	 */
-	public static function newFromJsApi( array $data ): ClientHintsData {
+	public static function newFromJsApi( array $data ): self {
 		// Handle clients sending uaFullVersion in their JS API request (T350316) by adding it to the
 		// fullVersionList if the fullVersionList is empty or not defined. If fullVersionList is defined,
 		// then the data is almost certainly duplicated in the already defined fullVersionList so ignore it.
@@ -113,7 +118,89 @@ class ClientHintsData implements JsonSerializable {
 			$data['platform'] ?? null,
 			$data['platformVersion'] ?? null,
 			null,
+			null,
+			null,
 			null
+		);
+	}
+
+	/**
+	 * Get a {@link ClientHintsData} object with values fetched from the Client Hints HTTP headers
+	 * in the provided $request.
+	 *
+	 * @param WebRequest $request
+	 * @param string[] $collectOnly If not an empty array, only collect data for these Client Hints data attributes
+	 * @throws TypeError on invalid data in the Client Hints headers
+	 */
+	public static function newFromRequestHeaders( WebRequest $request, array $collectOnly = [] ): self {
+		$data = [];
+
+		$headers = self::HEADER_TO_CLIENT_HINTS_DATA_PROPERTY_NAME;
+		if ( $collectOnly ) {
+			$headers = array_filter(
+				$headers,
+				static fn ( $propertyName ) => in_array( $propertyName, $collectOnly, true )
+			);
+		}
+
+		foreach ( $headers as $header => $propertyName ) {
+			$headerValue = $request->getHeader( $header );
+			if ( !$headerValue ) {
+				$headerValue = null;
+			}
+			if ( $headerValue === '?0' ) {
+				// Represents the boolean false per
+				// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Sec-CH-UA-Mobile
+				$headerValue = false;
+			} elseif ( $headerValue === '?1' ) {
+				// Represents the boolean true per
+				// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Sec-CH-UA-Mobile
+				$headerValue = true;
+			} elseif ( $headerValue && in_array( $propertyName, [ 'brands', 'fullVersionList' ] ) ) {
+				// See https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Sec-CH-UA for the format of the
+				// value for these headers. This expands the string into an array of brands with the brand name
+				// and version number separated.
+				$headerValue = explode( ',', $headerValue );
+				$headerValue = array_map( static function ( $value ) use ( $header ) {
+					$explodedValue = explode( ';v=', $value );
+					if ( count( $explodedValue ) > 1 ) {
+						$brandName = $explodedValue[0];
+						$versionNumber = $explodedValue[1];
+						return [
+							'brand' => trim( $brandName, " \n\r\t\v\0\"" ),
+							'version' => trim( $versionNumber, " \n\r\t\v\0\"" ),
+						];
+					} else {
+						// The format does not match the HTTP header, so don't store anything as it's likely fake
+						// data.
+						throw new TypeError( "Invalid header $header" );
+					}
+				}, $headerValue );
+			} elseif ( $headerValue ) {
+				// The header value needs to be trimmed, along with removing the quotation marks that wrap the value.
+				$headerValue = trim( $headerValue, " \n\r\t\v\0\"" );
+			}
+
+			if ( $propertyName === 'isBrowser' && $headerValue !== null ) {
+				$headerValue = intval( $headerValue );
+			}
+
+			$data[$propertyName] = $headerValue;
+		}
+		return new self(
+			$data['architecture'] ?? null,
+			$data['bitness'] ?? null,
+			$data['brands'] ?? null,
+			$data['formFactor'] ?? null,
+			$data['fullVersionList'] ?? null,
+			$data['mobile'] ?? null,
+			$data['model'] ?? null,
+			$data['platform'] ?? null,
+			$data['platformVersion'] ?? null,
+			$data['woW64'] ?? null,
+			$data['isBrowser'] ?? null,
+			$data['ja3n'] ?? null,
+			$data['ja4h'] ?? null
 		);
 	}
 
@@ -121,10 +208,9 @@ class ClientHintsData implements JsonSerializable {
 	 * Given an array of rows from the useragent_clienthints table,
 	 * construct a new ClientHintsData object.
 	 *
-	 * @param array $rows
-	 * @return ClientHintsData
+	 * @param array<array{uach_name: string, uach_value: string}> $rows
 	 */
-	public static function newFromDatabaseRows( array $rows ): ClientHintsData {
+	public static function newFromDatabaseRows( array $rows ): self {
 		$data = [];
 		foreach ( $rows as $row ) {
 			if ( in_array( $row['uach_name'], [ 'brands', 'fullVersionList' ] ) ) {
@@ -142,7 +228,7 @@ class ClientHintsData implements JsonSerializable {
 					$brandName = implode( ' ', $explodedValue );
 					$data[$row['uach_name']][] = [
 						"brand" => $brandName,
-						"version" => $versionNumber
+						"version" => $versionNumber,
 					];
 				} else {
 					// No space was found, therefore keep the value as is.
@@ -158,7 +244,7 @@ class ClientHintsData implements JsonSerializable {
 				$data[$row['uach_name']] = $value;
 			}
 		}
-		return new ClientHintsData(
+		return new self(
 			$data['architecture'] ?? null,
 			$data['bitness'] ?? null,
 			$data['brands'] ?? null,
@@ -168,8 +254,10 @@ class ClientHintsData implements JsonSerializable {
 			$data['model'] ?? null,
 			$data['platform'] ?? null,
 			$data['platformVersion'] ?? null,
-			$data['userAgent'] ?? null,
-			$data['woW64'] ?? null
+			$data['woW64'] ?? null,
+			$data['isBrowser'] ?? null,
+			$data['ja3n'] ?? null,
+			$data['ja4h'] ?? null
 		);
 	}
 
@@ -188,7 +276,7 @@ class ClientHintsData implements JsonSerializable {
 				if ( is_bool( $value ) ) {
 					$value = $value ? "1" : "0";
 				}
-				$value = trim( $value );
+				$value = trim( (string)$value );
 				$rows[] = [ 'uach_name' => $key, 'uach_value' => $value ];
 			} else {
 				// Some values are arrays, for example:
@@ -203,9 +291,7 @@ class ClientHintsData implements JsonSerializable {
 						// Sort so "brand" is always first and then "version".
 						ksort( $item );
 						// Trim the data to remove leading and trailing spaces.
-						$item = array_map( static function ( $value ) {
-							return trim( $value );
-						}, $item );
+						$item = array_map( trim( ... ), $item );
 						// Convert arrays to a string by imploding
 						$itemsAsString[] = implode( ' ', $item );
 					} elseif ( is_string( $item ) || is_numeric( $item ) ) {
@@ -236,7 +322,7 @@ class ClientHintsData implements JsonSerializable {
 				foreach ( $itemsAsString as $item ) {
 					$rows[] = [
 						'uach_name' => $key,
-						'uach_value' => $item
+						'uach_value' => $item,
 					];
 				}
 			}
@@ -256,8 +342,10 @@ class ClientHintsData implements JsonSerializable {
 			'model' => $this->model,
 			'platform' => $this->platform,
 			'platformVersion' => $this->platformVersion,
-			'userAgent' => $this->userAgent,
 			'woW64' => $this->woW64,
+			'isBrowser' => $this->isBrowser,
+			'ja3n' => $this->ja3n,
+			'ja4h' => $this->ja4h,
 		];
 	}
 }

@@ -1,0 +1,4 @@
+PHP 8.4.26: Unicode, GD, ZIP, database and worker modules passed.
+Lua runtime passed.
+No errors detected in compressed data of /tmp/utility-runtime.zip.
+ImageMagick, FFmpeg, ZIP and diff runtimes passed.

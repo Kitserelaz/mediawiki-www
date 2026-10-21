@@ -34,7 +34,7 @@ abstract class AbstractClientHandler extends Handler {
 		$control = new ConsumerSubmitControl(
 			RequestContext::getMain(),
 			$params,
-			Utils::getCentralDB( DB_PRIMARY )
+			Utils::getOAuthDB( DB_PRIMARY )
 		);
 
 		$status = $control->submit();
@@ -67,7 +67,7 @@ abstract class AbstractClientHandler extends Handler {
 			throw new HttpException( $value['error'], 400 );
 		}
 
-		throw new HttpException( $status->getMessage() );
+		throw new HttpException( $status->getMessage()->text() );
 	}
 
 	/**

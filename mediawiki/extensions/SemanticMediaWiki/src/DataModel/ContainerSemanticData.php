@@ -1,0 +1,152 @@
+<?php
+
+namespace SMW\DataModel;
+
+use SMW\DataItems\WikiPage;
+use SMW\Exception\DataItemException;
+
+/**
+ * Subclass of SemanticData that is used to store the data in SMWDIContainer
+ * objects. It is special since the subject that the stored property-value pairs
+ * refer may or may not be specified explicitly. This can be tested with
+ * hasAnonymousSubject(). When trying to access the subject in anonymous state,
+ * an Exception will be thrown.
+ *
+ * Anonymous container data items are used when no
+ * page context is available, e.g. when specifying such a value in a search form
+ * where the parent page is not known.
+ *
+ * Besides this change, the subclass mainly is needed to restore the disabled
+ * serialization of SemanticData.
+ *
+ * See also the documentation of SMWDIContainer.
+ *
+ * @license GPL-2.0-or-later
+ * @since 1.6
+ *
+ * @author Markus Krötzsch
+ * @author mwjames
+ */
+class ContainerSemanticData extends SemanticData {
+
+	private bool $skipAnonymousCheck = false;
+
+	/**
+	 * Construct a data container that refers to an anonymous subject. See
+	 * the documentation of the class for details.
+	 *
+	 * @since 1.7
+	 *
+	 * @param bool $noDuplicates stating if duplicate data should be avoided
+	 */
+	public static function makeAnonymousContainer( $noDuplicates = true, $skipAnonymousCheck = false ): ContainerSemanticData {
+		$containerSemanticData = new ContainerSemanticData(
+			new WikiPage( 'SMWInternalObject', NS_SPECIAL, '', 'int' ),
+			$noDuplicates
+		);
+
+		if ( $skipAnonymousCheck ) {
+			$containerSemanticData->skipAnonymousCheck();
+		}
+
+		return $containerSemanticData;
+	}
+
+	/**
+	 * Restore complete serialization which is disabled in SemanticData.
+	 */
+	public function __sleep(): array {
+		return [
+			'mSubject',
+			'mProperties',
+			'mPropVals',
+			'mHasVisibleProps',
+			'mHasVisibleSpecs',
+			'mNoDuplicates',
+			'skipAnonymousCheck',
+			'subSemanticData',
+			'options',
+			'extensionData',
+			'sequenceMap',
+			'countMap'
+		];
+	}
+
+	/**
+	 * Skip the check as it is required for some "search pattern match" activity
+	 * to temporarily to access the container without raising an exception.
+	 *
+	 * @since 2.4
+	 */
+	public function skipAnonymousCheck(): void {
+		$this->skipAnonymousCheck = true;
+	}
+
+	/**
+	 * Check if the subject of this container is an anonymous object.
+	 * See the documenation of the class for details.
+	 *
+	 * @return bool
+	 */
+	public function hasAnonymousSubject(): bool {
+		if ( $this->mSubject->getNamespace() == NS_SPECIAL &&
+			 $this->mSubject->getDBkey() == 'SMWInternalObject' &&
+			 $this->mSubject->getInterwiki() === '' &&
+			 $this->mSubject->getSubobjectName() === 'int' ) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Return subject to which the stored semantic annotation refer to, or
+	 * throw an exception if the subject is anonymous (if the data has not
+	 * been contextualized with setMasterPage() yet).
+	 *
+	 * @return WikiPage subject
+	 * @throws DataItemException
+	 */
+	public function getSubject(): WikiPage {
+		$error = "This container has been classified as anonymous and by trying to access" .
+		" its subject (that has not been given any) an exception is raised to inform about" .
+		" the incorrect usage. An anonymous container can only be used for a search pattern match.";
+
+		if ( !$this->skipAnonymousCheck && $this->hasAnonymousSubject() ) {
+			throw new DataItemException( $error );
+		}
+
+		return $this->mSubject;
+	}
+
+	/**
+	 * Change the object to become an exact copy of the given
+	 * SemanticData object. This is used to make other types of
+	 * SemanticData into an ContainerSemanticData. To copy objects of
+	 * the same type, PHP clone() should be used.
+	 *
+	 * @since 1.7
+	 *
+	 * @param SemanticData|null $semanticData
+	 */
+	public function copyDataFrom( ?SemanticData $semanticData = null ): void {
+		if ( $semanticData === null ) {
+			return;
+		}
+
+		$this->mSubject = $semanticData->getSubject();
+		$this->mProperties = $semanticData->getProperties();
+		$this->mPropVals = [];
+
+		foreach ( $this->mProperties as $property ) {
+			$this->mPropVals[$property->getKey()] = $semanticData->getPropertyValues( $property );
+		}
+
+		$this->mHasVisibleProps = $semanticData->hasVisibleProperties();
+		$this->mHasVisibleSpecs = $semanticData->hasVisibleSpecialProperties();
+		$this->sequenceMap = $semanticData->getSequenceMap();
+		$this->countMap = $semanticData->getCountMap();
+		$this->mNoDuplicates = $semanticData->mNoDuplicates;
+	}
+
+}

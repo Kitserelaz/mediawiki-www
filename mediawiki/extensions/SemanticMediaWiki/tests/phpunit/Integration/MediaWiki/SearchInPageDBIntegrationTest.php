@@ -1,0 +1,121 @@
+<?php
+
+namespace SMW\Tests\Integration\MediaWiki;
+
+use MediaWiki\MediaWikiServices;
+use MediaWiki\Registration\ExtensionRegistry;
+use SMW\MediaWiki\Search\ExtendedSearchEngine;
+use SMW\MediaWiki\Search\SearchResultSet;
+use SMW\SPARQLStore\SPARQLStore;
+use SMW\Tests\SMWIntegrationTestCase;
+use SMW\Tests\Utils\PageCreator;
+use SMW\Tests\Utils\PageDeleter;
+use Wikimedia\Rdbms\IConnectionProvider;
+
+/**
+ * @group SMW
+ * @group SMWExtension
+ *
+ * @group semantic-mediawiki-integration
+ * @group mediawiki-database
+ * @group Database
+ *
+ * @group medium
+ *
+ * @license GPL-2.0-or-later
+ * @since 2.1
+ *
+ * @author mwjames
+ */
+class SearchInPageDBIntegrationTest extends SMWIntegrationTestCase {
+
+	protected function setUp(): void {
+		parent::setUp();
+	}
+
+	public function testSearchForPageValueAsTerm() {
+		$titleFactory = MediaWikiServices::getInstance()->getTitleFactory();
+		$propertyPage = $titleFactory->newFromText( 'Has some page value', SMW_NS_PROPERTY );
+		$targetPage = $titleFactory->newFromText( __METHOD__ );
+
+		$connection = $this->getMockBuilder( IConnectionProvider::class )
+			->disableOriginalConstructor()
+			->getMockForAbstractClass();
+
+		$pageCreator = new PageCreator();
+
+		$pageCreator
+			->createPage( $propertyPage )
+			->doEdit( '[[Has type::Page]]' );
+
+		$pageCreator
+			->createPage( $targetPage )
+			->doEdit( '[[Has some page value::Foo]]' );
+
+		$this->testEnvironment->executePendingDeferredUpdates();
+
+		$search = new ExtendedSearchEngine( $connection );
+		$results = $search->searchText( '[[Has some page value::Foo]]' );
+
+		$this->assertInstanceOf(
+			SearchResultSet::class,
+			$results
+		);
+
+		$this->assertSame(
+			1,
+			$results->getTotalHits()
+		);
+
+		$pageDeleter = new PageDeleter();
+		$pageDeleter->deletePage( $targetPage );
+		$pageDeleter->deletePage( $propertyPage );
+	}
+
+	public function testSearchForGeographicCoordinateValueAsTerm() {
+		if ( !ExtensionRegistry::getInstance()->isLoaded( 'Maps' ) ) {
+			$this->markTestSkipped( "Requires 'Geographic coordinate' to be a supported data type (see Semantic Maps)" );
+		}
+
+		$titleFactory = MediaWikiServices::getInstance()->getTitleFactory();
+
+		$propertyPage = $titleFactory->newFromText( 'Has coordinates', SMW_NS_PROPERTY );
+		$targetPage = $titleFactory->newFromText( __METHOD__ );
+
+		$pageCreator = new PageCreator();
+
+		$pageCreator
+			->createPage( $propertyPage )
+			->doEdit( '[[Has type::Geographic coordinate]]' );
+
+		$pageCreator
+			->createPage( $targetPage )
+			->doEdit( "[[Has coordinates::52°31'N, 13°24'E]]" );
+
+		$this->testEnvironment->executePendingDeferredUpdates();
+
+		$search = new ExtendedSearchEngine();
+		$results = $search->searchText( "[[Has coordinates::52°31'N, 13°24'E]]" );
+
+		$this->assertInstanceOf(
+			SearchResultSet::class,
+			$results
+		);
+
+		if ( is_a( $this->getStore(), SPARQLStore::class ) ) {
+			$this->markTestIncomplete( "Test was marked as incomplete because the SPARQLStore doesn't support the Geo data type" );
+		}
+
+		$this->testEnvironment->executePendingDeferredUpdates();
+
+		$this->assertSame(
+			1,
+			$results->getTotalHits()
+		);
+
+		$pageDeleter = new PageDeleter();
+		$pageDeleter->deletePage( $targetPage );
+		$pageDeleter->deletePage( $propertyPage );
+	}
+
+}

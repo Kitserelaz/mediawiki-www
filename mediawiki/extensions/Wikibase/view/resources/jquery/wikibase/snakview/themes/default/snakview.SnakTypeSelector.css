@@ -1,0 +1,33 @@
+.wikibase-snakview-typeselector .wikibase-snaktypeselector {
+	background: none;
+	border: 0;
+	cursor: pointer;
+}
+
+/* TODO: Move to vector theme and add default coloured icons  */
+
+.ui-state-default .ui-icon-snaktypeselector {
+	/* @embed */
+	background-image: url( images/ui-icon_snaktypeselector.svg );
+	background-position: -0.6875rem 0;
+	background-size: 2.25rem 1.25rem; /* size of ui-icon_snaktypeselector.svg */
+	height: 1.25rem; /* same height as rankselector.svg */
+	width: 0.875rem;
+}
+
+.ui-state-hover .ui-icon-snaktypeselector {
+	background-position: -1.5rem 0;
+}
+
+.ui-state-active .ui-icon-snaktypeselector {
+	background-position: 0.125rem 0;
+}
+
+.wikibase-snaktypeselector-menu {
+	position: absolute;
+	z-index: 2; /* Monobook #content has 2 */
+}
+
+.wb-snaktypeselector-menu li a {
+	cursor: pointer;
+}

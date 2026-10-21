@@ -18,13 +18,13 @@ use Flow\OccupationController;
 use MediaWiki\Deferred\SiteStatsUpdate;
 use MediaWiki\Extension\CentralAuth\CentralAuthServices;
 use MediaWiki\Extension\CentralAuth\User\CentralAuthUser;
+use MediaWiki\Import\WikiImporter;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
 use MediaWiki\User\CentralId\CentralIdLookup;
 use MediaWiki\User\User;
 use MediaWiki\WikiMap\WikiMap;
 use RuntimeException;
-use WikiImporter;
 use XMLReader;
 
 class Importer {
@@ -71,23 +71,17 @@ class Importer {
 	 */
 	protected $transWikiMode = false;
 
-	/**
-	 * @param WikiImporter $importer
-	 */
 	public function __construct( WikiImporter $importer ) {
 		$this->importer = $importer;
 		try {
 			$this->lookup = MediaWikiServices::getInstance()
 				->getCentralIdLookupFactory()
 				->getLookup( 'CentralAuth' );
-		} catch ( \Throwable $unused ) {
+		} catch ( \Throwable ) {
 			$this->lookup = null;
 		}
 	}
 
-	/**
-	 * @param ManagerGroup $storage
-	 */
 	public function setStorage( ManagerGroup $storage ) {
 		$this->storage = $storage;
 	}
@@ -404,7 +398,7 @@ class Importer {
 			throw new ImportException( "User '{$localUser->getName()}' already exists" );
 		}
 
-		$status = CentralAuthServices::getUtilityService()->autoCreateUser( $localUser );
+		$status = CentralAuthServices::getUtilityService()->autoCreateUser( $localUser, true, $localUser );
 		if ( !$status->isGood() ) {
 			throw new ImportException(
 				"autoCreateUser failed for {$localUser->getName()}: " . print_r( $status->getErrors(), true )

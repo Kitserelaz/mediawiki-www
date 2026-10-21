@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Jonny84",
+			"Schläsinger",
+			"Äberlausitzer"
+		]
+	},
+	"forcepreview": "$1 (zuerscht Vurschau oazeiga)",
+	"forcepreview-desc": "Vurschau fer unprivilegierte Benutzer erzwinga",
+	"right-forcepreviewexempt": "Speichern ohne Erzwingung der Vurschau"
+}

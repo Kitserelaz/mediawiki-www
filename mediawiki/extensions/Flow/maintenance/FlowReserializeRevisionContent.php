@@ -2,7 +2,6 @@
 
 namespace Flow\Maintenance;
 
-use BatchRowIterator;
 use Flow\Container;
 use Flow\Conversion\Utils;
 use Flow\Data\ManagerGroup;
@@ -12,6 +11,7 @@ use Flow\Model\AbstractRevision;
 use Flow\Model\UUID;
 use Flow\Parsoid\ContentFixer;
 use MediaWiki\Maintenance\Maintenance;
+use MediaWiki\Utils\BatchRowIterator;
 use MediaWiki\WikiMap\WikiMap;
 use ReflectionClass;
 use ReflectionMethod;
@@ -65,12 +65,10 @@ class FlowReserializeRevisionContent extends Maintenance {
 		// Do reflection hackery to unblock updates to rev_content
 		$omClass = new ReflectionClass( get_class( $om ) );
 		$storageProp = $omClass->getProperty( 'storage' );
-		$storageProp->setAccessible( true );
 		$storageObj = $storageProp->getValue( $om );
 
 		$storageClass = new ReflectionClass( get_class( $storageObj ) );
 		$allowedUpdateColumnsProp = $storageClass->getProperty( 'allowedUpdateColumns' );
-		$allowedUpdateColumnsProp->setAccessible( true );
 		$allowedUpdateColumnsValue = $allowedUpdateColumnsProp->getValue( $storageObj );
 
 		$newAllowedUpdateColumnsValue = array_unique( array_merge( $allowedUpdateColumnsValue, [
@@ -85,7 +83,6 @@ class FlowReserializeRevisionContent extends Maintenance {
 	public function execute() {
 		// Reflection hackery: make setContentRaw() callable
 		$this->setContentRawMethod = new ReflectionMethod( AbstractRevision::class, 'setContentRaw' );
-		$this->setContentRawMethod->setAccessible( true );
 
 		$this->dbFactory = Container::get( 'db.factory' );
 		$this->storage = Container::get( 'storage' );

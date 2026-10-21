@@ -1,0 +1,9 @@
+{
+    "@metadata": {
+        "authors": [
+            "Antoine Lamielle"
+        ]
+    },
+    "customSubtitle": "Custom Subtitle",
+    "customSubtitle-desc": "Add the magic function {{#subtitle: ...}} to allow contributors to set custom subtitle to any content page."
+}

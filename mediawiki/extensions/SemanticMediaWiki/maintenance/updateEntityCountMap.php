@@ -1,0 +1,285 @@
+<?php
+
+namespace SMW\Maintenance;
+
+use MediaWiki\Maintenance\Maintenance;
+use Onoi\MessageReporter\MessageReporter;
+use SMW\DataItems\WikiPage;
+use SMW\Services\ServicesFactory as ApplicationFactory;
+use SMW\SQLStore\SQLStore;
+use SMW\Store;
+use SMW\Utils\CliMsgFormatter;
+use SMW\Utils\HmacSerializer;
+use SMW\Utils\PeriodicStatsFlusher;
+
+/**
+ * Load the required class
+ */
+// @codeCoverageIgnoreStart
+if ( getenv( 'MW_INSTALL_PATH' ) !== false ) {
+	require_once getenv( 'MW_INSTALL_PATH' ) . '/maintenance/Maintenance.php';
+} else {
+	require_once __DIR__ . '/../../../maintenance/Maintenance.php';
+}
+// @codeCoverageIgnoreEnd
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 3.2
+ *
+ * @author mwjames
+ */
+class updateEntityCountMap extends Maintenance {
+
+	/**
+	 * Incomplete task message
+	 */
+	const COUNTMAP_INCOMPLETE = 'smw-updateentitycountmap-incomplete';
+
+	/**
+	 * @var Store
+	 */
+	private $store;
+
+	/**
+	 * @var MessageReporter
+	 */
+	private $messageReporter;
+
+	/**
+	 * @var CliMsgFormatter
+	 */
+	private $cliMsgFormatter;
+
+	/**
+	 * @var int
+	 */
+	private $last = 0;
+
+	/**
+	 * @since 3.2
+	 */
+	public function __construct() {
+		parent::__construct();
+		$this->mDescription = 'Updates the smw_`countmap` field';
+		$this->addOption( 's', 'ID starting point', false, true );
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @param MessageReporter $messageReporter
+	 */
+	public function setMessageReporter( MessageReporter $messageReporter ) {
+		$this->messageReporter = $messageReporter;
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @param string $message
+	 */
+	public function reportMessage( $message ) {
+		$this->output( $message );
+	}
+
+	/**
+	 * @see Maintenance::execute
+	 */
+	public function execute() {
+		$maintenanceCheck = new MaintenanceCheck();
+		if ( !$maintenanceCheck->canExecute() ) {
+			exit( $maintenanceCheck->getMessage() );
+		}
+
+		$applicationFactory = ApplicationFactory::getInstance();
+		$maintenanceFactory = $applicationFactory->newMaintenanceFactory();
+
+		$this->store = $applicationFactory->getStore(
+			SQLStore::class
+		);
+
+		if ( $this->messageReporter === null ) {
+			$this->messageReporter = $maintenanceFactory->newMessageReporter(
+				[ $this, 'reportMessage' ]
+			);
+		}
+
+		$this->cliMsgFormatter = new CliMsgFormatter();
+
+		$this->messageReporter->reportMessage(
+			"\n" . $this->cliMsgFormatter->head()
+		);
+
+		$this->messageReporter->reportMessage(
+			$this->cliMsgFormatter->section( 'About' )
+		);
+
+		$text = [
+			"This script runs an update on the `smw_countmap` field."
+		];
+
+		$this->messageReporter->reportMessage(
+			"\n" . $this->cliMsgFormatter->wordwrap( $text ) . "\n"
+		);
+
+		$this->messageReporter->reportMessage(
+			$this->cliMsgFormatter->section( 'Field update' ) . "\n"
+		);
+
+		$this->messageReporter->reportMessage(
+			$this->cliMsgFormatter->oneCol( "Fetching fields ..." )
+		);
+
+		$count = $this->getCount();
+		$setupFile = $applicationFactory->singleton( 'SetupFile' );
+
+		if ( $count === false ) {
+			$setupFile->removeIncompleteTask( self::COUNTMAP_INCOMPLETE );
+
+			return $this->messageReporter->reportMessage(
+				$this->cliMsgFormatter->oneCol( "... nothing selected!", 3 )
+			);
+		}
+
+		$this->messageReporter->reportMessage(
+			$this->cliMsgFormatter->twoCols( "... estimating required updates ...", "{$count} (rows)", 3 )
+		);
+
+		$this->runUpdate();
+
+		$setupFile->removeIncompleteTask( self::COUNTMAP_INCOMPLETE );
+	}
+
+	private function getCount() {
+		$connection = $this->store->getConnection( 'mw.db' );
+
+		$this->last = (int)$connection->newSelectQueryBuilder()
+			->select( 'MAX(smw_id)' )
+			->from( SQLStore::ID_TABLE )
+			->caller( __METHOD__ )
+			->fetchField();
+
+		$row = $connection->newSelectQueryBuilder()
+			->select( [
+				'COUNT( smw_id ) AS count',
+			] )
+			->from( SQLStore::ID_TABLE )
+			->where( [
+				'smw_proptable_hash IS NOT NULL',
+				'smw_iw != ' . $connection->addQuotes( SMW_SQL3_SMWDELETEIW ),
+				'smw_iw != ' . $connection->addQuotes( SMW_SQL3_SMWINTDEFIW ),
+			] )
+			->caller( __METHOD__ )
+			->fetchRow();
+
+		if ( $row === false ) {
+			return false;
+		}
+
+		return $row->count;
+	}
+
+	private function runUpdate() {
+		$connection = $this->store->getConnection( 'mw.db' );
+
+		$statsFlusher = PeriodicStatsFlusher::newFromGlobalState();
+
+		for ( $i = 0; $i <= $this->last; $i++ ) {
+
+			$statsFlusher->tick();
+
+			$row = $connection->newSelectQueryBuilder()
+				->select( [
+					'smw_id',
+					'smw_title',
+					'smw_namespace',
+					'smw_iw',
+					'smw_subobject',
+					'smw_rev'
+				] )
+				->from( SQLStore::ID_TABLE )
+				->where( [
+					'smw_id' => $i,
+					'smw_proptable_hash IS NOT NULL',
+					'smw_iw != ' . $connection->addQuotes( SMW_SQL3_SMWDELETEIW ),
+					'smw_iw != ' . $connection->addQuotes( SMW_SQL3_SMWINTDEFIW ),
+				] )
+				->caller( __METHOD__ )
+				->fetchRow();
+
+			if ( $row === false ) {
+				continue;
+			}
+
+			$subject = new WikiPage(
+				$row->smw_title,
+				$row->smw_namespace,
+				$row->smw_iw,
+				$row->smw_subobject
+			);
+
+			$semanticData = $this->store->getSemanticData( $subject );
+			$countMap = [];
+
+			foreach ( $semanticData->getProperties() as $property ) {
+
+				$key = $property->getKey();
+				$pv = $semanticData->getPropertyValues(
+					$property
+				);
+
+				if ( $key === '_INST' ) {
+					$countMap[$key] ??= [];
+
+					foreach ( $pv as $dataItem ) {
+						$countMap[$key] += [ $dataItem->getDBKey() => 1 ];
+					}
+
+				} else {
+					$countMap[$key] = count( $pv );
+				}
+			}
+
+			$countMap = $connection->escape_bytea(
+				HmacSerializer::compress( $countMap )
+			);
+
+			$connection->newInsertQueryBuilder()
+				->insertInto( SQLStore::ID_AUXILIARY_TABLE )
+				->row( [
+					'smw_id' => $row->smw_id,
+					'smw_countmap' => $countMap
+				] )
+				->onDuplicateKeyUpdate()
+				->uniqueIndexFields( [ 'smw_id' ] )
+				->set( [
+					'smw_countmap' => $countMap
+				] )
+				->caller( __METHOD__ )
+				->execute();
+
+			$propgress = $this->cliMsgFormatter->progressCompact( $i, $this->last );
+
+			$this->messageReporter->reportMessage(
+				$this->cliMsgFormatter->twoColsOverride( "... updating (current/last) ...", $propgress, 3 )
+			);
+		}
+
+		$propgress = $this->cliMsgFormatter->progressCompact( $this->last, $this->last );
+
+		$this->messageReporter->reportMessage(
+			$this->cliMsgFormatter->twoColsOverride( "... updating (current/last) ...", $propgress, 3 )
+		);
+
+		$this->messageReporter->reportMessage(
+			"\n" . $this->cliMsgFormatter->oneCol( "... done.", 3 )
+		);
+	}
+
+}
+
+// @codeCoverageIgnoreStart
+$maintClass = updateEntityCountMap::class;
+require_once RUN_MAINTENANCE_IF_MAIN;
+// @codeCoverageIgnoreEnd

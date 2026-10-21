@@ -1,0 +1,17 @@
+{
+	"@metadata": {
+		"authors": [
+			"Bada Kaji",
+			"NehalDaveND",
+			"बडा काजी"
+		]
+	},
+	"translationnotifications-username": "प्रयोगकर्ता नाम:",
+	"translationnotifications-languages": "भाषाहरू",
+	"translationnotifications-lang": "भाषा #$1",
+	"translationnotifications-nolang": "एउटा भाषा छान्नुहोस्",
+	"translationnotifications-cmethod-email": "इमेल",
+	"translationnotifications-cmethod-talkpage": "वार्तालाप",
+	"translationnotifications-priority-high": "उच्च",
+	"translationnotifications-priority-medium": "मझौलो"
+}

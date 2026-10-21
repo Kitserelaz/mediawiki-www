@@ -1,0 +1,31 @@
+{
+	"@metadata": {
+		"authors": [
+			"Aefgh39622",
+			"NP-chaonay",
+			"RidJasper"
+		]
+	},
+	"cirrussearch-desc": "เครื่องมือค้นหาที่ขับเคลื่อนโดย Elasticsearch สำหรับ MediaWiki",
+	"cirrussearch-backend-error": "เราไม่สามารถดำเนินการค้นหาให้เสร็จสมบูรณ์ได้เนื่องจากเกิดปัญหาชั่วคราว โปรดลองอีกครั้งในภายหลัง",
+	"cirrussearch-parse-error": "ไม่เข้าใจแบบสอบถาม กรุณาทำรูปแบบของแบบสอบถามให้ง่ายขึ้น แบบสอบถามถูกบันทึกลงปูมเพื่อทำให้ระบบค้นหาดีขึ้น",
+	"cirrussearch-too-busy-error": "การค้นหาไม่ว่างในขณะนี้ กรุณาลองอีกครั้งในภายหลัง",
+	"cirrussearch-regex-syntax-error": "ไวยากรณ์นิพจน์ปกติผิดพลาดที่ $2: $1",
+	"cirrussearch-regex-too-busy-error": "มีการค้นหานิพจน์ปกติมากเกินไปในขณะนี้ กรุณาลองอีกครั้งในภายหลัง",
+	"cirrussearch-regex-too-complex-error": "นิพจน์ปกติซับซ้อนเกินไป เรียนรู้เพิ่มเติมเกี่ยวกับการทำรูปแบบให้ง่ายขึ้นได้[[mw:Special:MyLanguage/Help:CirrusSearch/RegexTooComplex|ที่นี่]]",
+	"cirrussearch-now-using": "วิกินี้กำลังใช้เครื่องมือค้นหาใหม่ ([[mw:Special:MyLanguage/Help:CirrusSearch|เรียนรู้เพิ่มเติม]])",
+	"cirrussearch-pref-label": "การค้นหาใหม่",
+	"cirrussearch-give-feedback": "ส่งคำติชมของคุณให้กับเรา",
+	"prefs-completion": "การเติมคำค้นให้สมบูรณ์",
+	"cirrussearch-pref-completion-profile-help": "ตั้งค่าลักษณะการทำงานสำหรับคำแนะนำการกรอกข้อมูลอัตโนมัติ (ค้นหาตามที่คุณพิมพ์)\n\n[https://www.mediawiki.org/wiki/Special:MyLanguage/Extension:CirrusSearch/CompletionSuggester ตัวแนะนำการกรอกข้อมูล]เป็นอัลกอรึทึมสำหรับคำแนะนำในการค้นหาโดยแก้ไขคำที่พิมพ์ผิดและแสดงผลลัพธ์ที่เกี่ยวข้องได้ดีขึ้น การค้นหาคำนำหน้าเป็นอัลกอรึทึมคำแนะนำค้นหาตามที่คุณพิมพ์แบบดั้งเดิม",
+	"cirrussearch-completion-profile-fuzzy-pref-name": "ค่าเริ่มต้น (แนะนำ)",
+	"cirrussearch-completion-profile-fuzzy-pref-desc": "สามารถแก้ไขคำที่พิมพ์ผิดได้มากที่สุดถึง 2 คำ และเอาหน้าเปลี่ยนทางที่คล้ายกับชื่อเรื่องหลักมากออกได้",
+	"cirrussearch-completion-profile-strict-pref-name": "โหมดเข้มงวด (ขั้นสูง)",
+	"cirrussearch-completion-profile-strict-pref-desc": "ไม่มีการแก้ไขคำที่พิมพ์ผิด รวมทั้งไม่มีการเพิกเฉยต่อเครื่องหมายกำกับการออกเสียง และผลลัพธ์ที่ได้จะคล้ายกับคำที่ค้นหามาก",
+	"cirrussearch-completion-profile-normal-pref-name": "โหมดหน้าเปลี่ยนทาง (ขั้นสูง)",
+	"cirrussearch-completion-profile-normal-pref-desc": "ไม่มีการแก้ไขคำที่พิมพ์ผิด และแปลงที่อยู่เป็นหน้าเปลี่ยนทางที่ใกล้เคียง",
+	"cirrussearch-completion-profile-classic-pref-name": "การค้นหาคำนำหน้าแบบดั้งเดิม",
+	"cirrussearch-completion-profile-classic-pref-desc": "ไม่มีการแก้ไขคำที่พิมพ์ผิด ผลลัพธ์ที่ได้จะตรงกับคำที่ขึ้นต้นชื่อเรื่อง",
+	"cirrussearch-explore-similar-related-none": "ไม่มีหน้าที่เกี่ยวข้อง",
+	"cirrussearch-article-words": "จำนวนคำในหน้าเนื้อหาทั้งหมด"
+}

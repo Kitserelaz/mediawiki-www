@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Fitoschido",
+			"No se"
+		]
+	},
+	"medik-default": "predeterminado",
+	"medik-desc": "Apariencia sencilla y limpia basada en la biblioteca Bootstrap.",
+	"medik-font-label": "Tamaño de letra",
+	"medik-tools-menu": "Edición y herramientas"
+}

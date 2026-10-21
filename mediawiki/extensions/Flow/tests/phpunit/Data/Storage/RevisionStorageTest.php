@@ -239,7 +239,6 @@ class RevisionStorageTest extends FlowTestCase {
 	private function setWhetherContentUpdatingAllowed( $revisionStorage, $allowContentUpdates ) {
 		$klass = new \ReflectionClass( HeaderRevisionStorage::class );
 		$allowedUpdateColumnsProp = $klass->getProperty( 'allowedUpdateColumns' );
-		$allowedUpdateColumnsProp->setAccessible( true );
 
 		$allowedUpdateColumns = $allowedUpdateColumnsProp->getValue( $revisionStorage );
 
@@ -348,7 +347,8 @@ class RevisionStorageTest extends FlowTestCase {
 		$factory = $this->mockDbFactory();
 		// this expect is the assertion for the test
 		$queryBuilder = $this->createMock( SelectQueryBuilder::class );
-		$queryBuilder->method( $this->logicalOr( 'select', 'from', 'join', 'where', 'andWhere', 'groupBy', 'caller' ) )->willReturnSelf();
+		$queryBuilder->method( $this->logicalOr( 'select', 'from', 'join', 'where', 'andWhere', 'groupBy', 'caller' ) )
+			->willReturnSelf();
 		$queryBuilder->method( 'fetchResultSet' )
 			->willReturn( new FakeResultWrapper( $result ) );
 		$factory->getDB( null )->expects( $this->exactly( $count ) )

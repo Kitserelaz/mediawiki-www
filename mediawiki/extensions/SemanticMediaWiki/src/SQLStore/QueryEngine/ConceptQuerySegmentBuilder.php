@@ -1,0 +1,96 @@
+<?php
+
+namespace SMW\SQLStore\QueryEngine;
+
+use RuntimeException;
+use SMW\Query\Parser as QueryParser;
+use SMW\Query\Query;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 2.2
+ *
+ * @author mwjames
+ */
+class ConceptQuerySegmentBuilder {
+
+	private ?QueryParser $queryParser = null;
+
+	/**
+	 * @since 2.2
+	 */
+	public function __construct(
+		private readonly ConditionBuilder $conditionBuilder,
+		private readonly QuerySegmentListProcessor $querySegmentListProcessor,
+	) {
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param QueryParser $queryParser
+	 */
+	public function setQueryParser( QueryParser $queryParser ): void {
+		$this->queryParser = $queryParser;
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * @param string $conceptDescriptionText
+	 *
+	 * @return QuerySegment|null
+	 */
+	public function getQuerySegmentFrom( $conceptDescriptionText ) {
+		QuerySegment::$qnum = 0;
+
+		$conditionBuilder = $this->conditionBuilder;
+		$conditionBuilder->setSortKeys( [] );
+
+		if ( $this->queryParser === null ) {
+			throw new RuntimeException( 'Missing a QueryParser instance' );
+		}
+
+		$conditionBuilder->buildFromDescription(
+			$this->queryParser->getQueryDescription( $conceptDescriptionText )
+		);
+
+		$qid = $conditionBuilder->getLastQuerySegmentId();
+		$querySegmentList = $conditionBuilder->getQuerySegmentList();
+
+		if ( $qid < 0 ) {
+			return null;
+		}
+
+		// execute query tree, resolve all dependencies
+		$this->querySegmentListProcessor->setQueryMode(
+			Query::MODE_INSTANCES
+		);
+
+		$this->querySegmentListProcessor->setQuerySegmentList(
+			$querySegmentList
+		);
+
+		$this->querySegmentListProcessor->process( $qid );
+
+		return $querySegmentList[$qid ?? ''] ?? null;
+	}
+
+	/**
+	 * @since 2.2
+	 */
+	public function cleanUp(): void {
+		$this->querySegmentListProcessor->setQueryMode( Query::MODE_INSTANCES );
+		$this->querySegmentListProcessor->cleanUp();
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * @return array
+	 */
+	public function getErrors(): array {
+		return $this->conditionBuilder->getErrors();
+	}
+
+}

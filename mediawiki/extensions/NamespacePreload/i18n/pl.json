@@ -1,0 +1,9 @@
+{
+  "@metadata": {
+	"authors": [
+	  "Ostrzyciel"
+	]
+  },
+  "namespacePreload": "NamespacePreload",
+  "namespacePreload-desc": "Wczytuje szablony na nowo tworzonych stronach na podstawie ich przestrzeni nazw."
+}

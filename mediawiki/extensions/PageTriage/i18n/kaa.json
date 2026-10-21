@@ -1,0 +1,20 @@
+{
+	"@metadata": {
+		"authors": [
+			"Ajiniyaz",
+			"Ajiniyaz Nurniyazov",
+			"Nurlan"
+		]
+	},
+	"pagetriage-unreviewed-article-count": "$1 {{PLURAL:$1|maqala|maqalalar}} hám $2 {{PLURAL:$2|baǵdarlaw|baǵdarlawlar}} kórip shıǵılmaǵan (eń eskisi: $3)",
+	"pagetriage-reviewed-article-count-past-week": "Usı háptede $1 {{PLURAL:$1|maqala|maqalalar}} hám $2 {{PLURAL:$2|baǵdarlaw|baǵdarlawlar}} kórip shıǵıldı",
+	"pagetriage-filter-bot-edits": "Botlar",
+	"pagetriage-filter-autopatrolled-edits": "Avtopatrul etilgen paydalanıwshılar",
+	"pagetriage-filter-user-heading": "Jaratqanlar:",
+	"pagetriage-filter-non-autoconfirmed": "Jańa kelgenler (avtomatik tastıyıqlanbaǵanlar)",
+	"pagetriage-filter-learners": "Úyreniwshiler (jańadan avtomatik tastıyıqlanǵanlar)",
+	"pagetriage-filter-blocked": "Bloklanǵan paydalanıwshılar",
+	"pagetriage-filter-stat-namespace": "Atamalar kópligi",
+	"pagetriage-auto-refresh-list": "Avto-jańalaw",
+	"log-action-filter-pagetriage-curation-delete": "Óshirilip atır"
+}

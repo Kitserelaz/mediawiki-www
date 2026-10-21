@@ -1,0 +1,97 @@
+{
+	"openapi": "3.1.0",
+	"info": {
+		"title": "Wikibase REST API",
+		"version": "1.1",
+		"description": "OpenAPI definition of Wikibase REST API",
+		"contact": {
+			"name": "Wikimedia Deutschland - Wikibase Product Platform Team",
+			"url": "https://phabricator.wikimedia.org/project/board/6692/"
+		},
+		"license": {
+			"name": "GNU General Public License v2.0 or later",
+			"url": "https://spdx.org/licenses/GPL-2.0-or-later.html"
+		}
+	},
+	"paths": {
+		"$ref": "./resources/index.json"
+	},
+	"components": {
+		"parameters": {
+			"$ref": "./global/parameters.json"
+		},
+		"requestBodies": {
+			"$ref": "./global/requests.json"
+		},
+		"responses": {
+			"$ref": "./global/responses.json"
+		},
+		"schemas": {
+			"$ref": "./global/schemas.json"
+		},
+		"examples": {
+			"$ref": "./global/examples.json"
+		}
+	},
+	"tags": [
+		{
+			"name": "items",
+			"description": "Wikibase Items",
+			"externalDocs": {
+				"description": "Wikibase Data Model - Items",
+				"url": "https://www.mediawiki.org/wiki/Wikibase/DataModel#Items"
+			}
+		},
+		{
+			"name": "sitelinks",
+			"description": "Wikibase Item Sitelinks",
+			"externalDocs": {
+				"description": "Wikibase Data Model - Sitelinks",
+				"url": "https://www.mediawiki.org/wiki/Wikibase/DataModel#Sitelinks"
+			}
+		},
+		{
+			"name": "properties",
+			"description": "Wikibase Properties",
+			"externalDocs": {
+				"description": "Wikibase Data Model - Properties",
+				"url": "https://www.mediawiki.org/wiki/Wikibase/DataModel#Properties"
+			}
+		},
+		{
+			"name": "labels",
+			"description": "Wikibase Labels",
+			"externalDocs": {
+				"description": "Wikibase Data Model - Terms",
+				"url": "https://www.mediawiki.org/wiki/Wikibase/DataModel#EntityDescriptions_of_Items_and_Properties"
+			}
+		},
+		{
+			"name": "descriptions",
+			"description": "Wikibase Descriptions",
+			"externalDocs": {
+				"description": "Wikibase Data Model - Terms",
+				"url": "https://www.mediawiki.org/wiki/Wikibase/DataModel#EntityDescriptions_of_Items_and_Properties"
+			}
+		},
+		{
+			"name": "aliases",
+			"description": "Wikibase Aliases",
+			"externalDocs": {
+				"description": "Wikibase Data Model - Terms",
+				"url": "https://www.mediawiki.org/wiki/Wikibase/DataModel#EntityDescriptions_of_Items_and_Properties"
+			}
+		},
+		{
+			"name": "statements",
+			"description": "Wikibase Statements",
+			"externalDocs": {
+				"description": "Wikibase Data Model - Statements",
+				"url": "https://www.mediawiki.org/wiki/Wikibase/DataModel#Statements"
+			}
+		}
+	],
+	"servers": [
+		{ "url": "https://wikibase.example/w/rest.php/wikibase/v1" }
+	]
+}

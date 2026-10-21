@@ -1,0 +1,110 @@
+<?php
+
+namespace SMW\SQLStore\Lookup;
+
+use SMW\DataItems\WikiPage;
+use SMW\SQLStore\EntityStore\IdCacheManager;
+use SMW\SQLStore\RedirectStore;
+use SMW\SQLStore\SQLStore;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 2.5
+ *
+ * @author mwjames
+ */
+class RedirectTargetLookup {
+
+	/**
+	 * Only attempt to lookup from cache
+	 */
+	const PREPARE_CACHE = 'redirect/cache';
+
+	/**
+	 * Only attempt to lookup from cache
+	 */
+	const CACHE_ONLY = 'cache/only';
+
+	private IdCacheManager $inMemoryCacheManager;
+
+	/**
+	 * @since 2.5
+	 */
+	public function __construct(
+		private readonly SQLStore $store,
+		IdCacheManager $inMemoryCacheManager,
+	) {
+		$this->inMemoryCacheManager = $inMemoryCacheManager;
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @param array $list
+	 */
+	public function prepareCache( array $list ): void {
+		$ids = array_keys( $list );
+
+		if ( $ids === [] ) {
+			return;
+		}
+
+		$source = $this->inMemoryCacheManager->get( IdCacheManager::REDIRECT_SOURCE );
+		$target = $this->inMemoryCacheManager->get( IdCacheManager::REDIRECT_TARGET );
+
+		$connection = $this->store->getConnection( 'mw.db' );
+
+		$rows = $connection->newSelectQueryBuilder()
+			->select( [
+				'o_id',
+				's_title',
+				's_namespace',
+			] )
+			->from( RedirectStore::TABLE_NAME )
+			->where( [
+				'o_id' => $ids
+			] )
+			->caller( __METHOD__ )
+			->fetchResultSet();
+
+		foreach ( $rows as $row ) {
+
+			// Matching target to source
+			[ $title, $namespace, $interwiki, $subobject ] = explode( "#", $list[$row->o_id] );
+
+			$hash = IdCacheManager::computeSha1(
+				[ $title, (int)$namespace, $interwiki, $subobject ]
+			);
+
+			$source->save( $hash, "$row->s_title#$row->s_namespace##" );
+
+			// Matching source to target
+			$hash = IdCacheManager::computeSha1(
+				[ $row->s_title, (int)$row->s_namespace, '', '' ]
+			);
+
+			$target->save( $hash, "$title#$namespace##" );
+		}
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @param WikiPage $target
+	 * @param string|null $flag
+	 *
+	 * @return WikiPage|false
+	 */
+	public function findRedirectSource( WikiPage $target, ?string $flag = null ): WikiPage|false {
+		$cache = $this->inMemoryCacheManager->get(
+			IdCacheManager::REDIRECT_SOURCE
+		);
+
+		if ( $flag === self::CACHE_ONLY && $cache->fetch( $target->getSha1() ) !== false ) {
+			return WikiPage::doUnserialize( $cache->fetch( $target->getSha1() ) );
+		}
+
+		return false;
+	}
+
+}

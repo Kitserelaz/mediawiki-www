@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": [
+			"Winston Sung"
+		]
+	},
+	"eventstreamconfig-desc": "Izlaže konfiguraciju toka događaja u krajnjoj točki priložnika. Možese koristiti za njeno davanje i putem ResourceLoadera",
+	"apihelp-streamconfigs-summary": "Izlaže konfiguraciju toka događaja. Vraća samo format=json s formatversion=2."
+}

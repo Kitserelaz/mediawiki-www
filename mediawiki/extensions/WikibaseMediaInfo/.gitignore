@@ -1,0 +1,14 @@
+.*.swp
+*~
+/.project
+/.idea
+/composer.lock
+/vendor
+/node_modules
+.eslintcache
+.DS_Store
+.env
+/.nyc_output/
+/coverage
+/.vscode/
+/.stylelintcache

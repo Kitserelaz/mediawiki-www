@@ -1,13 +1,13 @@
 <?php
 
-namespace MediaWiki\CheckUser\Tests\Integration\Api;
+namespace MediaWiki\Extension\CheckUser\Tests\Integration\Api;
 
 use MediaWiki\Api\ApiMain;
 use MediaWiki\Api\ApiQuery;
 use MediaWiki\Api\ApiUsageException;
-use MediaWiki\CheckUser\Api\ApiQueryCheckUserLog;
-use MediaWiki\CheckUser\Services\CheckUserLogService;
 use MediaWiki\Deferred\DeferredUpdates;
+use MediaWiki\Extension\CheckUser\Api\ApiQueryCheckUserLog;
+use MediaWiki\Extension\CheckUser\Services\CheckUserLogService;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Tests\Api\ApiTestCase;
 use Wikimedia\TestingAccessWrapper;
@@ -18,7 +18,7 @@ use Wikimedia\Timestamp\ConvertibleTimestamp;
  * @group medium
  * @group Database
  *
- * @covers \MediaWiki\CheckUser\Api\ApiQueryCheckUserLog
+ * @covers \MediaWiki\Extension\CheckUser\Api\ApiQueryCheckUserLog
  */
 class ApiQueryCheckUserLogTest extends ApiTestCase {
 
@@ -38,11 +38,11 @@ class ApiQueryCheckUserLogTest extends ApiTestCase {
 	 * @throws ApiUsageException
 	 */
 	public function doCheckUserLogApiRequest(
-		array $params = [], ?array $session = null, ?Authority $performer = null
+		array $params = [],
+		?array $session = null,
+		?Authority $performer = null
 	) {
-		if ( $performer === null ) {
-			$performer = $this->getTestUser( 'checkuser' )->getAuthority();
-		}
+		$performer ??= $this->getTestUser( 'checkuser' )->getAuthority();
 		return $this->doApiRequest( self::INITIAL_API_PARAMS + $params, $session, false, $performer );
 	}
 
@@ -56,7 +56,10 @@ class ApiQueryCheckUserLogTest extends ApiTestCase {
 		/** @var ApiQuery $query */
 		$query = $main->getModuleManager()->getModule( 'query' );
 		return TestingAccessWrapper::newFromObject( new ApiQueryCheckUserLog(
-			$query, $moduleName, $services->getCommentStore(), $services->get( 'CheckUserLogService' ),
+			$query,
+			$moduleName,
+			$services->getCommentStore(),
+			$services->get( 'CheckUserLogService' ),
 			$services->getUserFactory()
 		) );
 	}
@@ -128,17 +131,29 @@ class ApiQueryCheckUserLogTest extends ApiTestCase {
 
 	/** @dataProvider provideExampleLogEntryDataForReasonFilterTest */
 	public function testReasonFilter(
-		$logType, $targetType, $target, $reason, $targetID, $timestamp, $reasonToSearchFor, $shouldSeeEntry
+		$logType,
+		$targetType,
+		$target,
+		$reason,
+		$targetID,
+		$timestamp,
+		$reasonToSearchFor,
+		$shouldSeeEntry
 	) {
 		ConvertibleTimestamp::setFakeTime( $timestamp );
 		/** @var CheckUserLogService $checkUserLogService */
 		$checkUserLogService = $this->getServiceContainer()->get( 'CheckUserLogService' );
 		$checkUserLogService->addLogEntry(
-			$this->getTestSysop()->getUser(), $logType, $targetType, $target, $reason, $targetID
+			$this->getTestSysop()->getUser(),
+			$logType,
+			$targetType,
+			$target,
+			$reason,
+			$targetID
 		);
 		DeferredUpdates::doUpdates();
 		$result = $this->doCheckUserLogApiRequest( [
-			'culreason' => $reasonToSearchFor
+			'culreason' => $reasonToSearchFor,
 		] )[0]['query']['checkuserlog']['entries'];
 		if ( $shouldSeeEntry ) {
 			$this->assertCount( 1, $result, 'A search for the reason should show one entry.' );
@@ -146,15 +161,19 @@ class ApiQueryCheckUserLogTest extends ApiTestCase {
 			$this->assertCount( 0, $result, 'A search for the reason should show no entries.' );
 		}
 		$result = $this->doCheckUserLogApiRequest( [
-			'culreason' => $checkUserLogService->getPlaintextReason( $reasonToSearchFor )
+			'culreason' => $checkUserLogService->getPlaintextReason( $reasonToSearchFor ),
 		] )[0]['query']['checkuserlog']['entries'];
 		if ( $shouldSeeEntry ) {
 			$this->assertCount(
-				1, $result, 'A search for the plaintext version of the reason should show one entry.'
+				1,
+				$result,
+				'A search for the plaintext version of the reason should show one entry.'
 			);
 		} else {
 			$this->assertCount(
-				0, $result, 'A search for the plaintext version of the reason should show no entries.'
+				0,
+				$result,
+				'A search for the plaintext version of the reason should show no entries.'
 			);
 		}
 	}
@@ -175,7 +194,12 @@ class ApiQueryCheckUserLogTest extends ApiTestCase {
 		/** @var CheckUserLogService $checkUserLogService */
 		$checkUserLogService = $this->getServiceContainer()->get( 'CheckUserLogService' );
 		$checkUserLogService->addLogEntry(
-			$this->getTestSysop()->getUser(), $logType, $targetType, $target, $reason, $targetID
+			$this->getTestSysop()->getUser(),
+			$logType,
+			$targetType,
+			$target,
+			$reason,
+			$targetID
 		);
 		DeferredUpdates::doUpdates();
 		$result = $this->doCheckUserLogApiRequest()[0]['query']['checkuserlog']['entries'];
@@ -186,7 +210,7 @@ class ApiQueryCheckUserLogTest extends ApiTestCase {
 				'checkuser' => $this->getTestSysop()->getUserIdentity()->getName(),
 				'type' => $logType,
 				'reason' => $reason,
-				'target' => $target
+				'target' => $target,
 			],
 			$result[0],
 			'CheckUserLog entry returned was not correct.'
@@ -207,11 +231,16 @@ class ApiQueryCheckUserLogTest extends ApiTestCase {
 		/** @var CheckUserLogService $checkUserLogService */
 		$checkUserLogService = $this->getServiceContainer()->get( 'CheckUserLogService' );
 		$checkUserLogService->addLogEntry(
-			$this->getTestSysop()->getUser(), 'userips', 'user', $target, 'test', $targetID
+			$this->getTestSysop()->getUser(),
+			'userips',
+			'user',
+			$target,
+			'test',
+			$targetID
 		);
 		DeferredUpdates::doUpdates();
 		$result = $this->doCheckUserLogApiRequest( [
-			'cultarget' => $target
+			'cultarget' => $target,
 		] )[0]['query']['checkuserlog']['entries'];
 		$this->assertCount(
 			1,
@@ -226,11 +255,15 @@ class ApiQueryCheckUserLogTest extends ApiTestCase {
 		/** @var CheckUserLogService $checkUserLogService */
 		$checkUserLogService = $this->getServiceContainer()->get( 'CheckUserLogService' );
 		$checkUserLogService->addLogEntry(
-			$this->getTestSysop()->getUser(), 'ipusers', 'ip', $target, 'test'
+			$this->getTestSysop()->getUser(),
+			'ipusers',
+			'ip',
+			$target,
+			'test'
 		);
 		DeferredUpdates::doUpdates();
 		$result = $this->doCheckUserLogApiRequest( [
-			'cultarget' => $target
+			'cultarget' => $target,
 		] )[0]['query']['checkuserlog']['entries'];
 		$this->assertCount(
 			1,

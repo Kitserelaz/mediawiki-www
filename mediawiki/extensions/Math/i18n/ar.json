@@ -10,6 +10,7 @@
 			"Maroen1990",
 			"Meno25",
 			"Mido",
+			"Mohammed Qays",
 			"Moud hosny",
 			"Omda4wady",
 			"SaldırganSincap",
@@ -86,6 +87,7 @@
 	"math_invalidresponse": "$1: رد غير صحيح (\"$3\") من الخادم \"$2\":",
 	"math_invalidxml": "MathML أو SVG هو XML غير صحيح.",
 	"math_mathoid_error": "خطأ في التحويل. أبلغ الخادوم («$1») عن: «$2»",
+	"math_other_error": "خطأ آخر: $1",
 	"math-status-introduction": "هذه الصفحة تعرض المعلومات حول {{PLURAL:$1|نمط|أنماط}} عرض الرياضيات.\n\n{{PLURAL:$1|نمط|أنماط}} العرض التالية مفعلة:",
 	"math_syntax_error": "خطأ في الصياغة",
 	"math_timeout": "$1 انتهاء الوقت من \"$2\".",
@@ -108,7 +110,7 @@
 	"mw-math-latexml": "LaTeXML (تجريبي؛ يستخدم MathML)",
 	"mw-math-mathjax": "عرض MathJax من جانب العميل (للمتصفحات ذات دعم MathML المحدود)",
 	"mw-math-mathml": "SVG (يمكن تمكين MathML عبر البرنامج المساعد للمتصفح)",
-	"mw-math-native": "MathML (تجريبي ؛ لا توجد صور)",
+	"mw-math-native": "MathML (تجريبي؛ لا توجد صور)",
 	"mw-math-source": "اعرض على هيئة LaTeX (للمتصفحات النصية)",
 	"prefs-math": "رياضيات",
 	"mathstatus": "حالة الرياضيات",
@@ -129,5 +131,7 @@
 	"math-wikibase-special-form-button": "طلب معلومات",
 	"math-wikibase-special-error-header": "خطأ",
 	"math-wikibase-special-error-invalid-argument": "معرف عنصر قاعدة الويكي المحدد غير موجود.",
-	"math-wikibase-special-error-unknown": "حدث خطأ غير معروف أثناء جلب البيانات من ويكي."
+	"math-wikibase-special-error-unknown": "حدث خطأ غير معروف أثناء جلب البيانات من ويكي.",
+	"math-editpage-insert-inline": "صيغة رياضية (مضمنة)",
+	"math-editpage-insert-block": "صيغة رياضية (مربع)"
 }

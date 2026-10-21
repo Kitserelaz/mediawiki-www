@@ -1,0 +1,198 @@
+<?php
+
+namespace SMW\Schema;
+
+use JsonSerializable;
+use MediaWiki\HookContainer\HookContainer;
+use SMW\Schema\Exception\SchemaTypeAlreadyExistsException;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 3.2
+ *
+ * @author mwjames
+ */
+class SchemaTypes implements JsonSerializable {
+
+	private ?HookContainer $hookContainer = null;
+
+	private array $schemaTypes = [];
+
+	private bool $onRegisterSchemaTypes = false;
+
+	/**
+	 * Default types
+	 */
+	private static array $defaultTypes = [
+		'LINK_FORMAT_SCHEMA' => [
+			'group' => SMW_SCHEMA_GROUP_FORMAT,
+			'validation_schema' => 'link-format-schema.v1.json',
+			'type_description' => 'smw-schema-description-link-format-schema'
+		],
+		'SEARCH_FORM_SCHEMA' => [
+			'group' => SMW_SCHEMA_GROUP_SEARCH,
+			'validation_schema' => 'search-form-schema.v1.json',
+			'type_description' => 'smw-schema-description-search-form-schema'
+		],
+		'FACETEDSEARCH_PROFILE_SCHEMA' => [
+			'group' => SMW_SCHEMA_GROUP_SEARCH,
+			'validation_schema' => 'facetedsearch-profile-schema.v1.json',
+			'type_description' => 'smw-schema-description-facetedsearch-profile-schema'
+		],
+		'PROPERTY_GROUP_SCHEMA' => [
+			'group' => SMW_SCHEMA_GROUP_PROPERTY,
+			'validation_schema' => 'property-group-schema.v1.json',
+			'type_description' => 'smw-schema-description-property-group-schema'
+		],
+		'PROPERTY_CONSTRAINT_SCHEMA' => [
+			'group' => SMW_SCHEMA_GROUP_CONSTRAINT,
+			'validation_schema' => 'property-constraint-schema.v1.json',
+			'type_description' => 'smw-schema-description-property-constraint-schema',
+			'change_propagation' => [ '_CONSTRAINT_SCHEMA' ],
+			'usage_lookup' => '_CONSTRAINT_SCHEMA'
+		],
+		'CLASS_CONSTRAINT_SCHEMA' => [
+			'group' => SMW_SCHEMA_GROUP_CONSTRAINT,
+			'validation_schema' => 'class-constraint-schema.v1.json',
+			'type_description' => 'smw-schema-description-class-constraint-schema',
+			'change_propagation' => [ '_CONSTRAINT_SCHEMA' ],
+			'usage_lookup' => '_CONSTRAINT_SCHEMA'
+		],
+		'PROPERTY_PROFILE_SCHEMA' => [
+			'group' => SMW_SCHEMA_GROUP_PROFILE,
+			'validation_schema' => 'property-profile-schema.v1.json',
+			'type_description' => 'smw-schema-description-property-profile-schema',
+			'change_propagation' => '_PROFILE_SCHEMA',
+			'usage_lookup' => '_PROFILE_SCHEMA'
+		]
+	];
+
+	/**
+	 * @since 3.2
+	 */
+	public function __construct( private string $dir = '' ) {
+	}
+
+	/**
+	 * @since 7.0.0
+	 */
+	public function setHookContainer( HookContainer $hookContainer ): void {
+		$this->hookContainer = $hookContainer;
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @param string $dir
+	 *
+	 * @return string
+	 */
+	public function withDir( string $dir = '' ): string {
+		return str_replace( [ '\\', '//', '/', '\\\\' ], DIRECTORY_SEPARATOR, "{$this->dir}/$dir" );
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @param array $schemaTypes
+	 */
+	public function registerSchemaTypes( array $schemaTypes = [] ): void {
+		if ( $this->onRegisterSchemaTypes ) {
+			return;
+		}
+
+		$this->onRegisterSchemaTypes = true;
+
+		foreach ( self::$defaultTypes + $schemaTypes as $key => $value ) {
+
+			if ( isset( $value['validation_schema'] ) ) {
+				$value['validation_schema'] = $this->withDir( $value['validation_schema'] );
+			}
+
+			$this->registerSchemaType( $key, $value );
+		}
+
+		$this->hookContainer->run( 'SMW::Schema::RegisterSchemaTypes', [ $this ] );
+	}
+
+	/**
+	 * This method is provided for hook handlers to register a new schema type
+	 * via the `SMW::Schema::RegisterSchemaTypes` hook.
+	 *
+	 * @since 3.2
+	 *
+	 * @param string $type
+	 * @param array $params
+	 *
+	 * @throws SchemaTypeAlreadyExistsException
+	 */
+	public function registerSchemaType( string $type, array $params ): void {
+		if ( isset( $this->schemaTypes[$type] ) ) {
+			throw new SchemaTypeAlreadyExistsException( $type );
+		}
+
+		$this->schemaTypes[$type] = $params;
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @param string $type
+	 *
+	 * @return array
+	 */
+	public function getType( string $type ): array {
+		return $this->schemaTypes[$type] ?? [];
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @param string|null $type
+	 *
+	 * @return bool
+	 */
+	public function isRegisteredType( ?string $type ): bool {
+		return isset( $this->schemaTypes[$type ?? ''] );
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @return array
+	 */
+	public function getRegisteredTypes(): array {
+		return array_keys( $this->schemaTypes );
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @param string $group
+	 *
+	 * @return array
+	 */
+	public function getRegisteredTypesByGroup( string $group ): array {
+		$registeredTypes = [];
+		$groups = (array)$group;
+
+		foreach ( $this->schemaTypes as $type => $val ) {
+			if ( isset( $val['group'] ) && in_array( $val['group'], $groups ) ) {
+				$registeredTypes[] = $type;
+			}
+		}
+
+		return $registeredTypes;
+	}
+
+	/**
+	 * @see JsonSerializable::jsonSerialize
+	 * @since 3.2
+	 *
+	 * @return string
+	 */
+	public function jsonSerialize(): string {
+		return json_encode( $this->schemaTypes );
+	}
+
+}

@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Mainframe98",
+			"McDutchie"
+		]
+	},
+	"lockauthor-desc": "Voorkomt dat gebruikers pagina's kunnen bewerken die zij niet aangemaakt hebben",
+	"action-editall": "alle pagina's te bewerken",
+	"right-editall": "Alle pagina's bewerken"
+}

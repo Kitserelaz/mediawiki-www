@@ -1,0 +1,153 @@
+<?php
+
+namespace SMW\Utils;
+
+use MediaWiki\Html\Html;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 3.0
+ *
+ * @author mwjames
+ */
+class HtmlDivTable {
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param string $html
+	 * @param array $attributes
+	 *
+	 * @return string
+	 */
+	public static function table( string $html = '', array $attributes = [] ): string {
+		return self::open( $attributes ) . $html . self::close();
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param array $attributes
+	 *
+	 * @return string
+	 */
+	public static function open( array $attributes = [] ) {
+		return Html::openElement(
+			'div',
+			self::mergeAttributes( 'smw-table', $attributes )
+		);
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param string $html
+	 * @param array $attributes
+	 *
+	 * @return string
+	 */
+	public static function header( $html = '', array $attributes = [] ) {
+		return Html::rawElement(
+			'div',
+			self::mergeAttributes( 'smw-table-header', $attributes ),
+			$html
+		);
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param string $html
+	 * @param array $attributes
+	 *
+	 * @return string
+	 */
+	public static function body( $html = '', array $attributes = [] ) {
+		return Html::rawElement(
+			'div',
+			self::mergeAttributes( 'smw-table-body', $attributes ),
+			$html
+		);
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param string $html
+	 * @param array $attributes
+	 *
+	 * @return string
+	 */
+	public static function footer( $html = '', array $attributes = [] ) {
+		return Html::rawElement(
+			'div',
+			self::mergeAttributes( 'smw-table-footer', $attributes ),
+			$html
+		);
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param string $html
+	 * @param array $attributes
+	 *
+	 * @return string
+	 */
+	public static function row( $html = '', array $attributes = [] ) {
+		return Html::rawElement(
+			'div',
+			self::mergeAttributes( 'smw-table-row', $attributes ),
+			$html
+		);
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param string $html
+	 * @param array $attributes
+	 *
+	 * @return string
+	 */
+	public static function cell( $html = '', array $attributes = [] ) {
+		return Html::rawElement(
+			'div',
+			self::mergeAttributes( 'smw-table-cell', $attributes ),
+			$html
+		);
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @return string
+	 */
+	public static function close() {
+		return Html::closeElement(
+			'div'
+		);
+	}
+
+	/**
+	 * @return mixed[]
+	 */
+	private static function mergeAttributes( string $class, array $attr ): array {
+		$attributes = [];
+
+		// A bit of attribute order
+		if ( isset( $attr['id'] ) ) {
+			$attributes['id'] = $attr['id'];
+		}
+
+		if ( isset( $attr['class'] ) ) {
+			$attributes['class'] = $class . ' ' . $attr['class'];
+		} else {
+			$attributes['class'] = $class;
+		}
+
+		$attributes += $attr;
+		return $attributes;
+	}
+
+}

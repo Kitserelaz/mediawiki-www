@@ -1,0 +1,162 @@
+{
+	"name": "Newsletter",
+	"version": "1.2.1",
+	"author": [
+		"Siebrand Mazeland",
+		"Tina Johnson",
+		"Tony Thomas"
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:Newsletter",
+	"descriptionmsg": "newsletter-extension-desc",
+	"license-name": "GPL-2.0-or-later",
+	"requires": {
+		"MediaWiki": ">= 1.43"
+	},
+	"type": "other",
+	"AvailableRights": [
+		"newsletter-create",
+		"newsletter-delete",
+		"newsletter-manage",
+		"newsletter-restore"
+	],
+	"GroupPermissions": {
+		"sysop": {
+			"newsletter-create": true,
+			"newsletter-delete": true,
+			"newsletter-manage": true,
+			"newsletter-restore": true
+		}
+	},
+	"RateLimits": {
+		"newsletter": {
+			"user": [
+				3,
+				3600
+			]
+		},
+		"newsletter-announce": {
+			"user": [
+				2,
+				1800
+			]
+		}
+	},
+	"SpecialPages": {
+		"NewsletterCreate": "MediaWiki\\Extension\\Newsletter\\Specials\\SpecialNewsletterCreate",
+		"Newsletters": "MediaWiki\\Extension\\Newsletter\\Specials\\SpecialNewsletters",
+		"Newsletter": "MediaWiki\\Extension\\Newsletter\\Specials\\SpecialNewsletter"
+	},
+	"APIModules": {
+		"newslettersubscribe": "MediaWiki\\Extension\\Newsletter\\Api\\ApiNewsletterSubscribe"
+	},
+	"MessagesDirs": {
+		"Newsletter": [
+			"i18n",
+			"i18n/api"
+		]
+	},
+	"LogTypes": [
+		"newsletter"
+	],
+	"LogActionsHandlers": {
+		"newsletter/*": "MediaWiki\\Extension\\Newsletter\\Logging\\NewsletterLogFormatter"
+	},
+	"ActionFilteredLogs": {
+		"newsletter": {
+			"issue-added": [
+				"issue-added"
+			],
+			"newsletter-added": [
+				"newsletter-added"
+			],
+			"newsletter-removed": [
+				"newsletter-removed"
+			],
+			"publisher-added": [
+				"publisher-added"
+			],
+			"publisher-removed": [
+				"publisher-removed"
+			]
+		}
+	},
+	"ExtensionMessagesFiles": {
+		"NewsletterAlias": "Newsletter.alias.php",
+		"NewsletterNamespaces": "Newsletter.namespaces.php"
+	},
+	"ContentHandlers": {
+		"NewsletterContent": "MediaWiki\\Extension\\Newsletter\\Content\\NewsletterContentHandler"
+	},
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\Newsletter\\": "includes/"
+	},
+	"DefaultUserOptions": {
+		"echo-subscriptions-web-newsletter": true,
+		"echo-subscriptions-email-newsletter": true
+	},
+	"ResourceModules": {
+		"ext.newsletter.newsletters": {
+			"scripts": "ext.newsletter.newsletters.js",
+			"dependencies": [
+				"mediawiki.api",
+				"oojs-ui"
+			],
+			"messages": [
+				"newsletter-subscribe-button",
+				"newsletter-unsubscribe-button",
+				"newsletter-unsubscribing",
+				"newsletter-subscribing",
+				"newsletter-subscribe-success",
+				"newsletter-subscribe-error",
+				"newsletter-unsubscribe-error",
+				"newsletter-unsubscribe-success"
+			]
+		},
+		"ext.newsletter.newsletters.styles": {
+			"styles": "ext.newsletter.newsletters.styles.css"
+		},
+		"ext.newsletter.newsletter.styles": {
+			"styles": "ext.newsletter.newsletter.styles.css"
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "modules",
+		"remoteExtPath": "Newsletter/modules"
+	},
+	"Hooks": {
+		"LoadExtensionSchemaUpdates": "schema",
+		"BeforeCreateEchoEvent": "MediaWiki\\Extension\\Newsletter\\Hooks::onBeforeCreateEchoEvent",
+		"LoginFormValidErrorMessages": "main",
+		"UserMergeAccountFields": "MediaWiki\\Extension\\Newsletter\\Hooks::onUserMergeAccountFields",
+		"CustomEditor": "main",
+		"ArticleDelete": "main",
+		"PageUndelete": "main",
+		"TitleMove": "main",
+		"ContentModelCanBeUsedOn": "main",
+		"EditFilterMergedContent": "main",
+		"SkinTemplateNavigation::Universal": "main",
+		"getUserPermissionsErrors": "main"
+	},
+	"HookHandlers": {
+		"main": {
+			"class": "MediaWiki\\Extension\\Newsletter\\Hooks"
+		},
+		"schema": {
+			"class": "MediaWiki\\Extension\\Newsletter\\SchemaHooks"
+		}
+	},
+	"namespaces": [
+		{
+			"id": 5500,
+			"constant": "NS_NEWSLETTER",
+			"name": "Newsletter",
+			"defaultcontentmodel": "NewsletterContent"
+		},
+		{
+			"id": 5501,
+			"constant": "NS_NEWSLETTER_TALK",
+			"name": "Newsletter_talk"
+		}
+	],
+	"manifest_version": 2
+}

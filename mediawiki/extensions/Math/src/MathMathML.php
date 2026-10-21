@@ -132,6 +132,7 @@ class MathMathML extends MathRenderer {
 		$this->allowedRootElements = $settings;
 	}
 
+	/** @inheritDoc */
 	public function render() {
 		global $wgMathFullRestbaseURL, $wgMathSvgRenderer;
 		try {
@@ -275,8 +276,6 @@ class MathMathML extends MathRenderer {
 
 	/**
 	 * Does the actual web request to convert TeX to MathML.
-	 *
-	 * @return StatusValue
 	 */
 	protected function doRender(): StatusValue {
 		if ( $this->isEmpty() ) {
@@ -454,12 +453,15 @@ class MathMathML extends MathRenderer {
 	public function getHtmlOutput( bool $svg = true ): string {
 		$config = MediaWikiServices::getInstance()->getMainConfig();
 		$enableLinks = $config->get( "MathEnableFormulaLinks" );
+		$className = 'mwe-math-element';
 		if ( $this->getMathStyle() === 'display' ) {
 			$mml_class = 'mwe-math-mathml-display';
+			$className .= ' mwe-math-element-block';
 		} else {
 			$mml_class = 'mwe-math-mathml-inline';
+			$className .= ' mwe-math-element-inline';
 		}
-		$attribs = [ 'class' => 'mwe-math-element' ];
+		$attribs = [ 'class' => $className ];
 		if ( $this->getID() !== '' ) {
 			$attribs['id'] = $this->getID();
 		}
@@ -490,6 +492,9 @@ class MathMathML extends MathRenderer {
 				'class' => $mml_class,
 			];
 		}
+		if ( ( $this->params['class'] ?? '' ) === 'mathjax_ignore' ) {
+			$mml_attribs['class'] .= ' mathjax_ignore';
+		}
 		$output .= Html::rawElement( 'span', $mml_attribs, $mml );
 		if ( $svg ) {
 			$output .= $this->getFallbackImage();
@@ -505,6 +510,7 @@ class MathMathML extends MathRenderer {
 		return Html::rawElement( 'span', $attribs, $output );
 	}
 
+	/** @inheritDoc */
 	protected function dbOutArray() {
 		$out = parent::dbOutArray();
 		if ( $this->getMathTableName() === 'mathoid' ) {
@@ -514,6 +520,7 @@ class MathMathML extends MathRenderer {
 		return $out;
 	}
 
+	/** @inheritDoc */
 	protected function dbInArray() {
 		$out = parent::dbInArray();
 		if ( $this->getMathTableName() === 'mathoid' ) {

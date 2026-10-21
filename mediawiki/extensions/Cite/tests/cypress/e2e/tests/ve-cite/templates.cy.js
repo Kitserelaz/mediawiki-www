@@ -1,3 +1,4 @@
+require( '@cypress/skip-test/support' );
 import * as helper from './../../utils/functions.helper.js';
 import * as veHelper from './../../utils/ve.helper.js';
 
@@ -11,18 +12,22 @@ let usesCitoid;
 describe( 'Re-using refs in Visual Editor using templates', () => {
 
 	before( () => {
+		veHelper.checkModuleDependencies().then( ( deps ) => {
+			cy.skipOn( !deps.visualEditor || !deps.templateData );
+			usesCitoid = deps.citoid;
+		} );
+
 		cy.clearCookies();
 		helper.loginAsAdmin();
-
 		helper.editPage( 'MediaWiki:Cite-tool-definition.json', JSON.stringify( [
 			{
-				name: 'Webseite',
-				icon: 'ref-cite-web',
+				name: 'web',
+				title: 'Webseite',
 				template: 'Internetquelle'
 			},
 			{
-				name: 'Literatur',
-				icon: 'ref-cite-book',
+				name: 'book',
+				title: 'Literatur',
 				template: 'Literatur'
 			}
 		] ) );
@@ -34,16 +39,12 @@ describe( 'Re-using refs in Visual Editor using templates', () => {
 		cy.clearCookies();
 		helper.editPage( title, wikiText );
 
-		cy.window().then( async ( win ) => {
-			usesCitoid = win.mw.loader.getModuleNames().includes( 'ext.citoid.visualEditor' );
-		} );
-
 		veHelper.setVECookiesToDisableDialogs();
 		veHelper.openVEForEditingReferences( title, usesCitoid );
 	} );
 
 	it( 'should add a template reference and verify correct content in both saved and edit mode', () => {
-		cy.contains( '.mw-reflink-text', '[1]' ).type( '{rightarrow}' );
+		cy.contains( '.ve-ui-surface  .mw-reflink-text', '[1]' ).type( '{rightarrow}' );
 
 		if ( usesCitoid ) {
 			cy.get( '.ve-ui-toolbar-group-citoid' ).click();
@@ -60,9 +61,9 @@ describe( 'Re-using refs in Visual Editor using templates', () => {
 
 		} else {
 			cy.get( '.ve-ui-toolbar-group-cite' ).click();
-			cy.get( '.oo-ui-tool-name-cite-Literatur' ).contains( 'Literatur' )
+			cy.get( '.oo-ui-tool-name-cite-book' ).contains( 'Literatur' )
 				.should( 'be.visible' );
-			cy.get( '.oo-ui-tool-name-cite-Webseite' ).contains( 'Webseite' ).click();
+			cy.get( '.oo-ui-tool-name-cite-web' ).contains( 'Webseite' ).click();
 		}
 
 		// Tempalte dialog is displayed with correct content
@@ -78,12 +79,9 @@ describe( 'Re-using refs in Visual Editor using templates', () => {
 		cy.get( '.ve-ui-mwParameterPage-field' ).type( 'test' );
 		// Click on insert button
 		cy.get( '.ve-ui-mwTemplateDialog .oo-ui-processDialog-actions-primary .oo-ui-buttonElement-button' ).click();
-		cy.get( '.ve-ui-toolbar-saveButton' ).click();
-		// Click save changes button
-		cy.get( '.ve-ui-mwSaveDialog .oo-ui-processDialog-navigation .oo-ui-flaggedElement-primary .oo-ui-buttonElement-button' ).click();
 
-		// Success notification should be visible
-		cy.get( '.mw-notification-visible .oo-ui-icon-success' ).should( 'be.visible' );
+		// Save changes
+		veHelper.saveEdits();
 
 		// Ref has been added to references section and has correct content
 		helper.getRefFromReferencesSection( 2 ).find( '.reference-text' ).should( 'have.text', 'Template:Internetquelle' );

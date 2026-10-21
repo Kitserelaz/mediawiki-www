@@ -1,6 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
+			"Aca",
 			"Acamicamacaraca",
 			"BadDog",
 			"Jeeputer",
@@ -9,8 +10,7 @@
 			"Obsuser",
 			"Zenfiric",
 			"Милан Јелисавчић",
-			"Сербијана",
-			"Aca"
+			"Сербијана"
 		]
 	},
 	"templatedata-desc": "Омогућава чување података о параметрима шаблона (користећи JSON)",
@@ -47,7 +47,7 @@
 	"templatedata-doc-param-type-wiki-user-name": "име корисника",
 	"templatedata-doc-params": "Параметри шаблона",
 	"templatedata-editbutton": "Уреди податке о шаблону",
-	"templatedata-errormsg-jsonbadformat": "Неисправан JSON формат. Откажите ову радњу, исправите формат, избришите тренутне ознаке <templatedata> па покушајте поново. Алтернативно, можете наставити да бисте заменили тренутне податке шаблона с новим.",
+	"templatedata-errormsg-jsonbadformat": "Неисправан JSON формат. Можете отказати ову радњу ради исправке, брисања или наставити да бисте заменили тренутне податке шаблона с новим.",
 	"templatedata-errormsg-insertblank": "Желите ли заиста да уметнете податке о шаблону без информација?",
 	"templatedata-exists-on-related-page": "Напомена: Подаци о шаблону већ постоје на страници „[[$1]]”.",
 	"templatedata-helplink": "Информације за податке о шаблону",
@@ -75,6 +75,7 @@
 	"templatedata-modal-button-removemap": "Уклони мапу",
 	"templatedata-modal-button-saveparam": "Сачувај",
 	"templatedata-modal-confirmcancel": "Желите ли заиста да одбаците измене?",
+	"templatedata-modal-button-discard": "Одбаци",
 	"templatedata-modal-current-language": "Тренутни језик: $1",
 	"templatedata-modal-errormsg": "Пронађене грешке. Проверите да нема празних или дуплих имена параметара и да име не садржи „$1”, „$2” или „$3”.",
 	"templatedata-modal-errormsg-duplicate-name": "Пронађена грешка. Одабрано име већ користи други параметар.",
@@ -117,5 +118,25 @@
 	"templatedata-modal-title-templateformat": "Преферирано форматирање параметара",
 	"templatedata-modal-title-templateformatstring": "Ниска прилагођеног формата",
 	"templatedata-modal-title-templateparam-details": "Детаљи параметра: $1",
-	"templatedata-modal-title-templateparams": "Параметри шаблона"
+	"templatedata-modal-title-templateparams": "Параметри шаблона",
+	"templatedata-search-description": "Претрага шаблона",
+	"templatedata-search-placeholder": "Унесите назив странице",
+	"templatedata-search-placeholder-cirrussearch": "Унесите назив шаблона или кључне речи",
+	"templatedata-search-list-header": "Омиљено",
+	"templatedata-search-list-empty": "Шаблони које означите омиљеним ће се појавити овде",
+	"templatedata-search-list-empty-anon": "Молимо пријавите се да означите шаблон омиљеним",
+	"templatedata-favorite-add": "Додај шаблон у омиљене",
+	"templatedata-favorite-added": "Шаблон додат у омиљене",
+	"templatedata-favorite-remove": "Уклони шаблон из омиљених",
+	"templatedata-favorite-removed": "Шаблон уклоњен из омиљених",
+	"templatedata-category-browser-header": "Категорије",
+	"templatedata-category-rootcat": "Шаблони",
+	"templatedata-category-browser-loadmore": "…учитај још",
+	"templatedata-category-column-error": "Дошло је до грешке",
+	"templatedata-category-categories": "Остале категорије",
+	"templatedata-category-no-cats": "Нема.",
+	"templatedata-featured-list-header": "Истакнути",
+	"communityconfiguration-templatedata-featuredtemplates-title": "Истакнути шаблони",
+	"communityconfiguration-templatedata-featuredtemplates-featuredtemplates-titles-label": "Наслови",
+	"templatedata-featured-list-config-link": "Уреди списак истакнутих"
 }

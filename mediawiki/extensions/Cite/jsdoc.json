@@ -1,7 +1,9 @@
 {
 	"opts": {
 		"destination": "docs/js",
+		"package": "package.json",
 		"pedantic": false,
+		"readme": "README.md",
 		"recurse": true,
 		"template": "node_modules/jsdoc-wmf-theme"
 	},
@@ -9,7 +11,7 @@
 		"node_modules/jsdoc-wmf-theme/plugins/default"
 	],
 	"source": {
-		"include": [ "modules", "package.json", "README.md" ]
+		"include": [ "modules" ]
 	},
 	"templates": {
 		"cleverLinks": true,
@@ -19,6 +21,7 @@
 		"wmf": {
 			"repository": "https://gerrit.wikimedia.org/g/mediawiki/extensions/Cite/",
 			"prefixMap": {
+				"TestKitchen.": "https://doc.wikimedia.org/TestKitchen/master/js/{type}.html",
 				"ve.": "https://doc.wikimedia.org/visualeditor-standalone/master/{type}.html",
 				"ve.dm.MW": "https://doc.wikimedia.org/VisualEditor/master/js/{type}.html",
 				"ve.ce.MW": "https://doc.wikimedia.org/VisualEditor/master/js/{type}.html",
@@ -28,6 +31,7 @@
 				"ve.dm.MWGroupReferences": true,
 				"ve.dm.MWReference": true,
 				"ve.ce.MWReference": true,
+				"ve.ui.MWCitation": true,
 				"ve.ui.MWReference": true
 			},
 			"linkMap": {

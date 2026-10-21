@@ -11,6 +11,7 @@ namespace MediaWiki\Extension\DiscussionTools\Notifications;
 
 use DateInterval;
 use DateTimeImmutable;
+use DateTimeZone;
 use Iterator;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Deferred\DeferredUpdates;
@@ -34,28 +35,28 @@ use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Title\Title;
 use MediaWiki\User\UserIdentity;
 use Wikimedia\Assert\Assert;
-use Wikimedia\Parsoid\Core\ResourceLimitExceededException;
-use Wikimedia\Parsoid\Utils\DOMCompat;
-use Wikimedia\Parsoid\Utils\DOMUtils;
+use Wikimedia\Parsoid\Core\DOMCompat;
+use Wikimedia\Parsoid\Ext\DOMUtils;
 use Wikimedia\Rdbms\IDBAccessObject;
 
 class EventDispatcher {
-	/**
-	 * @throws ResourceLimitExceededException
-	 */
-	private static function getParsedRevision( RevisionRecord $revRecord ): ContentThreadItemSet {
-		return HookUtils::parseRevisionParsoidHtml( $revRecord, __METHOD__ );
-	}
+	protected static string $autosubscribe = 'preferences';
 
 	/**
-	 * @throws ResourceLimitExceededException
+	 * Set the autosubscribe preference from an API call
 	 */
+	public static function setAutosubscribe( string $autosubscribe ): void {
+		self::$autosubscribe = $autosubscribe;
+	}
+
+	private static function getParsedRevision( RevisionRecord $revRecord ): ContentThreadItemSet {
+		return HookUtils::parseRevisionParsoidHtml( $revRecord, __METHOD__ )->getValueOrThrow();
+	}
+
 	public static function generateEventsForRevision( array &$events, RevisionRecord $newRevRecord ): void {
 		$services = MediaWikiServices::getInstance();
 
-		$title = Title::newFromLinkTarget(
-			$newRevRecord->getPageAsLinkTarget()
-		);
+		$title = Title::newFromPageIdentity( $newRevRecord->getPage() );
 		if ( !HookUtils::isAvailableForTitle( $title ) ) {
 			// Not a talk page
 			return;
@@ -254,7 +255,7 @@ class EventDispatcher {
 			}
 			// Ignore comments which are more than 10 minutes old, as this may be a user archiving
 			// their own comment. (T290803)
-			$revTimestamp = new DateTimeImmutable( $newRevRecord->getTimestamp() );
+			$revTimestamp = new DateTimeImmutable( $newRevRecord->getTimestamp(), new DateTimeZone( 'UTC' ) );
 			$threshold = $revTimestamp->sub( new DateInterval( 'PT10M' ) );
 			if ( $newComment->getTimestamp() <= $threshold ) {
 				continue;
@@ -349,12 +350,15 @@ class EventDispatcher {
 	 */
 	protected static function addAutoSubscription( UserIdentity $user, Title $title, string $itemName ): void {
 		$dtConfig = MediaWikiServices::getInstance()->getConfigFactory()->makeConfig( 'discussiontools' );
+		if ( $dtConfig->get( 'DiscussionToolsAutoTopicSubEditor' ) !== 'any' ) {
+			return;
+		}
 
 		if (
-			$dtConfig->get( 'DiscussionToolsAutoTopicSubEditor' ) === 'any' &&
-			HookUtils::shouldAddAutoSubscription( $user, $title )
+			( self::$autosubscribe === 'preferences' && HookUtils::shouldAddAutoSubscription( $user, $title ) ) ||
+			self::$autosubscribe === 'yes'
 		) {
-			/** @var SubscriptionStore $parser */
+			/** @var SubscriptionStore $subscriptionStore */
 			$subscriptionStore = MediaWikiServices::getInstance()->getService( 'DiscussionTools.SubscriptionStore' );
 			$subscriptionStore->addAutoSubscriptionForUser( $user, $title, $itemName );
 		}
@@ -395,10 +399,6 @@ class EventDispatcher {
 	 * Log stuff to EventLogging's Schema:TalkPageEvent
 	 * If you don't have EventLogging installed, does nothing.
 	 *
-	 * @param array $addedComments
-	 * @param RevisionRecord $newRevRecord
-	 * @param PageIdentity $title
-	 * @param UserIdentity $identity
 	 * @return bool Whether events were logged
 	 */
 	protected static function logAddedComments(
@@ -493,17 +493,16 @@ class EventDispatcher {
 	/**
 	 * Should the current session be sampled for EventLogging?
 	 *
-	 * @param string $sessionId
 	 * @return bool Whether to sample the session
 	 */
 	protected static function inEventSample( string $sessionId ): bool {
 		global $wgDTSchemaEditAttemptStepSamplingRate, $wgWMESchemaEditAttemptStepSamplingRate;
 		// Sample 6.25%
 		$samplingRate = 0.0625;
-		if ( isset( $wgDTSchemaEditAttemptStepSamplingRate ) ) {
+		if ( $wgDTSchemaEditAttemptStepSamplingRate !== null ) {
 			$samplingRate = $wgDTSchemaEditAttemptStepSamplingRate;
 		}
-		if ( isset( $wgWMESchemaEditAttemptStepSamplingRate ) ) {
+		if ( $wgWMESchemaEditAttemptStepSamplingRate !== null ) {
 			$samplingRate = $wgWMESchemaEditAttemptStepSamplingRate;
 		}
 		if ( $samplingRate === 0 ) {

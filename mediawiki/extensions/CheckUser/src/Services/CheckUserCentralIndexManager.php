@@ -1,13 +1,13 @@
 <?php
 
-namespace MediaWiki\CheckUser\Services;
+namespace MediaWiki\Extension\CheckUser\Services;
 
-use Job;
-use JobQueueGroup;
-use JobSpecification;
-use MediaWiki\CheckUser\CheckUserQueryInterface;
-use MediaWiki\CheckUser\Jobs\UpdateUserCentralIndexJob;
 use MediaWiki\Config\ServiceOptions;
+use MediaWiki\Extension\CheckUser\CheckUserQueryInterface;
+use MediaWiki\Extension\CheckUser\Jobs\UpdateUserCentralIndexJob;
+use MediaWiki\JobQueue\Job;
+use MediaWiki\JobQueue\JobQueueGroup;
+use MediaWiki\JobQueue\JobSpecification;
 use MediaWiki\User\CentralId\CentralIdLookup;
 use MediaWiki\User\TempUser\TempUserConfig;
 use MediaWiki\User\UserFactory;
@@ -17,8 +17,7 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Wikimedia\IPUtils;
 use Wikimedia\Rdbms\IDBAccessObject;
-use Wikimedia\Rdbms\ILoadBalancer;
-use Wikimedia\Rdbms\LBFactory;
+use Wikimedia\Rdbms\ILBFactory;
 use Wikimedia\Timestamp\ConvertibleTimestamp;
 
 /**
@@ -33,33 +32,16 @@ class CheckUserCentralIndexManager implements CheckUserQueryInterface {
 		'CheckUserCuciUserRandomChanceDebounceCutoff',
 	];
 
-	private ServiceOptions $options;
-	private LBFactory $lbFactory;
-	private CentralIdLookup $centralIdLookup;
-	private UserGroupManager $userGroupManager;
-	private JobQueueGroup $jobQueueGroup;
-	private TempUserConfig $tempUserConfig;
-	private UserFactory $userFactory;
-	private LoggerInterface $logger;
-
 	public function __construct(
-		ServiceOptions $options,
-		LBFactory $lbFactory,
-		CentralIdLookup $centralIdLookup,
-		UserGroupManager $userGroupManager,
-		JobQueueGroup $jobQueueGroup,
-		TempUserConfig $tempUserConfig,
-		UserFactory $userFactory,
-		LoggerInterface $logger
+		private readonly ServiceOptions $options,
+		private readonly ILBFactory $lbFactory,
+		private readonly CentralIdLookup $centralIdLookup,
+		private readonly UserGroupManager $userGroupManager,
+		private readonly JobQueueGroup $jobQueueGroup,
+		private readonly TempUserConfig $tempUserConfig,
+		private readonly UserFactory $userFactory,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->options = $options;
-		$this->lbFactory = $lbFactory;
-		$this->centralIdLookup = $centralIdLookup;
-		$this->userGroupManager = $userGroupManager;
-		$this->jobQueueGroup = $jobQueueGroup;
-		$this->tempUserConfig = $tempUserConfig;
-		$this->userFactory = $userFactory;
-		$this->logger = $logger;
 	}
 
 	/**
@@ -72,13 +54,21 @@ class CheckUserCentralIndexManager implements CheckUserQueryInterface {
 	 * @param UserIdentity $performer The performer of the action that was logged to a local CheckUser result table
 	 * @param string|null $ip The IP address used to perform the action
 	 * @param string $domainID The domain ID for the wiki where the action was performed
-	 * @param string $timestamp When the action was performed, as a TS_MW timestamp
+	 * @param string $timestamp When the action was performed, in any format accepted by {@link ConvertibleTimestamp}
 	 * @param bool $hasRevisionId Whether the given action has a revision ID (i.e. is an edit)
 	 * @return void
 	 */
 	public function recordActionInCentralIndexes(
-		UserIdentity $performer, ?string $ip, string $domainID, string $timestamp, bool $hasRevisionId
+		UserIdentity $performer,
+		?string $ip,
+		string $domainID,
+		string $timestamp,
+		bool $hasRevisionId
 	) {
+		// Convert the timestamp to TS_MW format in case we are running on a postgres DB. This is a no-op on other
+		// DB types.
+		$timestamp = ConvertibleTimestamp::convert( TS_MW, $timestamp );
+
 		// Don't record data when the user does not exist locally or is an IP address, as for the user central index
 		// we need a central ID and for the temp edit index the performer has to be a temporary account.
 		if ( !$performer->isRegistered() ) {
@@ -102,7 +92,11 @@ class CheckUserCentralIndexManager implements CheckUserQueryInterface {
 	}
 
 	private function recordActionInTempEditCentralIndex(
-		UserIdentity $performer, ?string $ip, int $wikiMapId, string $timestamp, bool $hasRevisionId
+		UserIdentity $performer,
+		?string $ip,
+		int $wikiMapId,
+		string $timestamp,
+		bool $hasRevisionId
 	) {
 		// We only record edits performed by temporary accounts in this index, so return early if the performer
 		// is not a temporary account or if the action does not have a revision ID (i.e. not an edit). We also
@@ -156,7 +150,10 @@ class CheckUserCentralIndexManager implements CheckUserQueryInterface {
 	 * @return void
 	 */
 	private function recordActionInUserCentralIndex(
-		UserIdentity $performer, ?string $ip, int $wikiMapId, string $timestamp
+		UserIdentity $performer,
+		?string $ip,
+		int $wikiMapId,
+		string $timestamp
 	) {
 		// Don't record actions by users in any of the configured groups that are marked as excluded.
 		if ( count( array_intersect(
@@ -186,7 +183,9 @@ class CheckUserCentralIndexManager implements CheckUserQueryInterface {
 
 		if ( !$centralId ) {
 			$centralId = $this->centralIdLookup->centralIdFromLocalUser(
-				$performer, CentralIdLookup::AUDIENCE_RAW, IDBAccessObject::READ_LATEST
+				$performer,
+				CentralIdLookup::AUDIENCE_RAW,
+				IDBAccessObject::READ_LATEST
 			);
 		}
 
@@ -268,10 +267,7 @@ class CheckUserCentralIndexManager implements CheckUserQueryInterface {
 		// We could not find the wiki ID on the replica, so now try to insert the domain ID on the primary to get
 		// an ID for this wiki. We need to do this using auto-commit mode, so that we can read the value from
 		// the primary DB if the insert fails.
-		$dbDomain = $this->lbFactory->getPrimaryDatabase( self::VIRTUAL_GLOBAL_DB_DOMAIN )->getDomainID();
-		$dbw = $this->lbFactory->getLoadBalancer( self::VIRTUAL_GLOBAL_DB_DOMAIN )->getConnection(
-			DB_PRIMARY, [], $dbDomain, ILoadBalancer::CONN_TRX_AUTOCOMMIT
-		);
+		$dbw = $this->lbFactory->getAutoCommitPrimaryConnection( self::VIRTUAL_GLOBAL_DB_DOMAIN );
 
 		// We could not find the wiki ID on the replica, so now try to insert the domain ID on the primary
 		// to get an ID for this wiki.
@@ -332,7 +328,7 @@ class CheckUserCentralIndexManager implements CheckUserQueryInterface {
 				'cite_ciwm_id' => $wikiId,
 				'cite_ip_hex' => $row->cite_ip_hex,
 				// Use the timestamp as a CAS check to prevent races with concurrent updates to these rows
-				'cite_timestamp' => $row->cite_timestamp
+				'cite_timestamp' => $row->cite_timestamp,
 			] );
 		}
 
@@ -359,7 +355,7 @@ class CheckUserCentralIndexManager implements CheckUserQueryInterface {
 				'ciu_ciwm_id' => $wikiId,
 				'ciu_central_id' => $row->ciu_central_id,
 				// Use the timestamp as a CAS check to prevent races with concurrent updates to these rows
-				'ciu_timestamp' => $row->ciu_timestamp
+				'ciu_timestamp' => $row->ciu_timestamp,
 			] );
 		}
 

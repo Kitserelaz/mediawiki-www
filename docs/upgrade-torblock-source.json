@@ -1,0 +1,7 @@
+{
+  "component": "mediawiki/extensions/TorBlock",
+  "baseline": "86200b93405c05a416650409b828b7563ef6d137",
+  "target": "afb6f6e716d6f59c97aaa13bb5eb3d2c86854108",
+  "preserved_changes": [],
+  "dependency_status": "No production Composer requirements and no component lockfile; uses core dependencies"
+}

@@ -1,7 +1,8 @@
 {
 	"root": true,
 	"extends": [
-		"wikimedia/server",
+		"wikimedia/client/common",
+		"wikimedia/language/es2020",
 		"wikimedia/jquery",
 		"wikimedia/mediawiki",
 		"wikimedia/qunit"
@@ -14,6 +15,15 @@
 	},
 	"rules": {
 		"compat/compat": "off",
-		"qunit/no-loose-assertions": "warn"
+		"max-len": [ "warn", {
+			"code": 120,
+			"tabWidth": 4,
+			"ignorePattern": "^[\\s]*(//|<!--) (es|style)lint-.+",
+			"ignoreUrls": true,
+			"ignoreComments": true,
+			"ignoreRegExpLiterals": true,
+			"ignoreStrings": true,
+			"ignoreTemplateLiterals": true
+		} ]
 	}
 }

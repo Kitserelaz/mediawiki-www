@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Gildo Máquina"
+		]
+	},
+	"globalusage": "Orumeeliwa ilapo sotheene wa ekaruma",
+	"globalusage-on-wiki": "Ovarela ni mulimalelo-awe $2",
+	"globalusage-of-file": "Iwiki iya sinrumeela itthu sinttharelana",
+	"globalusage-more": "Oweha [[{{#Special:GlobalUsage}}/$1|irumeelelo sotheene]] etthu ela."
+}

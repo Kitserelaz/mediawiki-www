@@ -1,24 +1,25 @@
 <?php
 
-namespace MediaWiki\CheckUser\CheckUser\Pagers;
+namespace MediaWiki\Extension\CheckUser\CheckUser\Pagers;
 
-use HtmlArmor;
 use LogicException;
 use MediaWiki\Block\DatabaseBlock;
-use MediaWiki\CheckUser\CheckUser\CheckUserPagerNavigationBuilder;
-use MediaWiki\CheckUser\CheckUser\Widgets\HTMLFieldsetCheckUser;
-use MediaWiki\CheckUser\CheckUserQueryInterface;
-use MediaWiki\CheckUser\HookHandler\Preferences;
-use MediaWiki\CheckUser\Services\CheckUserLogService;
-use MediaWiki\CheckUser\Services\CheckUserLookupUtils;
-use MediaWiki\CheckUser\Services\TokenQueryManager;
+use MediaWiki\Block\DatabaseBlockStore;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Context\RequestContext;
+use MediaWiki\Extension\CheckUser\CheckUser\CheckUserPagerNavigationBuilder;
+use MediaWiki\Extension\CheckUser\CheckUser\Widgets\HTMLFieldsetCheckUser;
+use MediaWiki\Extension\CheckUser\CheckUserQueryInterface;
+use MediaWiki\Extension\CheckUser\HookHandler\Preferences;
+use MediaWiki\Extension\CheckUser\Services\CheckUserLogService;
+use MediaWiki\Extension\CheckUser\Services\CheckUserLookupUtils;
+use MediaWiki\Extension\CheckUser\Services\TokenQueryManager;
 use MediaWiki\Extension\GlobalBlocking\GlobalBlockingServices;
 use MediaWiki\Extension\TorBlock\TorExitNodes;
 use MediaWiki\Html\FormOptions;
 use MediaWiki\Html\Html;
 use MediaWiki\Html\TemplateParser;
+use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\Linker\LinkRenderer;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Navigation\PagerNavigationBuilder;
@@ -30,6 +31,7 @@ use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleValue;
 use MediaWiki\User\CentralId\CentralIdLookup;
 use MediaWiki\User\Options\UserOptionsLookup;
+use MediaWiki\User\TempUser\TempUserConfig;
 use MediaWiki\User\UserFactory;
 use MediaWiki\User\UserGroupManager;
 use MediaWiki\User\UserGroupMembership;
@@ -37,6 +39,9 @@ use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityLookup;
 use MediaWiki\Utils\MWTimestamp;
 use stdClass;
+use UtfNormal\Validator as UtfNormalValidator;
+use Wikimedia\HtmlArmor\HtmlArmor;
+use Wikimedia\IPUtils;
 use Wikimedia\Rdbms\FakeResultWrapper;
 use Wikimedia\Rdbms\IConnectionProvider;
 use Wikimedia\Rdbms\IResultWrapper;
@@ -60,6 +65,15 @@ abstract class AbstractCheckUserPager extends RangeChronologicalPager implements
 	];
 
 	/**
+	 * Form fields that are used as filters for a returned result as keys and their default value as the value.
+	 * Changing these form fields does not cause a CheckUserLog entry as long as no fields are
+	 * changed in {@link self::TOKEN_MANAGED_FIELDS}
+	 */
+	public const FILTER_FIELDS = [
+		'wpHideTemporaryAccounts' => false,
+	];
+
+	/**
 	 * Null if $target is a user.
 	 * Boolean is $target is a IP / range.
 	 *  - False if XFF is not appended
@@ -69,38 +83,18 @@ abstract class AbstractCheckUserPager extends RangeChronologicalPager implements
 	 */
 	protected ?bool $xfor = null;
 
-	/** @var string The type of CheckUserLog entry this check should generate. */
-	private string $logType;
-
-	/** @var FormOptions The submitted form data in a helper class */
-	protected FormOptions $opts;
-
-	protected UserIdentity $target;
-
-	/** @var bool Should Special:CheckUser display Client Hints data. */
-	protected bool $displayClientHints;
-
 	/**
 	 * @var string one of the SpecialCheckUser::SUBTYPE_... constants used by this abstract pager
 	 *  to know what the current checktype is.
 	 */
 	protected string $checkType;
 
-	protected UserGroupManager $userGroupManager;
-	protected CentralIdLookup $centralIdLookup;
-	private TokenQueryManager $tokenQueryManager;
-	private SpecialPageFactory $specialPageFactory;
-	private UserIdentityLookup $userIdentityLookup;
-	private CheckUserLogService $checkUserLogService;
 	protected TemplateParser $templateParser;
-	protected UserFactory $userFactory;
-	protected CheckUserLookupUtils $checkUserLookupUtils;
-	private UserOptionsLookup $userOptionsLookup;
 
 	/**
-	 * @param FormOptions $opts
+	 * @param FormOptions $opts The submitted form data in a helper class
 	 * @param UserIdentity $target
-	 * @param string $logType
+	 * @param string $logType The type of CheckUserLog entry this check should generate.
 	 * @param TokenQueryManager $tokenQueryManager
 	 * @param UserGroupManager $userGroupManager
 	 * @param CentralIdLookup $centralIdLookup
@@ -111,32 +105,32 @@ abstract class AbstractCheckUserPager extends RangeChronologicalPager implements
 	 * @param UserFactory $userFactory
 	 * @param CheckUserLookupUtils $checkUserLookupUtils
 	 * @param UserOptionsLookup $userOptionsLookup
+	 * @param DatabaseBlockStore $blockStore
+	 * @param TempUserConfig $tempUserConfig
 	 * @param IContextSource|null $context
 	 * @param LinkRenderer|null $linkRenderer
-	 * @param ?int $limit
+	 * @param int|null $limit
 	 */
 	public function __construct(
-		FormOptions $opts,
-		UserIdentity $target,
-		string $logType,
-		TokenQueryManager $tokenQueryManager,
-		UserGroupManager $userGroupManager,
-		CentralIdLookup $centralIdLookup,
+		protected FormOptions $opts,
+		protected UserIdentity $target,
+		private readonly string $logType,
+		private readonly TokenQueryManager $tokenQueryManager,
+		protected readonly UserGroupManager $userGroupManager,
+		protected readonly CentralIdLookup $centralIdLookup,
 		IConnectionProvider $dbProvider,
-		SpecialPageFactory $specialPageFactory,
-		UserIdentityLookup $userIdentityLookup,
-		CheckUserLogService $checkUserLogService,
-		UserFactory $userFactory,
-		CheckUserLookupUtils $checkUserLookupUtils,
-		UserOptionsLookup $userOptionsLookup,
+		private readonly SpecialPageFactory $specialPageFactory,
+		private readonly UserIdentityLookup $userIdentityLookup,
+		private readonly CheckUserLogService $checkUserLogService,
+		protected readonly UserFactory $userFactory,
+		protected readonly CheckUserLookupUtils $checkUserLookupUtils,
+		private readonly UserOptionsLookup $userOptionsLookup,
+		protected readonly DatabaseBlockStore $blockStore,
+		protected readonly TempUserConfig $tempUserConfig,
 		?IContextSource $context = null,
 		?LinkRenderer $linkRenderer = null,
-		?int $limit = null
+		?int $limit = null,
 	) {
-		$this->opts = $opts;
-		$this->target = $target;
-		$this->logType = $logType;
-
 		$this->mDb = $dbProvider->getReplicaDatabase();
 
 		parent::__construct( $context, $linkRenderer );
@@ -162,17 +156,6 @@ abstract class AbstractCheckUserPager extends RangeChronologicalPager implements
 
 		$this->mLimitsShown = array_map( 'ceil', $this->mLimitsShown );
 		$this->mLimitsShown = array_unique( $this->mLimitsShown );
-		$this->displayClientHints = $this->getConfig()->get( 'CheckUserDisplayClientHints' );
-
-		$this->userGroupManager = $userGroupManager;
-		$this->centralIdLookup = $centralIdLookup;
-		$this->tokenQueryManager = $tokenQueryManager;
-		$this->specialPageFactory = $specialPageFactory;
-		$this->userIdentityLookup = $userIdentityLookup;
-		$this->checkUserLogService = $checkUserLogService;
-		$this->userFactory = $userFactory;
-		$this->checkUserLookupUtils = $checkUserLookupUtils;
-		$this->userOptionsLookup = $userOptionsLookup;
 
 		$this->templateParser = new TemplateParser( __DIR__ . '/../../../templates' );
 
@@ -251,7 +234,7 @@ abstract class AbstractCheckUserPager extends RangeChronologicalPager implements
 				[],
 				[
 					'type' => 'block',
-					'page' => $userPage->getPrefixedText()
+					'page' => $userPage->getPrefixedText(),
 				]
 			);
 
@@ -315,8 +298,18 @@ abstract class AbstractCheckUserPager extends RangeChronologicalPager implements
 	 */
 	protected function getFormattedTimestamp( string $timestamp ): string {
 		return $this->getLanguage()->userTimeAndDate(
-			wfTimestamp( TS_MW, $timestamp ), $this->getUser()
+			wfTimestamp( TS_MW, $timestamp ),
+			$this->getUser()
 		);
+	}
+
+	/**
+	 * Cleans up a user agent string for display by replacing
+	 * invalid UTF-8 byte sequences with the Unicode replacement
+	 * character (U+FFFD).
+	 */
+	protected function getDisplayableUserAgent( ?string $userAgent ): string {
+		return UtfNormalValidator::cleanUp( $userAgent ?? '' );
 	}
 
 	/**
@@ -356,7 +349,8 @@ abstract class AbstractCheckUserPager extends RangeChronologicalPager implements
 				$lang = $this->getLanguage();
 				$contextUser = $this->getUser();
 				// FIXME: don't pass around parsed messages
-				return $this->msg( 'checkuser-nomatch-edits',
+				return $this->msg(
+					'checkuser-nomatch-edits',
 					$lang->userDate( $lastEditTime, $contextUser ),
 					$lang->userTime( $lastEditTime, $contextUser )
 				)->parseAsBlock() . "\n";
@@ -375,7 +369,7 @@ abstract class AbstractCheckUserPager extends RangeChronologicalPager implements
 
 		// Generate the block flag. Only one will be displayed, with the order of priority being local block, then
 		// global block, then tor exit node block, and finally the account having been previously blocked.
-		$block = DatabaseBlock::newFromTarget( $user, $ip );
+		$block = $this->blockStore->newFromTarget( $user, $ip );
 		if ( $block instanceof DatabaseBlock ) {
 			// Locally blocked
 			$flags[] = $this->getBlockFlag( $block );
@@ -383,7 +377,8 @@ abstract class AbstractCheckUserPager extends RangeChronologicalPager implements
 			$globalBlockLookup = GlobalBlockingServices::wrap( MediaWikiServices::getInstance() )
 				->getGlobalBlockLookup();
 			$globalBlock = $globalBlockLookup->getGlobalBlockingBlock(
-				$ip ?: null, $this->centralIdLookup->centralIdFromLocalUser( $user )
+				$ip ?: null,
+				$this->centralIdLookup->centralIdFromLocalUser( $user )
 			);
 			if ( $globalBlock !== null ) {
 				// Globally blocked IP or user
@@ -408,7 +403,7 @@ abstract class AbstractCheckUserPager extends RangeChronologicalPager implements
 				[
 					'type' => 'block',
 					// @todo Use TitleFormatter and PageReference to avoid the global state
-					'page' => Title::makeTitle( NS_USER, $user->getName() )->getPrefixedText()
+					'page' => Title::makeTitle( NS_USER, $user->getName() )->getPrefixedText(),
 				]
 			);
 			$flags[] = Html::rawElement( 'strong', [ 'class' => 'mw-changeslist-links' ], $blocklog );
@@ -477,7 +472,7 @@ abstract class AbstractCheckUserPager extends RangeChronologicalPager implements
 				'log_type' => [ 'block', 'suppress' ],
 				'log_action' => 'block',
 				'log_namespace' => $userpage->getNamespace(),
-				'log_title' => $userpage->getDBkey()
+				'log_title' => $userpage->getDBkey(),
 			] )
 			->useIndex( 'log_page_time' )
 			->caller( __METHOD__ )
@@ -590,7 +585,6 @@ abstract class AbstractCheckUserPager extends RangeChronologicalPager implements
 	}
 
 	/**
-	 *
 	 * Returns a empty HTML OOUI fieldset which is collapsible.
 	 * Used by checkUserHelper.js and it's where the wikitext
 	 *  table is added into the results page.
@@ -604,6 +598,61 @@ abstract class AbstractCheckUserPager extends RangeChronologicalPager implements
 		} else {
 			return '';
 		}
+	}
+
+	/**
+	 * Returns a collapsible form that allows the user to filter out temporary account
+	 * contributions from the results of a Special:CheckUser check
+	 *
+	 * @return string The HTML of the fieldset
+	 */
+	protected function getCheckUserResultsFilterFieldset(): string {
+		$fields = [];
+
+		// Show a filter to remove temporary accounts from the list, as long as the results could contain
+		// temporary accounts.
+		if ( $this->tempUserConfig->isKnown() && IPUtils::isIPAddress( $this->target->getName() ) ) {
+			$fields['HideTemporaryAccounts'] = [
+				'type' => 'check',
+				'label-message' => 'checkuser-filter-hide-temporary-accounts',
+				'default' => false,
+			];
+		}
+
+		// If there are no filters that apply here, then return early to avoid displaying an empty filters form
+		if ( count( $fields ) === 0 ) {
+			return '';
+		}
+
+		// Add the 'token' field which is used to encode the data stored in the main search form in a way which
+		// cannot be tampered with. We need to pass this so that if the user uses the filter form there will be
+		// no additional CheckUserLog entry created.
+		$tokenManagedFields = array_filter(
+			self::TOKEN_MANAGED_FIELDS,
+			$this->opts->validateName( ... )
+		);
+		$fieldData = [];
+		$fieldData['user'] = $this->target->getName();
+		foreach ( $tokenManagedFields as $field ) {
+			$fieldData[$field] = $this->opts->getValue( $field );
+		}
+		$fields['token'] = [
+			'type' => 'hidden',
+			'default' => $this->tokenQueryManager->updateToken( $this->getRequest(), $fieldData ),
+			'name' => 'token',
+		];
+
+		$fields['wpEditToken'] = [
+			'type' => 'hidden',
+			'default' => $this->getCsrfTokenSet()->getToken(),
+			'name' => 'wpEditToken',
+		];
+
+		$filterForm = HTMLForm::factory( 'ooui', $fields, $this->getContext() );
+		return $filterForm->setWrapperLegendMsg( 'checkuser-filter-title' )
+			->setCollapsibleOptions( true )
+			->prepareForm()
+			->getHTML( false );
 	}
 
 	/**
@@ -778,14 +827,16 @@ abstract class AbstractCheckUserPager extends RangeChronologicalPager implements
 			// Copied from ReverseChronologicalPager::buildQueryInfo
 			if ( $this->endOffset ) {
 				$conds[] = $this->mDb->buildComparison(
-					'<', [ $this->getTimestampField( $table ) => $this->endOffset ]
+					'<',
+					[ $this->getTimestampField( $table ) => $this->endOffset ]
 				);
 			}
 
 			// Copied from RangeChronologicalPager::buildQueryInfo
 			if ( $this->startOffset ) {
 				$conds[] = $this->mDb->buildComparison(
-					'>=', [ $this->getTimestampField( $table ) => $this->startOffset ]
+					'>=',
+					[ $this->getTimestampField( $table ) => $this->startOffset ]
 				);
 			}
 			// Add the data that would normally be returned by this method to an array
@@ -795,3 +846,10 @@ abstract class AbstractCheckUserPager extends RangeChronologicalPager implements
 		return $queryInfo;
 	}
 }
+
+// @codeCoverageIgnoreStart
+/**
+ * @deprecated since 1.46
+ */
+class_alias( AbstractCheckUserPager::class, 'MediaWiki\\CheckUser\\CheckUser\\Pagers\\AbstractCheckUserPager' );
+// @codeCoverageIgnoreEnd

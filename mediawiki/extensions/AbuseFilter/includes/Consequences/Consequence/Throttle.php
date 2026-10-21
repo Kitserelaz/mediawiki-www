@@ -6,8 +6,8 @@ use InvalidArgumentException;
 use MediaWiki\Extension\AbuseFilter\Consequences\ConsequenceNotPrecheckedException;
 use MediaWiki\Extension\AbuseFilter\Consequences\Parameters;
 use MediaWiki\Title\Title;
+use MediaWiki\User\Registration\UserRegistrationLookup;
 use MediaWiki\User\UserEditTracker;
-use MediaWiki\User\UserFactory;
 use Psr\Log\LoggerInterface;
 use Wikimedia\IPUtils;
 use Wikimedia\ObjectCache\BagOStuff;
@@ -16,20 +16,6 @@ use Wikimedia\ObjectCache\BagOStuff;
  * Consequence that delays executing other actions until certain conditions are met
  */
 class Throttle extends Consequence implements ConsequencesDisablerConsequence {
-	/** @var array */
-	private $throttleParams;
-	/** @var BagOStuff */
-	private $mainStash;
-	/** @var UserEditTracker */
-	private $userEditTracker;
-	/** @var UserFactory */
-	private $userFactory;
-	/** @var LoggerInterface */
-	private $logger;
-	/** @var bool */
-	private $filterIsCentral;
-	/** @var string|null */
-	private $centralDB;
 
 	/** @var bool|null */
 	private $hitThrottle;
@@ -39,33 +25,19 @@ class Throttle extends Consequence implements ConsequencesDisablerConsequence {
 
 	/**
 	 * @param Parameters $parameters
-	 * @param array $throttleParams
-	 * @phan-param array{groups:string[],id:int|string,count:int,period:int} $throttleParams
-	 * @param BagOStuff $mainStash
-	 * @param UserEditTracker $userEditTracker
-	 * @param UserFactory $userFactory
-	 * @param LoggerInterface $logger
-	 * @param bool $filterIsCentral
-	 * @param string|null $centralDB
+	 * @param array{groups:string[],id:int|string,count:int,period:int} $throttleParams
 	 */
 	public function __construct(
 		Parameters $parameters,
-		array $throttleParams,
-		BagOStuff $mainStash,
-		UserEditTracker $userEditTracker,
-		UserFactory $userFactory,
-		LoggerInterface $logger,
-		bool $filterIsCentral,
-		?string $centralDB
+		private readonly array $throttleParams,
+		private readonly BagOStuff $mainStash,
+		private readonly UserEditTracker $userEditTracker,
+		private readonly UserRegistrationLookup $userRegistrationLookup,
+		private readonly LoggerInterface $logger,
+		private readonly bool $filterIsCentral,
+		private readonly ?string $centralDB
 	) {
 		parent::__construct( $parameters );
-		$this->throttleParams = $throttleParams;
-		$this->mainStash = $mainStash;
-		$this->userEditTracker = $userEditTracker;
-		$this->userFactory = $userFactory;
-		$this->logger = $logger;
-		$this->filterIsCentral = $filterIsCentral;
-		$this->centralDB = $centralDB;
 	}
 
 	/**
@@ -126,8 +98,6 @@ class Throttle extends Consequence implements ConsequencesDisablerConsequence {
 
 	/**
 	 * Updates the throttle status with the given parameters
-	 *
-	 * @param string $types
 	 */
 	private function setThrottled( string $types ): void {
 		$key = $this->throttleKey( $types );
@@ -138,10 +108,6 @@ class Throttle extends Consequence implements ConsequencesDisablerConsequence {
 		$this->mainStash->incrWithInit( $key, $this->throttleParams['period'] );
 	}
 
-	/**
-	 * @param string $type
-	 * @return string
-	 */
 	private function throttleKey( string $type ): string {
 		$types = explode( ',', $type );
 
@@ -153,19 +119,16 @@ class Throttle extends Consequence implements ConsequencesDisablerConsequence {
 
 		$identifier = sha1( implode( ':', $identifiers ) );
 
+		// TODO: Migration strategy to abusefilter-throttle keygroup
 		if ( $this->parameters->getIsGlobalFilter() && !$this->filterIsCentral ) {
 			return $this->mainStash->makeGlobalKey(
-				'abusefilter', 'throttle', $this->centralDB, $this->throttleParams['id'], $identifier
+				'abusefilter', 'throttle', (string)$this->centralDB, $this->throttleParams['id'], $identifier
 			);
 		}
 
 		return $this->mainStash->makeKey( 'abusefilter', 'throttle', $this->throttleParams['id'], $identifier );
 	}
 
-	/**
-	 * @param string $type
-	 * @return string
-	 */
 	private function throttleIdentifier( string $type ): string {
 		$user = $this->parameters->getUser();
 		switch ( $type ) {
@@ -182,8 +145,7 @@ class Throttle extends Consequence implements ConsequencesDisablerConsequence {
 				$identifier = IPUtils::sanitizeRange( "{$requestIP}/$range" );
 				break;
 			case 'creationdate':
-				// TODO Inject a proper service, not UserFactory, once getRegistration is moved away from User
-				$reg = (int)$this->userFactory->newFromUserIdentity( $user )->getRegistration();
+				$reg = (int)$this->userRegistrationLookup->getRegistration( $user );
 				$identifier = $reg - ( $reg % 86400 );
 				break;
 			case 'editcount':

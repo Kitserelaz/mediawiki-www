@@ -32,12 +32,16 @@ use MediaWiki\Context\RequestContext;
 use MediaWiki\Json\FormatJson;
 use MediaWiki\MediaWikiServices;
 use Wikimedia\IPUtils;
+use Wikimedia\LightweightObjectStore\ExpirationAwareness;
 use Wikimedia\ObjectCache\CachedBagOStuff;
 
 /**
  * Collection of functions maintaining the list of Tor exit nodes.
  */
 class TorExitNodes {
+	private const CACHE_KEY = 'tor-exit-nodes';
+	private const CACHE_TTL = ExpirationAwareness::TTL_DAY;
+
 	/**
 	 * Determine if a given IP is a Tor exit node
 	 *
@@ -66,21 +70,21 @@ class TorExitNodes {
 		}
 
 		return $srvCache->getWithSetCallback(
-			$srvCache->makeGlobalKey( 'tor-exit-nodes' ),
+			$srvCache->makeGlobalKey( self::CACHE_KEY ),
 			$srvCache::TTL_HOUR,
 			function () {
 				$wanCache = MediaWikiServices::getInstance()->getMainWANObjectCache();
 
 				return $wanCache->getWithSetCallback(
-					$wanCache->makeGlobalKey( 'tor-exit-nodes' ),
-					$wanCache::TTL_DAY,
+					$wanCache->makeGlobalKey( self::CACHE_KEY ),
+					self::CACHE_TTL,
 					function () {
 						return self::fetchExitNodes();
 					},
 					[
 						// Avoid stampedes on TOR list servers due to cache expiration
-						'lockTSE' => $wanCache::TTL_DAY,
-						'staleTTL' => $wanCache::TTL_DAY,
+						'lockTSE' => self::CACHE_TTL,
+						'staleTTL' => self::CACHE_TTL,
 						// Avoid stampedes on TOR list servers due to cache eviction
 						'busyValue' => []
 					]
@@ -100,7 +104,7 @@ class TorExitNodes {
 		$nodes = self::fetchExitNodes();
 
 		$wanCache = MediaWikiServices::getInstance()->getMainWANObjectCache();
-		$wanCache->set( $wanCache->makeGlobalKey( 'tor-exit-nodes' ), $nodes, $wanCache::TTL_DAY );
+		$wanCache->set( $wanCache->makeGlobalKey( self::CACHE_KEY ), $nodes, self::CACHE_TTL );
 
 		return $nodes;
 	}
@@ -169,15 +173,20 @@ class TorExitNodes {
 	private static function fetchExitNodesFromOnionooServer() {
 		global $wgTorOnionooServer, $wgTorOnionooCA, $wgTorBlockProxy;
 
-		$url = wfExpandUrl( "$wgTorOnionooServer/details?type=relay&running=true&flag=Exit",
-			PROTO_HTTPS );
+		$services = MediaWikiServices::getInstance();
+
+		$url = $services->getUrlUtils()->expand(
+			"$wgTorOnionooServer/details?type=relay&running=true&flag=Exit&fields=or_addresses,exit_addresses",
+			PROTO_HTTPS
+		);
+
 		$options = [
 			'caInfo' => is_readable( $wgTorOnionooCA ) ? $wgTorOnionooCA : null
 		];
 		if ( $wgTorBlockProxy ) {
 			$options['proxy'] = $wgTorBlockProxy;
 		}
-		$raw = MediaWikiServices::getInstance()->getHttpRequestFactory()->get( $url, $options, __METHOD__ );
+		$raw = $services->getHttpRequestFactory()->get( (string)$url, $options, __METHOD__ );
 
 		if ( $raw === null ) {
 			wfDebugLog( 'torblock', "Got no reply or an invalid reply from $url.\n" );

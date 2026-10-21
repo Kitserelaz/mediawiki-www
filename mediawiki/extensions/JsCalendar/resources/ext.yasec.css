@@ -1,0 +1,30 @@
+/* Styles for FullCalendar v2 */
+
+div.fc {
+	max-width: 800px;
+}
+
+.fc h2 {
+	border-bottom: none;
+}
+
+.fc .fc-event-container a, .fc .fc-event-container a:hover, .fc .fc-event-container a:visited {
+	color: white;
+}
+
+/* Make links within the event easy to see. This is needed due to event font being always white */
+.fc-event a {
+	text-decoration: underline;
+}
+
+
+/* Limit the height of calendar cells (necessary when the snippets are too long) */
+.fc-event {
+	max-height: 150px;
+	overflow-x: hidden;
+	overflow-y: auto;
+}
+
+.eventcalendar .fc-basic-view .fc-body .fc-row {
+	min-height: 6em;
+}

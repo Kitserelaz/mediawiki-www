@@ -2,13 +2,13 @@
 
 namespace MediaWiki\Extension\OAuth\Frontend;
 
+use MediaWiki\Exception\MWException;
 use MediaWiki\Extension\Notifications\AttributeManager;
 use MediaWiki\Extension\Notifications\Formatters\EchoEventPresentationModel;
 use MediaWiki\Extension\OAuth\Backend\Consumer;
 use MediaWiki\Extension\OAuth\Backend\Utils;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\User\User;
-use MWException;
 
 class EchoOAuthStageChangePresentationModel extends EchoEventPresentationModel {
 	/** @var User[] OAuth admins who should be notified about additions to the review queue */
@@ -53,27 +53,32 @@ class EchoOAuthStageChangePresentationModel extends EchoEventPresentationModel {
 		return !( $action === 'propose' && $this->getConsumerStage() !== Consumer::STAGE_PROPOSED );
 	}
 
+	/** @inheritDoc */
 	public function getHeaderMessage() {
 		$action = $this->event->getExtraParam( 'action' );
 		return $this->msg( "notification-oauth-app-$action-title",
 			$this->event->getAgent(), $this->getConsumerName(), $this->getOwner() );
 	}
 
+	/** @inheritDoc */
 	public function getSubjectMessage() {
 		$action = $this->event->getExtraParam( 'action' );
 		return $this->msg( "notification-oauth-app-$action-subject",
 			$this->event->getAgent(), $this->getConsumerName(), $this->getOwner() );
 	}
 
+	/** @inheritDoc */
 	public function getBodyMessage() {
 		$comment = $this->event->getExtraParam( 'comment' );
 		return $comment ? $this->msg( 'notification-oauth-app-body', $comment ) : false;
 	}
 
+	/** @inheritDoc */
 	public function getIconType() {
 		return 'oauth';
 	}
 
+	/** @inheritDoc */
 	public function getPrimaryLink() {
 		$consumerKey = $this->event->getExtraParam( 'app-key' );
 		$action = $this->event->getExtraParam( 'action' );
@@ -95,6 +100,7 @@ class EchoOAuthStageChangePresentationModel extends EchoEventPresentationModel {
 		];
 	}
 
+	/** @inheritDoc */
 	public function getSecondaryLinks() {
 		return [ $this->getAgentLink() ];
 	}
@@ -104,7 +110,7 @@ class EchoOAuthStageChangePresentationModel extends EchoEventPresentationModel {
 	 */
 	protected function getConsumer() {
 		if ( $this->consumer === null ) {
-			$dbr = Utils::getCentralDB( DB_REPLICA );
+			$dbr = Utils::getOAuthDB( DB_REPLICA );
 			$this->consumer =
 				Consumer::newFromKey( $dbr, $this->event->getExtraParam( 'app-key' ) );
 		}
@@ -119,6 +125,8 @@ class EchoOAuthStageChangePresentationModel extends EchoEventPresentationModel {
 			$this->owner = Utils::getLocalUserFromCentralId(
 				$this->event->getExtraParam( 'owner-id' ) );
 		}
+		// No need to check whether the user is hidden, the only messages in which the owner
+		// is a parameter are only shown to the owner.
 		return $this->owner;
 	}
 

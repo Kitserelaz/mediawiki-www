@@ -1,180 +1,148 @@
 <?php
 /**
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 
 namespace MediaWiki\Extension\OATHAuth;
 
 use InvalidArgumentException;
-use MediaWiki\Config\ConfigException;
-use MediaWiki\Context\RequestContext;
+use MediaWiki\CheckUser\Services\CheckUserInsert;
+use MediaWiki\Extension\OATHAuth\Key\AuthKey;
+use MediaWiki\Extension\OATHAuth\Key\WebAuthnKey;
+use MediaWiki\Extension\OATHAuth\Module\IModule;
+use MediaWiki\Extension\OATHAuth\Module\WebAuthn;
 use MediaWiki\Extension\OATHAuth\Notifications\Manager;
 use MediaWiki\Json\FormatJson;
+use MediaWiki\Logging\ManualLogEntry;
+use MediaWiki\MediaWikiServices;
+use MediaWiki\Page\PageReferenceValue;
+use MediaWiki\Registration\ExtensionRegistry;
+use MediaWiki\User\CentralId\CentralIdLookup;
 use MediaWiki\User\CentralId\CentralIdLookupFactory;
-use MediaWiki\User\User;
-use MWException;
+use MediaWiki\User\UserIdentity;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
-use RuntimeException;
 use Wikimedia\ObjectCache\BagOStuff;
 use Wikimedia\Rdbms\IConnectionProvider;
 
 class OATHUserRepository implements LoggerAwareInterface {
-	private IConnectionProvider $dbProvider;
-
-	private BagOStuff $cache;
-
-	private OATHAuthModuleRegistry $moduleRegistry;
-
-	private CentralIdLookupFactory $centralIdLookupFactory;
-
 	private LoggerInterface $logger;
 
 	public function __construct(
-		IConnectionProvider $dbProvider,
-		BagOStuff $cache,
-		OATHAuthModuleRegistry $moduleRegistry,
-		CentralIdLookupFactory $centralIdLookupFactory,
-		LoggerInterface $logger
+		private readonly IConnectionProvider $dbProvider,
+		private readonly BagOStuff $cache,
+		private readonly OATHAuthModuleRegistry $moduleRegistry,
+		private readonly CentralIdLookupFactory $centralIdLookupFactory,
+		LoggerInterface $logger,
 	) {
-		$this->dbProvider = $dbProvider;
-		$this->cache = $cache;
-		$this->moduleRegistry = $moduleRegistry;
-		$this->centralIdLookupFactory = $centralIdLookupFactory;
 		$this->setLogger( $logger );
 	}
 
-	/**
-	 * @param LoggerInterface $logger
-	 */
-	public function setLogger( LoggerInterface $logger ) {
+	public function setLogger( LoggerInterface $logger ): void {
 		$this->logger = $logger;
 	}
 
-	/**
-	 * @param User $user
-	 * @return OATHUser
-	 * @throws ConfigException
-	 * @throws MWException
-	 */
-	public function findByUser( User $user ) {
+	public function findByUser( UserIdentity $user ): OATHUser {
 		$oathUser = $this->cache->get( $user->getName() );
 		if ( !$oathUser ) {
 			$uid = $this->centralIdLookupFactory->getLookup()
-				->centralIdFromLocalUser( $user );
+				->centralIdFromLocalUser( $user, CentralIdLookup::AUDIENCE_RAW );
 			$oathUser = new OATHUser( $user, $uid );
 			$this->loadKeysFromDatabase( $oathUser );
+
 			$this->cache->set( $user->getName(), $oathUser );
 		}
 		return $oathUser;
 	}
 
 	/**
-	 * @param OATHUser $user
-	 * @param string|null $clientInfo
-	 * @throws ConfigException
-	 * @throws MWException
+	 * Used for a "cheap" lookup whether a user has 2FA enabled.
+	 *
+	 * If you have no subsequent need for access to the full OATHUser object,
+	 * or their 2FA keys, use this function, rather than findByUser or similar.
+	 *
+	 * This function will check the cache first. If the OATHUser object is in
+	 * the cache, we can use OATHUser::isTwoFactorAuthEnabled(). If it is not, it
+	 * will query the database to check for oathauth_devices rows for this user.
+	 *
+	 * This can be more performant than loading all the oathauth_devices rows,
+	 * de-serializing them, and potentially decrypting values that would never be
+	 * used.
 	 */
-	public function persist( OATHUser $user, $clientInfo = null ) {
-		if ( !$clientInfo ) {
-			$clientInfo = RequestContext::getMain()->getRequest()->getIP();
+	public function userHas2FAEnabled( UserIdentity $user ): bool {
+		/** @var OATHUser $oathUser */
+		$oathUser = $this->cache->get( $user->getName() );
+		// Use the OATHUser from cache if it exists (though this is HashBagOfStuff, so limited in-process use only)
+		if ( $oathUser ) {
+			return $oathUser->isTwoFactorAuthEnabled();
 		}
-		$prevUser = $this->findByUser( $user->getUser() );
-		$userId = $this->centralIdLookupFactory->getLookup()->centralIdFromLocalUser( $user->getUser() );
-		$moduleId = null;
 
-		$dbw = $this->dbProvider->getPrimaryDatabase( 'virtual-oathauth' );
-		$dbw->startAtomic( __METHOD__ );
-
-		// TODO: only update changed rows
-		$dbw->newDeleteQueryBuilder()
-			->deleteFrom( 'oathauth_devices' )
-			->where( [ 'oad_user' => $userId ] )
+		// Else look it up from the database
+		return $this->dbProvider
+			->getReplicaDatabase( 'virtual-oathauth' )
+			->newSelectQueryBuilder()
+			->from( 'oathauth_devices' )
+			->where( [
+				'oad_user' => $this->centralIdLookupFactory->getLookup()
+					->centralIdFromLocalUser( $user, CentralIdLookup::AUDIENCE_RAW )
+			] )
 			->caller( __METHOD__ )
-			->execute();
-
-		if ( $user->getKeys() ) {
-			// if we have keys, then it means we also have a module, lets fetch it
-			// TODO: get the moduleId from the key instead of user once we support multiple keys
-			$moduleId = $this->moduleRegistry->getModuleId( $user->getModule()->getName() );
-		}
-		foreach ( $user->getKeys() as $key ) {
-			$dbw->newInsertQueryBuilder()
-				->insertInto( 'oathauth_devices' )
-				->row( [
-					'oad_user' => $userId,
-					'oad_type' => $moduleId,
-					'oad_data' => FormatJson::encode( $key->jsonSerialize() )
-				] )
-				->caller( __METHOD__ )
-				->execute();
-		}
-
-		$dbw->endAtomic( __METHOD__ );
-
-		$this->loadKeysFromDatabase( $user );
-
-		$userName = $user->getUser()->getName();
-		$this->cache->set( $userName, $user );
-
-		if ( $prevUser !== false ) {
-			$this->logger->info( 'OATHAuth updated for {user} from {clientip}', [
-				'user' => $userName,
-				'clientip' => $clientInfo,
-				'oldoathtype' => $prevUser->getModule() ? $prevUser->getModule()->getName() : 'disabled',
-				'newoathtype' => $user->getModule() ? $user->getModule()->getName() : 'disabled'
-			] );
-		} else {
-			// If findByUser() has returned false, there was no user row or cache entry
-			$this->logger->info( 'OATHAuth enabled for {user} from {clientip}', [
-				'user' => $userName,
-				'clientip' => $clientInfo,
-				'oathtype' => $user->getModule() ? $user->getModule()->getName() : 'disabled',
-			] );
-			Manager::notifyEnabled( $user );
-		}
+			->fetchRowCount() > 0;
 	}
 
 	/**
-	 * Persists the given OAuth key in the database.
-	 *
-	 * @param OATHUser $user
-	 * @param IModule $module
-	 * @param array $keyData
-	 * @param string $clientInfo
-	 * @return IAuthKey
+	 * Find the user who owns a given User Handle, and load an OATHUser object for them.
+	 * Use this to identify a user when you only have their WebAuthn authentication result.
+	 * @param string $userHandle User Handle value from the user's WebAuthn key
+	 * @return OATHUser|null OATHUser object for the user, or null if no user was found for the
+	 *   given User Handle
 	 */
-	public function createKey( OATHUser $user, IModule $module, array $keyData, string $clientInfo ): IAuthKey {
-		if ( $user->getModule() && $user->getModule()->getName() !== $module->getName() ) {
-			throw new InvalidArgumentException(
-				"User already has a key from a different module enabled ({$user->getModule()->getName()})"
-			);
+	public function findByUserHandle( string $userHandle ): ?OATHUser {
+		$userId = $this->dbProvider
+			->getReplicaDatabase( 'virtual-oathauth' )
+			->newSelectQueryBuilder()
+			->select( 'oah_user' )
+			->from( 'oathauth_user_handles' )
+			->where( [ 'oah_handle' => base64_encode( $userHandle ) ] )
+			->caller( __METHOD__ )
+			->fetchField();
+		if ( $userId === false ) {
+			return null;
 		}
 
-		$userId = $this->centralIdLookupFactory->getLookup()->centralIdFromLocalUser( $user->getUser() );
-		$moduleId = $this->moduleRegistry->getModuleId( $module->getName() );
+		$user = $this->centralIdLookupFactory->getLookup()->localUserFromCentralId(
+			$userId, CentralIdLookup::AUDIENCE_RAW
+		);
+		if ( $user === null ) {
+			return null;
+		}
 
+		$oathUser = new OATHUser( $user, $userId );
+		$oathUser->setUserHandle( $userHandle );
+		$this->loadKeysFromDatabase( $oathUser );
+		$this->cache->set( $user->getName(), $oathUser );
+		return $oathUser;
+	}
+
+	/**
+	 * Persists the given key in the database.
+	 */
+	public function createKey( OATHUser $user, IModule $module, array $keyData, string $clientInfo ): AuthKey {
+		$uid = $user->getCentralId();
+		if ( !$uid ) {
+			throw new InvalidArgumentException( "Can't persist a key for user with no central ID available" );
+		}
+
+		$moduleId = $this->moduleRegistry->getModuleId( $module->getName() );
 		$dbw = $this->dbProvider->getPrimaryDatabase( 'virtual-oathauth' );
+		$createdTimestamp = $dbw->timestamp();
 		$dbw->newInsertQueryBuilder()
 			->insertInto( 'oathauth_devices' )
 			->row( [
-				'oad_user' => $userId,
+				'oad_user' => $uid,
 				'oad_type' => $moduleId,
 				'oad_data' => FormatJson::encode( $keyData ),
-				'oad_created' => $dbw->timestamp(),
+				'oad_created' => $createdTimestamp,
 			] )
 			->caller( __METHOD__ )
 			->execute();
@@ -182,19 +150,36 @@ class OATHUserRepository implements LoggerAwareInterface {
 
 		$hasExistingKey = $user->isTwoFactorAuthEnabled();
 
-		$key = $module->newKey( $keyData + [ 'id' => $id ] );
+		$key = $module->newKey( $keyData + [ 'id' => $id, 'created_timestamp' => $createdTimestamp ] );
 		$user->addKey( $key );
 
-		$this->logger->info( 'OATHAuth {oathtype} key {key} added for {user} from {clientip}', [
+		$this->logger->info( 'OATHAuth added {oathtype} key {key} for {user} from {clientip}', [
 			'key' => $id,
 			'user' => $user->getUser()->getName(),
 			'clientip' => $clientInfo,
 			'oathtype' => $module->getName(),
 		] );
 
+		// If the user added a WebAuthn key, but doesn't have a User Handle yet, add this key's
+		// User Handle to the oathauth_user_handles table
+		if ( $key instanceof WebAuthnKey && $user->getUserHandle() === null ) {
+			$user->setUserHandle( $key->getUserHandle() );
+			$this->insertUserHandle( $user );
+		}
+
 		if ( !$hasExistingKey ) {
-			$user->setModule( $module );
 			Manager::notifyEnabled( $user );
+
+			if ( ExtensionRegistry::getInstance()->isLoaded( 'CheckUser' ) ) {
+				$logEntry = new ManualLogEntry( 'oath', 'enable-self' );
+				$logEntry->setPerformer( $user->getUser() );
+				$logEntry->setTarget(
+					PageReferenceValue::localReference( NS_USER, $user->getUser()->getName() )
+				);
+				/** @var CheckUserInsert $checkUserInsert */
+				$checkUserInsert = MediaWikiServices::getInstance()->get( 'CheckUserInsert' );
+				$checkUserInsert->updateCheckUserData( $logEntry->getRecentChange() );
+			}
 		}
 
 		return $key;
@@ -202,25 +187,18 @@ class OATHUserRepository implements LoggerAwareInterface {
 
 	/**
 	 * Saves an existing key in the database.
-	 *
-	 * @param OATHUser $user
-	 * @param IAuthKey $key
-	 * @return void
 	 */
-	public function updateKey( OATHUser $user, IAuthKey $key ): void {
+	public function updateKey( OATHUser $user, AuthKey $key ): void {
 		$keyId = $key->getId();
 		if ( !$keyId ) {
 			throw new InvalidArgumentException( 'updateKey() can only be used with already existing keys' );
 		}
 
-		$userId = $this->centralIdLookupFactory->getLookup()
-			->centralIdFromLocalUser( $user->getUser() );
-
 		$dbw = $this->dbProvider->getPrimaryDatabase( 'virtual-oathauth' );
 		$dbw->newUpdateQueryBuilder()
 			->table( 'oathauth_devices' )
 			->set( [ 'oad_data' => FormatJson::encode( $key->jsonSerialize() ) ] )
-			->where( [ 'oad_user' => $userId, 'oad_id' => $keyId ] )
+			->where( [ 'oad_user' => $user->getCentralId(), 'oad_id' => $keyId ] )
 			->caller( __METHOD__ )
 			->execute();
 
@@ -230,59 +208,74 @@ class OATHUserRepository implements LoggerAwareInterface {
 		] );
 	}
 
-	/**
-	 * @param OATHUser $user
-	 * @param IAuthKey $key
-	 * @param string $clientInfo
-	 * @param bool $self Whether they disabled it themselves
-	 */
-	public function removeKey( OATHUser $user, IAuthKey $key, string $clientInfo, bool $self ) {
+	private function removeSomeKeys( OATHUser $user, array $where ): void {
+		$this->dbProvider->getPrimaryDatabase( 'virtual-oathauth' )
+			->newDeleteQueryBuilder()
+			->deleteFrom( 'oathauth_devices' )
+			->where( [ 'oad_user' => $user->getCentralId() ] )
+			->where( $where )
+			->caller( __METHOD__ )
+			->execute();
+
+		$this->cache->delete( $user->getUser()->getName() );
+	}
+
+	public function removeKey( OATHUser $user, AuthKey $key, string $clientInfo, bool $self ) {
 		$keyId = $key->getId();
 		if ( !$keyId ) {
 			throw new InvalidArgumentException( 'A non-persisted key cannot be removed' );
 		}
 
-		$userId = $this->centralIdLookupFactory->getLookup()
-			->centralIdFromLocalUser( $user->getUser() );
-		$this->dbProvider->getPrimaryDatabase( 'virtual-oathauth' )
-			->newDeleteQueryBuilder()
-			->deleteFrom( 'oathauth_devices' )
-			->where( [ 'oad_user' => $userId, 'oad_id' => $keyId ] )
-			->caller( __METHOD__ )
-			->execute();
+		$this->removeSomeKeys( $user, [ 'oad_id' => $keyId ] );
+		$user->removeKey( $key );
 
-		// TODO: figure this out from the key itself
-		// After calling ->disable(), getModule() will return null so this
-		// has to be done before.
-		$keyType = $user->getModule()->getName();
-
-		// Remove the key from the user object
-		$user->setKeys(
-			array_values(
-				array_filter(
-					$user->getKeys(),
-					static function ( IAuthKey $key ) use ( $keyId ) {
-						return $key->getId() !== $keyId;
-					}
-				)
-			)
-		);
-
-		if ( !$user->getKeys() ) {
-			$user->setModule( null );
+		$moduleName = $key->getModule();
+		// If the user just deleted their last WebAuthn key, delete their User Handle
+		if ( $moduleName === WebAuthn::MODULE_ID && $user->getKeysForModule( $moduleName ) === [] ) {
+			$this->deleteUserHandle( $user );
 		}
-
-		$userName = $user->getUser()->getName();
-		$this->cache->delete( $userName );
 
 		$this->logger->info( 'OATHAuth removed {oathtype} key {key} for {user} from {clientip}', [
 			'key' => $keyId,
-			'user' => $userName,
+			'user' => $user->getUser()->getName(),
+			'clientip' => $clientInfo,
+			'oathtype' => $key->getModule(),
+		] );
+
+		if ( !$this->moduleRegistry->getModuleByKey( $key->getModule() )->isSpecial() ) {
+			Manager::notifyDisabled( $user, $self );
+		}
+	}
+
+	/**
+	 * @param OATHUser $user
+	 * @param string $keyType As in IModule::getName()
+	 * @param string $clientInfo
+	 * @param bool $self Whether they disabled it themselves
+	 */
+	public function removeAllOfType( OATHUser $user, string $keyType, string $clientInfo, bool $self ) {
+		$moduleId = $this->moduleRegistry->getModuleId( $keyType );
+		if ( !$moduleId ) {
+			throw new InvalidArgumentException( 'Invalid key type: ' . $keyType );
+		}
+
+		$this->removeSomeKeys( $user, [ 'oad_type' => $moduleId ] );
+		$user->removeKeysForModule( $keyType );
+
+		// If the user just deleted all of their WebAuthn keys, delete their User Handle
+		if ( $keyType === WebAuthn::MODULE_ID ) {
+			$this->deleteUserHandle( $user );
+		}
+
+		$this->logger->info( 'OATHAuth removed {oathtype} keys for {user} from {clientip}', [
+			'user' => $user->getUser()->getName(),
 			'clientip' => $clientInfo,
 			'oathtype' => $keyType,
 		] );
 
-		Manager::notifyDisabled( $user, $self );
+		if ( !$this->moduleRegistry->getModuleByKey( $keyType )->isSpecial() ) {
+			Manager::notifyDisabled( $user, $self );
+		}
 	}
 
 	/**
@@ -302,37 +295,31 @@ class OATHUserRepository implements LoggerAwareInterface {
 	 * @param bool $self Whether they disabled it themselves
 	 */
 	public function removeAll( OATHUser $user, $clientInfo, bool $self ) {
-		$userId = $this->centralIdLookupFactory->getLookup()
-			->centralIdFromLocalUser( $user->getUser() );
-		$this->dbProvider->getPrimaryDatabase( 'virtual-oathauth' )
-			->newDeleteQueryBuilder()
-			->deleteFrom( 'oathauth_devices' )
-			->where( [ 'oad_user' => $userId ] )
-			->caller( __METHOD__ )
-			->execute();
+		$this->removeSomeKeys( $user, [] );
 
-		// TODO: figure this out from the key itself
-		// After calling ->disable(), getModule() will return null so this
-		// has to be done before.
-		$keyType = $user->getModule()->getName();
-
+		$keyTypes = array_unique( array_map(
+			static fn ( AuthKey $key ) => $key->getModule(),
+			$user->getKeys()
+		) );
 		$user->disable();
 
-		$userName = $user->getUser()->getName();
-		$this->cache->delete( $userName );
+		$this->deleteUserHandle( $user );
 
 		$this->logger->info( 'OATHAuth disabled for {user} from {clientip}', [
-			'user' => $userName,
+			'user' => $user->getUser()->getName(),
 			'clientip' => $clientInfo,
-			'oathtype' => $keyType,
+			'oathtype' => implode( ',', $keyTypes ),
 		] );
 
 		Manager::notifyDisabled( $user, $self );
 	}
 
 	private function loadKeysFromDatabase( OATHUser $user ): void {
-		$uid = $this->centralIdLookupFactory->getLookup()
-			->centralIdFromLocalUser( $user->getUser() );
+		$uid = $user->getCentralId();
+		if ( !$uid ) {
+			// T379442
+			return;
+		}
 
 		$res = $this->dbProvider
 			->getReplicaDatabase( 'virtual-oathauth' )
@@ -341,6 +328,7 @@ class OATHUserRepository implements LoggerAwareInterface {
 				'oad_id',
 				'oad_data',
 				'oat_name',
+				'oad_created',
 			] )
 			->from( 'oathauth_devices' )
 			->join( 'oathauth_types', null, [ 'oat_id = oad_type' ] )
@@ -348,28 +336,70 @@ class OATHUserRepository implements LoggerAwareInterface {
 			->caller( __METHOD__ )
 			->fetchResultSet();
 
-		$module = null;
-
-		// Clear stored key list before loading keys
+		// Clear the stored key list before loading keys
 		$user->disable();
 
 		foreach ( $res as $row ) {
-			if ( $module && $row->oat_name !== $module->getName() ) {
-				// Not supported by current application-layer code.
-				throw new RuntimeException( "User {$uid} has multiple different two-factor modules defined" );
-			}
+			$module = $this->moduleRegistry->getModuleByKey( $row->oat_name );
+			$keyData = FormatJson::decode( $row->oad_data, true );
 
-			if ( !$module ) {
-				$module = $this->moduleRegistry->getModuleByKey( $row->oat_name );
-				$user->setModule( $module );
+			$user->addKey(
+				$module->newKey( $keyData + [
+					'id' => (int)$row->oad_id,
+					'created_timestamp' => $row->oad_created
+				] )
+			);
+		}
 
-				if ( !$module ) {
-					throw new MWException( 'oathauth-module-invalid' );
+		if ( $user->getUserHandle() === null ) {
+			$userHandle = $this->dbProvider
+				->getReplicaDatabase( 'virtual-oathauth' )
+				->newSelectQueryBuilder()
+				->select( 'oah_handle' )
+				->from( 'oathauth_user_handles' )
+				->where( [ 'oah_user' => $uid ] )
+				->caller( __METHOD__ )
+				->fetchField();
+			if ( $userHandle !== false ) {
+				$user->setUserHandle( base64_decode( $userHandle ) );
+			} else {
+				// If the user has any WebAuthn keys, derive their userHandle from that
+				/** @var WebAuthnKey[] $webauthnKeys */
+				$webauthnKeys = $user->getKeysForModule( WebAuthn::MODULE_ID );
+				'@phan-var WebAuthnKey[] $webauthnKeys';
+				if ( $webauthnKeys ) {
+					$user->setUserHandle( $webauthnKeys[0]->getUserHandle() );
 				}
 			}
-
-			$keyData = FormatJson::decode( $row->oad_data, true );
-			$user->addKey( $module->newKey( $keyData + [ 'id' => (int)$row->oad_id ] ) );
 		}
+	}
+
+	private function insertUserHandle( OATHUser $user ): void {
+		$userHandle = $user->getUserHandle();
+		if ( $userHandle === null ) {
+			return;
+		}
+		$this->dbProvider
+			->getPrimaryDatabase( 'virtual-oathauth' )
+			->newInsertQueryBuilder()
+			->insertInto( 'oathauth_user_handles' )
+			->ignore()
+			->row( [
+				'oah_user' => $user->getCentralId(),
+				'oah_handle' => base64_encode( $userHandle )
+			] )
+			->caller( __METHOD__ )
+			->execute();
+	}
+
+	private function deleteUserHandle( OATHUser $user ): void {
+		$user->setUserHandle( null );
+		$this->dbProvider
+			->getPrimaryDatabase( 'virtual-oathauth' )
+			->newDeleteQueryBuilder()
+			->deleteFrom( 'oathauth_user_handles' )
+			->where( [ 'oah_user' => $user->getCentralId() ] )
+			->caller( __METHOD__ )
+			->execute();
 	}
 }

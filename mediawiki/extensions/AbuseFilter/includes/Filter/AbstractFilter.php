@@ -27,8 +27,7 @@ class AbstractFilter {
 	/**
 	 * @param Specs $specs
 	 * @param Flags $flags
-	 * @param callable|array[] $actions Array with params or callable that will return them
-	 * @phan-param array[]|callable():array[] $actions
+	 * @param array[]|callable():array[] $actions Array with params or callable that will return them
 	 */
 	public function __construct(
 		Specs $specs,
@@ -37,7 +36,7 @@ class AbstractFilter {
 	) {
 		$this->specs = clone $specs;
 		$this->flags = clone $flags;
-		Assert::parameterType( 'callable|array', $actions, '$actions' );
+		Assert::parameterType( [ 'callable', 'array' ], $actions, '$actions' );
 		if ( is_callable( $actions ) ) {
 			$this->actionsCallback = $actions;
 		} elseif ( is_array( $actions ) ) {
@@ -45,37 +44,22 @@ class AbstractFilter {
 		}
 	}
 
-	/**
-	 * @return Specs
-	 */
 	public function getSpecs(): Specs {
 		return clone $this->specs;
 	}
 
-	/**
-	 * @return Flags
-	 */
 	public function getFlags(): Flags {
 		return clone $this->flags;
 	}
 
-	/**
-	 * @return string
-	 */
 	public function getRules(): string {
 		return $this->specs->getRules();
 	}
 
-	/**
-	 * @return string
-	 */
 	public function getComments(): string {
 		return $this->specs->getComments();
 	}
 
-	/**
-	 * @return string
-	 */
 	public function getName(): string {
 		return $this->specs->getName();
 	}
@@ -88,51 +72,34 @@ class AbstractFilter {
 		return $this->specs->getActionsNames();
 	}
 
-	/**
-	 * @return string
-	 */
 	public function getGroup(): string {
 		return $this->specs->getGroup();
 	}
 
-	/**
-	 * @return bool
-	 */
 	public function isEnabled(): bool {
 		return $this->flags->getEnabled();
 	}
 
-	/**
-	 * @return bool
-	 */
 	public function isDeleted(): bool {
 		return $this->flags->getDeleted();
 	}
 
-	/**
-	 * @return bool
-	 */
 	public function isHidden(): bool {
 		return $this->flags->getHidden();
 	}
 
-	/**
-	 * @return bool
-	 */
 	public function isProtected(): bool {
 		return $this->flags->getProtected();
 	}
 
-	/**
-	 * @return int
-	 */
+	public function isSuppressed(): bool {
+		return $this->flags->getSuppressed();
+	}
+
 	public function getPrivacyLevel(): int {
 		return $this->flags->getPrivacyLevel();
 	}
 
-	/**
-	 * @return bool
-	 */
 	public function isGlobal(): bool {
 		return $this->flags->getGlobal();
 	}
@@ -142,16 +109,13 @@ class AbstractFilter {
 	 */
 	public function getActions(): array {
 		if ( $this->actions === null ) {
-			$this->setActions( call_user_func( $this->actionsCallback ) );
+			$this->setActions( ( $this->actionsCallback )() );
 			// This is to ease testing
 			$this->actionsCallback = null;
 		}
 		return $this->actions;
 	}
 
-	/**
-	 * @param array $actions
-	 */
 	protected function setActions( array $actions ): void {
 		$this->actions = $actions;
 		$this->specs->setActionsNames( array_keys( $actions ) );

@@ -1,0 +1,129 @@
+<?php
+
+namespace SMW\SPARQLStore\QueryEngine;
+
+use SMW\Export\Exporter;
+use SMW\Exporter\Element\ExpElement;
+use SMW\Query\Query;
+use SMW\Query\QueryResult;
+use SMW\Store;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 2.0
+ *
+ * @author Markus Krötzsch
+ * @author mwjames
+ */
+class QueryResultFactory {
+
+	/**
+	 * @since 2.0
+	 */
+	public function __construct( private readonly Store $store ) {
+	}
+
+	/**
+	 * @since  2.0
+	 *
+	 * @param Query $query QueryResults hold a reference to original query
+	 * @param bool $hasFurtherResults
+	 *
+	 * @return QueryResult
+	 */
+	public function newEmptyQueryResult( Query $query, $hasFurtherResults = false ): QueryResult {
+		return new QueryResult(
+			$query->getDescription()->getPrintrequests(),
+			$query,
+			[],
+			$this->store,
+			$hasFurtherResults
+		);
+	}
+
+	/**
+	 * This function is used to generate instance query results, and the given
+	 * result wrapper must have an according format (one result column that
+	 * contains URIs of wiki pages).
+	 *
+	 * @param RepositoryResult|null $repositoryResult
+	 * @param Query $query QueryResults hold a reference to original query
+	 *
+	 * @return QueryResult
+	 */
+	public function newQueryResult( ?RepositoryResult $repositoryResult, Query $query ): QueryResult {
+		if ( $repositoryResult === null ) {
+			return $this->newEmptyQueryResult( $query );
+		}
+
+		if ( $query->querymode === Query::MODE_COUNT ) {
+			return $this->makeQueryResultForCount( $repositoryResult, $query );
+		}
+
+		return $this->makeQueryResultForInstance( $repositoryResult, $query );
+	}
+
+	private function makeQueryResultForCount( RepositoryResult $repositoryResult, Query $query ): QueryResult {
+		$queryResult = new QueryResult(
+			$query->getDescription()->getPrintrequests(),
+			$query,
+			[],
+			$this->store,
+			false
+		);
+
+		if ( $repositoryResult->getErrorCode() === RepositoryResult::ERROR_NOERROR ) {
+			$queryResult->setCountValue( $repositoryResult->getNumericValue() );
+		} else {
+			$queryResult->addErrors( [ wfMessage( 'smw_db_sparqlqueryproblem' )->inContentLanguage()->text() ] );
+		}
+
+		return $queryResult;
+	}
+
+	private function makeQueryResultForInstance( RepositoryResult $repositoryResult, Query $query ): QueryResult {
+		$resultDataItems = [];
+
+		foreach ( $repositoryResult as $resultRow ) {
+
+			if ( count( $resultRow ) > 0 && $resultRow[0] instanceof ExpElement ) {
+				$dataItem = Exporter::getInstance()->findDataItemForExpElement( $resultRow[0] );
+
+				if ( $dataItem !== null ) {
+					$resultDataItems[] = $dataItem;
+				}
+			}
+		}
+
+		if ( $repositoryResult->numRows() > $query->getLimit() ) {
+			if ( count( $resultDataItems ) > 1 ) {
+				array_pop( $resultDataItems );
+			}
+			$hasFurtherResults = true;
+		} else {
+			$hasFurtherResults = false;
+		}
+
+		$result = new QueryResult(
+			$query->getDescription()->getPrintrequests(),
+			$query,
+			$resultDataItems,
+			$this->store,
+			$hasFurtherResults
+		);
+
+		switch ( $repositoryResult->getErrorCode() ) {
+			case RepositoryResult::ERROR_NOERROR:
+				break;
+			case RepositoryResult::ERROR_INCOMPLETE:
+				$result->addErrors( [ wfMessage( 'smw_db_sparqlqueryincomplete' )->inContentLanguage()->text() ] );
+				break;
+			default:
+				$result->addErrors( [ wfMessage( 'smw_db_sparqlqueryproblem' )->inContentLanguage()->text() ] );
+				break;
+		}
+
+		return $result;
+	}
+
+}

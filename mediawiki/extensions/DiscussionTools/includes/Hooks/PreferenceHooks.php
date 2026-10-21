@@ -21,23 +21,18 @@ class PreferenceHooks implements
 	GetPreferencesHook
 {
 
-	private Config $config;
-	private LinkRenderer $linkRenderer;
+	private readonly Config $config;
 
 	public function __construct(
 		ConfigFactory $configFactory,
-		LinkRenderer $linkRenderer
+		private readonly LinkRenderer $linkRenderer,
 	) {
 		$this->config = $configFactory->makeConfig( 'discussiontools' );
-		$this->linkRenderer = $linkRenderer;
 	}
 
 	/**
 	 * Rename a key in an array while preserving the order of associative array keys.
 	 *
-	 * @param array $array
-	 * @param string $from
-	 * @param string $to
 	 * @return array Modified array
 	 */
 	private static function arrayRenameKey( array $array, string $from, string $to ): array {
@@ -67,13 +62,6 @@ class PreferenceHooks implements
 			];
 		}
 		foreach ( HookUtils::FEATURES as $feature ) {
-			if (
-				$feature === HookUtils::VISUALENHANCEMENTS_REPLY ||
-				$feature === HookUtils::VISUALENHANCEMENTS_PAGEFRAME
-			) {
-				// Feature is never user-configurable
-				continue;
-			}
 			if ( HookUtils::isFeatureAvailableToUser( $user, $feature ) ) {
 				$preferences["discussiontools-$feature"] = [
 					'type' => 'toggle',
@@ -122,36 +110,27 @@ class PreferenceHooks implements
 			}
 		}
 
-		if ( isset( $preferences['discussiontools-' . HookUtils::SOURCEMODETOOLBAR] ) && (
-			isset( $preferences['discussiontools-' . HookUtils::REPLYTOOL] ) ||
-			isset( $preferences['discussiontools-' . HookUtils::NEWTOPICTOOL] )
-		) ) {
-			// Disable this option when it would have no effect
-			// (both reply tool and new topic tool are disabled)
-			$preferences['discussiontools-' . HookUtils::SOURCEMODETOOLBAR]['disable-if'] = [ 'AND' ];
-
-			if ( isset( $preferences['discussiontools-' . HookUtils::REPLYTOOL] ) &&
-				// GlobalPreferences extension would delete disabled fields, avoid referring to it.
-				!( $preferences['discussiontools-' . HookUtils::REPLYTOOL]['disabled'] ?? false )
-			) {
-				$preferences['discussiontools-' . HookUtils::SOURCEMODETOOLBAR]['disable-if'][] = [
-					'===', 'discussiontools-' . HookUtils::REPLYTOOL, ''
-				];
+		foreach ( HookUtils::FEATURES_DEPENDENCIES as $feature => $dependencies ) {
+			if ( !isset( $preferences["discussiontools-$feature"] ) ) {
+				continue;
 			}
-			if ( isset( $preferences['discussiontools-' . HookUtils::NEWTOPICTOOL] ) ) {
-				$preferences['discussiontools-' . HookUtils::SOURCEMODETOOLBAR]['disable-if'][] = [
-					'===', 'discussiontools-' . HookUtils::NEWTOPICTOOL, ''
-				];
+			$fields = array_filter( $dependencies,
+				static fn ( $dep ) => isset( $preferences["discussiontools-$dep"] ) &&
+					// GlobalPreferences would remove disabled fields, avoid referencing them
+					!( $preferences["discussiontools-$dep"]['disabled'] ?? false )
+			);
+			// Disable the option when it would have no effect: its dependencies
+			// are all disabled by the user or by the conflicting Gadget
+			if ( count( $fields ) ) {
+				$preferences["discussiontools-$feature"]['disable-if'] = [ 'AND' ];
+				foreach ( $fields as $field ) {
+					$preferences["discussiontools-$feature"]['disable-if'][] = [
+						'===', "discussiontools-$field", ''
+					];
+				}
+			} else {
+				$preferences["discussiontools-$feature"]['disabled'] = true;
 			}
-		}
-
-		if ( isset( $preferences['discussiontools-' . HookUtils::AUTOTOPICSUB] ) &&
-			isset( $preferences['discussiontools-' . HookUtils::TOPICSUBSCRIPTION] )
-		) {
-			// Disable automatic subscriptions when subscriptions are disabled
-			$preferences['discussiontools-' . HookUtils::AUTOTOPICSUB]['disable-if'] = [
-				'===', 'discussiontools-' . HookUtils::TOPICSUBSCRIPTION, ''
-			];
 		}
 
 		$preferences['discussiontools-showadvanced'] = [

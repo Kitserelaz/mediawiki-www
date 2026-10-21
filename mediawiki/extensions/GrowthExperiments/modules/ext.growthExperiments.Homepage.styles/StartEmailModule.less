@@ -1,0 +1,40 @@
+@import 'mediawiki.skin.variables.less';
+@import '../utils/variables.less';
+
+.growthexperiments-homepage-module-startemail {
+	width: 100%;
+	background-color: @background-color-growth-subtle;
+	border: unset;
+
+	// Override strong padding-top: 0 rule for mobile from Homepage.less
+	body.mw-special-Homepage.growthexperiments-homepage-mobile-summary .growthexperiments-homepage-container &.growthexperiments-homepage-module {
+		padding-top: 1em;
+	}
+
+	.growthexperiments-homepage-startemail-address-wrapper {
+		font-size: 0.92857em;
+		vertical-align: middle;
+	}
+
+	.growthexperiments-homepage-startemail-address {
+		font-weight: bold;
+	}
+
+	.growthexperiments-homepage-startemail-noemail-link {
+		font-weight: bold;
+	}
+
+	.oo-ui-iconWidget {
+		margin-right: 0.5em;
+
+		&:not( .oo-ui-image-progressive ) {
+			// Simulate #555, closest to @color-subtle
+			opacity: @opacity-icon-subtle;
+		}
+
+		body.mw-special-Homepage.growthexperiments-homepage-mobile-summary & {
+			// Make sure font size is consistent between desktop and mobile
+			font-size: 0.875em;
+		}
+	}
+}

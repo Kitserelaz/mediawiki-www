@@ -1,0 +1,16 @@
+
+> test
+> playwright test auth.spec.js
+
+
+Running 3 tests using 1 worker
+
+(node:96163) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:96163) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 auth.spec.js:15:1 › browser login propagates between local wikis and global logout ends it (26.6s)
+  ✓  2 auth.spec.js:58:1 › editing, Lua, uploads, and thumbnails work in the container (6.2s)
+  ✓  3 auth.spec.js:84:1 › new public and private wikis finish provisioning and private files stay protected (550ms)
+
+  3 passed (35.9s)

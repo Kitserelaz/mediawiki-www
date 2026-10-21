@@ -1,0 +1,43 @@
+{
+	"@metadata": {
+		"authors": [
+			"Bjankuloski06"
+		]
+	},
+	"skinname-mirage": "Привидение",
+	"mirage-skin-desc": "Привидение е одѕивно руво кое се задржува на приказ на содржините со страничник од десно",
+	"mirage.css": "/* Тука поставениот CSS ќе се применува врз корисниците на рувото „Привидение“ */",
+	"mirage.js": "/* Тука поставениот JavaScript ќе се применува врз корисниците на рувото „Привидение“ */",
+	"mirage-community-messages-header": "Пораки на заедницата",
+	"mirage-interface-messages-module-edit-this-message": "Уреди ја поракава",
+	"mirage-page-actions": "Дејства врз страницата",
+	"mirage-jumptonavigation": "Прејди на прегледникот",
+	"mirage-jumptocontent": "Прејди на содржината",
+	"mirage-action-addsection": "Додај тема",
+	"mirage-userpage": "{{GENDER:$1|Корисничка}} страница",
+	"mirage-footer-places": "Места",
+	"mirage-footer-feeds": "Тековници",
+	"mirage-footer-info": "Информации за страницата",
+	"mirage-expand-submenu": "Прикажи ги ставките за подменито",
+	"mirage-talkpage": "Разговорна страница",
+	"mirage-user-tools": "Кориснички алатки",
+	"mirage-no-new-messages": "Немате нови пораки.",
+	"mirage-notifications": "Известувања",
+	"mirage-page-tools": "Алатки за страници",
+	"mirage-hidden-categories": "Скриени категории",
+	"mirage-recent-changes-module": "Скорешни промени",
+	"mirage-more": "Повеќе",
+	"mirage-more-recent-changes": "Погл. повеќе промени",
+	"mirage-toggle-right-rail": "Префрлање на десна пруга",
+	"prefs-mirage-max-width-label": "Ширина на содржината:",
+	"prefs-mirage-max-width": "Секогаш применувај ја најголемата ширина за страница",
+	"prefs-mirage-partial-max-width": "Применувај најголема ширина за страница само во статии",
+	"prefs-mirage-no-max-width": "Оневозможи најголема ширина на страници",
+	"prefs-mirage-show-right-rail": "Приказ на десната пруга",
+	"prefs-mirage-toc": "Поставеност на прегледот на содржини:",
+	"prefs-mirage-toc-legacy": "Прикажувај го прегледот на содржини во главнината на статијата",
+	"prefs-mirage-toc-hybrid": "Прикажувај го прегледот на содржини во главнината и како десен страничник",
+	"prefs-mirage-toc-right-rail-only": "Прикажувај го прегледот на содржини како десен страничник",
+	"mirage-toggle-toc": "Прик./скр. содржина",
+	"mirage-wordmark-file-warning": "Оваа податотека тековно е во потреба како зборовен белег на рувото Mirage."
+}

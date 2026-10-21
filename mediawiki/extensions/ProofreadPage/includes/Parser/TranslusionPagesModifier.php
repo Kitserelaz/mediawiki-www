@@ -1,0 +1,152 @@
+<?php
+
+namespace ProofreadPage\Parser;
+
+use MediaWiki\Context\IContextSource;
+use MediaWiki\Html\Html;
+use MediaWiki\Output\OutputPage;
+use MediaWiki\Parser\ParserOutput;
+use MediaWiki\Parser\ParserOutputLinkTypes;
+use MediaWiki\Title\Title;
+use ProofreadPage\Index\IndexQualityStatsLookup;
+use ProofreadPage\Index\PagesQualityStats;
+use ProofreadPage\Page\IndexForPageLookup;
+use ProofreadPage\Page\PageQualityLevelLookup;
+
+/**
+ * @license GPL-2.0-or-later
+ *
+ * Modifies the UI of pages that transcludes Page: pages
+ */
+class TranslusionPagesModifier {
+
+	public function __construct(
+		private readonly PageQualityLevelLookup $pageQualityLevelLookup,
+		private readonly IndexQualityStatsLookup $indexQualityStatsLookup,
+		private readonly IndexForPageLookup $indexForPageLookup,
+		private readonly int $pageNamespaceId,
+	) {
+	}
+
+	/**
+	 * Add the source index and its statistics to the output page (if appropriate)
+	 *
+	 * @param ParserOutput $parserOutput
+	 * @param OutputPage $outputPage
+	 */
+	public function modifyPage( ParserOutput $parserOutput, OutputPage $outputPage ) {
+		$transcludedPages = $this->getIncludedPagePagesTitles( $parserOutput );
+		$indexTitle = $this->getIndexTitleForPages( $transcludedPages );
+
+		if ( $parserOutput->getExtensionData( 'proofreadpage_is_toc' ) && $indexTitle !== null ) {
+			$qualityStats = $this->indexQualityStatsLookup->getStatsForIndexTitle( $indexTitle );
+		} else {
+			$qualityStats = $this->getQualityStatsForPages( $transcludedPages );
+		}
+
+		if ( $indexTitle !== null ) {
+			$outputPage->addJsConfigVars( 'prpSourceIndexPage', $indexTitle->getPrefixedText() );
+			$outputPage->setProperty( 'prpSourceIndexPage', $indexTitle->getPrefixedText() );
+		}
+
+		if ( $qualityStats->getNumberOfPages() !== 0 ) {
+			$outputPage->setSubtitle(
+				$outputPage->getSubtitle() .
+				$this->buildQualityStatsBar( $qualityStats, $outputPage )
+			);
+		}
+
+		$outputPage->addModuleStyles( [ 'ext.proofreadpage.base', 'ext.proofreadpage.article' ] );
+	}
+
+	/**
+	 * @param ParserOutput $parserOutput
+	 * @return Title[]
+	 */
+	private function getIncludedPagePagesTitles( ParserOutput $parserOutput ): array {
+		// Filter out templates in this namespace
+		$templates = $parserOutput->getLinkList(
+			ParserOutputLinkTypes::TEMPLATE,
+			$this->pageNamespaceId
+		);
+		// Convert from TitleValue to Title
+		return array_map(
+			static fn ( $item ) => Title::newFromLinkTarget( $item['link'] ),
+			$templates
+		);
+	}
+
+	/**
+	 * @param array $pages
+	 * @return Title|null
+	 */
+	private function getIndexTitleForPages( array $pages ): ?Title {
+		foreach ( $pages as $page ) {
+			$indexTitle = $this->indexForPageLookup->getIndexForPageTitle( $page );
+			if ( $indexTitle !== null ) {
+				return $indexTitle;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * @param Title[] $pages
+	 * @return PagesQualityStats
+	 */
+	private function getQualityStatsForPages( array $pages ): PagesQualityStats {
+		$this->pageQualityLevelLookup->prefetchQualityLevelForTitles( $pages );
+
+		$numberOfPagesByLevel = [];
+		foreach ( $pages as $pageTitle ) {
+			$pageQualityLevel = $this->pageQualityLevelLookup->getQualityLevelForPageTitle( $pageTitle );
+			if ( array_key_exists( $pageQualityLevel, $numberOfPagesByLevel ) ) {
+				$numberOfPagesByLevel[$pageQualityLevel]++;
+			} else {
+				$numberOfPagesByLevel[$pageQualityLevel] = 1;
+			}
+		}
+
+		return new PagesQualityStats( count( $pages ), $numberOfPagesByLevel );
+	}
+
+	/**
+	 * @param PagesQualityStats $qualityStats
+	 * @param IContextSource $contextSource
+	 * @return string
+	 */
+	private function buildQualityStatsBar(
+		PagesQualityStats $qualityStats,
+		IContextSource $contextSource
+	): string {
+		$totalPages = $qualityStats->getNumberOfPages();
+		$percentages = [];
+		for ( $i = 4; $i >= 0; $i-- ) {
+			$pagesAtLevel = $qualityStats->getNumberOfPagesForQualityLevel( $i );
+			$percentages[$i] = $pagesAtLevel * 100 / $totalPages;
+		}
+		$percentages['e'] = 100 - array_sum( $percentages );
+
+		$output = '';
+		foreach ( $percentages as $key => $value ) {
+			// The following classes are used here: quality0, quality1, quality2, quality3, quality4, qualitye
+			$output .= Html::element( 'td', [
+				'class' => "quality$key",
+				'style' => "width: $value%;"
+			] );
+		}
+
+		return Html::rawElement(
+			'table',
+			[
+				'class' => 'pr_quality',
+				'title' => $contextSource->msg( 'proofreadpage-indexquality-alt' )->numParams(
+					$qualityStats->getNumberOfPagesForQualityLevel( 4 ),
+					$qualityStats->getNumberOfPagesForQualityLevel( 3 ),
+					$qualityStats->getNumberOfPagesForQualityLevel( 1 )
+				)->text()
+			],
+			Html::rawElement( 'tr', [], $output )
+		);
+	}
+}

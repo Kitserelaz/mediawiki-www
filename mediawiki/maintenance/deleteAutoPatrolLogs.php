@@ -133,7 +133,7 @@ class DeleteAutoPatrolLogs extends Maintenance {
 		}
 
 		$result = $dbr->newSelectQueryBuilder()
-			->select( [ 'log_id', 'log_params' ] )
+			->select( [ 'log_id', 'log_type', 'log_action', 'log_params' ] )
 			->from( 'logging' )
 			->where( $conds )
 			->orderBy( 'log_id' )
@@ -158,7 +158,7 @@ class DeleteAutoPatrolLogs extends Maintenance {
 			if ( array_key_exists( '6::auto', $params ) ) {
 				// Between 2011-2016 autopatrol logs
 				$auto = $params['6::auto'] === true;
-			} elseif ( $logEntry->isLegacy() === true && array_key_exists( 2, $params ) ) {
+			} elseif ( $logEntry->isLegacy() && array_key_exists( 2, $params ) ) {
 				// Pre-2011 autopatrol logs
 				$auto = $params[2] === '1';
 			} else {

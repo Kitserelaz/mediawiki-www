@@ -28,7 +28,7 @@
 		}
 
 		// Either the ID is already a reuse, or at least one reuse exists somewhere else on the page
-		return id.slice( -2 ) !== '-0' ||
+		return !id.endsWith( '-0' ) ||
 			$content.find( '.references a[href="#' + $.escapeSelector( id.slice( 0, -1 ) ) + '1"]' ).length;
 	}
 
@@ -37,6 +37,7 @@
 	 * @return {jQuery}
 	 */
 	function makeUpArrowLink( $backlinkWrapper ) {
+		// We assume the first node we find here is the "↑ " text node
 		let textNode = $backlinkWrapper[ 0 ].firstChild;
 		const accessibilityLabel = mw.msg( 'cite_references_link_accessibility_back_label' );
 		const $upArrowLink = $( '<a>' )
@@ -48,12 +49,12 @@
 			return $upArrowLink;
 		}
 
-		// Skip additional, custom HTML wrappers, if any.
-		while ( textNode.firstChild ) {
+		// Skip custom HTML wrappers, but abort when it's our own a11y label (see T384204)
+		while ( textNode.firstChild && textNode.className !== 'cite-accessibility-label' ) {
 			textNode = textNode.firstChild;
 		}
 
-		if ( textNode.nodeType !== Node.TEXT_NODE || textNode.data.trim() === '' ) {
+		if ( textNode.nodeType !== Node.TEXT_NODE || !textNode.data.trim() ) {
 			return $upArrowLink;
 		}
 

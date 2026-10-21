@@ -1,0 +1,17 @@
+{
+	"@metadata": {
+		"authors": [
+			"Abijeet Patro"
+		]
+	},
+	"growthexperiments-edit-config-mentorship-enabled-true": "हाँ",
+	"growthexperiments-edit-config-mentorship-enabled-false": "नहीं",
+	"communityconfiguration-communityupdates-gehomepagecommunityupdatesthumbnailfile-label": "चित्र",
+	"communityconfiguration-communityupdates-gehomepagecommunityupdatescalltoaction-buttontext-label": "लेबल",
+	"communityconfiguration-growthsuggestededits-copyedit-disabled-control-label": "कार्य अक्षम है।",
+	"communityconfiguration-growthsuggestededits-references-disabled-control-label": "कार्य अक्षम है।",
+	"communityconfiguration-growthsuggestededits-update-disabled-control-label": "कार्य अक्षम है।",
+	"communityconfiguration-growthsuggestededits-expand-disabled-control-label": "कार्य अक्षम है।",
+	"communityconfiguration-growthsuggestededits-image_recommendation-disabled-control-label": "कार्य अक्षम है।",
+	"communityconfiguration-growthsuggestededits-section_image_recommendation-disabled-control-label": "कार्य अक्षम है।"
+}

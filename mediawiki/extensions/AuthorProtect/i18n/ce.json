@@ -1,0 +1,16 @@
+{
+	"@metadata": {
+		"authors": [
+			"Умар"
+		]
+	},
+	"authorprotect": "Авторш боцучарех ларйар",
+	"authorprotect-intro": "Лелайе хӀара форма, авторш боцучу декъашхойх агӀо ларйан.",
+	"authorprotect-success": "Ларйар дӀахӀоттийна!",
+	"protect-level-author": "Авторш боцучарех ларйар",
+	"restriction-level-author": "Авторан ларйар",
+	"action-authorprotect": "авторш боцучарех ларйар",
+	"right-authorprotect": "авторийн агӀонаш ларор",
+	"action-author": "авторан-ларйина агӀонашна нисдар",
+	"right-author": "Авторан-ларйина агӀонашна нисдар"
+}

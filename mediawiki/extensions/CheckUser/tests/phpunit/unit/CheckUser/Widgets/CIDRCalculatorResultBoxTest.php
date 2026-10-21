@@ -1,14 +1,14 @@
 <?php
 
-namespace MediaWiki\CheckUser\Tests\Unit\CheckUser\Widgets;
+namespace MediaWiki\Extension\CheckUser\Tests\Unit\CheckUser\Widgets;
 
-use MediaWiki\CheckUser\CheckUser\Widgets\CIDRCalculatorResultBox;
+use MediaWiki\Extension\CheckUser\CheckUser\Widgets\CIDRCalculatorResultBox;
 use MediaWikiUnitTestCase;
 use Wikimedia\TestingAccessWrapper;
 
 /**
  * @group CheckUser
- * @covers \MediaWiki\CheckUser\CheckUser\Widgets\CIDRCalculatorResultBox
+ * @covers \MediaWiki\Extension\CheckUser\CheckUser\Widgets\CIDRCalculatorResultBox
  */
 class CIDRCalculatorResultBoxTest extends MediaWikiUnitTestCase {
 
@@ -25,11 +25,11 @@ class CIDRCalculatorResultBoxTest extends MediaWikiUnitTestCase {
 	public static function provideIsAlwaysDisabled() {
 		return [
 			'Disabled is not set in the caller\'s config' => [
-				[]
+				[],
 			],
 			'Disabled is set in the caller\'s config' => [
-				[ 'disabled' => true ]
-			]
+				[ 'disabled' => true ],
+			],
 		];
 	}
 

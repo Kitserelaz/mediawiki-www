@@ -1,0 +1,161 @@
+{
+	"name": "DataDump",
+	"author": [
+		"Paladox",
+		"Universal Omega"
+	],
+	"url": "https://github.com/miraheze/DataDump",
+	"descriptionmsg": "datadump-desc",
+	"namemsg": "datadump-extensionname",
+	"license-name": "GPL-3.0-or-later",
+	"type": "specialpage",
+	"requires": {
+		"MediaWiki": ">= 1.43.0",
+		"platform": {
+			"php": ">= 8.1"
+		}
+	},
+	"MessagesDirs": {
+		"DataDump": [
+			"i18n"
+		]
+	},
+	"TranslationAliasesDirs": {
+		"DataDumpAliases": "i18n/aliases"
+	},
+	"AutoloadNamespaces": {
+		"Miraheze\\DataDump\\": "includes/",
+		"Miraheze\\DataDump\\Maintenance\\": "maintenance/"
+	},
+	"APIModules": {
+		"deletedumps": {
+			"class": "Miraheze\\DataDump\\Api\\ApiDeleteDumps",
+			"services": [
+				"ConnectionProvider",
+				"DataDumpFileBackend"
+			]
+		},
+		"generatedumps": {
+			"class": "Miraheze\\DataDump\\Api\\ApiGenerateDumps",
+			"services": [
+				"ConnectionProvider",
+				"JobQueueGroupFactory"
+			]
+		},
+		"viewdumps": {
+			"class": "Miraheze\\DataDump\\Api\\ApiViewDumps",
+			"services": [
+				"ConnectionProvider",
+				"PermissionManager"
+			]
+		}
+	},
+	"JobClasses": {
+		"DataDumpGenerateJob": {
+			"class": "Miraheze\\DataDump\\Jobs\\DataDumpGenerateJob",
+			"services": [
+				"ConnectionProvider",
+				"DataDumpConfig",
+				"DataDumpFileBackend"
+			],
+			"needsPage": false
+		}
+	},
+	"AvailableRights": [
+		"generate-dump",
+		"delete-dump",
+		"view-dump"
+	],
+	"LogActionsHandlers": {
+		"datadump/delete": "LogFormatter",
+		"datadump/generate": "LogFormatter",
+		"datadump/generate-completed": "LogFormatter",
+		"datadump/generate-failed": "LogFormatter",
+		"datadump/generate-in-progress": "LogFormatter"
+	},
+	"LogHeaders": {
+		"datadump": "datadump-log-header"
+	},
+	"LogNames": {
+		"datadump": "datadump-log-name"
+	},
+	"LogTypes": [
+		"datadump"
+	],
+	"ActionFilteredLogs": {
+		"datadump": {
+			"deletion": [
+				"delete"
+			],
+			"generation": [
+				"generate"
+			],
+			"status": [
+				"generate-completed",
+				"generate-failed",
+				"generate-in-progress"
+			]
+		}
+	},
+	"SpecialPages": {
+		"DataDump": {
+			"class": "Miraheze\\DataDump\\Specials\\SpecialDataDump",
+			"services": [
+				"ConnectionProvider",
+				"DataDumpFileBackend",
+				"JobQueueGroupFactory",
+				"PermissionManager"
+			]
+		}
+	},
+	"Hooks": {
+		"LoadExtensionSchemaUpdates": {
+			"handler": "Installer"
+		},
+		"ManageWikiAfterSidebarLinks": {
+			"handler": "ManageWiki"
+		}
+	},
+	"HookHandlers": {
+		"Installer": {
+			"class": "Miraheze\\DataDump\\HookHandlers\\Installer"
+		},
+		"ManageWiki": {
+			"class": "Miraheze\\DataDump\\HookHandlers\\ManageWiki"
+		}
+	},
+	"config": {
+		"DataDump": {
+			"description": "Array. An associative array of DataDump configuration options.",
+			"value": []
+		},
+		"DataDumpDirectory": {
+			"description": "String. Directory to store DataDump files in. Does nothing if using DataDumpFileBackend.",
+			"value": ""
+		},
+		"DataDumpDisableGenerate": {
+			"description": "Boolean. Whether to disable DataDump generation.",
+			"value": false
+		},
+		"DataDumpFileBackend": {
+			"description": "String. The file backend to use for DataDump if using something other than the default FSFileBackend.",
+			"value": ""
+		},
+		"DataDumpLimits": {
+			"description": "Array. Limits to use for DataDump generation commands.",
+			"value": {
+				"filesize": 0,
+				"memory": 0,
+				"time": 0,
+				"walltime": 0
+			}
+		}
+	},
+	"ConfigRegistry": {
+		"DataDump": "MediaWiki\\Config\\GlobalVarConfig::newInstance"
+	},
+	"ServiceWiringFiles": [
+		"includes/ServiceWiring.php"
+	],
+	"manifest_version": 2
+}

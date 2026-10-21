@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Mithridates",
+			"OIS",
+			"Renan",
+			"Stavanger7"
+		]
+	},
+	"globalusage": "Usu global del file",
+	"globalusage-on-wiki": "Usu in $2",
+	"globalusage-of-file": "Li altri wikis a sequer usa ti-ci file:",
+	"globalusage-more": "Vider [[{{#Special:GlobalUsage}}/$1|plu del usu global]] de ti-ci file."
+}

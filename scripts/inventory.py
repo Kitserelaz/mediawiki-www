@@ -13,15 +13,21 @@ def record_requirements(values, component):
             names = requirements.setdefault(key, [])
             if component not in names: names.append(component)
 record_requirements(json.loads((mw/'composer.json').read_text()).get('require', {}), 'MediaWiki')
-for folder, manifest in [('extensions','extension.json'), ('skins','skin.json')]:
-    for file in sorted((mw/folder).glob('*/'+manifest)):
+for folder, manifests in [('extensions', sorted(set((mw/'extensions').glob('*/extension*.json')) |
+                                               set((mw/'extensions').glob('*/*/extension*.json')))),
+                          ('skins', sorted((mw/'skins').glob('*/skin.json')))]:
+    for file in manifests:
         try: data = json.loads(file.read_text())
         except (ValueError, OSError): continue
-        result['components'].append({'type':folder,'name':file.parent.name,'version':data.get('version'),'sha256':hashlib.sha256(file.read_bytes()).hexdigest(),'requires':data.get('requires',{})})
+        result['components'].append({'type':folder,'name':data.get('name',file.parent.name),'manifest':str(file.relative_to(root)),'version':data.get('version'),'sha256':hashlib.sha256(file.read_bytes()).hexdigest(),'requires':data.get('requires',{})})
         record_requirements(data.get('requires', {}).get('platform', {}), file.parent.name)
         composer = file.parent/'composer.json'
         if composer.exists():
             record_requirements(json.loads(composer.read_text()).get('require', {}), file.parent.name)
+for name in ['SocialProfile', 'Validator']:
+    file = mw/'extensions'/name/(name+'.php')
+    result['components'].append({'type':'legacy-extension','name':name,'entrypoint':str(file.relative_to(root)),
+                                 'sha256':hashlib.sha256(file.read_bytes()).hexdigest()})
 for path in ['mediawiki/composer.lock','Moe-Counter/pnpm-lock.yaml','Moe-Counter/bun.lock']:
     result['lockfiles'][path] = hashlib.sha256((root/path).read_bytes()).hexdigest()
 for file in sorted(mw.glob('**/vendor/composer/installed.json')):
@@ -42,6 +48,12 @@ result['local_patches'] = {
     for file in [mw/'extensions/DataDump/includes/Api/ApiDeleteDumps.php', mw/'extensions/DataDump/includes/Api/ApiGenerateDumps.php']
 }
 result['installed_dependencies'] = installed
+result['upgrade_targets'] = json.loads((root/'docs/upgrade-targets.json').read_text())
+result['patch_reports'] = {
+    str(file.relative_to(root)): {'sha256':hashlib.sha256(file.read_bytes()).hexdigest(), 'report':json.loads(file.read_text())}
+    for file in sorted((root/'docs').glob('upgrade-*.json'))
+    if file.name.endswith(('-source.json', '-ports.json', '-additional.json', '-assets.json'))
+}
 result['php_extensions'] = requirements
 (root/'docs/dependency-inventory.json').write_text(json.dumps(result,indent=2)+'\n')
 print(f"Recorded {len(result['components'])} extensions/skins and dependency lockfiles")

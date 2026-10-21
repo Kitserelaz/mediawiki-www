@@ -1,0 +1,206 @@
+<?php
+
+namespace SMW\SPARQLStore\QueryEngine;
+
+use Iterator;
+use ReturnTypeWillChange;
+use SMW\Exporter\Element\ExpLiteral;
+
+/**
+ * Class for accessing SPARQL query results in a unified form. The data is
+ * structured in tabular form, with each cell containing some ExpElement.
+ * Rows should always have the same number of columns, but the datatype of the
+ * cells in each column may not be uniform throughout the result.
+ *
+ * @ingroup Sparql
+ *
+ * @license GPL-2.0-or-later
+ * @since 1.6
+ *
+ * @author Markus Krötzsch
+ */
+class RepositoryResult implements Iterator {
+
+	/// Error code: no errors occurred.
+	const ERROR_NOERROR = 0;
+
+	/// Error code: service unreachable; result will be empty
+	const ERROR_UNREACHABLE = 1;
+
+	/// Error code: results might be incomplete (e.g. due to some resource limit being reached)
+	const ERROR_INCOMPLETE = 2;
+
+	/**
+	 * Associative array mapping SPARQL variable names to column indices.
+	 *
+	 * @var array of integer
+	 */
+	protected array $header;
+
+	/**
+	 * List of result rows. Individual entries can be null if a cell in the
+	 * SPARQL result table is empty (this is different from finding a blank
+	 * node).
+	 *
+	 * @var array of array of (ExpElement or null)
+	 */
+	protected array $data;
+
+	/**
+	 * List of comment strings found in the XML file (without surrounding
+	 * markup, i.e. the actual string only).
+	 *
+	 * @var array of string
+	 */
+	protected array $comments;
+
+	/**
+	 * Initialise a result set from a result string in SPARQL XML format.
+	 */
+	public function __construct(
+		array $header = [],
+		array $data = [],
+		array $comments = [],
+		protected $errorCode = self::ERROR_NOERROR,
+	) {
+		$this->header    = $header;
+		$this->data      = $data;
+		$this->comments  = $comments;
+		reset( $this->data );
+	}
+
+	/**
+	 * Get the number of rows in the result object.
+	 *
+	 * @return int number of result rows
+	 */
+	public function numRows(): int {
+		return count( $this->data );
+	}
+
+	/**
+	 * Return error code. SMWSparqlResultWrapper::ERROR_NOERROR (0)
+	 * indicates that no error occurred.
+	 *
+	 * @return int error code
+	 */
+	public function getErrorCode() {
+		return $this->errorCode;
+	}
+
+	/**
+	 * Set the error code of this result set. This is used for allowing
+	 * callers to add additional errors discovered only later on. It does
+	 * not allow removing existing errors, since it will not accept
+	 * SMWSparqlResultWrapper::ERROR_NOERROR as a parameter.
+	 *
+	 * @param $errorCode integer error code
+	 */
+	public function setErrorCode( $errorCode ): void {
+		if ( $errorCode != self::ERROR_NOERROR ) {
+			$this->errorCode = $errorCode;
+		}
+	}
+
+	/**
+	 * Return a list of comment strings found in the SPARQL result. Comments
+	 * are used by some RDF stores to provide additional information or
+	 * warnings that can thus be accessed.
+	 *
+	 * @return array of string
+	 */
+	public function getComments(): array {
+		return $this->comments;
+	}
+
+	/**
+	 * Check if the result is what one would get for a SPARQL ASK query
+	 * that returned true. Returns false in all other cases (including
+	 * the case that the results do not look at all like the result of
+	 * an ASK query).
+	 *
+	 * @return bool
+	 */
+	public function isBooleanTrue(): bool {
+		if ( count( $this->data ) == 1 ) {
+			$row = reset( $this->data );
+			$expElement = reset( $row );
+			if ( ( count( $row ) == 1 ) && ( $expElement instanceof ExpLiteral ) &&
+				 ( $expElement->getLexicalForm() == 'true' ) &&
+				 ( $expElement->getDatatype() == 'http://www.w3.org/2001/XMLSchema#boolean' ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Check if the result is what one would get for a SPARQL SELECT COUNT
+	 * query, and return the corresponding integer value. Returns 0 in all
+	 * other cases (including the case that the results do not look at all
+	 * like the result of a SELECT COUNT query).
+	 *
+	 * @return int
+	 */
+	public function getNumericValue(): int {
+		if ( count( $this->data ) == 1 ) {
+			$row = reset( $this->data );
+			$expElement = reset( $row );
+			if ( ( count( $row ) == 1 ) && ( $expElement instanceof ExpLiteral ) &&
+				 ( $expElement->getDatatype() == 'http://www.w3.org/2001/XMLSchema#integer' ) ) {
+				return (int)$expElement->getLexicalForm();
+			}
+		}
+		return 0;
+	}
+
+	/**
+	 * Reset iterator to position 0. Standard method of Iterator.
+	 */
+	public function rewind(): void {
+		reset( $this->data );
+	}
+
+	/**
+	 * Return the current result row. Standard method of Iterator.
+	 *
+	 * @return array of (ExpElement or null), or false at end of data
+	 */
+	#[ReturnTypeWillChange]
+	public function current() {
+		return current( $this->data );
+	}
+
+	/**
+	 * Return the next result row and advance the internal pointer.
+	 * Standard method of Iterator.
+	 *
+	 * @return mixed
+	 */
+	#[ReturnTypeWillChange]
+	public function next() {
+		return next( $this->data );
+	}
+
+	/**
+	 * Return the next result row and advance the internal pointer.
+	 * Standard method of Iterator.
+	 *
+	 * @return int|string|null
+	 */
+	#[ReturnTypeWillChange]
+	public function key() {
+		return key( $this->data );
+	}
+
+	/**
+	 * Return true if the internal pointer refers to a valid element.
+	 * Standard method of Iterator.
+	 *
+	 * @return bool
+	 */
+	public function valid(): bool {
+		return ( current( $this->data ) !== false );
+	}
+
+}

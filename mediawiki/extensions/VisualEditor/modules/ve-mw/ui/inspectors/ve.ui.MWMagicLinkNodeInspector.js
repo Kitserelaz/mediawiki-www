@@ -93,7 +93,7 @@ ve.ui.MWMagicLinkNodeInspector.prototype.getActionProcess = function ( action ) 
 	}
 	if ( action === 'convert' ) {
 		return new OO.ui.Process( () => {
-			this.close( { action: action } );
+			this.close( { action } );
 		} );
 	}
 	return ve.ui.MWMagicLinkNodeInspector.super.prototype.getActionProcess.call( this, action );
@@ -142,8 +142,7 @@ ve.ui.MWMagicLinkNodeInspector.prototype.getReadyProcess = function ( data ) {
 /**
  * @inheritdoc
  */
-ve.ui.MWMagicLinkNodeInspector.prototype.getTeardownProcess = function ( data ) {
-	data = data || {};
+ve.ui.MWMagicLinkNodeInspector.prototype.getTeardownProcess = function ( data = {} ) {
 	return ve.ui.MWMagicLinkNodeInspector.super.prototype.getTeardownProcess.call( this, data )
 		.first( () => {
 			const surfaceView = this.manager.getSurface().getView(),

@@ -6,6 +6,7 @@
 !.env.sample
 !.env.*.sample
 *.local.json
+!/mediawiki/composer.local.json
 /docker/secrets/*
 !/docker/secrets/.gitkeep
 /docker/secrets-*/
@@ -55,6 +56,7 @@ __pycache__/
 .pytest_cache/
 .phpunit.result.cache
 .phpunit.cache/
+/mediawiki/phpunit.xml
 /docker/.npm-cache/
 /docker/.browsers/
 npm-debug.log*

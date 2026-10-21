@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Toliño"
+		]
+	},
+	"rightfunctions-desc": "Permisos baseados nas funcións analíticas",
+	"rightfunctions-casc": "(desde fontes en cascada)",
+	"rightfunctions-local": "(desde a páxina local)",
+	"rightfunctions-ns": "(desde a protección do espazo de nomes)"
+}

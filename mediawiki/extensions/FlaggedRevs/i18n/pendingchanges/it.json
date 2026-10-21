@@ -1,0 +1,39 @@
+{
+	"@metadata": {
+		"authors": [
+			"Beta16",
+			"Blaisorblade",
+			"Civvì",
+			"Darth Kule",
+			"Gianfranco",
+			"Melos",
+			"Nemo bis",
+			"Pietrodn",
+			"Rippitippi"
+		]
+	},
+	"pendingchanges": "Pagine con modifiche non revisionate",
+	"pendingchanges-legend": "Elenco delle pagine revisionate ma con versioni non revisionate",
+	"pendingchanges-list": "In questa lista [[{{MediaWiki:Validationpage}}|reviewed]] ci sono pagine che hanno una o più modifiche in attesa di verifica",
+	"pendingchanges-none": "Al momento non ci sono pagine che soddisfino i criteri di ricerca.",
+	"pendingchanges-hours": "$1 {{PLURAL:$1|ora|ore}}",
+	"pendingchanges-days": "$1 {{PLURAL:$1|giorno|giorni}}",
+	"pendingchanges-recent": "meno di un'ora",
+	"pendingchanges-category": "Categoria:",
+	"pendingchanges-limit": "Limite:",
+	"pendingchanges-onwatchlist": "Pagine nei miei osservati speciali",
+	"pendingchanges-stable": "La versione stabile è di default",
+	"pendingchanges-diff": "Revisiona",
+	"pendingchanges-size": "Cambiamento massimo (byte):",
+	"pendingchanges-unwatched": "non osservata",
+	"pendingchanges-table-caption": "Modifiche non revisionate",
+	"pendingchanges-table-page": "Pagina",
+	"pendingchanges-table-size": "Dimensione",
+	"pendingchanges-table-pending-since": "Da",
+	"pendingchanges-table-quality": "Qualità",
+	"pendingchanges-table-history": "Cronologia",
+	"pendingchanges-table-review": "Revisiona",
+	"pendingchanges-table-revision-history": "Cronologia",
+	"pendingchanges-table-footer": "Attualmente, {{PLURAL:$2|c'è $1 modifica non revisionata|ci sono $1 modifiche non revisionate}}",
+	"pendingchanges-filter-submit-button-text": "Filtra le modifiche non revisionate"
+}

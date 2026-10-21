@@ -3,30 +3,22 @@
 namespace MediaWiki\Extension\AbuseFilter\ChangeTags;
 
 use MediaWiki\Extension\AbuseFilter\ActionSpecifier;
+use MediaWiki\Extension\AbuseFilter\ServiceNames;
+use MediaWiki\RecentChanges\RecentChange;
 use MediaWiki\Title\TitleValue;
 use MediaWiki\User\UserIdentityValue;
-use RecentChange;
 
 /**
  * Class that collects change tags to be later applied
  * @internal This interface should be improved and is not ready for external use
  */
 class ChangeTagger {
-	public const SERVICE_NAME = 'AbuseFilterChangeTagger';
+	public const SERVICE_NAME = ServiceNames::ChangeTagger;
 
-	/** @var array (Persistent) map of (action ID => string[]) */
+	/** @var array<string,string[]> (Persistent) map of (action ID => string[]) */
 	private static $tagsToSet = [];
 
-	/**
-	 * @var ChangeTagsManager
-	 */
-	private $changeTagsManager;
-
-	/**
-	 * @param ChangeTagsManager $changeTagsManager
-	 */
-	public function __construct( ChangeTagsManager $changeTagsManager ) {
-		$this->changeTagsManager = $changeTagsManager;
+	public function __construct( private readonly ChangeTagsManager $changeTagsManager ) {
 	}
 
 	/**
@@ -36,17 +28,10 @@ class ChangeTagger {
 		self::$tagsToSet = [];
 	}
 
-	/**
-	 * @param ActionSpecifier $specifier
-	 */
 	public function addConditionsLimitTag( ActionSpecifier $specifier ): void {
 		$this->addTags( $specifier, [ $this->changeTagsManager->getCondsLimitTag() ] );
 	}
 
-	/**
-	 * @param ActionSpecifier $specifier
-	 * @param array $tags
-	 */
 	public function addTags( ActionSpecifier $specifier, array $tags ): void {
 		$id = $this->getActionID( $specifier );
 		$this->bufferTagsToSetByAction( [ $id => $tags ] );
@@ -66,7 +51,7 @@ class ChangeTagger {
 	/**
 	 * @param string $id
 	 * @param bool $clear
-	 * @return array
+	 * @return string[]
 	 */
 	private function getTagsForID( string $id, bool $clear = true ): array {
 		$val = self::$tagsToSet[$id] ?? [];
@@ -79,17 +64,13 @@ class ChangeTagger {
 	/**
 	 * @param RecentChange $recentChange
 	 * @param bool $clear
-	 * @return array
+	 * @return string[]
 	 */
 	public function getTagsForRecentChange( RecentChange $recentChange, bool $clear = true ): array {
 		$id = $this->getIDFromRecentChange( $recentChange );
 		return $this->getTagsForID( $id, $clear );
 	}
 
-	/**
-	 * @param RecentChange $recentChange
-	 * @return string
-	 */
 	private function getIDFromRecentChange( RecentChange $recentChange ): string {
 		$title = new TitleValue(
 			$recentChange->getAttribute( 'rc_namespace' ),
@@ -128,10 +109,14 @@ class ChangeTagger {
 	private function getActionID( ActionSpecifier $specifier ): string {
 		$username = $specifier->getUser()->getName();
 		$title = $specifier->getTitle();
-		if ( strpos( $specifier->getAction(), 'createaccount' ) !== false ) {
+		if ( str_contains( $specifier->getAction(), 'createaccount' ) ) {
 			// TODO Move this to ActionSpecifier?
 			$username = $specifier->getAccountName();
-			'@phan-var string $username';
+			if ( $username === null ) {
+				throw new \UnexpectedValueException(
+					'Expected string from ActionSpecifier::getAccountName()'
+				);
+			}
 			$title = new TitleValue( NS_USER, $username );
 		}
 

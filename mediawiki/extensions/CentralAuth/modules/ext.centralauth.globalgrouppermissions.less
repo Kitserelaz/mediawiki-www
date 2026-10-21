@@ -1,0 +1,36 @@
+/**
+ * Styles for Special:GlobalGroupPermissions
+ */
+@import 'mediawiki.skin.variables.less';
+@import 'mediawiki.mixins.less';
+
+.mw-centralauth-editgroup-readonly .mw-centralauth-editgroup-unchecked {
+	color: #808080;
+}
+
+.mw-centralauth-rights {
+	.column-count( 2 );
+	.column-width( 50em );
+
+	li {
+		.column-break-inside-avoid;
+	}
+}
+
+/**
+ * Used by the group permissions table
+ */
+table.mw-centralauth-groups-table tr {
+	vertical-align: top;
+}
+
+table.mw-centralauth-groups-table th:first-child {
+	width: 30%;
+}
+
+table.mw-centralauth-groups-table {
+	& tr:target,
+	& tr:target code {
+		background-color: @background-color-progressive-subtle;
+	}
+}

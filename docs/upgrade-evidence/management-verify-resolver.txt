@@ -1,0 +1,4 @@
+ Container cloudwiki-upgrade-restore1462-init-run-b3827c14ddab Creating 
+ Container cloudwiki-upgrade-restore1462-init-run-b3827c14ddab Created 
+{"configuration_class":"FarmManageWikiSiteConfiguration","target_project_row":{"name":"Upgrade_Alpha","searchable":1,"subpages":1,"content":0,"contentmodel":"wikitext","protection":"","aliases":[],"core":0,"additional":[]},"target_project_config":"Upgrade_Alpha"}
+Management acceptance phase passed: verify

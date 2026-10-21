@@ -4,7 +4,7 @@ namespace MediaWiki\Extension\TemplateData;
 
 use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
-use MediaWiki\Status\Status;
+use StatusValue;
 use stdClass;
 use Wikimedia\Rdbms\IReadableDatabase;
 
@@ -16,8 +16,8 @@ use Wikimedia\Rdbms\IReadableDatabase;
  */
 class TemplateDataBlob {
 
-	protected string $json;
-	protected Status $status;
+	protected readonly string $json;
+	protected readonly StatusValue $status;
 
 	/**
 	 * Parse and validate passed JSON and create a blob handling
@@ -26,14 +26,14 @@ class TemplateDataBlob {
 	 *
 	 * @param IReadableDatabase $db
 	 * @param string $json
-	 * @return TemplateDataBlob
+	 * @return self
 	 */
-	public static function newFromJSON( IReadableDatabase $db, string $json ): TemplateDataBlob {
+	public static function newFromJSON( IReadableDatabase $db, string $json ): self {
 		$lang = MediaWikiServices::getInstance()->getMainConfig()->get( MainConfigNames::LanguageCode );
 		if ( $db->getType() === 'mysql' ) {
 			$tdb = new TemplateDataCompressedBlob( $json, $lang );
 		} else {
-			$tdb = new TemplateDataBlob( $json, $lang );
+			$tdb = new self( $json, $lang );
 		}
 		return $tdb;
 	}
@@ -44,9 +44,9 @@ class TemplateDataBlob {
 	 *
 	 * @param IReadableDatabase $db
 	 * @param string $json
-	 * @return TemplateDataBlob
+	 * @return self
 	 */
-	public static function newFromDatabase( IReadableDatabase $db, string $json ): TemplateDataBlob {
+	public static function newFromDatabase( IReadableDatabase $db, string $json ): self {
 		// Handle GZIP compression. \037\213 is the header for GZIP files.
 		if ( substr( $json, 0, 2 ) === "\037\213" ) {
 			$json = gzdecode( $json );
@@ -108,7 +108,7 @@ class TemplateDataBlob {
 		return null;
 	}
 
-	public function getStatus(): Status {
+	public function getStatus(): StatusValue {
 		return $this->status;
 	}
 

@@ -1,39 +1,118 @@
 const ContextController = require( './ContextController.js' );
 const SamplingController = require( './SamplingController.js' );
-const CurationController = require( './CurationController.js' );
-const DefaultEventSubmitter = require( './DefaultEventSubmitter.js' ).DefaultEventSubmitter;
+const DefaultEventSubmitter = require( './DefaultEventSubmitter.js' );
 const Instrument = require( './Instrument.js' );
 
 const SCHEMA = '/analytics/mediawiki/client/metrics_event/2.1.0';
 
 /**
+ * @namespace EventPlatform
+ */
+
+/**
+ * @typedef {Object} EventData
+ * @property {string} $schema
+ * @property {EventPlatform.EventMetaData} [meta]
+ * @property {string} [client_dt]
+ * @property {string} [dt]
+ * @memberof EventPlatform
+ */
+
+/**
+ * @typedef {Object} EventMetaData
+ * @property {string} [domain]
+ * @property {string} stream
+ * @memberof EventPlatform
+ */
+
+// ---
+
+/**
+ * @typedef {EventPlatform.EventData|MetricsPlatform.Context.ContextAttributes} EventData
+ * @property {string} name
+ * @property {MetricsPlatform.FormattedCustomData} [custom_data]
+ * @memberof MetricsPlatform
+ */
+
+/**
+ * @typedef {Map<string,MetricsPlatform.EventCustomDatum>} FormattedCustomData
+ * @memberof MetricsPlatform
+ */
+
+/**
+ * @typedef {Object} EventCustomDatum
+ * @property {string} data_type
+ * @property {string} value
+ * @memberof MetricsPlatform
+ */
+
+/**
+ * Optional data related to the interaction.
+ *
+ * @typedef {Object} InteractionContextData
+ * @property {string} action_subtype
+ * @property {string} action_source
+ * @property {string} action_context
+ * @property {number} funnel_event_sequence_position
+ * @property {string} instrument_name
+ * @memberof MetricsPlatform
+ */
+
+/**
+ * Data for the interaction.
+ *
+ * This interface and the {@link MetricsPlatform.InteractionContextData} interface allow for the
+ * creation of many convenience methods that fill the `action` property (and/or other properties in
+ * future), e.g. {@link MetricsPlatform.MetricsClient#submitClick}.
+ *
+ * @typedef {Object} InteractionData
+ * @property {string} action
+ * @memberof MetricsPlatform
+ */
+
+/**
+ * @typedef {Object} ElementInteractionData
+ * @property {string} element_id
+ * @property {string} element_friendly_name
+ * @memberof MetricsPlatform
+ */
+
+// ---
+
+/**
  * Client for producing events to [the Event Platform](https://wikitech.wikimedia.org/wiki/Event_Platform) and
  * [the Metrics Platform](https://wikitech.wikimedia.org/wiki/Metrics_Platform).
  *
- * @param {Integration} integration
- * @param {StreamConfigs|false} streamConfigs
- * @param {EventSubmitter} [eventSubmitter] An instance of {@link DefaultEventSubmitter} by default
+ * @param {MetricsPlatform.Integration} integration
+ * @param {MetricsPlatform.Logger} logger
+ * @param {EventPlatform.StreamConfigs|false} streamConfigs
+ * @param {MetricsPlatform.EventSubmitter} [eventSubmitter] An instance of
+ *  {@link DefaultEventSubmitter} by default
  * @constructor
  * @class MetricsClient
+ * @memberof MetricsPlatform
  */
 function MetricsClient(
 	integration,
+	logger,
 	streamConfigs,
 	eventSubmitter
 ) {
 	this.contextController = new ContextController( integration );
 	this.samplingController = new SamplingController( integration );
-	this.curationController = new CurationController();
 	this.integration = integration;
+	this.logger = logger;
 	this.streamConfigs = streamConfigs;
 	this.eventSubmitter = eventSubmitter || new DefaultEventSubmitter();
 	this.eventNameToStreamNamesMap = null;
 }
 
 /**
- * @param {StreamConfigs|false} streamConfigs
+ * @ignore
+ *
+ * @param {EventPlatform.StreamConfigs|false} streamConfigs
  * @param {string} streamName
- * @return {StreamConfig|undefined}
+ * @return {EventPlatform.StreamConfig|undefined}
  */
 function getStreamConfigInternal( streamConfigs, streamName ) {
 	// If streamConfigs are false, then stream config usage is not enabled.
@@ -64,7 +143,7 @@ function getStreamConfigInternal( streamConfigs, streamName ) {
  * Gets a deep clone of the stream config.
  *
  * @param {string} streamName
- * @return {StreamConfig|undefined}
+ * @return {EventPlatform.StreamConfig|undefined}
  */
 MetricsClient.prototype.getStreamConfig = function ( streamName ) {
 	const streamConfig = getStreamConfigInternal( this.streamConfigs, streamName );
@@ -73,11 +152,13 @@ MetricsClient.prototype.getStreamConfig = function ( streamName ) {
 };
 
 /**
+ * @ignore
+ *
  * @param {StreamConfigs} streamConfigs
- * @return {Record<string, string[]>}
+ * @return {Map<string, string[]>}
  */
 function getEventNameToStreamNamesMap( streamConfigs ) {
-	/** @type Record<string, string[]> */
+	/** @type {Map<string, string[]>} */
 	const result = {};
 
 	for ( const streamName in streamConfigs ) {
@@ -162,9 +243,9 @@ MetricsClient.prototype.getStreamNamesForEvent = function ( eventName ) {
  *
  * @ignore
  *
- * @param {BaseEventData} eventData
+ * @param {EventPlatform.EventData} eventData
  * @param {string} streamName
- * @return {BaseEventData}
+ * @return {EventPlatform.EventData}
  */
 MetricsClient.prototype.addRequiredMetadata = function ( eventData, streamName ) {
 	if ( eventData.meta ) {
@@ -205,7 +286,7 @@ MetricsClient.prototype.addRequiredMetadata = function ( eventData, streamName )
  * sample. If E does not have the `$schema` property, then a warning is logged.
  *
  * @param {string} streamName The name of the stream to send the event data to
- * @param {BaseEventData} eventData The event data
+ * @param {EventPlatform.EventData} eventData The event data
  *
  * @stable
  */
@@ -221,15 +302,14 @@ MetricsClient.prototype.submit = function ( streamName, eventData ) {
  * If `eventData` is falsy or does not have the `$schema` property set, then a warning is logged
  * and `false` is returned. Otherwise, `true` is returned.
  *
- * @ignore
- *
  * @param {string} streamName
- * @param {BaseEventData} eventData
+ * @param {EventPlatform.EventData} eventData
  * @return {boolean}
+ * @protected
  */
 MetricsClient.prototype.validateSubmitCall = function ( streamName, eventData ) {
 	if ( !eventData || !eventData.$schema ) {
-		this.integration.logWarning(
+		this.logger.logWarning(
 			'submit( ' + streamName + ', eventData ) called with eventData missing required ' +
 			'field "$schema". No event will be produced.'
 		);
@@ -247,7 +327,7 @@ MetricsClient.prototype.validateSubmitCall = function ( streamName, eventData ) 
  *
  * @param {string} timestamp The ISO 8601 formatted timestamp of the original call
  * @param {string} streamName The name of the stream to send the event data to
- * @param {BaseEventData} eventData The event data
+ * @param {EventPlatform.EventData} eventData The event data
  */
 MetricsClient.prototype.processSubmitCall = function ( timestamp, streamName, eventData ) {
 	eventData.dt = timestamp;
@@ -255,164 +335,44 @@ MetricsClient.prototype.processSubmitCall = function ( timestamp, streamName, ev
 	const streamConfig = getStreamConfigInternal( this.streamConfigs, streamName );
 
 	if ( !streamConfig ) {
+		this.logger.logWarning(
+			'The stream ' + streamName + ' is not configured. No event will be sent'
+		);
 		return;
+	}
+
+	if ( !this.samplingController.isStreamInSample( streamConfig ) ) {
+		this.logger.logWarning(
+			'The stream ' + streamName + ' is out of sample. No event will be sent'
+		);
+		return;
+	}
+
+	// Should the event be redirected to a different stream?
+	const targetStreamName =
+		streamConfig &&
+		streamConfig.producers &&
+		streamConfig.producers.metrics_platform_client &&
+		streamConfig.producers.metrics_platform_client.stream_name;
+
+	if ( targetStreamName ) {
+
+		// The event should be redirected but the target stream isn't defined?
+		//
+		// NOTE: We could use recursion to DRY this up. However, we haven't discussed whether
+		// redirection should be generally available to analytics instrumentation owners and, in
+		// particular, if/how we should handle multiple sampling checks and how that could be
+		// stored in the event.
+		if ( !getStreamConfigInternal( this.streamConfigs, targetStreamName ) ) {
+			return;
+		}
+
+		streamName = targetStreamName;
 	}
 
 	this.addRequiredMetadata( eventData, streamName );
 
-	if ( this.samplingController.isStreamInSample( streamConfig ) ) {
-		this.eventSubmitter.submitEvent( eventData );
-	}
-};
-
-/**
- * Format the custom data so that it is compatible with the Metrics Platform Event schema.
- *
- * `customData` is considered valid if all of its keys are snake_case.
- *
- * @param {Record<string,any>|undefined} customData
- * @return {FormattedCustomData}
- * @throws {Error} If `customData` is invalid
- */
-function getFormattedCustomData( customData ) {
-	/** @type {Record<string,EventCustomDatum>} */
-	const result = {};
-
-	if ( !customData ) {
-		return result;
-	}
-
-	for ( const key in customData ) {
-		if ( !key.match( /^[$a-z]+[a-z0-9_]*$/ ) ) {
-			throw new Error( 'The key "' + key + '" is not snake_case.' );
-		}
-
-		const value = customData[ key ];
-		const type = value === null ? 'null' : typeof value;
-
-		result[ key ] = {
-			// eslint-disable-next-line camelcase
-			data_type: type,
-			value: String( value )
-		};
-	}
-
-	return result;
-}
-
-/**
- * Construct and submits a Metrics Platform Event from the event name and custom data for each
- * stream that is interested in those events.
- *
- * The Metrics Platform Event for a stream (S) is constructed by first initializing the minimum
- * valid event (E) that can be submitted to S, and then mixing the context attributes requested
- * in the configuration for S into E.
- *
- * The Metrics Platform Event is submitted to a stream (S) if S is in sample and the event
- * is not filtered according to the filtering rules for S.
- *
- * @see https://wikitech.wikimedia.org/wiki/Metrics_Platform
- *
- * @param {string} eventName
- * @param {Record<string, any>} [customData]
- *
- * @unstable
- * @deprecated
- */
-MetricsClient.prototype.dispatch = function ( eventName, customData ) {
-	const result = this.validateDispatchCall( eventName, customData );
-
-	if ( result ) {
-		this.processDispatchCall( new Date().toISOString(), eventName, result );
-	}
-};
-
-/**
- * If `streamConfigs` is `false` or the custom data cannot be formatted with
- * {@link getFormattedCustomData}, then a warning is logged and `false` is returned. Otherwise, the
- * formatted custom data is returned.
- *
- * @ignore
- *
- * @param {string} eventName
- * @param {Record<string, any>} [customData]
- * @return {FormattedCustomData|false}
- */
-MetricsClient.prototype.validateDispatchCall = function ( eventName, customData ) {
-	// T309083
-	if ( this.streamConfigs === false ) {
-		this.integration.logWarning(
-			'dispatch( ' + eventName + ', customData ) cannot dispatch events when stream configs are disabled.'
-		);
-
-		return false;
-	}
-
-	try {
-		return getFormattedCustomData( customData );
-	} catch ( e ) {
-		this.integration.logWarning(
-			// @ts-ignore TS2571
-			'dispatch( ' + eventName + ', customData ) called with invalid customData: ' + e.message +
-			'No event(s) will be produced.'
-		);
-
-		return false;
-	}
-};
-
-/**
- * Processes the result of a call to {@link MetricsClient.prototype.dispatch}.
- *
- * NOTE: This method should only be called **after** the stream configs have been fetched via
- * {@link MetricsClient.prototype.fetchStreamConfigs}.
- *
- * @ignore
- *
- * @param {string} timestamp The ISO 8601 formatted timestamp of the original call
- * @param {string} eventName
- * @param {Record<string, any>} [formattedCustomData]
- */
-MetricsClient.prototype.processDispatchCall = function (
-	timestamp,
-	eventName,
-	formattedCustomData
-) {
-	const streamNames = this.getStreamNamesForEvent( eventName );
-
-	// Produce the event(s)
-	for ( let i = 0; i < streamNames.length; ++i ) {
-		/* eslint-disable camelcase */
-		/** @type {MetricsPlatformEventData} */
-		const eventData = {
-			$schema: SCHEMA,
-			dt: timestamp,
-			name: eventName
-		};
-
-		if ( formattedCustomData ) {
-			eventData.custom_data = formattedCustomData;
-		}
-		/* eslint-enable camelcase */
-
-		const streamName = streamNames[ i ];
-		const streamConfig = getStreamConfigInternal( this.streamConfigs, streamName );
-
-		if ( !streamConfig ) {
-			// NOTE: This SHOULD never happen.
-			continue;
-		}
-
-		this.addRequiredMetadata( eventData, streamName );
-		this.contextController.addRequestedValues( eventData, streamConfig );
-
-		if (
-			this.samplingController.isStreamInSample( streamConfig ) &&
-			this.curationController.shouldProduceEvent( eventData, streamConfig )
-		) {
-			this.eventSubmitter.submitEvent( eventData );
-		}
-	}
+	this.eventSubmitter.submitEvent( eventData );
 };
 
 /**
@@ -422,26 +382,23 @@ MetricsClient.prototype.processDispatchCall = function (
  * occurring, e.g. the user (**performer**) tapping/clicking a UI element, or an app notifying the
  * server of its current state.
  *
- * An interaction event (E) MUST validate against the
- * /analytics/product_metrics/web/base/1.0.0 schema. At the time of writing, this means that E
+ * An interaction event (`E`) MUST validate against the
+ * /analytics/product_metrics/web/base/1.0.0 schema. At the time of writing, this means that `E`
  * MUST have the `action` property and MAY have the following properties:
  *
  * `action_subtype`
  * `action_source`
  * `action_context`
  *
- * If E does not have the `action` property, then a warning is logged.
+ * If `E` does not have the `action` property, then a warning is logged.
  *
- * @see https://wikitech.wikimedia.org/wiki/Metrics_Platform/Implementations
- * @todo Should we create an API subpage?
- * @todo Link to the page created as part of https://phabricator.wikimedia.org/T345906
- *
- * @unstable
+ * @see https://wikitech.wikimedia.org/wiki/Metrics_Platform/JavaScript_API#Submit_an_interaction_event
  *
  * @param {string} streamName
  * @param {string} schemaID
- * @param {InteractionAction} action
- * @param {InteractionContextData} [interactionData]
+ * @param {string} action
+ * @param {MetricsPlatform.InteractionContextData} [interactionData]
+ * @stable
  */
 MetricsClient.prototype.submitInteraction = function (
 	streamName,
@@ -450,18 +407,12 @@ MetricsClient.prototype.submitInteraction = function (
 	interactionData
 ) {
 	if ( !action ) {
-		this.integration.logWarning(
+		this.logger.logWarning(
 			'submitInteraction( ' + streamName + ', ..., action ) ' +
 			'called without required field "action". No event will be produced.'
 		);
 
 		return;
-	}
-
-	let currentUserExperiments = null;
-	// The new experiments fragment is only available for web/base 1.3.0
-	if ( schemaID === '/analytics/product_metrics/web/base/1.3.0' ) {
-		currentUserExperiments = this.integration.getCurrentUserExperiments();
 	}
 
 	const eventData = Object.assign(
@@ -471,8 +422,7 @@ MetricsClient.prototype.submitInteraction = function (
 		interactionData || {},
 		{
 			$schema: schemaID
-		},
-		currentUserExperiments
+		}
 	);
 
 	const streamConfig = getStreamConfigInternal( this.streamConfigs, streamName );
@@ -486,18 +436,16 @@ MetricsClient.prototype.submitInteraction = function (
 	this.submit( streamName, eventData );
 };
 
-const CLICK_SCHEMA_ID = '/analytics/product_metrics/web/base/1.2.0';
+const WEB_BASE_SCHEMA_ID = '/analytics/product_metrics/web/base/1.5.0';
 
 /**
- * See `MetricsClient#submitInteraction()`.
- *
- * @unstable
+ * See {@link MetricsPlatform.MetricsClient#submitInteraction}.
  *
  * @param {string} streamName
- * @param {ElementInteractionData} interactionData
+ * @param {MetricsPlatform.ElementInteractionData} interactionData
  */
 MetricsClient.prototype.submitClick = function ( streamName, interactionData ) {
-	this.submitInteraction( streamName, CLICK_SCHEMA_ID, 'click', interactionData );
+	this.submitInteraction( streamName, WEB_BASE_SCHEMA_ID, 'click', interactionData );
 };
 
 /**
@@ -505,6 +453,7 @@ MetricsClient.prototype.submitClick = function ( streamName, interactionData ) {
  *
  * @param {string} streamName
  * @return {boolean}
+ * @stable
  */
 MetricsClient.prototype.isStreamInSample = function ( streamName ) {
 	const streamConfig = getStreamConfigInternal( this.streamConfigs, streamName );
@@ -513,22 +462,61 @@ MetricsClient.prototype.isStreamInSample = function ( streamName ) {
 };
 
 /**
- * @param {string} streamName
- * @param {string} schemaID
- * @return {Instrument}
- */
-MetricsClient.prototype.newInstrument = function ( streamName, schemaID ) {
-	return new Instrument( this, streamName, schemaID );
-};
-
-/**
- *  Checks whether the user is enrolled in a specific experiment
+ * Creates a new {@link MetricsPlatform.Instrument} instance, which is bound to this
+ * `MetricsClient` instance.
  *
- * @param {string} experimentName
- * @return {boolean}
+ * @example
+ * // Create a new instrument by name:
+ *
+ * const m = require( '/path/to/metrics-platform' ).createMetricsClient();
+ * let i = m.newInstrument( 'my_instrument' );
+ *
+ * // … and by stream name/schema ID pair:
+ *
+ * i = m.newInstrument( 'my_stream_name', '/analytics/my/schema/id/1.0.0' );
+ *
+ * // … and by instrument name and stream name/schema ID pair:
+ *
+ * i = m.newInstrument( 'my_instrument', 'my_stream_name', '/analytics/my/schema/id/1.0.0' );
+ *
+ * @param {string} streamOrInstrumentName
+ * @param {string} [streamNameOrSchemaID]
+ * @param {string} [schemaID]
+ * @return {MetricsPlatform.Instrument}
+ * @stable
  */
-MetricsClient.prototype.isCurrentUserEnrolled = function ( experimentName ) {
-	return this.integration.isCurrentUserEnrolled( experimentName );
+MetricsClient.prototype.newInstrument = function (
+	streamOrInstrumentName,
+	streamNameOrSchemaID,
+	schemaID
+) {
+	let instrumentName;
+	let streamName;
+
+	if ( streamNameOrSchemaID === undefined ) {
+		// #newInstrument( instrumentName )
+
+		streamName = instrumentName = streamOrInstrumentName;
+		schemaID = WEB_BASE_SCHEMA_ID;
+	} else if ( schemaID === undefined ) {
+		// #newInstrument( streamName, schemaID )
+
+		streamName = streamOrInstrumentName;
+		schemaID = streamNameOrSchemaID;
+	} else {
+		// #newInstrument( instrumentName, streamName, schemaID )
+
+		instrumentName = streamOrInstrumentName;
+		streamName = streamNameOrSchemaID;
+	}
+
+	const result = new Instrument( this, streamName, schemaID );
+
+	if ( instrumentName ) {
+		result.setInstrumentName( instrumentName );
+	}
+
+	return result;
 };
 
 module.exports = MetricsClient;

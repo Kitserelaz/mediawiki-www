@@ -4,29 +4,19 @@ namespace MediaWiki\Extension\AbuseFilter;
 
 use MediaWiki\Extension\AbuseFilter\Filter\AbstractFilter;
 use MediaWiki\Language\Language;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\Language\RawMessage;
 use MediaWiki\Message\Message;
-use MessageLocalizer;
 
 /**
  * @todo Improve this once DI around Message objects is improved in MW core.
  */
 class SpecsFormatter {
-	public const SERVICE_NAME = 'AbuseFilterSpecsFormatter';
+	public const SERVICE_NAME = ServiceNames::SpecsFormatter;
 
-	/** @var MessageLocalizer */
-	private $messageLocalizer;
-
-	/**
-	 * @param MessageLocalizer $messageLocalizer
-	 */
-	public function __construct( MessageLocalizer $messageLocalizer ) {
-		$this->messageLocalizer = $messageLocalizer;
+	public function __construct( private MessageLocalizer $messageLocalizer ) {
 	}
 
-	/**
-	 * @param MessageLocalizer $messageLocalizer
-	 */
 	public function setMessageLocalizer( MessageLocalizer $messageLocalizer ): void {
 		$this->messageLocalizer = $messageLocalizer;
 	}
@@ -45,10 +35,6 @@ class SpecsFormatter {
 		return $msg->isDisabled() ? htmlspecialchars( $action ) : $msg->escaped();
 	}
 
-	/**
-	 * @param string $action
-	 * @return Message
-	 */
 	public function getActionMessage( string $action ): Message {
 		// Give grep a chance to find the usages:
 		// abusefilter-action-tag, abusefilter-action-throttle, abusefilter-action-warn,
@@ -91,7 +77,7 @@ class SpecsFormatter {
 			// abusefilter-throttle-site, abusefilter-throttle-creationdate, abusefilter-throttle-editcount
 			// abusefilter-throttle-range, abusefilter-throttle-page, abusefilter-throttle-none
 			foreach ( $parameters as &$val ) {
-				if ( strpos( $val, ',' ) !== false ) {
+				if ( str_contains( $val, ',' ) ) {
 					$subGroups = explode( ',', $val );
 					foreach ( $subGroups as &$group ) {
 						$msg = $this->messageLocalizer->msg( "abusefilter-throttle-$group" );

@@ -8,15 +8,19 @@ namespace MediaWiki\Extension\TemplateStyles;
  */
 
 use CSSJanus;
+use MediaWiki\Category\TrackingCategories;
+use MediaWiki\Config\Config;
+use MediaWiki\Config\ConfigFactory;
 use MediaWiki\Content\CodeContentHandler;
 use MediaWiki\Content\Content;
 use MediaWiki\Content\Renderer\ContentParseParams;
 use MediaWiki\Content\ValidationParams;
-use MediaWiki\MediaWikiServices;
 use MediaWiki\Message\Message;
 use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Status\Status;
+use MediaWiki\Title\Title;
 use StatusValue;
+use Wikimedia\CSS\Objects\Stylesheet as CSSStylesheet;
 use Wikimedia\CSS\Parser\Parser as CSSParser;
 use Wikimedia\CSS\Util as CSSUtil;
 
@@ -25,11 +29,19 @@ use Wikimedia\CSS\Util as CSSUtil;
  */
 class TemplateStylesContentHandler extends CodeContentHandler {
 
-	/**
-	 * @param string $modelId
-	 */
-	public function __construct( $modelId = 'sanitized-css' ) {
+	private Config $config;
+
+	public function __construct(
+		string $modelId,
+		private readonly TrackingCategories $trackingCategories,
+		private readonly ConfigFactory $configFactory,
+	) {
 		parent::__construct( $modelId, [ CONTENT_FORMAT_CSS ] );
+	}
+
+	private function getConfig(): Config {
+		$this->config ??= $this->configFactory->makeConfig( 'templatestyles' );
+		return $this->config;
 	}
 
 	/**
@@ -43,9 +55,7 @@ class TemplateStylesContentHandler extends CodeContentHandler {
 		return $this->sanitize( $content, [ 'novalue' => true, 'severity' => 'fatal' ] );
 	}
 
-	/**
-	 * @return string
-	 */
+	/** @inheritDoc */
 	protected function getContentClass() {
 		return TemplateStylesContent::class;
 	}
@@ -59,7 +69,6 @@ class TemplateStylesContentHandler extends CodeContentHandler {
 		ParserOutput &$output
 	) {
 		'@phan-var TemplateStylesContent $content';
-		$services = MediaWikiServices::getInstance();
 		$page = $cpoParams->getPage();
 		$parserOptions = $cpoParams->getParserOptions();
 
@@ -69,21 +78,25 @@ class TemplateStylesContentHandler extends CodeContentHandler {
 		if ( $cpoParams->getGenerateHtml() ) {
 			$html = "";
 			$html .= "<pre class=\"mw-code mw-css\" dir=\"ltr\">\n";
-			$html .= htmlspecialchars( $content->getNativeData(), ENT_NOQUOTES );
+			$html .= htmlspecialchars( $content->getText(), ENT_NOQUOTES );
 			$html .= "\n</pre>\n";
 		} else {
 			$html = '';
 		}
 
 		$output->clearWrapperDivClass();
-		$output->setRawText( $html );
+		$output->setContentHolderText( $html );
 
-		$status = $this->sanitize( $content, [ 'novalue' => true, 'class' => $parserOptions->getWrapOutputClass() ] );
-		if ( $status->getErrors() ) {
-			foreach ( $status->getErrors() as $error ) {
-				$output->addWarningMsg( $error['message'], $error['params'] );
+		$status = $this->sanitize( $content, [
+			'novalue' => true,
+			'class' => $parserOptions->getWrapOutputClass(),
+			'parserOutput' => $output
+		] );
+		if ( $status->getMessages() ) {
+			foreach ( $status->getMessages() as $msg ) {
+				$output->addWarningMsgVal( $msg );
 			}
-			$services->getTrackingCategories()->addTrackingCategory(
+			$this->trackingCategories->addTrackingCategory(
 				$output,
 				'templatestyles-stylesheet-error-category',
 				$page
@@ -105,7 +118,7 @@ class TemplateStylesContentHandler extends CodeContentHandler {
 		}
 		foreach ( $errors as $error ) {
 			$error[0] = 'templatestyles-error-' . $error[0];
-			call_user_func_array( [ $status, $severity ], $error );
+			$status->$severity( ...$error );
 		}
 	}
 
@@ -120,7 +133,8 @@ class TemplateStylesContentHandler extends CodeContentHandler {
 	 *  - novalue: (bool) Don't bother returning the actual stylesheet, just
 	 *    fill the Status with warnings.
 	 *  - severity: (string) Whether to consider errors as 'warning' or 'fatal'
-	 * @return Status
+	 *  - parserOutput: (ParserOutput) Register image links to this parserOutput
+	 * @return Status<string>
 	 */
 	public function sanitize( TemplateStylesContent $content, array $options = [] ) {
 		$options += [
@@ -130,12 +144,13 @@ class TemplateStylesContentHandler extends CodeContentHandler {
 			'minify' => true,
 			'novalue' => false,
 			'severity' => 'warning',
+			'parserOutput' => null
 		];
 
 		$status = Status::newGood();
 
 		$style = $content->getText();
-		$maxSize = Hooks::getConfig()->get( 'TemplateStylesMaxStylesheetSize' );
+		$maxSize = $this->getConfig()->get( 'TemplateStylesMaxStylesheetSize' );
 		if ( $maxSize !== null && strlen( $style ) > $maxSize ) {
 			$status->fatal(
 				// Status::getWikiText() chokes on the Message::sizeParam if we
@@ -149,6 +164,9 @@ class TemplateStylesContentHandler extends CodeContentHandler {
 			$style = CSSJanus::transform( $style, true, false );
 		}
 
+		$matcherFactory = Hooks::getMatcherFactory();
+		$matcherFactory->clearFileNames();
+
 		// Parse it, and collect any errors
 		$cssParser = CSSParser::newFromString( $style );
 		$stylesheet = $cssParser->parseStylesheet();
@@ -161,16 +179,21 @@ class TemplateStylesContentHandler extends CodeContentHandler {
 		// Just in case
 		$sanitizer->clearSanitizationErrors();
 		$stylesheet = $sanitizer->sanitize( $stylesheet );
+		'@phan-var ?CSSStylesheet $stylesheet';
 		self::processErrors( $status, $sanitizer->getSanitizationErrors(), $options['severity'] );
 		$sanitizer->clearSanitizationErrors();
 
 		// Stringify it while minifying
-		$value = CSSUtil::stringify( $stylesheet, [ 'minify' => $options['minify'] ] );
+		$value = $stylesheet === null ? '' :
+			CSSUtil::stringify( $stylesheet, [ 'minify' => $options['minify'] ] );
 
-		// Sanity check, don't allow "</style" if one somehow sneaks through the sanitizer
-		if ( preg_match( '!</style!i', $value ) ) {
+		// Sanity check, don't allow "</style" if one somehow sneaks through the sanitizer.
+		// Also, don't allow "<ABC" if one somehow sneaks through the sanitizer
+		// This matters if the style tag is in a foreign namespace (e.g. <svg>) which
+		// has different rules from normal HTML.
+		if ( preg_match( '!</?[a-z\!]!i', $value ) ) {
 			$value = '';
-			$status->fatal( 'templatestyles-end-tag-injection' );
+			$status->fatal( 'templatestyles-tag-injection' );
 		}
 
 		if ( !$options['novalue'] ) {
@@ -178,6 +201,16 @@ class TemplateStylesContentHandler extends CodeContentHandler {
 
 			// Sanity check, don't allow raw U+007F if one somehow sneaks through the sanitizer
 			$status->value = strtr( $status->value, [ "\x7f" => '�' ] );
+		}
+
+		if ( $options['parserOutput'] ) {
+			$fileNames = array_unique( $matcherFactory->getFileNames() );
+			foreach ( $fileNames as $file ) {
+				$fileTitle = Title::makeTitleSafe( NS_FILE, $file );
+				if ( $fileTitle ) {
+					$options['parserOutput']->addImage( $fileTitle );
+				}
+			}
 		}
 
 		return $status;

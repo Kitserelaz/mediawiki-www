@@ -12,14 +12,14 @@
 			"Kareyac",
 			"Lemondoge",
 			"MaxBioHazard",
+			"MidnightLG",
 			"Movses",
 			"NR Deblocked",
 			"Okras",
 			"Ole Yves",
 			"Patrick Star",
-			"Stjn",
 			"Qwrop",
-			"MidnightLG"
+			"Stjn"
 		]
 	},
 	"content-model-scribunto": "Модуль Scribunto",
@@ -48,7 +48,7 @@
 	"scribunto-common-timeout": "Время, выделенное для выполнения скриптов, истекло.",
 	"scribunto-common-oom": "Количество памяти, выделенное для выполнения скриптов, превышено.",
 	"scribunto-common-backtrace": "Трассировка вызовов:",
-	"scribunto-common-no-details": "Нет никаких подробностей.",
+	"scribunto-common-no-details": "Нет информации о местонахождении кода.",
 	"scribunto-lua-in-function": "в функции «$1»",
 	"scribunto-lua-in-main": "в основной части кода",
 	"scribunto-lua-in-function-at": "в функции $1:$2",

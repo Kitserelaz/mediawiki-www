@@ -1,0 +1,33 @@
+{
+	"@metadata": {
+		"authors": [
+			"Bosogo"
+		]
+	},
+	"pagetriage-please-wait": "Күтө туруңуз...",
+	"pagetriage-bytes": "$1 {{PLURAL:$1|байт}}",
+	"pagetriage-edits": "$1 {{PLURAL:$1|түзөтүү}}",
+	"pagetriage-categories": "$1 {{PLURAL:$1|категория}}",
+	"pagetriage-no-categories": "Категориялар жок",
+	"pagetriage-author-blocked": "Бөгөттөлгөн",
+	"pagetriage-author-bot": "Бот",
+	"pagetriage-user-creation-dateformat": "ЖЖЖЖ-АА-КК",
+	"pagetriage-filter-article": "Макала",
+	"pagetriage-filter-username": "Колдонуучунун аты",
+	"pagetriage-filter-stat-bots": "Боттор тарабынан",
+	"pagetriage-filter-stat-no-categories": "Категориялар жок",
+	"pagetriage-filter-stat-namespace": "Аталыш мейкиндиги",
+	"pagetriage-tags-param-article-label": "Макала:",
+	"pagetriage-tags-param-date-label": "Дата:",
+	"pagetriage-tags-param-free-yes-label": "Ооба",
+	"pagetriage-tags-param-free-no-label": "Жок",
+	"pagetriage-info-history-header": "Тарых",
+	"pagetriage-info-help": "жардам",
+	"pagetriage-info-problem-no-categories": "Категориялар жок",
+	"pagetriage-toolbar-learn-more": "Толук маалымат »",
+	"pagetriage-mark-title": "Текшерилди деп белгилөө",
+	"pagetriage-mark-as-reviewed": "Текшерилди деп белгилөө",
+	"pagetriage-wikilove-edit-count": "$1 {{PLURAL:$1|түзөтүү}}",
+	"pagetriage-toolbar-close": "Жабуу",
+	"pagetriage-thank-link": "{{GENDER:$1|{{GENDER:$2|Ыраазылык билдирүү}}}}"
+}

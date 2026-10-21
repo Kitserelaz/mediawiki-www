@@ -1,0 +1,52 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" bootstrap="tests/phpunit/bootstrap.php" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.3/phpunit.xsd" colors="true" backupGlobals="false" convertDeprecationsToExceptions="true" convertErrorsToExceptions="true" convertNoticesToExceptions="true" convertWarningsToExceptions="true" forceCoversAnnotation="true" failOnWarning="true" stopOnFailure="false" failOnRisky="true" beStrictAboutTestsThatDoNotTestAnything="true" beStrictAboutOutputDuringTests="true" verbose="false" printerClass="MediaWikiPHPUnitResultPrinter" stderr="true">
+  <php>
+    <ini name="memory_limit" value="-1" />
+    <ini name="max_execution_time" value="0" />
+  </php>
+  <testsuites>
+    <testsuite name="upgrade">
+      <directory>/var/www/mediawiki/extensions/CreateWiki/tests/phpunit</directory>
+      <directory>/var/www/mediawiki/extensions/ManageWiki/tests/phpunit</directory>
+    </testsuite>
+  </testsuites>
+  <groups>
+    <exclude>
+      <group>Broken</group>
+    </exclude>
+  </groups>
+  <coverage includeUncoveredFiles="false">
+    <include>
+      <directory suffix=".php">includes</directory>
+      <directory suffix=".php">languages</directory>
+      <directory suffix=".php">maintenance</directory>
+      <directory suffix=".php">extensions</directory>
+      <directory suffix=".php">skins</directory>
+    </include>
+    <exclude>
+      <directory suffix=".php">languages/messages</directory>
+      <directory suffix=".php">maintenance/benchmarks</directory>
+      <directory suffix=".php">extensions/*/tests</directory>
+      <directory suffix=".php">skins/*/tests</directory>
+    </exclude>
+  </coverage>
+  <extensions>
+    <extension class="Ergebnis\PHPUnit\SlowTestDetector\Extension">
+      <arguments>
+        <array>
+          <element key="maximum-duration">
+            <integer>100</integer>
+          </element>
+          <element key="maximum-count">
+            <integer>10</integer>
+          </element>
+          <element key="stderr">
+            <boolean>true</boolean>
+          </element>
+        </array>
+      </arguments>
+    </extension>
+    <extension class="MediaWikiLoggerPHPUnitExtension" />
+    <extension class="MediaWikiTeardownPHPUnitExtension" />
+  </extensions>
+</phpunit>

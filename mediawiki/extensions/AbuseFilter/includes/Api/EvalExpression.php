@@ -14,33 +14,14 @@ use Wikimedia\ParamValidator\ParamValidator;
 
 class EvalExpression extends ApiBase {
 
-	/** @var RuleCheckerFactory */
-	private $ruleCheckerFactory;
-
-	/** @var AbuseFilterPermissionManager */
-	private $afPermManager;
-
-	/** @var VariableGeneratorFactory */
-	private $afVariableGeneratorFactory;
-
-	/**
-	 * @param ApiMain $main
-	 * @param string $action
-	 * @param RuleCheckerFactory $ruleCheckerFactory
-	 * @param AbuseFilterPermissionManager $afPermManager
-	 * @param VariableGeneratorFactory $afVariableGeneratorFactory
-	 */
 	public function __construct(
 		ApiMain $main,
-		$action,
-		RuleCheckerFactory $ruleCheckerFactory,
-		AbuseFilterPermissionManager $afPermManager,
-		VariableGeneratorFactory $afVariableGeneratorFactory
+		string $action,
+		private readonly RuleCheckerFactory $ruleCheckerFactory,
+		private readonly AbuseFilterPermissionManager $afPermManager,
+		private readonly VariableGeneratorFactory $afVariableGeneratorFactory
 	) {
 		parent::__construct( $main, $action );
-		$this->ruleCheckerFactory = $ruleCheckerFactory;
-		$this->afPermManager = $afPermManager;
-		$this->afVariableGeneratorFactory = $afVariableGeneratorFactory;
 	}
 
 	/**
@@ -68,10 +49,6 @@ class EvalExpression extends ApiBase {
 		}
 	}
 
-	/**
-	 * @param string $expr
-	 * @return Status
-	 */
 	private function evaluateExpression( string $expr ): Status {
 		$ruleChecker = $this->ruleCheckerFactory->newRuleChecker();
 		if ( !$ruleChecker->checkSyntax( $expr )->isValid() ) {

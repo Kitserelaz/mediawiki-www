@@ -80,7 +80,7 @@ class MathRestbaseInterface {
 					$response = $results[ $j ][ 'response' ];
 					$mml = $rbi->evaluateContentResponse( 'mml', $response, $requests[$j] );
 					$rbi->mml = $mml;
-				} catch ( MathRestbaseException $e ) {
+				} catch ( MathRestbaseException ) {
 					// FIXME: Why is this silenced? Doesn't this leave invalid data behind?
 				}
 				$j++;
@@ -134,6 +134,7 @@ class MathRestbaseInterface {
 		}
 	}
 
+	/** @return bool */
 	public function checkTeX() {
 		$request = $this->getCheckRequest();
 		$requestResult = $this->executeRestbaseCheckRequest( $request );
@@ -184,16 +185,16 @@ class MathRestbaseInterface {
 			try {
 				$response = $requestResponse[ 'response' ];
 				$rbi->evaluateRestbaseCheckResponse( $response );
-			} catch ( Exception $e ) {
+			} catch ( Exception ) {
 			}
 		}
 		self::batchGetMathML( $rbis, $multiHttpClient );
 	}
 
 	private function getMultiHttpClient(): MultiHttpClient {
-		global $wgMathConcurrentReqs;
+		global $wgMathHTTPProxy, $wgMathConcurrentReqs;
 		$multiHttpClient = MediaWikiServices::getInstance()->getHttpRequestFactory()->createMultiClient(
-			[ 'maxConnsPerHost' => $wgMathConcurrentReqs ] );
+			[ 'maxConnsPerHost' => $wgMathConcurrentReqs, 'proxy' => $wgMathHTTPProxy ] );
 
 		return $multiHttpClient;
 	}

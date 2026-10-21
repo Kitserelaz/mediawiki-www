@@ -1,0 +1,30 @@
+{
+	"@metadata": {
+		"authors": [
+			"Pikne"
+		]
+	},
+	"score-deprecated-category": "Vananenud noodiatribuutidega leheküljed",
+	"score-deprecated-category-desc": "Lehekülg kasutab tarkvaralisa Score pakutavaid noodiatribuute, mis on vananenud. Need on: \"override_audio\", \"override_ogg\" ja \"override_midi\".",
+	"score-desc": "Lisab sildi, mis vormistab noodid LilyPondi abil.",
+	"score-download-midi-file": "Laadi alla MIDI-fail",
+	"score-download-source-file": "Laadi alla LilyPondi fail",
+	"score-error-category": "Nootide viimistlemise tõrkega leheküljed",
+	"score-error-category-desc": "Nootide viimistlemise juures esines tõrge.",
+	"score-use-category": "Tarkvaralisa Score kasutavad leheküljed",
+	"score-use-category-desc": "Lehekülg kasutab tarkvaralisa [https://www.mediawiki.org/wiki/Extension:Score Score].",
+	"score-visualeditor-mwscoredialog-audio": "Lisa helifail (vaikimisi automaatselt genereeritud)",
+	"score-visualeditor-mwscoredialog-card-advanced": "Täpsemalt",
+	"score-visualeditor-mwscoredialog-card-audio": "Heli",
+	"score-visualeditor-mwscoredialog-lang": "Keel",
+	"score-visualeditor-mwscoredialog-notelanguage": "Noodinimede keel",
+	"score-visualeditor-mwscoredialog-override-audio": "Kasuta olemasolevat helifaili",
+	"score-visualeditor-mwscoredialog-override-audio-placeholder": "Olemasoleva helifaili nimi",
+	"score-visualeditor-mwscoredialog-override-midi": "Kasuta olemasolevat MIDI-faili",
+	"score-visualeditor-mwscoredialog-override-midi-placeholder": "Olemasoleva MIDI-faili nimi",
+	"score-visualeditor-mwscoredialog-raw": "See on täielik LilyPondi fail",
+	"score-visualeditor-mwscoredialog-title": "Noodistik",
+	"datatypes-type-musical-notation": "Noodistik",
+	"wikibase-listdatatypes-musical-notation-head": "Noodistik",
+	"wikibase-listdatatypes-musical-notation-body": "Literaalandmete väli LilyPondi süntaksis kirjutatud nootide jaoks."
+}

@@ -1,0 +1,121 @@
+<?php
+
+namespace SMW\MediaWiki\Specials;
+
+use MediaWiki\MediaWikiServices;
+use MediaWiki\Skin\SkinComponentUtils;
+use MediaWiki\SpecialPage\SpecialPage;
+use SMW\Exporter\Escaper;
+
+/**
+ * Resolve (redirect) pretty URIs (or "short URIs") to the equivalent full MediaWiki
+ * representation.
+ *
+ * @license GPL-2.0-or-later
+ * @since 1.0
+ *
+ * @author Denny Vrandecic
+ */
+class SpecialURIResolver extends SpecialPage {
+
+	/**
+	 * @see SpecialPage::__construct
+	 */
+	public function __construct() {
+		// MediaWiki 1.46 deprecated the SpecialPage constructor flags; the
+		// page stays unlisted via the isListed() override below.
+		parent::__construct( 'URIResolver' );
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function isListed(): bool {
+		return false;
+	}
+
+	/**
+	 * @see SpecialPage::execute
+	 *
+	 * @param string $query string
+	 */
+	public function execute( $query ): void {
+		$out = $this->getOutput();
+
+		// #2344, It is believed that when no HTTP_ACCEPT is available then a
+		// request came from a "defect" mobile device without a correct accept
+		// header
+		if ( !isset( $_SERVER['HTTP_ACCEPT'] ) ) {
+			$_SERVER['HTTP_ACCEPT'] = '';
+		}
+
+		if ( $query === null || trim( $query ) === '' ) {
+			if ( stristr( $_SERVER['HTTP_ACCEPT'], 'RDF' ) ) {
+				$out->redirect( SpecialPage::getTitleFor( 'ExportRDF' )->getFullURL( [ 'stats' => '1' ] ), '303' );
+			} else {
+				$this->setHeaders();
+				$out->addHTML(
+					'<p>' .
+						$this->msg( 'smw_uri_doc', 'https://www.w3.org/2001/tag/issues.html#httpRange-14' )->parse() .
+					'</p>'
+				);
+			}
+		} else {
+			$query = Escaper::decodeUri( $query );
+			$query = str_replace( '_', '%20', $query );
+			$query = urldecode( $query );
+			$title = MediaWikiServices::getInstance()->getTitleFactory()->newFromText( $query );
+
+			// In case the title doesn't exist throw an error page
+			if ( $title === null ) {
+				$out->showErrorPage( 'badtitle', 'badtitletext' );
+			} elseif ( stristr( $_SERVER['HTTP_ACCEPT'], 'RDF' ) ) {
+				$out->redirect(
+					SkinComponentUtils::makeSpecialUrl( 'ExportRDF', [ 'xmlmime' => 'rdf' ] )
+				);
+			} else {
+				$targetUrl = $title->getFullURL();
+
+				// Validate the resolved target before redirecting: a malformed
+				// authority-like title can make getFullURL() point off-host,
+				// which would turn the resolver into an open redirect.
+				if ( $this->isLocalRedirectTarget( $targetUrl ) ) {
+					$out->redirect( $targetUrl, '303' );
+				} else {
+					$out->showErrorPage( 'badtitle', 'badtitletext' );
+				}
+			}
+		}
+	}
+
+	/**
+	 * Whether a resolved redirect target is safe to hand to the browser: it must
+	 * resolve to the current host and must not carry userinfo. The final URL is
+	 * validated at the sink rather than the input path, so authority-like paths
+	 * cannot smuggle a foreign host past normalisation.
+	 */
+	private function isLocalRedirectTarget( string $url ): bool {
+		$urlUtils = MediaWikiServices::getInstance()->getUrlUtils();
+
+		$targetBits = $urlUtils->parse( (string)$urlUtils->expand( $url, PROTO_CURRENT ) );
+		$serverBits = $urlUtils->parse( (string)$urlUtils->expand( '/', PROTO_CURRENT ) );
+
+		if ( $targetBits === null || $serverBits === null ) {
+			return false;
+		}
+
+		$targetHost = $targetBits['host'] ?? '';
+		$serverHost = $serverBits['host'] ?? '';
+
+		// Host comparison only; port is intentionally out of scope.
+		return $targetHost !== '' && $serverHost !== '' && strcasecmp( $targetHost, $serverHost ) === 0;
+	}
+
+	/**
+	 * @see SpecialPage::getGroupName
+	 */
+	protected function getGroupName(): string {
+		return 'smw_group';
+	}
+
+}

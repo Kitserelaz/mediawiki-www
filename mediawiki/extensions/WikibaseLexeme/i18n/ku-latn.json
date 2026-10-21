@@ -1,0 +1,43 @@
+{
+	"@metadata": {
+		"authors": [
+			"Balyozxane",
+			"Bikarhêner",
+			"Cûndûllah el-Kurdî",
+			"George Animal",
+			"Ghybu",
+			"Guherto"
+		]
+	},
+	"datatypes-type-wikibase-form": "Form",
+	"datatypes-type-wikibase-lexeme": "Leksem",
+	"datatypes-type-wikibase-sense": "Wate",
+	"special-mergelexemes": "Du lekseman bike yek",
+	"special-newlexeme": "Leksemeke nû çêke",
+	"wikibase-lexeme-summary-wbeditentity-create-form": "Formeke nû lê zêde bike",
+	"wikibase-listdatatypes-wikibase-lexeme-head": "Leksem",
+	"wikibase-listdatatypes-wikibase-sense-head": "Wate",
+	"wikibase-pageinfo-wbl-forms": "Hejmara forman",
+	"wikibase-pageinfo-wbl-senses": "Hejmara wateyan",
+	"wikibaselexeme-add-form": "Formekê lê zêde bike",
+	"wikibaselexeme-add-sense": "Maneyê lê zêde bike",
+	"wikibaselexeme-diffview-form": "Form",
+	"wikibaselexeme-diffview-grammatical-feature": "taybetmendiya rêzimanî",
+	"wikibaselexeme-diffview-language": "ziman",
+	"wikibaselexeme-diffview-lexical-category": "kategoriya ferhengî",
+	"wikibaselexeme-diffview-sense": "Mane",
+	"wikibaselexeme-field-language-label": "Ziman",
+	"wikibaselexeme-field-lexical-category-label": "Kategoriya ferhengî",
+	"wikibaselexeme-form-field-language-label": "Guhartoya rênivîsê",
+	"wikibaselexeme-form-grammatical-features": "Taybetmendiyên rêzimanî",
+	"wikibaselexeme-gloss-field-language-label": "Ziman",
+	"wikibaselexeme-header-forms": "Form",
+	"wikibaselexeme-header-senses": "Mane",
+	"wikibaselexeme-lemma-field-language-label": "Guhartoya rênivîsê",
+	"wikibaselexeme-newlexeme-fieldset": "Leksemeke nû çêke",
+	"wikibaselexeme-newlexeme-language": "Zimanê leksemê",
+	"wikibaselexeme-newlexeme-language-placeholder": "Zimanekî binivîse, wek mînak kurdî",
+	"wikibaselexeme-newlexeme-lexicalcategory": "Kategoriya peyvê",
+	"wikibaselexeme-unknown-category": "Nenas",
+	"wikibaselexeme-unknown-language": "Zimanê nenas"
+}

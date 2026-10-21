@@ -10,6 +10,7 @@
 	},
 	"ipinfo-desc": "Giver information om en IP-adresse.",
 	"ipinfo-infobox-title": "IP-information",
+	"ipinfo-infobox-temporary-account-help": "Flere IP-adresser er tilknyttede denne midlertidige konto. Du ser IP-information for den senest anvendte IP-adressen. [[Special:IPInfo/$1|Vis IP-information for alle IP-adresser]].",
 	"ipinfo-property-label-location": "Sted",
 	"ipinfo-property-label-ipversion": "Version",
 	"ipinfo-property-label-organization": "Organisation",
@@ -79,9 +80,9 @@
 	"ipinfo-widget-error-default": "IP-informationerne kunne ikke hentes.",
 	"ipinfo-widget-error-no-data": "Der er ingen data for denne IP-adresse fra $1.",
 	"ipinfo-widget-error-wrong-ip": "Den angivne IP-adresse matchede ikke loggen eller sideversionen.",
-	"ipinfo-widget-error-ip-no-edits": "IP-information for denne adresse kan ikke hentes, fordi der ikke er redigeret fra den.",
+	"ipinfo-widget-error-ip-no-contributions": "IP-information for denne adresse kan ikke hentes, fordi der ikke er redigeret fra den.",
 	"ipinfo-preference-enable": "Vis IP-informationsværktøjet på Special:Contributions-siden for uregistrede bidragsydere.",
-	"ipinfo-preference-use-agreement": "Jeg accepterer at bruge denne information til mit patruljerings- og anti-hærværksarbejde.",
+	"ipinfo-preference-use-agreement": "Jeg accepterer at bruge denne information til mit patruljering og hærværksbekæmpelse",
 	"ipinfo-preference-agreement-error": "Du skal aktivere IP-informationsværktøjet før du accepterer dets brugsbetingelser.",
 	"ipinfo-infobox-use-terms": "IP-informationsværktøjet bruger MaxMind-databasen til at vise detaljer som placering, proxy og hvor mange enheder der deler denne IP-adresse.",
 	"ipinfo-infobox-submit-agreement": "Aktiver IP-informationsværktøjet",
@@ -132,5 +133,8 @@
 	"ipinfo-special-ipinfo-user-tool-links": "For $1",
 	"ipinfo-special-ipinfo-sort-explainer": "Knapperne i tabeloverskrifterne kan bruges til at sortere tabellen efter den pågældende kolonnes værdi.",
 	"ipinfo-special-ipinfo-column-ip": "IP",
-	"ipinfo-special-ipinfo-no-results": "Ingen IP-information er tilgængelige for $1."
+	"ipinfo-special-ipinfo-no-results": "Ingen IP-information er tilgængelige for $1.",
+	"ipinfo-popup-link-text": "Se alle IP-information",
+	"ipinfo-help-text": "De viste oplysninger kommer fra MaxMind og [https://docs.spur.us/data-types Spur]. De er muligvis ikke helt nøjagtige.",
+	"ipinfo-learn-more-link": "[https://www.mediawiki.org/wiki/Special:MyLanguage/Trust_and_Safety_Product/IP_Info Få mere at vide om denne funktion]"
 }

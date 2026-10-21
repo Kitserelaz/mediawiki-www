@@ -1,6 +1,8 @@
 <?php
 // Explicit CLI-only bootstrap; ordinary requests can never enter this configuration.
 if (PHP_SAPI !== 'cli') { throw new RuntimeException('Bootstrap is CLI-only'); }
+// PHPUnit loads settings inside a function; helper methods populate this global.
+global $wgConf, $wgManageWikiExtensions, $wgManageWikiSettings, $wgManageWikiNamespacesAdditional, $farmSecrets;
 require __DIR__ . '/private.php';
 require __DIR__ . '/runtime.php';
 $wgDBtype = 'mysql';
@@ -27,7 +29,12 @@ $wgVirtualDomainsMapping = [
     'virtual-createwiki' => ['db' => 'wikidb'],
     'virtual-createwiki-central' => ['db' => 'metawiki'],
     'virtual-managewiki' => ['db' => 'wikidb'],
+    'virtual-managewiki-central' => ['db' => 'metawiki'],
     'virtual-centralauth' => ['db' => 'centralauth'],
+    'virtual-botpasswords' => ['db' => 'centralauth'],
+    'virtual-globalblocking' => ['db' => 'centralauth'],
+    'virtual-oathauth' => ['db' => 'centralauth'],
+    'virtual-importdump' => ['db' => 'metawiki'],
     'virtual-checkuser-global' => ['db' => 'wikidb'],
 ];
 defined('MW_DB') || define('MW_DB', $wgDBname);
@@ -40,8 +47,8 @@ farmSiteConfiguration();
 // Disable them only for this explicit CLI bootstrap; schema-update hooks stay enabled.
 $wgHooks['SetupAfterCache'][] = static fn() => false;
 $wgHooks['CreateWikiGenerateDatabaseLists'][] = 'MirahezeFunctions::onGenerateDatabaseLists';
-$wgHooks['CreateWikiDataFactoryBuilder'][] = 'MirahezeFunctions::onCreateWikiDataFactoryBuilder';
 $wgCreateWikiCacheDirectory = '/var/www/mediawiki/cw_cache';
+$wgManageWikiCacheDirectory = $wgCreateWikiCacheDirectory;
 $wgCentralAuthDatabase = 'centralauth';
 $wgGlobalPreferencesDB = 'centralauth';
 $wgCreateWikiDatabaseClusters = [];

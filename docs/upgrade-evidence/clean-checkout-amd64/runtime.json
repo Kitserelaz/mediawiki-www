@@ -1,0 +1,132 @@
+{
+  "platform": "linux/amd64",
+  "checks": {
+    "oathauth-dependencies": {
+      "exit_code": 0,
+      "command": [
+        "docker",
+        "run",
+        "--rm",
+        "--platform",
+        "linux/amd64",
+        "--entrypoint",
+        "php",
+        "cloudwiki-php:upgrade-clean-20261018-amd64",
+        "-r",
+        "require '/var/www/mediawiki/extensions/OATHAuth/vendor/autoload.php'; foreach (['Webauthn\\PublicKeyCredential', 'Endroid\\QrCode\\QrCode'] as $class) { if (!class_exists($class)) { throw new RuntimeException($class); } } echo 'OATHAuth WebAuthn and QR dependencies autoloaded successfully.', PHP_EOL;"
+      ]
+    },
+    "webauthn-dependencies": {
+      "exit_code": 0,
+      "command": [
+        "docker",
+        "run",
+        "--rm",
+        "--platform",
+        "linux/amd64",
+        "--entrypoint",
+        "php",
+        "cloudwiki-php:upgrade-clean-20261018-amd64",
+        "-r",
+        "require '/var/www/mediawiki/extensions/WebAuthn/vendor/autoload.php'; if (!class_exists('Webauthn\\PublicKeyCredential')) { throw new RuntimeException('WebAuthn dependency missing'); } echo 'WebAuthn dependencies autoloaded successfully.', PHP_EOL;"
+      ]
+    },
+    "architecture": {
+      "exit_code": 0,
+      "command": [
+        "docker",
+        "run",
+        "--rm",
+        "--platform",
+        "linux/amd64",
+        "--entrypoint",
+        "sh",
+        "-v",
+        "/Volumes/1TB SSD mew/www/docker/private-backup/createwiki-managewiki-upgrade/clean-checkout-20261018-v3/docker/tests/architecture.sh:/opt/architecture.sh:ro",
+        "cloudwiki-php:upgrade-clean-20261018-amd64",
+        "/opt/architecture.sh"
+      ]
+    },
+    "elastica": {
+      "exit_code": 0,
+      "command": [
+        "docker",
+        "run",
+        "--rm",
+        "--platform",
+        "linux/amd64",
+        "--entrypoint",
+        "php",
+        "-v",
+        "/Volumes/1TB SSD mew/www/docker/private-backup/createwiki-managewiki-upgrade/clean-checkout-20261018-v3/docker/tests/elastica.php:/opt/elastica.php:ro",
+        "cloudwiki-php:upgrade-clean-20261018-amd64",
+        "/opt/elastica.php"
+      ]
+    },
+    "php-lint": {
+      "exit_code": 0,
+      "command": [
+        "docker",
+        "run",
+        "--rm",
+        "--platform",
+        "linux/amd64",
+        "--entrypoint",
+        "python3",
+        "-v",
+        "/Volumes/1TB SSD mew/www/docker/private-backup/createwiki-managewiki-upgrade/clean-checkout-20261018-v3/scripts/lint-php-image.py:/opt/lint-php-image.py:ro",
+        "-v",
+        "/Volumes/1TB SSD mew/www/docker/private-backup/createwiki-managewiki-upgrade/clean-checkout-20261018-v3/docs/php-syntax-exceptions.json:/opt/php-syntax-exceptions.json:ro",
+        "cloudwiki-php:upgrade-clean-20261018-amd64",
+        "/opt/lint-php-image.py"
+      ]
+    },
+    "web-assets": {
+      "exit_code": 0,
+      "command": [
+        "docker",
+        "run",
+        "--rm",
+        "--platform",
+        "linux/amd64",
+        "--entrypoint",
+        "sh",
+        "cloudwiki-web:upgrade-clean-20261018-amd64",
+        "-ec",
+        "caddy version; test -s /var/www/mediawiki/index.php; test -s /var/www/mediawiki/load.php; test -d /var/www/mediawiki/extensions/CodeMirror/resources; test -d /var/www/mediawiki/skins/Femiwiki/resources/vendor; test -s /var/www/mediawiki/extensions/MobileFrontend/resources/dist/mobile.startup.js; test -s /var/www/mediawiki/extensions/MobileFrontend/resources/dist/mobile.common.js; test -s /var/www/mediawiki/extensions/CodeMirror/resources/lib/codemirror.bundle.lib.js; test -s /var/www/mediawiki/extensions/CodeMirror/resources/codemirror.bundle.lib.js; echo \"Caddy and exported MobileFrontend/CodeMirror/Femiwiki browser assets passed.\""
+      ]
+    },
+    "counter-unit": {
+      "exit_code": 0,
+      "command": [
+        "docker",
+        "run",
+        "--rm",
+        "--platform",
+        "linux/amd64",
+        "-v",
+        "/Volumes/1TB SSD mew/www/docker/private-backup/createwiki-managewiki-upgrade/clean-checkout-20261018-v3/Moe-Counter/test:/app/test:ro",
+        "cloudwiki-counter:upgrade-clean-20261018-amd64",
+        "node",
+        "--test"
+      ]
+    },
+    "counter-shutdown": {
+      "exit_code": 0,
+      "command": [
+        "env",
+        "DOCKER_DEFAULT_PLATFORM=linux/amd64",
+        "COUNTER_IMAGE=cloudwiki-counter:upgrade-clean-20261018-amd64",
+        "python3",
+        "docker/tests/counter-shutdown.py"
+      ]
+    }
+  },
+  "status": "passed",
+  "image_ids": {
+    "cloudwiki-php:upgrade-clean-20261018-amd64": "sha256:9a34a313317dff3c59fd24069c16976e6b29dd6e7962e68ce466db6a4e80e994",
+    "cloudwiki-web:upgrade-clean-20261018-amd64": "sha256:041fa67c731a881fc2d5152f83f7558275711f0cdade11e4fcd5d4d650364a4d",
+    "cloudwiki-counter:upgrade-clean-20261018-amd64": "sha256:d19bfbc915762b70cc0e53b4901960adfa5b3f3df939a362e81c08bbd59f8ec0"
+  },
+  "completed_at": "2026-10-19T01:21:05.881372+00:00"
+}

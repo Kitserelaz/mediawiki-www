@@ -7,11 +7,13 @@ use MediaWiki\Extension\OAuth\Lib\OAuthException;
 use MediaWiki\Extension\OAuth\Lib\OAuthRequest;
 use MediaWiki\Extension\OAuth\Lib\OAuthSignatureMethodHmacSha1;
 use MediaWiki\Extension\OAuth\Lib\OAuthSignatureMethodRsaSha1;
+use MediaWiki\MainConfigNames;
 use MediaWiki\Maintenance\Maintenance;
 
 /**
  * @ingroup Maintenance
  */
+// @codeCoverageIgnoreStart
 if ( getenv( 'MW_INSTALL_PATH' ) ) {
 	$IP = getenv( 'MW_INSTALL_PATH' );
 } else {
@@ -19,6 +21,7 @@ if ( getenv( 'MW_INSTALL_PATH' ) ) {
 }
 
 require_once "$IP/maintenance/Maintenance.php";
+// @codeCoverageIgnoreEnd
 
 class TestOAuthConsumer extends Maintenance {
 	public function __construct() {
@@ -35,16 +38,17 @@ class TestOAuthConsumer extends Maintenance {
 	}
 
 	public function execute() {
-		global $wgServer, $wgScriptPath;
-
 		$consumerKey = $this->getOption( 'consumerKey' );
 		$consumerSecret = $this->getOption( 'consumerSecret' );
 		$rsaKeyFile = $this->getOption( 'RSAKeyFile' );
-		$baseurl = wfExpandUrl(
-			"{$wgServer}{$wgScriptPath}/index.php?title=Special:OAuth", PROTO_CANONICAL );
-		$endpoint = "{$baseurl}/initiate&format=json&oauth_callback=oob";
+		$config = $this->getServiceContainer()->getMainConfig();
+		$script = $config->get( MainConfigNames::Server ) .
+			$config->get( MainConfigNames::ScriptPath );
+		$baseurl = $this->getServiceContainer()->getUrlUtils()->expand(
+			"$script/index.php?title=Special:OAuth", PROTO_CANONICAL );
+		$endpoint = "$baseurl/initiate&format=json&oauth_callback=oob";
 
-		$endpoint_acc = "{$baseurl}/token&format=json";
+		$endpoint_acc = "$baseurl/token&format=json";
 
 		if ( !$consumerSecret && !$rsaKeyFile ) {
 			$this->error( "Either consumerSecret or RSAKeyFile required!" );
@@ -65,7 +69,7 @@ class TestOAuthConsumer extends Maintenance {
 					/** @var string */
 					private $pubKey;
 
-					public function __construct( $privKeyFile ) {
+					public function __construct( string $privKeyFile ) {
 						$key = file_get_contents( $privKeyFile );
 						if ( !$key ) {
 							throw new OAuthException( "Could not read private key file $privKeyFile" );
@@ -88,10 +92,12 @@ class TestOAuthConsumer extends Maintenance {
 						$this->pubKey = $details['key'];
 					}
 
+					/** @inheritDoc */
 					protected function fetch_public_cert( &$request ) {
 						return $this->pubKey;
 					}
 
+					/** @inheritDoc */
 					protected function fetch_private_cert( &$request ) {
 						return $this->privKey;
 					}
@@ -170,5 +176,7 @@ class TestOAuthConsumer extends Maintenance {
 	}
 }
 
+// @codeCoverageIgnoreStart
 $maintClass = TestOAuthConsumer::class;
 require_once RUN_MAINTENANCE_IF_MAIN;
+// @codeCoverageIgnoreEnd

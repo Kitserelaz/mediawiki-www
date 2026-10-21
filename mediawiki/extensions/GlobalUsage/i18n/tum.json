@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Tumbuka Arch"
+		]
+	},
+	"globalusage": "Umo chinthu chagwiliskikila ntchito",
+	"globalusage-on-wiki": "Magwiliskilo pa $2",
+	"globalusage-of-file": "Ma wiki ghanyake agho ghakugwiliska ichi:",
+	"globalusage-more": "Wonani [[{{#Special:GlobalUsage}}/$1|magwiliskilo ghanandi ghapa charu]] gha chinthu ichi."
+}

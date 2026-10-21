@@ -1,0 +1,14 @@
+
+> test
+> playwright test production.spec.js
+
+
+Running 1 test using 1 worker
+
+(node:16927) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:16927) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 production.spec.js:4:1 › fresh production administrator signs in across the configured farm (35.9s)
+
+  1 passed (39.5s)

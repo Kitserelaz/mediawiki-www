@@ -4,8 +4,8 @@ namespace Flow\Maintenance;
 
 use Flow\Container;
 use Flow\Dump\Exporter;
+use MediaWiki\Export\WikiExporter;
 use MediaWiki\Maintenance\BackupDumper;
-use WikiExporter;
 
 $IP = getenv( 'MW_INSTALL_PATH' );
 if ( $IP === false ) {
@@ -119,16 +119,10 @@ TEXT
 		if ( $this->hasOption( 'pagelist' ) ) {
 			$filename = $this->getOption( 'pagelist' );
 			$pages = file( $filename );
-			if ( $pages === false ) {
+			if ( !is_array( $pages ) ) {
 				$this->fatalError( "Unable to open file {$filename}\n" );
 			}
-			$pages = array_map( 'trim', $pages );
-			$this->pages = array_filter(
-				$pages,
-				static function ( $x ) {
-					return $x !== '';
-				}
-			);
+			$this->pages = array_filter( array_map( trim( ... ), $pages ), 'strlen' );
 		}
 
 		if ( $this->hasOption( 'start' ) ) {

@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Shirayuki",
+			"The Evil IP address",
+			"Umherirrender"
+		]
+	},
+	"opengraphmeta-desc": "{{desc|name=Open Graph Meta|url=https://www.mediawiki.org/wiki/Extension:OpenGraphMeta}}",
+	"opengraphmeta-site-name": "{{Optional}}\n{{doc-important|You most probably do not need to translate this message.}}"
+}

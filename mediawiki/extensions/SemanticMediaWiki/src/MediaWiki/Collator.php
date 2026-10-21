@@ -1,0 +1,127 @@
+<?php
+
+// phpcs:disable Generic.NamingConventions.UpperCaseConstantName.ClassConstantNotUpperCase
+namespace SMW\MediaWiki;
+
+use Collation;
+use MediaWiki\MediaWikiServices;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 3.0
+ *
+ * @author mwjames
+ */
+class Collator {
+
+	/**
+	 * Used for armoring.
+	 */
+	const base64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+	const base64hex = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz{}';
+
+	private static array $instance = [];
+
+	/**
+	 * @private
+	 *
+	 * @since 3.0
+	 */
+	public function __construct(
+		private readonly Collation $collation,
+		private $collationName = '',
+	) {
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public static function singleton( string $collationName = '' ): Collator {
+		$collationName = $collationName === '' ? $GLOBALS['smwgEntityCollation'] : $collationName;
+
+		if ( !isset( self::$instance[$collationName] ) ) {
+			$services = MediaWikiServices::getInstance();
+			$collation = $services->getCollationFactory()->makeCollation( $collationName );
+
+			self::$instance[$collationName] = new self( $collation, $collationName );
+		}
+
+		return self::$instance[$collationName];
+	}
+
+	/**
+	 * For any uca-* generated sortkey armor the string by converting it
+	 * to base64 string to prevent invalid XML/UTF output.
+	 *
+	 * Compared to classical base64, the characters are here translated in
+	 * order to preserve bitwise sort order: comparing armored sort keys
+	 * bit-per-bit will give the same result as comparing original sort keys
+	 * bit-per-bit.
+	 *
+	 * @since 3.0
+	 */
+	public function armor( string $text ): string {
+		if ( strpos( $this->collationName, 'uca' ) === false ) {
+			return $text;
+		}
+
+		return rtrim( strtr( base64_encode( $text ), self::base64, self::base64hex ), '=' );
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * The output could be a binary string, it can be armored with the method
+	 * `armor`. Input the collation cannot process is returned unchanged.
+	 */
+	public function getSortKey( string $text ): string {
+		$sortKey = $this->collation->getSortKey( $text );
+
+		// `IcuCollation` delegates to intl, which returns `false` for input it
+		// cannot convert to UTF-16 — most notably a sort key it produced itself.
+		// Without weak mode coercing that to an empty string, every affected
+		// entity would compare equal to every other one.
+		if ( $sortKey === false ) {
+			return $text;
+		}
+
+		return $sortKey;
+	}
+
+	/**
+	 * Storage-safe sort key: the collation sort key of `$text`, armored so the
+	 * result is always valid UTF-8 (see `armor`).
+	 *
+	 * For `uca-*` collations the raw sort key is a binary blob that cannot be
+	 * stored in a text column such as Postgres `TEXT` (#7049); for the other
+	 * collations `armor` is a no-op and the value is returned unchanged.
+	 *
+	 * @since 7.2.0
+	 */
+	public function armoredSortKey( string $text ): string {
+		return $this->armor( $this->getSortKey( $text ) );
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function getFirstLetter( string $text ): string {
+		// Add check otherwise the Collation instance returns with a
+		// "Uninitialized string offset: 0"
+		if ( $text === '' ) {
+			return '';
+		}
+
+		return $this->collation->getFirstLetter( $text );
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function isIdentical( string $old, string $new ): bool {
+		// Through `getSortKey` so that input the collation rejects compares on
+		// its own text instead of every such value comparing equal
+		return $this->getSortKey( $old ) === $this->getSortKey( $new );
+	}
+
+}

@@ -1,0 +1,53 @@
+<?php
+
+namespace SMW\Query;
+
+use SMW\DataItems\Property;
+use SMW\Query\Language\Description;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 3.0
+ *
+ * @author mwjames
+ */
+interface Parser {
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param Property|string $property
+	 * @param string $value
+	 *
+	 * @return string
+	 */
+	public function createCondition( $property, $value );
+
+	/**
+	 * @since 3.0
+	 *
+	 * @return array
+	 */
+	public function getErrors();
+
+	/**
+	 * Describes a processed description instance in terms of the existence of
+	 * a self reference in connection with the context page a query is
+	 * embedded.
+	 *
+	 * @since 3.0
+	 *
+	 * @return bool
+	 */
+	public function containsSelfReference();
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param string $condition
+	 *
+	 * @return Description
+	 */
+	public function getQueryDescription( $condition );
+
+}

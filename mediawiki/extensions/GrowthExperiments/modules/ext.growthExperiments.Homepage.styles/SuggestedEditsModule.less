@@ -1,0 +1,780 @@
+@import 'mediawiki.skin.variables.less';
+@import 'mediawiki.mixins.less';
+@import '../utils/variables.less';
+@import '../utils/mixins.less';
+
+// The following variables are defined in HomepageHooks::lessCallback, as their
+// values vary between Minerva and Vector.
+// - cardContainerWrapperHeight
+// - cardImageHeight
+// - cardWrapperWidth
+// - cardWrapperPadding
+// - cardWrapperBorderRadius
+// - cardContentTextPadding
+// - cardExtractHeight
+// - cardPageviewsTopPadding
+// - cardPageviewsIconMarginBottom
+@textHeight: 8em;
+
+.suggested-edits-topic-filters {
+	&-topic-selector {
+		h4 {
+			margin-bottom: 4px;
+		}
+
+		h4,
+		p {
+			color: @color-base;
+		}
+
+		.mw-ge-suggestion {
+			line-height: 1.6;
+
+			.oo-ui-labelWidget {
+				// HACK use transition instead of animation for moving text left, so that the
+				// animation doesn't happen when suggestions are revealed with "show more"
+				transition: transform 200ms;
+				animation: none;
+			}
+		}
+
+		.mw-ge-suggestion-wrapper {
+			margin-right: 0.25em;
+			margin-bottom: 0.5em;
+		}
+	}
+}
+
+.mw-ge-filters-dialog {
+	&-footer {
+		background-color: @background-color-base;
+	}
+}
+
+#mw-ge-homepage-suggestededits-info {
+	.oo-ui-buttonElement-button {
+		padding: 0;
+		// 20px for the icon + 2*1px for the border
+		min-width: 22px;
+		min-height: 22px;
+
+		.oo-ui-iconElement-icon {
+			width: 20px;
+			height: 20px;
+			left: 0;
+		}
+	}
+}
+
+.mw-body-content {
+	h4.suggested-edits-task-explanation-heading {
+		margin-top: unset;
+		padding-top: unset;
+	}
+}
+
+.suggested-edits-task-explanation-wrapper {
+	padding: 16px 8px;
+	width: @cardWrapperWidth;
+	box-sizing: border-box;
+
+	.suggested-edits-taskexplanation-additional-info {
+		h4 {
+			margin-top: unset;
+			margin-bottom: unset;
+			padding-top: unset;
+			// Override line-height: 1.3; in Minerva
+			line-height: 1.6;
+		}
+	}
+
+	.suggested-edits-short-description {
+		color: @color-subtle;
+		font-size: 0.9em;
+	}
+}
+
+.mw-mf-page-center__mask.suggested-edits {
+	// Set value to be higher than Minerva's overlay content (@z-indexOverlay: 3).
+	z-index: 4 !important; // stylelint-disable-line declaration-no-important
+}
+
+.drawer.suggested-edits-taskexplanation-drawer {
+	h4 {
+		text-align: left;
+		padding-bottom: 10px;
+	}
+
+	p {
+		text-align: left;
+	}
+}
+
+.drawer.homepage-welcome-notice {
+	// Needed to provide a solid background to the 50% transparent on suggested
+	// edits background color used with main drawer contents.
+	background-color: @background-color-base;
+	padding: 16px;
+
+	main {
+		background-color: @suggestedEditsBackgroundColorLegacyLightOnly;
+		padding: 16px;
+		margin: -16px;
+
+		h4 {
+			font-size: 1.1em;
+			font-weight: bold;
+			text-align: left;
+		}
+
+		p {
+			font-size: 0.875em;
+			text-align: left;
+			padding: 8px 0;
+		}
+
+		footer {
+			background-color: @background-color-base;
+			min-height: 48px;
+			text-align: center;
+			font-weight: bold;
+			padding: 16px 0;
+			margin: 0 -16px -16px -16px;
+		}
+	}
+}
+
+body.mw-special-Homepage {
+	.overlay-content .growthexperiments-homepage-module-mobile-overlay.growthexperiments-homepage-module-suggested-edits {
+		padding: 0;
+		background-color: @suggestedEditsBackgroundColorLegacyLightOnly;
+	}
+
+	.overlay.suggested-edits-module-mobile-overlay {
+		// @suggestedEditsBackgroundColor can't be used here since the overlay background color
+		// needs to be opaque to cover the content behind it.
+		background: @suggestedEditsOpaqueBackgroundColor;
+		height: 100%;
+		display: flex;
+		flex-direction: column;
+
+		// overlay-content scrolls behind fixed header & footer
+		.overlay-header-container,
+		.overlay-footer-container {
+			flex-shrink: 0;
+		}
+
+		.overlay-content {
+			flex-grow: 1;
+			overflow: hidden auto;
+
+			.growthexperiments-homepage-module-suggested-edits {
+				background: none;
+				margin: 0 0 67px 0; // account for fixed footer
+				display: flex;
+				flex-direction: column;
+			}
+
+			.suggested-edits-filters {
+				position: fixed;
+				z-index: 2;
+			}
+
+			.suggested-edits-module-wrapper {
+				padding-top: 2em; // account for fixed header & filters
+			}
+
+			.growthexperiments-homepage-module-body {
+				height: 100%;
+			}
+
+			&.is-swiping {
+				overflow: hidden;
+			}
+		}
+
+		.growthexperiments-homepage-module-footer {
+			position: fixed;
+			bottom: 0;
+			left: 0;
+			width: 100%;
+			border: unset;
+			box-shadow: 0 -2px 2px rgba( 0, 0, 0, 0.1 );
+			padding: 17px 0;
+		}
+
+		.overlay-footer-container {
+			border: unset;
+		}
+	}
+}
+
+.overlay-enabled {
+	.drawer.suggested-edits-taskexplanation-drawer {
+		// Override MobileFrontend, which wants to hide the drawer
+		// on an overlay.
+		display: block !important; // stylelint-disable-line declaration-no-important
+	}
+
+	.drawer-container {
+		// Display over Minerva's overlay content (@z-indexOverOverlay: 4).
+		z-index: 5;
+		position: relative;
+	}
+	// Hide the popup from the button widget,
+	// since the Drawer gets drawn on top of it.
+	.suggested-edits-task-explanation-info-button .oo-ui-popupButtonWidget-popup {
+		display: none;
+	}
+
+	#mw-ge-homepage-suggestededits-info {
+		// Shift icon in mobile overlay a bit farther to the right.
+		margin-right: 8px;
+	}
+}
+
+.growthexperiments-homepage-module-suggested-edits {
+	display: flex;
+	flex-direction: column;
+
+	.growthexperiments-homepage-module-body {
+		flex-grow: 1;
+		padding-top: 4px;
+	}
+
+	.growthexperiments-homepage-module-footer {
+		// negate the padding on .growthexperiments-homepage-module in Homepage.less
+		margin: 16px -16px -16px -16px;
+		padding: 12px 24px 12px;
+		border: @border-width-thick @border-style-base @suggestedEditsBackgroundColorLegacyLightOnly;
+		background-color: @background-color-base;
+		color: @color-subtle;
+		font-size: 0.9em;
+	}
+
+	.suggested-edits-filters {
+		display: flex;
+		// Make the button full width (T236841); this is harder than it should be
+		width: 100%;
+		// ... but not wider than 1000px, which is the max-width breakpoint for Minerva.
+		max-width: 1000px;
+
+		.oo-ui-buttonGroupWidget {
+			flex-grow: 1;
+			display: flex;
+			width: 100%;
+
+			.oo-ui-buttonElement.topic-matching {
+				// Needed when two buttons are present.
+				max-width: 50%;
+			}
+
+			.oo-ui-buttonElement {
+				flex-grow: 1;
+				display: flex;
+
+				.oo-ui-buttonElement-button {
+					flex-grow: 1;
+					display: flex;
+					text-align: left;
+					max-width: 100%;
+
+					.oo-ui-labelElement-label {
+						flex-grow: 2;
+						.text-overflow( @visible: false );
+					}
+				}
+			}
+		}
+	}
+
+	&.growthexperiments-homepage-module-desktop {
+		background-color: @suggestedEditsBackgroundColor;
+
+		&.growthexperiments-homepage-module.activated {
+			border-color: @border-color-transparent;
+		}
+
+		&.growthexperiments-homepage-module.unactivated {
+			display: none;
+		}
+
+		.suggested-edits-filters {
+			.oo-ui-buttonGroupWidget {
+				.oo-ui-buttonElement {
+					.mw-pulsating-dot {
+						position: relative;
+						right: 50%;
+						top: 100%;
+						cursor: pointer;
+						// Ensure it appears above the button after clicked.
+						z-index: 2;
+					}
+				}
+			}
+		}
+
+		.suggested-edits-card-wrapper {
+			.suggested-edits-previous,
+			.suggested-edits-next {
+				.oo-ui-iconElement-icon {
+					width: 30px;
+				}
+
+				.oo-ui-buttonElement-frameless .oo-ui-buttonElement-button {
+					width: 42px;
+					height: 42px;
+				}
+			}
+
+			.suggested-edits-task-card-wrapper {
+				&:hover {
+					outline: 2px @border-style-base @border-color-progressive;
+				}
+			}
+		}
+	}
+
+	// Styles for mobile filter. Desktop does not have a subheader.
+	.growthexperiments-homepage-module-section-subheader {
+		// Snap to the header
+		padding: 0 !important; // stylelint-disable-line declaration-no-important
+
+		.suggested-edits-filters a.oo-ui-buttonElement-button {
+			height: 3em; // 48 px
+			// The layout of the OOUI element is not friendly to vertical centering.
+			// Get rid if the padding, make the line full-height, and hope for the best.
+			padding-top: 0;
+			padding-bottom: 0;
+			border-color: @border-color-subtle;
+			border-width: 0 0 @border-width-base 0;
+			border-radius: 0;
+			box-shadow: @box-shadow-drop-small;
+			font-weight: normal;
+
+			.oo-ui-labelElement-label {
+				line-height: 3em;
+			}
+
+			.oo-ui-indicatorElement-indicator {
+				right: 0.95238094em;
+			}
+		}
+	}
+
+	.suggested-edits-module-wrapper {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+
+		.suggested-edits-pager {
+			margin-top: 24px;
+			margin-bottom: 8px;
+			font-size: 0.875em;
+			color: @color-base;
+		}
+
+		.se-card-no-results,
+		.se-card-error,
+		.se-card-end-of-queue {
+			width: @cardWrapperWidth;
+			height: @cardContainerWrapperHeight;
+			padding: 0 8px;
+
+			.se-card-image {
+				margin-top: 1em;
+				height: @cardImageHeight;
+			}
+
+			.se-card-title,
+			.se-card-text {
+				margin: 0;
+				text-align: center;
+				color: @color-base;
+			}
+
+			.se-card-title {
+				padding: 10px 0 0;
+			}
+
+			.se-card-text {
+				padding: 20px 0 0;
+			}
+
+			.se-card-link {
+				margin-top: 1em;
+				width: 100%;
+				text-align: center;
+			}
+		}
+
+		.se-card-end-of-queue {
+			.se-card-image {
+				/* @embed */
+				background: url( ../../images/end-of-queue.svg ) no-repeat center center;
+			}
+		}
+
+		.se-card-no-results {
+			.se-card-image {
+				/* @embed */
+				background: url( ../../images/no-results.svg ) no-repeat center center;
+			}
+		}
+
+		.se-card-error {
+			.se-card-image {
+				background: url( ../../images/suggestededits/error-message.svg ) no-repeat center center;
+			}
+		}
+
+		.suggested-edits-card-wrapper {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			flex-direction: row;
+
+			// for pseudo-cards, make the top and bottom margin roughly match the pager and
+			// task type explanation size so the total height ends up similar to that of real cards
+			&.pseudo-card {
+				margin: 20px 0 108px;
+			}
+
+			// The EOQ card does have a pager, so adjust accordingly.
+			&.pseudo-card-eoq {
+				margin-top: 0;
+			}
+
+			.suggested-edits-previous {
+				padding-right: 16px;
+			}
+
+			.suggested-edits-next {
+				padding-left: 16px;
+			}
+
+			.suggested-edits-previous,
+			.suggested-edits-next {
+				// Override an OOUI style that moves the icons off the center of their containing
+				// blocks and makes symmetric positioning hard.
+				.oo-ui-buttonElement-frameless.oo-ui-iconElement:first-child {
+					margin-left: 0;
+				}
+			}
+
+			.suggested-edits-task-card-wrapper {
+				box-shadow: 0 5px 10px 0 rgba( 0, 0, 0, 0.15 );
+				background-color: @background-color-base;
+				width: @cardWrapperWidth;
+				padding: @cardWrapperPadding;
+				border-radius: @cardWrapperBorderRadius;
+
+				a {
+					text-decoration: none;
+					color: unset;
+				}
+
+				.se-card-content {
+					.se-card-text {
+						height: @textHeight;
+						padding: @cardContentTextPadding;
+						color: @color-base;
+
+						h3.se-card-title {
+							margin: 0;
+							.text-overflow( @visible: false );
+						}
+
+						.se-card-extract {
+							position: relative;
+							overflow: hidden;
+							font-size: 0.875em;
+							line-height: 1.5em;
+							height: @cardExtractHeight;
+
+							&::after {
+								content: '';
+								position: absolute;
+								bottom: 0;
+								width: 25%;
+								height: 1.5em;
+								pointer-events: none;
+							}
+						}
+
+						&[ dir='ltr' ] .se-card-extract::after {
+							/* @noflip */
+							right: 0;
+							/* @noflip */
+							background: linear-gradient( to right, rgba( 255, 255, 255, 0 ), #fff 50% );
+						}
+
+						&[ dir='rtl' ] .se-card-extract::after {
+							/* @noflip */
+							left: 0;
+							/* @noflip */
+							background: linear-gradient( to left, rgba( 255, 255, 255, 0 ), #fff 50% );
+						}
+
+						.se-card-pageviews {
+							font-size: 0.875em;
+							padding-top: @cardPageviewsTopPadding;
+							color: @color-subtle;
+							.text-overflow( @visible: false );
+
+							.oo-ui-iconWidget {
+								opacity: @opacity-icon-subtle;
+								margin-right: 8px;
+								width: 16px;
+								min-width: 16px;
+								height: 16px;
+								min-height: 16px;
+								margin-bottom: @cardPageviewsIconMarginBottom;
+							}
+						}
+					}
+
+					.se-card-image {
+						height: @cardImageHeight;
+						width: @cardWrapperWidth;
+						// TODO: Revisit with Codex `box-shadow` tokens. Use border-color-subtle here.
+						box-shadow: inset 0 0 2px @border-color-subtle;
+						background-position: center 25%;
+						background-repeat: repeat-x;
+						// background-image will be set dynamically in SuggestedEditCardWidget.getImageContent
+
+						&.no-image {
+							// This is also used during loading, with .skeleton added to it.
+							background-color: @background-color-growth-apparent;
+							background-image: url( ../../images/suggestededits/placeholder-image.svg );
+							background-repeat: no-repeat;
+							background-position: center center;
+							background-size: 60px;
+						}
+
+						&.mw-ge-tasktype-image-recommendation,
+						&.mw-ge-tasktype-section-image-recommendation {
+							background-color: @mediumBackgroundColor;
+							background-repeat: no-repeat;
+							background-position: center center, right 12px bottom 12px;
+							background-size: 75px, 100px;
+						}
+
+						&.mw-ge-tasktype-image-recommendation {
+							background-image: url( ../../images/addimage/placeholder-with-question-mark-ltr.svg ), url( ../../images/addimage/commons.svg );
+
+							html:lang( he ) & {
+								// Use LTR asset for Hebrew since it contains a question mark
+								/* @noflip */
+								background-image: url( ../../images/addimage/placeholder-with-question-mark-ltr.svg ), url( ../../images/addimage/commons.svg );
+							}
+						}
+
+						&.mw-ge-tasktype-section-image-recommendation {
+							background-image: url( ../../images/addsectionimage/placeholder-with-question-mark-ltr.svg ), url( ../../images/addimage/commons.svg );
+
+							html:lang( he ) & {
+								// Use LTR asset for Hebrew since it contains a question mark
+								/* @noflip */
+								background-image: url( ../../images/addsectionimage/placeholder-with-question-mark-ltr.svg ), url( ../../images/addimage/commons.svg );
+							}
+						}
+					}
+
+					.se-card-image.skeleton {
+						.loading-animation( 400ms );
+
+						&::before {
+							border-radius: @border-radius-base @border-radius-base 0 0;
+						}
+					}
+
+					.se-card-extract.skeleton {
+						.loading-animation( 800ms );
+
+						&::before {
+							background-image: linear-gradient( @background-color-growth-apparent 14px, @background-color-transparent 0 ), linear-gradient( @background-color-growth-apparent 14px, transparent 0 ), linear-gradient( @background-color-growth-apparent 14px, transparent 0 );
+							background-size: 100% 12px, 100% 12px, 100% 12px;
+							background-position: 0 4px, 0 21px, 0 38px;
+						}
+
+						&::after {
+							// Disable the fading of the last block of text from
+							// se-card-extract::after.
+							width: 0;
+							height: 0;
+						}
+					}
+
+					.se-card-pageviews.skeleton {
+						.loading-animation( 1200ms );
+
+						&::before {
+							width: 316px;
+							height: 16px;
+							clear: both;
+							z-index: 100;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	&.growthexperiments-homepage-module-mobile-summary {
+		background-color: #f5f9ff;
+	}
+
+	&.growthexperiments-homepage-module-mobile-overlay,
+	&.growthexperiments-homepage-module-mobile-details {
+		.suggested-edits-taskexplanation-additional-info {
+			.oo-ui-iconElement .oo-ui-iconElement-icon {
+				// Use an unpadded version of the info icon on mobile (T236854)
+				/* @embed */
+				background-image: url( ../../images/info-unpadded.svg );
+				max-width: 20px;
+			}
+		}
+
+		.suggested-edits-filters {
+			.oo-ui-buttonGroupWidget {
+				.oo-ui-buttonElement {
+					.mw-pulsating-dot {
+						position: relative;
+						right: 50%;
+						top: 100%;
+						cursor: pointer;
+						// Ensure it appears above the button after clicked.
+						z-index: 2;
+					}
+
+					.oo-ui-iconElement-icon {
+						max-width: 20px;
+					}
+				}
+			}
+		}
+
+		.growthexperiments-homepage-module-footer {
+			margin: 0;
+		}
+
+		.suggested-edits-pager {
+			font-size: 0.8em;
+			margin: 32px 0 8px 0;
+		}
+
+		.suggested-edits-task-explanation-wrapper {
+			padding: 24px 0 32px 0;
+
+			p.suggested-edits-short-description {
+				line-height: 1.5;
+				padding-top: 5px;
+				font-size: 0.8em;
+			}
+		}
+
+		.suggested-edits-card-wrapper {
+			position: relative;
+
+			.suggested-edits-task-card-wrapper {
+				width: @cardWrapperWidth;
+				border-radius: @border-radius-base;
+
+				.se-card-image {
+					border-top-left-radius: @border-radius-base;
+					border-top-right-radius: @border-radius-base;
+
+					// Needs some extra specificity.
+					&.mw-ge-tasktype-image-recommendation.se-card-image.se-card-image,
+					&.mw-ge-tasktype-section-image-recommendation.se-card-image.se-card-image {
+						background-position: center center, right 8px bottom 8px;
+						background-size: 54px, 75px;
+					}
+				}
+
+				.se-card-content {
+					.se-card-text {
+						h3.se-card-title {
+							font-size: 1em;
+							padding-top: 8px;
+						}
+
+						.se-card-extract {
+							// Minerva sets everything to border-box, which messes up
+							// the height calculations for @textHeight.
+							box-sizing: content-box;
+							padding-top: 4px;
+							font-size: 0.8em;
+							line-height: 1.5;
+						}
+
+						.se-card-pageviews {
+							font-size: 0.75em;
+
+							.oo-ui-iconElement-icon {
+								width: 16px;
+								min-width: 16px;
+								min-height: 16px;
+								vertical-align: text-bottom;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		.suggested-edits-footer-navigation {
+			display: flex;
+			justify-content: center;
+
+			.suggested-edits-footer-navigation-edit-button {
+				margin: 0;
+			}
+
+			.suggested-edits-previous,
+			.suggested-edits-next {
+				margin: 0 26px;
+
+				.oo-ui-iconElement .oo-ui-iconElement-icon {
+					width: 20px;
+				}
+			}
+		}
+
+		.suggested-edits-card-fake {
+			position: absolute;
+			top: 0;
+		}
+
+		.suggested-edits-card,
+		.suggested-edits-card-fake {
+			transition: transform 700ms ease-in-out;
+			transform: translateX( 0 );
+
+			&.no-transition {
+				transition: unset;
+			}
+
+			&.to-start {
+				transform: translateX( -100vw );
+			}
+
+			&.to-end {
+				transform: translateX( 100vw );
+			}
+		}
+	}
+}
+
+.growthexperiments-homepage-mobile-summary {
+	&.growthexperiments--suggestededits-swipe-navigation-enabled {
+		overflow: hidden;
+		height: 100%;
+	}
+}
+
+.ge-qualitygate-alert-dialog {
+	white-space: pre-line;
+}

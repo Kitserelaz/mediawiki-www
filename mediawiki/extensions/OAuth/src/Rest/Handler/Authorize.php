@@ -7,16 +7,15 @@ use GuzzleHttp\Psr7\ServerRequest;
 use League\OAuth2\Server\Entities\ScopeEntityInterface;
 use League\OAuth2\Server\Exception\OAuthServerException;
 use League\OAuth2\Server\RequestTypes\AuthorizationRequest;
-use MediaWiki\Extension\OAuth\AuthorizationProvider\Grant\AuthorizationCodeAuthorization;
+use MediaWiki\Exception\MWExceptionHandler;
+use MediaWiki\Extension\OAuth\AuthorizationProvider\Grant\AuthorizationCodeProvider;
 use MediaWiki\Extension\OAuth\Entity\ClientEntity;
 use MediaWiki\Extension\OAuth\Entity\UserEntity;
-use MediaWiki\Extension\OAuth\Exception\ClientApprovalDenyException;
 use MediaWiki\Extension\OAuth\Response;
 use MediaWiki\Rest\Response as RestResponse;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\User\User;
 use MediaWiki\WikiMap\WikiMap;
-use MWExceptionHandler;
 use Throwable;
 use Wikimedia\ParamValidator\ParamValidator;
 
@@ -28,9 +27,7 @@ use Wikimedia\ParamValidator\ParamValidator;
 class Authorize extends AuthenticationHandler {
 	private const RESPONSE_TYPE_CODE = 'code';
 
-	/**
-	 * @inheritDoc
-	 */
+	/** @inheritDoc */
 	public function execute() {
 		$response = new Response();
 
@@ -52,13 +49,21 @@ class Authorize extends AuthenticationHandler {
 			$authProvider->setUser( $this->user );
 			/** @var AuthorizationRequest $authRequest */
 			$authRequest = $authProvider->init( $request );
+			'@phan-var AuthorizationRequest $authRequest';
 			$this->setValidScopes( $authRequest );
 			if ( !$authProvider->needsUserApproval() ) {
 				return $authProvider->authorize( $authRequest, $response );
 			}
 
 			if ( $this->getValidatedParams()['approval_cancel'] ) {
-				throw new ClientApprovalDenyException( $authRequest->getRedirectUri() );
+				throw new OAuthServerException(
+					wfMessage( 'mwoauth-oauth2-error-user-approval-deny' )->plain(),
+					401,
+					'unauthorized_client',
+					400,
+					null,
+					$authRequest->getRedirectUri()
+				);
 			}
 
 			if (
@@ -81,7 +86,7 @@ class Authorize extends AuthenticationHandler {
 		}
 	}
 
-	protected function setValidScopes( AuthorizationRequest &$authRequest ) {
+	protected function setValidScopes( AuthorizationRequest $authRequest ) {
 		/** @var ClientEntity $client */
 		$client = $authRequest->getClient();
 		'@phan-var ClientEntity $client';
@@ -105,9 +110,7 @@ class Authorize extends AuthenticationHandler {
 		) );
 	}
 
-	/**
-	 * @inheritDoc
-	 */
+	/** @inheritDoc */
 	public function getParamSettings() {
 		return [
 			'response_type' => [
@@ -163,11 +166,7 @@ class Authorize extends AuthenticationHandler {
 		];
 	}
 
-	/**
-	 * @param AuthorizationRequest $authRequest
-	 * @return RestResponse
-	 */
-	private function getApprovalRedirectResponse( AuthorizationRequest $authRequest ) {
+	private function getApprovalRedirectResponse( AuthorizationRequest $authRequest ): RestResponse {
 		return $this->getResponseFactory()->createTemporaryRedirect(
 			SpecialPage::getTitleFor( 'OAuth', 'approve' )->getFullURL( [
 				'returnto' => $this->getRequest()->getUri()->getPath(),
@@ -181,7 +180,7 @@ class Authorize extends AuthenticationHandler {
 		);
 	}
 
-	private function getLoginRedirectResponse() {
+	private function getLoginRedirectResponse(): RestResponse {
 		return $this->getResponseFactory()->createTemporaryRedirect(
 			SpecialPage::getTitleFor( 'Userlogin' )->getFullURL( [
 				'returnto' => SpecialPage::getTitleFor( 'OAuth', 'rest_redirect' ),
@@ -192,9 +191,7 @@ class Authorize extends AuthenticationHandler {
 		);
 	}
 
-	/**
-	 * @return string
-	 */
+	/** @inheritDoc */
 	protected function getGrantType() {
 		return $this->getValidatedParams()['response_type'];
 	}
@@ -204,21 +201,16 @@ class Authorize extends AuthenticationHandler {
 	 * @return string|false
 	 */
 	protected function getGrantClass( $grantType ) {
-		switch ( $grantType ) {
-			case static::RESPONSE_TYPE_CODE:
-				return AuthorizationCodeAuthorization::class;
-			default:
-				return false;
-		}
+		return match ( $grantType ) {
+			static::RESPONSE_TYPE_CODE => AuthorizationCodeProvider::class,
+			default => false,
+		};
 	}
 
 	/**
 	 * Check if user has approved the client, and scopes it requested
-	 *
-	 * @param AuthorizationRequest $authRequest
-	 * @return bool
 	 */
-	private function checkApproval( AuthorizationRequest $authRequest ) {
+	private function checkApproval( AuthorizationRequest $authRequest ): bool {
 		/** @var ClientEntity $client */
 		$client = $authRequest->getClient();
 		'@phan-var ClientEntity $client';
@@ -232,7 +224,7 @@ class Authorize extends AuthenticationHandler {
 				$userEntity->getMwUser(),
 				WikiMap::getCurrentWikiId()
 			);
-		} catch ( Exception $ex ) {
+		} catch ( Exception ) {
 			return false;
 		}
 

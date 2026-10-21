@@ -5,8 +5,8 @@ namespace MediaWiki\Extension\Thanks\Api;
 use MediaWiki\Api\ApiBase;
 use MediaWiki\Api\ApiMain;
 use MediaWiki\Extension\Thanks\Storage\LogStore;
+use MediaWiki\Page\PageIdentity;
 use MediaWiki\Permissions\PermissionManager;
-use MediaWiki\Title\Title;
 use MediaWiki\User\User;
 
 /**
@@ -17,18 +17,13 @@ use MediaWiki\User\User;
  */
 abstract class ApiThank extends ApiBase {
 
-	protected PermissionManager $permissionManager;
-	protected LogStore $storage;
-
 	public function __construct(
 		ApiMain $main,
-		$action,
-		PermissionManager $permissionManager,
-		LogStore $storage
+		string $action,
+		protected readonly PermissionManager $permissionManager,
+		protected readonly LogStore $storage,
 	) {
 		parent::__construct( $main, $action );
-		$this->permissionManager = $permissionManager;
-		$this->storage = $storage;
 	}
 
 	protected function dieOnBadUser( User $user ) {
@@ -47,10 +42,10 @@ abstract class ApiThank extends ApiBase {
 	 * This is separate from dieOnBadUser because we need to know the title.
 	 *
 	 * @param User $user
-	 * @param Title $title
+	 * @param PageIdentity $page
 	 */
-	protected function dieOnUserBlockedFromTitle( User $user, Title $title ) {
-		if ( $this->permissionManager->isBlockedFrom( $user, $title ) ) {
+	protected function dieOnUserBlockedFromPage( User $user, PageIdentity $page ) {
+		if ( $this->permissionManager->isBlockedFrom( $user, $page ) ) {
 			// Block should definitely exist
 			// @phan-suppress-next-line PhanTypeMismatchArgumentNullable
 			$this->dieBlocked( $user->getBlock() );
@@ -60,8 +55,8 @@ abstract class ApiThank extends ApiBase {
 	/**
 	 * Check whether the user is sitewide blocked.
 	 *
-	 * This is separate from dieOnUserBlockedFromTitle because we need to know if the thank
-	 * is related to a revision. (If it is, then use dieOnUserBlockedFromTitle instead.)
+	 * This is separate from dieOnUserBlockedFromPage because we need to know if the thank
+	 * is related to a revision. (If it is, then use dieOnUserBlockedFromPage instead.)
 	 *
 	 * @param User $user
 	 */
@@ -83,25 +78,27 @@ abstract class ApiThank extends ApiBase {
 		}
 	}
 
-	protected function markResultSuccess( $recipientName ) {
+	protected function markResultSuccess( string $recipientName ) {
 		$this->getResult()->addValue( null, 'result', [
 			'success' => 1,
 			'recipient' => $recipientName,
 		] );
 	}
 
-	protected function haveAlreadyThanked( User $thanker, $uniqueId ) {
+	protected function haveAlreadyThanked( User $thanker, string $uniqueId ): bool {
 		return $this->storage->haveThanked( $thanker, $uniqueId );
 	}
 
-	protected function logThanks( User $user, User $recipient, $uniqueId ) {
+	protected function logThanks( User $user, User $recipient, string $uniqueId ) {
 		$this->storage->thank( $user, $recipient, $uniqueId );
 	}
 
+	/** @inheritDoc */
 	public function needsToken() {
 		return 'csrf';
 	}
 
+	/** @inheritDoc */
 	public function isWriteMode() {
 		// Writes to the Echo database and sometimes log tables.
 		return true;

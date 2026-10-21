@@ -1,0 +1,26 @@
+{
+	"@metadata": {
+		"authors": [
+			"Jon Harald Søby"
+		]
+	},
+	"apihelp-homepagequestionstore-summary": "Hent formaterte spørsmål postet via hjemmesidemoduler",
+	"apihelp-homepagequestionstore-param-questionformat": "Formatet spørsmålene skal returneres i, f. eks. HTML.",
+	"apihelp-homepagequestionstore-param-storage": "Stedet spørsmålene lagres.",
+	"apihelp-homepagequestionstore-param-userid": "Bruker-ID-en spørsmål skal hentes for.",
+	"growthexperiments-homepage-questionstore-noquestionsfound": "Ingen spørsmål funnet.",
+	"apihelp-growthsetmentor-summary": "Sett brukerens fadder. Endringen blir logget offentlig.",
+	"apihelp-growthsetmentor-param-mentee": "Fadderbarnets brukernavn",
+	"apihelp-growthsetmentor-param-mentor": "Fadderens brukernavn",
+	"apihelp-growthsetmentor-param-reason": "Årsak for endringen",
+	"apihelp-query+growthimagesuggestiondata-summary": "Hent tilknyttede [https://www.mediawiki.org/wiki/wikitech:Add_Image bildeforslagsdata] hvis de er tilgjengelige",
+	"apihelp-query+growthimagesuggestiondata-param-tasktype": "Oppgavetype-ID (for å angi hvorvidt data skal hentes for bildeforslag for toppnivået eller seksjonsnivåer)",
+	"growthexperiments-homepage-imagesuggestiondata-not-in-config": "Oppgavetype-ID-en «$1» ble ikke funnet i wikiens konfigurasjon.",
+	"apihelp-growthinvalidateimagerecommendation-summary": "Merk bildeforslag som ugyldig",
+	"apihelp-growthinvalidateimagerecommendation-extended-description": "Å bruke dette API-et vil:\n\n* Nullstille [https://www.mediawiki.org/wiki/wikitech:Add_Image den vektede «hasrecommendation:image»-taggen] for artikkelen, så artikkelen ikke lenger returneres i søkeresultater for bildeforslag.\n\n* Legge til artikkelen i en kortvarig mellomlagring som [https://www.mediawiki.org/wiki/Extension:GrowthExperiments GrowthExperiments]-utvidelsens ImageRecommendationFilter sjekker for å bestemme om artikkelen bør ekskluderes fra brukerens kø for foreslåtte redigeringer på [[Special:Homepage]] eller via [[Special:ApiHelp/query+growthtasks|action=query&list=growthtasks]]-API-et.\n\n* Generere og sende en hendelse til EventGate til [https://schema.wikimedia.org/#!/secondary/jsonschema/mediawiki/page/image-suggestions-feedback image-suggestion-feedback]-strømmen. Dette gjør det mulig å forbedre arbeidsflyten for bildeforslag, siden kode i arbeidsflyten kan ta hensyn til tilbakemeldinger fra brukere når forslag genereres.\n\nMer lesning: [https://www.mediawiki.org/wiki/Special:MyLanguage/Growth/Personalized_first_day/Structured_tasks/Add_an_image meiawiki.org]",
+	"apihelp-growthinvalidateimagerecommendation-param-tasktype": "Oppgavetype (toppnivå eller seksjonsnivå)",
+	"apihelp-growthinvalidateimagerecommendation-param-title": "Tittelen på artikkelen bildeforslagsoppgaven gjelder",
+	"apihelp-growthinvalidateimagerecommendation-param-filename": "Filnavnet for bildeforslag uten prefiks, f.eks. <kbd>Foo.jpg</kbd>",
+	"apihelp-growthinvalidateimagerecommendation-param-sectiontitle": "Tittelen til seksjonen bildeforslaget gjelder, f.eks. <kbd>Historie</kbd>.",
+	"apihelp-growthinvalidateimagerecommendation-param-sectionnumber": "Den 1-baserte indeksen til seksjonen bildeforslaget gjelder, f.eks. <kbd>3</kbd>"
+}

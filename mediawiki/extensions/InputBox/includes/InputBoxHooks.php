@@ -8,13 +8,15 @@
 
 namespace MediaWiki\Extension\InputBox;
 
-use Article;
 use MediaWiki\Actions\ActionEntryPoint;
 use MediaWiki\Config\Config;
 use MediaWiki\Hook\MediaWikiPerformActionHook;
-use MediaWiki\Hook\ParserFirstCallInitHook;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Page\Article;
+use MediaWiki\Parser\Hook\ParserFirstCallInitHook;
 use MediaWiki\Parser\Parser;
+use MediaWiki\Parser\PPFrame;
+use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\Request\WebRequest;
 use MediaWiki\SpecialPage\Hook\SpecialPageBeforeExecuteHook;
 use MediaWiki\SpecialPage\SpecialPage;
@@ -29,16 +31,10 @@ class InputBoxHooks implements
 	SpecialPageBeforeExecuteHook,
 	MediaWikiPerformActionHook
 {
-	/** @var Config */
-	private $config;
-
-	/**
-	 * @param Config $config
-	 */
 	public function __construct(
-		Config $config
+		private readonly Config $config,
+		private readonly ExtensionRegistry $extensionRegistry,
 	) {
-		$this->config = $config;
 	}
 
 	/**
@@ -51,9 +47,11 @@ class InputBoxHooks implements
 	}
 
 	/**
-	 * Prepend prefix to wpNewTitle if necessary
+	 * If necssary, prepend prefix to wpNewTitle, or update the search parameter with the searchfilter.
+	 *
 	 * @param SpecialPage $special
-	 * @param string $subPage
+	 * @param string|null $subPage Subpage string, or null if no subpage was specified
+	 * @return bool|void True or no return value to continue or false to prevent execution
 	 */
 	public function onSpecialPageBeforeExecute( $special, $subPage ) {
 		$request = $special->getRequest();
@@ -65,8 +63,13 @@ class InputBoxHooks implements
 			$request->setVal( 'wpNewTitle', $prefix . $title );
 			$request->unsetVal( 'prefix' );
 		}
-		if ( $special->getName() === 'Search' && $searchfilter !== '' ) {
-			$request->setVal( 'search', $search . ' ' . $searchfilter );
+		if ( in_array( $special->getName(), [ 'Search', 'MediaSearch' ] ) && $searchfilter !== '' ) {
+			// Redirect to Special:Search after modifying the search parameter.
+			$searchQuery = $request->getQueryValues();
+			$searchQuery[ 'search' ] = trim( $search ) . ' ' . $searchfilter;
+			unset( $searchQuery['searchfilter'], $searchQuery['title'] );
+			$special->getOutput()->redirect( $special->getPageTitle()->getFullURL( $searchQuery ) );
+			return false;
 		}
 	}
 
@@ -75,18 +78,19 @@ class InputBoxHooks implements
 	 * @param string|null $input
 	 * @param array $args
 	 * @param Parser $parser
+	 * @param PPFrame $frame
 	 * @return string
 	 */
-	public function render( $input, $args, Parser $parser ) {
+	public function render( $input, $args, Parser $parser, PPFrame $frame ) {
 		if ( $input === null ) {
 			return '';
 		}
 
 		// Create InputBox
-		$inputBox = new InputBox( $this->config, $parser );
+		$inputBox = new InputBox( $this->config, $this->extensionRegistry, $parser );
 
 		// Configure InputBox
-		$inputBox->extractOptions( $parser->replaceVariables( $input ) );
+		$inputBox->extractOptions( $parser->replaceVariables( $input, $frame ) );
 
 		// Return output
 		return $inputBox->render();

@@ -15,20 +15,8 @@ use RuntimeException;
 use UtfNormal\Validator;
 
 class LuaSandboxInterpreter extends LuaInterpreter {
-	/**
-	 * @var LuaEngine
-	 */
-	public $engine;
-
-	/**
-	 * @var LuaSandbox
-	 */
-	public $sandbox;
-
-	/**
-	 * @var bool
-	 */
-	public $profilerEnabled;
+	public LuaSandbox $sandbox;
+	public bool $profilerEnabled = false;
 
 	public const SAMPLES = 0;
 	public const SECONDS = 1;
@@ -53,14 +41,12 @@ class LuaSandboxInterpreter extends LuaInterpreter {
 		}
 	}
 
-	/**
-	 * @param LuaEngine $engine
-	 * @param array $options
-	 */
-	public function __construct( $engine, array $options ) {
+	public function __construct(
+		public readonly LuaEngine $engine,
+		array $options,
+	) {
 		self::checkLuaSandboxVersion();
 
-		$this->engine = $engine;
 		$this->sandbox = new LuaSandbox;
 		$this->sandbox->setMemoryLimit( $options['memoryLimit'] );
 		$this->sandbox->setCPULimit( $options['cpuLimit'] );
@@ -80,15 +66,14 @@ class LuaSandboxInterpreter extends LuaInterpreter {
 	 */
 	protected function convertSandboxError( LuaSandboxError $e ) {
 		$opts = [];
+		// @phan-suppress-next-line MediaWikiNoIssetIfDefined Upstream class, not clear if always declared
 		if ( isset( $e->luaTrace ) ) {
-			$trace = $e->luaTrace;
+			$trace = $e->luaTrace ?? [];
 			foreach ( $trace as &$val ) {
-				$val = array_map( static function ( $val ) {
-					if ( is_string( $val ) ) {
-						$val = Validator::cleanUp( $val );
-					}
-					return $val;
-				}, $val );
+				$val = array_map(
+					static fn ( $s ) => is_string( $s ) ? Validator::cleanUp( $s ) : $s,
+					$val
+				);
 			}
 			$opts['trace'] = $trace;
 		}
@@ -98,6 +83,7 @@ class LuaSandboxInterpreter extends LuaInterpreter {
 			$opts['line'] = $m[2];
 			$message = $m[3];
 		}
+		$opts['log'] = $this->engine->getLogBuffer();
 		return $this->engine->newLuaError( $message, $opts );
 	}
 
@@ -124,10 +110,6 @@ class LuaSandboxInterpreter extends LuaInterpreter {
 				$funcName ];
 		}
 		$this->sandbox->registerLibrary( $name, $realLibrary );
-
-		# TODO: replace this with
-		# $this->sandbox->registerVirtualLibrary(
-		# 	$name, [ $this, 'callback' ], $functions );
 	}
 
 	/** @inheritDoc */
@@ -142,7 +124,7 @@ class LuaSandboxInterpreter extends LuaInterpreter {
 					__METHOD__ . ': LuaSandboxFunction::call returned false' );
 			}
 			return $ret;
-		} catch ( LuaSandboxTimeoutError $e ) {
+		} catch ( LuaSandboxTimeoutError ) {
 			throw $this->engine->newException( 'scribunto-common-timeout' );
 		} catch ( LuaSandboxError $e ) {
 			throw $this->convertSandboxError( $e );

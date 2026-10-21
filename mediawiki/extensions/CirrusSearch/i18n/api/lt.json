@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"Albertas",
+			"Nokeoo"
+		]
+	},
+	"apihelp-query+compsuggestbuilddoc-param-method": "Naudotinas balų skaičiavimo metodas",
+	"apierror-compsuggestbuilddoc-bad-method": "Nežinomas balų skaičiavimo metodas"
+}

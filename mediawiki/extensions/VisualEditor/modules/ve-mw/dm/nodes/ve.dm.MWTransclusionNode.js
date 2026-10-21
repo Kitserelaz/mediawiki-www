@@ -63,7 +63,7 @@ ve.dm.MWTransclusionNode.static.enableAboutGrouping = true;
 // We handle rendering ourselves, no need to render attributes from originalDomElements (T207325),
 // except for data-parsoid/RESTBase ID (T207325)
 ve.dm.MWTransclusionNode.static.preserveHtmlAttributes = function ( attribute ) {
-	return [ 'data-parsoid', 'id' ].indexOf( attribute ) !== -1;
+	return [ 'data-parsoid', 'id' ].includes( attribute );
 };
 
 ve.dm.MWTransclusionNode.static.getHashObject = function ( dataElement ) {
@@ -116,7 +116,7 @@ ve.dm.MWTransclusionNode.static.toDataElement = function ( domElements, converte
 		type = isInline ? this.inlineType : this.blockType;
 
 	const dataElement = {
-		type: type,
+		type,
 		attributes: {
 			mw: mwData,
 			originalMw: mwDataJSON
@@ -204,11 +204,11 @@ ve.dm.MWTransclusionNode.static.toDomElements = function ( dataElement, doc, con
 		for ( let i = 1; i < els.length; i++ ) {
 			// Wrap plain text nodes so we can give them an attribute
 			els[ i ] = wrapTextNode( els[ i ] );
-			els[ i ].setAttribute( 'data-ve-ignore', 'true' );
+			els[ i ].setAttribute( 'data-ve-ignore', '' );
 		}
 	} else if ( converter.isForPreview() ) {
 		const modelNode = ve.dm.nodeFactory.createFromElement( dataElement );
-		modelNode.setDocument( converter.internalList.getDocument() );
+		modelNode.setDocument( converter.getInternalList().getDocument() );
 		const viewNode = ve.ce.nodeFactory.createFromModel( modelNode );
 		// HACK: Node must be attached to check for rendering
 		viewNode.$element.appendTo( 'body' );
@@ -268,7 +268,7 @@ ve.dm.MWTransclusionNode.static.describeChanges = function ( attributeChanges ) 
 			const from = ( params[ param ].from || '' ).trim() || undefined,
 				to = ( params[ param ].to || '' ).trim() || undefined;
 			if ( from !== to ) {
-				const change = this.describeChange( param, { from: from, to: to } );
+				const change = this.describeChange( param, { from, to } );
 				if ( change ) {
 					if ( !paramChanges ) {
 						paramChanges = document.createElement( 'ul' );
@@ -467,16 +467,17 @@ ve.dm.MWTransclusionNode.prototype.getPartsList = function () {
 		const content = this.getAttribute( 'mw' );
 		for ( let i = 0; i < content.parts.length; i++ ) {
 			const part = content.parts[ i ];
-			// A template as serialized by {@see ve.dm.MWTemplateModel.serialize}
+			// A template as serialized by {@link ve.dm.MWTemplateModel#serialize}
 			if ( part.template ) {
 				const href = part.template.target.href,
 					page = href ? mw.libs.ve.normalizeParsoidResourceName( href ) : null;
 				this.partsList.push( {
 					template: part.template.target.wt,
-					templatePage: page
+					templatePage: page,
+					params: part.template.params
 				} );
 			} else {
-				// Raw wikitext as serialized by {@see ve.dm.MWTransclusionContentModel.serialize}
+				// Raw wikitext as serialized by {@link ve.dm.MWTransclusionContentModel#serialize}
 				this.partsList.push( { content: part } );
 			}
 		}
@@ -486,12 +487,24 @@ ve.dm.MWTransclusionNode.prototype.getPartsList = function () {
 };
 
 /**
- * Wrapper for static method, {@see ve.dm.MWTransclusionNode.static.getWikitext} above.
+ * Wrapper for static method, {@link ve.dm.MWTransclusionNode.static.getWikitext} above.
  *
  * @return {string} Wikitext
  */
 ve.dm.MWTransclusionNode.prototype.getWikitext = function () {
-	return this.constructor.static.getWikitext( this.getAttribute( 'mw' ) );
+	try {
+		return this.constructor.static.getWikitext( this.getAttribute( 'mw' ) );
+	} catch ( e ) {
+		let message;
+		const originalDomElements = this.getOriginalDomElements( this.getStore() );
+		if ( originalDomElements.length ) {
+			message = originalDomElements.map( ve.getNodeHtml ).join( '' );
+		} else {
+			message = '[DOM elements not found]';
+		}
+		// Temporary logging for T380432
+		throw new Error( `Failed to generate wikitext for MWTransclusionNode: ${ message }` );
+	}
 };
 
 /* Registration */

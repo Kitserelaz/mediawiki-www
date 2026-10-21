@@ -8,7 +8,6 @@ abstract class ExceptionBase extends Exception {
 
 	/**
 	 * Serialize data for edit stash
-	 * @return array
 	 */
 	public function toArray(): array {
 		return [
@@ -19,7 +18,7 @@ abstract class ExceptionBase extends Exception {
 
 	/**
 	 * Deserialize data from edit stash
-	 * @param array $value
+	 * @param array{class: class-string<static>, message: string} $value
 	 * @return static
 	 */
 	public static function fromArray( array $value ) {

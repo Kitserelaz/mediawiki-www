@@ -1,0 +1,34 @@
+{
+	"@metadata": {
+		"authors": [
+			"Aursani",
+			"Kaleem Bhatti",
+			"Mehtab ahmed",
+			"Tweety"
+		]
+	},
+	"nstab-page": "صفحو",
+	"proofreadpage_nextpage": "اڳيون صفحو",
+	"proofreadpage_prevpage": "پويون صفحو",
+	"proofreadpage_quality0_category": "بنان متن",
+	"proofreadpage_quality1_category": "تصديق نہ ڪيل",
+	"proofreadpage_quality2_category": "اڻانگا",
+	"proofreadpage_quality3_category": "تصديق-ڪيل",
+	"proofreadpage_quality4_category": "توثيق شده",
+	"proofreadpage_quality0_summary": "بنان متن",
+	"proofreadpage_quality1_message": "هن صفحي جي چُڪَ چڪاس ڪا نہ ٿي آهي",
+	"proofreadpage_specialpage_filterby_all": "سڀ",
+	"proofreadpage_index_listofpages": "صفحن جي فھرست",
+	"prp-editinsequence-preview": "پيش-نگاھ",
+	"proofreadpage-pagelist-dialog-insertchanges": "تبديليون درج ڪريو",
+	"proofreadpage-pagelist-dialog-help-invisible-label": "مددگار",
+	"proofreadpage-preferences-show-dialog-before-every-save-label": "هر دفعي جڏهن {{GENDER:|توھان}} هڪ صفحو EditInSequence موڊ ۾ محفوظ ڪندا ھجو تہ هڪ سنوار جو خلاصو تت ڊائلاگ ڏيکاريو.",
+	"content-model-proofread-page": "ڪتابي صفحو",
+	"proofreadpage-visualeditor-node-pages-inspector-tooltip": "صفحا",
+	"proofreadpage-index-field-category-label": "زمرا",
+	"tag-proofreadpage-quality0-description": "اھي سنوارون جن صفحي جي معيار کي \"{{int:tag-proofreadpage-quality0}}\" ڏانھن بدلايو",
+	"tag-proofreadpage-quality1-description": "اھي سنوارون جن صفحي جي معيار کي \"{{int:tag-proofreadpage-quality1}}\" ڏانھن بدلايو",
+	"tag-proofreadpage-quality2-description": "اھي سنوارون جن صفحي جي معيار کي \"{{int:tag-proofreadpage-quality2}}\" ڏانھن بدلايو",
+	"tag-proofreadpage-quality3-description": "اھي سنوارون جن صفحي جي معيار کي \"{{int:tag-proofreadpage-quality3}}\" ڏانھن بدلايو",
+	"tag-proofreadpage-quality4-description": "اھي سنوارون جن صفحي جي معيار کي \"{{int:tag-proofreadpage-quality4}}\" ڏانھن بدلايو"
+}

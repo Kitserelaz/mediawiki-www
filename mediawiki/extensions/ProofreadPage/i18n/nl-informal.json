@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": [
+			"McDutchie",
+			"Siebrand"
+		]
+	},
+	"proofreadpage-preferences-show-dialog-before-every-save-label": "Telkens wanneer je in de modus \"Bewerking in volgorde\" een pagina opslaat een dialoogvenster voor bewerkingssamenvatting weergeven"
+}

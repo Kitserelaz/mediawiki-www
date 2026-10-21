@@ -15,7 +15,6 @@
  * along with MultimediaViewer.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const HtmlUtils = require( '../mmv.HtmlUtils.js' );
 const Description = require( './mmv.ui.description.js' );
 const UiElement = require( './mmv.ui.js' );
 const MetadataPanelScroller = require( './mmv.ui.metadataPanelScroller.js' );
@@ -41,6 +40,18 @@ class MetadataPanel extends UiElement {
 
 		this.initializeHeader();
 		this.initializeImageMetadata();
+	}
+
+	/**
+	 * Check whether the image has geolocation data.
+	 *
+	 * @param {ImageModel} imageData
+	 * @return {boolean}
+	 */
+	static hasCoords( imageData ) {
+		// TODO: Confirm null check is impossible and remove
+		return imageData.latitude !== undefined && imageData.latitude !== null &&
+			imageData.longitude !== undefined && imageData.longitude !== null;
 	}
 
 	/**
@@ -639,7 +650,7 @@ class MetadataPanel extends UiElement {
 	 * @param {ImageModel} imageData
 	 */
 	setLocationData( imageData ) {
-		if ( !imageData.hasCoords() ) {
+		if ( !MetadataPanel.hasCoords( imageData ) ) {
 			return;
 		}
 
@@ -746,7 +757,7 @@ class MetadataPanel extends UiElement {
 	 * @param {string} error error message
 	 */
 	showError( title, error ) {
-		this.$credit.text( mw.msg( 'multimediaviewer-metadata-error', error ) );
+		this.creditField.set( mw.msg( 'multimediaviewer-metadata-error', error ) );
 		this.$title.html( title );
 	}
 
@@ -826,7 +837,7 @@ class MetadataPanel extends UiElement {
 /**
  * Maximum number of restriction icons before default icon is used
  *
- * @property {number} MAX_RESTRICT
+ * @type {number}
  * @static
  */
 MetadataPanel.MAX_RESTRICT = 4;

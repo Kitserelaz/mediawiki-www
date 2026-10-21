@@ -1,0 +1,269 @@
+<?php
+
+namespace SMW\SQLStore\EntityStore;
+
+use MediaWiki\MediaWikiServices;
+use SMW\MediaWiki\Connection\Sequence;
+use SMW\MediaWiki\JobFactory;
+use SMW\SQLStore\SQLStore;
+use SMW\SQLStore\TableBuilder\FieldType;
+use stdClass;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 3.0
+ *
+ * @author mwjames
+ */
+class IdChanger {
+
+	/**
+	 * @since 3.0
+	 */
+	public function __construct(
+		private readonly SQLStore $store,
+		private ?JobFactory $jobFactory = null,
+	) {
+		if ( $this->jobFactory === null ) {
+			$this->jobFactory = new JobFactory();
+		}
+	}
+
+	/**
+	 * Change an internal id to another value. If no target value is given, the
+	 * value is changed to become the last id entry (based on the automatic id
+	 * increment of the database). Whatever currently occupies this id will be
+	 * moved consistently in all relevant tables. Whatever currently occupies
+	 * the target id will be ignored (it should be ensured that nothing is
+	 * moved to an id that is still in use somewhere).
+	 *
+	 * @since 3.1
+	 *
+	 * @param int $curid
+	 * @param int $targetid
+	 *
+	 * @return stdClass|void
+	 */
+	public function move( $curid, $targetid = 0 ) {
+		$connection = $this->store->getConnection( 'mw.db' );
+
+		$row = $connection->newSelectQueryBuilder()
+			->select( '*' )
+			->from( SQLStore::ID_TABLE )
+			->where( [ 'smw_id' => $curid ] )
+			->caller( __METHOD__ )
+			->fetchRow();
+
+		// No id at current position, ignore
+		if ( $row === false ) {
+			return;
+		}
+
+		$connection->beginAtomicTransaction( __METHOD__ );
+
+		// Bug 42659
+		$sequence = Sequence::makeSequence( SQLStore::ID_TABLE, 'smw_id' );
+		$id = $targetid == 0 ? $connection->nextSequenceValue( $sequence ) : $targetid;
+
+		$hash = [
+			$row->smw_title,
+			(int)$row->smw_namespace,
+			$row->smw_iw,
+			$row->smw_subobject
+		];
+
+		$connection->newInsertQueryBuilder()
+			->insertInto( SQLStore::ID_TABLE )
+			->row( [
+				'smw_id' => $id,
+				'smw_title' => $row->smw_title,
+				'smw_namespace' => $row->smw_namespace,
+				'smw_iw' => $row->smw_iw,
+				'smw_subobject' => $row->smw_subobject,
+				'smw_sortkey' => $row->smw_sortkey,
+				'smw_sort' => $row->smw_sort,
+				'smw_hash' => $connection->escape_bytea( IdCacheManager::computeSha1( $hash ) )
+			] )
+			->caller( __METHOD__ )
+			->execute();
+
+		$targetid = $targetid == 0 ? $connection->insertId() : $targetid;
+
+		$connection->newDeleteQueryBuilder()
+			->deleteFrom( SQLStore::ID_AUXILIARY_TABLE )
+			->where( [ 'smw_id' => $curid ] )
+			->caller( __METHOD__ )
+			->execute();
+
+		$connection->newDeleteQueryBuilder()
+			->deleteFrom( SQLStore::ID_TABLE )
+			->where( [ 'smw_id' => $curid ] )
+			->caller( __METHOD__ )
+			->execute();
+
+		$row->smw_id = $targetid;
+
+		$this->change(
+			$curid,
+			$targetid,
+			$row->smw_namespace,
+			$row->smw_namespace
+		);
+
+		$connection->endAtomicTransaction( __METHOD__ );
+
+		$title = MediaWikiServices::getInstance()->getTitleFactory()->newFromText(
+			$row->smw_title,
+			$row->smw_namespace
+		);
+		if ( $title !== null ) {
+			$updateJob = $this->jobFactory->newUpdateJob( $title, [ 'origin' => __METHOD__ ] );
+			$updateJob->insert();
+		}
+
+		return $row;
+	}
+
+	/**
+	 * Change an SMW page id across all relevant tables. The redirect table
+	 * is also updated (without much effect if the change happended due to
+	 * some redirect, since the table should not contain the id of the
+	 * redirected page). If namespaces are given, then they are used to
+	 * delete any entries that are limited to one particular namespace (e.g.
+	 * only properties can be used as properties) instead of moving them.
+	 *
+	 * The id in the SMW IDs table is not touched.
+	 *
+	 * @note This method only changes internal page IDs in SMW. It does not
+	 * assume any change in (title-related) data, as e.g. in a page move.
+	 * Internal objects (subobject) do not need to be updated since they
+	 * refer to the title of their parent page, not to its ID.
+	 *
+	 * @since 1.8
+	 *
+	 * @param int $old_id numeric ID that is to be changed
+	 * @param int $new_id numeric ID to which the records are to be changed
+	 * @param int $old_ns namespace of old id's page (-1 to ignore it)
+	 * @param int $new_ns namespace of new id's page (-1 to ignore it)
+	 * @param bool $s_data stating whether to update subject references
+	 * @param bool $po_data stating if to update property/object references
+	 */
+	public function change( $old_id, $new_id, $old_ns = -1, $new_ns = -1, $s_data = true, $po_data = true ): void {
+		$connection = $this->store->getConnection( 'mw.db' );
+
+		// Change all id entries in property tables:
+		foreach ( $this->store->getPropertyTables() as $proptable ) {
+
+			if ( $s_data && $proptable->usesIdSubject() ) {
+
+				$row = $connection->newSelectQueryBuilder()
+					->select( [ 's_id' ] )
+					->from( $proptable->getName() )
+					->where( [ 's_id' => $old_id ] )
+					->caller( __METHOD__ )
+					->fetchRow();
+
+				if ( $row === false ) {
+					continue;
+				}
+
+				$connection->newUpdateQueryBuilder()
+					->update( $proptable->getName() )
+					->set( [ 's_id' => $new_id ] )
+					->where( [ 's_id' => $old_id ] )
+					->caller( __METHOD__ )
+					->execute();
+			}
+
+			if ( $po_data ) {
+				if ( ( ( $old_ns == -1 ) || ( $old_ns == SMW_NS_PROPERTY ) ) && ( !$proptable->isFixedPropertyTable() ) ) {
+					if ( ( $new_ns == -1 ) || ( $new_ns == SMW_NS_PROPERTY ) ) {
+						$connection->newUpdateQueryBuilder()
+							->update( $proptable->getName() )
+							->set( [ 'p_id' => $new_id ] )
+							->where( [ 'p_id' => $old_id ] )
+							->caller( __METHOD__ )
+							->execute();
+					} else {
+						$connection->newDeleteQueryBuilder()
+							->deleteFrom( $proptable->getName() )
+							->where( [ 'p_id' => $old_id ] )
+							->caller( __METHOD__ )
+							->execute();
+					}
+				}
+
+				foreach ( $proptable->getFields( $this->store ) as $fieldName => $fieldType ) {
+
+					if ( $fieldType !== FieldType::FIELD_ID ) {
+						continue;
+					}
+
+					$row = $connection->newSelectQueryBuilder()
+						->select( [ $fieldName ] )
+						->from( $proptable->getName() )
+						->where( [ $fieldName => $old_id ] )
+						->caller( __METHOD__ )
+						->fetchRow();
+
+					if ( $row === false ) {
+						continue;
+					}
+
+					$connection->newUpdateQueryBuilder()
+						->update( $proptable->getName() )
+						->set( [ $fieldName => $new_id ] )
+						->where( [ $fieldName => $old_id ] )
+						->caller( __METHOD__ )
+						->execute();
+				}
+			}
+		}
+
+		$this->update_concept( $old_id, $new_id, $old_ns, $new_ns, $s_data, $po_data );
+	}
+
+	private function update_concept( $old_id, $new_id, $old_ns, $new_ns, $s_data, $po_data ): void {
+		$connection = $this->store->getConnection( 'mw.db' );
+
+		if ( $s_data && ( ( $old_ns == -1 ) || ( $old_ns == SMW_NS_CONCEPT ) ) ) {
+			if ( ( $new_ns == -1 ) || ( $new_ns == SMW_NS_CONCEPT ) ) {
+				$connection->newUpdateQueryBuilder()
+					->update( SQLStore::CONCEPT_TABLE )
+					->set( [ 's_id' => $new_id ] )
+					->where( [ 's_id' => $old_id ] )
+					->caller( __METHOD__ )
+					->execute();
+
+				$connection->newUpdateQueryBuilder()
+					->update( SQLStore::CONCEPT_CACHE_TABLE )
+					->set( [ 's_id' => $new_id ] )
+					->where( [ 's_id' => $old_id ] )
+					->caller( __METHOD__ )
+					->execute();
+			} else {
+				$connection->newDeleteQueryBuilder()
+					->deleteFrom( SQLStore::CONCEPT_TABLE )
+					->where( [ 's_id' => $old_id ] )
+					->caller( __METHOD__ )
+					->execute();
+
+				$connection->newDeleteQueryBuilder()
+					->deleteFrom( SQLStore::CONCEPT_CACHE_TABLE )
+					->where( [ 's_id' => $old_id ] )
+					->caller( __METHOD__ )
+					->execute();
+			}
+		}
+
+		if ( $po_data ) {
+			$connection->newUpdateQueryBuilder()
+				->update( SQLStore::CONCEPT_CACHE_TABLE )
+				->set( [ 'o_id' => $new_id ] )
+				->where( [ 'o_id' => $old_id ] )
+				->caller( __METHOD__ )
+				->execute();
+		}
+	}
+
+}

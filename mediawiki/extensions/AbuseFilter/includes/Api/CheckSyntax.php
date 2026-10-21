@@ -11,27 +11,13 @@ use Wikimedia\ParamValidator\ParamValidator;
 
 class CheckSyntax extends ApiBase {
 
-	/** @var RuleCheckerFactory */
-	private $ruleCheckerFactory;
-
-	/** @var AbuseFilterPermissionManager */
-	private $afPermManager;
-
-	/**
-	 * @param ApiMain $main
-	 * @param string $action
-	 * @param RuleCheckerFactory $ruleCheckerFactory
-	 * @param AbuseFilterPermissionManager $afPermManager
-	 */
 	public function __construct(
 		ApiMain $main,
-		$action,
-		RuleCheckerFactory $ruleCheckerFactory,
-		AbuseFilterPermissionManager $afPermManager
+		string $action,
+		private readonly RuleCheckerFactory $ruleCheckerFactory,
+		private readonly AbuseFilterPermissionManager $afPermManager
 	) {
 		parent::__construct( $main, $action );
-		$this->ruleCheckerFactory = $ruleCheckerFactory;
-		$this->afPermManager = $afPermManager;
 	}
 
 	/**
@@ -64,10 +50,12 @@ class CheckSyntax extends ApiBase {
 			// Everything went better than expected :)
 			$r['status'] = 'ok';
 		} else {
-			// TODO: Improve the type here.
-			/** @var UserVisibleException $excep */
 			$excep = $result->getException();
-			'@phan-var UserVisibleException $excep';
+			if ( !( $excep instanceof UserVisibleException ) ) {
+				throw new \UnexpectedValueException(
+					'Non-user-visible exception returned from syntax check'
+				);
+			}
 			$r = [
 				'status' => 'error',
 				'message' => $this->msg( $excep->getMessageObj() )->text(),

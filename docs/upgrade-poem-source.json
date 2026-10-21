@@ -1,0 +1,54 @@
+{
+  "component": "mediawiki/extensions/Poem",
+  "baseline": "8c1e853e2e7f08d20e0c78309509c90b46f73bae",
+  "target": "7a05889112c8ed8ea68f203df639a4e7161be819",
+  "preserved_changes": [
+    {
+      "path": ".eslintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".gitignore",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".gitreview",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".phan/config.php",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".phan/stubs/DomImpl.php",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".phpcs.xml",
+      "change": "local-deletion"
+    },
+    {
+      "path": "Gruntfile.js",
+      "change": "local-deletion"
+    },
+    {
+      "path": "package-lock.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "package.json",
+      "change": "local-deletion"
+    }
+  ],
+  "dependency_status": {
+    "old_runtime_requirements": {},
+    "new_runtime_requirements": {},
+    "has_lock": false,
+    "has_vendor": false,
+    "status": "runtime-requirements-unchanged"
+  },
+  "baseline_proof": {
+    "matched_runtime_and_manifest_files": 4,
+    "method": "Exact Git blobs for all installed non-test, non-vendor PHP and extension.json"
+  }
+}

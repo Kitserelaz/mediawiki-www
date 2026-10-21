@@ -1,0 +1,648 @@
+<?php
+
+namespace MediaWiki\Extension\CentralAuth\Special;
+
+use Exception;
+use InvalidArgumentException;
+use MediaWiki\Exception\ErrorPageError;
+use MediaWiki\Extension\CentralAuth\CentralAuthDatabaseManager;
+use MediaWiki\Extension\CentralAuth\Config\CAMainConfigNames;
+use MediaWiki\Extension\CentralAuth\User\CentralAuthUser;
+use MediaWiki\Html\Html;
+use MediaWiki\SpecialPage\SpecialPage;
+use MediaWiki\Title\NamespaceInfo;
+use MediaWiki\User\UserFactory;
+use MediaWiki\Utils\MWCryptRand;
+use MediaWiki\WikiMap\WikiMap;
+use RuntimeException;
+
+class SpecialMergeAccount extends SpecialPage {
+
+	/** @var string */
+	protected $mUserName;
+	/** @var bool */
+	protected $mAttemptMerge;
+	/** @var string */
+	protected $mMergeAction;
+	/** @var string */
+	protected $mPassword;
+	/** @var string[] */
+	protected $mWikiIDs;
+	/** @var string */
+	protected $mSessionToken;
+
+	private NamespaceInfo $namespaceInfo;
+	private UserFactory $userFactory;
+	private CentralAuthDatabaseManager $databaseManager;
+
+	public function __construct(
+		NamespaceInfo $namespaceInfo,
+		UserFactory $userFactory,
+		CentralAuthDatabaseManager $databaseManager
+	) {
+		parent::__construct( 'MergeAccount' );
+		$this->namespaceInfo = $namespaceInfo;
+		$this->userFactory = $userFactory;
+		$this->databaseManager = $databaseManager;
+	}
+
+	/** @inheritDoc */
+	public function getRestriction(): string {
+		return 'centralauth-merge';
+	}
+
+	/** @inheritDoc */
+	public function doesWrites() {
+		return true;
+	}
+
+	/** @inheritDoc */
+	public function execute( $subpage ) {
+		$this->setHeaders();
+		$this->addHelpLink( 'Extension:CentralAuth' );
+		$this->getOutput()->addModuleStyles( 'mediawiki.codex.messagebox.styles' );
+
+		if ( $subpage !== null && preg_match( "/^[0-9a-zA-Z]{32}$/", $subpage ) ) {
+			$user = $this->userFactory->newFromConfirmationCode( $subpage );
+
+			if ( is_object( $user ) ) {
+				$user->confirmEmail();
+				$user->saveSettings();
+				$this->getOutput()->addWikiMsg( 'confirmemail_success' );
+			} else {
+				$this->getOutput()->addWikiMsg( 'confirmemail_invalid' );
+				// return; // Let's be greedy and still show them MergeAccount
+			}
+		}
+
+		if ( !$this->userCanExecute( $this->getUser() ) ) {
+			$this->getOutput()->addWikiMsg( 'centralauth-merge-denied' );
+			$this->getOutput()->addWikiMsg( 'centralauth-readmore-text' );
+			return;
+		}
+
+		if ( !$this->getUser()->isNamed() ) {
+			$loginpage = SpecialPage::getTitleFor( 'Userlogin' );
+			$loginurl = $loginpage->getFullUrl(
+				[ 'returnto' => $this->getPageTitle()->getPrefixedText() ]
+			);
+			$this->getOutput()->addWikiMsg( 'centralauth-merge-notlogged', $loginurl );
+			$this->getOutput()->addWikiMsg( 'centralauth-readmore-text' );
+
+			return;
+		}
+
+		$this->databaseManager->assertNotReadOnly();
+		$request = $this->getRequest();
+
+		$this->mUserName = $this->getUser()->getName();
+
+		$this->mAttemptMerge = $request->wasPosted();
+
+		$this->mMergeAction = $request->getVal( 'wpMergeAction' );
+		$this->mPassword = $request->getVal( 'wpPassword' );
+		$this->mWikiIDs = $request->getArray( 'wpWikis' );
+		$this->mSessionToken = $request->getVal( 'wpMergeSessionToken' );
+
+		// Possible demo states
+
+		// success, all accounts merged
+		// successful login, some accounts merged, others left
+		// successful login, others left
+		// not account owner, others left
+
+		// is owner / is not owner
+		// did / did not merge some accounts
+		// do / don't have more accounts to merge
+
+		if ( $this->mAttemptMerge ) {
+			// First check the edit token
+			if ( !$this->getUser()->matchEditToken( $request->getVal( 'wpEditToken' ) ) ) {
+				throw new ErrorPageError( 'sessionfailure-title', 'sessionfailure' );
+			}
+			switch ( $this->mMergeAction ) {
+				case "dryrun":
+					$this->doDryRunMerge();
+					break;
+				case "initial":
+					$this->doInitialMerge();
+					break;
+				case "cleanup":
+					$this->doCleanupMerge();
+					break;
+				case "attach":
+					$this->doAttachMerge();
+					break;
+				default:
+					throw new InvalidArgumentException(
+						'Invalid merge action ' . $this->mMergeAction . ' given'
+					);
+			}
+			return;
+		}
+
+		$globalUser = CentralAuthUser::getInstanceByName( $this->mUserName );
+		if ( $globalUser->exists() ) {
+			$this->showFormForExistingUsers( $globalUser );
+		} else {
+			$this->showWelcomeForm();
+		}
+	}
+
+	/**
+	 * Pick which form to show for a user that already exists
+	 */
+	private function showFormForExistingUsers( CentralAuthUser $globalUser ) {
+		if ( $globalUser->isAttached() ) {
+			$this->showCleanupForm();
+		} else {
+			$this->showAttachForm();
+		}
+	}
+
+	/**
+	 * To pass potentially multiple passwords from one form submission
+	 * to another while previewing the merge behavior, we can store them
+	 * in the server-side session information.
+	 */
+	private function initSession() {
+		$this->mSessionToken = MWCryptRand::generateHex( 32 );
+	}
+
+	/**
+	 * @return string[]
+	 */
+	private function getWorkingPasswords() {
+		$data = $this->getRequest()->getSession()->getSecret( 'wsCentralAuthMigration', [] );
+		$passwords = $data[$this->mSessionToken] ?? [];
+		return $passwords;
+	}
+
+	/**
+	 * @param string $password
+	 */
+	private function addWorkingPassword( $password ) {
+		$passwords = $this->getWorkingPasswords();
+		if ( !in_array( $password, $passwords ) ) {
+			$passwords[] = $password;
+		}
+		$data = $this->getRequest()->getSession()->getSecret( 'wsCentralAuthMigration', [] );
+		$data[$this->mSessionToken] = $passwords;
+		$this->getRequest()->getSession()->setSecret( 'wsCentralAuthMigration', $data );
+	}
+
+	private function clearWorkingPasswords() {
+		$data = $this->getRequest()->getSession()->getSecret( 'wsCentralAuthMigration', [] );
+		unset( $data[$this->mSessionToken] );
+		$this->getRequest()->getSession()->setSecret( 'wsCentralAuthMigration', $data );
+	}
+
+	/**
+	 * @param string $text
+	 * @param string $key
+	 * @return string
+	 */
+	private function xorString( $text, $key ) {
+		if ( $key !== '' ) {
+			$textLen = strlen( $text );
+			$keyLen = strlen( $key );
+			for ( $i = 0; $i < $textLen; $i++ ) {
+				$text[$i] = chr( 0xff & ( ord( $text[$i] ) ^ ord( $key[$i % $keyLen] ) ) );
+			}
+		}
+		return $text;
+	}
+
+	private function doDryRunMerge() {
+		$globalUser = CentralAuthUser::getPrimaryInstance( $this->getUser() );
+
+		if ( $globalUser->exists() ) {
+			// Already exists - race condition
+			$this->showFormForExistingUsers( $globalUser );
+			return;
+		}
+
+		if ( $this->getConfig()->get( CAMainConfigNames::CentralAuthDryRun ) ) {
+			$this->getOutput()->addHTML(
+				Html::successBox(
+					$this->msg( 'centralauth-notice-dryrun' )->parseAsBlock()
+				)
+			);
+		}
+
+		$password = $this->getRequest()->getVal( 'wpPassword' );
+		$this->addWorkingPassword( $password );
+		$passwords = $this->getWorkingPasswords();
+
+		$home = false;
+		$attached = [];
+		$unattached = [];
+		$methods = [];
+		$status = $globalUser->migrationDryRun(
+			$passwords, $home, $attached, $unattached, $methods
+		);
+
+		if ( $status->isGood() ) {
+			// This is the global account or matched it
+			if ( count( $unattached ) == 0 ) {
+				// Everything matched -- very convenient!
+				$this->getOutput()->addWikiMsg( 'centralauth-merge-dryrun-complete' );
+			} else {
+				$this->getOutput()->addWikiMsg( 'centralauth-merge-dryrun-incomplete' );
+			}
+
+			if ( count( $unattached ) > 0 ) {
+				$this->getOutput()->addHTML( $this->step2PasswordForm( $unattached ) );
+				$this->getOutput()->addWikiMsg( 'centralauth-merge-dryrun-or' );
+			}
+
+			$subAttached = array_diff( $attached, [ $home ] );
+			$this->getOutput()->addHTML( $this->step3ActionForm( $home, $subAttached, $methods ) );
+		} else {
+			// Show error message from status
+			$out = $this->getOutput();
+			foreach ( $status->getMessages() as $msg ) {
+				$out->addHTML( Html::errorBox( $this->msg( $msg )->parse() ) );
+			}
+
+			// Show wiki list if required
+			if ( $status->hasMessage( 'centralauth-merge-home-password' ) ) {
+				$out = Html::rawElement( 'h2', [],
+					$this->msg( 'centralauth-list-home-title' )->escaped() );
+				$out .= $this->msg( 'centralauth-list-home-dryrun' )->parseAsBlock();
+				$out .= $this->listWikis( [ $home ], [ $home => 'primary' ] );
+				$this->getOutput()->addHTML( $out );
+			}
+
+			// Show password box
+			$this->getOutput()->addHTML( $this->step1PasswordForm() );
+		}
+	}
+
+	private function doInitialMerge() {
+		$globalUser = CentralAuthUser::getPrimaryInstance( $this->getUser() );
+
+		if ( $this->getConfig()->get( CAMainConfigNames::CentralAuthDryRun ) ) {
+			$this->dryRunError();
+			return;
+		}
+
+		if ( $globalUser->exists() ) {
+			// Already exists - race condition
+			$this->showFormForExistingUsers( $globalUser );
+			return;
+		}
+
+		$passwords = $this->getWorkingPasswords();
+		if ( !$passwords ) {
+			throw new RuntimeException( "Submission error -- invalid input" );
+		}
+
+		$globalUser->storeAndMigrate(
+			$passwords,
+			true,
+			false,
+			true
+		);
+		$this->clearWorkingPasswords();
+
+		$this->showCleanupForm();
+	}
+
+	private function doCleanupMerge() {
+		$globalUser = CentralAuthUser::getPrimaryInstance( $this->getUser() );
+
+		if ( !$globalUser->exists() ) {
+			throw new RuntimeException( "User doesn't exist -- race condition?" );
+		}
+
+		if ( !$globalUser->isAttached() ) {
+			throw new RuntimeException( "Can't cleanup merge if not already attached." );
+		}
+
+		if ( $this->getConfig()->get( CAMainConfigNames::CentralAuthDryRun ) ) {
+			$this->dryRunError();
+			return;
+		}
+		$password = $this->getRequest()->getText( 'wpPassword' );
+
+		$attached = [];
+		$unattached = [];
+		$ok = $globalUser->attemptPasswordMigration( $password, $attached, $unattached );
+		$this->clearWorkingPasswords();
+
+		if ( !$ok ) {
+			if ( !$attached ) {
+				$this->getOutput()->addWikiMsg( 'centralauth-finish-noconfirms' );
+			} else {
+				$this->getOutput()->addWikiMsg( 'centralauth-finish-incomplete' );
+			}
+		}
+		$this->showCleanupForm();
+	}
+
+	private function doAttachMerge() {
+		$globalUser = CentralAuthUser::getPrimaryInstance( $this->getUser() );
+
+		if ( !$globalUser->exists() ) {
+			throw new RuntimeException( "User doesn't exist -- race condition?" );
+		}
+
+		if ( $globalUser->isAttached() ) {
+			// Already attached - race condition
+			$this->showCleanupForm();
+			return;
+		}
+
+		if ( $this->getConfig()->get( CAMainConfigNames::CentralAuthDryRun ) ) {
+			$this->dryRunError();
+			return;
+		}
+		$password = $this->getRequest()->getText( 'wpPassword' );
+		if ( $globalUser->authenticate( $password ) == [ CentralAuthUser::AUTHENTICATE_OK ] ) {
+			$globalUser->attach( WikiMap::getCurrentWikiId(), 'password' );
+			$this->getOutput()->addWikiMsg( 'centralauth-attach-success' );
+			$this->showCleanupForm();
+		} else {
+			$this->getOutput()->addHTML(
+				Html::errorBox(
+					$this->msg( 'wrongpassword' )->escaped()
+				) . $this->attachActionForm()
+			);
+		}
+	}
+
+	private function showWelcomeForm() {
+		if ( $this->getConfig()->get( CAMainConfigNames::CentralAuthDryRun ) ) {
+			$this->getOutput()->addHTML(
+				Html::successBox(
+					$this->msg( 'centralauth-notice-dryrun' )->parseAsBlock()
+				)
+			);
+		}
+
+		$this->getOutput()->addWikiMsg( 'centralauth-merge-welcome' );
+		$this->getOutput()->addWikiMsg( 'centralauth-readmore-text' );
+
+		$this->initSession();
+		$this->getOutput()->addHTML(
+			$this->passwordForm(
+				'dryrun',
+				$this->msg( 'centralauth-merge-step1-title' )->text(),
+				$this->msg( 'centralauth-merge-step1-detail' )->escaped(),
+				$this->msg( 'centralauth-merge-step1-submit' )->text() )
+			);
+	}
+
+	private function showCleanupForm() {
+		$globalUser = CentralAuthUser::getInstance( $this->getUser() );
+
+		$merged = $globalUser->listAttached();
+		$remainder = $globalUser->listUnattached();
+		$this->showStatus( $merged, $remainder );
+	}
+
+	private function showAttachForm() {
+		$globalUser = CentralAuthUser::getInstance( $this->getUser() );
+		$merged = $globalUser->listAttached();
+		$this->getOutput()->addWikiMsg( 'centralauth-attach-list-attached', $this->mUserName );
+		$this->getOutput()->addHTML( $this->listWikis( $merged ) );
+		$this->getOutput()->addHTML( $this->attachActionForm() );
+	}
+
+	/**
+	 * @param string[] $merged
+	 * @param string[] $remainder
+	 */
+	private function showStatus( $merged, $remainder ) {
+		$remainderCount = count( $remainder );
+		if ( $remainderCount > 0 ) {
+			$this->getOutput()->setPageTitleMsg( $this->msg( 'centralauth-incomplete' ) );
+			$this->getOutput()->addWikiMsg( 'centralauth-incomplete-text' );
+		} else {
+			$this->getOutput()->setPageTitleMsg( $this->msg( 'centralauth-complete' ) );
+			$this->getOutput()->addWikiMsg( 'centralauth-complete-text' );
+		}
+		$this->getOutput()->addWikiMsg( 'centralauth-readmore-text' );
+
+		if ( $merged ) {
+			$this->getOutput()->addHTML( Html::element( 'hr' ) );
+			$this->getOutput()->addWikiMsg(
+				'centralauth-list-attached',
+				$this->mUserName,
+				count( $merged )
+			);
+			$this->getOutput()->addHTML( $this->listWikis( $merged ) );
+		}
+
+		if ( $remainder ) {
+			$this->getOutput()->addHTML( Html::element( 'hr' ) );
+			$this->getOutput()->addWikiMsg(
+				'centralauth-list-unattached',
+				$this->mUserName,
+				$remainderCount
+			);
+			$this->getOutput()->addHTML( $this->listWikis( $remainder ) );
+
+			// Try the password form!
+			$this->getOutput()->addHTML( $this->passwordForm(
+				'cleanup',
+				$this->msg( 'centralauth-finish-title' )->text(),
+				$this->msg( 'centralauth-finish-text' )->parseAsBlock(),
+				$this->msg( 'centralauth-finish-login' )->text() ) );
+		}
+	}
+
+	/**
+	 * @param string[] $list
+	 * @param array<string,string> $methods
+	 */
+	private function listWikis( array $list, array $methods = [] ): string {
+		if ( !$list ) {
+			return '';
+		}
+
+		asort( $list );
+
+		$html = '';
+		foreach ( $list as $item ) {
+			$html .= Html::rawElement( 'li', [],
+				$this->listWikiItem( $item, $methods[$item] ?? '' )
+			) . "\n";
+		}
+		return Html::rawElement( 'ul', [], "\n" . $html ) . "\n";
+	}
+
+	private function listWikiItem( string $wikiID, string $method ): string {
+		$return = $this->foreignUserLink( $wikiID );
+		if ( $method ) {
+			// Give grep a chance to find the usages:
+			// centralauth-merge-method-primary, centralauth-merge-method-empty,
+			// centralauth-merge-method-mail, centralauth-merge-method-password,
+			// centralauth-merge-method-admin, centralauth-merge-method-new,
+			// centralauth-merge-method-login,
+			$return .= $this->msg( 'word-separator' )->escaped();
+			$return .= $this->msg( 'parentheses',
+				$this->msg( 'centralauth-merge-method-' . $method )->text()
+			)->escaped();
+		}
+		return $return;
+	}
+
+	/**
+	 * @param string $wikiID
+	 * @return string
+	 * @throws Exception
+	 */
+	private function foreignUserLink( $wikiID ) {
+		$wiki = WikiMap::getWiki( $wikiID );
+		if ( !$wiki ) {
+			throw new InvalidArgumentException( "Invalid wiki: $wikiID" );
+		}
+
+		$wikiname = $wiki->getDisplayName();
+		return SpecialCentralAuth::foreignLink(
+			$wiki,
+			$this->namespaceInfo->getCanonicalName( NS_USER ) . ':' . $this->mUserName,
+			$wikiname,
+			$this->msg( 'centralauth-foreign-link', $this->mUserName, $wikiname )->text()
+		);
+	}
+
+	/**
+	 * @param string $action Value for wpMergeAction hidden form field
+	 * @param string $title Header for form (Plain text. Will be escaped by this method)
+	 * @param string $text Raw html contents of form
+	 * @return string HTML of form
+	 */
+	private function actionForm( $action, $title, $text ) {
+		return Html::openElement( 'div', [ 'id' => "userloginForm" ] ) .
+			Html::openElement( 'form',
+				[
+					'method' => 'post',
+					'action' => $this->getPageTitle()->getLocalUrl( 'action=submit' ) ] ) .
+			Html::element( 'h2', [], $title ) .
+			Html::hidden( 'wpEditToken', $this->getUser()->getEditToken() ) .
+			Html::hidden( 'wpMergeAction', $action ) .
+			Html::hidden( 'wpMergeSessionToken', $this->mSessionToken ) .
+
+			$text .
+
+			Html::closeElement( 'form' ) .
+			Html::element( 'br', [ 'clear' => 'all' ] ) .
+			Html::closeElement( 'div' );
+	}
+
+	/**
+	 * @param string $action wpMergeAction form value
+	 * @param string $title Header of form (Not html escaped)
+	 * @param string $text Raw html contents of form
+	 * @param string $submit Text of submit button (Not html escaped)
+	 * @return string HTML of form.
+	 */
+	private function passwordForm( $action, $title, $text, $submit ) {
+		$table = Html::rawElement( 'table', [],
+			Html::rawElement( 'tr', [],
+				Html::rawElement( 'td', [],
+					Html::label(
+						$this->msg( 'centralauth-finish-password' )->text(),
+						'wpPassword1'
+					)
+				) .
+				Html::rawElement( 'td', [],
+					Html::input(
+						'wpPassword', '', 'text',
+						[ 'type' => 'password', 'id' => 'wpPassword1', 'size' => 20 ]
+					)
+				)
+			) .
+			Html::rawElement( 'tr', [],
+				Html::rawElement( 'td' ) .
+				Html::rawElement( 'td', [],
+					Html::submitButton( $submit, [ 'name' => 'wpLogin' ] )
+				)
+			)
+		);
+		return $this->actionForm( $action, $title, $text . $table );
+	}
+
+	/**
+	 * @return string
+	 */
+	private function step1PasswordForm() {
+		return $this->passwordForm(
+			'dryrun',
+			$this->msg( 'centralauth-merge-step1-title' )->text(),
+			$this->msg( 'centralauth-merge-step1-detail' )->escaped(),
+			$this->msg( 'centralauth-merge-step1-submit' )->text() );
+	}
+
+	/**
+	 * @param string[] $unattached
+	 * @return string
+	 */
+	private function step2PasswordForm( $unattached ) {
+		return $this->passwordForm(
+			'dryrun',
+			$this->msg( 'centralauth-merge-step2-title' )->text(),
+			$this->msg( 'centralauth-merge-step2-detail',
+				$this->getUser()->getName() )->parseAsBlock() .
+				$this->listWikis( $unattached ),
+			$this->msg( 'centralauth-merge-step2-submit' )->text() );
+	}
+
+	/**
+	 * @param string $home
+	 * @param string[] $attached
+	 * @param array<string,string> $methods
+	 * @return string
+	 */
+	private function step3ActionForm( $home, $attached, $methods ) {
+		$html = $this->msg( 'centralauth-merge-step3-detail',
+			$this->getUser()->getName() )->parseAsBlock() .
+			Html::rawElement( 'h3', [],
+				$this->msg( 'centralauth-list-home-title' )->escaped()
+			) . $this->msg( 'centralauth-list-home-dryrun' )->parseAsBlock() .
+			$this->listWikis( [ $home ], $methods );
+
+		if ( count( $attached ) ) {
+			$html .= Html::rawElement( 'h3', [],
+				$this->msg( 'centralauth-list-attached-title' )->escaped()
+			) . $this->msg( 'centralauth-list-attached-dryrun',
+				$this->getUser()->getName(),
+				count( $attached ) )->parseAsBlock();
+		}
+
+		$html .= $this->listWikis( $attached, $methods ) .
+			Html::rawElement( 'p', [],
+				Html::submitButton( $this->msg( 'centralauth-merge-step3-submit' )->text(),
+					[ 'name' => 'wpLogin' ] )
+			);
+
+		return $this->actionForm(
+			'initial',
+			$this->msg( 'centralauth-merge-step3-title' )->text(),
+			$html
+		);
+	}
+
+	/**
+	 * @return string
+	 */
+	private function attachActionForm() {
+		return $this->passwordForm(
+			'attach',
+			$this->msg( 'centralauth-attach-title' )->text(),
+			$this->msg( 'centralauth-attach-text' )->escaped(),
+			$this->msg( 'centralauth-attach-submit' )->text() );
+	}
+
+	private function dryRunError() {
+		$this->getOutput()->addWikiMsg( 'centralauth-disabled-dryrun' );
+	}
+
+	/** @inheritDoc */
+	protected function getGroupName() {
+		return 'login';
+	}
+}

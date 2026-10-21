@@ -1,0 +1,219 @@
+{
+	"name": "ReportIncident",
+	"author": [
+		"[https://www.mediawiki.org/wiki/Trust_and_Safety_Tools Wikimedia Trust and Safety Tools team]",
+		"Ellen Rayfield",
+		"Essex Igyan",
+		"Julia Kieserman"
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:ReportIncident",
+	"descriptionmsg": "reportincident-desc",
+	"license-name": "GPL-2.0-or-later",
+	"type": "other",
+	"requires": {
+		"MediaWiki": ">= 1.43"
+	},
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\ReportIncident\\": "src/"
+	},
+	"config": {
+		"ReportIncidentReportButtonEnabled": {
+			"value": true,
+			"description": "Whether to display the report button on configured namespaces."
+		},
+		"ReportIncidentApiEnabled": {
+			"value": true,
+			"description": "When set to true, the REST API endpoint for ingesting reports is available."
+		},
+		"ReportIncidentDeveloperMode": {
+			"value": true,
+			"description": "When set to true, some developer-friendly features are enabled to facilitate testing and QA."
+		},
+		"ReportIncidentEnabledNamespaces": {
+			"value": [
+				1,
+				3,
+				5,
+				7,
+				9,
+				11,
+				13,
+				15
+			],
+			"description": "Determines what namespaces the Incident Reporting tool will render within. The default is 3 which defaults to the NS_USER_TALK namespace"
+		},
+		"ReportIncidentAdministratorsPage": {
+			"value": "Main_Page",
+			"description": "The page the report incident form links to when specifying who will review an incident report. This value will be passed to mw.util.getUrl(); a DB prefix is allowed, e.g. Wikipedia:Administrators"
+		},
+		"ReportIncidentRecipientEmails": {
+			"value": [],
+			"description": "An array of email addresses that should receive reports sent via the incident report system. An empty array means that ReportIncident will not attempt to send any emails when a user files an incident report."
+		},
+		"ReportIncidentEmailFromAddress": {
+			"value": "",
+			"description": "Email to use as the 'from' address for emails that ReportIncident sends. If not set, ReportIncident cannot send emails when users file an incident report."
+		},
+		"ReportIncidentMinimumAccountAgeInSeconds": {
+			"value": 10800,
+			"description": "User accounts must be older than this value in order to submit a report. The default is 3 hours."
+		}
+	},
+	"AvailableRights": [
+		"reportincident"
+	],
+	"GroupPermissions": {
+		"user": {
+			"reportincident": true
+		}
+	},
+	"HookHandlers": {
+		"ReportIncidentHooks": {
+			"class": "MediaWiki\\Extension\\ReportIncident\\Hooks\\Handlers\\MainHooksHandler",
+			"services": [
+				"ReportIncidentController"
+			]
+		},
+		"DiscussionToolsHooks": {
+			"class": "MediaWiki\\Extension\\ReportIncident\\Hooks\\Handlers\\DiscussionToolsHandler",
+			"services": [
+				"ReportIncidentController"
+			]
+		}
+	},
+	"Hooks": {
+		"BeforePageDisplay": "ReportIncidentHooks",
+		"SidebarBeforeOutput": "ReportIncidentHooks",
+		"SkinTemplateNavigation::Universal": "ReportIncidentHooks",
+		"DiscussionToolsAddOverflowMenuItems": "DiscussionToolsHooks"
+	},
+	"MessagesDirs": {
+		"ReportIncident": [
+			"i18n"
+		]
+	},
+	"RateLimits": {
+		"reportincident": {
+			"&can-bypass": false,
+			"user": [
+				5,
+				86400
+			],
+			"newbie": [
+				1,
+				86400
+			]
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "resources/ext.reportIncident",
+		"remoteExtPath": "ReportIncident/resources/ext.reportIncident"
+	},
+	"ResourceModules": {
+		"ext.reportIncident": {
+			"styles": [
+				"ext.reportincident.less"
+			],
+			"skinStyles": {
+				"timeless": "ext.reportincident.timeless.less",
+				"monobook": "ext.reportincident.monobook.less"
+			},
+			"packageFiles": [
+				"init.js",
+				"Constants.js",
+				"components/App.vue",
+				"components/EmailAlertDialog.vue",
+				"components/ReportIncidentDialog.vue",
+				"components/ReportIncidentDialogStep1.vue",
+				"components/ReportIncidentDialogStep2.vue",
+				"components/SuccessConfirmationBanner.vue",
+				"stores/Form.js"
+			],
+			"messages": [
+				"reportincident-desc",
+				"reportincident-report-btn-label",
+				"reportincident-dialog-close-btn",
+				"reportincident-dialog-proceed-btn",
+				"reportincident-dialog-back-btn",
+				"reportincident-dialog-submit-btn",
+				"reportincident-dialog-title",
+				"reportincident-dialog-first-step-cancel-btn",
+				"reportincident-dialog-harassment-type-label",
+				"reportincident-dialog-additional-details-input-label",
+				"reportincident-dialog-optional-label",
+				"reportincident-dialog-violator-label",
+				"reportincident-dialog-harassment-type-hate-speech-or-discrimination",
+				"reportincident-dialog-harassment-type-sexual-harassment",
+				"reportincident-dialog-harassment-type-threats-of-violence",
+				"reportincident-dialog-harassment-type-intimidation",
+				"reportincident-dialog-harassment-type-something-else",
+				"reportincident-dialog-something-else-input-placeholder",
+				"reportincident-dialog-harassment-intro-text",
+				"reportincident-dialog-harassment-lead-in-to-harassment-examples",
+				"reportincident-dialog-harassment-example-insults",
+				"reportincident-dialog-harassment-example-sexual-harassment",
+				"reportincident-dialog-harassment-example-threats",
+				"reportincident-dialog-harassment-example-encouraging-harm",
+				"reportincident-dialog-harassment-example-doxing",
+				"reportincident-dialog-harassment-example-hounding",
+				"reportincident-dialog-harassment-example-trolling",
+				"reportincident-dialog-engage-header",
+				"reportincident-dialog-engage-text",
+				"reportincident-dialog-additional-details-input-placeholder",
+				"reportincident-dialog-violator-placeholder-text",
+				"reportincident-dialog-admin-review",
+				"reportincident-dialog-violator-empty",
+				"reportincident-dialog-violator-nonexistent",
+				"reportincident-dialog-something-else-empty",
+				"reportincident-dialog-harassment-empty",
+				"reportincident-dialog-generic-error",
+				"reportincident-dialog-server-error",
+				"reportincident-dialog-internet-disconnected-error",
+				"reportincident-emaildialog-title",
+				"reportincident-emaildialog-close-button",
+				"reportincident-emaildialog-content",
+				"reportincident-emaildialog-primary",
+				"reportincident-success-message",
+				"reportincident-success-message-close"
+			],
+			"dependencies": [
+				"mediawiki.Uri",
+				"mediawiki.jqueryMsg",
+				"mediawiki.api",
+				"mediawiki.language",
+				"mediawiki.storage",
+				"mediawiki.String",
+				"mediawiki.user",
+				"jquery.lengthLimit",
+				"vue",
+				"pinia",
+				"@wikimedia/codex"
+			]
+		},
+		"ext.reportIncident.menuStyles": {
+			"skinStyles": {
+				"minerva": "menuStyles.minerva.less"
+			}
+		}
+	},
+	"RestRoutes": [
+		{
+			"path": "/reportincident/v0/report",
+			"method": "POST",
+			"class": "MediaWiki\\Extension\\ReportIncident\\Api\\Rest\\Handler\\ReportHandler",
+			"services": [
+				"MainConfig",
+				"RevisionStore",
+				"UserNameUtils",
+				"UserIdentityLookup",
+				"ReportIncidentManager",
+				"UserFactory",
+				"ContentLanguage"
+			]
+		}
+	],
+	"ServiceWiringFiles": [
+		"src/ServiceWiring.php"
+	],
+	"manifest_version": 2
+}

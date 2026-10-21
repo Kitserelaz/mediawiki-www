@@ -7,13 +7,9 @@ use MediaWiki\Linker\LinkTarget;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Message\Message;
 use MediaWiki\Title\Title;
+use Wikimedia\Message\ListType;
 
 abstract class GadgetRepo {
-
-	/**
-	 * @var GadgetRepo|null
-	 */
-	private static $instance;
 
 	/** @internal */
 	public const RESOURCE_TITLE_PREFIX = 'MediaWiki:Gadget-';
@@ -61,19 +57,19 @@ abstract class GadgetRepo {
 	}
 
 	/**
-	 * Get a lists of Gadget objects by category
+	 * Get a lists of Gadget objects by section
 	 *
-	 * @return array<string,Gadget[]> `[ 'category' => [ 'name' => $gadget ] ]`
+	 * @return array<string,Gadget[]> `[ 'section' => [ 'name' => $gadget ] ]`
 	 */
 	public function getStructuredList() {
 		$list = [];
 		foreach ( $this->getGadgetIds() as $id ) {
 			try {
 				$gadget = $this->getGadget( $id );
-			} catch ( InvalidArgumentException $e ) {
+			} catch ( InvalidArgumentException ) {
 				continue;
 			}
-			$list[$gadget->getCategory()][$gadget->getName()] = $gadget;
+			$list[$gadget->getSection()][$gadget->getName()] = $gadget;
 		}
 
 		return $list;
@@ -106,11 +102,12 @@ abstract class GadgetRepo {
 			return wfMessage( $warningMsgKey );
 		}, $warningMsgKeys );
 
-		// Check for invalid values in skins, rights, namespaces, and contentModels
-		$this->checkInvalidLoadConditions( $gadget, 'skins', $warnings );
-		$this->checkInvalidLoadConditions( $gadget, 'rights', $warnings );
-		$this->checkInvalidLoadConditions( $gadget, 'namespaces', $warnings );
-		$this->checkInvalidLoadConditions( $gadget, 'contentModels', $warnings );
+		// Check for invalid values in skins, rights, namespaces, contentModels, and dependencies
+		$this->checkProperty( $gadget, 'skins', $warnings );
+		$this->checkProperty( $gadget, 'rights', $warnings );
+		$this->checkProperty( $gadget, 'namespaces', $warnings );
+		$this->checkProperty( $gadget, 'contentModels', $warnings );
+		$this->checkProperty( $gadget, 'dependencies', $warnings );
 
 		// Peer gadgets not being styles-only gadgets, or not being defined at all
 		foreach ( $gadget->getPeers() as $peer ) {
@@ -119,7 +116,7 @@ abstract class GadgetRepo {
 				if ( $peerGadget->getType() !== 'styles' ) {
 					$warnings[] = wfMessage( "gadgets-validate-invalidpeer", $peer );
 				}
-			} catch ( InvalidArgumentException $ex ) {
+			} catch ( InvalidArgumentException ) {
 				$warnings[] = wfMessage( "gadgets-validate-nopeer", $peer );
 			}
 		}
@@ -168,11 +165,24 @@ abstract class GadgetRepo {
 
 	/**
 	 * @param Gadget $gadget
-	 * @param string $condition
+	 * @param string $property
 	 * @param Message[] &$warnings
 	 */
-	private function checkInvalidLoadConditions( Gadget $gadget, string $condition, array &$warnings ) {
-		switch ( $condition ) {
+	private function checkProperty( Gadget $gadget, string $property, array &$warnings ) {
+		switch ( $property ) {
+			case 'dependencies':
+				$rl = MediaWikiServices::getInstance()->getResourceLoader();
+				$this->maybeAddWarnings( $gadget->getDependencies(),
+					static function ( $dep ) use ( $rl ) {
+						return $rl->getModule( $dep ) === null;
+					}, $warnings, "gadgets-validate-invaliddependencies" );
+				$this->maybeAddWarnings( $gadget->getDependencies(),
+					static function ( $dep ) use ( $rl ) {
+						$depModule = $rl->getModule( $dep );
+						return $depModule !== null && $depModule->getDeprecationWarning() !== null;
+					}, $warnings, "gadgets-validate-deprecateddependencies" );
+				break;
+
 			case 'skins':
 				$allSkins = array_keys( MediaWikiServices::getInstance()->getSkinFactory()->getInstalledSkins() );
 				$this->maybeAddWarnings( $gadget->getRequiredSkins(),
@@ -226,35 +236,10 @@ abstract class GadgetRepo {
 				$invalidEntries[] = $entry;
 			}
 		}
-		if ( count( $invalidEntries ) ) {
+		if ( $invalidEntries ) {
 			$warnings[] = wfMessage( $message,
-				Message::listParam( $invalidEntries, 'comma' ),
+				Message::listParam( $invalidEntries, ListType::COMMA ),
 				count( $invalidEntries ) );
 		}
-	}
-
-	/**
-	 * Get the configured default GadgetRepo.
-	 *
-	 * @deprecated Use the GadgetsRepo service instead
-	 * @return GadgetRepo
-	 */
-	public static function singleton() {
-		wfDeprecated( __METHOD__, '1.42' );
-		if ( self::$instance === null ) {
-			return MediaWikiServices::getInstance()->getService( 'GadgetsRepo' );
-		}
-		return self::$instance;
-	}
-
-	/**
-	 * Should only be used by unit tests
-	 *
-	 * @deprecated Use the GadgetsRepo service instead
-	 * @param GadgetRepo|null $repo
-	 */
-	public static function setSingleton( $repo = null ) {
-		wfDeprecated( __METHOD__, '1.42' );
-		self::$instance = $repo;
 	}
 }

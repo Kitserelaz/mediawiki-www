@@ -10,26 +10,30 @@ if ( hasFeature ) {
 	const $btn = $( '<button>' )
 		.attr( 'type', 'button' )
 		.text( mw.msg( 'syntaxhighlight-button-copy' ) )
+		.addClass( 'mw-highlight-copy-button' )
 		.on( 'click', function () {
 			const btn = this;
 			const wrapper = btn.closest( '.mw-highlight-copy' );
-			const preNode = wrapper && wrapper.querySelector( 'pre' );
-			const content = preNode && preNode.textContent.trim();
+			const contentNode = wrapper ? wrapper.firstChild : btn.previousElementSibling;
+			const content = contentNode && contentNode.matches( 'pre, code' ) && contentNode.textContent.trim();
 			try {
 				navigator.clipboard.writeText( content );
 			} catch ( e ) {
 				return;
 			}
-			const prevLabel = btn.textContent;
 			btn.textContent = mw.msg( 'syntaxhighlight-button-copied' );
 			setTimeout( () => {
-				btn.textContent = prevLabel;
+				btn.textContent = mw.msg( 'syntaxhighlight-button-copy' );
 			}, 5000 );
 		} );
 
 	mw.hook( 'wikipage.content' ).add( ( $content ) => {
-		$content.find( '.mw-highlight-copy:not(.mw-highlight-copy--bound)' )
+		$content.find( 'div.mw-highlight-copy:not(.mw-highlight-copy--bound)' )
 			.append( $btn.clone( true ) )
+			.addClass( 'mw-highlight-copy--bound' );
+
+		$content.find( 'code.mw-highlight-copy:not(.mw-highlight-copy--bound)' )
+			.after( $btn.clone( true ) )
 			.addClass( 'mw-highlight-copy--bound' );
 	} );
 }

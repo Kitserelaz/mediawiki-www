@@ -69,40 +69,42 @@ ipInfoInfoboxWidget.prototype.buildMarkup = function ( info ) {
 	}
 
 	// IPoid-provided data
-	let behaviors = info.data[ 'ipinfo-source-ipoid' ].behaviors;
-	if ( behaviors ) {
-		if ( behaviors.length ) {
-			behaviors = behaviors.join( '</br>' );
-		} else {
-			behaviors = null;
-		}
-	}
-	let risks = info.data[ 'ipinfo-source-ipoid' ].risks;
-	risks = risks ? this.getRisks( info.data[ 'ipinfo-source-ipoid' ].risks ) : risks;
-	risks = risks ? risks.join( '<br />' ) : risks;
-	let connectionTypes = info.data[ 'ipinfo-source-ipoid' ].connectionTypes;
-	connectionTypes = connectionTypes ? this.getConnectionTypes( info.data[ 'ipinfo-source-ipoid' ].connectionTypes ) : connectionTypes;
-	connectionTypes = connectionTypes ? connectionTypes.join( '<br />' ) : connectionTypes;
-	let tunnelOperators = info.data[ 'ipinfo-source-ipoid' ].tunnelOperators;
-	if ( tunnelOperators ) {
-		if ( tunnelOperators.length ) {
-			tunnelOperators = tunnelOperators.join( '</br>' );
-		} else {
-			tunnelOperators = null;
-		}
-	}
-	let proxies = info.data[ 'ipinfo-source-ipoid' ].proxies;
-	if ( proxies ) {
-		if ( proxies.length ) {
-			proxies = proxies.join( '</br>' );
-		} else {
-			proxies = null;
-		}
+	let behaviors, risks, connectionTypes, tunnelOperators, proxies, numUsersOnThisIP;
+
+	const ipoidData = info.data && info.data[ 'ipinfo-source-ipoid' ];
+	const hasIpoidData = ipoidData ?
+		Object.keys( ipoidData ).some( ( k ) => ipoidData[ k ] !== null ) :
+		false;
+
+	if ( hasIpoidData ) {
+		behaviors = ipoidData.behaviors && ipoidData.behaviors.length ?
+			ipoidData.behaviors.join( '<br>' ) :
+			null;
+
+		risks = ipoidData.risks ? this.getRisks( ipoidData.risks ) : null;
+		risks = risks ? risks.join( '<br>' ) : risks;
+
+		connectionTypes = ipoidData.connectionTypes ?
+			this.getConnectionTypes( ipoidData.connectionTypes ) :
+			null;
+		connectionTypes = connectionTypes ? connectionTypes.join( '<br>' ) : connectionTypes;
+
+		tunnelOperators = ipoidData.tunnelOperators && ipoidData.tunnelOperators.length ?
+			ipoidData.tunnelOperators.join( '<br>' ) :
+			null;
+
+		proxies = ipoidData.proxies && ipoidData.proxies.length ?
+			ipoidData.proxies.join( '<br>' ) :
+			null;
+
+		numUsersOnThisIP = ipoidData.numUsersOnThisIP;
 	}
 
-	const ipversion = mw.util.isIPv4Address( info.subject, true ) ?
-		mw.msg( 'ipinfo-value-ipversion-ipv4' ) :
-		mw.msg( 'ipinfo-value-ipversion-ipv6' );
+	const ipversion = info.data[ 'ipinfo-source-ipversion' ].version;
+	// Possible message keys used here:
+	// * ipinfo-value-ipversion-ipv4
+	// * ipinfo-value-ipversion-ipv6
+	const ipVersionText = ipversion ? mw.message( `ipinfo-value-ipversion-${ ipversion }` ).escaped() : '';
 
 	let $numIPAddresses = $( '' );
 	if ( info.data[ 'ipinfo-source-ip-count' ].numIPAddresses ) {
@@ -117,13 +119,12 @@ ipInfoInfoboxWidget.prototype.buildMarkup = function ( info ) {
 		.append(
 			$( '<div>' ).addClass( 'ext-ipinfo-widget-properties-col' ).append(
 				this.generatePropertyMarkup( 'location', location, mw.msg( 'ipinfo-property-label-location' ) ),
-				this.generatePropertyMarkup( 'isp', info.data[ 'ipinfo-source-geoip2' ].isp, mw.msg( 'ipinfo-property-label-isp' ) ),
 				this.generatePropertyMarkup( 'asn',
 					info.data[ 'ipinfo-source-geoip2' ].asn,
 					mw.msg( 'ipinfo-property-label-asn' ),
 					mw.msg( 'ipinfo-property-tooltip-asn' ) ),
 				this.generatePropertyMarkup( 'organization', info.data[ 'ipinfo-source-geoip2' ].organization, mw.msg( 'ipinfo-property-label-organization' ) ),
-				this.generatePropertyMarkup( 'version', ipversion, mw.msg( 'ipinfo-property-label-ipversion' ) )
+				this.generatePropertyMarkup( 'version', ipVersionText, mw.msg( 'ipinfo-property-label-ipversion' ) )
 			)
 		).append(
 			$( '<div>' ).addClass( 'ext-ipinfo-widget-properties-col' ).append(
@@ -154,7 +155,7 @@ ipInfoInfoboxWidget.prototype.buildMarkup = function ( info ) {
 					mw.msg( 'ipinfo-property-tooltip-proxies' ) ),
 				this.generatePropertyMarkup(
 					'userCount',
-					info.data[ 'ipinfo-source-ipoid' ].numUsersOnThisIP,
+					numUsersOnThisIP,
 					mw.msg( 'ipinfo-property-label-usercount' ),
 					mw.msg( 'ipinfo-property-tooltip-usercount' )
 				)
@@ -170,15 +171,43 @@ ipInfoInfoboxWidget.prototype.buildMarkup = function ( info ) {
 					'edits',
 					$edits,
 					mw.msg( 'ipinfo-property-label-edits' ) ).append( $deletedEditsLink ),
-				$( '<div>' ).addClass( 'ext-ipinfo-widget-property-source' ).html(
-					mw.message( 'ipinfo-source-geoip2' ).parse()
-				)
+				$( '<div>' )
+					.addClass( 'ext-ipinfo-widget-property-source' )
+					.append(
+						$( '<p>' )
+							.addClass( 'ext-ipinfo-widget-property-source__help' )
+							.html( mw.message( 'ipinfo-help-text' ).parse() )
+					)
+					.append( $( '<p>' ).html( mw.message( 'ipinfo-learn-more-link' ).parse() ) )
 			)
 		);
 
-	mw.hook( 'ext.ipinfo.infobox.widget' ).fire( $info );
+	mw.hook( 'ext.ipinfo.infobox.widget' ).fire( $info, info, this.generatePropertyMarkup );
 
 	return $info;
+};
+
+/**
+ * Success callback for the info promise.
+ *
+ * @param {Object} info
+ */
+ipInfoInfoboxWidget.prototype.success = function ( info ) {
+	if ( !info ) {
+		return;
+	}
+
+	const ipCount = info.data[ 'ipinfo-source-ip-count' ].numIPAddresses;
+	if ( ipCount && ipCount > 1 && mw.util.isTemporaryUser( info.subject ) ) {
+		const ipCountMsg = new OO.ui.MessageWidget( {
+			type: 'notice',
+			label: new OO.ui.HtmlSnippet( mw.message( 'ipinfo-infobox-temporary-account-help', info.subject ).parse() )
+		} );
+
+		this.$element.append( ipCountMsg.$element );
+	}
+
+	ipInfoInfoboxWidget.super.prototype.success.call( this, info );
 };
 
 module.exports = ipInfoInfoboxWidget;

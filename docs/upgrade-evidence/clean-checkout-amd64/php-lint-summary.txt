@@ -1,0 +1,2 @@
+Version-guarded skip: /var/www/mediawiki/extensions/OATHAuth/vendor/symfony/polyfill-uuid/bootstrap85.php Symfony UUID constants use PHP 8.5-only Deprecated attributes; bootstrap80.php only requires this file when PHP_VERSION_ID >= 80500.
+PHP 80426: syntax passed for 33836 files; 1 verified version-guarded skips.

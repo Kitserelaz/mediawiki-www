@@ -1,0 +1,122 @@
+{
+	"name": "SemanticDrilldown",
+	"version": "4.0.0-beta4",
+	"author": [
+		"Yaron Koren",
+		"gesinn.it team",
+		"..."
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:Semantic_Drilldown",
+	"descriptionmsg": "semanticdrilldown-desc",
+	"license-name": "GPL-2.0-or-later",
+	"type": "semantic",
+	"requires": {
+		"MediaWiki": ">= 1.39",
+		"platform": {
+			"php": ">= 7.4"
+		}
+	},
+	"SpecialPages": {
+		"BrowseData": "SD\\Services::getSpecialBrowseData"
+	},
+	"MessagesDirs": {
+		"SemanticDrilldown": [
+			"i18n"
+		]
+	},
+	"ExtensionMessagesFiles": {
+		"SemanticDrilldownMagic": "languages/SemanticDrilldown.i18n.magic.php",
+		"SemanticDrilldownAlias": "languages/SD_Aliases.php"
+	},
+	"AutoloadNamespaces": {
+		"SD\\": "includes/"
+	},
+	"ResourceModules": {
+		"ext.semanticdrilldown.main": {
+			"scripts": "libs/SemanticDrilldown.js",
+			"styles": [
+				"skins/SD_main.css",
+				"skins/SD_jquery_ui_overrides.css"
+			],
+			"dependencies": [
+				"jquery.ui"
+			]
+		},
+		"ext.semanticdrilldown.info": {
+			"styles": [
+				"skins/SD_info.css"
+			]
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "",
+		"remoteExtPath": "SemanticDrilldown"
+	},
+	"Hooks": {
+		"AdminLinks": "SD\\Utils::addToAdminLinks",
+		"MagicWordwgVariableIDs": "SD\\Utils::addMagicWordVariableIDs",
+		"MakeGlobalVariablesScript": "SD\\Utils::setGlobalJSVariables",
+		"ParserAfterTidy": "SD\\Utils::handleShowAndHide",
+		"PageSchemasRegisterHandlers": "SD\\PageSchemas::registerClass",
+		"ParserFirstCallInit": "SD\\Services::onParserFirstCallInit",
+		"UnitTestsList": "SD\\Utils::onUnitTestsList"
+	},
+	"config_prefix": "sdg",
+	"config": {
+		"HideCategoriesByDefault": {
+			"value": false
+		},
+		"NumResultsPerPage": {
+			"value": 250
+		},
+		"FiltersSmallestFontSize": {
+			"value": -1
+		},
+		"FiltersLargestFontSize": {
+			"value": -1
+		},
+		"ShowCategoriesAsTabs": {
+			"value": false
+		},
+		"MinValuesForComboBox": {
+			"value": 40
+		},
+		"NumRangesForNumberFilters": {
+			"value": 6
+		},
+		"HideFiltersWithoutValues": {
+			"value": false
+		},
+		"DisableFilterCollapsible": {
+			"value": false
+		},
+		"ResultFormatTypes": {
+			"value": {
+				"broadtable": "paged",
+				"category": "paged",
+				"count": "unsupported",
+				"csv": "unsupported",
+				"debug": "unsupported",
+				"dsv": "unsupported",
+				"embedded": "paged",
+				"feed": "unsupported",
+				"gantt": "unsupported",
+				"icalendar": "unsupported",
+				"jqplotchart": "unsupported",
+				"jqplotseries": "paged",
+				"json": "unsupported",
+				"list": "paged",
+				"map": "unpaged",
+				"ol": "paged",
+				"plainlist": "paged",
+				"rdf": "unsupported",
+				"spreadsheet": "unsupported",
+				"table": "paged",
+				"template": "paged",
+				"templatefile": "unsupported",
+				"ul": "paged"
+			}
+		}
+	},
+	"manifest_version": 2
+}

@@ -1,0 +1,18 @@
+{
+	"@metadata": {
+		"authors": [
+			"Bosogo"
+		]
+	},
+	"wikiforum-description": "Сыпаттама:",
+	"wikiforum-forum-name": "$1 форуму",
+	"wikiforum-button-preview": "Алдын ала көрүү",
+	"wikiforum-preview": "Алдын ала көрүү",
+	"wikiforum-preview-with-title": "Алдын ала көрүү: $1",
+	"wikiforum-save": "Сактоо",
+	"wikiforum-topic-name": "Форум - $1",
+	"wikiforum-write-thread": "Жаңы тема",
+	"wikiforum-replies": "Жооптор",
+	"wikiforum-add-category": "Категория кошуу",
+	"wikiforum-edit-category": "Категорияны түзөтүү"
+}

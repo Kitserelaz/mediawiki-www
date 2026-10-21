@@ -56,11 +56,11 @@ ve.dm.MWImageNode.static.rdfaToTypes = ( function () {
 	const rdfaToType = {};
 
 	[ 'File', 'Image', 'Video', 'Audio' ].forEach( ( mediaClass ) => {
-		rdfaToType[ 'mw:' + mediaClass ] = { mediaClass: mediaClass, frameType: 'none' };
-		rdfaToType[ 'mw:' + mediaClass + '/Frameless' ] = { mediaClass: mediaClass, frameType: 'frameless' };
+		rdfaToType[ 'mw:' + mediaClass ] = { mediaClass, frameType: 'none' };
+		rdfaToType[ 'mw:' + mediaClass + '/Frameless' ] = { mediaClass, frameType: 'frameless' };
 		// Block image only:
-		rdfaToType[ 'mw:' + mediaClass + '/Thumb' ] = { mediaClass: mediaClass, frameType: 'thumb' };
-		rdfaToType[ 'mw:' + mediaClass + '/Frame' ] = { mediaClass: mediaClass, frameType: 'frame' };
+		rdfaToType[ 'mw:' + mediaClass + '/Thumb' ] = { mediaClass, frameType: 'thumb' };
+		rdfaToType[ 'mw:' + mediaClass + '/Frame' ] = { mediaClass, frameType: 'frame' };
 	} );
 
 	return rdfaToType;
@@ -154,7 +154,7 @@ ve.dm.MWImageNode.static.describeChanges = function ( attributeChanges, attribut
 		);
 	}
 	for ( const key in attributeChanges ) {
-		if ( customKeys.indexOf( key ) === -1 ) {
+		if ( !customKeys.includes( key ) ) {
 			if ( key === 'borderImage' && !attributeChanges.borderImage.from && !attributeChanges.borderImage.to ) {
 				// Skip noise from the data model
 				continue;
@@ -362,10 +362,7 @@ ve.dm.MWImageNode.prototype.getFilename = function () {
  */
 ve.dm.MWImageNode.prototype.getScalable = function () {
 	if ( !this.scalablePromise ) {
-		this.scalablePromise = ve.dm.MWImageNode.static.getScalablePromise( this.getFilename() );
-		// If the promise was already resolved before getScalablePromise returned, then jQuery will execute the done straight away.
-		// So don't just do getScalablePromise( ... ).done because we need to make sure that this.scalablePromise gets set first.
-		this.scalablePromise.done( ( info ) => {
+		this.scalablePromise = ve.dm.MWImageNode.static.getScalablePromise( this.getFilename() ).then( ( info ) => {
 			if ( info ) {
 				this.getScalable().setOriginalDimensions( {
 					width: info.width,

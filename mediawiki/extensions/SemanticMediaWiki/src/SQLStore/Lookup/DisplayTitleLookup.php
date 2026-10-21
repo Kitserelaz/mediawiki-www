@@ -1,0 +1,132 @@
+<?php
+
+namespace SMW\SQLStore\Lookup;
+
+use RuntimeException;
+use SMW\DataItems\Property;
+use SMW\SQLStore\SQLStore;
+use SMW\Store;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 3.1
+ *
+ * @author mwjames
+ */
+class DisplayTitleLookup {
+	private const MAX_ITEMS_PER_QUERY = 2000;
+
+	/**
+	 * @since 3.1
+	 */
+	public function __construct( private readonly Store $store ) {
+	}
+
+	/**
+	 * @since 3.1
+	 *
+	 * @param array $dataItems
+	 *
+	 * @return array
+	 */
+	public function prefetchFromList( array $dataItems ): array {
+		$list = [];
+		$prefetch = [];
+		$connection = $this->store->getConnection( 'mw.db' );
+		$idTable = $this->store->getObjectIds();
+		$hashes = [];
+
+		// Very large queries can fail or confuse the query planner. Avoid this by making
+		// multiple smaller queries if necessary.
+		$chunks = array_chunk( $dataItems, self::MAX_ITEMS_PER_QUERY, true );
+
+		foreach ( $chunks as $chunk ) {
+			// - Doing a select without calling the `CacheWarmer` since this would
+			//   cause as circular dependency given that it calls `DisplayTitleFinder`
+			//   which itself calls this class
+			// - $dataItems[] expects to be of the format [ sha1 => DataItem ]
+			// - Adding smw_title, smw_namespace to ensure a `Using index condition`
+			//   during the select
+			$rows = $connection->newSelectQueryBuilder()
+				->select( [
+					'smw_id',
+					'smw_title',
+					'smw_namespace',
+					'smw_hash'
+				] )
+				->from( SQLStore::ID_TABLE )
+				->where( [
+					'smw_hash' => array_map( [ $connection, 'escape_bytea' ], array_keys( $chunk ) )
+				] )
+				->caller( __METHOD__ )
+				->fetchResultSet();
+
+			foreach ( $rows as $row ) {
+				$hashes[$connection->unescape_bytea( $row->smw_hash )] = $row->smw_id;
+			}
+
+			foreach ( $chunk as $sha1 => $dataItem ) {
+				$list[$hashes[$sha1] ?? $idTable->getId( $dataItem )] = $dataItem;
+			}
+
+			$rows = $this->fetchFromTable( $list );
+
+			foreach ( $rows as $row ) {
+				if ( !isset( $list[$row->s_id] ) ) {
+					continue;
+				}
+
+				$dataItem = $list[$row->s_id];
+
+				if ( $row->o_blob !== null ) {
+					$displayTitle = $connection->unescape_bytea( $row->o_blob );
+				} else {
+					$displayTitle = $row->o_hash;
+				}
+
+				unset( $list[$row->s_id] );
+				$prefetch[$dataItem->getSha1()] = $displayTitle;
+			}
+		}
+
+		// Those that don't have a DisplayTitle are marked with a NULL
+		foreach ( $list as $id => $dataItem ) {
+			$prefetch[$dataItem->getSha1()] = null;
+		}
+
+		return $prefetch;
+	}
+
+	private function fetchFromTable( array $list ) {
+		$property = new Property( '_DTITLE' );
+		$connection = $this->store->getConnection( 'mw.db' );
+
+		$propTableId = $this->store->findPropertyTableID(
+			$property
+		);
+
+		$propTables = $this->store->getPropertyTables();
+
+		if ( !isset( $propTables[$propTableId] ) ) {
+			throw new RuntimeException( "Missing $propTableId!" );
+		}
+
+		$propTable = $propTables[$propTableId];
+
+		$rows = $connection->newSelectQueryBuilder()
+			->select( [
+				's_id',
+				'o_hash',
+				'o_blob'
+			] )
+			->from( $propTable->getName() )
+			->where( [
+				's_id' => array_keys( $list )
+			] )
+			->caller( __METHOD__ )
+			->fetchResultSet();
+
+		return $rows;
+	}
+
+}

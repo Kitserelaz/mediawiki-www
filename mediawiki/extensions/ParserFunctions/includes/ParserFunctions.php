@@ -5,12 +5,14 @@ namespace MediaWiki\Extension\ParserFunctions;
 use DateTime;
 use DateTimeZone;
 use Exception;
-use MediaWiki\Cache\LinkCache;
 use MediaWiki\Config\Config;
+use MediaWiki\FileRepo\RepoGroup;
 use MediaWiki\HookContainer\HookContainer;
-use MediaWiki\Languages\LanguageConverterFactory;
-use MediaWiki\Languages\LanguageFactory;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Language\LanguageConverterFactory;
+use MediaWiki\Language\LanguageFactory;
+use MediaWiki\Language\LanguageNameUtils;
+use MediaWiki\Page\LinkCache;
+use MediaWiki\Parser\CoreMagicVariables;
 use MediaWiki\Parser\Parser;
 use MediaWiki\Parser\PPFrame;
 use MediaWiki\Parser\PPNode;
@@ -18,9 +20,9 @@ use MediaWiki\Parser\Sanitizer;
 use MediaWiki\SpecialPage\SpecialPageFactory;
 use MediaWiki\Title\Title;
 use MediaWiki\Utils\MWTimestamp;
-use RepoGroup;
-use StringUtils;
+use WeakMap;
 use Wikimedia\RequestTimeout\TimeoutException;
+use Wikimedia\StringUtils\StringUtils;
 
 /**
  * Parser function handlers
@@ -28,78 +30,54 @@ use Wikimedia\RequestTimeout\TimeoutException;
  * @link https://www.mediawiki.org/wiki/Help:Extension:ParserFunctions
  */
 class ParserFunctions {
-	/** @var ExprParser|null */
-	private static $mExprParser = null;
+	private static ?ExprParser $mExprParser = null;
 	/** @var array[][][][] */
-	private static $mTimeCache = [];
-	/** @var int */
-	private static $mTimeChars = 0;
+	private static array $mTimeCache = [];
+	private static ?WeakMap $timeCharsLimits = null;
 
 	/** ~10 seconds */
 	private const MAX_TIME_CHARS = 6000;
 
-	/** @var Config */
-	private $config;
-
-	/** @var HookContainer */
-	private $hookContainer;
-
-	/** @var LanguageConverterFactory */
-	private $languageConverterFactory;
-
-	/** @var LanguageFactory */
-	private $languageFactory;
-
-	/** @var LanguageNameUtils */
-	private $languageNameUtils;
-
-	/** @var LinkCache */
-	private $linkCache;
-
-	/** @var RepoGroup */
-	private $repoGroup;
-
-	/** @var SpecialPageFactory */
-	private $specialPageFactory;
-
-	/**
-	 * @param Config $config
-	 * @param HookContainer $hookContainer
-	 * @param LanguageConverterFactory $languageConverterFactory
-	 * @param LanguageFactory $languageFactory
-	 * @param LanguageNameUtils $languageNameUtils
-	 * @param LinkCache $linkCache
-	 * @param RepoGroup $repoGroup
-	 * @param SpecialPageFactory $specialPageFactory
-	 */
 	public function __construct(
-		Config $config,
-		HookContainer $hookContainer,
-		LanguageConverterFactory $languageConverterFactory,
-		LanguageFactory $languageFactory,
-		LanguageNameUtils $languageNameUtils,
-		LinkCache $linkCache,
-		RepoGroup $repoGroup,
-		SpecialPageFactory $specialPageFactory
+		private readonly Config $config,
+		private readonly HookContainer $hookContainer,
+		private readonly LanguageConverterFactory $languageConverterFactory,
+		private readonly LanguageFactory $languageFactory,
+		private readonly LanguageNameUtils $languageNameUtils,
+		private readonly LinkCache $linkCache,
+		private readonly RepoGroup $repoGroup,
+		private readonly SpecialPageFactory $specialPageFactory,
 	) {
-		$this->config = $config;
-		$this->hookContainer = $hookContainer;
-		$this->languageConverterFactory = $languageConverterFactory;
-		$this->languageFactory = $languageFactory;
-		$this->languageNameUtils = $languageNameUtils;
-		$this->linkCache = $linkCache;
-		$this->repoGroup = $repoGroup;
-		$this->specialPageFactory = $specialPageFactory;
 	}
 
-	/**
-	 * @return ExprParser
-	 */
-	private static function &getExprParser() {
+	private static function &getExprParser(): ExprParser {
 		if ( self::$mExprParser === null ) {
 			self::$mExprParser = new ExprParser;
 		}
 		return self::$mExprParser;
+	}
+
+	// Limit the length of the format string (per parser)
+	public static function getLimit( Parser $parser ): int {
+		return (
+			self::$timeCharsLimits !== null &&
+			self::$timeCharsLimits->offsetExists( $parser )
+		) ? self::$timeCharsLimits->offsetGet( $parser ) : 0;
+	}
+
+	public static function incrLimit( Parser $parser, int $amt ): bool {
+		$newValue = self::getLimit( $parser ) + $amt;
+		if ( self::$timeCharsLimits === null ) {
+			self::$timeCharsLimits = new WeakMap;
+		}
+		self::$timeCharsLimits->offsetSet( $parser, $newValue );
+		return $newValue > self::MAX_TIME_CHARS;
+	}
+
+	public static function resetLimit( Parser $parser ): void {
+		if ( self::$timeCharsLimits !== null ) {
+			self::$timeCharsLimits->offsetSet( $parser, 0 );
+		}
 	}
 
 	/**
@@ -275,7 +253,8 @@ class ParserFunctions {
 				if ( $defaultFound || $mwDefault->matchStartToEnd( $test ) ) {
 					$default = $valueNode;
 					$defaultFound = false;
-				} # else wrong case, continue
+				}
+				# else wrong case, continue
 			} else {
 				# Multiple input, single output
 				# If the value matches, set a flag and continue
@@ -354,11 +333,12 @@ class ParserFunctions {
 		$newExploded = [];
 
 		foreach ( $exploded as $current ) {
-			if ( $current === '..' ) { // removing one level
+			// removing one level
+			if ( $current === '..' ) {
 				if ( !count( $newExploded ) ) {
 					// attempted to access a node above root node
-					$msg = wfMessage( 'pfunc_rel2abs_invalid_depth', $fullPath )
-						->inContentLanguage()->escaped();
+					$msg = $parser->msg( 'pfunc_rel2abs_invalid_depth', $fullPath )
+						->escaped();
 					return '<strong class="error">' . $msg . '</strong>';
 				}
 				// remove last level from the stack
@@ -373,13 +353,7 @@ class ParserFunctions {
 		return implode( '/', $newExploded );
 	}
 
-	/**
-	 * @param Parser $parser
-	 * @param string $titletext
-	 *
-	 * @return bool
-	 */
-	private function ifexistInternal( Parser $parser, $titletext ): bool {
+	private function ifexistInternal( Parser $parser, string $titletext ): bool {
 		$title = Title::newFromText( $titletext );
 		$this->languageConverterFactory->getLanguageConverter( $parser->getContentLanguage() )
 			->findVariantLink( $titletext, $title, true );
@@ -419,20 +393,18 @@ class ParserFunctions {
 			return false;
 		}
 		$pdbk = $title->getPrefixedDBkey();
-		$id = $this->linkCache->getGoodLinkID( $pdbk );
-		if ( $id !== 0 ) {
-			$parser->getOutput()->addLink( $title, $id );
+		if ( $this->linkCache->getGoodLinkID( $pdbk ) !== 0 ) {
+			$parser->getOutput()->addExistenceDependency( $title );
 			return true;
 		}
 		if ( $this->linkCache->isBadLink( $pdbk ) ) {
-			$parser->getOutput()->addLink( $title, 0 );
+			$parser->getOutput()->addExistenceDependency( $title );
 			return false;
 		}
 		if ( !$parser->incrementExpensiveFunctionCount() ) {
 			return false;
 		}
-		$id = $title->getArticleID();
-		$parser->getOutput()->addLink( $title, $id );
+		$parser->getOutput()->addExistenceDependency( $title );
 
 		// bug 70495: don't just check whether the ID != 0
 		return $title->exists();
@@ -461,39 +433,34 @@ class ParserFunctions {
 	}
 
 	/**
+	 * Build a human-readable label identifying what caused a cache TTL reduction.
+	 */
+	private static function makeCacheExpirySource( PPFrame $frame, string $funcName ): string {
+		return $frame->getTitle()->getPrefixedDBkey() . " ($funcName)";
+	}
+
+	/**
 	 * Used by time() and localTime()
-	 *
-	 * @param Parser $parser
-	 * @param PPFrame $frame
-	 * @param string $format
-	 * @param string $date
-	 * @param string $language
-	 * @param string|bool $local
-	 * @return string
 	 */
 	private function timeCommon(
-		Parser $parser, PPFrame $frame, $format, $date, $language, $local
-	) {
-		$this->hookContainer->register(
-			'ParserClearState',
-			static function () {
-				self::$mTimeChars = 0;
-			}
-		);
-
+		Parser $parser, string $format, string $date, string $language,
+		bool $local, string $source
+	): string {
+		$unixTimestamp = '0';
 		if ( $date === '' ) {
-			$cacheKey = $parser->getOptions()->getTimestamp();
-			$timestamp = new MWTimestamp( $cacheKey );
+			$timestamp = new MWTimestamp( $parser->getParseTime() );
+			$cacheKey = $timestamp->getTimestamp( TS_MW );
 			$date = $timestamp->getTimestamp( TS_ISO_8601 );
+			$unixTimestamp = $timestamp->getTimestamp( TS_UNIX );
 			$useTTL = true;
 		} else {
 			$cacheKey = $date;
 			$useTTL = false;
 		}
-		if ( isset( self::$mTimeCache[$format][$cacheKey][$language][$local] ) ) {
-			$cachedVal = self::$mTimeCache[$format][$cacheKey][$language][$local];
+		if ( isset( self::$mTimeCache[$format][$cacheKey][$language][(int)$local] ) ) {
+			$cachedVal = self::$mTimeCache[$format][$cacheKey][$language][(int)$local];
 			if ( $useTTL && $cachedVal[1] !== null ) {
-				$frame->setTTL( $cachedVal[1] );
+				CoreMagicVariables::applyCacheExpiry( $parser, $cachedVal[1], (int)$unixTimestamp, $source );
 			}
 			return $cachedVal[0];
 		}
@@ -537,7 +504,7 @@ class ParserFunctions {
 			// Unfortunately DateTime throws a generic Exception, but we can't
 			// ignore an exception generated by the RequestTimeout library.
 			throw $ex;
-		} catch ( Exception $ex ) {
+		} catch ( Exception ) {
 			$invalidTime = true;
 		}
 
@@ -545,46 +512,45 @@ class ParserFunctions {
 		# format the timestamp and return the result
 		if ( $invalidTime ) {
 			$result = '<strong class="error">' .
-				wfMessage( 'pfunc_time_error' )->inContentLanguage()->escaped() .
+				$parser->msg( 'pfunc_time_error' )->escaped() .
 				'</strong>';
 		} else {
-			self::$mTimeChars += strlen( $format );
-			if ( self::$mTimeChars > self::MAX_TIME_CHARS ) {
+			if ( self::incrLimit( $parser, strlen( $format ) ) ) {
 				return '<strong class="error">' .
-					wfMessage( 'pfunc_time_too_long' )->inContentLanguage()->escaped() .
+					$parser->msg( 'pfunc_time_too_long' )->escaped() .
 					'</strong>';
 			}
 
-			if ( $ts < 0 ) { // Language can't deal with BC years
+			// Language can't deal with BC years
+			// @phan-suppress-next-line PhanPossiblyUndeclaredVariable
+			if ( $ts < 0 ) {
 				return '<strong class="error">' .
-					wfMessage( 'pfunc_time_too_small' )->inContentLanguage()->escaped() .
+					$parser->msg( 'pfunc_time_too_small' )->escaped() .
 					'</strong>';
 			}
-			if ( $ts >= 100000000000000 ) { // Language can't deal with years after 9999
+			// Language can't deal with years after 9999
+			if ( $ts >= 100000000000000 ) {
 				return '<strong class="error">' .
-					wfMessage( 'pfunc_time_too_big' )->inContentLanguage()->escaped() .
+					$parser->msg( 'pfunc_time_too_big' )->escaped() .
 					'</strong>';
 			}
 
 			$langObject = $this->languageFactory->getLanguage(
 				$this->normalizeLangCode( $parser, $language ) );
+			// @phan-suppress-next-line PhanPossiblyUndeclaredVariable
 			$result = $langObject->sprintfDate( $format, $ts, $tz, $ttl );
 		}
-		self::$mTimeCache[$format][$cacheKey][$language][$local] = [ $result, $ttl ];
+		self::$mTimeCache[$format][$cacheKey][$language][(int)$local] = [ $result, $ttl ];
 		if ( $useTTL && $ttl !== null ) {
-			$frame->setTTL( $ttl );
+			CoreMagicVariables::applyCacheExpiry( $parser, $ttl, (int)$unixTimestamp, $source );
 		}
 		return $result;
 	}
 
 	/**
 	 * Convert an input string to a known language code for time formatting
-	 *
-	 * @param Parser $parser
-	 * @param string $langCode
-	 * @return string
 	 */
-	private function normalizeLangCode( Parser $parser, string $langCode ) {
+	private function normalizeLangCode( Parser $parser, string $langCode ): string {
 		if ( $langCode !== '' && $this->languageNameUtils->isKnownLanguageTag( $langCode ) ) {
 			return $langCode;
 		} else {
@@ -609,7 +575,8 @@ class ParserFunctions {
 		$date = isset( $args[1] ) ? trim( $frame->expand( $args[1] ) ) : '';
 		$language = isset( $args[2] ) ? trim( $frame->expand( $args[2] ) ) : '';
 		$local = isset( $args[3] ) && trim( $frame->expand( $args[3] ) );
-		return $this->timeCommon( $parser, $frame, $format, $date, $language, $local );
+		return $this->timeCommon( $parser, $format, $date, $language, $local,
+			self::makeCacheExpirySource( $frame, '#time' ) );
 	}
 
 	/**
@@ -629,7 +596,8 @@ class ParserFunctions {
 		$format = isset( $args[0] ) ? trim( $frame->expand( $args[0] ) ) : '';
 		$date = isset( $args[1] ) ? trim( $frame->expand( $args[1] ) ) : '';
 		$language = isset( $args[2] ) ? trim( $frame->expand( $args[2] ) ) : '';
-		return $this->timeCommon( $parser, $frame, $format, $date, $language, true );
+		return $this->timeCommon( $parser, $format, $date, $language, true,
+			self::makeCacheExpirySource( $frame, '#timel' ) );
 	}
 
 	/**
@@ -659,14 +627,8 @@ class ParserFunctions {
 
 	/**
 	 * Helper for timef and timefl
-	 *
-	 * @param Parser $parser
-	 * @param PPFrame $frame
-	 * @param array $args
-	 * @param bool $local
-	 * @return string
 	 */
-	private function timefCommon( Parser $parser, PPFrame $frame, array $args, $local ) {
+	private function timefCommon( Parser $parser, PPFrame $frame, array $args, bool $local ): string {
 		$date = isset( $args[0] ) ? trim( $frame->expand( $args[0] ) ) : '';
 		$inputType = isset( $args[1] ) ? trim( $frame->expand( $args[1] ) ) : '';
 
@@ -692,7 +654,8 @@ class ParserFunctions {
 		$langCode = $this->normalizeLangCode( $parser, $langCode );
 		$lang = $this->languageFactory->getLanguage( $langCode );
 		$format = $lang->getDateFormatString( $type, 'default' );
-		return $this->timeCommon( $parser, $frame, $format, $date, $langCode, $local );
+		return $this->timeCommon( $parser, $format, $date, $langCode, $local,
+			self::makeCacheExpirySource( $frame, $local ? '#timefl' : '#timef' ) );
 	}
 
 	/**
@@ -724,22 +687,18 @@ class ParserFunctions {
 
 	/**
 	 * Verifies parameter is less than max string length.
-	 *
-	 * @param string $text
-	 * @return bool
 	 */
-	private function checkLength( $text ) {
-		return ( mb_strlen( $text ) < $this->config->get( 'PFStringLengthLimit' ) );
+	private function checkLength( string $text ): bool {
+		return mb_strlen( $text ) < $this->config->get( 'PFStringLengthLimit' );
 	}
 
 	/**
 	 * Generates error message. Called when string is too long.
-	 * @return string
 	 */
-	private function tooLongError() {
-		$msg = wfMessage( 'pfunc_string_too_long' )
+	private function tooLongError( Parser $parser ): string {
+		$msg = $parser->msg( 'pfunc_string_too_long' )
 			->numParams( $this->config->get( 'PFStringLengthLimit' ) );
-		return '<strong class="error">' . $msg->inContentLanguage()->escaped() . '</strong>';
+		return '<strong class="error">' . $msg->escaped() . '</strong>';
 	}
 
 	/**
@@ -775,7 +734,7 @@ class ParserFunctions {
 
 		if ( !$this->checkLength( $inStr ) ||
 			!$this->checkLength( $inNeedle ) ) {
-			return $this->tooLongError();
+			return $this->tooLongError( $parser );
 		}
 
 		if ( $inNeedle === '' ) {
@@ -808,7 +767,7 @@ class ParserFunctions {
 
 		if ( !$this->checkLength( $inStr ) ||
 			!$this->checkLength( $inNeedle ) ) {
-			return $this->tooLongError();
+			return $this->tooLongError( $parser );
 		}
 
 		if ( $inNeedle === '' ) {
@@ -845,7 +804,7 @@ class ParserFunctions {
 		$inStr = $parser->killMarkers( (string)$inStr );
 
 		if ( !$this->checkLength( $inStr ) ) {
-			return $this->tooLongError();
+			return $this->tooLongError( $parser );
 		}
 
 		if ( (int)$inLength === 0 ) {
@@ -875,7 +834,7 @@ class ParserFunctions {
 
 		if ( !$this->checkLength( $inStr ) ||
 			!$this->checkLength( $inSubStr ) ) {
-			return $this->tooLongError();
+			return $this->tooLongError( $parser );
 		}
 
 		if ( $inSubStr === '' ) {
@@ -912,7 +871,7 @@ class ParserFunctions {
 		if ( !$this->checkLength( $inStr ) ||
 			!$this->checkLength( $inReplaceFrom ) ||
 			!$this->checkLength( $inReplaceTo ) ) {
-			return $this->tooLongError();
+			return $this->tooLongError( $parser );
 		}
 
 		if ( $inReplaceFrom === '' ) {
@@ -942,7 +901,7 @@ class ParserFunctions {
 						$inReplaceTo, $inStr, $limit );
 
 		if ( !$this->checkLength( $result ) ) {
-			return $this->tooLongError();
+			return $this->tooLongError( $parser );
 		}
 
 		return $result;
@@ -977,7 +936,7 @@ class ParserFunctions {
 
 		if ( !$this->checkLength( $inStr ) ||
 			!$this->checkLength( $inDiv ) ) {
-			return $this->tooLongError();
+			return $this->tooLongError( $parser );
 		}
 
 		$inDiv = preg_quote( $inDiv, '/' );
@@ -986,8 +945,8 @@ class ParserFunctions {
 
 		if ( $inPos >= 0 && isset( $matches[$inPos] ) ) {
 			$result = $matches[$inPos];
-		} elseif ( $inPos < 0 && isset( $matches[count( $matches ) + $inPos] ) ) {
-			$result = $matches[count( $matches ) + $inPos];
+		} elseif ( $inPos < 0 && isset( $matches[count( $matches ) + (int)$inPos] ) ) {
+			$result = $matches[count( $matches ) + (int)$inPos];
 		} else {
 			$result = '';
 		}
@@ -1007,7 +966,7 @@ class ParserFunctions {
 	public function runUrlDecode( Parser $parser, $inStr = '' ) {
 		$inStr = $parser->killMarkers( (string)$inStr );
 		if ( !$this->checkLength( $inStr ) ) {
-			return $this->tooLongError();
+			return $this->tooLongError( $parser );
 		}
 
 		return urldecode( $inStr );
@@ -1025,7 +984,7 @@ class ParserFunctions {
 	 *   but with char refs intact
 	 * @return string The trimmed, expanded and entity reference decoded version of the PPNode
 	 */
-	private static function decodeTrimExpand( $obj, PPFrame $frame, &$trimExpanded = '' ) {
+	private static function decodeTrimExpand( $obj, PPFrame $frame, string &$trimExpanded = '' ): string {
 		$expanded = $frame->expand( $obj );
 		$trimExpanded = trim( $expanded );
 		return trim( Sanitizer::decodeCharReferences( $expanded ) );

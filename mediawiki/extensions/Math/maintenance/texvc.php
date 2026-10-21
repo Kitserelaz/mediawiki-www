@@ -21,7 +21,9 @@
 
 use MediaWiki\Maintenance\Maintenance;
 
+// @codeCoverageIgnoreStart
 require_once __DIR__ . '/../../../maintenance/Maintenance.php';
+// @codeCoverageIgnoreEnd
 
 // phpcs:disable MediaWiki.Files.ClassMatchesFilename.NotMatch
 class WikiTexVcCli extends Maintenance {
@@ -46,12 +48,14 @@ class WikiTexVcCli extends Maintenance {
 		$result = $texvc->check( $userInputTex, $options );
 		if ( $result['status'] !== '+' ) {
 			$this->error( $result['status'] . $result['details'] );
+		} else {
+			$this->output( $result['output'] );
+			$this->output( "\n" );
 		}
-		$this->output( $result['output'] );
-		$this->output( "\n" );
 	}
 }
 
+// @codeCoverageIgnoreStart
 $maintClass = WikiTexVcCli::class;
-/** @noinspection PhpIncludeInspection */
 require_once RUN_MAINTENANCE_IF_MAIN;
+// @codeCoverageIgnoreEnd

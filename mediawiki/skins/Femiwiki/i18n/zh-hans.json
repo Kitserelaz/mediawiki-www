@@ -1,0 +1,19 @@
+{
+	"@metadata": {
+		"authors": [
+			"500000000006城",
+			"Lakejason0",
+			"落花有意12138"
+		]
+	},
+	"skinname-femiwiki": "Femiwiki",
+	"femiwiki-desc": "Femiwiki皮肤",
+	"skin-femiwiki-page-menu-tooltip": "菜单",
+	"skin-femiwiki-share-tooltip": "分享这篇文章",
+	"skin-femiwiki-share-dismiss": "关闭",
+	"skin-femiwiki-share-twitter": "推特",
+	"femiwiki.css": "/* 这里放置的CSS将影响使用Femiwiki皮肤的用户 */",
+	"femiwiki.js": "/* 这里的任何JavaScript将为使用Femiwiki皮肤的用户加载 */",
+	"prefs-femiwiki-large-elements-label": "使用更大的元素",
+	"prefs-femiwiki-large-elements-help": "这个参数允许您徐兰更大的元素。屏幕上的元素将会被替换成更大的。"
+}

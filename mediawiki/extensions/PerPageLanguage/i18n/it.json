@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": [
+			"Beta16"
+		]
+	},
+	"perpagelanguage-desc": "Imposta la lingua dell'interfaccia in modo che corrisponda alla lingua del contenuto della pagina",
+	"perpagelanguage-label": "Imposta lingua"
+}

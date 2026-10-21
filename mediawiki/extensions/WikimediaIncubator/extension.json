@@ -1,0 +1,263 @@
+{
+	"name": "Wikimedia Incubator",
+	"version": "6.3.0",
+	"author": [
+		"SPQRobin",
+		"Hydriz",
+		"Jon Harald Søby"
+	],
+	"license-name": "GPL-2.0-or-later",
+	"url": "https://www.mediawiki.org/wiki/Extension:WikimediaIncubator",
+	"descriptionmsg": "wminc-desc",
+	"requires": {
+		"MediaWiki": ">= 1.43"
+	},
+	"type": "other",
+	"config": {
+		"Pref": {
+			"value": "incubatortestwiki"
+		},
+		"Projects": {
+			"value": {
+				"p": {
+					"name": "Wikipedia",
+					"dbsuffix": "wiki",
+					"wikitag": "wikipedia",
+					"sister": false
+				},
+				"t": {
+					"name": "Wiktionary",
+					"dbsuffix": "wiktionary",
+					"wikitag": "wiktionary",
+					"sister": false
+				},
+				"b": {
+					"name": "Wikibooks",
+					"dbsuffix": "wikibooks",
+					"wikitag": "wikibooks",
+					"sister": false
+				},
+				"q": {
+					"name": "Wikiquote",
+					"dbsuffix": "wikiquote",
+					"wikitag": "wikiquote",
+					"sister": false
+				},
+				"n": {
+					"name": "Wikinews",
+					"dbsuffix": "wikinews",
+					"wikitag": "wikinews",
+					"sister": false
+				},
+				"y": {
+					"name": "Wikivoyage",
+					"dbsuffix": "wikivoyage",
+					"wikitag": "wikivoyage",
+					"sister": false
+				},
+				"s": {
+					"name": "Wikisource",
+					"dbsuffix": "wikisource",
+					"wikitag": "wikisource",
+					"sister": true
+				},
+				"v": {
+					"name": "Wikiversity",
+					"dbsuffix": "wikiversity",
+					"wikitag": "wikiversity",
+					"sister": true
+				}
+			}
+		},
+		"MultilingualProjects": {
+			"value": {
+				"meta": "Meta-Wiki",
+				"commons": "Wikimedia Commons",
+				"species": "Wikispecies",
+				"mediawiki": "MediaWiki",
+				"wikidata": "Wikidata",
+				"wikifunctions": "Wikifunctions"
+			}
+		},
+		"ProjectSite": {
+			"value": {
+				"name": "Incubator",
+				"short": "inc"
+			}
+		},
+		"TestWikiNamespaces": {
+			"value": [
+				0,
+				1,
+				10,
+				11,
+				14,
+				15,
+				828,
+				829
+			]
+		},
+		"LangCodeLength": {
+			"value": 12
+		},
+		"PseudoCategoryNSes": {
+			"value": [
+				"Incubator",
+				"Help",
+				"Users",
+				"Maintenance",
+				"Files"
+			]
+		},
+		"ExistingWikis": {
+			"value": null
+		},
+		"ClosedWikis": {
+			"value": false
+		}
+	},
+	"config_prefix": "wminc",
+	"GroupPermissions": {
+		"test-sysop": {
+			"delete": true,
+			"undelete": true,
+			"deletedhistory": true,
+			"block": true,
+			"blockemail": true,
+			"rollback": true,
+			"suppressredirect": true,
+			"autopatrol": true
+		},
+		"*": {
+			"viewuserlang": false
+		},
+		"sysop": {
+			"viewuserlang": true
+		}
+	},
+	"PrivilegedGroups": [
+		"test-sysop"
+	],
+	"AddGroups": {
+		"bureaucrat": [
+			"test-sysop"
+		]
+	},
+	"RemoveGroups": {
+		"bureaucrat": [
+			"test-sysop"
+		]
+	},
+	"AvailableRights": [
+		"viewuserlang"
+	],
+	"SpecialPages": {
+		"ViewUserLang": {
+			"class": "MediaWiki\\Extension\\WikimediaIncubator\\SpecialViewUserLang",
+			"services": [
+				"UserNamePrefixSearch",
+				"UserNameUtils",
+				"UserOptionsLookup",
+				"LanguageNameUtils"
+			]
+		},
+		"MyWiki": "MediaWiki\\Extension\\WikimediaIncubator\\SpecialMyWiki",
+		"RandomByTest": {
+			"class": "MediaWiki\\Extension\\WikimediaIncubator\\SpecialRandomByTest",
+			"services": [
+				"ConnectionProvider",
+				"NamespaceInfo",
+				"UserOptionsLookup"
+			]
+		},
+		"SearchWiki": {
+			"class": "MediaWiki\\Extension\\WikimediaIncubator\\SpecialSearchWiki",
+			"services": [
+				"LanguageNameUtils",
+				"LanguageFactory"
+			]
+		},
+		"IncubatorFirstSteps": {
+			"class": "MediaWiki\\Extension\\WikimediaIncubator\\SpecialIncubatorFirstSteps",
+			"services": [
+				"LanguageNameUtils"
+			]
+		}
+	},
+	"MessagesDirs": {
+		"WikimediaIncubator": [
+			"i18n/core",
+			"i18n/onwikimessages"
+		]
+	},
+	"ExtensionMessagesFiles": {
+		"WikimediaIncubatorAlias": "WikimediaIncubator.alias.php",
+		"WikimediaIncubatorMagic": "WikimediaIncubator.i18n.magic.php"
+	},
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\WikimediaIncubator\\": "includes/"
+	},
+	"ResourceModules": {
+		"WikimediaIncubator.InfoPage": {
+			"styles": "infoPage.css"
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "modules",
+		"remoteExtPath": "WikimediaIncubator/modules"
+	},
+	"AuthManagerAutoConfig": {
+		"secondaryauth": {
+			"WikimediaIncubatorSecondaryAuthenticationProvider": {
+				"class": "MediaWiki\\Extension\\WikimediaIncubator\\WikimediaIncubatorSecondaryAuthenticationProvider",
+				"sort": 0,
+				"services": [
+					"UserOptionsManager"
+				]
+			}
+		}
+	},
+	"Hooks": {
+		"ContributionsToolLinks": "main",
+		"GetPreferences": "main",
+		"UserGetDefaultOptions": "main",
+		"LoadUserOptions": "main",
+		"MagicWordwgVariableIDs": "main",
+		"ParserGetVariableValueSwitch": "main",
+		"getUserPermissionsErrors": "main",
+		"MovePageIsValidMove": "main",
+		"ChangesListSpecialPageQuery": "recentchanges",
+		"SpecialRecentChangesPanel": "recentchanges",
+		"ShowMissingArticle": "main",
+		"EditFormPreloadText": "main",
+		"MediaWikiPerformAction": "main",
+		"TitleIsAlwaysKnown": "main",
+		"ParserFirstCallInit": "main",
+		"PageContentLanguage": "main",
+		"ArticleParserOptions": "main",
+		"MakeGlobalVariablesScript": "main",
+		"SpecialListusersHeaderForm": "listusers",
+		"SpecialListusersQueryInfo": "listusers",
+		"SpecialListusersHeader": "listusers",
+		"SpecialSearchCreateLink": "main",
+		"SpecialSearchPowerBox": "main",
+		"SpecialSearchSetupEngine": "main",
+		"GetDefaultSortkey": "main",
+		"BeforePageDisplay": "main"
+	},
+	"HookHandlers": {
+		"main": {
+			"class": "MediaWiki\\Extension\\WikimediaIncubator\\WikimediaIncubator",
+			"services": [
+				"LanguageFactory"
+			]
+		},
+		"recentchanges": {
+			"class": "MediaWiki\\Extension\\WikimediaIncubator\\TestWikiRC"
+		},
+		"listusers": {
+			"class": "MediaWiki\\Extension\\WikimediaIncubator\\ListUsersTestWiki"
+		}
+	},
+	"manifest_version": 2
+}

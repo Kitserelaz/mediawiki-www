@@ -1,0 +1,155 @@
+{
+  "component": "mediawiki/extensions/CodeMirror",
+  "baseline": "75428fa046a44b407c798a763e75966fcdf3a374",
+  "target": "5568ee4cb03174fa27e7869ea50a546ac7fe773b",
+  "preserved_changes": [
+    {
+      "path": "composer.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ar.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/az.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/bg.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ccp.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ce.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/diq.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/es.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/et.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/fa.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/fi.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/fr.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/gl.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ha.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/hr.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ja.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ka.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ko.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/lb.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/mns.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ms.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/nb.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/pa.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/pl.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ps.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/pt-br.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/qqq.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ru.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/sr-ec.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/sr-el.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/te.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/tr.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/uk.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ur.json",
+      "change": "local-source-edit"
+    }
+  ],
+  "dependency_status": "No PHP runtime dependencies; verify tracked production assets",
+  "baseline_proof": {
+    "component": "CodeMirror",
+    "matched": 4,
+    "required": 4,
+    "baseline": "75428fa046a44b407c798a763e75966fcdf3a374",
+    "target": "5568ee4cb03174fa27e7869ea50a546ac7fe773b",
+    "repo": "/tmp/wiki-upgrade-audit/CodeMirror-146"
+  },
+  "manual_resolutions": [
+    "Use matching target dev lock; installed package manifest exactly matched baseline; compiled production assets are tracked upstream."
+  ]
+}

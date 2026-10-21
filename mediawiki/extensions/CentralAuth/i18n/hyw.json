@@ -1,0 +1,20 @@
+{
+	"@metadata": {
+		"authors": [
+			"Azniv Stepanian",
+			"Kareyac",
+			"Rajemian"
+		]
+	},
+	"centralauth-admin-blocklog": "Արգելակումներու տեղեկատետր",
+	"centralauth-admin-list-groups": "Խումբեր",
+	"centralauth-admin-yes": "այո",
+	"centralauth-foreign-contributions": "$1 {{PLURAL:$1|ներդրում|ներդրումներ}} $2ին մէջ",
+	"centralauth-foreign-link": "$2էն $1 մասնակից",
+	"centralauth-merge-dryrun-or": "'''կամ'''",
+	"centralauth-merge-method-login": "Մուտքի ատեն ստեղծուած",
+	"centralauth-rename-table-status-done": "Եղած է",
+	"globalrenamequeue-column-row-actions": "Գործողություն",
+	"globalrenamequeue-request-vanish-user-blocked": "այո",
+	"globalrenamequeue-request-vanish-user-not-blocked": "ոչ"
+}

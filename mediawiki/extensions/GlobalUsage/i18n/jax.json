@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Pitchrigi"
+		]
+	},
+	"globalusage": "Pemakean berkas global",
+	"globalusage-on-wiki": "Pemakean on $2",
+	"globalusage-of-file": "Wiki lain yang make berkas ko:",
+	"globalusage-more": "Tengokla [[{{#Special:GlobalUsage}}/$1|lebih banyak pemakéan global]] dari berkas ko."
+}

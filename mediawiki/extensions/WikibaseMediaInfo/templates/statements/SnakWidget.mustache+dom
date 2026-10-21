@@ -1,0 +1,25 @@
+<div class="wbmi-snak">
+	{{#editing}}
+		{{{propertyInput}}}
+		{{{valueInput}}}
+		{{{removeIcon}}}
+	{{/editing}}
+
+	{{^editing}}
+		<div class="wbmi-snak-value">
+			{{{property}}}
+
+			{{#property}}
+				{{#value}}
+				<span class="wbmi-snak-value-separator">{{separator}}</span>
+				{{/value}}
+			{{/property}}
+
+			<span class="wbmi-snak-value--value"><bdi>{{{value}}}</bdi></span>
+
+			<div class="wbmi-constraints-report">
+				{{{constraintsReport}}}
+			</div>
+		</div>
+	{{/editing}}
+</div>

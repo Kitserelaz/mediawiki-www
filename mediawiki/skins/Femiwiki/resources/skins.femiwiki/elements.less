@@ -1,0 +1,66 @@
+@import '../variables.less';
+
+* {
+  -webkit-text-size-adjust: none;
+  -moz-text-size-adjust: none;
+  text-size-adjust: none;
+}
+
+// TODO: Stop targeting tags. https://github.com/femiwiki/FemiwikiSkin/issues/20
+html {
+  font-size: unit(@font-size-root-default, px);
+  @media (max-width: @width-breakpoint-mobile-small) {
+    font-size: 16px;
+  }
+  @media (max-width: @width-breakpoint-mobile) {
+    font-size: 16.5px;
+  }
+
+  font-family: @font-family;
+}
+
+body {
+  padding: 0;
+  color: @color-base15;
+  line-height: @line-height-base;
+
+  // Word breaks shouldn't be used for CJK text
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+:focus {
+  outline: none;
+}
+
+::selection {
+  background-color: @color-background1;
+}
+
+// Many components of MediaWiki core and extensions assume the below rule is true. It is not removable now.
+a {
+  text-decoration: none;
+  .mw-link-colors();
+}
+
+// Quote
+blockquote {
+  position: relative;
+  padding: 1em;
+  margin: 1em 0;
+  overflow: hidden;
+  border: none;
+  background-color: #f0f0f0;
+}
+
+th,
+td {
+  background-color: transparent;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid #ddd;
+}
+
+tt,
+.mw-code {
+  font-family: monospace, monospace;
+}

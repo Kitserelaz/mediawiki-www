@@ -1,0 +1,10 @@
+parameters:
+	level: 1
+	paths:
+		- src
+		- tests
+	scanDirectories:
+		- ../../includes
+		- ../../vendor
+	bootstrapFiles:
+		- ../../includes/AutoLoader.php

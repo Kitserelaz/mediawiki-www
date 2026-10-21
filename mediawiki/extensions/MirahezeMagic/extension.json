@@ -1,0 +1,169 @@
+{
+	"name": "MirahezeMagic",
+	"author": [
+		"Agent Isai",
+		"John Lewis",
+		"Labster",
+		"MacFan4000",
+		"Reception123",
+		"Revi",
+		"Paladox",
+		"Southparkfan",
+		"Universal Omega"
+	],
+	"url": "https://github.com/miraheze/MirahezeMagic",
+	"descriptionmsg": "mirahezemagic-description",
+	"namemsg": "mirahezemagic-extensionname",
+	"license-name": "GPL-3.0-or-later",
+	"type": "other",
+	"requires": {
+		"MediaWiki": ">= 1.43.0",
+		"platform": {
+			"php": ">= 8.1"
+		}
+	},
+	"MessagesDirs": {
+		"MirahezeMagic": [
+			"i18n/overrides",
+			"i18n/miraheze",
+			"i18n/mirahezeprojectnames"
+		]
+	},
+	"ExtensionMessagesFiles": {
+		"MirahezeMagicAliases": "MirahezeMagicAliases.php"
+	},
+	"AutoloadNamespaces": {
+		"Miraheze\\MirahezeMagic\\": "includes/",
+		"Miraheze\\MirahezeMagic\\Maintenance\\": "maintenance/"
+	},
+	"LogActionsHandlers": {
+		"vanishuser/*": "LogFormatter"
+	},
+	"LogHeaders": {
+		"vanishuser": "vanishuser-log-header"
+	},
+	"LogNames": {
+		"vanishuser": "vanishuser-log-name"
+	},
+	"LogTypes": [
+		"vanishuser"
+	],
+	"SpecialPages": {
+		"VanishUser": {
+			"class": "Miraheze\\MirahezeMagic\\Specials\\SpecialVanishUser",
+			"services" : [
+				"JobQueueGroupFactory",
+				"UserFactory"
+			],
+			"optional_services": [
+				"CentralAuth.CentralAuthAntiSpoofManager",
+				"CentralAuth.CentralAuthDatabaseManager",
+				"CentralAuth.GlobalRenameUserValidator"
+			]
+		}
+	},
+	"Hooks": {
+		"AbuseFilterShouldFilterAction": {
+			"handler": "Main"
+		},
+		"APIQuerySiteInfoGeneralInfo": {
+			"handler": "Main"
+		},
+		"BlockIpComplete": {
+			"handler": "Main"
+		},
+		"ContributionsToolLinks": {
+			"handler": "Main"
+		},
+		"CreateWikiDeletion": {
+			"handler": "Main"
+		},
+		"CreateWikiRename": {
+			"handler": "Main"
+		},
+		"CreateWikiStatePrivate": {
+			"handler": "Main"
+		},
+		"CreateWikiTables": {
+			"handler": "Main"
+		},
+		"GetLocalURL::Internal": {
+			"handler": "Main"
+		},
+		"GlobalUserPageWikis": {
+			"handler": "Main"
+		},
+		"ImportDumpJobAfterImport": {
+			"handler": "Main"
+		},
+		"ImportDumpJobGetFile": {
+			"handler": "Main"
+		},
+		"MessageCacheFetchOverrides": {
+			"handler": "Main"
+		},
+		"MimeMagicInit": {
+			"handler": "Main"
+		},
+		"RecentChange_save": {
+			"handler": "Main"
+		},
+		"RequestWikiFormDescriptorModify": {
+			"handler": "RequestWiki"
+		},
+		"RequestWikiQueueFormDescriptorModify": {
+			"handler": "RequestWiki"
+		},
+		"SiteNoticeAfter": {
+			"handler": "Main"
+		},
+		"SkinAddFooterLinks": {
+			"handler": "Main"
+		},
+		"TitleReadWhitelist": {
+			"handler": "Main"
+		},
+		"UserGetRightsRemove": {
+			"handler": "Main"
+		}
+	},
+	"HookHandlers": {
+		"Main": {
+			"class": "Miraheze\\MirahezeMagic\\HookHandlers\\Main",
+			"factory": "Miraheze\\MirahezeMagic\\HookHandlers\\Main::factory",
+			"services": [
+				"MainConfig",
+				"CommentStore",
+				"ConnectionProvider",
+				"HttpRequestFactory",
+				"LinkRenderer",
+				"ManageWikiModuleFactory"
+			]
+		},
+		"RequestWiki": {
+			"class": "Miraheze\\MirahezeMagic\\HookHandlers\\RequestWiki"
+		}
+	},
+	"config": {
+		"MirahezeMagicAccessIdsMap": {
+			"description": "Array, in the format of wiki => [ central ids ]. Users authorized to access certain wikis to prevent global read rights from applying.",
+			"value": []
+		},
+		"MirahezeMagicMemcachedServers": {
+			"description": "Array. Memcached servers to use for clearing memcached keys when a wiki is deleted or renamed.",
+			"value": []
+		},
+		"MirahezeReportsBlockAlertKeywords": {
+			"description": "Array. Words in block reasons which trigger a report being sent to TSPortal.",
+			"value": []
+		},
+		"MirahezeReportsWriteKey": {
+			"description": "String. TSPortal write key to be used when connecting to it.",
+			"value": ""
+		}
+	},
+	"ConfigRegistry": {
+		"MirahezeMagic": "MediaWiki\\Config\\GlobalVarConfig::newInstance"
+	},
+	"manifest_version": 2
+}

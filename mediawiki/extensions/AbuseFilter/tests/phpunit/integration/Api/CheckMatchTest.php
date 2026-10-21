@@ -2,6 +2,7 @@
 
 namespace MediaWiki\Extension\AbuseFilter\Tests\Integration\Api;
 
+use MediaWiki\Extension\AbuseFilter\AbuseFilterPermissionStatus;
 use MediaWiki\Extension\AbuseFilter\AbuseFilterServices;
 use MediaWiki\Extension\AbuseFilter\Filter\ExistingFilter;
 use MediaWiki\Extension\AbuseFilter\Filter\Flags;
@@ -11,20 +12,30 @@ use MediaWiki\Extension\AbuseFilter\Parser\FilterEvaluator;
 use MediaWiki\Extension\AbuseFilter\Parser\ParserStatus;
 use MediaWiki\Extension\AbuseFilter\Parser\RuleCheckerFactory;
 use MediaWiki\Extension\AbuseFilter\Parser\RuleCheckerStatus;
+use MediaWiki\Extension\AbuseFilter\ProtectedVarsAccessLogger;
+use MediaWiki\Extension\AbuseFilter\Tests\Integration\AbuseFilterPermissionManagerTestTrait;
 use MediaWiki\Extension\AbuseFilter\Variables\VariableHolder;
 use MediaWiki\Json\FormatJson;
+use MediaWiki\Logging\LogEntryBase;
+use MediaWiki\Logging\ManualLogEntry;
+use MediaWiki\MainConfigNames;
+use MediaWiki\Permissions\Authority;
 use MediaWiki\Tests\Api\ApiTestCase;
 use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
 use MediaWiki\Title\Title;
 
 /**
+ * @covers \MediaWiki\Extension\AbuseFilter\AbuseFilterPermissionManager
  * @covers \MediaWiki\Extension\AbuseFilter\Api\CheckMatch
  * @group Database
  * @group medium
  */
 class CheckMatchTest extends ApiTestCase {
 	use AbuseFilterApiTestTrait;
+	use AbuseFilterPermissionManagerTestTrait;
 	use MockAuthorityTrait;
+
+	private static int $recentChangeId;
 
 	public function testExecute_noPermissions() {
 		$this->expectApiErrorCode( 'permissiondenied' );
@@ -35,7 +46,7 @@ class CheckMatchTest extends ApiTestCase {
 			'action' => 'abusefiltercheckmatch',
 			'filter' => 'sampleFilter',
 			'vars' => FormatJson::encode( [] ),
-		], null, null, $this->mockRegisteredNullAuthority() );
+		], null, false, $this->mockRegisteredNullAuthority() );
 	}
 
 	public static function provideExecuteOk() {
@@ -79,7 +90,7 @@ class CheckMatchTest extends ApiTestCase {
 		);
 	}
 
-	public function testExecute_error() {
+	public function testExecuteForBadFilterSyntax() {
 		$this->expectApiErrorCode( 'badsyntax' );
 		$filter = 'sampleFilter';
 		$status = new ParserStatus( $this->createMock( InternalException::class ), [], 1 );
@@ -94,6 +105,72 @@ class CheckMatchTest extends ApiTestCase {
 			'filter' => $filter,
 			'vars' => FormatJson::encode( [] ),
 		] );
+	}
+
+	public function testExecuteForRCEntryAccessLogSource() {
+		$rc = $this->createRCEntryDeleteLog();
+		$rcid = $rc->getAttribute( 'rc_id' );
+		$this->assertNotNull( $rcid );
+
+		$this->assertRCEntryAccessControlBruteForce(
+			self::PERMSET_LOG,
+			[
+				'action' => 'abusefiltercheckmatch',
+				'filter' => 'action === "delete"',
+				'rcid' => $rcid,
+			],
+			true
+		);
+	}
+
+	public function testExecuteForRCEntryAccessNonlogSource() {
+		$this->overrideConfigValue( MainConfigNames::PageCreationLog, false );
+		$rc = $this->createRCEntryEdit();
+		$rcid = $rc->getAttribute( 'rc_id' );
+		$this->assertNotNull( $rcid );
+
+		$this->assertRCEntryAccessControlBruteForce(
+			self::PERMSET_REVISION,
+			[
+				'action' => 'abusefiltercheckmatch',
+				'filter' => 'action === "edit"',
+				'rcid' => $rcid,
+			],
+			false
+		);
+	}
+
+	private function assertRCEntryAccessControlBruteForce(
+		array $permSet,
+		array $apiParams,
+		bool $isLog
+	) {
+		// Test all possible bitmask patterns of the LogPage:: or RevisionRecord::DELETED_* constants
+		$ceil = $isLog ? self::LOG_DELETED_ALL : self::REV_DELETED_ALL;
+		for ( $vis = 0; $vis <= $ceil; $vis++ ) {
+			if ( $vis !== 0 ) {
+				$this->updateRCEntryVisibility( $vis, (int)$apiParams['rcid'] );
+			}
+
+			foreach ( $permSet as $perms ) {
+				$authority = $this->mockFilterEditorAuthorityWithPermissions( $perms );
+				$this->apiContext->setAuthority( $authority );
+
+				$shouldSucceed = $isLog
+					? $this->shouldHaveRCEntryAccess( $vis, $perms )
+					: $this->shouldHaveRevisionAccess( $vis, $perms );
+				if ( !$shouldSucceed ) {
+					// ::doApiRequest intentionally duped because the error expectation
+					// should not carry over to the next iteration on an unexpected success
+					$this->expectApiErrorCode( 'deletedrc' );
+					$this->doApiRequest( $apiParams );
+					continue;
+				}
+
+				[ $res ] = $this->doApiRequest( $apiParams );
+				$this->assertArrayEquals( [ 'abusefiltercheckmatch' => [ 'result' => true ] ], $res );
+			}
+		}
 	}
 
 	public function testExecuteWhenPerformerCannotSeeLogId() {
@@ -124,5 +201,238 @@ class CheckMatchTest extends ApiTestCase {
 			],
 			null, false, $this->mockRegisteredAuthorityWithPermissions( [ 'abusefilter-modify' ] )
 		);
+	}
+
+	private function addCustomProtectedVariable(
+		?string $variableValue = 'custom_variable_value'
+	): void {
+		$this->setTemporaryHook( 'AbuseFilterCustomProtectedVariables', static function ( &$variables ) {
+			$variables[] = 'custom_variable';
+		} );
+		$this->setTemporaryHook( 'AbuseFilter-builder', static function ( array &$realValues ) {
+			$realValues['vars']['custom_variable'] = 'custom-variable-test';
+		} );
+		$this->setTemporaryHook(
+			'AbuseFilter-generateGenericVars',
+			static function ( VariableHolder $vars ) use ( $variableValue ) {
+				$vars->setVar( 'custom_variable', $variableValue );
+			}
+		);
+		$this->resetServices();
+	}
+
+	public function testExecuteWhenLogIdContainsProtectedVariablesUserCannotSee() {
+		// Mock the FilterLookup service to return that the filter with the ID 1 is protected.
+		$mockLookup = $this->createMock( FilterLookup::class );
+		$mockLookup->method( 'getFilter' )
+			->with( 1, false )
+			->willReturnCallback( function () {
+				$filterObj = $this->createMock( ExistingFilter::class );
+				$filterObj->method( 'getPrivacyLevel' )->willReturn( Flags::FILTER_USES_PROTECTED_VARS );
+				$filterObj->method( 'isProtected' )->willReturn( true );
+				$filterObj->method( 'getRules' )->willReturn( 'custom_variable = 1' );
+				return $filterObj;
+			} );
+		$this->setService( FilterLookup::SERVICE_NAME, $mockLookup );
+
+		$this->addCustomProtectedVariable();
+		$this->setTemporaryHook(
+			'AbuseFilterCanViewProtectedVariables',
+			static function ( Authority $performer, array $variables, AbuseFilterPermissionStatus $returnStatus ) {
+				if ( in_array( 'custom_variable', $variables ) ) {
+					$returnStatus->setPermission( 'test-permission' );
+				}
+			}
+		);
+
+		// Create an AbuseFilter log entry for the protected filter that has a protected variable the user cannot see.
+		AbuseFilterServices::getAbuseLoggerFactory()->newLogger(
+			Title::newFromText( 'Testing' ),
+			$this->getTestUser()->getUser(),
+			VariableHolder::newFromArray( [ 'action' => 'edit', 'custom_variable' => 'abc' ] )
+		)->addLogEntries( [ 1 => [ 'warn' ] ] );
+
+		$this->expectApiErrorCode( 'cannotseedetails' );
+		$this->doApiRequest(
+			[
+				'action' => 'abusefiltercheckmatch',
+				'logid' => 1,
+				'filter' => 'invalidfilter=======',
+			],
+			null, false,
+			$this->mockRegisteredAuthorityWithoutPermissions( [ 'test-permission' ] )
+		);
+	}
+
+	public function testExecuteWhenProvidedTestPatternUsesProtectedVariableUserCannotSee() {
+		$this->addCustomProtectedVariable();
+		$this->setTemporaryHook(
+			'AbuseFilterCanViewProtectedVariables',
+			static function ( Authority $performer, array $variables, AbuseFilterPermissionStatus $returnStatus ) {
+				if ( in_array( 'custom_variable', $variables ) ) {
+					$returnStatus->setPermission( 'test-permission' );
+				}
+			}
+		);
+
+		// The API request should fail because it uses a protected variable the user cannot see the values of,
+		// so testing using it could allow them to trial-and-error work out the value.
+		$this->expectApiErrorCode( 'cannotseeprotectedvariables' );
+		$this->doApiRequest(
+			[
+				'action' => 'abusefiltercheckmatch',
+				'rcid' => self::$recentChangeId,
+				'filter' => 'custom_variable = 1',
+			],
+			null, false,
+			$this->mockRegisteredAuthorityWithoutPermissions( [ 'test-permission' ] )
+		);
+	}
+
+	public function testExecuteWhenProvidedTestPatternUsesProtectedVariablesButInReadOnlyMode(): void {
+		$this->addCustomProtectedVariable();
+
+		$this->getServiceContainer()->getReadOnlyMode()->setReason( 'test' );
+
+		$this->expectApiErrorCode( 'readonly' );
+		$this->doApiRequest(
+			[
+				'action' => 'abusefiltercheckmatch',
+				'rcid' => self::$recentChangeId,
+				'filter' => 'custom_variable = 1',
+			],
+			null, false, $this->mockRegisteredUltimateAuthority()
+		);
+	}
+
+	public function testExecuteWhenProvidedTestPatternUsesProtectedVariables() {
+		$this->addCustomProtectedVariable();
+		$this->setTemporaryHook(
+			'AbuseFilterCanViewProtectedVariables',
+			static function ( Authority $performer, array $variables, AbuseFilterPermissionStatus $returnStatus ) {
+				if ( in_array( 'custom_variable', $variables ) ) {
+					$returnStatus->setPermission( 'test-permission' );
+				}
+			}
+		);
+
+		// The API request should fail because it uses a protected variable the user cannot see the values of,
+		// so testing using it could allow them to trial-and-error work out the value.
+		$this->expectApiErrorCode( 'cannotseeprotectedvariables' );
+		$this->doApiRequest(
+			[
+				'action' => 'abusefiltercheckmatch',
+				'rcid' => self::$recentChangeId,
+				'filter' => 'custom_variable = 1',
+			],
+			null, false, $this->mockRegisteredUltimateAuthority()
+		);
+	}
+
+	public function testViewExamineForRecentChangeWhenUserCanSeeRecentChange() {
+		$this->addCustomProtectedVariable();
+
+		[ $result ] = $this->doApiRequest(
+			[
+				'action' => 'abusefiltercheckmatch',
+				'rcid' => self::$recentChangeId,
+				'filter' => "custom_variable = 'custom_variable_value'",
+			],
+			null, false, $this->mockRegisteredUltimateAuthority()
+		);
+
+		$this->assertSame( [ 'abusefiltercheckmatch' => [ 'result' => true ] ], $result );
+
+		// Verify that a protected variable access log was created as protected variable values were viewed.
+		$result = $this->newSelectQueryBuilder()
+			->select( 'log_params' )
+			->from( 'logging' )
+			->where( [
+				'log_action' => 'view-protected-var-value',
+				'log_type' => ProtectedVarsAccessLogger::LOG_TYPE,
+			] )
+			->caller( __METHOD__ )
+			->fetchResultSet();
+		$this->assertSame( 1, $result->numRows() );
+		$result->rewind();
+		$this->assertArrayEquals(
+			[ 'variables' => [ 'custom_variable' ] ],
+			LogEntryBase::extractParams( $result->fetchRow()['log_params'] ),
+			false,
+			true
+		);
+
+		$this->dropProtectedVarAccessLogs();
+	}
+
+	public function testViewExamineForProtectedVariableWhenValueIsNull() {
+		$this->addCustomProtectedVariable( null );
+
+		[ $result ] = $this->doApiRequest(
+			[
+				'action' => 'abusefiltercheckmatch',
+				'rcid' => self::$recentChangeId,
+				'filter' => "custom_variable = 'custom_variable_value'",
+			],
+			null, false, $this->mockRegisteredUltimateAuthority()
+		);
+
+		$this->assertSame( [ 'abusefiltercheckmatch' => [ 'result' => false ] ], $result );
+
+		// Verify that a protected variable access log was created as protected variable values were viewed.
+		$this->newSelectQueryBuilder()
+			->select( '1' )
+			->from( 'logging' )
+			->where( [
+				'log_action' => 'view-protected-var-value',
+				'log_type' => ProtectedVarsAccessLogger::LOG_TYPE,
+			] )
+			->caller( __METHOD__ )
+			->assertEmptyResult();
+
+		$this->dropProtectedVarAccessLogs();
+	}
+
+	/**
+	 * Drops the 'view-protected-var-value' logs from the 'logging' table.
+	 *
+	 * This is needed because in {@link self::addDBDataOnce} we added rows to the 'logging' table and so the table is
+	 * not reset between tests.
+	 *
+	 * @return void
+	 */
+	private function dropProtectedVarAccessLogs(): void {
+		$this->getDb()->newDeleteQueryBuilder()
+			->deleteFrom( 'logging' )
+			->where( [
+				'log_action' => 'view-protected-var-value',
+				'log_type' => ProtectedVarsAccessLogger::LOG_TYPE,
+			] )
+			->caller( __METHOD__ )
+			->execute();
+	}
+
+	public function addDBDataOnce() {
+		// Create a testing recentchanges table row by creating a logging table row that is sent to recentchanges.
+		$logEntry = new ManualLogEntry( 'move', 'move' );
+		$logEntry->setPerformer( $this->getTestUser()->getUserIdentity() );
+		$logEntry->setTarget( $this->getExistingTestPage()->getTitle() );
+		$logEntry->setComment( 'A very good reason' );
+		$logEntry->setParameters( [
+			'4::target' => wfRandomString(),
+			'5::noredir' => '0'
+		] );
+		$logId = $logEntry->insert();
+		$logEntry->publish( $logId );
+
+		// Check that the recentchanges row for the log entry exists and get the ID for it.
+		$recentChangeId = $this->newSelectQueryBuilder()
+			->select( 'rc_id' )
+			->from( 'recentchanges' )
+			->where( [ 'rc_logid' => $logId ] )
+			->caller( __METHOD__ )
+			->fetchField();
+		$this->assertNotFalse( $recentChangeId );
+		self::$recentChangeId = $recentChangeId;
 	}
 }

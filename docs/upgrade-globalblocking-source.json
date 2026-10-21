@@ -1,0 +1,7 @@
+{
+  "component": "mediawiki/extensions/GlobalBlocking",
+  "baseline": "2a885ab678c6114db01cddf176cd466fd89bdb2d",
+  "target": "5d3c49eac2c9e06e589e1eb4a322318650fcd21f",
+  "preserved_changes": [],
+  "dependency_status": "requires-lock-regeneration"
+}

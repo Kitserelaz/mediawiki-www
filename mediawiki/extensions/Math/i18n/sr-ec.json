@@ -1,6 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
+			"Aca",
 			"Acamicamacaraca",
 			"BadDog",
 			"Kizule",
@@ -11,8 +12,7 @@
 			"Srdjan m",
 			"Zenfiric",
 			"Zoranzoki21",
-			"Милан Јелисавчић",
-			"Aca"
+			"Милан Јелисавчић"
 		]
 	},
 	"math-desc": "Рендерује математичке формуле између ознака <code>&lt;math&gt;</code> … <code>&lt;/math&gt;</code>",
@@ -66,10 +66,11 @@
 	"math-visualeditor-symbol-group-math-typefaces": "Облици фонта",
 	"math-visualeditor-symbol-group-math-unsorted": "Несврстано",
 	"math_failure": "Рашчлањивање није успело",
+	"math_other_error": "Друга грешка: $1",
 	"math_syntax_error": "грешка у синтакси",
 	"math-test-fail": "Тест ''$1'' није успео.",
 	"math-test-success": "Тест ''$1'' успешан.",
-	"math-tracking-category-error": "Стране са математичким грешкама",
+	"math-tracking-category-error": "Странице са матиш грешкама",
 	"math-tracking-category-mhchem-deprecation": "Странице које користе застарели формат хемијских ознака",
 	"math-tracking-category-mhchem-deprecation-desc": "Странице са застарелим форматом хемијских ознака",
 	"math-tracking-category-texvc-deprecation-desc": "Странице са застарелим форматом математичких ознака",
@@ -93,5 +94,8 @@
 	"math-wikibase-special-form-header": "Име формуле:",
 	"math-wikibase-special-form-placeholder": "Назив формуле",
 	"math-wikibase-special-form-button": "Затражи информацију",
-	"math-wikibase-special-error-header": "Грешка"
+	"math-wikibase-special-error-header": "Грешка",
+	"math-wikibase-special-error-invalid-argument": "Навели сте ID ставке на Викибази који не постоји.",
+	"math-editpage-insert-inline": "Математичка формула (инлајн)",
+	"math-editpage-insert-block": "Математичка формула (блок)"
 }

@@ -10,9 +10,9 @@ use Flow\Exception\PermissionException;
 use Flow\Hooks\HookRunner;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Parser\Sanitizer;
+use MediaWiki\RecentChanges\RecentChange;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
-use RecentChange;
 
 abstract class AbstractRevision {
 	public const MODERATED_NONE = '';
@@ -246,7 +246,7 @@ abstract class AbstractRevision {
 	 * and it is not the most recent revision.
 	 *
 	 * @param User $user
-	 * @return AbstractRevision
+	 * @return static
 	 * @throws PermissionException
 	 */
 	public function newNullRevision( User $user ) {
@@ -275,7 +275,7 @@ abstract class AbstractRevision {
 	 * @param string $format wikitext|html
 	 * @param string $changeType
 	 * @param Title $title The article title of the related workflow
-	 * @return AbstractRevision
+	 * @return static
 	 */
 	public function newNextRevision( User $user, $content, $format, $changeType, Title $title ) {
 		$obj = $this->newNullRevision( $user );
@@ -289,7 +289,7 @@ abstract class AbstractRevision {
 	 * @param string $state
 	 * @param string $changeType
 	 * @param string $reason
-	 * @return AbstractRevision|null
+	 * @return static|null
 	 */
 	public function moderate( User $user, $state, $changeType, $reason ) {
 		if ( !$this->isValidModerationState( $state ) ) {

@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"Mainframe98",
+			"McDutchie",
+			"Siebrand"
+		]
+	},
+	"forcepreview": "$1 (de bewerking eerst ter controle weergeven)",
+	"forcepreview-desc": "Bewerkingen voor gebruikers zonder rechten eerst ter controle weergeven",
+	"action-forcepreviewexempt": "een pagina op te slaan zonder de bewerking ter controle te bekijken",
+	"right-forcepreviewexempt": "Een pagina opslaan zonder de bewerking ter controle te bekijken"
+}

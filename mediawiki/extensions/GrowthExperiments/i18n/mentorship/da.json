@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Saederup92",
+			"SiGNOUT"
+		]
+	},
+	"growthexperiments-mentor-dashboard-mentee-overview-info-legend-userinfo": "Brugernavn",
+	"growthexperiments-mentor-dashboard-mentee-overview-add-filter-total-edits-from": "Fra",
+	"growthexperiments-mentor-dashboard-mentee-overview-add-filter-active-days-ago-days": "Seneste dage",
+	"growthexperiments-mentor-dashboard-mentee-overview-add-filter-active-days-ago-months": "Seneste måneder",
+	"growthexperiments-mentor-dashboard-mentor-tools-mentor-weight-none": "Ingen",
+	"growthexperiments-manage-mentors-weight": "Antal nytilkomne tildelt",
+	"growthexperiments-manage-mentors-edit-weight": "Antal nytilkomne tildelt"
+}

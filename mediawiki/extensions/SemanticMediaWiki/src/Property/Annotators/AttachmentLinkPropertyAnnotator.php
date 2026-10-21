@@ -1,0 +1,51 @@
+<?php
+
+namespace SMW\Property\Annotators;
+
+use SMW\Property\Annotator;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 3.1
+ *
+ * @author mwjames
+ */
+class AttachmentLinkPropertyAnnotator extends PropertyAnnotatorDecorator {
+
+	private array $predefinedPropertyList = [];
+
+	/**
+	 * @since 3.1
+	 */
+	public function __construct(
+		Annotator $propertyAnnotator,
+		private $attachments,
+	) {
+		parent::__construct( $propertyAnnotator );
+	}
+
+	/**
+	 * @since 3.1
+	 *
+	 * @param array $predefinedPropertyList
+	 */
+	public function setPredefinedPropertyList( array $predefinedPropertyList ): void {
+		$this->predefinedPropertyList = array_flip( $predefinedPropertyList );
+	}
+
+	protected function addPropertyValues(): void {
+		if ( !is_array( $this->attachments ) || !isset( $this->predefinedPropertyList['_ATTCH_LINK'] ) ) {
+			return;
+		}
+
+		$semanticData = $this->getSemanticData();
+		$property = $this->dataItemFactory->newDIProperty( '_ATTCH_LINK' );
+
+		foreach ( $this->attachments as $attachment => $v ) {
+			$semanticData->addPropertyObjectValue(
+				$property,
+				$this->dataItemFactory->newDIWikiPage( $attachment, NS_FILE )
+			);
+		}
+	}
+}

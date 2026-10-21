@@ -1,0 +1,1119 @@
+{
+  "schema_version": 1,
+  "gate": "skin-render",
+  "environment": {
+    "gate": "skin-render",
+    "mode": "isolated-development-source-overlay",
+    "composer_lock_sha256": "781089ddc1d8c848c78432e5c6f086b0ae9d84ec4a90967f37497c658fc549c8",
+    "upgrade_targets_sha256": "c0a109df8fd28973e4895e2814d468e8c13d4a27d5821555ad040dc700b93b16",
+    "farm_sources_sha256": "98819babe49dcc5a0e0ee4af2a25b4053a4a8375ee9d46d5ebacf60d677c13af"
+  },
+  "expected_manifests": 35,
+  "components": [
+    {
+      "manifest": "skins/Anisa/skin.json",
+      "manifest_sha256": "7df5dcdb6818d222b3cd5bc08ec2f882d74e9daf5194a3882dc28190bae2e38c",
+      "source_sha256": "a1e47b8846c3e42d5d7a16ed0320f17da728a3f063566dd3ba89a243cadadb7b",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 40.74,
+      "log": "skins_Anisa_skin.json.log",
+      "evidence": {
+        "manifest": "skins/Anisa/skin.json",
+        "skin_render": "passed",
+        "skins": [
+          {
+            "name": "anisa",
+            "bytes": 7775,
+            "html_sha256": "3aa636be5cc58ed8131d55f30cd7daa40cdec5137ab0575c6831f40553c797ac",
+            "resource_modules": {
+              "skins.anisa": "215e9813602885d0361fd8a2924198f068562fe6f59eacbac20be4d68f949c33",
+              "skins.anisa.js": "2eefa62d394b10f1c12fd927d8bff8cb320213d26dfdf3a9932aafebaf8c158e"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "manifest": "skins/BlueSky/skin.json",
+      "manifest_sha256": "2c3c830ba685d5770fc0378a1c33b0dc8935d905287090332b431f0288c6f19d",
+      "source_sha256": "c2b23624e0967d68912371d123503467726e40710c41c7a9eb6d0855dbfb07d4",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 40.95,
+      "log": "skins_BlueSky_skin.json.log",
+      "evidence": {
+        "manifest": "skins/BlueSky/skin.json",
+        "skin_render": "passed",
+        "skins": [
+          {
+            "name": "bluesky",
+            "bytes": 7959,
+            "html_sha256": "23acc8f70f2b561b58657222f32248bee6363d6155db8490511d5ad3e7f5d7c0",
+            "resource_modules": {
+              "skins.bluesky": "629ab932d04e9fe1d44bedce5d0ca3234fa1dba85e9ea8e274d602bcac37b292",
+              "skins.bluesky.js": "2765db37efc7d0dfd355c42542d6785035e969386b2e27b7bc3382582f698604",
+              "themeloader.skins.bluesky.blue": "a7b4cfec6176c79bc7829c057175f95a000ccfe0b8022a315c66e84fdb4d6e14",
+              "themeloader.skins.bluesky.green": "3ed7ef9b11d7e9a998ee5249491e3ae1bb4ff271ef896ce9f9866c03672931d2",
+              "themeloader.skins.bluesky.red": "392795b745200c89e315c45e3721c95b8318b713da43f5d148db9dbb26dc2f1c",
+              "themeloader.skins.bluesky.white": "2cfedde4b9a0663e5f15a66b89145129c012fe6f7d53c5acc45ace0addd98b07",
+              "themeloader.skins.bluesky.grey": "c77aaad88488026d7c60b77c390298403b99558f61e962423faa65631a2aee88"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "manifest": "skins/Citizen/skin.json",
+      "manifest_sha256": "0919b66e3065d0b6391bb0d20f1a1aff1cb822ddcd5aa444e57ff60b2e70e165",
+      "source_sha256": "fd08b9d8af66e1aa10dc656283b1d3fe32bc92a1e0901347bc75a7273a5a6941",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 28.22,
+      "log": "skins_Citizen_skin.json.log",
+      "evidence": {
+        "manifest": "skins/Citizen/skin.json",
+        "skin_render": "passed",
+        "skins": [
+          {
+            "name": "citizen",
+            "bytes": 21880,
+            "html_sha256": "8439a1557eb77a735fcea2deeeb499d477435d45433db688bee1affb9dc35fa1",
+            "resource_modules": {
+              "skins.citizen.styles": "16129510076e65d1cc8c5730552219a764d26b59e78549ba5459d450cbc51be3",
+              "skins.citizen.codex.styles": "08b22e9ab9a0f35cb48660263f3230777268fefa4e2f57be9bdd41e1e9d7586d",
+              "skins.citizen.styles.fonts.cjk": "4a41d5425dd9f23593f2370123d0ece34750e9c2e283c0825654dfb14a7b4f8b",
+              "skins.citizen.styles.fonts.ar": "f5f35ce7de204778adf808eb5e973b54c09c59bd1eb1add98f96d026f709185f",
+              "skins.citizen.scripts": "07d93f16fb6bfcf726088e8638b36eba407baf95e7438f5b627c63334ff64c34",
+              "mediawiki.page.ready": "431e8aadbee95215cd5894bc2021dcefa385b5a739354dca0f5f73f80e664f1e",
+              "mediawiki.api": "864240c85a4032ba5eed9dd7eb4db194dd26a0e75ba9f7ac6849bc33d065786b",
+              "mediawiki.Title": "26560dbe3cf0a4ca731277555b104a6a79c83fc6b9b6b965fcb00a53e15b9183",
+              "mediawiki.String": "724c03179a5e8a5e635e0158b87fecb7199ba7e3d875a3e6a8a6f1c827e6fcef",
+              "mediawiki.util": "150f70995670e7a4a03f8addabed31df42d7b7de912784b1461416cfa303f753",
+              "jquery.client": "a25472aeb50d26d1a6045b976a49a4ac940a44057d14ce3e31a8f77c58499118",
+              "web2017-polyfills": "ab6225f0e7298ffd8c1985f12205bc3f9f6a3ef5c2768dbb34259aa25a947c80",
+              "mediawiki.jqueryMsg": "96838c94b7955a25aea87ce12b094c5096be05a09685179fbceca4ac8c5710a7",
+              "mediawiki.language": "2ea03f3322af18e2e2668f27d87ebe479a60eb3d2d210e6bc81165214edb911a",
+              "mediawiki.cldr": "60dc9b320b0d351c13a30150931550147b5885a89435a838356494ce9292f216",
+              "mediawiki.libs.pluralruleparser": "0644974cf1265deab9c40590e6ede22fc11b0f42c46973e375072f4d6d024268",
+              "user.options": "66825400b14d88f63962d54bbbafc2b6623d74a1c2b5c13ba405896a62e6dc87",
+              "mediawiki.user": "ac8d46508028bde4c93e28b64be6aa9c56b5e269b05727f361d6812ba985e44b",
+              "mediawiki.cookie": "5e625957e4dc8fb6f282da4098539d025f6bb19a8ccf1cab4850d0ba96659951",
+              "skins.citizen.search": "353309cc7941784cf0cfc3c3efa7fa768e67699f0985d0e4ed4823424f4c9978",
+              "mediawiki.storage": "05e9db95aaed229a2362658fd224054dca3f9295d2303825e39c8bd0de124c28",
+              "mediawiki.template.mustache": "b2421c69872394785160707b8537fb233c4b9f3f582df6123f2997b6c19268cb",
+              "mediawiki.template": "288fadb67a450a57300e716ee838fb249154a5d377538967e2e6bd816c29f11b",
+              "skins.citizen.preferences": "d1bdad643440218aed8cd7c3ba1b50f3de35271409f1df405cf6c8cd4e7413b9",
+              "skins.citizen.serviceWorker": "91bb4fc841e863794d571a8829b251ce66d60fe2200742b6c70cf7e39c1d2912",
+              "skins.citizen.commandPalette": "1e3436d4074ae7183c8dbe9f8cf8afb8b9274b9c64ffc491d8fb2a48e43f70e5",
+              "pinia": "81b91a95325780d60e70828448316c60773b7b984f210413dc13fd01ce8c5e57",
+              "vue": "a897d1835b0ecebf26c0c1d07304030d3d255d71d27ecac69346f452ba8472c6",
+              "skins.citizen.commandPalette.codex": "2dcf0cd2cd14b3a73d9240a3937463e1d610dfd9405d092d41438da4c41c74c3",
+              "skins.citizen.icons": "a017b8b742f46d46992b7102b2f1e5a10b4e4ded133d10c25539dd9e672e6df3"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "manifest": "skins/CologneBlue/skin.json",
+      "manifest_sha256": "938024202da2cf218cb3ba9bb36d275448f045ba182e055d7309a90c4d1e70b6",
+      "source_sha256": "ca33a072c4e00de39c82f6bda6c056207d01ec78e0d6c328222e8a75977a6204",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 19.15,
+      "log": "skins_CologneBlue_skin.json.log",
+      "evidence": {
+        "manifest": "skins/CologneBlue/skin.json",
+        "skin_render": "passed",
+        "skins": [
+          {
+            "name": "cologneblue",
+            "bytes": 8923,
+            "html_sha256": "9a2080d863899f310fd7a69abcc526c0f13073e5b83c4b6cdcd73d01353fe99c",
+            "resource_modules": {
+              "skins.cologneblue": "5c086e9f54404ae0fd724194b4767bcd0bf7fe97777d6afd0422fcb81e510a76"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "manifest": "skins/Cosmos/skin.json",
+      "manifest_sha256": "78dfa1adea1827e92e6c49646a020475e8fd1c380300082d500a72d0f4a018df",
+      "source_sha256": "4f12fd0c81788aa158a934b12179813248d5a5e31cb5d0743897c82dc7d3bac8",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 18.73,
+      "log": "skins_Cosmos_skin.json.log",
+      "evidence": {
+        "manifest": "skins/Cosmos/skin.json",
+        "skin_render": "passed",
+        "skins": [
+          {
+            "name": "cosmos",
+            "bytes": 21897,
+            "html_sha256": "8ec8f1519efa70cf7939c0b613cf30c2ccd655556f27c18d102c49bbe7571e66",
+            "resource_modules": {
+              "skins.cosmos.styles": "4ab7b8e92af1fc5250e9ce0a69e395eb2617b5b17978fdda198af44cb27178a7",
+              "skins.cosmos.js": "2533603a3e075a7e26ba73352a554b2b23469d6ab60199ebc512e21f447af632",
+              "mediawiki.cookie": "5e625957e4dc8fb6f282da4098539d025f6bb19a8ccf1cab4850d0ba96659951",
+              "skins.cosmos.searchLoader": "3e344e52c188fb7ffa5840605a243529305bc19dfad9e2ac81318d2f63f43ffb",
+              "mediawiki.page.ready": "4440080746a57929ecf3c53d248d5e54b0cf3c74f35f1bb3fa1a1adc27a20775",
+              "mediawiki.api": "864240c85a4032ba5eed9dd7eb4db194dd26a0e75ba9f7ac6849bc33d065786b",
+              "mediawiki.Title": "26560dbe3cf0a4ca731277555b104a6a79c83fc6b9b6b965fcb00a53e15b9183",
+              "mediawiki.String": "724c03179a5e8a5e635e0158b87fecb7199ba7e3d875a3e6a8a6f1c827e6fcef",
+              "mediawiki.util": "0ee7e33a844e960e8cd49794f0b414f32f8c0fa419a16051de08cb829b883038",
+              "jquery.client": "a25472aeb50d26d1a6045b976a49a4ac940a44057d14ce3e31a8f77c58499118",
+              "web2017-polyfills": "ab6225f0e7298ffd8c1985f12205bc3f9f6a3ef5c2768dbb34259aa25a947c80",
+              "mediawiki.jqueryMsg": "96838c94b7955a25aea87ce12b094c5096be05a09685179fbceca4ac8c5710a7",
+              "mediawiki.language": "2ea03f3322af18e2e2668f27d87ebe479a60eb3d2d210e6bc81165214edb911a",
+              "mediawiki.cldr": "60dc9b320b0d351c13a30150931550147b5885a89435a838356494ce9292f216",
+              "mediawiki.libs.pluralruleparser": "0644974cf1265deab9c40590e6ede22fc11b0f42c46973e375072f4d6d024268",
+              "user.options": "66825400b14d88f63962d54bbbafc2b6623d74a1c2b5c13ba405896a62e6dc87",
+              "mediawiki.user": "ac8d46508028bde4c93e28b64be6aa9c56b5e269b05727f361d6812ba985e44b",
+              "skins.cosmos.search": "da9e04d937ff59d24cea7d4d8c87fdfa7195cedf73b1b259f11fb6e11137cee3",
+              "mediawiki.Uri": "f23bbc18c2224295356dcc3497f030359a9d002b03dc1a9b12c3228b79483e5d",
+              "mediawiki.codex.typeaheadSearch": "f250e1088a4619f9eb52832c179396f576eb83da5b6dfe01b72fe7a30dae6361",
+              "vue": "a897d1835b0ecebf26c0c1d07304030d3d255d71d27ecac69346f452ba8472c6",
+              "skins.cosmos.rail": "ac73155d38f8cb8013724c456a67bf605f7c7e712df1a24437af71977f79597b",
+              "skins.cosmos.portableinfobox": "68a2b627593e9e9b85d0ef951b704f1b2b03898525b133e477d15c58f51403e1",
+              "skins.cosmos.portableinfobox.default": "b384a824c4e713c8293072aea6a8310aa5c0c87de00136ccd9d644015868c4f9",
+              "skins.cosmos.portableinfobox.europa": "0154d7e0dbb34bec5fe63cffa18f35684510ea4af6cd22485b50fa461dfb74c8",
+              "skins.cosmos.socialprofile": "fa58e9625e1f96cde0c3ba127d3eb52038e9e3dae9de24d0c214791caffbb8fa",
+              "skins.cosmos.profiletabs": "3b868a044b75e316d9cdbafd629b8306f4987060437a4655c73f3cd2c2a3d1f3",
+              "skins.cosmos.profileavatar": "005c33292154d469f737294972feb601452606ece965f7d5d9926f38bcc0a546",
+              "skins.cosmos.profileeditcount": "8df23106ceadbaff442276f2d77673e79a7baf32dfc9348f96c4779de0f279d4",
+              "skins.cosmos.profiletags": "28d31bdf3e96290f090bd995eacf5fd77d23b2a5792c78f14727f0a968fc0f2b",
+              "skins.cosmos.profilebio": "e3da38a0644f3f2be8dbb0b2079f67427bdf5945da992fbbe38c6593017852e6",
+              "skins.cosmos.codemirror": "311c4bd82da8723aca6555d21debf6a81b849af129d0a433ae9e0175a7fe5547",
+              "skins.cosmos.codeeditor": "6d3c9b5b550972b958d2fade3548d6a9ae37016310d2dbbd6f409835b22e0c37"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "manifest": "skins/DuskToDawn/skin.json",
+      "manifest_sha256": "eb61693965754233fc0fe54099dcdc19454369de13bbc44413df9ca6524949b0",
+      "source_sha256": "97b3c4f62bb626d57306363855e3f31a0dd86a7bb14a197b8b9ca91c4b72ef0d",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 14.55,
+      "log": "skins_DuskToDawn_skin.json.log",
+      "evidence": {
+        "manifest": "skins/DuskToDawn/skin.json",
+        "skin_render": "passed",
+        "skins": [
+          {
+            "name": "dusktodawn",
+            "bytes": 7801,
+            "html_sha256": "f1cdf3bebc25fb9f9f8aed583a0c996499b87fb34815fb19da583e047c83b41c",
+            "resource_modules": {
+              "skins.dusktodawn.styles": "7407d3ee1e6b6f3f4bf67e731e9e84a28e99913c5163e3672848c8c4adfdf341",
+              "skins.dusktodawn.audio": "cd746ce4e2edb6051df0b2af61c9a6049dd9c73345f2a26bd182df47575b56d8"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "manifest": "skins/Evelution/skin.json",
+      "manifest_sha256": "baeba2a94067ed3c3592ece098d551b358251f4ad151bfc49f1dac2de30f0d23",
+      "source_sha256": "b9ff924c127e328b3f6e9e06f8b056fc2f594c01cdc6422f17aa8417831140fc",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 11.77,
+      "log": "skins_Evelution_skin.json.log",
+      "evidence": {
+        "manifest": "skins/Evelution/skin.json",
+        "skin_render": "passed",
+        "skins": [
+          {
+            "name": "evelution",
+            "bytes": 369903,
+            "html_sha256": "1621e8362e63fd71d913ff72340fa3b77cb88638b5a4eb8b50abca36e0bf9af6",
+            "resource_modules": {
+              "skins.evelution.styles": "94f5017948534f36f4463621b2945666880433931c1d03c05ca36a5fdca69357",
+              "skins.evelution": "bd56cd2c62d5dc21171ed6f731f1196bb654d6309b4d3758457eccaabc1afd3d",
+              "skins.evelution.designer": "618c534cd3ae4161e7779477ad7e48100d2473ba6e747624b3cfc2c3bf902392"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "manifest": "skins/Eveskin/skin.json",
+      "manifest_sha256": "904bc6b13ab9735840bf5e10423dc0670c3937c2d29779cf810350669f2b8661",
+      "source_sha256": "e80f974f03049c50daec847b3d78c0d00a7b5630541042f2174b2d4012ee8a3f",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 5.76,
+      "log": "skins_Eveskin_skin.json.log",
+      "evidence": {
+        "manifest": "skins/Eveskin/skin.json",
+        "skin_render": "passed",
+        "skins": [
+          {
+            "name": "eveskin",
+            "bytes": 7023,
+            "html_sha256": "c1fcd418f6c6b96e37f762f5a403d31f155a94d8b3c010d57a86b897c0095691",
+            "resource_modules": {
+              "skins.eve.styles": "1e3123a6978ea65172ac44f9d6a2c432d170ef199f5ce05f464ec167f677096f"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "manifest": "skins/Femiwiki/skin.json",
+      "manifest_sha256": "6d34629bd58d16fd4f82d3f3eb7d668c94cfe98cc2e427bddb8d79aa11b5ebc3",
+      "source_sha256": "f7a9cf134bb5e5332d6e0ffba4a0486348e646db8a6220602860258f8d3e6b90",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 40.05,
+      "log": "skins_Femiwiki_skin.json.log",
+      "evidence": {
+        "manifest": "skins/Femiwiki/skin.json",
+        "skin_render": "passed",
+        "skins": [
+          {
+            "name": "femiwiki",
+            "bytes": 10509,
+            "html_sha256": "8d50789965dd876a059d319b7054de300c757a13e07a24b3f26980486b1a0dd9",
+            "resource_modules": {
+              "skins.femiwiki": "0381687fcf9f61638b6984584bb93e3789cdecc9d6f3490ae8c319e32321f84f",
+              "skins.femiwiki.xeicon": "ff5732321b2671cf30f47e05a49fe1ac1c225ff47b3e393dc3e55ec75f326ab2",
+              "skins.femiwiki.smallElements": "210ef0e4552a64bcb2a45ace9e82c8d8a0fa0629bf560a5cf2bd8a9cb79af2c0",
+              "skins.femiwiki.js": "e4d5eefe146ae1755c12ecae61d434af2f0d7756d1b37dcc91bad0a78d922931",
+              "mediawiki.page.ready": "976dc609822adef1a401313eac465cd45882628fbe6796d72ff3e533f10742bb",
+              "mediawiki.api": "864240c85a4032ba5eed9dd7eb4db194dd26a0e75ba9f7ac6849bc33d065786b",
+              "mediawiki.Title": "26560dbe3cf0a4ca731277555b104a6a79c83fc6b9b6b965fcb00a53e15b9183",
+              "mediawiki.String": "724c03179a5e8a5e635e0158b87fecb7199ba7e3d875a3e6a8a6f1c827e6fcef",
+              "mediawiki.util": "150f70995670e7a4a03f8addabed31df42d7b7de912784b1461416cfa303f753",
+              "jquery.client": "a25472aeb50d26d1a6045b976a49a4ac940a44057d14ce3e31a8f77c58499118",
+              "web2017-polyfills": "ab6225f0e7298ffd8c1985f12205bc3f9f6a3ef5c2768dbb34259aa25a947c80",
+              "mediawiki.jqueryMsg": "96838c94b7955a25aea87ce12b094c5096be05a09685179fbceca4ac8c5710a7",
+              "mediawiki.language": "2ea03f3322af18e2e2668f27d87ebe479a60eb3d2d210e6bc81165214edb911a",
+              "mediawiki.cldr": "60dc9b320b0d351c13a30150931550147b5885a89435a838356494ce9292f216",
+              "mediawiki.libs.pluralruleparser": "0644974cf1265deab9c40590e6ede22fc11b0f42c46973e375072f4d6d024268",
+              "user.options": "66825400b14d88f63962d54bbbafc2b6623d74a1c2b5c13ba405896a62e6dc87",
+              "mediawiki.user": "ac8d46508028bde4c93e28b64be6aa9c56b5e269b05727f361d6812ba985e44b",
+              "mediawiki.cookie": "5e625957e4dc8fb6f282da4098539d025f6bb19a8ccf1cab4850d0ba96659951",
+              "oojs": "3b31f696ae73520d22624a36d15e001b99626a054a3f7fa7baa62a3f6374a40d",
+              "oojs-ui-core": "00eb3a870af6d6e9814a3df6448c653b7a87eae13ad1f44ad6d40e737bfe3c77",
+              "oojs-ui-core.icons": "5ec803f5d9f4a986a00e500eaa2927bce542384be194cd6d6137ded49c8fdad7",
+              "oojs-ui-core.styles": "c4f2bfc66e896a0bda6c13c7c43e9ae0219fdaf0c01977c5f6ac1f5a052d26cd",
+              "oojs-ui.styles.indicators": "47d14d2df28b91c2357d42e6ca1d5f3bff8a150abb5ff16a588a8df511a436cd",
+              "skins.femiwiki.notifications": "1abec1354aae537fcdf0a889ddb42785e86823d209c6f4c02b0bee6afd2bec12",
+              "skins.femiwiki.dm": "fafdf0f4a906f854b085c82e0879694c0b7630c8a625c9998e431f0459b707a3",
+              "skins.femiwiki.share": "a72c0bf618a15157a43aee92ea5ebeadbf416578c56b775505b0d15d76f311ec",
+              "oojs-ui-windows": "942352852bb1aba443625e12a09976db34d57579c184a736f12ff8d5e0821e2a",
+              "oojs-ui-windows.icons": "5dc13a6fd2235d538662b6b2109cd305c7d4b11279e98534ce536b739e97e030",
+              "skins.femiwiki.share.ui": "c96ea94dd017c1e2888854e820fd6097b217fb616124cdbc1aaa558b3eaba453",
+              "mediawiki.widgets.styles": "3e12e812ec07d5930dcdaeca4f15480e3a33c746dba5cfc0a64c8f23a582967d"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "manifest": "skins/Foreground/skin.json",
+      "manifest_sha256": "3367a4a5a1479d5e5592eeb6319eb9f6a45d0fe09ee9f32a6f70881a03a9a486",
+      "source_sha256": "83d6ff271259d325503753d255e2820a9438b3fdcc95c897d87e9fd5dbcc0afb",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 34.62,
+      "log": "skins_Foreground_skin.json.log",
+      "evidence": {
+        "manifest": "skins/Foreground/skin.json",
+        "skin_render": "passed",
+        "skins": [
+          {
+            "name": "foreground",
+            "bytes": 8147,
+            "html_sha256": "8ca0745d54fe3334ac48c3976ce91862110765b8f2f9c4bdfb73695eb69904fb",
+            "resource_modules": {
+              "skins.foreground.styles": "f4203c96fb0af54b5c7e77258885a394212d0fc1dfa19b6bb00caf89eec40c25",
+              "skins.foreground.modernizr": "ce1ab683d84b2a964879890df5d79189d4149f683e2427937df170781a278b78",
+              "skins.foreground.js": "9f6e640555df2071d98c2efd5e0682722ffb45e88dd93a667937411f4bd9549b",
+              "mediawiki.cookie": "5e625957e4dc8fb6f282da4098539d025f6bb19a8ccf1cab4850d0ba96659951"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "manifest": "skins/Gamepress/skin.json",
+      "manifest_sha256": "cb0d62b0442f9584a528995b2114129a0bf08d5db53b05360a0ca78f6af1ece7",
+      "source_sha256": "093371c999af514faf71f875c4e0f6928b3d0945ef56ad2620cea0030a89cdd8",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 14.44,
+      "log": "skins_Gamepress_skin.json.log",
+      "evidence": {
+        "manifest": "skins/Gamepress/skin.json",
+        "skin_render": "passed",
+        "skins": [
+          {
+            "name": "gamepress",
+            "bytes": 7948,
+            "html_sha256": "2ca0ac67cbb372734f5532064ce40d47e6884740787e7c97a3fd85fee94fe548",
+            "resource_modules": {
+              "skins.gamepress.styles": "078d5af32d43977b378e7a93a34455cb178b7dbd5b0a9cf503514e81746c12cc",
+              "skins.gamepress.site": "cfdf0d26639be93faa5fc23f9b37a2447b23c225a2ab4d0701ced4c50c46ff85",
+              "themeloader.skins.gamepress.blue": "f8ea81c816a0b409edc57b73c62dc81a27620328663faec3fe7d7278d7c6d5a6",
+              "themeloader.skins.gamepress.green": "6138ade1d3ba780a533d27768206d47e8174802aeea36e7de0153478afdd6635",
+              "themeloader.skins.gamepress.orange": "32b7998434fd9637e9961908d2a2f27c5f150e9864d9a59e43c96b04d8092235"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "manifest": "skins/HasSomeColours/skin.json",
+      "manifest_sha256": "9b454fffd8fef5c3e9d925cdbb07aa2186b0f33e19238c49fa5ae1841b9747c5",
+      "source_sha256": "4bab3ec072a684c21497262a16e7964a5e77635a7e8a240a001a641d8ebea06a",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 11.66,
+      "log": "skins_HasSomeColours_skin.json.log",
+      "evidence": {
+        "manifest": "skins/HasSomeColours/skin.json",
+        "skin_render": "passed",
+        "skins": [
+          {
+            "name": "hassomecolours",
+            "bytes": 7648,
+            "html_sha256": "799f19267dbe0327cdbce69d96138ceef82f9e44a237c3064843f752cd0d82c4",
+            "resource_modules": {
+              "skins.hassomecolours": "5cba3067159235db34103720beb7e8296de78bf4825d1a9c1cbcaf0682cdaa0a",
+              "skins.hassomecolours.js": "ea66e6d701219b8491d2fef176635b707ae1eb1bb50c9685780066ad03b3ad18"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "manifest": "skins/Lakeus/skin.json",
+      "manifest_sha256": "45068fb179dad257691cbdb83010cd1a1e8bf70ac49464a6d12198a8b2c1f58f",
+      "source_sha256": "b8e1746c86a37ca4158c2672b9e740499011a3b24951504ad3ff832579cc2cec",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 60.06,
+      "log": "skins_Lakeus_skin.json.log",
+      "evidence": {
+        "manifest": "skins/Lakeus/skin.json",
+        "skin_render": "passed",
+        "skins": [
+          {
+            "name": "lakeus",
+            "bytes": 10380,
+            "html_sha256": "f435ca2afa2d23b08cb993d3f6cd41e31da1d46e813dee103f46178ca4a0f026",
+            "resource_modules": {
+              "skins.lakeus.scripts": "417772e3c7bdfad0f2f09f13d7ac40b2472c95cdacb134316f6059f9a1e60715",
+              "skins.lakeus.styles": "58c584749912300ca9969467358c813ec5eda8cfb0bee3f664f9b9b1f957e050",
+              "skins.lakeus.theme.designer": "9a4e742fcb298ea59333a97284fedd2dff6ef86544c9388e7992a7f3c82a6141",
+              "mediawiki.api": "864240c85a4032ba5eed9dd7eb4db194dd26a0e75ba9f7ac6849bc33d065786b",
+              "mediawiki.Title": "26560dbe3cf0a4ca731277555b104a6a79c83fc6b9b6b965fcb00a53e15b9183",
+              "mediawiki.String": "724c03179a5e8a5e635e0158b87fecb7199ba7e3d875a3e6a8a6f1c827e6fcef",
+              "mediawiki.util": "0ee7e33a844e960e8cd49794f0b414f32f8c0fa419a16051de08cb829b883038",
+              "jquery.client": "a25472aeb50d26d1a6045b976a49a4ac940a44057d14ce3e31a8f77c58499118",
+              "web2017-polyfills": "ab6225f0e7298ffd8c1985f12205bc3f9f6a3ef5c2768dbb34259aa25a947c80",
+              "mediawiki.jqueryMsg": "96838c94b7955a25aea87ce12b094c5096be05a09685179fbceca4ac8c5710a7",
+              "mediawiki.language": "2ea03f3322af18e2e2668f27d87ebe479a60eb3d2d210e6bc81165214edb911a",
+              "mediawiki.cldr": "60dc9b320b0d351c13a30150931550147b5885a89435a838356494ce9292f216",
+              "mediawiki.libs.pluralruleparser": "0644974cf1265deab9c40590e6ede22fc11b0f42c46973e375072f4d6d024268",
+              "user.options": "66825400b14d88f63962d54bbbafc2b6623d74a1c2b5c13ba405896a62e6dc87"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "manifest": "skins/Mask/skin.json",
+      "manifest_sha256": "7bdffb2b32c90c812153a9322af9bcd02d90f1c866a79376ec7461ba8d2b4fa6",
+      "source_sha256": "84ccf1ee5e96ef4218bd12b21913f7e6b3472484a053a54df69a8c3dea6f871d",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 53.09,
+      "log": "skins_Mask_skin.json.log",
+      "evidence": {
+        "manifest": "skins/Mask/skin.json",
+        "skin_render": "passed",
+        "skins": [
+          {
+            "name": "mask",
+            "bytes": 7051,
+            "html_sha256": "3144b54aaa735004d4f0423473fb096805397965cb5c722fb37d7a0255a9e0bc",
+            "resource_modules": {
+              "skins.mask": "a187d87cdaba128516f55b603d3a00b676afcf44de5d4936befe022fcf0e83f5"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "manifest": "skins/Medik/skin.json",
+      "manifest_sha256": "240292e6bd050fc4e624ebc2a23d1f8325276a57a9a46bd51b86d03fe7be437c",
+      "source_sha256": "07f750bbe425ef86418e99d8c105dbdd4de99ceb74af848a9eaa41e268608172",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 48.52,
+      "log": "skins_Medik_skin.json.log",
+      "evidence": {
+        "manifest": "skins/Medik/skin.json",
+        "skin_render": "passed",
+        "skins": [
+          {
+            "name": "medik",
+            "bytes": 9391,
+            "html_sha256": "e7272ee936efe951e52e5d0ec76b273c0f4ab7eb54f67cac29da2a89e95352da",
+            "resource_modules": {
+              "skins.medik": "64c60fe1f2f00186d3570c9600e889933b63dddf15a91b504ef059698836a00e",
+              "skins.medik.js": "8691b6bac549169ab74dfb3ef47afc875fec57d56c0541653742f60db4eb36be"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "manifest": "skins/Metrolook/skin.json",
+      "manifest_sha256": "52eca441e290f5d66ea75be8d14dc3df20faa45a0dfc1cc7af095e487931449e",
+      "source_sha256": "b3a3dcfb3287d25cc74de38c2deb50fe7791a1b7259362b6555db062662d3f66",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 45.71,
+      "log": "skins_Metrolook_skin.json.log",
+      "evidence": {
+        "manifest": "skins/Metrolook/skin.json",
+        "skin_render": "passed",
+        "skins": [
+          {
+            "name": "metrolook",
+            "bytes": 10173,
+            "html_sha256": "f1bc1720ef893c69b3f634d742506cff6dc04afa6e707356572b101b0efd8834",
+            "resource_modules": {
+              "skins.metrolook.interface": "30fb10fd67552d672392bd34f702b09dd743e4dcc2611cece937e8a8ce34d327",
+              "skins.metrolook.styles": "77370f52f3114e6cc4902fb42fc456b084ee8f58f271d64195f40324858da0b1",
+              "skins.metrolook.styles.custom": "4f759c3d213a7051b38a472f76247d864ab083c1bbb262264b57314cba8ec70b",
+              "skins.metrolook.styles.experimental.print": "359d61dd240e33528df95aed06425e4ae3acf57ff150e4c64666862a632291dd",
+              "skins.metrolook.styles.mobile": "ae88f1f8a3b11159de89731e84a585e5dee21bcb981f1eeb9bbfa1a6b53a60a7",
+              "skins.metrolook.styles.mobile.custom": "57216206ea1f261ba751b94c1ae94be4154108cb182ae096542452094f31b534",
+              "skins.metrolook.styles.theme.custom": "9903fea0986a8cdc688f229314dc6220a8a85f1bce18151816b3616a8cfef102",
+              "skins.metrolook.js": "432971f2fe9f1ab38f42b5f8040a464b5c7548e0628d70602ccba1ec6ea345e3",
+              "mediawiki.util": "0ee7e33a844e960e8cd49794f0b414f32f8c0fa419a16051de08cb829b883038",
+              "jquery.client": "a25472aeb50d26d1a6045b976a49a4ac940a44057d14ce3e31a8f77c58499118",
+              "web2017-polyfills": "ab6225f0e7298ffd8c1985f12205bc3f9f6a3ef5c2768dbb34259aa25a947c80",
+              "skins.metrolook.collapsibleNav": "cd41ed2c10061036d495d84b619a6269255292c4cbcc22ec7e7e3829d0ae8462",
+              "mediawiki.cookie": "5e625957e4dc8fb6f282da4098539d025f6bb19a8ccf1cab4850d0ba96659951"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "manifest": "skins/MinervaNeue/skin.json",
+      "manifest_sha256": "5b35e3814207e9f01f4cbba55b9388944529e756c454f5b3b00603f69bcdb88b",
+      "source_sha256": "52ae53071fc2f2d335fe11821696d5956a6439e3a23135cc8a6db65bf2dbe130",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 21.47,
+      "log": "skins_MinervaNeue_skin.json.log",
+      "evidence": {
+        "manifest": "skins/MinervaNeue/skin.json",
+        "skin_render": "passed",
+        "skins": [
+          {
+            "name": "minerva",
+            "bytes": 13004,
+            "html_sha256": "fdec93ad646f7e6f00d39ba840b20eecf8a4c8bd5c9f40299d668f40af35701b",
+            "resource_modules": {
+              "skins.minerva.styles": "47d1718b96275b05bc4ed6f53c06afcf47dc739d5d4ea2f9469d32e3135a7ebd",
+              "skins.minerva.content.styles.images": "9333b168bb06fcbe2994288cfdfa62742db9504e6cfc63379fa51cdeeb879f58",
+              "skins.minerva.amc.styles": "6e900316978ac81239ff2ae6686a7d5e0b68c0fead321c5f4fccd3f738b7cdfa",
+              "skins.minerva.overflow.icons": "3db56157d93e964127ad4143732d293c13f5e570369d594bdb1e7f3da744beb1",
+              "skins.minerva.icons": "77ebc49b3325e7e1b1c508dbb2d7bde761a953f1e423b3c7b5c40c7ad20e5011",
+              "skins.minerva.mainPage.styles": "3a548b86d40c1805f3f9980848c28f4b93ce8148bc1ce825642066acc851aa3b",
+              "skins.minerva.userpage.styles": "7c35f9fb401bd0c49fbd2f6c5d39c35b318626283c3d404d58305427a89cdb88",
+              "skins.minerva.personalMenu.icons": "01e0abf76c324d2a523ae25dcb3ce3e204ad745867a507e6c81a72ef31816aa1",
+              "skins.minerva.mainMenu.advanced.icons": "e64b2f428bb0c55ca1b1ad463aeb8cdba31244da77591d6842bf9746aa85fb49",
+              "skins.minerva.loggedin.styles": "11dd1b4d90d70825846136c4971311a7d680370d1b498eb2ba143b05c2793224",
+              "skins.minerva.search": "b0269bf7f52b906e72d4a065e8114510094813dc1f2b9bae00f4587db2f84d69",
+              "mediawiki.page.ready": "685b026c9e1264c29cccbea8172bde4b694378b57aa6b1949e74e5cb4d1f2fac",
+              "mediawiki.api": "864240c85a4032ba5eed9dd7eb4db194dd26a0e75ba9f7ac6849bc33d065786b",
+              "mediawiki.Title": "26560dbe3cf0a4ca731277555b104a6a79c83fc6b9b6b965fcb00a53e15b9183",
+              "mediawiki.String": "724c03179a5e8a5e635e0158b87fecb7199ba7e3d875a3e6a8a6f1c827e6fcef",
+              "mediawiki.util": "150f70995670e7a4a03f8addabed31df42d7b7de912784b1461416cfa303f753",
+              "jquery.client": "a25472aeb50d26d1a6045b976a49a4ac940a44057d14ce3e31a8f77c58499118",
+              "web2017-polyfills": "ab6225f0e7298ffd8c1985f12205bc3f9f6a3ef5c2768dbb34259aa25a947c80",
+              "mediawiki.jqueryMsg": "96838c94b7955a25aea87ce12b094c5096be05a09685179fbceca4ac8c5710a7",
+              "mediawiki.language": "2ea03f3322af18e2e2668f27d87ebe479a60eb3d2d210e6bc81165214edb911a",
+              "mediawiki.cldr": "60dc9b320b0d351c13a30150931550147b5885a89435a838356494ce9292f216",
+              "mediawiki.libs.pluralruleparser": "0644974cf1265deab9c40590e6ede22fc11b0f42c46973e375072f4d6d024268",
+              "user.options": "66825400b14d88f63962d54bbbafc2b6623d74a1c2b5c13ba405896a62e6dc87",
+              "mediawiki.user": "ac8d46508028bde4c93e28b64be6aa9c56b5e269b05727f361d6812ba985e44b",
+              "mediawiki.cookie": "5e625957e4dc8fb6f282da4098539d025f6bb19a8ccf1cab4850d0ba96659951",
+              "mediawiki.router": "9750d6fc8ac4f616d17eec08e0028ec5681526352c8254013a33df53bff1f9d1",
+              "oojs": "3b31f696ae73520d22624a36d15e001b99626a054a3f7fa7baa62a3f6374a40d",
+              "mediawiki.skinning.typeaheadSearch": "d7aec1bfc13c845ab7db20ba7b5cef023f68146e71a0275234eecb0d37b54669",
+              "mediawiki.codex.typeaheadSearch": "f250e1088a4619f9eb52832c179396f576eb83da5b6dfe01b72fe7a30dae6361",
+              "vue": "a897d1835b0ecebf26c0c1d07304030d3d255d71d27ecac69346f452ba8472c6",
+              "skins.minerva.scripts": "31ee97b7b629923d78114202364a31be268e8ccf1870c49ec9d214fe0f31dae5",
+              "mediawiki.DateFormatter": "3d820d6d7a4c10934fac2b3a796306d5109c08dda285910ddf9f4f87db43702b",
+              "mediawiki.experiments": "276b6ecdeef197aefcc17dd2cf824738308deedaa7f2d5fae6063037abac86e2",
+              "mediawiki.page.watch.ajax": "bb55af75991dd7e4e818aca507b9fa9eab5f87f3525447e55571ca4404e8d5a3",
+              "mediawiki.storage": "05e9db95aaed229a2362658fd224054dca3f9295d2303825e39c8bd0de124c28",
+              "mobile.startup": "25a869eab164c1fa136b892bc806560ea98f66133f2e8cadbaa1c782059a6435",
+              "mediawiki.searchSuggest": "426c75f64d552864e5ceb7228cfb7daf67dbdc15ae3a361ea9947b9abf84a1d5",
+              "jquery.suggestions": "195f2d623413074330db0955ff736265fc4895190bf39307c6facc916e2a0bbe",
+              "jquery.highlightText": "7a0770258a434cfb123a0b64374a284440e518fafd2992fd7f9af91a9420bc57",
+              "mediawiki.template": "288fadb67a450a57300e716ee838fb249154a5d377538967e2e6bd816c29f11b",
+              "mediawiki.template.mustache": "b2421c69872394785160707b8537fb233c4b9f3f582df6123f2997b6c19268cb",
+              "skins.minerva.categories.styles": "e8eee7620a30cfe6bb2ee209379973a0fe1cd543efb0a2aa1577c2d3de2aa840",
+              "skins.minerva.codex.styles": "5e1a16a38a3ca0a4c7203639c141fa6acd7b67b0ecfdb7a8325c0e2dd7a94c5a"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "manifest": "skins/Mirage/skin.json",
+      "manifest_sha256": "a285be215fd71727690abe0eb40452f132f301ae71ccba16af74296959e43a68",
+      "source_sha256": "0e8bea79989a6096e22fe27089131e2af5fe8060f816f8514e05700d98766467",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 14.02,
+      "log": "skins_Mirage_skin.json.log",
+      "evidence": {
+        "manifest": "skins/Mirage/skin.json",
+        "skin_render": "passed",
+        "skins": [
+          {
+            "name": "mirage",
+            "bytes": 15154,
+            "html_sha256": "a9744564afcb2743aeefe2c04474e5f600ddb3a6d25b34c4852028cc1913ca3f",
+            "resource_modules": {
+              "skins.mirage.styles": "3346e6641a7dc8dedfea8a4e9f39b548d572ee2280700028b2bfb9202e09b75b",
+              "skins.mirage.scripts": "4278d247f5e7e854812e9bdec7aa24d1f82978308bac46e2c6cd44acc7ba2116",
+              "mediawiki.page.ready": "976dc609822adef1a401313eac465cd45882628fbe6796d72ff3e533f10742bb",
+              "mediawiki.api": "864240c85a4032ba5eed9dd7eb4db194dd26a0e75ba9f7ac6849bc33d065786b",
+              "mediawiki.Title": "26560dbe3cf0a4ca731277555b104a6a79c83fc6b9b6b965fcb00a53e15b9183",
+              "mediawiki.String": "724c03179a5e8a5e635e0158b87fecb7199ba7e3d875a3e6a8a6f1c827e6fcef",
+              "mediawiki.util": "0ee7e33a844e960e8cd49794f0b414f32f8c0fa419a16051de08cb829b883038",
+              "jquery.client": "a25472aeb50d26d1a6045b976a49a4ac940a44057d14ce3e31a8f77c58499118",
+              "web2017-polyfills": "ab6225f0e7298ffd8c1985f12205bc3f9f6a3ef5c2768dbb34259aa25a947c80",
+              "mediawiki.jqueryMsg": "96838c94b7955a25aea87ce12b094c5096be05a09685179fbceca4ac8c5710a7",
+              "mediawiki.language": "2ea03f3322af18e2e2668f27d87ebe479a60eb3d2d210e6bc81165214edb911a",
+              "mediawiki.cldr": "60dc9b320b0d351c13a30150931550147b5885a89435a838356494ce9292f216",
+              "mediawiki.libs.pluralruleparser": "0644974cf1265deab9c40590e6ede22fc11b0f42c46973e375072f4d6d024268",
+              "user.options": "66825400b14d88f63962d54bbbafc2b6623d74a1c2b5c13ba405896a62e6dc87",
+              "mediawiki.user": "ac8d46508028bde4c93e28b64be6aa9c56b5e269b05727f361d6812ba985e44b",
+              "mediawiki.cookie": "5e625957e4dc8fb6f282da4098539d025f6bb19a8ccf1cab4850d0ba96659951",
+              "skin.mirage.icons": "60077fbe61338e1bec0a6f73da1567577885c1d2a54af895edaa4bc1570a63fe",
+              "skin.mirage.indicators": "a3d2cd6f2042b1eaf4383627d9ea2ddb92bf53070c2ce135d704dcc07ef040a7"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "manifest": "skins/Modern/skin.json",
+      "manifest_sha256": "e0cd0884818de4f62e0d6d2876b80602b1a726431687712543d737a118586edf",
+      "source_sha256": "9c77607bd91f651cb90a57beb06faba0ca4e0e0054b52fc99f841325a7e6f214",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 18.22,
+      "log": "skins_Modern_skin.json.log",
+      "evidence": {
+        "manifest": "skins/Modern/skin.json",
+        "skin_render": "passed",
+        "skins": [
+          {
+            "name": "modern",
+            "bytes": 7289,
+            "html_sha256": "d71283a63412abe19c08124844e3c7c8735fcc31a443d134312d3e6b991f2e06",
+            "resource_modules": {
+              "skins.modern": "729e14441eace6152551aaa1dd32926fbb36437dca28ef2491246634d2095c05"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "manifest": "skins/Monaco/skin.json",
+      "manifest_sha256": "35361ba00daf5a3efb3284f5970681502a47e448d43fea76ac790ca06817a59f",
+      "source_sha256": "80672a98d746b7c69153420bb54e0f1e3f2bff1904b2c8a963517fb3e0e89309",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 11.62,
+      "log": "skins_Monaco_skin.json.log",
+      "evidence": {
+        "manifest": "skins/Monaco/skin.json",
+        "skin_render": "passed",
+        "skins": [
+          {
+            "name": "monaco",
+            "bytes": 9381,
+            "html_sha256": "42c6a53ca91dd21e5279062d4ea7df551ed5a97b1e4ca8f764c380b9ddb1b8ee",
+            "resource_modules": {
+              "skins.monaco": "c435573db14f57d28af40ea9de2977e74acf7afbc5789038c60dd252ae6cdbab",
+              "skins.monaco.scripts": "8934404336e756446b08053e61ac3dd4f7a9b7d91d7fafa96db1b7d1a5fe4084",
+              "skins.monaco.widget": "ccbcd20d9a03a79b747755ad4761bcbc63dbfa08b100f64e52705d6019183b09"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "manifest": "skins/MonoBook/skin.json",
+      "manifest_sha256": "351cfc2b1a0c2f741947b4a00ea8c0b24472ea50924bd967c41f19ec35be9a4c",
+      "source_sha256": "095c7666e29610f77f51932c6f13bc84b3f78ca5f3b83cf6ecce4e29596da021",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 19.31,
+      "log": "skins_MonoBook_skin.json.log",
+      "evidence": {
+        "manifest": "skins/MonoBook/skin.json",
+        "skin_render": "passed",
+        "skins": [
+          {
+            "name": "monobook",
+            "bytes": 8154,
+            "html_sha256": "962621c11e6a8a58ead677d25b8df8d35816be5b1d188549844dd6c08cdec07e",
+            "resource_modules": {
+              "skins.monobook.styles": "d7c59498967472845259e1e34e3cd82d703b5c57b0c1759aaf9fcf4431efe0a9",
+              "skins.monobook.scripts": "54dcb1830841781c6f90b13f3ad099ba61b0b96b449ff6b48b5ae00697913839",
+              "mediawiki.user": "ac8d46508028bde4c93e28b64be6aa9c56b5e269b05727f361d6812ba985e44b",
+              "mediawiki.api": "864240c85a4032ba5eed9dd7eb4db194dd26a0e75ba9f7ac6849bc33d065786b",
+              "mediawiki.Title": "26560dbe3cf0a4ca731277555b104a6a79c83fc6b9b6b965fcb00a53e15b9183",
+              "mediawiki.String": "724c03179a5e8a5e635e0158b87fecb7199ba7e3d875a3e6a8a6f1c827e6fcef",
+              "mediawiki.util": "0ee7e33a844e960e8cd49794f0b414f32f8c0fa419a16051de08cb829b883038",
+              "jquery.client": "a25472aeb50d26d1a6045b976a49a4ac940a44057d14ce3e31a8f77c58499118",
+              "web2017-polyfills": "ab6225f0e7298ffd8c1985f12205bc3f9f6a3ef5c2768dbb34259aa25a947c80",
+              "mediawiki.jqueryMsg": "96838c94b7955a25aea87ce12b094c5096be05a09685179fbceca4ac8c5710a7",
+              "mediawiki.language": "2ea03f3322af18e2e2668f27d87ebe479a60eb3d2d210e6bc81165214edb911a",
+              "mediawiki.cldr": "60dc9b320b0d351c13a30150931550147b5885a89435a838356494ce9292f216",
+              "mediawiki.libs.pluralruleparser": "0644974cf1265deab9c40590e6ede22fc11b0f42c46973e375072f4d6d024268",
+              "user.options": "66825400b14d88f63962d54bbbafc2b6623d74a1c2b5c13ba405896a62e6dc87",
+              "mediawiki.cookie": "5e625957e4dc8fb6f282da4098539d025f6bb19a8ccf1cab4850d0ba96659951",
+              "oojs-ui.styles.icons-alerts": "bda232c02ec2effe8c69ae8d1db6bc4ad4fd27e90152574bcecd5b9dfc213483"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "manifest": "skins/Nimbus/skin.json",
+      "manifest_sha256": "1bac789fd603c64e5af4c2d10e1f93a30aca602ef17de46e91f90d47fd18e0a0",
+      "source_sha256": "82491dfd935dbfef15f8431060a482859cd069e4e9a4472361d015ef58397f26",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 18.3,
+      "log": "skins_Nimbus_skin.json.log",
+      "evidence": {
+        "manifest": "skins/Nimbus/skin.json",
+        "skin_render": "passed",
+        "skins": [
+          {
+            "name": "nimbus",
+            "bytes": 6425,
+            "html_sha256": "785ab5fc17787d8fad4a7c20afd3e694eb6127e5839d3e0642890b7c036f8bd2",
+            "resource_modules": {
+              "skins.nimbus": "3e38b2f0ea637d3800e2b8bbfa5ca6741cf3b126863f0dc116d162e8cf771f78",
+              "skins.nimbus.menu": "a0728a04673429e657e612c820a5925bf193e101ae0c5018318da907cdf2e982"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "manifest": "skins/Nostalgia/skin.json",
+      "manifest_sha256": "94817ddcc9dd6b6519989bd3a3c56321072218db07fe6fccee9c43d02afb9751",
+      "source_sha256": "ca2497bbc7c5cc8dfb0a23d1b61eb0c789dfc291e6afd0dc4799444f726c6cc8",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 12.74,
+      "log": "skins_Nostalgia_skin.json.log",
+      "evidence": {
+        "manifest": "skins/Nostalgia/skin.json",
+        "skin_render": "passed",
+        "skins": [
+          {
+            "name": "nostalgia",
+            "bytes": 10897,
+            "html_sha256": "a103a61d113c02683a60c94385757de7c26b927be5ce69eef1ecd8de4eac5e95",
+            "resource_modules": {
+              "ext.nostalgia": "756540bb66d49411f78c2a20cb4e3790bbfe825a3470f6cdbb70a32db13d9a4f",
+              "mediawiki.pager.codex": "8c1ef05f074c1c579c56924396408fe6cc6c54081a388d9f9eac15d6717377fb"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "manifest": "skins/Pivot/skin.json",
+      "manifest_sha256": "281e9d3ecab56c481cc733699d4bbcb8dcde2f8d195c4f0c3f691522477b82e3",
+      "source_sha256": "fc0cacaa2e28d93e344d9a326d00435328f12d41e9aa3956c9f8988d9329758f",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 11.7,
+      "log": "skins_Pivot_skin.json.log",
+      "evidence": {
+        "manifest": "skins/Pivot/skin.json",
+        "skin_render": "passed",
+        "skins": [
+          {
+            "name": "pivot",
+            "bytes": 10725,
+            "html_sha256": "6c23432f5cdeb0a8a9d22c0c4f04c856dfbd7336d4b61caf3b9ee776bbebe899",
+            "resource_modules": {
+              "skins.pivot.styles": "be8e1872e88a477ce4c58702873e365d5afed37c7b639b4eb0ca497750e867c1",
+              "skins.pivot.modernizr": "74b8bf5ea32c4e0022d24879bd3ac6744c2a434fc7912f29e2d8e19eeb5b1bb5",
+              "skins.pivot.js": "c47a60fa210689bd81051ece4226bb5508052e05136747380344a2e7a2b23854",
+              "mediawiki.cookie": "5e625957e4dc8fb6f282da4098539d025f6bb19a8ccf1cab4850d0ba96659951"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "manifest": "skins/Refreshed/skin.json",
+      "manifest_sha256": "05bfcc4dd4fddbc29a47923c6138347e7b2fcbf54bfe7c083e659ecc32590602",
+      "source_sha256": "be5a2a36d015f2eea3e6281e7bd6f78ffd26a141cc53e5e2a91ba2c84ef12e49",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 19.76,
+      "log": "skins_Refreshed_skin.json.log",
+      "evidence": {
+        "manifest": "skins/Refreshed/skin.json",
+        "skin_render": "passed",
+        "skins": [
+          {
+            "name": "refreshed",
+            "bytes": 16894,
+            "html_sha256": "113541fe90670e16c20a0d7fd7fe3bd7d7e132628906f1a7874378e9498c86a1",
+            "resource_modules": {
+              "skins.refreshed": "8805a07f10bb2018b28f44c509d6024c75b1d90b388dffc5d3d94077c5af9667",
+              "skins.refreshed.js": "db16ecc7d424e1265579d47ffcbac9240c6ef62a9f5e4f511c462e27d5c98b9e",
+              "mediawiki.api": "864240c85a4032ba5eed9dd7eb4db194dd26a0e75ba9f7ac6849bc33d065786b",
+              "mediawiki.Title": "26560dbe3cf0a4ca731277555b104a6a79c83fc6b9b6b965fcb00a53e15b9183",
+              "mediawiki.String": "724c03179a5e8a5e635e0158b87fecb7199ba7e3d875a3e6a8a6f1c827e6fcef",
+              "mediawiki.util": "0ee7e33a844e960e8cd49794f0b414f32f8c0fa419a16051de08cb829b883038",
+              "jquery.client": "a25472aeb50d26d1a6045b976a49a4ac940a44057d14ce3e31a8f77c58499118",
+              "web2017-polyfills": "ab6225f0e7298ffd8c1985f12205bc3f9f6a3ef5c2768dbb34259aa25a947c80",
+              "mediawiki.jqueryMsg": "96838c94b7955a25aea87ce12b094c5096be05a09685179fbceca4ac8c5710a7",
+              "mediawiki.language": "2ea03f3322af18e2e2668f27d87ebe479a60eb3d2d210e6bc81165214edb911a",
+              "mediawiki.cldr": "60dc9b320b0d351c13a30150931550147b5885a89435a838356494ce9292f216",
+              "mediawiki.libs.pluralruleparser": "0644974cf1265deab9c40590e6ede22fc11b0f42c46973e375072f4d6d024268",
+              "user.options": "66825400b14d88f63962d54bbbafc2b6623d74a1c2b5c13ba405896a62e6dc87"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "manifest": "skins/Splash/skin.json",
+      "manifest_sha256": "fbec6d30fe63337b69f80d5433f421b7af9b26cfac09fe86d6ea2e2a1c43c9af",
+      "source_sha256": "3f60168830f210f786aff90a3244e09254dab95cbfe1e9a2558aa3cea6503030",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 14.63,
+      "log": "skins_Splash_skin.json.log",
+      "evidence": {
+        "manifest": "skins/Splash/skin.json",
+        "skin_render": "passed",
+        "skins": [
+          {
+            "name": "splash",
+            "bytes": 8545,
+            "html_sha256": "401a58a299201ed23f2e15b1c7f095879572026e9872d45a308f0ec87f5e2f49",
+            "resource_modules": {
+              "skins.splash": "6300eb92788e0c6aa7f6f11adbc6576698098d332979c982be545a9088acb275",
+              "skins.splash.js": "442f352325da46e2f5726cc134ac84937dd09415799e09d65069624fa1cfe1ae"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "manifest": "skins/Timeless/skin.json",
+      "manifest_sha256": "79e2a610af3274db14608f4310da26c30dbe5fee0747724ad120908018c22a12",
+      "source_sha256": "2bfc244ab6bed343a70ed8e8e10dff87878738bdf790b0cd092f6de74320d67d",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 19.16,
+      "log": "skins_Timeless_skin.json.log",
+      "evidence": {
+        "manifest": "skins/Timeless/skin.json",
+        "skin_render": "passed",
+        "skins": [
+          {
+            "name": "timeless",
+            "bytes": 10088,
+            "html_sha256": "0ae2fd2ef40a7a5121713fe83bcc389104b534054d37f3c49e57c4137db6902c",
+            "resource_modules": {
+              "skins.timeless": "558c05b9752b5b1a039ee46dbbde72eadf46d62f97f479b549a77940a30a9d02",
+              "skins.timeless.js": "25e76b07141cc0712b67ebf2ef72433f2089f7c91d620953f90022f049ef9586"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "manifest": "skins/Truglass/skin.json",
+      "manifest_sha256": "5064c0bf8838ea22ff3c0b41b46fd563a58bd66021df1321adebc540e31a33d5",
+      "source_sha256": "9f114747c1171fba3bbf9b9c79468abee3935c7a3b0905528929d7a869dc1ff0",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 14.88,
+      "log": "skins_Truglass_skin.json.log",
+      "evidence": {
+        "manifest": "skins/Truglass/skin.json",
+        "skin_render": "passed",
+        "skins": [
+          {
+            "name": "truglass",
+            "bytes": 6904,
+            "html_sha256": "c309ea497c14c2e982ebe336642dd9774b4ebd690a03d0600634067c4bbf5668",
+            "resource_modules": {
+              "skins.truglass": "bca22b7e622861b1549441f8a052798e7fb83b7684878f53dcd4d6a48b0aed3c"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "manifest": "skins/Tweeki/skin.json",
+      "manifest_sha256": "7e271007f5af13528bfa810c7b742c37924f0b528f88009cd2fe5ab1dd3c818e",
+      "source_sha256": "2c77e0bea282bf1ea45306553ef0c93b4049f17bc2632ccf58b6d27b7db08ef9",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 18.73,
+      "log": "skins_Tweeki_skin.json.log",
+      "evidence": {
+        "manifest": "skins/Tweeki/skin.json",
+        "skin_render": "passed",
+        "skins": [
+          {
+            "name": "tweeki",
+            "bytes": 5080,
+            "html_sha256": "cb97ef1e960e327088c07b465a7841f7780478dabf9b194514905d786d11ce5c",
+            "resource_modules": {
+              "skins.tweeki.messages": "dfbb26f91d9b3980f49601c862c8e17cf9c8016970deee0a2bad300716d47234",
+              "skins.tweeki.styles": "232357a9464c19e194c1b85eccbd4ad39b1e7c901a1f67a4982be2fe24223b87",
+              "skins.tweeki.custom.styles": "ca1c9585be4e97f4df77e6f1255dc340833f1a196fa2882395f3439b3454cdbd",
+              "skins.tweeki.externallinks.styles": "438f170a69b0892a47bf94e3d2345dfb952647be1db2bfe56a2901d368ff9322",
+              "skins.tweeki.mediawiki.legacy.styles": "3b2a172c0e32b7346f34c7ae79670cf536fe80e18daa8662d083c49026693835",
+              "skins.tweeki.mediawiki.styles": "26d83b160de666e640cf2d14d9c456f6ba288bc9fee609c12fce3a7f514cd41f",
+              "skins.tweeki.awesome.styles": "a5bc22e429ae2555763f364f39d8683b1dc1b833eb51c4f0850a2b459eb284ef",
+              "skins.tweeki.scripts": "1abd00e1266e457d62caf10722d12a098051942a9cd2f207fbf4d32b71a8c459",
+              "mediawiki.jqueryMsg": "96838c94b7955a25aea87ce12b094c5096be05a09685179fbceca4ac8c5710a7",
+              "mediawiki.String": "724c03179a5e8a5e635e0158b87fecb7199ba7e3d875a3e6a8a6f1c827e6fcef",
+              "mediawiki.Title": "26560dbe3cf0a4ca731277555b104a6a79c83fc6b9b6b965fcb00a53e15b9183",
+              "mediawiki.util": "0ee7e33a844e960e8cd49794f0b414f32f8c0fa419a16051de08cb829b883038",
+              "jquery.client": "a25472aeb50d26d1a6045b976a49a4ac940a44057d14ce3e31a8f77c58499118",
+              "web2017-polyfills": "ab6225f0e7298ffd8c1985f12205bc3f9f6a3ef5c2768dbb34259aa25a947c80",
+              "mediawiki.language": "2ea03f3322af18e2e2668f27d87ebe479a60eb3d2d210e6bc81165214edb911a",
+              "mediawiki.cldr": "60dc9b320b0d351c13a30150931550147b5885a89435a838356494ce9292f216",
+              "mediawiki.libs.pluralruleparser": "0644974cf1265deab9c40590e6ede22fc11b0f42c46973e375072f4d6d024268",
+              "user.options": "66825400b14d88f63962d54bbbafc2b6623d74a1c2b5c13ba405896a62e6dc87",
+              "skins.tweeki.custom.scripts": "6282421baf9018269c0859ab3fa36b06078702941fac6d4f660c0734e069487a"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "manifest": "skins/Vector/skin.json",
+      "manifest_sha256": "7200284ebd040dca865940d1b64a6730bb653a790b5e43836e4362dced29ce8b",
+      "source_sha256": "d270308fb0a567c48184f41add342698ecf59206871af3a78022045341b97bfe",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 38.68,
+      "log": "skins_Vector_skin.json.log",
+      "evidence": {
+        "manifest": "skins/Vector/skin.json",
+        "skin_render": "passed",
+        "skins": [
+          {
+            "name": "vector-2022",
+            "bytes": 25385,
+            "html_sha256": "a253a989058d92cd50e51d0bbeeccc711af6e52f37c1539cfcb65f1ca51193ed",
+            "resource_modules": {
+              "skins.vector.search.codex.styles": "f44bb0d670396748509a46efffb7b10be5e30e8c6611360b3c70f5db942eb8b2",
+              "skins.vector.search": "705af3d29e61d9d681f2e1da0f8b269b22d3f6ca7c1ba66cdfb43d800faf6c3b",
+              "mediawiki.skinning.typeaheadSearch": "d7aec1bfc13c845ab7db20ba7b5cef023f68146e71a0275234eecb0d37b54669",
+              "mediawiki.codex.typeaheadSearch": "f250e1088a4619f9eb52832c179396f576eb83da5b6dfe01b72fe7a30dae6361",
+              "vue": "a897d1835b0ecebf26c0c1d07304030d3d255d71d27ecac69346f452ba8472c6",
+              "mediawiki.page.ready": "d2901337b85ad6c3d09a1363889accb82a5875728fa83f93a0422e0cc50425f7",
+              "mediawiki.api": "864240c85a4032ba5eed9dd7eb4db194dd26a0e75ba9f7ac6849bc33d065786b",
+              "mediawiki.Title": "26560dbe3cf0a4ca731277555b104a6a79c83fc6b9b6b965fcb00a53e15b9183",
+              "mediawiki.String": "724c03179a5e8a5e635e0158b87fecb7199ba7e3d875a3e6a8a6f1c827e6fcef",
+              "mediawiki.util": "150f70995670e7a4a03f8addabed31df42d7b7de912784b1461416cfa303f753",
+              "jquery.client": "a25472aeb50d26d1a6045b976a49a4ac940a44057d14ce3e31a8f77c58499118",
+              "web2017-polyfills": "ab6225f0e7298ffd8c1985f12205bc3f9f6a3ef5c2768dbb34259aa25a947c80",
+              "mediawiki.jqueryMsg": "96838c94b7955a25aea87ce12b094c5096be05a09685179fbceca4ac8c5710a7",
+              "mediawiki.language": "2ea03f3322af18e2e2668f27d87ebe479a60eb3d2d210e6bc81165214edb911a",
+              "mediawiki.cldr": "60dc9b320b0d351c13a30150931550147b5885a89435a838356494ce9292f216",
+              "mediawiki.libs.pluralruleparser": "0644974cf1265deab9c40590e6ede22fc11b0f42c46973e375072f4d6d024268",
+              "user.options": "66825400b14d88f63962d54bbbafc2b6623d74a1c2b5c13ba405896a62e6dc87",
+              "mediawiki.user": "ac8d46508028bde4c93e28b64be6aa9c56b5e269b05727f361d6812ba985e44b",
+              "mediawiki.cookie": "5e625957e4dc8fb6f282da4098539d025f6bb19a8ccf1cab4850d0ba96659951",
+              "skins.vector.styles.legacy": "3998b1dcdf052d035e9952d7a2b86793dc23e8edd6dd7f9ff67df48484c2db9d",
+              "skins.vector.styles": "54d610c6cc906adbc3fbbfe2fa45b9f52e5ac69423949d6aa2ae12b42de00d25",
+              "skins.vector.icons.js": "7dd1a12879a0fd773d5aecf8e245677fdef3c4e9ac3c26609d9118e7bfb7ab23",
+              "skins.vector.icons": "207a08441f2b86e1c0eb3e5f09232f12c53d1c1ae82d177a3d6865af393ba7e5",
+              "skins.vector.clientPreferences": "fba23fa196c6dfddcd7474454f44f52772002eb1b18b040ccafa731188bb2bbc",
+              "skins.vector.js": "a0a960405c73f91a7449ba658ff01e9594d8d0089a0ed2c5172f9d25261af28c",
+              "mediawiki.experiments": "276b6ecdeef197aefcc17dd2cf824738308deedaa7f2d5fae6063037abac86e2",
+              "mediawiki.page.watch.ajax": "bb55af75991dd7e4e818aca507b9fa9eab5f87f3525447e55571ca4404e8d5a3",
+              "mediawiki.storage": "05e9db95aaed229a2362658fd224054dca3f9295d2303825e39c8bd0de124c28",
+              "skins.vector.legacy.js": "a60861aaeea193b7a200f998dbbedb822f51fbf8b0f50f8073177083d1069ecf"
+            }
+          },
+          {
+            "name": "vector",
+            "bytes": 10180,
+            "html_sha256": "2039ad728f5a613871475442d743c68f187d66a49cbc82f791dceb56f232e720",
+            "resource_modules": {
+              "skins.vector.search.codex.styles": "f44bb0d670396748509a46efffb7b10be5e30e8c6611360b3c70f5db942eb8b2",
+              "skins.vector.search": "705af3d29e61d9d681f2e1da0f8b269b22d3f6ca7c1ba66cdfb43d800faf6c3b",
+              "mediawiki.skinning.typeaheadSearch": "d7aec1bfc13c845ab7db20ba7b5cef023f68146e71a0275234eecb0d37b54669",
+              "mediawiki.codex.typeaheadSearch": "f250e1088a4619f9eb52832c179396f576eb83da5b6dfe01b72fe7a30dae6361",
+              "vue": "a897d1835b0ecebf26c0c1d07304030d3d255d71d27ecac69346f452ba8472c6",
+              "mediawiki.page.ready": "6b04f6ce85d102c34049457cedb9e34fddc3edd2525612d628757fbaa054f98b",
+              "mediawiki.api": "864240c85a4032ba5eed9dd7eb4db194dd26a0e75ba9f7ac6849bc33d065786b",
+              "mediawiki.Title": "26560dbe3cf0a4ca731277555b104a6a79c83fc6b9b6b965fcb00a53e15b9183",
+              "mediawiki.String": "724c03179a5e8a5e635e0158b87fecb7199ba7e3d875a3e6a8a6f1c827e6fcef",
+              "mediawiki.util": "150f70995670e7a4a03f8addabed31df42d7b7de912784b1461416cfa303f753",
+              "jquery.client": "a25472aeb50d26d1a6045b976a49a4ac940a44057d14ce3e31a8f77c58499118",
+              "web2017-polyfills": "ab6225f0e7298ffd8c1985f12205bc3f9f6a3ef5c2768dbb34259aa25a947c80",
+              "mediawiki.jqueryMsg": "96838c94b7955a25aea87ce12b094c5096be05a09685179fbceca4ac8c5710a7",
+              "mediawiki.language": "2ea03f3322af18e2e2668f27d87ebe479a60eb3d2d210e6bc81165214edb911a",
+              "mediawiki.cldr": "60dc9b320b0d351c13a30150931550147b5885a89435a838356494ce9292f216",
+              "mediawiki.libs.pluralruleparser": "0644974cf1265deab9c40590e6ede22fc11b0f42c46973e375072f4d6d024268",
+              "user.options": "66825400b14d88f63962d54bbbafc2b6623d74a1c2b5c13ba405896a62e6dc87",
+              "mediawiki.user": "ac8d46508028bde4c93e28b64be6aa9c56b5e269b05727f361d6812ba985e44b",
+              "mediawiki.cookie": "5e625957e4dc8fb6f282da4098539d025f6bb19a8ccf1cab4850d0ba96659951",
+              "skins.vector.styles.legacy": "9a99cea37625afa8163a142acdc7df72db29c3606964a89c2078dbd1185af000",
+              "skins.vector.styles": "a838517bebc0cf47626a295504e10f7dbb6ae8b1abcd8d3c207c1ea526279519",
+              "skins.vector.icons.js": "43990c69fa292baaa6a7bc2fa116a2a1ea9b1544585021b0914eb37e2e56340f",
+              "skins.vector.icons": "63b2cdcb24360b05cfc11e7c409bc87bf9fcb5c1c196c3a5ff7e56e05f790687",
+              "skins.vector.clientPreferences": "fba23fa196c6dfddcd7474454f44f52772002eb1b18b040ccafa731188bb2bbc",
+              "skins.vector.js": "a0a960405c73f91a7449ba658ff01e9594d8d0089a0ed2c5172f9d25261af28c",
+              "mediawiki.experiments": "276b6ecdeef197aefcc17dd2cf824738308deedaa7f2d5fae6063037abac86e2",
+              "mediawiki.page.watch.ajax": "bb55af75991dd7e4e818aca507b9fa9eab5f87f3525447e55571ca4404e8d5a3",
+              "mediawiki.storage": "05e9db95aaed229a2362658fd224054dca3f9295d2303825e39c8bd0de124c28",
+              "skins.vector.legacy.js": "a60861aaeea193b7a200f998dbbedb822f51fbf8b0f50f8073177083d1069ecf"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "manifest": "skins/WMAU/skin.json",
+      "manifest_sha256": "0cb5c2fdec31011d5cce6b1e1b96780070f56b4fd3a5ab97bd0d3c5616a51953",
+      "source_sha256": "1f3dbff39c7d6af8a842a3cbf4084785a56ed1e6ed7b49ecd90f085a0d894e25",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 10.75,
+      "log": "skins_WMAU_skin.json.log",
+      "evidence": {
+        "manifest": "skins/WMAU/skin.json",
+        "skin_render": "passed",
+        "skins": [
+          {
+            "name": "wmau",
+            "bytes": 3347,
+            "html_sha256": "19f6ce00a04241faddb2bca4258cb7a51405eeca6593dd271dcbc2bc5934f08d",
+            "resource_modules": {
+              "skins.wmau": "b0463e91115ad812b600ef1e2f83ad54e61bdff88fbdf0272cb0fccd68315ec2",
+              "skins.wmau.js": "0bbd3ca67c54e310dec1f6cf03934fa5d3633d62302c66d327692843dc472dc1"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "manifest": "skins/apex/skin.json",
+      "manifest_sha256": "d3ec0ec267f8ad31583b6e6cb8edbe81cf4af745336043d9d6cbab41444c5097",
+      "source_sha256": "4a5fb2ba9d41b8e7b25d63ef38e24ffcd9b38c4a29efcc60198b168bcafd8b16",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 30.59,
+      "log": "skins_apex_skin.json.log",
+      "evidence": {
+        "manifest": "skins/apex/skin.json",
+        "skin_render": "passed",
+        "skins": [
+          {
+            "name": "apex",
+            "bytes": 7300,
+            "html_sha256": "ea1ef5ed9a6d43b9dc15fefe8b1e3d407217ffdc000e5fb4ce8bdce4253e7b03",
+            "resource_modules": {
+              "skins.apex": "0cdf57a2b50f7f12033ca1b1dfd2b94f05cde49035021deea81d17d2ff5feefc",
+              "skins.apex.styles": "f8aedd5e8ffd7a87db7ad6cd3344040e012869fc0969ee6b05d2eecb6c16bf5b"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "manifest": "skins/chameleon/skin.json",
+      "manifest_sha256": "615d36598e7c8f79ec8ed83bdb669262b7b8af5fb85b15a40de075ab5f53ad37",
+      "source_sha256": "485054697d2bcdfa36102ca22c66aa330ef42a65856b0d3c5924eebb625ceb3c",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 28.8,
+      "log": "skins_chameleon_skin.json.log",
+      "evidence": {
+        "manifest": "skins/chameleon/skin.json",
+        "skin_render": "passed",
+        "skins": [
+          {
+            "name": "chameleon",
+            "bytes": 9910,
+            "html_sha256": "04a7c040ab63881bb65bc3886fedbd47f23da7118fa4708550ade8999afc4658",
+            "resource_modules": {
+              "ext.bootstrap.scripts": "a4554606c32bc292bd5bca69ef14b36d6e0335f95b58db3d794b12c41c69c604"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "manifest": "skins/erudite/skin.json",
+      "manifest_sha256": "49f1079adf1e89cb342facacfa439b766534ba29e526f2c87b8de79123acb49c",
+      "source_sha256": "c1af8e7594925da470309e28ba5022bda0b4c33afbda2326e87affe0e50b5f13",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 15.31,
+      "log": "skins_erudite_skin.json.log",
+      "evidence": {
+        "manifest": "skins/erudite/skin.json",
+        "skin_render": "passed",
+        "skins": [
+          {
+            "name": "erudite",
+            "bytes": 6426,
+            "html_sha256": "6c43306819e25036bddb1e0c2f55c7f65f469b29ad5ec09fee93086c79c09e4b",
+            "resource_modules": {
+              "skins.erudite": "3dfe5561b44d5d5169df65f7ef851456912bc846a5b8fbb790cc246f0c0bf3e4"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "manifest": "skins/snapwikiskin/skin.json",
+      "manifest_sha256": "1a5a6a81b3d5723d6466210a1e2135dcd08ffd3d43f5161205b68a7087a85d5d",
+      "source_sha256": "aef05855eb88a9993ffb6a9a35aa5093dd742e41f8e5b4e04544f2714bdf74bb",
+      "status": "failed",
+      "returncode": 1,
+      "seconds": 10.4,
+      "log": "skins_snapwikiskin_skin.json.log",
+      "evidence": null
+    }
+  ]
+}

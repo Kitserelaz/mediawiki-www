@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": [
+			"Seb35",
+			"Verdy p"
+		]
+	},
+	"sfs-desc": "Permet de générer un champ de sélection dans un formulaire, dont les options proposées proviennent d’une requête"
+}

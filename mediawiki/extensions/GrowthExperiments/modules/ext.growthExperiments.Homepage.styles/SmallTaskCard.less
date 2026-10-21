@@ -1,0 +1,245 @@
+@import 'mediawiki.skin.variables.less';
+@import 'mediawiki.mixins';
+@import '../utils/variables.less';
+@import '../utils/mixins.less';
+
+.mw-ge-small-task-card {
+	display: flex;
+	width: 100%;
+	box-sizing: border-box;
+	padding: 8px;
+	background-color: @background-color-base;
+	box-shadow: 0 1px 0 0 @border-color-subtle;
+
+	&:hover {
+		// Browser default is to underline links on hover, which looks weird when the
+		// whole card is a link.
+		text-decoration: none;
+	}
+
+	&-image {
+		width: 88px;
+		height: 88px;
+		flex-grow: 0;
+		flex-shrink: 0;
+		// background-image is set dynamically
+		background-repeat: no-repeat;
+		background-position: center;
+		background-size: cover;
+
+		&-placeholder {
+			/* @embed */
+			background: url( ../../images/suggestededits/placeholder-image.svg ) no-repeat center/40px, @mediumBackgroundColor;
+
+			.mw-ge-tasktype-image-recommendation & {
+				/* @embed */
+				background: url( ../../images/addimage/placeholder-with-question-mark-ltr.svg ) no-repeat center/40px, @mediumBackgroundColor;
+
+				html:lang( he ) & {
+					// Use LTR asset for Hebrew since it contains a question mark
+					/* @noflip */
+					background: url( ../../images/addimage/placeholder-with-question-mark-ltr.svg ) no-repeat center/40px, @mediumBackgroundColor;
+				}
+			}
+
+			.mw-ge-tasktype-section-image-recommendation & {
+				/* @embed */
+				background: url( ../../images/addsectionimage/placeholder-with-question-mark-ltr.svg ) no-repeat center/40px @mediumBackgroundColor;
+
+				html:lang( he ) & {
+					// Use LTR asset for Hebrew since it contains a question mark
+					/* @noflip */
+					background: url( ../../images/addsectionimage/placeholder-with-question-mark-ltr.svg ) no-repeat center/40px @mediumBackgroundColor;
+				}
+			}
+		}
+
+		&-skeleton {
+			.loading-animation( 400ms );
+
+			&::before {
+				border-radius: @border-radius-base @border-radius-base 0 0;
+			}
+		}
+	}
+
+	&-text-container {
+		display: flex;
+		flex-direction: column;
+		flex-grow: 1;
+		justify-items: flex-start;
+		overflow: hidden;
+		padding: 0 0 0 16px;
+
+		.mw-ge-small-task-card-glue:first-of-type {
+			display: none;
+		}
+	}
+
+	&-title {
+		font-weight: bold;
+		margin-bottom: 4px;
+		color: @color-base;
+
+		&:active {
+			// FIXME per https://phabricator.wikimedia.org/T307637#7909619 this color
+			// is not defined yet
+			color: @color-base;
+		}
+
+		&.skeleton {
+			.loading-animation (600ms);
+
+			&::before {
+				content: '\00a0';
+			}
+		}
+	}
+
+	&-description {
+		text-overflow: ellipsis;
+		overflow: hidden;
+		color: @color-subtle;
+
+		&.skeleton {
+			.loading-animation (800ms);
+
+			&::before {
+				content: '\00a0';
+			}
+		}
+	}
+
+	&-glue {
+		flex-grow: 1;
+	}
+
+	&-metadata-container {
+		display: flex;
+		justify-content: flex-end;
+	}
+
+	&-pageviews {
+		flex: 1 0 0;
+		box-sizing: border-box;
+		justify-self: flex-start;
+		padding-right: 5px;
+		color: @color-subtle;
+		text-overflow: ellipsis;
+		overflow: hidden;
+		white-space: nowrap;
+
+		.oo-ui-iconWidget {
+			margin-right: 8px;
+			opacity: @opacity-icon-subtle;
+		}
+
+		&.skeleton {
+			.loading-animation (1200ms);
+
+			&::before {
+				content: '\00a0';
+			}
+		}
+	}
+
+	&-tasktype {
+		display: flex;
+		align-items: center;
+		overflow: hidden;
+
+		&-difficulty-easy {
+			color: @easyColor;
+		}
+
+		&-difficulty-medium {
+			color: @mediumColor;
+		}
+
+		&-difficulty-hard {
+			color: @hardColor;
+		}
+
+		&-taskname {
+			display: inline-block;
+			text-overflow: ellipsis;
+			overflow: hidden;
+			white-space: nowrap;
+		}
+
+		.oo-ui-iconWidget {
+			margin-right: 8px;
+			// Undoing parent's text-align:right which causes OOUI's invisible icon to be visible
+			text-align: initial;
+			// OOUI icons has 20px min width & height.
+			min-width: 16px;
+			min-height: unset;
+			width: 16px;
+		}
+	}
+
+	.mw-ge-small-task-card-desktop & {
+		&-title {
+			.paragraph-ellipsis( @lines: 2, @parentFontSize: 14px, @targetFontSize: 14px, @targetLineHeight: 20px );
+
+			&--with-description {
+				display: block;
+				.text-ellipsis();
+			}
+		}
+
+		&-description {
+			.text-ellipsis();
+			line-height: 1.4;
+			font-size: (13/14 * 1em);
+		}
+
+		&-container {
+			font-size: (12.4/14 * 1em);
+		}
+
+		&-footer {
+			border-top: @border-subtle;
+			background-color: @background-color-growth-subtle;
+
+			// need win over OOUI-s four-class selector in specificity, but works out fine here
+			.oo-ui-buttonElement-button {
+				padding: 11px 20px 13px;
+
+				.oo-ui-labelElement-label {
+					line-height: (16/14 * 1em);
+					font-size: (14/14 * 1em);
+				}
+			}
+		}
+	}
+
+	.mw-ge-small-task-card-mobile & {
+		&-title {
+			.paragraph-ellipsis( @lines: 2, @parentFontSize: 16px, @targetFontSize: 16px, @targetLineHeight: 22px );
+
+			&--with-description {
+				display: block;
+				.text-ellipsis();
+			}
+		}
+
+		&-description {
+			.text-ellipsis();
+			font-size: (13/16 * 1em);
+		}
+
+		&-container {
+			padding-top: 0;
+		}
+
+		&-image {
+			width: 72px;
+			height: 72px;
+		}
+
+		&-tasktype {
+			font-size: (13/16 * 1em);
+		}
+	}
+}

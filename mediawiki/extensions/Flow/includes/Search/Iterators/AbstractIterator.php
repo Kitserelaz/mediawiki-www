@@ -47,9 +47,6 @@ abstract class AbstractIterator implements Iterator {
 	 */
 	protected $key;
 
-	/**
-	 * @param DbFactory $dbFactory
-	 */
 	public function __construct( DbFactory $dbFactory ) {
 		$this->dbr = $dbFactory->getDB( DB_REPLICA );
 		$this->conditions = [ 'workflow_wiki' => WikiMap::getCurrentWikiId() ];
@@ -81,34 +78,6 @@ abstract class AbstractIterator implements Iterator {
 		unset( $this->conditions['workflow_namespace'] );
 		if ( $namespace !== null ) {
 			$this->conditions['workflow_namespace'] = $namespace;
-		}
-	}
-
-	/**
-	 * Define where to start iterating (inclusive)
-	 *
-	 * @param UUID|null $revId
-	 */
-	public function setFrom( ?UUID $revId = null ) {
-		$this->results = null;
-
-		unset( $this->conditions[0] );
-		if ( $revId !== null ) {
-			$this->conditions[0] = $this->dbr->expr( 'rev_id', '>=', $revId->getBinary() );
-		}
-	}
-
-	/**
-	 * Define where to stop iterating (exclusive)
-	 *
-	 * @param UUID|null $revId
-	 */
-	public function setTo( ?UUID $revId = null ) {
-		$this->results = null;
-
-		unset( $this->conditions[1] );
-		if ( $revId !== null ) {
-			$this->conditions[1] = $this->dbr->expr( 'rev_id', '<', $revId->getBinary() );
 		}
 	}
 

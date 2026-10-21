@@ -11,7 +11,7 @@
 	"license-name": "GPL-2.0-or-later",
 	"type": "other",
 	"requires": {
-		"MediaWiki": ">= 1.43"
+		"MediaWiki": ">= 1.46"
 	},
 	"namespaces": [
 		{
@@ -32,11 +32,15 @@
 		}
 	],
 	"DefaultUserOptions": {
-		"eventlogging-display-web": 0,
 		"eventlogging-display-console": 0
 	},
 	"ContentHandlers": {
-		"JsonSchema": "MediaWiki\\Extension\\EventLogging\\JsonSchemaContentHandler"
+		"JsonSchema": {
+			"class": "MediaWiki\\Extension\\EventLogging\\JsonSchemaContentHandler",
+			"optional_services": [
+				"SyntaxHighlight.SyntaxHighlight"
+			]
+		}
 	},
 	"ExtensionFunctions": [
 		"MediaWiki\\Extension\\EventLogging\\Hooks::onSetup"
@@ -77,20 +81,12 @@
 					"name": "ext.eventLogging/data.json",
 					"callback": "MediaWiki\\Extension\\EventLogging\\Hooks::getModuleData"
 				},
-				"lib/metrics-platform/ContextUtils.js",
-				"lib/metrics-platform/ContextController.js",
-				"lib/metrics-platform/CurationController.js",
-				"lib/metrics-platform/DefaultEventSubmitter.js",
-				"lib/metrics-platform/Instrument.js",
-				"lib/metrics-platform/MetricsClient.js",
-				"lib/metrics-platform/SamplingController.js",
-				"lib/metrics-platform/StreamConfigUtils.js",
-				"ext.eventLogging/MediaWikiMetricsClientIntegration.js",
 				"ext.eventLogging/EventSubmitter.js"
 			],
 			"dependencies": [
 				"mediawiki.user",
-				"user.options"
+				"user.options",
+				"ext.eventLogging.metricsPlatform"
 			]
 		},
 		"ext.eventLogging.debug": {
@@ -111,6 +107,22 @@
 		},
 		"ext.eventLogging.jsonSchema.styles": {
 			"styles": "modules/ext.eventLogging.jsonSchema.styles/jsonSchema.css"
+		},
+		"ext.eventLogging.metricsPlatform": {
+			"localBasePath": "modules",
+			"remoteExtPath": "EventLogging/modules",
+			"packageFiles": [
+				"ext.eventLogging.metricsPlatform/index.js",
+				"ext.eventLogging.metricsPlatform/MediaWikiMetricsClientIntegration.js",
+				"ext.eventLogging.metricsPlatform/MediaWikiMetricsClientLogger.js",
+				"lib/metrics-platform/Context.js",
+				"lib/metrics-platform/ContextController.js",
+				"lib/metrics-platform/DefaultEventSubmitter.js",
+				"lib/metrics-platform/Instrument.js",
+				"lib/metrics-platform/MetricsClient.js",
+				"lib/metrics-platform/SamplingController.js",
+				"lib/metrics-platform/StreamConfig.js"
+			]
 		}
 	},
 	"ForeignResourcesDir": "modules/lib",
@@ -127,26 +139,23 @@
 			"tests/qunit/ext.eventLogging/id.test.js",
 			"tests/qunit/ext.eventLogging/log.test.js",
 			"tests/qunit/ext.eventLogging/stream.test.js",
-			"tests/qunit/ext.eventLogging/utils.test.js",
-			"tests/qunit/ext.eventLogging/MediaWikiMetricsClientIntegration.test.js",
-			"tests/qunit/ext.eventLogging.debug/debug.test.js"
+			"tests/qunit/ext.eventLogging/utils.test.js"
 		],
 		"dependencies": [
-			"ext.eventLogging",
-			"ext.eventLogging.debug"
+			"ext.eventLogging"
 		]
 	},
 	"Hooks": {
-		"CanonicalNamespaces": "main",
 		"BeforePageDisplay": [
 			"main",
 			"jsonschema"
 		],
 		"GetPreferences": "main",
-		"CodeEditorGetPageLanguage": "MediaWiki\\Extension\\EventLogging\\JsonSchemaHooks::onCodeEditorGetPageLanguage",
+		"CodeEditorGetPageLanguage": "jsonschema.codemirror",
 		"EditFilterMergedContent": "jsonschema",
 		"MovePageIsValidMove": "jsonschema",
-		"ApiMain::moduleManager": "jsonschema"
+		"ApiMain::moduleManager": "jsonschema",
+		"CanonicalNamespaces": "jsonschema"
 	},
 	"HookHandlers": {
 		"main": {
@@ -156,7 +165,16 @@
 			]
 		},
 		"jsonschema": {
-			"class": "MediaWiki\\Extension\\EventLogging\\JsonSchemaHooks"
+			"class": "MediaWiki\\Extension\\EventLogging\\JsonSchemaHooks",
+			"services": [
+				"EventLogging.JsonSchemaHooksHelper"
+			]
+		},
+		"jsonschema.codemirror": {
+			"class": "MediaWiki\\Extension\\EventLogging\\JsonSchemaCodeEditorHooks",
+			"services": [
+				"EventLogging.JsonSchemaHooksHelper"
+			]
 		}
 	},
 	"config": {

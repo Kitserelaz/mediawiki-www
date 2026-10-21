@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Toliño"
+		]
+	},
+	"eventstreamconfig-desc": "Expón a configuración do fluxo de eventos nun extremo da API. Tamén se pode usar para expoñer configuracións mediante ResourceLoader",
+	"apihelp-streamconfigs-summary": "Expón a configuración do fluxo de eventos. Devolve só format=json con formatversion=2.",
+	"apihelp-streamconfigs-param-streams": "Lista de fluxos dos que obter a configuración",
+	"apihelp-streamconfigs-param-all_settings": "Inclúe todas as opcións de configuración nos resultados da configuración do fluxo. Obsoleto desde a versión 1.41. Todas as opcións están incluídas por defecto.",
+	"apihelp-streamconfigs-param-constraints": "Filtrar os resultados para as entradas de configuración do fluxo que teñan estas opcións",
+	"apihelp-streamconfigs-example-1": "Obter as opcións de cada fluxo para unha lista de fluxos",
+	"apihelp-streamconfigs-example-2": "Obter as opcións de cada fluxo para os fluxos con todas as opcións",
+	"apihelp-streamconfigs-example-3": "Obter as opcións de cada fluxo para os fluxos que teñan estas restricións"
+}

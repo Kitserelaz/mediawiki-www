@@ -10,7 +10,8 @@ namespace MediaWiki\Extension\Math\WikiTexVC\MMLnodes;
  */
 class MMLmstyle extends MMLbase {
 
-	public function __construct( string $texclass = "", array $attributes = [] ) {
-		parent::__construct( "mstyle", $texclass, $attributes );
+	/** @inheritDoc */
+	public function __construct( string $texclass = "", array $attributes = [], ...$children ) {
+		parent::__construct( "mstyle", $texclass, $attributes, ...$children );
 	}
 }

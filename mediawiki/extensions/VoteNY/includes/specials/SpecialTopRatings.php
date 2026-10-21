@@ -170,14 +170,16 @@ class SpecialTopRatings extends IncludableSpecialPage {
 		$where = [ 'vote_page_id <> 0' ];
 
 		if ( $categoryName && $namespace !== null ) {
-			$tables = [ 'Vote', 'page', 'categorylinks' ];
+			$tables = [ 'Vote', 'page', 'categorylinks', 'linktarget' ];
 			$where = [
 				'vote_page_id <> 0',
-				'cl_to' => str_replace( ' ', '_', $categoryName ),
+				'lt_title' => str_replace( ' ', '_', $categoryName ),
+				'lt_namespace' => NS_CATEGORY,
 				'page_namespace' => $namespace
 			];
 			$joinConds = [
 				'categorylinks' => [ 'INNER JOIN', 'cl_from = page_id' ],
+				'linktarget' => [ 'INNER JOIN', 'cl_target_id = lt_id' ],
 				'page' => [ 'INNER JOIN', 'page_id = vote_page_id' ]
 			];
 		}

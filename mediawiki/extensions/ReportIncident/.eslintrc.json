@@ -1,0 +1,15 @@
+{
+	"root": true,
+	"extends": [
+		"wikimedia/jquery",
+		"wikimedia/client-es6",
+		"wikimedia/mediawiki"
+	],
+	"overrides": [
+		{
+			"files": [
+				"jest.setup.js"
+			]
+		}
+	]
+}

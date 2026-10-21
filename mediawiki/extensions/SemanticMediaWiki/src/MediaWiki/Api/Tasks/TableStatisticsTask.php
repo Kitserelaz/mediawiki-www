@@ -1,0 +1,68 @@
+<?php
+
+namespace SMW\MediaWiki\Api\Tasks;
+
+use SMW\Store;
+use Wikimedia\ObjectCache\BagOStuff;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 3.1
+ *
+ * @author mwjames
+ */
+class TableStatisticsTask extends Task {
+
+	const CACHE_KEY = 'table-statistics';
+
+	private ?array $cacheUsage = null;
+
+	/**
+	 * @since 3.1
+	 */
+	public function __construct(
+		private readonly Store $store,
+		private readonly BagOStuff $cache,
+	) {
+	}
+
+	/**
+	 * @since 3.1
+	 */
+	public function setCacheUsage( array $cacheUsage ): void {
+		$this->cacheUsage = $cacheUsage;
+	}
+
+	/**
+	 * @since 3.1
+	 */
+	public function process( array $parameters ): array {
+		$cacheTTL = 3600;
+
+		if ( isset( $this->cacheUsage['api.table.statistics'] ) ) {
+			$cacheTTL = $this->cacheUsage['api.table.statistics'];
+		}
+
+		$key = self::makeCacheKey( self::CACHE_KEY );
+
+		// Guard against repeated API calls (or fuzzing)
+		if ( $cacheTTL !== false ) {
+			$result = $this->cache->get( $key );
+			if ( $result !== false ) {
+				return $result + [ 'isFromCache' => true, 'cacheTTL' => $cacheTTL ];
+			}
+		}
+
+		$tableStatisticsLookup = $this->store->service( 'TableStatisticsLookup' );
+
+		$result = [
+			'list' => $tableStatisticsLookup->getStats(),
+			'time' => date( 'Y-m-d H:i:s' )
+		];
+
+		$this->cache->set( $key, $result, $cacheTTL );
+
+		return $result;
+	}
+
+}

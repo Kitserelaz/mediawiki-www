@@ -17,31 +17,33 @@ class CommentUtilsTest extends MediaWikiUnitTestCase {
 	/**
 	 * @dataProvider provideLinearWalk
 	 */
-	public function testLinearWalk( string $name, string $htmlPath, string $expectedPath ) {
-		$html = static::getHtml( $htmlPath );
+	public function testLinearWalk( string $name, string $dom, string $expected ) {
+		$html = static::getHtml( $dom );
 		$doc = static::createDocument( $html );
-		$expected = static::getJson( $expectedPath );
+		$expectedArray = static::getJson( $expected );
 
 		$actual = [];
 		CommentUtils::linearWalk( $doc, static function ( $event, $node ) use ( &$actual ) {
-			$actual[] = "$event {$node->nodeName}({$node->nodeType})";
+			// Different versions of PHP can give different cases for nodeName (T415942)
+			$actual[] = $event . ' ' . strtolower( $node->nodeName );
 		} );
 
 		$actualBackwards = [];
 		CommentUtils::linearWalkBackwards( $doc, static function ( $event, $node ) use ( &$actualBackwards ) {
-			$actualBackwards[] = "$event {$node->nodeName}({$node->nodeType})";
+			$actualBackwards[] = $event . ' ' . strtolower( $node->nodeName );
 		} );
 
 		// Optionally write updated content to the JSON files
 		if ( getenv( 'DISCUSSIONTOOLS_OVERWRITE_TESTS' ) ) {
-			static::overwriteJsonFile( $expectedPath, $actual );
+			static::overwriteJsonFile( $expected, $actual );
 		}
 
-		static::assertEquals( $expected, $actual, $name );
+		static::assertEquals( $expectedArray, $actual, $name );
 
-		$expectedBackwards = array_map( static function ( $a ) {
-			return ( substr( $a, 0, 5 ) === 'enter' ? 'leave' : 'enter' ) . substr( $a, 5 );
-		}, array_reverse( $expected ) );
+		$expectedBackwards = array_map(
+			static fn ( $a ) => ( $a[0] === 'e' ? 'leave' : 'enter' ) . substr( $a, 5 ),
+			array_reverse( $expectedArray )
+		);
 		static::assertEquals( $expectedBackwards, $actualBackwards, $name . ' (backwards)' );
 	}
 

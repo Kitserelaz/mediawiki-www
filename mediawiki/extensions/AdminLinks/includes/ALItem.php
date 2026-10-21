@@ -1,6 +1,8 @@
 <?php
 
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Parser\Sanitizer;
+use MediaWiki\Title\Title;
 
 /**
  * A single 'item' in the AdminLinks page, most likely representing a link
@@ -8,13 +10,17 @@ use MediaWiki\MediaWikiServices;
  * is not displayed and is only used for organizational purposes.
  */
 class ALItem {
-	/** @var string */
-	public $text;
-	/** @var string|null */
-	public $label;
+	public ?string $text;
+	public ?string $label;
 
-	static function newFromPage( $page_name_or_title, $desc = null, $query = [] ) {
-		$item = new ALItem();
+	/**
+	 * @param string|Title $page_name_or_title
+	 * @param string|null $desc
+	 * @param array $query
+	 * @return self|null
+	 */
+	public static function newFromPage( $page_name_or_title, ?string $desc = null, array $query = [] ): ?self {
+		$item = new self();
 		$item->label = $desc;
 		if ( $page_name_or_title instanceof Title ) {
 			$title = $page_name_or_title;
@@ -29,8 +35,8 @@ class ALItem {
 		return $item;
 	}
 
-	static function newFromSpecialPage( $page_name ) {
-		$item = new ALItem();
+	public static function newFromSpecialPage( string $page_name ): self {
+		$item = new self();
 		$item->label = $page_name;
 
 		$page = MediaWikiServices::getInstance()
@@ -38,26 +44,29 @@ class ALItem {
 			->getPage( $page_name );
 
 		if ( $page ) {
+			// SpecialPage::getDescription() returns Message since 1.45 and strings before
+			$desc = $page->getDescription();
+			// @phan-suppress-next-line SecurityCheck-DoubleEscaped
 			$item->text = MediaWikiServices::getInstance()->getLinkRenderer()
-				->makeKnownLink( $page->getPageTitle(), $page->getDescription() );
+				->makeKnownLink( $page->getPageTitle(), $desc instanceof Message ? $desc->text() : $desc );
 		}
 		return $item;
 	}
 
-	static function newFromEditLink( $page_name, $desc ) {
-		$item = new ALItem();
+	public static function newFromEditLink( string $page_name, string $desc ): self {
+		$item = new self();
 		$item->label = $page_name;
 		$title = Title::makeTitleSafe( NS_MEDIAWIKI, $page_name );
 		$edit_link = $title->getFullURL( 'action=edit' );
-		$item->text = "<a href=\"$edit_link\">" . htmlspecialchars( $desc ) . "</a>";
+		$item->text = "<a href=\"$edit_link\">" . htmlspecialchars( $desc ) . '</a>';
 		return $item;
 	}
 
-	static function newFromExternalLink( $url, $label ) {
-		$item = new ALItem();
+	public static function newFromExternalLink( string $url, string $label ): self {
+		$item = new self();
 		$item->label = $label;
-		$item->text = "<a class=\"external text\" rel=\"nofollow\" href=\"" .
-			Sanitizer::encodeAttribute( $url ) . "\">" . htmlspecialchars( $label ) . "</a>";
+		$item->text = '<a class="external text" rel="nofollow" href="' .
+			Sanitizer::encodeAttribute( $url ) . '">' . htmlspecialchars( $label ) . '</a>';
 		return $item;
 	}
 }

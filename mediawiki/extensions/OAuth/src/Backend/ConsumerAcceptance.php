@@ -3,28 +3,17 @@
 namespace MediaWiki\Extension\OAuth\Backend;
 
 use MediaWiki\Context\IContextSource;
+use MediaWiki\Extension\OAuth\Control\ConsumerSubmitControl;
 use MediaWiki\Json\FormatJson;
 use MediaWiki\MediaWikiServices;
-use Wikimedia\Rdbms\IDatabase;
+use MediaWiki\Message\Message;
 use Wikimedia\Rdbms\IDBAccessObject;
+use Wikimedia\Rdbms\IReadableDatabase;
 
 /**
  * (c) Aaron Schulz 2013, GPL
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 
 /**
@@ -61,7 +50,7 @@ class ConsumerAcceptance extends MWOAuthDAO {
 	/** @var string */
 	protected $oauth_version;
 
-	protected static function getSchema() {
+	protected static function getSchema(): array {
 		return [
 			'table'               => 'oauth_accepted_consumer',
 			'fieldColumnMap'      => [
@@ -80,7 +69,7 @@ class ConsumerAcceptance extends MWOAuthDAO {
 		];
 	}
 
-	protected static function getFieldPermissionChecks() {
+	protected static function getFieldPermissionChecks(): array {
 		return [
 			'wiki'          => 'userCanSee',
 			'userId'        => 'userCanSee',
@@ -94,12 +83,12 @@ class ConsumerAcceptance extends MWOAuthDAO {
 	}
 
 	/**
-	 * @param IDatabase $db
+	 * @param IReadableDatabase $db
 	 * @param string $token Access token
 	 * @param int $flags ConsumerAcceptance::READ_* bitfield
 	 * @return ConsumerAcceptance|bool
 	 */
-	public static function newFromToken( IDatabase $db, $token, $flags = 0 ) {
+	public static function newFromToken( IReadableDatabase $db, $token, $flags = 0 ) {
 		$queryBuilder = $db->newSelectQueryBuilder()
 			->select( array_values( static::getFieldColumnMap() ) )
 			->from( static::getTable() )
@@ -120,7 +109,7 @@ class ConsumerAcceptance extends MWOAuthDAO {
 	}
 
 	/**
-	 * @param IDatabase $db
+	 * @param IReadableDatabase $db
 	 * @param int $userId of user who authorized (central wiki's id)
 	 * @param Consumer $consumer
 	 * @param string $wiki wiki associated with the acceptance
@@ -129,7 +118,7 @@ class ConsumerAcceptance extends MWOAuthDAO {
 	 * @return ConsumerAcceptance|bool
 	 */
 	public static function newFromUserConsumerWiki(
-		IDatabase $db, $userId, $consumer,
+		IReadableDatabase $db, $userId, $consumer,
 		$wiki, $flags = 0, $oauthVersion = Consumer::OAUTH_VERSION_1
 	) {
 		$queryBuilder = $db->newSelectQueryBuilder()
@@ -237,7 +226,11 @@ class ConsumerAcceptance extends MWOAuthDAO {
 		$this->grants = (array)$this->grants;
 	}
 
-	protected function encodeRow( IDatabase $db, $row ) {
+	/**
+	 * @inheritDoc
+	 * @throws MWOAuthException
+	 */
+	protected function encodeRow( IReadableDatabase $db, $row ) {
 		if ( (int)$row['oaac_user_id'] === 0 ) {
 			throw new MWOAuthException( 'mwoauth-consumer-access-no-user', [
 				'consumer_id' => $row['oaac_consumer_id'],
@@ -251,12 +244,19 @@ class ConsumerAcceptance extends MWOAuthDAO {
 			}
 		}
 
-		$row['oaac_grants'] = FormatJson::encode( $row['oaac_grants'] );
+		$grants = FormatJson::encode( $row['oaac_grants'] );
+
+		if ( strlen( $grants ) > ConsumerSubmitControl::BLOB_SIZE ) {
+			throw new MWOAuthException( 'mwoauth-consumer-access-grants-too-long' );
+		}
+
+		$row['oaac_grants'] = $grants;
 		$row['oaac_accepted'] = $db->timestamp( $row['oaac_accepted'] );
 		return $row;
 	}
 
-	protected function decodeRow( IDatabase $db, $row ) {
+	/** @inheritDoc */
+	protected function decodeRow( IReadableDatabase $db, $row ) {
 		$row['oaac_grants'] = FormatJson::decode( $row['oaac_grants'], true );
 		$row['oaac_accepted'] = wfTimestamp( TS_MW, $row['oaac_accepted'] );
 
@@ -271,6 +271,11 @@ class ConsumerAcceptance extends MWOAuthDAO {
 		return $row;
 	}
 
+	/**
+	 * @param string $name
+	 * @param IContextSource $context
+	 * @return Message|true
+	 */
 	protected function userCanSee( $name, IContextSource $context ) {
 		$centralUserId = Utils::getCentralIdFromLocalUser( $context->getUser() );
 		$permissionManager = MediaWikiServices::getInstance()->getPermissionManager();
@@ -284,6 +289,11 @@ class ConsumerAcceptance extends MWOAuthDAO {
 		}
 	}
 
+	/**
+	 * @param string $name
+	 * @param IContextSource $context
+	 * @return Message|true
+	 */
 	protected function userCanSeePrivate( $name, IContextSource $context ) {
 		$permissionManager = MediaWikiServices::getInstance()->getPermissionManager();
 
@@ -294,6 +304,11 @@ class ConsumerAcceptance extends MWOAuthDAO {
 		}
 	}
 
+	/**
+	 * @param string $name
+	 * @param IContextSource $context
+	 * @return Message|true
+	 */
 	protected function userCanSeeSecret( $name, IContextSource $context ) {
 		return $context->msg( 'mwoauth-field-private' );
 	}

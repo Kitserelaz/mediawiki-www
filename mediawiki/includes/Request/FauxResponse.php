@@ -80,6 +80,11 @@ class FauxResponse extends WebResponse {
 		return $this->headers[$key] ?? null;
 	}
 
+	/** @return string[] All set headers */
+	public function getHeaders(): array {
+		return $this->headers ?? [];
+	}
+
 	/**
 	 * Get the HTTP response code, null if not set
 	 *
@@ -117,9 +122,7 @@ class FauxResponse extends WebResponse {
 		$cookieSecure = $cookieConfig->get( MainConfigNames::CookieSecure );
 		$cookieExpiration = $cookieConfig->get( MainConfigNames::CookieExpiration );
 		$cookieHttpOnly = $cookieConfig->get( MainConfigNames::CookieHttpOnly );
-		$options = array_filter( $options, static function ( $a ) {
-			return $a !== null;
-		} ) + [
+		$options = array_filter( $options, static fn ( $a ) => $a !== null ) + [
 			'prefix' => $cookiePrefix,
 			'domain' => $cookieDomain,
 			'path' => $cookiePath,

@@ -1,0 +1,20 @@
+{
+	"@metadata": {
+		"authors": [
+			"H78c67c",
+			"Winston Sung",
+			"Yueman"
+		]
+	},
+	"unreviewedpages": "未複審嘅版",
+	"unreviewedpages-legend": "列示未複審嘅內容頁",
+	"unreviewedpages-category": "分類:",
+	"unreviewedpages-diff": "更改",
+	"unreviewedpages-unwatched": "(未睇)",
+	"unreviewedpages-watched": "（$1位活躍{{PLURAL:$1|用戶}}監視緊）",
+	"unreviewedpages-list": "呢一版列示出重未複審或視察過嘅文章修訂。",
+	"unreviewedpages-none": "呢度現時無版合乎呢啲條件",
+	"unreviewedpages-hours": "（$1{{PLURAL:$1|個鐘頭}}）",
+	"unreviewedpages-days": "（$1 {{PLURAL:$1|日}}）",
+	"unreviewedpages-recent": "（唔夠1個鐘）"
+}

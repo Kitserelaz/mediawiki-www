@@ -16,7 +16,6 @@ use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Title\Title;
 use MediaWiki\User\UserFactory;
 use Wikimedia\ParamValidator\ParamValidator;
-use Wikimedia\Parsoid\Core\ResourceLimitExceededException;
 
 /**
  * API module to send DiscussionTools comment thanks notifications
@@ -24,35 +23,25 @@ use Wikimedia\Parsoid\Core\ResourceLimitExceededException;
  * @ingroup API
  * @ingroup Extensions
  */
-
 class ApiDiscussionToolsThank extends ApiThank {
 
 	use ApiDiscussionToolsTrait;
 	use ApiParsoidTrait;
 
-	private RevisionLookup $revisionLookup;
-	private UserFactory $userFactory;
-
-	/**
-	 * @inheritDoc
-	 */
 	public function __construct(
 		ApiMain $main,
-		$action,
+		string $action,
 		PermissionManager $permissionManager,
 		LogStore $storage,
-		RevisionLookup $revisionLookup,
-		UserFactory $userFactory
+		private readonly RevisionLookup $revisionLookup,
+		private readonly UserFactory $userFactory,
 	) {
 		parent::__construct( $main, $action, $permissionManager, $storage );
-		$this->revisionLookup = $revisionLookup;
-		$this->userFactory = $userFactory;
 	}
 
 	/**
 	 * @inheritDoc
 	 * @throws ApiUsageException
-	 * @throws ResourceLimitExceededException
 	 */
 	public function execute() {
 		$user = $this->getUser();
@@ -80,7 +69,11 @@ class ApiDiscussionToolsThank extends ApiThank {
 				'nosuchrevid'
 			);
 		}
-		$threadItemSet = HookUtils::parseRevisionParsoidHtml( $revision, __METHOD__ );
+		$status = HookUtils::parseRevisionParsoidHtml( $revision, __METHOD__ );
+		if ( !$status->isOK() ) {
+			$this->dieStatus( $status );
+		}
+		$threadItemSet = $status->getValueOrThrow();
 
 		$comment = $threadItemSet->findCommentById( $commentId );
 

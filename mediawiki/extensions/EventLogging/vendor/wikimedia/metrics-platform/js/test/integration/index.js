@@ -1,0 +1,38 @@
+'use strict';
+
+/* eslint-disable camelcase */
+
+const MetricsClient = require( './../../src/ExternalMetricsClient' );
+const Integration = require( './NodeIntegration' );
+const Logger = require( './NodeLogger' );
+const NodeEventSubmitter = require( '../../src/NodeEventSubmitter' );
+
+// eslint-disable-next-line no-unused-vars
+const Instrument = require( '../../src/Instrument' );
+
+const integration = new Integration( 'http://host.docker.internal:8080' );
+const logger = new Logger();
+const eventSubmitter = new NodeEventSubmitter( 'http://host.docker.internal:8192' );
+
+const metricsClient = new MetricsClient( integration, logger, eventSubmitter );
+
+setTimeout(
+	() => {
+		/** @type {Instrument} */
+		const i = metricsClient.newInstrument(
+			'test.metrics_platform.interactions',
+			'/analytics/product_metrics/web/base/1.3.0'
+		);
+
+		i.submitInteraction( 'init' );
+		i.submitClick( {
+			element_id: 'ca-edit',
+			element_friendly_name: 'edit'
+		} );
+		i.submitClick( {
+			element_id: 'ca-talk',
+			element_friendly_name: 'talk'
+		} );
+	},
+	1000
+);

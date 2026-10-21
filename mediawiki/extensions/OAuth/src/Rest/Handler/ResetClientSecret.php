@@ -7,7 +7,7 @@ use MediaWiki\Extension\OAuth\Backend\Consumer;
 use MediaWiki\Extension\OAuth\Backend\Utils;
 use MediaWiki\Extension\OAuth\Control\ConsumerAccessControl;
 use MediaWiki\Rest\LocalizedHttpException;
-use MWRestrictions;
+use MediaWiki\Utils\MWRestrictions;
 use Wikimedia\Message\MessageValue;
 use Wikimedia\ParamValidator\ParamValidator;
 
@@ -33,7 +33,7 @@ class ResetClientSecret extends AbstractClientHandler {
 		$params['client_key'] = $this->getRequest()->getPathParam( 'client_key' );
 
 		$requestContext = RequestContext::getMain();
-		$dbr = Utils::getCentralDB( DB_REPLICA );
+		$dbr = Utils::getOAuthDB( DB_REPLICA );
 		$clientAccess = ConsumerAccessControl::wrap(
 			Consumer::newFromKey( $dbr, $params['consumerKey'] ), $requestContext
 		);

@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"DiegoAmbrocio",
+			"No se"
+		]
+	},
+	"perpagelanguage-desc": "Establece el idioma de la interfaz para coincidir con el idioma del contenido de la página.",
+	"perpagelanguage-label": "Establecer idioma"
+}

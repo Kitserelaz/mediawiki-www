@@ -1,0 +1,56 @@
+{
+	"name": "professional-wiki/network",
+	"type": "mediawiki-extension",
+	"description": "MediaWiki extension for adding interactive network visualizations to your wiki pages",
+	"keywords": [
+		"MediaWiki",
+		"Network",
+		"Visualization",
+		"Chart",
+		"visjs",
+		"interactive",
+		"dynamic",
+		"graph",
+		"force-directed graph",
+		"pages",
+		"links",
+		"outgoing links",
+		"incoming links",
+		"what links here"
+	],
+	"homepage": "https://professional.wiki/en/extension/network",
+	"license": "GPL-2.0-or-later",
+	"authors": [
+		{
+			"name": "Professional Wiki",
+			"email": "info@professional.wiki",
+			"homepage": "https://professional.wiki",
+			"role": "Creator"
+		},
+		{
+			"name": "Jeroen De Dauw",
+			"email": "jeroendedauw@gmail.com",
+			"homepage": "https://www.entropywins.wtf",
+			"role": "Creator and lead developer"
+		}
+	],
+	"support": {
+		"issues": "https://github.com/ProfessionalWiki/Network/issues",
+		"source": "https://github.com/ProfessionalWiki/Network"
+	},
+	"require": {
+		"php": ">=7.4",
+		"composer/installers": "^2|^1.0.1"
+	},
+	"require-dev": {
+		"vimeo/psalm": "^5.17.0",
+		"phpstan/phpstan": "^2.0.2",
+		"mediawiki/mediawiki-codesniffer": "45.0.0"
+	},
+	"config": {
+		"allow-plugins": {
+			"composer/installers": true,
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		}
+	}
+}

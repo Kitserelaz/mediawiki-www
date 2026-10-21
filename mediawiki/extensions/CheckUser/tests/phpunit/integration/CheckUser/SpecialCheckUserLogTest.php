@@ -1,17 +1,19 @@
 <?php
 
-namespace MediaWiki\CheckUser\Tests\Integration\CheckUser;
+namespace MediaWiki\Extension\CheckUser\Tests\Integration\CheckUser;
 
-use MediaWiki\CheckUser\CheckUser\SpecialCheckUserLog;
-use MediaWiki\CheckUser\Services\CheckUserLogService;
 use MediaWiki\Context\RequestContext;
+use MediaWiki\Exception\PermissionsError;
+use MediaWiki\Exception\UserBlockedError;
+use MediaWiki\Extension\CheckUser\CheckUser\SpecialCheckUserLog;
+use MediaWiki\Extension\CheckUser\Services\CheckUserLogService;
+use MediaWiki\Extension\CheckUser\Tests\Integration\SuggestedInvestigations\SuggestedInvestigationsTestTrait;
 use MediaWiki\Request\FauxRequest;
+use MediaWiki\Tests\Specials\SpecialPageTestBase;
 use MediaWiki\User\User;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityValue;
-use SpecialPageTestBase;
 use TestUser;
-use UserBlockedError;
 use Wikimedia\IPUtils;
 use Wikimedia\Timestamp\ConvertibleTimestamp;
 
@@ -21,10 +23,12 @@ use Wikimedia\Timestamp\ConvertibleTimestamp;
  * @group CheckUser
  * @group Database
  *
- * @covers \MediaWiki\CheckUser\CheckUser\SpecialCheckUserLog
- * @covers \MediaWiki\CheckUser\CheckUser\Pagers\CheckUserLogPager
+ * @covers \MediaWiki\Extension\CheckUser\CheckUser\SpecialCheckUserLog
+ * @covers \MediaWiki\Extension\CheckUser\CheckUser\Pagers\CheckUserLogPager
  */
 class SpecialCheckUserLogTest extends SpecialPageTestBase {
+
+	use SuggestedInvestigationsTestTrait;
 
 	private static User $testCheckUser;
 	private static User $blockedCheckUser;
@@ -88,6 +92,11 @@ class SpecialCheckUserLogTest extends SpecialPageTestBase {
 			'No user groups' => [ '', false ],
 			'checkuser-log right only' => [ 'checkuser-log', true ],
 		];
+	}
+
+	public function testLoadSpecialPageWhenMissingRequiredRight() {
+		$this->expectException( PermissionsError::class );
+		$this->executeSpecialPage();
 	}
 
 	/**
@@ -207,6 +216,57 @@ class SpecialCheckUserLogTest extends SpecialPageTestBase {
 		$this->assertStringContainsString( 'mw-checkuser-log-highlight-entry', $html );
 	}
 
+	/** @dataProvider provideLinkToSuggestedInvestigationsPresent */
+	public function testLinkToSuggestedInvestigationsPresent(
+		bool $enabled,
+		bool $hidden,
+		bool $linkExpected
+	) {
+		if ( $enabled ) {
+			$this->enableSuggestedInvestigations();
+		} else {
+			$this->disableSuggestedInvestigations();
+		}
+		if ( $hidden ) {
+			$this->hideSuggestedInvestigations();
+		} else {
+			$this->unhideSuggestedInvestigations();
+		}
+
+		[ $html ] = $this->executeSpecialPage( '', new FauxRequest(), null, $this->getTestCheckUser(), true );
+
+		if ( $linkExpected ) {
+			$this->assertStringContainsString( '(checkuser-show-suggestedinvestigations', $html );
+		} else {
+			$this->assertStringNotContainsString( '(checkuser-show-suggestedinvestigations', $html );
+		}
+	}
+
+	public static function provideLinkToSuggestedInvestigationsPresent() {
+		return [
+			'Feature disabled, not hidden' => [
+				'enabled' => false,
+				'hidden' => false,
+				'linkExpected' => false,
+			],
+			'Feature enabled, not hidden' => [
+				'enabled' => true,
+				'hidden' => false,
+				'linkExpected' => true,
+			],
+			'Feature disabled, hidden' => [
+				'enabled' => false,
+				'hidden' => true,
+				'linkExpected' => false,
+			],
+			'Feature enabled, hidden' => [
+				'enabled' => true,
+				'hidden' => true,
+				'linkExpected' => false,
+			],
+		];
+	}
+
 	public function addDBDataOnce() {
 		// Create two test users that will be referenced in the tests. These are constructed here to avoid creating the
 		// users on each test.
@@ -281,7 +341,12 @@ class SpecialCheckUserLogTest extends SpecialPageTestBase {
 			$target = $data['target'];
 			$targetType = IPUtils::isIPAddress( $target->getName() ) ? 'ip' : 'user';
 			$checkUserLogService->addLogEntry(
-				$data['initiator'], $data['logType'], $targetType, $target->getName(), "Check $i", $target->getId()
+				$data['initiator'],
+				$data['logType'],
+				$targetType,
+				$target->getName(),
+				"Check $i",
+				$target->getId()
 			);
 		}
 		ConvertibleTimestamp::setFakeTime( false );

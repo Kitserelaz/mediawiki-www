@@ -1,0 +1,136 @@
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 3.75kB 0.0s done
+#1 DONE 0.1s
+
+#2 resolve image config for docker-image://docker.io/docker/dockerfile:1.4
+#2 DONE 1.0s
+
+#3 docker-image://docker.io/docker/dockerfile:1.4@sha256:9ba7531bd80fb0a858632727cf7a112fbfd19b17e94c4e84ced81e24ef1a0dbc
+#3 resolve docker.io/docker/dockerfile:1.4@sha256:9ba7531bd80fb0a858632727cf7a112fbfd19b17e94c4e84ced81e24ef1a0dbc 0.0s done
+#3 CACHED
+
+#4 [internal] load .dockerignore
+#4 transferring context: 735B 0.0s done
+#4 DONE 0.0s
+
+#5 [internal] load metadata for docker.io/library/php:8.4.26-fpm-bookworm@sha256:6bfef8e416977aa41f48e3e42a40c1e08050d24e4a938c6edb421400bff24601
+#5 DONE 0.1s
+
+#6 [internal] load metadata for docker.io/library/caddy:2.10.2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
+#6 DONE 0.1s
+
+#7 [web 1/3] FROM docker.io/library/caddy:2.10.2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
+#7 resolve docker.io/library/caddy:2.10.2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d 0.1s done
+#7 DONE 0.1s
+
+#8 [php  1/21] FROM docker.io/library/php:8.4.26-fpm-bookworm@sha256:6bfef8e416977aa41f48e3e42a40c1e08050d24e4a938c6edb421400bff24601
+#8 resolve docker.io/library/php:8.4.26-fpm-bookworm@sha256:6bfef8e416977aa41f48e3e42a40c1e08050d24e4a938c6edb421400bff24601 0.1s done
+#8 DONE 0.1s
+
+#9 [internal] load build context
+#9 transferring context: 55.86MB 4.6s
+#9 transferring context: 116.97MB 9.6s
+#9 transferring context: 179.44MB 14.7s
+#9 transferring context: 233.03MB 19.7s
+#9 transferring context: 275.44MB 24.9s
+#9 transferring context: 367.86MB 30.0s
+#9 transferring context: 450.64MB 35.1s
+#9 transferring context: 498.71MB 40.2s
+#9 transferring context: 554.57MB 45.2s
+#9 transferring context: 625.03MB 50.3s
+#9 transferring context: 683.31MB 55.5s
+#9 transferring context: 700.98MB 60.6s
+#9 transferring context: 763.38MB 65.6s
+#9 transferring context: 877.02MB 70.7s
+#9 transferring context: 963.80MB 75.9s
+#9 transferring context: 1.02GB 81.0s
+#9 transferring context: 1.10GB 86.2s
+#9 transferring context: 1.18GB 88.8s done
+#9 DONE 91.7s
+
+#10 [php  6/21] COPY --link mediawiki/vendor/ ./vendor/
+#10 CACHED
+
+#11 [php 10/21] COPY --link mediawiki/languages/ ./languages/
+#11 CACHED
+
+#12 [php 13/21] COPY --link mediawiki/sql/ ./sql/
+#12 CACHED
+
+#13 [php 20/21] COPY --link docker/mediawiki/private.php ./PrivateSettings.php
+#13 CACHED
+
+#14 [php 11/21] COPY --link mediawiki/includes/ ./includes/
+#14 CACHED
+
+#15 [php 19/21] COPY --link docker/mediawiki/ ./docker/mediawiki/
+#15 CACHED
+
+#16 [php 12/21] COPY --link mediawiki/maintenance/ ./maintenance/
+#16 CACHED
+
+#17 [php 14/21] COPY --link mediawiki/ErrorPages/ ./ErrorPages/
+#17 CACHED
+
+#18 [php 15/21] COPY --link mediawiki/docs/ ./docs/
+#18 CACHED
+
+#19 [php  3/21] RUN apt-get update && apt-get install -y --no-install-recommends     libicu-dev libonig-dev libxml2-dev libzip-dev libpng-dev libjpeg62-turbo-dev     libfreetype6-dev libgmp-dev libldap2-dev libmemcached-dev zlib1g-dev libssl-dev     imagemagick ffmpeg lua5.1 zip unzip diffutils fonts-freefont-ttf     librsvg2-bin ghostscript graphviz ploticus curl ca-certificates mariadb-client tini     && docker-php-ext-configure gd --with-freetype --with-jpeg     && docker-php-ext-install -j"$(nproc)" intl mbstring mysqli pdo_mysql gd zip gmp bcmath ldap exif calendar pcntl sockets opcache     && pecl install redis-6.2.0 memcached-3.3.0     && docker-php-ext-enable redis memcached     && rm -rf /var/lib/apt/lists/* /tmp/pear
+#19 CACHED
+
+#20 [php  5/21] WORKDIR /var/www/mediawiki
+#20 CACHED
+
+#21 [php  9/21] COPY --link mediawiki/resources/ ./resources/
+#21 CACHED
+
+#22 [php  4/21] RUN apt-get update && apt-get install -y --no-install-recommends poppler-utils djvulibre-bin libtiff-tools python3 python3-pygments && rm -rf /var/lib/apt/lists/*
+#22 CACHED
+
+#23 [php 18/21] COPY --link docker/mediawiki/ /opt/farm/
+#23 CACHED
+
+#24 [php  7/21] COPY --link mediawiki/extensions/ ./extensions/
+#24 CACHED
+
+#25 [php  8/21] COPY --link mediawiki/skins/ ./skins/
+#25 CACHED
+
+#26 [php 17/21] COPY --link mediawiki/composer.json mediawiki/composer.local.json mediawiki/composer.lock mediawiki/README.md mediawiki/INSTALL mediawiki/UPGRADE mediawiki/FAQ mediawiki/COPYING mediawiki/CREDITS mediawiki/HISTORY mediawiki/SECURITY mediawiki/RELEASE-NOTES-1.46 ./
+#26 CACHED
+
+#27 [php  2/21] RUN printf 'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/%s/ bookworm main\ndeb [check-valid-until=no] https://snapshot.debian.org/archive/debian/%s/ bookworm-updates main\ndeb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/%s/ bookworm-security main\n' "20261015T000000Z" "20261015T000000Z" "20261015T000000Z" > /etc/apt/sources.list     && rm -f /etc/apt/sources.list.d/debian.sources
+#27 CACHED
+
+#28 [php 16/21] COPY --link mediawiki/*.php ./
+#28 CACHED
+
+#29 [php 21/21] RUN mkdir -p images cw_cache cache /var/www/dumps /var/log/mediawiki     && chown -R www-data:www-data images cw_cache cache /var/www/dumps /var/log/mediawiki     && chmod +x /opt/farm/entrypoint.sh     && printf 'upload_max_filesize=100M\npost_max_size=110M\nmemory_limit=512M\nexpose_php=Off\n' > /usr/local/etc/php/conf.d/farm.ini
+#29 CACHED
+
+#30 [assets 1/1] RUN python3 /opt/farm/export-assets.py
+#30 DONE 59.1s
+
+#7 [web 1/3] FROM docker.io/library/caddy:2.10.2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
+#7 CACHED
+
+#31 [web 2/3] COPY --link --from=assets /opt/public/ /var/www/mediawiki/
+#31 DONE 37.6s
+
+#32 [web 3/3] COPY --link --from=php /var/www/mediawiki/index.php /var/www/mediawiki/api.php /var/www/mediawiki/load.php /var/www/mediawiki/rest.php /var/www/mediawiki/img_auth.php /var/www/mediawiki/thumb.php /var/www/mediawiki/thumb_handler.php /var/www/mediawiki/opensearch_desc.php /var/www/mediawiki/
+#32 DONE 0.0s
+
+#33 exporting to image
+#33 exporting layers
+#33 exporting layers 29.8s done
+#33 exporting manifest sha256:2aba05a4d5b883fe5689ff7849a4c3fbaf26b81f01387c33983708e14d97d1c0 done
+#33 exporting config sha256:c43ddf7d3db71f7c8571aa713b635c6f1ad2913d18bbdf3eebd8ffe63e4dbd5b done
+#33 exporting attestation manifest sha256:88d7b1d9c7227e2c70f83a3034c47d209858d0f12027d275900efca761a3095f 0.0s done
+#33 exporting manifest list sha256:041fa67c731a881fc2d5152f83f7558275711f0cdade11e4fcd5d4d650364a4d done
+#33 naming to docker.io/library/cloudwiki-web:upgrade-clean-20261018-amd64 done
+#33 DONE 29.9s
+
+#34 resolving provenance for metadata file
+#34 DONE 0.2s

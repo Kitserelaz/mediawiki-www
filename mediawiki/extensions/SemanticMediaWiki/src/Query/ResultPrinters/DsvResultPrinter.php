@@ -1,0 +1,190 @@
+<?php
+
+namespace SMW\Query\ResultPrinters;
+
+use MediaWiki\Parser\Sanitizer;
+use SMW\DataValues\URIValue;
+use SMW\Query\QueryResult;
+use SMW\Query\Result\ResultArray;
+
+/**
+ * Result printer to print results in UNIX-style DSV (delimiter separated value)
+ * format.
+ *
+ * @license GPL-2.0-or-later
+ * @since 1.6
+ *
+ * @author Jeroen De Dauw < jeroendedauw@gmail.com >
+ */
+class DsvResultPrinter extends FileExportPrinter {
+
+	/**
+	 * @see ResultPrinter::getName
+	 *
+	 * {@inheritDoc}
+	 */
+	public function getName() {
+		return wfMessage( 'smw_printername_dsv' )->text();
+	}
+
+	/**
+	 * @see FileExportPrinter::getMimeType
+	 *
+	 * @since 1.8
+	 *
+	 * {@inheritDoc}
+	 */
+	public function getMimeType( QueryResult $queryResult ): string {
+		return 'text/dsv';
+	}
+
+	/**
+	 * @see FileExportPrinter::getMimeType
+	 *
+	 * @since 1.8
+	 *
+	 * {@inheritDoc}
+	 */
+	public function getFileName( QueryResult $queryResult ): string {
+		if ( $this->params['filename'] === '' ) {
+			return 'result.dsv';
+		}
+
+		if ( substr( $this->params['filename'], -4 ) === '.dsv' ) {
+			return str_replace( ' ', '_', $this->params['filename'] );
+		}
+
+		return str_replace( ' ', '_', $this->params['filename'] . '.dsv' );
+	}
+
+	/**
+	 * @see ResultPrinter::getParamDefinitions
+	 *
+	 * @since 1.8
+	 *
+	 * {@inheritDoc}
+	 */
+	public function getParamDefinitions( array $definitions ): array {
+		$params = parent::getParamDefinitions( $definitions );
+
+		$params['searchlabel']->setDefault( wfMessage( 'smw_dsv_link' )->text() );
+
+		$params['limit']->setDefault( 100 );
+
+		$params[] = [
+			'name' => 'separator',
+			'message' => 'smw-paramdesc-dsv-separator',
+			'default' => ':',
+			'aliases' => 'sep',
+		];
+
+		$params[] = [
+			'name' => 'filename',
+			'message' => 'smw-paramdesc-dsv-filename',
+			'default' => 'result.dsv',
+		];
+
+		return $params;
+	}
+
+	/**
+	 * @see ResultPrinter::getResultText
+	 *
+	 * {@inheritDoc}
+	 */
+	protected function getResultText( QueryResult $queryResult, $outputMode ) {
+		if ( $outputMode !== SMW_OUTPUT_FILE ) {
+			return $this->getDsvLink( $queryResult, $outputMode );
+		}
+
+		return $this->buildContents( $queryResult );
+	}
+
+	private function getDsvLink( QueryResult $queryResult, $outputMode ) {
+		// Can be viewed as HTML if requested, no more parsing needed
+		$this->isHTML = ( $outputMode == SMW_OUTPUT_HTML );
+
+		$link = $this->getLink(
+			$queryResult,
+			$outputMode
+		);
+
+		return $link->getText( $outputMode, $this->mLinker );
+	}
+
+	private function buildContents( QueryResult $queryResult ): string {
+		$lines = [];
+
+		// Do not allow backspaces as delimiter, as they'll break stuff.
+		if ( trim( $this->params['separator'] ) != '\\' ) {
+			$this->params['separator'] = trim( $this->params['separator'] );
+		}
+
+		/**
+		 * @var ResultPrinter::mShowHeaders
+		 */
+		$showHeaders = $this->mShowHeaders;
+
+		if ( $showHeaders ) {
+			$headerItems = [];
+
+			foreach ( $queryResult->getPrintRequests() as $printRequest ) {
+				$headerItems[] = $printRequest->getLabel();
+			}
+
+			$lines[] = $this->getDSVLine( $headerItems );
+		}
+
+		// Loop over the result objects (pages).
+		$row = $queryResult->getNext();
+		while ( $row ) {
+			$rowItems = [];
+
+			/**
+			 * Loop over their fields (properties).
+			 * @var ResultArray $field
+			 */
+			foreach ( $row as $field ) {
+				$itemSegments = [];
+
+				// Loop over all values for the property.
+				$object = $field->getNextDataValue();
+				while ( $object !== false ) {
+					$wikiValue = $object->getWikiValue();
+					// Decode char references except for URIs
+					$itemSegments[] = ( !$object instanceof URIValue )
+						? Sanitizer::decodeCharReferences( $wikiValue )
+						: $wikiValue;
+					$object = $field->getNextDataValue();
+				}
+
+				// Join all values into a single string, separating them with comma's.
+				$rowItems[] = implode( ',', $itemSegments );
+			}
+
+			$lines[] = $this->getDSVLine( $rowItems );
+			$row = $queryResult->getNext();
+		}
+
+		return implode( "\n", $lines );
+	}
+
+	private function getDSVLine( array $fields ): string {
+		return implode( $this->params['separator'], array_map( [ $this, 'encodeDSV' ], $fields ) );
+	}
+
+	private function encodeDSV( $value ): string|array {
+		$sep = $this->params['separator'];
+		// TODO
+		// \nnn or \onnn or \0nnn for the character with octal value nnn
+		// \xnn for the character with hexadecimal value nn
+		// \dnnn for the character with decimal value nnn
+		// \unnnn for a hexadecimal Unicode literal.
+		return str_replace(
+			[ '\n', '\r', '\t', '\b', '\f', '\\', $sep ],
+			[ "\n", "\r", "\t", "\b", "\f", '\\\\', "\\$sep" ],
+			$value
+		);
+	}
+
+}

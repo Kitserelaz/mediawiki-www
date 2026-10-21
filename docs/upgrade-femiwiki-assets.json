@@ -1,0 +1,20 @@
+[
+  {
+    "package": "xeicon",
+    "lock": {
+      "version": "2.3.3",
+      "resolved": "git+ssh://git@github.com/xpressengine/XEIcon.git#50731896efb462a1b9da7aaa37364bb333757a5d",
+      "license": "OFL-1.1"
+    },
+    "destination": "resources/vendor/xeicon"
+  },
+  {
+    "package": "@femiwiki/ooui-femiwiki-theme",
+    "lock": {
+      "version": "0.1.0",
+      "resolved": "git+ssh://git@github.com/femiwiki/OOUIFemiwikiTheme.git#e797b586aee8aeb3e9900759288d5fbf54388d36",
+      "license": "MIT"
+    },
+    "destination": "resources/vendor/ooui-femiwiki-theme"
+  }
+]

@@ -3,12 +3,11 @@
 namespace Flow\Exception;
 
 use Wikimedia\Message\MessageSpecifier;
-use Wikimedia\NormalizedException\NormalizedException;
 
 /**
  * Flow base exception
  */
-class FlowException extends NormalizedException implements MessageSpecifier {
+class FlowException extends FlowBaseException implements MessageSpecifier {
 
 	/**
 	 * Flow exception error code
@@ -51,7 +50,7 @@ class FlowException extends NormalizedException implements MessageSpecifier {
 	 * Implement MessageSpecifier interface to add a more human-friendly error message.
 	 * @inheritDoc
 	 */
-	final public function getKey() {
+	final public function getKey(): string {
 		return $this->getErrorCode();
 	}
 
@@ -59,7 +58,7 @@ class FlowException extends NormalizedException implements MessageSpecifier {
 	 * Implement MessageSpecifier interface to add a more human-friendly error message.
 	 * @inheritDoc
 	 */
-	final public function getParams() {
+	final public function getParams(): array {
 		return [];
 	}
 

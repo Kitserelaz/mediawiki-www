@@ -9,13 +9,13 @@ use MediaWiki\Extension\DiscussionTools\ThreadItem\ContentThreadItem;
 use MediaWiki\MediaWikiServices;
 use UnexpectedValueException;
 use Wikimedia\Assert\Assert;
+use Wikimedia\Parsoid\Core\DOMCompat;
 use Wikimedia\Parsoid\DOM\Document;
 use Wikimedia\Parsoid\DOM\DocumentFragment;
 use Wikimedia\Parsoid\DOM\Element;
 use Wikimedia\Parsoid\DOM\Node;
 use Wikimedia\Parsoid\DOM\Text;
-use Wikimedia\Parsoid\Utils\DOMCompat;
-use Wikimedia\Parsoid\Utils\DOMUtils;
+use Wikimedia\Parsoid\Ext\DOMUtils;
 
 class CommentModifier {
 
@@ -80,7 +80,6 @@ class CommentModifier {
 	 * @param string $replyIndentation Reply indentation syntax to use, one of:
 	 *   - 'invisible' (use `<dl><dd>` tags to output `:` in wikitext)
 	 *   - 'bullet' (use `<ul><li>` tags to output `*` in wikitext)
-	 * @return Element
 	 */
 	public static function addListItem( ContentThreadItem $comment, string $replyIndentation ): Element {
 		$listTypeMap = [
@@ -305,7 +304,6 @@ class CommentModifier {
 	 *
 	 * @param iterable<Node> $nodes Node list
 	 * @param string $type Element type
-	 * @return bool
 	 */
 	private static function allOfType( iterable $nodes, string $type ): bool {
 		$hasElements = false;
@@ -424,7 +422,9 @@ class CommentModifier {
 				// Text node / comment node, probably empty
 				$insertBefore = $referenceNode->nextSibling;
 				$referenceNode = $list->firstChild;
-				$container->insertBefore( $list->firstChild, $insertBefore );
+				if ( $referenceNode ) {
+					$container->insertBefore( $referenceNode, $insertBefore );
+				}
 			}
 		}
 		$container->removeChild( $list );
@@ -474,6 +474,8 @@ class CommentModifier {
 		if (
 			!( $wrapperNode instanceof Element ) ||
 			strtolower( $wrapperNode->tagName ) !== 'p' ||
+			// A signature placed inside a template rendering would get deleted (T390316)
+			$wrapperNode->getAttribute( 'typeof' ) === 'mw:Transclusion' ||
 			(
 				// This would be easier to check in prepareWikitextReply(), but that would result
 				// in an empty list item being added at the end if we don't need to add a signature.
@@ -635,6 +637,8 @@ class CommentModifier {
 			) || (
 				$node instanceof Element &&
 				strtolower( $node->tagName ) === 'p' &&
+				// A template-generated paragraph is not "empty" (T390316)
+				$node->getAttribute( 'typeof' ) !== 'mw:Transclusion' &&
 				CommentUtils::htmlTrim( DOMCompat::getInnerHTML( $node ) ) === ''
 			) ) {
 				$container->removeChild( $node );

@@ -1,0 +1,7 @@
+{
+  "component": "mediawiki/extensions/Cargo",
+  "baseline": "1d0ee5a33cb4b7067f290486adcbc75c203836e0",
+  "target": "0f20d1c6bff488c2f22baada2d413dc2d514b466",
+  "preserved_changes": [],
+  "dependency_status": "No runtime Composer packages or component lock; uses core platform dependencies"
+}

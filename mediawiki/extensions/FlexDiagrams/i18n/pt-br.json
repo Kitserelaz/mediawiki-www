@@ -1,0 +1,21 @@
+{
+	"@metadata": {
+		"authors": [
+			"Eduardo Addad de Oliveira",
+			"Eduardoaddad"
+		]
+	},
+	"flexdiagrams-desc": "Edição e criação de diagramas",
+	"editdiagram": "Editar diagrama",
+	"flexdiagrams-edit-title": "Editar diagrama: $1",
+	"flexdiagrams-creatediagram": "Criar diagrama",
+	"flexdiagrams-viewdiagram": "Ver diagrama",
+	"flexdiagrams-edit-code": "Código:",
+	"flexdiagrams-edit-preview": "Pré-visualizar:",
+	"flexdiagrams-embedding-unsupported": "As páginas do diagrama não podem ser incorporadas.",
+	"flexdiagrams-gantt-zoomlevel": "Nível de zoom:",
+	"flexdiagrams-gantt-hours": "Horas",
+	"flexdiagrams-gantt-days": "Dias",
+	"flexdiagrams-gantt-months": "Meses",
+	"flexdiagrams-gantt-years": "Anos"
+}

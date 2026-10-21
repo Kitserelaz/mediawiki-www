@@ -1,0 +1,132 @@
+<?php
+
+namespace SMW;
+
+use Deserializers\Deserializer;
+use OutOfBoundsException;
+use Serializers\Serializer;
+use SMW\DataModel\SemanticData;
+use SMW\Deserializers\ExpDataDeserializer;
+use SMW\Deserializers\SemanticDataDeserializer;
+use SMW\Export\ExpData;
+use SMW\Query\QueryResult;
+use SMW\Serializers\ExpDataSerializer;
+use SMW\Serializers\QueryResultSerializer;
+use SMW\Serializers\SemanticDataSerializer;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 1.9
+ *
+ * @author mwjames
+ */
+class SerializerFactory {
+
+	/**
+	 * @since 7.0.0
+	 */
+	public function __construct( private readonly Store $store ) {
+	}
+
+	/**
+	 * Method that assigns registered serializers to an object
+	 *
+	 * @since 2.2
+	 *
+	 * @param mixed $object
+	 *
+	 * @return Serializer
+	 */
+	public function getSerializerFor( $object ): Serializer {
+		$serializer = null;
+
+		if ( $object instanceof SemanticData ) {
+			$serializer = $this->newSemanticDataSerializer();
+		} elseif ( $object instanceof QueryResult ) {
+			$serializer = $this->newQueryResultSerializer();
+		} elseif ( $object instanceof ExpData ) {
+			$serializer = $this->newExpDataSerializer();
+		}
+
+		if ( !$serializer instanceof Serializer ) {
+			throw new OutOfBoundsException( 'No serializer can be matched to the object' );
+		}
+
+		return $serializer;
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * @param array $serialization
+	 *
+	 * @return Deserializer
+	 */
+	public function getDeserializerFor( array $serialization ): Deserializer {
+		$deserializer = null;
+
+		if ( isset( $serialization['serializer'] ) ) {
+
+			switch ( $serialization['serializer'] ) {
+				case 'SMW\Serializers\SemanticDataSerializer':
+					$deserializer = $this->newSemanticDataDeserializer();
+					break;
+				case 'SMW\Serializers\ExpDataSerializer':
+					$deserializer = $this->newExpDataDeserializer();
+					break;
+			}
+		}
+
+		if ( !$deserializer instanceof Deserializer ) {
+			throw new OutOfBoundsException( 'No deserializer can be matched to the serialization format' );
+		}
+
+		return $deserializer;
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * @return SemanticDataSerializer
+	 */
+	public function newSemanticDataSerializer(): SemanticDataSerializer {
+		return new SemanticDataSerializer( $this->store );
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * @return SemanticDataDeserializer
+	 */
+	public function newSemanticDataDeserializer(): SemanticDataDeserializer {
+		return new SemanticDataDeserializer();
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * @return QueryResultSerializer
+	 */
+	public function newQueryResultSerializer(): QueryResultSerializer {
+		return new QueryResultSerializer();
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * @return ExpDataSerializer
+	 */
+	public function newExpDataSerializer(): ExpDataSerializer {
+		return new ExpDataSerializer();
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * @return ExpDataDeserializer
+	 */
+	public function newExpDataDeserializer(): ExpDataDeserializer {
+		return new ExpDataDeserializer();
+	}
+
+}

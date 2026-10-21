@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Hosseinblue",
+			"Lakzon"
+		]
+	},
+	"apihelp-query+pageterms-example-simple": "گرفتن همهٔ آیتم‌های مرتبط با صفحهٔ «لندن» به زبان کاربر.",
+	"apihelp-query+pageterms-example-label-en": "برچسب‌ها و نام‌های مستعار مرتبط شده با صفحه 'London' در انگلیسی را دریافت کن",
+	"apihelp-query+pageterms-param-terms": "نوع اصطلاح‌ها برای دریافت مانند «توضیحات». اگر مشخص نشده باشد، همهٔ نوع‌ها بازگشت داده می‌شود.",
+	"apihelp-query+wikibase-example": "دریافت نشانی اینترنتی و اطلاعات مرتبط با ویکی‌بیس کلاینت و مخزن ویکی‌بیس."
+}

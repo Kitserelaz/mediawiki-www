@@ -1,11 +1,12 @@
 <?php
 
-namespace MediaWiki\CheckUser\Api\Rest\Handler;
+namespace MediaWiki\Extension\CheckUser\Api\Rest\Handler;
 
-use JobQueueGroup;
 use MediaWiki\Block\BlockManager;
-use MediaWiki\CheckUser\Jobs\LogTemporaryAccountAccessJob;
 use MediaWiki\Config\Config;
+use MediaWiki\Extension\CheckUser\Jobs\LogTemporaryAccountAccessJob;
+use MediaWiki\Extension\CheckUser\Services\CheckUserPermissionManager;
+use MediaWiki\JobQueue\JobQueueGroup;
 use MediaWiki\Permissions\PermissionManager;
 use MediaWiki\Rest\LocalizedHttpException;
 use MediaWiki\Rest\Response;
@@ -13,53 +14,27 @@ use MediaWiki\Rest\SimpleHandler;
 use MediaWiki\Rest\TokenAwareHandlerTrait;
 use MediaWiki\Rest\Validator\Validator;
 use MediaWiki\User\ActorStore;
-use MediaWiki\User\Options\UserOptionsLookup;
 use MediaWiki\User\UserNameUtils;
 use Wikimedia\Message\MessageValue;
 use Wikimedia\Rdbms\IConnectionProvider;
 use Wikimedia\Rdbms\IReadableDatabase;
+use Wikimedia\Rdbms\ReadOnlyMode;
 
 abstract class AbstractTemporaryAccountHandler extends SimpleHandler {
 
 	use TokenAwareHandlerTrait;
 
-	protected Config $config;
-	protected JobQueueGroup $jobQueueGroup;
-	protected PermissionManager $permissionManager;
-	protected UserOptionsLookup $userOptionsLookup;
-	protected UserNameUtils $userNameUtils;
-	protected IConnectionProvider $dbProvider;
-	protected ActorStore $actorStore;
-	protected BlockManager $blockManager;
-
-	/**
-	 * @param Config $config
-	 * @param JobQueueGroup $jobQueueGroup
-	 * @param PermissionManager $permissionManager
-	 * @param UserOptionsLookup $userOptionsLookup
-	 * @param UserNameUtils $userNameUtils
-	 * @param IConnectionProvider $dbProvider
-	 * @param ActorStore $actorStore
-	 * @param BlockManager $blockManager
-	 */
 	public function __construct(
-		Config $config,
-		JobQueueGroup $jobQueueGroup,
-		PermissionManager $permissionManager,
-		UserOptionsLookup $userOptionsLookup,
-		UserNameUtils $userNameUtils,
-		IConnectionProvider $dbProvider,
-		ActorStore $actorStore,
-		BlockManager $blockManager
+		protected readonly Config $config,
+		protected readonly JobQueueGroup $jobQueueGroup,
+		protected readonly PermissionManager $permissionManager,
+		protected readonly UserNameUtils $userNameUtils,
+		protected readonly IConnectionProvider $dbProvider,
+		protected readonly ActorStore $actorStore,
+		protected readonly BlockManager $blockManager,
+		private readonly CheckUserPermissionManager $checkUserPermissionsManager,
+		private readonly ReadOnlyMode $readOnlyMode,
 	) {
-		$this->config = $config;
-		$this->jobQueueGroup = $jobQueueGroup;
-		$this->permissionManager = $permissionManager;
-		$this->userOptionsLookup = $userOptionsLookup;
-		$this->userNameUtils = $userNameUtils;
-		$this->dbProvider = $dbProvider;
-		$this->actorStore = $actorStore;
-		$this->blockManager = $blockManager;
 	}
 
 	/**
@@ -73,31 +48,19 @@ abstract class AbstractTemporaryAccountHandler extends SimpleHandler {
 			);
 		}
 
-		if (
-			!$this->permissionManager->userHasRight(
-				$this->getAuthority()->getUser(),
-				'checkuser-temporary-account-no-preference'
-			) &&
-			(
-				!$this->permissionManager->userHasRight(
-					$this->getAuthority()->getUser(),
-					'checkuser-temporary-account'
-				) ||
-				!$this->userOptionsLookup->getOption(
-					$this->getAuthority()->getUser(),
-					'checkuser-temporary-account-enable'
-				)
-			)
-		) {
+		$permStatus = $this->checkUserPermissionsManager->canAccessTemporaryAccountIPAddresses(
+			$this->getAuthority()
+		);
+		if ( !$permStatus->isGood() ) {
+			if ( $permStatus->getBlock() ) {
+				throw new LocalizedHttpException(
+					new MessageValue( 'checkuser-rest-access-denied-blocked-user' ),
+					403
+				);
+			}
+
 			throw new LocalizedHttpException(
 				new MessageValue( 'checkuser-rest-access-denied' ),
-				403
-			);
-		}
-
-		if ( $this->getAuthority()->getBlock() ) {
-			throw new LocalizedHttpException(
-				new MessageValue( 'checkuser-rest-access-denied-blocked-user' ),
 				403
 			);
 		}
@@ -109,20 +72,37 @@ abstract class AbstractTemporaryAccountHandler extends SimpleHandler {
 	public function run( $identifier ): Response {
 		$this->checkPermissions();
 
+		$readOnlyReason = $this->readOnlyMode->getReason();
+		if ( $readOnlyReason ) {
+			throw new LocalizedHttpException(
+				new MessageValue( 'readonlytext', [ $readOnlyReason ] ),
+				503
+			);
+		}
+
 		$results = $this->getResults( $identifier );
 
-		$this->jobQueueGroup->push(
-			LogTemporaryAccountAccessJob::newSpec(
-				$this->getAuthority()->getUser(),
-				$this->urlEncodeTitle( $identifier ),
-				$this->getLogType()
-			)
-		);
+		$this->makeLog( $identifier );
 
 		$maxAge = $this->config->get( 'CheckUserTemporaryAccountMaxAge' );
 		$response = $this->getResponseFactory()->createJson( $results );
 		$response->setHeader( 'Cache-Control', "private, max-age=$maxAge" );
 		return $response;
+	}
+
+	/**
+	 * Enqueue a job to log the reveal that was performed.
+	 *
+	 * @param int|string $identifier
+	 */
+	public function makeLog( $identifier ) {
+		$this->jobQueueGroup->push(
+			LogTemporaryAccountAccessJob::newSpec(
+				$this->getAuthority()->getUser(),
+				$identifier,
+				$this->getLogType()
+			)
+		);
 	}
 
 	/**
@@ -132,7 +112,7 @@ abstract class AbstractTemporaryAccountHandler extends SimpleHandler {
 	abstract protected function getResults( $identifier ): array;
 
 	/**
-	 * @param int|string $identifier
+	 * @param int|string|array $identifier
 	 * @param IReadableDatabase $dbr
 	 * @return array associated IP addresses or temporary accounts
 	 */

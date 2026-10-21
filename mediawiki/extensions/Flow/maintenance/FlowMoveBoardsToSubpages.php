@@ -2,16 +2,16 @@
 
 namespace Flow\Maintenance;
 
-use BatchRowIterator;
 use Flow\Container;
 use Flow\DbFactory;
-use IDBAccessObject;
-use Maintenance;
+use MediaWiki\Content\WikitextContent;
+use MediaWiki\Maintenance\Maintenance;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Status\Status;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
-use WikitextContent;
+use MediaWiki\Utils\BatchRowIterator;
+use Wikimedia\Rdbms\IDBAccessObject;
 
 $IP = getenv( 'MW_INSTALL_PATH' );
 if ( $IP === false ) {
@@ -41,6 +41,8 @@ class FlowMoveBoardsToSubpages extends Maintenance {
 		$this->addOption( 'limit', 'Limit of inconsistent pages to identify (and fix if not a dry ' .
 			'run). Defaults to no limit', false, true );
 		$this->addOption( 'subpage', 'Name of subpage to create. Defaults to "Flow"', false, true );
+		$this->addOption( 'always-number', 'Always number an archive page, even when it\'s the first one' );
+		$this->addOption( 'title', 'Title of a specific page to move', false, true );
 
 		$this->setBatchSize( 300 );
 
@@ -51,13 +53,11 @@ class FlowMoveBoardsToSubpages extends Maintenance {
 	 * @return false|void
 	 */
 	public function execute() {
-		global $wgLang;
-
 		$this->dbFactory = Container::get( 'db.factory' );
 
 		$occupationController = MediaWikiServices::getInstance()->getService( 'FlowTalkpageManager' );
 		$movePageFactory = MediaWikiServices::getInstance()->getMovePageFactory();
-		$moveUser = User::newSystemUser( FLOW_TALK_PAGE_MANAGER_USER, [ 'steal' => true ] );
+		$moveUser = $occupationController->getTalkpageManager();
 
 		$dryRun = $this->hasOption( 'dry-run' );
 
@@ -74,27 +74,44 @@ class FlowMoveBoardsToSubpages extends Maintenance {
 		] );
 		$iterator->setCaller( __METHOD__ );
 
-		if ( $this->hasOption( 'namespaceName' ) ) {
-			$namespaceName = $this->getOption( 'namespaceName' );
-			$namespaceId = $wgLang->getNsIndex( $namespaceName );
+		$useSingleTitle = $this->hasOption( 'title' );
+		$titleText = null;
 
-			if ( !$namespaceId ) {
-				$this->error( "'$namespaceName' is not a valid namespace name" );
+		if ( $useSingleTitle ) {
+			$titleText = $this->getOption( 'title' );
+			$title = Title::newFromText( $titleText );
+			if ( !$title ) {
+				$this->error( "Invalid title: " . $titleText . "\n" );
 				return false;
 			}
-
-			if ( $namespaceId == NS_TOPIC ) {
-				$this->error( 'This script can not be run on the Flow topic namespace' );
-				return false;
-			}
-
 			$iterator->addConditions( [
-				'page_namespace' => $namespaceId,
+				'page_title' => $title->getDBkey(),
+				'page_namespace' => $title->getNamespace(),
 			] );
 		} else {
-			$iterator->addConditions( [
-				$wikiDbw->expr( 'page_namespace', '!=', NS_TOPIC ),
-			] );
+			if ( $this->hasOption( 'namespaceName' ) ) {
+				$namespaceName = $this->getOption( 'namespaceName' );
+				$lang = $this->getServiceContainer()->getContentLanguage();
+				$namespaceId = $lang->getNsIndex( $namespaceName );
+
+				if ( !$namespaceId ) {
+					$this->error( "'$namespaceName' is not a valid namespace name" );
+					return false;
+				}
+
+				if ( $namespaceId == NS_TOPIC ) {
+					$this->error( 'This script can not be run on the Flow topic namespace' );
+					return false;
+				}
+
+				$iterator->addConditions( [
+					'page_namespace' => $namespaceId,
+				] );
+			} else {
+				$iterator->addConditions( [
+					$wikiDbw->expr( 'page_namespace', '!=', NS_TOPIC ),
+				] );
+			}
 		}
 
 		$checkedCount = 0;
@@ -105,38 +122,56 @@ class FlowMoveBoardsToSubpages extends Maintenance {
 				$checkedCount++;
 				$coreTitle = Title::makeTitle( $row->page_namespace, $row->page_title );
 
-				if ( $coreTitle->isSubpage() ) {
-					// Don't try to act on subpages
-					$this->output( "Skipped '$coreTitle' as it is already a subpage\n" );
+				if ( !$useSingleTitle ) {
+					if ( preg_match( "/\/([Ff]low|[Aa]rchive|StructuredDiscussions).*/", $coreTitle->getText() ) ) {
+						// Don't try to act on subpages
+						// $coreTitle->isSubpage() only works on namespaces with subpages enabled, which
+						// we don't care about for this check.
+						$this->output( "Skipped '$coreTitle' as it is already an archived page\n" );
+						continue;
+					}
+					// $row / $coreTitle is a page with the flow board content model, and isn't an archived page
+					if ( !$coreTitle->inNamespace( NS_USER_TALK ) ) {
+						// Skip pages whose non-talk namespace counterpart doesn't exist, assuming they're archives
+						// but don't skip user talk pages, since having a redlinked user page isn't indicative of anything
+						$subject = $coreTitle->getSubjectPage();
+						if ( !$subject || !$subject->exists() ) {
+							$this->output( "Skipped '$coreTitle' as it has no associated subject page\n" );
+							continue;
+						}
+
+						if ( $coreTitle->equals( $subject ) ) {
+							$this->output( "Skipped '$coreTitle' as it is a standalone Flow page\n" );
+							continue;
+						}
+					}
+				}
+
+				$creationStatus = $this->findValidSubpage( $coreTitle, $subpage, $moveUser );
+
+				if ( !$creationStatus->isOk() ) {
+					$this->error( "Cannot move '$coreTitle': " . $creationStatus->getMessage()->text() . "\n" );
 					continue;
 				}
-				// $row / $coreTitle is a page with the flow board content model, and isn't a subpage
 
-				$subpageTitle = $coreTitle->getSubpage( $subpage );
-
-				$creationStatus = $occupationController->safeAllowCreation(
-					$subpageTitle,
-					$moveUser,
-					/* $mustNotExist = */ true,
-					/* $forWrite = */ true
-				);
-
-				if ( !$creationStatus->isGood() ) {
-					$this->error( "Cannot move '$coreTitle' to '$subpageTitle': " . $creationStatus->getMessage()->text() . "\n" );
-					continue;
-				}
+				$subpageTitle = $creationStatus->getValue();
 
 				if ( $dryRun ) {
 					$moveCount++;
 					$this->output( "Would move '$coreTitle' to '$subpageTitle'\n" );
 				} else {
 					$mp = $movePageFactory->newMovePage( $coreTitle, $subpageTitle );
-
-					$status = $mp->move(
-						/* user */ $moveUser,
-						/* reason */ "Flow archival",
-						/* create redirect */ false
-					);
+					try {
+						$status = $mp->move(
+							/* user */ $moveUser,
+							/* reason */ "Flow archival",
+							/* create redirect */ false
+						);
+					} catch ( \Throwable $e ) {
+						$this->error( "Exception while moving '$coreTitle' to '$subpageTitle': " . $e->getMessage() . "\n" );
+						$this->error( $e->getTraceAsString() . "\n" );
+						continue;
+					}
 
 					if ( $status->isGood() ) {
 						$moveCount++;
@@ -165,6 +200,46 @@ class FlowMoveBoardsToSubpages extends Maintenance {
 				break;
 			}
 		}
+		if ( $useSingleTitle && $moveCount === 0 ) {
+			$this->output( "No Flow board found for '" . $titleText . "'\n" );
+		}
+	}
+
+	/**
+	 * Checks for a valid subpage to move a board into
+	 *
+	 * @param Title $coreTitle Previous location of the page, before moving
+	 * @param string $subpage Name stem for the subpages
+	 * @param User $moveUser User to make the move
+	 * @return Status Contains subpage as value
+	 */
+	protected function findValidSubpage( Title $coreTitle, string $subpage, User $moveUser ) {
+		$occupationController = MediaWikiServices::getInstance()->getService( 'FlowTalkpageManager' );
+
+		$status = Status::newGood();
+
+		$alwaysNumber = $this->getOption( 'always-number' );
+
+		for ( $i = 1; $i <= 9; $i++ ) {
+			$suffix = ( $alwaysNumber || $i > 1 ) ? $i : '';
+			$subpageTitle = $coreTitle->getSubpage( $subpage . $suffix );
+
+			$creationStatus = $occupationController->safeAllowCreation(
+				$subpageTitle,
+				$moveUser,
+				/* $mustNotExist = */ true,
+				/* $forWrite = */ true
+			);
+
+			if ( $creationStatus->isGood() ) {
+				$status->setResult( true, $subpageTitle );
+				return $status;
+			}
+
+			$status->merge( $creationStatus );
+		}
+
+		return $status;
 	}
 
 	/**

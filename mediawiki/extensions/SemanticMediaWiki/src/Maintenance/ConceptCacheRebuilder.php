@@ -1,0 +1,327 @@
+<?php
+
+namespace SMW\Maintenance;
+
+use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
+use Onoi\MessageReporter\MessageReporter;
+use Onoi\MessageReporter\MessageReporterFactory;
+use SMW\DataItems\Concept;
+use SMW\MediaWiki\TitleLookup;
+use SMW\Settings;
+use SMW\Store;
+use SMW\Utils\CliMsgFormatter;
+use SMW\Utils\PeriodicStatsFlusher;
+
+/**
+ * Is part of the `rebuildConceptCache.php` maintenance script to rebuild
+ * cache entries for selected concepts
+ *
+ * @note This is an internal class and should not be used outside of smw-core
+ *
+ * @license GPL-2.0-or-later
+ * @since 1.9.2
+ *
+ * @author mwjames
+ */
+class ConceptCacheRebuilder {
+
+	/**
+	 * @var MessageReporter
+	 */
+	private $reporter;
+
+	private $concept = null;
+	private ?string $action  = null;
+	private array $options = [];
+	private int $startId = 0;
+	private int $endId   = 0;
+	private int $lines   = 0;
+	private bool $verbose = false;
+	private ?PeriodicStatsFlusher $statsFlusher = null;
+
+	/**
+	 * @since 1.9.2
+	 */
+	public function __construct(
+		private readonly Store $store,
+		private readonly Settings $settings,
+	) {
+		$this->reporter = MessageReporterFactory::getInstance()->newNullMessageReporter();
+	}
+
+	/**
+	 * @since 2.1
+	 *
+	 * @param MessageReporter $reporter
+	 */
+	public function setMessageReporter( MessageReporter $reporter ): void {
+		$this->reporter = $reporter;
+	}
+
+	/**
+	 * @since 7.2.0
+	 */
+	public function setStatsFlusher( PeriodicStatsFlusher $statsFlusher ): void {
+		$this->statsFlusher = $statsFlusher;
+	}
+
+	/**
+	 * @since 1.9.2
+	 *
+	 * @param array $parameters
+	 */
+	public function setParameters( array $parameters ): void {
+		$options = [ 'hard', 'update', 'old', 'quiet', 'status', 'verbose' ];
+
+		foreach ( $options as $option ) {
+			if ( isset( $parameters[$option] ) ) {
+				$this->options[$option] = $parameters[$option];
+			}
+		}
+
+		if ( isset( $parameters['concept'] ) ) {
+			$this->concept = $parameters['concept'];
+		}
+
+		if ( isset( $parameters['s'] ) ) {
+			$this->startId = intval( $parameters['s'] );
+		}
+
+		if ( isset( $parameters['e'] ) ) {
+			$this->endId = intval( $parameters['e'] );
+		}
+
+		$actions = [ 'status', 'create', 'delete' ];
+
+		foreach ( $actions as $action ) {
+			if ( isset( $parameters[$action] ) && $this->action === null ) {
+				$this->action = $action;
+			}
+		}
+
+		$this->verbose = array_key_exists( 'verbose', $parameters );
+	}
+
+	/**
+	 * @since 1.9.2
+	 *
+	 * @return bool
+	 */
+	public function rebuild(): bool {
+		$cliMsgFormatter = new CliMsgFormatter();
+
+		$this->reportMessage(
+			$cliMsgFormatter->section( 'Concept(s)' )
+		);
+
+		if ( $this->hasOption( 'hard' ) ) {
+
+			$this->reportMessage(
+				"\nOption 'hard' defined with:\n"
+			);
+
+			$this->reportMessage(
+				$cliMsgFormatter->twoCols( '... smwgQMaxDepth', $this->settings->get( 'smwgQMaxDepth' ), 3, '.' )
+			);
+
+			$this->reportMessage(
+				$cliMsgFormatter->twoCols( '... smwgQMaxSize', $this->settings->get( 'smwgQMaxSize' ), 3, '.' )
+			);
+
+			$this->reportMessage(
+				$cliMsgFormatter->twoCols( '... smwgQFeatures', $this->settings->get( 'smwgQFeatures' ), 3, '.' )
+			);
+
+			$this->reportMessage(
+				$cliMsgFormatter->section( 'Tasks', 3, '-', true )
+			);
+		}
+
+		switch ( $this->action ) {
+			case 'status':
+				$this->reportMessage( "\nCache status information ...\n" );
+				break;
+			case 'create':
+				$this->reportMessage( "\nCreating (or updating) concept caches ...\n" );
+				break;
+			case 'delete':
+				$delay = 5;
+				$this->reportMessage( "\nAbort with CTRL-C in the next $delay seconds ... " );
+
+				if ( !$this->hasOption( 'quiet' ) ) {
+					$this->countDown( $delay );
+				}
+
+				$this->reportMessage( "\nDeleting concept caches ...\n" );
+				break;
+			default:
+				return false;
+		}
+
+		$concepts = $this->getConcepts();
+
+		foreach ( $concepts as $concept ) {
+			if ( $this->statsFlusher !== null ) {
+				$this->statsFlusher->tick();
+			}
+			$this->workOnConcept( $concept );
+		}
+
+		if ( $concepts === [] ) {
+			$this->reportMessage( "No concept(s) available.\n" );
+		} else {
+			$this->reportMessage( "   ... done.\n" );
+		}
+
+		return true;
+	}
+
+	private function workOnConcept( Title $title ): int|float {
+		$concept = $this->store->getConceptCacheStatus( $title );
+
+		if ( $this->skipConcept( $title, $concept ) ) {
+			$this->lines += $this->verbose ? 1 : 0;
+			return $this->lines;
+		}
+
+		$this->performAction( $title, $concept );
+
+		$this->lines += 1;
+		return $this->lines;
+	}
+
+	private function skipConcept( Title $title, $concept = null ): false|string {
+		$skip = false;
+
+		if ( $concept === null ) {
+			$skip = 'page not cacheable (no concept description, maybe a redirect)';
+		} elseif ( ( $this->hasOption( 'update' ) ) && ( $concept->getCacheStatus() !== 'full' ) ) {
+			$skip = 'page not cached yet';
+		} elseif ( ( $this->hasOption( 'old' ) ) && ( $concept->getCacheStatus() === 'full' ) &&
+			( $concept->getCacheDate() > ( strtotime( 'now' ) - intval( $this->options['old'] ) * 60 ) ) ) {
+			$skip = 'cache is not old yet';
+		} elseif ( ( $this->hasOption( 'hard' ) ) && ( $this->settings->get( 'smwgQMaxSize' ) >= $concept->getSize() ) &&
+					( $this->settings->get( 'smwgQMaxDepth' ) >= $concept->getDepth() &&
+					( ( ~( ~( $concept->getQueryFeatures() + 0 ) | $this->settings->get( 'smwgQFeatures' ) ) ) == 0 ) ) ) {
+			$skip = 'concept is not "hard" according to wiki settings';
+		}
+
+		if ( $skip ) {
+			$this->reportMessage(
+				"($this->lines) " . 'Skipping concept "' . $title->getPrefixedText() . "\": $skip\n",
+				$this->verbose
+			);
+		}
+
+		return $skip;
+	}
+
+	private function performAction( Title $title, Concept $concept ) {
+		$cliMsgFormatter = new CliMsgFormatter();
+
+		if ( $this->action === 'create' ) {
+
+			$this->store->refreshConceptCache( $title );
+
+			$this->reportMessage(
+				$cliMsgFormatter->twoCols( '... ' . $title->getPrefixedText() . ' ...', CliMsgFormatter::OK, 3 )
+			);
+
+			return;
+		}
+
+		if ( $this->action === 'delete' ) {
+
+			$this->reportMessage(
+				$cliMsgFormatter->oneCol( '... ' . $title->getPrefixedText() . ' ...', 3 )
+			);
+
+			return $this->store->deleteConceptCache( $title );
+		}
+
+		$this->reportMessage(
+			$cliMsgFormatter->oneCol( '... ' . $title->getPrefixedText() . ' ...', 3 )
+		);
+
+		if ( $concept->getCacheStatus() === 'full' ) {
+
+			$this->reportMessage(
+				$cliMsgFormatter->twoCols( '... created at', $this->getCacheDateInfo( $concept->getCacheDate() ), 7 )
+			);
+
+			$this->reportMessage(
+				$cliMsgFormatter->twoCols( '... elements count', $concept->getCacheCount(), 7, '.' )
+			);
+		} else {
+			$this->reportMessage(
+				$cliMsgFormatter->oneCol( '... not cached', 7 )
+			);
+		}
+	}
+
+	private function getConcepts(): array {
+		if ( $this->concept !== null ) {
+			$concept = $this->createConcept();
+			return $concept === null ? [] : [ $concept ];
+		}
+
+		return $this->createMultipleConcepts();
+	}
+
+	private function createConcept(): ?Title {
+		return MediaWikiServices::getInstance()->getTitleFactory()->newFromText( $this->concept, SMW_NS_CONCEPT );
+	}
+
+	private function createMultipleConcepts(): array {
+		$titleLookup = new TitleLookup( $this->store->getConnection( 'mw.db' ) );
+		$titleLookup->setNamespace( SMW_NS_CONCEPT );
+
+		if ( $this->endId == 0 && $this->startId == 0 ) {
+			return $titleLookup->selectAll();
+		}
+
+		$endId = $titleLookup->getMaxId();
+
+		if ( $this->endId > 0 ) {
+			$endId = min( $this->endId, $endId );
+		}
+
+		return $titleLookup->selectByIdRange( $this->startId, $endId );
+	}
+
+	private function hasOption( string $key ): bool {
+		return isset( $this->options[$key] );
+	}
+
+	private function reportMessage( string $message, bool $output = true ): void {
+		if ( $output ) {
+			$this->reporter->reportMessage( $message );
+		}
+	}
+
+	/**
+	 * Copied from wfCountDown as it became deprecated in 1.31
+	 *
+	 * @since 4.0
+	 */
+	private function countDown( int $seconds ): void {
+		for ( $i = $seconds; $i >= 0; $i-- ) {
+			if ( $i != $seconds ) {
+				echo str_repeat( "\x08", strlen( (string)( $i + 1 ) ) );
+			}
+			echo $i;
+			flush();
+			if ( $i ) {
+				sleep( 1 );
+			}
+		}
+		echo "\n";
+	}
+
+	private function getCacheDateInfo( string|int $date ): string {
+		$timestamp = (int)$date;
+		return date( 'Y-m-d H:i:s', $timestamp ) . ' (' . floor( ( strtotime( 'now' ) - $timestamp ) / 60 ) . ' minutes old)';
+	}
+
+}

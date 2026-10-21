@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": [
+			"Muhammad Shuaib"
+		]
+	},
+	"apihelp-streamconfigs-summary": "ایونٹ اسٹریم کی ترتیبات کو پیش کرتا ہے۔ یہ جواب میں formatversion=2 کے ساتھ فقط format=json کو لوٹاتا ہے۔"
+}

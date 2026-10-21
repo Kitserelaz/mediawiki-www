@@ -1,0 +1,8 @@
+/modules/lib/
+/modules/ext.growthExperiments.MentorDashboard.Vue/components/icons.json
+/tests/qunit/__mocks__/**
+/vendor/
+/coverage/
+/documentation/frontend/coverage
+/node_modules/
+/docs

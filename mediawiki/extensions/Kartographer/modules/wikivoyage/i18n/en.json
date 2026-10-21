@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": []
+	},
+	"kartographer-wv-group": "Group:",
+	"kartographer-wv-layer-wikimedia": "Wikimedia",
+	"kartographer-wv-warning-external-source-title": "External data source",
+	"kartographer-wv-warning-external-source-message": "This content is hosted externally, so enabling it shares your IP address and other data to the map provider.",
+	"kartographer-wv-warning-external-source-agree": "I understand",
+	"kartographer-wv-warning-external-source-disagree": "Cancel"
+}

@@ -1,0 +1,21 @@
+{
+	"@metadata": {
+		"authors": [
+			"Balyozxane",
+			"Bikarhêner",
+			"Ghybu"
+		]
+	},
+	"apex-desc": "Versiyona modern yê Vektorê tevî xuyaniyeke teze û çendîn pêşxistinên bikaranînê",
+	"apex-action-addsection": "Mijarekê lê zêde bike",
+	"apex-action-delete": "Jê bibe",
+	"apex-action-move": "Neql bike",
+	"apex-action-protect": "Biparêze",
+	"apex-action-undelete": "Jêbirinê betal bike",
+	"apex-action-unprotect": "Parastinê biguhêre",
+	"apex-view-create": "Çêke",
+	"apex-view-edit": "Biguhêre",
+	"apex-view-history": "Dîrokê bibîne",
+	"apex-view-view": "Bixwîne",
+	"apex-view-viewsource": "Çavkaniyê bibîne"
+}

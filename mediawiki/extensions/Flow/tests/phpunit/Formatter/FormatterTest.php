@@ -15,7 +15,6 @@ use Flow\Tests\FlowTestCase;
 use Flow\UrlGenerator;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Title\Title;
-use Wikimedia\AtEase\AtEase;
 
 /**
  * @group Flow
@@ -56,8 +55,6 @@ class FormatterTest extends FlowTestCase {
 	 * @group Broken
 	 */
 	public function testCheckUserFormatter( $message, $test, $action, UUID $workflowId, UUID $revId, ?UUID $postId = null ) {
-		global $wgLang;
-
 		$this->markTestSkippedIfExtensionNotLoaded( 'CheckUser' );
 
 		$title = Title::makeTitle( NS_USER_TALK, 'TestCheckUserFormatter' );
@@ -68,15 +65,11 @@ class FormatterTest extends FlowTestCase {
 
 		$ctx = $this->createMock( IContextSource::class );
 		$ctx->method( 'getLanguage' )
-			->willReturn( $wgLang );
+			->willReturn( RequestContext::getMain()->getLanguage() );
 		$ctx->method( 'msg' )
 			->willReturnCallback( 'wfMessage' );
 
-		// Code uses wfWarn as a louder wfDebugLog in error conditions.
-		// but phpunit considers a warning a fail.
-		AtEase::suppressWarnings();
 		$links = $this->createFormatter()->format( $row, $ctx );
-		AtEase::restoreWarnings();
 		$test( $this, $message, $links );
 	}
 

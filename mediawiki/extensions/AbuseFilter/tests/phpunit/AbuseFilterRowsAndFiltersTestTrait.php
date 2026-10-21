@@ -4,6 +4,7 @@ use MediaWiki\Extension\AbuseFilter\Filter\ExistingFilter;
 use MediaWiki\Extension\AbuseFilter\Filter\Flags;
 use MediaWiki\Extension\AbuseFilter\Filter\LastEditInfo;
 use MediaWiki\Extension\AbuseFilter\Filter\Specs;
+use MediaWiki\User\UserIdentityValue;
 
 /**
  * This trait contains some Filter <-> db_row correspondences, and can be used to avoid long test
@@ -13,7 +14,7 @@ trait AbuseFilterRowsAndFiltersTestTrait {
 	/**
 	 * @return array[]
 	 */
-	public function getRowsAndFilters(): array {
+	public static function provideRowsAndFilters(): array {
 		static $ret = null;
 		if ( $ret !== null ) {
 			return $ret;
@@ -75,8 +76,7 @@ trait AbuseFilterRowsAndFiltersTestTrait {
 				),
 				array_fill_keys( $actionKeys, [] ),
 				new LastEditInfo(
-					$row->af_user,
-					$row->af_user_text,
+					UserIdentityValue::newRegistered( $row->af_user, $row->af_user_text ),
 					$row->af_timestamp
 				),
 				$row->af_id,
@@ -85,8 +85,8 @@ trait AbuseFilterRowsAndFiltersTestTrait {
 			);
 			$ret[$name] = [
 				'row' => $row,
-				'actions' => $this->getRowsForActions( $row->af_id, $actionKeys ),
-				'filter' => $filter
+				'actionsRows' => self::getRowsForActions( $row->af_id, $actionKeys ),
+				'expected' => $filter
 			];
 		}
 
@@ -111,8 +111,8 @@ trait AbuseFilterRowsAndFiltersTestTrait {
 					'af_global' => 0,
 					'af_group' => 'default'
 				],
-				'actions' => $this->getRowsForActions( 333, [ 'warn' ] ),
-				'filter' => new ExistingFilter(
+				'actionsRows' => self::getRowsForActions( 333, [ 'warn' ] ),
+				'expected' => new ExistingFilter(
 					new Specs(
 						'false',
 						'',
@@ -123,8 +123,7 @@ trait AbuseFilterRowsAndFiltersTestTrait {
 					new Flags( true, false, true, false ),
 					[ 'warn' => [] ],
 					new LastEditInfo(
-						1,
-						'FilterTester',
+						UserIdentityValue::newRegistered( 1, 'FilterTester' ),
 						'20190826000000'
 					),
 					333,
@@ -149,8 +148,8 @@ trait AbuseFilterRowsAndFiltersTestTrait {
 					'af_global' => 1,
 					'af_group' => 'default'
 				],
-				'actions' => [],
-				'filter' => new ExistingFilter(
+				'actionsRows' => [],
+				'expected' => new ExistingFilter(
 					new Specs(
 						'"foo"',
 						'foo',
@@ -161,8 +160,7 @@ trait AbuseFilterRowsAndFiltersTestTrait {
 					new Flags( false, true, true, true ),
 					[],
 					new LastEditInfo(
-						1,
-						'FilterTester',
+						UserIdentityValue::newRegistered( 1, 'FilterTester' ),
 						'20190826000000'
 					),
 					1000
@@ -187,8 +185,8 @@ trait AbuseFilterRowsAndFiltersTestTrait {
 					'af_global' => 1,
 					'af_group' => 'default'
 				],
-				'actions' => [],
-				'filter' => new ExistingFilter(
+				'actionsRows' => [],
+				'expected' => new ExistingFilter(
 					new Specs(
 						'0',
 						'foo',
@@ -199,8 +197,7 @@ trait AbuseFilterRowsAndFiltersTestTrait {
 					new Flags( false, true, true, true ),
 					[],
 					new LastEditInfo(
-						1,
-						'FilterTester',
+						UserIdentityValue::newRegistered( 1, 'FilterTester' ),
 						'20190826000000'
 					),
 					1000,
@@ -218,7 +215,7 @@ trait AbuseFilterRowsAndFiltersTestTrait {
 	 * @param string[] $actions
 	 * @return stdClass[]
 	 */
-	private function getRowsForActions( int $id, array $actions ): array {
+	private static function getRowsForActions( int $id, array $actions ): array {
 		$ret = [];
 		foreach ( $actions as $action ) {
 			$ret[] = (object)[

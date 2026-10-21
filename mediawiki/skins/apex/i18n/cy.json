@@ -1,0 +1,20 @@
+{
+	"@metadata": {
+		"authors": [
+			"Afalau",
+			"Ceirios"
+		]
+	},
+	"apex-desc": "Fersiwn newydd o Vector gyda golwg ffres ac ystod o welliannau defnyddioldeb",
+	"apex-action-addsection": "Ychwanegu pwnc",
+	"apex-action-delete": "Dileu",
+	"apex-action-move": "Symud",
+	"apex-action-protect": "Diogelu",
+	"apex-action-undelete": "Adfer",
+	"apex-action-unprotect": "Newid y diogelwch",
+	"apex-view-create": "Creu",
+	"apex-view-edit": "Golygu",
+	"apex-view-history": "Gweld hanes",
+	"apex-view-view": "Darllen",
+	"apex-view-viewsource": "Gweld y cod"
+}

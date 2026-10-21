@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"01miki10",
+			"Pyscowicz"
+		]
+	},
+	"deleteuserpages-desc": "Antaa käyttäjien poistaa omat käyttäjäsivunsa",
+	"action-delete-rootuserpages": "poistaa omaa käyttäjä- ja keskustelusivua",
+	"right-delete-rootuserpages": "Poistaa oma käyttäjä- ja keskustelusivu",
+	"action-delete-usersubpages": "poistaa oman käyttäjäsivun alasivuja",
+	"right-delete-usersubpages": "Poistaa oman käyttäjäsivun alasivuja"
+}

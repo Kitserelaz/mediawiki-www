@@ -1,0 +1,10 @@
+[
+	{
+		"resourceModule": "ext.eventLogging",
+		"maxSize": null
+	},
+	{
+		"resourceModule": "ext.eventLogging.metricsPlatform",
+		"maxSize": null
+	}
+]

@@ -1,0 +1,49 @@
+@import 'mediawiki.skin.variables.less';
+@import '../../utils/variables.less';
+@import '../../utils/mixins.less';
+
+.addlink-onboarding-content {
+	@mobileFontSize: 16px;
+
+	&-example-label {
+		.rel-font-size-and-line-height( @parentFontSize: @mobileFontSize, @targetFontSize: 14.8px, @targetLineHeight: 22px );
+		font-style: italic;
+		margin-top: 8px;
+		color: @color-subtle;
+	}
+
+	&-example {
+		padding: 12px;
+		background-color: @background-color-growth-subtle;
+		border: @border-subtle;
+		box-sizing: border-box;
+		border-radius: @border-radius-base;
+		margin-bottom: 8px;
+
+		.positive {
+			background-color: @background-color-progressive-subtle;
+			mix-blend-mode: multiply;
+			padding: 2px;
+			.noDarkModeMixBlendMode();
+			color: @color-base;
+		}
+	}
+
+	&-image1 {
+		background-image: url( ../../../images/addlink/onboarding-image1-ltr.svg );
+	}
+
+	&-image2 {
+		background-image: url( ../../../images/addlink/onboarding-image2-ltr.svg );
+	}
+
+	&-image3 {
+		background-image: url( ../../../images/addlink/onboarding-image3-ltr.svg );
+	}
+
+	&-desktop {
+		.addlink-onboarding-content-example-label {
+			.rel-font-size-and-line-height( @parentFontSize: 14px, @targetFontSize: 13px, @targetLineHeight: 19px );
+		}
+	}
+}

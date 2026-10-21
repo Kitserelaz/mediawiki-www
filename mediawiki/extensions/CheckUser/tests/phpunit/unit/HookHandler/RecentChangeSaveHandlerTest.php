@@ -1,17 +1,17 @@
 <?php
 
-namespace MediaWiki\CheckUser\Tests\Unit\HookHandler;
+namespace MediaWiki\Extension\CheckUser\Tests\Unit\HookHandler;
 
-use JobQueueGroup;
-use JobSpecification;
-use MediaWiki\CheckUser\HookHandler\RecentChangeSaveHandler;
-use MediaWiki\CheckUser\Services\CheckUserInsert;
+use MediaWiki\Extension\CheckUser\HookHandler\RecentChangeSaveHandler;
+use MediaWiki\Extension\CheckUser\Services\CheckUserInsert;
+use MediaWiki\JobQueue\JobQueueGroup;
+use MediaWiki\JobQueue\JobSpecification;
+use MediaWiki\RecentChanges\RecentChange;
 use MediaWikiUnitTestCase;
-use RecentChange;
 use Wikimedia\Rdbms\IConnectionProvider;
 
 /**
- * @covers \MediaWiki\CheckUser\HookHandler\RecentChangeSaveHandler
+ * @covers \MediaWiki\Extension\CheckUser\HookHandler\RecentChangeSaveHandler
  * @group CheckUser
  */
 class RecentChangeSaveHandlerTest extends MediaWikiUnitTestCase {

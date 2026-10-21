@@ -1,0 +1,50 @@
+<?php
+
+namespace SMW\Exporter\ResourceBuilders;
+
+use SMW\DataItems\DataItem;
+use SMW\DataItems\Property;
+use SMW\Export\ExpData;
+
+/**
+ * @private
+ *
+ * @license GPL-2.0-or-later
+ * @since 2.5
+ *
+ * @author mwjames
+ */
+class RedirectPropertyValueResourceBuilder extends PredefinedPropertyValueResourceBuilder {
+
+	/**
+	 * @since 2.5
+	 *
+	 * {@inheritDoc}
+	 */
+	public function isResourceBuilderFor( Property $property ): bool {
+		return $property->getKey() === '_REDI';
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * {@inheritDoc}
+	 */
+	public function addResourceValue( ExpData $expData, Property $property, DataItem $dataItem ): void {
+		parent::addResourceValue( $expData, $property, $dataItem );
+
+		$expElement = $this->exporter->newExpElement(
+			$dataItem
+		);
+
+		if ( $expElement === null ) {
+			return;
+		}
+
+		$expData->addPropertyObjectValue(
+			$this->exporter->getSpecialPropertyResource( '_URI' ),
+			$expElement
+		);
+	}
+
+}

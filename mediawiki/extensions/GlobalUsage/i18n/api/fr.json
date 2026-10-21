@@ -1,0 +1,20 @@
+{
+	"@metadata": {
+		"authors": [
+			"Djiboun",
+			"Gomoko",
+			"Verdy p",
+			"Wladek92"
+		]
+	},
+	"apihelp-query+globalusage-summary": "Renvoie l’utilisation globale d’une certaine image.",
+	"apihelp-query+globalusage-param-prop": "Quelles propriétés renvoyer :",
+	"apihelp-query+globalusage-paramvalue-prop-url": "Ajoute l’URL.",
+	"apihelp-query+globalusage-paramvalue-prop-pageid": "Ajoute l’ID de la page.",
+	"apihelp-query+globalusage-paramvalue-prop-namespace": "Ajoute l’ID de l’espace de noms.",
+	"apihelp-query+globalusage-param-limit": "Combien de liens renvoyer.",
+	"apihelp-query+globalusage-param-filterlocal": "Filtre l’utilisation locale du fichier.",
+	"apihelp-query+globalusage-param-namespace": "Limiter les résultats à ces espaces de noms.",
+	"apihelp-query+globalusage-param-site": "Limiter les résultats à ces sites.",
+	"apihelp-query+globalusage-example-1": "Renvoie l’utilisation de [[:File:Example.jpg]]"
+}

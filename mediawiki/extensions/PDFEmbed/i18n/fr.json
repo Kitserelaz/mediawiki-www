@@ -1,0 +1,17 @@
+{
+	"@metadata": {
+		"authors": [
+			"Seb35",
+			"Verdy p",
+			"Wladek92"
+		]
+	},
+	"action-embed_pdf": "intégrer des PDF",
+	"pdfembed": "Intégration de PDF",
+	"pdfembed_description": "Extension du gestionnaire de médias pour les fichiers PDF.",
+	"embed_pdf_no_permission": "Vous n’avez pas le droit d’intégrer des fichiers PDF.",
+	"embed_pdf_blank_file": "L’URL ou le chemin du fichier donné pour intégrer un PDF est vide.",
+	"embed_pdf_invalid_file": "L’URL ou le chemin du fichier donné n’existe pas.",
+	"embed_pdf_invalid_user": "Un utilisateur non valide a été spécifié pour tester les permissions d’intégration de ce PDF.",
+	"right-embed_pdf": "Intégrer des fichiers PDF dans les pages"
+}

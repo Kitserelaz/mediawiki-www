@@ -2,16 +2,17 @@
 
 namespace LoginNotify;
 
-use MediaWiki\Title\Title;
+use MediaWiki\JobQueue\Job;
 
-class PurgeSeenJob extends \Job {
-	private LoginNotify $loginNotify;
-
-	public function __construct( Title $title, array $params, LoginNotify $loginNotify ) {
-		parent::__construct( 'LoginNotifyPurgeSeen', $title, $params );
-		$this->loginNotify = $loginNotify;
+class PurgeSeenJob extends Job {
+	public function __construct(
+		array $params,
+		private readonly LoginNotify $loginNotify,
+	) {
+		parent::__construct( 'LoginNotifyPurgeSeen', $params );
 	}
 
+	/** @inheritDoc */
 	public function run() {
 		$minId = $this->getParams()['minId'];
 		$this->loginNotify->purgeSeen( $minId );

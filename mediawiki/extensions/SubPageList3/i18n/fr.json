@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Crochet.david",
+			"Grondin",
+			"Urhixidur",
+			"Verdy p",
+			"Wladek92"
+		]
+	},
+	"spl3-desc": "Ajoute la balise <code>&lt;splist /&gt;</code> qui génère une liste de sous-pages d’une page donnée.",
+	"spl3_debug": "Valeur inconnue pour l’option $1.",
+	"spl3_nosubpages": "$1 n’a aucune sous-page à lister."
+}

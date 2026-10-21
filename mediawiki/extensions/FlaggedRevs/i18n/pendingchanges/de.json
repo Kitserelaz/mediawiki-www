@@ -1,0 +1,43 @@
+{
+	"@metadata": {
+		"authors": [
+			"Brettchenweber",
+			"FriedhelmW",
+			"Inkowik",
+			"Justman10000",
+			"Kghbln",
+			"Melancholie",
+			"Michawiki",
+			"Raimond Spekking",
+			"The Evil IP address",
+			"Umherirrender"
+		]
+	},
+	"pendingchanges": "Seiten mit unmarkierten Änderungen",
+	"pendingchanges-legend": "Liste gesichteter Seiten mit ungesichteten Versionen",
+	"pendingchanges-list": "Diese Spezialseite zeigt [[{{MediaWiki:Validationpage}}|markierte]] Seiten mit einer oder mehreren nicht markierten Bearbeitungen.",
+	"pendingchanges-none": "Gegenwärtig existieren keine Seiten, auf die diese Kriterien zutreffen.",
+	"pendingchanges-hours": "$1 {{PLURAL:$1|Stunde|Stunden}}",
+	"pendingchanges-days": "$1 {{PLURAL:$1|Tag|Tage}}",
+	"pendingchanges-recent": "weniger als 1 Stunde",
+	"pendingchanges-category": "Kategorie:",
+	"pendingchanges-limit": "Limit:",
+	"pendingchanges-edit-tag": "Änderungsmarkierung:",
+	"pendingchanges-edit-tag-any": "Jede Markierung",
+	"pendingchanges-onwatchlist": "Seiten auf meiner Beobachtungsliste",
+	"pendingchanges-stable": "Die stabile Version ist Standard",
+	"pendingchanges-diff": "Sichten",
+	"pendingchanges-size": "Maximale Änderungsgröße in Byte:",
+	"pendingchanges-unwatched": "unbeobachtet",
+	"pendingchanges-table-caption": "Ausstehende Änderungen",
+	"pendingchanges-table-page": "Seite",
+	"pendingchanges-table-size": "Größe",
+	"pendingchanges-table-pending-since": "Seit",
+	"pendingchanges-table-quality": "Qualität",
+	"pendingchanges-table-watching": "Aktive Beobachter",
+	"pendingchanges-table-history": "Versionsgeschichte",
+	"pendingchanges-table-review": "Überprüfen",
+	"pendingchanges-table-revision-history": "Versionsgeschichte",
+	"pendingchanges-table-footer": "Derzeit {{PLURAL:$2|ist $1 Änderung|sind $1 Änderungen}} ausstehend",
+	"pendingchanges-filter-submit-button-text": "Ausstehende Änderungen filtern"
+}

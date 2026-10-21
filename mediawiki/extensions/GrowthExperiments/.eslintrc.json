@@ -1,0 +1,31 @@
+{
+	"root": true,
+	"extends": [
+		"wikimedia/server"
+	],
+	"overrides": [
+		{
+			"files": [
+				"jest.setup.js"
+			],
+			"extends": [
+				"wikimedia/language/es6",
+				"wikimedia/mediawiki"
+			]
+		},
+		{
+			"files": [
+				"**/*.ts"
+			],
+			"extends": [
+				"@wmde/wikimedia-typescript"
+			],
+			"rules": {
+				"comma-dangle": [
+					"error",
+					"always-multiline"
+				]
+			}
+		}
+	]
+}

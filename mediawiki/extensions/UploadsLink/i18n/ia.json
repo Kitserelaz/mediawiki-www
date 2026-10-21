@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"McDutchie"
+		]
+	},
+	"uploadslink-desc": "Adde un ligamine al lista de incargamentos del usator actual al menu personal de utensiles e un ligamine al lista de incargamentos del usator relevante al menu Utensiles del barra lateral",
+	"uploadslink-portlet-label": "Files incargate",
+	"tooltip-pt-uploads": "Lista del files que tu ha incargate",
+	"uploadslink-toobox-label": "Incargamentos del {{GENDER:$1|usator}}",
+	"tooltip-tb-uploads": "Un lista de files incargate per iste {{GENDER:$1|usator}}"
+}

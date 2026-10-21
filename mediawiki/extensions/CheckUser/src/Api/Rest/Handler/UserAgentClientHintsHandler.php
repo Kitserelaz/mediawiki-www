@@ -1,19 +1,23 @@
 <?php
 
-namespace MediaWiki\CheckUser\Api\Rest\Handler;
+namespace MediaWiki\Extension\CheckUser\Api\Rest\Handler;
 
-use MediaWiki\CheckUser\ClientHints\ClientHintsData;
-use MediaWiki\CheckUser\Services\UserAgentClientHintsManager;
 use MediaWiki\Config\Config;
+use MediaWiki\Extension\CheckUser\ClientHints\ClientHintsData;
+use MediaWiki\Extension\CheckUser\Services\UserAgentClientHintsManager;
 use MediaWiki\Rest\LocalizedHttpException;
 use MediaWiki\Rest\SimpleHandler;
 use MediaWiki\Rest\TokenAwareHandlerTrait;
 use MediaWiki\Rest\Validator\Validator;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\RevisionStore;
+use MediaWiki\User\ActorStore;
+use MediaWiki\User\UserIdentityValue;
 use TypeError;
+use Wikimedia\IPUtils;
 use Wikimedia\Message\MessageValue;
 use Wikimedia\ParamValidator\ParamValidator;
+use Wikimedia\Rdbms\IConnectionProvider;
 use Wikimedia\Timestamp\ConvertibleTimestamp;
 
 /**
@@ -28,21 +32,13 @@ use Wikimedia\Timestamp\ConvertibleTimestamp;
 class UserAgentClientHintsHandler extends SimpleHandler {
 	use TokenAwareHandlerTrait;
 
-	private Config $config;
-	private RevisionStore $revisionStore;
-	private UserAgentClientHintsManager $userAgentClientHintsManager;
-
-	/**
-	 * @param Config $config
-	 * @param RevisionStore $revisionStore
-	 * @param UserAgentClientHintsManager $userAgentClientHintsManager
-	 */
 	public function __construct(
-		Config $config, RevisionStore $revisionStore, UserAgentClientHintsManager $userAgentClientHintsManager
+		private readonly Config $config,
+		private readonly RevisionStore $revisionStore,
+		private readonly UserAgentClientHintsManager $userAgentClientHintsManager,
+		private readonly IConnectionProvider $dbProvider,
+		private readonly ActorStore $actorStore,
 	) {
-		$this->config = $config;
-		$this->revisionStore = $revisionStore;
-		$this->userAgentClientHintsManager = $userAgentClientHintsManager;
 	}
 
 	/**
@@ -55,11 +51,13 @@ class UserAgentClientHintsHandler extends SimpleHandler {
 		$this->validateToken( true );
 	}
 
+	/** @inheritDoc */
 	public function run() {
 		if ( !$this->config->get( 'CheckUserClientHintsEnabled' ) ) {
 			// Pretend the route doesn't exist if the feature flag is off.
 			throw new LocalizedHttpException(
-				new MessageValue( 'rest-no-match' ), 404
+				new MessageValue( 'rest-no-match' ),
+				404
 			);
 		}
 		$data = $this->getValidatedBody();
@@ -86,35 +84,32 @@ class UserAgentClientHintsHandler extends SimpleHandler {
 			// ::newFromJsApi with the $data may raise a TypeError as the $data
 			// does not have its type validated (T305973).
 			$clientHints = ClientHintsData::newFromJsApi( $data );
-		} catch ( TypeError $e ) {
+		} catch ( TypeError ) {
 			throw new LocalizedHttpException( new MessageValue( 'rest-bad-json-body' ), 400 );
 		}
 		$type = $this->getValidatedParams()['type'];
 		$identifier = $this->getValidatedParams()['id'];
 		if ( $type === 'revision' ) {
 			$this->performValidationForRevision( $identifier );
+		} elseif ( $type === 'privatelog' ) {
+			$this->performValidationForPrivateLog( $identifier );
 		} else {
 			// If the type is not supported, pretend the route doesn't exist.
 			throw new LocalizedHttpException(
-				new MessageValue( 'rest-no-match' ), 404
+				new MessageValue( 'rest-no-match' ),
+				404
 			);
 		}
 		$status = $this->userAgentClientHintsManager->insertClientHintValues( $clientHints, $identifier, $type );
 		if ( !$status->isGood() ) {
-			$error = $status->getErrors()[0];
-			// A client hints mapping entry already exists.
-			throw new LocalizedHttpException(
-				new MessageValue( $error['message'], $error['params'][0] ),
-				400
-			);
+			throw new LocalizedHttpException( MessageValue::newFromSpecifier( $status->getMessages()[0] ), 400 );
 		}
 
-		$response = $this->getResponseFactory()->createJson( [
-			"value" => $this->getResponseFactory()->formatMessage(
+		return $this->getResponseFactory()->createJson( [
+			'value' => $this->getResponseFactory()->formatMessage(
 				new MessageValue( 'checkuser-api-useragent-clienthints-explanation' )
-			)
+			),
 		] );
-		return $response;
 	}
 
 	/**
@@ -132,7 +127,9 @@ class UserAgentClientHintsHandler extends SimpleHandler {
 		$revision = $this->revisionStore->getRevisionById( $revisionId );
 		if ( !$revision ) {
 			throw new LocalizedHttpException(
-				new MessageValue( 'rest-nonexistent-revision', [ $revisionId ] ), 404 );
+				new MessageValue( 'rest-nonexistent-revision', [ $revisionId ] ),
+				404
+			);
 		}
 		$this->performTimestampValidation( $revision->getTimestamp(), 'revision', $revisionId );
 		// Check the performer of the action is the same as the user submitting this REST API request
@@ -152,29 +149,78 @@ class UserAgentClientHintsHandler extends SimpleHandler {
 	}
 
 	/**
+	 * Check whether Client Hints data can be stored for the private log event ID.
+	 * This method checks that the revision with this private log event ID exists,
+	 * was not made over wgCheckUserClientHintsRestApiMaxTimeLag seconds ago, and
+	 * that the user making the request performed the private log.
+	 *
+	 * @param int $privateLogId The private log ID
+	 * @return void
+	 * @throws LocalizedHttpException If the checks fail, this exception will be raised.
+	 */
+	private function performValidationForPrivateLog( int $privateLogId ) {
+		// Fetch details about the private event with ID $privateLogId
+		$dbr = $this->dbProvider->getReplicaDatabase();
+		$privateEventRow = $dbr->newSelectQueryBuilder()
+			->select( [ 'cupe_timestamp', 'cupe_actor', 'cupe_ip_hex' ] )
+			->from( 'cu_private_event' )
+			->where( [ 'cupe_id' => $privateLogId ] )
+			->caller( __METHOD__ )
+			->fetchRow();
+		if ( $privateEventRow === false ) {
+			throw new LocalizedHttpException(
+				new MessageValue(
+					'checkuser-api-useragent-clienthints-nonexistent-id',
+					[ 'privatelog', $privateLogId ]
+				),
+				404
+			);
+		}
+		$this->performTimestampValidation( $privateEventRow->cupe_timestamp, 'privatelog', $privateLogId );
+		// Check the performer of the action is the same as the user submitting this REST API request
+		if ( $privateEventRow->cupe_actor === null && $privateEventRow->cupe_ip_hex !== null ) {
+			// Use the IP as the user_text if the actor ID is NULL and the IP is not NULL (T353953).
+			$performingUser = new UserIdentityValue(
+				0,
+				IPUtils::formatHex( $privateEventRow->cupe_ip_hex )
+			);
+		} else {
+			$performingUser = $this->actorStore->getActorById( $privateEventRow->cupe_actor, $dbr );
+		}
+		$user = $this->getAuthority()->getUser();
+		if ( !$performingUser->equals( $user ) ) {
+			throw new LocalizedHttpException(
+				new MessageValue(
+					'checkuser-api-useragent-clienthints-revision-user-mismatch',
+					[ $user->getId(), $privateLogId ]
+				),
+				401
+			);
+		}
+	}
+
+	/**
 	 * Validate that the API was not called over wgCheckUserClientHintsRestApiMaxTimeLag
 	 * seconds ago.
 	 *
-	 * @param ?string $associatedEntryTimestamp The timestamp associated with the $identifier in TS_MW form.
-	 *   If null, the validation will always fail.
+	 * @param ?string $associatedEntryTimestamp The timestamp associated with the $identifier in any format
+	 *   accepted by {@link ConvertibleTimestamp}. If null, the validation will always fail.
 	 * @param string $type The type of the $identifier (e.g. revision)
 	 * @param int $identifier The ID of the entry of type $type
 	 * @return void
 	 * @throws LocalizedHttpException If the validation fails, this exception will be raised.
 	 */
 	private function performTimestampValidation(
-		?string $associatedEntryTimestamp, string $type, int $identifier
+		?string $associatedEntryTimestamp,
+		string $type,
+		int $identifier
 	): void {
 		// Check that the API was not called too long after the edit
-		$cutoff = ConvertibleTimestamp::convert(
-			TS_MW,
-			ConvertibleTimestamp::time() - $this->config->get( 'CheckUserClientHintsRestApiMaxTimeLag' )
-		);
-		// If there is no timestamp associated with this action, then
-		// this method cannot perform the timestamp check. This should
-		// rarely happen and is likely to occur for actions that are
-		// already too old, so just don't store data in this case.
-		if ( $associatedEntryTimestamp < $cutoff ) {
+		$cutoff = ConvertibleTimestamp::time() - $this->config->get( 'CheckUserClientHintsRestApiMaxTimeLag' );
+		if (
+			$associatedEntryTimestamp === null ||
+			ConvertibleTimestamp::convert( TS_UNIX, $associatedEntryTimestamp ) < $cutoff
+		) {
 			throw new LocalizedHttpException(
 				new MessageValue(
 					'checkuser-api-useragent-clienthints-called-too-late',
@@ -185,6 +231,7 @@ class UserAgentClientHintsHandler extends SimpleHandler {
 		}
 	}
 
+	/** @inheritDoc */
 	public function needsWriteAccess() {
 		return true;
 	}
@@ -210,7 +257,7 @@ class UserAgentClientHintsHandler extends SimpleHandler {
 		return [
 			'brands' => [
 				self::PARAM_SOURCE => 'body',
-				ParamValidator::PARAM_TYPE => 'array'
+				ParamValidator::PARAM_TYPE => 'array',
 			],
 			'mobile' => [
 				self::PARAM_SOURCE => 'body',
@@ -222,15 +269,15 @@ class UserAgentClientHintsHandler extends SimpleHandler {
 			],
 			'architecture' => [
 				self::PARAM_SOURCE => 'body',
-				ParamValidator::PARAM_TYPE => 'string'
+				ParamValidator::PARAM_TYPE => 'string',
 			],
 			'bitness' => [
 				self::PARAM_SOURCE => 'body',
-				ParamValidator::PARAM_TYPE => 'string'
+				ParamValidator::PARAM_TYPE => 'string',
 			],
 			'fullVersionList' => [
 				self::PARAM_SOURCE => 'body',
-				ParamValidator::PARAM_TYPE => 'array'
+				ParamValidator::PARAM_TYPE => 'array',
 			],
 			'model' => [
 				self::PARAM_SOURCE => 'body',
@@ -250,3 +297,13 @@ class UserAgentClientHintsHandler extends SimpleHandler {
 		] + $this->getTokenParamDefinition();
 	}
 }
+
+// @codeCoverageIgnoreStart
+/**
+ * @deprecated since 1.46
+ */
+class_alias(
+	UserAgentClientHintsHandler::class,
+	'MediaWiki\\CheckUser\\Api\\Rest\\Handler\\UserAgentClientHintsHandler'
+);
+// @codeCoverageIgnoreEnd

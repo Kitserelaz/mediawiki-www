@@ -1,0 +1,72 @@
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.98kB 0.0s done
+#1 DONE 0.1s
+
+#2 [internal] load metadata for docker.io/library/node:22.22.0-bookworm-slim@sha256:dd9d21971ec4395903fa6143c2b9267d048ae01ca6d3ea96f16cb30df6187d94
+#2 DONE 1.3s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 113B done
+#3 DONE 0.1s
+
+#4 [dependencies 1/6] FROM docker.io/library/node:22.22.0-bookworm-slim@sha256:dd9d21971ec4395903fa6143c2b9267d048ae01ca6d3ea96f16cb30df6187d94
+#4 resolve docker.io/library/node:22.22.0-bookworm-slim@sha256:dd9d21971ec4395903fa6143c2b9267d048ae01ca6d3ea96f16cb30df6187d94 0.0s done
+#4 DONE 0.1s
+
+#5 [internal] load build context
+#5 transferring context: 2.39MB 0.1s done
+#5 DONE 0.2s
+
+#6 [stage-1 5/9] COPY --chown=node:node db ./db
+#6 CACHED
+
+#7 [stage-1 7/9] COPY --chown=node:node views ./views
+#7 CACHED
+
+#8 [stage-1 8/9] COPY --chown=node:node assets ./assets
+#8 CACHED
+
+#9 [dependencies 5/6] COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+#9 CACHED
+
+#10 [dependencies 6/6] RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm install --prod --frozen-lockfile
+#10 CACHED
+
+#11 [stage-1 4/9] COPY --chown=node:node package.json index.js ./
+#11 CACHED
+
+#12 [dependencies 4/6] WORKDIR /app
+#12 CACHED
+
+#13 [stage-1 6/9] COPY --chown=node:node utils ./utils
+#13 CACHED
+
+#14 [dependencies 2/6] RUN printf 'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian/%s/ bookworm main\ndeb [check-valid-until=no] http://snapshot.debian.org/archive/debian/%s/ bookworm-updates main\ndeb [check-valid-until=no] http://snapshot.debian.org/archive/debian-security/%s/ bookworm-security main\n' "20261015T000000Z" "20261015T000000Z" "20261015T000000Z" > /etc/apt/sources.list     && rm -f /etc/apt/sources.list.d/debian.sources
+#14 CACHED
+
+#15 [dependencies 3/6] RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ ca-certificates     && sed -i 's|http://snapshot.debian.org/|https://snapshot.debian.org/|g' /etc/apt/sources.list     && rm -rf /var/lib/apt/lists/*     && corepack enable && corepack prepare pnpm@10.11.0 --activate
+#15 CACHED
+
+#16 [stage-1 3/9] COPY --from=dependencies /app/node_modules ./node_modules
+#16 CACHED
+
+#17 [stage-1 2/9] WORKDIR /app
+#17 CACHED
+
+#18 [stage-1 9/9] RUN mkdir -p /app/data && chown node:node /app/data
+#18 CACHED
+
+#19 exporting to image
+#19 exporting layers done
+#19 exporting manifest sha256:3597ac44f4bfe0b89df38278029db3112fd8752554367ff1e0b689425a5b0dec done
+#19 exporting config sha256:9781abc1934d161fdf4558fb0741b2b9178a5bdee0d3f4bc3007c12f72840f3d done
+#19 exporting attestation manifest sha256:f2e052f362a8c4cf2eea5784299639d403032e1d838d761559ef31e031d60959
+#19 exporting attestation manifest sha256:f2e052f362a8c4cf2eea5784299639d403032e1d838d761559ef31e031d60959 0.0s done
+#19 exporting manifest list sha256:d19bfbc915762b70cc0e53b4901960adfa5b3f3df939a362e81c08bbd59f8ec0 0.0s done
+#19 naming to docker.io/library/cloudwiki-counter:upgrade-clean-20261018-amd64 done
+#19 DONE 0.2s
+
+#20 resolving provenance for metadata file
+#20 DONE 0.0s

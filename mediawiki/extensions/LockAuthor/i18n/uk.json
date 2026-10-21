@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"DDPAT",
+			"Ice bulldog",
+			"Movses"
+		]
+	},
+	"lockauthor-desc": "Забороняє користувачам редагувати сторінки, які вони не створили",
+	"action-editall": "редагувати усі сторінки",
+	"right-editall": "Редагувати всі сторінки"
+}

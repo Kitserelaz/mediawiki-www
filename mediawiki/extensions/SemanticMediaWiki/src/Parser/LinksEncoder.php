@@ -1,0 +1,237 @@
+<?php
+
+namespace SMW\Parser;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 2.5
+ *
+ * @author mwjames
+ */
+class LinksEncoder {
+
+	/**
+	 * @since 2.5
+	 */
+	public static function findAndEncodeLinks( string $text, InTextAnnotationParser $parser ): string|array {
+		// #2193
+		// Use &#x005B; instead of &#91; to distinguish it from the MW's Sanitizer
+		// who uses the same decode sequence and avoid issues when removing links
+		// after obfuscation
+
+		// #2671
+		// Use &#x005D; instead of &#93; (]) since CiteExtension use the later as
+		// encoding for the ref brackets
+
+		// Filter simple [ ... ] from [[ ... ]] links and ensure to find the correct
+		// start and end in case of [[Foo::[[Bar]]]] or [[Foo::[http://example.org/foo]]]
+		$text = str_replace(
+			[ '[', ']', '&#x005B;&#x005B;', '&#x005D;&#x005D;&#x005D;&#x005D;', '&#x005D;&#x005D;&#x005D;', '&#x005D;&#x005D;' ],
+			[ '&#x005B;', '&#x005D;', '[[', ']]]]', '&#x005D;]]', ']]' ],
+			$text
+		);
+
+		// Deep nesting is NOT supported as in [[Foo::[[abc]] [[Bar::123[[abc]] ]] ]]
+		return self::matchAndReplace( $text, $parser );
+	}
+
+	/**
+	 * @since 2.5
+	 */
+	public static function removeLinkObfuscation( string $text ): string {
+		$from = [ '&#x005B;', '&#x005D;', '&#124;' ];
+		$to = [ '[', ']', '|' ];
+
+		return str_replace( $from, $to, $text );
+	}
+
+	/**
+	 * @since 2.5
+	 */
+	public static function encodeLinks( string $text ): string {
+		return str_replace(
+			[ '[', ']', '|' ],
+			[ '&#x005B;', '&#x005D;', '&#124;' ],
+			$text
+		);
+	}
+
+	/**
+	 * @since 2.5
+	 */
+	public static function decodeSquareBracket( string $text ): string {
+		return str_replace( [ '%5B', '%5D' ], [ '[', ']' ], $text );
+	}
+
+	/**
+	 * Strips the annotation syntax from text that re-enters the wikitext
+	 * stream ahead of InTextAnnotationParser, so that it cannot annotate.
+	 *
+	 * A parser function returns its result while the Parser expands templates,
+	 * which is before InTextAnnotationParser scans the page, so text a parser
+	 * function passes through reaches that scan: `[[Bar::Baz]]` would store an
+	 * annotation of its own and `[[SMW::off]]` would discard the annotations of
+	 * everything that follows it. The `[[Foo::Bar]]` syntax needs none of this,
+	 * as InTextAnnotationParser consumes its text itself and never rescans it.
+	 *
+	 * @since 7.2.0
+	 */
+	public static function neutralizeAnnotation( string $text ): string {
+		// removeAnnotation() reduces an annotation to the text it displays and
+		// leaves ordinary links alone, but unwraps one level at a time, so
+		// repeat it to reduce a value that is an annotation in its own right.
+		// It never lengthens the text, hence this settles.
+		do {
+			$previous = $text;
+			$text = self::removeAnnotation( $text );
+		} while ( $text !== $previous );
+
+		// Some shapes are deliberately left intact by removeAnnotation (#1747),
+		// so encode the brackets of whatever it did not reduce.
+		return (string)self::obfuscateAnnotation( $text );
+	}
+
+	/**
+	 * @since 2.5
+	 */
+	public static function obfuscateAnnotation( string $text ): ?string {
+		return preg_replace_callback(
+			LinksProcessor::getRegexpPattern( false ),
+			static function ( array $matches ): string {
+				return str_replace( '[', '&#91;', $matches[0] );
+			},
+			self::decodeSquareBracket( $text )
+		);
+	}
+
+	/**
+	 * @since 2.5
+	 */
+	public static function removeAnnotation( string $text ): string {
+		if ( strpos( $text, '::' ) === false && strpos( $text, ':=' ) === false ) {
+			return $text;
+		}
+
+		return preg_replace_callback(
+			LinksProcessor::getRegexpPattern( false ),
+			[ self::class, 'doRemoveAnnotation' ],
+			self::decodeSquareBracket( $text )
+		);
+	}
+
+	private static function doRemoveAnnotation( array $matches ) {
+		$caption = false;
+		$value = '';
+
+		// #1453
+		if ( $matches[0] === InTextAnnotationParser::OFF || $matches[0] === InTextAnnotationParser::ON ) {
+			return false;
+		}
+
+		// Strict mode matching
+		if ( array_key_exists( 1, $matches ) ) {
+			if ( strpos( $matches[1], ':' ) !== false && isset( $matches[2] ) ) {
+				[ $matches[1], $matches[2] ] = explode( '::', $matches[1] . '::' . $matches[2], 2 );
+			}
+		}
+
+		if ( array_key_exists( 2, $matches ) ) {
+
+			// #1747
+			if ( strpos( $matches[1], '|' ) !== false ) {
+				return $matches[0];
+			}
+
+			$parts = explode( '|', $matches[2] );
+			$value = array_key_exists( 0, $parts ) ? $parts[0] : '';
+			$caption = array_key_exists( 1, $parts ) ? $parts[1] : false;
+		}
+
+		// #1855
+		if ( $value === '@@@' ) {
+			$value = '';
+		}
+
+		return $caption !== false ? $caption : $value;
+	}
+
+	private static function matchAndReplace( array|string $text, InTextAnnotationParser $parser ): string|array {
+		/**
+		 * @see http://blog.angeloff.name/post/2012/08/05/php-recursive-patterns/
+		 *
+		 * \[{2}         # find the first opening '[['.
+		 *   (?:         # start a new group, this is so '|' below does not apply/affect the opening '['.
+		 *     [^\[\]]+  # skip ahead happily if no '[' or ']'.
+		 *     |         #   ...otherwise...
+		 *     (?R)      # we may be at the start of a new group, repeat whole pattern.
+		 *     )
+		 *   *           # nesting can be many levels deep.
+		 * \]{2}         # finally, expect a balanced closing ']]'
+		 */
+		preg_match_all( "/\[{2}(?:[^\[\]]+|(?R))*\]{2}/is", $text, $matches );
+		$isOffAnnotation = false;
+
+		// At this point we distinguish between a normal [[Foo::bar]] annotation
+		// and a compound construct such as [[Foo::[[Foobar::Bar]] ]] and
+		// [[Foo::[http://example.org/foo foo] [[Foo::123|Bar]] ]].
+		//
+		// Only the compound is being processed and matched as we require to
+		// identify the boundaries of the enclosing annotation
+		foreach ( $matches[0] as $match ) {
+
+			// Ignore simple links like `[[:Property:Has URL|Has URL]]` but
+			// do parse `[[Has description::[[foo]][[:bar]]]]` (:= legacy notation)
+			if ( strpos( $match, '[[' ) !== false && strpos( $match, '::' ) === false && strpos( $match, ':=' ) === false ) {
+				continue;
+			}
+
+			// Remember whether the text contains OFF/ON marker (added by
+			// recursive parser, template, embedded result printer)
+			if ( $isOffAnnotation === false ) {
+				$isOffAnnotation = $match === InTextAnnotationParser::OFF;
+			}
+
+			$annotationOpenNum = substr_count( $match, '[[' );
+
+			// Only engage if the match contains more than one [[ :: ]] pair
+			if ( $annotationOpenNum > 1 ) {
+				$replace = self::replace( $match, $parser, $isOffAnnotation );
+				$text = str_replace( $match, $replace, $text );
+			}
+		}
+
+		return $text;
+	}
+
+	private static function replace( string $match, InTextAnnotationParser $parser, bool $isOffAnnotation = false ): string {
+		// Remove the Leading and last square bracket to avoid distortion
+		// during the annotation parsing
+		$match = substr( substr( $match, 2 ), 0, -2 );
+
+		// Restore OFF/ON for the recursive processing
+		if ( $isOffAnnotation ) {
+			$match = InTextAnnotationParser::OFF . $match . InTextAnnotationParser::ON;
+		}
+
+		// Only match annotations of style [[...::...]] during a recursive
+		// obfuscation process, any other processing is being done by the
+		// InTextAnnotation parser hereafter
+		//
+		// [[Foo::Bar]] annotation therefore run a pattern match and
+		// obfuscate the returning [[, |, ]] result
+		$replace = self::encodeLinks( preg_replace_callback(
+			LinksProcessor::getRegexpPattern( false ),
+			[ $parser, 'preprocess' ],
+			$match
+		) );
+
+		// Decode the pipe as part of a hidden marker (`...]]|`) to ensure that
+		// the standard MediaWiki parser can work its magic to hide the part of
+		// the string
+		$replace = str_replace( "&#x005D;&#x005D;&#124;", "&#x005D;&#x005D;|", $replace );
+
+		// Restore the square brackets
+		return '[[' . $replace . ']]';
+	}
+
+}

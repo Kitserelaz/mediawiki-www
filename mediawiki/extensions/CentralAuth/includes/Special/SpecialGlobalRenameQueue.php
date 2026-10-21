@@ -1,0 +1,1031 @@
+<?php
+/**
+ * @section LICENSE
+ * @license GPL-2.0-or-later
+ *
+ * @file
+ * @ingroup SpecialPage
+ */
+
+namespace MediaWiki\Extension\CentralAuth\Special;
+
+use Exception;
+use MediaWiki\Extension\CentralAuth\CentralAuthDatabaseManager;
+use MediaWiki\Extension\CentralAuth\CentralAuthUIService;
+use MediaWiki\Extension\CentralAuth\Config\CAMainConfigNames;
+use MediaWiki\Extension\CentralAuth\GlobalRename\GlobalRenameFactory;
+use MediaWiki\Extension\CentralAuth\GlobalRename\GlobalRenameRequest;
+use MediaWiki\Extension\CentralAuth\GlobalRename\GlobalRenameRequestStore;
+use MediaWiki\Extension\CentralAuth\GlobalRename\GlobalRenameUserLogger;
+use MediaWiki\Extension\CentralAuth\GlobalRename\LocalRenameJob\LocalRenameUserJob;
+use MediaWiki\Extension\CentralAuth\User\CentralAuthAntiSpoofManager;
+use MediaWiki\Extension\CentralAuth\User\CentralAuthUser;
+use MediaWiki\Extension\TitleBlacklist\TitleBlacklist;
+use MediaWiki\Extension\TitleBlacklist\TitleBlacklistEntry;
+use MediaWiki\Html\Html;
+use MediaWiki\HTMLForm\HTMLForm;
+use MediaWiki\JobQueue\JobQueueGroupFactory;
+use MediaWiki\Logger\LoggerFactory;
+use MediaWiki\Logging\LogEventsList;
+use MediaWiki\Mail\MailAddress;
+use MediaWiki\Mail\UserMailer;
+use MediaWiki\MainConfigNames;
+use MediaWiki\Parser\ParserOptions;
+use MediaWiki\Registration\ExtensionRegistry;
+use MediaWiki\SpecialPage\SpecialPage;
+use MediaWiki\Title\Title;
+use MediaWiki\User\User;
+use MediaWiki\User\UserIdentityLookup;
+use MediaWiki\User\UserNameUtils;
+use MediaWiki\WikiMap\WikiMap;
+use OOUI\MessageWidget;
+use Psr\Log\LoggerInterface;
+use RuntimeException;
+use StatusValue;
+use Wikimedia\Rdbms\LBFactory;
+
+/**
+ * Process account rename requests made via [[Special:GlobalRenameRequest]].
+ *
+ * @author Bryan Davis <bd808@wikimedia.org>
+ * @copyright © 2014 Bryan Davis and Wikimedia Foundation.
+ * @ingroup SpecialPage
+ */
+class SpecialGlobalRenameQueue extends SpecialPage {
+
+	private UserNameUtils $userNameUtils;
+	private LBFactory $lbFactory;
+	private CentralAuthDatabaseManager $databaseManager;
+	private CentralAuthUIService $uiService;
+	private GlobalRenameRequestStore $globalRenameRequestStore;
+	private JobQueueGroupFactory $jobQueueGroupFactory;
+	private CentralAuthAntiSpoofManager $caAntiSpoofManager;
+	private GlobalRenameFactory $globalRenameFactory;
+	private UserIdentityLookup $userIdentityLookup;
+	private LoggerInterface $logger;
+
+	public const PAGE_OPEN_QUEUE = 'open';
+	public const PAGE_PROCESS_REQUEST = 'request';
+	public const PAGE_CLOSED_QUEUE = 'closed';
+
+	private const ACTION_CANCEL = 'cancel';
+	public const ACTION_VIEW = 'view';
+
+	public function __construct(
+		UserNameUtils $userNameUtils,
+		LBFactory $lbFactory,
+		CentralAuthDatabaseManager $databaseManager,
+		CentralAuthUIService $uiService,
+		GlobalRenameRequestStore $globalRenameRequestStore,
+		JobQueueGroupFactory $jobQueueGroupFactory,
+		CentralAuthAntiSpoofManager $caAntiSpoofManager,
+		GlobalRenameFactory $globalRenameFactory,
+		UserIdentityLookup $userIdentityLookup
+	) {
+		parent::__construct( 'GlobalRenameQueue' );
+		$this->userNameUtils = $userNameUtils;
+		$this->lbFactory = $lbFactory;
+		$this->databaseManager = $databaseManager;
+		$this->uiService = $uiService;
+		$this->globalRenameRequestStore = $globalRenameRequestStore;
+		$this->jobQueueGroupFactory = $jobQueueGroupFactory;
+		$this->caAntiSpoofManager = $caAntiSpoofManager;
+		$this->globalRenameFactory = $globalRenameFactory;
+		$this->userIdentityLookup = $userIdentityLookup;
+		$this->logger = LoggerFactory::getInstance( 'CentralAuth' );
+	}
+
+	/** @inheritDoc */
+	public function getRestriction(): string {
+		return 'centralauth-rename';
+	}
+
+	/** @inheritDoc */
+	public function doesWrites() {
+		return true;
+	}
+
+	/**
+	 * @param string|null $par Subpage string if one was specified
+	 */
+	public function execute( $par ) {
+		$navigation = explode( '/', $par ?? '' );
+		$action = array_shift( $navigation );
+
+		$this->outputHeader();
+		$this->addSubtitleLinks();
+
+		switch ( $action ) {
+			case self::PAGE_OPEN_QUEUE:
+				$this->handleOpenQueue();
+				break;
+
+			case self::PAGE_CLOSED_QUEUE:
+				$this->handleClosedQueue();
+				break;
+
+			case self::PAGE_PROCESS_REQUEST:
+				$this->handleProcessRequest( $navigation );
+				break;
+
+			default:
+				$this->doRedirectToOpenQueue();
+				break;
+		}
+	}
+
+	/**
+	 * @param string $titleMessage Message name for page title
+	 * @param array $titleParams Params for page title
+	 */
+	protected function commonPreamble( $titleMessage, $titleParams = [] ) {
+		$out = $this->getOutput();
+		$this->setHeaders();
+		$this->checkPermissions();
+		$out->setPageTitleMsg( $this->msg( $titleMessage, $titleParams ) );
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function getAssociatedNavigationLinks() {
+		return [
+			$this->getPageTitle( self::PAGE_OPEN_QUEUE )->getPrefixedText(),
+			$this->getPageTitle( self::PAGE_CLOSED_QUEUE )->getPrefixedText(),
+		];
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function getShortDescription( string $path = '' ): string {
+		switch ( $path ) {
+			case $this->getPageTitle( self::PAGE_OPEN_QUEUE )->getText():
+				return $this->msg( 'globalrenamequeue-nav-openqueue' )->text();
+			case $this->getPageTitle( self::PAGE_CLOSED_QUEUE )->getText():
+				return $this->msg( 'globalrenamequeue-nav-closedqueue' )->text();
+			default:
+				return '';
+		}
+	}
+
+	private function addSubtitleLinks() {
+		if ( $this->getSkin()->supportsMenu( 'associated-pages' ) ) {
+			// Already shown by the skin
+			return;
+		}
+		$links = [];
+		foreach ( $this->getAssociatedNavigationLinks() as $titleText ) {
+			$title = Title::newFromText( $titleText );
+			$links[] = $this->getLinkRenderer()->makeKnownLink(
+				$title,
+				$this->getShortDescription( $title->getText() )
+			);
+		}
+		$this->getOutput()->addSubtitle( $this->getLanguage()->pipeList( $links ) );
+	}
+
+	/**
+	 * Get an array of fields for use by the HTMLForm shown above the pager.
+	 *
+	 * @return array[]
+	 */
+	private function getCommonFormFieldsArray() {
+		$lang = $this->getLanguage();
+		return [
+			'username' => [
+				'type' => 'text',
+				'name' => 'username',
+				'label-message' => 'globalrenamequeue-form-username',
+				'size' => 30,
+			],
+			'newname' => [
+				'type' => 'text',
+				'name' => 'newname',
+				'size' => 30,
+				'label-message' => 'globalrenamequeue-form-newname',
+			],
+			'limit' => [
+				'type' => 'limitselect',
+				'name' => 'limit',
+				'label-message' => 'table_pager_limit_label',
+				'options' => [
+					$lang->formatNum( 25 ) => 25,
+					$lang->formatNum( 50 ) => 50,
+					$lang->formatNum( 75 ) => 75,
+					$lang->formatNum( 100 ) => 100,
+				],
+			],
+			'type' => [
+				'type' => 'select',
+				'name' => 'type',
+				'label-message' => 'globalrenamequeue-form-type',
+				'options-messages' => [
+					'globalrenamequeue-form-type-all' => 'all',
+					'globalrenamequeue-form-type-rename' => GlobalRenameRequest::RENAME,
+					'globalrenamequeue-form-type-vanish' => GlobalRenameRequest::VANISH,
+				],
+				'default' => 'all',
+			],
+		];
+	}
+
+	/**
+	 * Initialize and output the HTMLForm used for filtering.
+	 */
+	private function outputFilterForm( array $formDescriptor ) {
+		$htmlForm = HTMLForm::factory( 'ooui', $formDescriptor, $this->getContext() );
+		$htmlForm
+			->setMethod( 'get' )
+			->setWrapperLegendMsg( 'search' )
+			->prepareForm()->displayForm( false );
+	}
+
+	/**
+	 * Handle requests to display the open request queue
+	 */
+	protected function handleOpenQueue() {
+		$this->commonPreamble( 'globalrenamequeue' );
+		$this->outputFilterForm( $this->getCommonFormFieldsArray() );
+
+		$pager = new RenameQueueTablePager(
+			$this->getContext(),
+			$this->getLinkRenderer(),
+			$this->databaseManager,
+			$this->userNameUtils,
+			self::PAGE_OPEN_QUEUE
+		);
+		$this->getOutput()->addParserOutputContent(
+			$pager->getFullOutput(),
+			ParserOptions::newFromContext( $this->getContext() )
+		);
+	}
+
+	/**
+	 * Handle requests to display the closed request queue
+	 */
+	protected function handleClosedQueue() {
+		$this->commonPreamble( 'globalrenamequeue' );
+		$formDescriptor = array_merge(
+			$this->getCommonFormFieldsArray(),
+			[
+				'status' => [
+					'type' => 'select',
+					'name' => 'status',
+					'label-message' => 'globalrenamequeue-form-status',
+					'options-messages' => [
+						'globalrenamequeue-form-status-all' => 'all',
+						'globalrenamequeue-view-approved' => GlobalRenameRequest::APPROVED,
+						'globalrenamequeue-view-rejected' => GlobalRenameRequest::REJECTED,
+					],
+					'default' => 'all',
+				]
+			]
+		);
+		$this->outputFilterForm( $formDescriptor );
+
+		$pager = new RenameQueueTablePager(
+			$this->getContext(),
+			$this->getLinkRenderer(),
+			$this->databaseManager,
+			$this->userNameUtils,
+			self::PAGE_CLOSED_QUEUE
+		);
+		$this->getOutput()->addParserOutputContent(
+			$pager->getFullOutput(),
+			ParserOptions::newFromContext( $this->getContext() )
+		);
+	}
+
+	/**
+	 * Handle requests related to processing a request.
+	 *
+	 * @param array $pathArgs Extra path arguments
+	 */
+	protected function handleProcessRequest( array $pathArgs ) {
+		if ( !$pathArgs ) {
+			$this->doRedirectToOpenQueue();
+			return;
+		}
+
+		$rqId = array_shift( $pathArgs );
+		if ( !is_numeric( $rqId ) ) {
+			$this->showUnknownRequest();
+			return;
+		}
+		$req = $this->globalRenameRequestStore->newFromId( $rqId );
+		if ( !$req->exists() ) {
+			$this->showUnknownRequest();
+			return;
+		}
+
+		$action = array_shift( $pathArgs );
+		if ( !$req->isPending() ) {
+			$action = self::ACTION_VIEW;
+		}
+
+		switch ( $action ) {
+			case self::ACTION_CANCEL:
+				$this->doRedirectToOpenQueue();
+				break;
+			case self::ACTION_VIEW:
+				$this->doViewRequest( $req );
+				break;
+			default:
+				$this->doShowProcessForm( $req );
+				break;
+		}
+	}
+
+	private function showUnknownRequest() {
+		$this->commonPreamble( 'globalrenamequeue-request-unknown-title' );
+		$this->getOutput()->addWikiMsg(
+			'globalrenamequeue-request-unknown-body'
+		);
+	}
+
+	protected function doRedirectToOpenQueue() {
+		$this->getOutput()->redirect(
+			$this->getPageTitle( self::PAGE_OPEN_QUEUE )->getFullURL()
+		);
+	}
+
+	/**
+	 * Format a rename reason for display, handling multi-line content properly.
+	 *
+	 * @param string $reason The reason text
+	 * @return string Formatted HTML
+	 */
+	protected function formatReason( $reason ) {
+		if ( $reason === '' ) {
+			return '';
+		}
+		$escaped = htmlspecialchars( $reason, ENT_QUOTES | ENT_HTML5 );
+		$withBreaks = str_replace( "\n", '<br>', $escaped );
+		return "<dl><dd>$withBreaks</dd></dl>";
+	}
+
+	/**
+	 * Display a request.
+	 */
+	protected function doViewRequest( GlobalRenameRequest $req ) {
+		$isVanishRequest = $req->getType() === GlobalRenameRequest::VANISH;
+
+		if ( $isVanishRequest ) {
+			$this->commonPreamble(
+				'globalrenamequeue-request-vanish-status-title',
+				[ $req->getName() ]
+			);
+		} else {
+			$this->commonPreamble(
+				'globalrenamequeue-request-status-title',
+				[ $req->getName(), $req->getNewName() ]
+			);
+		}
+
+		$reason = $this->formatReason( $req->getReason() ?: '' );
+
+		$renamer = CentralAuthUser::newFromId( $req->getPerformer() );
+		if ( $renamer === false ) {
+			throw new RuntimeException(
+				"The performer's global user id ({$req->getPerformer()}) " .
+					"does not exist in the database"
+			);
+		}
+		$homewiki = $renamer->getHomeWiki();
+		if ( $renamer->isAttached() || $homewiki === null ) {
+			$renamerLink = Title::makeTitleSafe( NS_USER, $renamer->getName() )->getFullURL();
+		} else {
+			$renamerLink = WikiMap::getForeignURL( $homewiki, 'User:' . $renamer->getName() );
+		}
+
+		$status = $req->getStatus();
+		$causerName = $status === GlobalRenameRequest::APPROVED
+			? $req->getNewName()
+			: $req->getName();
+
+		$causer = CentralAuthUser::getInstanceByName( $causerName );
+		$attachedWikis = $causer->exists() && $causer->isAttached()
+			? implode( ', ', array_keys( $causer->queryAttachedBasic() ) )
+			: '';
+
+		// Done as one big message so that admins can create a local
+		// translation to customize the output as they see fit.
+		// @TODO: Do that actually in here... this is not how we do interfaces in 2015.
+		if ( $isVanishRequest ) {
+			$viewMsg = $this->msg( 'globalrenamequeue-vanish-view',
+				$req->getName(),
+				$reason,
+				$this->msg( 'globalrenamequeue-view-' . $status )->text(),
+				$this->getLanguage()->userTimeAndDate(
+					$req->getRequested(), $this->getUser()
+				),
+				$this->getLanguage()->userTimeAndDate(
+					$req->getCompleted(), $this->getUser()
+				),
+				$attachedWikis,
+				$renamerLink,
+				$renamer->getName(),
+				$req->getComments()
+			)->parseAsBlock();
+		} else {
+			$viewMsg = $this->msg( 'globalrenamequeue-view',
+				$req->getName(),
+				$req->getNewName(),
+				$reason,
+				$this->msg( 'globalrenamequeue-view-' . $status )->text(),
+				$this->getLanguage()->userTimeAndDate(
+					$req->getRequested(), $this->getUser()
+				),
+				$this->getLanguage()->userTimeAndDate(
+					$req->getCompleted(), $this->getUser()
+				),
+				$renamerLink,
+				$renamer->getName(),
+				$req->getComments()
+			)->parseAsBlock();
+		}
+
+		$this->getOutput()->addHtml( '<div class="plainlinks">' . $viewMsg . '</div>' );
+	}
+
+	/**
+	 * Display form for approving/denying request or process form submission.
+	 *
+	 * @param GlobalRenameRequest $req Pending request
+	 */
+	protected function doShowProcessForm( GlobalRenameRequest $req ) {
+		$isVanishRequest = $req->getType() === GlobalRenameRequest::VANISH;
+
+		// Set up message keys according to request type (rename/vanish)
+		if ( $isVanishRequest ) {
+			$commonPreambleMsg = 'globalrenamequeue-request-vanish-title';
+			$approveButtonMsg = 'globalrenamequeue-request-vanish-approve-text';
+			$denyButtonMsg = 'globalrenamequeue-request-vanish-deny-text';
+			$globalUserInfoMsg = 'globalrenamequeue-request-vanish-userinfo';
+			$headerMsgKey = 'globalrenamequeue-request-vanish-header';
+			$reasonMsg = 'globalrenamequeue-request-vanish-reason';
+			$approveConfirmation = 'mw-renamequeue-approve-vanish';
+		} else {
+			$commonPreambleMsg = 'globalrenamequeue-request-title';
+			$approveButtonMsg = 'globalrenamequeue-request-approve-text';
+			$denyButtonMsg = 'globalrenamequeue-request-deny-text';
+			$globalUserInfoMsg = 'globalrenamequeue-request-userinfo-global';
+			$headerMsgKey = 'globalrenamequeue-request-header';
+			$reasonMsg = 'globalrenamequeue-request-reason';
+			$approveConfirmation = 'mw-renamequeue-approve';
+		}
+
+		$this->commonPreamble( $commonPreambleMsg, [ $req->getName() ] );
+
+		$formDescriptor = [
+			'rid' => [
+				'default' => $req->getId(),
+				'name'    => 'rid',
+				'type'    => 'hidden',
+			],
+			'comments' => [
+				'default'       => $this->getRequest()->getVal( 'comments' ),
+				'id'            => 'mw-renamequeue-comments',
+				'label-message' => 'globalrenamequeue-request-comments-label',
+				'name'          => 'comments',
+				'type'          => 'textarea',
+				'rows'          => 5,
+			],
+		];
+
+		if ( $isVanishRequest ) {
+			$formDescriptor[ 'comments' ][ 'help-message' ] =
+				'globalrenamequeue-request-comments-help-message';
+		}
+
+		$htmlForm = HTMLForm::factory( 'ooui',
+			$formDescriptor,
+			$this->getContext(),
+			'globalrenamequeue'
+		);
+
+		// Show tools to approve only when user is not reviewing own request.
+		if ( $req->getName() !== $this->getUser()->getName() ) {
+			$htmlForm
+				->addFields( [
+					// The following fields need to have their names stay in
+					// sync with the expectations of GlobalRenameUser::rename()
+					'reason' => [
+						'id'            => 'mw-renamequeue-reason',
+						'label-message' => 'globalrenamequeue-request-reason-label',
+						'name'          => 'reason',
+						'type'          => 'text',
+					],
+					'movepages' => [
+						'id'            => 'mw-renamequeue-movepages',
+						'name'          => 'movepages',
+						'label-message' => 'globalrenamequeue-request-movepages',
+						'type'          => 'check',
+						'default'       => 1,
+					],
+					'suppressredirects' => [
+						'id'            => 'mw-renamequeue-suppressredirects',
+						'name'          => 'suppressredirects',
+						'label-message' => 'globalrenamequeue-request-suppressredirects',
+						'type'          => 'check',
+						'default'       => $isVanishRequest ? 1 : 0,
+						'disabled'      => $isVanishRequest ? 1 : 0,
+					],
+				] )
+				->addButton( [
+					'name' => 'approve',
+					'value' => $this->msg( $approveButtonMsg )->text(),
+					'id' => $approveConfirmation,
+					'flags' => [ 'primary', 'progressive' ],
+					'framed' => true
+				] );
+		}
+
+		$htmlForm
+			->suppressDefaultSubmit()
+			->addButton( [
+				'name' => 'deny',
+				'value' => $this->msg( $denyButtonMsg )->text(),
+				'id' => 'mw-renamequeue-deny',
+				'flags' => [ 'destructive' ],
+				'framed' => true
+			] )
+			->addButton( [
+				'name' => 'cancel',
+				'value' => $this->msg( 'globalrenamequeue-request-cancel-text' )->text(),
+				'id' => 'mw-renamequeue-cancel',
+			] )
+			->setId( 'mw-globalrenamequeue-request' );
+
+		if ( $req->userIsGlobal() ) {
+			$globalUser = CentralAuthUser::getInstanceByName( $req->getName() );
+			$homeWiki = $globalUser->getHomeWiki();
+			$infoMsgKey = $globalUserInfoMsg;
+		} else {
+			$homeWiki = $req->getWiki();
+			$infoMsgKey = 'globalrenamequeue-request-userinfo-local';
+		}
+
+		if ( $homeWiki === null ) {
+			$homeLink = Title::makeTitleSafe( NS_USER, $req->getName() )->getFullURL();
+		} else {
+			$homeLink = WikiMap::getForeignURL( $homeWiki, 'User:' . $req->getName() );
+		}
+
+		$headerMsg = $this->msg(
+			$headerMsgKey,
+			$homeLink,
+			$req->getName(),
+			$req->getNewName()
+		);
+		$htmlForm->addHeaderHtml( '<span class="plainlinks">' . $headerMsg->parseAsBlock() .
+			'</span>' );
+
+		$homeWikiWiki = $homeWiki ? WikiMap::getWiki( $homeWiki ) : null;
+		$infoMsgArgs = [
+			$infoMsgKey,
+			$req->getName(),
+			// homeWikiWiki shouldn't ever be null except in
+			// a development/testing environment.
+			( $homeWikiWiki ? $homeWikiWiki->getDisplayName() : $homeWiki ),
+		];
+		// Rename requests need the new username into the info message
+		if ( !$isVanishRequest ) {
+			$infoMsgArgs[] = $req->getNewName();
+		}
+		$infoMsg = $this->msg( ...$infoMsgArgs );
+
+		if ( isset( $globalUser ) ) {
+			$infoMsg->numParams( $globalUser->getGlobalEditCount() );
+			$infoMsg->params( $this->msg(
+				$globalUser->isBlocked() ?
+					'globalrenamequeue-request-vanish-user-blocked' :
+					'globalrenamequeue-request-vanish-user-not-blocked'
+			) );
+		}
+
+		$htmlForm->addHeaderHtml( $infoMsg->parseAsBlock() );
+
+		// Handle AntiSpoof integration
+		$spoofUser = $this->caAntiSpoofManager->getSpoofUser( $req->getNewName() );
+		$conflicts = $this->uiService->processAntiSpoofConflicts(
+			$this->getContext(),
+			$req->getName(),
+			$spoofUser->getConflicts()
+		);
+		$renamedUser = $this->caAntiSpoofManager->getOldRenamedUserName( $req->getNewName() );
+		if ( $renamedUser !== null ) {
+			$conflicts[] = $renamedUser;
+		}
+		if ( $conflicts ) {
+			$htmlForm->addHeaderHtml(
+				$this->msg(
+					'globalrenamequeue-request-antispoof-conflicts',
+					$this->getLanguage()->commaList( $conflicts )
+				)->numParams( count( $conflicts ) )->parseAsBlock()
+			);
+		}
+
+		// In regular rename requests, show a message if the new username matches the deny list
+		if ( !$isVanishRequest && ExtensionRegistry::getInstance()->isLoaded( 'TitleBlacklist' ) ) {
+			$match = TitleBlacklist::singleton()->isBlacklisted(
+				Title::makeTitleSafe( NS_USER, $req->getNewName() ),
+				'new-account'
+			);
+			if ( $match instanceof TitleBlacklistEntry ) {
+				$htmlForm->addHeaderHtml(
+					$this->msg( 'globalrenamequeue-request-titleblacklist' )
+						->params( wfEscapeWikiText( $match->getRegex() ) )->parseAsBlock()
+				);
+			}
+		}
+
+		// Show a log entry of previous renames under the requesting user's username
+		$caTitle = SpecialPage::getTitleFor( 'CentralAuth', $req->getName() );
+		$extract = '';
+		$extractCount = LogEventsList::showLogExtract( $extract, 'gblrename', $caTitle, '', [
+			'showIfEmpty' => false,
+		] );
+		if ( $extractCount ) {
+			$htmlForm->addHeaderHtml(
+				Html::rawElement( 'fieldset', [],
+					Html::element( 'legend', [], $this->msg( 'globalrenamequeue-request-previous-renames' )
+						->numParams( $extractCount )
+						->text()
+					) . "\n" . $extract
+				)
+			);
+		}
+
+		$reason = $this->formatReason( $req->getReason() ?: '' );
+
+		$htmlForm->addHeaderHtml( $this->msg( $reasonMsg, $reason )->parseAsBlock() );
+
+		// Show warning when reviewing own request
+		if ( $req->getName() === $this->getUser()->getName() ) {
+			$message = new MessageWidget( [
+				'label' => $this->msg( 'globalrenamerequest-self-warning' )->text(),
+				'type' => 'warning',
+				'inline' => true
+			] );
+			$htmlForm->addHeaderHtml( $message->toString() );
+		}
+
+		$htmlForm->setSubmitCallback( [ $this, 'onProcessSubmit' ] );
+
+		$out = $this->getOutput();
+		$out->addModuleStyles( 'ext.centralauth.globalrenamequeue.styles' );
+		$out->addModules( 'ext.centralauth.globalrenamequeue' );
+
+		$status = $htmlForm->show();
+		if ( $status instanceof StatusValue && $status->isOK() ) {
+			$this->getOutput()->redirect(
+				$this->getPageTitle(
+					self::PAGE_PROCESS_REQUEST . "/{$req->getId()}/{$status->value}"
+				)->getFullURL()
+			);
+		}
+	}
+
+	/**
+	 * @return StatusValue
+	 */
+	public function onProcessSubmit( array $data ) {
+		$request = $this->getContext()->getRequest();
+		$status = StatusValue::newGood();
+		if ( $request->getCheck( 'approve' ) ) {
+			$status = $this->doResolveRequest( true, $data );
+		} elseif ( $request->getCheck( 'deny' ) ) {
+			$status = $this->doResolveRequest( false, $data );
+		} else {
+			$status->setResult( true, 'cancel' );
+		}
+		return $status;
+	}
+
+	/**
+	 * @param bool $approved
+	 * @param array $data
+	 *
+	 * @return StatusValue
+	 */
+	protected function doResolveRequest( $approved, $data ) {
+		$request = $this->globalRenameRequestStore->newFromId( $data['rid'] );
+		$oldUser = User::newFromName( $request->getName() );
+
+		$newUser = User::newFromName( $request->getNewName(), 'creatable' );
+		$status = StatusValue::newGood();
+		$session = $this->getContext()->exportSession();
+		if ( $approved ) {
+			// Disallow self-renaming
+			if ( $request->getName() === $this->getUser()->getName() ) {
+				return StatusValue::newFatal( 'globalrenamerequest-self-error' );
+			}
+
+			if ( $request->userIsGlobal() ) {
+				$data['type'] = $request->getType();
+
+				$globalRenameUser = $this->globalRenameFactory
+					->newGlobalRenameUser(
+						$this->getUser(),
+						CentralAuthUser::getInstanceByName( $request->getName() ),
+						$request->getNewName()
+					)
+					->withSession( $session );
+
+				// Credit the vanish performer with account locking logs for
+				// vanish requests. Renamers cannot normally perform locks and
+				// thus should not be associated with them.
+				if ( $request->getType() === GlobalRenameRequest::VANISH ) {
+					$vanishPerformerName = $this->getConfig()
+						->get( CAMainConfigNames::CentralAuthAutomaticVanishPerformer );
+
+					if ( $vanishPerformerName !== null ) {
+						$localVanishPerformer = $this->userIdentityLookup
+							->getUserIdentityByName( $vanishPerformerName );
+
+						if ( $localVanishPerformer !== null ) {
+							$globalRenameUser = $globalRenameUser->withLockPerformingUser( $localVanishPerformer );
+						}
+					}
+				}
+
+				// Trigger a global rename job
+				$status = $globalRenameUser->rename( $data );
+			} else {
+				// If the user is local-only:
+				// * rename the local user using LocalRenameUserJob
+				// * create a global user attached only to the local wiki
+				$job = new LocalRenameUserJob(
+					Title::newFromText( 'Global rename job' ),
+					[
+						'from' => $oldUser->getName(),
+						'to' => $newUser->getName(),
+						'renamer' => $this->getUser()->getName(),
+						'movepages' => true,
+						'suppressredirects' => true,
+						'promotetoglobal' => true,
+						'reason' => $data['reason'],
+						'session' => $session,
+						'type' => $request->getType(),
+					]
+				);
+				$this->jobQueueGroupFactory->makeJobQueueGroup( $request->getWiki() )->push( $job );
+				// Now log it
+				$this->logPromotionRename(
+					$oldUser->getName(),
+					$request->getWiki(),
+					$newUser->getName(),
+					$data['reason']
+				);
+				$status = StatusValue::newGood();
+			}
+		}
+
+		if ( $status->isGood() ) {
+			$requestType = $request->getType();
+
+			// Require a rejection reason if the rename request is a vanish
+			// request that's being rejected. This is not needed for approved
+			// requests (T388522)
+			if (
+				!$approved &&
+				$requestType === GlobalRenameRequest::VANISH &&
+				trim( $data['comments'] ?? '' ) === ''
+			) {
+				return StatusValue::newFatal( 'globalrenamequeue-request-vanish-no-reason' );
+			}
+
+			$request->setStatus(
+				$approved ? GlobalRenameRequest::APPROVED : GlobalRenameRequest::REJECTED
+			);
+			$request->setCompleted( wfTimestampNow() );
+			$request->setPerformer(
+				CentralAuthUser::getInstance( $this->getUser() )->getId()
+			);
+			$request->setComments( $data['comments'] );
+
+			if ( $this->globalRenameRequestStore->save( $request ) ) {
+				if ( $requestType === GlobalRenameRequest::VANISH ) {
+					$emailSubjectApprovedMsg = 'globalrenamequeue-vanish-email-subject-approved';
+					$emailBodyApprovedMsg = 'globalrenamequeue-vanish-email-body-approved';
+					$emailBodyApprovedWithNoteMsg = 'globalrenamequeue-vanish-email-body-approved-with-note';
+					$emailSubjectRejectedMsg = 'globalrenamequeue-vanish-email-subject-rejected';
+					$emailBodyRejectedMsg = 'globalrenamequeue-vanish-email-body-rejected';
+					$emailBodyMsgArgs = [
+						$oldUser->getName(),
+						$request->getComments()
+					];
+				} else {
+					$emailSubjectApprovedMsg = 'globalrenamequeue-email-subject-approved';
+					$emailBodyApprovedMsg = 'globalrenamequeue-email-body-approved';
+					$emailBodyApprovedWithNoteMsg = 'globalrenamequeue-email-body-approved-with-note';
+					$emailSubjectRejectedMsg = 'globalrenamequeue-email-subject-rejected';
+					$emailBodyRejectedMsg = 'globalrenamequeue-email-body-rejected';
+					$emailBodyMsgArgs = [
+						$oldUser->getName(),
+						$newUser->getName(),
+						$request->getComments(),
+					];
+				}
+
+				// Send email to the user about the change in status.
+				if ( $approved ) {
+					$subject = $this->msg(
+						$emailSubjectApprovedMsg
+					)->inContentLanguage()->text();
+					if ( $request->getComments() === '' ) {
+						$msgKey = $emailBodyApprovedMsg;
+					} else {
+						$msgKey = $emailBodyApprovedWithNoteMsg;
+					}
+					$body = $this->msg(
+						$msgKey, $emailBodyMsgArgs
+					)->inContentLanguage()->text();
+				} else {
+					$recipientConfig = $this->getConfig()
+						->get( CAMainConfigNames::CentralAuthRejectVanishUserNotification );
+					if ( $recipientConfig ) {
+						$status = $this->sendEmailForRejectionOfVanishRequest( $request, $recipientConfig );
+					}
+
+					$subject = $this->msg(
+						$emailSubjectRejectedMsg
+					)->inContentLanguage()->text();
+					$body = $this->msg(
+						$emailBodyRejectedMsg, $emailBodyMsgArgs
+					)->inContentLanguage()->text();
+				}
+
+				if ( $request->userIsGlobal() || $request->getWiki() === WikiMap::getCurrentWikiId() ) {
+					$notifyEmail = MailAddress::newFromUser( $oldUser );
+				} else {
+					$notifyEmail = $this->getRemoteUserMailAddress(
+						$request->getWiki(), $request->getName()
+					);
+				}
+
+				if ( $notifyEmail !== null && $notifyEmail->address ) {
+					$type = $approved ? 'approval' : 'rejection';
+					$this->logger->info( "Send $type email to User:{oldName}", [
+						'oldName' => $oldUser->getName(),
+						'component' => 'GlobalRename',
+					] );
+					$this->sendNotificationEmail( $notifyEmail, $subject, $body );
+				}
+			} else {
+				$status->fatal( 'globalrenamequeue-request-savefailed' );
+			}
+		}
+		return $status;
+	}
+
+	/**
+	 * Log a promotion to global rename in the global rename log
+	 *
+	 * @param string $oldName
+	 * @param string $wiki
+	 * @param string $newName
+	 * @param string $reason
+	 */
+	protected function logPromotionRename( $oldName, $wiki, $newName, $reason ) {
+		$logger = new GlobalRenameUserLogger( $this->getUser() );
+		$logger->logPromotion( $oldName, $wiki, $newName, $reason );
+	}
+
+	/**
+	 * Get a MailAddress for a user on a remote wiki
+	 *
+	 * @param string $wiki
+	 * @param string $username
+	 * @return MailAddress|null
+	 */
+	protected function getRemoteUserMailAddress( $wiki, $username ) {
+		$lb = $this->lbFactory->getMainLB( $wiki );
+		$remoteDB = $lb->getConnection( DB_REPLICA, [], $wiki );
+		$row = $remoteDB->newSelectQueryBuilder()
+			->select( [ 'user_email', 'user_name', 'user_real_name' ] )
+			->from( 'user' )
+			->where( [
+				'user_name' => $this->userNameUtils->getCanonical( $username ),
+			] )
+			->caller( __METHOD__ )
+			->fetchRow();
+		if ( $row === false ) {
+			$address = null;
+		} else {
+			$address = new MailAddress(
+				$row->user_email, $row->user_name, $row->user_real_name
+			);
+		}
+		return $address;
+	}
+
+	/**
+	 * Send an email notifying the user of the result of their request.
+	 *
+	 * @param MailAddress $to
+	 * @param string $subject
+	 * @param string $body
+	 * @return StatusValue
+	 */
+	protected function sendNotificationEmail( MailAddress $to, $subject, $body ) {
+		$from = new MailAddress(
+			$this->getConfig()->get( MainConfigNames::PasswordSender ),
+			$this->msg( 'emailsender' )->inContentLanguage()->text()
+		);
+		return UserMailer::send( $to, $from, $subject, $body );
+	}
+
+	/**
+	 * Send an email on account vanishing rejection to the provided recipient.
+	 *
+	 * @param GlobalRenameRequest $request
+	 * @param string $recipientUserName
+	 * @return StatusValue
+	 */
+	protected function sendEmailForRejectionOfVanishRequest( GlobalRenameRequest $request, $recipientUserName ) {
+		// Email to legal is only sent when it's a vanish request
+		if ( $request->getType() !== GlobalRenameRequest::VANISH ) {
+			return StatusValue::newGood();
+		}
+
+		if ( $request->userIsGlobal() ) {
+			$globalUser = CentralAuthUser::getInstanceByName( $request->getName() );
+			$homeWiki = $globalUser->getHomeWiki();
+			$globalEditCount = $globalUser->getGlobalEditCount();
+			$isBlocked = $globalUser->isBlocked() ?
+				'globalrenamequeue-request-vanish-user-blocked' :
+				'globalrenamequeue-request-vanish-user-not-blocked';
+		} else {
+			$homeWiki = $request->getWiki();
+			$globalEditCount = '';
+			$isBlocked = 'globalrenamequeue-request-vanish-user-not-blocked';
+		}
+		// This should never be null except in dev/testing environment.
+		$homeWikiWiki = $homeWiki ? WikiMap::getWiki( $homeWiki ) : null;
+		$rejector = CentralAuthUser::newFromId( $request->getPerformer() );
+		$rejectorName = $rejector ? $rejector->getName() : $request->getPerformer();
+
+		$subject = $this->msg(
+			'globalvanishrequest-rejected-subject-notification',
+			$request->getName(),
+		)->inContentLanguage()->text();
+		$isBlockedMsg = $this->msg( $isBlocked )->inContentLanguage()->text();
+		$bodyMessage = $this->msg(
+			'globalvanishrequest-rejected-body-notification',
+			$request->getName(),
+			// @phan-suppress-next-line PhanTypeMismatchArgumentNullable
+			( $homeWikiWiki ? $homeWikiWiki->getDisplayName() : $homeWiki ),
+			$globalEditCount,
+			$isBlockedMsg,
+			$request->getReason(),
+			$rejectorName,
+			$request->getComments(),
+			$this->getLanguage()->userTimeAndDate(
+				$request->getRequested(), $this->getUser()
+			),
+			$this->getLanguage()->userTimeAndDate(
+				$request->getCompleted(), $this->getUser()
+			),
+		)->inContentLanguage()->text();
+
+		try {
+			$contactRecipientUser = User::newFromName( $recipientUserName );
+			$contactRecipientAddress = MailAddress::newFromUser( $contactRecipientUser );
+			$contactSenderAddress = new MailAddress(
+				$this->getConfig()->get( MainConfigNames::PasswordSender ),
+				$this->msg( 'emailsender' )->inContentLanguage()->text()
+			);
+
+			$userMailerStatus = UserMailer::send(
+				$contactRecipientAddress,
+				$contactSenderAddress,
+				$subject,
+				$bodyMessage,
+			);
+			if ( $userMailerStatus->isGood() ) {
+				return StatusValue::newGood();
+			} else {
+				return StatusValue::newFatal( 'globalvanishrequest-rejected-notification-error' );
+			}
+		} catch ( Exception ) {
+			return StatusValue::newFatal( 'globalvanishrequest-rejected-notification-error' );
+		}
+	}
+
+	/** @inheritDoc */
+	protected function getGroupName() {
+		return 'users';
+	}
+
+	/** @inheritDoc */
+	public function getSubpagesForPrefixSearch() {
+		return [
+			self::PAGE_OPEN_QUEUE,
+			self::PAGE_PROCESS_REQUEST,
+			self::PAGE_CLOSED_QUEUE
+		];
+	}
+}

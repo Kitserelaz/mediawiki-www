@@ -8,8 +8,6 @@
 
 namespace MediaWiki\Extension\Math;
 
-// phpcs:disable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
-
 use MediaWiki\Config\ConfigException;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Hook\MaintenanceRefreshLinksInitHook;
@@ -23,12 +21,9 @@ class Hooks implements
 	SpecialPage_initListHook,
 	MaintenanceRefreshLinksInitHook
 {
-	private UserOptionsManager $userOptionsManager;
-
 	public function __construct(
-		UserOptionsManager $userOptionsManager
+		private readonly UserOptionsManager $userOptionsManager,
 	) {
-		$this->userOptionsManager = $userOptionsManager;
 	}
 
 	/**

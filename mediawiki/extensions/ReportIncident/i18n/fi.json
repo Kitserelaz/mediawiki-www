@@ -1,0 +1,36 @@
+{
+	"@metadata": {
+		"authors": [
+			"Samoasambia",
+			"Yupik"
+		]
+	},
+	"reportincident-report-btn-label": "Ilmianna",
+	"reportincident-dialog-close-btn": "Sulje",
+	"reportincident-dialog-proceed-btn": "Jatka ilmoituksen tekemiseen",
+	"reportincident-dialog-back-btn": "Takaisin",
+	"reportincident-dialog-submit-btn": "Lähetä",
+	"reportincident-dialog-first-step-cancel-btn": "En halua tehdä ilmoitusta",
+	"reportincident-dialog-harassment-type-label": "Millaisesta käytöksestä on kyse?",
+	"reportincident-dialog-additional-details-input-label": "Lisätietoja",
+	"reportincident-dialog-optional-label": "(valinnainen)",
+	"reportincident-dialog-violator-label": "Käyttäjä, josta {{GENDER:|haluat}} tehdä ilmoituksen",
+	"reportincident-dialog-violator-placeholder-text": "Kenestä {{GENDER:|teet}} ilmiannon?",
+	"reportincident-dialog-harassment-type-hate-speech-or-discrimination": "Vihapuhe tai syrjintä",
+	"reportincident-dialog-harassment-type-sexual-harassment": "Seksuaalinen häirintä",
+	"reportincident-dialog-harassment-type-threats-of-violence": "Väkivallalla uhkailu",
+	"reportincident-dialog-harassment-type-intimidation": "Uhkailu, hyökkäys, nimittely",
+	"reportincident-dialog-harassment-type-something-else": "Jokin muu",
+	"reportincident-dialog-something-else-input-placeholder": "Kerro, millaisesta käytöksestä on kyse.",
+	"reportincident-dialog-harassment-empty": "{{GENDER:|Sinun}} on valittava vähintään yksi käytöstyyppi.",
+	"reportincident-dialog-something-else-empty": "Anna lyhyt kuvaus tapahtuneesta.",
+	"reportincident-dialog-server-error": "Pahoittelut, näyttää siltä, ettei palvelimemme vastaa. Kokeile lähettää uudelleen.",
+	"reportincident-dialog-generic-error": "Pyyntöäsi ei voitu lähettää virheen vuoksi. Kokeile lähettää uudelleen.",
+	"right-reportincident": "Tehdä ilmianto",
+	"action-reportincident": "tehdä ilmiantoa",
+	"reportincident-emaildialog-title": "Vaaditaan varmennettu sähköpostiosoite",
+	"reportincident-emaildialog-close-button": "Peruuta",
+	"reportincident-emaildialog-content": "Tarvitsemme varmennetun sähköpostiosoitteesi, jotta voimme lähettää sinulle päivityksiä ilmiannostasi tai ottaa sinuun yhteyttä tarvittaessa. Lisää ja varmenna sähköpostiosoitteesi käyttäjätunnuksesi asetuksissa ennen kuin lähetät ilmiannon.",
+	"reportincident-emaildialog-primary": "Mene asetuksiin",
+	"reportincident-confirmedemail-required": "Ilmiannon tekemiseen vaaditaan varmennettu sähköpostiosoite."
+}

@@ -4,19 +4,20 @@ namespace Miraheze\ManageWiki\Hooks;
 
 use MediaWiki\Context\IContextSource;
 use MediaWiki\HookContainer\HookContainer;
+use MediaWiki\Skin\Skin;
 use Miraheze\ManageWiki\Helpers\Factories\ModuleFactory;
 use Miraheze\ManageWiki\ICoreModule;
-use Skin;
 
 class HookRunner implements
 	ManageWikiAfterSidebarLinksHook,
 	ManageWikiCoreAddFormFieldsHook,
 	ManageWikiCoreFormSubmissionHook,
-	ManageWikiCoreProviderHook
+	ManageWikiCoreProviderHook,
+	ManageWikiDataStoreBuilderHook
 {
 
 	public function __construct(
-		private readonly HookContainer $container
+		private readonly HookContainer $container,
 	) {
 	}
 
@@ -63,6 +64,19 @@ class HookRunner implements
 		$this->container->run(
 			'ManageWikiCoreProvider',
 			[ &$provider, $dbname ],
+			[ 'abortable' => false ]
+		);
+	}
+
+	/** @inheritDoc */
+	public function onManageWikiDataStoreBuilder(
+		ModuleFactory $moduleFactory,
+		string $dbname,
+		array &$cacheArray
+	): void {
+		$this->container->run(
+			'ManageWikiDataStoreBuilder',
+			[ $moduleFactory, $dbname, &$cacheArray ],
 			[ 'abortable' => false ]
 		);
 	}

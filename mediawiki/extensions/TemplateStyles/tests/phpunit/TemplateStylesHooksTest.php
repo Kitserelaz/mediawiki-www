@@ -55,11 +55,12 @@ class TemplateStylesHooksTest extends MediaWikiLangTestCase {
 
 	/**
 	 * @dataProvider provideOnRegistration
-	 * @param array $textModelsToParse
-	 * @param bool $autoParseContent
-	 * @param array $expect
 	 */
-	public function testOnRegistration( $textModelsToParse, $autoParseContent, $expect ) {
+	public function testOnRegistration(
+		array $textModelsToParse,
+		bool $autoParseContent,
+		array $expect
+	) {
 		$this->overrideConfigValues( [
 			MainConfigNames::TextModelsToParse => $textModelsToParse,
 			'TemplateStylesAutoParseContent' => $autoParseContent,
@@ -165,7 +166,7 @@ class TemplateStylesHooksTest extends MediaWikiLangTestCase {
 					$revRecord->setParentId( $title->getLatestRevID() );
 					return $revRecord;
 				}
-				return call_user_func( $oldCurrentRevisionRecordCallback, $title, $parser );
+				return $oldCurrentRevisionRecordCallback( $title, $parser );
 			}
 		);
 
@@ -180,7 +181,7 @@ class TemplateStylesHooksTest extends MediaWikiLangTestCase {
 		$expect = preg_replace_callback( '/\{\{REV:(.*?)\}\}/', static function ( $m ) {
 			return Title::newFromText( 'Template:TemplateStyles test/' . $m[1] )->getLatestRevID();
 		}, $expect );
-		$this->assertEquals( $expect, $out->getText( $getTextOptions ) );
+		$this->assertEquals( $expect, $out->runOutputPipeline( $popt, $getTextOptions )->getContentHolderText() );
 	}
 
 	public static function provideTag() {
@@ -278,10 +279,10 @@ class TemplateStylesHooksTest extends MediaWikiLangTestCase {
 				// phpcs:disable Generic.Files.LineLength
 				trim( '
 <div class="mw-content-ltr templatestyles-test" lang="en" dir="ltr"><style data-mw-deduplicate="TemplateStyles:r{{REV:styles1.css}}/templatestyles-test">.templatestyles-test .foo{color:blue}</style>
-<link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r{{REV:styles1.css}}/templatestyles-test">
+<link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r{{REV:styles1.css}}/templatestyles-test" />
 <style data-mw-deduplicate="TemplateStyles:r{{REV:styles2.css}}/templatestyles-test">.templatestyles-test .bar{color:green}</style>
-<link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r{{REV:styles1.css}}/templatestyles-test">
-<link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r{{REV:styles2.css}}/templatestyles-test"></div>
+<link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r{{REV:styles1.css}}/templatestyles-test" />
+<link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r{{REV:styles2.css}}/templatestyles-test" /></div>
 				' ),
 				// phpcs:enable
 			],
@@ -315,10 +316,10 @@ class TemplateStylesHooksTest extends MediaWikiLangTestCase {
 				// phpcs:disable Generic.Files.LineLength
 				trim( '
 <div class="mw-content-ltr mw-parser-output" lang="en" dir="ltr"><style data-mw-deduplicate="TemplateStyles:r{{REV:styles1.css}}">.mw-parser-output .foo{color:blue}</style>
-<link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r{{REV:styles1.css}}">
+<link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r{{REV:styles1.css}}" />
 <style data-mw-deduplicate="TemplateStyles:r{{REV:styles1.css}}/mw-parser-output/.foobar">.mw-parser-output .foobar .foo{color:blue}</style>
 <style data-mw-deduplicate="TemplateStyles:r{{REV:styles1.css}}/mw-parser-output/.foobaz">.mw-parser-output .foobaz .foo{color:blue}</style>
-<link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r{{REV:styles1.css}}/mw-parser-output/.foobar"></div>
+<link rel="mw-deduplicated-inline-style" href="mw-data:TemplateStyles:r{{REV:styles1.css}}/mw-parser-output/.foobar" /></div>
 				' ),
 				// phpcs:enable
 			],

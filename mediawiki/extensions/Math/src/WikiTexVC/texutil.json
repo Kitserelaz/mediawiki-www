@@ -1,4 +1,39 @@
 {
+	"": {
+		"operator_infix": [
+			" exports.MO.ORD"
+		]
+	},
+	"!": {
+		"operator_infix": [
+			"1, 0, TEXCLASS.CLOSE, null"
+		]
+	},
+	"!=": {
+		"operator_infix": [
+			" exports.MO.BIN4"
+		]
+	},
+	"#": {
+		"operator_infix": [
+			" exports.MO.ORD"
+		]
+	},
+	"$": {
+		"operator_infix": [
+			" exports.MO.ORD"
+		]
+	},
+	"%": {
+		"operator_infix": [
+			" [3, 3, MmlNode_js_1.TEXCLASS.ORD], null]"
+		]
+	},
+	"&&": {
+		"operator_infix": [
+			" exports.MO.BIN4"
+		]
+	},
 	"(": {
 		"delimiter": [
 			"(",
@@ -15,29 +50,162 @@
 			}
 		]
 	},
-	"-": {
+	"*": {
+		"operator_infix": [
+			" exports.MO.BIN3"
+		],
 		"operator_rendering": [
-			"&#x2212;"
+			"∗"
+		]
+	},
+	"**": {
+		"operator_infix": [
+			" OPDEF(1\"], 1)"
+		]
+	},
+	"*=": {
+		"operator_infix": [
+			" exports.MO.BIN4"
+		]
+	},
+	"+": {
+		"operator_infix": [
+			" exports.MO.BIN4"
+		]
+	},
+	"+=": {
+		"operator_infix": [
+			" exports.MO.BIN4"
+		]
+	},
+	",": {
+		"operator_infix": [
+			" [0, 3], MmlNode_js_1.TEXCLASS.PUNCT\"],{ linebreakstyle=> [\" 'after'\"], separator=> [\" true }]",
+			true
+		]
+	},
+	"-": {
+		"operator_infix": [
+			" exports.MO.BIN4"
+		],
+		"operator_rendering": [
+			"−"
+		]
+	},
+	"-=": {
+		"operator_infix": [
+			" exports.MO.BIN4"
+		]
+	},
+	"->": {
+		"operator_infix": [
+			" exports.MO.BIN5"
 		]
 	},
 	".": {
 		"delimiter": [
 			""
+		],
+		"operator_infix": [
+			" [0, 3], MmlNode_js_1.TEXCLASS.PUNCT\"], { separator=> [ true }]"
 		]
 	},
 	"/": {
 		"delimiter": [
 			"/"
+		],
+		"operator_infix": [
+			" exports.MO.ORD11",
+			true
+		]
+	},
+	"//": {
+		"operator_infix": [
+			" OPDEF(1\"], 1)"
+		]
+	},
+	"/=": {
+		"operator_infix": [
+			" exports.MO.BIN4"
+		]
+	},
+	":": {
+		"operator_infix": [
+			" [1, 2], MmlNode_js_1.TEXCLASS.REL\"], null]"
+		]
+	},
+	":=": {
+		"operator_infix": [
+			" exports.MO.BIN5"
+		]
+	},
+	";": {
+		"operator_infix": [
+			" [0, 3], MmlNode_js_1.TEXCLASS.PUNCT],{ linebreakstyle=> ['after'], separator=> [ true }]",
+			true
 		]
 	},
 	"<": {
 		"delimiter": [
-			"&#x27E8;"
+			"⟨"
+		],
+		"operator_infix": [
+			" exports.MO.REL",
+			true
+		]
+	},
+	"<=": {
+		"operator_infix": [
+			" exports.MO.BIN5"
+		]
+	},
+	"<>": {
+		"operator_infix": [
+			" OPDEF(1, 1)"
+		]
+	},
+	"=": {
+		"operator_infix": [
+			" exports.MO.REL"
+		]
+	},
+	"==": {
+		"operator_infix": [
+			" exports.MO.BIN4"
+		]
+	},
+	"=>": {
+		"operator_infix": [
+			" [1, 2], MmlNode_js_1.TEXCLASS.REL\"], null]"
+		]
+	},
+	"=>=": {
+		"operator_infix": [
+			" exports.MO.BIN4"
 		]
 	},
 	">": {
 		"delimiter": [
-			"&#x27E9;"
+			"⟩"
+		],
+		"operator_infix": [
+			" exports.MO.REL",
+			true
+		]
+	},
+	">=": {
+		"operator_infix": [
+			" exports.MO.BIN5"
+		]
+	},
+	"?": {
+		"operator_infix": [
+			" [1, 1], MmlNode_js_1.TEXCLASS.CLOSE], null]"
+		]
+	},
+	"@": {
+		"operator_infix": [
+			" exports.MO.ORD11"
 		]
 	},
 	"Apricot": {
@@ -323,7 +491,7 @@
 	},
 	"\\AA": {
 		"nullary_macro_in_mbox": true,
-		"unicode_char": "00C5"
+		"unicode_char": "Å"
 	},
 	"\\Alpha": {
 		"callback": [
@@ -340,7 +508,7 @@
 	},
 	"\\Arrowvert": {
 		"delimiter": [
-			"&#x2016;"
+			"‖"
 		]
 	},
 	"\\Bbb": {
@@ -354,10 +522,7 @@
 	"\\Bbbk": {
 		"ams_required": true,
 		"identifier": [
-			"\\u006B",
-			{
-				"mathvariant": "double-struck"
-			}
+			"𝕜"
 		],
 		"is_literal": true,
 		"nullary_macro": true
@@ -394,13 +559,6 @@
 			1.75
 		]
 	},
-	"\\Biggm": {
-		"callback": [
-			"makeBig",
-			"REL",
-			1.75
-		]
-	},
 	"\\Biggr": {
 		"big_literals": true,
 		"callback": [
@@ -417,13 +575,6 @@
 			1.15
 		]
 	},
-	"\\Bigm": {
-		"callback": [
-			"makeBig",
-			"REL",
-			1.15
-		]
-	},
 	"\\Bigr": {
 		"big_literals": true,
 		"callback": [
@@ -435,7 +586,7 @@
 	"\\Box": {
 		"ams_required": true,
 		"identifier": [
-			"\\u25FB"
+			"◻"
 		],
 		"nullary_macro": true
 	},
@@ -443,7 +594,7 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x224E;"
+			"≎"
 		]
 	},
 	"\\C": {
@@ -453,7 +604,7 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22D2;"
+			"⋒"
 		]
 	},
 	"\\Chi": {
@@ -470,13 +621,13 @@
 	"\\Coppa": {
 		"nullary_macro_in_mbox": true,
 		"teubner_required": true,
-		"unicode_char": "03D8"
+		"unicode_char": "Ϙ"
 	},
 	"\\Cup": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22D3;"
+			"⋓"
 		]
 	},
 	"\\Dagger": {
@@ -486,32 +637,34 @@
 		"other_delimiters2": "\\Downarrow"
 	},
 	"\\Delta": {
+		"identifier": [
+			"Δ"
+		],
 		"is_literal": true,
-		"mathchar": "&#x0394;",
 		"mhchem_single_macro": true,
 		"nullary_macro": true
 	},
 	"\\Diamond": {
 		"ams_required": true,
 		"identifier": [
-			"\\u25CA"
+			"◊"
 		],
 		"nullary_macro": true
 	},
 	"\\Digamma": {
 		"nullary_macro_in_mbox": true,
 		"teubner_required": true,
-		"unicode_char": "03DC"
+		"unicode_char": "Ϝ"
 	},
 	"\\Doteq": {
 		"nullary_macro_aliase": "\\doteqdot",
 		"operator_rendering": [
-			"&#x2251;"
+			"≑"
 		]
 	},
 	"\\Downarrow": {
 		"delimiter": [
-			"&#x21D3;"
+			"⇓"
 		],
 		"other_delimiters1": true
 	},
@@ -534,7 +687,7 @@
 	"\\Finv": {
 		"ams_required": true,
 		"identifier": [
-			"\\u2132"
+			"Ⅎ"
 		],
 		"is_literal": true,
 		"nullary_macro": true
@@ -542,14 +695,16 @@
 	"\\Game": {
 		"ams_required": true,
 		"identifier": [
-			"\\u2141"
+			"⅁"
 		],
 		"is_literal": true,
 		"nullary_macro": true
 	},
 	"\\Gamma": {
+		"identifier": [
+			"Γ"
+		],
 		"is_literal": true,
-		"mathchar": "&#x0393;",
 		"mhchem_single_macro": true,
 		"nullary_macro": true
 	},
@@ -561,7 +716,7 @@
 	},
 	"\\Im": {
 		"identifier": [
-			"\\u2111",
+			"ℑ",
 			{
 				"mathvariant": "normal"
 			}
@@ -578,7 +733,7 @@
 	},
 	"\\Join": {
 		"operator_rendering": [
-			"&#x22C8;"
+			"⋈"
 		]
 	},
 	"\\Kappa": {
@@ -592,7 +747,7 @@
 	"\\Koppa": {
 		"nullary_macro_in_mbox": true,
 		"teubner_required": true,
-		"unicode_char": "03DE"
+		"unicode_char": "Ϟ"
 	},
 	"\\LaTeX": {
 		"callback": [
@@ -601,8 +756,10 @@
 		]
 	},
 	"\\Lambda": {
+		"identifier": [
+			"Λ"
+		],
 		"is_literal": true,
-		"mathchar": "&#x039B;",
 		"mhchem_single_macro": true,
 		"nullary_macro": true
 	},
@@ -612,38 +769,38 @@
 	"\\Leftarrow": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21D0;"
+			"⇐"
 		]
 	},
 	"\\Leftrightarrow": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21D4;"
+			"⇔"
 		]
 	},
 	"\\Lleftarrow": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21DA;"
+			"⇚"
 		]
 	},
 	"\\Longleftarrow": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x27F8;"
+			"⟸"
 		]
 	},
 	"\\Longleftrightarrow": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x27FA;"
+			"⟺"
 		]
 	},
 	"\\Longrightarrow": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x27F9;"
+			"⟹"
 		]
 	},
 	"\\Lrarr": {
@@ -653,7 +810,7 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21B0;"
+			"↰"
 		]
 	},
 	"\\Mu": {
@@ -679,8 +836,10 @@
 		"nullary_macro_aliase": "\\emptyset"
 	},
 	"\\Omega": {
+		"identifier": [
+			"Ω"
+		],
 		"is_literal": true,
-		"mathchar": "&#x03A9;",
 		"mhchem_single_macro": true,
 		"nullary_macro": true
 	},
@@ -702,25 +861,31 @@
 		"nullary_macro": true
 	},
 	"\\Phi": {
+		"identifier": [
+			"Φ"
+		],
 		"is_literal": true,
-		"mathchar": "&#x03A6;",
 		"mhchem_single_macro": true,
 		"nullary_macro": true
 	},
 	"\\Pi": {
+		"identifier": [
+			"Π"
+		],
 		"is_literal": true,
-		"mathchar": "&#x03A0;",
 		"mhchem_single_macro": true,
 		"nullary_macro": true
 	},
 	"\\Pr": {
-		"callback": "namedOp",
+		"callback": "MediaWiki\\Extension\\Math\\WikiTexVC\\Nodes\\Literal::namedOp",
 		"latex_function_names": true,
 		"operator": true
 	},
 	"\\Psi": {
+		"identifier": [
+			"Ψ"
+		],
 		"is_literal": true,
-		"mathchar": "&#x03A8;",
 		"mhchem_single_macro": true,
 		"nullary_macro": true
 	},
@@ -735,7 +900,7 @@
 	},
 	"\\Re": {
 		"identifier": [
-			"\\u211C",
+			"ℜ",
 			{
 				"mathvariant": "normal"
 			}
@@ -756,26 +921,26 @@
 	"\\Rightarrow": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21D2;"
+			"⇒"
 		]
 	},
 	"\\Rrightarrow": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21DB;"
+			"⇛"
 		]
 	},
 	"\\Rsh": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21B1;"
+			"↱"
 		]
 	},
 	"\\S": {
 		"identifier": [
-			"\\u00A7",
+			"§",
 			{
 				"mathvariant": "normal"
 			}
@@ -786,31 +951,33 @@
 	"\\Sampi": {
 		"nullary_macro_in_mbox": true,
 		"teubner_required": true,
-		"unicode_char": "03E0"
+		"unicode_char": "Ϡ"
 	},
 	"\\Sigma": {
+		"identifier": [
+			"Σ"
+		],
 		"is_literal": true,
-		"mathchar": "&#x03A3;",
 		"mhchem_single_macro": true,
 		"nullary_macro": true
 	},
 	"\\Stigma": {
 		"nullary_macro_in_mbox": true,
 		"teubner_required": true,
-		"unicode_char": "03DA"
+		"unicode_char": "Ϛ"
 	},
 	"\\Subset": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22D0;"
+			"⋐"
 		]
 	},
 	"\\Supset": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22D1;"
+			"⋑"
 		]
 	},
 	"\\Tau": {
@@ -828,8 +995,10 @@
 		]
 	},
 	"\\Theta": {
+		"identifier": [
+			"Θ"
+		],
 		"is_literal": true,
-		"mathchar": "&#x0398;",
 		"mhchem_single_macro": true,
 		"nullary_macro": true
 	},
@@ -838,18 +1007,20 @@
 	},
 	"\\Uparrow": {
 		"delimiter": [
-			"&#x21D1;"
+			"⇑"
 		],
 		"other_delimiters1": true
 	},
 	"\\Updownarrow": {
 		"delimiter": [
-			"&#x21D5;"
+			"⇕"
 		],
 		"other_delimiters1": true
 	},
 	"\\Upsilon": {
-		"mathchar": "&#x03A5;",
+		"identifier": [
+			"Υ"
+		],
 		"mhchem_single_macro": true,
 		"nullary_macro": true
 	},
@@ -857,12 +1028,12 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22A9;"
+			"⊩"
 		]
 	},
 	"\\Vert": {
 		"delimiter": [
-			"&#x2016;"
+			"‖"
 		],
 		"other_delimiters1": true
 	},
@@ -870,12 +1041,14 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22AA;"
+			"⊪"
 		]
 	},
 	"\\Xi": {
+		"identifier": [
+			"Ξ"
+		],
 		"is_literal": true,
-		"mathchar": "&#x039E;",
 		"nullary_macro": true
 	},
 	"\\Z": {
@@ -922,7 +1095,7 @@
 	},
 	"\\aleph": {
 		"identifier": [
-			"\\u2135",
+			"ℵ",
 			{
 				"mathvariant": "normal"
 			}
@@ -932,7 +1105,7 @@
 	},
 	"\\alpha": {
 		"identifier": [
-			"\\u03B1"
+			"α"
 		],
 		"is_literal": true,
 		"mhchem_single_macro": true,
@@ -942,7 +1115,7 @@
 		"is_literal": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2A3F;"
+			"⨿"
 		]
 	},
 	"\\and": {
@@ -953,7 +1126,7 @@
 	},
 	"\\angle": {
 		"identifier": [
-			"\\u2220",
+			"∠",
 			{
 				"mathvariant": "normal"
 			}
@@ -964,18 +1137,18 @@
 		"mhchem_single_macro": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2248;"
+			"≈"
 		]
 	},
 	"\\approxeq": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x224A;"
+			"≊"
 		]
 	},
 	"\\arccos": {
-		"callback": "namedFn",
+		"callback": "MediaWiki\\Extension\\Math\\WikiTexVC\\Nodes\\Literal::namedFn",
 		"latex_function_names": true
 	},
 	"\\arccot": {
@@ -988,15 +1161,15 @@
 		"mediawiki_function_names": true
 	},
 	"\\arcsin": {
-		"callback": "namedFn",
+		"callback": "MediaWiki\\Extension\\Math\\WikiTexVC\\Nodes\\Literal::namedFn",
 		"latex_function_names": true
 	},
 	"\\arctan": {
-		"callback": "namedFn",
+		"callback": "MediaWiki\\Extension\\Math\\WikiTexVC\\Nodes\\Literal::namedFn",
 		"latex_function_names": true
 	},
 	"\\arg": {
-		"callback": "namedFn",
+		"callback": "MediaWiki\\Extension\\Math\\WikiTexVC\\Nodes\\Literal::namedFn",
 		"latex_function_names": true
 	},
 	"\\array": {
@@ -1004,19 +1177,19 @@
 	},
 	"\\arrowvert": {
 		"delimiter": [
-			"&#x23D0;"
+			"⏐"
 		]
 	},
 	"\\ast": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2217;"
+			"∗"
 		]
 	},
 	"\\asymp": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x224D;"
+			"≍"
 		]
 	},
 	"\\atop": {
@@ -1031,13 +1204,13 @@
 		"is_literal": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x220D;"
+			"∍"
 		]
 	},
 	"\\backprime": {
 		"ams_required": true,
 		"identifier": [
-			"\\u2035",
+			"‵",
 			{
 				"variantForm": "True"
 			}
@@ -1048,14 +1221,14 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x223D;"
+			"∽"
 		]
 	},
 	"\\backsimeq": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22CD;"
+			"⋍"
 		]
 	},
 	"\\backslash": {
@@ -1063,7 +1236,7 @@
 			"\\"
 		],
 		"identifier": [
-			"\\u2216",
+			"∖",
 			{
 				"mathvariant": "normal"
 			}
@@ -1082,7 +1255,7 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22BC;"
+			"⊼"
 		]
 	},
 	"\\bbFont": {
@@ -1104,7 +1277,7 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2235;"
+			"∵"
 		]
 	},
 	"\\begin{Bmatrix}": {
@@ -1139,7 +1312,7 @@
 	},
 	"\\beta": {
 		"identifier": [
-			"\\u03B2"
+			"β"
 		],
 		"is_literal": true,
 		"mhchem_single_macro": true,
@@ -1148,7 +1321,7 @@
 	"\\beth": {
 		"ams_required": true,
 		"identifier": [
-			"\\u2136"
+			"ℶ"
 		],
 		"is_literal": true,
 		"nullary_macro": true
@@ -1157,7 +1330,7 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x226C;"
+			"≬"
 		]
 	},
 	"\\bf": {
@@ -1179,7 +1352,7 @@
 		"nullary_macro": true,
 		"operator": true,
 		"operator_rendering": [
-			"&#x22C2;",
+			"⋂",
 			{
 				"movesupsub": true
 			}
@@ -1189,14 +1362,14 @@
 		"nullary_macro": true,
 		"operator": true,
 		"operator_rendering": [
-			"&#x25EF;"
+			"◯"
 		]
 	},
 	"\\bigcup": {
 		"nullary_macro": true,
 		"operator": true,
 		"operator_rendering": [
-			"&#x22C3;",
+			"⋃",
 			{
 				"movesupsub": true
 			}
@@ -1215,13 +1388,6 @@
 		"callback": [
 			"makeBig",
 			"OPEN",
-			1.45
-		]
-	},
-	"\\biggm": {
-		"callback": [
-			"makeBig",
-			"REL",
 			1.45
 		]
 	},
@@ -1252,7 +1418,7 @@
 		"nullary_macro": true,
 		"operator": true,
 		"operator_rendering": [
-			"&#x2A00;",
+			"⨀",
 			{
 				"movesupsub": true
 			}
@@ -1262,7 +1428,7 @@
 		"nullary_macro": true,
 		"operator": true,
 		"operator_rendering": [
-			"&#x2A01;",
+			"⨁",
 			{
 				"movesupsub": true
 			}
@@ -1272,7 +1438,7 @@
 		"nullary_macro": true,
 		"operator": true,
 		"operator_rendering": [
-			"&#x2A02;",
+			"⨂",
 			{
 				"movesupsub": true
 			}
@@ -1290,7 +1456,7 @@
 		"nullary_macro": true,
 		"operator": true,
 		"operator_rendering": [
-			"&#x2A06;",
+			"⨆",
 			{
 				"movesupsub": true
 			}
@@ -1299,7 +1465,7 @@
 	"\\bigstar": {
 		"ams_required": true,
 		"identifier": [
-			"\\u2605"
+			"★"
 		],
 		"nullary_macro": true,
 		"operator": true
@@ -1308,21 +1474,21 @@
 		"nullary_macro": true,
 		"operator": true,
 		"operator_rendering": [
-			"&#x25BD;"
+			"▽"
 		]
 	},
 	"\\bigtriangleup": {
 		"nullary_macro": true,
 		"operator": true,
 		"operator_rendering": [
-			"&#x25B3;"
+			"△"
 		]
 	},
 	"\\biguplus": {
 		"nullary_macro": true,
 		"operator": true,
 		"operator_rendering": [
-			"&#x2A04;",
+			"⨄",
 			{
 				"movesupsub": true
 			}
@@ -1332,7 +1498,7 @@
 		"nullary_macro": true,
 		"operator": true,
 		"operator_rendering": [
-			"&#x22C1;",
+			"⋁",
 			{
 				"movesupsub": true
 			}
@@ -1342,7 +1508,7 @@
 		"nullary_macro": true,
 		"operator": true,
 		"operator_rendering": [
-			"&#x22C0;",
+			"⋀",
 			{
 				"movesupsub": true
 			}
@@ -1362,28 +1528,28 @@
 	"\\blacklozenge": {
 		"ams_required": true,
 		"identifier": [
-			"\\u29EB"
+			"⧫"
 		],
 		"nullary_macro": true
 	},
 	"\\blacksquare": {
 		"ams_required": true,
 		"identifier": [
-			"\\u25FC"
+			"◼"
 		],
 		"nullary_macro": true
 	},
 	"\\blacktriangle": {
 		"ams_required": true,
 		"identifier": [
-			"\\u25B4"
+			"▴"
 		],
 		"nullary_macro": true
 	},
 	"\\blacktriangledown": {
 		"ams_required": true,
 		"identifier": [
-			"\\u25BE"
+			"▾"
 		],
 		"nullary_macro": true
 	},
@@ -1391,14 +1557,14 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x25C2;"
+			"◂"
 		]
 	},
 	"\\blacktriangleright": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x25B8;"
+			"▸"
 		]
 	},
 	"\\bmod": {
@@ -1431,7 +1597,7 @@
 	},
 	"\\bot": {
 		"identifier": [
-			"\\u22A5",
+			"⊥",
 			{
 				"mathvariant": "normal"
 			}
@@ -1441,14 +1607,14 @@
 	"\\bowtie": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22C8;"
+			"⋈"
 		]
 	},
 	"\\boxdot": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22A1;"
+			"⊡"
 		]
 	},
 	"\\boxed": {
@@ -1462,21 +1628,21 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x229F;"
+			"⊟"
 		]
 	},
 	"\\boxplus": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x229E;"
+			"⊞"
 		]
 	},
 	"\\boxtimes": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22A0;"
+			"⊠"
 		]
 	},
 	"\\brace": {
@@ -1488,7 +1654,7 @@
 	},
 	"\\bracevert": {
 		"delimiter": [
-			"&#x23AA;"
+			"⎪"
 		]
 	},
 	"\\brack": {
@@ -1512,14 +1678,14 @@
 	"\\bullet": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2219;"
+			"∙"
 		]
 	},
 	"\\bumpeq": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x224F;"
+			"≏"
 		]
 	},
 	"\\ca": {
@@ -1528,6 +1694,7 @@
 			"&#x223C;",
 			true
 		],
+		"mhchem_required": true,
 		"mhchem_single_macro": true
 	},
 	"\\cal": {
@@ -1557,7 +1724,7 @@
 	"\\cap": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2229;"
+			"∩"
 		]
 	},
 	"\\cases": {
@@ -1565,7 +1732,10 @@
 			"matrix",
 			"{",
 			"",
-			"left left",
+			[
+				"l",
+				"l"
+			],
 			null,
 			".1em",
 			null,
@@ -1575,19 +1745,19 @@
 	"\\cdot": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22C5;"
+			"⋅"
 		]
 	},
 	"\\cdotp": {
 		"operator_rendering": [
-			"&#x22C5;",
+			"⋅",
 			[]
 		]
 	},
 	"\\cdots": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22EF;"
+			"⋯"
 		]
 	},
 	"\\ce": {
@@ -1603,7 +1773,7 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22C5;",
+			"⋅",
 			{
 				"variantForm": "True"
 			}
@@ -1627,13 +1797,13 @@
 	"\\checkmark": {
 		"ams_required": true,
 		"identifier": [
-			"\\u2713"
+			"✓"
 		],
 		"nullary_macro": true
 	},
 	"\\chi": {
 		"identifier": [
-			"\\u03C7"
+			"χ"
 		],
 		"is_literal": true,
 		"mhchem_single_macro": true,
@@ -1651,34 +1821,34 @@
 		"mhchem_single_macro": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2218;"
+			"∘"
 		]
 	},
 	"\\circeq": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2257;"
+			"≗"
 		]
 	},
 	"\\circlearrowleft": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21BA;"
+			"↺"
 		]
 	},
 	"\\circlearrowright": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21BB;"
+			"↻"
 		]
 	},
 	"\\circledS": {
 		"ams_required": true,
 		"identifier": [
-			"\\u24C8",
+			"Ⓢ",
 			{
 				"mathvariant": "normal"
 			}
@@ -1689,21 +1859,21 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x229B;"
+			"⊛"
 		]
 	},
 	"\\circledcirc": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x229A;"
+			"⊚"
 		]
 	},
 	"\\circleddash": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x229D;"
+			"⊝"
 		]
 	},
 	"\\clubs": {
@@ -1711,7 +1881,7 @@
 	},
 	"\\clubsuit": {
 		"identifier": [
-			"\\u2663",
+			"♣",
 			{
 				"mathvariant": "normal"
 			}
@@ -1724,7 +1894,7 @@
 	"\\colon": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x003A;",
+			":",
 			[]
 		]
 	},
@@ -1736,7 +1906,7 @@
 	"\\complement": {
 		"ams_required": true,
 		"identifier": [
-			"\\u2201"
+			"∁"
 		],
 		"is_literal": true,
 		"nullary_macro": true
@@ -1744,90 +1914,90 @@
 	"\\cong": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2245;"
+			"≅"
 		]
 	},
 	"\\coppa": {
 		"nullary_macro_in_mbox": true,
 		"teubner_required": true,
-		"unicode_char": "03D9"
+		"unicode_char": "ϙ"
 	},
 	"\\coprod": {
 		"nullary_macro": true,
 		"operator": true,
 		"operator_rendering": [
-			"&#x2210;",
+			"∐",
 			{
 				"movesupsub": true
 			}
 		]
 	},
 	"\\cos": {
-		"callback": "namedFn",
+		"callback": "MediaWiki\\Extension\\Math\\WikiTexVC\\Nodes\\Literal::namedFn",
 		"latex_function_names": true
 	},
 	"\\cosh": {
-		"callback": "namedFn",
+		"callback": "MediaWiki\\Extension\\Math\\WikiTexVC\\Nodes\\Literal::namedFn",
 		"latex_function_names": true
 	},
 	"\\cot": {
-		"callback": "namedFn",
+		"callback": "MediaWiki\\Extension\\Math\\WikiTexVC\\Nodes\\Literal::namedFn",
 		"latex_function_names": true
 	},
 	"\\coth": {
-		"callback": "namedFn",
+		"callback": "MediaWiki\\Extension\\Math\\WikiTexVC\\Nodes\\Literal::namedFn",
 		"latex_function_names": true
 	},
 	"\\csc": {
-		"callback": "namedFn",
+		"callback": "MediaWiki\\Extension\\Math\\WikiTexVC\\Nodes\\Literal::namedFn",
 		"latex_function_names": true
 	},
 	"\\cup": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x222A;"
+			"∪"
 		]
 	},
 	"\\curlyeqprec": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22DE;"
+			"⋞"
 		]
 	},
 	"\\curlyeqsucc": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22DF;"
+			"⋟"
 		]
 	},
 	"\\curlyvee": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22CE;"
+			"⋎"
 		]
 	},
 	"\\curlywedge": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22CF;"
+			"⋏"
 		]
 	},
 	"\\curvearrowleft": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21B6;"
+			"↶"
 		]
 	},
 	"\\curvearrowright": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21B7;"
+			"↷"
 		]
 	},
 	"\\dArr": {
@@ -1836,13 +2006,13 @@
 	"\\dagger": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2020;"
+			"†"
 		]
 	},
 	"\\daleth": {
 		"ams_required": true,
 		"identifier": [
-			"\\u2138"
+			"ℸ"
 		],
 		"is_literal": true,
 		"nullary_macro": true
@@ -1852,18 +2022,18 @@
 	},
 	"\\dashleftarrow": {
 		"operator_rendering": [
-			"&#x21E0;"
+			"⇠"
 		]
 	},
 	"\\dashrightarrow": {
 		"operator_rendering": [
-			"&#x21E2;"
+			"⇢"
 		]
 	},
 	"\\dashv": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22A3;"
+			"⊣"
 		]
 	},
 	"\\dbinom": {
@@ -1880,7 +2050,7 @@
 	"\\ddagger": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2021;"
+			"‡"
 		]
 	},
 	"\\ddddot": {
@@ -1906,7 +2076,7 @@
 	"\\ddots": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22F1;"
+			"⋱"
 		]
 	},
 	"\\definecolor": {
@@ -1914,19 +2084,19 @@
 		"definecolor_function": true
 	},
 	"\\deg": {
-		"callback": "namedFn",
+		"callback": "MediaWiki\\Extension\\Math\\WikiTexVC\\Nodes\\Literal::namedFn",
 		"latex_function_names": true
 	},
 	"\\delta": {
 		"identifier": [
-			"\\u03B4"
+			"δ"
 		],
 		"is_literal": true,
 		"mhchem_single_macro": true,
 		"nullary_macro": true
 	},
 	"\\det": {
-		"callback": "namedOp",
+		"callback": "MediaWiki\\Extension\\Math\\WikiTexVC\\Nodes\\Literal::namedOp",
 		"latex_function_names": true,
 		"operator": true
 	},
@@ -1944,21 +2114,21 @@
 	"\\diagdown": {
 		"ams_required": true,
 		"identifier": [
-			"\\u2572"
+			"╲"
 		],
 		"nullary_macro": true
 	},
 	"\\diagup": {
 		"ams_required": true,
 		"identifier": [
-			"\\u2571"
+			"╱"
 		],
 		"nullary_macro": true
 	},
 	"\\diamond": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22C4;"
+			"⋄"
 		]
 	},
 	"\\diamonds": {
@@ -1966,7 +2136,7 @@
 	},
 	"\\diamondsuit": {
 		"identifier": [
-			"\\u2662",
+			"♢",
 			{
 				"mathvariant": "normal"
 			}
@@ -1976,13 +2146,13 @@
 	"\\digamma": {
 		"ams_required": true,
 		"identifier": [
-			"\\u03DD"
+			"ϝ"
 		],
 		"is_literal": true,
 		"nullary_macro": true
 	},
 	"\\dim": {
-		"callback": "namedFn",
+		"callback": "MediaWiki\\Extension\\Math\\WikiTexVC\\Nodes\\Literal::namedFn",
 		"latex_function_names": true
 	},
 	"\\displaylines": {
@@ -1990,7 +2160,7 @@
 			"matrix",
 			null,
 			null,
-			"center",
+			null,
 			null,
 			".5em",
 			"D"
@@ -2008,19 +2178,19 @@
 	"\\div": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x00F7;"
+			"÷"
 		]
 	},
 	"\\divideontimes": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22C7;"
+			"⋇"
 		]
 	},
 	"\\divsymbol": {
 		"operator_rendering": [
-			"&#x00F7;"
+			"÷"
 		]
 	},
 	"\\dot": {
@@ -2034,21 +2204,21 @@
 	"\\doteq": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2250;"
+			"≐"
 		]
 	},
 	"\\doteqdot": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2251;"
+			"≑"
 		]
 	},
 	"\\dotplus": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2214;"
+			"∔"
 		]
 	},
 	"\\dots": {
@@ -2059,59 +2229,59 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22EF;"
+			"⋯"
 		]
 	},
 	"\\dotsc": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2026;"
+			"…"
 		]
 	},
 	"\\dotsi": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22EF;"
+			"⋯"
 		]
 	},
 	"\\dotsm": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22EF;"
+			"⋯"
 		]
 	},
 	"\\dotso": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2026;"
+			"…"
 		]
 	},
 	"\\doublebarwedge": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2A5E;"
+			"⩞"
 		]
 	},
 	"\\doublecap": {
 		"nullary_macro_aliase": "\\Cap",
 		"operator_rendering": [
-			"&#x22D2;"
+			"⋒"
 		]
 	},
 	"\\doublecup": {
 		"nullary_macro_aliase": "\\Cup",
 		"operator_rendering": [
-			"&#x22D3;"
+			"⋓"
 		]
 	},
 	"\\downarrow": {
 		"delimiter": [
-			"&#x2193;"
+			"↓"
 		],
 		"other_delimiters1": true
 	},
@@ -2119,26 +2289,26 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21CA;"
+			"⇊"
 		]
 	},
 	"\\downharpoonleft": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21C3;"
+			"⇃"
 		]
 	},
 	"\\downharpoonright": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21C2;"
+			"⇂"
 		]
 	},
 	"\\ell": {
 		"identifier": [
-			"\\u2113"
+			"ℓ"
 		],
 		"is_literal": true,
 		"nullary_macro": true
@@ -2156,7 +2326,7 @@
 	},
 	"\\emptyset": {
 		"identifier": [
-			"\\u2205",
+			"∅",
 			{
 				"mathvariant": "normal"
 			}
@@ -2171,7 +2341,7 @@
 	},
 	"\\epsilon": {
 		"identifier": [
-			"\\u03F5"
+			"ϵ"
 		],
 		"is_literal": true,
 		"mhchem_single_macro": true,
@@ -2182,7 +2352,10 @@
 			"matrix",
 			null,
 			null,
-			"right left",
+			[
+				"r",
+				"l"
+			],
 			"(0, lengths_js_1.em)(MathSpace::thickmathspace)",
 			".5em",
 			"D"
@@ -2193,7 +2366,10 @@
 			"matrix",
 			null,
 			null,
-			"right left",
+			[
+				"r",
+				"l"
+			],
 			"(0, lengths_js_1.em)(MathSpace::thickmathspace)",
 			".5em",
 			"D",
@@ -2205,39 +2381,39 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2256;"
+			"≖"
 		]
 	},
 	"\\eqsim": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2242;"
+			"≂"
 		]
 	},
 	"\\eqslantgtr": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2A96;"
+			"⪖"
 		]
 	},
 	"\\eqslantless": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2A95;"
+			"⪕"
 		]
 	},
 	"\\equiv": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2261;"
+			"≡"
 		]
 	},
 	"\\eta": {
 		"identifier": [
-			"\\u03B7"
+			"η"
 		],
 		"is_literal": true,
 		"mhchem_single_macro": true,
@@ -2246,7 +2422,7 @@
 	"\\eth": {
 		"ams_required": true,
 		"identifier": [
-			"\\u00F0",
+			"ð",
 			{
 				"mathvariant": "normal"
 			}
@@ -2257,14 +2433,14 @@
 	"\\euro": {
 		"euro_required": true,
 		"nullary_macro_in_mbox": true,
-		"unicode_char": "20AC"
+		"unicode_char": "€"
 	},
 	"\\exist": {
 		"nullary_macro_aliase": "\\exists"
 	},
 	"\\exists": {
 		"identifier": [
-			"\\u2203",
+			"∃",
 			{
 				"mathvariant": "normal"
 			}
@@ -2272,19 +2448,19 @@
 		"nullary_macro": true
 	},
 	"\\exp": {
-		"callback": "namedFn",
+		"callback": "MediaWiki\\Extension\\Math\\WikiTexVC\\Nodes\\Literal::namedFn",
 		"latex_function_names": true
 	},
 	"\\fallingdotseq": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2252;"
+			"≒"
 		]
 	},
 	"\\flat": {
 		"identifier": [
-			"\\u266D",
+			"♭",
 			{
 				"mathvariant": "normal"
 			}
@@ -2294,7 +2470,7 @@
 	},
 	"\\forall": {
 		"identifier": [
-			"\\u2200",
+			"∀",
 			{
 				"mathvariant": "normal"
 			}
@@ -2315,42 +2491,42 @@
 	"\\frown": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2322;"
+			"⌢"
 		]
 	},
 	"\\gamma": {
 		"identifier": [
-			"\\u03B3"
+			"γ"
 		],
 		"is_literal": true,
 		"mhchem_single_macro": true,
 		"nullary_macro": true
 	},
 	"\\gcd": {
-		"callback": "namedOp",
+		"callback": "MediaWiki\\Extension\\Math\\WikiTexVC\\Nodes\\Literal::namedOp",
 		"latex_function_names": true,
 		"operator": true
 	},
 	"\\ge": {
 		"nullary_macro_aliase": "\\geq",
 		"operator_rendering": [
-			"&#x2265;"
+			"≥"
 		]
 	},
 	"\\geneuro": {
 		"euro_required": true,
 		"nullary_macro_in_mbox": true,
-		"unicode_char": "20AC"
+		"unicode_char": "€"
 	},
 	"\\geneuronarrow": {
 		"euro_required": true,
 		"nullary_macro_in_mbox": true,
-		"unicode_char": "20AC"
+		"unicode_char": "€"
 	},
 	"\\geneurowide": {
 		"euro_required": true,
 		"nullary_macro_in_mbox": true,
-		"unicode_char": "20AC"
+		"unicode_char": "€"
 	},
 	"\\genfrac": {
 		"callback": [
@@ -2360,52 +2536,52 @@
 	"\\geq": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2265;"
+			"≥"
 		]
 	},
 	"\\geqq": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2267;"
+			"≧"
 		]
 	},
 	"\\geqslant": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2A7E;"
+			"⩾"
 		]
 	},
 	"\\gets": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2190;"
+			"←"
 		]
 	},
 	"\\gg": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x226B;"
+			"≫"
 		]
 	},
 	"\\ggg": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22D9;"
+			"⋙"
 		]
 	},
 	"\\gggtr": {
 		"nullary_macro_aliase": "\\ggg",
 		"operator_rendering": [
-			"&#x22D9;"
+			"⋙"
 		]
 	},
 	"\\gimel": {
 		"ams_required": true,
 		"identifier": [
-			"\\u2137"
+			"ℷ"
 		],
 		"is_literal": true,
 		"nullary_macro": true
@@ -2414,28 +2590,28 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2A8A;"
+			"⪊"
 		]
 	},
 	"\\gneq": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2A88;"
+			"⪈"
 		]
 	},
 	"\\gneqq": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2269;"
+			"≩"
 		]
 	},
 	"\\gnsim": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22E7;"
+			"⋧"
 		]
 	},
 	"\\grave": {
@@ -2448,59 +2624,59 @@
 	},
 	"\\gt": {
 		"delimiter": [
-			"&#x27E9;"
+			"⟩"
 		],
 		"operator_rendering": [
-			"&#x003E;"
+			">"
 		]
 	},
 	"\\gtrapprox": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2A86;"
+			"⪆"
 		]
 	},
 	"\\gtrdot": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22D7;"
+			"⋗"
 		]
 	},
 	"\\gtreqless": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22DB;"
+			"⋛"
 		]
 	},
 	"\\gtreqqless": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2A8C;"
+			"⪌"
 		]
 	},
 	"\\gtrless": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2277;"
+			"≷"
 		]
 	},
 	"\\gtrsim": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2273;"
+			"≳"
 		]
 	},
 	"\\gvertneqq": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2269;",
+			"≩",
 			{
 				"variantForm": true
 			}
@@ -2515,14 +2691,14 @@
 	"\\hat": {
 		"callback": [
 			"accent",
-			"005E"
+			"0302"
 		],
 		"fun_ar1": true,
 		"is_letter_mod": true
 	},
 	"\\hbar": {
 		"identifier": [
-			"\\u210F",
+			"ℏ",
 			{
 				"alternate": "1"
 			}
@@ -2547,7 +2723,7 @@
 	},
 	"\\heartsuit": {
 		"identifier": [
-			"\\u2661",
+			"♡",
 			{
 				"mathvariant": "normal"
 			}
@@ -2562,19 +2738,19 @@
 		"hline_function": true
 	},
 	"\\hom": {
-		"callback": "namedFn",
+		"callback": "MediaWiki\\Extension\\Math\\WikiTexVC\\Nodes\\Literal::namedFn",
 		"latex_function_names": true
 	},
 	"\\hookleftarrow": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21A9;"
+			"↩"
 		]
 	},
 	"\\hookrightarrow": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21AA;"
+			"↪"
 		]
 	},
 	"\\hphantom": {
@@ -2592,7 +2768,7 @@
 	"\\hslash": {
 		"ams_required": true,
 		"identifier": [
-			"\\u210F"
+			"ℏ"
 		],
 		"is_literal": true,
 		"nullary_macro": true
@@ -2610,26 +2786,23 @@
 	"\\iiiint": {
 		"ams_required": true,
 		"nullary_macro": true,
-		"operator": true,
 		"operator_rendering": [
-			"&#x2A0C;"
+			"⨌"
 		]
 	},
 	"\\iiint": {
 		"ams_required": true,
 		"nullary_macro": true,
-		"operator": true,
 		"operator_rendering": [
-			"&#x222D;",
+			"∭",
 			[]
 		]
 	},
 	"\\iint": {
 		"ams_required": true,
 		"nullary_macro": true,
-		"operator": true,
 		"operator_rendering": [
-			"&#x222C;",
+			"∬",
 			[]
 		]
 	},
@@ -2638,7 +2811,7 @@
 	},
 	"\\imath": {
 		"identifier": [
-			"\\u0131"
+			"ı"
 		],
 		"is_literal": true,
 		"nullary_macro": true
@@ -2654,11 +2827,11 @@
 	"\\in": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2208;"
+			"∈"
 		]
 	},
 	"\\inf": {
-		"callback": "namedOp",
+		"callback": "MediaWiki\\Extension\\Math\\WikiTexVC\\Nodes\\Literal::namedOp",
 		"latex_function_names": true,
 		"operator": true
 	},
@@ -2667,7 +2840,7 @@
 	},
 	"\\infty": {
 		"identifier": [
-			"\\u221E",
+			"∞",
 			{
 				"mathvariant": "normal"
 			}
@@ -2677,7 +2850,7 @@
 	"\\injlim": {
 		"ams_required": true,
 		"callback": [
-			"namedOp",
+			"MediaWiki\\Extension\\Math\\WikiTexVC\\Nodes\\Literal::namedOp",
 			"inj lim"
 		],
 		"nullary_macro": true,
@@ -2685,26 +2858,23 @@
 	},
 	"\\int": {
 		"nullary_macro": true,
-		"operator": true,
 		"operator_rendering": [
-			"&#x222B;",
+			"∫",
 			[]
 		]
 	},
 	"\\intBar": {
 		"nullary_macro": true,
-		"operator": true,
 		"operator_rendering": [
-			"&#x2A0E;",
+			"⨎",
 			[]
 		],
 		"stix_required": true
 	},
 	"\\intbar": {
 		"nullary_macro": true,
-		"operator": true,
 		"operator_rendering": [
-			"&#x2A0D;",
+			"⨍",
 			[]
 		],
 		"stix_required": true
@@ -2720,12 +2890,12 @@
 		"nullary_macro": true,
 		"operator": true,
 		"operator_rendering": [
-			"&#x22BA;"
+			"⊺"
 		]
 	},
 	"\\intop": {
 		"operator_rendering": [
-			"&#x222B;",
+			"∫",
 			{
 				"movesupsub": true,
 				"movablelimits": true
@@ -2734,7 +2904,7 @@
 	},
 	"\\iota": {
 		"identifier": [
-			"\\u03B9"
+			"ι"
 		],
 		"is_literal": true,
 		"mhchem_single_macro": true,
@@ -2752,21 +2922,21 @@
 	},
 	"\\jmath": {
 		"identifier": [
-			"\\u0237"
+			"ȷ"
 		],
 		"is_literal": true,
 		"nullary_macro": true
 	},
 	"\\kappa": {
 		"identifier": [
-			"\\u03BA"
+			"κ"
 		],
 		"is_literal": true,
 		"mhchem_single_macro": true,
 		"nullary_macro": true
 	},
 	"\\ker": {
-		"callback": "namedFn",
+		"callback": "MediaWiki\\Extension\\Math\\WikiTexVC\\Nodes\\Literal::namedFn",
 		"latex_function_names": true
 	},
 	"\\kern": {
@@ -2777,7 +2947,7 @@
 	"\\koppa": {
 		"nullary_macro_in_mbox": true,
 		"teubner_required": true,
-		"unicode_char": "03DF"
+		"unicode_char": "ϟ"
 	},
 	"\\lArr": {
 		"nullary_macro_aliase": "\\Leftarrow"
@@ -2785,13 +2955,13 @@
 	"\\lVert": {
 		"ams_required": true,
 		"delimiter": [
-			"&#x2016;"
+			"‖"
 		],
 		"nullary_macro": true
 	},
 	"\\lambda": {
 		"identifier": [
-			"\\u03BB"
+			"λ"
 		],
 		"is_literal": true,
 		"mhchem_single_macro": true,
@@ -2800,7 +2970,7 @@
 	"\\land": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2227;"
+			"∧"
 		]
 	},
 	"\\lang": {
@@ -2808,7 +2978,7 @@
 	},
 	"\\langle": {
 		"delimiter": [
-			"&#x27E8;"
+			"⟨"
 		],
 		"other_delimiters1": true
 	},
@@ -2829,31 +2999,31 @@
 	},
 	"\\lceil": {
 		"delimiter": [
-			"&#x2308;"
+			"⌈"
 		],
 		"other_delimiters1": true
 	},
 	"\\ldotp": {
 		"operator_rendering": [
-			"&#x002E;",
+			".",
 			[]
 		]
 	},
 	"\\ldots": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2026;"
+			"…"
 		]
 	},
 	"\\le": {
 		"nullary_macro_aliase": "\\leq",
 		"operator_rendering": [
-			"&#x2264;"
+			"≤"
 		]
 	},
 	"\\leadsto": {
 		"operator_rendering": [
-			"&#x21DD;"
+			"⇝"
 		]
 	},
 	"\\left": {
@@ -2862,73 +3032,73 @@
 	"\\leftarrow": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2190;"
+			"←"
 		]
 	},
 	"\\leftarrowtail": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21A2;"
+			"↢"
 		]
 	},
 	"\\leftharpoondown": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21BD;"
+			"↽"
 		]
 	},
 	"\\leftharpoonup": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21BC;"
+			"↼"
 		]
 	},
 	"\\leftleftarrows": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21C7;"
+			"⇇"
 		]
 	},
 	"\\leftrightarrow": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2194;"
+			"↔"
 		]
 	},
 	"\\leftrightarrows": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21C6;"
+			"⇆"
 		]
 	},
 	"\\leftrightharpoons": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21CB;"
+			"⇋"
 		]
 	},
 	"\\leftrightsquigarrow": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21AD;"
+			"↭"
 		]
 	},
 	"\\leftthreetimes": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22CB;"
+			"⋋"
 		]
 	},
 	"\\leq": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2264;"
+			"≤"
 		]
 	},
 	"\\leqalignno": {
@@ -2936,7 +3106,10 @@
 			"matrix",
 			null,
 			null,
-			"right left",
+			[
+				"r",
+				"l"
+			],
 			"(0, lengths_js_1.em)(MathSpace::thickmathspace)",
 			".5em",
 			"D",
@@ -2948,100 +3121,97 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2266;"
+			"≦"
 		]
 	},
 	"\\leqslant": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2A7D;"
+			"⩽"
 		]
 	},
 	"\\lessapprox": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2A85;"
+			"⪅"
 		]
 	},
 	"\\lessdot": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22D6;"
+			"⋖"
 		]
 	},
 	"\\lesseqgtr": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22DA;"
+			"⋚"
 		]
 	},
 	"\\lesseqqgtr": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2A8B;"
+			"⪋"
 		]
 	},
 	"\\lessgtr": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2276;"
+			"≶"
 		]
 	},
 	"\\lesssim": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2272;"
+			"≲"
 		]
 	},
 	"\\lfloor": {
 		"delimiter": [
-			"&#x230A;"
+			"⌊"
 		],
 		"other_delimiters1": true
 	},
 	"\\lg": {
-		"callback": "namedFn",
+		"callback": "MediaWiki\\Extension\\Math\\WikiTexVC\\Nodes\\Literal::namedFn",
 		"latex_function_names": true
 	},
 	"\\lgroup": {
 		"delimiter": [
-			"&#x27EE;"
+			"⟮"
 		]
 	},
 	"\\lhd": {
 		"operator_rendering": [
-			"&#x22B2;"
+			"⊲"
 		]
 	},
 	"\\lim": {
-		"callback": "namedOp",
+		"callback": "MediaWiki\\Extension\\Math\\WikiTexVC\\Nodes\\Literal::namedOp",
 		"latex_function_names": true
 	},
 	"\\liminf": {
 		"callback": [
-			"namedOp",
+			"MediaWiki\\Extension\\Math\\WikiTexVC\\Nodes\\Literal::namedOp",
 			"lim inf"
 		],
 		"latex_function_names": true,
 		"operator": true
 	},
 	"\\limits": {
-		"callback": [
-			"limits",
-			1
-		],
+		"callback": "MediaWiki\\Extension\\Math\\WikiTexVC\\Nodes\\Literal::limits",
 		"nullary_macro": true
 	},
 	"\\limsup": {
 		"callback": [
-			"namedOp",
+			"MediaWiki\\Extension\\Math\\WikiTexVC\\Nodes\\Literal::namedOp",
 			"lim sup"
 		],
 		"latex_function_names": true,
@@ -3050,18 +3220,18 @@
 	"\\ll": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x226A;"
+			"≪"
 		]
 	},
 	"\\llap": {
-		"callback": "lap",
+		"callback": "MediaWiki\\Extension\\Math\\WikiTexVC\\Nodes\\Fun1::lap",
 		"fun_ar1": true,
 		"mhchemtexified_required": true
 	},
 	"\\llcorner": {
 		"ams_required": true,
 		"delimiter": [
-			"&#x231E;"
+			"⌞"
 		],
 		"other_delimiters1": true
 	},
@@ -3069,47 +3239,47 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22D8;"
+			"⋘"
 		]
 	},
 	"\\llless": {
 		"operator_rendering": [
-			"&#x22D8;"
+			"⋘"
 		]
 	},
 	"\\lmoustache": {
 		"delimiter": [
-			"&#x23B0;"
+			"⎰"
 		]
 	},
 	"\\ln": {
-		"callback": "namedFn",
+		"callback": "MediaWiki\\Extension\\Math\\WikiTexVC\\Nodes\\Literal::namedFn",
 		"latex_function_names": true
 	},
 	"\\lnapprox": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2A89;"
+			"⪉"
 		]
 	},
 	"\\lneq": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2A87;"
+			"⪇"
 		]
 	},
 	"\\lneqq": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2268;"
+			"≨"
 		]
 	},
 	"\\lnot": {
 		"identifier": [
-			"\\u00AC",
+			"¬",
 			{
 				"mathvariant": "normal"
 			}
@@ -3120,11 +3290,11 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22E6;"
+			"⋦"
 		]
 	},
 	"\\log": {
-		"callback": "namedFn",
+		"callback": "MediaWiki\\Extension\\Math\\WikiTexVC\\Nodes\\Literal::namedFn",
 		"latex_function_names": true
 	},
 	"\\longLeftrightharpoons": {
@@ -3146,13 +3316,13 @@
 	"\\longleftarrow": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x27F5;"
+			"⟵"
 		]
 	},
 	"\\longleftrightarrow": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x27F7;"
+			"⟷"
 		]
 	},
 	"\\longleftrightarrows": {
@@ -3166,7 +3336,7 @@
 	"\\longmapsto": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x27FC;",
+			"⟼",
 			{
 				"stretchy": "false"
 			}
@@ -3175,7 +3345,7 @@
 	"\\longrightarrow": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x27F6;"
+			"⟶"
 		]
 	},
 	"\\longrightleftharpoons": {
@@ -3190,20 +3360,20 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21AB;"
+			"↫"
 		]
 	},
 	"\\looparrowright": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21AC;"
+			"↬"
 		]
 	},
 	"\\lor": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2228;"
+			"∨"
 		]
 	},
 	"\\lower": {
@@ -3214,7 +3384,7 @@
 	"\\lozenge": {
 		"ams_required": true,
 		"identifier": [
-			"\\u25CA"
+			"◊"
 		],
 		"nullary_macro": true
 	},
@@ -3227,30 +3397,30 @@
 	"\\lrcorner": {
 		"ams_required": true,
 		"delimiter": [
-			"&#x231F;"
+			"⌟"
 		],
 		"other_delimiters1": true
 	},
 	"\\lt": {
 		"delimiter": [
-			"&#x27E8;"
+			"⟨"
 		],
 		"operator_rendering": [
-			"&#x003C;"
+			"<"
 		]
 	},
 	"\\ltimes": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22C9;"
+			"⋉"
 		]
 	},
 	"\\lvertneqq": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2268;",
+			"≨",
 			{
 				"variantForm": true
 			}
@@ -3259,7 +3429,7 @@
 	"\\mapsto": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21A6;",
+			"↦",
 			{
 				"stretchy": "false"
 			}
@@ -3496,7 +3666,7 @@
 		"callback": "matrix"
 	},
 	"\\max": {
-		"callback": "namedOp",
+		"callback": "MediaWiki\\Extension\\Math\\WikiTexVC\\Nodes\\Literal::namedOp",
 		"latex_function_names": true,
 		"operator": true
 	},
@@ -3510,14 +3680,14 @@
 	"\\measuredangle": {
 		"ams_required": true,
 		"identifier": [
-			"\\u2221"
+			"∡"
 		],
 		"nullary_macro": true
 	},
 	"\\mho": {
 		"ams_required": true,
 		"identifier": [
-			"\\u2127"
+			"℧"
 		],
 		"is_literal": true,
 		"nullary_macro": true
@@ -3525,11 +3695,11 @@
 	"\\mid": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2223;"
+			"∣"
 		]
 	},
 	"\\min": {
-		"callback": "namedOp",
+		"callback": "MediaWiki\\Extension\\Math\\WikiTexVC\\Nodes\\Literal::namedOp",
 		"latex_function_names": true,
 		"operator": true
 	},
@@ -3556,13 +3726,13 @@
 	"\\models": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22A8;"
+			"⊨"
 		]
 	},
 	"\\mp": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2213;"
+			"∓"
 		]
 	},
 	"\\mskip": {
@@ -3575,7 +3745,7 @@
 	},
 	"\\mu": {
 		"identifier": [
-			"\\u03BC"
+			"μ"
 		],
 		"is_literal": true,
 		"mhchem_single_macro": true,
@@ -3585,47 +3755,47 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22B8;"
+			"⊸"
 		]
 	},
 	"\\nLeftarrow": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21CD;"
+			"⇍"
 		]
 	},
 	"\\nLeftrightarrow": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21CE;"
+			"⇎"
 		]
 	},
 	"\\nRightarrow": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21CF;"
+			"⇏"
 		]
 	},
 	"\\nVDash": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22AF;"
+			"⊯"
 		]
 	},
 	"\\nVdash": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22AE;"
+			"⊮"
 		]
 	},
 	"\\nabla": {
 		"identifier": [
-			"\\u2207",
+			"∇",
 			{
 				"mathvariant": "normal"
 			}
@@ -3637,7 +3807,7 @@
 	},
 	"\\natural": {
 		"identifier": [
-			"\\u266E",
+			"♮",
 			{
 				"mathvariant": "normal"
 			}
@@ -3649,24 +3819,24 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2246;"
+			"≆"
 		]
 	},
 	"\\ne": {
 		"nullary_macro_aliase": "\\neq",
 		"operator_rendering": [
-			"&#x2260;"
+			"≠"
 		]
 	},
 	"\\nearrow": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2197;"
+			"↗"
 		]
 	},
 	"\\neg": {
 		"identifier": [
-			"\\u00AC",
+			"¬",
 			{
 				"mathvariant": "normal"
 			}
@@ -3694,7 +3864,7 @@
 	"\\neq": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2260;"
+			"≠"
 		]
 	},
 	"\\newline": {
@@ -3706,7 +3876,7 @@
 	"\\nexists": {
 		"ams_required": true,
 		"identifier": [
-			"\\u2204"
+			"∄"
 		],
 		"nullary_macro": true
 	},
@@ -3714,14 +3884,14 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2271;"
+			"≱"
 		]
 	},
 	"\\ngeqq": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2271;",
+			"≱",
 			{
 				"variantForm": true
 			}
@@ -3731,7 +3901,7 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2A88;",
+			"⪈",
 			{
 				"variantForm": true
 			}
@@ -3741,41 +3911,41 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x226F;"
+			"≯"
 		]
 	},
 	"\\ni": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x220B;"
+			"∋"
 		]
 	},
 	"\\nleftarrow": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x219A;"
+			"↚"
 		]
 	},
 	"\\nleftrightarrow": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21AE;"
+			"↮"
 		]
 	},
 	"\\nleq": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2270;"
+			"≰"
 		]
 	},
 	"\\nleqq": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2270;",
+			"≰",
 			{
 				"variantForm": true
 			}
@@ -3785,7 +3955,7 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2A87;",
+			"⪇",
 			{
 				"variantForm": true
 			}
@@ -3795,14 +3965,14 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x226E;"
+			"≮"
 		]
 	},
 	"\\nmid": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2224;"
+			"∤"
 		]
 	},
 	"\\nobreakspace": {
@@ -3811,10 +3981,7 @@
 		]
 	},
 	"\\nolimits": {
-		"callback": [
-			"limits",
-			0
-		],
+		"callback": "MediaWiki\\Extension\\Math\\WikiTexVC\\Nodes\\Literal::limits",
 		"nullary_macro": true
 	},
 	"\\not": {
@@ -3823,34 +3990,34 @@
 	},
 	"\\notChar": {
 		"operator_rendering": [
-			"&#x29F8;"
+			"⧸"
 		]
 	},
 	"\\notin": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2209;"
+			"∉"
 		]
 	},
 	"\\nparallel": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2226;"
+			"∦"
 		]
 	},
 	"\\nprec": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2280;"
+			"⊀"
 		]
 	},
 	"\\npreceq": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22E0;",
+			"⋠",
 			{
 				"variantForm": true
 			}
@@ -3860,14 +4027,14 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x219B;"
+			"↛"
 		]
 	},
 	"\\nshortmid": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2224;",
+			"∤",
 			{
 				"variantForm": true
 			}
@@ -3877,7 +4044,7 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2226;",
+			"∦",
 			{
 				"variantForm": true
 			}
@@ -3887,21 +4054,21 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2241;"
+			"≁"
 		]
 	},
 	"\\nsubseteq": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2288;"
+			"⊈"
 		]
 	},
 	"\\nsubseteqq": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2288;",
+			"⊈",
 			{
 				"variantForm": true
 			}
@@ -3911,14 +4078,14 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2281;"
+			"⊁"
 		]
 	},
 	"\\nsucceq": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22E1;",
+			"⋡",
 			{
 				"variantForm": true
 			}
@@ -3928,14 +4095,14 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2289;"
+			"⊉"
 		]
 	},
 	"\\nsupseteqq": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2289;",
+			"⊉",
 			{
 				"variantForm": true
 			}
@@ -3945,33 +4112,33 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22EA;"
+			"⋪"
 		]
 	},
 	"\\ntrianglelefteq": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22EC;"
+			"⋬"
 		]
 	},
 	"\\ntriangleright": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22EB;"
+			"⋫"
 		]
 	},
 	"\\ntrianglerighteq": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22ED;"
+			"⋭"
 		]
 	},
 	"\\nu": {
 		"identifier": [
-			"\\u03BD"
+			"ν"
 		],
 		"is_literal": true,
 		"mhchem_single_macro": true,
@@ -3981,26 +4148,26 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22AD;"
+			"⊭"
 		]
 	},
 	"\\nvdash": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22AC;"
+			"⊬"
 		]
 	},
 	"\\nwarrow": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2196;"
+			"↖"
 		]
 	},
 	"\\odot": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2299;",
+			"⊙",
 			{
 				"largeop": false
 			}
@@ -4009,7 +4176,7 @@
 	"\\officialeuro": {
 		"euro_required": true,
 		"nullary_macro_in_mbox": true,
-		"unicode_char": "20AC"
+		"unicode_char": "€"
 	},
 	"\\oiiint": {
 		"callback": [
@@ -4054,7 +4221,7 @@
 	},
 	"\\omega": {
 		"identifier": [
-			"\\u03C9"
+			"ω"
 		],
 		"is_literal": true,
 		"mhchem_single_macro": true,
@@ -4062,7 +4229,7 @@
 	},
 	"\\omicron": {
 		"identifier": [
-			"\\u03BF"
+			"ο"
 		],
 		"mhchem_single_macro": true,
 		"nullary_macro_aliase": "o"
@@ -4070,7 +4237,7 @@
 	"\\ominus": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2296;",
+			"⊖",
 			{
 				"largeop": false
 			}
@@ -4087,7 +4254,7 @@
 	"\\oplus": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2295;",
+			"⊕",
 			{
 				"largeop": false
 			}
@@ -4099,7 +4266,7 @@
 	"\\oslash": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2298;",
+			"⊘",
 			{
 				"largeop": false
 			}
@@ -4108,7 +4275,7 @@
 	"\\otimes": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2297;",
+			"⊗",
 			{
 				"largeop": false
 			}
@@ -4121,7 +4288,7 @@
 	"\\overarc": {
 		"callback": [
 			"underOver",
-			"23DC",
+			"⏜",
 			1
 		],
 		"fun_ar1nb": true,
@@ -4130,7 +4297,7 @@
 	"\\overbrace": {
 		"callback": [
 			"underOver",
-			"23DE",
+			"⏞",
 			1
 		],
 		"fun_ar1nb": true,
@@ -4139,45 +4306,41 @@
 	"\\overleftarrow": {
 		"callback": [
 			"underOver",
-			"2190"
+			"←"
 		],
 		"fun_ar1": true,
-		"is_letter_mod": true,
-		"over_operator": true
+		"is_letter_mod": true
 	},
 	"\\overleftrightarrow": {
 		"ams_required": true,
 		"callback": [
 			"underOver",
-			"2194"
+			"↔"
 		],
 		"fun_ar1": true,
-		"is_letter_mod": true,
-		"over_operator": true
+		"is_letter_mod": true
 	},
 	"\\overline": {
 		"callback": [
 			"underOver",
-			"203E"
+			"‾"
 		],
 		"fun_ar1": true,
-		"is_letter_mod": true,
-		"over_operator": true
+		"is_letter_mod": true
 	},
 	"\\overparen": {
 		"callback": [
 			"underOver",
-			"23DC"
+			"⏜"
 		]
 	},
 	"\\overrightarrow": {
 		"callback": [
 			"underOver",
-			"2192"
+			"→"
 		],
 		"fun_ar1": true,
-		"is_letter_mod": true,
-		"over_operator": true
+		"is_letter_mod": true
 	},
 	"\\overset": {
 		"ams_required": true,
@@ -4190,7 +4353,7 @@
 	},
 	"\\owns": {
 		"operator_rendering": [
-			"&#x220B;"
+			"∋"
 		]
 	},
 	"\\pagecolor": {
@@ -4200,7 +4363,7 @@
 	"\\parallel": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2225;"
+			"∥"
 		]
 	},
 	"\\part": {
@@ -4208,14 +4371,14 @@
 	},
 	"\\partial": {
 		"identifier": [
-			"\\u2202"
+			"∂"
 		],
 		"nullary_macro": true
 	},
 	"\\perp": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22A5;"
+			"⊥"
 		]
 	},
 	"\\phantom": {
@@ -4225,7 +4388,7 @@
 	},
 	"\\phi": {
 		"identifier": [
-			"\\u03D5"
+			"ϕ"
 		],
 		"is_literal": true,
 		"mhchem_single_macro": true,
@@ -4233,7 +4396,7 @@
 	},
 	"\\pi": {
 		"identifier": [
-			"\\u03C0"
+			"π"
 		],
 		"is_literal": true,
 		"mhchem_single_macro": true,
@@ -4244,7 +4407,7 @@
 		"is_literal": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22D4;"
+			"⋔"
 		]
 	},
 	"\\plusmn": {
@@ -4254,7 +4417,7 @@
 		"mhchem_single_macro": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x00B1;"
+			"±"
 		]
 	},
 	"\\pmatrix": {
@@ -4289,71 +4452,68 @@
 	"\\prec": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x227A;"
+			"≺"
 		]
 	},
 	"\\precapprox": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2AB7;"
+			"⪷"
 		]
 	},
 	"\\preccurlyeq": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x227C;"
+			"≼"
 		]
 	},
 	"\\preceq": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2AAF;"
+			"⪯"
 		]
 	},
 	"\\precnapprox": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2AB9;"
+			"⪹"
 		]
 	},
 	"\\precneqq": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2AB5;"
+			"⪵"
 		]
 	},
 	"\\precnsim": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22E8;"
+			"⋨"
 		]
 	},
 	"\\precsim": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x227E;"
+			"≾"
 		]
 	},
 	"\\prime": {
-		"identifier": [
-			"\\u2032",
-			{
-				"alternate": "1"
-			}
-		],
-		"nullary_macro": true
+		"nullary_macro": true,
+		"operator_rendering": [
+			"′"
+		]
 	},
 	"\\prod": {
 		"nullary_macro": true,
 		"operator": true,
 		"operator_rendering": [
-			"&#x220F;",
+			"∏",
 			{
 				"movesupsub": true
 			}
@@ -4362,7 +4522,7 @@
 	"\\projlim": {
 		"ams_required": true,
 		"callback": [
-			"namedOp",
+			"MediaWiki\\Extension\\Math\\WikiTexVC\\Nodes\\Literal::namedOp",
 			"proj lim"
 		],
 		"nullary_macro": true,
@@ -4371,12 +4531,12 @@
 	"\\propto": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x221D;"
+			"∝"
 		]
 	},
 	"\\psi": {
 		"identifier": [
-			"\\u03C8"
+			"ψ"
 		],
 		"is_literal": true,
 		"mhchem_single_macro": true,
@@ -4408,7 +4568,7 @@
 	"\\rVert": {
 		"ams_required": true,
 		"delimiter": [
-			"&#x2016;"
+			"‖"
 		],
 		"nullary_macro": true
 	},
@@ -4422,7 +4582,7 @@
 	},
 	"\\rangle": {
 		"delimiter": [
-			"&#x27E9;"
+			"⟩"
 		],
 		"other_delimiters1": true
 	},
@@ -4443,7 +4603,7 @@
 	},
 	"\\rceil": {
 		"delimiter": [
-			"&#x2309;"
+			"⌉"
 		],
 		"other_delimiters1": true
 	},
@@ -4456,28 +4616,28 @@
 	"\\restriction": {
 		"nullary_macro_aliase": "\\upharpoonright",
 		"operator_rendering": [
-			"&#x21BE;"
+			"↾"
 		]
 	},
 	"\\rfloor": {
 		"delimiter": [
-			"&#x230B;"
+			"⌋"
 		],
 		"other_delimiters1": true
 	},
 	"\\rgroup": {
 		"delimiter": [
-			"&#x27EF;"
+			"⟯"
 		]
 	},
 	"\\rhd": {
 		"operator_rendering": [
-			"&#x22B3;"
+			"⊳"
 		]
 	},
 	"\\rho": {
 		"identifier": [
-			"\\u03C1"
+			"ρ"
 		],
 		"is_literal": true,
 		"mhchem_single_macro": true,
@@ -4489,38 +4649,38 @@
 	"\\rightarrow": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2192;"
+			"→"
 		]
 	},
 	"\\rightarrowtail": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21A3;"
+			"↣"
 		]
 	},
 	"\\rightharpoondown": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21C1;"
+			"⇁"
 		]
 	},
 	"\\rightharpoonup": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21C0;"
+			"⇀"
 		]
 	},
 	"\\rightleftarrows": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21C4;"
+			"⇄"
 		]
 	},
 	"\\rightleftharpoons": {
 		"operator_rendering": [
-			"&#x21CC;"
+			"⇌"
 		],
 		"other_delimiters1": true
 	},
@@ -4528,32 +4688,32 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21C9;"
+			"⇉"
 		]
 	},
 	"\\rightsquigarrow": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21DD;"
+			"⇝"
 		]
 	},
 	"\\rightthreetimes": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22CC;"
+			"⋌"
 		]
 	},
 	"\\risingdotseq": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2253;"
+			"≓"
 		]
 	},
 	"\\rlap": {
-		"callback": "lap",
+		"callback": "MediaWiki\\Extension\\Math\\WikiTexVC\\Nodes\\Fun1::lap",
 		"fun_ar1": true,
 		"mhchemtexified_required": true
 	},
@@ -4566,20 +4726,20 @@
 	},
 	"\\rmoustache": {
 		"delimiter": [
-			"&#x23B1;"
+			"⎱"
 		]
 	},
 	"\\rtimes": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22CA;"
+			"⋊"
 		]
 	},
 	"\\sampi": {
 		"nullary_macro_in_mbox": true,
 		"teubner_required": true,
-		"unicode_char": "03E1"
+		"unicode_char": "ϡ"
 	},
 	"\\scr": {
 		"callback": [
@@ -4611,11 +4771,11 @@
 	"\\searrow": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2198;"
+			"↘"
 		]
 	},
 	"\\sec": {
-		"callback": "namedFn",
+		"callback": "MediaWiki\\Extension\\Math\\WikiTexVC\\Nodes\\Literal::namedFn",
 		"latex_function_names": true
 	},
 	"\\sect": {
@@ -4627,7 +4787,7 @@
 	"\\setminus": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2216;"
+			"∖"
 		]
 	},
 	"\\sf": {
@@ -4641,7 +4801,7 @@
 	},
 	"\\sharp": {
 		"identifier": [
-			"\\u266F",
+			"♯",
 			{
 				"mathvariant": "normal"
 			}
@@ -4652,7 +4812,7 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2223;",
+			"∣",
 			{
 				"variantForm": true
 			}
@@ -4662,7 +4822,7 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2225;",
+			"∥",
 			{
 				"variantForm": true
 			}
@@ -4677,7 +4837,7 @@
 	},
 	"\\sigma": {
 		"identifier": [
-			"\\u03C3"
+			"σ"
 		],
 		"is_literal": true,
 		"mhchem_single_macro": true,
@@ -4686,21 +4846,21 @@
 	"\\sim": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x223C;"
+			"∼"
 		]
 	},
 	"\\simeq": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2243;"
+			"≃"
 		]
 	},
 	"\\sin": {
-		"callback": "namedFn",
+		"callback": "MediaWiki\\Extension\\Math\\WikiTexVC\\Nodes\\Literal::namedFn",
 		"latex_function_names": true
 	},
 	"\\sinh": {
-		"callback": "namedFn",
+		"callback": "MediaWiki\\Extension\\Math\\WikiTexVC\\Nodes\\Literal::namedFn",
 		"latex_function_names": true
 	},
 	"\\skew": {
@@ -4714,7 +4874,7 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2322;",
+			"⌢",
 			{
 				"variantForm": true
 			}
@@ -4722,7 +4882,7 @@
 	},
 	"\\smallint": {
 		"operator_rendering": [
-			"&#x222B;",
+			"∫",
 			{
 				"largeop": false
 			}
@@ -4732,7 +4892,7 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2216;",
+			"∖",
 			{
 				"variantForm": "True"
 			}
@@ -4742,7 +4902,7 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2323;",
+			"⌣",
 			{
 				"variantForm": true
 			}
@@ -4757,7 +4917,7 @@
 	"\\smile": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2323;"
+			"⌣"
 		]
 	},
 	"\\space": {
@@ -4768,7 +4928,7 @@
 	},
 	"\\spadesuit": {
 		"identifier": [
-			"\\u2660",
+			"♠",
 			{
 				"mathvariant": "normal"
 			}
@@ -4778,20 +4938,20 @@
 	"\\sphericalangle": {
 		"ams_required": true,
 		"identifier": [
-			"\\u2222"
+			"∢"
 		],
 		"nullary_macro": true
 	},
 	"\\sqcap": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2293;"
+			"⊓"
 		]
 	},
 	"\\sqcup": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2294;"
+			"⊔"
 		]
 	},
 	"\\sqrt": {
@@ -4803,32 +4963,32 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x228F;"
+			"⊏"
 		]
 	},
 	"\\sqsubseteq": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2291;"
+			"⊑"
 		]
 	},
 	"\\sqsupset": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2290;"
+			"⊐"
 		]
 	},
 	"\\sqsupseteq": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2292;"
+			"⊒"
 		]
 	},
 	"\\square": {
 		"ams_required": true,
 		"identifier": [
-			"\\u25FB"
+			"◻"
 		],
 		"nullary_macro": true
 	},
@@ -4850,13 +5010,13 @@
 	"\\star": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22C6;"
+			"⋆"
 		]
 	},
 	"\\stigma": {
 		"nullary_macro_in_mbox": true,
 		"teubner_required": true,
-		"unicode_char": "03DB"
+		"unicode_char": "ϛ"
 	},
 	"\\sub": {
 		"nullary_macro_aliase": "\\subset"
@@ -4867,34 +5027,34 @@
 	"\\subset": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2282;"
+			"⊂"
 		]
 	},
 	"\\subseteq": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2286;"
+			"⊆"
 		]
 	},
 	"\\subseteqq": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2AC5;"
+			"⫅"
 		]
 	},
 	"\\subsetneq": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x228A;"
+			"⊊"
 		]
 	},
 	"\\subsetneqq": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2ACB;"
+			"⫋"
 		]
 	},
 	"\\substack": {
@@ -4907,69 +5067,69 @@
 	"\\succ": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x227B;"
+			"≻"
 		]
 	},
 	"\\succapprox": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2AB8;"
+			"⪸"
 		]
 	},
 	"\\succcurlyeq": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x227D;"
+			"≽"
 		]
 	},
 	"\\succeq": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2AB0;"
+			"⪰"
 		]
 	},
 	"\\succnapprox": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2ABA;"
+			"⪺"
 		]
 	},
 	"\\succneqq": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2AB6;"
+			"⪶"
 		]
 	},
 	"\\succnsim": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22E9;"
+			"⋩"
 		]
 	},
 	"\\succsim": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x227F;"
+			"≿"
 		]
 	},
 	"\\sum": {
 		"nullary_macro": true,
 		"operator": true,
 		"operator_rendering": [
-			"&#x2211;",
+			"∑",
 			{
 				"movesupsub": true
 			}
 		]
 	},
 	"\\sup": {
-		"callback": "namedOp",
+		"callback": "MediaWiki\\Extension\\Math\\WikiTexVC\\Nodes\\Literal::namedOp",
 		"latex_function_names": true,
 		"operator": true
 	},
@@ -4979,46 +5139,49 @@
 	"\\supset": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2283;"
+			"⊃"
 		]
 	},
 	"\\supseteq": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2287;"
+			"⊇"
 		]
 	},
 	"\\supseteqq": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2AC6;"
+			"⫆"
 		]
 	},
 	"\\supsetneq": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x228B;"
+			"⊋"
 		]
 	},
 	"\\supsetneqq": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2ACC;"
+			"⫌"
 		]
 	},
 	"\\surd": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x221A;"
+			"√",
+			{
+				"symmetric": "true"
+			}
 		]
 	},
 	"\\swarrow": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2199;"
+			"↙"
 		]
 	},
 	"\\symbb": {
@@ -5148,16 +5311,16 @@
 		]
 	},
 	"\\tan": {
-		"callback": "namedFn",
+		"callback": "MediaWiki\\Extension\\Math\\WikiTexVC\\Nodes\\Literal::namedFn",
 		"latex_function_names": true
 	},
 	"\\tanh": {
-		"callback": "namedFn",
+		"callback": "MediaWiki\\Extension\\Math\\WikiTexVC\\Nodes\\Literal::namedFn",
 		"latex_function_names": true
 	},
 	"\\tau": {
 		"identifier": [
-			"\\u03C4"
+			"τ"
 		],
 		"is_literal": true,
 		"mhchem_single_macro": true,
@@ -5247,7 +5410,7 @@
 	},
 	"\\textvisiblespace": {
 		"nullary_macro_in_mbox": true,
-		"unicode_char": "2423"
+		"unicode_char": "␣"
 	},
 	"\\tfrac": {
 		"ams_required": true,
@@ -5264,12 +5427,12 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2234;"
+			"∴"
 		]
 	},
 	"\\theta": {
 		"identifier": [
-			"\\u03B8"
+			"θ"
 		],
 		"is_literal": true,
 		"mhchem_single_macro": true,
@@ -5282,9 +5445,9 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2248;",
+			"≈",
 			{
-				"variantForm": "True"
+				"variantForm": "true"
 			}
 		]
 	},
@@ -5292,9 +5455,9 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x223C;",
+			"∼",
 			{
-				"variantForm": "True"
+				"variantForm": "true"
 			}
 		]
 	},
@@ -5315,13 +5478,13 @@
 	"\\times": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x00D7;"
+			"×"
 		]
 	},
 	"\\to": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2192;",
+			"→",
 			{
 				"accent": "false"
 			}
@@ -5329,7 +5492,7 @@
 	},
 	"\\top": {
 		"identifier": [
-			"\\u22A4",
+			"⊤",
 			{
 				"mathvariant": "normal"
 			}
@@ -5339,7 +5502,7 @@
 	},
 	"\\triangle": {
 		"identifier": [
-			"\\u25B3",
+			"△",
 			{
 				"mathvariant": "normal"
 			}
@@ -5349,9 +5512,9 @@
 	"\\triangledown": {
 		"ams_required": true,
 		"identifier": [
-			"\\u25BD",
+			"▽",
 			{
-				"variantForm": "True"
+				"variantForm": "true"
 			}
 		],
 		"nullary_macro": true
@@ -5359,34 +5522,34 @@
 	"\\triangleleft": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x25C3;"
+			"◃"
 		]
 	},
 	"\\trianglelefteq": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22B4;"
+			"⊴"
 		]
 	},
 	"\\triangleq": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x225C;"
+			"≜"
 		]
 	},
 	"\\triangleright": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x25B9;"
+			"▹"
 		]
 	},
 	"\\trianglerighteq": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22B5;"
+			"⊵"
 		]
 	},
 	"\\tripledash": {
@@ -5406,14 +5569,14 @@
 	"\\twoheadleftarrow": {
 		"ams_required": true,
 		"operator_rendering": [
-			"&#x219E;"
+			"↞"
 		],
 		"other_delimiters1": true
 	},
 	"\\twoheadrightarrow": {
 		"ams_required": true,
 		"operator_rendering": [
-			"&#x21A0;"
+			"↠"
 		],
 		"other_delimiters1": true
 	},
@@ -5426,14 +5589,14 @@
 	"\\ulcorner": {
 		"ams_required": true,
 		"delimiter": [
-			"&#x231C;"
+			"⌜"
 		],
 		"other_delimiters1": true
 	},
 	"\\underbrace": {
 		"callback": [
 			"underOver",
-			"23DF",
+			"⏟",
 			1
 		],
 		"fun_ar1nb": true,
@@ -5442,21 +5605,19 @@
 	"\\underleftarrow": {
 		"callback": [
 			"underOver",
-			"2190"
+			"←"
 		]
 	},
 	"\\underleftrightarrow": {
 		"callback": [
 			"underOver",
-			"2194"
+			"↔"
 		]
 	},
 	"\\underline": {
 		"callback": [
 			"underOver",
-			"_",
-			null,
-			true
+			"_"
 		],
 		"fun_ar1": true,
 		"is_letter_mod": true
@@ -5464,13 +5625,13 @@
 	"\\underparen": {
 		"callback": [
 			"underOver",
-			"23DD"
+			"⏝"
 		]
 	},
 	"\\underrightarrow": {
 		"callback": [
 			"underOver",
-			"2192"
+			"→"
 		]
 	},
 	"\\underset": {
@@ -5481,23 +5642,23 @@
 	},
 	"\\unlhd": {
 		"operator_rendering": [
-			"&#x22B4;"
+			"⊴"
 		]
 	},
 	"\\unrhd": {
 		"operator_rendering": [
-			"&#x22B5;"
+			"⊵"
 		]
 	},
 	"\\uparrow": {
 		"delimiter": [
-			"&#x2191;"
+			"↑"
 		],
 		"other_delimiters1": true
 	},
 	"\\updownarrow": {
 		"delimiter": [
-			"&#x2195;"
+			"↕"
 		],
 		"other_delimiters1": true
 	},
@@ -5505,25 +5666,25 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21BF;"
+			"↿"
 		]
 	},
 	"\\upharpoonright": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21BE;"
+			"↾"
 		]
 	},
 	"\\uplus": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x228E;"
+			"⊎"
 		]
 	},
 	"\\upsilon": {
 		"identifier": [
-			"\\u03C5"
+			"υ"
 		],
 		"mhchem_single_macro": true,
 		"nullary_macro": true
@@ -5532,13 +5693,13 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x21C8;"
+			"⇈"
 		]
 	},
 	"\\urcorner": {
 		"ams_required": true,
 		"delimiter": [
-			"&#x231D;"
+			"⌝"
 		],
 		"other_delimiters1": true
 	},
@@ -5546,7 +5707,7 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22A8;",
+			"⊨",
 			{
 				"variantForm": true
 			}
@@ -5554,91 +5715,61 @@
 	},
 	"\\varDelta": {
 		"identifier": [
-			"\\u0394",
-			{
-				"mathvariant": "italic"
-			}
+			"𝞓"
 		],
 		"nullary_macro": true
 	},
 	"\\varGamma": {
 		"identifier": [
-			"\\u0393",
-			{
-				"mathvariant": "italic"
-			}
+			"𝛤"
 		],
 		"nullary_macro": true
 	},
 	"\\varLambda": {
 		"identifier": [
-			"\\u039B",
-			{
-				"mathvariant": "italic"
-			}
+			"𝛬"
 		],
 		"nullary_macro": true
 	},
 	"\\varOmega": {
 		"identifier": [
-			"\\u03A9",
-			{
-				"mathvariant": "italic"
-			}
+			"𝛺"
 		],
 		"nullary_macro": true
 	},
 	"\\varPhi": {
 		"identifier": [
-			"\\u03A6",
-			{
-				"mathvariant": "italic"
-			}
+			"𝛷"
 		],
 		"nullary_macro": true
 	},
 	"\\varPi": {
 		"identifier": [
-			"\\u03A0",
-			{
-				"mathvariant": "italic"
-			}
+			"𝛱"
 		],
 		"nullary_macro": true
 	},
 	"\\varSigma": {
 		"identifier": [
-			"\\u03A3",
-			{
-				"mathvariant": "italic"
-			}
+			"𝛴"
 		],
 		"nullary_macro": true
 	},
 	"\\varTheta": {
 		"identifier": [
-			"\\u0398",
-			{
-				"mathvariant": "italic"
-			}
+			"𝜣"
 		],
 		"nullary_macro": true
 	},
 	"\\varUpsilon": {
 		"identifier": [
-			"\\u03A5",
-			{
-				"mathvariant": "italic"
-			}
+			"𝜰"
 		],
 		"nullary_macro": true
 	},
 	"\\varXi": {
 		"identifier": [
-			"\\u039E",
-			{
-				"mathvariant": "italic"
-			}
+			"𝛯"
 		],
 		"nullary_macro": true
 	},
@@ -5647,7 +5778,7 @@
 	},
 	"\\varepsilon": {
 		"identifier": [
-			"\\u03B5"
+			"ε"
 		],
 		"is_literal": true,
 		"mhchem_single_macro": true,
@@ -5659,13 +5790,12 @@
 			"macro",
 			"\\mathop{\\xrightarrow{\\mmlToken{mi}{lim}}}"
 		],
-		"nullary_macro": true,
-		"operator": true
+		"nullary_macro": true
 	},
 	"\\varkappa": {
 		"ams_required": true,
 		"identifier": [
-			"\\u03F0"
+			"ϰ"
 		],
 		"is_literal": true,
 		"mhchem_single_macro": true,
@@ -5692,9 +5822,9 @@
 	"\\varnothing": {
 		"ams_required": true,
 		"identifier": [
-			"\\u2205",
+			"∅",
 			{
-				"variantForm": "True"
+				"variantForm": "true"
 			}
 		],
 		"is_literal": true,
@@ -5711,7 +5841,7 @@
 	},
 	"\\varphi": {
 		"identifier": [
-			"\\u03C6"
+			"φ"
 		],
 		"is_literal": true,
 		"mhchem_single_macro": true,
@@ -5719,7 +5849,7 @@
 	},
 	"\\varpi": {
 		"identifier": [
-			"\\u03D6"
+			"ϖ"
 		],
 		"is_literal": true,
 		"mhchem_single_macro": true,
@@ -5738,7 +5868,7 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x221D;",
+			"∝",
 			{
 				"variantForm": true
 			}
@@ -5746,7 +5876,7 @@
 	},
 	"\\varrho": {
 		"identifier": [
-			"\\u03F1"
+			"ϱ"
 		],
 		"is_literal": true,
 		"mhchem_single_macro": true,
@@ -5754,7 +5884,7 @@
 	},
 	"\\varsigma": {
 		"identifier": [
-			"\\u03C2"
+			"ς"
 		],
 		"is_literal": true,
 		"mhchem_single_macro": true,
@@ -5763,13 +5893,13 @@
 	"\\varstigma": {
 		"nullary_macro_in_mbox": true,
 		"teubner_required": true,
-		"unicode_char": "03DB"
+		"unicode_char": "ϛ"
 	},
 	"\\varsubsetneq": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x228A;",
+			"⊊",
 			{
 				"variantForm": true
 			}
@@ -5779,7 +5909,7 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2ACB;",
+			"⫋",
 			{
 				"variantForm": true
 			}
@@ -5789,7 +5919,7 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x228B;",
+			"⊋",
 			{
 				"variantForm": true
 			}
@@ -5799,7 +5929,7 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2ACC;",
+			"⫌",
 			{
 				"variantForm": true
 			}
@@ -5807,7 +5937,7 @@
 	},
 	"\\vartheta": {
 		"identifier": [
-			"\\u03D1"
+			"ϑ"
 		],
 		"is_literal": true,
 		"mhchem_single_macro": true,
@@ -5817,7 +5947,7 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x25B3;",
+			"△",
 			{
 				"variantForm": true
 			}
@@ -5827,14 +5957,14 @@
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22B2;"
+			"⊲"
 		]
 	},
 	"\\vartriangleright": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22B3;"
+			"⊳"
 		]
 	},
 	"\\vbox": {
@@ -5853,13 +5983,13 @@
 	"\\vdash": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22A2;"
+			"⊢"
 		]
 	},
 	"\\vdots": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22EE;"
+			"⋮"
 		]
 	},
 	"\\vec": {
@@ -5873,14 +6003,14 @@
 	"\\vee": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2228;"
+			"∨"
 		]
 	},
 	"\\veebar": {
 		"ams_required": true,
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x22BB;"
+			"⊻"
 		]
 	},
 	"\\vert": {
@@ -5904,7 +6034,7 @@
 	"\\wedge": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2227;"
+			"∧"
 		]
 	},
 	"\\weierp": {
@@ -5930,7 +6060,7 @@
 	},
 	"\\wp": {
 		"identifier": [
-			"\\u2118",
+			"℘",
 			{
 				"mathvariant": "normal"
 			}
@@ -5941,7 +6071,7 @@
 	"\\wr": {
 		"nullary_macro": true,
 		"operator_rendering": [
-			"&#x2240;"
+			"≀"
 		]
 	},
 	"\\xLeftrightharpoons": {
@@ -5971,7 +6101,7 @@
 	},
 	"\\xi": {
 		"identifier": [
-			"\\u03BE"
+			"ξ"
 		],
 		"is_literal": true,
 		"nullary_macro": true
@@ -6018,7 +6148,7 @@
 	},
 	"\\zeta": {
 		"identifier": [
-			"\\u03B6"
+			"ζ"
 		],
 		"is_literal": true,
 		"mhchem_single_macro": true,
@@ -6035,7 +6165,7 @@
 	},
 	"\\|": {
 		"delimiter": [
-			"&#x2016;"
+			"‖"
 		]
 	},
 	"\\}": {
@@ -6053,6 +6183,16 @@
 			{
 				"stretchy": "false"
 			}
+		]
+	},
+	"^": {
+		"operator_infix": [
+			" exports.MO.ORD11"
+		]
+	},
+	"_": {
+		"operator_infix": [
+			" exports.MO.ORD11"
 		]
 	},
 	"alignat": {
@@ -6073,11 +6213,14 @@
 	},
 	"aligned": {
 		"callback": [
-			"amsEqnArray",
+			"alignAt",
 			null,
 			null,
 			null,
-			"rl",
+			[
+				"r",
+				"l"
+			],
 			"ParseUtil_js_1.default.cols(0, 2)",
 			".5em",
 			"D"
@@ -6110,7 +6253,10 @@
 			"matrix",
 			"{",
 			"",
-			"left left",
+			[
+				"l",
+				"l"
+			],
 			null,
 			".1em",
 			null,
@@ -6173,6 +6319,19 @@
 	"|": {
 		"delimiter": [
 			"|"
+		],
+		"operator_infix": [
+			" [2, 2], MmlNode_js_1.TEXCLASS.ORD],{ fence=> [\"true\"], stretchy=> [\"true\"], symmetric=> [\" true }]"
+		]
+	},
+	"||": {
+		"operator_infix": [
+			" [2, 2], MmlNode_js_1.TEXCLASS.ORD],{ fence=> [\"true\"], stretchy=> [\"true\"], symmetric=> [\" true }]"
+		]
+	},
+	"|||": {
+		"operator_infix": [
+			" [2, 2], MmlNode_js_1.TEXCLASS.ORD],{ fence=> [\"true\"], stretchy=> [\"true\"], symmetric=> [\" true }]"
 		]
 	},
 	"~": {

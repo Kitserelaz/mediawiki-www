@@ -22,24 +22,28 @@
 		 *
 		 * @param {Object} clientHintData Data structured returned by
 		 *  navigator.userAgentData.getHighEntropyValues()
+		 * @param {number} identifier The ID associated with the event
+		 * @param {string} type The type of event (e.g. 'revision').
 		 * @param {boolean} retryOnTokenMismatch Whether to retry the POST if the CSRF token is a
 		 *  mismatch. A mismatch can happen if the token has expired.
 		 * @return {jQuery.Promise} A promise that resolves after the POST is complete.
 		 */
-		function postClientHintData( clientHintData, retryOnTokenMismatch ) {
+		function postClientHintData(
+			clientHintData, identifier, type, retryOnTokenMismatch
+		) {
 			const restApi = new mw.Rest();
 			const api = new mw.Api();
 			const deferred = $.Deferred();
 			api.getToken( 'csrf' ).then( ( token ) => {
 				clientHintData.token = token;
 				restApi.post(
-					'/checkuser/v0/useragent-clienthints/revision/' + mw.config.get( 'wgCurRevisionId' ),
+					'/checkuser/v0/useragent-clienthints/' + type + '/' + identifier,
 					clientHintData
 				).then(
 					( data ) => {
 						deferred.resolve( data );
 					}
-				).fail( ( err, errObject ) => {
+				).catch( ( err, errObject ) => {
 					mw.log.error( errObject );
 					let errMessage = errObject.exception;
 					if (
@@ -58,7 +62,7 @@
 					) {
 						// The CSRF token has expired. Retry the POST with a new token.
 						api.badToken( 'csrf' );
-						postClientHintData( clientHintData, false ).then(
+						postClientHintData( clientHintData, identifier, type, false ).then(
 							( data ) => {
 								deferred.resolve( data );
 							},
@@ -67,11 +71,11 @@
 							}
 						);
 					} else {
-						mw.errorLogger.logError( new Error( errMessage ), 'error.checkuser' );
+						logError( 'Unable to submit client hints', errMessage );
 						deferred.reject( err, errObject );
 					}
 				} );
-			} ).fail( ( err, errObject ) => {
+			} ).catch( ( err, errObject ) => {
 				mw.log.error( errObject );
 				let errMessage = errObject.exception;
 				if ( errObject.xhr &&
@@ -79,10 +83,62 @@
 				errObject.xhr.responseJSON.messageTranslations ) {
 					errMessage = errObject.xhr.responseJSON.messageTranslations.en;
 				}
-				mw.errorLogger.logError( new Error( errMessage ), 'error.checkuser' );
+				logError( 'Unable to get token for recording client hints', errMessage );
 				deferred.reject( err, errObject );
 			} );
 			return deferred.promise();
+		}
+
+		/**
+		 * Collect and POST Client Hints data for a given event.
+		 *
+		 * @param {number} identifier The ID associated with the event
+		 * @param {string} type The type of event (e.g. 'revision').
+		 * @return {Promise<Object>}
+		 */
+		function collectAndSendClientHintsData( identifier, type ) {
+			return collectClientHintsData().then( ( userAgentHighEntropyValues ) => {
+				postClientHintData( userAgentHighEntropyValues, identifier, type, true );
+			} );
+		}
+
+		/**
+		 * Collect high entropy client hints data.
+		 *
+		 * @return {Promise<Object>}
+		 */
+		function collectClientHintsData() {
+			try {
+				return navigatorData.userAgentData.getHighEntropyValues(
+					wgCheckUserClientHintsHeadersJsApi
+				);
+			} catch ( err ) {
+				// Handle NotAllowedError, if the browser throws it.
+				mw.log.error( err );
+				logError( 'Unable to collect high entropy client hints', err.toString() );
+				return Promise.reject( err );
+			}
+		}
+
+		/**
+		 * Logs error to Logstash
+		 *
+		 * @param {string} message A message, without varying parts (not to spam Logstash)
+		 * @param {string} originalMessage Original error message, will be added to the log context
+		 */
+		function logError( message, originalMessage ) {
+			const loggedError = new Error( message );
+			/* eslint-disable camelcase */
+			loggedError.error_context = { originalMessage };
+			/* eslint-enable camelcase */
+			mw.errorLogger.logError( loggedError, 'error.checkuser' );
+		}
+
+		// Collect and send Client Hints data if the user has just performed a
+		// CheckUser private event.
+		const privateEventId = mw.config.get( 'wgCheckUserClientHintsPrivateEventId' );
+		if ( privateEventId ) {
+			collectAndSendClientHintsData( privateEventId, 'privatelog' );
 		}
 
 		/**
@@ -92,16 +148,22 @@
 		 * CheckUserClientHintsEnabled is set to true.
 		 */
 		mw.hook( 'postEdit' ).add( () => {
-			try {
-				navigatorData.userAgentData.getHighEntropyValues(
-					wgCheckUserClientHintsHeadersJsApi
-				).then( ( userAgentHighEntropyValues ) => postClientHintData( userAgentHighEntropyValues, true ) );
-			} catch ( err ) {
-				// Handle NotAllowedError, if the browser throws it.
-				mw.log.error( err );
-				mw.errorLogger.logError( new Error( err ), 'error.checkuser' );
-			}
+			collectAndSendClientHintsData( mw.config.get( 'wgCurRevisionId' ), 'revision' );
 		} );
+
+		/**
+		 * Respond to JS logout flow in core, and add high entropy client hint data to
+		 * the request to ApiLogout.
+		 */
+		mw.hook( 'extendLogout' ).add( ( data ) => {
+			// eslint-disable-next-line arrow-body-style
+			data.promise = data.promise.then( () => {
+				return collectClientHintsData().then( ( userAgentHighEntropyValues ) => {
+					data.params.checkuserclienthints = JSON.stringify( userAgentHighEntropyValues );
+				} );
+			} );
+		} );
+
 		return true;
 	}
 

@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.4
 # Immutable multi-platform base digests and a dated Debian snapshot fix dependency resolution.
-ARG PHP_IMAGE=php:8.3.30-fpm-bookworm@sha256:e7ca6c7f5a598a27384ca428e5235047a39d0d62930078fa5cab2d50b13fa381
+ARG PHP_IMAGE=php:8.4.26-fpm-bookworm@sha256:6bfef8e416977aa41f48e3e42a40c1e08050d24e4a938c6edb421400bff24601
 ARG CADDY_IMAGE=caddy:2.10.2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
 FROM ${PHP_IMAGE} AS php
 ARG DEBIAN_SNAPSHOT=20261015T000000Z
@@ -31,7 +31,7 @@ COPY --link mediawiki/sql/ ./sql/
 COPY --link mediawiki/ErrorPages/ ./ErrorPages/
 COPY --link mediawiki/docs/ ./docs/
 COPY --link mediawiki/*.php ./
-COPY --link mediawiki/composer.json mediawiki/composer.lock mediawiki/README.md mediawiki/INSTALL mediawiki/UPGRADE mediawiki/FAQ mediawiki/COPYING mediawiki/CREDITS mediawiki/HISTORY mediawiki/SECURITY mediawiki/RELEASE-NOTES-1.45 ./
+COPY --link mediawiki/composer.json mediawiki/composer.local.json mediawiki/composer.lock mediawiki/README.md mediawiki/INSTALL mediawiki/UPGRADE mediawiki/FAQ mediawiki/COPYING mediawiki/CREDITS mediawiki/HISTORY mediawiki/SECURITY mediawiki/RELEASE-NOTES-1.46 ./
 COPY --link docker/mediawiki/ /opt/farm/
 COPY --link docker/mediawiki/ ./docker/mediawiki/
 COPY --link docker/mediawiki/private.php ./PrivateSettings.php

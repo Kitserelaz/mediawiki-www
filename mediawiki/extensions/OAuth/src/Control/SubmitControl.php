@@ -6,36 +6,32 @@ use LogicException;
 use MediaWiki\Api\ApiMessage;
 use MediaWiki\Context\ContextSource;
 use MediaWiki\Context\IContextSource;
+use MediaWiki\Exception\MWException;
+use MediaWiki\Extension\OAuth\Backend\Consumer;
 use MediaWiki\HTMLForm\HTMLForm;
+use MediaWiki\MediaWikiServices;
 use MediaWiki\Message\Message;
 use MediaWiki\Status\Status;
-use MWException;
 use StatusValue;
+use Wikimedia\Message\MessageParam;
 use Wikimedia\Message\MessageSpecifier;
 
 /**
  * (c) Aaron Schulz 2013, GPL
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 
 /**
  * Handle the logic of submitting a client request
  */
 abstract class SubmitControl extends ContextSource {
+	/** @var string[]|null */
+	private static $irrevocableGrants = null;
+
+	/** @var string[] */
+	public const AUTH_ONLY_GRANTS = [ 'mwoauth-authonlyprivate', 'mwoauth-authonly' ];
+
 	/** @var array (field name => value) */
 	protected $vals;
 
@@ -82,12 +78,7 @@ abstract class SubmitControl extends ContextSource {
 			return $status;
 		}
 
-		$status = $this->processAction( $action );
-		if ( $status instanceof Status ) {
-			return $status;
-		} else {
-			throw new MWException( "Submission action '$action' not handled." );
-		}
+		return $this->processAction( $action );
 	}
 
 	/**
@@ -136,7 +127,7 @@ abstract class SubmitControl extends ContextSource {
 			$allValues['action'] = $this->vals['action'];
 		}
 		if ( !isset( $allValues['action'] ) ) {
-			throw new MWException( "No form action defined; cannot validate fields." );
+			throw new LogicException( "No form action defined; cannot validate fields." );
 		}
 		$validators = $this->getRequiredFields();
 		if ( !isset( $validators[$allValues['action']][$field] ) ) {
@@ -198,7 +189,7 @@ abstract class SubmitControl extends ContextSource {
 		if ( $result instanceof StatusValue ) {
 			if ( $result->isGood() ) {
 				return true;
-			} elseif ( count( $result->getErrors() ) !== 1 ) {
+			} elseif ( count( $result->getMessages() ) !== 1 ) {
 				throw new LogicException( 'Validator return status has too many errors: '
 					. $result );
 			}
@@ -216,7 +207,7 @@ abstract class SubmitControl extends ContextSource {
 					return true;
 				}
 			}
-			$result = $result->getErrors()[0]['message'];
+			$result = $result->getMessages()[0];
 		}
 		if ( is_bool( $result ) || $result instanceof ApiMessage ) {
 			return $result;
@@ -227,16 +218,15 @@ abstract class SubmitControl extends ContextSource {
 	}
 
 	/**
-	 * Get the field names and their validation methods. Fields can be omitted. Fields that are
-	 * not
+	 * Get the field names and their validation methods. Fields can be omitted.
 	 *
 	 * A validation method is either a regex string or a callable.
 	 * Callables take (field value, field/value map) as params and must return a boolean or a
 	 * StatusValue with a single ApiMessage in it. If that is a warning, the user will be allowed
-	 * to override it. A StatusValue with an error of boolean false will prevent submission.
+	 * to override it. A StatusValue with an error or boolean false will prevent submission.
 	 *
-	 * When false is returned, the error message mwoauth-invalid-field-<fieldname> will be shown
-	 * if it exists. Otherwise, a generic message will be used (see getDefaultValidationError()).
+	 * When false is returned, the error message will be 'mwoauth-invalid-field-<fieldname>'
+	 * if it exists, or a generic message otherwise (see getDefaultValidationError()).
 	 *
 	 * @return array (action => (field name => validation regex or function))
 	 * @phan-return array<string,array<string,string|callable(mixed):(bool|StatusValue)|callable(mixed,array):(bool|StatusValue)>>
@@ -274,7 +264,7 @@ abstract class SubmitControl extends ContextSource {
 				$message = $this->getDefaultValidationError( $field, $this->vals[$field] );
 				return $this->failure( "invalid_field_$field", $message );
 			} elseif ( $validationResult instanceof ApiMessage ) {
-				return $this->failure( $validationResult->getApiCode(), $validationResult, $field );
+				return $this->failure( $validationResult->getApiCode(), $validationResult );
 			}
 		}
 		return $this->success();
@@ -286,20 +276,16 @@ abstract class SubmitControl extends ContextSource {
 	 * @param string $action
 	 * @return Status
 	 */
-	abstract protected function processAction( $action );
+	abstract protected function processAction( $action ): Status;
 
 	/**
 	 * @param string $error API error key
 	 * @param string|MessageSpecifier $msg Message
-	 * @param mixed ...$params Additional arguments used as message parameters
+	 * @param MessageParam|MessageSpecifier|string|int|float ...$params Additional arguments used as message parameters
 	 * @return Status
 	 */
 	protected function failure( $error, $msg, ...$params ) {
-		// Use the same logic as wfMessage
-		if ( isset( $params[0] ) && is_array( $params[0] ) ) {
-			$params = $params[0];
-		}
-		$status = Status::newFatal( $this->msg( $msg, $params ) );
+		$status = Status::newFatal( $msg, ...$params );
 		$status->value = [ 'error' => $error, 'result' => null ];
 		return $status;
 	}
@@ -310,5 +296,32 @@ abstract class SubmitControl extends ContextSource {
 	 */
 	protected function success( $value = null ) {
 		return Status::newGood( [ 'error' => null, 'result' => $value ] );
+	}
+
+	public static function getIrrevocableGrants(): array {
+		if ( self::$irrevocableGrants === null ) {
+			self::$irrevocableGrants = array_merge(
+				MediaWikiServices::getInstance()->getGrantsInfo()->getHiddenGrants(),
+				self::AUTH_ONLY_GRANTS
+			);
+		}
+		return self::$irrevocableGrants;
+	}
+
+	/**
+	 * Given a list of accepted grants (in OAuth 1 terminology; scopes in OAuth 2 terminology),
+	 * assumed to be from user input, filter them to those allowed by the consumer,
+	 * and make sure that irrevocable grants needed by the consumer are included.
+	 */
+	protected function getAcceptedConsumerGrants( array $grants, Consumer $cmr ): array {
+		return array_values(
+			array_unique(
+				array_intersect(
+					array_merge( self::getIrrevocableGrants(), $grants ),
+					// Only keep the applicable ones
+					$cmr->getGrants()
+				)
+			)
+		);
 	}
 }

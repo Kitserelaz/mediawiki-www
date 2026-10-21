@@ -1,23 +1,23 @@
 <?php
 
-namespace MediaWiki\CheckUser\CheckUser;
+namespace MediaWiki\Extension\CheckUser\CheckUser;
 
-use MediaWiki\Cache\LinkBatchFactory;
-use MediaWiki\CheckUser\CheckUser\Pagers\CheckUserLogPager;
-use MediaWiki\CheckUser\Services\CheckUserLogService;
 use MediaWiki\CommentFormatter\CommentFormatter;
 use MediaWiki\CommentStore\CommentStore;
+use MediaWiki\Exception\UserBlockedError;
+use MediaWiki\Extension\CheckUser\CheckUser\Pagers\CheckUserLogPager;
+use MediaWiki\Extension\CheckUser\Services\CheckUserLogService;
 use MediaWiki\Html\Html;
 use MediaWiki\HTMLForm\HTMLForm;
-use MediaWiki\Pager\ContribsPager;
+use MediaWiki\Page\LinkBatchFactory;
 use MediaWiki\Permissions\PermissionManager;
 use MediaWiki\SpecialPage\SpecialPage;
+use MediaWiki\Specials\Pager\ContribsPager;
 use MediaWiki\Title\Title;
 use MediaWiki\User\ActorStore;
 use MediaWiki\User\UserFactory;
-use UserBlockedError;
+use Wikimedia\Rdbms\IConnectionProvider;
 use Wikimedia\Rdbms\IReadableDatabase;
-use Wikimedia\Rdbms\LBFactory;
 
 class SpecialCheckUserLog extends SpecialPage {
 	/**
@@ -25,45 +25,25 @@ class SpecialCheckUserLog extends SpecialPage {
 	 */
 	protected array $opts;
 
-	private IReadableDatabase $dbr;
+	private readonly IReadableDatabase $dbr;
 
-	private LinkBatchFactory $linkBatchFactory;
-	private PermissionManager $permissionManager;
-	private CommentStore $commentStore;
-	private CommentFormatter $commentFormatter;
-	private CheckUserLogService $checkUserLogService;
-	private UserFactory $userFactory;
-	private ActorStore $actorStore;
-
-	/**
-	 * @param LinkBatchFactory $linkBatchFactory
-	 * @param PermissionManager $permissionManager
-	 * @param CommentStore $commentStore
-	 * @param CommentFormatter $commentFormatter
-	 * @param CheckUserLogService $checkUserLogService
-	 * @param UserFactory $userFactory
-	 * @param ActorStore $actorStore
-	 * @param LBFactory $lbFactory
-	 */
 	public function __construct(
-		LinkBatchFactory $linkBatchFactory,
-		PermissionManager $permissionManager,
-		CommentStore $commentStore,
-		CommentFormatter $commentFormatter,
-		CheckUserLogService $checkUserLogService,
-		UserFactory $userFactory,
-		ActorStore $actorStore,
-		LBFactory $lbFactory
+		private readonly LinkBatchFactory $linkBatchFactory,
+		private readonly PermissionManager $permissionManager,
+		private readonly CommentStore $commentStore,
+		private readonly CommentFormatter $commentFormatter,
+		private readonly CheckUserLogService $checkUserLogService,
+		private readonly UserFactory $userFactory,
+		private readonly ActorStore $actorStore,
+		IConnectionProvider $dbProvider,
 	) {
-		parent::__construct( 'CheckUserLog', 'checkuser-log' );
-		$this->linkBatchFactory = $linkBatchFactory;
-		$this->permissionManager = $permissionManager;
-		$this->commentStore = $commentStore;
-		$this->commentFormatter = $commentFormatter;
-		$this->checkUserLogService = $checkUserLogService;
-		$this->userFactory = $userFactory;
-		$this->actorStore = $actorStore;
-		$this->dbr = $lbFactory->getReplicaDatabase();
+		parent::__construct( 'CheckUserLog' );
+		$this->dbr = $dbProvider->getReplicaDatabase();
+	}
+
+	/** @inheritDoc */
+	public function getRestriction(): string {
+		return 'checkuser-log';
 	}
 
 	/**
@@ -71,7 +51,7 @@ class SpecialCheckUserLog extends SpecialPage {
 	 */
 	public function execute( $par ) {
 		$this->setHeaders();
-		$this->addHelpLink( 'Extension:CheckUser' );
+		$this->addHelpLink( 'Help:Extension:CheckUser' );
 		$this->checkPermissions();
 
 		// Blocked users are not allowed to run checkuser queries (bug T157883)
@@ -84,7 +64,7 @@ class SpecialCheckUserLog extends SpecialPage {
 		$out->addModules( [ 'ext.checkUser' ] );
 		$out->addModuleStyles( [
 			'ext.checkUser.styles',
-			'mediawiki.interface.helpers.styles'
+			'mediawiki.interface.helpers.styles',
 		] );
 		$request = $this->getRequest();
 
@@ -190,17 +170,25 @@ class SpecialCheckUserLog extends SpecialPage {
 				);
 			}
 
+			if (
+				$this->getConfig()->get( 'CheckUserSuggestedInvestigationsEnabled' ) &&
+				!$this->getConfig()->get( 'CheckUserSuggestedInvestigationsHidden' )
+			) {
+				$links[] = $this->getLinkRenderer()->makeKnownLink(
+					SpecialPage::getTitleFor( 'SuggestedInvestigations' ),
+					$this->msg( 'checkuser-show-suggestedinvestigations' )->text()
+				);
+			}
+
+			$html = '';
+			foreach ( $links as $link ) {
+				$html .= Html::rawElement( 'span', [], $link );
+			}
 			$this->getOutput()->addSubtitle( Html::rawElement(
-					'span',
-					[ "class" => "mw-checkuser-links-no-parentheses" ],
-					Html::openElement( 'span' ) .
-					implode(
-						Html::closeElement( 'span' ) . Html::openElement( 'span' ),
-						$links
-					) .
-					Html::closeElement( 'span' )
-				)
-			);
+				'span',
+				[ 'class' => 'mw-checkuser-links-no-parentheses' ],
+				$html
+			) );
 		}
 	}
 
@@ -218,7 +206,7 @@ class SpecialCheckUserLog extends SpecialPage {
 				'size' => 40,
 				'label-message' => 'checkuser-log-search-target',
 				'default' => $this->opts['target'],
-				'id' => 'mw-target-user-or-ip'
+				'id' => 'mw-target-user-or-ip',
 			],
 			'initiator' => [
 				'type' => 'user',
@@ -228,7 +216,7 @@ class SpecialCheckUserLog extends SpecialPage {
 				'name' => 'cuInitiator',
 				'size' => 40,
 				'label-message' => 'checkuser-log-search-initiator',
-				'default' => $this->opts['initiator']
+				'default' => $this->opts['initiator'],
 			],
 			'reason' => [
 				'type' => 'text',
@@ -236,22 +224,22 @@ class SpecialCheckUserLog extends SpecialPage {
 				'size' => 40,
 				'label-message' => 'checkuser-log-search-reason',
 				'default' => $this->opts['reason'],
-				'help-message' => 'checkuser-log-search-reason-help'
+				'help-message' => 'checkuser-log-search-reason-help',
 			],
 			'start' => [
 				'type' => 'date',
 				'default' => '',
 				'id' => 'mw-date-start',
 				'label' => $this->msg( 'date-range-from' )->text(),
-				'name' => 'start'
+				'name' => 'start',
 			],
 			'end' => [
 				'type' => 'date',
 				'default' => '',
 				'id' => 'mw-date-end',
 				'label' => $this->msg( 'date-range-to' )->text(),
-				'name' => 'end'
-			]
+				'name' => 'end',
+			],
 		];
 
 		$form = HTMLForm::factory( 'ooui', $fields, $this->getContext() );

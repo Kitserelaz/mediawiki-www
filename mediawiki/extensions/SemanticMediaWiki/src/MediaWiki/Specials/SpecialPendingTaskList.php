@@ -1,0 +1,98 @@
+<?php
+
+namespace SMW\MediaWiki\Specials;
+
+use MediaWiki\Html\Html;
+use MediaWiki\SpecialPage\SpecialPage;
+use SMW\MediaWiki\Specials\PendingTasks\IncompleteSetupTasks;
+use SMW\Utils\HtmlTabs;
+
+/**
+ * Displays pending tasks in connection with Semantic MediaWiki.
+ *
+ * @license GPL-2.0-or-later
+ *
+ * @since 3.2
+ * @author mwjames
+ */
+class SpecialPendingTaskList extends SpecialPage {
+
+	public function __construct() {
+		// MediaWiki 1.46 deprecated the SpecialPage constructor flags; the
+		// page stays unlisted via the isListed() override below.
+		parent::__construct( 'PendingTaskList' );
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function isListed(): bool {
+		return false;
+	}
+
+	/**
+	 * @see SpecialPage::execute
+	 */
+	public function execute( $query ): bool {
+		$this->addHelpLink(
+			$this->msg( 'smw-helplink', 'Pending_tasks' )->text(),
+			true
+		);
+
+		$output = $this->getOutput();
+		$output->addModuleStyles( 'ext.smw.styles' );
+		$output->addModuleStyles( 'ext.smw.special.styles' );
+
+		$this->setHeaders();
+
+		$output->addHTML( $this->buildHTML() );
+
+		return true;
+	}
+
+	/**
+	 * @see SpecialPage::getGroupName
+	 */
+	protected function getGroupName(): string {
+		return 'smw_group/maintenance';
+	}
+
+	private function buildHTML(): string {
+		$isEmpty = true;
+
+		$htmlTabs = new HtmlTabs();
+
+		$pendingTasks = [
+			new IncompleteSetupTasks()
+		];
+
+		foreach ( $pendingTasks as $pendingTask ) {
+			$content = $pendingTask->getHtml();
+
+			if ( $content !== '' && $isEmpty ) {
+				$isEmpty = false;
+			}
+
+			$htmlTabs->tab(
+				'setup',
+				$this->msg( $pendingTask->getTitle() )->text(),
+				[
+					'hide'  => $content === ''
+				]
+			);
+
+			$htmlTabs->content( 'setup', $content );
+		}
+
+		$html = $htmlTabs->buildHTML(
+			[ 'class' => 'smw-pendingtasks' ]
+		);
+
+		return Html::rawElement(
+			'p',
+			[],
+			$this->msg( ( $isEmpty ? 'smw-pendingtasks-intro-empty' : 'smw-pendingtasks-intro' ) )->parse()
+		) . $html;
+	}
+
+}

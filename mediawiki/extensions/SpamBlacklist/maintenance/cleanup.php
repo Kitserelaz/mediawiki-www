@@ -19,11 +19,13 @@ use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleFormatter;
 use MediaWiki\User\User;
 
+// @codeCoverageIgnoreStart
 $IP = getenv( 'MW_INSTALL_PATH' );
 if ( $IP === false ) {
 	$IP = __DIR__ . '/../../..';
 }
 require_once "$IP/maintenance/Maintenance.php";
+// @codeCoverageIgnoreEnd
 
 class Cleanup extends Maintenance {
 	/** @var RevisionLookup */
@@ -103,7 +105,7 @@ class Cleanup extends Maintenance {
 	 * @param User $user
 	 */
 	private function cleanupArticle( RevisionRecord $rev, $regexes, $match, User $user ) {
-		$title = Title::newFromLinkTarget( $rev->getPageAsLinkTarget() );
+		$title = Title::newFromPageIdentity( $rev->getPage() );
 		while ( $rev ) {
 			$matches = false;
 			$content = $rev->getContent( SlotRecord::MAIN );
@@ -111,7 +113,7 @@ class Cleanup extends Maintenance {
 				$matches = $matches
 					|| preg_match(
 						$regex,
-						( $content instanceof TextContent ) ? $content->getText() : null
+						( $content instanceof TextContent ) ? $content->getText() : ''
 					);
 			}
 			if ( !$matches ) {
@@ -137,5 +139,7 @@ class Cleanup extends Maintenance {
 	}
 }
 
+// @codeCoverageIgnoreStart
 $maintClass = Cleanup::class;
 require_once RUN_MAINTENANCE_IF_MAIN;
+// @codeCoverageIgnoreEnd

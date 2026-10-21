@@ -1,0 +1,62 @@
+@import 'mediawiki.mixins';
+@import './../../sd-base-variables.less';
+
+.sd-input {
+	box-sizing: border-box;
+	vertical-align: middle;
+
+	&__wrapper {
+		// Input wrapper should grow to fit the container.
+		.flex( 1, 1, auto, 0 );
+		// For proper positioning of icon, indicator, and lookup results.
+		position: relative;
+	}
+
+	&__label {
+		.sd-visually-hidden();
+	}
+
+	&__input {
+		width: 100%;
+
+		&[ type='search' ] {
+			// Support: Safari, Chrome (Blink).
+			&::-webkit-search-decoration,
+			&::-webkit-search-cancel-button {
+				display: none;
+			}
+		}
+	}
+
+	// Apply pending state mixin, which generates a moving striped background,
+	// while autocomplete results are fetched.
+	&--pending &__input input {
+		.sd-pending-state();
+	}
+
+	&--button {
+		display: flex;
+
+		// Remove the border radii between the input and the button.
+		> .sd-input__wrapper .sd-input__input {
+			flex: 1;
+
+			input {
+				border-top-right-radius: 0;
+				border-bottom-right-radius: 0;
+			}
+		}
+
+		.sd-input__button {
+			flex-shrink: 0;
+			border-top-left-radius: 0;
+			border-bottom-left-radius: 0;
+			border-left-width: 0;
+		}
+	}
+
+	// Styles for CSS-only icon
+	&__css-icon--search {
+		.cdx-mixin-css-icon( @cdx-icon-search );
+	}
+}

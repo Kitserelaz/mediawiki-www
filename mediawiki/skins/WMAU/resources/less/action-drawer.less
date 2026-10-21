@@ -1,0 +1,57 @@
+body {
+	width: 100%;
+	overflow-x: hidden;
+}
+
+aside.skin-wmau-action-drawer {
+	position: absolute;
+	right: -180px;
+	transition: right 300ms ease 800ms;
+	width: 205px;
+	border: 1px solid @skin-wmau-green;
+	border-right: 0;
+	background-color: @skin-wmau-lightgreen;
+	border-radius: 4px 0 0 4px;
+	box-shadow: 0 0 15px 4px #ccc;
+
+	a {
+		display: block;
+		opacity: 0.3;
+		color: @skin-wmau-green;
+		padding: 2px 5px;
+
+		&:hover {
+			background-color: #cde5dd;
+			text-decoration: none;
+		}
+	}
+
+	&:hover {
+		right: 0;
+		transition: right 100ms;
+
+		a {
+			opacity: 1;
+		}
+	}
+
+	ul {
+		list-style-type: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	.skin-wmau-drawer-section {
+		border-top: 1px dashed @skin-wmau-green;
+	}
+
+	.skin-wmau-user-menu {
+		font-size: smaller;
+	}
+}
+
+@media screen and ( max-width: @skin-wmau-smallscreen-width ) {
+	aside.skin-wmau-action-drawer {
+		display: none;
+	}
+}

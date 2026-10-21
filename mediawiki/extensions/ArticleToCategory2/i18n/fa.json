@@ -1,0 +1,20 @@
+{
+	"@metadata": {
+		"authors": [
+			"Amirsara",
+			"Beginneruser",
+			"FarsiNevis",
+			"Jeeputer",
+			"Mjbmr"
+		]
+	},
+	"articletocategory2-desc": "یک جعبهٔ ورودی را در هر صفحهٔ رده قرار می‌دهد و امکان ایجاد یک صفحهٔ تازه و قرار دادن مستقیم آن در آن رده را فراهم می‌کند",
+	"articletocategory2-create-article-under-category-text": "افزودن صفحه‌ای به این رده",
+	"articletocategory2-create-article-under-category-button": "ایجاد",
+	"articletocategory2-create-category-under-category-text": "افزودن رده‌ای به این رده",
+	"articletocategory2-create-category-under-category-button": "ایجاد",
+	"action-ArticleToCategory2": "افزودن صفحه‌ای به رده",
+	"right-ArticleToCategory2": "افزودن صفحه به رده",
+	"action-ArticleToCategory2AddCat": "افزودن رده‌ای به رده",
+	"right-ArticleToCategory2AddCat": "افزودن رده‌ای به رده"
+}

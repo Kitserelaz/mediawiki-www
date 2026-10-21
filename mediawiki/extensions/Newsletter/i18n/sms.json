@@ -1,0 +1,32 @@
+{
+	"@metadata": {
+		"authors": [
+			"Yupik"
+		]
+	},
+	"newsletter-name": "Oođâsǩeeʹrj nõmm",
+	"newsletter-desc": "Deskriptt",
+	"newsletter-subtitlelinks-unsubscribe": "čåuddõõđ tiʹllʼjõõzz",
+	"newsletter-subtitlelinks-subscribe": "tiʹlle",
+	"newsletters": "Oođâsǩeeʹrj",
+	"newsletter-subscribe-loginrequired": "Ton õõlǥak leeʹd sizz ǩeeʹrjtõõttâm, jõs haaʹlääk [[Special:Newsletters| oođâsǩiiʹrjid]] tiʹllʼjed.",
+	"newsletter-notfound": "Oođâsǩeʹrjj ij käunnʼjam",
+	"newsletter-view-mainpage": "Oođâsǩeeʹrj ouddseidd:",
+	"newsletter-view-description": "Deskriptt:",
+	"newsletter-unsubscribe-button": "Čåuddõõđ tiʹllʼjõõzz",
+	"newsletter-subscribe-button": "Tiʹlle",
+	"newsletter-manage-name": "Oođâsǩeeʹrj nõmm:",
+	"newsletter-manage-title": "Ouddseeid nõmm",
+	"newsletter-manage-description": "Deskriptt:",
+	"newsletter-managenewsletter-button": "Vuõlttâd",
+	"newsletter-delete": "Jaukkâd oođâsǩeeʹrj",
+	"newsletter-subscribers": "Oođâsǩeeʹrj tiʹllʼjeei",
+	"echo-category-title-newsletter": "Oođâsǩeeʹrj",
+	"newsletter-notification-link-text-view-newsletter": "Čuäʹjet oođâsǩeeʹrj",
+	"newsletter-header-name": "Nõmm",
+	"newsletter-header-description": "Deskriptt",
+	"right-newsletter-delete": "Jaukkâd oođâsǩiiʹrjid",
+	"action-newsletter-delete": "jaukkeed oođâsǩiiʹrjid",
+	"newsletter-notification-link-text-del-publisher": "Čuäʹjet oođâsǩeeʹrj",
+	"newsletter-diff-mainpageheader": "Muttâz ouddseeidast:"
+}

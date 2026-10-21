@@ -1,0 +1,291 @@
+<?php
+
+namespace SMW\MediaWiki;
+
+use MediaWiki\Deferred\DeferrableUpdate;
+use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
+use Psr\Log\LoggerAwareTrait;
+use SMW\MediaWiki\Connection\Database;
+use SMW\MediaWiki\Deferred\TransactionalCallableUpdate;
+use SMW\Utils\Timer;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 2.1
+ *
+ * @author mwjames
+ */
+class PageUpdater implements DeferrableUpdate {
+
+	use LoggerAwareTrait;
+
+	/**
+	 * @var Title[]
+	 */
+	private array $titles = [];
+
+	/**
+	 * @var string
+	 */
+	private $origin = '';
+
+	/**
+	 * @var bool
+	 */
+	private $isHtmlCacheUpdate = true;
+
+	private bool $onTransactionIdle = false;
+
+	private bool $asPoolPurge = false;
+
+	private bool $isPending = false;
+
+	private array $pendingUpdates = [];
+
+	/**
+	 * @since 2.5
+	 */
+	public function __construct(
+		private ?Database $connection = null,
+		private ?TransactionalCallableUpdate $transactionalCallableUpdate = null,
+	) {
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param string $origin
+	 */
+	public function setOrigin( $origin ): void {
+		$this->origin = $origin;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param bool $isHtmlCacheUpdate
+	 */
+	public function isHtmlCacheUpdate( $isHtmlCacheUpdate ): void {
+		$this->isHtmlCacheUpdate = $isHtmlCacheUpdate;
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function markAsPending(): void {
+		$this->isPending = true;
+	}
+
+	/**
+	 * @since 2.1
+	 *
+	 * @param Title|null $title
+	 */
+	public function addPage( ?Title $title = null ): void {
+		if ( $title === null ) {
+			return;
+		}
+
+		$this->titles[$title->getDBKey()] = $title;
+	}
+
+	/**
+	 * @note MW 1.29+ runs Title::invalidateCache in AutoCommitUpdate which has
+	 * been shown to cause transaction issues when executed while a transaction
+	 * hasn't finished therefore use 'onTransactionIdle' to isolate the
+	 * execution.
+	 *
+	 * @since 2.5
+	 */
+	public function waitOnTransactionIdle(): void {
+		$this->onTransactionIdle = true;
+	}
+
+	/**
+	 * Controls the purge to use a direct DB access to make changes to avoid
+	 * racing conditions for a large number of title entities.
+	 *
+	 * @since 3.0
+	 */
+	public function doPurgeParserCacheAsPool(): void {
+		if ( $this->connection !== null ) {
+			$this->connection->onTransactionCommitOrIdle( function (): void {
+				 $this->doPoolPurge();
+			} );
+		} else {
+			$this->doPoolPurge();
+		}
+	}
+
+	/**
+	 * @since 2.1
+	 */
+	public function clear(): void {
+		$this->titles = [];
+	}
+
+	/**
+	 * @since 2.1
+	 *
+	 * @return bool
+	 */
+	public function canUpdate(): bool {
+		return !MediaWikiServices::getInstance()->getReadOnlyMode()->isReadOnly();
+	}
+
+	/**
+	 * Push pendingUpdates to be either deferred or direct executable, pending
+	 * the setting invoked by PageUPdater::markAsPending.
+	 *
+	 * @since 3.0
+	 */
+	public function pushUpdate() {
+		if ( $this->transactionalCallableUpdate === null ) {
+			return $this->log( __METHOD__ . ' it is not possible to push updates as DeferredTransactionalUpdate)' );
+		}
+
+		$this->transactionalCallableUpdate->setCallback( function (): void{
+			$this->doUpdate();
+		} );
+
+		if ( $this->onTransactionIdle ) {
+			$this->transactionalCallableUpdate->waitOnTransactionIdle();
+		}
+		if ( $this->isPending ) {
+			$this->transactionalCallableUpdate->markAsPending();
+		}
+
+		$this->transactionalCallableUpdate->setOrigin( [
+			__METHOD__,
+			$this->origin
+		] );
+
+		$this->transactionalCallableUpdate->pushUpdate();
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function doUpdate(): void {
+		$this->isPending = false;
+		$this->onTransactionIdle = false;
+
+		foreach ( array_keys( $this->pendingUpdates ) as $update ) {
+			call_user_func( [ $this, $update ] );
+		}
+
+		$this->pendingUpdates = [];
+	}
+
+	/**
+	 * @since 2.1
+	 */
+	public function doPurgeParserCache() {
+		$method = __METHOD__;
+
+		if ( $this->isPending || $this->onTransactionIdle ) {
+			$this->pendingUpdates['doPurgeParserCache'] = true;
+			return $this->pendingUpdates['doPurgeParserCache'];
+		}
+
+		foreach ( $this->titles as $title ) {
+			$title->invalidateCache();
+		}
+	}
+
+	/**
+	 * @since 2.1
+	 */
+	public function doPurgeHtmlCache() {
+		if ( $this->isHtmlCacheUpdate === false ) {
+			return;
+		}
+
+		if ( $this->isPending || $this->onTransactionIdle ) {
+			$this->pendingUpdates['doPurgeHtmlCache'] = true;
+			return $this->pendingUpdates['doPurgeHtmlCache'];
+		}
+
+		$method = __METHOD__;
+
+		// Calls HTMLCacheUpdate, HTMLCacheUpdateJob including HTMLFileCache,
+		// CdnCacheUpdate
+		foreach ( $this->titles as $title ) {
+			$title->touchLinks();
+		}
+	}
+
+	/**
+	 * Copied from PurgeJobUtils to avoid the AutoCommitUpdate from
+	 * Title::invalidateCache introduced with MW 1.28/1.29 on a large update pool
+	 */
+	private function doPoolPurge(): void {
+		Timer::start( __METHOD__ );
+
+		// #3413
+		$byNamespace = [];
+
+		foreach ( $this->titles as $title ) {
+			$namespace = $title->getNamespace();
+			$pagename = $title->getDBkey();
+			$byNamespace[$namespace][] = $pagename;
+		}
+
+		$conds = [];
+
+		foreach ( $byNamespace as $namespaces => $pagenames ) {
+
+			$cond = [
+				'page_namespace' => $namespaces,
+				'page_title' => $pagenames,
+			];
+
+			$conds[] = $this->connection->makeList( $cond, LIST_AND );
+		}
+
+		$titleConds = $this->connection->makeList( $conds, LIST_OR );
+
+		// Required due to postgres and "Error: 22007 ERROR:  invalid input
+		// syntax for type timestamp with time zone: "20170408113703""
+		$now = $this->connection->timestamp();
+		$res = $this->connection->newSelectQueryBuilder()
+			->select( [ 'page_id' ] )
+			->from( 'page' )
+			->where( [
+				$titleConds,
+				'page_touched < ' . $this->connection->addQuotes( $now )
+			] )
+			->caller( __METHOD__ )
+			->fetchResultSet();
+
+		$ids = [];
+
+		foreach ( $res as $row ) {
+			$ids[] = $row->page_id;
+		}
+
+		if ( $ids === [] ) {
+			return;
+		}
+
+		$this->connection->newUpdateQueryBuilder()
+			->update( 'page' )
+			->set( [ 'page_touched' => $now ] )
+			->where( [
+				'page_id' => $ids,
+				'page_touched < ' . $this->connection->addQuotes( $now )
+			] )
+			->caller( __METHOD__ )
+			->execute();
+
+		$context = [
+			'method' => __METHOD__,
+			'procTime' => Timer::getElapsedTime( __METHOD__, 7 ),
+			'role' => 'developer'
+		];
+
+		$this->logger->info( 'Page update, pool update (procTime in sec: {procTime})', $context );
+	}
+
+}

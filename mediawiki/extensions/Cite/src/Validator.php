@@ -6,97 +6,215 @@ use MediaWiki\Parser\Sanitizer;
 use StatusValue;
 
 /**
- * Context-aware, detailed validation of the arguments and content of a <ref> tag.
+ * Context-aware, detailed validation of the arguments and content of <ref> and <references> tags.
  *
  * @license GPL-2.0-or-later
  */
 class Validator {
 
-	private ReferenceStack $referenceStack;
-	private ?string $inReferencesGroup;
-	private bool $isSectionPreview;
-	private bool $isExtendsEnabled;
-
 	/**
-	 * @param ReferenceStack $referenceStack
 	 * @param string|null $inReferencesGroup Group name of the <references> context to consider
 	 *  during validation. Null if we are currently not in a <references> context.
-	 * @param bool $isSectionPreview Validation is relaxed when previewing parts of a page
-	 * @param bool $isExtendsEnabled Temporary feature flag
 	 */
 	public function __construct(
-		ReferenceStack $referenceStack,
-		?string $inReferencesGroup = null,
-		bool $isSectionPreview = false,
-		bool $isExtendsEnabled = false
+		private readonly ?string $inReferencesGroup,
 	) {
-		$this->referenceStack = $referenceStack;
-		$this->inReferencesGroup = $inReferencesGroup;
-		$this->isSectionPreview = $isSectionPreview;
-		$this->isExtendsEnabled = $isExtendsEnabled;
 	}
 
-	public function validateRef(
-		?string $text,
-		string $group,
-		?string $name,
-		?string $extends,
-		?string $follow,
-		?string $dir
-	): StatusValue {
-		if ( ctype_digit( (string)$name )
-			|| ctype_digit( (string)$extends )
-			|| ctype_digit( (string)$follow )
-		) {
-			// Numeric names mess up the resulting id's, potentially producing
-			// duplicate id's in the XHTML.  The Right Thing To Do
-			// would be to mangle them, but it's not really high-priority
-			// (and would produce weird id's anyway).
-			return StatusValue::newFatal( 'cite_error_ref_numeric_key' );
-		}
+	/**
+	 * @param array<string|int,?string> $argv The original arguments from the <ref …> tag
+	 * @param string[] $allowedArguments
+	 * @return StatusValue<array<string,mixed>> Always returns the complete dictionary of allowed
+	 *  argument names and values. Missing arguments are present, but null. Invalid arguments are
+	 *  stripped.
+	 */
+	private static function filterArguments( array $argv, array $allowedArguments ): StatusValue {
+		$expected = count( $allowedArguments );
+		// Constructs a map of all expected arguments, followed by invalid arguments
+		$allValues = array_merge( array_fill_keys( $allowedArguments, null ), $argv );
 
-		if ( $extends ) {
-			// Temporary feature flag until mainstreamed, see T236255
-			if ( !$this->isExtendsEnabled ) {
-				return StatusValue::newFatal( 'cite_error_ref_too_many_keys' );
-			}
+		$status = StatusValue::newGood( array_slice( $allValues, 0, $expected ) );
 
-			$groupRefs = $this->referenceStack->getGroupRefs( $group );
-			// @phan-suppress-next-line PhanTypeMismatchDimFetchNullable false positive
-			if ( isset( $groupRefs[$name] ) && !isset( $groupRefs[$name]->extends ) ) {
-				// T242141: A top-level <ref> can't be changed into a sub-reference
-				return StatusValue::newFatal( 'cite_error_references_duplicate_key', $name );
-			} elseif ( isset( $groupRefs[$extends]->extends ) ) {
-				// A sub-reference can not be extended a second time (no nesting)
-				return StatusValue::newFatal( 'cite_error_ref_nested_extends', $extends,
-					$groupRefs[$extends]->extends );
+		// Unexpected arguments after the expected ones, hence the message "too many"
+		if ( count( $allValues ) > $expected ) {
+			$badArguments = array_keys( array_slice( $allValues, $expected ) );
+			$firstBadArgument = $badArguments[0];
+			$closestMatch = self::closestMatch( $firstBadArgument, $allowedArguments );
+
+			// Use different error messages for <ref> vs. <references> (cannot have a name)
+			$forReferenceList = !in_array( 'name', $allowedArguments, true );
+			if ( $closestMatch && !$forReferenceList ) {
+				$status->warning( 'cite_error_ref_parameter_suggestion',
+					$firstBadArgument,
+					$closestMatch
+				);
+			} else {
+				sort( $allowedArguments );
+				$status->warning( $forReferenceList ?
+					'cite_error_references_invalid_parameters' :
+					'cite_error_ref_too_many_keys',
+					$firstBadArgument,
+					implode( ', ', $allowedArguments )
+				);
 			}
 		}
 
-		if ( $follow && ( $name || $extends ) ) {
-			return StatusValue::newFatal( 'cite_error_ref_follow_conflicts' );
-		}
-
-		if ( $dir !== null && $dir !== 'rtl' && $dir !== 'ltr' ) {
-			return StatusValue::newFatal( 'cite_error_ref_invalid_dir', $dir );
-		}
-
-		return $this->inReferencesGroup === null ?
-			$this->validateRefOutsideOfReferenceList( $text, $name ) :
-			$this->validateRefInReferenceList( $text, $group, $name );
+		return $status;
 	}
 
-	private function validateRefOutsideOfReferenceList(
-		?string $text,
-		?string $name
+	/**
+	 * Tries to find a word that is as close as possible to the user input, from a list of
+	 * possibilities. The minimum Levenshtein distance is used to find the closest match, see
+	 * https://en.wikipedia.org/wiki/Levenshtein_distance. This is expensive but reasonable here
+	 * because the strings and arrays are all very short.
+	 *
+	 * @param string $badArgument The user input
+	 * @param string[] $suggestions Possible suggestions
+	 * @return string|null Null when no meaningful suggestion can be made
+	 */
+	private static function closestMatch( string $badArgument, array $suggestions ): ?string {
+		$badArgument = strtolower( trim( $badArgument ) );
+
+		// Stop early when character-by-character comparisons are going to be pointless. The
+		// longest possible answer is "responsive" (10 characters).
+		if ( strlen( $badArgument ) > 20 ) {
+			return null;
+		}
+
+		$bestMatch = '';
+		$bestDistance = 0;
+		foreach ( $suggestions as $suggestion ) {
+			$distance = levenshtein( $badArgument, $suggestion );
+			// It's not going to become better
+			if ( $distance <= 1 ) {
+				return $suggestion;
+			}
+			if ( !$bestMatch || $distance < $bestDistance ) {
+				$bestMatch = $suggestion;
+				$bestDistance = $distance;
+			}
+		}
+		// It's probably not a useful suggestion if not even half of it is the same
+		return $bestDistance <= strlen( $bestMatch ) / 2 ? $bestMatch : null;
+	}
+
+	/**
+	 * Filters the raw <ref> arguments and turns them into a predictable format with all
+	 * elements guaranteed to be present.
+	 *
+	 * @param array<string|int,?string> $argv The original arguments from the <references …> tag
+	 * @param bool $isSubreferenceSupported Temporary feature flag
+	 * @return StatusValue<array<string,mixed>> Always returns the complete dictionary of allowed
+	 *  argument names and values. Missing arguments are present, but null. Invalid arguments are
+	 *  stripped.
+	 */
+	public static function filterRefArguments(
+		array $argv,
+		bool $isSubreferenceSupported = false
 	): StatusValue {
+		$allowedArguments = [ 'group', 'name', 'follow', 'dir' ];
+		if ( $isSubreferenceSupported ) {
+			$allowedArguments[] = 'details';
+		}
+		return self::filterArguments( $argv, $allowedArguments );
+	}
+
+	/**
+	 * Filters the raw <references> arguments and turns them into a predictable format with all
+	 * elements guaranteed to be present.
+	 *
+	 * @param array<string|int,?string> $argv The original arguments from the <references …> tag
+	 * @return StatusValue<array<string,mixed>> Always returns the complete dictionary of
+	 *  allowed argument names and values. Missing arguments are present, but null. Invalid
+	 *  arguments are stripped.
+	 */
+	public static function filterReferenceListArguments( array $argv ): StatusValue {
+		$status = self::filterArguments( $argv, [ 'group', 'responsive' ] );
+		/** @var array<string,string|null> $arguments */
+		$arguments = $status->getValue();
+		if ( $arguments['responsive'] !== null ) {
+			// All strings including the empty string mean enabled, only "0" means disabled
+			$status->value['responsive'] = $arguments['responsive'] !== '0';
+		}
+		return $status;
+	}
+
+	/**
+	 * Collection of all validation and sanitization steps that can be done in place while parsing
+	 * a <ref> tag. This excludes failures like "there was never a <ref name=… /> with content" that
+	 * can only be decided at the very end.
+	 *
+	 * @param string|null $text
+	 * @param array{group: ?string, name: ?string, follow: ?string, dir: ?string, details: ?string} $arguments
+	 * @return StatusValue<array<string,mixed>> Returns a sanitized version of the dictionary of
+	 *  argument names and values. Some errors are fatals, meaning the <ref> tag shouldn't be used.
+	 *  Some are warnings.
+	 */
+	public function validateRef( ?string $text, array $arguments ): StatusValue {
+		$status = StatusValue::newGood();
+
+		// Use the default group, or the references group when inside one
+		$arguments['group'] ??= $this->inReferencesGroup ?? Cite::DEFAULT_GROUP;
+
+		// We never care about the difference between empty name="" and non-existing attribute
+		$name = (string)$arguments['name'];
+		$follow = (string)$arguments['follow'];
+
+		// Disallow numeric names to avoid confusion with global ids
+		if ( ctype_digit( $name ) ) {
+			$arguments['name'] = null;
+			$status->warning( 'cite_error_ref_numeric_key' );
+		} elseif ( ctype_digit( $follow ) ) {
+			$status->fatal( 'cite_error_ref_numeric_key' );
+		}
+
+		// The details attribute is a marker and shouldn't be ignored, even if empty
+		if ( $follow && ( $name || isset( $arguments['details'] ) ) ) {
+			$status->fatal( 'cite_error_ref_follow_conflicts' );
+		}
+
+		if ( isset( $arguments['dir'] ) ) {
+			$lowerDir = strtolower( $arguments['dir'] );
+			if ( $lowerDir !== 'rtl' && $lowerDir !== 'ltr' ) {
+				$lowerDir = null;
+				$status->warning( 'cite_error_ref_invalid_dir', $arguments['dir'] );
+			}
+			$arguments['dir'] = $lowerDir;
+		}
+
+		$sanitized = $this->inReferencesGroup === null ?
+			$this->validateRefBeforeReferenceList( $text, $arguments ) :
+			$this->validateRefInReferenceList( $text, $arguments );
+		return $status->merge( $sanitized, true );
+	}
+
+	/**
+	 * Validation steps specific to <ref> tags outside of (more specifically *before*) a
+	 * <references> tag.
+	 *
+	 * @return StatusValue<array<string,mixed>> Sanitized arguments
+	 */
+	private function validateRefBeforeReferenceList( ?string $text, array $arguments ): StatusValue {
+		$status = StatusValue::newGood();
+
+		$name = (string)$arguments['name'];
+
 		if ( !$name ) {
-			if ( $text === null ) {
+			$isSelfClosingTag = $text === null;
+			$containsText = trim( $text ?? '' ) !== '';
+			// The details attribute is a marker and shouldn't be ignored, even if empty
+			if ( isset( $arguments['details'] ) && !$containsText ) {
+				$status->fatal( 'cite_error_details_missing_parent' );
+			} elseif ( ( $arguments['details'] ?? '' ) !== '' ) {
+				// References with details must have a name.
+				$status->warning( 'cite_error_ref_with_details_no_name' );
+				$arguments['details'] = null;
+			} elseif ( $isSelfClosingTag ) {
 				// Completely empty ref like <ref /> is forbidden.
-				return StatusValue::newFatal( 'cite_error_ref_no_key' );
-			} elseif ( trim( $text ) === '' ) {
+				$status->fatal( 'cite_error_ref_no_key' );
+			} elseif ( !$containsText ) {
 				// Must have content or reuse another ref by name.
-				return StatusValue::newFatal( 'cite_error_ref_no_input' );
+				$status->fatal( 'cite_error_ref_no_input' );
 			}
 		}
 
@@ -114,49 +232,70 @@ class Validator {
 			// Possible improvement: print the warning, followed by the contents
 			// of the <ref> tag.  This way no part of the article will be eaten
 			// even temporarily.
-			return StatusValue::newFatal( 'cite_error_included_ref' );
+			$status->fatal( 'cite_error_included_ref' );
 		}
 
-		return StatusValue::newGood();
+		// Return the sanitized set of <ref …> arguments
+		$status->value = $arguments;
+		return $status;
 	}
 
-	private function validateRefInReferenceList(
-		?string $text,
-		string $group,
-		?string $name
-	): StatusValue {
+	/**
+	 * Validation steps specific to <ref> tags inside of a <references> tag.
+	 *
+	 * @return StatusValue<array<string,mixed>> Sanitized arguments
+	 */
+	private function validateRefInReferenceList( ?string $text, array $arguments ): StatusValue {
+		$status = StatusValue::newGood();
+
+		$group = $arguments['group'];
+		$name = (string)$arguments['name'];
+
+		// The details attribute is a marker and shouldn't be ignored, even if empty
+		if ( isset( $arguments['details'] ) ) {
+			$arguments['details'] = null;
+			$status->warning( 'cite_error_details_unsupported_context',
+				Sanitizer::safeEncodeAttribute( $name )
+			);
+		}
+
 		if ( $group !== $this->inReferencesGroup ) {
 			// <ref> and <references> have conflicting group attributes.
-			return StatusValue::newFatal( 'cite_error_references_group_mismatch',
-				Sanitizer::safeEncodeAttribute( $group ) );
+			$arguments['group'] = $this->inReferencesGroup;
+			$status->warning( 'cite_error_references_group_mismatch',
+				Sanitizer::safeEncodeAttribute( $group )
+			);
 		}
 
 		if ( !$name ) {
 			// <ref> calls inside <references> must be named
-			return StatusValue::newFatal( 'cite_error_references_no_key' );
+			$status->fatal( 'cite_error_references_no_key' );
 		}
 
 		if ( $text === null || trim( $text ) === '' ) {
 			// <ref> called in <references> has no content.
-			return StatusValue::newFatal(
-				'cite_error_empty_references_define',
+			$status->fatal( 'cite_error_empty_references_define',
 				Sanitizer::safeEncodeAttribute( $name ),
 				Sanitizer::safeEncodeAttribute( $group )
 			);
 		}
 
-		// Section previews are exempt from some rules.
-		if ( !$this->isSectionPreview ) {
-			$groupRefs = $this->referenceStack->getGroupRefs( $group );
+		// Return the sanitized set of <ref …> arguments
+		$status->value = $arguments;
+		return $status;
+	}
 
-			if ( !isset( $groupRefs[$name] ) ) {
-				// No such named ref exists in this group.
-				return StatusValue::newFatal( 'cite_error_references_missing_key',
-					Sanitizer::safeEncodeAttribute( $name ) );
-			}
+	public function validateListDefinedRefUsage( ?string $name, bool $isKnownName ): StatusValue {
+		$status = StatusValue::newGood();
+
+		if ( $this->inReferencesGroup !== null && $name && !$isKnownName ) {
+			// No such named ref exists in this group.
+			$status->fatal( 'cite_error_references_missing_key',
+				Sanitizer::safeEncodeAttribute( $name )
+			);
 		}
 
-		return StatusValue::newGood();
+		return $status;
 	}
 
 }

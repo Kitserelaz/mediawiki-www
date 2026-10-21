@@ -1,0 +1,25 @@
+{
+	"@metadata": {
+		"authors": [
+			"Beta16",
+			"Giromin Cangiaxo",
+			"Ontsed"
+		]
+	},
+	"nearby": "Pagine su argomenti nelle tue vicinanze",
+	"nearby-pages-desc": "Aggiunge la pagina speciale [[Special:Nearby|Nelle vicinanze]]",
+	"nearby-pages-distance": "{{PLURAL:$1|$1 km}}",
+	"nearby-pages-distance-meters": "{{PLURAL:$1|$1 m}}",
+	"nearby-pages-error": "{{SITENAME}} sta avendo alcuni problemi.",
+	"nearby-pages-error-guidance": "Prova ad aggiornare la tua posizione.",
+	"nearby-pages-noresults": "È tranquillo da queste parti... non abbiamo trovato pagine con argomenti di interesse nelle vicinanze.",
+	"nearby-pages-noresults-guidance": "Prova a creare una nuova pagina o ad aggiungere le coordinate della posizione ad una esistente",
+	"nearby-pages-permission-denied": "Hai negato l'accesso ai servizi di localizzazione per {{SITENAME}}. Per modificarlo, verifica le impostazioni del tuo browser web o del tuo dispositivo.",
+	"nearby-pages-requirements": "Ci dispiace! Il tuo browser non supporta \"Nelle vicinanze\" di {{SITENAME}}.",
+	"nearby-pages-requirements-guidance": "Prova ad usare un browser diverso o attiva JavaScript se lo hai disattivato.",
+	"nearby-pages-title": "Nelle vicinanze",
+	"nearby-pages-info-heading": "Luoghi vicino a te",
+	"nearby-pages-info-description": "Puoi leggere pagine interessanti di {{SITENAME}} su luoghi nelle tue vicinanze",
+	"nearby-pages-info-show-random": "Mostra pagine a caso",
+	"nearby-pages-info-show-button": "Mostra pagine nelle vicinanze"
+}

@@ -2,8 +2,9 @@
 
 namespace MediaWiki\Extension\CodeEditor;
 
-use ErrorPageError;
+use MediaWiki\Config\Config;
 use MediaWiki\EditPage\EditPage;
+use MediaWiki\Exception\ErrorPageError;
 use MediaWiki\Extension\CodeEditor\Hooks\HookRunner;
 use MediaWiki\Hook\EditPage__showEditForm_initialHook;
 use MediaWiki\Hook\EditPage__showReadOnlyForm_initialHook;
@@ -15,23 +16,21 @@ use MediaWiki\Title\Title;
 use MediaWiki\User\Options\UserOptionsLookup;
 use MediaWiki\User\User;
 
-/**
- * @phpcs:disable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
- */
 class Hooks implements
 	GetPreferencesHook,
 	EditPage__showEditForm_initialHook,
 	EditPage__showReadOnlyForm_initialHook
 {
-	private UserOptionsLookup $userOptionsLookup;
-	private HookRunner $hookRunner;
+	private readonly HookRunner $hookRunner;
+	private readonly array $enabledModes;
 
 	public function __construct(
-		UserOptionsLookup $userOptionsLookup,
-		HookContainer $hookContainer
+		private readonly UserOptionsLookup $userOptionsLookup,
+		HookContainer $hookContainer,
+		Config $config,
 	) {
-		$this->userOptionsLookup = $userOptionsLookup;
 		$this->hookRunner = new HookRunner( $hookContainer );
+		$this->enabledModes = $config->get( 'CodeEditorEnabledModes' );
 	}
 
 	private function getPageLanguage( Title $title, string $model, string $format ): ?string {
@@ -41,6 +40,8 @@ class Hooks implements
 			return 'css';
 		} elseif ( $model === CONTENT_MODEL_JSON ) {
 			return 'json';
+		} elseif ( $model === CONTENT_MODEL_VUE ) {
+			return 'vue';
 		}
 
 		// Give extensions a chance
@@ -67,11 +68,19 @@ class Hooks implements
 	 * @throws ErrorPageError
 	 */
 	public function onEditPage__showEditForm_initial( $editpage, $output ) {
-		$title = $editpage->getContextTitle();
 		$model = $editpage->contentModel;
+		$title = $editpage->getContextTitle();
 		$format = $editpage->contentFormat;
-
+		// @phan-suppress-next-line PhanTypeMismatchArgumentNullable
 		$lang = $this->getPageLanguage( $title, $model, $format );
+
+		if ( $lang &&
+			isset( $this->enabledModes[$lang] ) &&
+			$this->enabledModes[$lang] === false
+		) {
+			return;
+		}
+
 		if ( $lang && $this->userOptionsLookup->getOption( $output->getUser(), 'usebetatoolbar' ) ) {
 			$output->addModules( 'ext.codeEditor' );
 			$output->addModuleStyles( 'ext.codeEditor.styles' );

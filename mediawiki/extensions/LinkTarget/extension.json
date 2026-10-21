@@ -1,0 +1,41 @@
+{
+	"name": "LinkTarget",
+	"version": "0.2",
+	"author": [
+		"Ike Hecht"
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:LinkTarget",
+	"descriptionmsg": "linktarget-desc",
+	"license-name": "GPL-2.0-or-later",
+	"type": "other",
+	"requires": {
+		"MediaWiki": ">= 1.35.0"
+	},
+	"MessagesDirs": {
+		"LinkTarget": [
+			"i18n"
+		]
+	},
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\LinkTarget\\": "includes/"
+	},
+	"HookHandlers": {
+		"LinkTarget": {
+			"class": "MediaWiki\\Extension\\LinkTarget\\LinkTargetHooks"
+		}
+	},
+	"Hooks": {
+		"OutputPageParserOutput": {
+			"handler": "LinkTarget"
+		}
+	},
+	"config": {
+		"LinkTargetParentClasses": {
+			"value": []
+		},
+		"LinkTargetDefault": {
+			"value": "_blank"
+		}
+	},
+	"manifest_version": 2
+}

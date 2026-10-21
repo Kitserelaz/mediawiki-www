@@ -1,0 +1,210 @@
+<?php
+
+namespace SMW\Tests\Integration\MediaWiki;
+
+use MediaWiki\Deferred\LinksUpdate\LinksUpdate;
+use MediaWiki\MediaWikiServices;
+use MediaWiki\Parser\ParserOutput;
+use SMW\DataItems\WikiPage;
+use SMW\Services\ServicesFactory as ApplicationFactory;
+use SMW\Tests\SMWIntegrationTestCase;
+
+/**
+ * @group semantic-mediawiki
+ * @group Database
+ * @group medium
+ *
+ * @license GPL-2.0-or-later
+ * @since 1.9.1
+ *
+ * @author mwjames
+ */
+class LinksUpdateTest extends SMWIntegrationTestCase {
+
+	private $title = null;
+	private $applicationFactory;
+	private $semanticDataValidator;
+	private $pageDeleter;
+	private $pageCreator;
+	private $revisionGuard;
+
+	protected function setUp(): void {
+		parent::setUp();
+
+		$this->semanticDataValidator = $this->testEnvironment->getUtilityFactory()->newValidatorFactory()->newSemanticDataValidator();
+		$this->pageCreator = $this->testEnvironment->getUtilityFactory()->newPageCreator();
+		$this->pageDeleter = $this->testEnvironment->getUtilityFactory()->newPageDeleter();
+
+		$this->applicationFactory = ApplicationFactory::getInstance();
+		$this->testEnvironment->addConfiguration( 'smwgPageSpecialProperties', [ '_MDAT' ] );
+
+		$this->title = MediaWikiServices::getInstance()->getTitleFactory()->newFromText( __METHOD__ );
+
+		$this->revisionGuard = ApplicationFactory::getInstance()->singleton( 'RevisionGuard' );
+	}
+
+	public function tearDown(): void {
+		$this->applicationFactory->clear();
+
+		$this->testEnvironment->flushPages( [ $this->title ] );
+		$this->testEnvironment->tearDown();
+		parent::tearDown();
+	}
+
+	public function testUpdateToSetPredefinedAnnotations() {
+		$this->pageCreator
+			->createPage( $this->title );
+
+		$semanticData = $this->getStore()->getSemanticData(
+			WikiPage::newFromTitle( $this->title )
+		);
+
+		$this->assertCount(
+			2,
+			$semanticData->getProperties()
+		);
+
+		$expected = [
+			'propertyKeys' => [ '_SKEY', '_MDAT' ]
+		];
+
+		$this->semanticDataValidator->assertThatPropertiesAreSet(
+			$expected,
+			$semanticData
+		);
+	}
+
+	/**
+	 * @depends testUpdateToSetPredefinedAnnotations
+	 */
+	public function testDoUpdateUsingUserdefinedAnnotations() {
+		$this->pageCreator
+			->createPage( $this->title )
+			->doEdit( '[[HasFirstLinksUpdatetest::testDoUpdate]] [[HasSecondLinksUpdatetest::testDoUpdate]]' );
+
+		$parserData = $this->applicationFactory->newParserData(
+			$this->title,
+			$this->pageCreator->getEditInfo()->getOutput()
+		);
+
+		$contentParser = $this->applicationFactory->newContentParser( $this->title );
+		$contentParser->parse();
+
+		$parsedParserData = $this->applicationFactory->newParserData(
+			$this->title,
+			$contentParser->getOutput()
+		);
+
+		$this->assertCount(
+			3,
+			$parserData->getSemanticData()->getProperties()
+		);
+
+		$this->assertCount(
+			4,
+			$this->getStore()->getSemanticData( WikiPage::newFromTitle( $this->title ) )->getProperties()
+		);
+
+		/**
+		 * See #347 and LinksUpdateComplete
+		 */
+		$linksUpdate = new LinksUpdate( $this->title, new ParserOutput() );
+		$linksUpdate->doUpdate();
+
+		$this->testEnvironment->executePendingDeferredUpdates();
+
+		/**
+		 * Asserts that before and after the update, the SemanticData container
+		 * holds the same amount of properties despite the fact that the ParserOutput
+		 * was invoked empty
+		 */
+		$semanticData = $this->getStore()->getSemanticData(
+			WikiPage::newFromTitle( $this->title )
+		);
+
+		$this->assertCount(
+			4,
+			$semanticData->getProperties()
+		);
+
+		$expected = [
+			'propertyKeys' => [ '_SKEY', '_MDAT', 'HasFirstLinksUpdatetest', 'HasSecondLinksUpdatetest' ]
+		];
+
+		$this->semanticDataValidator->assertThatPropertiesAreSet(
+			$expected,
+			$semanticData
+		);
+
+		return $this->revisionGuard->newRevisionFromPage( $this->pageCreator->getPage() );
+	}
+
+	/**
+	 * @depends testDoUpdateUsingUserdefinedAnnotations
+	 */
+	public function testDoUpdateUsingNoAnnotations( $firstRunRevision ) {
+		$this->pageCreator
+			->createPage( $this->title )
+			->doEdit( 'no annotation' );
+
+		$this->assertNotSame(
+			$firstRunRevision,
+			$this->revisionGuard->newRevisionFromPage( $this->pageCreator->getPage() )
+		);
+
+		$contentParser = $this->applicationFactory->newContentParser( $this->title );
+		$contentParser->parse();
+
+		$parserData = $this->applicationFactory->newParserData(
+			$this->title,
+			$contentParser->getOutput()
+		);
+
+		if ( count( $parserData->getSemanticData()->getProperties() ) != 0 ) {
+			$this->markTestSkipped( "Something changed with MW 1.28 and I'm too lazy to investigate." );
+		}
+
+		$this->assertCount(
+			0,
+			$parserData->getSemanticData()->getProperties()
+		);
+
+		$this->assertCount(
+			2,
+			$this->getStore()->getSemanticData( WikiPage::newFromTitle( $this->title ) )->getProperties()
+		);
+
+		return $firstRunRevision;
+	}
+
+	/**
+	 * @depends testDoUpdateUsingNoAnnotations
+	 */
+	public function testReparseFirstRevision( $firstRunRevision ) {
+		$contentParser = $this->applicationFactory->newContentParser( $this->title );
+		$contentParser->setRevision( $firstRunRevision );
+		$contentParser->parse();
+
+		$parserData = $this->applicationFactory->newParserData(
+			$this->title,
+			$contentParser->getOutput()
+		);
+
+		$semanticData = $parserData->getSemanticData();
+
+		$this->assertCount(
+			3,
+			$semanticData->getProperties()
+		);
+
+		$expected = [
+			'propertyKeys' => [ '_SKEY', 'HasFirstLinksUpdatetest', 'HasSecondLinksUpdatetest' ]
+		];
+
+		$this->semanticDataValidator->assertThatPropertiesAreSet(
+			$expected,
+			$semanticData
+		);
+	}
+
+}

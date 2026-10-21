@@ -55,9 +55,6 @@ abstract class ApiFlowBase extends ApiBase {
 		return true;
 	}
 
-	/**
-	 * @param Title $page
-	 */
 	public function setPage( Title $page ) {
 		$this->page = $page;
 	}
@@ -95,9 +92,7 @@ abstract class ApiFlowBase extends ApiBase {
 
 		if ( $addAliases ) {
 			// aliases for AbstractRevision::MODERATED_NONE
-			$states = array_merge( $states, [
-				'restore', 'unhide', 'undelete', 'unsuppress',
-			] );
+			return [ ...$states, 'restore', 'unhide', 'undelete', 'unsuppress' ];
 		}
 
 		return $states;

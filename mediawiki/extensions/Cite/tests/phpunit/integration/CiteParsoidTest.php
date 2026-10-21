@@ -4,17 +4,27 @@ declare( strict_types = 1 );
 
 namespace Cite\Tests\Integration;
 
+use Cite\Parsoid\ReferenceListTagHandler;
+use MediaWiki\Config\HashConfig;
 use MediaWiki\Registration\ExtensionRegistry;
+use MediaWiki\Title\TitleValue;
 use Wikimedia\ObjectFactory\ObjectFactory;
+use Wikimedia\Parsoid\Config\PageConfig;
+use Wikimedia\Parsoid\Core\ContentMetadataCollector;
+use Wikimedia\Parsoid\Core\DOMCompat;
 use Wikimedia\Parsoid\Core\SelserData;
 use Wikimedia\Parsoid\DOM\Element;
+use Wikimedia\Parsoid\Ext\ContentUtils;
+use Wikimedia\Parsoid\Ext\DOMDataUtils;
+use Wikimedia\Parsoid\Ext\DOMUtils;
+use Wikimedia\Parsoid\Ext\ParsoidExtensionAPI;
 use Wikimedia\Parsoid\Mocks\MockDataAccess;
 use Wikimedia\Parsoid\Mocks\MockPageConfig;
 use Wikimedia\Parsoid\Mocks\MockPageContent;
 use Wikimedia\Parsoid\Mocks\MockSiteConfig;
+use Wikimedia\Parsoid\NodeData\DataMw;
+use Wikimedia\Parsoid\NodeData\DataMwBody;
 use Wikimedia\Parsoid\Parsoid;
-use Wikimedia\Parsoid\Utils\DOMCompat;
-use Wikimedia\Parsoid\Utils\DOMUtils;
 
 /**
  * @coversDefaultClass \Cite\Parsoid\Cite
@@ -32,14 +42,11 @@ class CiteParsoidTest extends \MediaWikiIntegrationTestCase {
 	private function getSiteConfig( $options ) {
 		$objectFactory = $this->getServiceContainer()->getObjectFactory();
 		$siteConfig = new class( $options, $objectFactory ) extends MockSiteConfig {
-			private ObjectFactory $objectFactory;
-
 			public function __construct(
 				array $opts,
-				ObjectFactory $objectFactory
+				private readonly ObjectFactory $objectFactory,
 			) {
 				parent::__construct( $opts );
-				$this->objectFactory = $objectFactory;
 			}
 
 			public function getObjectFactory(): ObjectFactory {
@@ -58,38 +65,42 @@ class CiteParsoidTest extends \MediaWikiIntegrationTestCase {
 	/**
 	 * @param string $wt
 	 * @param array $pageOpts
-	 * @param bool $wrapSections
 	 * @return Element
 	 */
-	private function parseWT( string $wt, array $pageOpts = [], $wrapSections = false ): Element {
-		$siteConfig = $this->getSiteConfig( [] );
+	private function parseWT( string $wt, array $pageOpts = [] ): Element {
+		$siteConfig = $this->getSiteConfig( [ 'linting' => true ] );
 		$dataAccess = new MockDataAccess( $siteConfig, [] );
 		$parsoid = new Parsoid( $siteConfig, $dataAccess );
-
-		$content = new MockPageContent( [ 'main' => $wt ] );
+		$content = new MockPageContent(
+			[ 'main' => $wt ],
+			isset( $pageOpts['title'] ) ? TitleValue::tryNew( 0, $pageOpts['title'] ) : null,
+		);
 		$pageConfig = new MockPageConfig( $siteConfig, $pageOpts, $content );
-		$html = $parsoid->wikitext2html( $pageConfig, [ "wrapSections" => $wrapSections ] );
+		$html = $parsoid->wikitext2html( $pageConfig, [ 'wrapSections' => false ] );
 
-		$doc = DOMUtils::parseHTML( $html );
-
-		$docBody = DOMCompat::getBody( $doc );
-
-		return( $docBody );
+		return DOMCompat::getBody( DOMUtils::parseHTML( $html ) );
 	}
 
-	private function wtToLint( string $wt, array $options = [] ): array {
-		$opts = [
-			'prefix' => $options['prefix'] ?? 'enwiki',
-			'pageName' => $options['pageName'] ?? 'main',
-			'wrapSections' => false
-		];
-
-		$siteOptions = [ 'linting' => true ] + $options;
-		$siteConfig = $this->getSiteConfig( $siteOptions );
-		$dataAccess = new MockDataAccess( $siteConfig, [] );
+	private function wtToLint( string $wt ): array {
+		$siteConfig = $this->getSiteConfig( [ 'linting' => true ] );
+		$dataAccess = new class( $siteConfig, [] ) extends MockDataAccess {
+			/** @inheritDoc */
+			public function addTrackingCategory(
+				PageConfig $pageConfig,
+				ContentMetadataCollector $metadata,
+				string $key
+			): void {
+				if ( $key === 'cite-tracking-category-cite-error' ) {
+					$tv = TitleValue::tryNew( 14, 'Pages with reference errors' );
+					$metadata->addCategory( $tv );
+					return;
+				}
+				parent::addTrackingCategory( $pageConfig, $metadata, $key );
+			}
+		};
 		$parsoid = new Parsoid( $siteConfig, $dataAccess );
 
-		$content = new MockPageContent( [ $opts['pageName'] => $wt ] );
+		$content = new MockPageContent( [ $options['pageName'] ?? 'main' => $wt ] );
 		$pageConfig = new MockPageConfig( $siteConfig, [], $content );
 
 		return $parsoid->wikitext2lint( $pageConfig, [] );
@@ -125,19 +136,19 @@ class CiteParsoidTest extends \MediaWikiIntegrationTestCase {
 	 * incompatibility.  This test asserts that selser will restore content
 	 * for invalid follows that would otherwise be dropped since it wasn't
 	 * span wrapped.
-	 * @covers \Cite\Parsoid\Ref::domToWikitext
+	 * @covers \Cite\Parsoid\RefTagHandler::domToWikitext
 	 */
 	public function testSelserFollowsWrap(): void {
 		$wt = 'Hi ho <ref follow="123">hi ho</ref>';
 		$html = <<<EOT
-<p data-parsoid='{"dsr":[0,35,0,0]}'>Hi ho <sup about="#mwt2" class="mw-ref" id="cite_ref-1" rel="dc:references" typeof="mw:Extension/ref mw:Error" data-parsoid='{"dsr":[6,35,18,6]}' data-mw='{"name":"ref","attrs":{"follow":"123"},"body":{"id":"mw-reference-text-cite_note-1"},"errors":[{"key":"cite_error_references_missing_key","params":["123"]}]}'><a href="./Main_Page#cite_note-1" style="counter-reset: mw-Ref 1;" data-parsoid="{}"><span class="mw-reflink-text" data-parsoid="{}">[1]</span></a></sup></p>
+<p data-parsoid='{"dsr":[0,35,0,0]}'>Hi ho <sup about="#mwt2" class="mw-ref" id="cite_ref-1" rel="dc:references" typeof="mw:Extension/ref mw:Error" data-parsoid='{"dsr":[6,35,18,6]}' data-mw='{"name":"ref","attrs":{"follow":"123"},"body":{"id":"mw-reference-text-cite_note-1"},"errors":[{"key":"cite_error_references_missing_key","params":["123"]}]}'><a href="./Main_Page#cite_note-1" data-parsoid="{}"><span class="mw-reflink-text" data-parsoid="{}">[1]</span></a></sup></p>
 
-<div class="mw-references-wrap" typeof="mw:Extension/references" about="#mwt3" data-parsoid='{"dsr":[36,36,0,0]}' data-mw='{"name":"references","attrs":{},"autoGenerated":true}'><ol class="mw-references references" data-parsoid="{}"><li about="#cite_note-1" id="cite_note-1" data-parsoid="{}"><a href="./Main_Page#cite_ref-1" rel="mw:referencedBy" data-parsoid="{}"><span class="mw-linkback-text" data-parsoid="{}">↑ </span></a> <span id="mw-reference-text-cite_note-1" class="mw-reference-text" data-parsoid="{}">hi ho</span></li></ol></div>
+<div class="mw-references-wrap" typeof="mw:Extension/references" about="#mwt3" data-parsoid='{"dsr":[36,36,0,0]}' data-mw='{"name":"references","attrs":{},"autoGenerated":true}'><ol class="mw-references references" data-parsoid="{}"><li about="#cite_note-1" id="cite_note-1" data-parsoid="{}"><a href="./Main_Page#cite_ref-1" rel="mw:referencedBy" data-parsoid="{}"><span class="mw-linkback-text" data-parsoid="{}">↑</span></a> <span id="mw-reference-text-cite_note-1" class="mw-reference-text" data-parsoid="{}">hi ho</span></li></ol></div>
 EOT;
 		$editedHtml = <<<EOT
-<p data-parsoid='{"dsr":[0,35,0,0]}'>Ha ha <sup about="#mwt2" class="mw-ref" id="cite_ref-1" rel="dc:references" typeof="mw:Extension/ref mw:Error" data-parsoid='{"dsr":[6,35,18,6]}' data-mw='{"name":"ref","attrs":{"follow":"123"},"body":{"id":"mw-reference-text-cite_note-1"},"errors":[{"key":"cite_error_references_missing_key","params":["123"]}]}'><a href="./Main_Page#cite_note-1" style="counter-reset: mw-Ref 1;" data-parsoid="{}"><span class="mw-reflink-text" data-parsoid="{}">[1]</span></a></sup></p>
+<p data-parsoid='{"dsr":[0,35,0,0]}'>Ha ha <sup about="#mwt2" class="mw-ref" id="cite_ref-1" rel="dc:references" typeof="mw:Extension/ref mw:Error" data-parsoid='{"dsr":[6,35,18,6]}' data-mw='{"name":"ref","attrs":{"follow":"123"},"body":{"id":"mw-reference-text-cite_note-1"},"errors":[{"key":"cite_error_references_missing_key","params":["123"]}]}'><a href="./Main_Page#cite_note-1" data-parsoid="{}"><span class="mw-reflink-text" data-parsoid="{}">[1]</span></a></sup></p>
 
-<div class="mw-references-wrap" typeof="mw:Extension/references" about="#mwt3" data-parsoid='{"dsr":[36,36,0,0]}' data-mw='{"name":"references","attrs":{},"autoGenerated":true}'><ol class="mw-references references" data-parsoid="{}"><li about="#cite_note-1" id="cite_note-1" data-parsoid="{}"><a href="./Main_Page#cite_ref-1" rel="mw:referencedBy" data-parsoid="{}"><span class="mw-linkback-text" data-parsoid="{}">↑ </span></a> <span id="mw-reference-text-cite_note-1" class="mw-reference-text" data-parsoid="{}">hi ho</span></li></ol></div>
+<div class="mw-references-wrap" typeof="mw:Extension/references" about="#mwt3" data-parsoid='{"dsr":[36,36,0,0]}' data-mw='{"name":"references","attrs":{},"autoGenerated":true}'><ol class="mw-references references" data-parsoid="{}"><li about="#cite_note-1" id="cite_note-1" data-parsoid="{}"><a href="./Main_Page#cite_ref-1" rel="mw:referencedBy" data-parsoid="{}"><span class="mw-linkback-text" data-parsoid="{}">↑</span></a> <span id="mw-reference-text-cite_note-1" class="mw-reference-text" data-parsoid="{}">hi ho</span></li></ol></div>
 EOT;
 
 		$siteConfig = $this->getSiteConfig( [] );
@@ -220,6 +231,16 @@ EOT;
 		$this->assertTrue( isset( $result[1]['templateInfo'] ), $desc );
 		$this->assertEquals( 'Template:1x', $result[1]['templateInfo']['name'], $desc );
 
+		$desc = "should lint content even when ref is the first node of a template";
+		$wt = "{{1x|<ref><s>x</ref> }}";
+		$result = $this->wtToLint( $wt );
+		$this->assertCount( 1, $result, $desc );
+		$this->assertEquals( 'missing-end-tag', $result[0]['type'], $desc );
+		$this->assertEquals( [ 0, 23, null, null ], $result[0]['dsr'], $desc );
+		$this->assertTrue( isset( $result[0]['params'] ), $desc );
+		$this->assertEquals( 's', $result[0]['params']['name'], $desc );
+		$this->assertEquals( 'Template:1x', $result[0]['templateInfo']['name'], $desc );
+
 		$desc = "should lint inside ref with redefinition";
 		$wt = "<ref name=\"test\">123</ref>\n" .
 			"<ref name=\"test\"><s>345</ref>\n" .
@@ -231,10 +252,75 @@ EOT;
 		$this->assertTrue( isset( $result[0]['params'] ), $desc );
 		$this->assertEquals( 's', $result[0]['params']['name'], $desc );
 
-		$desc = "should not get into a cycle trying to lint ref in ref";
-		$result = $this->wtToLint(
+		$desc = "should lint follow content once";
+		$wt = "<ref name='test'>hi ho</ref><ref follow='test'>[[File:Foobar.jpg|hi|ho]]</ref>";
+		$result = $this->wtToLint( $wt );
+		$this->assertCount( 1, $result, $desc );
+		$this->assertEquals( 'bogus-image-options', $result[0]['type'], $desc );
+
+		$desc = "should lint content once in face of follow";
+		$wt = "<ref name='test'>[[File:Foobar.jpg|hi|ho]]</ref><ref follow='test'>hi ho</ref>";
+		$result = $this->wtToLint( $wt );
+		$this->assertCount( 1, $result, $desc );
+		$this->assertEquals( 'bogus-image-options', $result[0]['type'], $desc );
+
+		$desc = "should preserve follow content when linting";
+		$wt = "<ref name='test'>1</ref><ref follow='test'>2</ref><ref follow='test'>3</ref>";
+		$body = $this->parseWT( $wt );
+		$li = DOMCompat::querySelector( $body, 'li' );
+		$this->assertEquals( '↑ 1 2 3', $li->textContent, $desc );
+
+		// T415220
+		$desc = "should lint parameter in extension tag in embedded doc";
+		$wt = '<references>\n' .
+			'<ref>\n' .
+			'<gallery>{{{1}}}</gallery>\n' .
+			'</ref>\n' .
+			'</references>\n';
+		$result = $this->wtToLint( $wt );
+		$this->assertCount( 1, $result, $desc );
+		$this->assertEquals( 'template-arg-in-extension-tag', $result[0]['type'], $desc );
+		$this->assertEquals( 'gallery', $result[0]['params']['ext-name'], $desc );
+		$this->assertEquals( '{{{1}}}', $result[0]['params']['details'][0], $desc );
+
+		// Should not get into a cycle trying to lint ref in ref
+		$this->wtToLint(
 			"{{#tag:ref|<ref name='y' />|name='x'}}{{#tag:ref|<ref name='x' />|name='y'}}<ref name='x' />"
 		);
 		$this->wtToLint( "<ref name='x' />{{#tag:ref|<ref name='x' />|name=x}}" );
+
+		// FIXME: MockDataAccess::preprocessWikitext is naive and doesn't do the nested expansion
+		// so we help it out to get the returned string we expect from the template
+		// $this->wtToLint( "{{1x|<ref name='test' />{{#tag:ref|<ref follow='test'>123</ref>|follow='test'}}}}" );
+		$this->wtToLint( "{{1x|<ref name='test' /><ref follow='test'><ref follow='test'>123</ref></ref>}}" );
+	}
+
+	/**
+	 * @covers \Cite\Parsoid\ReferenceListTagHandler::processAttributeEmbeddedDom
+	 */
+	public function testProcessAttributeEmbeddedDom() {
+		$extApi = $this->createNoOpMock( ParsoidExtensionApi::class );
+		$doc = ContentUtils::createAndLoadDocument( '' );
+		$elt = $doc->createElement( 'a' );
+		$df = $doc->createDocumentFragment();
+		$df->textContent = 'old';
+		$body = new DataMwBody;
+		$body->setHtml( $extApi, $df );
+		DOMDataUtils::setDataMw( $elt, new DataMw( [
+			'body' => $body,
+		] ) );
+
+		$refs = new ReferenceListTagHandler( new HashConfig() );
+		$refs->processAttributeEmbeddedDom(
+			$extApi,
+			$elt,
+			static function ( $df ) {
+				$df->textContent = 'new';
+				return true;
+			}
+		);
+
+		$actual = DOMDataUtils::getDataMw( $elt )->body->getHtml( $extApi );
+		$this->assertSame( 'new', $actual->textContent );
 	}
 }

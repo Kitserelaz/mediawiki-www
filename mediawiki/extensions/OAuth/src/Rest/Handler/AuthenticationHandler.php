@@ -6,8 +6,8 @@ use League\OAuth2\Server\Exception\OAuthServerException;
 use LogicException;
 use MediaWiki\Config\Config;
 use MediaWiki\Context\RequestContext;
-use MediaWiki\Extension\OAuth\AuthorizationProvider\AccessToken as AccessTokenProvider;
-use MediaWiki\Extension\OAuth\AuthorizationProvider\Grant\AuthorizationCodeAuthorization;
+use MediaWiki\Extension\OAuth\AuthorizationProvider\AccessTokenProvider;
+use MediaWiki\Extension\OAuth\AuthorizationProvider\Grant\AuthorizationCodeProvider;
 use MediaWiki\Extension\OAuth\Backend\Utils;
 use MediaWiki\Extension\OAuth\Response;
 use MediaWiki\MediaWikiServices;
@@ -44,7 +44,7 @@ abstract class AuthenticationHandler extends Handler {
 	 */
 	public static function factory() {
 		$centralId = Utils::getCentralIdFromLocalUser( RequestContext::getMain()->getUser() );
-		$user = $centralId ? Utils::getLocalUserFromCentralId( $centralId ) : User::newFromId( 0 );
+		$user = $centralId ? RequestContext::getMain()->getUser() : User::newFromId( 0 );
 		$config = MediaWikiServices::getInstance()->getConfigFactory()->makeConfig( 'mwoauth' );
 		// @phan-suppress-next-line PhanTypeInstantiateAbstractStatic
 		return new static( $user, $config );
@@ -78,8 +78,8 @@ abstract class AuthenticationHandler extends Handler {
 	}
 
 	/**
+	 * @return AccessTokenProvider|AuthorizationCodeProvider
 	 * @throws HttpException
-	 * @return AccessTokenProvider|AuthorizationCodeAuthorization
 	 */
 	protected function getAuthorizationProvider() {
 		$grantType = $this->getGrantType();
@@ -89,7 +89,7 @@ abstract class AuthenticationHandler extends Handler {
 			throw new LogicException( 'Could not find grant class factory' );
 		}
 
-		/** @var AccessTokenProvider|AuthorizationCodeAuthorization $authProvider */
+		/** @var AccessTokenProvider|AuthorizationCodeProvider $authProvider */
 		$authProvider = $class::factory();
 		'@phan-var AccessTokenProvider|AuthorizationCodeAuthorization $authProvider';
 		return $authProvider;
@@ -197,11 +197,13 @@ abstract class AuthenticationHandler extends Handler {
 		$msg = isset( $map[$type] )
 			? wfMessage( $map[$type] )
 			: wfMessage( 'mwoauth-oauth2-error-server-error', $exception->getMessage() );
-		if ( $exception->getHint() ) {
-			return wfMessage( 'mwoauth-oauth2-error-serverexception-withhint', $msg, $exception->getHint() );
-		} else {
-			return $msg;
+
+		$hint = $exception->getHint();
+		if ( $hint !== null ) {
+			return wfMessage( 'mwoauth-oauth2-error-serverexception-withhint', $msg, $hint );
 		}
+
+		return $msg;
 	}
 
 	/** @inheritDoc */

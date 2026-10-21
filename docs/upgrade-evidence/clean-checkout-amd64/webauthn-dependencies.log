@@ -1,0 +1,561 @@
+
+Deprecated: Safe\mssql_connect(): Implicitly marking parameter $servername as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/deprecated/mssql.php on line 100
+
+Deprecated: Safe\mssql_connect(): Implicitly marking parameter $username as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/deprecated/mssql.php on line 100
+
+Deprecated: Safe\mssql_connect(): Implicitly marking parameter $password as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/deprecated/mssql.php on line 100
+
+Deprecated: Safe\mssql_pconnect(): Implicitly marking parameter $servername as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/deprecated/mssql.php on line 333
+
+Deprecated: Safe\mssql_pconnect(): Implicitly marking parameter $username as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/deprecated/mssql.php on line 333
+
+Deprecated: Safe\mssql_pconnect(): Implicitly marking parameter $password as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/deprecated/mssql.php on line 333
+
+Deprecated: Safe\preg_replace(): Implicitly marking parameter $count as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/lib/special_cases.php on line 155
+
+Deprecated: Safe\bzwrite(): Implicitly marking parameter $length as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/bzip2.php on line 84
+
+Deprecated: Safe\com_print_typeinfo(): Implicitly marking parameter $dispinterface as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/com.php on line 120
+
+Deprecated: Safe\curl_getinfo(): Implicitly marking parameter $opt as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/curl.php on line 515
+
+Deprecated: Safe\curl_init(): Implicitly marking parameter $url as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/curl.php on line 545
+
+Deprecated: Safe\date_sunrise(): Implicitly marking parameter $latitude as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/datetime.php on line 236
+
+Deprecated: Safe\date_sunrise(): Implicitly marking parameter $longitude as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/datetime.php on line 236
+
+Deprecated: Safe\date_sunrise(): Implicitly marking parameter $zenith as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/datetime.php on line 236
+
+Deprecated: Safe\date_sunset(): Implicitly marking parameter $latitude as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/datetime.php on line 339
+
+Deprecated: Safe\date_sunset(): Implicitly marking parameter $longitude as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/datetime.php on line 339
+
+Deprecated: Safe\date_sunset(): Implicitly marking parameter $zenith as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/datetime.php on line 339
+
+Deprecated: Safe\date(): Implicitly marking parameter $timestamp as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/datetime.php on line 377
+
+Deprecated: Safe\gmdate(): Implicitly marking parameter $timestamp as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/datetime.php on line 408
+
+Deprecated: Safe\mktime(): Implicitly marking parameter $hour as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/datetime.php on line 464
+
+Deprecated: Safe\mktime(): Implicitly marking parameter $minute as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/datetime.php on line 464
+
+Deprecated: Safe\mktime(): Implicitly marking parameter $second as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/datetime.php on line 464
+
+Deprecated: Safe\mktime(): Implicitly marking parameter $month as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/datetime.php on line 464
+
+Deprecated: Safe\mktime(): Implicitly marking parameter $day as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/datetime.php on line 464
+
+Deprecated: Safe\mktime(): Implicitly marking parameter $year as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/datetime.php on line 464
+
+Deprecated: Safe\strtotime(): Implicitly marking parameter $now as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/datetime.php on line 587
+
+Deprecated: Safe\eio_busy(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/eio.php on line 22
+
+Deprecated: Safe\eio_chmod(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/eio.php on line 74
+
+Deprecated: Safe\eio_chown(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/eio.php on line 126
+
+Deprecated: Safe\eio_close(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/eio.php on line 175
+
+Deprecated: Safe\eio_dup2(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/eio.php on line 283
+
+Deprecated: Safe\eio_fallocate(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/eio.php on line 355
+
+Deprecated: Safe\eio_fchmod(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/eio.php on line 405
+
+Deprecated: Safe\eio_fdatasync(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/eio.php on line 453
+
+Deprecated: Safe\eio_fsync(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/eio.php on line 607
+
+Deprecated: Safe\eio_ftruncate(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/eio.php on line 658
+
+Deprecated: Safe\eio_futime(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/eio.php on line 709
+
+Deprecated: Safe\eio_grp(): Implicitly marking parameter $data as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/eio.php on line 753
+
+Deprecated: Safe\eio_mkdir(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/eio.php on line 852
+
+Deprecated: Safe\eio_mknod(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/eio.php on line 917
+
+Deprecated: Safe\eio_nop(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/eio.php on line 965
+
+Deprecated: Safe\eio_readahead(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/eio.php on line 1016
+
+Deprecated: Safe\eio_readdir(): Implicitly marking parameter $data as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/eio.php on line 1319
+
+Deprecated: Safe\eio_readlink(): Implicitly marking parameter $data as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/eio.php on line 1367
+
+Deprecated: Safe\eio_rename(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/eio.php on line 1416
+
+Deprecated: Safe\eio_rmdir(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/eio.php on line 1464
+
+Deprecated: Safe\eio_seek(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/eio.php on line 1520
+
+Deprecated: Safe\eio_sendfile(): Implicitly marking parameter $pri as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/eio.php on line 1572
+
+Deprecated: Safe\eio_sendfile(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/eio.php on line 1572
+
+Deprecated: Safe\eio_sendfile(): Implicitly marking parameter $data as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/eio.php on line 1572
+
+Deprecated: Safe\eio_symlink(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/eio.php on line 1734
+
+Deprecated: Safe\eio_sync_file_range(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/eio.php on line 1793
+
+Deprecated: Safe\eio_sync(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/eio.php on line 1814
+
+Deprecated: Safe\eio_syncfs(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/eio.php on line 1862
+
+Deprecated: Safe\eio_truncate(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/eio.php on line 1912
+
+Deprecated: Safe\eio_unlink(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/eio.php on line 1960
+
+Deprecated: Safe\eio_utime(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/eio.php on line 2010
+
+Deprecated: Safe\eio_write(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/eio.php on line 2063
+
+Deprecated: Safe\error_log(): Implicitly marking parameter $destination as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/errorfunc.php on line 69
+
+Deprecated: Safe\error_log(): Implicitly marking parameter $extra_headers as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/errorfunc.php on line 69
+
+Deprecated: Safe\system(): Implicitly marking parameter $return_var as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/exec.php on line 151
+
+Deprecated: Safe\file_get_contents(): Implicitly marking parameter $maxlen as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/filesystem.php on line 240
+
+Deprecated: Safe\fwrite(): Implicitly marking parameter $length as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/filesystem.php on line 925
+
+Deprecated: Safe\touch(): Implicitly marking parameter $time as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/filesystem.php on line 1451
+
+Deprecated: Safe\touch(): Implicitly marking parameter $atime as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/filesystem.php on line 1451
+
+Deprecated: Safe\ftp_alloc(): Implicitly marking parameter $result as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ftp.php on line 18
+
+Deprecated: Safe\gnupg_addsignkey(): Implicitly marking parameter $passphrase as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/gnupg.php on line 56
+
+Deprecated: Safe\ibase_add_user(): Implicitly marking parameter $first_name as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ibase.php on line 37
+
+Deprecated: Safe\ibase_add_user(): Implicitly marking parameter $middle_name as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ibase.php on line 37
+
+Deprecated: Safe\ibase_add_user(): Implicitly marking parameter $last_name as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ibase.php on line 37
+
+Deprecated: Safe\ibase_connect(): Implicitly marking parameter $database as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ibase.php on line 253
+
+Deprecated: Safe\ibase_connect(): Implicitly marking parameter $username as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ibase.php on line 253
+
+Deprecated: Safe\ibase_connect(): Implicitly marking parameter $password as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ibase.php on line 253
+
+Deprecated: Safe\ibase_connect(): Implicitly marking parameter $charset as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ibase.php on line 253
+
+Deprecated: Safe\ibase_connect(): Implicitly marking parameter $buffers as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ibase.php on line 253
+
+Deprecated: Safe\ibase_connect(): Implicitly marking parameter $dialect as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ibase.php on line 253
+
+Deprecated: Safe\ibase_connect(): Implicitly marking parameter $role as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ibase.php on line 253
+
+Deprecated: Safe\ibase_connect(): Implicitly marking parameter $sync as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ibase.php on line 253
+
+Deprecated: Safe\ibase_modify_user(): Implicitly marking parameter $first_name as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ibase.php on line 406
+
+Deprecated: Safe\ibase_modify_user(): Implicitly marking parameter $middle_name as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ibase.php on line 406
+
+Deprecated: Safe\ibase_modify_user(): Implicitly marking parameter $last_name as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ibase.php on line 406
+
+Deprecated: Safe\ibase_pconnect(): Implicitly marking parameter $database as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ibase.php on line 483
+
+Deprecated: Safe\ibase_pconnect(): Implicitly marking parameter $username as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ibase.php on line 483
+
+Deprecated: Safe\ibase_pconnect(): Implicitly marking parameter $password as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ibase.php on line 483
+
+Deprecated: Safe\ibase_pconnect(): Implicitly marking parameter $charset as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ibase.php on line 483
+
+Deprecated: Safe\ibase_pconnect(): Implicitly marking parameter $buffers as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ibase.php on line 483
+
+Deprecated: Safe\ibase_pconnect(): Implicitly marking parameter $dialect as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ibase.php on line 483
+
+Deprecated: Safe\ibase_pconnect(): Implicitly marking parameter $role as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ibase.php on line 483
+
+Deprecated: Safe\ibase_pconnect(): Implicitly marking parameter $sync as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ibase.php on line 483
+
+Deprecated: Safe\db2_autocommit(): Implicitly marking parameter $value as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ibmDb2.php on line 49
+
+Deprecated: Safe\db2_bind_param(): Implicitly marking parameter $parameter_type as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ibmDb2.php on line 99
+
+Deprecated: Safe\db2_execute(): Implicitly marking parameter $parameters as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ibmDb2.php on line 307
+
+Deprecated: Safe\getimagesize(): Implicitly marking parameter $imageinfo as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/image.php on line 69
+
+Deprecated: Safe\image2wbmp(): Implicitly marking parameter $foreground as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/image.php on line 94
+
+Deprecated: Safe\imageaffine(): Implicitly marking parameter $clip as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/image.php on line 121
+
+Deprecated: Safe\imagefilter(): Implicitly marking parameter $arg1 as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/image.php on line 1370
+
+Deprecated: Safe\imagefilter(): Implicitly marking parameter $arg2 as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/image.php on line 1370
+
+Deprecated: Safe\imagefilter(): Implicitly marking parameter $arg3 as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/image.php on line 1370
+
+Deprecated: Safe\imagefilter(): Implicitly marking parameter $arg4 as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/image.php on line 1370
+
+Deprecated: Safe\imagewbmp(): Implicitly marking parameter $foreground as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/image.php on line 2554
+
+Deprecated: Safe\imagexbm(): Implicitly marking parameter $foreground as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/image.php on line 2609
+
+Deprecated: Safe\imap_append(): Implicitly marking parameter $options as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/imap.php on line 25
+
+Deprecated: Safe\imap_append(): Implicitly marking parameter $internal_date as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/imap.php on line 25
+
+Deprecated: Safe\imap_headerinfo(): Implicitly marking parameter $defaulthost as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/imap.php on line 570
+
+Deprecated: Safe\imap_mail(): Implicitly marking parameter $additional_headers as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/imap.php on line 787
+
+Deprecated: Safe\imap_mail(): Implicitly marking parameter $cc as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/imap.php on line 787
+
+Deprecated: Safe\imap_mail(): Implicitly marking parameter $bcc as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/imap.php on line 787
+
+Deprecated: Safe\imap_mail(): Implicitly marking parameter $rpath as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/imap.php on line 787
+
+Deprecated: Safe\imap_sort(): Implicitly marking parameter $search_criteria as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/imap.php on line 1328
+
+Deprecated: Safe\imap_sort(): Implicitly marking parameter $charset as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/imap.php on line 1328
+
+Deprecated: Safe\getopt(): Implicitly marking parameter $longopts as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/info.php on line 195
+
+Deprecated: Safe\ingres_connect(): Implicitly marking parameter $database as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ingres-ii.php on line 335
+
+Deprecated: Safe\ingres_connect(): Implicitly marking parameter $username as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ingres-ii.php on line 335
+
+Deprecated: Safe\ingres_connect(): Implicitly marking parameter $password as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ingres-ii.php on line 335
+
+Deprecated: Safe\ingres_connect(): Implicitly marking parameter $options as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ingres-ii.php on line 335
+
+Deprecated: Safe\ingres_execute(): Implicitly marking parameter $params as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ingres-ii.php on line 367
+
+Deprecated: Safe\ingres_execute(): Implicitly marking parameter $types as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ingres-ii.php on line 367
+
+Deprecated: Safe\ingres_pconnect(): Implicitly marking parameter $database as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ingres-ii.php on line 506
+
+Deprecated: Safe\ingres_pconnect(): Implicitly marking parameter $username as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ingres-ii.php on line 506
+
+Deprecated: Safe\ingres_pconnect(): Implicitly marking parameter $password as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ingres-ii.php on line 506
+
+Deprecated: Safe\ingres_pconnect(): Implicitly marking parameter $options as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ingres-ii.php on line 506
+
+Deprecated: Safe\ldap_add_ext(): Implicitly marking parameter $serverctrls as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ldap.php on line 18
+
+Deprecated: Safe\ldap_add(): Implicitly marking parameter $serverctrls as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ldap.php on line 48
+
+Deprecated: Safe\ldap_bind_ext(): Implicitly marking parameter $serverctrls as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ldap.php on line 69
+
+Deprecated: Safe\ldap_delete_ext(): Implicitly marking parameter $serverctrls as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ldap.php on line 173
+
+Deprecated: Safe\ldap_delete(): Implicitly marking parameter $serverctrls as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ldap.php on line 193
+
+Deprecated: Safe\ldap_exop_passwd(): Implicitly marking parameter $serverctrls as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ldap.php on line 218
+
+Deprecated: Safe\ldap_exop(): Implicitly marking parameter $reqdata as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ldap.php on line 266
+
+Deprecated: Safe\ldap_list(): Implicitly marking parameter $attributes as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ldap.php on line 801
+
+Deprecated: Safe\ldap_list(): Implicitly marking parameter $serverctrls as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ldap.php on line 801
+
+Deprecated: Safe\ldap_mod_add_ext(): Implicitly marking parameter $serverctrls as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ldap.php on line 837
+
+Deprecated: Safe\ldap_mod_add(): Implicitly marking parameter $serverctrls as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ldap.php on line 859
+
+Deprecated: Safe\ldap_mod_del_ext(): Implicitly marking parameter $serverctrls as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ldap.php on line 880
+
+Deprecated: Safe\ldap_mod_del(): Implicitly marking parameter $serverctrls as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ldap.php on line 903
+
+Deprecated: Safe\ldap_mod_replace_ext(): Implicitly marking parameter $serverctrls as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ldap.php on line 924
+
+Deprecated: Safe\ldap_mod_replace(): Implicitly marking parameter $serverctrls as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ldap.php on line 946
+
+Deprecated: Safe\ldap_modify_batch(): Implicitly marking parameter $serverctrls as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ldap.php on line 1041
+
+Deprecated: Safe\ldap_read(): Implicitly marking parameter $attributes as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ldap.php on line 1196
+
+Deprecated: Safe\ldap_read(): Implicitly marking parameter $serverctrls as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ldap.php on line 1196
+
+Deprecated: Safe\ldap_rename_ext(): Implicitly marking parameter $serverctrls as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ldap.php on line 1234
+
+Deprecated: Safe\ldap_rename(): Implicitly marking parameter $serverctrls as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ldap.php on line 1258
+
+Deprecated: Safe\ldap_sasl_bind(): Implicitly marking parameter $binddn as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ldap.php on line 1282
+
+Deprecated: Safe\ldap_sasl_bind(): Implicitly marking parameter $password as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ldap.php on line 1282
+
+Deprecated: Safe\ldap_sasl_bind(): Implicitly marking parameter $sasl_mech as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ldap.php on line 1282
+
+Deprecated: Safe\ldap_sasl_bind(): Implicitly marking parameter $sasl_realm as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ldap.php on line 1282
+
+Deprecated: Safe\ldap_sasl_bind(): Implicitly marking parameter $sasl_authc_id as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ldap.php on line 1282
+
+Deprecated: Safe\ldap_sasl_bind(): Implicitly marking parameter $sasl_authz_id as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ldap.php on line 1282
+
+Deprecated: Safe\ldap_sasl_bind(): Implicitly marking parameter $props as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ldap.php on line 1282
+
+Deprecated: Safe\ldap_search(): Implicitly marking parameter $attributes as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ldap.php on line 1378
+
+Deprecated: Safe\ldap_search(): Implicitly marking parameter $serverctrls as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ldap.php on line 1378
+
+Deprecated: Safe\mailparse_msg_extract_part_file(): Implicitly marking parameter $callbackfunc as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/mailparse.php on line 29
+
+Deprecated: Safe\mb_chr(): Implicitly marking parameter $encoding as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/mbstring.php on line 16
+
+Deprecated: Safe\mb_ereg_search_init(): Implicitly marking parameter $pattern as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/mbstring.php on line 193
+
+Deprecated: Safe\mb_ereg_search_regs(): Implicitly marking parameter $pattern as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/mbstring.php on line 218
+
+Deprecated: Safe\mb_http_output(): Implicitly marking parameter $encoding as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/mbstring.php on line 292
+
+Deprecated: Safe\mb_internal_encoding(): Implicitly marking parameter $encoding as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/mbstring.php on line 323
+
+Deprecated: Safe\mb_ord(): Implicitly marking parameter $encoding as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/mbstring.php on line 347
+
+Deprecated: Safe\mb_regex_encoding(): Implicitly marking parameter $encoding as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/mbstring.php on line 395
+
+Deprecated: Safe\mb_send_mail(): Implicitly marking parameter $additional_parameter as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/mbstring.php on line 467
+
+Deprecated: Safe\mb_str_split(): Implicitly marking parameter $encoding as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/mbstring.php on line 514
+
+Deprecated: Safe\sapi_windows_vt100_support(): Implicitly marking parameter $enable as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/misc.php on line 342
+
+Deprecated: Safe\msql_connect(): Implicitly marking parameter $hostname as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/msql.php on line 84
+
+Deprecated: Safe\msql_pconnect(): Implicitly marking parameter $hostname as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/msql.php on line 372
+
+Deprecated: Safe\mysql_connect(): Implicitly marking parameter $server as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/mysql.php on line 76
+
+Deprecated: Safe\mysql_connect(): Implicitly marking parameter $username as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/mysql.php on line 76
+
+Deprecated: Safe\mysql_connect(): Implicitly marking parameter $password as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/mysql.php on line 76
+
+Deprecated: Safe\fsockopen(): Implicitly marking parameter $timeout as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/network.php on line 307
+
+Deprecated: Safe\oci_connect(): Implicitly marking parameter $connection_string as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/oci8.php on line 492
+
+Deprecated: Safe\oci_connect(): Implicitly marking parameter $character_set as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/oci8.php on line 492
+
+Deprecated: Safe\oci_connect(): Implicitly marking parameter $session_mode as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/oci8.php on line 492
+
+Deprecated: Safe\oci_new_collection(): Implicitly marking parameter $schema as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/oci8.php on line 915
+
+Deprecated: Safe\oci_new_connect(): Implicitly marking parameter $connection_string as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/oci8.php on line 1014
+
+Deprecated: Safe\oci_new_connect(): Implicitly marking parameter $character_set as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/oci8.php on line 1014
+
+Deprecated: Safe\oci_new_connect(): Implicitly marking parameter $session_mode as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/oci8.php on line 1014
+
+Deprecated: Safe\oci_pconnect(): Implicitly marking parameter $connection_string as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/oci8.php on line 1235
+
+Deprecated: Safe\oci_pconnect(): Implicitly marking parameter $character_set as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/oci8.php on line 1235
+
+Deprecated: Safe\oci_pconnect(): Implicitly marking parameter $session_mode as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/oci8.php on line 1235
+
+Deprecated: Safe\openssl_csr_new(): Implicitly marking parameter $configargs as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/openssl.php on line 212
+
+Deprecated: Safe\openssl_csr_new(): Implicitly marking parameter $extraattribs as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/openssl.php on line 212
+
+Deprecated: Safe\openssl_csr_sign(): Implicitly marking parameter $configargs as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/openssl.php on line 253
+
+Deprecated: Safe\openssl_open(): Implicitly marking parameter $iv as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/openssl.php on line 363
+
+Deprecated: Safe\openssl_pkcs12_export_to_file(): Implicitly marking parameter $args as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/openssl.php on line 436
+
+Deprecated: Safe\openssl_pkcs12_export(): Implicitly marking parameter $args as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/openssl.php on line 484
+
+Deprecated: Safe\openssl_pkcs7_sign(): Implicitly marking parameter $extracerts as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/openssl.php on line 621
+
+Deprecated: Safe\openssl_pkey_export_to_file(): Implicitly marking parameter $passphrase as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/openssl.php on line 651
+
+Deprecated: Safe\openssl_pkey_export_to_file(): Implicitly marking parameter $configargs as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/openssl.php on line 651
+
+Deprecated: Safe\openssl_pkey_export(): Implicitly marking parameter $passphrase as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/openssl.php on line 682
+
+Deprecated: Safe\openssl_pkey_export(): Implicitly marking parameter $configargs as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/openssl.php on line 682
+
+Deprecated: Safe\openssl_pkey_new(): Implicitly marking parameter $configargs as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/openssl.php on line 771
+
+Deprecated: Safe\openssl_seal(): Implicitly marking parameter $iv as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/openssl.php on line 956
+
+Deprecated: Safe\password_hash(): Implicitly marking parameter $options as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/password.php on line 114
+
+Deprecated: Safe\pcntl_exec(): Implicitly marking parameter $args as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/pcntl.php on line 23
+
+Deprecated: Safe\pcntl_exec(): Implicitly marking parameter $envs as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/pcntl.php on line 23
+
+Deprecated: Safe\pcntl_getpriority(): Implicitly marking parameter $pid as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/pcntl.php on line 53
+
+Deprecated: Safe\pcntl_setpriority(): Implicitly marking parameter $pid as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/pcntl.php on line 86
+
+Deprecated: Safe\preg_match_all(): Implicitly marking parameter $matches as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/pcre.php on line 350
+
+Deprecated: Safe\preg_match(): Implicitly marking parameter $matches as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/pcre.php on line 587
+
+Deprecated: Safe\pg_connect(): Implicitly marking parameter $connect_type as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/pgsql.php on line 133
+
+Deprecated: Safe\pg_copy_from(): Implicitly marking parameter $delimiter as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/pgsql.php on line 216
+
+Deprecated: Safe\pg_copy_from(): Implicitly marking parameter $null_as as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/pgsql.php on line 216
+
+Deprecated: Safe\pg_copy_to(): Implicitly marking parameter $delimiter as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/pgsql.php on line 248
+
+Deprecated: Safe\pg_copy_to(): Implicitly marking parameter $null_as as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/pgsql.php on line 248
+
+Deprecated: Safe\pg_execute(): Implicitly marking parameter $stmtname as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/pgsql.php on line 406
+
+Deprecated: Safe\pg_execute(): Implicitly marking parameter $params as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/pgsql.php on line 406
+
+Deprecated: Safe\pg_lo_export(): Implicitly marking parameter $oid as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/pgsql.php on line 782
+
+Deprecated: Safe\pg_lo_export(): Implicitly marking parameter $pathname as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/pgsql.php on line 782
+
+Deprecated: Safe\pg_lo_import(): Implicitly marking parameter $pathname as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/pgsql.php on line 823
+
+Deprecated: Safe\pg_lo_write(): Implicitly marking parameter $len as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/pgsql.php on line 1012
+
+Deprecated: Safe\pg_parameter_status(): Implicitly marking parameter $param_name as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/pgsql.php on line 1116
+
+Deprecated: Safe\pg_pconnect(): Implicitly marking parameter $connect_type as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/pgsql.php on line 1177
+
+Deprecated: Safe\pg_prepare(): Implicitly marking parameter $stmtname as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/pgsql.php on line 1281
+
+Deprecated: Safe\pg_prepare(): Implicitly marking parameter $query as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/pgsql.php on line 1281
+
+Deprecated: Safe\pg_put_line(): Implicitly marking parameter $data as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/pgsql.php on line 1322
+
+Deprecated: Safe\pg_query_params(): Implicitly marking parameter $query as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/pgsql.php on line 1388
+
+Deprecated: Safe\pg_query_params(): Implicitly marking parameter $params as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/pgsql.php on line 1388
+
+Deprecated: Safe\pg_query(): Implicitly marking parameter $query as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/pgsql.php on line 1446
+
+Deprecated: Safe\ps_get_parameter(): Implicitly marking parameter $modifier as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ps.php on line 781
+
+Deprecated: Safe\ps_open_file(): Implicitly marking parameter $filename as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ps.php on line 928
+
+Deprecated: Safe\pspell_config_create(): Implicitly marking parameter $spelling as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/pspell.php on line 93
+
+Deprecated: Safe\pspell_config_create(): Implicitly marking parameter $jargon as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/pspell.php on line 93
+
+Deprecated: Safe\pspell_config_create(): Implicitly marking parameter $encoding as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/pspell.php on line 93
+
+Deprecated: Safe\pspell_new(): Implicitly marking parameter $spelling as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/pspell.php on line 395
+
+Deprecated: Safe\pspell_new(): Implicitly marking parameter $jargon as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/pspell.php on line 395
+
+Deprecated: Safe\pspell_new(): Implicitly marking parameter $encoding as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/pspell.php on line 395
+
+Deprecated: Safe\readline_read_history(): Implicitly marking parameter $filename as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/readline.php on line 125
+
+Deprecated: Safe\readline_write_history(): Implicitly marking parameter $filename as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/readline.php on line 146
+
+Deprecated: Safe\sodium_crypto_pwhash(): Implicitly marking parameter $alg as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/sodium.php on line 46
+
+Deprecated: Safe\spl_autoload_register(): Implicitly marking parameter $autoload_function as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/spl.php on line 102
+
+Deprecated: Safe\sqlsrv_get_field(): Implicitly marking parameter $getAsType as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/sqlsrv.php on line 254
+
+Deprecated: Safe\sqlsrv_prepare(): Implicitly marking parameter $params as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/sqlsrv.php on line 360
+
+Deprecated: Safe\sqlsrv_prepare(): Implicitly marking parameter $options as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/sqlsrv.php on line 360
+
+Deprecated: Safe\sqlsrv_query(): Implicitly marking parameter $params as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/sqlsrv.php on line 397
+
+Deprecated: Safe\sqlsrv_query(): Implicitly marking parameter $options as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/sqlsrv.php on line 397
+
+Deprecated: Safe\ssh2_auth_hostbased_file(): Implicitly marking parameter $passphrase as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ssh2.php on line 42
+
+Deprecated: Safe\ssh2_auth_hostbased_file(): Implicitly marking parameter $local_username as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ssh2.php on line 42
+
+Deprecated: Safe\ssh2_auth_pubkey_file(): Implicitly marking parameter $passphrase as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ssh2.php on line 94
+
+Deprecated: Safe\ssh2_connect(): Implicitly marking parameter $methods as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ssh2.php on line 307
+
+Deprecated: Safe\ssh2_connect(): Implicitly marking parameter $callbacks as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ssh2.php on line 307
+
+Deprecated: Safe\ssh2_exec(): Implicitly marking parameter $pty as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ssh2.php on line 360
+
+Deprecated: Safe\ssh2_exec(): Implicitly marking parameter $env as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ssh2.php on line 360
+
+Deprecated: Safe\ssh2_publickey_add(): Implicitly marking parameter $attributes as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/ssh2.php on line 398
+
+Deprecated: Safe\stream_filter_append(): Implicitly marking parameter $read_write as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/stream.php on line 86
+
+Deprecated: Safe\stream_filter_prepend(): Implicitly marking parameter $read_write as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/stream.php on line 135
+
+Deprecated: Safe\stream_socket_accept(): Implicitly marking parameter $timeout as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/stream.php on line 334
+
+Deprecated: Safe\stream_socket_client(): Implicitly marking parameter $errno as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/stream.php on line 400
+
+Deprecated: Safe\stream_socket_client(): Implicitly marking parameter $errstr as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/stream.php on line 400
+
+Deprecated: Safe\stream_socket_client(): Implicitly marking parameter $timeout as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/stream.php on line 400
+
+Deprecated: Safe\stream_socket_server(): Implicitly marking parameter $errno as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/stream.php on line 495
+
+Deprecated: Safe\stream_socket_server(): Implicitly marking parameter $errstr as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/stream.php on line 495
+
+Deprecated: Safe\substr(): Implicitly marking parameter $length as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/strings.php on line 532
+
+Deprecated: Safe\swoole_async_write(): Implicitly marking parameter $offset as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/swoole.php on line 17
+
+Deprecated: Safe\swoole_async_write(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/swoole.php on line 17
+
+Deprecated: Safe\swoole_async_writefile(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/swoole.php on line 43
+
+Deprecated: Safe\odbc_columns(): Implicitly marking parameter $catalog as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/uodbc.php on line 240
+
+Deprecated: Safe\odbc_columns(): Implicitly marking parameter $schema as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/uodbc.php on line 240
+
+Deprecated: Safe\odbc_columns(): Implicitly marking parameter $table_name as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/uodbc.php on line 240
+
+Deprecated: Safe\odbc_columns(): Implicitly marking parameter $column_name as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/uodbc.php on line 240
+
+Deprecated: Safe\odbc_exec(): Implicitly marking parameter $flags as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/uodbc.php on line 317
+
+Deprecated: Safe\odbc_execute(): Implicitly marking parameter $parameters_array as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/uodbc.php on line 348
+
+Deprecated: Safe\odbc_fetch_into(): Implicitly marking parameter $rownumber as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/uodbc.php on line 376
+
+Deprecated: Safe\odbc_gettypeinfo(): Implicitly marking parameter $data_type as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/uodbc.php on line 576
+
+Deprecated: Safe\odbc_result_all(): Implicitly marking parameter $format as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/uodbc.php on line 690
+
+Deprecated: Safe\odbc_tables(): Implicitly marking parameter $catalog as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/uodbc.php on line 991
+
+Deprecated: Safe\odbc_tables(): Implicitly marking parameter $schema as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/uodbc.php on line 991
+
+Deprecated: Safe\odbc_tables(): Implicitly marking parameter $name as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/uodbc.php on line 991
+
+Deprecated: Safe\odbc_tables(): Implicitly marking parameter $types as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/uodbc.php on line 991
+
+Deprecated: Safe\xdiff_string_patch(): Implicitly marking parameter $flags as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/xdiff.php on line 222
+
+Deprecated: Safe\xml_parser_create_ns(): Implicitly marking parameter $encoding as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/xml.php on line 25
+
+Deprecated: Safe\xml_parser_create(): Implicitly marking parameter $encoding as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/xml.php on line 62
+
+Deprecated: Safe\yaml_parse_file(): Implicitly marking parameter $callbacks as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/yaml.php on line 26
+
+Deprecated: Safe\yaml_parse_url(): Implicitly marking parameter $callbacks as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/yaml.php on line 59
+
+Deprecated: Safe\yaml_parse(): Implicitly marking parameter $callbacks as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/yaml.php on line 89
+
+Deprecated: Safe\yaz_wait(): Implicitly marking parameter $options as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/yaz.php on line 430
+
+Deprecated: Safe\zip_entry_open(): Implicitly marking parameter $mode as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/zip.php on line 38
+
+Deprecated: Safe\deflate_init(): Implicitly marking parameter $options as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/zlib.php on line 118
+
+Deprecated: Safe\gzdecode(): Implicitly marking parameter $length as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/zlib.php on line 186
+
+Deprecated: Safe\gzgets(): Implicitly marking parameter $length as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/zlib.php on line 279
+
+Deprecated: Safe\gzgetss(): Implicitly marking parameter $allowable_tags as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/zlib.php on line 308
+
+Deprecated: Safe\inflate_init(): Implicitly marking parameter $options as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/zlib.php on line 553
+
+Deprecated: Safe\zlib_decode(): Implicitly marking parameter $max_decoded_len as nullable is deprecated, the explicit nullable type must be used instead in /var/www/mediawiki/extensions/WebAuthn/vendor/thecodingmachine/safe/generated/zlib.php on line 599
+WebAuthn dependencies autoloaded successfully.

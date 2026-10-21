@@ -1,0 +1,9 @@
+{
+    "@metadata": {
+        "authors": [
+            "Ostrzyciel"
+        ]
+    },
+    "namespacePreload": "The name of the extension",
+    "namespacePreload-desc": "{{desc|name=NamespacePreload|url=}}"
+}

@@ -1,0 +1,43 @@
+{
+	"@metadata": {
+		"authors": [ "thomas-topway-it" ]
+	},
+
+	"pageproperties-extension-desc": "A label message",
+	"pageproperties-label": "A label message",
+	"pageproperties": "A label message",
+	"pageproperties-navigation": "A label message",
+
+	"pageproperties-tracking-category": "A label message",
+	"pageproperties-tracking-category-desc": "A label message",
+
+	"apihelp-pageproperties-check-latest-version-summary": "A label message",
+
+	"right-pageproperties-caneditpageproperties": "A label message",
+	"action-pageproperties-caneditpageproperties": "A label message",
+
+	"group-pageproperties-admin": "A label message",
+	"group-pageproperties-editor": "A label message",
+
+	"group-pageproperties-admin-member": "A label message",
+	"group-pageproperties-editor-member": "A label message",
+
+	"pageproperties-specialpage-notitle": "A label message",
+	"pageproperties-specialpage-no-valid-title": "A label message",
+	"pageproperties-jsmodule-pageproperties-outdated-version": "A label message",
+
+	"pageproperties-return": "A label message",
+	"pageproperties-form-section-main": "A label message",
+	"pageproperties-form-section-seo": "A label message",
+	"pageproperties-form-section-main-label": "A label message",
+	"pageproperties-form-displaytitle-label": "A label message",
+	"pageproperties_form-displaytitle-option-override": "A label message",
+	"pageproperties_form-displaytitle-option-default": "A label message",
+	"pageproperties-form-model-label": "A label message",
+	"pageproperties-form-section-seo-label": "A label message",
+	"pageproperties-form-meta_description-label": "A label message",
+	"pageproperties_dynamictable_addfield": "A label message",
+	"pageproperties-form-meta_robots_noindex_nofollow-label": "A label message",
+	"pageproperties-form-seo_subpages-label": "A label message",
+	"pageproperties-form-seo_entire_wiki-label": "apply to entire wiki (set values can be overwritten from other pages)"
+}

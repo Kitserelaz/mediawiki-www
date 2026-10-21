@@ -1,0 +1,12 @@
+# syntax=docker-registry.wikimedia.org/repos/releng/blubber/buildkit:v1.5.0
+version: v4
+base: docker-registry.wikimedia.org/nodejs18-devel:0.0.1
+variants:
+  test:
+    base: docker-registry.wikimedia.org/nodejs18-devel:0.0.1
+    runs:
+      insecurely: true
+    copies: [local]
+    node:
+      requirements: [package.json, package-lock.json]
+    entrypoint: [npm, test]

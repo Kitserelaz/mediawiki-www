@@ -7,12 +7,14 @@ use MediaWiki\Extension\Math\MathConfig;
 use MediaWiki\Extension\Math\MathFormatter;
 use MediaWiki\Extension\Math\MathWikibaseConnector;
 use MediaWiki\Extension\Math\Render\RendererFactory;
+use MediaWiki\Extension\Math\WikiTexVC\MMLnodes\VisitorFactory;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Registration\ExtensionRegistry;
 use Wikibase\Client\WikibaseClient;
 use Wikibase\Lib\Formatters\SnakFormatter;
 
+/** @phpcs-require-sorted-array */
 return [
 	'Math.CheckerFactory' => static function ( MediaWikiServices $services ): InputCheckFactory {
 		return new InputCheckFactory(
@@ -30,6 +32,9 @@ return [
 			new ServiceOptions( MathConfig::CONSTRUCTOR_OPTIONS, $services->getMainConfig() ),
 			ExtensionRegistry::getInstance()
 		);
+	},
+	'Math.MathMLTreeVisitor' => static function ( MediaWikiServices $services ): VisitorFactory {
+		return new VisitorFactory();
 	},
 	'Math.RendererFactory' => static function ( MediaWikiServices $services ): RendererFactory {
 		return new RendererFactory(

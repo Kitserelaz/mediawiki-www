@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": [
+			"Kghbln"
+		]
+	},
+	"mermaid-desc": "Ermöglicht das Erstellen von Grafiken und Diagrammen mithilfe der Skriptsprache [https://mermaidjs.github.io/ „mermaid“]"
+}

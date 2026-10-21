@@ -1,0 +1,165 @@
+{
+  "component": "mediawiki/extensions/CiteThisPage",
+  "baseline": "0ee100a783c06fc5d608222eb00bd1eb358731cc",
+  "target": "f4cc497b50a8d641beef9d3076aa0a584b27e427",
+  "preserved_changes": [
+    {
+      "path": ".eslintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".gitignore",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".gitreview",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".phan/config.php",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".phpcs.xml",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".stylelintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "Gruntfile.js",
+      "change": "local-deletion"
+    },
+    {
+      "path": "composer.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ba.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/be.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/cdo.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ce.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/et.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/fr.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/gom-latn.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/hak.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/hil.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/hoc-latn.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ka.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/kk-cyrl.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/kr.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "i18n/ks.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/nb.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ng.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/nl.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/nup.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/pap.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/prg.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ps.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/scn.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/sh-latn.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/sr-ec.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/sr-el.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/tig.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/vi.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/zh-hans.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "package-lock.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "package.json",
+      "change": "local-deletion"
+    }
+  ],
+  "dependency_status": "Review component Composer lock/vendor against target manifest before final verification",
+  "manual_resolutions": [],
+  "baseline_proof": {
+    "matched_runtime_and_manifest_files": 4,
+    "method": "Exact installed PHP implementation and manifest Git blobs before reviewed JS/lock resolutions"
+  }
+}

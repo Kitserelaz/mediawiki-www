@@ -1,0 +1,88 @@
+<div class="wbmi-item
+			{{#editing}}wbmi-item-edit{{/editing}}
+			{{^editing}}wbmi-item-read{{/editing}}">
+	<div class="wbmi-item-container">
+		{{#errors}}
+			{{{.}}}
+		{{/errors}}
+
+		<div class="wbmi-entity-header">
+			<div class="wbmi-entity-data">
+				<div class="wbmi-entity-title">
+					<h4 class="wbmi-entity-label">
+						<bdi>
+							{{{label}}}
+						</bdi>
+						<div class="wbmi-constraints-report">
+							{{{constraintsReport}}}
+						</div>
+					</h4>
+				</div>
+			</div>
+
+			{{^disabled}}
+				<a class="wbmi-entity-primary
+						{{#prominent}}wbmi-entity-is-prominent{{/prominent}}
+						{{^prominent}}wbmi-entity-mark-as-prominent{{/prominent}}"
+					href="#"
+					onclick="{{prominenceToggleHandler}}">
+					{{#prominent}}
+					<span class="oo-ui-widget
+								oo-ui-widget-enabled
+								oo-ui-iconElement
+								oo-ui-iconElement-icon
+								oo-ui-icon-check
+								oo-ui-labelElement-invisible
+								oo-ui-iconWidget"
+						aria-disabled="false">
+					</span>
+					{{/prominent}}
+					{{prominenceMessage}}
+				</a>
+			{{/disabled}}
+
+			{{!-- when disabled, only show the "prominent" text, not "mark as prominent" --}}
+			{{#disabled}}
+				{{#prominent}}
+					<span class="wbmi-entity-primary
+							{{#prominent}}wbmi-entity-is-prominent{{/prominent}}
+							{{^prominent}}wbmi-entity-mark-as-prominent{{/prominent}}">
+						<span class="oo-ui-widget
+									oo-ui-widget-enabled
+									oo-ui-iconElement
+									oo-ui-iconElement-icon
+									oo-ui-icon-check
+									oo-ui-labelElement-invisible
+									oo-ui-iconWidget"
+							aria-disabled="false">
+						</span>
+						{{prominenceMessage}}
+					</span>
+				{{/prominent}}
+			{{/disabled}}
+		</div>
+
+		{{#isGlobecoordinate}}
+			{{#kartographer}}
+				{{{map}}}
+			{{/kartographer}}
+		{{/isGlobecoordinate}}
+
+		<div class="wbmi-item-qualifiers">
+			{{#editing}}<h5 class="wbmi-snaklist-title">{{qualifiersTitle}}</h5>{{/editing}}
+			{{{qualifiers}}}
+		</div>
+
+		<div class="wbmi-item-references">
+			{{#editing}}<h5 class="wbmi-snaklist-title">{{referencesTitle}}</h5>{{/editing}}
+			{{#references}}
+				{{^editing}}<h5 class="wbmi-snaklist-title wbmi-item-indent">{{referenceTitle}}</h5>{{/editing}}
+				{{{.}}}
+			{{/references}}
+			{{#editing}}{{{addReferenceButton}}}{{/editing}}
+		</div>
+
+	</div>
+
+	{{#editing}}{{{removeButton}}}{{/editing}}
+</div>

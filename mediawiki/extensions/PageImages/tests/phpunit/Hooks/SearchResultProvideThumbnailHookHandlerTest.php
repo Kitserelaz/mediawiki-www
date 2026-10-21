@@ -2,17 +2,16 @@
 
 namespace PageImages\Tests\Hooks;
 
-use LocalFile;
 use LogicException;
-use MediaWiki\Page\PageIdentity;
+use MediaWiki\FileRepo\File\LocalFile;
+use MediaWiki\FileRepo\RepoGroup;
+use MediaWiki\Media\ThumbnailImage;
 use MediaWiki\Page\PageIdentityValue;
 use MediaWiki\Page\PageProps;
 use MediaWiki\Search\SearchResultThumbnailProvider;
 use MediaWikiIntegrationTestCase;
 use PageImages\Hooks\SearchResultProvideThumbnailHookHandler;
 use PageImages\PageImages;
-use RepoGroup;
-use ThumbnailImage;
 
 /**
  * @covers \PageImages\Hooks\SearchResultProvideThumbnailHookHandler
@@ -20,11 +19,9 @@ use ThumbnailImage;
  * @group PageImages
  */
 class SearchResultProvideThumbnailHookHandlerTest extends MediaWikiIntegrationTestCase {
+
 	/**
 	 * Creates mock object for LocalFile
-	 * @param int $size
-	 * @param LocalFile $file
-	 * @return ThumbnailImage
 	 */
 	private function getMockThumbnailImage(
 		int $size,
@@ -56,11 +53,8 @@ class SearchResultProvideThumbnailHookHandlerTest extends MediaWikiIntegrationTe
 
 	/**
 	 * Creates mock object for LocalFile
-	 * @param int $size
-	 * @param string $filename
-	 * @return LocalFile
 	 */
-	private function getMockLocalFile( int $size, $filename ): LocalFile {
+	private function getMockLocalFile( int $size, string $filename ): LocalFile {
 		$file = $this->getMockBuilder( LocalFile::class )
 			->disableOriginalConstructor()
 			->onlyMethods( [
@@ -92,10 +86,10 @@ class SearchResultProvideThumbnailHookHandlerTest extends MediaWikiIntegrationTe
 			->getMock();
 
 		$pageIdentities = [
-			1 => new PageIdentityValue( 1, NS_MAIN, 'dbKey1', PageIdentity::LOCAL ),
-			2 => new PageIdentityValue( 2, NS_MAIN, 'dbKey2', PageIdentity::LOCAL ),
-			3 => new PageIdentityValue( 3, NS_FILE, 'dbKey3', PageIdentity::LOCAL ),
-			4 => new PageIdentityValue( 4, NS_FILE, 'dbKey4', PageIdentity::LOCAL )
+			1 => PageIdentityValue::localIdentity( 1, NS_MAIN, 'dbKey1' ),
+			2 => PageIdentityValue::localIdentity( 2, NS_MAIN, 'dbKey2' ),
+			3 => PageIdentityValue::localIdentity( 3, NS_FILE, 'dbKey3' ),
+			4 => PageIdentityValue::localIdentity( 4, NS_FILE, 'dbKey4' )
 		];
 
 		$pageProps->expects( $this->once() )

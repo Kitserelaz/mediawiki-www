@@ -1,0 +1,22 @@
+{
+	"@metadata": {
+		"authors": [
+			"Dbc334",
+			"Eleassar"
+		]
+	},
+	"authorprotect": "Zaščitite stran pred ne avtorji",
+	"authorprotect-desc": "Omogoča avtorjem strani, da jih zaščitijo pred drugimi uporabniki",
+	"authorprotect-notauthor": "Niste {{GENDER:$1|avtor|avtorica|avtor_ica}} te strani.",
+	"authorprotect-confirm": "Spremeni ravni zaščite",
+	"authorprotect-edit": "Omeji urejanje na avtorje",
+	"authorprotect-move": "Omeji prestavljanje na avtorje",
+	"authorprotect-intro": "S tem obrazcem lahko zaklenete to stran pred ne avtorji",
+	"authorprotect-success": "Zaščita nastavljena!",
+	"protect-level-author": "Zaščiti pred ne avtorji",
+	"restriction-level-author": "Zaščiteno na avtorje",
+	"action-authorprotect": "zaščito pred ne-avtorji",
+	"right-authorprotect": "Zaščiti avtorske strani",
+	"action-author": "urejanje strani, ki so jih avtorji zaščitili,",
+	"right-author": "Urejanje strani, ki so jih zaščitili avtorji"
+}

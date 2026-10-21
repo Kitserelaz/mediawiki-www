@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Metalhead64"
+		]
+	},
+	"kartographer-wv-group": "Gruppe:",
+	"kartographer-wv-warning-external-source-title": "Externe Datenquelle",
+	"kartographer-wv-warning-external-source-message": "Dieser Inhalt wird extern gehostet, so dass deine IP-Adresse und andere Daten an den Kartenanbieter weitergegeben werden.",
+	"kartographer-wv-warning-external-source-agree": "Ich verstehe",
+	"kartographer-wv-warning-external-source-disagree": "Abbrechen"
+}

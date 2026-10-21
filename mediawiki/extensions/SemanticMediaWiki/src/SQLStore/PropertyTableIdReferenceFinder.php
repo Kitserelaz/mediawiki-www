@@ -1,0 +1,254 @@
+<?php
+
+namespace SMW\SQLStore;
+
+use SMW\DataItems\DataItem;
+use SMW\DataItems\Property;
+use SMW\MediaWiki\Connection\Database;
+use SMW\NamespaceExaminer;
+use SMW\Services\ServicesFactory as ApplicationFactory;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 2.4
+ *
+ * @author mwjames
+ */
+class PropertyTableIdReferenceFinder {
+
+	/**
+	 * @var Database
+	 */
+	private $connection;
+
+	private NamespaceExaminer $namespaceExaminer;
+
+	/**
+	 * @var bool
+	 */
+	private $isCapitalLinks = true;
+
+	/**
+	 * @since 2.4
+	 */
+	public function __construct( private readonly SQLStore $store ) {
+		$this->connection = $this->store->getConnection( 'mw.db' );
+		$this->namespaceExaminer = ApplicationFactory::getInstance()->getNamespaceExaminer();
+	}
+
+	/**
+	 * @note If $wgCapitalLinks is set false then it will avoid forcing the first
+	 * letter of page titles (including included pages, images and categories)
+	 * to capitals
+	 *
+	 * @since 2.4
+	 *
+	 * @param bool $isCapitalLinks
+	 */
+	public function isCapitalLinks( $isCapitalLinks ): void {
+		$this->isCapitalLinks = $isCapitalLinks;
+	}
+
+	/**
+	 * @since 2.4
+	 *
+	 * @param Property $property
+	 *
+	 * @return DataItem|false
+	 */
+	public function tryToFindAtLeastOneReferenceForProperty( Property $property ) {
+		$dataItem = $property->getDiWikiPage();
+
+		$sid = $this->store->getObjectIds()->getSMWPageID(
+			$dataItem->getDBkey(),
+			$dataItem->getNamespace(),
+			$dataItem->getInterwiki(),
+			''
+		);
+
+		// Lets see if we have some lower/upper case matching for
+		// when wgCapitalLinks setting was involved
+		if ( !$this->isCapitalLinks && $sid == 0 ) {
+			$sid = $this->store->getObjectIds()->getSMWPageID(
+				lcfirst( $dataItem->getDBkey() ),
+				$dataItem->getNamespace(),
+				$dataItem->getInterwiki(),
+				''
+			);
+		}
+
+		return $this->findAtLeastOneActiveReferenceById( $sid );
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param int $id
+	 *
+	 * @return bool
+	 */
+	public function hasResidualPropertyTableReference( $id ): bool {
+		if ( $id == SQLStore::FIXED_PROPERTY_ID_UPPERBOUND ) {
+			return true;
+		}
+
+		return (bool)$this->findAtLeastOneActiveReferenceById( $id, false );
+	}
+
+	/**
+	 * @since 2.4
+	 *
+	 * @param int $id
+	 *
+	 * @return bool
+	 */
+	public function hasResidualReferenceForId( $id ): bool {
+		if ( $id == SQLStore::FIXED_PROPERTY_ID_UPPERBOUND ) {
+			return true;
+		}
+
+		return (bool)$this->findAtLeastOneActiveReferenceById( $id );
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * @param int $id
+	 *
+	 * @return array
+	 */
+	public function searchAllTablesToFindAtLeastOneReferenceById( $id ): array {
+		$references = [];
+
+		foreach ( $this->store->getPropertyTables() as $proptable ) {
+			$reference = false;
+
+			$reference = $this->findReferenceByPropertyTable( $proptable, $id );
+			if ( $reference !== false ) {
+				$references[$proptable->getName()] = $reference;
+			}
+		}
+
+		$reference = $this->findQueryLinksTableReferenceById( $id );
+		if ( $reference !== false ) {
+			$references[SQLStore::QUERY_LINKS_TABLE] = $reference;
+		}
+
+		return $references;
+	}
+
+	/**
+	 * @since 2.4
+	 *
+	 * @param int $id
+	 * @param bool $secondary_ref
+	 *
+	 * @return DataItem|false
+	 */
+	public function findAtLeastOneActiveReferenceById( $id, $secondary_ref = true ): DataItem|false {
+		$reference = false;
+
+		foreach ( $this->store->getPropertyTables() as $proptable ) {
+
+			$reference = $this->findReferenceByPropertyTable( $proptable, $id );
+			if ( $reference !== false ) {
+
+				// If null is returned it means that a reference was found but no DI could
+				// be matched therefore is categorized as false positive
+				if ( isset( $reference->s_id ) ) {
+					$reference = $this->store->getObjectIds()->getDataItemById( $reference->s_id );
+
+					// If the reference is for some reason not part of a  supported namespace,
+					// it is assumed to be invalid
+					if ( $reference !== null && !$this->namespaceExaminer->isSemanticEnabled( $reference->getNamespace() ) ) {
+						$reference = false;
+					}
+				}
+			}
+
+			if ( $reference instanceof DataItem ) {
+				return $reference;
+			}
+		}
+
+		if ( $secondary_ref && is_object( $reference ) && !isset( $reference->s_id ) ) {
+			$reference = $this->findQueryLinksTableReferenceById( $id );
+		}
+
+		if ( is_object( $reference ) && isset( $reference->s_id ) ) {
+			$reference = $this->store->getObjectIds()->getDataItemById( $reference->s_id );
+		}
+
+		if ( $reference === false || $reference === null ) {
+			return false;
+		}
+
+		return $reference;
+	}
+
+	private function findReferenceByPropertyTable( $proptable, $id ) {
+		$row = false;
+
+		if ( $proptable->usesIdSubject() ) {
+			$row = $this->connection->newSelectQueryBuilder()
+				->select( [ 's_id' ] )
+				->from( $proptable->getName() )
+				->where( [ 's_id' => $id ] )
+				->caller( __METHOD__ )
+				->fetchRow();
+		}
+
+		if ( $row !== false ) {
+			return $row;
+		}
+
+		$fields = $proptable->getFields( $this->store );
+
+		// Check whether an object reference exists or not
+		if ( isset( $fields['o_id'] ) ) {
+
+			// This next time someone ... I'm going to Alaska
+			$field = preg_match( '/redi$/', $proptable->getName() ?? '' ) ? [ 's_title', 's_namespace' ] : [ 's_id' ];
+
+			$row = $this->connection->newSelectQueryBuilder()
+				->select( $field )
+				->from( $proptable->getName() )
+				->where( [ 'o_id' => $id ] )
+				->caller( __METHOD__ )
+				->fetchRow();
+
+			if ( $row !== false && strpos( $proptable->getName(), 'redi' ) ) {
+				$row->s_id = $this->store->getObjectIds()->findRedirect( $row->s_title, $row->s_namespace );
+			}
+		}
+
+		// If the property table is not a fixed table (== assigns a whole
+		// table to a specific property with the p_id column being suppressed)
+		// then check for the p_id field
+		if ( $row === false && !$proptable->isFixedPropertyTable() ) {
+			$row = $this->connection->newSelectQueryBuilder()
+				->select( [ 's_id' ] )
+				->from( $proptable->getName() )
+				->where( [ 'p_id' => $id ] )
+				->caller( __METHOD__ )
+				->fetchRow();
+		}
+
+		return $row;
+	}
+
+	private function findQueryLinksTableReferenceById( $id ) {
+		// If the query table contains a reference then we keep the object (could
+		// be a subject, property, or printrequest) where in case the query is
+		// removed the object will also loose its reference
+		$row = $this->connection->newSelectQueryBuilder()
+			->select( [ 's_id' ] )
+			->from( SQLStore::QUERY_LINKS_TABLE )
+			->where( [ 'o_id' => $id ] )
+			->caller( __METHOD__ )
+			->fetchRow();
+
+		return $row;
+	}
+
+}

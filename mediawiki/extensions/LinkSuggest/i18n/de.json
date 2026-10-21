@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"Kghbln",
+			"Metalhead64"
+		]
+	},
+	"linksuggest-desc": "Ermöglicht im Bearbeitungsfenster Linkvorschläge für Bearbeiter",
+	"tog-disablelinksuggest": "Keine Linkvorschläge anzeigen"
+}

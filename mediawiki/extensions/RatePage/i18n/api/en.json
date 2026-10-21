@@ -1,0 +1,23 @@
+{
+	"@metadata": {
+		"authors": [
+			"Ostrzyciel",
+			"Polskacafe"
+		]
+	},
+	"apihelp-ratepage-summary": "Allows a user to vote on a page and gets the rating for a page. Requires specifying one of two parameters: pageid or pagetitle.",
+	"apihelp-ratepage-param-pageid": "Page ID",
+	"apihelp-ratepage-param-pagetitle": "Page title",
+	"apihelp-ratepage-param-answer": "User's page rating (from 1 to 5 inclusive by default, can be altered by configuration settings)",
+	"apihelp-ratepage-param-contest": "Contest identifier",
+	"apihelp-ratepage-example-1": "Get the current rating for page Example.",
+	"apihelp-ratepage-example-2": "Rate page Example with a 2.",
+	"apihelp-query+pagerating-summary": "Returns votes on this page and this user's voting permissions.",
+	"apihelp-query+pagerating-param-contest": "Contest identifier",
+	"apierror-ratepage-contest-id-too-long": "Contest ID length exceeds the limit (255 characters).",
+	"apierror-ratepage-contest-id-allowed-chars": "Contest ID must consist only of digits and Latin letters. No other characters are allowed.",
+	"apierror-ratepage-contest-not-exists": "Contest $1 does not exist.",
+	"apierror-ratepage-page-not-exists": "Specified page does not exist.",
+	"apierror-ratepage-cannot-vote-in-contest": "You do not have permissions to vote in this contest.",
+	"apierror-ratepage-invalid-answer": "Invalid answer was specified. The answer should be greater than or equal to $1 and less than or equal to $2."
+}

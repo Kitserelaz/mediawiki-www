@@ -1,0 +1,178 @@
+<?php
+
+namespace SMW\MediaWiki\Specials\Admin\Maintenance;
+
+use MediaWiki\Html\Html;
+use MediaWiki\Request\WebRequest;
+use MediaWiki\SpecialPage\SpecialPage;
+use SMW\MediaWiki\Job;
+use SMW\MediaWiki\JobFactory;
+use SMW\MediaWiki\JobQueue;
+use SMW\MediaWiki\Renderer\HtmlFormRenderer;
+use SMW\MediaWiki\Specials\Admin\ActionableTask;
+use SMW\MediaWiki\Specials\Admin\OutputFormatter;
+use SMW\MediaWiki\Specials\Admin\TaskHandler;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since   2.5
+ *
+ * @author mwjames
+ */
+class DataRefreshJobTaskHandler extends TaskHandler implements ActionableTask {
+
+	private ?Job $refreshjob = null;
+
+	/**
+	 * @since 2.5
+	 */
+	public function __construct(
+		private readonly HtmlFormRenderer $htmlFormRenderer,
+		private readonly OutputFormatter $outputFormatter,
+		private readonly JobFactory $jobFactory,
+		private readonly JobQueue $jobQueue,
+	) {
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * {@inheritDoc}
+	 */
+	public function getSection(): string {
+		return self::SECTION_MAINTENANCE;
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * {@inheritDoc}
+	 */
+	public function getTask(): string {
+		return 'refreshstore';
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * {@inheritDoc}
+	 */
+	public function isTaskFor( string $action ): bool {
+		return $action === $this->getTask();
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * {@inheritDoc}
+	 */
+	public function getHtml() {
+		$this->htmlFormRenderer
+			->addHeader( 'h3', $this->msg( 'smw_smwadmin_datarefresh' ) )
+			->addParagraph( $this->msg( 'smw_smwadmin_datarefreshdocu' ) );
+
+		if ( !$this->hasFeature( SMW_ADM_REFRESH ) ) {
+			$this->htmlFormRenderer->addParagraph( $this->msg( 'smw-admin-feature-disabled' ) );
+		} elseif ( $this->getRefreshJob() !== null ) {
+			$this->htmlFormRenderer
+				->setMethod( 'post' )
+				->addHiddenField( 'action', 'refreshstore' )
+				->addParagraph( $this->msg( 'smw_smwadmin_datarefreshprogress' ) )
+				->addParagraph( $this->getProgressBar( $this->getRefreshJob()->getProgress() ) )
+				->addLineBreak()
+				->addSubmitButton(
+					$this->msg( 'smw_smwadmin_datarefreshstop' ),
+					[
+						'class' => ''
+					]
+				)
+				->addCheckbox(
+					$this->msg( 'smw_smwadmin_datarefreshstopconfirm' ),
+					'rfsure',
+					'stop'
+				);
+		} elseif ( $this->getRefreshJob() === null ) {
+			$this->htmlFormRenderer
+				->setMethod( 'post' )
+				->addHiddenField( 'action', 'refreshstore' )
+				->addHiddenField( 'rfsure', 'yes' )
+				->addSubmitButton(
+					$this->msg( 'smw_smwadmin_datarefreshbutton' ),
+					[
+						'class' => ''
+					]
+				);
+		}
+
+		return Html::rawElement( 'div', [], $this->htmlFormRenderer->getForm() );
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * {@inheritDoc}
+	 */
+	public function handleRequest( WebRequest $webRequest ): void {
+		if ( !$this->hasFeature( SMW_ADM_REFRESH ) ) {
+			return;
+		}
+
+		$sure = $webRequest->getText( 'rfsure' );
+
+		if ( $sure == 'yes' ) {
+			$refreshjob = $this->getRefreshJob();
+
+			if ( $refreshjob === null ) { // careful, there might be race conditions here
+
+				$newjob = $this->jobFactory->newByType(
+					'smw.refresh',
+					SpecialPage::getTitleFor( 'SMWAdmin' ),
+					[ 'spos' => 1, 'prog' => 0, 'rc' => 2 ]
+				);
+
+				$newjob->insert();
+			}
+
+		} elseif ( $sure == 'stop' ) {
+			$this->jobQueue->disableCache();
+			$this->jobQueue->delete( 'smw.refresh' );
+		}
+
+		$this->outputFormatter->redirectToRootPage( '', [ 'tab' => 'maintenance' ] );
+	}
+
+	private function getProgressBar( $prog ): string {
+		return Html::rawElement(
+			'div',
+			[ 'style' => 'float: left; background: #DDDDDD; border: 1px solid grey; width: 300px;' ],
+			Html::rawElement( 'div', [ 'style' => 'background: #AAF; width: ' . round( $prog * 300 ) . 'px; height: 20px; ' ], '' )
+		) . '&#160;' . round( $prog * 100, 4 ) . '%';
+	}
+
+	private function getRefreshJob(): ?Job {
+		if ( !$this->hasFeature( SMW_ADM_REFRESH ) ) {
+			return null;
+		}
+
+		if ( $this->refreshjob !== null ) {
+			return $this->refreshjob;
+		}
+
+		if ( !$this->jobQueue->hasPendingJob( 'smw.refresh' ) ) {
+			return null;
+		}
+
+		// Pop and acknowledge the job to fetch progress details
+		// from itself
+		$refreshJob = $this->jobQueue->pop( 'smw.refresh' );
+
+		if ( $refreshJob instanceof Job ) {
+			$refreshJob->run();
+			$this->jobQueue->ack( $refreshJob );
+			$this->refreshjob = $refreshJob;
+		}
+
+		return $this->refreshjob;
+	}
+
+}

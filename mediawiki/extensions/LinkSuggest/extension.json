@@ -1,0 +1,65 @@
+{
+	"name": "LinkSuggest",
+	"version": "2.2.0",
+	"author": [
+		"Inez Korczyński",
+		"Bartek Łapiński",
+		"Łukasz Garczewski",
+		"Maciej Brencz",
+		"Jesús Martínez Novo",
+		"Jack Phoenix",
+		"Jayden Bailey"
+	],
+	"license-name": "GPL-2.0-or-later",
+	"url": "https://www.mediawiki.org/wiki/Extension:LinkSuggest",
+	"descriptionmsg": "linksuggest-desc",
+	"type": "other",
+	"requires": {
+		"MediaWiki": ">= 1.35.0"
+	},
+	"MessagesDirs": {
+		"LinkSuggest": [
+			"i18n"
+		]
+	},
+	"AutoloadClasses": {
+		"LinkSuggest": "includes/LinkSuggest.php"
+	},
+	"Hooks": {
+		"EditPage::showEditForm:initial": "main",
+		"GetPreferences": "main"
+	},
+	"HookHandlers": {
+		"main": {
+			"class": "LinkSuggest",
+			"services": [
+				"UserOptionsManager"
+			]
+		}
+	},
+	"config": {
+		"LinkSuggestFromNamespaces": [
+			0
+		]
+	},
+	"ConfigRegistry": {
+		"linksuggest": "GlobalVarConfig::newInstance"
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "",
+		"remoteExtPath": "LinkSuggest"
+	},
+	"ResourceModules": {
+		"ext.LinkSuggest": {
+			"packageFiles": [
+				"jquery.mw.linksuggest.js",
+				{
+					"name": "config.json",
+					"config": [ "LinkSuggestFromNamespaces" ]
+				}
+			],
+			"dependencies": [ "jquery.ui", "mediawiki.api" ]
+		}
+	},
+	"manifest_version": 1
+}

@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": [
+			"Vfc"
+		]
+	},
+	"perpagelanguage-desc": "Estableix l'idioma de la interfície perquè coincideixi amb l'idioma del contingut de la pàgina",
+	"perpagelanguage-label": "Estableix l'idioma"
+}

@@ -1,0 +1,82 @@
+<?php
+
+namespace SMW\Elastic\Connection;
+
+/**
+ * @private
+ *
+ * !! Only used during integration testing!!
+ *
+ * @license GPL-2.0-or-later
+ * @since 3.1
+ *
+ * @author mwjames
+ */
+class TestClient extends Client {
+
+	/**
+	 * @see Client::bulk
+	 * @since 3.0
+	 */
+	public function bulk( array $params ) {
+		if ( $params === [] ) {
+			return;
+		}
+
+		$params += [ 'refresh' => true ];
+
+		return parent::bulk( $params );
+	}
+
+	/**
+	 * @see https://www.elastic.co/guide/en/elasticsearch/reference/current/search-count.html
+	 * @see Client::count
+	 * @since 3.0
+	 */
+	public function count( array $params ): array {
+		if ( $params === [] ) {
+			return [];
+		}
+
+		// https://discuss.elastic.co/t/es-5-2-refresh-interval-doesnt-work-if-set-to-0/79248/2
+		// Make sure the replication/index lag doesn't hinder the search
+		$this->client->indices()->refresh( [ 'index' => $params['index'] ] );
+
+		return parent::count( $params );
+	}
+
+	/**
+	 * @see Client::search
+	 * @since 3.0
+	 */
+	public function search( array $params ): array {
+		if ( $params === [] ) {
+			return [];
+		}
+
+		$this->client->indices()->refresh( [ 'index' => $params['index'] ] );
+
+		return parent::search( $params );
+	}
+
+	/**
+	 * @see Client::explain
+	 * @since 3.0
+	 *
+	 * @param array $params
+	 *
+	 * @return mixed
+	 */
+	public function explain( array $params ) {
+		if ( $params === [] ) {
+			return [];
+		}
+
+		// https://discuss.elastic.co/t/es-5-2-refresh-interval-doesnt-work-if-set-to-0/79248/2
+		// Make sure the replication/index lag doesn't hinder the search
+		$this->client->indices()->refresh( [ 'index' => $params['index'] ] );
+
+		return parent::explain( $params );
+	}
+
+}

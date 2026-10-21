@@ -8,11 +8,13 @@
 			"Gzhegozh",
 			"Ice bulldog",
 			"Piramidion",
+			"Repakr",
 			"Steve.rusyn",
 			"SteveR",
 			"Ата"
 		]
 	},
+	"content-model-scribunto": "Модуль Scribunto",
 	"scribunto-desc": "Фреймворк для включення скриптових мов на сторінки MediaWiki",
 	"scribunto-line": "у рядку $1",
 	"scribunto-module-line": "у $1 у рядку $2",
@@ -38,7 +40,7 @@
 	"scribunto-common-timeout": "Закінчився час, виділений для виконання скриптів.",
 	"scribunto-common-oom": "Перевищено розмір пам'яті, дозволений для виконання скриптів.",
 	"scribunto-common-backtrace": "Зворотне трасування:",
-	"scribunto-common-no-details": "Немає жодних деталей.",
+	"scribunto-common-no-details": "Немає відомостей про розташування коду.",
 	"scribunto-lua-in-function": "у функції «$1»",
 	"scribunto-lua-in-main": "в головній частині коду",
 	"scribunto-lua-in-function-at": "у функції в $1:$2",
@@ -71,5 +73,7 @@
 	"scribunto-limitreport-profile-percent": "$1%",
 	"scribunto-limitreport-logs": "Журнали Lua",
 	"nstab-module": "Модуль",
-	"tooltip-ca-nstab-module": "Переглянути сторінку модуля"
+	"tooltip-ca-nstab-module": "Переглянути сторінку модуля",
+	"namespaceinfo-description-ns828": "Простір назва для модулів коду Lua, які можна викликати з вікісторінок, та їхні сторінки документації.",
+	"namespaceinfo-description-ns829": "Сторінки обговорення для модулів та документацій"
 }

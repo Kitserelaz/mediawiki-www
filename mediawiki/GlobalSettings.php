@@ -3,7 +3,9 @@ if (!defined('MEDIAWIKI')) {
         die('Not an entry point.');
 }
 
-$wgHooks['CreateWikiDataFactoryBuilder'][] = 'MirahezeFunctions::onCreateWikiDataFactoryBuilder';
+$wgManageWikiCacheDirectory = $wgCreateWikiCacheDirectory;
+require_once "$IP/FarmSiteConfiguration.php";
+$wgManageWikiSiteConfiguration = new FarmManageWikiSiteConfiguration($wgConf);
 
 if ($wi->isExtensionActive('SocialProfile')) {
         require_once "$IP/extensions/SocialProfile/SocialProfile.php";

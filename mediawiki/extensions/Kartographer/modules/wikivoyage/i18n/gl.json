@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Banjo",
+			"Elisardojm",
+			"Toliño"
+		]
+	},
+	"kartographer-wv-group": "Grupo:",
+	"kartographer-wv-warning-external-source-title": "Fonte de datos externa",
+	"kartographer-wv-warning-external-source-message": "Este contido está aloxado externamente, polo tanto, se o activa compartiranse o seu enderezo IP e outros datos co provedor do mapa.",
+	"kartographer-wv-warning-external-source-agree": "Entendo",
+	"kartographer-wv-warning-external-source-disagree": "Cancelar"
+}

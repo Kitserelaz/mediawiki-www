@@ -32,19 +32,19 @@ ve.dm.MWFlaggedMetaItem.static.matchTagNames = [ 'meta' ];
 ve.dm.MWFlaggedMetaItem.static.toDataElement = function ( domElements ) {
 	let property = domElements[ 0 ].getAttribute( 'property' );
 
-	if ( !property || this.matchRdfaTypes.indexOf( property ) === -1 ) {
+	if ( !property || !this.matchRdfaTypes.includes( property ) ) {
 		// Fallback to first match if somehow unset
 		property = this.matchRdfaTypes[ 0 ];
 	}
 
-	return { type: this.name, attributes: { property: property } };
+	return { type: this.name, attributes: { property } };
 };
 
 ve.dm.MWFlaggedMetaItem.static.toDomElements = function ( dataElement, doc, converter ) {
 	let domElement;
 	let property = OO.getProp( dataElement, 'attributes', 'property' );
 
-	if ( !property || this.matchRdfaTypes.indexOf( property ) === -1 ) {
+	if ( !property || !this.matchRdfaTypes.includes( property ) ) {
 		// Fallback to first item if somehow unset
 		property = this.matchRdfaTypes[ 0 ];
 	}

@@ -6,13 +6,14 @@
 	"license-name": "WTFPL",
 	"type": "api",
 	"requires": {
-		"MediaWiki": ">= 1.43"
+		"MediaWiki": ">= 1.46"
 	},
 	"APIPropModules": {
 		"pageimages": {
 			"class": "PageImages\\ApiQueryPageImages",
 			"services": [
-				"RepoGroup"
+				"RepoGroup",
+				"UrlUtils"
 			]
 		}
 	},
@@ -45,6 +46,7 @@
 				"MainConfig",
 				"DBLoadBalancerFactory",
 				"RepoGroup",
+				"UrlUtils",
 				"UserOptionsLookup"
 			]
 		},
@@ -77,9 +79,14 @@
 			"class": "PageImages\\Job\\InitImageDataJob",
 			"services": [
 				"DBLoadBalancerFactory"
-			]
+			],
+			"needsPage": false
 		}
 	},
+	"ServiceWiringFiles": [
+		"includes/ServiceWiring.php"
+	],
+	"callback": "PageImages\\PageImages::onRegistration",
 	"config": {
 		"PageImagesScores": {
 			"description": "Images <120px are usually from maintenance or stub templates; >600px are panoramas, less suitable.",
@@ -120,7 +127,6 @@
 		},
 		"PageImagesOpenGraph": {
 			"description": "Enable the OpenGraph meta tags",
-			"public": true,
 			"value": true
 		},
 		"PageImagesDenylistExpiry": {
@@ -130,9 +136,7 @@
 			"value": false
 		},
 		"PageImagesNamespaces": {
-			"value": [
-				0
-			]
+			"value": false
 		},
 		"PageImagesLeadSectionOnly": {
 			"description": "Whether page images should be restricted to those in section 0",
@@ -145,6 +149,18 @@
 		"PageImagesOpenGraphFallbackImage": {
 			"description": "A url to fallback image that will be shown when there is no image on a page.",
 			"value": false
+		}
+	},
+	"attributes": {
+		"Scribunto": {
+			"LuaExtraTitleAttributes": {
+				"pageImage": {
+					"class": "PageImages\\LuaPageImageResolver",
+					"services": [
+						"PageImages.PageImages"
+					]
+				}
+			}
 		}
 	},
 	"manifest_version": 2

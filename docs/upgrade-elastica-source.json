@@ -1,0 +1,16 @@
+{
+  "component": "mediawiki/extensions/Elastica",
+  "baseline": "361b0504fb1e8dd368e7687d523ff34517ab3c65",
+  "target": "a3326af107aafd75f6958e8b4ae8e3d00f22b65f",
+  "preserved_changes": [],
+  "dependency_status": "Regenerated component lock on PHP 8.4; ruflin/elastica 7.3.2; Composer audit clean",
+  "vendor_patches": [
+    {
+      "path": "mediawiki/extensions/Elastica/vendor/ruflin/elastica/src/Query/Match.php",
+      "upstream_sha256": "b1c7c0221392567c2741bc84b161ccc5aab194b04dd9c5c4c81e936c2ca79691",
+      "patched_sha256": "80dbc0e68d43a6d16788cf29cdcf512c8d047b32d71591d0a6d4c733fe2be124",
+      "reason": "Replace PHP 7-only reserved Match declaration with a string class alias; preserve dynamic callers on PHP 8.4.",
+      "patch": "patches/elastica-php8-match.patch"
+    }
+  ]
+}

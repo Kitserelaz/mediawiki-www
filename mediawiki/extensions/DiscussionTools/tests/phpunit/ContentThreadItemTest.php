@@ -3,6 +3,7 @@
 namespace MediaWiki\Extension\DiscussionTools\Tests;
 
 use DateTimeImmutable;
+use DateTimeZone;
 use MediaWiki\Extension\DiscussionTools\CommentUtils;
 use MediaWiki\Extension\DiscussionTools\ImmutableRange;
 use MediaWiki\Extension\DiscussionTools\ThreadItem\ContentCommentItem;
@@ -22,7 +23,7 @@ class ContentThreadItemTest extends IntegrationTestCase {
 	 * @dataProvider provideAuthors
 	 */
 	public function testGetAuthorsOrThreadItemsBelow(
-		array $thread, array $expectedAuthors, array $expectedThreadItemIds
+		array $thread, array $expectedAuthorsBelow, array $expectedThreadItemIdsBelow
 	): void {
 		$doc = $this->createDocument( '' );
 		$node = $doc->createElement( 'div' );
@@ -31,7 +32,7 @@ class ContentThreadItemTest extends IntegrationTestCase {
 		$makeThreadItem = static function ( array $arr ) use ( &$makeThreadItem, $range ): ContentThreadItem {
 			if ( $arr['type'] === 'comment' ) {
 				$item = new ContentCommentItem(
-					1, $range, false, [], [], new DateTimeImmutable(),
+					1, $range, false, [], [], new DateTimeImmutable( 'now', new DateTimeZone( 'UTC' ) ),
 					$arr['author'],
 					$arr['displayName'] ?? null
 				);
@@ -47,10 +48,11 @@ class ContentThreadItemTest extends IntegrationTestCase {
 
 		$threadItem = $makeThreadItem( $thread );
 
-		static::assertEquals( $expectedAuthors, $threadItem->getAuthorsBelow() );
-		static::assertEquals( $expectedThreadItemIds, array_map( static function ( ThreadItem $threadItem ): string {
-			return $threadItem->getId();
-		}, $threadItem->getThreadItemsBelow() ) );
+		static::assertEquals( $expectedAuthorsBelow, $threadItem->getAuthorsBelow() );
+		static::assertEquals( $expectedThreadItemIdsBelow,
+			array_map( static function ( ThreadItem $threadItem ): string {
+				return $threadItem->getId();
+			}, $threadItem->getThreadItemsBelow() ) );
 	}
 
 	public static function provideAuthors(): array {

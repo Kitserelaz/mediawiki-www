@@ -1,19 +1,21 @@
 <?php
+
+use MediaWiki\SpecialPage\SpecialPage;
+
 /**
  * Class for the page Special:AdminLinks
  *
  * @author Yaron Koren
  */
-
 class AdminLinks extends SpecialPage {
 	/**
 	 * Constructor
 	 */
-	function __construct() {
+	public function __construct() {
 		parent::__construct( 'AdminLinks' );
 	}
 
-	function createInitialTree() {
+	private function createInitialTree(): ALTree {
 		$tree = new ALTree();
 
 		// 'general' section
@@ -68,7 +70,8 @@ class AdminLinks extends SpecialPage {
 		return $tree;
 	}
 
-	function execute( $query ) {
+	/** @inheritDoc */
+	public function execute( $query ): void {
 		$out = $this->getOutput();
 
 		$this->setHeaders();
@@ -80,7 +83,7 @@ class AdminLinks extends SpecialPage {
 	}
 
 	/** @inheritDoc */
-	protected function getGroupName() {
+	protected function getGroupName(): string {
 		return 'users';
 	}
 }

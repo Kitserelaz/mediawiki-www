@@ -22,14 +22,10 @@ namespace MediaWiki\Extension\Gadgets\Content;
 
 class GadgetDefinitionContentArmor {
 
-	/** @var string */
-	private $value;
-
-	public function __construct( $value ) {
-		$this->value = $value;
+	public function __construct( private readonly string $value ) {
 	}
 
-	public function __toString() {
+	public function __toString(): string {
 		return $this->value;
 	}
 }

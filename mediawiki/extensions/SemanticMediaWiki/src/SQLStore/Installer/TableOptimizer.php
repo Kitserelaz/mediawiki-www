@@ -1,0 +1,93 @@
+<?php
+
+namespace SMW\SQLStore\Installer;
+
+use DateTimeZone;
+use Onoi\MessageReporter\MessageReporterAwareTrait;
+use SMW\MediaWiki\ExtendedDateTime;
+use SMW\SetupFile;
+use SMW\SQLStore\TableBuilder;
+use SMW\Utils\CliMsgFormatter;
+
+/**
+ * @private
+ *
+ * @license GPL-2.0-or-later
+ * @since 3.2
+ *
+ * @author mwjames
+ */
+class TableOptimizer {
+
+	use MessageReporterAwareTrait;
+
+	private ?SetupFile $setupFile = null;
+
+	/**
+	 * @since 3.2
+	 */
+	public function __construct( private TableBuilder $tableBuilder ) {
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @param SetupFile $setupFile
+	 */
+	public function setSetupFile( SetupFile $setupFile ): void {
+		$this->setupFile = $setupFile;
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @param array $tables
+	 */
+	public function runForTables( array $tables ): void {
+		$cliMsgFormatter = new CliMsgFormatter();
+
+		$text = [
+			'The optimization task can take a moment to complete and depending',
+			'on the database backend, tables can be locked during the operation.'
+		];
+
+		$this->messageReporter->reportMessage(
+			$cliMsgFormatter->wordwrap( $text ) . "\n"
+		);
+
+		$this->messageReporter->reportMessage(
+			$cliMsgFormatter->section( 'Core table(s)', 6, '-', true ) . "\n"
+		);
+
+		$custom = false;
+		$this->messageReporter->reportMessage( "Checking table ...\n" );
+
+		foreach ( $tables as $table ) {
+
+			if ( !$custom && !$table->isCoreTable() ) {
+				$custom = true;
+
+				$this->messageReporter->reportMessage( "   ... done.\n" );
+
+				$this->messageReporter->reportMessage(
+					$cliMsgFormatter->section( 'Custom table(s)', 6, '-', true ) . "\n"
+				);
+
+				$this->messageReporter->reportMessage( "Checking table ...\n" );
+			}
+
+			$this->tableBuilder->optimize( $table );
+		}
+
+		$this->messageReporter->reportMessage( "   ... done.\n" );
+
+		$dateTimeUtc = new ExtendedDateTime( 'now', new DateTimeZone( 'UTC' ) );
+
+		$this->setupFile->set(
+			[
+				SetupFile::LAST_OPTIMIZATION_RUN => $dateTimeUtc->format( 'Y-m-d h:i' )
+			]
+		);
+	}
+
+}

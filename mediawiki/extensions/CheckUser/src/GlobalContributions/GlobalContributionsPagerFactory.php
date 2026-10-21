@@ -1,90 +1,71 @@
 <?php
 
-namespace MediaWiki\CheckUser\GlobalContributions;
+namespace MediaWiki\Extension\CheckUser\GlobalContributions;
 
-use JobQueueGroup;
-use MediaWiki\Cache\LinkBatchFactory;
-use MediaWiki\CheckUser\Services\CheckUserLookupUtils;
+use GlobalPreferences\GlobalPreferencesFactory;
+use MediaWiki\ChangeTags\ChangeTagsStoreFactory;
 use MediaWiki\CommentFormatter\CommentFormatter;
+use MediaWiki\Config\Config;
 use MediaWiki\Context\IContextSource;
+use MediaWiki\Extension\CheckUser\Services\CheckUserLookupUtils;
 use MediaWiki\HookContainer\HookContainer;
+use MediaWiki\JobQueue\JobQueueGroup;
 use MediaWiki\Linker\LinkRenderer;
+use MediaWiki\Linker\UserLinkRenderer;
+use MediaWiki\Page\LinkBatchFactory;
+use MediaWiki\Permissions\PermissionManager;
 use MediaWiki\Revision\RevisionStore;
+use MediaWiki\Revision\RevisionStoreFactory;
+use MediaWiki\Site\SiteLookup;
+use MediaWiki\SpecialPage\ContributionsRangeTrait;
 use MediaWiki\Title\NamespaceInfo;
+use MediaWiki\User\CentralId\CentralIdLookup;
 use MediaWiki\User\TempUser\TempUserConfig;
 use MediaWiki\User\UserFactory;
 use MediaWiki\User\UserIdentity;
-use Wikimedia\Assert\Assert;
-use Wikimedia\Assert\ParameterAssertionException;
 use Wikimedia\Rdbms\IConnectionProvider;
+use Wikimedia\Rdbms\ReadOnlyMode;
 
 class GlobalContributionsPagerFactory {
-	private LinkRenderer $linkRenderer;
-	private LinkBatchFactory $linkBatchFactory;
-	private HookContainer $hookContainer;
-	private RevisionStore $revisionStore;
-	private NamespaceInfo $namespaceInfo;
-	private CommentFormatter $commentFormatter;
-	private UserFactory $userFactory;
-	private TempUserConfig $tempUserConfig;
-	private CheckUserLookupUtils $lookupUtils;
-	private IConnectionProvider $dbProvider;
-	private JobQueueGroup $jobQueueGroup;
 
-	/**
-	 * @param LinkRenderer $linkRenderer
-	 * @param LinkBatchFactory $linkBatchFactory
-	 * @param HookContainer $hookContainer
-	 * @param RevisionStore $revisionStore
-	 * @param NamespaceInfo $namespaceInfo
-	 * @param CommentFormatter $commentFormatter
-	 * @param UserFactory $userFactory
-	 * @param TempUserConfig $tempUserConfig
-	 * @param CheckUserLookupUtils $lookupUtils
-	 * @param IConnectionProvider $dbProvider
-	 * @param JobQueueGroup $jobQueueGroup
-	 */
+	use ContributionsRangeTrait;
+
 	public function __construct(
-		LinkRenderer $linkRenderer,
-		LinkBatchFactory $linkBatchFactory,
-		HookContainer $hookContainer,
-		RevisionStore $revisionStore,
-		NamespaceInfo $namespaceInfo,
-		CommentFormatter $commentFormatter,
-		UserFactory $userFactory,
-		TempUserConfig $tempUserConfig,
-		CheckUserLookupUtils $lookupUtils,
-		IConnectionProvider $dbProvider,
-		JobQueueGroup $jobQueueGroup
+		private readonly LinkRenderer $linkRenderer,
+		private readonly LinkBatchFactory $linkBatchFactory,
+		private readonly HookContainer $hookContainer,
+		private readonly RevisionStore $revisionStore,
+		private readonly NamespaceInfo $namespaceInfo,
+		private readonly CommentFormatter $commentFormatter,
+		private readonly UserFactory $userFactory,
+		private readonly TempUserConfig $tempUserConfig,
+		private readonly Config $config,
+		private readonly CheckUserLookupUtils $lookupUtils,
+		private readonly CentralIdLookup $centralIdLookup,
+		private readonly CheckUserGlobalContributionsLookup $globalContributionsLookup,
+		private readonly PermissionManager $permissionManager,
+		private readonly GlobalPreferencesFactory $globalPreferencesFactory,
+		private readonly IConnectionProvider $dbProvider,
+		private readonly JobQueueGroup $jobQueueGroup,
+		private readonly UserLinkRenderer $userLinkRenderer,
+		private readonly RevisionStoreFactory $revisionStoreFactory,
+		private readonly ChangeTagsStoreFactory $changeTagsStoreFactory,
+		private readonly SiteLookup $siteLookup,
+		private readonly ReadOnlyMode $readOnlyMode,
 	) {
-		$this->linkRenderer = $linkRenderer;
-		$this->linkBatchFactory = $linkBatchFactory;
-		$this->hookContainer = $hookContainer;
-		$this->revisionStore = $revisionStore;
-		$this->namespaceInfo = $namespaceInfo;
-		$this->commentFormatter = $commentFormatter;
-		$this->userFactory = $userFactory;
-		$this->tempUserConfig = $tempUserConfig;
-		$this->lookupUtils = $lookupUtils;
-		$this->dbProvider = $dbProvider;
-		$this->jobQueueGroup = $jobQueueGroup;
 	}
 
 	/**
 	 * @param IContextSource $context
 	 * @param array $options
-	 * @param UserIdentity $target IP address for temporary user contributions lookup
+	 * @param UserIdentity $target IP address or username for user contributions lookup
 	 * @return GlobalContributionsPager
-	 * @throws ParameterAssertionException
 	 */
 	public function createPager(
 		IContextSource $context,
 		array $options,
 		UserIdentity $target
 	): GlobalContributionsPager {
-		$username = $target->getName();
-		Assert::parameter( $this->lookupUtils->isValidIPOrRange( $username ), 'username', 'target is invalid' );
-
 		return new GlobalContributionsPager(
 			$this->linkRenderer,
 			$this->linkBatchFactory,
@@ -95,8 +76,17 @@ class GlobalContributionsPagerFactory {
 			$this->userFactory,
 			$this->tempUserConfig,
 			$this->lookupUtils,
+			$this->centralIdLookup,
+			$this->globalContributionsLookup,
+			$this->permissionManager,
+			$this->globalPreferencesFactory,
 			$this->dbProvider,
 			$this->jobQueueGroup,
+			$this->userLinkRenderer,
+			$this->revisionStoreFactory,
+			$this->changeTagsStoreFactory,
+			$this->siteLookup,
+			$this->readOnlyMode,
 			$context,
 			$options,
 			$target

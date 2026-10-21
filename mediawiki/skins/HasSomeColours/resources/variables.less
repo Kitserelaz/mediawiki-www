@@ -1,0 +1,84 @@
+@import 'mediawiki.mixins';
+
+// From config:
+// @primary: default #555;
+// @secondary: default #d77;
+// @header-text: default #fff;
+// @header-link: default #def;
+
+@text: #000;
+@background: #fff;
+
+// Misc
+@blue-links: #06c;
+@ext-links: #55c;
+@red-links: #c00;
+
+@grey1: #ddd;
+@grey2: #555;
+
+@borders: 2px;
+
+@fonts:  "Montserrat Light", "Montserrat", "Nunito Sans", "Noto Sans", "Lucida Sans Unicode", "Lucida Sans", "Tahoma", sans-serif;
+@fonts-mono: monospace, monospace;
+@fonts-serif: "Georgia", times, serif;
+
+@smaller-text: 0.9em;
+
+/* To hide objects, but keep them accessible for screen-readers */
+.hidden() {
+	position: absolute;
+	top: -9999px;
+}
+
+.dropdown() {
+	position: relative;
+
+	h3 {
+		cursor: pointer;
+		display: inline-block;
+		padding-right: 22px;
+		background: url( images/arrow-down-black.svg ) no-repeat 100% 4px;
+	}
+
+	.mw-portlet-body {
+		display: none;
+	}
+
+	&:hover .mw-portlet-body {
+		display: block;
+		position: absolute;
+		right: 0;
+		background: @background;
+		padding: 1em 2em 2em;
+		border-bottom: solid @borders @secondary;
+		border-top: solid 1px @primary;
+		min-width: 14em;
+		box-sizing: border-box;
+		box-shadow: 0 2px 3px rgba( 0, 0, 0, 0.125 );
+		z-index: 100;
+
+		li {
+			border-bottom: solid 1px @grey1;
+			padding: 0.5em 0 0.25em;
+		}
+
+		a {
+			display: block;
+			color: @grey2;
+
+			&:hover {
+				color: @text;
+			}
+		}
+	}
+}
+
+.nav-list() {
+	ul {
+		list-style-type: none;
+		list-style-image: none;
+		margin: 0;
+		padding: 0;
+	}
+}

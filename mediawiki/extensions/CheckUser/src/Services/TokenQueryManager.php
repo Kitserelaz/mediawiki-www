@@ -1,17 +1,13 @@
 <?php
 
-namespace MediaWiki\CheckUser\Services;
+namespace MediaWiki\Extension\CheckUser\Services;
 
 use MediaWiki\Request\WebRequest;
 
 class TokenQueryManager {
-	public TokenManager $tokenManager;
-
-	/**
-	 * @param TokenManager $tokenManager
-	 */
-	public function __construct( TokenManager $tokenManager ) {
-		$this->tokenManager = $tokenManager;
+	public function __construct(
+		private readonly TokenManager $tokenManager,
+	) {
 	}
 
 	/**
@@ -74,7 +70,7 @@ class TokenQueryManager {
 
 		try {
 			return $this->tokenManager->decode( $request->getSession(), $token );
-		} catch ( \Exception $e ) {
+		} catch ( \Exception ) {
 			return [];
 		}
 	}

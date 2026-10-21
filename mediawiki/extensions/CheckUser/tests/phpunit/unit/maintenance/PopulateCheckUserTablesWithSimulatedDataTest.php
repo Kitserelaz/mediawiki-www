@@ -1,9 +1,9 @@
 <?php
 
-namespace MediaWiki\CheckUser\Tests\Unit\Maintenance;
+namespace MediaWiki\Extension\CheckUser\Tests\Unit\Maintenance;
 
-use MediaWiki\CheckUser\Maintenance\PopulateCheckUserTablesWithSimulatedData;
 use MediaWiki\Config\HashConfig;
+use MediaWiki\Extension\CheckUser\Maintenance\PopulateCheckUserTablesWithSimulatedData;
 use MediaWikiUnitTestCase;
 use ReflectionClass;
 use Wikimedia\IPUtils;
@@ -13,7 +13,7 @@ use Wikimedia\Timestamp\ConvertibleTimestamp;
 /**
  * @group CheckUser
  *
- * @covers \MediaWiki\CheckUser\Maintenance\PopulateCheckUserTablesWithSimulatedData
+ * @covers \MediaWiki\Extension\CheckUser\Maintenance\PopulateCheckUserTablesWithSimulatedData
  */
 class PopulateCheckUserTablesWithSimulatedDataTest extends MediaWikiUnitTestCase {
 	public function setUpObjectUnderTest() {
@@ -70,7 +70,7 @@ class PopulateCheckUserTablesWithSimulatedDataTest extends MediaWikiUnitTestCase
 			'Three IPs, one excluded' => [
 				[ '127.0.0.1', '127.0.0.2', '127.0.0.3' ],
 				[ '127.0.0.2' ],
-				[ '127.0.0.1', '127.0.0.3' ]
+				[ '127.0.0.1', '127.0.0.3' ],
 			],
 		];
 	}
@@ -90,7 +90,7 @@ class PopulateCheckUserTablesWithSimulatedDataTest extends MediaWikiUnitTestCase
 			'Three IPs, three excluded' => [
 				[ '127.0.0.1', '127.0.0.2', '127.0.0.3' ],
 				[ '127.0.0.1', '127.0.0.2', '127.0.0.3' ],
-			]
+			],
 		];
 	}
 
@@ -142,7 +142,7 @@ class PopulateCheckUserTablesWithSimulatedDataTest extends MediaWikiUnitTestCase
 	}
 
 	/** @dataProvider provideGenerateNewIp */
-	public function testGenerateNewIp( $randomFloat, $validationCallback ) {
+	public function testGenerateNewIp( float $randomFloat, callable $validationCallback ) {
 		// TODO: Maybe mock mt_rand to avoid random failures?
 		$mockObject = $this->createPartialMock( PopulateCheckUserTablesWithSimulatedData::class, [ 'getRandomFloat' ] );
 		$mockObject->expects( $this->once() )
@@ -169,8 +169,8 @@ class PopulateCheckUserTablesWithSimulatedDataTest extends MediaWikiUnitTestCase
 
 	public static function provideGenerateNewIp() {
 		return [
-			'Gets IPv4' => [ 0.3, [ IPUtils::class, 'isValidIPv4' ] ],
-			'Gets IPv6' => [ 0.7, [ IPUtils::class, 'isValidIPv6' ] ],
+			'Gets IPv4' => [ 0.3, IPUtils::isValidIPv4( ... ) ],
+			'Gets IPv6' => [ 0.7, IPUtils::isValidIPv6( ... ) ],
 		];
 	}
 
@@ -178,17 +178,14 @@ class PopulateCheckUserTablesWithSimulatedDataTest extends MediaWikiUnitTestCase
 	public function testGenerateNewIpv6( $ipv6Ranges, $mtRandValue ) {
 		if ( $mtRandValue !== null ) {
 			$objectUnderTest = $this->createPartialMock(
-				PopulateCheckUserTablesWithSimulatedData::class, [ 'mtRand' ]
+				PopulateCheckUserTablesWithSimulatedData::class,
+				[ 'mtRand' ]
 			);
 			$objectUnderTest->method( 'mtRand' )
-				->willReturnCallback( static function ( $min, $max ) use ( $mtRandValue ) {
-					if ( $mtRandValue === 'min' ) {
-						return $min;
-					} elseif ( $mtRandValue === 'max' ) {
-						return $max;
-					} else {
-						return $mtRandValue;
-					}
+				->willReturnCallback( static fn ( $min, $max ) => match ( $mtRandValue ) {
+					'min' => $min,
+					'max' => $max,
+					default => $mtRandValue
 				} );
 			$objectUnderTest = TestingAccessWrapper::newFromObject( $objectUnderTest );
 		} else {
@@ -218,7 +215,6 @@ class PopulateCheckUserTablesWithSimulatedDataTest extends MediaWikiUnitTestCase
 		// T287318 - TestingAccessWrapper::__call does not support pass-by-reference
 		$classReflection = new ReflectionClass( $objectUnderTest->object );
 		$methodReflection = $classReflection->getMethod( 'incrementAndCheck' );
-		$methodReflection->setAccessible( true );
 		$this->assertSame(
 			$expectedReturnValue,
 			$methodReflection->invokeArgs( $objectUnderTest->object, [ &$actionsPerformed, $actionsLeft ] ),
@@ -237,13 +233,15 @@ class PopulateCheckUserTablesWithSimulatedDataTest extends MediaWikiUnitTestCase
 
 	/** @dataProvider provideApplyRemainderAction */
 	public function testApplyRemainderAction(
-		$actionsLeft, $remainderActions, $expectedActionsLeftAfterCall, $expectedRemainderActionsAfterCall
+		$actionsLeft,
+		$remainderActions,
+		$expectedActionsLeftAfterCall,
+		$expectedRemainderActionsAfterCall
 	) {
 		$objectUnderTest = $this->setUpObjectUnderTest();
 		// T287318 - TestingAccessWrapper::__call does not support pass-by-reference
 		$classReflection = new ReflectionClass( $objectUnderTest->object );
 		$methodReflection = $classReflection->getMethod( 'applyRemainderAction' );
-		$methodReflection->setAccessible( true );
 		$methodReflection->invokeArgs( $objectUnderTest->object, [ &$actionsLeft, &$remainderActions ] );
 		$this->assertSame(
 			$expectedActionsLeftAfterCall,
@@ -257,7 +255,7 @@ class PopulateCheckUserTablesWithSimulatedDataTest extends MediaWikiUnitTestCase
 		);
 	}
 
-	public function provideApplyRemainderAction() {
+	public static function provideApplyRemainderAction() {
 		return [
 			'No remainder actions' => [ 3, 0, 3, 0 ],
 			'One remainder action' => [ 3, 1, 4, 0 ],

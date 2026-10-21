@@ -9,7 +9,6 @@
 	"ipinfo-infobox-title": "Podaci o IP adresi",
 	"ipinfo-property-label-location": "Lokacija:",
 	"ipinfo-property-label-ipversion": "Verzija:",
-	"ipinfo-property-label-isp": "Provajder:",
 	"ipinfo-property-label-asn": "ASN:",
 	"ipinfo-property-label-organization": "Organizacija:",
 	"ipinfo-property-label-connectiontype": "Način povezivanja:",
@@ -73,8 +72,9 @@
 	"ipinfo-widget-error-default": "Ne mogu da preuzmem podatke o IP adresi.",
 	"ipinfo-widget-error-no-data": "U izvoru $1 nema podataka za navedenu IP adresu.",
 	"ipinfo-widget-error-wrong-ip": "Navedena IP adresa se ne podudara s dnevničkom stavkom ili izmenom.",
-	"ipinfo-widget-error-ip-no-edits": "Ne mogu da preuzmem podatke o navedenoj IP adresi jer ona nema izmena na ovom projektu.",
+	"ipinfo-widget-error-ip-no-contributions": "Ne mogu da preuzmem podatke o navedenoj IP adresi jer ona nema izmena na ovom projektu.",
 	"ipinfo-preference-enable": "Prikaži IP info alatku na stranici doprinosa neregistrovanog urednika.",
+	"ipinfo-preference-use-agreement": "Podatke ću koristiti samo za potrebe patroliranja i antivandalizama",
 	"ipinfo-preference-agreement-error": "Morate prvo omogućiti IP info pre pristanka na uslove korišćenja.",
 	"ipinfo-infobox-use-terms": "IP info koristi bazu podataka MaxMind-a za prikaz informacija kao što su lokacija, proksi i koliko uređaja koristi ovu IP adresu.",
 	"ipinfo-infobox-submit-agreement": "Omogući IP info",
@@ -116,5 +116,6 @@
 	"ipinfo-special-ipinfo-table-caption": "IP informacije za $1",
 	"ipinfo-special-ipinfo-target": "Ciljano korisničko ime:",
 	"ipinfo-special-ipinfo-user-tool-links": "Za $1",
-	"ipinfo-special-ipinfo-no-results": "Nema IP informacija za $1."
+	"ipinfo-special-ipinfo-no-results": "Nema IP informacija za $1.",
+	"ipinfo-popup-link-text": "Vidi sve IP informacije"
 }

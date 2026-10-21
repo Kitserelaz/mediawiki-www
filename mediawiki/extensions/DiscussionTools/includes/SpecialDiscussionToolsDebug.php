@@ -6,7 +6,7 @@ use MediaWiki\Extension\DiscussionTools\ThreadItem\ContentCommentItem;
 use MediaWiki\Extension\DiscussionTools\ThreadItem\ContentHeadingItem;
 use MediaWiki\Extension\DiscussionTools\ThreadItem\ContentThreadItem;
 use MediaWiki\Html\Html;
-use MediaWiki\Languages\LanguageFactory;
+use MediaWiki\Language\LanguageFactory;
 use MediaWiki\Linker\Linker;
 use MediaWiki\Page\ParserOutputAccess;
 use MediaWiki\Parser\ParserOptions;
@@ -15,24 +15,17 @@ use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Title\Title;
 use MediaWiki\Utils\MWTimestamp;
 use Wikimedia\Assert\Assert;
-use Wikimedia\Parsoid\Utils\DOMCompat;
-use Wikimedia\Parsoid\Utils\DOMUtils;
+use Wikimedia\Parsoid\Core\DOMCompat;
+use Wikimedia\Parsoid\Ext\DOMUtils;
 
 class SpecialDiscussionToolsDebug extends FormSpecialPage {
 
-	private LanguageFactory $languageFactory;
-	private ParserOutputAccess $parserOutputAccess;
-	private CommentParser $commentParser;
-
 	public function __construct(
-		LanguageFactory $languageFactory,
-		ParserOutputAccess $parserOutputAccess,
-		CommentParser $commentParser
+		private readonly LanguageFactory $languageFactory,
+		private readonly ParserOutputAccess $parserOutputAccess,
+		private readonly CommentParser $commentParser,
 	) {
 		parent::__construct( 'DiscussionToolsDebug' );
-		$this->languageFactory = $languageFactory;
-		$this->parserOutputAccess = $parserOutputAccess;
-		$this->commentParser = $commentParser;
 	}
 
 	/**
@@ -84,16 +77,19 @@ class SpecialDiscussionToolsDebug extends FormSpecialPage {
 	public function onSubmit( array $data ) {
 		$title = Title::newFromText( $data['pagetitle'] );
 
+		$parserOptions = ParserOptions::newFromAnon();
 		$status = $this->parserOutputAccess->getParserOutput(
 			$title->toPageRecord(),
-			ParserOptions::newFromAnon()
+			$parserOptions
 		);
 		if ( !$status->isOK() ) {
 			return $status;
 		}
 
 		$parserOutput = $status->getValue();
-		$html = $parserOutput->getText();
+		$html = $parserOutput->runOutputPipeline( $parserOptions, [
+			'enableSectionEditLinks' => false,
+		] )->getContentHolderText();
 
 		$doc = DOMUtils::parseHTML( $html );
 		$container = DOMCompat::getBody( $doc );
@@ -107,12 +103,14 @@ class SpecialDiscussionToolsDebug extends FormSpecialPage {
 			SpecialPage::getTitleFor(
 				'ApiSandbox',
 				false,
-				'action=discussiontoolspageinfo&prop=threaditemshtml&excludesignatures=1&page='
+				'action=discussiontoolspageinfo&prop=threaditemshtml&threaditemsflags=excludesignatures&page='
 					. urlencode( $title->getPrefixedText() )
 			)->getFullText()
 		)->parseAsBlock() );
 
-		$pageLang = $this->languageFactory->getLanguage( $parserOutput->getLanguage() );
+		$parsedLanguage = $parserOutput->getLanguage();
+		$pageLang = $parsedLanguage !== null ?
+			$this->languageFactory->getLanguage( $parsedLanguage ) : $this->getLanguage();
 		$pageLangAttribs = [
 			'lang' => $pageLang->getHtmlCode(),
 			'dir' => $pageLang->getDir(),
@@ -131,8 +129,6 @@ class SpecialDiscussionToolsDebug extends FormSpecialPage {
 	/**
 	 * Format a thread item with replies.
 	 *
-	 * @param ContentThreadItem $comment
-	 * @param array $pageLangAttribs
 	 * @return string HTML
 	 */
 	private function formatComments( ContentThreadItem $comment, array $pageLangAttribs ) {

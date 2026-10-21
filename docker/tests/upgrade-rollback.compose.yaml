@@ -1,0 +1,17 @@
+# Rehearse the preserved 1.45 image/configuration with its matching old snapshot.
+services:
+  init:
+    environment:
+      MIRAHEZE_WIKI_VERSION: '1.45'
+  php:
+    environment:
+      MIRAHEZE_WIKI_VERSION: '1.45'
+  worker:
+    environment:
+      MIRAHEZE_WIKI_VERSION: '1.45'
+  scheduler:
+    environment:
+      MIRAHEZE_WIKI_VERSION: '1.45'
+networks:
+  default:
+    internal: true

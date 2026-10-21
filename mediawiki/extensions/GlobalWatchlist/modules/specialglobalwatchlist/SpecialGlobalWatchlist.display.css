@@ -1,0 +1,87 @@
+/* stylelint-disable selector-max-id */
+
+.ext-globalwatchlist-col {
+	-moz-column-width: 45em;
+	-webkit-column-width: 45em;
+	column-width: 45em;
+}
+
+.ext-globalwatchlist-emptywatchlist {
+	font-size: 130%;
+}
+
+.ext-globalwatchlist-content hr {
+	height: 2px;
+	clear: both;
+}
+
+.ext-globalwatchlist-expiry-icon {
+	/* Copied from core watchlistexpiry.less */
+	min-height: 13px;
+	height: 13px;
+	position: relative;
+	top: -1px;
+	opacity: 0.51; /* To match @opacity-icon-base--disabled */
+}
+
+.oo-ui-labelWidget {
+	display: block;
+	padding-bottom: 5px;
+}
+
+#ext-globalwatchlist-watchlistsloading {
+	margin: auto;
+	margin-top: 5px;
+}
+
+#ext-globalwatchlist-asof {
+	display: block;
+	text-align: center;
+}
+
+/* Ensure that this applies to links, see T245104 */
+.ext-globalwatchlist-strike,
+.ext-globalwatchlist-strike a {
+	text-decoration: line-through;
+}
+
+#ext-globalwatchlist-sites-list > div,
+.oo-ui-fieldLayout {
+	margin-top: 0;
+}
+
+#ext-globalwatchlist-toolbar {
+	position: sticky;
+	top: 0;
+	background: #fff;
+	z-index: 1;
+	padding-top: 10px;
+	padding-bottom: 5px;
+	border-bottom: 1px solid #0fd977;
+}
+
+.ext-globalwatchlist-site a,
+li b {
+	unicode-bidi: isolate;
+	display: inline-block;
+}
+
+/*
+ * Copy some core styles from mediawiki.interface.helpers.styles.less to match the normal watchlist:
+ *
+ * - auto-generated edit summaries
+ * - formatting of message when a username is hidden from an edit
+ *
+ * See T288733
+ */
+.autocomment,
+.autocomment a,
+.autocomment a:visited {
+	color: #72777d;
+}
+
+span.history-deleted {
+	text-decoration: line-through;
+	color: #72777d;
+	font-style: italic;
+}

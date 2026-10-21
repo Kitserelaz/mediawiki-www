@@ -8,7 +8,9 @@
 			"No Sleep till Krupki",
 			"Plaga med",
 			"Tomato Cream",
+			"Ucukor",
 			"Vlad5250",
+			"ZlyiLev",
 			"Тест"
 		]
 	},
@@ -19,6 +21,7 @@
 	"checkuser-contribs-log": "праверкі ўдзельніка",
 	"right-checkuser": "Праверка ІР-адрасоў і іншай інфармацыі ўдзельнікаў",
 	"right-checkuser-log": "Прагляд журнала праверкі ўдзельнікаў",
+	"right-checkuser-temporary-account": "Прагляд IP-адрасоў, ужытых часовымі ўліковымі запісамі",
 	"grant-checkuser": "Доступ да даных праверкі ўдзельнікаў",
 	"action-checkuser": "правяраць ІР-адрасы і іншую інфармацыю ўдзельнікаў",
 	"action-checkuser-log": "праглядаць журнал праверкі ўдзельнікаў",
@@ -73,7 +76,7 @@
 	"checkuser-investigateblock-warning-confirmaction": "Калі вы ўпэўнены, што сапраўды хочаце гэта зрабіць, калі ласка, адзначце поле \"{{int:checkuser-investigateblock-confirm-blocks-label}}\" ніжэй.",
 	"checkuser-investigate": "Даследаваць",
 	"checkuser-investigate-page-subtitle": "Бягучае даследаванне за $1",
-	"checkuser-investigate-subtitle-cancel-button-label": "Адмена",
+	"checkuser-investigate-subtitle-cancel-button-label": "Скасаваць",
 	"checkuser-investigate-subtitle-continue-button-label": "Працягнуць",
 	"checkuser-investigate-indicator-new-investigation": "Новае даследаванне",
 	"checkuser-investigate-indicator-logs": "Журналы",
@@ -108,5 +111,6 @@
 	"checkuser-investigate-compare-table-cell-unregistered": "Незарэгістраваны",
 	"checkuser-investigate-compare-table-header-username": "Імя ўдзельніка",
 	"checkuser-investigate-compare-table-header-activity": "Дыяпазон дат",
-	"checkuser-investigate-compare-table-header-ip": "IP"
+	"checkuser-investigate-compare-table-header-ip": "IP",
+	"checkuser-global-contributions-link": "глабальны ўклад"
 }

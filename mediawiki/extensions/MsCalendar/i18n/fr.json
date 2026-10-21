@@ -1,0 +1,34 @@
+{
+	"@metadata": {
+		"authors": [
+			"DePlusJean",
+			"Gomoko",
+			"Urhixidur",
+			"Verdy p",
+			"Wladek92",
+			"mberthault",
+			"riverbees"
+		]
+	},
+	"msc-desc": "Ajoute <code>&lt;mscalendar&gt;</code> pour insérer un calendrier dans une page du wiki",
+	"msc-noname": "Chaque calendrier doit avoir un nom",
+	"msc-notfirstday": "Attention, cet événement est périodique",
+	"msc-change": "Confirmer",
+	"msc-remove": "Supprimer cet événement",
+	"msc-create": "Valider",
+	"msc-cancel": "Annuler",
+	"msc-eventname": "Nom de l’événement :",
+	"msc-eventdate": "Date :",
+	"msc-eventduration": "Durée (en jours) :",
+	"msc-eventyearly": "Événement annuel",
+	"msc-eventedit": "Modifier cet événement",
+	"msc-eventcreate": "Créer un nouvel événement",
+	"msc-today": "Aujourd’hui",
+	"msc-todaylabel": "Aller à la date du jour",
+	"msc-months": "janvier,février,mars,avril,mai,juin,juillet,août,septembre,octobre,novembre,décembre",
+	"msc-days": "dimanche,lundi,mardi,mercredi,jeudi,vendredi,samedi",
+	"apihelp-mscalendargetmonth-summary": "Obtenir le mois",
+	"apihelp-mscalendarsavenew-summary": "Enregistrer le nouveau",
+	"apihelp-mscalendarupdate-summary": "Mettre à jour",
+	"apihelp-mscalendarremove-summary": "Retirer"
+}

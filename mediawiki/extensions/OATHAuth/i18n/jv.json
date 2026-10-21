@@ -9,8 +9,8 @@
 	"oathauth-account": "Jeneng akun:",
 	"oathauth-secret": "Kunci wani otèntifikasi rong faktor:",
 	"oathauth-enable": "Urubaké otèntifikasi rong faktor",
-	"oathauth-disable": "Patèni otèntifikasi rong faktor",
 	"oathauth-failedtovalidateoath": "Wurung validhasi krédhènsial rong faktor",
+	"oathauth-disable": "Patèni otèntifikasi rong faktor",
 	"oathauth-disabledoath": "Patèni otèntifikasi rong faktor.",
 	"oathauth-prefs-label": "Otèntifikasi rong faktor:",
 	"oathauth-step1": "Lampah 1: Undhuh program otèntifikasi rong faktor",
@@ -26,6 +26,5 @@
 	"oathauth-login-failed": "Wurung vèrifikasi.",
 	"oathauth-describe-provider": "Otèntifikasi rong faktor (OATH).",
 	"grant-group-authentication": "Ayahi tumindak otèntifikasi kanggo panjenengan dhéwé lan liyan",
-	"grant-oath": "Aksès informasi otèntifikasi rong faktor (OATH) kanggo panjenengan dhéwé lan liyan",
-	"action-oathauth-api-all": "priksa status OATH"
+	"grant-oath": "Aksès informasi otèntifikasi rong faktor (OATH) kanggo panjenengan dhéwé lan liyan"
 }

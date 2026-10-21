@@ -5,6 +5,7 @@
 
 use MediaWiki\Config\ServiceOptions;
 use MediaWiki\Http\HttpRequestFactory;
+use MediaWiki\Http\MWHttpRequest;
 use MediaWiki\MainConfigNames;
 use MediaWiki\Status\Status;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -76,6 +77,7 @@ trait MockHttpTrait {
 			MainConfigNames::HTTPConnectTimeout => 1,
 			MainConfigNames::HTTPMaxTimeout => 1,
 			MainConfigNames::HTTPMaxConnectTimeout => 1,
+			MainConfigNames::HTTPUserAgentContact => 'https://contact.test',
 			MainConfigNames::LocalVirtualHosts => [],
 			MainConfigNames::LocalHTTPProxy => false,
 		] );
@@ -136,20 +138,14 @@ trait MockHttpTrait {
 	 * Check whether $array is an array where all elements are instances of $class.
 	 *
 	 * @internal to the trait
-	 * @param string $class
+	 * @param class-string $class
 	 * @param mixed $array
 	 * @return bool
 	 */
 	private function isArrayOfClass( string $class, $array ): bool {
-		if ( !is_array( $array ) || !count( $array ) ) {
-			return false;
-		}
-		foreach ( $array as $item ) {
-			if ( !$item instanceof $class ) {
-				return false;
-			}
-		}
-		return true;
+		return is_array( $array ) &&
+			$array &&
+			array_all( $array, static fn ( $obj ) => $obj instanceof $class );
 	}
 
 	/**

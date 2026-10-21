@@ -1,0 +1,42 @@
+<?php
+
+namespace SMW\Query\ResultPrinters;
+
+use SMW\Query\QueryResult;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 3.0
+ *
+ * @author mwjames
+ */
+class NullResultPrinter extends ResultPrinter {
+
+	/**
+	 * @see ResultPrinter::getName
+	 *
+	 * {@inheritDoc}
+	 */
+	public function getName(): string {
+		return 'null';
+	}
+
+	/**
+	 * @see ResultPrinter::dependsOnUserLanguage
+	 *
+	 * {@inheritDoc}
+	 */
+	public function dependsOnUserLanguage(): bool {
+		return false;
+	}
+
+	/**
+	 * @see ResultPrinter::getResultText
+	 *
+	 * {@inheritDoc}
+	 */
+	protected function getResultText( QueryResult $queryResult, $outputMode ): string {
+		return '';
+	}
+
+}

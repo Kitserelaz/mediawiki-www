@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"27christian11",
+			"Herryz",
+			"Salomo Christian Hutajulu"
+		]
+	},
+	"globalusage": "Parhaseangon ugasan na global",
+	"globalusage-on-wiki": "Parhaseangon di $2",
+	"globalusage-of-file": "Wiki na asing manghaseanghon ugasan on:",
+	"globalusage-more": "Ida [[{{#Special:GlobalUsage}}/$1|lumobi godangan pamangke global]] sian ugasan on."
+}

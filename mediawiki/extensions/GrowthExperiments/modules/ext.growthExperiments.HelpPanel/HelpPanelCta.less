@@ -1,0 +1,72 @@
+@import 'mediawiki.skin.variables.less';
+
+.mw-ge-help-panel-cta {
+	// Don't show the help panel in printable versions of a page.
+	@media print {
+		display: none;
+	}
+	animation: help-panel-slidein 800ms;
+
+	&.animate-out {
+		animation: help-panel-slideout 400ms;
+		bottom: -1em;
+		opacity: 0;
+	}
+
+	.client-js &:not( .mw-ge-help-panel-ready ) {
+		display: none;
+	}
+}
+
+.mw-ge-help-panel-widget-overlay .mw-ge-help-panel-cta {
+	position: fixed;
+	bottom: 2em;
+	right: 1em;
+}
+
+.suggested-edits-mobile-peek-footer {
+	a {
+		.cdx-mixin-link-underlined();
+	}
+}
+
+@keyframes help-panel-slidein {
+	0%,
+	20% {
+		bottom: -1em;
+		opacity: 0.5;
+	}
+
+	70% {
+		bottom: 1.75em;
+		opacity: 0.9;
+	}
+
+	100% {
+		bottom: 2em;
+		opacity: 1;
+	}
+}
+
+@keyframes help-panel-slideout {
+	0% {
+		bottom: 2em;
+		opacity: 1;
+	}
+
+	100% {
+		bottom: -1em;
+		opacity: 0;
+	}
+}
+
+.mw-ge-help-panel-widget-overlay {
+	position: fixed;
+	right: 1em;
+	bottom: 1em;
+	z-index: 2;
+
+	.secondary-navigation-enabled & {
+		z-index: 0;
+	}
+}

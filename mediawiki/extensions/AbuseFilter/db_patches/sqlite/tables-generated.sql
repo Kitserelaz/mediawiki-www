@@ -40,7 +40,7 @@ CREATE TABLE /*_*/abuse_filter_log (
   afl_filter_id BIGINT UNSIGNED NOT NULL,
   afl_user BIGINT UNSIGNED NOT NULL,
   afl_user_text BLOB NOT NULL,
-  afl_ip VARCHAR(255) NOT NULL,
+  afl_ip_hex VARCHAR(255) NOT NULL,
   afl_action BLOB NOT NULL,
   afl_actions BLOB NOT NULL,
   afl_var_dump BLOB NOT NULL,
@@ -49,7 +49,6 @@ CREATE TABLE /*_*/abuse_filter_log (
   afl_title BLOB NOT NULL,
   afl_wiki BLOB DEFAULT NULL,
   afl_deleted SMALLINT DEFAULT 0 NOT NULL,
-  afl_patrolled_by INTEGER UNSIGNED DEFAULT 0 NOT NULL,
   afl_rev_id INTEGER UNSIGNED DEFAULT NULL
 );
 
@@ -67,11 +66,13 @@ CREATE INDEX afl_page_timestamp ON /*_*/abuse_filter_log (
   afl_namespace, afl_title, afl_timestamp
 );
 
-CREATE INDEX afl_ip_timestamp ON /*_*/abuse_filter_log (afl_ip, afl_timestamp);
+CREATE INDEX afl_ip_hex_timestamp ON /*_*/abuse_filter_log (afl_ip_hex, afl_timestamp);
 
 CREATE INDEX afl_rev_id ON /*_*/abuse_filter_log (afl_rev_id);
 
 CREATE INDEX afl_wiki_timestamp ON /*_*/abuse_filter_log (afl_wiki, afl_timestamp);
+
+CREATE INDEX afl_var_dump_timestamp ON /*_*/abuse_filter_log (afl_var_dump, afl_timestamp);
 
 
 CREATE TABLE /*_*/abuse_filter_history (

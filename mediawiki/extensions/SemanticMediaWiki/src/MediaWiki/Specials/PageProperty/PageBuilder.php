@@ -1,0 +1,162 @@
+<?php
+
+namespace SMW\MediaWiki\Specials\PageProperty;
+
+use MediaWiki\Html\Html;
+use MediaWiki\Linker\Linker;
+use SMW\DataTypeRegistry;
+use SMW\DataValueFactory;
+use SMW\Formatters\Infolink;
+use SMW\Localizer\Message;
+use SMW\MediaWiki\Renderer\HtmlFormRenderer;
+use SMW\Options;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 3.0
+ *
+ * @author mwjames
+ */
+class PageBuilder {
+
+	/**
+	 * @var Linker
+	 */
+	private $linker;
+
+	/**
+	 * @since 3.0
+	 */
+	public function __construct(
+		private readonly HtmlFormRenderer $htmlFormRenderer,
+		private readonly Options $options,
+	) {
+		$this->linker = smwfGetLinker();
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param int $count
+	 *
+	 * @return string
+	 */
+	public function buildForm( $count = 0 ): string {
+		$html = Html::rawElement(
+			'p',
+			[
+				'class' => 'plainlinks'
+			],
+			Message::get( 'smw-special-pageproperty-description', Message::PARSE, Message::USER_LANGUAGE )
+		);
+
+		$html .= $this->createForm( $count );
+
+		$html .= Html::element(
+			'h2',
+			[],
+			Message::get( 'smw-sp-searchbyproperty-resultlist-header', Message::PARSE, Message::USER_LANGUAGE )
+		);
+
+		return $html;
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function buildHtml( array $results ): string {
+		if ( count( $results ) == 0 ) {
+			return Message::get( 'smw_result_noresults', Message::TEXT, Message::USER_LANGUAGE );
+		}
+
+		$limit = (int)$this->options->get( 'limit' );
+		$dataValueFactory = DataValueFactory::getInstance();
+
+		$propertyValue = $dataValueFactory->newPropertyValueByLabel(
+			$this->options->get( 'property' )
+		);
+
+		$property = $propertyValue->getDataItem();
+
+		$isBrowsableType = DataTypeRegistry::getInstance()->isBrowsableType(
+			$property->findPropertyValueType()
+		);
+
+		$list = [];
+		$count = $limit + 1;
+
+		foreach ( $results as $dataItem ) {
+			$count--;
+			$link = '';
+
+			if ( $count < 1 ) {
+				continue;
+			}
+
+			$dataValue = $dataValueFactory->newDataValueByItem(
+				$dataItem,
+				$property
+			);
+
+			$link = $dataValue->getLongHTMLText( $this->linker );
+
+			if ( $isBrowsableType && $this->options->safeGet( 'from', '' ) !== '' ) {
+				$val = $dataValue->getLongWikiText();
+				$infolink = Infolink::newBrowsingLink( '+', $val );
+				$infolink->setLinkAttributes( [ 'title' => $val ] );
+			} else {
+				$val = $dataValue->getWikiValue();
+				$infolink = Infolink::newPropertySearchLink( '+', $property->getLabel(), $val );
+				$infolink->setLinkAttributes( [ 'title' => $val ] );
+			}
+
+			$link .= '&#160;&#160;' . $infolink->getHTML( $this->linker );
+			$list[] = $link;
+		}
+
+		return Html::rawElement(
+			'ul',
+			[],
+			'<li>' . implode( '</li><li>', $list ) . '</li>'
+		);
+	}
+
+	private function createForm( $count ) {
+		// Precaution to avoid any inline breakage caused by a div element
+		// within a paragraph (e.g Highlighter content)
+		// $resultMessage = str_replace( 'div', 'span', $resultMessage );
+
+		$this->htmlFormRenderer
+			->setName( 'pageproperty' )
+			->withFieldset()
+			->addParagraph( Message::get( 'smw_pp_docu', Message::ESCAPED, Message::USER_LANGUAGE ) )
+			->addPaging(
+				(int)$this->options->safeGet( 'limit', 20 ),
+				(int)$this->options->safeGet( 'offset', 0 ),
+				$count )
+			->addHorizontalRule()
+			->openElement( 'div', [ 'class' => 'smw-special-pageproperty-input' ] )
+			->addInputField(
+				Message::get( 'smw_pp_from', Message::TEXT, Message::USER_LANGUAGE ),
+				'from',
+				$this->options->safeGet( 'from', '' ),
+				'smw-page-input',
+				30,
+				[ 'class' => 'is-disabled' ]
+			)
+			->addNonBreakingSpace()
+			->addInputField(
+				Message::get( 'smw_sbv_property', Message::TEXT, Message::USER_LANGUAGE ),
+				'type',
+				$this->options->safeGet( 'type', '' ),
+				'smw-property-input',
+				20,
+				[ 'class' => 'is-disabled' ] )
+			->addNonBreakingSpace()
+			->addSubmitButton( Message::get( 'smw_sbv_submit', Message::TEXT, Message::USER_LANGUAGE ) )
+			->closeElement( 'div' );
+
+		return $this->htmlFormRenderer->renderForm();
+	}
+
+}

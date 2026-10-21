@@ -1,0 +1,42 @@
+'use strict';
+
+module.exports = function ( grunt ) {
+	const conf = grunt.file.readJSON( 'extension.json' );
+
+	grunt.loadNpmTasks( 'grunt-banana-checker' );
+	grunt.loadNpmTasks( 'grunt-contrib-watch' );
+	grunt.loadNpmTasks( 'grunt-eslint' );
+	grunt.loadNpmTasks( 'grunt-stylelint' );
+
+	grunt.initConfig( {
+		eslint: {
+			options: {
+				cache: true,
+				fix: grunt.option( 'fix' )
+			},
+			all: '.'
+		},
+		stylelint: {
+			options: {
+				cache: true
+			},
+			src: [
+				'**/*.{css,less}',
+				'!node_modules/**',
+				'!vendor/**'
+			]
+		},
+		watch: {
+			files: [
+				'.{stylelintrc,eslintrc}.json',
+				'<%= eslint.all %>'
+			],
+			tasks: 'lint'
+		},
+		banana: conf.MessagesDirs
+	} );
+
+	grunt.registerTask( 'lint', [ 'eslint', 'stylelint', 'banana' ] );
+	grunt.registerTask( 'test', 'lint' );
+	grunt.registerTask( 'default', 'test' );
+};

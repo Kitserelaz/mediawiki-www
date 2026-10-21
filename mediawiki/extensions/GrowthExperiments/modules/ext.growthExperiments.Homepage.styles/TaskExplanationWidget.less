@@ -1,0 +1,199 @@
+@import 'mediawiki.skin.variables.less';
+@import 'mediawiki.mixins.less';
+@import '../utils/variables.less';
+
+.suggested-edits-taskexplanation-difficulty-and-time,
+.suggested-edits-taskexplanation-additional-info {
+	p {
+		color: @color-base;
+	}
+
+	.suggested-edits-difficulty-indicator {
+		margin-left: auto;
+		margin-top: 2px;
+		margin-right: 4px;
+		text-transform: uppercase;
+		font-size: 0.75em;
+		// The text in the indicator and the level must line up. To ensure that,
+		// make their line height 100% of their padding-box height.
+		height: 14px;
+		line-height: 14px;
+		position: relative;
+		padding: 2px 4px;
+		// Counter the global border-box rule on mobile
+		box-sizing: content-box;
+	}
+
+	.suggested-edits-difficulty-time-estimate {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+
+		.suggested-edits-difficulty-indicator {
+			margin-left: 0;
+		}
+
+		.suggested-edits-difficulty-level {
+			// height is 18px
+			line-height: 1.5;
+			font-size: 12px;
+			margin-top: 2px;
+			padding-left: 4px;
+			color: @color-base;
+		}
+
+		.suggested-edits-task-explanation-icon {
+			@iconDimension: 16px;
+			margin-right: 8px;
+			width: @iconDimension;
+			height: @iconDimension;
+			// OOUI sets 20px min width & height.
+			min-height: @iconDimension;
+			min-width: @iconDimension;
+		}
+	}
+
+	.suggested-edits-difficulty-indicator-mixin( @baseColor, @darkenColor ) {
+		background-color: @baseColor;
+		color: @color-base;
+		border: @border-width-base @border-style-base @darkenColor;
+		height: 12px;
+		line-height: 12px;
+		border-radius: @border-radius-base 0 0 @border-radius-base;
+
+		&::before,
+		&::after {
+			content: '';
+			position: absolute;
+			width: 0;
+			height: 0;
+		}
+
+		&::before {
+			right: -5px;
+			bottom: -1px;
+			border-right: 4px @border-style-base @border-color-transparent;
+			border-top: 9px @border-style-base @darkenColor;
+			border-bottom: 9px @border-style-base @darkenColor;
+		}
+
+		&::after {
+			right: -4px;
+			bottom: 0;
+			border-right: 4px @border-style-base @border-color-transparent;
+			border-top: 8px @border-style-base @baseColor;
+			border-bottom: 8px @border-style-base @baseColor;
+		}
+	}
+
+	.suggested-edits-difficulty-indicator-easy {
+		.suggested-edits-difficulty-indicator-mixin( @easyBackgroundColor, @easyColor );
+	}
+
+	.suggested-edits-difficulty-indicator-medium {
+		.suggested-edits-difficulty-indicator-mixin( @mediumBackgroundColor, @mediumColor );
+	}
+
+	.suggested-edits-difficulty-indicator-hard {
+		.suggested-edits-difficulty-indicator-mixin( @hardBackgroundColor, @hardColor );
+	}
+}
+
+.suggested-edits-taskexplanation-additional-info {
+	h4.suggested-edits-task-explanation-heading {
+		margin-top: unset;
+		margin-bottom: unset;
+		padding-top: unset;
+		// Override line-height: 1.3; in Minerva
+		line-height: 1.6;
+	}
+
+	// Mimic h4 styling for the heading
+	span.suggested-edits-task-explanation-heading {
+		font-weight: bold;
+		font-size: 1em;
+	}
+
+	// Align the icon with the heading.
+	.oo-ui-iconElement {
+		text-align: left;
+		margin-top: -2px;
+	}
+}
+
+// This only applies to the task explanation in the suggested edits module (not the mobile drawer).
+.suggested-edits-task-explanation-wrapper {
+	.suggested-edits-taskexplanation-additional-info {
+		@iconOuterWidth: 2.3em; // Round up OOUI button width (2.14285714em) and its border
+		margin-bottom: 8px;
+
+		// Add additional padding to make room for the icon, which has negative margin.
+		// This prevents the icon from being orphaned.
+		.suggested-edits-task-explanation-heading {
+			padding-right: @iconOuterWidth;
+		}
+
+		// Align the icon with the heading.
+		.suggested-edits-task-explanation-info-button {
+			margin-left: calc( -1 * @iconOuterWidth );
+		}
+	}
+}
+
+.suggested-edits-mobile-peek-content,
+.suggested-edits-panel-header {
+	background-color: @suggestedEditsBackgroundColorLegacyLightOnly;
+	display: flex;
+	justify-content: space-between;
+	// Restore Minerva's padding for the Drawer
+	padding: 16px;
+
+	.suggested-edits-header-text {
+		padding-right: 16px;
+
+		h4 {
+			font-size: 1.144em;
+			text-align: left;
+			color: @color-base;
+			padding-bottom: 4px;
+		}
+
+		.suggested-edits-taskexplanation-additional-info {
+			// Align the suggested edits icon to the right.
+			align-items: center;
+		}
+	}
+
+	.suggested-edits-icon {
+		flex-shrink: 0;
+		align-self: flex-end;
+		width: 64px;
+		height: 64px;
+		// Image URLs are relative to the current CSS
+		background-image: url( ../../images/suggestededits/Topic-general-64w.svg );
+		background-repeat: no-repeat;
+	}
+}
+
+.suggested-edits-mobile-peek-content {
+	// on mobile, we want an extra 16px padding at the bottom. The desktop
+	// reuse of this component in the help panel suggested edits screen
+	// does not need it.
+	padding-bottom: 16px;
+}
+
+.drawer.suggested-edits-mobile-peek {
+	padding: unset;
+
+	.suggested-edits-icon {
+		margin-bottom: 0;
+	}
+
+	.suggested-edits-mobile-peek-footer {
+		background-color: @background-color-base;
+		min-height: 48px;
+		text-align: center;
+		font-weight: bold;
+		padding: 16px 0;
+	}
+}

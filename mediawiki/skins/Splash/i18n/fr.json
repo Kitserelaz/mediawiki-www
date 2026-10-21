@@ -1,0 +1,21 @@
+{
+	"@metadata": {
+		"authors": [
+			"Gomoko",
+			"Thibaut120094",
+			"Verdy p",
+			"Wladek92"
+		]
+	},
+	"splash-skin-desc": "Habillage Splash pour MediaWiki, tel que conçu pour zaori.org",
+	"splash-notloggedin": "Non connecté(e)",
+	"splash-userpage": "Page utilisateur",
+	"splash-talkpage": "Page de discussion",
+	"splash-page-tools": "Outils de la page",
+	"splash-talk": "Discuter",
+	"splash-jumptonavigation": "Aller à la navigation",
+	"splash-jumptocontent": "Aller au contenu",
+	"splash-jumptosearch": "Aller à la recherche",
+	"splash-toolbox": "Autres outils",
+	"global-links": "Autre navigation"
+}

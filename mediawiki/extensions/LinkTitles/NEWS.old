@@ -1,0 +1,240 @@
+Version 5.0.7 (2018-06-27)
+------------------------------------------------------------------------
+
+- Fix: Improve handling of page titles that start or end with numbers.
+
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
+
+Version 5.0.6 (2018-06-20)
+------------------------------------------------------------------------
+
+- Fix: Do not link inside `<syntaxhighlight></syntaxhighlight>` tags.
+
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
+
+Version 5.0.5 (2017-10-17)
+------------------------------------------------------------------------
+
+- Fix: Avoid errors with SQLite database.
+
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
+
+Version 5.0.4 (2017-09-23)
+------------------------------------------------------------------------
+
+- Fix: Many pages would not be linked.
+
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
+
+Version 5.0.3 (2017-09-06)
+------------------------------------------------------------------------
+
+- Fix: <autolinks> tag was broken.
+- Fix: <noautolinks> tag did not work in parse-on-render mode.
+
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
+
+Version 5.0.2 (2017-09-05)
+------------------------------------------------------------------------
+
+- Fix: Better detection of <span> and <div> elements that do not have attributes.
+
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
+
+Version 5.0.1 (2017-09-03)
+------------------------------------------------------------------------
+
+- Fix: Detection of existing links had a bug.
+- Fix: Do not crash when testing redirect target on empty page.
+- Improved: Special Page can now be translated using messages.
+- Improved: The comment that is added when pages are edited by the maintenance script can now be translated using a message.
+
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
+
+Version 5.0.0 (2017-09-01)
+------------------------------------------------------------------------
+
+Version 5 is a major rewrite of the LinKTitles extension. The code is
+now much better organized, and it included automatic (unit) testing,
+which will greatly facilitate future maintenance and development.
+
+Namespace support was overhauled, and a couple of **breaking changes**
+were introduced in this version. Most notably, the
+`$wgLinkTitlesNamespaces` configuration variable was removed and
+replaced with `$wgLinKTitlesSourceNamespaces`,
+`$wgLinkTitlesTargetNamespaces`, and `$wgLinkTitlesSameNamespace`.
+`$wgLinKTitlesTimeLimit` was renamed to
+`$wgLinkTitlesSpecialPageReloadAfter`.
+
+Version 5 offers more fine-grained control over where to link and what
+to link. In addition to the `__NOAUTOLINKS__` and
+`__NOAUTOLINKSTARGET__` magic words, you can have
+`<autolink>..</autolink>` and `<noautolink>..</noautolink>` tags in your
+page source to explicitly include or exclude sections from linking.
+
+Several long-standing bugs were fixed.
+
+Please see the detailed documentation in the README.md file, and the
+NEWS file.
+- Change: The $wgLinkTitlesBatchTimeLimit configuration variable was renamed to $wgLinkTitlesSpecialPageReloadAfter.
+- Fix: Blacklist did not always work properly
+- Fix: Contents of <noautolink> tags are now properly parsed as Wiki text.
+- Fix: Links to other namespaces were not prefixed properly.
+- Fix: The firstOnly option finally also works if a page contains a link to a given other page that was not currently added by the extension, i.e. that existed prior to an edit or that was manually added.
+- Fix: When $wgCapitalLinks was true, the extension would not work with non-latin languages.
+
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
+
+Version 4.1.0 (2017-08-25)
+------------------------------------------------------------------------
+
+- Fix: Properly handle templates that include other templates.
+- New: Mark sections that are not to be automatically linked with the new `<noautolinks>..</noautolinks>` tag.
+- New: Mark sections that are to be automatically linked with the new `<autolinks>..</autolinks>` tag. This tag only makes sense on pages with the `__NOAUTOLINKS__` magic word, or if both `$wgLinkTitlesParseOnEdit` and `$wgLinkTitlesParseOnRender` are set to false. Note that this tag is parsed when a page is rendered, not when it is saved. Therefore, the links will not appear in the page source.
+
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
+
+Version 4.0.9 (2017-03-21)
+------------------------------------------------------------------------
+
+- Fix: __NOAUTOLINKS__ was not respected during rendering.
+
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
+
+Version 4.0.8 (2017-02-16)
+------------------------------------------------------------------------
+
+- Fix: Do not link inside <gallery>...</gallery> tags.
+- Fix: The special page and the maintenance script did not work in MW 1.28.
+- Fix: The special page did not work.
+
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
+
+Version 4.0.7 (2017-01-02)
+------------------------------------------------------------------------
+
+- Improvement: Increase performance of special page and maintenance script.
+
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
+
+Version 4.0.6 (2016-12-28)
+------------------------------------------------------------------------
+
+- Fix: Bug fixes.
+- Fix: Custom namespace weights were not respected.
+
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
+
+Version 4.0.5 (2016-12-14)
+------------------------------------------------------------------------
+
+- Fix: Maintenance script would crash if invoked with the --page option.
+- Fix: Remove leftover error log call.
+- Improvement: Refactored maintenance script, improving user interaction.
+
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
+
+Version 4.0.4 (2016-11-30)
+------------------------------------------------------------------------
+
+- Fix: Do not link titles twice if $wgLinkTitlesFirstOnly and $wgLinkTitlesSmartMode are both true.
+
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
+
+Version 4.0.3 (2016-11-22)
+------------------------------------------------------------------------
+
+- Fix: __NOAUTOLINKS__ magic word would not be respected when saving an edited page.
+
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
+
+Version 4.0.2 (2016-11-09)
+------------------------------------------------------------------------
+
+- FIX: Removed a fatal bug in the LinkTitles_Maintenance script.
+- FIX: Repaired severely broken namespaces support.
+
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
+
+Version 4.0.1 (2016-11-08)
+------------------------------------------------------------------------
+
+- FIX: Prevent syntax error when accessing special page.
+
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
+
+Version 4.0.0 (2016-11-05)
+------------------------------------------------------------------------
+
+- CHANGE: Improve performance.
+- FIX: Prevent a crash when trying to save a page whose title contains a quote character.
+- FIX: Prevent unicode compilation errors.
+- NEW: Support namespaces.
+- NEW: Use the new extension format introduced by MediaWiki 1.25; the extension will no longer run with older MediaWiki versions.
+
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
+
+Version 3.1.0. (2015-02-05)
+------------------------------------------------------------------------
+
+- IMPROVEMENT: Do not link inside <file>...</file> tags.
+
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+version 0.0.1 (2012-05-20)
+------------------------------------------------------------------------
+
+
+
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *

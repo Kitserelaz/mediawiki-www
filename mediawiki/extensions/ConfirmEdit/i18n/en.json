@@ -2,6 +2,7 @@
 	"@metadata": {
 		"authors": []
 	},
+	"captcha-name": "SimpleCaptcha",
 	"captcha-edit": "To edit this page, please solve the following task below and enter the answer in the box ([[Special:Captcha/help|more info]]):",
 	"captcha-edit-fail": "Incorrect or missing CAPTCHA.",
 	"captcha-desc": "Provides CAPTCHA techniques to protect against spam and password-guessing",
@@ -32,5 +33,6 @@
 	"confirmedit-preview-valid": "valid",
 	"confirmedit-preview-invalid": "invalid",
 	"confirmedit-preview-description": "The following table shows the list of lines on this page and whether it's a valid IP address or IP address range. If the line is a valid IP address or IP address range, it will be excluded from CAPTCHA checks but invalid lines will be ignored. An example of a valid IP address range would be: 69.208.0.0/16 which goes from 69.208.0.0 to 69.208.255.255. [https://www.mediawiki.org/wiki/Special:MyLanguage/Help:Range_blocks#Calculating_the_CIDR_suffix More information] about calculating an IP address range.",
-	"abusefilter-edit-action-showcaptcha": "Require the user to complete a CAPTCHA in order to proceed with the action. Users with permission to skip a CAPTCHA are exempt."
+	"abusefilter-edit-action-showcaptcha": "Require CAPTCHA verification to perform the action",
+	"abusefilter-edit-action-showcaptcha-help": "Users with permission to skip a CAPTCHA are exempt."
 }

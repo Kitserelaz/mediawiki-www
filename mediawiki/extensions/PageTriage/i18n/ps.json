@@ -1,0 +1,30 @@
+{
+	"@metadata": {
+		"authors": [
+			"Af420",
+			"Ahmed-Najib-Biabani-Ibrahimkhel",
+			"Amjad Khan",
+			"Baloch Khan",
+			"شاه زمان پټان"
+		]
+	},
+	"pagetriage-edits": "$1 {{PLURAL:$1|سمونه|سمونې}}",
+	"pagetriage-filter-show-heading": "دريځ:",
+	"pagetriage-filter-unreviewed-edits": "نامخکتلي مخونه",
+	"pagetriage-filter-article": "ليکنه",
+	"pagetriage-filter-username": "کارن‌نوم",
+	"pagetriage-filter-ns-all": "ټول",
+	"pagetriage-filter-stat-all": "ټول",
+	"pagetriage-filter-stat-unreviewed": "نامخکتلي",
+	"pagetriage-filter-stat-username": "د کارن له مخې: $1",
+	"pagetriage-tags-param-article-label": "ليکنه:",
+	"pagetriage-tags-param-date-label": "نېټه:",
+	"pagetriage-tags-param-free-yes-label": "هو",
+	"pagetriage-tags-param-free-no-label": "نه",
+	"pagetriage-info-title": "د مخ مالومات",
+	"pagetriage-info-history-header": "پېښليک",
+	"pagetriage-info-help": "لارښود",
+	"pagetriage-toolbar-learn-more": "نور څه زده کول »",
+	"pagetriage-mark-as-unreviewed": "نامخکتلی په نښه کول",
+	"pagetriage-wikilove-edit-count": "$1 {{PLURAL:$1|edit|سمونې}}"
+}

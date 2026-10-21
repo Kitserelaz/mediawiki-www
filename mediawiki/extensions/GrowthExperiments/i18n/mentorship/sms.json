@@ -1,0 +1,26 @@
+{
+	"@metadata": {
+		"authors": [
+			"Yupik"
+		]
+	},
+	"growthexperiments-mentor-dashboard-mentee-overview-info-legend-headline": "Čiʹlǧǧtõs",
+	"growthexperiments-mentor-dashboard-mentee-overview-info-legend-userinfo": "Õõʹnninõmm",
+	"growthexperiments-mentor-dashboard-mentee-overview-add-filter": "Siʹllʼjeei",
+	"growthexperiments-mentor-dashboard-mentee-overview-add-filter-submit": "Peiʹvved",
+	"growthexperiments-mentor-dashboard-mentee-overview-search-placeholder": "Ooʒʒ",
+	"growthexperiments-mentor-dashboard-mentee-overview-registered-unknown": "toobdtem",
+	"growthexperiments-mentor-dashboard-mentee-overview-show-entries": "Čuäʹjet $1",
+	"growthexperiments-mentor-dashboard-mentor-tools-headline": "Asetõõzz",
+	"growthexperiments-mentor-dashboard-mentor-tools-away-dialog-cancel": "Jõõsk",
+	"growthexperiments-quit-mentorship-reason": "Mäinn",
+	"growthexperiments-notification-body-mentee-claimed": "Mäinn: $1",
+	"growthexperiments-mentor-dashboard-mentor-tools-message-change-dialog-save": "Ruõkk",
+	"growthexperiments-mentor-dashboard-mentor-tools-message-change-dialog-cancel": "Jõõsk",
+	"growthexperiments-mentor-dashboard-personalized-praise-info-headline": "Lââʹssteâđ",
+	"growthexperiments-mentor-dashboard-personalized-praise-skip-mentee-submit": "Vuõlttâd",
+	"growthexperiments-mentor-dashboard-personalized-praise-settings-save": "Ruõkk",
+	"growthexperiments-manage-mentors-username": "Õõʹnninõmm",
+	"growthexperiments-manage-mentors-edit": "Muuʹtt",
+	"growthexperiments-manage-mentors-remove-mentor": "Jaukkâd"
+}

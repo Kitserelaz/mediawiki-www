@@ -2,8 +2,8 @@
 
 namespace MediaWiki\IPInfo\Logging;
 
-use LogFormatter;
 use MediaWiki\Linker\Linker;
+use MediaWiki\Logging\LogFormatter;
 use MediaWiki\Message\Message;
 
 class IPInfoLogFormatter extends LogFormatter {
@@ -17,6 +17,8 @@ class IPInfoLogFormatter extends LogFormatter {
 			// Message keys used:
 			// - 'ipinfo-change-access-level-enable'
 			// - 'ipinfo-change-access-level-disable'
+			// - 'ipinfo-change-access-level-enable-globally'
+			// - 'ipinfo-change-access-level-disable-globally'
 			$params[3] = $this->msg( 'ipinfo-change-access-level-' . $params[3], $params[1] );
 		}
 

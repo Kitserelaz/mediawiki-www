@@ -5,6 +5,7 @@ use MediaWiki\Extension\TemplateData\TemplateDataBlob;
 use MediaWiki\Extension\TemplateData\TemplateDataHtmlFormatter;
 use MediaWiki\Extension\TemplateData\TemplateDataValidator;
 use MediaWiki\Json\FormatJson;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\Language\RawMessage;
 use MediaWiki\MainConfigNames;
 use MediaWiki\Status\Status;
@@ -702,10 +703,10 @@ class TemplateDataBlobTest extends MediaWikiIntegrationTestCase {
 		}
 	}
 
-	private function getStatusText( Status $status ): string {
+	private function getStatusText( StatusValue $status ): string {
 		// Unescape char references for things like "[, "]" and "|" for
 		// cleaner test assertions and output
-		return html_entity_decode( $status->getMessage()->plain() );
+		return html_entity_decode( Status::wrap( $status )->getMessage()->plain() );
 	}
 
 	private function ksort( array &$input ): void {
@@ -733,8 +734,8 @@ class TemplateDataBlobTest extends MediaWikiIntegrationTestCase {
 	private function assertStrictJsonEquals( string $expected, stdClass $actual, ?string $message = null ): void {
 		// Lazy recursive strict comparison: Serialise to JSON and compare that
 		// Sort first to ensure key-order
-		$expected = json_decode( $expected, /* assoc = */ true );
-		$actual = json_decode( json_encode( $actual ), /* assoc = */ true );
+		$expected = json_decode( $expected, true );
+		$actual = json_decode( json_encode( $actual ), true );
 		$this->ksort( $expected );
 		$this->ksort( $actual );
 

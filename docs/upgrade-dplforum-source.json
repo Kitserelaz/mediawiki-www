@@ -1,0 +1,7 @@
+{
+  "component": "mediawiki/extensions/DPLForum",
+  "baseline": "47a26a8d17bd99de6f76eaef45b4e766ca9c77b7",
+  "target": "76f07d8a05ebf9dc48c507ba96c674bfb1c2e7b9",
+  "preserved_changes": [],
+  "dependency_status": "No runtime Composer packages or component lock; uses core platform dependencies"
+}

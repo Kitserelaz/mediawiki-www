@@ -1,0 +1,23 @@
+{
+	"@metadata": {
+		"authors": [
+			"Aleator",
+			"Grondin",
+			"Mguix",
+			"SMP",
+			"Solde"
+		]
+	},
+	"validationstatistics": "Estadístiques de revisió",
+	"validationstatistics-users": "'''{{SITENAME}}''' té actualment '''[[Special:ListUsers/editor|$1]]''' {{PLURAL:$1|usuari|usuaris}} amb drets d'[[{{MediaWiki:Validationpage}}|Editor]].\n\nEls Editors són usuaris experimentats que poden validar les revisions de les pàgines.",
+	"validationstatistics-lastupdate": "''Les dades següents van ser actualitzades el $1 a les $2.''",
+	"validationstatistics-pndtime": "Les edicions que han estat comprovades pels usuaris establerts es consideren ''{{int:validationstatistics-stable}}''. <br><br>El retard mitjà de revisió per a [[Special:OldReviewedPages|pàgines amb edicions actualment pendents de revisió]] és ''$1'''; el retard mesura quant de temps ha passat sense revisar l'edició pendent més antiga.",
+	"validationstatistics-ns": "Espai de noms",
+	"validationstatistics-total": "Pàgines",
+	"validationstatistics-stable": "S'ha revisat",
+	"validationstatistics-latest": "Sincronitzat",
+	"validationstatistics-synced": "Sincronitzat/Revisat",
+	"validationstatistics-old": "Desfasat",
+	"validationstatistics-user": "Usuari",
+	"validationstatistics-reviews": "Revisions"
+}

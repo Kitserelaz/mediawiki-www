@@ -1,14 +1,11 @@
-'use strict';
-
-const assert = require( 'assert' ),
-	Api = require( 'wdio-mediawiki/Api' ),
-	MathPage = require( '../pageobjects/math.page' );
+import { createApiClient } from 'wdio-mediawiki/Api.js';
+import MathPage from '../pageobjects/math.page.js';
 
 describe( 'Math', () => {
-	let bot;
+	let api;
 
 	before( async () => {
-		bot = await Api.bot();
+		api = await createApiClient();
 	} );
 
 	it( 'should work for addition', async () => {
@@ -17,12 +14,12 @@ describe( 'Math', () => {
 		const pageName = Math.random().toString();
 
 		// create a page with a simple addition
-		await bot.edit( pageName, '<math>3 + 2</math>' );
+		await api.edit( pageName, '<math>3 + 2</math>' );
 
 		await MathPage.openTitle( pageName );
 
 		// check if the page displays the image
-		assert( await MathPage.mathml.isExisting() );
+		await expect( await MathPage.mathml ).toExist();
 
 	} );
 

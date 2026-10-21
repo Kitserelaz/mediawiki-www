@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Derugon",
+			"Grondin",
+			"McDutchie",
+			"Urhixidur"
+		]
+	},
+	"rightfunctions-desc": "Fonctions de l’analyseur concernant les permissions",
+	"rightfunctions-casc": "(depuis les sources en cascade)",
+	"rightfunctions-local": "(depuis une page locale)",
+	"rightfunctions-ns": "(depuis la protection des espaces de nom)"
+}

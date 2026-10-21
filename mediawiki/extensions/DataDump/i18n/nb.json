@@ -1,0 +1,38 @@
+{
+	"@metadata": {
+		"authors": [
+			"EdoAug",
+			"Jon Harald Søby"
+		]
+	},
+	"action-delete-dump": "slett sikkerhetskopier av wiki",
+	"action-generate-dump": "generer sikkerhetskopier av wiki",
+	"action-view-dump": "vis sikkerhetskopier av wiki",
+	"apihelp-viewdumps-example-1": "Dette er et eksempel for hvordan man henter alle dumper.",
+	"apihelp-viewdumps-example-2": "Dette er et eksempel for hvordan man henter dumper med den angitte typen «xml».",
+	"apihelp-viewdumps-param-filename": "Finn dump med dette filnavnet angitt.",
+	"apihelp-viewdumps-param-timestamp": "Finn dump med dette tidsstempelet angitt.",
+	"apihelp-viewdumps-param-type": "Finn dump med denne typen angitt.",
+	"apihelp-viewdumps-summary": "Vis dumper for spesifikk type, filnavn eller tidsstempel.",
+	"datadump": "Sikkerhetskopier deler av denne wikien",
+	"datadump-delete-button": "Slett",
+	"datadump-delete-failed": "Den valgte sikkerhetskopien kunne ikke slettes. Prøv på nytt.",
+	"datadump-delete-success": "Du har slettet sikkerhetskopien.",
+	"datadump-desc": "Du kan generere flere typer sikkerhetskopier. Velg et alternativ nedenfor for å generere en sikkerhetskopi.",
+	"datadump-generated-error": "Kunne ikke generere en sikkerhetskopi. Du kan kun generere {{PLURAL:$1|én dump|$1 dumper}}.",
+	"datadump-generated-success": "Sikkerhetskopieringsforespørselen er send inn. Vent mens sikkerhetskopien genereres. Avhengig av størrelsen til kopien, kan det ta opptil noen timer.",
+	"datadump-label-generate": "Generer",
+	"datadump-log-header": "Denne loggen sporer alle wikisikkerhetskopier som slettes eller genereres med [[Special:DataDump|DataDump]].",
+	"datadump-log-name": "Wikisikkerhetskopieringslogg",
+	"datadump-no-results": "Ingen dumper funnet, vennligst generer en.",
+	"datadump-not-configured": "Du har ikke konfigurert $wgDataDump.",
+	"datadump-table-column-failed": "Feilet",
+	"datadump-table-column-queued": "I kø",
+	"datadump-table-header-delete": "Slett",
+	"datadump-table-header-name": "Navn",
+	"datadump-table-header-size": "Størrelse",
+	"datadump-table-header-status": "Status",
+	"datadump-table-header-type": "Type",
+	"logentry-datadump-delete": "$1 slettet $4 dumper.",
+	"logentry-datadump-generate": "$1 genererte dumpen $4."
+}

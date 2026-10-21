@@ -1,0 +1,19 @@
+{
+	"@metadata": {
+		"authors": [
+			"Bjankuloski06"
+		]
+	},
+	"rottenlinks": "Состојба на надворешни врски",
+	"rottenlinks-desc": "Ја прикажува [[Special:RottenLinks|состојбата на сите надворешни врски]] на викито",
+	"rottenlinks-extensionname": "RottenLinks",
+	"rottenlinks-header": "Уточни приказ на надворешни врски во исходот",
+	"rottenlinks-header-info": "Можете да изберете кои статистики сакате да се прикажуваат или колку ставки по страница да има исходот.",
+	"rottenlinks-rlstatus-no-url": "Нема укажано URL-адреса за {{#rl_status}}",
+	"rottenlinks-table-external": "Надворешна врска",
+	"rottenlinks-table-response": "HTTP-одговор",
+	"rottenlinks-table-usage": "Употреба на страницата",
+	"rottenlinks-showbad": "Прикажувај само расипани врски",
+	"rottenlinks-statistics": "Статистика за расипани врски",
+	"rottenlinks-stats": "Дај статистика за врски"
+}

@@ -19,8 +19,7 @@ use MediaWiki\Message\Message;
  * @author Moritz Schubotz
  */
 class RestbaseChecker extends BaseChecker {
-	/** @var MathRestbaseInterface */
-	private $restbaseInterface;
+	private readonly MathRestbaseInterface $restbaseInterface;
 
 	/**
 	 * @param string $tex the TeX input string to be checked
@@ -56,7 +55,6 @@ class RestbaseChecker extends BaseChecker {
 
 	/**
 	 * Returns the string of the last error.
-	 * @return ?Message
 	 */
 	public function getError(): ?Message {
 		$err = $this->restbaseInterface->getError();
@@ -65,7 +63,7 @@ class RestbaseChecker extends BaseChecker {
 		}
 		try {
 			$host = $this->restbaseInterface->getUrl( '' );
-		} catch ( Exception $ignore ) {
+		} catch ( Exception ) {
 			$host = 'invalid';
 		}
 		return $this->errorObjectToMessage( $err, $host );

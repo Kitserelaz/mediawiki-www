@@ -1,12 +1,13 @@
 {
-	"@metadata": {
-		"authors": [
-			"Lam Takuma",
-			"Mirlim"
-		]
-	},
-	"visualeditor-ca-createlocaldescriptionsource": "Wak sumbo ttere hok stepak",
-	"visualeditor-ca-createsource": "Buwak sumbo",
-	"visualeditor-ca-editsource": "Suténg sumbo",
-	"visualeditor-ca-editsource-section": "suténg sumbo"
+  "@metadata": {
+    "authors": [
+      "EmpAhmadK",
+      "Lam Takuma",
+      "Mirlim"
+    ]
+  },
+  "visualeditor-ca-createlocaldescriptionsource": "Wak sumbo ttere hok stepak",
+  "visualeditor-ca-createsource": "Buwak sumbo",
+  "visualeditor-ca-editsource": "Suténg sumbo",
+  "visualeditor-ca-editsource-section": "suténg sumbo"
 }

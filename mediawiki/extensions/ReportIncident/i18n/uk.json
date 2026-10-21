@@ -1,0 +1,28 @@
+{
+	"@metadata": {
+		"authors": [
+			"Ата"
+		]
+	},
+	"reportincident-desc": "Розширення Системи повідомлень про інциденти.",
+	"reportincident-report-btn-label": "Поскаржитися",
+	"reportincident-dialog-close-btn": "Закрити",
+	"reportincident-dialog-back-btn": "Назад",
+	"reportincident-dialog-optional-label": "(необов'язково)",
+	"reportincident-dialog-violator-placeholder-text": "На кого {{GENDER:|ви}} скаржитеся?",
+	"reportincident-dialog-harassment-type-hate-speech-or-discrimination": "Мова ненависті чи дискримінація",
+	"reportincident-dialog-harassment-type-sexual-harassment": "Сексуальні домагання",
+	"reportincident-dialog-harassment-type-something-else": "Щось інше",
+	"reportincident-dialog-something-else-input-placeholder": "Укажіть поведінку, не зазначену вище.",
+	"reportincident-dialog-harassment-empty": "{{GENDER:|Ви}} маєте вибрати принаймні один тип поведінки.",
+	"reportincident-dialog-something-else-empty": "Будь ласка, дайте короткий опис поведінки.",
+	"reportincident-dialog-server-error": "Вибачте, схоже, що наш сервер не відповідає. Спробуйте надіслати ще раз.",
+	"reportincident-dialog-generic-error": "{{GENDER:|Ваш}} запит не вдалося надіслати через помилку. Спробуйте надіслати ще раз.",
+	"right-reportincident": "Надсилання скарг",
+	"action-reportincident": "надсилання скарг",
+	"reportincident-emaildialog-title": "Потрібна підтверджена електронна адреса",
+	"reportincident-emaildialog-close-button": "Скасувати",
+	"reportincident-emaildialog-content": "Нам потрібна {{GENDER:|ваша}} підтверджена адреса електронної пошти, на яку можна буде надіслати новини щодо скарги або зв'язатися з вами за потреби. Будь ласка, додайте або підтвердьте {{GENDER:|свою}} електронну адресу в налаштуваннях облікового запису, перш ніж надсилати скаргу.",
+	"reportincident-emaildialog-primary": "Перейти до налаштувань",
+	"reportincident-confirmedemail-required": "Щоб надіслати скаргу про інцидент, потрібна підтверджена електронна адреса."
+}

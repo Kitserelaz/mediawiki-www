@@ -1,0 +1,38 @@
+{
+	"@metadata": {
+		"authors": [
+			"Elefentiste"
+		]
+	},
+	"ratePage-vote-title": "Gradi article",
+	"ratePage-vote-info": "Tua vota: $1",
+	"ratePage-vote-average-info": "Promedia: $1 ($2)",
+	"ratePage-caption-4": "Bon",
+	"ratePage-caption-5": "Eselente!",
+	"ratePage-prompt": "Vota per vide la gradi promedia",
+	"action-ratepage-contests-edit": "edita un concurso",
+	"action-ratepage-contests-clear": "vacui la resultas de un concurso",
+	"right-ratepage-contests-edit": "Edita un concurso",
+	"right-ratepage-contests-clear": "Vacui la resultas de un concurso",
+	"ratePage-contest-disabled": "descomutada",
+	"ratePage-contest-enabled": "'''comutada'''",
+	"ratePage-contests-list-enabled": "State",
+	"ratePage-contests-list-description": "Descrive",
+	"ratePage-contest-edit-title": "Editante un concurso",
+	"ratePage-contests-new": "Crea un concurso nova",
+	"ratePage-edit-description": "Descrive",
+	"ratePage-edit-enabled": "Comutada",
+	"ratePage-edit-allowed-to-vote": "Pote vota",
+	"ratePage-edit-save": "Fisa",
+	"ratePage-results-list-page": "Paje",
+	"ratePage-results-list-avg": "Gradi promedia",
+	"logentry-ratepage-contest-create": "$1 {{GENDER:$2|ia crea}} $4",
+	"logentry-ratepage-contest-change": "$1 {{GENDER:$2|ia cambia}} $4",
+	"ratePage-log-contest-formatter": "concurso $1",
+	"ratePage-no-such-contest": "Era: concurso \"$1\" no esiste.",
+	"ratePage-vote-cannot-vote": "Tu no pote vota en esta concurso",
+	"ratePage-property-average-alias": "Gradi promedia",
+	"ratePage-property-average-description": "Gradi promedia per esta paje.",
+	"ratePage-property-count-description": "La cuantia de gradis per esta paje.",
+	"ratePage-edit-export": "Esporta resultas"
+}

@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"Eleassar",
+			"Janezdrilc"
+		]
+	},
+	"uploadslink-desc": "Doda povezavo do seznama naložitev trenutnega uporabnika v meni osebnih orodij in povezavo do seznama naložitev ustreznega uporabnika v meni Orodja v stranski letvici",
+	"uploadslink-portlet-label": "Naložitve",
+	"tooltip-pt-uploads": "Seznam datotek, ki ste jih naložili",
+	"uploadslink-toobox-label": "{{GENDER:$1|Uporabnikove|Uporabničine|Uporabnikove}} naložitve",
+	"tooltip-tb-uploads": "Seznam naložitev {{GENDER:$1|tega uporabnika|te uporabnice|tega_te uporabnika_ice}}"
+}

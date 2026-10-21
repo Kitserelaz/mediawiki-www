@@ -21,12 +21,11 @@
  * @param {Object} [config.toolbarConfig]
  * @param {string|null} [config.section] Number of the section target should scroll to
  */
-ve.init.mw.MobileArticleTarget = function VeInitMwMobileArticleTarget( overlay, config ) {
+ve.init.mw.MobileArticleTarget = function VeInitMwMobileArticleTarget( overlay, config = {} ) {
 	this.overlay = overlay;
 	this.$overlay = overlay.$el;
 	this.$overlaySurface = overlay.$el.find( '.surface' );
 
-	config = config || {};
 	config.toolbarConfig = ve.extendObject( {
 		actions: false
 	}, config.toolbarConfig );
@@ -52,12 +51,16 @@ OO.inheritClass( ve.init.mw.MobileArticleTarget, ve.init.mw.ArticleTarget );
 /* Static Properties */
 
 ve.init.mw.MobileArticleTarget.static.toolbarGroups = [
-	// History
+	// Back
+	{
+		name: 'back',
+		include: [ 'back' ],
+		excludeFromTargetWidget: true
+	},
 	{
 		name: 'history',
 		include: [ 'undo' ]
 	},
-	// Style
 	{
 		name: 'style',
 		classes: [ 've-test-toolbar-style' ],
@@ -71,21 +74,64 @@ ve.init.mw.MobileArticleTarget.static.toolbarGroups = [
 		promote: [ 'bold', 'italic' ],
 		demote: [ 'strikethrough', 'code', 'underline', 'language', 'clear' ]
 	},
-	// Link
 	{
 		name: 'link',
 		include: [ 'link' ]
 	},
-	// Placeholder for reference tools (e.g. Cite and/or Citoid)
 	{
-		name: 'reference'
+		name: 'insert',
+		label: OO.ui.deferMsg( 'visualeditor-toolbar-insert' ),
+		title: OO.ui.deferMsg( 'visualeditor-toolbar-insert' ),
+		narrowConfig: {
+			invisibleLabel: true,
+			icon: 'add'
+		},
+		// This is the default for include=*, but that's not guaranteed:
+		type: 'list'
+	},
+	{
+		name: 'editMode',
+		type: 'list',
+		icon: 'edit',
+		title: ve.msg( 'visualeditor-mweditmode-tooltip' ),
+		label: ve.msg( 'visualeditor-mweditmode-tooltip' ),
+		invisibleLabel: true,
+		include: [ { group: 'editMode' } ],
+		excludeFromTargetWidget: true
+	},
+	{
+		name: 'save',
+		type: 'bar',
+		include: [ 'showSave' ],
+		excludeFromTargetWidget: true
 	}
 ];
+
+const mobileInsertMenu = mw.config.get( 'wgVisualEditorConfig' ).mobileInsertMenu;
+const insertGroupIndex = ve.init.mw.MobileArticleTarget.static.toolbarGroups.findIndex( ( toolGroup ) => toolGroup.name === 'insert' );
+if ( mobileInsertMenu ) {
+	const insertGroup = ve.init.mw.MobileArticleTarget.static.toolbarGroups[ insertGroupIndex ];
+	if ( mobileInsertMenu === true ) {
+		insertGroup.include = '*';
+		insertGroup.forceExpand = [ 'transclusion', 'insertTable' ];
+		insertGroup.promote = [ 'transclusion', 'insertTable' ];
+		insertGroup.exclude = [ { group: 'format' }, { group: 'history' }, { group: 'structure' }, 'gallery', 'media', 'mwSignature' ];
+	} else {
+		insertGroup.include = mobileInsertMenu;
+		// Citoid sets this up, so we need to force it for everything:
+		insertGroup.forceExpand = mobileInsertMenu;
+	}
+} else {
+	// Feature disabled, remove the insert group
+	ve.init.mw.MobileArticleTarget.static.toolbarGroups.splice( insertGroupIndex, 1 );
+}
 
 ve.init.mw.MobileArticleTarget.static.trackingName = 'mobile';
 
 // FIXME Some of these users will be on tablets, check for this
 ve.init.mw.MobileArticleTarget.static.platformType = 'phone';
+
+ve.init.mw.MobileArticleTarget.static.enforceResizesContent = true;
 
 /* Methods */
 
@@ -242,7 +288,7 @@ ve.init.mw.MobileArticleTarget.prototype.onSurfaceScroll = function () {
 /**
  * @inheritdoc
  */
-ve.init.mw.MobileArticleTarget.prototype.createSurface = function ( dmDoc, config ) {
+ve.init.mw.MobileArticleTarget.prototype.createSurface = function ( dmDoc, config = {} ) {
 	if ( this.overlay.isNewPage ) {
 		config = ve.extendObject( {
 			placeholder: this.overlay.options.placeholder
@@ -272,13 +318,12 @@ ve.init.mw.MobileArticleTarget.prototype.getSurfaceClasses = function () {
 ve.init.mw.MobileArticleTarget.prototype.setSurface = function ( surface ) {
 	const changed = surface !== this.surface;
 
-	// Parent method
-	// FIXME This actually skips ve.init.mw.Target.prototype.setSurface. Why?
-	ve.init.mw.Target.super.prototype.setSurface.apply( this, arguments );
-
 	if ( changed ) {
 		this.$overlaySurface.append( surface.$element );
 	}
+
+	// Parent method
+	ve.init.mw.MobileArticleTarget.super.prototype.setSurface.apply( this, arguments );
 };
 
 /**
@@ -298,8 +343,12 @@ ve.init.mw.MobileArticleTarget.prototype.surfaceReady = function () {
 	// Parent method
 	ve.init.mw.MobileArticleTarget.super.prototype.surfaceReady.apply( this, arguments );
 
-	// If no selection has been set yet, set it to the start of the document.
-	if ( this.getSurface().getModel().getSelection().isNull() ) {
+	// In section editing mode, if no selection has been set yet,
+	// set it to the start of the visible document.
+	if (
+		this.enableVisualSectionEditing &&
+		this.getSurface().getModel().getSelection().isNull()
+	) {
 		this.getSurface().getView().selectFirstSelectableContentOffset();
 	}
 
@@ -330,13 +379,9 @@ ve.init.mw.MobileArticleTarget.prototype.afterSurfaceReady = function () {
 ve.init.mw.MobileArticleTarget.prototype.adjustContentPadding = function () {
 	const surface = this.getSurface(),
 		surfaceView = surface.getView(),
-		toolbarHeight = this.getToolbar().$element[ 0 ].clientHeight;
+		paddingTop = surface.getPadding().top;
 
-	surface.setPadding( {
-		top: toolbarHeight
-	} );
-	surfaceView.$attachedRootNode.css( 'padding-top', toolbarHeight );
-	surface.$placeholder.css( 'padding-top', toolbarHeight );
+	this.$overlaySurface.css( 'padding-top', paddingTop );
 	surfaceView.emit( 'position' );
 	surface.scrollSelectionIntoView();
 };
@@ -430,46 +475,40 @@ ve.init.mw.MobileArticleTarget.prototype.saveFail = function ( doc, saveData, co
  * @inheritdoc
  */
 ve.init.mw.MobileArticleTarget.prototype.tryTeardown = function () {
-	this.overlay.onExitClick( $.Event() );
+	// This is working around the MobileFrontend overlay manager requiring
+	// that the exit/cancel callbacks be called synchronously, which means
+	// the cancel callback is unreliable for telling whether the teardown was
+	// actually canceled.
+	const deferred = ve.createDeferred();
+	const onClosing = ( win, compatClosing, data ) => {
+		// If we're not receiving the only data that would trigger
+		// EditorOverlay to do the teardown...
+		if ( !( data && data.action === 'discard' ) ) {
+			deferred.reject();
+		}
+	};
+	this.overlay.onBeforeExit( () => {
+		// exit; if this is called we're *actually* exiting.
+		this.overlay.hide();
+		deferred.resolve();
+		if ( this.overlay.windowManager ) {
+			this.overlay.windowManager.off( 'closing', onClosing );
+		}
+	}, () => {
+		// cancel; this is called just before the "are you sure?" dialog is
+		// shown. Later the exit callback will be called if the user chooses
+		// not to cancel after all.
+		this.overlay.windowManager.once( 'closing', onClosing );
+	} );
+	return deferred.promise();
 };
 
 /**
  * @inheritdoc
  */
-ve.init.mw.MobileArticleTarget.prototype.setupToolbar = function ( surface ) {
-	const originalToolbarGroups = this.toolbarGroups;
-
-	// We don't want any of these tools to show up in subordinate widgets, so we
-	// temporarily add them here. We need to do it _here_ rather than in their
-	// own static variable to make sure that other tools which meddle with
-	// toolbarGroups (Cite, mostly) have a chance to do so.
-	this.toolbarGroups = [
-		// Back
-		{
-			name: 'back',
-			include: [ 'back' ]
-		},
-		...this.toolbarGroups,
-		{
-			name: 'editMode',
-			type: 'list',
-			icon: 'edit',
-			title: ve.msg( 'visualeditor-mweditmode-tooltip' ),
-			label: ve.msg( 'visualeditor-mweditmode-tooltip' ),
-			invisibleLabel: true,
-			include: [ { group: 'editMode' } ]
-		},
-		{
-			name: 'save',
-			type: 'bar',
-			include: [ 'showSave' ]
-		}
-	];
-
+ve.init.mw.MobileArticleTarget.prototype.setupToolbar = function () {
 	// Parent method
-	ve.init.mw.MobileArticleTarget.super.prototype.setupToolbar.call( this, surface );
-
-	this.toolbarGroups = originalToolbarGroups;
+	ve.init.mw.MobileArticleTarget.super.prototype.setupToolbar.apply( this, arguments );
 
 	this.toolbar.$element.addClass( 've-init-mw-mobileArticleTarget-toolbar' );
 	this.toolbar.$popups.addClass( 've-init-mw-mobileArticleTarget-toolbar-popups' );
@@ -482,6 +521,9 @@ ve.init.mw.MobileArticleTarget.prototype.attachToolbar = function () {
 	// Move the toolbar to the overlay header
 	this.overlay.$el.find( '.overlay-header > .toolbar' ).append( this.toolbar.$element );
 	this.toolbar.initialize();
+	// MobileFrontend handles toolbar floating, but mark it as floating so we
+	// calculate a height for surface padding.
+	this.toolbar.float();
 };
 
 /**

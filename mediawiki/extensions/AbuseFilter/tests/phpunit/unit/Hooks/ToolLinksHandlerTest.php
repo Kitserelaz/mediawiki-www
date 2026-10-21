@@ -7,7 +7,7 @@ use MediaWiki\Extension\AbuseFilter\AbuseFilterPermissionManager;
 use MediaWiki\Extension\AbuseFilter\Hooks\Handlers\ToolLinksHandler;
 use MediaWiki\Linker\LinkRenderer;
 use MediaWiki\Message\Message;
-use MediaWiki\Request\WebRequest;
+use MediaWiki\Request\FauxRequest;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
@@ -54,11 +54,12 @@ class ToolLinksHandlerTest extends MediaWikiUnitTestCase {
 		$handler = $this->getToolLinksHandler();
 		$sp = $this->createMock( SpecialPage::class );
 		$sp->method( 'getUser' )->willReturn( $this->createMock( User::class ) );
+		$sp->method( 'msg' )->willReturn( $this->createMock( Message::class ) );
 		$title = $this->createMock( Title::class );
 		$title->method( 'getText' )->willReturn( '1.1.0.0/16' );
 		$tools = [];
 		$handler->onContributionsToolLinks( 1, $title, $tools, $sp );
-		$this->assertCount( 0, $tools );
+		$this->assertArrayHasKey( 'abuselog', $tools );
 	}
 
 	public function testOnHistoryPageToolLinks() {
@@ -85,8 +86,7 @@ class ToolLinksHandlerTest extends MediaWikiUnitTestCase {
 		$handler = $this->getToolLinksHandler();
 		$ctx = $this->createMock( IContextSource::class );
 		$ctx->method( 'getUser' )->willReturn( $this->createMock( User::class ) );
-		$req = $this->createMock( WebRequest::class );
-		$req->method( 'getVal' )->with( 'action' )->willReturn( 'view' );
+		$req = new FauxRequest( [ 'action' => 'view' ] );
 		$ctx->method( 'getRequest' )->willReturn( $req );
 		$ctx->method( 'msg' )->willReturn( $this->createMock( Message::class ) );
 		$ctx->method( 'getTitle' )->willReturn( $this->createMock( Title::class ) );
@@ -99,8 +99,7 @@ class ToolLinksHandlerTest extends MediaWikiUnitTestCase {
 		$handler = $this->getToolLinksHandler( false );
 		$ctx = $this->createMock( IContextSource::class );
 		$ctx->method( 'getUser' )->willReturn( $this->createMock( User::class ) );
-		$req = $this->createMock( WebRequest::class );
-		$req->method( 'getVal' )->with( 'action' )->willReturn( 'view' );
+		$req = new FauxRequest( [ 'action' => 'view' ] );
 		$ctx->method( 'getRequest' )->willReturn( $req );
 		$links = [];
 		$handler->onUndeletePageToolLinks( $ctx, $this->createMock( LinkRenderer::class ), $links );
@@ -111,8 +110,7 @@ class ToolLinksHandlerTest extends MediaWikiUnitTestCase {
 		$handler = $this->getToolLinksHandler();
 		$ctx = $this->createMock( IContextSource::class );
 		$ctx->method( 'getUser' )->willReturn( $this->createMock( User::class ) );
-		$req = $this->createMock( WebRequest::class );
-		$req->method( 'getVal' )->with( 'action' )->willReturn( 'history' );
+		$req = new FauxRequest( [ 'action' => 'history' ] );
 		$ctx->method( 'getRequest' )->willReturn( $req );
 		$links = [];
 		$handler->onUndeletePageToolLinks( $ctx, $this->createMock( LinkRenderer::class ), $links );

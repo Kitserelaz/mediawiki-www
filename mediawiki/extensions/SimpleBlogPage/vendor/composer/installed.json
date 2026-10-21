@@ -1,0 +1,426 @@
+{
+    "packages": [
+        {
+            "name": "composer/installers",
+            "version": "v2.3.0",
+            "version_normalized": "2.3.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/composer/installers.git",
+                "reference": "12fb2dfe5e16183de69e784a7b84046c43d97e8e"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/composer/installers/zipball/12fb2dfe5e16183de69e784a7b84046c43d97e8e",
+                "reference": "12fb2dfe5e16183de69e784a7b84046c43d97e8e",
+                "shasum": ""
+            },
+            "require": {
+                "composer-plugin-api": "^1.0 || ^2.0",
+                "php": "^7.2 || ^8.0"
+            },
+            "require-dev": {
+                "composer/composer": "^1.10.27 || ^2.7",
+                "composer/semver": "^1.7.2 || ^3.4.0",
+                "phpstan/phpstan": "^1.11",
+                "phpstan/phpstan-phpunit": "^1",
+                "symfony/phpunit-bridge": "^7.1.1",
+                "symfony/process": "^5 || ^6 || ^7"
+            },
+            "time": "2024-06-24T20:46:46+00:00",
+            "type": "composer-plugin",
+            "extra": {
+                "class": "Composer\\Installers\\Plugin",
+                "branch-alias": {
+                    "dev-main": "2.x-dev"
+                },
+                "plugin-modifies-install-path": true
+            },
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "Composer\\Installers\\": "src/Composer/Installers"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Kyle Robinson Young",
+                    "email": "kyle@dontkry.com",
+                    "homepage": "https://github.com/shama"
+                }
+            ],
+            "description": "A multi-framework Composer library installer",
+            "homepage": "https://composer.github.io/installers/",
+            "keywords": [
+                "Dolibarr",
+                "Eliasis",
+                "Hurad",
+                "ImageCMS",
+                "Kanboard",
+                "Lan Management System",
+                "MODX Evo",
+                "MantisBT",
+                "Mautic",
+                "Maya",
+                "OXID",
+                "Plentymarkets",
+                "Porto",
+                "RadPHP",
+                "SMF",
+                "Starbug",
+                "Thelia",
+                "Whmcs",
+                "WolfCMS",
+                "agl",
+                "annotatecms",
+                "attogram",
+                "bitrix",
+                "cakephp",
+                "chef",
+                "cockpit",
+                "codeigniter",
+                "concrete5",
+                "concreteCMS",
+                "croogo",
+                "dokuwiki",
+                "drupal",
+                "eZ Platform",
+                "elgg",
+                "expressionengine",
+                "fuelphp",
+                "grav",
+                "installer",
+                "itop",
+                "known",
+                "kohana",
+                "laravel",
+                "lavalite",
+                "lithium",
+                "magento",
+                "majima",
+                "mako",
+                "matomo",
+                "mediawiki",
+                "miaoxing",
+                "modulework",
+                "modx",
+                "moodle",
+                "osclass",
+                "pantheon",
+                "phpbb",
+                "piwik",
+                "ppi",
+                "processwire",
+                "puppet",
+                "pxcms",
+                "reindex",
+                "roundcube",
+                "shopware",
+                "silverstripe",
+                "sydes",
+                "sylius",
+                "tastyigniter",
+                "wordpress",
+                "yawik",
+                "zend",
+                "zikula"
+            ],
+            "support": {
+                "issues": "https://github.com/composer/installers/issues",
+                "source": "https://github.com/composer/installers/tree/v2.3.0"
+            },
+            "funding": [
+                {
+                    "url": "https://packagist.com",
+                    "type": "custom"
+                },
+                {
+                    "url": "https://github.com/composer",
+                    "type": "github"
+                },
+                {
+                    "url": "https://tidelift.com/funding/github/packagist/composer/composer",
+                    "type": "tidelift"
+                }
+            ],
+            "install-path": "./installers"
+        },
+        {
+            "name": "mwstake/mediawiki-component-commonuserinterface",
+            "version": "6.0.0",
+            "version_normalized": "6.0.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/hallowelt/mwstake-mediawiki-component-commonuserinterface.git",
+                "reference": "5713ce7ec91749cdb68128360c2411a0f51a75c0"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/hallowelt/mwstake-mediawiki-component-commonuserinterface/zipball/5713ce7ec91749cdb68128360c2411a0f51a75c0",
+                "reference": "5713ce7ec91749cdb68128360c2411a0f51a75c0",
+                "shasum": ""
+            },
+            "require": {
+                "composer/installers": "~1.0|~2",
+                "mwstake/mediawiki-componentloader": "~1"
+            },
+            "require-dev": {
+                "mediawiki/mediawiki-codesniffer": "45.0.0",
+                "mediawiki/mediawiki-phan-config": "0.14.0",
+                "mediawiki/minus-x": "1.1.3",
+                "php-parallel-lint/php-console-highlighter": "1.0.0",
+                "php-parallel-lint/php-parallel-lint": "1.4.0",
+                "phpunit/phpunit": "^8.5"
+            },
+            "time": "2025-05-07T08:38:51+00:00",
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "files": [
+                    "bootstrap.php"
+                ],
+                "psr-4": {
+                    "MWStake\\MediaWiki\\Component\\CommonUserInterface\\": "src/",
+                    "MWStake\\MediaWiki\\Component\\CommonUserInterface\\Tests\\": "tests/phpunit/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "GPL-3.0-only"
+            ],
+            "authors": [
+                {
+                    "name": "HalloWelt! GmbH",
+                    "email": "info@hallowelt.com",
+                    "homepage": "http://www.hallowelt.com"
+                }
+            ],
+            "description": "Provides common user interface elements and customizeable stylings",
+            "support": {
+                "issues": "https://github.com/hallowelt/mwstake-mediawiki-component-commonuserinterface/issues",
+                "source": "https://github.com/hallowelt/mwstake-mediawiki-component-commonuserinterface/tree/6.0.0"
+            },
+            "install-path": "../mwstake/mediawiki-component-commonuserinterface"
+        },
+        {
+            "name": "mwstake/mediawiki-component-commonwebapis",
+            "version": "3.0.18",
+            "version_normalized": "3.0.18.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/hallowelt/mwstake-mediawiki-component-commonwebapis.git",
+                "reference": "7f9c954da27ea56201a28c72db1cb119412d6df8"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/hallowelt/mwstake-mediawiki-component-commonwebapis/zipball/7f9c954da27ea56201a28c72db1cb119412d6df8",
+                "reference": "7f9c954da27ea56201a28c72db1cb119412d6df8",
+                "shasum": ""
+            },
+            "require": {
+                "mwstake/mediawiki-component-datastore": "~2",
+                "mwstake/mediawiki-component-utils": "~3",
+                "mwstake/mediawiki-componentloader": "~1"
+            },
+            "require-dev": {
+                "mediawiki/mediawiki-codesniffer": "39.0.0",
+                "mediawiki/minus-x": "1.1.1",
+                "php-parallel-lint/php-console-highlighter": "1.0.0",
+                "php-parallel-lint/php-parallel-lint": "1.3.2",
+                "phpunit/phpunit": "^8.5"
+            },
+            "time": "2025-06-10T01:56:18+00:00",
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "files": [
+                    "bootstrap.php"
+                ],
+                "psr-4": {
+                    "MWStake\\MediaWiki\\Component\\CommonWebAPIs\\": "src/",
+                    "MWStake\\MediaWiki\\Component\\CommonWebAPIs\\Tests\\": "tests/phpunit/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "GPL-3.0-only"
+            ],
+            "authors": [
+                {
+                    "name": "HalloWelt! GmbH",
+                    "email": "info@hallowelt.com",
+                    "homepage": "http://www.hallowelt.com"
+                }
+            ],
+            "description": "Provides various web APIs (Action API and REST)",
+            "support": {
+                "issues": "https://github.com/hallowelt/mwstake-mediawiki-component-commonwebapis/issues",
+                "source": "https://github.com/hallowelt/mwstake-mediawiki-component-commonwebapis/tree/3.0.18"
+            },
+            "install-path": "../mwstake/mediawiki-component-commonwebapis"
+        },
+        {
+            "name": "mwstake/mediawiki-component-datastore",
+            "version": "2.0.0",
+            "version_normalized": "2.0.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/hallowelt/mwstake-mediawiki-component-datastore.git",
+                "reference": "ebb4a6224fd89bd8ebe347733da04d2b1cf8de65"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/hallowelt/mwstake-mediawiki-component-datastore/zipball/ebb4a6224fd89bd8ebe347733da04d2b1cf8de65",
+                "reference": "ebb4a6224fd89bd8ebe347733da04d2b1cf8de65",
+                "shasum": ""
+            },
+            "require-dev": {
+                "mediawiki/mediawiki-codesniffer": "45.0.0",
+                "mediawiki/mediawiki-phan-config": "0.14.0",
+                "mediawiki/minus-x": "1.1.3",
+                "php-parallel-lint/php-console-highlighter": "1.0.0",
+                "php-parallel-lint/php-parallel-lint": "1.4.0"
+            },
+            "time": "2025-05-07T08:45:42+00:00",
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "files": [
+                    "bootstrap.php"
+                ],
+                "psr-4": {
+                    "MWStake\\MediaWiki\\Component\\DataStore\\": "src/",
+                    "MWStake\\MediaWiki\\Component\\DataStore\\Tests\\": "tests/phpunit/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "GPL-3.0-only"
+            ],
+            "authors": [
+                {
+                    "name": "HalloWelt! GmbH",
+                    "email": "info@hallowelt.com",
+                    "homepage": "http://www.hallowelt.com"
+                }
+            ],
+            "description": "datastore",
+            "support": {
+                "issues": "https://github.com/hallowelt/mwstake-mediawiki-component-datastore/issues",
+                "source": "https://github.com/hallowelt/mwstake-mediawiki-component-datastore/tree/2.0.0"
+            },
+            "install-path": "../mwstake/mediawiki-component-datastore"
+        },
+        {
+            "name": "mwstake/mediawiki-component-utils",
+            "version": "3.0.1",
+            "version_normalized": "3.0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/hallowelt/mwstake-mediawiki-component-utils.git",
+                "reference": "adca79be446de2d4a84e4ce63527b513e730849f"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/hallowelt/mwstake-mediawiki-component-utils/zipball/adca79be446de2d4a84e4ce63527b513e730849f",
+                "reference": "adca79be446de2d4a84e4ce63527b513e730849f",
+                "shasum": ""
+            },
+            "require": {
+                "mwstake/mediawiki-componentloader": "~1"
+            },
+            "require-dev": {
+                "mediawiki/mediawiki-codesniffer": "41.0.0",
+                "mediawiki/minus-x": "1.1.1",
+                "php-parallel-lint/php-console-highlighter": "1.0.0",
+                "php-parallel-lint/php-parallel-lint": "1.3.2",
+                "phpunit/phpunit": "^8.5"
+            },
+            "time": "2025-02-25T08:10:31+00:00",
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "files": [
+                    "bootstrap.php"
+                ],
+                "psr-4": {
+                    "MWStake\\MediaWiki\\Component\\Utils\\": "src/",
+                    "MWStake\\MediaWiki\\Component\\Utils\\Tests\\": "tests/phpunit/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "GPL-3.0-only"
+            ],
+            "authors": [
+                {
+                    "name": "HalloWelt! GmbH",
+                    "email": "info@hallowelt.com",
+                    "homepage": "http://www.hallowelt.com"
+                }
+            ],
+            "support": {
+                "issues": "https://github.com/hallowelt/mwstake-mediawiki-component-utils/issues",
+                "source": "https://github.com/hallowelt/mwstake-mediawiki-component-utils/tree/3.0.1"
+            },
+            "install-path": "../mwstake/mediawiki-component-utils"
+        },
+        {
+            "name": "mwstake/mediawiki-componentloader",
+            "version": "1.0.1",
+            "version_normalized": "1.0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/hallowelt/mwstake-mediawiki-componentloader.git",
+                "reference": "9884a1bcec50095748b68e7328f13baa969b35aa"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/hallowelt/mwstake-mediawiki-componentloader/zipball/9884a1bcec50095748b68e7328f13baa969b35aa",
+                "reference": "9884a1bcec50095748b68e7328f13baa969b35aa",
+                "shasum": ""
+            },
+            "require-dev": {
+                "jakub-onderka/php-console-highlighter": "0.4.0",
+                "jakub-onderka/php-parallel-lint": "1.0.0",
+                "mediawiki/mediawiki-codesniffer": "29.0.0",
+                "mediawiki/minus-x": "1.0.0"
+            },
+            "time": "2025-02-13T15:46:19+00:00",
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "files": [
+                    "bootstrap.php"
+                ],
+                "psr-4": {
+                    "MWStake\\MediaWiki\\ComponentLoader\\": "src/",
+                    "MWStake\\MediaWiki\\ComponentLoader\\Tests\\": "tests/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "GPL-3.0-only"
+            ],
+            "authors": [
+                {
+                    "name": "HalloWelt! GmbH",
+                    "email": "info@hallowelt.com",
+                    "homepage": "http://www.hallowelt.com"
+                }
+            ],
+            "description": "Required for proper initialization of MWStake components",
+            "support": {
+                "issues": "https://github.com/hallowelt/mwstake-mediawiki-componentloader/issues",
+                "source": "https://github.com/hallowelt/mwstake-mediawiki-componentloader/tree/1.0.1"
+            },
+            "install-path": "../mwstake/mediawiki-componentloader"
+        }
+    ],
+    "dev": false,
+    "dev-package-names": []
+}

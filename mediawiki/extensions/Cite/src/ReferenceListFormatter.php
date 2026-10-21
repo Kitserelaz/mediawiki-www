@@ -13,49 +13,37 @@ use MediaWiki\Parser\Parser;
  */
 class ReferenceListFormatter {
 
-	/**
-	 * The backlinks, in order, to pass as $3 to
-	 * 'cite_references_link_many_format', defined in
-	 * 'cite_references_link_many_format_backlink_labels
-	 *
-	 * @var string[]|null
-	 */
-	private ?array $backlinkLabels = null;
-	private ErrorReporter $errorReporter;
-	private AnchorFormatter $anchorFormatter;
-	private ReferenceMessageLocalizer $messageLocalizer;
-
 	public function __construct(
-		ErrorReporter $errorReporter,
-		AnchorFormatter $anchorFormatter,
-		ReferenceMessageLocalizer $messageLocalizer
+		private readonly ErrorReporter $errorReporter,
+		private readonly AnchorFormatter $anchorFormatter,
+		private readonly BacklinkMarkRenderer $backlinkMarkRenderer,
+		private readonly ReferenceMessageLocalizer $messageLocalizer,
 	) {
-		$this->errorReporter = $errorReporter;
-		$this->anchorFormatter = $anchorFormatter;
-		$this->messageLocalizer = $messageLocalizer;
 	}
 
 	/**
 	 * @param Parser $parser
 	 * @param array<string|int,ReferenceStackItem> $groupRefs
 	 * @param bool $responsive
-	 * @param bool $isSectionPreview
-	 *
 	 * @return string HTML
 	 */
 	public function formatReferences(
 		Parser $parser,
 		array $groupRefs,
-		bool $responsive,
-		bool $isSectionPreview
+		bool $responsive
 	): string {
 		if ( !$groupRefs ) {
 			return '';
 		}
 
-		$wikitext = $this->formatRefsList( $parser, $groupRefs, $isSectionPreview );
+		$wikitext = $this->formatRefsList( $groupRefs );
 		$html = $parser->recursiveTagParse( $wikitext );
-		$html = Html::rawElement( 'ol', [ 'class' => 'references' ], $html );
+
+		$firstRef = array_first( $groupRefs );
+		$html = Html::rawElement( 'ol', [
+			'class' => 'references',
+			'data-mw-group' => $firstRef->group === Cite::DEFAULT_GROUP ? null : $firstRef->group,
+		], $html );
 
 		if ( $responsive ) {
 			$wrapClasses = [ 'mw-references-wrap' ];
@@ -71,25 +59,15 @@ class ReferenceListFormatter {
 	}
 
 	/**
-	 * @param Parser $parser
-	 * @param array<string|int,ReferenceStackItem> $groupRefs
-	 * @param bool $isSectionPreview
-	 *
+	 * @param non-empty-array<string|int,ReferenceStackItem> $groupRefs
 	 * @return string Wikitext
 	 */
-	private function formatRefsList(
-		Parser $parser,
-		array $groupRefs,
-		bool $isSectionPreview
-	): string {
+	private function formatRefsList( array $groupRefs ): string {
 		// After sorting the list, we can assume that references are in the same order as their
 		// numbering.  Subreferences will come immediately after their parent.
-		uasort(
-			$groupRefs,
-			static function ( ReferenceStackItem $a, ReferenceStackItem $b ): int {
-				$cmp = ( $a->number ?? 0 ) - ( $b->number ?? 0 );
-				return $cmp ?: ( $a->extendsIndex ?? 0 ) - ( $b->extendsIndex ?? 0 );
-			}
+		uasort( $groupRefs, static fn ( ReferenceStackItem $a, ReferenceStackItem $b ) =>
+			$a->numberInGroup <=> $b->numberInGroup ?:
+			$a->subrefIndex <=> $b->subrefIndex
 		);
 
 		// Add new lines between the list items (ref entries) to avoid confusing tidy (T15073).
@@ -97,27 +75,21 @@ class ReferenceListFormatter {
 		$parserInput = "\n";
 		/** @var string|bool $indented */
 		$indented = false;
-		foreach ( $groupRefs as $key => &$ref ) {
-			// Make sure the parent is not a subreference.
-			// FIXME: Move to a validation function.
-			$extends =& $ref->extends;
-			if ( isset( $extends ) && isset( $groupRefs[$extends]->extends ) ) {
-				$ref->warnings[] = [ 'cite_error_ref_nested_extends',
-					$extends, $groupRefs[$extends]->extends ];
-			}
-
-			if ( !$indented && isset( $extends ) ) {
+		foreach ( $groupRefs as $ref ) {
+			if ( !$indented && $ref->hasMainRef ) {
+				// Create nested list before processing the first subref.
 				// The nested <ol> must be inside the parent's <li>
 				if ( preg_match( '#</li>\s*$#D', $parserInput, $matches, PREG_OFFSET_CAPTURE ) ) {
 					$parserInput = substr( $parserInput, 0, $matches[0][1] );
 				}
-				$parserInput .= Html::openElement( 'ol', [ 'class' => 'mw-extended-references' ] );
+				$parserInput .= Html::openElement( 'ol', [ 'class' => 'mw-subreference-list' ] );
 				$indented = $matches[0][0] ?? true;
-			} elseif ( $indented && !isset( $extends ) ) {
+			} elseif ( $indented && !$ref->hasMainRef ) {
+				// End nested list.
 				$parserInput .= $this->closeIndention( $indented );
 				$indented = false;
 			}
-			$parserInput .= $this->formatListItem( $parser, $key, $ref, $isSectionPreview ) . "\n";
+			$parserInput .= $this->formatListItem( $ref ) . "\n";
 		}
 		$parserInput .= $this->closeIndention( $indented );
 		return $parserInput;
@@ -137,151 +109,97 @@ class ReferenceListFormatter {
 	}
 
 	/**
-	 * @param Parser $parser
-	 * @param string|int $key The key of the reference
 	 * @param ReferenceStackItem $ref
-	 * @param bool $isSectionPreview
-	 *
 	 * @return string Wikitext, wrapped in a single <li> element
 	 */
-	private function formatListItem(
-		Parser $parser, $key, ReferenceStackItem $ref, bool $isSectionPreview
-	): string {
-		$text = $this->renderTextAndWarnings( $parser, $key, $ref, $isSectionPreview );
+	private function formatListItem( ReferenceStackItem $ref ): string {
+		$text = $this->renderTextAndWarnings( $ref );
 
 		// Special case for an incomplete follow="…". This is valid e.g. in the Page:… namespace on
 		// Wikisource. Note this returns a <p>, not an <li> as expected!
-		if ( isset( $ref->follow ) ) {
-			return '<p id="' . $this->anchorFormatter->jumpLinkTarget( $ref->follow ) . '">' . $text . '</p>';
+		if ( $ref->follow !== null ) {
+			return "<p>$text</p>";
 		}
 
 		// Parameter $4 in the cite_references_link_one and cite_references_link_many messages
-		$extraAttributes = '';
-		if ( isset( $ref->dir ) ) {
+		$extraAttributes = [];
+		if ( $ref->dir !== null ) {
 			// The following classes are generated here:
 			// * mw-cite-dir-ltr
 			// * mw-cite-dir-rtl
-			$extraAttributes = Html::expandAttributes( [ 'class' => 'mw-cite-dir-' . $ref->dir ] );
+			$extraAttributes['class'] = 'mw-cite-dir-' . $ref->dir;
 		}
 
 		if ( $ref->count === 1 ) {
-			if ( !isset( $ref->name ) ) {
-				$id = $ref->key;
-				$backlinkId = $this->anchorFormatter->backLink( $ref->key );
-			} else {
-				$id = $key . '-' . $ref->key;
-				// TODO: Use count without decrementing.
-				$backlinkId = $this->anchorFormatter->backLink( $key, $ref->key . '-' . ( $ref->count - 1 ) );
-			}
+			$backlinkId = $this->anchorFormatter->wikitextSafeBacklink( $ref->name, $ref->globalId, $ref->count );
 			return $this->messageLocalizer->msg(
 				'cite_references_link_one',
-				$this->anchorFormatter->jumpLinkTarget( $id ),
+				$this->anchorFormatter->noteLinkTarget( $ref->name, $ref->globalId ),
 				$backlinkId,
 				$text,
-				$extraAttributes
+				Html::expandAttributes( $extraAttributes )
 			)->plain();
 		}
 
 		$backlinks = [];
 		for ( $i = 0; $i < $ref->count; $i++ ) {
-			$numericLabel = $this->referencesFormatEntryNumericBacklinkLabel(
-				$ref->number . ( $ref->extendsIndex ? '.' . $ref->extendsIndex : '' ),
-				$i,
-				$ref->count
-			);
-			$backlinks[] = $this->messageLocalizer->msg(
-				'cite_references_link_many_format',
-				$this->anchorFormatter->backLink( $key, $ref->key . '-' . $i ),
-				$numericLabel,
-				$this->referencesFormatEntryAlternateBacklinkLabel( $parser, $i ) ?? $numericLabel
-			)->plain();
+			if ( $this->backlinkMarkRenderer->isLegacyMode() ) {
+				// FIXME: parent mark should be explicitly markSymbolRenderer'd if it
+				// stays here.
+				$parentLabel = $this->messageLocalizer->localizeDigits( (string)$ref->numberInGroup );
+
+				$backlinks[] = $this->messageLocalizer->msg(
+					'cite_references_link_many_format',
+					$this->anchorFormatter->wikitextSafeBacklink( $ref->name, $ref->globalId, $i + 1 ),
+					$this->backlinkMarkRenderer->getLegacyNumericMarker( $i, $ref->count, $parentLabel ),
+					$this->backlinkMarkRenderer->getLegacyAlphabeticMarker( $i + 1, $ref->count, $parentLabel )
+				)->plain();
+			} else {
+				$backlinkLabel = $this->backlinkMarkRenderer->getBacklinkMarker( $i + 1 );
+
+				$backlinks[] = $this->messageLocalizer->msg(
+					'cite_references_link_many_format',
+					$this->anchorFormatter->wikitextSafeBacklink( $ref->name, $ref->globalId, $i + 1 ),
+					$backlinkLabel,
+					$backlinkLabel
+				)->plain();
+			}
 		}
 
-		// The parent of a subref might actually be unused and therefor have zero backlinks
-		$linkTargetId = $ref->count > 0 ?
-			$this->anchorFormatter->jumpLinkTarget( $key . '-' . $ref->key ) : '';
+		// The parent of a subref might actually be unused and therefore have zero backlinks
+		if ( $ref->count < 1 ) {
+			return Html::rawElement( 'li',
+				$extraAttributes,
+				Html::element( 'span',
+					[ 'class' => 'mw-cite-backlink' ],
+					$this->backlinkMarkRenderer->getUpArrow()
+				) . ' ' . $text
+			);
+		}
+
 		return $this->messageLocalizer->msg(
 			'cite_references_link_many',
-			$linkTargetId,
+			$this->anchorFormatter->noteLinkTarget( $ref->name, $ref->globalId ),
 			$this->listToText( $backlinks ),
 			$text,
-			$extraAttributes
+			Html::expandAttributes( $extraAttributes )
 		)->plain();
 	}
 
 	/**
-	 * @param Parser $parser
-	 * @param string|int $key
 	 * @param ReferenceStackItem $ref
-	 * @param bool $isSectionPreview
-	 *
 	 * @return string Wikitext
 	 */
-	private function renderTextAndWarnings(
-		Parser $parser, $key, ReferenceStackItem $ref, bool $isSectionPreview
-	): string {
-		if ( !isset( $ref->text ) ) {
-			return $this->errorReporter->plain( $parser,
-				$isSectionPreview
-					? 'cite_warning_sectionpreview_no_text'
-					: 'cite_error_references_no_text', $key );
-		}
-
+	private function renderTextAndWarnings( ReferenceStackItem $ref ): string {
 		$text = $ref->text ?? '';
 		foreach ( $ref->warnings as $warning ) {
 			// @phan-suppress-next-line PhanParamTooFewUnpack
-			$text .= ' ' . $this->errorReporter->plain( $parser, ...$warning );
+			$text .= ' ' . $this->errorReporter->plain( ...$warning );
 			// FIXME: We could use a StatusValue object to get rid of duplicates
 			break;
 		}
 
 		return '<span class="reference-text">' . rtrim( $text, "\n" ) . "</span>\n";
-	}
-
-	/**
-	 * Generate a numeric backlink given a base number and an
-	 * offset, e.g. $base = 1, $offset = 2; = 1.2
-	 * Since bug #5525, it correctly does 1.9 -> 1.10 as well as 1.099 -> 1.100
-	 *
-	 * @param string $base
-	 * @param int $offset
-	 * @param int $max Maximum value expected.
-	 *
-	 * @return string
-	 */
-	private function referencesFormatEntryNumericBacklinkLabel(
-		string $base,
-		int $offset,
-		int $max
-	): string {
-		return $this->messageLocalizer->localizeDigits( $base ) .
-			$this->messageLocalizer->localizeSeparators( '.' ) .
-			$this->messageLocalizer->localizeDigits(
-				str_pad( (string)$offset, strlen( (string)$max ), '0', STR_PAD_LEFT )
-			);
-	}
-
-	/**
-	 * Generate a custom format backlink given an offset, e.g.
-	 * $offset = 2; = c if $this->mBacklinkLabels = [ 'a',
-	 * 'b', 'c', ...]. Return an error if the offset > the # of
-	 * array items
-	 */
-	private function referencesFormatEntryAlternateBacklinkLabel(
-		Parser $parser, int $offset
-	): ?string {
-		if ( !isset( $this->backlinkLabels ) ) {
-			$msg = $this->messageLocalizer->msg( 'cite_references_link_many_format_backlink_labels' );
-			$this->backlinkLabels = $msg->isDisabled() ? [] : preg_split( '/\s+/', $msg->plain() );
-		}
-
-		// Disabling the message just disables the feature
-		if ( !$this->backlinkLabels ) {
-			return null;
-		}
-
-		return $this->backlinkLabels[$offset]
-			?? $this->errorReporter->plain( $parser, 'cite_error_references_no_backlink_label' );
 	}
 
 	/**

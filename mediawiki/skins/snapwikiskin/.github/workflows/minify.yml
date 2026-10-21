@@ -1,0 +1,22 @@
+name: Minify Mustache templates
+on: push
+
+jobs:
+  minify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: 22.x
+          
+      - name: Install html-minifier-terser
+        run:  npm install --global html-minifier-terser
+      - name: Minify templates
+        run:  html-minifier-terser --collapse-whitespace --remove-comments --input-dir ./templates --output-dir ./templates/minified --file-ext mustache
+      - name: Commit changed files
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "Minify Mustache templates"
+          

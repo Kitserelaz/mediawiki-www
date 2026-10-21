@@ -2,12 +2,13 @@
 
 namespace MediaWiki\IPInfo\Rest\Presenter;
 
+use MediaWiki\Extension\IPReputation\IPoid\IPoidResponse;
 use MediaWiki\IPInfo\AccessLevelTrait;
 use MediaWiki\IPInfo\Info\BlockInfo;
 use MediaWiki\IPInfo\Info\ContributionInfo;
 use MediaWiki\IPInfo\Info\Info;
 use MediaWiki\IPInfo\Info\IPCountInfo;
-use MediaWiki\IPInfo\Info\IPoidInfo;
+use MediaWiki\IPInfo\Info\IPVersionInfo;
 use MediaWiki\IPInfo\Info\Location;
 use MediaWiki\Permissions\PermissionManager;
 use MediaWiki\User\UserIdentity;
@@ -15,8 +16,6 @@ use Wikimedia\Assert\Assert;
 
 class DefaultPresenter {
 	use AccessLevelTrait;
-
-	private PermissionManager $permissionManager;
 
 	public const IPINFO_VIEW_BASIC_RIGHT = 'ipinfo-view-basic';
 	public const IPINFO_VIEW_FULL_RIGHT = 'ipinfo-view-full';
@@ -29,6 +28,7 @@ class DefaultPresenter {
 		'numRecentEdits',
 		'proxyType',
 		'userType',
+		'version',
 	];
 
 	private const IPINFO_VIEW_FULL = [
@@ -37,7 +37,6 @@ class DefaultPresenter {
 		'connectionType',
 		'connectionTypes',
 		'countryNames',
-		'isp',
 		'location',
 		'numActiveBlocks',
 		'numDeletedEdits',
@@ -51,6 +50,7 @@ class DefaultPresenter {
 		'risks',
 		'tunnelOperators',
 		'userType',
+		'version',
 	];
 
 	/**
@@ -64,9 +64,8 @@ class DefaultPresenter {
 	];
 
 	public function __construct(
-		PermissionManager $permissionManager
+		private readonly PermissionManager $permissionManager,
 	) {
-		$this->permissionManager = $permissionManager;
 	}
 
 	/**
@@ -75,8 +74,18 @@ class DefaultPresenter {
 	 * @return array
 	 */
 	public function present( array $info, UserIdentity $user ): array {
+		$expectedElementTypes = [
+			Info::class,
+			IPCountInfo::class,
+			BlockInfo::class,
+			ContributionInfo::class,
+			IPVersionInfo::class,
+		];
+		if ( class_exists( IPoidResponse::class ) ) {
+			$expectedElementTypes[] = IPoidResponse::class;
+		}
 		Assert::parameterElementType(
-			[ Info::class, IPCountInfo::class, IPoidInfo::class, BlockInfo::class, ContributionInfo::class ],
+			$expectedElementTypes,
 			$info['data'],
 			"info['data']"
 		);
@@ -97,12 +106,14 @@ class DefaultPresenter {
 				$data += $this->presentInfo( $itemInfo );
 			} elseif ( $itemInfo instanceof IPCountInfo ) {
 				$data += [ 'numIPAddresses' => $itemInfo->getCount() ];
-			} elseif ( $itemInfo instanceof IPoidInfo ) {
+			} elseif ( $itemInfo instanceof IPoidResponse ) {
 				$data += $this->presentIPoidInfo( $itemInfo );
 			} elseif ( $itemInfo instanceof BlockInfo ) {
 				$data += $this->presentBlockInfo( $itemInfo );
 			} elseif ( $itemInfo instanceof ContributionInfo ) {
 				$data += $this->presentContributionInfo( $itemInfo, $user );
+			} elseif ( $itemInfo instanceof IPVersionInfo ) {
+				$data += [ 'version' => $itemInfo->getVersion() ];
 			}
 
 			// Unset all properties the user doesn't have access to before writing to $result
@@ -143,7 +154,6 @@ class DefaultPresenter {
 					'label' => $location->getLabel(),
 				];
 			}, $location ) : null,
-			'isp' => $info->getIsp(),
 			'connectionType' => $info->getConnectionType(),
 			'userType' => $info->getUserType(),
 			'proxyType' => $proxyType ? [
@@ -159,10 +169,10 @@ class DefaultPresenter {
 	}
 
 	/**
-	 * @param IPoidInfo $info
+	 * @param IPoidResponse $info
 	 * @return array<string,mixed>
 	 */
-	private function presentIPoidInfo( IPoidInfo $info ): array {
+	private function presentIPoidInfo( IPoidResponse $info ): array {
 		return [
 			'behaviors' => $info->getBehaviors(),
 			'risks' => $info->getRisks(),

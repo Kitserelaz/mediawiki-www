@@ -1,0 +1,537 @@
+<?php
+
+namespace SMW;
+
+// Fatal error: Cannot use SMW\ParserFunctions\SubobjectParserFunction as SubobjectParserFunction because the name is already in use
+use MediaWiki\Parser\Parser;
+use MediaWiki\Parser\PPFrame;
+use ParamProcessor\Processor;
+use SMW\DataModel\Subobject;
+use SMW\Formatters\MessageFormatter;
+use SMW\Parser\PropertyLinkRenderer;
+use SMW\Parser\RecursiveTextProcessor;
+use SMW\ParserFunctions\AskParserFunction;
+use SMW\ParserFunctions\ConceptParserFunction;
+use SMW\ParserFunctions\DeclareParserFunction;
+use SMW\ParserFunctions\DocumentationParserFunction;
+use SMW\ParserFunctions\ExpensiveFuncExecutionWatcher;
+use SMW\ParserFunctions\InfoParserFunction;
+use SMW\ParserFunctions\PropertyLinkParserFunction;
+use SMW\ParserFunctions\RecurringEventsParserFunction as RecurringEventsParserFunc;
+use SMW\ParserFunctions\SetParserFunction;
+use SMW\ParserFunctions\ShowParserFunction;
+use SMW\ParserFunctions\SubobjectParserFunction as SubobjectParserFunc;
+use SMW\Services\ServicesFactory as ApplicationFactory;
+use SMW\Utils\CircularReferenceGuard;
+use SMW\Utils\RecurringEvents;
+
+/**
+ * @see http://www.semantic-mediawiki.org/wiki/Help:ParserFunction
+ *
+ * @license GPL-2.0-or-later
+ * @since 1.9
+ *
+ * @author mwjames
+ */
+class ParserFunctionFactory {
+
+	private ?Parser $parser;
+
+	/**
+	 * @since 1.9
+	 */
+	public function __construct( ?Parser $parser = null ) {
+		$this->parser = $parser;
+	}
+
+	/**
+	 * Convenience instantiation of a ParserFunctionFactory object
+	 *
+	 * @since 1.9
+	 */
+	public static function newFromParser( Parser $parser ): self {
+		return new self( $parser );
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function registerFunctionHandlers( Parser $parser ): void {
+		[ $name, $definition, $flag ] = $this->getAskParserFunctionDefinition();
+		$parser->setFunctionHook( $name, $definition, $flag );
+
+		[ $name, $definition, $flag ] = $this->getShowParserFunctionDefinition();
+		$parser->setFunctionHook( $name, $definition, $flag );
+
+		[ $name, $definition, $flag ] = $this->getSubobjectParserFunctionDefinition();
+		$parser->setFunctionHook( $name, $definition, $flag );
+
+		[ $name, $definition, $flag ] = $this->getSetRecurringEventParserFunctionDefinition();
+		$parser->setFunctionHook( $name, $definition, $flag );
+
+		[ $name, $definition, $flag ] = $this->getSetParserFunctionDefinition();
+		$parser->setFunctionHook( $name, $definition, $flag );
+
+		[ $name, $definition, $flag ] = $this->getConceptParserFunctionDefinition();
+		$parser->setFunctionHook( $name, $definition, $flag );
+
+		[ $name, $definition, $flag ] = $this->getDeclareParserFunctionDefinition();
+		$parser->setFunctionHook( $name, $definition, $flag );
+
+		[ $name, $definition, $flag ] = $this->getPropertyLinkParserFunctionDefinition();
+		$parser->setFunctionHook( $name, $definition, $flag );
+	}
+
+	/**
+	 * @since 2.1
+	 */
+	public function newAskParserFunction( Parser $parser ): AskParserFunction {
+		$applicationFactory = ApplicationFactory::getInstance();
+
+		$circularReferenceGuard = new CircularReferenceGuard( 'ask-parser' );
+		$circularReferenceGuard->setMaxRecursionDepth( 2 );
+
+		$parserData = $applicationFactory->newParserData(
+			$parser->getTitle(),
+			$parser->getOutput()
+		);
+
+		if ( $parserData->hasAnnotationBlock() ) {
+			$parserData->setOption( $parserData::NO_QUERY_DEPENDENCY_TRACE, true );
+		}
+
+		// Avoid possible actions during for example stashedit etc.
+		$parserData->setOption( 'request.action', $GLOBALS['wgRequest']->getVal( 'action' ) );
+
+		$parserData->setParserOptions(
+			$parser->getOptions()
+		);
+
+		$messageFormatter = new MessageFormatter(
+			$parser->getTargetLanguage()
+		);
+
+		$expensiveFuncExecutionWatcher = new ExpensiveFuncExecutionWatcher(
+			$parserData
+		);
+
+		$expensiveFuncExecutionWatcher->setExpensiveThreshold(
+			$applicationFactory->getSettings()->get( 'smwgQExpensiveThreshold' )
+		);
+
+		$expensiveFuncExecutionWatcher->setExpensiveExecutionLimit(
+			$applicationFactory->getSettings()->get( 'smwgQExpensiveExecutionLimit' )
+		);
+
+		$askParserFunction = new AskParserFunction(
+			$parserData,
+			$messageFormatter,
+			$circularReferenceGuard,
+			$expensiveFuncExecutionWatcher
+		);
+
+		$askParserFunction->setPostProcHandler(
+			$applicationFactory->newPostProcHandler( $parser->getOutput() )
+		);
+
+		$askParserFunction->setRecursiveTextProcessor(
+			new RecursiveTextProcessor( $parser )
+		);
+
+		return $askParserFunction;
+	}
+
+	/**
+	 * @since 2.1
+	 */
+	public function newShowParserFunction( Parser $parser ): ShowParserFunction {
+		$settings = ApplicationFactory::getInstance()->getSettings();
+
+		$askParserFunction = $this->newAskParserFunction(
+			$parser
+		);
+
+		$askParserFunction->setCurtailmentMode(
+			$settings->isFlagSet( 'smwgExperimentalFeatures', SMW_SHOWPARSER_USE_CURTAILMENT )
+		);
+
+		$showParserFunction = new ShowParserFunction(
+			$askParserFunction
+		);
+
+		return $showParserFunction;
+	}
+
+	/**
+	 * @since 2.1
+	 */
+	public function newSetParserFunction( Parser $parser ): SetParserFunction {
+		$applicationFactory = ApplicationFactory::getInstance();
+
+		$parserData = $applicationFactory->newParserData(
+			$parser->getTitle(),
+			$parser->getOutput()
+		);
+
+		$messageFormatter = new MessageFormatter(
+			$parser->getTargetLanguage()
+		);
+
+		$mediaWikiCollaboratorFactory = $applicationFactory->newMwCollaboratorFactory();
+
+		$stripMarkerDecoder = $mediaWikiCollaboratorFactory->newStripMarkerDecoder(
+			$parser->getStripState()
+		);
+
+		$setParserFunction = new SetParserFunction(
+			$parserData,
+			$messageFormatter,
+			$mediaWikiCollaboratorFactory->newWikitextTemplateRenderer()
+		);
+
+		$setParserFunction->setStripMarkerDecoder(
+			$stripMarkerDecoder
+		);
+
+		return $setParserFunction;
+	}
+
+	/**
+	 * @since 2.1
+	 */
+	public function newConceptParserFunction( Parser $parser ): ConceptParserFunction {
+		$applicationFactory = ApplicationFactory::getInstance();
+
+		$parserData = $applicationFactory->newParserData(
+			$parser->getTitle(),
+			$parser->getOutput()
+		);
+
+		$messageFormatter = new MessageFormatter(
+			$parser->getTargetLanguage()
+		);
+
+		$conceptParserFunction = new ConceptParserFunction(
+			$parserData,
+			$messageFormatter
+		);
+
+		$conceptParserFunction->setPostProcHandler(
+			$applicationFactory->newPostProcHandler( $parser->getOutput() )
+		);
+
+		return $conceptParserFunction;
+	}
+
+	/**
+	 * @since 2.1
+	 */
+	public function newSubobjectParserFunction( Parser $parser ): SubobjectParserFunc {
+		$applicationFactory = ApplicationFactory::getInstance();
+
+		$parserData = $applicationFactory->newParserData(
+			$parser->getTitle(),
+			$parser->getOutput()
+		);
+
+		$subobject = new Subobject( $parser->getTitle() );
+
+		$messageFormatter = new MessageFormatter(
+			$parser->getTargetLanguage()
+		);
+
+		$subobjectParserFunction = new SubobjectParserFunc(
+			$parserData,
+			$subobject,
+			$messageFormatter
+		);
+
+		$subobjectParserFunction->isCapitalLinks(
+			Site::isCapitalLinks()
+		);
+
+		$subobjectParserFunction->isComparableContent(
+			$applicationFactory->getSettings()->get( 'smwgUseComparableContentHash' )
+		);
+
+		$stripMarkerDecoder = $applicationFactory->newMwCollaboratorFactory()->newStripMarkerDecoder(
+			$parser->getStripState()
+		);
+
+		$subobjectParserFunction->setStripMarkerDecoder(
+			$stripMarkerDecoder
+		);
+
+		return $subobjectParserFunction;
+	}
+
+	/**
+	 * @since 2.1
+	 */
+	public function newRecurringEventsParserFunction( Parser $parser ): RecurringEventsParserFunc {
+		$applicationFactory = ApplicationFactory::getInstance();
+		$settings = $applicationFactory->getSettings();
+
+		$parserData = $applicationFactory->newParserData(
+			$parser->getTitle(),
+			$parser->getOutput()
+		);
+
+		$subobject = new Subobject( $parser->getTitle() );
+
+		$messageFormatter = new MessageFormatter(
+			$parser->getTargetLanguage()
+		);
+
+		$recurringEvents = new RecurringEvents();
+
+		$recurringEvents->setDefaultNumRecurringEvents(
+			$settings->get( 'smwgDefaultNumRecurringEvents' )
+		);
+
+		$recurringEvents->setMaxNumRecurringEvents(
+			$settings->get( 'smwgMaxNumRecurringEvents' )
+		);
+
+		$recurringEventsParserFunction = new RecurringEventsParserFunc(
+			$parserData,
+			$subobject,
+			$messageFormatter,
+			$recurringEvents
+		);
+
+		$recurringEventsParserFunction->isCapitalLinks(
+			Site::isCapitalLinks()
+		);
+
+		$recurringEventsParserFunction->isComparableContent(
+			$settings->get( 'smwgUseComparableContentHash' )
+		);
+
+		return $recurringEventsParserFunction;
+	}
+
+	/**
+	 * @since 2.1
+	 */
+	public function newDeclareParserFunction( Parser $parser ): DeclareParserFunction {
+		$parserData = ApplicationFactory::getInstance()->newParserData(
+			$parser->getTitle(),
+			$parser->getOutput()
+		);
+
+		$declareParserFunction = new DeclareParserFunction(
+			$parserData
+		);
+
+		return $declareParserFunction;
+	}
+
+	/**
+	 * @since 7.2.0
+	 */
+	public function newPropertyLinkParserFunction( Parser $parser ): PropertyLinkParserFunction {
+		$parserData = ApplicationFactory::getInstance()->newParserData(
+			$parser->getTitle(),
+			$parser->getOutput()
+		);
+
+		return new PropertyLinkParserFunction(
+			$parserData,
+			new PropertyLinkRenderer( $parserData )
+		);
+	}
+
+	/**
+	 * @since 2.3
+	 */
+	public function getAskParserFunctionDefinition(): array {
+		$askParserFunctionDefinition = function ( Parser $parser ) {
+			$applicationFactory = ApplicationFactory::getInstance();
+			$settings = $applicationFactory->getSettings();
+
+			$askParserFunction = $this->newAskParserFunction(
+				$parser
+			);
+
+			if ( !$settings->get( 'smwgQEnabled' ) ) {
+				return $settings->isFlagSet( 'smwgParserFeatures', SMW_PARSER_INL_ERROR ) ? $askParserFunction->isQueryDisabled() : '';
+			}
+
+			return $askParserFunction->parse( func_get_args() );
+		};
+
+		return [ 'ask', $askParserFunctionDefinition, 0 ];
+	}
+
+	/**
+	 * @since 2.3
+	 */
+	public function getShowParserFunctionDefinition(): array {
+		$showParserFunctionDefinition = function ( Parser $parser ) {
+			$applicationFactory = ApplicationFactory::getInstance();
+			$settings = $applicationFactory->getSettings();
+
+			$showParserFunction = $this->newShowParserFunction(
+				$parser
+			);
+
+			if ( !$settings->get( 'smwgQEnabled' ) ) {
+				return $settings->isFlagSet( 'smwgParserFeatures', SMW_PARSER_INL_ERROR ) ? $showParserFunction->isQueryDisabled() : '';
+			}
+
+			return $showParserFunction->parse( func_get_args() );
+		};
+
+		return [ 'show', $showParserFunctionDefinition, 0 ];
+	}
+
+	/**
+	 * @since 2.3
+	 */
+	public function getSubobjectParserFunctionDefinition(): array {
+		$subobjectParserFunctionDefinition = function ( Parser $parser ) {
+			$subobjectParserFunction = $this->newSubobjectParserFunction(
+				$parser
+			);
+
+			return $subobjectParserFunction->parse(
+				ParameterProcessorFactory::newFromArray( func_get_args() )
+			);
+		};
+
+		return [ 'subobject', $subobjectParserFunctionDefinition, 0 ];
+	}
+
+	/**
+	 * @since 2.3
+	 */
+	public function getSetRecurringEventParserFunctionDefinition(): array {
+		$recurringEventsParserFunctionDefinition = function ( Parser $parser ) {
+			$recurringEventsParserFunction = $this->newRecurringEventsParserFunction(
+				$parser
+			);
+
+			return $recurringEventsParserFunction->parse(
+				ParameterProcessorFactory::newFromArray( func_get_args() )
+			);
+		};
+
+		return [ 'set_recurring_event', $recurringEventsParserFunctionDefinition, 0 ];
+	}
+
+	/**
+	 * @since 2.3
+	 */
+	public function getSetParserFunctionDefinition(): array {
+		$setParserFunctionDefinition = function ( Parser $parser ): array {
+			$setParserFunction = $this->newSetParserFunction(
+				$parser
+			);
+
+			return $setParserFunction->parse(
+				ParameterProcessorFactory::newFromArray( func_get_args(), true )
+			);
+		};
+
+		return [ 'set', $setParserFunctionDefinition, 0 ];
+	}
+
+	/**
+	 * @since 2.3
+	 */
+	public function getConceptParserFunctionDefinition(): array {
+		$conceptParserFunctionDefinition = function ( Parser $parser ) {
+			$conceptParserFunction = $this->newConceptParserFunction(
+				$parser
+			);
+
+			return $conceptParserFunction->parse( func_get_args() );
+		};
+
+		return [ 'concept', $conceptParserFunctionDefinition, 0 ];
+	}
+
+	/**
+	 * @since 2.3
+	 */
+	public function getDeclareParserFunctionDefinition(): array {
+		$declareParserFunctionDefinition = function ( Parser $parser, PPFrame $frame, array $args ): string {
+			$declareParserFunction = $this->newDeclareParserFunction(
+				$parser
+			);
+
+			return $declareParserFunction->parse( $frame, $args );
+		};
+
+		return [ 'declare', $declareParserFunctionDefinition, Parser::SFH_OBJECT_ARGS ];
+	}
+
+	/**
+	 * @since 5.1
+	 */
+	public function getDocumentationParserFunctionDefinition(): array {
+		$smwdocDefinition = static function ( Parser $parser, PPFrame $frame, array $args ): array {
+			$expandedArgs = [];
+			foreach ( $args as $arg ) {
+				$expandedArgs[] = $frame->expand( $arg );
+			}
+
+			$processor = Processor::newDefault();
+			$processor->setFunctionParams(
+				$expandedArgs,
+				DocumentationParserFunction::getParamDefinitions(),
+				DocumentationParserFunction::getDefaultParams()
+			);
+
+			$result = $processor->processParameters();
+
+			$handler = new DocumentationParserFunction();
+			return [ $handler->handle( $parser, $result ) ];
+		};
+
+		return [ 'smwdoc', $smwdocDefinition, Parser::SFH_OBJECT_ARGS ];
+	}
+
+	/**
+	 * @since 5.1
+	 */
+	public function getInfoParserFunctionDefinition(): array {
+		$infoDefinition = static function ( Parser $parser, PPFrame $frame, array $args ): array {
+			$expandedArgs = [];
+			foreach ( $args as $arg ) {
+				$expandedArgs[] = $frame->expand( $arg );
+			}
+
+			$processor = Processor::newDefault();
+			$processor->setFunctionParams(
+				$expandedArgs,
+				InfoParserFunction::getParamDefinitions(),
+				InfoParserFunction::getDefaultParams()
+			);
+
+			$result = $processor->processParameters();
+
+			$handler = new InfoParserFunction();
+			return [ $handler->handle( $parser, $result ) ];
+		};
+
+		return [ 'info', $infoDefinition, Parser::SFH_OBJECT_ARGS ];
+	}
+
+	/**
+	 * @since 7.2.0
+	 */
+	public function getPropertyLinkParserFunctionDefinition(): array {
+		$propertyLinkParserFunctionDefinition = function ( Parser $parser ): string {
+			$propertyLinkParserFunction = $this->newPropertyLinkParserFunction(
+				$parser
+			);
+
+			return $propertyLinkParserFunction->parse( func_get_args() );
+		};
+
+		return [ 'property_link', $propertyLinkParserFunctionDefinition, 0 ];
+	}
+
+}

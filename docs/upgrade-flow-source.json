@@ -1,0 +1,7 @@
+{
+  "component": "mediawiki/extensions/Flow",
+  "baseline": "3d06d286f9e80e39cc96ada03ed9ef862ff50f34",
+  "target": "ee8925d5da919a06ac6f1bba0792b8dd9e85190b",
+  "preserved_changes": [],
+  "dependency_status": "requires-lock-regeneration"
+}

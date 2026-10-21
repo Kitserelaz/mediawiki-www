@@ -2,11 +2,11 @@
 
 namespace Flow\Utils;
 
-use BatchRowIterator;
 use Iterator;
 use IteratorAggregate;
 use MediaWiki\Extension\Notifications\Iterator\CallbackIterator;
 use MediaWiki\Title\Title;
+use MediaWiki\Utils\BatchRowIterator;
 use RecursiveIteratorIterator;
 use Wikimedia\Rdbms\IReadableDatabase;
 
@@ -37,7 +37,7 @@ class NamespaceIterator implements IteratorAggregate {
 	/**
 	 * @return Iterator<Title>
 	 */
-	public function getIterator() {
+	public function getIterator(): Iterator {
 		$it = new BatchRowIterator(
 			$this->db,
 			/* tables */ [ 'page' ],

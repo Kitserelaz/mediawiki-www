@@ -1,0 +1,291 @@
+{
+  "started_at": "2026-10-19T01:08:35.228116+00:00",
+  "platform": "linux/amd64",
+  "checkout_kind": "clean clone of parentless uncommitted candidate snapshot",
+  "tree": "a5d376c130e8d52d62d911ad2c997ed43a365b54",
+  "images": {
+    "php": {
+      "tag": "cloudwiki-php:upgrade-clean-20261018-amd64",
+      "exit_code": 0,
+      "command": [
+        "docker",
+        "buildx",
+        "build",
+        "--builder",
+        "desktop-linux",
+        "--platform",
+        "linux/amd64",
+        "--load",
+        "--progress=plain",
+        "--metadata-file",
+        "/Volumes/1TB SSD mew/www/docs/upgrade-evidence/clean-checkout-amd64/php-metadata.json",
+        "-t",
+        "cloudwiki-php:upgrade-clean-20261018-amd64",
+        "-f",
+        "docker/mediawiki/Dockerfile",
+        "--target",
+        "php",
+        "."
+      ],
+      "id": "sha256:9a34a313317dff3c59fd24069c16976e6b29dd6e7962e68ce466db6a4e80e994",
+      "architecture": "amd64",
+      "os": "linux",
+      "metadata": {
+        "buildx.build.provenance": {
+          "builder": {
+            "id": ""
+          },
+          "buildType": "https://mobyproject.org/buildkit@v1",
+          "materials": [
+            {
+              "uri": "pkg:docker/docker/dockerfile@1.4",
+              "digest": {
+                "sha256": "9ba7531bd80fb0a858632727cf7a112fbfd19b17e94c4e84ced81e24ef1a0dbc"
+              }
+            },
+            {
+              "uri": "pkg:docker/php@8.4.26-fpm-bookworm?digest=sha256:6bfef8e416977aa41f48e3e42a40c1e08050d24e4a938c6edb421400bff24601&platform=linux%2Famd64",
+              "digest": {
+                "sha256": "6bfef8e416977aa41f48e3e42a40c1e08050d24e4a938c6edb421400bff24601"
+              }
+            }
+          ],
+          "invocation": {
+            "configSource": {
+              "entryPoint": "Dockerfile"
+            },
+            "parameters": {
+              "frontend": "gateway.v0",
+              "args": {
+                "cmdline": "docker/dockerfile:1.4",
+                "source": "docker/dockerfile:1.4",
+                "target": "php"
+              },
+              "locals": [
+                {
+                  "name": "context"
+                },
+                {
+                  "name": "dockerfile"
+                }
+              ],
+              "root": {
+                "configSource": {
+                  "path": "Dockerfile"
+                },
+                "request": {
+                  "args": {
+                    "target": "php",
+                    "vcs:localdir:context": ".",
+                    "vcs:localdir:dockerfile": "docker/mediawiki",
+                    "vcs:revision": "028f51e7767078778431d686d8843ee07607a4b6",
+                    "vcs:source": "/var/folders/19/1g7tg4ln6yl5rn3jxcrllwdm0000gn/T/farm-clean-export-_m_nfheq/candidate.git"
+                  }
+                }
+              },
+              "compatibilityVersion": 30
+            },
+            "environment": {
+              "platform": "linux/arm64"
+            }
+          }
+        },
+        "buildx.build.ref": "desktop-linux/desktop-linux/o38tggz7cev65z88lnbxwxme8",
+        "containerimage.descriptor": {
+          "mediaType": "application/vnd.oci.image.index.v1+json",
+          "digest": "sha256:9a34a313317dff3c59fd24069c16976e6b29dd6e7962e68ce466db6a4e80e994",
+          "size": 856
+        },
+        "containerimage.digest": "sha256:9a34a313317dff3c59fd24069c16976e6b29dd6e7962e68ce466db6a4e80e994",
+        "image.name": "docker.io/library/cloudwiki-php:upgrade-clean-20261018-amd64"
+      }
+    },
+    "web": {
+      "tag": "cloudwiki-web:upgrade-clean-20261018-amd64",
+      "exit_code": 0,
+      "command": [
+        "docker",
+        "buildx",
+        "build",
+        "--builder",
+        "desktop-linux",
+        "--platform",
+        "linux/amd64",
+        "--load",
+        "--progress=plain",
+        "--metadata-file",
+        "/Volumes/1TB SSD mew/www/docs/upgrade-evidence/clean-checkout-amd64/web-metadata.json",
+        "-t",
+        "cloudwiki-web:upgrade-clean-20261018-amd64",
+        "-f",
+        "docker/mediawiki/Dockerfile",
+        "--target",
+        "web",
+        "."
+      ],
+      "id": "sha256:041fa67c731a881fc2d5152f83f7558275711f0cdade11e4fcd5d4d650364a4d",
+      "architecture": "amd64",
+      "os": "linux",
+      "metadata": {
+        "buildx.build.provenance": {
+          "builder": {
+            "id": ""
+          },
+          "buildType": "https://mobyproject.org/buildkit@v1",
+          "materials": [
+            {
+              "uri": "pkg:docker/docker/dockerfile@1.4",
+              "digest": {
+                "sha256": "9ba7531bd80fb0a858632727cf7a112fbfd19b17e94c4e84ced81e24ef1a0dbc"
+              }
+            },
+            {
+              "uri": "pkg:docker/caddy@2.10.2-alpine?digest=sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d&platform=linux%2Famd64",
+              "digest": {
+                "sha256": "4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d"
+              }
+            },
+            {
+              "uri": "pkg:docker/php@8.4.26-fpm-bookworm?digest=sha256:6bfef8e416977aa41f48e3e42a40c1e08050d24e4a938c6edb421400bff24601&platform=linux%2Famd64",
+              "digest": {
+                "sha256": "6bfef8e416977aa41f48e3e42a40c1e08050d24e4a938c6edb421400bff24601"
+              }
+            }
+          ],
+          "invocation": {
+            "configSource": {
+              "entryPoint": "Dockerfile"
+            },
+            "parameters": {
+              "frontend": "gateway.v0",
+              "args": {
+                "cmdline": "docker/dockerfile:1.4",
+                "source": "docker/dockerfile:1.4",
+                "target": "web"
+              },
+              "locals": [
+                {
+                  "name": "context"
+                },
+                {
+                  "name": "dockerfile"
+                }
+              ],
+              "root": {
+                "configSource": {
+                  "path": "Dockerfile"
+                },
+                "request": {
+                  "args": {
+                    "target": "web",
+                    "vcs:localdir:context": ".",
+                    "vcs:localdir:dockerfile": "docker/mediawiki",
+                    "vcs:revision": "028f51e7767078778431d686d8843ee07607a4b6",
+                    "vcs:source": "/var/folders/19/1g7tg4ln6yl5rn3jxcrllwdm0000gn/T/farm-clean-export-_m_nfheq/candidate.git"
+                  }
+                }
+              },
+              "compatibilityVersion": 30
+            },
+            "environment": {
+              "platform": "linux/arm64"
+            }
+          }
+        },
+        "buildx.build.ref": "desktop-linux/desktop-linux/swpcuel9g6hy173qgil47k7xz",
+        "containerimage.descriptor": {
+          "mediaType": "application/vnd.oci.image.index.v1+json",
+          "digest": "sha256:041fa67c731a881fc2d5152f83f7558275711f0cdade11e4fcd5d4d650364a4d",
+          "size": 856
+        },
+        "containerimage.digest": "sha256:041fa67c731a881fc2d5152f83f7558275711f0cdade11e4fcd5d4d650364a4d",
+        "image.name": "docker.io/library/cloudwiki-web:upgrade-clean-20261018-amd64"
+      }
+    },
+    "counter": {
+      "tag": "cloudwiki-counter:upgrade-clean-20261018-amd64",
+      "exit_code": 0,
+      "command": [
+        "docker",
+        "buildx",
+        "build",
+        "--builder",
+        "desktop-linux",
+        "--platform",
+        "linux/amd64",
+        "--load",
+        "--progress=plain",
+        "--metadata-file",
+        "/Volumes/1TB SSD mew/www/docs/upgrade-evidence/clean-checkout-amd64/counter-metadata.json",
+        "-t",
+        "cloudwiki-counter:upgrade-clean-20261018-amd64",
+        "-f",
+        "Moe-Counter/Dockerfile",
+        "Moe-Counter"
+      ],
+      "id": "sha256:d19bfbc915762b70cc0e53b4901960adfa5b3f3df939a362e81c08bbd59f8ec0",
+      "architecture": "amd64",
+      "os": "linux",
+      "metadata": {
+        "buildx.build.provenance": {
+          "builder": {
+            "id": ""
+          },
+          "buildType": "https://mobyproject.org/buildkit@v1",
+          "materials": [
+            {
+              "uri": "pkg:docker/node@22.22.0-bookworm-slim?digest=sha256:dd9d21971ec4395903fa6143c2b9267d048ae01ca6d3ea96f16cb30df6187d94&platform=linux%2Famd64",
+              "digest": {
+                "sha256": "dd9d21971ec4395903fa6143c2b9267d048ae01ca6d3ea96f16cb30df6187d94"
+              }
+            }
+          ],
+          "invocation": {
+            "configSource": {
+              "entryPoint": "Dockerfile"
+            },
+            "parameters": {
+              "frontend": "dockerfile.v0",
+              "locals": [
+                {
+                  "name": "context"
+                },
+                {
+                  "name": "dockerfile"
+                }
+              ],
+              "root": {
+                "configSource": {
+                  "path": "Dockerfile"
+                },
+                "request": {
+                  "args": {
+                    "vcs:localdir:context": "Moe-Counter",
+                    "vcs:localdir:dockerfile": "Moe-Counter",
+                    "vcs:revision": "028f51e7767078778431d686d8843ee07607a4b6",
+                    "vcs:source": "/var/folders/19/1g7tg4ln6yl5rn3jxcrllwdm0000gn/T/farm-clean-export-_m_nfheq/candidate.git"
+                  }
+                }
+              },
+              "compatibilityVersion": 30
+            },
+            "environment": {
+              "dockerfileVersion": "1.27.0",
+              "platform": "linux/arm64"
+            }
+          }
+        },
+        "buildx.build.ref": "desktop-linux/desktop-linux/lumaz6b0g13k63dn9ojtswhs6",
+        "containerimage.descriptor": {
+          "mediaType": "application/vnd.oci.image.index.v1+json",
+          "digest": "sha256:d19bfbc915762b70cc0e53b4901960adfa5b3f3df939a362e81c08bbd59f8ec0",
+          "size": 856
+        },
+        "containerimage.digest": "sha256:d19bfbc915762b70cc0e53b4901960adfa5b3f3df939a362e81c08bbd59f8ec0",
+        "image.name": "docker.io/library/cloudwiki-counter:upgrade-clean-20261018-amd64"
+      }
+    }
+  },
+  "status": "passed",
+  "completed_at": "2026-10-19T01:18:42.718468+00:00"
+}

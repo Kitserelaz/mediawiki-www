@@ -1,0 +1,21 @@
+{
+	"@metadata": {
+		"authors": []
+	},
+	"flexdiagrams-desc": "Editieren und Erstellen von Diagrammen",
+	"editdiagram": "Diagramm bearbeiten",
+	"flexdiagrams-edit-title": "Diagramm bearbeiten: $1",
+	"flexdiagrams-creatediagram": "Diagramm erstellen",
+	"flexdiagrams-viewdiagram": "Diagramm anzeigen",
+	"flexdiagrams-linkingpages": "Die folgenden Seiten verweisen auf dieses Diagramm: $1",
+	"flexdiagrams-drawio-saveinfo": "Bitte speichere das Diagramm in der Bearbeitungsoberfläche, bevor du auf die Schaltfläche „$1“ klickst.",
+	"flexdiagrams-edit-code": "Code:",
+	"flexdiagrams-edit-preview": "Vorschau:",
+	"flexdiagrams-embedding-unsupported": "Diagrammseiten können nicht eingebettet werden.",
+	"flexdiagrams-gantt-zoomlevel": "Zoomstufe:",
+	"flexdiagrams-gantt-hours": "Stunden",
+	"flexdiagrams-gantt-days": "Tage",
+	"flexdiagrams-gantt-weeks": "Wochen",
+	"flexdiagrams-gantt-months": "Monate",
+	"flexdiagrams-gantt-years": "Jahre"
+}

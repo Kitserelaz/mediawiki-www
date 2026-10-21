@@ -1,0 +1,16 @@
+#mw-content-text td {
+	padding-left: 0.5em;
+	padding-right: 0.5em;
+}
+
+.tilesheet-importer-textarea {
+	padding-bottom: 0.5em;
+}
+
+.tilesheet-importer-textarea textarea {
+	width: 145.5% !important;
+}
+
+.sheet-manager-filter-wrapper {
+	width: 75%;
+}

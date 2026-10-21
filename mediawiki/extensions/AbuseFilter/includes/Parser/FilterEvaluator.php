@@ -147,50 +147,20 @@ class FilterEvaluator {
 	private $allowMissingVariables = false;
 
 	/**
-	 * @var BagOStuff Used to cache the AST and the tokens
-	 */
-	private $cache;
-	/**
 	 * @var bool Whether the AST was retrieved from cache
 	 */
 	private $fromCache = false;
-	/**
-	 * @var LoggerInterface Used for debugging
-	 */
-	private $logger;
-	/**
-	 * @var Language Content language, used for language-dependent functions
-	 */
-	private $contLang;
-	/**
-	 * @var IBufferingStatsdDataFactory
-	 */
-	private $statsd;
-
-	/** @var KeywordsManager */
-	private $keywordsManager;
-
-	/** @var VariablesManager */
-	private $varManager;
-
-	/** @var int */
-	private $conditionsLimit;
 
 	/** @var UserVisibleWarning[] */
 	private $warnings = [];
 
 	/**
-	 * @var array Cached results of functions
+	 * @var array<string,mixed> Cached results of functions
 	 */
 	private $funcCache = [];
 
 	/**
-	 * @var Equivset
-	 */
-	private $equivset;
-
-	/**
-	 * @var array AFPToken::TID values found during node evaluation
+	 * @var string[] AFPToken::TID values found during node evaluation
 	 */
 	private $usedVars = [];
 
@@ -202,30 +172,22 @@ class FilterEvaluator {
 	 * @param LoggerInterface $logger Used for debugging
 	 * @param KeywordsManager $keywordsManager
 	 * @param VariablesManager $varManager
-	 * @param IBufferingStatsdDataFactory $statsdDataFactory
+	 * @param IBufferingStatsdDataFactory $statsd
 	 * @param Equivset $equivset
 	 * @param int $conditionsLimit
 	 * @param VariableHolder|null $vars
 	 */
 	public function __construct(
-		Language $contLang,
-		BagOStuff $cache,
-		LoggerInterface $logger,
-		KeywordsManager $keywordsManager,
-		VariablesManager $varManager,
-		IBufferingStatsdDataFactory $statsdDataFactory,
-		Equivset $equivset,
-		int $conditionsLimit,
+		private readonly Language $contLang,
+		private readonly BagOStuff $cache,
+		private readonly LoggerInterface $logger,
+		private readonly KeywordsManager $keywordsManager,
+		private readonly VariablesManager $varManager,
+		private readonly IBufferingStatsdDataFactory $statsd,
+		private readonly Equivset $equivset,
+		private readonly int $conditionsLimit,
 		?VariableHolder $vars = null
 	) {
-		$this->contLang = $contLang;
-		$this->cache = $cache;
-		$this->logger = $logger;
-		$this->statsd = $statsdDataFactory;
-		$this->keywordsManager = $keywordsManager;
-		$this->varManager = $varManager;
-		$this->equivset = $equivset;
-		$this->conditionsLimit = $conditionsLimit;
 		$this->resetState();
 		if ( $vars ) {
 			$this->mVariables = $vars;
@@ -251,9 +213,6 @@ class FilterEvaluator {
 		}
 	}
 
-	/**
-	 * @param VariableHolder $vars
-	 */
 	public function setVariables( VariableHolder $vars ) {
 		$this->mVariables = $vars;
 	}
@@ -403,6 +362,7 @@ class FilterEvaluator {
 		$this->fromCache = true;
 		return $this->cache->getWithSetCallback(
 			$this->cache->makeGlobalKey(
+				'abusefilter-tree',
 				__CLASS__,
 				self::getCacheVersion(),
 				hash( 'sha256', $code )
@@ -427,10 +387,6 @@ class FilterEvaluator {
 		);
 	}
 
-	/**
-	 * @param AFPSyntaxTree $tree
-	 * @return AFPData
-	 */
 	private function evalTree( AFPSyntaxTree $tree ): AFPData {
 		$startTime = microtime( true );
 		$root = $tree->getRoot();
@@ -582,16 +538,13 @@ class FilterEvaluator {
 				[ $op, $leftOperand, $rightOperand ] = $node->children;
 				$leftOperand = $this->evalNode( $leftOperand );
 				$rightOperand = $this->evalNode( $rightOperand );
-				switch ( $op ) {
-					case '+':
-						return $leftOperand->sum( $rightOperand );
-					case '-':
-						return $leftOperand->sub( $rightOperand );
-					default:
-						// @codeCoverageIgnoreStart
-						throw new InternalException( "Unknown sum-related operator: {$op}" );
-						// @codeCoverageIgnoreEnd
-				}
+				return match ( $op ) {
+					'+' => $leftOperand->sum( $rightOperand ),
+					'-' => $leftOperand->sub( $rightOperand ),
+					// @codeCoverageIgnoreStart
+					default => throw new InternalException( "Unknown sum-related operator: {$op}" ),
+					// @codeCoverageIgnoreEnd
+				};
 				// Unreachable line
 			case AFPTreeNode::COMPARE:
 				[ $op, $leftOperand, $rightOperand ] = $node->children;
@@ -831,7 +784,7 @@ class FilterEvaluator {
 		// allowing it to result in DUNDEFINED.
 		$allowMissingVariables = !$this->varExists( $var ) || $this->allowMissingVariables;
 
-		array_push( $this->usedVars, $var );
+		$this->usedVars[] = $var;
 
 		// It's a built-in, non-disabled variable (either set or unset), or a set custom variable
 		$flags = $allowMissingVariables
@@ -1175,7 +1128,7 @@ class FilterEvaluator {
 				continue;
 			}
 
-			$is_found = strpos( $string, $needle ) !== false;
+			$is_found = str_contains( $string, $needle );
 			if ( $is_found === $is_any ) {
 				// If I'm here and it's ANY (OR) => something is found.
 				// If I'm here and it's ALL (AND) => nothing is found.
@@ -1424,7 +1377,7 @@ class FilterEvaluator {
 			return new AFPData( AFPData::DBOOL, false );
 		}
 
-		return new AFPData( AFPData::DBOOL, strpos( $a, $b ) !== false );
+		return new AFPData( AFPData::DBOOL, str_contains( $a, $b ) );
 	}
 
 	/**
@@ -1540,8 +1493,6 @@ class FilterEvaluator {
 	 * Given a node that we don't need to evaluate, decide what to do with it.
 	 * The nodes passed in will usually be discarded by short-circuit
 	 * evaluation. If we don't allow it, we fully evaluate the node.
-	 *
-	 * @param AFPTreeNode $node
 	 */
 	private function maybeDiscardNode( AFPTreeNode $node ) {
 		if ( !$this->mAllowShort ) {

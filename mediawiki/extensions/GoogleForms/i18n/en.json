@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"BlankEclair"
+		]
+	},
+	"googleforms-desc": "This is an extension that allows users to embed Google Forms via iframes",
+	"googleforms-missing-parameter": "GoogleForms error: Missing '$1' parameter",
+	"googleforms-bad-parameter": "GoogleForms error: Invalid characters in '$1' parameter"
+}

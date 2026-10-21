@@ -1,0 +1,29 @@
+{
+	"@metadata": {
+		"authors": [
+			"Kareyac",
+			"Stjn"
+		]
+	},
+	"reportincident-desc": "Расширение системы жалоб об инцидентах (Incident Reporting System).",
+	"reportincident-report-btn-label": "Пожаловаться",
+	"reportincident-dialog-close-btn": "Закрыть",
+	"reportincident-dialog-back-btn": "Назад",
+	"reportincident-dialog-optional-label": "(необязательно)",
+	"reportincident-dialog-violator-placeholder-text": "О ком {{GENDER:|вы}} жалуетесь?",
+	"reportincident-dialog-harassment-type-hate-speech-or-discrimination": "Язык вражды или дискриминация",
+	"reportincident-dialog-harassment-type-sexual-harassment": "Сексуальные домогательства",
+	"reportincident-dialog-harassment-type-something-else": "Другое",
+	"reportincident-dialog-something-else-input-placeholder": "Укажите поведение, не перечисленное выше.",
+	"reportincident-dialog-harassment-empty": "{{GENDER:|Вы}} должны выбрать хотя бы одно поведение.",
+	"reportincident-dialog-something-else-empty": "Пожалуйста, предоставьте краткое описание поведения.",
+	"reportincident-dialog-server-error": "Извините, похоже, наш сервер не отвечает. Пожалуйста, попробуйте отправить форму снова.",
+	"reportincident-dialog-generic-error": "{{GENDER:|Ваш}} запрос не мог быть отправлен из-за ошибки. Пожалуйста, попробуйте отправить форму снова.",
+	"reportincident-success-message-close": "Закрыть",
+	"right-reportincident": "Пожаловаться об инциденте",
+	"action-reportincident": "пожаловаться об инциденте",
+	"reportincident-emaildialog-title": "Требуется подтверждённый адрес электронной почты",
+	"reportincident-emaildialog-close-button": "Отменить",
+	"reportincident-emaildialog-primary": "Перейти в настройки",
+	"reportincident-confirmedemail-required": "Для отправки жалобы требуется подтверждённый адрес электронной почты."
+}

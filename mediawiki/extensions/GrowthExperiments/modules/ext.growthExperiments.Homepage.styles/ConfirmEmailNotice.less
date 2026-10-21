@@ -1,0 +1,45 @@
+@import 'mediawiki.skin.variables.less';
+
+.mw-ge-homepage-confirmemail-nojs {
+	text-align: left;
+	padding: 1em;
+
+	.mw-ge-homepage-confirmemail-nojs-message {
+		padding-left: 1em;
+	}
+}
+
+.client-js .mw-ge-homepage-confirmemail-nojs {
+	display: none;
+}
+
+.client-nojs .mw-ge-homepage-confirmemail-nojs {
+	background-color: @background-color-success-subtle;
+	border: @border-width-base @border-style-base @border-color-success;
+	font-size: 1em;
+	font-weight: bold;
+	color: @color-base;
+
+	&-desktop {
+		margin: 1em 0;
+	}
+}
+
+// The following block does not apply to Minerva with JS
+body:not( .skin-minerva ) {
+	.mw-notification-area {
+		// Center the confirm email notification without impacting other notifications
+		.mw-notification-type-ge-homepage-confirmemail {
+			background-color: @background-color-success-subtle;
+			border: @border-width-base @border-style-base @border-color-success;
+			font-size: 1em;
+			font-weight: bold;
+			color: @color-base;
+			position: fixed;
+			left: 50%;
+			box-sizing: border-box;
+			max-width: 20em;
+			transform: translate( -50%, -35px );
+		}
+	}
+}

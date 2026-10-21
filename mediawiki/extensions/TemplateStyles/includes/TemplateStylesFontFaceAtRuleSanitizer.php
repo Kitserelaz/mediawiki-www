@@ -20,22 +20,16 @@ use Wikimedia\CSS\Sanitizer\FontFaceAtRuleSanitizer;
  */
 class TemplateStylesFontFaceAtRuleSanitizer extends FontFaceAtRuleSanitizer {
 
-	/**
-	 * @param MatcherFactory $matcherFactory
-	 */
 	public function __construct( MatcherFactory $matcherFactory ) {
 		parent::__construct( $matcherFactory );
 
 		// Only allow the font-family if it begins with "TemplateStyles"
+		$validator = static fn ( Token $t ) => str_starts_with( $t->value(), 'TemplateStyles' );
 		$this->propertySanitizer->setKnownProperties( [
 			'font-family' => new Alternative( [
-				new TokenMatcher( Token::T_STRING, static function ( Token $t ) {
-					return substr( $t->value(), 0, 14 ) === 'TemplateStyles';
-				} ),
+				new TokenMatcher( Token::T_STRING, $validator ),
 				new Juxtaposition( [
-					new TokenMatcher( Token::T_IDENT, static function ( Token $t ) {
-						return substr( $t->value(), 0, 14 ) === 'TemplateStyles';
-					} ),
+					new TokenMatcher( Token::T_IDENT, $validator ),
 					Quantifier::star( $matcherFactory->ident() ),
 				] ),
 			] ),

@@ -1,0 +1,11 @@
+{
+	"GERestbaseUrl": "https://en.wikipedia.org/api/rest_v1",
+	"GELinkRecommendationsEnabled": false,
+	"GEImageRecommendationsEnabled": false,
+	"GEHomepageSuggestedEditsIntroLinks": {
+		"create": "Help:Creating pages",
+		"image": "Help:Images"
+	},
+	"GENewcomerTasksTopicFiltersPref": "growthexperiments-homepage-se-topic-filters",
+	"GESearchTaskSuggesterDefaultLimit": 15
+}

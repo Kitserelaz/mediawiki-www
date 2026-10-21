@@ -1,0 +1,123 @@
+<?php
+
+namespace SMW\ParserFunctions;
+
+use MediaWiki\Parser\Parser;
+use ParamProcessor\ProcessedParam;
+use ParamProcessor\ProcessingResult;
+use SMW\ParameterListDocBuilder;
+use SMW\Query\QueryProcessor;
+
+/**
+ * Class that provides the {{#smwdoc}} parser function, which displays parameter
+ * documentation for a specified result format.
+ *
+ * @ingroup ParserFunction
+ *
+ * @license GPL-2.0-or-later
+ * @author Jeroen De Dauw < jeroendedauw@gmail.com >
+ */
+class DocumentationParserFunction {
+
+	/**
+	 * @var string
+	 */
+	private $language = 'en';
+
+	/**
+	 * @param Parser $parser
+	 * @param ProcessingResult $result
+	 *
+	 * @return mixed
+	 */
+	public function handle( Parser $parser, ProcessingResult $result ) {
+		if ( $result->hasFatal() ) {
+			return $this->getOutputForErrors();
+		}
+
+		$parameters = $result->getParameters();
+		$format = $parameters['format']->getValue();
+
+		$formatParameters = QueryProcessor::getFormatParameters(
+			$format
+		);
+
+		$this->language = $parameters['language']->getValue();
+
+		if ( $formatParameters === [] ) {
+			return $this->msg( 'smw-smwdoc-default-no-parameter-list', $format );
+		}
+
+		return $this->buildParameterListDocumentation( $parameters, $formatParameters );
+	}
+
+	public static function getParamDefinitions(): array {
+		return [
+			[
+				'name' => 'format',
+				'message' => 'smw-smwdoc-par-format',
+				'values' => array_keys( $GLOBALS['smwgResultFormats'] ),
+			],
+			[
+				'name' => 'language',
+				'message' => 'smw-smwdoc-par-language',
+				'default' => $GLOBALS['wgLanguageCode'],
+			],
+			[
+				'name' => 'parameters',
+				'message' => 'smw-smwdoc-par-parameters',
+				'values' => [ 'all', 'specific', 'base' ],
+				'default' => 'specific',
+			],
+		];
+	}
+
+	public static function getDefaultParams(): array {
+		return [ 'format', 'language', 'parameters' ];
+	}
+
+	/**
+	 * @param ProcessedParam[] $parameters
+	 *
+	 * @return string
+	 */
+	private function buildParameterListDocumentation( array $parameters, array $formatParameters ) {
+		if ( $parameters['parameters']->getValue() === 'specific' ) {
+			foreach ( array_keys( QueryProcessor::getParameters() ) as $name ) {
+				unset( $formatParameters[$name] );
+			}
+		} elseif ( $parameters['parameters']->getValue() === 'base' ) {
+			foreach ( array_diff_key( $formatParameters, QueryProcessor::getParameters() ) as $param ) {
+				unset( $formatParameters[$param->getName()] );
+			}
+		}
+
+		$docBuilder = new ParameterListDocBuilder(
+			[ $this, 'msg' ]
+		);
+
+		$parameterTable = $docBuilder->getParameterTable( $formatParameters );
+		if ( $parameterTable !== '' ) {
+			return $parameterTable;
+		}
+
+		return $this->msg( 'smw-smwdoc-default-no-parameter-list', $parameters['format']->getValue() );
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param ...$args
+	 *
+	 * @return string
+	 */
+	public function msg( ...$args ) {
+		return wfMessage( array_shift( $args ) )->params( $args )->useDatabase( true )->inLanguage( $this->language )->text();
+	}
+
+	private function getOutputForErrors(): string {
+		// TODO: see https://github.com/SemanticMediaWiki/SemanticMediaWiki/issues/1485
+		return 'A fatal error occurred in the #smwdoc parser function';
+	}
+
+}

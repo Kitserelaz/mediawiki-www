@@ -27,10 +27,6 @@ class RevisionActionPermissions {
 	 */
 	protected $user;
 
-	/**
-	 * @param FlowActions $actions
-	 * @param User $user
-	 */
 	public function __construct( FlowActions $actions, User $user ) {
 		$this->user = $user;
 		$this->actions = $actions;
@@ -242,7 +238,7 @@ class RevisionActionPermissions {
 		} elseif ( $revision instanceof PostRevision && !$revision->isTopicTitle() ) {
 			try {
 				$topicId = $revision->getCollection()->getWorkflowId();
-			} catch ( DataModelException $e ) {
+			} catch ( DataModelException ) {
 				// failed to locate root post (most likely in unit tests, where
 				// we didn't store the tree)
 				return $revision;
@@ -270,9 +266,6 @@ class RevisionActionPermissions {
 		return $this->actions;
 	}
 
-	/**
-	 * @param User $user
-	 */
 	public function setUser( User $user ) {
 		$this->user = $user;
 	}

@@ -1,0 +1,8 @@
+{
+    "query": "pictures local:",
+    "config": {
+        "CirrusSearchExtraIndexes": {
+            "0": [ "foowiki" ]
+        }
+    }
+}

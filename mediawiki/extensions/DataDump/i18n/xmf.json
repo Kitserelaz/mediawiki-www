@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Narazeni"
+		]
+	},
+	"datadump-delete-button": "ლასუა",
+	"datadump-label-generate": "გენერირაფა",
+	"datadump-table-column-failed": "ვემიხუჯინუ",
+	"datadump-table-header-name": "ჯოხო",
+	"datadump-table-header-size": "ზჷმა",
+	"datadump-table-header-status": "სტატუსი",
+	"datadump-table-header-type": "ტიპი"
+}

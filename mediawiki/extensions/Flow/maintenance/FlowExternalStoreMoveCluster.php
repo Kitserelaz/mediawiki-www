@@ -2,17 +2,17 @@
 
 namespace Flow\Maintenance;
 
-use BatchRowIterator;
-use BatchRowUpdate;
-use BatchRowWriter;
-use ExternalStore;
 use Flow\Container;
 use Flow\DbFactory;
 use Flow\Model\UUID;
+use MediaWiki\ExternalStore\ExternalStoreException;
 use MediaWiki\Maintenance\Maintenance;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Utils\BatchRowIterator;
+use MediaWiki\Utils\BatchRowUpdate;
+use MediaWiki\Utils\BatchRowWriter;
+use MediaWiki\Utils\RowUpdateGenerator;
 use MediaWiki\WikiMap\WikiMap;
-use RowUpdateGenerator;
 use RuntimeException;
 use stdClass;
 use Wikimedia\Rdbms\IDatabase;
@@ -167,7 +167,7 @@ abstract class ExternalStoreMoveCluster extends Maintenance {
 	 * a Closure.
 	 *
 	 * @param string $out
-	 * @param mixed|null $channel
+	 * @param string|null $channel
 	 */
 	public function output( $out, $channel = null ) {
 		parent::output( $out, $channel );
@@ -241,7 +241,14 @@ class ExternalStoreUpdateGenerator implements RowUpdateGenerator {
 	 * @return string
 	 */
 	public function read( $url, array $flags = [] ) {
-		$content = ExternalStore::fetchFromURL( $url );
+		try {
+			$content = MediaWikiServices::getInstance()
+				->getExternalStoreAccess()
+				->fetchFromURL( $url );
+		} catch ( ExternalStoreException ) {
+			$content = false;
+		}
+
 		if ( $content === false ) {
 			throw new RuntimeException( "Failed to fetch content from URL: $url" );
 		}
@@ -286,7 +293,9 @@ class ExternalStoreUpdateGenerator implements RowUpdateGenerator {
 		foreach ( $this->stores as $store ) {
 			$stores[] = 'DB://' . $store;
 		}
-		$url = ExternalStore::insertWithFallback( $stores, $content );
+		$url = MediaWikiServices::getInstance()
+			->getExternalStoreAccess()
+			->insert( $content, [], $stores );
 		if ( $url === false ) {
 			throw new RuntimeException( 'Failed to write content to stores ' . json_encode( $stores ) );
 		}

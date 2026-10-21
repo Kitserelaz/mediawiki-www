@@ -1,0 +1,9 @@
+{
+  "@metadata": {
+    "authors": [
+      "nordicnames.de  -- Malte Ahrholdt",
+      "colleirose.github.io - Collei"
+    ]
+  },
+  "removeredlinks-desc": "This extension shows redlinks as text to logged-out users. Optionally, it can be configured to show redlinks as text for all users."
+}

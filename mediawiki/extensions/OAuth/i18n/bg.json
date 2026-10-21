@@ -7,7 +7,8 @@
 			"StanProg",
 			"Ted Masters",
 			"Termininja",
-			"Vlad5250"
+			"Vlad5250",
+			"ArcaneIE"
 		]
 	},
 	"mwoauth-desc": "Позволява употреба на OAuth 1.0а и OAuth 2.0 за удостоверяване за API",
@@ -38,6 +39,8 @@
 	"mwoauth-consumer-stage-approved": "Одобрено",
 	"mwoauth-consumer-stage-disabled": "Изключено",
 	"mwoauth-consumer-stage-suppressed": "Потиснато",
+	"mwoauth-consumers-central-wiki": "Потребителите могат да се управляват само от централното уики.",
+	"mwoauth-consumers-central-wiki-go": "Към тази страница на $1",
 	"oauthconsumerregistration": "Регистрация на клиент на OAuth",
 	"mwoauthconsumerregistration-navigation": "Навигация:",
 	"mwoauthconsumerregistration-list": "Списък на мои клиенти",
@@ -124,7 +127,7 @@
 	"mwoauthmanagemygrants-action": "Промяна на статус:",
 	"mwoauthmanagemygrants-success-update": "Вашите настройки за това приложение са обновени.",
 	"mwoauthmanagemygrants-success-renounce": "Достъпът на приложението до Вашата сметка бе отменен.",
-	"mwoauthmanagemygrants-basic-tooltip": "Защо не мога да обновя това разрешение? Това разрешение дава права на Вашите основни свързани приложения, които имат нужда от него, за да функционират както трябва. Ако не искате това свързано приложение да има тези права, тогава отменете достъпа на приложението.",
+	"mwoauthmanagemygrants-basic-tooltip": "'''Защо не мога да обновя това разрешение?'''\n\nТова разрешение дава права на Вашите основни свързани приложения, които имат нужда от него, за да функционират както трябва. Ако не искате това свързано приложение да има тези права, тогава отменете достъпа на приложението.",
 	"mwoauthmanagemygrants-editslink": "{{GENDER:$1|Вашите}} редакции с това приложение",
 	"mwoauthmanagemygrants-actionslink": "{{GENDER:$1|Вашите}} действия с това приложение",
 	"log-action-filter-mwoauthconsumer": "Вид клиентско действие с OAuth:",

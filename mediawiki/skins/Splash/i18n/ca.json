@@ -1,0 +1,18 @@
+{
+	"@metadata": {
+		"authors": [
+			"Mguix",
+			"SMP"
+		]
+	},
+	"splash-notloggedin": "No heu iniciat la sessió",
+	"splash-userpage": "Pàgina d'usuari",
+	"splash-talkpage": "Pàgina de discussió",
+	"splash-page-tools": "Eines de la pàgina",
+	"splash-talk": "Discussió",
+	"splash-jumptonavigation": "Salta a la navegació",
+	"splash-jumptocontent": "Salta al contingut",
+	"splash-jumptosearch": "Salta a la cerca",
+	"splash-toolbox": "Altres utilitats",
+	"global-links": "Altra navegació"
+}

@@ -1,0 +1,40 @@
+{
+	"name": "Subpage List 3",
+	"version": "1.4",
+	"descriptionmsg": "spl3-desc",
+	"url": "https://www.mediawiki.org/wiki/Extension:SubPageList3",
+	"author": [
+		"James McCormack",
+		"Martin Schallnahs",
+		"Rob Church"
+	],
+	"license-name": "GPL-2.0-or-later",
+	"requires": {
+		"MediaWiki": ">= 1.43"
+	},
+	"MessagesDirs": {
+		"SubPageList3": [
+			"i18n"
+		]
+	},
+	"Hooks": {
+		"ParserFirstCallInit": "main"
+	},
+	"HookHandlers": {
+		"main": {
+			"class": "MediaWiki\\Extension\\SubPageList3\\Hooks"
+		}
+	},
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\SubPageList3\\": "includes/"
+	},
+	"ConfigRegistry": {
+		"SubPageList3": "GlobalVarConfig::newInstance"
+	},
+	"config": {
+		"SubPageListDescendantsLimit": {
+			"value": 200
+		}
+	},
+	"manifest_version": 2
+}

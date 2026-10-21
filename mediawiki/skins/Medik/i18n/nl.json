@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"HanV",
+			"Mainframe98",
+			"McDutchie"
+		]
+	},
+	"skinname-medik": "Medik",
+	"medik-default": "standaard",
+	"medik-desc": "Eenvoudige en schone skin op basis van de Bootstrap-bibliotheek.",
+	"medik-font-label": "Lettergrootte",
+	"medik-tools-menu": "Bewerken en hulpmiddelen"
+}

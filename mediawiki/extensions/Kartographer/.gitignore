@@ -1,0 +1,10 @@
+*swp
+*swo
+*swn
+node_modules/
+vendor/
+composer.lock
+docs/
+.DS_Store
+.eslintcache
+/.stylelintcache

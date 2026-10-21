@@ -1,0 +1,31 @@
+{
+	"@metadata": {
+		"authors": [
+			"Abijeet Patro",
+			"Nilesh shukla",
+			"पदाति"
+		]
+	},
+	"growthexperiments-homepage-discovery-thanks-text": "{{GENDER:$1|अपने}} मुख पृष्ठ पर जाने और आरंभ करने के लिए पृष्ठ के शीर्ष पर $2 पर क्लिक करें।",
+	"growthexperiments-homepage-suggestededits-pager-loading": "लोड हो रहा है…",
+	"growthexperiments-homepage-welcome-notice-button-text-variant-c": "आगे बढ़ें",
+	"growthexperiments-homepage-welcome-notice-button-text-variant-d": "समझ गया",
+	"growthexperiments-addlink-context-button-next": "अगला",
+	"newcomertasksinfo-table-header-task-count": "गणना",
+	"growthexperiments-structuredtask-editmode-confirmation-dialog-action-cancel": "रद्द करें",
+	"growthexperiments-addimage-inspector-yes-button": "हाँ",
+	"growthexperiments-addimage-inspector-no-button": "नहीं",
+	"growthexperiments-addimage-rejectiondialog-action-done": "पूर्ण हुआ",
+	"growthexperiments-addimage-rejectiondialog-action-cancel": "रद्द करें",
+	"growthexperiments-addimage-rejectiondialog-reason-other": "अन्य",
+	"growthexperiments-addimage-viewer-close-button": "बंद करें",
+	"growthexperiments-addimage-skip-dialog-cancel": "रद्द करें",
+	"growthexperiments-structuredtask-user-error-login-cta": "लॉग इन",
+	"growthexperiments-addimage-summary-label": "सारांश",
+	"growthexperiments-homepage-mentorship-confirm-dialog-cancel": "रद्द करें",
+	"growthexperiments-homepage-mentorship-confirm-dialog-continue": "जारी रखें",
+	"growthexperiments-homepage-mentorship-optout-cancel": "रद्द करें",
+	"growthexperiments-homepage-mentorship-optout-confirmation-done": "पूर्ण हुआ",
+	"growthexperiments-levelingup-getstarted-notification-learnmore-label": "अधिक जानिए",
+	"growthexperiments-homepage-communityupdates-calltoaction-button": "अधिक जानिए"
+}

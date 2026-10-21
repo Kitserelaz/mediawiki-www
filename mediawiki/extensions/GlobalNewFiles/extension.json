@@ -1,0 +1,130 @@
+{
+	"name": "GlobalNewFiles",
+	"author": [
+		"John Lewis",
+		"Paladox",
+		"Southparkfan",
+		"Universal Omega"
+	],
+	"url": "https://github.com/miraheze/GlobalNewFiles",
+	"descriptionmsg": "globalnewfiles-description",
+	"license-name": "GPL-3.0-or-later",
+	"type": "specialpage",
+	"requires": {
+		"MediaWiki": ">= 1.43.0",
+		"platform": {
+			"php": ">= 8.1"
+		}
+	},
+	"MessagesDirs": {
+		"GlobalNewFiles": [
+			"i18n"
+		]
+	},
+	"ExtensionMessagesFiles": {
+		"GlobalNewFilesAliases": "GlobalNewFilesAliases.php"
+	},
+	"AvailableRights": [
+		"viewglobalprivatefiles"
+	],
+	"AutoloadNamespaces": {
+		"Miraheze\\GlobalNewFiles\\": "includes/",
+		"Miraheze\\GlobalNewFiles\\Maintenance\\": "maintenance/"
+	},
+	"JobClasses": {
+		"GlobalNewFilesDeleteJob": {
+			"class": "Miraheze\\GlobalNewFiles\\Jobs\\GlobalNewFilesDeleteJob",
+			"services": [
+				"ConnectionProvider",
+				"MainConfig"
+			],
+			"needsPage": false
+		},
+		"GlobalNewFilesInsertJob": {
+			"class": "Miraheze\\GlobalNewFiles\\Jobs\\GlobalNewFilesInsertJob",
+			"services": [
+				"ConnectionProvider",
+				"MainConfig",
+				"PermissionManager",
+				"RepoGroup"
+			],
+			"needsPage": false
+		},
+		"GlobalNewFilesMoveJob": {
+			"class": "Miraheze\\GlobalNewFiles\\Jobs\\GlobalNewFilesMoveJob",
+			"services": [
+				"ConnectionProvider",
+				"MainConfig",
+				"RepoGroup"
+			],
+			"needsPage": false
+		}
+	},
+	"SpecialPages": {
+		"GlobalNewFiles": {
+			"class": "Miraheze\\GlobalNewFiles\\Specials\\SpecialGlobalNewFiles",
+			"services": [
+				"CentralIdLookup",
+				"ConnectionProvider"
+			]
+		}
+	},
+	"ResourceModules": {
+		"ext.globalnewfiles.styles": {
+			"styles": "ext.globalnewfiles.styles.css"
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "resources",
+		"remoteExtPath": "GlobalNewFiles/resources"
+	},
+	"Hooks": {
+		"CreateWikiStatePrivate": {
+			"handler": "CreateWiki"
+		},
+		"CreateWikiStatePublic": {
+			"handler": "CreateWiki"
+		},
+		"CreateWikiTables": {
+			"handler": "CreateWiki"
+		},
+		"FileDeleteComplete": {
+			"handler": "Main"
+		},
+		"FileUndeleteComplete": {
+			"handler": "Main"
+		},
+		"LoadExtensionSchemaUpdates": {
+			"handler": "Installer"
+		},
+		"PageMoveComplete": {
+			"handler": "Main"
+		},
+		"UploadComplete": {
+			"handler": "Main"
+		}
+	},
+	"HookHandlers": {
+		"CreateWiki": {
+			"class": "Miraheze\\GlobalNewFiles\\HookHandlers\\CreateWiki",
+			"services": [
+				"ConnectionProvider"
+			]
+		},
+		"Installer": {
+			"class": "Miraheze\\GlobalNewFiles\\HookHandlers\\Installer"
+		},
+		"Main": {
+			"class": "Miraheze\\GlobalNewFiles\\HookHandlers\\Main",
+			"services": [
+				"CentralIdLookup",
+				"JobQueueGroup",
+				"TitleFactory"
+			]
+		}
+	},
+	"DatabaseVirtualDomains": [
+		"virtual-globalnewfiles"
+	],
+	"manifest_version": 2
+}

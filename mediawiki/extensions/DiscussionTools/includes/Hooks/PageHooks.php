@@ -9,35 +9,37 @@
 
 namespace MediaWiki\Extension\DiscussionTools\Hooks;
 
-use Article;
 use MediaWiki\Actions\Hook\GetActionNameHook;
 use MediaWiki\Context\IContextSource;
-use MediaWiki\Context\RequestContext;
+use MediaWiki\Extension\DiscussionTools\BatchModifyElements;
 use MediaWiki\Extension\DiscussionTools\CommentFormatter;
 use MediaWiki\Extension\DiscussionTools\CommentUtils;
 use MediaWiki\Extension\DiscussionTools\SubscriptionStore;
 use MediaWiki\Extension\VisualEditor\Hooks as VisualEditorHooks;
-use MediaWiki\Hook\SidebarBeforeOutputHook;
-use MediaWiki\Hook\SkinTemplateNavigation__UniversalHook;
 use MediaWiki\Html\Html;
-use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\Hook\BeforePageDisplayHook;
 use MediaWiki\Output\Hook\OutputPageBeforeHTMLHook;
 use MediaWiki\Output\Hook\OutputPageParserOutputHook;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Page\Article;
+use MediaWiki\Page\Hook\ArticleParserOptionsHook;
 use MediaWiki\Page\Hook\BeforeDisplayNoArticleTextHook;
+use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Parser\ParserOutput;
-use MediaWiki\Registration\ExtensionRegistry;
+use MediaWiki\Skin\Hook\SidebarBeforeOutputHook;
+use MediaWiki\Skin\Hook\SkinTemplateNavigation__UniversalHook;
+use MediaWiki\Skin\Skin;
+use MediaWiki\Skin\SkinTemplate;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Title\Title;
 use MediaWiki\User\Options\UserOptionsLookup;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserNameUtils;
+use MobileContext;
 use OOUI\ButtonWidget;
-use Skin;
-use SkinTemplate;
 
 class PageHooks implements
+	ArticleParserOptionsHook,
 	BeforeDisplayNoArticleTextHook,
 	BeforePageDisplayHook,
 	GetActionNameHook,
@@ -47,27 +49,22 @@ class PageHooks implements
 	SkinTemplateNavigation__UniversalHook
 {
 
-	private SubscriptionStore $subscriptionStore;
-	private UserNameUtils $userNameUtils;
-	private UserOptionsLookup $userOptionsLookup;
-
 	public function __construct(
-		SubscriptionStore $subscriptionStore,
-		UserNameUtils $userNameUtils,
-		UserOptionsLookup $userOptionsLookup
+		private readonly SubscriptionStore $subscriptionStore,
+		private readonly UserNameUtils $userNameUtils,
+		private readonly UserOptionsLookup $userOptionsLookup,
+		private readonly ?MobileContext $mobileContext,
 	) {
-		$this->subscriptionStore = $subscriptionStore;
-		$this->userNameUtils = $userNameUtils;
-		$this->userOptionsLookup = $userOptionsLookup;
 	}
 
 	private function isMobile(): bool {
-		if ( ExtensionRegistry::getInstance()->isLoaded( 'MobileFrontend' ) ) {
-			/** @var \MobileContext $mobFrontContext */
-			$mobFrontContext = MediaWikiServices::getInstance()->getService( 'MobileFrontend.Context' );
-			return $mobFrontContext->shouldDisplayMobileView();
+		return $this->mobileContext && $this->mobileContext->shouldDisplayMobileView();
+	}
+
+	public function onArticleParserOptions( Article $article, ParserOptions $popts ) {
+		if ( !$popts->getUseParsoid() && HookUtils::isAvailableForTitle( $article->getTitle() ) ) {
+			$article->setUseLegacyPostprocCache();
 		}
-		return false;
 	}
 
 	/**
@@ -94,8 +91,6 @@ class PageHooks implements
 				// * ext-discussiontools-topicsubscription-enabled
 				// * ext-discussiontools-autotopicsub-enabled
 				// * ext-discussiontools-visualenhancements-enabled
-				// * ext-discussiontools-visualenhancements_reply-enabled
-				// * ext-discussiontools-visualenhancements_pageframe-enabled
 				$output->addBodyClasses( "ext-discussiontools-$feature-enabled" );
 			}
 		}
@@ -185,7 +180,7 @@ class PageHooks implements
 				$output->prependHTML(
 					Html::rawElement( 'div',
 						[ 'class' => 'ext-discussiontools-init-lede-button-container' ],
-						( new ButtonWidget( [
+						(string)( new ButtonWidget( [
 							'label' => $output->getContext()->msg( 'discussiontools-ledesection-button' )->text(),
 							'classes' => [ 'ext-discussiontools-init-lede-button' ],
 							'framed' => false,
@@ -212,7 +207,7 @@ class PageHooks implements
 				// Minerva doesn't show a new topic button.
 				$output->addHTML( Html::rawElement( 'div',
 					[ 'class' => 'ext-discussiontools-init-new-topic' ],
-					( new ButtonWidget( [
+					(string)( new ButtonWidget( [
 						'classes' => [ 'ext-discussiontools-init-new-topic-button' ],
 						'href' => $title->getLinkURL( [ 'action' => 'edit', 'section' => 'new' ] ),
 						'icon' => 'speechBubbleAdd',
@@ -249,25 +244,34 @@ class PageHooks implements
 		// This hook can be executed more than once per page view if the page content is composed from
 		// multiple sources!
 
+		$batchModifyElements = new BatchModifyElements();
+
+		// Match the check in ParserHooks::transformHtml which adds the timestamp link placeholders
+		if ( HookUtils::isAvailableForTitle( $output->getTitle() ) ) {
+			CommentFormatter::postprocessTimestampLinks( $text, $batchModifyElements, $output );
+		}
+
 		$isMobile = $this->isMobile();
 		$visualEnhancementsEnabled =
 			HookUtils::isFeatureEnabledForOutput( $output, HookUtils::VISUALENHANCEMENTS );
-		$visualEnhancementsReplyEnabled =
-			HookUtils::isFeatureEnabledForOutput( $output, HookUtils::VISUALENHANCEMENTS_REPLY );
 
 		if ( HookUtils::isFeatureEnabledForOutput( $output, HookUtils::TOPICSUBSCRIPTION ) ) {
 			// Just enable OOUI PHP - the OOUI subscribe button isn't infused unless VISUALENHANCEMENTS are enabled
 			$output->setupOOUI();
-			$text = CommentFormatter::postprocessTopicSubscription(
-				$text, $output, $this->subscriptionStore, $isMobile, $visualEnhancementsEnabled
+			CommentFormatter::postprocessTopicSubscription(
+				$text, $batchModifyElements, $output, $this->subscriptionStore, $isMobile, $visualEnhancementsEnabled
 			);
+		} else {
+			CommentFormatter::removeTopicSubscription( $batchModifyElements );
 		}
 
 		if ( HookUtils::isFeatureEnabledForOutput( $output, HookUtils::REPLYTOOL ) ) {
 			$output->enableOOUI();
-			$text = CommentFormatter::postprocessReplyTool(
-				$text, $output, $isMobile, $visualEnhancementsReplyEnabled
+			CommentFormatter::postprocessReplyTool(
+				$text, $batchModifyElements, $output, $isMobile, $visualEnhancementsEnabled
 			);
+		} else {
+			CommentFormatter::removeReplyTool( $batchModifyElements );
 		}
 
 		if ( $visualEnhancementsEnabled ) {
@@ -278,10 +282,7 @@ class PageHooks implements
 			}
 			if (
 				$isMobile ||
-				(
-					$visualEnhancementsReplyEnabled &&
-					CommentFormatter::isLanguageRequiringReplyIcon( $output->getLanguage() )
-				)
+				CommentFormatter::isLanguageRequiringReplyIcon( $output->getLanguage() )
 			) {
 				// Reply button: share
 				$output->addModuleStyles( 'oojs-ui.styles.icons-content' );
@@ -296,7 +297,14 @@ class PageHooks implements
 					'oojs-ui.styles.icons-editing-core',
 				] );
 			}
-			$text = CommentFormatter::postprocessVisualEnhancements( $text, $output, $isMobile );
+			CommentFormatter::postprocessVisualEnhancements( $text, $batchModifyElements, $output, $isMobile );
+		} else {
+			CommentFormatter::removeVisualEnhancements( $batchModifyElements );
+		}
+
+		// Optimization: Only parse and process the HTML if it seems to contain our tags (T400115)
+		if ( str_contains( $text, '<mw:dt-' ) ) {
+			$text = $batchModifyElements->apply( $text );
 		}
 
 		// Append empty state if the OutputPageParserOutput hook decided that we should.
@@ -432,12 +440,10 @@ class PageHooks implements
 	 * Generate HTML markup for the new topic tool's empty state, shown on talk pages that don't exist
 	 * or have no topics.
 	 *
-	 * @param IContextSource $context
 	 * @return string HTML
 	 */
 	private function getEmptyStateHtml( IContextSource $context ): string {
-		$coreConfig = RequestContext::getMain()->getConfig();
-		$iconpath = $coreConfig->get( 'ExtensionAssetsPath' ) . '/DiscussionTools/images';
+		$coreConfig = $context->getConfig();
 
 		$descParams = [];
 		$buttonMsg = 'discussiontools-emptystate-button';
@@ -500,7 +506,7 @@ class PageHooks implements
 				$context->msg( $titleMsg )->parse()
 			) .
 			Html::rawElement( 'div', [ 'class' => 'plainlinks' ],
-				$context->msg( $descMsg, $descParams )->parseAsBlock()
+				$context->msg( $descMsg, ...$descParams )->parseAsBlock()
 			);
 
 		if ( $buttonMsg ) {
@@ -514,12 +520,7 @@ class PageHooks implements
 		$wrapped =
 			Html::rawElement( 'div', [ 'class' => 'ext-discussiontools-emptystate' ],
 				Html::rawElement( 'div', [ 'class' => 'ext-discussiontools-emptystate-text' ], $text ) .
-				Html::element( 'img', [
-					'src' => $iconpath . '/emptystate.svg',
-					'class' => 'ext-discussiontools-emptystate-logo',
-					// This is a purely decorative element
-					'alt' => '',
-				] )
+				Html::element( 'div', [ 'class' => 'ext-discussiontools-emptystate-logo' ] )
 			);
 
 		return $wrapped;
@@ -551,8 +552,6 @@ class PageHooks implements
 	/**
 	 * @param SkinTemplate $sktemplate
 	 * @param array &$links
-	 * @return void
-	 * @phpcs:disable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
 	 */
 	public function onSkinTemplateNavigation__Universal( $sktemplate, &$links ): void {
 		$output = $sktemplate->getOutput();
@@ -571,6 +570,14 @@ class PageHooks implements
 			];
 
 			$output->addModules( [ 'ext.discussionTools.init' ] );
+		}
+
+		if (
+			$sktemplate->getSkinName() === 'minerva' &&
+			HookUtils::isFeatureEnabledForOutput( $output, HookUtils::NEWTOPICTOOL )
+		) {
+			// Remove duplicate add topic button from page actions (T395980)
+			unset( $links[ 'views' ][ 'addsection' ] );
 		}
 	}
 

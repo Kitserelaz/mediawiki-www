@@ -1,0 +1,140 @@
+{
+	"name": "WikidataPageBanner",
+	"namemsg": "wikidatapagebanner-extensionname",
+	"version": "0.0.3",
+	"author": [
+		"Sumit Asthana"
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:WikidataPageBanner",
+	"descriptionmsg": "wikidatapagebanner-desc",
+	"license-name": "GPL-2.0-or-later",
+	"type": "other",
+	"requires": {
+		"MediaWiki": ">= 1.43"
+	},
+	"MessagesDirs": {
+		"WikidataPageBanner": [
+			"i18n"
+		]
+	},
+	"ExtensionMessagesFiles": {
+		"WikidataPageBannerMagic": "WikidataPageBanner.i18n.magic.php"
+	},
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\WikidataPageBanner\\": "includes/"
+	},
+	"TestAutoloadClasses": {
+		"MockBanner": "tests/phpunit/MockBanner.php",
+		"MockBannerOptions": "tests/phpunit/MockBannerOptions.php"
+	},
+	"ResourceModules": {
+		"ext.WikidataPageBanner": {
+			"styles": [
+				"ext.WikidataPageBanner.styles/ext.WikidataPageBanner.less"
+			],
+			"skinStyles": {
+				"default": "ext.WikidataPageBanner.styles/ext.WikidataPageBanner.default.less",
+				"modern": "ext.WikidataPageBanner.styles/ext.WikidataPageBanner.modern.less",
+				"minerva": "ext.WikidataPageBanner.styles/ext.WikidataPageBanner.minerva.less"
+			}
+		},
+		"ext.WikidataPageBanner.toc.styles": {
+			"styles": [
+				"ext.WikidataPageBanner.toc.styles/ext.WikidataPageBanner.toc.less",
+				"ext.WikidataPageBanner.toc.styles/ext.WikidataPageBanner.bottomtoc.less"
+			],
+			"skinStyles": {
+				"minerva": "ext.WikidataPageBanner.toc.styles/ext.WikidataPageBanner.toc.minerva.less"
+			}
+		},
+		"ext.WikidataPageBanner.print.styles": {
+			"styles": {
+				"ext.WikidataPageBanner.print.styles/ext.WikidataPageBanner.print.less": {
+					"media": "print"
+				}
+			}
+		},
+		"ext.WikidataPageBanner.positionBanner": {
+			"scripts": [
+				"ext.WikidataPageBanner.positionBanner/ext.WikidataPageBanner.positionBanner.js"
+			],
+			"dependencies": "mediawiki.util"
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "resources",
+		"remoteExtPath": "WikidataPageBanner/resources"
+	},
+	"QUnitTestModule": {
+		"localBasePath": "tests/qunit",
+		"remoteExtPath": "WikidataPageBanner/tests/qunit",
+		"scripts": [
+			"ext.WikidataPageBanner.positionBanner/test_ext.WikidataPageBanner.positionBanner.js"
+		],
+		"dependencies": [
+			"ext.WikidataPageBanner.positionBanner"
+		]
+	},
+	"Hooks": {
+		"BeforePageDisplay": "WikidataPageBannerHooks",
+		"ParserOutputPostCacheTransform": "WikidataPageBannerHooks",
+		"OutputPageParserOutput": "WikidataPageBannerHooks",
+		"SiteNoticeAfter": "WikidataPageBannerHooks",
+		"ParserFirstCallInit": "WikidataPageBannerHooks"
+	},
+	"HookHandlers": {
+		"WikidataPageBannerHooks": {
+			"class": "MediaWiki\\Extension\\WikidataPageBanner\\Hooks",
+			"services": [
+				"LanguageConverterFactory"
+			]
+		}
+	},
+	"config": {
+		"WPBEnablePageImagesBanners": {
+			"value": false
+		},
+		"WPBEnableHeadingOverride": {
+			"value": true
+		},
+		"WPBDisplaySubtitleAfterBannerSkins": {
+			"value": [
+				"minerva"
+			]
+		},
+		"WPBEnableDefaultBanner": {
+			"value": false
+		},
+		"WPBImage": {
+			"value": ""
+		},
+		"WPBNamespaces": {
+			"value": [
+				0
+			]
+		},
+		"WPBDisabledNamespaces": {
+			"value": []
+		},
+		"WPBEnableMainPage": {
+			"value": false
+		},
+		"WPBStandardSizes": {
+			"value": [
+				640,
+				1280,
+				2560
+			]
+		},
+		"WPBBannerProperty": {
+			"value": ""
+		},
+		"WPBSkinDisabled": {
+			"value": []
+		}
+	},
+	"ConfigRegistry": {
+		"wikidatapagebanner": "GlobalVarConfig::newInstance"
+	},
+	"manifest_version": 2
+}

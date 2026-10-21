@@ -35,46 +35,24 @@ class TotalsLookup {
 		'LinterStatsdSampleFactor',
 	];
 
-	private ServiceOptions $options;
-	private WANObjectCache $cache;
-	private IBufferingStatsdDataFactory $statsdDataFactory;
-	private CategoryManager $categoryManager;
-	private Database $database;
-
-	/**
-	 * @param ServiceOptions $options
-	 * @param WANObjectCache $cache
-	 * @param IBufferingStatsdDataFactory $statsdDataFactory
-	 * @param CategoryManager $categoryManager
-	 * @param Database $database
-	 */
 	public function __construct(
-		ServiceOptions $options,
-		WANObjectCache $cache,
-		IBufferingStatsdDataFactory $statsdDataFactory,
-		CategoryManager $categoryManager,
-		Database $database
+		private readonly ServiceOptions $options,
+		private readonly WANObjectCache $cache,
+		private readonly IBufferingStatsdDataFactory $statsdDataFactory,
+		private readonly CategoryManager $categoryManager,
+		private readonly Database $database,
 	) {
 		$options->assertRequiredOptions( self::CONSTRUCTOR_OPTIONS );
-		$this->options = $options;
-		$this->cache = $cache;
-		$this->statsdDataFactory = $statsdDataFactory;
-		$this->categoryManager = $categoryManager;
-		$this->database = $database;
 	}
 
-	/**
-	 * @param string $cat
-	 * @return string
-	 */
-	private function makeKey( $cat ) {
+	private function makeKey( string $cat ): string {
 		return $this->cache->makeKey( 'linter', 'total', $cat );
 	}
 
 	/**
 	 * Get the totals for every category in the database
 	 *
-	 * @return array
+	 * @return array<string,int>
 	 */
 	public function getTotals(): array {
 		$cats = $this->categoryManager->getVisibleCategories();

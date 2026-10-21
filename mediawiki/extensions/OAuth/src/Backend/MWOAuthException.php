@@ -2,7 +2,7 @@
 
 namespace MediaWiki\Extension\OAuth\Backend;
 
-use ILocalizedException;
+use MediaWiki\Exception\ILocalizedException;
 use MediaWiki\Extension\OAuth\Lib\OAuthException;
 use MediaWiki\Message\Message;
 use Wikimedia\NormalizedException\INormalizedException;
@@ -47,7 +47,7 @@ class MWOAuthException extends OAuthException implements INormalizedException, I
 	 * @inheritDoc
 	 */
 	public function getMessageContext(): array {
-		return array_filter( $this->params, fn ( $key ) => !is_numeric( $key ), ARRAY_FILTER_USE_KEY );
+		return array_filter( $this->params, static fn ( $key ) => !is_numeric( $key ), ARRAY_FILTER_USE_KEY );
 	}
 
 	/**

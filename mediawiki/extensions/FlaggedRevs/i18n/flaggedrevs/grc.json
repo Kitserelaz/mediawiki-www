@@ -1,0 +1,40 @@
+{
+	"@metadata": {
+		"authors": [
+			"Crazymadlover",
+			"Gts-tg",
+			"Omnipaedista",
+			"PastelKos"
+		]
+	},
+	"editor": "Μεταγραφεύς",
+	"flaggedrevs": "Ἐληλεγμέναι Ἀναθεωρήσεις",
+	"prefs-flaggedrevs-ui": "Σεσημασμέναι ἀναθεωρήσεις",
+	"group-editor": "Μεταγραφεῖς",
+	"group-editor-member": "{{GENDER:$1|μεταγραφεύς}}",
+	"group-reviewer": "Ἐπιθεωρηταί",
+	"group-reviewer-member": "{{GENDER:$1|ἐπιθεωρητής}}",
+	"grouppage-editor": "{{ns:project}}:Μεταγραφεύς",
+	"grouppage-reviewer": "{{ns:project}}:Ἐπιθεωρητής",
+	"group-autoreview": "Αὐτόματοι ἐπιθεωρηταί",
+	"group-autoreview-member": "αὐτόματος ἐπιθεωρητής",
+	"revreview-hist-draft": "πρόχειρος ἐπιθεώρησις",
+	"revreview-hist-basic": "θεωρημένη ἀναθεώρησις",
+	"review-logentry-id": "ἀναθεώρησις: $2",
+	"review-logentry-diff": "μεταβολαὶ ὡς πρὸς τὴν σταθερὰ ἔκδοσιν",
+	"review-logpage": "Ἀναθεωρήσεων κατάλογος",
+	"reviewer": "ἐπιθεωρητής",
+	"revreview-accuracy": "Ἀκρίβεια",
+	"revreview-accuracy-0": "Μὴ προκεκριμένη",
+	"revreview-accuracy-1": "Θεωρημένη",
+	"revreview-accuracy-2": "Ἀκριβής",
+	"revreview-accuracy-4": "Ἐξαίρετος",
+	"revreview-current": "Πρόχειρος",
+	"revreview-draft-title": "Προσχέδιος δέλτος",
+	"revreview-oldrating": "Ἐβαθμώθη:",
+	"revreview-quick-invalid": "'''Ἄκυρος ἀναθεώρησις ID'''",
+	"revreview-basic-title": "θεωρημένη δέλτος",
+	"revreview-reviewlink": "ἐπιθεωρεῖν",
+	"tooltip-ca-current": "Ὀρᾶν ταύτη δέλτον μετά τας ἐκκρεμούσας ἀλλαγάς της",
+	"validationpage": "{{ns:help}}:Έπικύρωσις δέλτου"
+}

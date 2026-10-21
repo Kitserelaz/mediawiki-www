@@ -19,6 +19,8 @@
  * @hideconstructor
  */
 ( function () {
+	mw.libs.ve = mw.libs.ve || {};
+
 	const conf = mw.config.get( 'wgVisualEditorConfig' ),
 		pluginCallbacks = [],
 		modules = [
@@ -28,6 +30,9 @@
 		];
 
 	const url = new URL( location.href );
+
+	mw.libs.ve.initialUrl = url;
+
 	// Provide the new wikitext editor
 	if (
 		mw.user.options.get( 'visualeditor-newwikitext' ) ||
@@ -36,8 +41,18 @@
 		modules.push( 'ext.visualEditor.mwwikitext' );
 	}
 
-	// A/B test enrollment for edit check (T342930)
-	if ( conf.editCheckABTest ) {
+	// Collab
+	if (
+		mw.user.options.get( 'visualeditor-collab' ) ||
+		url.searchParams.has( 'collabSession' )
+	) {
+		modules.push( 'ext.visualEditor.collab' );
+	}
+
+	// A/B test enrollment for edit check (T389231)
+	// Note: this happens here rather than inside editcheck so that the bucket will
+	// get logged for EditAttemptStep init events
+	if ( conf.editCheck && conf.editCheckABTest ) {
 		let inABTest;
 		if ( mw.user.isAnon() ) {
 			// can't just use mw.user.sessionId() because we need this to last across sessions
@@ -48,14 +63,24 @@
 		} else {
 			inABTest = mw.user.getId() % 2 === 1;
 		}
-		conf.editCheck = inABTest;
+		conf.editCheckABTestGroup = inABTest ? 'test' : 'control';
 		// Communicate the bucket to instrumentation:
-		mw.config.set( 'wgVisualEditorEditCheckABTestBucket', '2024-02-editcheck-reference-' + ( inABTest ? 'test' : 'control' ) );
+		mw.config.set(
+			'wgVisualEditorEditCheckABTestBucket',
+			'2025-09-editcheck-' + conf.editCheckABTest + '-' + ( inABTest ? 'test' : 'control' )
+		);
 	}
 
-	const editCheck = conf.editCheck || !!url.searchParams.get( 'ecenable' ) || !!window.MWVE_FORCE_EDIT_CHECK_ENABLED;
+	let ecenable = url.searchParams.get( 'ecenable' );
+	if ( window.MWVE_FORCE_EDIT_CHECK_ENABLED && ecenable !== '0' ) {
+		ecenable = window.MWVE_FORCE_EDIT_CHECK_ENABLED;
+	}
+	const editCheck = conf.editCheck || !!ecenable;
 	if ( conf.editCheckTagging || editCheck ) {
-		modules.push( 'ext.visualEditor.editCheck' );
+		modules.push(
+			'ext.visualEditor.editCheck',
+			'ext.visualEditor.editCheck.checks'
+		);
 	}
 
 	const namespaces = mw.config.get( 'wgNamespaceIds' );
@@ -66,8 +91,6 @@
 	) {
 		modules.push( 'ext.visualEditor.mwsignature' );
 	}
-
-	mw.libs.ve = mw.libs.ve || {};
 
 	mw.libs.ve.targetLoader = {
 		/**
@@ -101,13 +124,13 @@
 		 */
 		loadModules: function ( mode ) {
 			mw.hook( 've.loadModules' ).fire( this.addPlugin.bind( this ) );
-			ve.track( 'trace.moduleLoad.enter', { mode: mode } );
+			ve.track( 'trace.moduleLoad.enter', { mode } );
 			return mw.loader.using( modules )
 				.then( () => {
-					ve.track( 'trace.moduleLoad.exit', { mode: mode } );
+					ve.track( 'trace.moduleLoad.exit', { mode } );
 					pluginCallbacks.push( ve.init.platform.getInitializedPromise.bind( ve.init.platform ) );
 					// Execute plugin callbacks and collect promises
-					return $.when.apply( $, pluginCallbacks.map( ( callback ) => {
+					return $.when( ...pluginCallbacks.map( ( callback ) => {
 						try {
 							return callback();
 						} catch ( e ) {
@@ -124,7 +147,7 @@
 		 * @param {Object[]} checkboxesDef Checkbox definitions from the API
 		 * @param {Object} [widgetConfig] Additional widget config
 		 * @return {Object} Result object with checkboxFields (OO.ui.FieldLayout[]) and
-		 *  checkboxesByName (keyed object of OO.ui.CheckboxInputWidget).
+		 *  checkboxesByName (keyed object of OO.ui.InputWidget).
 		 */
 		createCheckboxFields: function ( checkboxesDef, widgetConfig ) {
 			const checkboxFields = [],
@@ -133,7 +156,7 @@
 			if ( checkboxesDef ) {
 				Object.keys( checkboxesDef ).forEach( ( name ) => {
 					const options = checkboxesDef[ name ];
-					let accesskey = null,
+					let accessKey = null,
 						title = null;
 
 					// The messages documented below are just the ones defined in core.
@@ -142,7 +165,7 @@
 						// The following messages are used here:
 						// * accesskey-minoredit
 						// * accesskey-watch
-						accesskey = mw.message( 'accesskey-' + options.tooltip ).text();
+						accessKey = mw.message( 'accesskey-' + options.tooltip ).text();
 						// The following messages are used here:
 						// * tooltip-minoredit
 						// * tooltip-watch
@@ -159,11 +182,12 @@
 					const $label = mw.message( options[ 'label-message' ] ).parseDom();
 
 					const config = $.extend( {
-						accessKey: accesskey,
+						accessKey,
 						// The following classes are used here:
 						// * ve-ui-mwSaveDialog-checkbox-wpMinoredit
 						// * ve-ui-mwSaveDialog-checkbox-wpWatchthis
 						// * ve-ui-mwSaveDialog-checkbox-wpWatchlistExpiry
+						// * ve-ui-mwSaveDialog-checkbox-wpWatchlistLabels
 						classes: [ 've-ui-mwSaveDialog-checkbox-' + name ]
 					}, widgetConfig );
 
@@ -176,6 +200,19 @@
 							} ) );
 							break;
 
+						case 'MediaWiki\\Widget\\MenuTagMultiselectWidget':
+							checkbox = new mw.widgets.MenuTagMultiselectWidget( $.extend( config, {
+								name,
+								options: options.options || {},
+								selected: options.default || [],
+								allowReordering: !!options.allowReordering,
+								allowArbitrary: false,
+								inputPosition: options.inputPosition || 'outline',
+								// eslint-disable-next-line mediawiki/msg-doc
+								placeholder: options[ 'placeholder-message' ] ? mw.message( options[ 'placeholder-message' ] ).text() : undefined
+							} ) );
+							break;
+
 						default:
 							checkbox = new OO.ui.CheckboxInputWidget( $.extend( config, {
 								selected: options.default
@@ -183,24 +220,32 @@
 							break;
 					}
 
+					const fieldConfig = {
+						align: options.align || 'inline',
+						label: $label,
+						title,
+						invisibleLabel: !!options.invisibleLabel,
+						// * ve-ui-mwSaveDialog-field-wpMinoredit
+						// * ve-ui-mwSaveDialog-field-wpWatchthis
+						// * ve-ui-mwSaveDialog-field-wpWatchlistExpiry
+						// * ve-ui-mwSaveDialog-field-wpWatchlistLabels
+						classes: [ 've-ui-mwSaveDialog-field-' + name ]
+					};
+					if ( options[ 'help-message' ] ) {
+						// eslint-disable-next-line mediawiki/msg-doc
+						fieldConfig.help = mw.message( options[ 'help-message' ] ).parseDom();
+						fieldConfig.helpInline = true;
+					}
+
 					checkboxFields.push(
-						new OO.ui.FieldLayout( checkbox, {
-							align: 'inline',
-							label: $label,
-							title: title,
-							invisibleLabel: !!options.invisibleLabel,
-							// * ve-ui-mwSaveDialog-field-wpMinoredit
-							// * ve-ui-mwSaveDialog-field-wpWatchthis
-							// * ve-ui-mwSaveDialog-field-wpWatchlistExpiry
-							classes: [ 've-ui-mwSaveDialog-field-' + name ]
-						} )
+						new OO.ui.FieldLayout( checkbox, fieldConfig )
 					);
 					checkboxesByName[ name ] = checkbox;
 				} );
 			}
 			return {
-				checkboxFields: checkboxFields,
-				checkboxesByName: checkboxesByName
+				checkboxFields,
+				checkboxesByName
 			};
 		},
 
@@ -222,8 +267,10 @@
 		 * @param {string[]} [options.preloadparams] Parameters to substitute into preload if it's used
 		 * @return {jQuery.Promise} Abortable promise resolved with a JSON object
 		 */
-		requestPageData: function ( mode, pageName, options ) {
-			options = options || {};
+		requestPageData: function ( mode, pageName, options = {} ) {
+			if ( mode === 'visual' && options.section === 'new' ) {
+				throw new Error( 'Adding new section is not supported in visual mode' );
+			}
 			const apiRequest = mode === 'source' ?
 				this.requestWikitext.bind( this, pageName, options ) :
 				this.requestParsoidData.bind( this, pageName, options );
@@ -300,11 +347,10 @@
 		 *  is not required for some use cases, e.g. diffing.
 		 * @return {jQuery.Promise} Abortable promise resolved with a JSON object
 		 */
-		requestParsoidData: function ( pageName, options, noRestbase, noMetadata ) {
+		requestParsoidData: function ( pageName, options = {}, noRestbase = false, noMetadata = false ) {
 			const section = options.section !== undefined ? options.section : null,
 				useRestbase = !noRestbase && ( conf.fullRestbaseUrl || conf.restbaseUrl ) && section === null;
 
-			options = options || {};
 			const data = {
 				action: 'visualeditor',
 				paction: useRestbase ? 'metadata' : 'parse',
@@ -398,7 +444,7 @@
 							wikitext: options.wikitext,
 							stash: 'true'
 						},
-						headers: headers,
+						headers,
 						dataType: 'text'
 					} );
 				} else {
@@ -413,7 +459,7 @@
 							( data.oldid === undefined ? '' : '/' + data.oldid ) +
 							'?redirect=false&stash=true',
 						type: 'GET',
-						headers: headers,
+						headers,
 						dataType: 'text'
 					} );
 				}
@@ -485,7 +531,7 @@
 
 				resp.veMode = 'visual';
 				return resp;
-			} ).promise( { abort: abort } );
+			} ).promise( { abort } );
 		},
 
 		/**
@@ -495,8 +541,7 @@
 		 * @param {Object} [options] See #requestPageData
 		 * @return {jQuery.Promise} Abortable promise resolved with a JSON object
 		 */
-		requestWikitext: function ( pageName, options ) {
-			options = options || {};
+		requestWikitext: function ( pageName, options = {} ) {
 			const data = {
 				action: 'visualeditor',
 				paction: 'wikitext',

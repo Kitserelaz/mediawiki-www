@@ -3,5 +3,7 @@
 		"authors": [
 			"Ezeone10"
 		]
-	}
+	},
+	"apihelp-query+globalcontributions-param-target": "Sunan mai amfani don duba (bai kamata ya zama IP ba)",
+	"apihelp-query+globalcontributions-param-offset": "Ci gaba da daidaitawa don ci gaba da ƙididdigar daga."
 }

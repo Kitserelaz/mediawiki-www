@@ -1,0 +1,196 @@
+<?php
+
+namespace SMW\Schema;
+
+use JsonSchema\Validator;
+use MediaWiki\MediaWikiServices;
+use RuntimeException;
+use SMW\DataItems\WikiPage;
+use SMW\MediaWiki\Jobs\ChangePropagationDispatchJob;
+use SMW\Schema\Exception\SchemaConstructionFailedException;
+use SMW\Schema\Exception\SchemaTypeNotFoundException;
+use SMW\Services\ServicesFactory as ApplicationFactory;
+use SMW\Store;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 3.0
+ *
+ * @author mwjames
+ */
+class SchemaFactory {
+
+	private ?SchemaTypes $schemaTypes = null;
+
+	/**
+	 * @since 3.0
+	 */
+	public function __construct( private readonly array $types = [] ) {
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @return SchemaTypes
+	 */
+	public function getSchemaTypes(): SchemaTypes {
+		if ( $this->schemaTypes === null ) {
+			$this->schemaTypes = $this->newSchemaTypes( $this->types );
+		}
+
+		return $this->schemaTypes;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param string $type
+	 *
+	 * @return array
+	 */
+	public function getType( string $type ): array {
+		return $this->getSchemaTypes()->getType( $type );
+	}
+
+	/**
+	 * @since 3.1
+	 *
+	 * @param Schema|null $schema
+	 */
+	public function pushChangePropagationDispatchJob( ?Schema $schema = null ): void {
+		if ( $schema === null ) {
+			return;
+		}
+
+		$typeName = $schema->get( 'type' );
+		if ( !is_string( $typeName ) || $typeName === '' ) {
+			return;
+		}
+
+		$type = $this->getType( $typeName );
+
+		if ( !isset( $type['change_propagation'] ) || $type['change_propagation'] === false ) {
+			return;
+		}
+
+		if ( !is_array( $type['change_propagation'] ) ) {
+			$type['change_propagation'] = (array)$type['change_propagation'];
+		}
+
+		$subject = WikiPage::newFromText( $schema->getName(), SMW_NS_SCHEMA );
+
+		foreach ( $type['change_propagation'] as $property ) {
+			$params = [
+				'schema_change_propagation' => true,
+				'property_key' => $property,
+				'origin' => 'SchemaFactory'
+			];
+
+			ChangePropagationDispatchJob::planAsJob( $subject, $params );
+		}
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param string $name
+	 * @param array|string $data
+	 *
+	 * @return Schema
+	 * @throws RuntimeException
+	 */
+	public function newSchema( $name, $data ) {
+		if ( is_string( $data ) ) {
+			$data = json_decode( $data, true );
+			if ( $data === null || json_last_error() !== JSON_ERROR_NONE ) {
+				throw new RuntimeException( "Invalid JSON format." );
+			}
+		}
+
+		$type = null;
+		$info = [];
+
+		if ( isset( $data['type'] ) ) {
+			$type = $data['type'];
+		}
+
+		$schemaTypes = $this->getSchemaTypes();
+
+		if ( !$schemaTypes->isRegisteredType( $type ) ) {
+			throw new SchemaTypeNotFoundException( $type );
+		}
+
+		$schemaType = $schemaTypes->getType( $type );
+
+		if ( isset( $schemaType['validation_schema'] ) ) {
+			$info[Schema::SCHEMA_VALIDATION_FILE] = $schemaType['validation_schema'];
+		}
+
+		if ( isset( $schemaType['__factory'] ) && is_callable( $schemaType['__factory'] ) ) {
+			$schema = $schemaType['__factory']( $name, $data, $info );
+		} else {
+			$schema = new SchemaDefinition( $name, $data, $info );
+		}
+
+		if ( !$schema instanceof Schema ) {
+			throw new SchemaConstructionFailedException( $type );
+		}
+
+		return $schema;
+	}
+
+	/**
+	 * @since 3.1
+	 */
+	public function newSchemaFinder( ?Store $store = null ): SchemaFinder {
+		$applicationFactory = ApplicationFactory::getInstance();
+
+		if ( $store === null ) {
+			$store = $applicationFactory->getStore();
+		}
+
+		return new SchemaFinder(
+			$store,
+			$applicationFactory->getPropertySpecificationLookup(),
+			$applicationFactory->getObjectCache()
+		);
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @return SchemaValidator
+	 */
+	public function newSchemaValidator(): SchemaValidator {
+		return new SchemaValidator(
+			new Validator()
+		);
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @return SchemaFilterFactory
+	 */
+	public function newSchemaFilterFactory(): SchemaFilterFactory {
+		return new SchemaFilterFactory();
+	}
+
+	private function newSchemaTypes( array $types ): SchemaTypes {
+		$applicationFactory = ApplicationFactory::getInstance();
+		$settings = $applicationFactory->getSettings();
+
+		$schemaTypes = new SchemaTypes(
+			$settings->mung( 'smwgDir', '/data/schema' )
+		);
+
+		$schemaTypes->setHookContainer(
+			MediaWikiServices::getInstance()->getHookContainer()
+		);
+
+		$schemaTypes->registerSchemaTypes( $types );
+
+		return $schemaTypes;
+	}
+
+}

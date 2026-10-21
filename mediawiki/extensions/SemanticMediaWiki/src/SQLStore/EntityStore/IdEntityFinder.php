@@ -1,0 +1,174 @@
+<?php
+
+namespace SMW\SQLStore\EntityStore;
+
+use SMW\DataItems\WikiPage;
+use SMW\IteratorFactory;
+use SMW\Iterators\MappingIterator;
+use SMW\RequestOptions;
+use SMW\SQLStore\SQLStore;
+use stdClass;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 2.1
+ *
+ * @author mwjames
+ */
+class IdEntityFinder {
+
+	/**
+	 * @since 2.1
+	 */
+	public function __construct(
+		private readonly SQLStore $store,
+		private readonly IteratorFactory $iteratorFactory,
+		private readonly IdCacheManager $idCacheManager,
+	) {
+	}
+
+	/**
+	 * @since 2.3
+	 *
+	 * @param array $idList
+	 * @param RequestOptions|null $requestOptions
+	 *
+	 * @return MappingIterator|array
+	 */
+	public function getDataItemsFromList( array $idList, ?RequestOptions $requestOptions = null ): array|MappingIterator {
+		if ( $idList === [] ) {
+			return [];
+		}
+
+		$conditions = [
+			'smw_id' => $idList,
+		];
+
+		if ( $requestOptions !== null ) {
+			foreach ( $requestOptions->getExtraConditions() as $extraCondition ) {
+				$conditions[] = $extraCondition;
+			}
+		}
+
+		$rows = $this->fetchFromTable(
+			$conditions
+		);
+
+		if ( $rows === false ) {
+			return [];
+		}
+
+		return $this->iteratorFactory->newMappingIterator(
+			$this->iteratorFactory->newResultIterator( $rows ),
+			[ $this, 'newFromRow' ]
+		);
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param stdClass $row
+	 *
+	 * @return WikiPage
+	 */
+	public function newFromRow( $row ): WikiPage {
+		$dataItem = new WikiPage(
+			$row->smw_title,
+			$row->smw_namespace,
+			$row->smw_iw,
+			$row->smw_subobject
+		);
+
+		$dataItem->setId( $row->smw_id );
+
+		if ( isset( $row->smw_sortkey ) ) {
+			$dataItem->setSortKey( $row->smw_sortkey );
+		}
+
+		if ( isset( $row->smw_sort ) ) {
+			$dataItem->setOption( 'sort', $row->smw_sort );
+		}
+
+		if ( !$this->idCacheManager->hasCache( $this->store->getConnection( 'mw.db' )->unescape_bytea( $row->smw_hash ) ) ) {
+			$sortkey = $row->smw_sort === null ? '' : $row->smw_sortkey;
+
+			$this->idCacheManager->setCache(
+				$row->smw_title,
+				$row->smw_namespace,
+				$row->smw_iw,
+				$row->smw_subobject,
+				$row->smw_id,
+				$sortkey
+			);
+		}
+
+		return $dataItem;
+	}
+
+	/**
+	 * @since 2.1
+	 *
+	 * @param int $id
+	 *
+	 * @return WikiPage|null
+	 */
+	public function getDataItemById( $id ) {
+		$dataItem = $this->get( (int)$id );
+		if ( $dataItem !== false ) {
+			return $dataItem;
+		}
+
+		return null;
+	}
+
+	private function get( int $id ): WikiPage|false {
+		$cache = $this->idCacheManager->get( 'entity.lookup' );
+
+		$dataItem = $cache->fetch( (string)$id );
+		if ( $dataItem !== false ) {
+			return $dataItem;
+		}
+
+		$row = $this->fetchFromTable(
+			[ 'smw_id' => $id ],
+			true
+		);
+
+		if ( $row === false ) {
+			return false;
+		}
+
+		$dataItem = $this->newFromRow( $row );
+		$cache->save( (string)$id, $dataItem );
+
+		return $dataItem;
+	}
+
+	private function fetchFromTable( array $conditions, bool $selectRow = false ) {
+		$connection = $this->store->getConnection( 'mw.db' );
+
+		$fields = [
+			'smw_id',
+			'smw_title',
+			'smw_namespace',
+			'smw_iw',
+			'smw_subobject',
+			'smw_sortkey',
+			'smw_sort',
+			'smw_hash'
+		];
+
+		$queryBuilder = $connection->newSelectQueryBuilder()
+			->select( $fields )
+			->from( SQLStore::ID_TABLE )
+			->where( $conditions )
+			->caller( __METHOD__ );
+
+		if ( $selectRow ) {
+			return $queryBuilder->fetchRow();
+		}
+
+		return $queryBuilder->fetchResultSet();
+	}
+
+}

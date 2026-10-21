@@ -3,61 +3,76 @@
 namespace Cite\Tests;
 
 use Cite\Hooks\CiteHooks;
+use Cite\Hooks\ReferencePreviewsHooks;
+use Cite\ReferencePreviews\ReferencePreviewsContext;
 use Cite\ReferencePreviews\ReferencePreviewsGadgetsIntegration;
-use MediaWiki\Api\ApiQuerySiteinfo;
 use MediaWiki\Config\HashConfig;
+use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\ResourceLoader\ResourceLoader;
 use MediaWiki\User\Options\StaticUserOptionsLookup;
 use MediaWiki\User\User;
 
 /**
  * @covers \Cite\Hooks\CiteHooks
+ * @covers \Cite\Hooks\ReferencePreviewsHooks
  * @license GPL-2.0-or-later
  */
 class CiteHooksTest extends \MediaWikiIntegrationTestCase {
 
 	/**
-	 * @dataProvider provideBooleans
+	 * @dataProvider provideConfigVars
 	 */
-	public function testOnResourceLoaderGetConfigVars( bool $enabled ) {
+	public function testOnResourceLoaderGetConfigVars( $input, bool $expected ) {
 		$vars = [];
 
 		$config = new HashConfig( [
-			'CiteVisualEditorOtherGroup' => $enabled,
-			'CiteResponsiveReferences' => $enabled,
-			'CiteBookReferencing' => $enabled,
+			'CiteVisualEditorOtherGroup' => $input,
+			'CiteResponsiveReferences' => $input,
+			'CiteSubReferencing' => $input,
+			'CiteRemoveSyntheticRefsUnsafe' => $input,
 		] );
 
 		( new CiteHooks(
-			$this->getServiceContainer()->getService( 'Cite.ReferencePreviewsContext' ),
-			$this->getServiceContainer()->getService( 'Cite.GadgetsIntegration' ),
+			$this->createNoOpMock( ExtensionRegistry::class ),
 			new StaticUserOptionsLookup( [] )
 		) )
 			->onResourceLoaderGetConfigVars( $vars, 'vector', $config );
 
 		$this->assertSame( [
-			'wgCiteVisualEditorOtherGroup' => $enabled,
-			'wgCiteResponsiveReferences' => $enabled,
-			'wgCiteBookReferencing' => $enabled,
+			'wgCiteVisualEditorOtherGroup' => $expected,
+			'wgCiteResponsiveReferences' => $expected,
+			'wgCiteSubReferencing' => $expected,
+			'wgCiteRemoveSyntheticRefsUnsafe' => $expected,
 		], $vars );
+	}
+
+	public static function provideConfigVars() {
+		yield [ true, true ];
+		yield [ false, false ];
+		yield [ 0, false ];
+		yield [ 'FooBar', true ];
 	}
 
 	/**
 	 * @dataProvider provideBooleans
 	 */
-	public function testOnResourceLoaderRegisterModules( bool $enabled ) {
-		$this->markTestSkippedIfExtensionNotLoaded( 'Popups' );
+	public function testResourceLoaderRegistration_ReferencePreviews( bool $enabled ) {
+		$extensionRegistry = $this->createNoOpMock( ExtensionRegistry::class, [ 'isLoaded' ] );
+		$extensionRegistry->method( 'isLoaded' )->willReturn( true );
 
 		$resourceLoader = $this->createMock( ResourceLoader::class );
 		$resourceLoader->method( 'getConfig' )
 			->willReturn( new HashConfig( [ 'CiteReferencePreviews' => $enabled ] ) );
 		$resourceLoader->expects( $this->exactly( (int)$enabled ) )
-			->method( 'register' );
+			->method( 'register' )
+			->willReturnCallback( function ( array $modules ) {
+				$this->assertArrayHasKey( 'ext.cite.referencePreviews', $modules );
+			} );
 
-		( new CiteHooks(
-			$this->getServiceContainer()->getService( 'Cite.ReferencePreviewsContext' ),
-			$this->getServiceContainer()->getService( 'Cite.GadgetsIntegration' ),
-			new StaticUserOptionsLookup( [] )
+		( new ReferencePreviewsHooks(
+			$extensionRegistry,
+			$this->createNoOpMock( ReferencePreviewsContext::class ),
+			$this->createNoOpMock( ReferencePreviewsGadgetsIntegration::class )
 		) )
 			->onResourceLoaderRegisterModules( $resourceLoader );
 	}
@@ -65,22 +80,31 @@ class CiteHooksTest extends \MediaWikiIntegrationTestCase {
 	/**
 	 * @dataProvider provideBooleans
 	 */
-	public function testOnAPIQuerySiteInfoGeneralInfo( bool $enabled ) {
-		$api = $this->createMock( ApiQuerySiteinfo::class );
-		$api->expects( $this->once() )
-			->method( 'getConfig' )
-			->willReturn( new HashConfig( [ 'CiteResponsiveReferences' => $enabled ] ) );
+	public function testResourceLoaderRegistration_VisualAndWikiEditor( bool $loaded ) {
+		$extensionRegistry = $this->createNoOpMock( ExtensionRegistry::class, [ 'isLoaded' ] );
+		$extensionRegistry->method( 'isLoaded' )->willReturn( $loaded );
 
-		$data = [];
+		$rlModules = [];
+
+		$resourceLoader = $this->createNoOpMock( ResourceLoader::class, [ 'register' ] );
+		$resourceLoader->expects( $this->exactly( $loaded ? 2 : 0 ) )
+			->method( 'register' )
+			->willReturnCallback( static function ( array $modules ) use ( &$rlModules ) {
+				$rlModules += $modules;
+			} );
 
 		( new CiteHooks(
-			$this->getServiceContainer()->getService( 'Cite.ReferencePreviewsContext' ),
-			$this->getServiceContainer()->getService( 'Cite.GadgetsIntegration' ),
+			$extensionRegistry,
 			new StaticUserOptionsLookup( [] )
 		) )
-			->onAPIQuerySiteInfoGeneralInfo( $api, $data );
+			->onResourceLoaderRegisterModules( $resourceLoader );
 
-		$this->assertSame( [ 'citeresponsivereferences' => $enabled ], $data );
+		if ( $loaded ) {
+			$this->assertArrayHasKey( 'ext.cite.wikiEditor', $rlModules );
+			$this->assertArrayHasKey( 'ext.cite.visualEditor', $rlModules );
+		} else {
+			$this->assertSame( [], $rlModules );
+		}
 	}
 
 	public static function provideBooleans() {
@@ -89,33 +113,38 @@ class CiteHooksTest extends \MediaWikiIntegrationTestCase {
 	}
 
 	public function testOnGetPreferences_noConflicts() {
+		$extensionRegistry = $this->createNoOpMock( ExtensionRegistry::class, [ 'isLoaded' ] );
+		$extensionRegistry->method( 'isLoaded' )->willReturn( true );
+
 		$expected = [
 			'popups-reference-previews' => [
 				'type' => 'toggle',
-				'label-message' => 'popups-refpreview-user-preference-label',
+				'label-message' => 'cite-reference-previews-preference-label',
 				'help-message' => 'popups-prefs-conflicting-gadgets-info',
 				'section' => 'rendering/reading'
 			]
 		];
 		$gadgetsIntegrationMock = $this->createMock( ReferencePreviewsGadgetsIntegration::class );
 		$prefs = [];
-		( new CiteHooks(
-			$this->getServiceContainer()->getService( 'Cite.ReferencePreviewsContext' ),
+		( new ReferencePreviewsHooks(
+			$extensionRegistry,
+			$this->createNoOpMock( ReferencePreviewsContext::class ),
 			$gadgetsIntegrationMock,
-			new StaticUserOptionsLookup( [] )
 		) )
-			->onGetPreferences( $this->createMock( User::class ), $prefs );
+			->onGetPreferences( $this->createNoOpMock( User::class ), $prefs );
 		$this->assertEquals( $expected, $prefs );
 	}
 
 	public function testOnGetPreferences_conflictingGadget() {
+		$extensionRegistry = $this->createNoOpMock( ExtensionRegistry::class, [ 'isLoaded' ] );
+		$extensionRegistry->method( 'isLoaded' )->willReturn( true );
+
 		$expected = [
 			'popups-reference-previews' => [
 				'type' => 'toggle',
-				'label-message' => 'popups-refpreview-user-preference-label',
-				// 'help-message' => 'popups-prefs-conflicting-gadgets-info',
+				'label-message' => 'cite-reference-previews-preference-label',
 				'help-message' => [
-					'popups-prefs-navpopups-gadget-conflict-info',
+					'cite-reference-previews-gadget-conflict-info-navpopups',
 					'Special:Preferences#mw-prefsection-gadgets',
 				],
 				'section' => 'rendering/reading',
@@ -127,16 +156,19 @@ class CiteHooksTest extends \MediaWikiIntegrationTestCase {
 			->method( 'isNavPopupsGadgetEnabled' )
 			->willReturn( true );
 		$prefs = [];
-		( new CiteHooks(
-			$this->getServiceContainer()->getService( 'Cite.ReferencePreviewsContext' ),
+		( new ReferencePreviewsHooks(
+			$extensionRegistry,
+			$this->createNoOpMock( ReferencePreviewsContext::class ),
 			$gadgetsIntegrationMock,
-			new StaticUserOptionsLookup( [] )
 		) )
-			->onGetPreferences( $this->createMock( User::class ), $prefs );
+			->onGetPreferences( $this->createNoOpMock( User::class ), $prefs );
 		$this->assertEquals( $expected, $prefs );
 	}
 
 	public function testOnGetPreferences_redundantPreference() {
+		$extensionRegistry = $this->createNoOpMock( ExtensionRegistry::class, [ 'isLoaded' ] );
+		$extensionRegistry->method( 'isLoaded' )->willReturn( true );
+
 		$prefs = [
 			'popups-reference-previews' => [
 				'type' => 'toggle',
@@ -144,12 +176,12 @@ class CiteHooksTest extends \MediaWikiIntegrationTestCase {
 			]
 		];
 		$expected = $prefs;
-		( new CiteHooks(
-			$this->getServiceContainer()->getService( 'Cite.ReferencePreviewsContext' ),
-			$this->getServiceContainer()->getService( 'Cite.GadgetsIntegration' ),
-			new StaticUserOptionsLookup( [] )
+		( new ReferencePreviewsHooks(
+			$extensionRegistry,
+			$this->createNoOpMock( ReferencePreviewsContext::class ),
+			$this->createMock( ReferencePreviewsGadgetsIntegration::class )
 		) )
-			->onGetPreferences( $this->createMock( User::class ), $prefs );
+			->onGetPreferences( $this->createNoOpMock( User::class ), $prefs );
 		$this->assertEquals( $expected, $prefs );
 	}
 

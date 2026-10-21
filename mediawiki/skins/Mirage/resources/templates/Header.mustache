@@ -1,0 +1,84 @@
+<header id="mw-navigation">
+	<h2>{{ msg-navigation-heading }}</h2>
+	<a class="mw-jump-link" href="#content">{{ msg-mirage-jumptocontent }}</a>
+	<div id="mirage-fixed-header">
+		<div id="mirage-sitename">
+			{{# data-logos }}
+				{{> Wordmark }}
+			{{/ data-logos }}
+		</div>
+		{{# data-search-box }}
+			{{> Search }}
+		{{/ data-search-box }}
+		{{# data-portlets.data-user-menu }}
+			{{> PersonalTools }}
+		{{/ data-portlets.data-user-menu }}
+		{{# data-portlets.data-notifications }}
+			{{> Notifications }}
+		{{/ data-portlets.data-notifications }}
+	</div>
+	<div class="mw-notification-area" data-mw="interface"></div>
+	<div id="mirage-top-header">
+		<div id="mirage-navigation-header">
+			<div id="mirage-logo">
+				{{# has-mirage-wordmark }}
+					<a href="{{ link-mainpage }}" id="mirage-wordmark"></a>
+				{{/ has-mirage-wordmark }}
+				{{^ has-mirage-wordmark }}
+					{{# data-logos }}
+						{{> Wordmark }}
+					{{/ data-logos }}
+				{{/ has-mirage-wordmark }}
+			</div>
+			<div id="module-site-tools">
+				<ul class="skin-mirage-horizontally-oriented-list">
+					{{# array-site-tools }}
+						{{& . }}
+					{{/ array-site-tools }}
+					{{# site-tools-dropdown }}
+						<li class="skin-mirage-dropdown-container" tabindex="0">
+							{{& html-dropdown-icon }}
+							<div class="skin-mirage-dropdown-list skin-mirage-dropdown-hide">
+								<ul>
+									{{# array-dropdown-items }}
+										{{& . }}
+									{{/ array-dropdown-items }}
+								</ul>
+								<div class="skin-mirage-dropdown-list-anchor"></div>
+							</div>
+						</li>
+					{{/ site-tools-dropdown }}
+				</ul>
+			</div>
+			<div id="module-site-navigation" class="skin-mirage-mirage-navigation">
+				{{# array-navigation-modules }}
+					{{> SiteNavigationMenu }}
+				{{/ array-navigation-modules }}
+			</div>
+		</div>
+		<div id="module-page-navigation">
+			<div id="left-navigation">
+				{{# data-portlets.data-namespaces }}
+					{{> Tabs }}
+				{{/ data-portlets.data-namespaces }}
+				{{# data-portlets.data-associated-pages }}
+					{{> Tabs }}
+				{{/ data-portlets.data-associated-pages }}
+				{{# data-portlets.data-variants }}
+					{{> Tabs }}
+				{{/ data-portlets.data-variants }}
+			</div>
+			<div id="right-navigation">
+				{{# data-portlets.data-languages }}
+					{{> Languages }}
+				{{/ data-portlets.data-languages }}
+				{{# data-portlets.data-mirage-edit-button }}
+					{{> EditButton }}
+				{{/ data-portlets.data-mirage-edit-button }}
+				{{# html-right-rail-collapse-button }}
+					{{& . }}
+				{{/ html-right-rail-collapse-button }}
+			</div>
+		</div>
+	</div>
+</header>

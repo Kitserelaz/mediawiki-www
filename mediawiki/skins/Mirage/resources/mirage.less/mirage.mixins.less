@@ -1,0 +1,20 @@
+// This file contains all shared mixins used in the stylesheets used by Mirage.
+@import 'mirage.variables';
+
+.default-border() {
+	border: @mirage-default-border;
+	border-radius: @border-radius-base;
+}
+
+.user-select-none() {
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+
+// word-wrap is the old legacy name for overflow-wrap.
+.overflow-wrap( @value ) {
+	word-wrap: @value;
+	overflow-wrap: @value;
+}

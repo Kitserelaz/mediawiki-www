@@ -1,0 +1,43 @@
+<?php
+
+namespace SMW\Tests\Utils\Mock;
+
+use SMW\Query\Query;
+use SMW\Query\QueryResult;
+use SMW\QueryEngine;
+use SMW\Store;
+use SMW\StoreAware;
+
+/**
+ * FIXME One would wish to have a FakeStore but instead \SMW\SQLStore\SQLStore is used in
+ * order to avoid to implement all abstract methods specified by SMW\Store
+ *
+ * @group SMW
+ * @group SMWExtension
+ * @group medium
+ * @group semantic-mediawiki-integration
+ * @group mediawiki-databaseless
+ *
+ * @license GPL-2.0-or-later
+ * @since   1.9.2
+ *
+ * @author mwjames
+ */
+class FakeQueryStore implements QueryEngine, StoreAware {
+
+	protected $store;
+	protected QueryResult $queryResult;
+
+	public function setQueryResult( QueryResult $queryResult ) {
+		$this->queryResult = $queryResult;
+	}
+
+	public function setStore( Store $store ) {
+		$this->store = $store;
+	}
+
+	// @codingStandardsIgnoreStart phpcs, ignore --sniffs=Generic.CodeAnalysis.UnusedFunctionParameter
+	public function getQueryResult( Query $query ) { // @codingStandardsIgnoreEnd
+		return $this->store->getQueryResult( $query );
+	}
+}

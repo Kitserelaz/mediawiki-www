@@ -1,0 +1,23 @@
+{
+	"@metadata": {
+		"authors": [
+			"Bosogo"
+		]
+	},
+	"quizgame-edit": "Түзөтүү",
+	"quizgame-protect": "Коргоо",
+	"quizgame-edit-title": "«‎$1» түзөтүлүүдө",
+	"quizgame-flagged-reason": "Себеп",
+	"quizgame-question": "Суроо",
+	"quizgame-answers": "Жооптор",
+	"quizgame-picture": "Сүрөт",
+	"quizgame-save-page-button": "Баракты сактоо",
+	"quizgame-cancel-button": "Жокко чыгаруу",
+	"quizgame-login-button": "Кирүү",
+	"quizgame-js-loading": "Жүктөлүүдө...",
+	"quizgame-nav-next": "кийинки",
+	"quizgame-permalink": "Туруктуу шилтеме",
+	"quizgame-pause-continue": "Улантуу",
+	"quizgame-time-days": "{{PLURAL:$1|бир күн|$1 күн}}",
+	"quizgame-time-minutes": "{{PLURAL:$1|бир мүнөт|$1 мүнөт}}"
+}

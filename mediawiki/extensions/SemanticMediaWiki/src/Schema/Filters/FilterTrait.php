@@ -1,0 +1,135 @@
+<?php
+
+namespace SMW\Schema\Filters;
+
+use SMW\Schema\Compartment;
+use SMW\Schema\CompartmentIterator;
+use SMW\Schema\SchemaFilter;
+
+/**
+ * @private
+ *
+ * @license GPL-2.0-or-later
+ * @since 3.2
+ *
+ * @author mwjames
+ */
+trait FilterTrait {
+
+	/**
+	 * @var iterable
+	 */
+	private $matches = [];
+
+	/**
+	 * @var array
+	 */
+	private $options = [];
+
+	/**
+	 * @var SchemaFilter
+	 */
+	private $nodeFilter;
+
+	/**
+	 * @since 3.2
+	 *
+	 * {@inheritDoc}
+	 */
+	public function hasMatches(): bool {
+		return $this->matches !== [];
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * {@inheritDoc}
+	 */
+	public function getMatches(): iterable {
+		return $this->matches;
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * {@inheritDoc}
+	 */
+	public function addOption( string $key, $value ): void {
+		$this->options[$key] = $value;
+	}
+
+	/**
+	 * Returns information about which filter was used and how many matches where
+	 * found as part of the filtering process.
+	 *
+	 * @since 3.2
+	 */
+	public function getLog(): iterable {
+		$matches = $this->getMatches();
+		$matchArray = is_array( $matches ) ? $matches : iterator_to_array( $matches );
+		$log = [
+			$this->getName() => count( $matchArray )
+		];
+
+		if ( $this->nodeFilter instanceof SchemaFilter ) {
+			$log += $this->nodeFilter->getLog();
+		}
+
+		return $log;
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * {@inheritDoc}
+	 */
+	public function setNodeFilter( SchemaFilter $nodeFilter ): void {
+		$this->nodeFilter = $nodeFilter;
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * {@inheritDoc}
+	 */
+	public function filter( iterable $compartments ): void {
+		$this->matches = [];
+
+		if ( $compartments instanceof CompartmentIterator ) {
+			foreach ( $compartments->find( 'if' ) as $compartment ) {
+				$this->match( $compartment );
+			}
+		} else {
+			if ( !$compartments instanceof Compartment ) {
+				return;
+			}
+			$this->match( $compartments );
+		}
+
+		if ( !$this->nodeFilter instanceof SchemaFilter ) {
+			return;
+		}
+
+		$this->nodeFilter->filter(
+			new CompartmentIterator( $this->matches, CompartmentIterator::RULE_COMPARTMENT )
+		);
+
+		$this->matches = $this->nodeFilter->getMatches();
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @param Compartment $compartment
+	 */
+	abstract protected function match( Compartment $compartment );
+
+	private function getOption( string $key ) {
+		if ( !isset( $this->options[$key] ) ) {
+			return false;
+		}
+
+		return $this->options[$key];
+	}
+
+}

@@ -1,0 +1,11 @@
+.svn
+*~
+*.kate-swp
+.*.swp
+node_modules
+composer.lock
+vendor
+.eslintcache
+.vscode
+/coverage/
+tests/selenium/log/

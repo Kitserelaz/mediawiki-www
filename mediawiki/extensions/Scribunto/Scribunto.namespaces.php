@@ -30,6 +30,11 @@ $namespaceNames['alt'] = [
 	829 => 'Модульды_шӱӱжери',
 ];
 
+$namespaceNames['am'] = [
+	828 => 'ሞጁል',
+	829 => 'ሞጁል_ውይይት',
+];
+
 $namespaceNames['an'] = [
 	828 => 'Módulo',
 	829 => 'Descusión_módulo',
@@ -130,6 +135,11 @@ $namespaceNames['ca'] = [
 	829 => 'Mòdul_Discussió',
 ];
 
+$namespaceNames['cbk-zam'] = [
+	828 => 'Módulo',
+	829 => 'Discusión_del_módulo',
+];
+
 $namespaceNames['ce'] = [
 	828 => 'Модуль',
 	829 => 'Модуль_йийцар',
@@ -176,7 +186,11 @@ $namespaceNames['din'] = [
 
 $namespaceNames['diq'] = [
 	828 => 'Modul',
-	829 => 'Modul_vaten',
+	829 => 'Werênayışê_moduli',
+];
+
+$namespaceAliases['diq'] = [
+	'Modul_vaten' => 829,
 ];
 
 $namespaceNames['dsb'] = [
@@ -284,6 +298,13 @@ $namespaceNames['hi'] = [
 	829 => 'मॉड्यूल_वार्ता',
 ];
 
+$namespaceAliases['hi'] = [
+	# Former namespace names; incorrect (T366235), but kept as aliases
+	# for backwards compatibility
+	'अनुखंड' => 828,
+	'अनुखंड_वार्ता' => 829,
+];
+
 $namespaceNames['hr'] = [
 	828 => 'Modul',
 	829 => 'Razgovor_o_modulu',
@@ -302,6 +323,11 @@ $namespaceNames['hu'] = [
 $namespaceNames['hy'] = [
 	828 => 'Մոդուլ',
 	829 => 'Մոդուլի_քննարկում',
+];
+
+$namespaceNames['ia'] = [
+	828 => 'Modulo',
+	829 => 'Discussion_Modulo',
 ];
 
 $namespaceNames['iba'] = [
@@ -344,9 +370,23 @@ $namespaceNames['ka'] = [
 	829 => 'მოდულის_განხილვა',
 ];
 
+$namespaceNames['kaa'] = [
+	828 => 'Modul',
+	829 => 'Modul_talqılawı',
+];
+
+$namespaceNames['kaj'] = [
+	828 => 'Kkwan',
+	829 => 'Ba̱ryat_nkkwan',
+];
+
 $namespaceNames['kn'] = [
 	828 => 'ಮಾಡ್ಯೂಲ್',
-	829 => 'ಮಾಡ್ಯೂಲ್_ಚರ್ಚೆ',
+	829 => 'ಮಾಡ್ಯೂಲ್_ಚರ್ಚೆಪುಟ',
+];
+
+$namespaceAliases['kn'] = [
+	'ಮಾಡ್ಯೂಲ್_ಚರ್ಚೆ' => 829,
 ];
 
 $namespaceNames['ko'] = [
@@ -367,6 +407,11 @@ $namespaceNames['ku'] = [
 $namespaceNames['ky'] = [
 	828 => 'Модуль',
 	829 => 'Модулду_талкуулоо',
+];
+
+$namespaceNames['la'] = [
+	828 => 'Modulus',
+	829 => 'Disputatio_Moduli'
 ];
 
 $namespaceNames['lb'] = [
@@ -504,6 +549,16 @@ $namespaceNames['pnb'] = [
 	829 => 'ماڈیول_گل_بات',
 ];
 
+$namespaceNames['ppl'] = [
+	828 => 'Tapualtakutun',
+	829 => 'Tapualtakutun_titajtaketzakan',
+];
+
+$namespaceNames['ps'] = [
+	828 => 'چلنوال',
+	829 => 'د_چلنوال_خبرې_اترې',
+];
+
 $namespaceNames['pt'] = [
 	828 => 'Módulo',
 	829 => 'Módulo_Discussão',
@@ -622,6 +677,11 @@ $namespaceNames['szy'] = [
 $namespaceNames['tcy'] = [
 	828 => 'ಮೋಡ್ಯೂಲ್',
 	829 => 'ಮೋಡ್ಯೂಲ್_ಪಾತೆರ',
+];
+
+$namespaceNames['tdd'] = [
+	828 => 'ᥛᥨᥝᥱ_ᥓᥧᥰ',
+	829 => 'ᥟᥧᥙᥱ_ᥐᥧᥛᥴ_ᥛᥩᥱ_ᥓᥧᥰ',
 ];
 
 $namespaceNames['te'] = [

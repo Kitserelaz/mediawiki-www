@@ -1,0 +1,1 @@
+Container shutdown flushed the pending counter and preserved SQLite data.

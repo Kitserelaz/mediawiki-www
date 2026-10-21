@@ -2,6 +2,7 @@
 
 namespace MediaWiki\Tests\Maintenance;
 
+use MediaWiki\Logging\LogEntryBase;
 use PHPUnit\Framework\Assert;
 use XMLReader;
 
@@ -270,12 +271,7 @@ class DumpAsserter {
 		Assert::assertEquals( XMLReader::ELEMENT, $this->xml->nodeType, "Node type" );
 		$actualAttributes = $this->getAttributeArray( $this->xml );
 
-		$attributes = array_map(
-			function ( $v ) {
-				return $this->resolveVars( $v );
-			},
-			$attributes
-		);
+		$attributes = array_map( $this->resolveVars( ... ), $attributes );
 		$actualAttributes = array_intersect_key( $actualAttributes, $attributes );
 
 		Assert::assertEquals( $attributes, $actualAttributes, "Attributes" );
@@ -542,7 +538,7 @@ class DumpAsserter {
 		$this->assertTextNode( "logtitle", $title );
 
 		$this->assertNodeStart( "params" );
-		$parameters_xml = unserialize( $this->xml->value );
+		$parameters_xml = LogEntryBase::extractParams( $this->xml->value, "$type/$subtype" );
 		Assert::assertEquals( $parameters, $parameters_xml );
 		Assert::assertTrue( $this->xml->read(), "Skipping past processed text of params" );
 		$this->assertNodeEnd( "params" );

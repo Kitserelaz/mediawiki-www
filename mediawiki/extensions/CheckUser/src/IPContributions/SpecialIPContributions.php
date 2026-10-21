@@ -1,23 +1,26 @@
 <?php
 
-namespace MediaWiki\CheckUser\IPContributions;
+namespace MediaWiki\Extension\CheckUser\IPContributions;
 
-use ErrorPageError;
 use MediaWiki\Block\DatabaseBlockStore;
-use MediaWiki\CheckUser\Services\CheckUserLookupUtils;
+use MediaWiki\Exception\ErrorPageError;
+use MediaWiki\Exception\PermissionsError;
+use MediaWiki\Exception\UserBlockedError;
+use MediaWiki\Extension\CheckUser\Services\CheckUserPermissionManager;
+use MediaWiki\Html\Html;
 use MediaWiki\Permissions\PermissionManager;
 use MediaWiki\SpecialPage\ContributionsSpecialPage;
 use MediaWiki\Title\NamespaceInfo;
 use MediaWiki\User\Options\UserOptionsLookup;
+use MediaWiki\User\User;
 use MediaWiki\User\UserFactory;
+use MediaWiki\User\UserGroupAssignmentService;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityLookup;
 use MediaWiki\User\UserNamePrefixSearch;
 use MediaWiki\User\UserNameUtils;
 use OOUI\HtmlSnippet;
 use OOUI\MessageWidget;
-use PermissionsError;
-use UserBlockedError;
 use Wikimedia\IPUtils;
 use Wikimedia\Rdbms\IConnectionProvider;
 
@@ -25,23 +28,10 @@ use Wikimedia\Rdbms\IConnectionProvider;
  * @ingroup SpecialPage
  */
 class SpecialIPContributions extends ContributionsSpecialPage {
-	private CheckUserLookupUtils $lookupUtils;
-	private IPContributionsPagerFactory $pagerFactory;
+	private const BASE_HELP_URL = 'https://www.mediawiki.org/wiki/Special:MyLanguage/Help:';
+
 	private ?IPContributionsPager $pager = null;
 
-	/**
-	 * @param PermissionManager $permissionManager
-	 * @param IConnectionProvider $dbProvider
-	 * @param NamespaceInfo $namespaceInfo
-	 * @param UserNameUtils $userNameUtils
-	 * @param UserNamePrefixSearch $userNamePrefixSearch
-	 * @param UserOptionsLookup $userOptionsLookup
-	 * @param UserFactory $userFactory
-	 * @param UserIdentityLookup $userIdentityLookup
-	 * @param DatabaseBlockStore $blockStore
-	 * @param CheckUserLookupUtils $lookupUtils
-	 * @param IPContributionsPagerFactory $pagerFactory
-	 */
 	public function __construct(
 		PermissionManager $permissionManager,
 		IConnectionProvider $dbProvider,
@@ -52,8 +42,9 @@ class SpecialIPContributions extends ContributionsSpecialPage {
 		UserFactory $userFactory,
 		UserIdentityLookup $userIdentityLookup,
 		DatabaseBlockStore $blockStore,
-		CheckUserLookupUtils $lookupUtils,
-		IPContributionsPagerFactory $pagerFactory
+		UserGroupAssignmentService $userGroupAssignmentService,
+		private readonly IPContributionsPagerFactory $pagerFactory,
+		private readonly CheckUserPermissionManager $checkUserPermissionManager,
 	) {
 		parent::__construct(
 			$permissionManager,
@@ -65,17 +56,17 @@ class SpecialIPContributions extends ContributionsSpecialPage {
 			$userFactory,
 			$userIdentityLookup,
 			$blockStore,
+			$userGroupAssignmentService,
 			'IPContributions'
 		);
-		$this->lookupUtils = $lookupUtils;
-		$this->pagerFactory = $pagerFactory;
 	}
 
 	/**
 	 * @inheritDoc
+	 * @codeCoverageIgnore Merely declarative
 	 */
-	public function requiresUnblock() {
-		return true;
+	public function isIncludable() {
+		return false;
 	}
 
 	/**
@@ -92,94 +83,122 @@ class SpecialIPContributions extends ContributionsSpecialPage {
 			'autofocus' => $target === '',
 			'section' => 'contribs-top',
 			'validation-callback' => function ( $target ) {
-				if ( !$this->lookupUtils->isValidIPOrRange( $target ) ) {
+				if ( !$this->isValidIPOrQueryableRange( $target, $this->getConfig() ) ) {
 					return $this->msg( 'checkuser-ip-contributions-target-error-no-ip' );
 				}
 				return true;
 			},
+			'excludenamed' => true,
+			'excludetemp' => true,
 			'ipallowed' => true,
 			'iprange' => true,
-			'iprangelimits' => $this->lookupUtils->getRangeLimit(),
+			'iprangelimits' => $this->getQueryableRangeLimit( $this->getConfig() ),
 			'required' => true,
 		];
 	}
 
 	/**
 	 * @inheritDoc
+	 * @codeCoverageIgnore Merely declarative
 	 */
-	public function execute( $par ) {
-		// These checks are the same as in AbstractTemporaryAccountHandler.
-		if (
-			!$this->permissionManager->userHasRight(
-				$this->getAuthority()->getUser(),
-				'checkuser-temporary-account-no-preference'
-			)
-		) {
-			// The user must have the 'checkuser-temporary-account' right.
-			if (
-				!$this->permissionManager->userHasRight(
-					$this->getAuthority()->getUser(),
-					'checkuser-temporary-account'
-				)
-			) {
-				throw new PermissionsError( 'checkuser-temporary-account' );
-			}
+	public function isRestricted() {
+		return true;
+	}
 
-			// The user must also have enabled the preference.
-			if (
-				!$this->userOptionsLookup->getOption(
-					$this->getAuthority()->getUser(),
-					'checkuser-temporary-account-enable'
-				)
-			) {
+	/** @inheritDoc */
+	public function userCanExecute( User $user ) {
+		// Implemented so that Special:SpecialPages can hide Special:IPContributions if the user does not have the
+		// necessary rights, but still show it if the user just hasn't checked the preference or is blocked.
+		// The user is denied access for reasons other than rights in ::execute.
+		$permissionCheck = $this->checkUserPermissionManager->canAccessTemporaryAccountIPAddresses(
+			$user
+		);
+		return $permissionCheck->getPermission() === null;
+	}
+
+	/**
+	 * @inheritDoc
+	 * @throws ErrorPageError
+	 * @throws UserBlockedError
+	 */
+	public function checkPermissions(): void {
+		// These checks are the same as in AbstractTemporaryAccountHandler.
+		//
+		// Note we don't call parent::checkPermissions() here: The parent method
+		// would call userCanExecute(), which essentially does the same we do
+		// here but throwing a generic PermissionsError exception, while here we
+		// throw different exceptions depending on the cause of the error.
+		$permStatus = $this->checkUserPermissionManager->canAccessTemporaryAccountIPAddresses(
+			$this->getAuthority()
+		);
+
+		if ( !$permStatus->isGood() ) {
+			if ( $permStatus->hasMessage( 'checkuser-tempaccount-reveal-ip-permission-error-description' ) ) {
 				throw new ErrorPageError(
 					$this->msg( 'checkuser-ip-contributions-permission-error-title' ),
 					$this->msg( 'checkuser-ip-contributions-permission-error-description' )
 				);
 			}
+
+			$block = $permStatus->getBlock();
+			if ( $block ) {
+				throw new UserBlockedError(
+					$block,
+					$this->getAuthority()->getUser(),
+					$this->getLanguage(),
+					$this->getRequest()->getIP()
+				);
+			}
+
+			throw new PermissionsError( $permStatus->getPermission() );
 		}
 
-		$isArchive = $this->isArchive();
 		$canSeeDeletedHistory = $this->permissionManager->userHasRight(
 			$this->getAuthority()->getUser(),
 			'deletedhistory'
 		);
 
-		if ( $isArchive && !$canSeeDeletedHistory ) {
+		if ( $this->isArchive() && !$canSeeDeletedHistory ) {
 			throw new PermissionsError( 'deletedhistory' );
 		}
+	}
 
-		$block = $this->getAuthority()->getBlock();
-		if ( $block ) {
-			throw new UserBlockedError(
-				$block,
-				$this->getAuthority()->getUser(),
-				$this->getLanguage(),
-				$this->getRequest()->getIP()
-			);
-		}
-
+	/**
+	 * @inheritDoc
+	 */
+	public function execute( $par ) {
 		// Add to the $opts array now, so that parent::getForm() can add this as a
 		// hidden field. This ensures the search form displayed on each tab submits
 		// in the correct mode.
-		$this->opts['isArchive'] = $isArchive;
+		$this->opts['isArchive'] = $this->isArchive();
+
+		// IP reveal needs to be logged, so if in read only mode the special page cannot be used
+		$this->checkReadOnly();
 
 		parent::execute( $par );
 
+		// Setting $overrideBaseUrl=true is needed to prevent addHelpLink()
+		// from trying to encode the anchor character (#)
+		$this->addHelpLink(
+			self::BASE_HELP_URL . 'Extension:CheckUser#Special:IPContributions_usage',
+			true
+		);
+
 		$target = $this->opts['target'] ?? null;
-		if (
-			$target &&
-			!$this->lookupUtils->isValidIPOrRange( $target ) &&
-			!IPUtils::isIPAddress( $target )
-		) {
+		if ( $target && !IPUtils::isIPAddress( $target ) ) {
 			$this->getOutput()->setSubtitle(
-				new MessageWidget( [
+				(string)new MessageWidget( [
 					'type' => 'error',
 					'label' => new HtmlSnippet(
 						$this->msg( 'checkuser-ip-contributions-target-error-no-ip-banner', $target )->parse()
-					)
+					),
 				] )
 			);
+		} elseif ( $target && !$this->isValidIPOrQueryableRange( $target, $this->getConfig() ) ) {
+			// Valid range, but outside CIDR limit.
+			$limits = $this->getQueryableRangeLimit( $this->getConfig() );
+			$limit = $limits[ IPUtils::isIPv4( $target ) ? 'IPv4' : 'IPv6' ];
+			$this->getOutput()->addWikiMsg( 'sp-contributions-outofrange', $limit );
 		} else {
 			$this->getOutput()->addJsConfigVars( 'wgIPRangeTarget', $target );
 		}
@@ -251,6 +270,7 @@ class SpecialIPContributions extends ContributionsSpecialPage {
 
 		// Add subtitle text describing that the data shown is limited to wgCUDMaxAge seconds ago. The count should
 		// be in days, as this makes it easier to translate the message.
+		$contributionsSub .= Html::element( 'br' );
 		$contributionsSub .= $this->msg( 'checkuser-ip-contributions-subtitle' )
 			->numParams( round( $this->getConfig()->get( 'CUDMaxAge' ) / 86400 ) )
 			->parse();
@@ -261,6 +281,6 @@ class SpecialIPContributions extends ContributionsSpecialPage {
 	/** @inheritDoc */
 	public function shouldShowBlockLogExtract( UserIdentity $target ): bool {
 		return parent::shouldShowBlockLogExtract( $target ) &&
-			$this->lookupUtils->isValidIPOrRange( $target->getName() );
+			$this->isValidIPOrQueryableRange( $target->getName(), $this->getConfig() );
 	}
 }

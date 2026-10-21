@@ -1,0 +1,19 @@
+{
+	"@metadata": {
+		"authors": [
+			"Умар",
+			"Исмаил Садуев"
+		]
+	},
+	"apex-action-addsection": "Тема тӀетоха",
+	"apex-action-delete": "ДӀайаккха",
+	"apex-action-move": "ЦӀе хийца",
+	"apex-action-protect": "Ларйан",
+	"apex-action-undelete": "Йухадаккха дӀайаккхар",
+	"apex-action-unprotect": "Ларйар хийцар",
+	"apex-view-create": "Кхолла",
+	"apex-view-edit": "Нисйан",
+	"apex-view-history": "Исторега хьажа",
+	"apex-view-view": "Йеша",
+	"apex-view-viewsource": "Коде хьажар"
+}

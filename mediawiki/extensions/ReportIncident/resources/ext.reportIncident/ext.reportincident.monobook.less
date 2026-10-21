@@ -1,0 +1,18 @@
+.cdx-dialog {
+	&.ext-reportincident-emaildialog,
+	&.ext-reportincident-dialog {
+		// This increases the maximum width of the dialog for reporting and asking
+		// for email confirmation, as the font-size on Monobook is smaller than
+		// Vector. This makes the default em measurement produce a dialog that
+		// is too narrow on desktop devices.
+		max-width: 45em;
+	}
+
+	.cdx-checkbox__label {
+		// The label text for checkboxes do not properly align in Codex because
+		// of the reduced font size. Increase the padding to the left and add
+		// a padding to the top to properly align the label for the checkboxes.
+		padding-left: calc( 1.75em + 8px );
+		padding-top: 0.25em;
+	}
+}

@@ -1,11 +1,11 @@
 <?php
 
-namespace MediaWiki\CheckUser\Api;
+namespace MediaWiki\Extension\CheckUser\Api;
 
 use MediaWiki\Api\ApiBase;
 use MediaWiki\Api\ApiQuery;
 use MediaWiki\Api\ApiQueryBase;
-use MediaWiki\CheckUser\Services\ApiQueryCheckUserResponseFactory;
+use MediaWiki\Extension\CheckUser\Services\ApiQueryCheckUserResponseFactory;
 use MediaWiki\ParamValidator\TypeDef\UserDef;
 use Wikimedia\ParamValidator\ParamValidator;
 use Wikimedia\ParamValidator\TypeDef\EnumDef;
@@ -16,20 +16,20 @@ use Wikimedia\ParamValidator\TypeDef\IntegerDef;
  */
 class ApiQueryCheckUser extends ApiQueryBase {
 
-	private ApiQueryCheckUserResponseFactory $responseFactory;
-
-	/**
-	 * @param ApiQuery $query
-	 * @param string $moduleName
-	 * @param ApiQueryCheckUserResponseFactory $responseFactory
-	 */
-	public function __construct( $query, $moduleName, ApiQueryCheckUserResponseFactory $responseFactory ) {
+	public function __construct(
+		ApiQuery $query,
+		string $moduleName,
+		private readonly ApiQueryCheckUserResponseFactory $responseFactory,
+	) {
 		parent::__construct( $query, $moduleName, 'cu' );
-		$this->responseFactory = $responseFactory;
 	}
 
 	public function execute() {
 		$this->checkUserRightsAny( 'checkuser' );
+
+		if ( $this->getConfig()->get( 'CheckUserDisableCheckUserAPI' ) ) {
+			$this->dieWithError( 'apierror-checkuser-disabled', 'disabled' );
+		}
 
 		$response = $this->responseFactory->newFromRequest( $this );
 		$result = $this->getResult();
@@ -77,11 +77,11 @@ class ApiQueryCheckUser extends ApiQueryBase {
 					'ipusers',
 				],
 				ApiBase::PARAM_HELP_MSG_PER_VALUE => [
-					'edits' => 'apihelp-query+checkuser-paramvalue-request-actions'
+					'edits' => 'apihelp-query+checkuser-paramvalue-request-actions',
 				],
 				EnumDef::PARAM_DEPRECATED_VALUES => [
 					'edits' => true,
-				]
+				],
 			],
 			'target'   => [
 				ParamValidator::PARAM_REQUIRED => true,
@@ -90,7 +90,7 @@ class ApiQueryCheckUser extends ApiQueryBase {
 			],
 			'reason'   => [
 				ParamValidator::PARAM_DEFAULT => '',
-				ParamValidator::PARAM_REQUIRED => $this->getConfig()->get( 'CheckUserForceSummary' )
+				ParamValidator::PARAM_REQUIRED => $this->getConfig()->get( 'CheckUserForceSummary' ),
 			],
 			'limit'    => [
 				ParamValidator::PARAM_DEFAULT => 500,
@@ -100,7 +100,7 @@ class ApiQueryCheckUser extends ApiQueryBase {
 				IntegerDef::PARAM_MAX2 => $this->getConfig()->get( 'CheckUserMaximumRowCount' ),
 			],
 			'timecond' => [
-				ParamValidator::PARAM_DEFAULT => '-2 weeks'
+				ParamValidator::PARAM_DEFAULT => '-2 weeks',
 			],
 			'xff'      => null,
 		];
@@ -125,4 +125,24 @@ class ApiQueryCheckUser extends ApiQueryBase {
 	public function needsToken() {
 		return 'csrf';
 	}
+
+	/** @inheritDoc */
+	protected function getSummaryMessage() {
+		if ( $this->getConfig()->get( 'CheckUserDisableCheckUserAPI' ) ) {
+			return 'apihelp-query+checkuser-summary-api-disabled';
+		}
+		return parent::getSummaryMessage();
+	}
+
+	/** @inheritDoc */
+	public function isDeprecated() {
+		return $this->getConfig()->get( 'CheckUserDisableCheckUserAPI' );
+	}
 }
+
+// @codeCoverageIgnoreStart
+/**
+ * @deprecated since 1.46
+ */
+class_alias( ApiQueryCheckUser::class, 'MediaWiki\\CheckUser\\Api\\ApiQueryCheckUser' );
+// @codeCoverageIgnoreEnd

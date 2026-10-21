@@ -1,0 +1,62 @@
+{
+  "component": "mediawiki/extensions/InputBox",
+  "baseline": "a8184c4572811cf9df340702e882fe95baa885a0",
+  "target": "67accce1e7bc967cce680a03601968885154d4ce",
+  "preserved_changes": [
+    {
+      "path": ".eslintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".gitignore",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".gitreview",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".phan/config.php",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".phpcs.xml",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".stylelintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "Gruntfile.js",
+      "change": "local-deletion"
+    },
+    {
+      "path": "i18n/hoc-latn.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ln.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "package-lock.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "package.json",
+      "change": "local-deletion"
+    }
+  ],
+  "dependency_status": {
+    "old_runtime_requirements": {},
+    "new_runtime_requirements": {},
+    "has_lock": false,
+    "has_vendor": false,
+    "status": "runtime-requirements-unchanged"
+  },
+  "baseline_proof": {
+    "matched_runtime_and_manifest_files": 3,
+    "method": "Exact Git blobs for all installed non-test, non-vendor PHP and extension.json"
+  }
+}

@@ -1,33 +1,38 @@
 <?php
 
-namespace MediaWiki\CheckUser\CheckUser;
+namespace MediaWiki\Extension\CheckUser\CheckUser;
 
-use LogFormatterFactory;
-use MediaWiki\Cache\LinkBatchFactory;
-use MediaWiki\CheckUser\CheckUser\Pagers\AbstractCheckUserPager;
-use MediaWiki\CheckUser\CheckUser\Pagers\CheckUserGetActionsPager;
-use MediaWiki\CheckUser\CheckUser\Pagers\CheckUserGetIPsPager;
-use MediaWiki\CheckUser\CheckUser\Pagers\CheckUserGetUsersPager;
-use MediaWiki\CheckUser\CheckUser\Widgets\CIDRCalculator;
-use MediaWiki\CheckUser\Hook\HookRunner;
-use MediaWiki\CheckUser\Services\CheckUserLogService;
-use MediaWiki\CheckUser\Services\CheckUserLookupUtils;
-use MediaWiki\CheckUser\Services\CheckUserUtilityService;
-use MediaWiki\CheckUser\Services\TokenQueryManager;
-use MediaWiki\CheckUser\Services\UserAgentClientHintsFormatter;
-use MediaWiki\CheckUser\Services\UserAgentClientHintsLookup;
+use MediaWiki\Block\DatabaseBlockStore;
 use MediaWiki\CommentFormatter\CommentFormatter;
 use MediaWiki\CommentStore\CommentStore;
+use MediaWiki\Exception\UserBlockedError;
+use MediaWiki\Extension\CheckUser\CheckUser\Pagers\AbstractCheckUserPager;
+use MediaWiki\Extension\CheckUser\CheckUser\Pagers\CheckUserGetActionsPager;
+use MediaWiki\Extension\CheckUser\CheckUser\Pagers\CheckUserGetIPsPager;
+use MediaWiki\Extension\CheckUser\CheckUser\Pagers\CheckUserGetUsersPager;
+use MediaWiki\Extension\CheckUser\CheckUser\Widgets\CIDRCalculator;
+use MediaWiki\Extension\CheckUser\Hook\HookRunner;
+use MediaWiki\Extension\CheckUser\Services\CheckUserLogService;
+use MediaWiki\Extension\CheckUser\Services\CheckUserLookupUtils;
+use MediaWiki\Extension\CheckUser\Services\CheckUserUtilityService;
+use MediaWiki\Extension\CheckUser\Services\TokenQueryManager;
+use MediaWiki\Extension\CheckUser\Services\UserAgentClientHintsFormatter;
+use MediaWiki\Extension\CheckUser\Services\UserAgentClientHintsLookup;
+use MediaWiki\Extension\CheckUser\SuggestedInvestigations\Services\SuggestedInvestigationsCaseLookupService;
+use MediaWiki\Extension\CheckUser\SuggestedInvestigations\Services\SuggestedInvestigationsMessageRenderer;
 use MediaWiki\Html\FormOptions;
 use MediaWiki\Html\Html;
 use MediaWiki\HTMLForm\HTMLForm;
+use MediaWiki\Logging\LogFormatterFactory;
 use MediaWiki\Message\Message;
+use MediaWiki\Page\LinkBatchFactory;
 use MediaWiki\Permissions\PermissionManager;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Title\Title;
 use MediaWiki\User\CentralId\CentralIdLookup;
 use MediaWiki\User\CentralId\CentralIdLookupFactory;
 use MediaWiki\User\Options\UserOptionsLookup;
+use MediaWiki\User\TempUser\TempUserConfig;
 use MediaWiki\User\UserEditTracker;
 use MediaWiki\User\UserFactory;
 use MediaWiki\User\UserGroupManager;
@@ -37,7 +42,6 @@ use MediaWiki\User\UserIdentityValue;
 use MediaWiki\User\UserNamePrefixSearch;
 use MediaWiki\User\UserNameUtils;
 use OOUI\IconWidget;
-use UserBlockedError;
 use Wikimedia\IPUtils;
 use Wikimedia\Rdbms\IConnectionProvider;
 
@@ -58,99 +62,46 @@ class SpecialCheckUser extends SpecialPage {
 	 */
 	protected $opts;
 
-	private LinkBatchFactory $linkBatchFactory;
-	private UserGroupManager $userGroupManager;
-	private CentralIdLookup $centralIdLookup;
-	private PermissionManager $permissionManager;
-	private UserIdentityLookup $userIdentityLookup;
-	private TokenQueryManager $tokenQueryManager;
-	private IConnectionProvider $dbProvider;
-	private UserFactory $userFactory;
-	private CheckUserLogService $checkUserLogService;
-	private CommentFormatter $commentFormatter;
-	private UserEditTracker $userEditTracker;
-	private UserNamePrefixSearch $userNamePrefixSearch;
-	private UserNameUtils $userNameUtils;
-	private HookRunner $hookRunner;
-	private CheckUserUtilityService $checkUserUtilityService;
-	private CommentStore $commentStore;
-	private UserAgentClientHintsLookup $clientHintsLookup;
-	private UserAgentClientHintsFormatter $clientHintsFormatter;
-	private CheckUserLookupUtils $checkUserLookupUtils;
-	private LogFormatterFactory $logFormatterFactory;
-	private UserOptionsLookup $userOptionsLookup;
+	private readonly CentralIdLookup $centralIdLookup;
 
-	/**
-	 * @param LinkBatchFactory $linkBatchFactory
-	 * @param UserGroupManager $userGroupManager
-	 * @param CentralIdLookupFactory $centralIdLookupFactory
-	 * @param PermissionManager $permissionManager
-	 * @param UserIdentityLookup $userIdentityLookup
-	 * @param TokenQueryManager $tokenQueryManager
-	 * @param IConnectionProvider $dbProvider
-	 * @param UserFactory $userFactory
-	 * @param CheckUserLogService $checkUserLogService
-	 * @param CommentFormatter $commentFormatter
-	 * @param UserEditTracker $userEditTracker
-	 * @param UserNamePrefixSearch $userNamePrefixSearch
-	 * @param UserNameUtils $userNameUtils
-	 * @param HookRunner $hookRunner
-	 * @param CheckUserUtilityService $checkUserUtilityService
-	 * @param CommentStore $commentStore
-	 * @param UserAgentClientHintsLookup $clientHintsLookup
-	 * @param UserAgentClientHintsFormatter $clientHintsFormatter
-	 * @param CheckUserLookupUtils $checkUserLookupUtils
-	 * @param LogFormatterFactory $logFormatterFactory
-	 * @param UserOptionsLookup $userOptionsLookup
-	 */
 	public function __construct(
-		LinkBatchFactory $linkBatchFactory,
-		UserGroupManager $userGroupManager,
+		private readonly LinkBatchFactory $linkBatchFactory,
+		private readonly UserGroupManager $userGroupManager,
 		CentralIdLookupFactory $centralIdLookupFactory,
-		PermissionManager $permissionManager,
-		UserIdentityLookup $userIdentityLookup,
-		TokenQueryManager $tokenQueryManager,
-		IConnectionProvider $dbProvider,
-		UserFactory $userFactory,
-		CheckUserLogService $checkUserLogService,
-		CommentFormatter $commentFormatter,
-		UserEditTracker $userEditTracker,
-		UserNamePrefixSearch $userNamePrefixSearch,
-		UserNameUtils $userNameUtils,
-		HookRunner $hookRunner,
-		CheckUserUtilityService $checkUserUtilityService,
-		CommentStore $commentStore,
-		UserAgentClientHintsLookup $clientHintsLookup,
-		UserAgentClientHintsFormatter $clientHintsFormatter,
-		CheckUserLookupUtils $checkUserLookupUtils,
-		LogFormatterFactory $logFormatterFactory,
-		UserOptionsLookup $userOptionsLookup
+		private readonly PermissionManager $permissionManager,
+		private readonly UserIdentityLookup $userIdentityLookup,
+		private readonly TokenQueryManager $tokenQueryManager,
+		private readonly IConnectionProvider $dbProvider,
+		private readonly UserFactory $userFactory,
+		private readonly CheckUserLogService $checkUserLogService,
+		private readonly CommentFormatter $commentFormatter,
+		private readonly UserEditTracker $userEditTracker,
+		private readonly UserNamePrefixSearch $userNamePrefixSearch,
+		private readonly UserNameUtils $userNameUtils,
+		private readonly HookRunner $hookRunner,
+		private readonly CheckUserUtilityService $checkUserUtilityService,
+		private readonly CommentStore $commentStore,
+		private readonly UserAgentClientHintsLookup $clientHintsLookup,
+		private readonly UserAgentClientHintsFormatter $clientHintsFormatter,
+		private readonly CheckUserLookupUtils $checkUserLookupUtils,
+		private readonly LogFormatterFactory $logFormatterFactory,
+		private readonly UserOptionsLookup $userOptionsLookup,
+		private readonly DatabaseBlockStore $blockStore,
+		private readonly TempUserConfig $tempUserConfig,
+		private readonly SuggestedInvestigationsMessageRenderer $suggestedInvestigationsMessageRenderer,
+		private readonly SuggestedInvestigationsCaseLookupService $siCaseLookupService,
 	) {
-		parent::__construct( 'CheckUser', 'checkuser' );
+		parent::__construct( 'CheckUser' );
 
-		$this->linkBatchFactory = $linkBatchFactory;
-		$this->userGroupManager = $userGroupManager;
 		$this->centralIdLookup = $centralIdLookupFactory->getLookup();
-		$this->permissionManager = $permissionManager;
-		$this->userIdentityLookup = $userIdentityLookup;
-		$this->tokenQueryManager = $tokenQueryManager;
-		$this->dbProvider = $dbProvider;
-		$this->userFactory = $userFactory;
-		$this->checkUserLogService = $checkUserLogService;
-		$this->commentFormatter = $commentFormatter;
-		$this->userEditTracker = $userEditTracker;
-		$this->userNamePrefixSearch = $userNamePrefixSearch;
-		$this->userNameUtils = $userNameUtils;
-		$this->hookRunner = $hookRunner;
-		$this->checkUserUtilityService = $checkUserUtilityService;
-		$this->commentStore = $commentStore;
-		$this->clientHintsLookup = $clientHintsLookup;
-		$this->clientHintsFormatter = $clientHintsFormatter;
-		$this->checkUserLookupUtils = $checkUserLookupUtils;
-		$this->logFormatterFactory = $logFormatterFactory;
-		$this->userOptionsLookup = $userOptionsLookup;
 	}
 
+	/** @inheritDoc */
+	public function getRestriction(): string {
+		return 'checkuser';
+	}
+
+	/** @inheritDoc */
 	public function doesWrites() {
 		// logging
 		return true;
@@ -159,7 +110,7 @@ class SpecialCheckUser extends SpecialPage {
 	/** @inheritDoc */
 	public function execute( $subPage ) {
 		$this->setHeaders();
-		$this->addHelpLink( 'Extension:CheckUser' );
+		$this->addHelpLink( 'Help:Extension:CheckUser' );
 		$this->checkPermissions();
 		// Logging and blocking requires writing so stop from here if read-only mode
 		$this->checkReadOnly();
@@ -180,6 +131,9 @@ class SpecialCheckUser extends SpecialPage {
 		$opts->add( 'limit', 0 );
 		$opts->add( 'dir', '' );
 		$opts->add( 'token', '' );
+		foreach ( AbstractCheckUserPager::FILTER_FIELDS as $field => $default ) {
+			$opts->add( $field, $default );
+		}
 		$opts->fetchValuesFromRequest( $request );
 
 		// If the client has provided a token, they are trying to paginate.
@@ -263,19 +217,29 @@ class SpecialCheckUser extends SpecialPage {
 				);
 			}
 		}
-
-		if ( count( $links ) ) {
-			$out->addSubtitle( Html::rawElement(
+		if (
+			$this->getConfig()->get( 'CheckUserSuggestedInvestigationsEnabled' ) &&
+			!$this->getConfig()->get( 'CheckUserSuggestedInvestigationsHidden' )
+		) {
+			$links[] = Html::rawElement(
 				'span',
-				[ 'class' => 'mw-checkuser-links-no-parentheses' ],
-				Html::openElement( 'span' ) .
-				implode(
-					Html::closeElement( 'span' ) . Html::openElement( 'span' ),
-					$links
-				) .
-				Html::closeElement( 'span' )
-			) );
+				[],
+				$this->getLinkRenderer()->makeKnownLink(
+					SpecialPage::getTitleFor( 'SuggestedInvestigations' ),
+					$this->msg( 'checkuser-show-suggestedinvestigations' )->text()
+				)
+			);
 		}
+
+		$html = '';
+		foreach ( $links as $link ) {
+			$html .= Html::rawElement( 'span', [], $link );
+		}
+		$out->addSubtitle( Html::rawElement(
+			'span',
+			[ 'class' => 'mw-checkuser-links-no-parentheses' ],
+			$html
+		) );
 
 		$userIdentity = null;
 		$isIP = false;
@@ -303,7 +267,7 @@ class SpecialCheckUser extends SpecialPage {
 		// Perform one of the various submit operations...
 		if ( $request->wasPosted() ) {
 			$checkType = $this->opts->getValue( 'checktype' );
-			if ( !$this->getUser()->matchEditToken( $request->getVal( 'wpEditToken' ) ) ) {
+			if ( !$this->getContext()->getCsrfTokenSet()->matchTokenField() ) {
 				$out->wrapWikiMsg( '<div class="error">$1</div>', 'checkuser-token-fail' );
 			} elseif ( !$this->checkReason() ) {
 				$out->addWikiMsg( 'checkuser-noreason' );
@@ -326,7 +290,14 @@ class SpecialCheckUser extends SpecialPage {
 
 						// Ordered in descent by timestamp. Can cause large filesorts on range scans.
 						$pager = $this->getPager( self::SUBTYPE_GET_ACTIONS, $userIdentity, $logType, $xfor );
-						$out->addHTML( $pager->getBody() );
+						$pagerBody = $pager->getBody();
+						$out->addHTML(
+							$this->suggestedInvestigationsMessageRenderer->getOpenCasesNotice(
+								$pager,
+								$this->getContext(),
+								$this->getLinkRenderer()
+							) . $pagerBody
+						);
 					}
 				} else {
 					// Target is a username
@@ -352,16 +323,19 @@ class SpecialCheckUser extends SpecialPage {
 					$logType = $xfor ? 'ipusers-xff' : 'ipusers';
 
 					$pager = $this->getPager( self::SUBTYPE_GET_USERS, $userIdentity, $logType, $xfor );
-					$out->addHTML( $pager->getBody() );
+					$pagerBody = $pager->getBody();
+					$out->addHTML(
+						$this->suggestedInvestigationsMessageRenderer->getOpenCasesNotice(
+							$pager,
+							$this->getContext(),
+							$this->getLinkRenderer()
+						) . $pagerBody
+					);
 				}
 			}
 		}
 		// Add CIDR calculation convenience JS form
 		$this->addJsCIDRForm();
-		$out->addJsConfigVars(
-			'wgCheckUserDisplayClientHints',
-			$this->getConfig()->get( 'CheckUserDisplayClientHints' )
-		);
 		$out->addModules( 'ext.checkUser' );
 		$out->addModuleStyles( [
 			'mediawiki.interface.helpers.styles',
@@ -450,9 +424,15 @@ class SpecialCheckUser extends SpecialPage {
 				'default' => $this->opts->getValue( 'reason' ),
 				'label-message' => 'checkuser-reason',
 				'size' => 46,
-				'maxlength' => 150,
+				'maxlength' => CommentStore::COMMENT_CHARACTER_LIMIT,
 				'id' => 'checkreason',
 				'name' => 'reason',
+			],
+			// Persist the "Hide temporary accounts" filter when changing things like the check type or period
+			// in the main search form
+			'HideTemporaryAccounts' => [
+				'type' => 'hidden',
+				'default' => $this->opts->getValue( 'wpHideTemporaryAccounts' ),
 			],
 		];
 
@@ -475,9 +455,6 @@ class SpecialCheckUser extends SpecialPage {
 		$out->addHTML( ( new CIDRCalculator( $out ) )->getHtml() );
 	}
 
-	/**
-	 * @return bool
-	 */
 	protected function checkReason(): bool {
 		return ( !$this->getConfig()->get( 'CheckUserForceSummary' ) || strlen( $this->opts->getValue( 'reason' ) ) );
 	}
@@ -493,74 +470,78 @@ class SpecialCheckUser extends SpecialPage {
 	 * @return AbstractCheckUserPager|null
 	 */
 	public function getPager( string $checkType, UserIdentity $userIdentity, string $logType, ?bool $xfor = null ) {
-		switch ( $checkType ) {
-			case self::SUBTYPE_GET_IPS:
-				return new CheckUserGetIPsPager(
-					$this->opts,
-					$userIdentity,
-					$logType,
-					$this->tokenQueryManager,
-					$this->userGroupManager,
-					$this->centralIdLookup,
-					$this->dbProvider,
-					$this->getSpecialPageFactory(),
-					$this->userIdentityLookup,
-					$this->checkUserLogService,
-					$this->userFactory,
-					$this->checkUserLookupUtils,
-					$this->userOptionsLookup
-				);
-			case self::SUBTYPE_GET_USERS:
-				return new CheckUserGetUsersPager(
-					$this->opts,
-					$userIdentity,
-					$xfor ?? false,
-					$logType,
-					$this->tokenQueryManager,
-					$this->permissionManager,
-					$this->userGroupManager,
-					$this->centralIdLookup,
-					$this->dbProvider,
-					$this->getSpecialPageFactory(),
-					$this->userIdentityLookup,
-					$this->userFactory,
-					$this->checkUserLogService,
-					$this->checkUserLookupUtils,
-					$this->userEditTracker,
-					$this->checkUserUtilityService,
-					$this->clientHintsLookup,
-					$this->clientHintsFormatter,
-					$this->userOptionsLookup
-				);
-			case self::SUBTYPE_GET_ACTIONS:
-				return new CheckUserGetActionsPager(
-					$this->opts,
-					$userIdentity,
-					$xfor,
-					$logType,
-					$this->tokenQueryManager,
-					$this->userGroupManager,
-					$this->centralIdLookup,
-					$this->linkBatchFactory,
-					$this->dbProvider,
-					$this->getSpecialPageFactory(),
-					$this->userIdentityLookup,
-					$this->userFactory,
-					$this->checkUserLookupUtils,
-					$this->checkUserLogService,
-					$this->commentFormatter,
-					$this->userEditTracker,
-					$this->hookRunner,
-					$this->checkUserUtilityService,
-					$this->commentStore,
-					$this->clientHintsLookup,
-					$this->clientHintsFormatter,
-					$this->logFormatterFactory,
-					$this->userOptionsLookup
-				);
-			default:
-				return null;
-		}
+		return match ( $checkType ) {
+			self::SUBTYPE_GET_IPS => new CheckUserGetIPsPager(
+				$this->opts,
+				$userIdentity,
+				$logType,
+				$this->tokenQueryManager,
+				$this->userGroupManager,
+				$this->centralIdLookup,
+				$this->dbProvider,
+				$this->getSpecialPageFactory(),
+				$this->userIdentityLookup,
+				$this->checkUserLogService,
+				$this->userFactory,
+				$this->checkUserLookupUtils,
+				$this->userOptionsLookup,
+				$this->blockStore,
+				$this->tempUserConfig
+			),
+			self::SUBTYPE_GET_USERS => new CheckUserGetUsersPager(
+				$this->opts,
+				$userIdentity,
+				$xfor ?? false,
+				$logType,
+				$this->tokenQueryManager,
+				$this->permissionManager,
+				$this->userGroupManager,
+				$this->centralIdLookup,
+				$this->dbProvider,
+				$this->getSpecialPageFactory(),
+				$this->userIdentityLookup,
+				$this->userFactory,
+				$this->checkUserLogService,
+				$this->checkUserLookupUtils,
+				$this->userEditTracker,
+				$this->checkUserUtilityService,
+				$this->clientHintsLookup,
+				$this->clientHintsFormatter,
+				$this->userOptionsLookup,
+				$this->blockStore,
+				$this->linkBatchFactory,
+				$this->tempUserConfig,
+				$this->siCaseLookupService
+			),
+			self::SUBTYPE_GET_ACTIONS => new CheckUserGetActionsPager(
+				$this->opts,
+				$userIdentity,
+				$xfor,
+				$logType,
+				$this->tokenQueryManager,
+				$this->userGroupManager,
+				$this->centralIdLookup,
+				$this->linkBatchFactory,
+				$this->dbProvider,
+				$this->getSpecialPageFactory(),
+				$this->userIdentityLookup,
+				$this->userFactory,
+				$this->checkUserLookupUtils,
+				$this->checkUserLogService,
+				$this->commentFormatter,
+				$this->userEditTracker,
+				$this->hookRunner,
+				$this->checkUserUtilityService,
+				$this->commentStore,
+				$this->clientHintsLookup,
+				$this->clientHintsFormatter,
+				$this->logFormatterFactory,
+				$this->userOptionsLookup,
+				$this->blockStore,
+				$this->tempUserConfig
+			),
+			default => null
+		};
 	}
 
 	/**

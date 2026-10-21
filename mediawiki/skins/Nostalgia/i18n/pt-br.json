@@ -1,0 +1,26 @@
+{
+	"@metadata": {
+		"authors": [
+			"Cainamarques",
+			"Diego Queiroz",
+			"Eduardo Addad de Oliveira",
+			"Eduardoaddad",
+			"Felipe L. Ewald"
+		]
+	},
+	"nostalgia-desc": "Um tema para demonstrar como a Wikipédia se parecia em 2001",
+	"skinname-nostalgia": "Nostalgia",
+	"nostalgia.css": "/* Todos os CSS colocado aqui serão carregados para usuários do tema Nostalgia */",
+	"nostalgia.js": "/* Todos os JavaScript aqui colocado será carregado para usuários do tema Nostalgia */",
+	"nostalgia-articlepage": "Ver página de conteúdo",
+	"nostalgia-create-this-page": "Criar esta página",
+	"nostalgia-deletethispage": "Excluir esta página",
+	"nostalgia-editthispage": "Editar esta página",
+	"nostalgia-newmessageslink": "novas mensagens",
+	"nostalgia-newmessagesdifflink": "última alteração",
+	"nostalgia-projectpage": "Ver página de projeto",
+	"nostalgia-protectthispage": "Proteger esta página",
+	"nostalgia-talkpage": "Discutir sobre esta página",
+	"nostalgia-unprotectthispage": "Alterar a proteção desta página",
+	"nostalgia-userpage": "Ver página de usuário"
+}

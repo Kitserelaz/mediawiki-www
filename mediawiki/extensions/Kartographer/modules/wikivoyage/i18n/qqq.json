@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"EpicPupper",
+			"Liuxinyu970226",
+			"Umherirrender"
+		]
+	},
+	"kartographer-wv-group": "{{Identical|Group}}",
+	"kartographer-wv-layer-wikimedia": "{{optional}}\nLabel for the tile layer that contains tiles from Wikimedia tile server.",
+	"kartographer-wv-warning-external-source-title": "Title for the message dialog that warns about loading external data source.",
+	"kartographer-wv-warning-external-source-message": "Message for the message dialog that warns about loading external data source.",
+	"kartographer-wv-warning-external-source-agree": "Label of the message dialog action that approves loading external data source.",
+	"kartographer-wv-warning-external-source-disagree": "{{Identical|Cancel}}"
+}

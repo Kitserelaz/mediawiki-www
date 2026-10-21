@@ -1,0 +1,626 @@
+<?php
+
+namespace SMW\SPARQLStore\QueryEngine;
+
+use RuntimeException;
+use SMW\DataItems\DataItem;
+use SMW\DataItems\Property;
+use SMW\DataItems\WikiPage;
+use SMW\DataTypeRegistry;
+use SMW\DataValues\PropertyChainValue;
+use SMW\Export\Exporter;
+use SMW\Exporter\Element\ExpElement;
+use SMW\Exporter\Element\ExpNsResource;
+use SMW\Exporter\Serializer\TurtleSerializer;
+use SMW\HierarchyLookup;
+use SMW\Localizer\Message;
+use SMW\Query\DescriptionFactory;
+use SMW\Query\Language\Description;
+use SMW\SPARQLStore\QueryEngine\Condition\Condition;
+use SMW\SPARQLStore\QueryEngine\Condition\SingletonCondition;
+use SMW\SPARQLStore\QueryEngine\Condition\TrueCondition;
+use SMW\SPARQLStore\QueryEngine\DescriptionInterpreters\DispatchingDescriptionInterpreter;
+use SMW\Utils\CircularReferenceGuard;
+
+/**
+ * Build an internal representation for a SPARQL condition from individual query
+ * descriptions
+ *
+ * @license GPL-2.0-or-later
+ * @since 2.0
+ *
+ * @author Markus Krötzsch
+ * @author mwjames
+ */
+class ConditionBuilder {
+
+	/**
+	 * @var DispatchingDescriptionInterpreter
+	 */
+	private $dispatchingDescriptionInterpreter;
+
+	private ?CircularReferenceGuard $circularReferenceGuard = null;
+
+	private ?HierarchyLookup $hierarchyLookup = null;
+
+	private DescriptionFactory $descriptionFactory;
+
+	private array $errors = [];
+
+	/**
+	 * Counter used to generate globally fresh variables.
+	 */
+	private int $variableCounter = 0;
+
+	/**
+	 * sortKeys that are being used while building the query conditions
+	 *
+	 * @var array
+	 */
+	private $sortKeys = [];
+
+	/**
+	 * The name of the SPARQL variable that represents the query result
+	 *
+	 * @var string
+	 */
+	private $resultVariable = 'result';
+
+	/**
+	 * @var string
+	 */
+	private $joinVariable;
+
+	/**
+	 * @var Property|null
+	 */
+	private $orderByProperty;
+
+	private array $redirectByVariableReplacementMap = [];
+
+	/**
+	 * @since 2.2
+	 */
+	public function __construct(
+		DescriptionInterpreterFactory $descriptionInterpreterFactory,
+		private ?EngineOptions $engineOptions = null,
+	) {
+		$this->dispatchingDescriptionInterpreter = $descriptionInterpreterFactory->newDispatchingDescriptionInterpreter( $this );
+
+		if ( $this->engineOptions === null ) {
+			$this->engineOptions = new EngineOptions();
+		}
+
+		$this->descriptionFactory = new DescriptionFactory();
+	}
+
+	/**
+	 * @since 2.0
+	 *
+	 * @param string $resultVariable
+	 */
+	public function setResultVariable( $resultVariable ): static {
+		$this->resultVariable = $resultVariable;
+		return $this;
+	}
+
+	/**
+	 * @since 7.1.0
+	 *
+	 * @return string
+	 */
+	public function getResultVariable(): string {
+		return $this->resultVariable;
+	}
+
+	/**
+	 * Get a fresh unused variable name for building SPARQL conditions.
+	 *
+	 * @return string
+	 */
+	public function getNextVariable( string $prefix = 'v' ): string {
+		return $prefix . ( ++$this->variableCounter );
+	}
+
+	/**
+	 * @since 2.0
+	 *
+	 * @param array $sortKeys
+	 */
+	public function setSortKeys( $sortKeys ): static {
+		$this->sortKeys = $sortKeys;
+		return $this;
+	}
+
+	/**
+	 * @since 2.1
+	 *
+	 * @return array
+	 */
+	public function getSortKeys(): array {
+		return $this->sortKeys;
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * @return array
+	 */
+	public function getErrors(): array {
+		return $this->errors;
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * @param string|array $error
+	 * @param int|string|null $type
+	 */
+	public function addError( $error, $type = Message::TEXT ): void {
+		$this->errors[Message::getHash( $error, $type )] = Message::encode( $error, $type );
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * @param CircularReferenceGuard $circularReferenceGuard
+	 */
+	public function setCircularReferenceGuard( CircularReferenceGuard $circularReferenceGuard ): void {
+		$this->circularReferenceGuard = $circularReferenceGuard;
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * @return CircularReferenceGuard|null
+	 */
+	public function getCircularReferenceGuard(): ?CircularReferenceGuard {
+		return $this->circularReferenceGuard;
+	}
+
+	/**
+	 * @since 2.3
+	 *
+	 * @param HierarchyLookup $hierarchyLookup
+	 */
+	public function setHierarchyLookup( HierarchyLookup $hierarchyLookup ): void {
+		$this->hierarchyLookup = $hierarchyLookup;
+	}
+
+	/**
+	 * @since 2.3
+	 *
+	 * @return HierarchyLookup|null
+	 */
+	public function getHierarchyLookup(): ?HierarchyLookup {
+		return $this->hierarchyLookup;
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * @param string $joinVariable name of the variable that conditions
+	 * will refer to
+	 */
+	public function setJoinVariable( $joinVariable ): void {
+		$this->joinVariable = $joinVariable;
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * @return string
+	 */
+	public function getJoinVariable() {
+		return $this->joinVariable;
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * @param Property|null $orderByProperty if given then
+	 * this is the property the values of which this condition will refer
+	 * to, and the condition should also enable ordering by this value
+	 */
+	public function setOrderByProperty( $orderByProperty ): void {
+		$this->orderByProperty = $orderByProperty;
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * @return Property|null
+	 */
+	public function getOrderByProperty() {
+		return $this->orderByProperty;
+	}
+
+	/**
+	 * Get a Condition object for a Description.
+	 *
+	 * This conversion is implemented by a number of recursive functions,
+	 * and this is the main entry point for this recursion. In particular,
+	 * it resets global variables that are used for the construction.
+	 *
+	 * If property value variables should be recorded for ordering results
+	 * later on, the keys of the respective properties need to be given in
+	 * sortKeys earlier.
+	 *
+	 * @param Description $description
+	 *
+	 * @return Condition
+	 */
+	public function getConditionFrom( Description $description ) {
+		$this->variableCounter = 0;
+
+		$this->setJoinVariable( $this->resultVariable );
+		$this->setOrderByProperty( null );
+
+		$condition = $this->mapDescriptionToCondition( $description );
+
+		$this->addMissingOrderByConditions(
+			$condition
+		);
+
+		$this->addPropertyPathToMatchRedirectTargets(
+			$condition
+		);
+
+		$this->addFilterToRemoveEntitiesThatContainRedirectPredicate(
+			$condition
+		);
+
+		return $condition;
+	}
+
+	/**
+	 * Recursively create a Condition from a Description
+	 *
+	 * @param Description $description
+	 *
+	 * @return Condition
+	 */
+	public function mapDescriptionToCondition( Description $description ) {
+		return $this->dispatchingDescriptionInterpreter->interpretDescription( $description );
+	}
+
+	/**
+	 * Build the condition (WHERE) string for a given Condition.
+	 * The function also expresses the single value of
+	 * SingletonCondition objects in the condition, which may
+	 * lead to additional namespaces for serializing its URI.
+	 *
+	 * @param Condition &$condition
+	 *
+	 * @return string
+	 */
+	public function convertConditionToString( Condition &$condition ): string|array {
+		$conditionAsString = $condition->getWeakConditionString();
+
+		if ( ( $conditionAsString === '' ) && !$condition->isSafe() ) {
+			$swivtPageResource = Exporter::getInstance()->newExpNsResourceById( 'swivt', 'page' );
+			$conditionAsString = '?' . $this->resultVariable . ' ' . $swivtPageResource->getQName() . " ?url .\n";
+		}
+
+		$conditionAsString .= $condition->getCondition();
+		$conditionAsString .= $condition->getCogentConditionString();
+
+		if ( $condition instanceof SingletonCondition ) { // prepare for ASK, maybe rather use BIND?
+
+			$matchElement = $condition->matchElement;
+
+			if ( $matchElement instanceof ExpElement ) {
+				$matchElementName = TurtleSerializer::getTurtleNameForExpElement( $matchElement );
+			} else {
+				$matchElementName = $matchElement;
+			}
+
+			if ( $matchElement instanceof ExpNsResource ) {
+				$condition->namespaces[$matchElement->getNamespaceId()] = $matchElement->getNamespace();
+			}
+
+			$conditionAsString = str_replace( '?' . $this->resultVariable . ' ', "$matchElementName ", $conditionAsString );
+		}
+
+		return $conditionAsString;
+	}
+
+	/**
+	 * Create an Condition from an empty (true) description.
+	 * May still require helper conditions for ordering.
+	 *
+	 * @param string $joinVariable string name, see mapDescriptionToCondition()
+	 * @param mixed $orderByProperty mixed Property or null, see mapDescriptionToCondition()
+	 *
+	 * @return TrueCondition
+	 */
+	public function newTrueCondition( string $joinVariable, $orderByProperty ): TrueCondition {
+		$result = new TrueCondition();
+		$this->addOrderByDataForProperty( $result, $joinVariable, $orderByProperty );
+		return $result;
+	}
+
+	/**
+	 * @since 2.3
+	 *
+	 * @param DataItem|null $dataItem
+	 *
+	 * @return string|null
+	 */
+	public function tryToFindRedirectVariableForDataItem( ?DataItem $dataItem = null ): ?string {
+		if ( !$dataItem instanceof WikiPage || !$this->isSetFlag( SMW_SPARQL_QF_REDI ) ) {
+			return null;
+		}
+
+		// Maybe there is a better way to verify the "isRedirect" state other
+		// than by using the Title object
+		if ( $dataItem->getTitle() === null || !$dataItem->getTitle()->isRedirect() ) {
+			return null;
+		}
+
+		$redirectExpElement = Exporter::getInstance()->getResourceElementForWikiPage( $dataItem );
+
+		// If the resource was matched to an imported vocab then no redirect is required
+		if ( $redirectExpElement->isImported() ) {
+			return null;
+		}
+
+		$valueName = TurtleSerializer::getTurtleNameForExpElement( $redirectExpElement );
+
+		// Add unknow redirect target/variable for value
+		if ( !isset( $this->redirectByVariableReplacementMap[$valueName] ) ) {
+			$namespaces = [];
+			$namespaces[$redirectExpElement->getNamespaceId()] = $redirectExpElement->getNamespace();
+			$redirectByVariable = '?' . $this->getNextVariable( 'r' );
+
+			$this->redirectByVariableReplacementMap[$valueName] = [
+				$redirectByVariable,
+				$namespaces
+			];
+		}
+
+		// Reuse an existing variable for the value to allow to be used more than
+		// once when referring to the same property/value redirect
+		[ $redirectByVariable, $namespaces ] = $this->redirectByVariableReplacementMap[$valueName];
+
+		return $redirectByVariable;
+	}
+
+	/**
+	 * @since 2.3
+	 *
+	 * @param int $featureFlag
+	 *
+	 * @return bool
+	 */
+	public function isSetFlag( $featureFlag ): bool {
+		$canUse = true;
+
+		// Adhere additional condition
+		if ( $featureFlag === SMW_SPARQL_QF_SUBP ) {
+			$canUse = $this->engineOptions->get( 'smwgQSubpropertyDepth' ) > 0;
+		}
+
+		if ( $featureFlag === SMW_SPARQL_QF_SUBC ) {
+			$canUse = $this->engineOptions->get( 'smwgQSubcategoryDepth' ) > 0;
+		}
+
+		return $this->engineOptions->get( 'smwgSparqlQFeatures' ) === ( (int)$this->engineOptions->get( 'smwgSparqlQFeatures' ) | (int)$featureFlag ) && $canUse;
+	}
+
+	/**
+	 * Extend the given SPARQL condition by a suitable order by variable,
+	 * if an order by property is set.
+	 *
+	 * @param Condition &$sparqlCondition condition to modify
+	 * @param string $mainVariable the variable that represents the value to be ordered
+	 * @param mixed $orderByProperty DIProperty or null
+	 * @param int $diType DataItem type id if known, or DataItem::TYPE_NOTYPE to determine it from the property
+	 */
+	public function addOrderByDataForProperty(
+		Condition &$sparqlCondition,
+		string $mainVariable,
+		$orderByProperty,
+		$diType = DataItem::TYPE_NOTYPE
+	): void {
+		if ( $orderByProperty === null ) {
+			return;
+		}
+
+		if ( $diType == DataItem::TYPE_NOTYPE ) {
+			$diType = DataTypeRegistry::getInstance()->getDataItemByType( $orderByProperty->findPropertyValueType() );
+		}
+
+		$this->addOrderByData( $sparqlCondition, $mainVariable, $diType );
+	}
+
+	/**
+	 * Extend the given SPARQL condition by a suitable order by variable,
+	 * possibly adding conditions if required for the type of data.
+	 *
+	 * @param Condition &$condition condition to modify
+	 * @param string $mainVariable the variable that represents the value to be ordered
+	 * @param int $diType DataItem type id
+	 */
+	public function addOrderByData( Condition &$condition, string $mainVariable, $diType ): void {
+		if ( $diType !== DataItem::TYPE_WIKIPAGE ) {
+			$condition->orderByVariable = $mainVariable;
+			return;
+		}
+
+		$condition->orderByVariable = $mainVariable . 'sk';
+
+		if ( $this->isSetFlag( SMW_SPARQL_QF_COLLATION ) ) {
+			$skeyExpElement = Exporter::getInstance()->newExpNsResourceById( 'swivt', 'sort' );
+		} else {
+			$skeyExpElement = Exporter::getInstance()->getSpecialPropertyResource( '_SKEY' );
+		}
+
+		$weakConditions = [
+			$condition->orderByVariable => "?$mainVariable " . $skeyExpElement->getQName() . " ?{$condition->orderByVariable} .\n"
+		];
+
+		$condition->weakConditions += $weakConditions;
+	}
+
+	/**
+	 * Extend the given Condition with additional conditions to
+	 * ensure that it can be ordered by all requested properties. After
+	 * this operation, every key in sortKeys is assigned to a query
+	 * variable by $sparqlCondition->orderVariables.
+	 *
+	 * @param Condition &$condition condition to modify
+	 */
+	protected function addMissingOrderByConditions( Condition &$condition ): void {
+		foreach ( $this->sortKeys as $propertyKey => $order ) {
+
+			if ( !is_string( $propertyKey ) ) {
+				throw new RuntimeException( "Expected a string value as sortkey" );
+			}
+
+			if ( strpos( $propertyKey, " " ) !== false ) {
+				throw new RuntimeException( "Expected the canonical form of {$propertyKey} (without any whitespace)" );
+			}
+
+			if ( !array_key_exists( $propertyKey, $condition->orderVariables ) ) { // Find missing property to sort by.
+				$this->addOrderForUnknownPropertyKey( $condition, $propertyKey, $order );
+			}
+		}
+	}
+
+	private function addOrderForUnknownPropertyKey( Condition &$condition, string $propertyKey, $order ): void {
+		if ( $propertyKey === '' || $propertyKey === '#' ) { // order by result page sortkey
+
+			$this->addOrderByData(
+				$condition,
+				$this->resultVariable,
+				DataItem::TYPE_WIKIPAGE
+			);
+
+			$condition->orderVariables[$propertyKey] = $condition->orderByVariable;
+			return;
+		} elseif ( PropertyChainValue::isChained( $propertyKey ) ) { // Try to extend query.
+			$propertyChainValue = new PropertyChainValue();
+			$propertyChainValue->setUserValue( $propertyKey );
+
+			if ( !$propertyChainValue->isValid() ) {
+				return;
+			}
+
+			$lastDataItem = $propertyChainValue->getLastPropertyChainValue()->getDataItem();
+
+			if ( !$lastDataItem instanceof Property ) {
+				return;
+			}
+
+			$description = $this->descriptionFactory->newSomeProperty(
+				$lastDataItem,
+				$this->descriptionFactory->newThingDescription()
+			);
+
+			foreach ( $propertyChainValue->getPropertyChainValues() as $val ) {
+				$property = $val->getDataItem();
+				if ( $property instanceof Property ) {
+					$description = $this->descriptionFactory->newSomeProperty(
+						$property,
+						$description
+					);
+				}
+			}
+
+			// Add and replace Foo.Bar=asc with Bar=asc as we ultimately only
+			// order to the result of the last element
+			$this->sortKeys[$lastDataItem->getKey()] = $order;
+			unset( $this->sortKeys[$propertyKey] );
+			$propertyKey = $lastDataItem->getKey();
+
+			$auxDescription = $description;
+		} else {
+			$auxDescription = $this->descriptionFactory->newSomeProperty(
+				new Property( $propertyKey ),
+				$this->descriptionFactory->newThingDescription()
+			);
+		}
+
+		$this->setJoinVariable( $this->resultVariable );
+		$this->setOrderByProperty( null );
+
+		$auxCondition = $this->mapDescriptionToCondition(
+			$auxDescription
+		);
+
+		// orderVariables MUST be set for $propertyKey -- or there is a bug; let it show!
+		$condition->orderVariables[$propertyKey] = $auxCondition->orderVariables[$propertyKey];
+		$condition->weakConditions[$condition->orderVariables[$propertyKey]] = $auxCondition->getWeakConditionString() . $auxCondition->getCondition();
+		$condition->namespaces = array_merge( $condition->namespaces, $auxCondition->namespaces );
+	}
+
+	/**
+	 * @see http://www.w3.org/TR/sparql11-query/#propertypaths
+	 *
+	 * Query of:
+	 *
+	 * SELECT DISTINCT ?result WHERE {
+	 *	?result swivt:wikiPageSortKey ?resultsk .
+	 *	{
+	 *		?result property:FOO ?v1 .
+	 *		FILTER( ?v1sk >= "=BAR" )
+	 *		?v1 swivt:wikiPageSortKey ?v1sk .
+	 *	} UNION {
+	 *		?result property:FOO ?v2 .
+	 *	}
+	 * }
+	 *
+	 * results in:
+	 *
+	 * SELECT DISTINCT ?result WHERE {
+	 *	?result swivt:wikiPageSortKey ?resultsk .
+	 *	?r2 ^swivt:redirectsTo property:FOO .
+	 *	{
+	 *		?result ?r2 ?v1 .
+	 *		FILTER( ?v1sk >= "=BAR" )
+	 *		?v1 swivt:wikiPageSortKey ?v1sk .
+	 *	} UNION {
+	 *		?result ?r2 ?v3 .
+	 *	}
+	 * }
+	 */
+	private function addPropertyPathToMatchRedirectTargets( Condition &$condition ): void {
+		if ( $this->redirectByVariableReplacementMap === [] ) {
+			return;
+		}
+
+		$weakConditions = [];
+		$namespaces = [];
+
+		$rediExpElement = Exporter::getInstance()->getSpecialPropertyResource( '_REDI' );
+		$namespaces[$rediExpElement->getNamespaceId()] = $rediExpElement->getNamespace();
+
+		foreach ( $this->redirectByVariableReplacementMap as $valueName => $content ) {
+			[ $redirectByVariable, $ns ] = $content;
+			$weakConditions[] = "$redirectByVariable " . "^" . $rediExpElement->getQName() . " $valueName .\n";
+			$namespaces = array_merge( $namespaces, $ns );
+		}
+
+		$condition->namespaces = array_merge( $condition->namespaces, $namespaces );
+		$condition->weakConditions += $weakConditions;
+	}
+
+	/**
+	 * @see https://www.w3.org/TR/rdf-sparql-query/#func-bound
+	 *
+	 * Remove entities that contain a "swivt:redirectsTo" predicate
+	 */
+	private function addFilterToRemoveEntitiesThatContainRedirectPredicate( Condition &$condition ): void {
+		$rediExpElement = Exporter::getInstance()->getSpecialPropertyResource( '_REDI' );
+		$namespaces = [];
+		$namespaces[$rediExpElement->getNamespaceId()] = $rediExpElement->getNamespace();
+
+		$boundVariable = '?' . $this->getNextVariable( 'o' );
+		$cogentCondition = " OPTIONAL { ?$this->resultVariable " . $rediExpElement->getQName() . " $boundVariable } .\n FILTER ( !bound( $boundVariable ) ) .\n";
+
+		$condition->addNamespaces( $namespaces );
+		$condition->cogentConditions[$boundVariable] = $cogentCondition;
+	}
+
+}

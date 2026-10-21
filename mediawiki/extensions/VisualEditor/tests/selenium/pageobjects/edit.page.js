@@ -1,5 +1,4 @@
-'use strict';
-const Page = require( 'wdio-mediawiki/Page' );
+import Page from 'wdio-mediawiki/Page';
 
 class EditPage extends Page {
 
@@ -45,6 +44,110 @@ class EditPage extends Page {
 
 	get insertedTable() {
 		return $( 'table.ve-ce-branchNode' );
+	}
+
+	get insertedBulletList() {
+		return $( 'ul.ve-ce-branchNode' );
+	}
+
+	get insertedNumberedList() {
+		return $( 'ol.ve-ce-branchNode' );
+	}
+
+	get indentedBulletList() {
+		return $( 'ul.ve-ce-branchNode ul.ve-ce-branchNode' );
+	}
+
+	get indentedNumberedList() {
+		return $( 'ol.ve-ce-branchNode ol.ve-ce-branchNode' );
+	}
+
+	get linkMenu() {
+		return $( 'div.ve-ui-mwLinkAnnotationInspector' );
+	}
+
+	get linkInput() {
+		return $( 'div.ve-ui-mwLinkAnnotationInspector input' );
+	}
+
+	get insertedInternalLink() {
+		return $( 'a.ve-ce-mwInternalLinkAnnotation' );
+	}
+
+	get insertedExternalLink() {
+		return $( 'span.ve-ce-mwNumberedExternalLinkNode' );
+	}
+
+	get pageTitle() {
+		return $( 'h1.ve-ce-headingNode' );
+	}
+
+	get heading() {
+		return $( 'h2.ve-ce-headingNode' );
+	}
+
+	get subHeadingOne() {
+		return $( 'h3.ve-ce-headingNode' );
+	}
+
+	get subHeadingTwo() {
+		return $( 'h4.ve-ce-headingNode' );
+	}
+
+	get subHeadingThree() {
+		return $( 'h5.ve-ce-headingNode' );
+	}
+
+	get subHeadingFour() {
+		return $( 'h6.ve-ce-headingNode' );
+	}
+
+	get preformatted() {
+		return $( 'pre.ve-ce-branchNode' );
+	}
+
+	get blockQuote() {
+		return $( 'blockquote.ve-ce-branchNode' );
+	}
+
+	get bold() {
+		return $( 'b.ve-ce-boldAnnotation' );
+	}
+
+	get italic() {
+		return $( 'i.ve-ce-italicAnnotation' );
+	}
+
+	get superscript() {
+		return $( 'sup.ve-ce-superscriptAnnotation' );
+	}
+
+	get subscript() {
+		return $( 'sub.ve-ce-subscriptAnnotation' );
+	}
+
+	get code() {
+		return $( 'code.ve-ce-codeAnnotation' );
+	}
+
+	get strikethrough() {
+		return $( 's.ve-ce-strikethroughAnnotation' );
+	}
+
+	get underline() {
+		return $( 'u.ve-ce-underlineAnnotation' );
+	}
+
+	get commentMenu() {
+		return $( 'div.ve-ui-commentInspector-content' );
+	}
+
+	get commentInput() {
+		return $( 'div.ve-ui-commentInspector-content textarea' );
+	}
+
+	get insertedComment() {
+		return $( 'span.ve-ce-commentNode' );
 	}
 
 	get notices() {
@@ -115,8 +218,8 @@ class EditPage extends Page {
 		return $( '.oo-ui-tool-name-editModeVisual' );
 	}
 
-	openForEditing( title ) {
-		super.openTitle( title, { veaction: 'edit', cxhidebetapopup: 1, hidewelcomedialog: 1, vehidebetadialog: 1 } );
+	async openForEditing( title ) {
+		return super.openTitle( title, { veaction: 'edit', cxhidebetapopup: 1, hidewelcomedialog: 1, vehidebetadialog: 1 } );
 	}
 
 	activationComplete() {
@@ -124,6 +227,22 @@ class EditPage extends Page {
 			mw.hook( 've.activationComplete' ).add( () => {
 				done();
 			} );
+		} );
+	}
+
+	clearBeforeUnload() {
+		// T269566: Clear VE's beforeunload handler before navigating to avoid the
+		// 'Leave site? Changes that you made may not be saved.' popup.
+		return browser.execute( () => {
+			// eslint-disable-next-line no-undef
+			window.onbeforeunload = null;
+		} );
+	}
+
+	focusRootNode() {
+		return browser.execute( () => {
+			// eslint-disable-next-line no-undef
+			document.querySelector( '.ve-ce-rootNode[role="textbox"]' ).focus();
 		} );
 	}
 
@@ -141,4 +260,5 @@ class EditPage extends Page {
 	}
 
 }
-module.exports = new EditPage();
+
+export default new EditPage();

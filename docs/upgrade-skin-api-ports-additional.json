@@ -1,0 +1,99 @@
+[
+  {
+    "path": "mediawiki/skins/Eveskin/EveTemplate.php",
+    "before_sha256": "e2202c6a5ad858bcea2e3fc81892de227a8e5faa509aa2c5d0a41be6eb96998b",
+    "after_sha256": "c567fa2aca436388ffc93297f564d31712cf775dc4e3c6426a647e8efd40d1c4",
+    "changes": [
+      "Port removed URL protocol helper and remaining namespaced core classes"
+    ]
+  },
+  {
+    "path": "mediawiki/skins/apex/ApexTemplate.php",
+    "before_sha256": "6aa963bb3839df8526ad67eb7f48a920d4cfefd6d448c8a7391563e33d367942",
+    "after_sha256": "06541416d5c950f21780207db7e48db0911ff33045d94bcd2993c5fbdcf90041",
+    "changes": [
+      "Port removed URL protocol helper and remaining namespaced core classes"
+    ]
+  },
+  {
+    "path": "mediawiki/skins/Mask/includes/MaskTemplate.php",
+    "before_sha256": "f6fa9c78a4498f0cb9a4f2fef34c5e49af39f78c2a0d8bd848e76a2896f6aea1",
+    "after_sha256": "1b35fd72b6ff2ffde6310a64b866fbb8ce43fdce07c47dd431e39a88562a37d9",
+    "changes": [
+      "Port removed URL protocol helper and remaining namespaced core classes"
+    ]
+  },
+  {
+    "path": "mediawiki/skins/Nimbus/includes/SkinNimbus.php",
+    "before_sha256": "34f2f8d5894a9950eec4de8c1629483577502078501f9a9c72a7d269a52630ba",
+    "after_sha256": "b53cae80c44d2f0c54e766b845e1ed790ff75b4dcfa0166f019554b679f8b683",
+    "changes": [
+      "Port removed URL protocol helper and remaining namespaced core classes"
+    ]
+  },
+  {
+    "path": "mediawiki/skins/Nimbus/includes/NimbusTemplate.php",
+    "before_sha256": "ae39976248e2dfa9fc8c2264edb396620af9c0ebea3f8ad2ef3d2f11b6386009",
+    "after_sha256": "432769d643493b631cbbd0c733b75493cc284ee2fe6683a792ce857499a09379",
+    "changes": [
+      "Port removed URL protocol helper and remaining namespaced core classes"
+    ]
+  },
+  {
+    "path": "mediawiki/skins/BlueSky/includes/BlueSkyTemplate.php",
+    "before_sha256": "62ec4716fa5a4da1297fb4e8379bf9656e910f69447ca77517bd3d70feb8878d",
+    "after_sha256": "3edb79719bb452d982a242bd3304bf4148c9aca2c6ac90c798ef2423887d2b57",
+    "changes": [
+      "Port removed URL protocol helper and remaining namespaced core classes"
+    ]
+  },
+  {
+    "path": "mediawiki/skins/Monaco/includes/MonacoSidebar.php",
+    "before_sha256": "56e72fab5e7ed794f8b508d5bc882b7b9e380f9a7d9fd62b2dd3d69703722e3c",
+    "after_sha256": "c147fb57a773874909caac56ee8af231129d9bb25e8d04957848999d518a0379",
+    "changes": [
+      "Port removed URL protocol helper and remaining namespaced core classes"
+    ]
+  },
+  {
+    "path": "mediawiki/skins/Tweeki/includes/Hooks.php",
+    "before_sha256": "0265262e55e4bc1b1155bdc4e5f0ae55ccb46d25ac63a25afe7adc0ebbcbd34d",
+    "after_sha256": "0f421f5820d9425b9422f401a8bb4e71fc68feaa4fb246a2b6be3d6e71b12c9c",
+    "changes": [
+      "Port removed URL protocol helper and remaining namespaced core classes"
+    ]
+  },
+  {
+    "path": "mediawiki/skins/Gamepress/includes/GamepressSkinNavigationService.php",
+    "before_sha256": "9df5f2e172ca1dee037b1414930ec226783a27832fc4fb0199af4953fd464188",
+    "after_sha256": "df39754bc242c21acfb7846582d084f54891f9061f484ef2c81b90dfb9cf3762",
+    "changes": [
+      "Port removed URL protocol helper and remaining namespaced core classes"
+    ]
+  },
+  {
+    "path": "mediawiki/skins/Eveskin/EveTemplate.php",
+    "before_sha256": "c567fa2aca436388ffc93297f564d31712cf775dc4e3c6426a647e8efd40d1c4",
+    "after_sha256": "0f456129a5673b5e4d99787bef43f8437049baf37e0afcec7628534e50080218",
+    "changes": [
+      "User::groupHasPermission( '*', 'edit' )"
+    ]
+  },
+  {
+    "path": "mediawiki/skins/Monaco/includes/MonacoTemplate.php",
+    "before_sha256": "34c5bfaff3b9f8985875aa8731f1aec8c1e580f6123353531f48b5c6f0e1c77f",
+    "after_sha256": "78969894a1d5aa731f11c8da37656d89ab8ddc14a0ea003657580d06cb804b6c",
+    "changes": [
+      "Skin::makeSpecialUrl( 'Randompage' )",
+      "Skin::makeSpecialUrl( 'Userlogin', $returnto )"
+    ]
+  },
+  {
+    "path": "mediawiki/skins/Eveskin/EveTemplate.php",
+    "before_sha256": "0f456129a5673b5e4d99787bef43f8437049baf37e0afcec7628534e50080218",
+    "after_sha256": "03ed49eeec3c23f800a66517793fbde39e658e2628b230223b716849e2a7ea0e",
+    "changes": [
+      "Return body content; core OutputPage owns document wrapper and trailing scripts"
+    ]
+  }
+]

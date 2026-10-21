@@ -11,8 +11,9 @@ $specialPageAliases = [];
 /** English (English) */
 $specialPageAliases['en'] = [
 	'DisableOATHForUser' => [ 'DisableOATHForUser' ],
-	'OATHManage' => [ 'Manage_Two-factor_authentication', 'OATH_Manage', 'OATHManage',
-		'OATH', 'Two-factor_authentication', 'OATHAuth' ],
+	'OATHManage' => [ 'AccountSecurity', 'Manage_Two-factor_authentication', 'OATH_Manage',
+		'OATHManage', 'OATH', 'Two-factor_authentication', 'OATHAuth' ],
+	'Recover2FAForUser' => [ 'Recover2FAForUser' ],
 	'VerifyOATHForUser' => [ 'VerifyOATHForUser' ],
 ];
 
@@ -24,6 +25,13 @@ $specialPageAliases['ar'] = [
 /** Egyptian Arabic (مصرى) */
 $specialPageAliases['arz'] = [
 	'OATHManage' => [ 'اواث', 'اواث_اوث' ],
+];
+
+/** Azerbaijani (azərbaycanca) */
+$specialPageAliases['az'] = [
+	'DisableOATHForUser' => [ 'İstifadəçiÜçünOATHSöndür' ],
+	'OATHManage' => [ 'İki-faktorlu_autentifikasiya', '2FAİdarə', 'OATHİdarə' ],
+	'VerifyOATHForUser' => [ 'İstifadəçiÜçünOATHTəsdiqlə' ],
 ];
 
 /** Czech (čeština) */
@@ -86,6 +94,14 @@ $specialPageAliases['pl'] = [
 	]
 ];
 
+/** Slovak (slovenčina) */
+$specialPageAliases['sk'] = [
+	'DisableOATHForUser' => [ 'DeaktivovaťDvojfaktorovúAutentifikáciuPoužívateľa' ],
+	'OATHManage' => [ 'ZabezpečenieÚčtu', 'DvojfaktorováAutentifikácia', 'SpravovaťDvojfaktorovúAutentifikáciu' ],
+	'Recover2FAForUser' => [ 'ObnoviťDvojfaktorovúAutentifikáciuPoužívateľa' ],
+	'VerifyOATHForUser' => [ 'OveriťDvojfaktorovúAutentifikáciuPoužívateľa' ],
+];
+
 /** Serbian Cyrillic (српски (ћирилица)) */
 $specialPageAliases['sr-ec'] = [
 	'DisableOATHForUser' => [ 'Онемогућавање_двофакторске_потврде_идентитета' ],
@@ -103,22 +119,50 @@ $specialPageAliases['ur'] = [
 	'OATHManage' => [ 'حلف_نامہ' ],
 ];
 
-/** Simplified Chinese (中文（简体）‎) */
+/** Chinese (中文) */
+$specialPageAliases['zh'] = [
+	'DisableOATHForUser' => [ 'DisableOATHForUser' ],
+	'OATHManage' => [ 'AccountSecurity', 'Manage_Two-factor_authentication' ],
+	'VerifyOATHForUser' => [ 'VerifyOATHForUser' ],
+];
+
+/** Simplified Chinese (中文（简体）) */
 $specialPageAliases['zh-hans'] = [
 	'DisableOATHForUser' => [ '禁用用户OATH' ],
 	'OATHManage' => [ 'OATH验证' ],
 	'VerifyOATHForUser' => [ '验证用户OATH' ],
 ];
 
-/** Traditional Chinese (中文（繁體）‎) */
+/** Traditional Chinese (中文（繁體）) */
 $specialPageAliases['zh-hant'] = [
 	'DisableOATHForUser' => [ '停用使用者OATH' ],
 	'OATHManage' => [ 'OATH驗證', 'OATH_認證' ],
 	'VerifyOATHForUser' => [ '確認使用者OATH' ],
 ];
 
-/** Chinese (Hong Kong) (中文（香港）‎) */
+/** Chinese (Hong Kong) (中文（香港）) */
 $specialPageAliases['zh-hk'] = [
 	'DisableOATHForUser' => [ '停用用戶OATH' ],
 	'VerifyOATHForUser' => [ '確認用戶OATH' ],
+];
+
+/** Hebrew (עברית) */
+$specialPageAliases['he'] = [
+	'DisableOATHForUser' => [
+		'השבתת_אימות_דו־שלבי_של_משתמש',
+		'השבתת_אימות_דו_שלבי_של_משתמש',
+	],
+	'OATHManage' => [
+		'ניהול_אימות_דו־שלבי',
+		'ניהול_אימות_דו_שלבי',
+		'ניהול_OATH',
+		'אבטחת_חשבון',
+	],
+	'Recover2FAForUser' => [
+		'שחזור_אימות_דו־שלבי_של_משתמש',
+		'שחזור_אימות_דו_שלבי_של_משתמש',
+	],
+	'VerifyOATHForUser' => [
+		'וידוא OATH של משתמש',
+	],
 ];

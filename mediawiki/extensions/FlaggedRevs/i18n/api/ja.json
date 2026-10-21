@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Omotecho",
+			"春春眠眠"
+		]
+	},
+	"apihelp-query+configuredpages-param-autoreview": "査読/自動査読の制限レベル。",
+	"apihelp-query+unreviewedpages-example-1": "未査読ページの一覧の閲覧",
+	"apihelp-stabilize-param-expiry-protect": "設定保護が解除されました。",
+	"apihelp-stabilize-param-review": "このページを査読する。",
+	"apihelp-stabilize-param-protectlevel": "査読保護のレベル。",
+	"apihelp-stabilize-example-general": "[[Test]]を設定して既定で安定版のリビジョンを表示する",
+	"apihelp-stabilize-example-protect": "[[Test]]から査読保護を除去"
+}

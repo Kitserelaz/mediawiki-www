@@ -1,0 +1,506 @@
+<?php
+
+namespace SMW\Query;
+
+use SMW\DataItems\WikiPage;
+use SMW\Formatters\Infolink;
+use SMW\Query\Result\FieldItemFinder;
+use SMW\Query\Result\FilterMap;
+use SMW\Query\Result\ItemFetcher;
+use SMW\Query\Result\ItemJournal;
+use SMW\Query\Result\ResultArray;
+use SMW\SerializerFactory;
+use SMW\Services\ServicesFactory;
+use SMW\Store;
+
+/**
+ * Objects of this class encapsulate the result of a query in SMW. They
+ * provide access to the query result and printed data, and to some
+ * relevant query parameters that were used.
+ *
+ * Standard access is provided through the iterator function getNext(),
+ * which returns an array ("table row") of ResultArray objects ("table cells").
+ * It is also possible to access the set of result pages directly using
+ * getResults(). This is useful for printers that disregard printouts and
+ * only are interested in the actual list of pages.
+ *
+ * @license GPL-2.0-or-later
+ * @since 2.5
+ *
+ * @author Markus Krötzsch
+ * @author Jeroen De Dauw < jeroendedauw@gmail.com >
+ */
+class QueryResult {
+
+	/**
+	 * When generating a hash just iterates over available subjects, not
+	 * the entire object structure.
+	 */
+	const QUICK_HASH = 'quick';
+
+	/**
+	 * Array of WikiPage objects that are the basis for this result
+	 *
+	 * @var WikiPage[]
+	 */
+	protected array $mResults;
+
+	/**
+	 * Array of \SMW\Query\PrintRequest objects, indexed by their natural hash keys
+	 *
+	 * @var PrintRequest[]
+	 */
+	protected array $mPrintRequests;
+
+	/**
+	 * The query object for which this is a result, must be set on create and is the source of
+	 * data needed to create further result links.
+	 */
+	protected Query $mQuery;
+
+	/**
+	 * The Store object used to retrieve further data on demand.
+	 */
+	protected Store $mStore;
+
+	/**
+	 * Holds a value that belongs to a count query result
+	 */
+	private ?int $countValue = null;
+
+	/**
+	 * Indicates whether results have been retrieved from cache or not
+	 */
+	private bool $isFromCache = false;
+
+	private ItemJournal $itemJournal;
+
+	private FieldItemFinder $fieldItemFinder;
+
+	/**
+	 * @var int
+	 */
+	private $serializer_version = 2;
+
+	private ?ScoreSet $scoreSet = null;
+
+	private ?Excerpts $excerpts = null;
+
+	private FilterMap $filterMap;
+
+	/**
+	 * Opaque next-page cursor token, set by `QueryEngine` when the query
+	 * was run in keyset cursor mode and there are further results. Stays
+	 * `null` for legacy offset-mode queries and for cursor-mode queries
+	 * on the final page.
+	 *
+	 * @since 7.0.0
+	 */
+	private ?string $nextCursor = null;
+
+	public function __construct(
+		array $printRequests,
+		Query $query,
+		array $results,
+		Store $store,
+		protected $mFurtherResults = false,
+	) {
+		$this->mResults = $results;
+		reset( $this->mResults );
+		$this->mPrintRequests = $printRequests;
+		$this->mQuery = $query;
+		$this->mStore = $store;
+		$this->itemJournal = new ItemJournal();
+
+		$itemFetcher = new ItemFetcher( $store, $this->mResults );
+
+		// Used temporarily to allow switching back while testing
+		// Read via Settings (not $GLOBALS directly) so the value goes through
+		// LegacyConstantNormalizer's array-of-strings normalization (#6586).
+		$itemFetcher->setPrefetchFlag(
+			ServicesFactory::getInstance()->getSettings()->get( 'smwgExperimentalFeatures' )
+		);
+
+		// Init the instance here so the value cache is shared and hereby avoids
+		// a static declaration
+		$this->fieldItemFinder = new FieldItemFinder(
+			$store,
+			$itemFetcher
+		);
+
+		$this->filterMap = new FilterMap( $this->mStore, $this->mResults );
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @return FilterMap
+	 */
+	public function getFilterMap(): FilterMap {
+		return $this->filterMap;
+	}
+
+	/**
+	 * @since 3.1
+	 *
+	 * @return FieldItemFinder
+	 */
+	public function getFieldItemFinder(): FieldItemFinder {
+		return $this->fieldItemFinder;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param ItemJournal $itemJournal
+	 */
+	public function setItemJournal( ItemJournal $itemJournal ): void {
+		$this->itemJournal = $itemJournal;
+	}
+
+	/**
+	 * @since  2.4
+	 *
+	 * @return ItemJournal
+	 */
+	public function getItemJournal(): ItemJournal {
+		return $this->itemJournal;
+	}
+
+	/**
+	 * @since  2.4
+	 *
+	 * @param bool $isFromCache
+	 */
+	public function setFromCache( $isFromCache ): void {
+		$this->isFromCache = (bool)$isFromCache;
+	}
+
+	/**
+	 * Only available by some stores that support the computation of scores.
+	 *
+	 * @since 3.0
+	 *
+	 * @param ScoreSet $scoreSet
+	 */
+	public function setScoreSet( ScoreSet $scoreSet ): void {
+		$this->scoreSet = $scoreSet;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @return ScoreSet|null
+	 */
+	public function getScoreSet(): ?ScoreSet {
+		return $this->scoreSet;
+	}
+
+	/**
+	 * Only available by some stores that support the retrieval of excerpts.
+	 *
+	 * @since 3.0
+	 *
+	 * @param Excerpts $excerpts
+	 */
+	public function setExcerpts( Excerpts $excerpts ): void {
+		$this->excerpts = $excerpts;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @return Excerpts|null
+	 */
+	public function getExcerpts(): ?Excerpts {
+		return $this->excerpts;
+	}
+
+	/**
+	 * @since  2.4
+	 *
+	 * @return bool
+	 */
+	public function isFromCache(): bool {
+		return $this->isFromCache;
+	}
+
+	/**
+	 * Get the Store object that this result is based on.
+	 *
+	 * @return Store
+	 */
+	public function getStore(): Store {
+		return $this->mStore;
+	}
+
+	/**
+	 * Return the next result row as an array of ResultArray objects, and
+	 * advance the internal pointer.
+	 *
+	 * @return ResultArray[]|false
+	 */
+	public function getNext(): false|array {
+		$page = current( $this->mResults );
+		next( $this->mResults );
+
+		if ( $page === false ) {
+			return false;
+		}
+
+		$row = [];
+
+		foreach ( $this->mPrintRequests as $pr ) {
+			$row[] = $this->newResultArray( $page, $pr );
+		}
+
+		return $row;
+	}
+
+	private function newResultArray( WikiPage $page, PrintRequest $pr ): ResultArray {
+		$resultArray = ResultArray::factory( $page, $pr, $this );
+		$resultArray->setItemJournal( $this->itemJournal );
+		return $resultArray;
+	}
+
+	/**
+	 * Return number of available results.
+	 *
+	 * @return int
+	 */
+	public function getCount(): int {
+		return count( $this->mResults );
+	}
+
+	/**
+	 * Return an array of WikiPage objects that make up the
+	 * results stored in this object.
+	 *
+	 * @return WikiPage[]
+	 */
+	public function getResults(): array {
+		return $this->mResults;
+	}
+
+	/**
+	 * @since 2.3
+	 */
+	public function reset(): WikiPage|false {
+		return reset( $this->mResults );
+	}
+
+	/**
+	 * Returns the query object of the current result set
+	 *
+	 * @since 1.8
+	 *
+	 * @return Query
+	 */
+	public function getQuery(): Query {
+		return $this->mQuery;
+	}
+
+	/**
+	 * Return the number of columns of result values that each row
+	 * in this result set contains.
+	 *
+	 * @return int
+	 */
+	public function getColumnCount(): int {
+		return count( $this->mPrintRequests );
+	}
+
+	/**
+	 * Return array of print requests (needed for printout since they contain
+	 * property labels).
+	 *
+	 * @return PrintRequest[]
+	 */
+	public function getPrintRequests(): array {
+		return $this->mPrintRequests;
+	}
+
+	/**
+	 * Returns the query string defining the conditions for the entities to be
+	 * returned.
+	 *
+	 * @return string
+	 */
+	public function getQueryString() {
+		return $this->mQuery->getQueryString();
+	}
+
+	/**
+	 * Would there be more query results that were not shown due to a limit?
+	 *
+	 * @return bool
+	 */
+	public function hasFurtherResults(): bool {
+		return $this->mFurtherResults;
+	}
+
+	/**
+	 * Set the opaque next-page cursor token. Called by `QueryEngine`
+	 * when the query was run in keyset cursor mode and there are
+	 * further results to fetch.
+	 *
+	 * @since 7.0.0
+	 */
+	public function setNextCursor( string $token ): void {
+		$this->nextCursor = $token;
+	}
+
+	/**
+	 * The opaque next-page cursor token, or `null` when not applicable
+	 * (legacy offset-mode, or cursor mode but on the final page).
+	 * Consumers (the Ask API renderer) surface this as
+	 * `query-continue-cursor` in the response.
+	 *
+	 * @since 7.0.0
+	 */
+	public function getNextCursor(): ?string {
+		return $this->nextCursor;
+	}
+
+	/**
+	 * @since  2.0
+	 *
+	 * @param int|string $countValue
+	 */
+	public function setCountValue( $countValue ): void {
+		$this->countValue = (int)$countValue;
+	}
+
+	/**
+	 * @since  2.0
+	 *
+	 * @return int|null
+	 */
+	public function getCountValue(): ?int {
+		return $this->countValue;
+	}
+
+	/**
+	 * Return error array, possibly empty.
+	 *
+	 * @return array
+	 */
+	public function getErrors(): array {
+		// Just use query errors, as no errors generated in this class at the moment.
+		return $this->mQuery->getErrors();
+	}
+
+	/**
+	 * Adds an array of erros.
+	 *
+	 * @param array $errors
+	 */
+	public function addErrors( array $errors ): void {
+		$this->mQuery->addErrors( $errors );
+	}
+
+	/**
+	 * Create an Infolink object representing a link to further query results.
+	 * This link can then be serialised or extended by further params first.
+	 * The optional $caption can be used to set the caption of the link (though this
+	 * can also be changed afterwards with Infolink::setCaption()). If empty, the
+	 * message 'smw_iq_moreresults' is used as a caption.
+	 *
+	 * @param string|false $caption
+	 *
+	 * @return Infolink
+	 */
+	public function getQueryLink( $caption = false ): Infolink {
+		$link = QueryLinker::get( $this->mQuery );
+
+		$link->setCaption( $caption );
+		$link->setParameter( $this->mQuery->getOffset() + count( $this->mResults ), 'offset' );
+
+		return $link;
+	}
+
+	/**
+	 * @private
+	 *
+	 * @since 3.0
+	 */
+	public function setSerializerVersion( $version ): void {
+		$this->serializer_version = $version;
+	}
+
+	/**
+	 * @see DISerializer::getSerializedQueryResult
+	 * @since 1.7
+	 * @return array
+	 */
+	public function serializeToArray(): array {
+		$serializerFactory = new SerializerFactory( $this->mStore );
+		$serializer = $serializerFactory->newQueryResultSerializer();
+		$serializer->version( $this->serializer_version );
+
+		$serialized = $serializer->serialize( $this );
+		reset( $this->mResults );
+
+		return $serialized;
+	}
+
+	/**
+	 * Returns a serialized QueryResult object with additional meta data
+	 *
+	 * This methods extends the serializeToArray() for additional meta
+	 * that are useful when handling data via the api
+	 *
+	 * @note should be used instead of QueryResult::serializeToArray()
+	 * as this method contains additional informaion
+	 *
+	 * @since 1.9
+	 *
+	 * @return array
+	 */
+	public function toArray(): array {
+		$time = microtime( true );
+
+		// @note micro optimization: We call getSerializedQueryResult()
+		// only once and create the hash here instead of calling getHash()
+		// to avoid getSerializedQueryResult() being called again
+		// @note count + offset equals total therefore we deploy both values
+		$serializeArray = $this->serializeToArray();
+
+		return array_merge( $serializeArray, [
+			'meta' => [
+				'hash'   => md5( json_encode( $serializeArray ) ),
+				'count'  => $this->getCount(),
+				'offset' => $this->mQuery->getOffset(),
+				'source' => $this->mQuery->getQuerySource(),
+				'time'   => number_format( ( microtime( true ) - $time ), 6, '.', '' )
+				]
+			]
+		);
+	}
+
+	/**
+	 * Returns result hash value
+	 *
+	 * @since 1.9
+	 *
+	 * @return string
+	 */
+	public function getHash( $type = null ): string {
+		// Just iterate over available subjects to create a "quick" hash given
+		// that resolving the entire object tree is costly due to recursive
+		// processing of all data items including its printouts
+		if ( $type === self::QUICK_HASH ) {
+			$hash = [];
+
+			foreach ( $this->mResults as $dataItem ) {
+				$hash[] = $dataItem->getHash();
+			}
+
+			reset( $this->mResults );
+			return 'q:' . md5( json_encode( $hash ) );
+		}
+
+		return md5( json_encode( $this->serializeToArray() ) );
+	}
+
+}

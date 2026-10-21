@@ -1,0 +1,16 @@
+{
+	"@metadata": {
+		"authors": [
+			"Elisardojm",
+			"Toliño"
+		]
+	},
+	"skinname-metrolook": "Metrolook",
+	"metrolook-desc": "Metrolook é unha aparencia derivada da aparencia Vector e [https://en.wikipedia.org/wiki/Metro_(design_language) inspirada en Metro]",
+	"metrolook.css": "/* O CSS colocado aquí afectará aos usuarios da aparencia Metrolook */",
+	"metrolook.js": "/* O código JavaScript colocado aquí cargarase para os usuarios que utilicen a aparencia Metrolook */",
+	"skinmetrolook-collapsiblenav-preference": "Permitir pregar os elementos da barra lateral na aparencia Metrolook",
+	"metrolook-guest": "Invitado",
+	"metrolook-jump-to-navigation": "Saltar á navegación",
+	"metrolook-jump-to-search": "Saltar á procura"
+}

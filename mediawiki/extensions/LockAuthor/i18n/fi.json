@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Pyscowicz",
+			"Veikk0.ma"
+		]
+	},
+	"lockauthor-desc": "Estää käyttäjiä muokkaamasta sivuja joita he eivät ole luoneet",
+	"action-editall": "muokata kaikkia sivuja",
+	"right-editall": "Muokata kaikkia sivuja"
+}

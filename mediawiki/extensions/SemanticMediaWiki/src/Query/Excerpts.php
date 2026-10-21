@@ -1,0 +1,100 @@
+<?php
+
+namespace SMW\Query;
+
+use SMW\DataItems\WikiPage;
+
+/**
+ * Record excerpts for query results that support an excerpt retrieval function.
+ *
+ * @license GPL-2.0-or-later
+ * @since 3.0
+ *
+ * @author mwjames
+ */
+class Excerpts {
+
+	/**
+	 * @var array
+	 */
+	protected $excerpts = [];
+
+	/**
+	 * @var bool
+	 */
+	protected $noHighlight = false;
+
+	/**
+	 * @var bool
+	 */
+	protected $hasHighlight = false;
+
+	/**
+	 * @var bool
+	 */
+	protected $stripTags = true;
+
+	/**
+	 * @since 3.0
+	 */
+	public function noHighlight(): void {
+		$this->noHighlight = true;
+	}
+
+	/**
+	 * @note The hash is expected to be equivalent to WikiPage::getHash to
+	 * easily match result subjects available in an QueryResult instance.
+	 *
+	 * @since 3.0
+	 *
+	 * @param WikiPage|string $hash
+	 * @param string|int $excerpt
+	 */
+	public function addExcerpt( $hash, $excerpt ): void {
+		if ( $hash instanceof WikiPage ) {
+			$hash = $hash->getHash();
+		}
+
+		$this->excerpts[] = [ $hash, $excerpt ];
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param WikiPage|string $hash
+	 *
+	 * @return string|int|false
+	 */
+	public function getExcerpt( $hash ) {
+		if ( $hash instanceof WikiPage ) {
+			$hash = $hash->getHash();
+		}
+
+		foreach ( $this->excerpts as $map ) {
+			if ( $map[0] === $hash ) {
+				return $map[1];
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @return array
+	 */
+	public function getExcerpts(): array {
+		return $this->excerpts;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @return bool
+	 */
+	public function hasHighlight(): bool {
+		return $this->hasHighlight;
+	}
+
+}

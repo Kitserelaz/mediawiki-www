@@ -1,21 +1,14 @@
 <?php
 
-namespace MediaWiki\CheckUser\Investigate\Utilities;
+namespace MediaWiki\Extension\CheckUser\Investigate\Utilities;
 
 use MediaWiki\Extension\EventLogging\EventLogging;
 use MediaWiki\Registration\ExtensionRegistry;
-use Wikimedia\Timestamp\ConvertibleTimestamp;
 
 class EventLogger {
-	private ExtensionRegistry $extensionRegistry;
-
-	/**
-	 * @param ExtensionRegistry $extensionRegistry
-	 */
 	public function __construct(
-		ExtensionRegistry $extensionRegistry
+		private readonly ExtensionRegistry $extensionRegistry,
 	) {
-		$this->extensionRegistry = $extensionRegistry;
 	}
 
 	/**
@@ -36,15 +29,5 @@ class EventLogger {
 				]
 			);
 		}
-	}
-
-	/**
-	 * Get a timestamp in milliseconds.
-	 *
-	 * @return int
-	 */
-	public function getTime(): int {
-		// phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
-		return (int)round( @ConvertibleTimestamp::microtime() * 1000 );
 	}
 }

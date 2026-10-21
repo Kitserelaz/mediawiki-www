@@ -1,68 +1,151 @@
 const {
+	Compartment,
+	Config,
+	Diagnostic,
+	EditorSelection,
 	EditorState,
 	EditorView,
 	Extension,
-	Compartment,
-	KeyBinding,
+	LanguageSupport,
+	LintSource,
+	Prec,
+	StateEffect,
 	ViewUpdate,
-	bracketMatching,
+	autocompletion,
+	closeBrackets,
 	crosshairCursor,
-	defaultKeymap,
+	defaultHighlightStyle,
+	deleteCharBackwardStrict,
 	drawSelection,
+	dropCursor,
+	foldGutter,
+	foldKeymap,
+	highlightActiveLine,
+	highlightSelectionMatches,
 	highlightSpecialChars,
+	highlightTrailingWhitespace,
+	highlightWhitespace,
 	history,
-	historyKeymap,
+	indentOnInput,
+	indentUnit,
+	insertTab,
+	insertNewlineKeepIndent,
 	keymap,
 	lineNumbers,
+	linter,
+	oneDark,
 	rectangularSelection,
-	redo
-} = require( 'ext.CodeMirror.v6.lib' );
+	searchPanelOpen,
+	syntaxHighlighting
+} = require( 'ext.CodeMirror.lib' );
+const CodeMirrorLint = require( './codemirror.lint.js' );
 const CodeMirrorTextSelection = require( './codemirror.textSelection.js' );
 const CodeMirrorSearch = require( './codemirror.search.js' );
 const CodeMirrorGotoLine = require( './codemirror.gotoLine.js' );
+const CodeMirrorPreferences = require( './codemirror.preferences.js' );
+const CodeMirrorKeymap = require( './codemirror.keymap.js' );
+const CodeMirrorExtensionRegistry = require( './codemirror.extensionRegistry.js' );
+const bracketMatching = require( './codemirror.matchbrackets.js' );
 require( './ext.CodeMirror.data.js' );
 
 /**
  * Interface for the CodeMirror editor.
  *
+ * This class is a wrapper around the {@link https://codemirror.net/ CodeMirror library},
+ * providing a simplified interface for creating and managing CodeMirror instances in MediaWiki.
+ *
+ * ## Lifecycle
+ *
+ * * {@link CodeMirror#initialize initialize}
+ * * {@link CodeMirror#activate activate}
+ * * {@link CodeMirror#toggle toggle}
+ * * {@link CodeMirror#deactivate deactivate}
+ * * {@link CodeMirror#destroy destroy}
+ *
  * @example
- * mw.loader.using( [
- *   'ext.CodeMirror.v6',
- *   'ext.CodeMirror.v6.mode.mediawiki'
- * ] ).then( ( require ) => {
- *   const CodeMirror = require( 'ext.CodeMirror.v6' );
- *   const mediawikiLang = require( 'ext.CodeMirror.v6.mode.mediawiki' );
- *   const cm = new CodeMirror( myTextarea );
- *   cm.initialize( [ cm.defaultExtensions, mediawikiLang() ] );
+ * // Creating a new CodeMirror instance.
+ * const require = await mw.loader.using( [ 'ext.CodeMirror', 'ext.CodeMirror.mode.mediawiki' ] );
+ * const CodeMirror = require( 'ext.CodeMirror' );
+ * const { mediawiki } = require( 'ext.CodeMirror.mode.mediawiki' );
+ * const cm = new CodeMirror( myTextarea, mediawiki() );
+ * cm.initialize();
+ *
+ * // Integrating with an existing CodeMirror instance.
+ * mw.hook( 'ext.CodeMirror.ready', ( cm ) => {
+ *   cm.applyExtension( myExtension );
  * } );
  */
 class CodeMirror {
 	/**
 	 * Instantiate a new CodeMirror instance.
 	 *
-	 * @param {HTMLTextAreaElement|jQuery|string|ve.ui.Surface} textarea Textarea to
-	 *   add syntax highlighting to.
+	 * @param {HTMLTextAreaElement|jQuery|string} textarea Textarea to add syntax highlighting to.
+	 * @param {LanguageSupport} [langSupport] Language support and its extension(s).
 	 * @constructor
+	 * @stable to call and extend
 	 */
-	constructor( textarea ) {
-		if ( textarea.constructor.name === 'VeUiMWWikitextSurface' ) {
-			/**
-			 * The VisualEditor surface CodeMirror is bound to.
-			 *
-			 * @type {ve.ui.Surface}
-			 */
-			this.surface = textarea;
-
-			// Let the content editable mimic the textarea.
-			// eslint-disable-next-line no-jquery/variable-pattern
-			textarea = this.surface.getView().$attachedRootNode;
-		}
+	constructor( textarea, langSupport = [] ) {
 		/**
 		 * The textarea that CodeMirror is bound to.
 		 *
+		 * @type {HTMLTextAreaElement}
+		 */
+		this.textarea = $( textarea )[ 0 ];
+		/**
+		 * jQuery instance of the textarea for use with WikiEditor and jQuery plugins.
+		 *
 		 * @type {jQuery}
 		 */
-		this.$textarea = $( textarea );
+		this.$textarea = $( this.textarea );
+		/**
+		 * The VisualEditor surface CodeMirror is bound to.
+		 *
+		 * @type {ve.ui.Surface|null}
+		 */
+		this.surface = null;
+		/**
+		 * The function to lint the code in the editor using a web worker.
+		 * It can be disabled by setting `this.lintSource.disabled = true`.
+		 *
+		 * @example
+		 * mw.hook( 'ext.CodeMirror.ready' ).add( ( cm ) => {
+		 *   if ( cm.lintSource ) {
+		 *     cm.lintSource.disabled = true;
+		 *   }
+		 * } );
+		 *
+		 * @type {LintSource|undefined}
+		 */
+		this.lintSource = langSupport.lintSource;
+		/**
+		 * The function to lint the code in the editor using a MediaWiki API.
+		 * It can be disabled by setting `this.lintApi.disabled = true`.
+		 *
+		 * @example
+		 * mw.hook( 'ext.CodeMirror.ready' ).add( ( cm ) => {
+		 *   if ( cm.lintApi ) {
+		 *     cm.lintApi.disabled = true;
+		 *   }
+		 * } );
+		 *
+		 *
+		 * @type {LintSource|undefined}
+		 */
+		this.lintApi = langSupport.lintApi;
+		/**
+		 * The extended configuration for bracket matching.
+		 *
+		 * @type {Config|undefined}
+		 * @private
+		 */
+		// eslint-disable-next-line no-underscore-dangle
+		this._bracketMatchingConfig = langSupport.bracketMatchingConfig;
+		/**
+		 * Language support and its extension(s).
+		 *
+		 * @type {LanguageSupport}
+		 */
+		this.langExtension = langSupport;
 		/**
 		 * The editor user interface.
 		 *
@@ -70,25 +153,39 @@ class CodeMirror {
 		 */
 		this.view = null;
 		/**
-		 * The editor state.
+		 * Whether the CodeMirror instance is active.
 		 *
-		 * @type {EditorState}
+		 * @type {boolean}
 		 */
-		this.state = null;
+		this.isActive = false;
+		/**
+		 * The .ext-codemirror-wrapper container. This houses both
+		 * the original textarea and the CodeMirror editor.
+		 *
+		 * @type {HTMLDivElement}
+		 */
+		this.container = null;
 		/**
 		 * Whether the textarea is read-only.
 		 *
 		 * @type {boolean}
 		 */
-		this.readOnly = this.surface ?
-			this.surface.getModel().isReadOnly() :
-			this.$textarea.prop( 'readonly' );
+		this.readOnly = this.textarea.readOnly;
 		/**
-		 * The [edit recovery]{@link https://www.mediawiki.org/wiki/Manual:Edit_Recovery} handler.
+		 * The CodeMirror "mode" (language).
+		 *
+		 * @type {string}
+		 */
+		this.mode = langSupport && langSupport.language ?
+			langSupport.language.name :
+			'mediawiki';
+		/**
+		 * The form `submit` event handler.
 		 *
 		 * @type {Function|null}
+		 * @private
 		 */
-		this.editRecoveryHandler = null;
+		this.formSubmitEventHandler = null;
 		/**
 		 * jQuery.textSelection overrides for CodeMirror.
 		 *
@@ -96,52 +193,149 @@ class CodeMirror {
 		 */
 		this.textSelection = null;
 		/**
-		 * Compartment for the language direction Extension.
+		 * CodeMirror key mappings and help dialog.
+		 *
+		 * @type {CodeMirrorKeymap}
+		 */
+		this.keymap = new CodeMirrorKeymap();
+		/**
+		 * Registry of CodeMirror {@link Extension Extensions}.
+		 *
+		 * @type {CodeMirrorExtensionRegistry}
+		 */
+		this.extensionRegistry = new CodeMirrorExtensionRegistry( {
+			// Empty extension; We just want the toggleable preference.
+			autofocus: [],
+			bracketMatching: this.bracketMatchingExtension,
+			closeBrackets: this.closeBracketsExtension,
+			lineNumbering: this.lineNumberingExtension,
+			lineWrapping: this.lineWrappingExtension,
+			activeLine: this.activeLineExtension,
+			specialChars: this.specialCharsExtension,
+			whitespace: this.whitespaceExtension,
+			trailingWhitespace: this.trailingWhitespaceExtension
+		}, this.constructor.name === 'CodeMirrorVisualEditor' );
+		/**
+		 * Compartment to control the direction of the editor.
 		 *
 		 * @type {Compartment}
 		 */
 		this.dirCompartment = new Compartment();
 		/**
-		 * Compartment for the special characters Extension.
+		 * The CodeMirror preferences panel.
 		 *
-		 * @type {Compartment}
+		 * @type {CodeMirrorPreferences}
 		 */
-		this.specialCharsCompartment = new Compartment();
+		this.preferences = new CodeMirrorPreferences(
+			this.extensionRegistry,
+			this.mode,
+			this.keymap,
+			this.constructor.name === 'CodeMirrorVisualEditor'
+		);
+		/**
+		 * The CodeMirror search panel.
+		 *
+		 * @type {CodeMirrorSearch}
+		 */
+		this.search = new CodeMirrorSearch( this.keymap );
+		/**
+		 * The go-to line panel.
+		 *
+		 * @type {CodeMirrorGotoLine}
+		 */
+		this.gotoLine = new CodeMirrorGotoLine();
+		/**
+		 * Custom linters added via {@link CodeMirror#applyLinter}.
+		 *
+		 * @type {Extension}
+		 * @private
+		 */
+		this.customLinters = [];
+		/**
+		 * Mapping of mw.hook handlers added by CodeMirror.
+		 * Handlers added here will be removed during deactivation.
+		 *
+		 * @type {Object<Set<Function>>}
+		 * @private
+		 */
+		this.hooks = {};
+		/**
+		 * State of the textarea's selection and scroll before CodeMirror is initialized.
+		 * This is used for restoration during the initial call to `activate()`, since
+		 * initialization does DOM manipulation that can cause the scroll position to be lost.
+		 *
+		 * @type {Object}
+		 * @private
+		 */
+		this.preInitSelection = {
+			selectionStart: null,
+			selectionEnd: null,
+			scrollTop: null
+		};
+	}
+
+	/**
+	 * The extended configuration for bracket matching.
+	 * Setting this will update the
+	 * {@link CodeMirror#bracketMatchingExtension bracket matching extension}
+	 *
+	 * @type {Config|undefined}
+	 *
+	 * @example
+	 * // Highlight matching angle brackets in addition to the default.
+	 * mw.hook( 'ext.CodeMirror.ready' ).add( ( cm ) => {
+	 *   const config = cm.bracketMatchingConfig || {};
+	 *   config.brackets = ( config.brackets || '()[]{}' ) + '<>';
+	 *   cm.bracketMatchingConfig = config;
+	 * } );
+	 */
+	get bracketMatchingConfig() {
+		return this._bracketMatchingConfig; // eslint-disable-line no-underscore-dangle
+	}
+
+	set bracketMatchingConfig( config ) {
+		this._bracketMatchingConfig = config; // eslint-disable-line no-underscore-dangle
+		if ( this.extensionRegistry.isRegistered( 'bracketMatching', this.view ) ) {
+			this.extensionRegistry.extensions.bracketMatching = this.bracketMatchingExtension;
+			if ( this.extensionRegistry.isEnabled( 'bracketMatching', this.view ) ) {
+				this.extensionRegistry.toggle( 'bracketMatching', this.view, true );
+			}
+		}
 	}
 
 	/**
 	 * Default extensions used by CodeMirror.
 	 * Extensions here should be applicable to all theoretical uses of CodeMirror in MediaWiki.
+	 * This getter can be overridden to apply additional extensions before
+	 * {@link CodeMirror#initialize initialization}. To apply a new extension after initialization,
+	 * use {@link CodeMirror#applyExtension applyExtension()}, or through
+	 * {@link CodeMirrorExtensionRegistry} using
+	 * {@link CodeMirrorExtensionRegistry#register register()} if it needs
+	 * to be reconfigured (such as toggling on and off).
 	 *
 	 * @see https://codemirror.net/docs/ref/#state.Extension
 	 * @type {Extension|Extension[]}
-	 * @stable to call
+	 * @stable to call and override
 	 */
 	get defaultExtensions() {
 		const extensions = [
 			this.contentAttributesExtension,
+			this.editorAttributesExtension,
 			this.phrasesExtension,
-			this.specialCharsCompartment.of( this.specialCharsExtension ),
 			this.heightExtension,
 			this.updateExtension,
-			this.bracketMatchingExtension,
 			this.dirExtension,
 			this.searchExtension,
+			this.domEventHandlersExtension,
+			this.preferences.extension,
+			this.keymap.extension,
 			EditorState.readOnly.of( this.readOnly ),
-			EditorView.domEventHandlers( {
-				blur: () => {
-					this.$textarea[ 0 ].dispatchEvent( new Event( 'blur' ) );
-				},
-				focus: () => {
-					this.$textarea[ 0 ].dispatchEvent( new Event( 'focus' ) );
-				}
-			} ),
-			EditorView.lineWrapping,
-			keymap.of( defaultKeymap ),
 			EditorState.allowMultipleSelections.of( true ),
 			drawSelection(),
 			rectangularSelection(),
-			crosshairCursor()
+			crosshairCursor(),
+			dropCursor(),
+			this.langExtension
 		];
 
 		// Add extensions relevant to editing (not read-only).
@@ -152,49 +346,157 @@ class CodeMirror {
 				}
 			} ) );
 			extensions.push( history() );
-			extensions.push( keymap.of(
-				historyKeymap.concat( /** @type {KeyBinding} */ {
-					win: 'Ctrl-Shift-z',
-					run: redo,
-					preventDefault: true
-				} )
-			) );
+		} else {
+			// Prevent transactions that make changes to the document.
+			extensions.push( EditorState.transactionFilter.of( ( tr ) => {
+				if ( tr.docChanged ) {
+					return [];
+				}
+				return tr;
+			} ) );
 		}
 
-		// Set to [] to disable everywhere, or null to enable everywhere
-		const namespaces = mw.config.get( 'extCodeMirrorConfig' ).lineNumberingNamespaces;
-		if ( !namespaces || namespaces.includes( mw.config.get( 'wgNamespaceNumber' ) ) ) {
-			extensions.push( lineNumbers() );
+		if ( this.mode === 'mediawiki' ) {
+			extensions.push(
+				Prec.high( keymap.of( [
+					{ key: 'Enter', run: insertNewlineKeepIndent, shift: insertNewlineKeepIndent },
+					{ key: 'Backspace', run: deleteCharBackwardStrict, preventDefault: true }
+				] ) )
+			);
+		} else {
+			extensions.push(
+				syntaxHighlighting( defaultHighlightStyle, { fallback: true } ),
+				highlightSelectionMatches( { wholeWords: true } ),
+				indentUnit.of( '\t' ),
+				indentOnInput(),
+				// Make the [Tab] key inserts a tab character when no text is selected,
+				// or indent the selected lines for languages other than MediaWiki.
+				keymap.of( [ { key: 'Tab', run: insertTab } ] ),
+				keymap.of( foldKeymap )
+			);
 		}
 
 		return extensions;
 	}
 
 	/**
+	 * Extension to bubble some DOM events to the original textarea.
+	 *
+	 * The CodeMirror events are natively fired on the {@link EditorView}'s
+	 * `.cm-content` element, which is accessible through
+	 * {@link CodeMirror#view `view.contentDOM`}. The `scroll` event is fired on
+	 * the `.cm-scroller` element, which is accessible through
+	 * {@link CodeMirror#view `view.scrollDOM`}.
+	 *
+	 * @type {Extension}
+	 * @protected
+	 */
+	get domEventHandlersExtension() {
+		return EditorView.domEventHandlers( {
+			blur: () => {
+				this.textarea.dispatchEvent( new FocusEvent( 'blur' ) );
+			},
+			focus: () => {
+				this.textarea.dispatchEvent( new FocusEvent( 'focus' ) );
+			},
+			keyup: ( event ) => {
+				this.textarea.dispatchEvent( new KeyboardEvent( 'keyup', event ) );
+			},
+			keydown: ( event ) => {
+				// Temporarily restrict keydown event bubbling to wikitext (T401271).
+				// TODO: Fix the core issue in WikiEditor or remove WikiEditor integration entirely.
+				if ( this.mode === 'mediawiki' ) {
+					this.textarea.dispatchEvent( new KeyboardEvent( 'keydown', event ) );
+				}
+			},
+			scroll: ( event ) => {
+				if ( event.target === this.view.scrollDOM ) {
+					this.textarea.dispatchEvent( new Event( 'scroll' ) );
+				}
+			}
+		} );
+	}
+
+	/**
+	 * Extension for highlighting the active line.
+	 *
+	 * @type {Extension}
+	 */
+	get activeLineExtension() {
+		return highlightActiveLine();
+	}
+
+	/**
+	 * Extension for line wrapping.
+	 *
+	 * @type {Extension}
+	 */
+	get lineWrappingExtension() {
+		return EditorView.lineWrapping;
+	}
+
+	/**
+	 * Extension for line numbering.
+	 *
+	 * @type {Extension}
+	 */
+	get lineNumberingExtension() {
+		return [
+			lineNumbers( {
+				formatNumber: ( num ) => {
+					const numberString = String( num );
+					const transformTable = mw.language.getDigitTransformTable();
+					if ( mw.config.get( 'wgTranslateNumerals' ) && transformTable ) {
+						let convertedNumber = '';
+						for ( let i = 0; i < numberString.length; i++ ) {
+							// eslint-disable-next-line max-len
+							if ( Object.prototype.hasOwnProperty.call( transformTable, numberString[ i ] ) ) {
+								convertedNumber += transformTable[ numberString[ i ] ];
+							} else {
+								convertedNumber += numberString[ i ];
+							}
+						}
+						return convertedNumber;
+					}
+					return numberString;
+				}
+			} ),
+			EditorView.theme( {
+				'.cm-lineNumbers .cm-gutterElement': {
+					textAlign: 'end'
+				}
+			} )
+		];
+	}
+
+	/**
 	 * Extension for search and goto line functionality.
 	 *
-	 * @return {Extension|Extension[]}
+	 * @type {Extension}
 	 */
 	get searchExtension() {
 		return [
-			new CodeMirrorSearch().extension,
-			new CodeMirrorGotoLine().extension
+			this.search.extension,
+			this.gotoLine.extension
 		];
 	}
 
 	/**
 	 * This extension adds bracket matching to the CodeMirror editor.
 	 *
-	 * @return {Extension}
+	 * @type {Extension}
 	 */
 	get bracketMatchingExtension() {
-		return bracketMatching( mw.config.get( 'wgPageContentModel' ) === 'wikitext' ?
-			{
-				// Also match CJK full-width brackets (T362992)
-				// This is only for wikitext as it can be confusing in programming languages.
-				brackets: '()[]{}（）【】［］｛｝'
-			} : {}
-		);
+		return bracketMatching( this.bracketMatchingConfig );
+	}
+
+	/**
+	 * This extension adds automatic closing of brackets to the CodeMirror editor.
+	 *
+	 * @type {Extension}
+	 */
+	get closeBracketsExtension() {
+		return closeBrackets();
 	}
 
 	/**
@@ -210,7 +512,7 @@ class CodeMirror {
 			if ( update.docChanged ) {
 				/**
 				 * Called when document changes are made in CodeMirror.
-				 * The native textarea is not necessarily updated yet.
+				 * The original textarea is not necessarily updated yet.
 				 *
 				 * @event CodeMirror~'ext.CodeMirror.input'
 				 * @param {ViewUpdate} update
@@ -222,8 +524,10 @@ class CodeMirror {
 	}
 
 	/**
-	 * This extension sets the height of the CodeMirror editor to match the textarea.
-	 * Override this method to change the height of the editor.
+	 * This extension sets the height of the CodeMirror editor to match the
+	 * {@link CodeMirror#textarea textarea}. This getter can be overridden to
+	 * change the height of the editor, but it's usually simpler to set the
+	 * height of the textarea using CSS prior to initialization.
 	 *
 	 * @type {Extension}
 	 * @stable to call and override
@@ -231,76 +535,75 @@ class CodeMirror {
 	get heightExtension() {
 		return EditorView.theme( {
 			'&': {
-				height: this.surface ? '100%' : `${ this.$textarea.outerHeight() }px`
-			},
-			'.cm-scroller': {
-				overflow: 'auto'
+				height: `${ this.$textarea.outerHeight() }px`
 			}
 		} );
 	}
 
 	/**
-	 * This specifies which attributes get added to the `.cm-content` and `.cm-editor` elements.
+	 * This specifies which attributes get added to the CodeMirror contenteditable `.cm-content`.
 	 * Subclasses are safe to override this method, but attributes here are considered vital.
 	 *
 	 * @see https://codemirror.net/docs/ref/#view.EditorView^contentAttributes
 	 * @type {Extension}
-	 * @stable to call and override
+	 * @protected
+	 * @stable to call and override by subclasses
 	 */
 	get contentAttributesExtension() {
 		const classList = [];
-		// T245568: Sync text editor font preferences with CodeMirror,
-		// but don't do this for the 2017 wikitext editor.
-		if ( !this.surface ) {
-			const fontClass = Array.from( this.$textarea[ 0 ].classList )
-				.find( ( style ) => style.startsWith( 'mw-editfont-' ) );
-			if ( fontClass ) {
-				classList.push( fontClass );
-			}
-			// Add colorblind mode if preference is set.
-			// This currently is only to be used for the MediaWiki markup language.
-			if (
-				mw.user.options.get( 'usecodemirror-colorblind' ) &&
-				mw.config.get( 'wgPageContentModel' ) === 'wikitext'
-			) {
-				classList.push( 'cm-mw-colorblind-colors' );
-			}
+
+		// T245568: Sync text editor font preferences with CodeMirror.
+		const fontClass = Array.from( this.textarea.classList )
+			.find( ( style ) => style.startsWith( 'mw-editfont-' ) );
+		if ( fontClass ) {
+			classList.push( this.mode === 'mediawiki' ? fontClass : 'mw-editfont-monospace' );
 		}
 
-		return [
-			// .cm-content element (the contenteditable area)
-			EditorView.contentAttributes.of( {
-				// T259347: Use accesskey of the original textbox
-				accesskey: this.$textarea.attr( 'accesskey' ),
-				// Classes need to be on .cm-content to have precedence over .cm-scroller
-				class: classList.join( ' ' ),
-				spellcheck: 'true',
-				tabindex: this.$textarea.attr( 'tabindex' )
-			} ),
-			// .cm-editor element (contains the whole CodeMirror UI)
-			EditorView.editorAttributes.of( {
-				// Use language of the original textbox.
-				// These should be attributes of .cm-editor, not the .cm-content (T359589)
-				lang: this.$textarea.attr( 'lang' )
-			} ),
-			// The search panel should use the same direction as the interface language (T359611)
-			EditorView.theme( {
-				'.cm-panels': {
-					direction: document.dir
-				}
-			} )
-		];
+		// Add colorblind mode if preference is set.
+		// This currently is only to be used for the MediaWiki markup language.
+		if (
+			mw.user.options.get( 'usecodemirror-colorblind' ) &&
+			this.mode === 'mediawiki'
+		) {
+			classList.push( 'cm-mw-colorblind-colors' );
+		}
+
+		return EditorView.contentAttributes.of( {
+			// T259347: Use accesskey of the original textbox
+			accesskey: this.textarea.accessKey,
+			// Classes need to be on .cm-content to have precedence over .cm-scroller
+			class: classList.join( ' ' ),
+			spellcheck: this.mode === 'mediawiki',
+			tabindex: this.textarea.tabIndex
+		} );
 	}
 
 	/**
-	 * These are all potential messages used in a full-featured CodeMirror setup.
-	 * We lump them all here and supply it as default extensions because it is only a small cost
-	 * and we don't want localization to be overlooked by CodeMirror clients and subclasses.
+	 * This specifies which attributes get added to the `.cm-editor` element (the entire editor).
+	 * Subclasses are safe to override this method, but attributes here are considered vital.
+	 *
+	 * @see https://codemirror.net/docs/ref/#view.EditorView^editorAttributes
+	 * @type {Extension}
+	 * @protected
+	 * @stable to call and override by subclasses
+	 */
+	get editorAttributesExtension() {
+		return EditorView.editorAttributes.of( {
+			// Use language of the original textbox.
+			// These should be attributes of .cm-editor, not the .cm-content (T359589)
+			lang: this.textarea.lang,
+			// Add a class for the mode/language.
+			class: `cm-mw-mode-${ this.mode || 'none' }`
+		} );
+	}
+
+	/**
+	 * Overrides for the CodeMirror library's internalization system.
 	 *
 	 * @see https://codemirror.net/examples/translate/
 	 * @type {Extension}
-	 * @stable to call. Instead of overriding, pass in an additional `EditorState.phrases.of()`
-	 *   when calling `initialize()`.
+	 * @protected
+	 * @stable to call and override by subclasses.
 	 */
 	get phrasesExtension() {
 		return EditorState.phrases.of( {
@@ -316,10 +619,11 @@ class CodeMirror {
 	 *
 	 * @see https://codemirror.net/docs/ref/#view.highlightSpecialChars
 	 * @type {Extension}
+	 * @protected
 	 * @stable to call
 	 */
 	get specialCharsExtension() {
-		// Keys are the decimal unicode number, values are the messages.
+		// Keys are the decimal Unicode number, values are the messages.
 		const messages = {
 			0: mw.msg( 'codemirror-special-char-null' ),
 			7: mw.msg( 'codemirror-special-char-bell' ),
@@ -368,18 +672,44 @@ class CodeMirror {
 		} );
 	}
 
+	/**
+	 * This extension highlights whitespace characters.
+	 *
+	 * @return {Extension}
+	 */
+	get whitespaceExtension() {
+		return highlightWhitespace();
+	}
+
+	/**
+	 * This extension highlights trailing whitespace characters.
+	 *
+	 * @return {Extension}
+	 */
+	get trailingWhitespaceExtension() {
+		return highlightTrailingWhitespace();
+	}
+
+	/**
+	 * This extension adds the ability to change the direction of the editor.
+	 *
+	 * @type {Extension}
+	 * @protected
+	 * @stable to call
+	 */
 	get dirExtension() {
 		return [
 			this.dirCompartment.of( EditorView.editorAttributes.of( {
 				// Use direction of the original textbox.
 				// These should be attributes of .cm-editor, not the .cm-content (T359589)
-				dir: this.$textarea.attr( 'dir' )
+				dir: this.textarea.dir
 			} ) ),
+			// Register key binding for changing direction in CodeMirrorKeymap.
 			keymap.of( [ {
-				key: 'Mod-Shift-x',
+				key: this.keymap.keymapHelpRegistry.other.direction.key,
 				run: ( view ) => {
-					const dir = this.$textarea.attr( 'dir' ) === 'rtl' ? 'ltr' : 'rtl';
-					this.$textarea.attr( 'dir', dir );
+					const dir = this.textarea.dir === 'rtl' ? 'ltr' : 'rtl';
+					this.textarea.dir = dir;
 					view.dispatch( {
 						effects: this.dirCompartment.reconfigure(
 							EditorView.editorAttributes.of( { dir } )
@@ -392,159 +722,619 @@ class CodeMirror {
 	}
 
 	/**
+	 * This extension adds the ability to lint the code in the editor.
+	 *
+	 * @type {Extension}
+	 * @protected
+	 * @stable to call
+	 */
+	get lintExtension() {
+		return [
+			new CodeMirrorLint(
+				this.lintSource, this.keymap, this.lintApi, this.gotoLine
+			).extension,
+			this.customLinters
+		];
+	}
+
+	/* eslint-disable max-len */
+	/**
 	 * Setup CodeMirror and add it to the DOM. This will hide the original textarea.
 	 *
-	 * @param {Extension|Extension[]} [extensions=this.defaultExtensions] Extensions to use.
+	 * This method should only be called once per instance. Use {@link CodeMirror#toggle toggle},
+	 * {@link CodeMirror#activate activate}, and {@link CodeMirror#deactivate deactivate}
+	 * to enable or disable the same CodeMirror instance programmatically, and restore or hide
+	 * the original textarea.
+	 *
+	 * @param {Extension|Extension[]} [extensions={@link CodeMirror#defaultExtensions this.defaultExtensions}]
+	 *   Extensions to use.
 	 * @fires CodeMirror~'ext.CodeMirror.initialize'
 	 * @fires CodeMirror~'ext.CodeMirror.ready'
 	 * @stable to call and override
 	 */
 	initialize( extensions = this.defaultExtensions ) {
+		/* eslint-enable max-len */
+		if ( this.view ) {
+			mw.log.warn( '[CodeMirror] CodeMirror instance already initialized.' );
+			return;
+		}
+
 		/**
 		 * Called just before CodeMirror is initialized.
 		 * This can be used to manipulate the DOM to suit CodeMirror
 		 * (i.e. if you manipulate WikiEditor's DOM, you may need this).
 		 *
 		 * @event CodeMirror~'ext.CodeMirror.initialize'
-		 * @param {jQuery} $textarea The textarea that CodeMirror is bound to.
+		 * @param {HTMLTextAreaElement|ve.ui.Surface} textarea The textarea or
+		 *   VisualEditor surface that CodeMirror is bound to.
 		 * @stable to use
 		 */
-		mw.hook( 'ext.CodeMirror.initialize' ).fire( this.$textarea );
-		mw.hook( 'editRecovery.loadEnd' ).add( ( data ) => {
-			this.editRecoveryHandler = data.fieldChangeHandler;
-		} );
+		mw.hook( 'ext.CodeMirror.initialize' ).fire( this.surface || this.textarea );
 
-		// Set up the initial EditorState of CodeMirror with contents of the native textarea.
-		this.state = EditorState.create( {
-			doc: this.surface ?
-				this.surface.getDom() :
-				this.$textarea.textSelection( 'getContents' ),
+		// Make note of the focus state, scroll and selection before we hide the textarea.
+		const hasFocus = document.activeElement === this.textarea,
+			{ selectionStart, selectionEnd, scrollTop } = this.textarea;
+		this.preInitSelection = { selectionStart, selectionEnd, scrollTop };
+		// Remove required attribute, which can otherwise cause the valueMissing constraint
+		// to fail ("invalid form control … is not focusable") on submission.
+		// For now, CodeMirror clients are expected to handle validation by other means.
+		// TODO: Listen to validate event and use a panel to display errors.
+		this.textarea.removeAttribute( 'required' );
+
+		// Wrap the textarea with .ext-codemirror-wrapper, hiding the original textarea.
+		this.container = document.createElement( 'div' );
+		this.container.className = 'ext-codemirror-wrapper';
+		this.textarea.before( this.container );
+		this.container.appendChild( this.textarea );
+
+		// Create the EditorState of CodeMirror with contents of the original textarea.
+		const state = EditorState.create( {
+			doc: this.surface ? this.surface.getDom() : this.textarea.value,
 			extensions
 		} );
 
-		// Add CodeMirror view to the DOM.
-		this.addCodeMirrorToDom();
+		// Instantiate the view, adding it to the DOM
+		this.view = new EditorView( { state, parent: this.container } );
 
-		// Hide native textarea and sync CodeMirror contents upon submission.
-		if ( !this.surface ) {
-			this.$textarea.hide();
-			if ( this.$textarea[ 0 ].form ) {
-				this.$textarea[ 0 ].form.addEventListener( 'submit', () => {
-					this.$textarea.val( this.view.state.doc.toString() );
-					const scrollTop = document.getElementById( 'wpScrolltop' );
-					if ( scrollTop ) {
-						scrollTop.value = this.view.scrollDOM.scrollTop;
-					}
-				} );
-			}
+		// Restore focus state.
+		if ( hasFocus ) {
+			this.focus( true );
 		}
 
-		// Register $.textSelection() on the .cm-editor element.
-		$( this.view.dom ).textSelection( 'register', this.cmTextSelection );
-		// Also override textSelection() functions for the "real" hidden textarea to route to
-		// CodeMirror. We unregister this when switching to normal textarea mode.
-		this.$textarea.textSelection( 'register', this.cmTextSelection );
+		// Use toggle() instead of activate() directly so that the toggle hook is fired.
+		this.toggle();
+
+		this.addEditRecoveredHandler();
+		this.addTextAreaJQueryHook();
+		this.addFormSubmitHandler();
+
+		if ( this.mode !== 'mediawiki' ) {
+			// Register applicable extensions through CodeMirrorPreferences.
+			this.preferences.registerExtension( 'codeFolding', foldGutter(), this.view );
+			this.preferences.registerExtension( 'autocomplete', autocompletion(), this.view );
+			// Document accessibility key bindings in help dialog since
+			// the Tab key does not move focus by default in non-wikitext.
+			this.keymap.registerKeyBindingHelp( 'accessibility', 'tabEscape', { key: 'Escape' } );
+			this.keymap.registerKeyBindingHelp( 'accessibility', 'tabMode', { key: 'Ctrl-m', mac: 'Shift-Alt-m' } );
+
+			this.addDarkModeMutationObserver();
+		}
+
+		if ( this.lintSource || this.lintApi ) {
+			this.preferences.registerExtension( 'lint', this.lintExtension, this.view );
+		}
 
 		/**
 		 * Called just after CodeMirror is initialized.
 		 *
 		 * @event CodeMirror~'ext.CodeMirror.ready'
-		 * @param {jQuery} $view The CodeMirror view.
+		 * @param {CodeMirror} cm The CodeMirror instance.
 		 * @stable to use
 		 */
-		mw.hook( 'ext.CodeMirror.ready' ).fire( $( this.view.dom ) );
+		mw.hook( 'ext.CodeMirror.ready' ).fire( this );
 	}
 
 	/**
-	 * Instantiate the EditorView, adding the CodeMirror editor to the DOM.
-	 * We use a dummy container to ensure that the editor will
-	 * always be placed where the textarea is.
-	 *
-	 * @private
+	 * Use a MutationObserver to watch for CSS class changes to the <html> element,
+	 * and update the CodeMirror editor's theme accordingly. This is ony necessary
+	 * for non-wikitext, where we don't use our own CSS classes during tokenization.
 	 */
-	addCodeMirrorToDom() {
-		this.$textarea.wrap( '<div class="ext-codemirror-wrapper"></div>' );
+	addDarkModeMutationObserver() {
+		const doc = document.documentElement;
+		const matchMediaQuery = window.matchMedia( '(prefers-color-scheme: dark)' );
+		const setDarkTheme = () => {
+			const isDark = doc.classList.contains( 'skin-theme-clientpref-night' ) || (
+				doc.classList.contains( 'skin-theme-clientpref-os' ) && matchMediaQuery.matches
+			);
+			this.extensionRegistry.register( 'darkMode', oneDark, this.view, isDark );
+		};
+		const observer = new MutationObserver( ( mutations ) => {
+			for ( const mutation of mutations ) {
+				if ( mutation.type === 'attributes' && mutation.attributeName === 'class' ) {
+					setDarkTheme();
+				}
+			}
+		} );
+		observer.observe( doc, {
+			attributes: true,
+			childList: false,
+			subtree: false
+		} );
+		matchMediaQuery.addEventListener( 'change', setDarkTheme );
+		setDarkTheme();
+	}
 
-		this.view = new EditorView( {
-			state: this.state,
-			parent: this.surface ?
-				this.surface.getView().$element[ 0 ] :
-				this.$textarea.parent()[ 0 ]
+	/**
+	 * Add a handler for the given {@link Hook}.
+	 * This method is used to ensure no hook handlers are duplicated across lifecycle methods,
+	 * All handlers will be removed during {@link CodeMirror#deactivate deactivation}.
+	 *
+	 * @param {string} hook
+	 * @param {Function} fn
+	 * @protected
+	 */
+	addMwHook( hook, fn ) {
+		if ( !this.hooks[ hook ] ) {
+			this.hooks[ hook ] = new Set();
+		}
+		if ( this.hooks[ hook ].has( fn ) ) {
+			return;
+		}
+		this.hooks[ hook ].add( fn );
+		mw.hook( hook ).add( fn );
+	}
+
+	/**
+	 * Set a new edit recovery handler.
+	 *
+	 * @protected
+	 */
+	addEditRecoveredHandler() {
+		mw.hook( 'editRecovery.loadEnd' ).add( ( data ) => {
+			/**
+			 * The edit recovery handler.
+			 *
+			 * @type {Function}
+			 * @see https://www.mediawiki.org/wiki/Manual:Edit_Recovery
+			 * @private
+			 */
+			this.editRecoveryHandler = data.fieldChangeHandler;
 		} );
 	}
 
 	/**
+	 * Define jQuery hook for .val() on the textarea.
+	 *
+	 * @see https://phabricator.wikimedia.org/T384556
+	 * @protected
+	 */
+	addTextAreaJQueryHook() {
+		const jQueryValHooks = $.valHooks.textarea;
+		$.valHooks.textarea = {
+			get: ( elem ) => {
+				if ( elem === this.textarea && this.isActive ) {
+					return this.cmTextSelection.getContents();
+				} else if ( jQueryValHooks ) {
+					return jQueryValHooks.get( elem );
+				}
+				return elem.value;
+			},
+			set: ( elem, value ) => {
+				if ( elem === this.textarea && this.isActive ) {
+					return this.cmTextSelection.setContents( value );
+				} else if ( jQueryValHooks ) {
+					return jQueryValHooks.set( elem, value );
+				}
+				elem.value = value;
+			}
+		};
+	}
+
+	/**
+	 * Sync the CodeMirror editor with the original textarea on form submission.
+	 *
+	 * @protected
+	 */
+	addFormSubmitHandler() {
+		if ( !this.textarea.form ) {
+			return;
+		}
+
+		this.formSubmitEventHandler = () => {
+			if ( !this.isActive ) {
+				return;
+			}
+			this.textarea.value = this.view.state.doc.toString();
+			const scrollTop = document.getElementById( 'wpScrolltop' );
+			if ( scrollTop ) {
+				scrollTop.value = this.view.scrollDOM.scrollTop;
+			}
+		};
+		this.textarea.form.addEventListener( 'submit', this.formSubmitEventHandler );
+	}
+
+	/**
+	 * Apply an {@link Extension} to the CodeMirror editor.
+	 * This is accomplished through
+	 * {@link https://codemirror.net/examples/config/#top-level-reconfiguration top-level reconfiguration}
+	 * of the {@link CodeMirror#view EditorView}.
+	 *
+	 * If the extension needs to be reconfigured (such as toggling on and off), use the
+	 * {@link CodeMirror#extensionRegistry extensionRegistry} instead.
+	 *
+	 * @example
+	 * const require = await mw.loader.using( 'ext.CodeMirror' );
+	 * mw.hook( 'ext.CodeMirror.ready' ).add( ( cm ) => {
+	 *   const { EditorView, Prec } = require( 'ext.CodeMirror.lib' );
+	 *   // Disable spellchecking. Use Prec.high() to override the
+	 *   // contentAttributesExtension which adds spellcheck="true".
+	 *   cm.applyExtension( Prec.high( EditorView.contentAttributes.of( {
+	 *     spellcheck: 'false'
+	 *   } ) ) );
+	 * } );
+	 * @see https://codemirror.net/examples/config/
+	 * @param {Extension} extension
+	 * @stable to call
+	 */
+	applyExtension( extension ) {
+		this.view.dispatch( {
+			effects: StateEffect.appendConfig.of( extension )
+		} );
+	}
+
+	/**
+	 * Apply an extra {@link LintSource linter} to the CodeMirror editor.
+	 * This linter respects the user preference for enabling or disabling linting.
+	 *
+	 * @example
+	 * // Report Ukrainian letter 'і' among Latin letters as a warning.
+	 * const lint = {
+	 *   pattern: /[a-zA-Z]і|і(?=[a-zA-Z])/g,
+	 *   callback( match ) {
+	 *     return {
+	 *       from: match.index + match[ 0 ].indexOf( 'і' ),
+	 *       to: match.index + match[ 0 ].indexOf( 'і' ) + 1,
+	 *       severity: 'warning',
+	 *       message: 'Ukrainian letter "і" found among Latin letters.',
+	 *       actions: [ {
+	 *         name: 'To Latin',
+	 *         apply( view, from, to ) {
+	 *           view.dispatch( {
+	 *             changes: { from, to, insert: 'i' }
+	 *           } );
+	 *         }
+	 *       } ]
+	 *     };
+	 *   }
+	 * };
+	 * mw.hook( 'ext.CodeMirror.ready' ).add( ( cm ) => {
+	 *   cm.applyLinter( lint );
+	 * } );
+	 *
+	 * @param {Function|Object} lint Function that takes a string and returns an array of
+	 * {@link Diagnostic}, or an object with a `pattern` RegExp and `callback` function that takes
+	 * a RegExp match and returns {@link Diagnostic} or an array of {@link Diagnostic}.
+	 * @param {Object} [config] Optional {@link https://codemirror.net/docs/ref/#lint.linter^config configuration}.
+	 */
+	applyLinter( lint, config ) {
+		const extension = linter( ( view ) => {
+			if ( typeof lint === 'function' ) {
+				return CodeMirrorLint.renderDiagnostics(
+					lint( view.state.doc.toString(), view ),
+					this.readOnly
+				);
+			}
+			const { pattern, callback } = lint;
+			const re = new RegExp( pattern, pattern.flags + ( pattern.global ? '' : 'g' ) );
+			const text = view.state.doc.toString();
+			const diagnostics = [];
+			let match = re.exec( text );
+			let lastIndex = 0;
+			while ( match ) {
+				if ( re.lastIndex === lastIndex ) {
+					// Avoid infinite loop on zero-length matches.
+					re.lastIndex++;
+				}
+				const errors = callback( match, view );
+				if ( Array.isArray( errors ) ) {
+					diagnostics.push( ...errors );
+				} else if ( errors ) {
+					diagnostics.push( errors );
+				}
+				( { lastIndex } = re );
+				match = re.exec( text );
+			}
+			return CodeMirrorLint.renderDiagnostics( diagnostics, this.readOnly );
+		}, config );
+		this.customLinters.push( extension );
+		if ( this.extensionRegistry.isRegistered( 'lint', this.view ) ) {
+			this.extensionRegistry.extensions.lint = this.lintExtension;
+		} else {
+			this.preferences.registerExtension( 'lint', this.lintExtension, this.view );
+		}
+		if ( this.extensionRegistry.isEnabled( 'lint', this.view ) ) {
+			this.extensionRegistry.toggle( 'lint', this.view, true );
+		}
+	}
+
+	/**
+	 * Focus the CodeMirror editor.
+	 *
+	 * @param {boolean} [isActive] Whether the CodeMirror editor is active.
+	 * @stable to call and override
+	 */
+	focus( isActive = this.isActive ) {
+		if ( isActive ) {
+			this.view.focus();
+		} else {
+			this.textarea.focus( { preventScroll: true } );
+		}
+	}
+
+	/**
+	 * Toggle CodeMirror on or off from the textarea.
+	 * This will call {@link CodeMirror#initialize initialize} if CodeMirror
+	 * is being enabled for the first time.
+	 *
+	 * @param {boolean} [force] `true` to enable CodeMirror, `false` to disable.
+	 *   Note that the {@link CodeMirror~'ext.CodeMirror.toggle' ext.CodeMirror.toggle}
+	 *   hook will not be fired if this parameter is set.
+	 * @stable to call and override
+	 * @fires CodeMirror~'ext.CodeMirror.toggle'
+	 */
+	toggle( force ) {
+		const toEnable = force === undefined ? !this.isActive : force;
+		const wasActive = this.isActive;
+		if ( toEnable ) {
+			if ( !this.view ) {
+				this.initialize();
+			} else {
+				this.activate();
+			}
+		} else {
+			this.deactivate();
+		}
+		// Only fire the toggle hook when the active state has changed.
+		if ( wasActive !== this.isActive ) {
+			/**
+			 * Called when CodeMirror is toggled on or off.
+			 *
+			 * @event CodeMirror~'ext.CodeMirror.toggle'
+			 * @param {boolean} enabled `true` if CodeMirror is now enabled, `false` if disabled.
+			 * @param {CodeMirror} cm The CodeMirror instance.
+			 * @param {HTMLTextAreaElement} textarea The original textarea.
+			 * @stable to use
+			 */
+			mw.hook( 'ext.CodeMirror.toggle' ).fire( this.isActive, this, this.textarea );
+		}
+	}
+
+	/**
+	 * Activate CodeMirror on the {@link CodeMirror#textarea textarea}.
+	 * This shows the editor view, hiding the original textarea.
+	 *
+	 * {@link CodeMirror#initialize initialize} is expected to be called before this method.
+	 *
+	 * @protected
+	 * @stable to call and override by subclasses
+	 */
+	activate() {
+		if ( this.isActive ) {
+			mw.log.warn( '[CodeMirror] CodeMirror instance already active.' );
+			return;
+		}
+
+		this.setupFeatureLogging();
+
+		// Backup scroll position, selections, and focus state before we hide the textarea.
+		const { selectionStart, selectionEnd, scrollTop } = this.preInitSelection || this.textarea;
+		// Clear the pre-init selection since it's no longer valid after the first activation.
+		this.preInitSelection = null;
+		const hasFocus = document.activeElement === this.textarea || (
+			this.constructor.name !== 'CodeMirrorChild' &&
+			this.preferences.getPreference( 'autofocus' )
+		);
+
+		if ( this.view ) {
+			// We're re-enabling, so we want to sync contents from the textarea.
+			this.cmTextSelection.setContents(
+				this.surface ? this.surface.getDom() : this.textarea.value
+			);
+		}
+
+		// Re-show the view, should it be hidden.
+		this.container.classList.remove( 'ext-codemirror-wrapper--hidden' );
+
+		this.isActive = true;
+		this.logEditFeature( 'activated' );
+
+		// Register $.textSelection() on the .cm-editor element.
+		$( this.view.dom ).textSelection( 'register', this.cmTextSelection );
+
+		if ( !this.surface ) {
+			// Override textSelection() functions for the "real" hidden textarea to route to
+			// CodeMirror. We unregister this in this.deactivate().
+			this.$textarea.textSelection( 'register', this.cmTextSelection );
+			// Disable IME on the hidden textarea to avoid conflicts.
+			this.$textarea.addClass( 'noime' ).off( '.ime' ).removeData( [ 'ime', 'imeselector' ] );
+
+			// Sync scroll position, selections, and focus state.
+			this.requestAnimationFrame( () => {
+				this.view.scrollDOM.scrollTop = scrollTop;
+				if ( selectionStart !== 0 || selectionEnd !== 0 ) {
+					const range = EditorSelection.range( selectionStart, selectionEnd ),
+						scrollEffect = EditorView.scrollIntoView( range );
+					// Restore scroll position when previewing (T254962).
+					scrollEffect.value.isSnapshot = true;
+					this.view.dispatch( {
+						selection: EditorSelection.create( [ range ] ),
+						effects: scrollEffect
+					} );
+				}
+				if ( hasFocus ) {
+					this.view.focus();
+				}
+			} );
+		}
+	}
+
+	/**
+	 * Wrapper for requestAnimationFrame to allow overriding in Jest tests.
+	 *
+	 * @param {Function} callback
+	 * @return {number}
+	 * @private
+	 * @ignore
+	 */
+	requestAnimationFrame( callback ) {
+		return window.requestAnimationFrame( callback );
+	}
+
+	/**
+	 * Deactivate CodeMirror on the {@link CodeMirror#textarea textarea}, restoring the original
+	 * textarea and hiding the editor. This life-cycle method should retain the
+	 * {@link CodeMirror#view view}.
+	 *
+	 * @protected
+	 * @stable to call and override by subclasses
+	 */
+	deactivate() {
+		if ( !this.isActive ) {
+			mw.log.warn( '[CodeMirror] CodeMirror instance is not active.' );
+			return;
+		}
+
+		// Store what we need before we destroy the state or make DOM changes.
+		const scrollTop = this.view.scrollDOM.scrollTop;
+		const hasFocus = this.surface ? this.surface.getView().isFocused() : this.view.hasFocus;
+		const { from, to } = this.view.state.selection.ranges[ 0 ];
+
+		// Unregister textSelection() on the CodeMirror view.
+		$( this.view.dom ).textSelection( 'unregister' );
+
+		if ( !this.surface ) {
+			// Sync contents to the original textarea.
+			this.textarea.value = this.view.state.doc.toString();
+			// Unregister textSelection() on the hidden textarea.
+			this.$textarea.textSelection( 'unregister' );
+			// Re-enable IME on the hidden textarea.
+			this.$textarea.removeClass( 'noime' );
+		}
+
+		// Remove hook handlers.
+		Object.keys( this.hooks ).forEach( ( hook ) => {
+			this.hooks[ hook ].forEach( ( fn ) => mw.hook( hook ).remove( fn ) );
+			delete this.hooks[ hook ];
+		} );
+
+		// Hide the view. We use a CSS class on the wrapper since CodeMirror
+		// adds high-specificity styles to .cm-editor that we can't easily override.
+		this.container.classList.add( 'ext-codemirror-wrapper--hidden' );
+
+		this.isActive = false;
+		this.logEditFeature( 'deactivated' );
+
+		// Sync focus state, selections and scroll position.
+		if ( hasFocus ) {
+			this.focus();
+		}
+		if ( !this.surface ) {
+			this.textarea.selectionStart = Math.min( from, to );
+			this.textarea.selectionEnd = Math.max( from, to );
+			this.textarea.scrollTop = scrollTop;
+		}
+	}
+
+	/**
 	 * Destroy the CodeMirror instance and revert to the original textarea.
+	 * This action should be considered irreversible.
 	 *
 	 * @fires CodeMirror~'ext.CodeMirror.destroy'
 	 * @stable to call and override
 	 */
 	destroy() {
-		const scrollTop = this.view.scrollDOM.scrollTop;
-		const hasFocus = this.view.hasFocus;
-		const { from, to } = this.view.state.selection.ranges[ 0 ];
-		$( this.view.dom ).textSelection( 'unregister' );
-		this.$textarea.textSelection( 'unregister' );
-		this.$textarea.unwrap( '.ext-codemirror-wrapper' );
-		if ( !this.surface ) {
-			this.$textarea.val( this.view.state.doc.toString() );
-		}
+		this.deactivate();
 		this.view.destroy();
 		this.view = null;
-		this.$textarea.show();
-		if ( hasFocus ) {
-			this.$textarea.trigger( 'focus' );
-		}
-		this.$textarea.prop( 'selectionStart', Math.min( from, to ) )
-			.prop( 'selectionEnd', Math.max( to, from ) );
-		this.$textarea.scrollTop( scrollTop );
+		this.$textarea.unwrap( '.ext-codemirror-wrapper' );
+		this.container = null;
 		this.textSelection = null;
+		// Remove form submission listener.
+		if ( this.formSubmitEventHandler && this.textarea.form ) {
+			this.textarea.form.removeEventListener( 'submit', this.formSubmitEventHandler );
+			this.formSubmitEventHandler = null;
+		}
 
 		/**
 		 * Called just after CodeMirror is destroyed and the original textarea is restored.
 		 *
 		 * @event CodeMirror~'ext.CodeMirror.destroy'
-		 * @param {jQuery} $textarea The original textarea.
+		 * @param {HTMLTextAreaElement} textarea The original textarea.
 		 * @stable to use
 		 */
-		mw.hook( 'ext.CodeMirror.destroy' ).fire( this.$textarea );
+		mw.hook( 'ext.CodeMirror.destroy' ).fire( this.textarea );
 	}
 
 	/**
 	 * Log usage of CodeMirror.
 	 *
-	 * @param {Object} data
-	 * @stable to call
-	 * @internal
-	 * @ignore
+	 * @param {string} action
+	 * @see https://phabricator.wikimedia.org/T373710
+	 * @protected
+	 * @stable to call and override by subclasses
 	 */
-	static logUsage( data ) {
-		/* eslint-disable camelcase */
-		const event = Object.assign( {
-			session_token: mw.user.sessionId(),
-			user_id: mw.user.getId()
-		}, data );
-		const editCountBucket = mw.config.get( 'wgUserEditCountBucket' );
-		if ( editCountBucket !== null ) {
-			event.user_edit_count_bucket = editCountBucket;
-		}
-		/* eslint-enable camelcase */
-		mw.track( 'event.CodeMirrorUsage', event );
+	// eslint-disable-next-line no-unused-vars
+	logEditFeature( action ) {}
+
+	/**
+	 * Add hook handlers to log usage of CodeMirror features.
+	 *
+	 * @protected
+	 * @stable to call and override by subclasses
+	 */
+	setupFeatureLogging() {
+		this.addMwHook( 'ext.CodeMirror.preferences.apply', ( prefName, enabled ) => {
+			// Log only when in-use and when the user has preferences differing from defaults.
+			if ( enabled && this.preferences.hasNonDefaultPreferences() ) {
+				this.logEditFeature( `prefs-${ prefName }` );
+			}
+		} );
+		this.addMwHook( 'ext.CodeMirror.preferences.display', () => {
+			if ( this.view.state.field( this.preferences.panelStateField ) ) {
+				this.logEditFeature( 'prefs-display' );
+			}
+		} );
+		this.addMwHook( 'ext.CodeMirror.search', () => {
+			if ( searchPanelOpen( this.view.state ) ) {
+				this.logEditFeature( 'search' );
+			}
+		} );
+		this.addMwHook( 'ext.CodeMirror.keymap',
+			() => this.logEditFeature( 'keymap' )
+		);
 	}
 
 	/**
 	 * Save CodeMirror enabled preference.
 	 *
-	 * @param {boolean} prefValue True, if CodeMirror should be enabled by default, otherwise false.
+	 * @param {boolean} prefValue `true` to enable CodeMirror where possible on page load.
 	 * @stable to call and override
 	 */
-	static setCodeMirrorPreference( prefValue ) {
+	setCodeMirrorPreference( prefValue ) {
 		// Skip for unnamed users
 		if ( !mw.user.isNamed() ) {
 			return;
 		}
-		new mw.Api().saveOption( 'usecodemirror', prefValue ? 1 : 0 );
-		mw.user.options.set( 'usecodemirror', prefValue ? 1 : 0 );
+		let optionName = 'usecodemirror';
+		if ( this.mode !== 'mediawiki' ) {
+			optionName += '-code';
+		}
+		// Abort if the preference is already set to the desired value.
+		if ( mw.user.options.get( optionName ) > 0 && prefValue ) {
+			mw.log( '[CodeMirror] Preference not changed, skipping save.' );
+			return;
+		}
+		this.preferences.saveUserOptionInternal( optionName, prefValue ? 1 : 0 );
 	}
 
 	/**
@@ -569,6 +1359,25 @@ class CodeMirror {
 			encapsulateSelection: ( options ) => this.textSelection.encapsulateSelection( options )
 		};
 	}
+
+	/**
+	 * Get a {@link CodeMirrorChild} object for use on other textareas that
+	 * should have preferences synced with this CodeMirror instance.
+	 *
+	 * @type {CodeMirrorChild}
+	 */
+	get child() {
+		return require( './codemirror.child.js' );
+	}
 }
 
+/**
+ * @module ext.CodeMirror
+ * @description
+ * This module provides the basic CodeMirror integration for MediaWiki editors
+ * and exports the {@link CodeMirror} class. To be usable beyond a plain text editor,
+ * you will need to pass in a language mode to the constructor.
+ * See {@link CodeMirror} for more information.
+ * @see CodeMirror
+ */
 module.exports = CodeMirror;

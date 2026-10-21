@@ -1,0 +1,161 @@
+<?php
+
+namespace SMW\MediaWiki\Specials\Admin\Supplement;
+
+use MediaWiki\Html\Html;
+use MediaWiki\Request\WebRequest;
+use SMW\Localizer\Message;
+use SMW\MediaWiki\Specials\Admin\ActionableTask;
+use SMW\MediaWiki\Specials\Admin\OutputFormatter;
+use SMW\MediaWiki\Specials\Admin\TaskHandler;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since   3.0
+ *
+ * @author mwjames
+ */
+class DuplicateLookupTaskHandler extends TaskHandler implements ActionableTask {
+
+	/**
+	 * @since 3.0
+	 */
+	public function __construct( private readonly OutputFormatter $outputFormatter ) {
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * {@inheritDoc}
+	 */
+	public function getSection(): string {
+		return self::SECTION_SUPPLEMENT;
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * {@inheritDoc}
+	 */
+	public function getTask(): string {
+		return 'duplicate-lookup';
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * {@inheritDoc}
+	 */
+	public function isTaskFor( string $action ): bool {
+		return $action === $this->getTask();
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * {@inheritDoc}
+	 */
+	public function getHtml() {
+		$link = $this->outputFormatter->createSpecialPageLink(
+			$this->msg( 'smw-admin-supplementary-duplookup-title' ),
+			[
+				'action' => $this->getTask()
+			]
+		);
+
+		return Html::rawElement(
+			'li',
+			[],
+			$this->msg(
+				[
+					'smw-admin-supplementary-duplookup-intro',
+					$link
+				]
+			)
+		);
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * {@inheritDoc}
+	 */
+	public function handleRequest( WebRequest $webRequest ): void {
+		$this->outputFormatter->setPageTitle(
+			$this->msg( [ 'smw-admin-main-title', $this->msg( 'smw-admin-supplementary-duplookup-title' ) ] )
+		);
+
+		$this->outputFormatter->addParentLink(
+			[
+				'tab' => 'supplement'
+			]
+		);
+
+		$this->outputFormatter->addHelpLink(
+			$this->msg( 'smw-admin-supplementary-duplookup-helplink' )
+		);
+
+		$this->outputFormatter->addHtml(
+			Html::rawElement(
+				'p',
+				[
+					'class' => 'plainlinks'
+				],
+				$this->msg( 'smw-admin-supplementary-duplookup-docu', Message::PARSE )
+			)
+		);
+
+		$placeholder = Html::rawElement(
+			'div',
+			[
+				'class' => 'smw-admin-supplementary-duplicate-lookup-placeholder',
+			],
+			Message::get( 'smw-data-lookup-with-wait' ) .
+			"\n\n\n" . Message::get( 'smw-preparing' ) . "\n"
+		) .	Html::rawElement(
+			'span',
+			[
+				'class' => 'smw-overlay-spinner medium',
+				'style' => 'transform: translate(-50%, -50%);'
+			]
+		);
+
+		// Ajax is doing the query and result display to avoid a timeout issue
+		$html = Html::rawElement(
+			'div',
+			[
+				'class' => 'smw-admin-supplementary-duplicate-lookup',
+				'style' => 'opacity:0.5;position: relative;',
+				'data-config' => json_encode(
+					[
+						'contentClass' => 'smw-admin-supplementary-duplookup-content',
+						'errorClass'   => 'smw-admin-supplementary-duplookup-error'
+					]
+				)
+			],
+			Html::errorBox(
+				// Since message boxes can be rendered differently in different MW version,
+				// insert a div wrapper so JS can target that
+				Html::rawElement( 'div', [ 'class' => 'smw-message-content' ] ),
+				'',
+				'smw-message--hidden smw-admin-supplementary-duplookup-error'
+			) .
+			Html::rawElement(
+				'div',
+				[
+					'class' => 'smw-jsonview-menu',
+				]
+			) .
+			Html::rawElement(
+				'pre',
+				[
+					'class' => 'smw-admin-supplementary-duplookup-content'
+				],
+				$placeholder
+			)
+		);
+
+		$this->outputFormatter->addHtml( $html );
+	}
+
+}

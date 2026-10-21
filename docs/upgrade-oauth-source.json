@@ -1,0 +1,7 @@
+{
+  "component": "mediawiki/extensions/OAuth",
+  "baseline": "3075d3757dbf5c9fee314d576313f100407bb650",
+  "target": "80b5f7b4297f0a9db5865c59d8d9b1bd22dc00d1",
+  "preserved_changes": [],
+  "dependency_status": "requires-lock-regeneration"
+}

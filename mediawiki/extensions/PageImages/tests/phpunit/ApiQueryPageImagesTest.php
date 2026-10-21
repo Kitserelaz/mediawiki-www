@@ -27,7 +27,7 @@ use Wikimedia\TestingAccessWrapper;
  */
 class ApiQueryPageImagesTest extends MediaWikiIntegrationTestCase {
 
-	private function newInstance() {
+	private function newInstance(): ApiQueryPageImages {
 		$config = new HashConfig( [
 			'PageImagesAPIDefaultLicense' => 'free'
 		] );
@@ -47,12 +47,12 @@ class ApiQueryPageImagesTest extends MediaWikiIntegrationTestCase {
 			->method( 'getMain' )
 			->willReturn( $main );
 
-		return new ApiQueryPageImages( $query, '', $this->getServiceContainer()->getRepoGroup() );
-	}
-
-	public function testConstructor() {
-		$instance = $this->newInstance();
-		$this->assertInstanceOf( ApiQueryPageImages::class, $instance );
+		return new ApiQueryPageImages(
+			$query,
+			'',
+			$this->getServiceContainer()->getRepoGroup(),
+			$this->getServiceContainer()->getUrlUtils()
+		);
 	}
 
 	public function testGetCacheMode() {

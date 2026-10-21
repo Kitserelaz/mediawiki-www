@@ -7,11 +7,15 @@ $cfg['directory_list'] = array_merge(
 	[
 		'../../extensions/AbuseFilter',
 		'../../extensions/CentralAuth',
+		'../../extensions/EventBus',
 		'../../extensions/EventLogging',
-		'../../extensions/GuidedTour',
 		'../../extensions/GlobalBlocking',
+		'../../extensions/GlobalPreferences',
+		'../../extensions/GrowthExperiments',
+		'../../extensions/IPInfo',
+		'../../extensions/MobileFrontend',
 		'../../extensions/TorBlock',
-		'../../extensions/UserMerge'
+		'../../extensions/UserMerge',
 	]
 );
 
@@ -20,11 +24,15 @@ $cfg['exclude_analysis_directory_list'] = array_merge(
 	[
 		'../../extensions/AbuseFilter',
 		'../../extensions/CentralAuth',
+		'../../extensions/EventBus',
 		'../../extensions/EventLogging',
-		'../../extensions/GuidedTour',
 		'../../extensions/GlobalBlocking',
+		'../../extensions/GlobalPreferences',
+		'../../extensions/GrowthExperiments',
+		'../../extensions/IPInfo',
+		'../../extensions/MobileFrontend',
 		'../../extensions/TorBlock',
-		'../../extensions/UserMerge'
+		'../../extensions/UserMerge',
 	]
 );
 

@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Samoasambia",
+			"Silvonen"
+		]
+	},
+	"apihelp-stabilize-param-reason": "Syy.",
+	"apierror-flaggedrevs-notreviewable": "Annettua sivua ei voi arvioida.",
+	"apierror-flaggedrevs-notsamepage": "Muutokset eivät kuulu samalle sivulle.",
+	"apierror-flaggedrevs-pagedoesnotexist": "Annettua sivua ei ole olemassa."
+}

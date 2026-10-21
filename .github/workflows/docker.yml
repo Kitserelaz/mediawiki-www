@@ -14,13 +14,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
+      - run: python3 scripts/verify-checkout.py
       - run: python3 scripts/setup-dev.py
       - run: docker compose config --quiet
       - run: scripts/farm build
+      - name: Syntax check complete immutable PHP runtime
+        run: sh scripts/lint-php-image.sh
+      - name: Elastica PHP 8 query compatibility
+        run: docker compose run --rm --no-deps -v "$PWD/docker/tests/elastica.php:/opt/elastica-test.php:ro" init php /opt/elastica-test.php
       - run: docker compose --profile dev up -d database redis memcached mailpit
       - run: scripts/farm init
       - run: scripts/farm init
       - run: scripts/farm up
+      - name: Pinned CreateWiki and ManageWiki upstream integration suite
+        run: python3 scripts/test-upstream.py
+      - name: Complete isolated catalogue and skin asset checks
+        run: |
+          export COMPOSE_PROJECT_NAME=cloudwiki-catalogue-tests
+          docker compose -f compose.yaml -f docker/tests/upgrade-isolated.compose.yaml up -d --wait database redis memcached
+          docker compose -f compose.yaml -f docker/tests/upgrade-isolated.compose.yaml run --rm --no-deps init php /opt/farm/manage.php fresh
+          docker compose -f compose.yaml -f docker/tests/upgrade-isolated.compose.yaml run --rm --no-deps --user www-data -e MW_CONFIG_FILE=/opt/catalogue-settings.php -e MW_CATALOGUE_COMPONENT=extensions/DataTransfer/extension.json -e 'MW_CATALOGUE_EXTRA_COMPONENTS_JSON=["Highlight Links in Category"]' -v "$PWD/docker/tests/catalogue-settings.php:/opt/catalogue-settings.php:ro" -v "$PWD/docker/tests/legacy-linktarget.php:/opt/legacy-linktarget.php:ro" init php maintenance/run.php /opt/legacy-linktarget.php --wiki=testwiki
+          python3 scripts/check-catalogue.py --env-file .env --immutable --workers 1 --report-directory docker/tests/test-results/catalogue-registration
+          python3 scripts/check-catalogue.py --env-file .env --immutable --workers 1 --gate skin-render --report-directory docker/tests/test-results/catalogue-skins
+          docker compose -f compose.yaml -f docker/tests/upgrade-isolated.compose.yaml down
       - uses: actions/setup-node@v4
         with:
           node-version: '22'

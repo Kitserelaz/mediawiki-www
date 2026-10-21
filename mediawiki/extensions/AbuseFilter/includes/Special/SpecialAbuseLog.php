@@ -2,23 +2,22 @@
 
 namespace MediaWiki\Extension\AbuseFilter\Special;
 
-use DifferenceEngine;
 use InvalidArgumentException;
-use ManualLogEntry;
-use MediaWiki\Cache\LinkBatchFactory;
+use MediaWiki\Diff\DifferenceEngine;
+use MediaWiki\Extension\AbuseFilter\AbuseFilter;
 use MediaWiki\Extension\AbuseFilter\AbuseFilterPermissionManager;
 use MediaWiki\Extension\AbuseFilter\AbuseFilterServices;
+use MediaWiki\Extension\AbuseFilter\AbuseLogConditionFactory;
 use MediaWiki\Extension\AbuseFilter\AbuseLoggerFactory;
 use MediaWiki\Extension\AbuseFilter\CentralDBNotAvailableException;
 use MediaWiki\Extension\AbuseFilter\Consequences\ConsequencesRegistry;
 use MediaWiki\Extension\AbuseFilter\Filter\FilterNotFoundException;
-use MediaWiki\Extension\AbuseFilter\Filter\Flags;
-use MediaWiki\Extension\AbuseFilter\FilterUtils;
+use MediaWiki\Extension\AbuseFilter\Filter\MutableFilter;
+use MediaWiki\Extension\AbuseFilter\FilterLookup;
 use MediaWiki\Extension\AbuseFilter\GlobalNameUtils;
 use MediaWiki\Extension\AbuseFilter\Pager\AbuseLogPager;
 use MediaWiki\Extension\AbuseFilter\SpecsFormatter;
 use MediaWiki\Extension\AbuseFilter\Variables\UnsetVariableException;
-use MediaWiki\Extension\AbuseFilter\Variables\VariableHolder;
 use MediaWiki\Extension\AbuseFilter\Variables\VariablesBlobStore;
 use MediaWiki\Extension\AbuseFilter\Variables\VariablesFormatter;
 use MediaWiki\Extension\AbuseFilter\Variables\VariablesManager;
@@ -27,22 +26,24 @@ use MediaWiki\Html\Html;
 use MediaWiki\Html\ListToggle;
 use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\Linker\Linker;
+use MediaWiki\Logging\ManualLogEntry;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Page\LinkBatchFactory;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Permissions\PermissionManager;
 use MediaWiki\Registration\ExtensionRegistry;
-use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Status\Status;
 use MediaWiki\Title\Title;
+use MediaWiki\User\TempUser\TempUserConfig;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityLookup;
+use MediaWiki\User\UserIdentityValue;
 use MediaWiki\WikiMap\WikiMap;
 use OOUI\ButtonInputWidget;
 use stdClass;
-use Wikimedia\Rdbms\IExpression;
+use Wikimedia\IPUtils;
 use Wikimedia\Rdbms\LBFactory;
-use Wikimedia\Rdbms\LikeValue;
 
 class SpecialAbuseLog extends AbuseFilterSpecialPage {
 	public const PAGE_NAME = 'AbuseLog';
@@ -53,6 +54,8 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 	public const VISIBILITY_HIDDEN = 'hidden';
 	/** Visible entry but the associated revision is hidden */
 	public const VISIBILITY_HIDDEN_IMPLICIT = 'implicit';
+	/** Explicity suppressed entry due to the filter being suppressed */
+	public const VISIBILITY_SUPPRESSED = 'suppressed';
 
 	/**
 	 * @var string|null The user whose AbuseLog entries are being searched
@@ -107,74 +110,31 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 	/** @var string|null The filter group to search, as defined in $wgAbuseFilterValidGroups */
 	private $mSearchGroup;
 
-	/** @var LBFactory */
-	private $lbFactory;
-
-	/** @var LinkBatchFactory */
-	private $linkBatchFactory;
-
-	/** @var PermissionManager */
-	private $permissionManager;
-
-	/** @var UserIdentityLookup */
-	private $userIdentityLookup;
-
-	/** @var ConsequencesRegistry */
-	private $consequencesRegistry;
-
-	/** @var VariablesBlobStore */
-	private $varBlobStore;
-
-	/** @var SpecsFormatter */
-	private $specsFormatter;
-
-	/** @var VariablesFormatter */
-	private $variablesFormatter;
-
-	/** @var VariablesManager */
-	private $varManager;
-
-	private AbuseLoggerFactory $abuseLoggerFactory;
-
-	/**
-	 * @param LBFactory $lbFactory
-	 * @param LinkBatchFactory $linkBatchFactory
-	 * @param PermissionManager $permissionManager
-	 * @param UserIdentityLookup $userIdentityLookup
-	 * @param AbuseFilterPermissionManager $afPermissionManager
-	 * @param ConsequencesRegistry $consequencesRegistry
-	 * @param VariablesBlobStore $varBlobStore
-	 * @param SpecsFormatter $specsFormatter
-	 * @param VariablesFormatter $variablesFormatter
-	 * @param VariablesManager $varManager
-	 * @param AbuseLoggerFactory $abuseLoggerFactory
-	 */
 	public function __construct(
-		LBFactory $lbFactory,
-		LinkBatchFactory $linkBatchFactory,
-		PermissionManager $permissionManager,
-		UserIdentityLookup $userIdentityLookup,
+		private readonly LBFactory $lbFactory,
+		private readonly LinkBatchFactory $linkBatchFactory,
+		private readonly PermissionManager $permissionManager,
+		private readonly UserIdentityLookup $userIdentityLookup,
 		AbuseFilterPermissionManager $afPermissionManager,
-		ConsequencesRegistry $consequencesRegistry,
-		VariablesBlobStore $varBlobStore,
-		SpecsFormatter $specsFormatter,
-		VariablesFormatter $variablesFormatter,
-		VariablesManager $varManager,
-		AbuseLoggerFactory $abuseLoggerFactory
+		private readonly ConsequencesRegistry $consequencesRegistry,
+		private readonly VariablesBlobStore $varBlobStore,
+		private readonly SpecsFormatter $specsFormatter,
+		private readonly VariablesFormatter $variablesFormatter,
+		private readonly VariablesManager $varManager,
+		private readonly AbuseLoggerFactory $abuseLoggerFactory,
+		private readonly FilterLookup $filterLookup,
+		private readonly TempUserConfig $tempUserConfig,
+		private readonly ExtensionRegistry $extensionRegistry,
+		private readonly AbuseLogConditionFactory $abuseLogConditionFactory
 	) {
-		parent::__construct( self::PAGE_NAME, 'abusefilter-log', $afPermissionManager );
-		$this->lbFactory = $lbFactory;
-		$this->linkBatchFactory = $linkBatchFactory;
-		$this->permissionManager = $permissionManager;
-		$this->userIdentityLookup = $userIdentityLookup;
-		$this->consequencesRegistry = $consequencesRegistry;
-		$this->varBlobStore = $varBlobStore;
-		$this->specsFormatter = $specsFormatter;
+		parent::__construct( self::PAGE_NAME, $afPermissionManager );
 		$this->specsFormatter->setMessageLocalizer( $this );
-		$this->variablesFormatter = $variablesFormatter;
 		$this->variablesFormatter->setMessageLocalizer( $this );
-		$this->varManager = $varManager;
-		$this->abuseLoggerFactory = $abuseLoggerFactory;
+	}
+
+	/** @inheritDoc */
+	public function getRestriction(): string {
+		return 'abusefilter-log';
 	}
 
 	/**
@@ -264,7 +224,7 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 
 		$searchUsername = trim( $request->getText( 'wpSearchUser' ) );
 		$userTitle = Title::newFromText( $searchUsername, NS_USER );
-		$this->mSearchUser = $userTitle ? $userTitle->getText() : null;
+		$this->mSearchUser = $userTitle?->getText();
 		if ( $this->getConfig()->get( 'AbuseFilterIsCentral' ) ) {
 			$this->mSearchWiki = $request->getText( 'wpSearchWiki' );
 		}
@@ -313,6 +273,7 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 				'label-message' => 'abusefilter-log-search-user',
 				'type' => 'user',
 				'ipallowed' => true,
+				'iprange' => true,
 				'default' => $this->mSearchUser,
 			],
 			'SearchPeriodStart' => [
@@ -422,6 +383,7 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 			->setWrapperLegendMsg( 'abusefilter-log-search' )
 			->setSubmitTextMsg( 'abusefilter-log-search-submit' )
 			->setMethod( 'get' )
+			->setId( 'abusefilter-log-search' )
 			->setCollapsibleOptions( true )
 			->prepareForm()
 			->displayForm( false );
@@ -433,6 +395,10 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 			$this->afPermissionManager,
 			$this->getContext(),
 			$this->getLinkRenderer(),
+			$this->linkBatchFactory,
+			$this->permissionManager,
+			$this->filterLookup,
+			$this->varBlobStore,
 			self::PAGE_NAME
 		);
 		$view->show();
@@ -446,21 +412,9 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 		$performer = $this->getAuthority();
 
 		// Generate conditions list.
-		$conds = [];
-
-		if ( $this->mSearchUser !== null ) {
-			$searchedUser = $this->userIdentityLookup->getUserIdentityByName( $this->mSearchUser );
-
-			if ( !$searchedUser ) {
-				$conds['afl_user'] = 0;
-				$conds['afl_user_text'] = $this->mSearchUser;
-			} else {
-				$conds['afl_user'] = $searchedUser->getId();
-				$conds['afl_user_text'] = $searchedUser->getName();
-			}
-		}
-
 		$dbr = $this->lbFactory->getReplicaDatabase();
+		$conds = $this->getUserFilter( $performer, $this->mSearchUser );
+
 		if ( $this->mSearchPeriodStart ) {
 			$conds[] = $dbr->expr( 'afl_timestamp', '>=',
 				$dbr->timestamp( strtotime( $this->mSearchPeriodStart ) ) );
@@ -498,57 +452,77 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 			foreach ( $rawFilters as $filter ) {
 				try {
 					$filtersList[] = GlobalNameUtils::splitGlobalName( $filter );
-				} catch ( InvalidArgumentException $e ) {
+				} catch ( InvalidArgumentException ) {
 					$foundInvalid = true;
 					continue;
 				}
 			}
 
-			// if a filter is hidden, users who can't view private filters should
-			// not be able to find log entries generated by it.
-			if ( !$this->afPermissionManager->canViewPrivateFiltersLogs( $performer ) ) {
-				$searchedForPrivate = false;
-				foreach ( $filtersList as $index => $filterData ) {
-					try {
-						$filter = AbuseFilterServices::getFilterLookup()->getFilter( ...$filterData );
-					} catch ( FilterNotFoundException $_ ) {
-						unset( $filtersList[$index] );
-						$foundInvalid = true;
-						continue;
-					}
-					if ( $filter->isHidden() ) {
-						unset( $filtersList[$index] );
-						$searchedForPrivate = true;
-					}
+			// Initialize flags for warning messages about filters excluded due to permissions
+			$excludedDueToSuppression = false;
+			$excludedDueToHidden = false;
+			$excludedDueToProtected = false;
+
+			// Evaluate the user's permissions
+			// We can't evaluate their protected variable permissions as it could be different between filter objects
+			$canViewSuppressed = $this->afPermissionManager->canViewSuppressed( $performer );
+			$canViewPrivate = $this->afPermissionManager->canViewPrivateFiltersLogs( $performer );
+
+			// Iterate over the filters the user is searching for.
+			// Remove filters from the list if the user lacks permissions to see their logs
+			// based on suppression, hidden status, or protected status.
+			foreach ( $filtersList as $index => $filterData ) {
+				try {
+					// Use the injected filterLookup service
+					$filter = $this->filterLookup->getFilter( ...$filterData );
+				} catch ( FilterNotFoundException ) {
+					// Filter ID is invalid or filter doesn't exist
+					unset( $filtersList[$index] );
+					$foundInvalid = true;
+					continue;
 				}
-				if ( $searchedForPrivate ) {
-					$out->addWikiMsg( 'abusefilter-log-private-not-included' );
+
+				// 1. Check for suppression
+				if ( $filter->isSuppressed() && !$canViewSuppressed ) {
+					unset( $filtersList[$index] );
+					$excludedDueToSuppression = true;
+					continue;
+				}
+
+				// 2. Check if filter is hidden (private)
+				if ( $filter->isHidden() && !$canViewPrivate ) {
+					unset( $filtersList[$index] );
+					$excludedDueToHidden = true;
+					continue;
+				}
+
+				// 3. Check if filter is protected and user lacks permission for its variables
+				if (
+					$filter->isProtected() &&
+					!$this->afPermissionManager->canViewProtectedVariablesInFilter( $performer, $filter )->isGood()
+				) {
+					unset( $filtersList[$index] );
+					$excludedDueToProtected = true;
+					continue;
 				}
 			}
 
-			// if a filter is protected, users who can't view protected filters should
-			// not be able to find log entries generated by it.
-			if ( !$this->afPermissionManager->canViewProtectedVariables( $performer ) ) {
-				$searchedForProtected = false;
-				foreach ( $filtersList as $index => $filterData ) {
-					try {
-						$filter = AbuseFilterServices::getFilterLookup()->getFilter( ...$filterData );
-					} catch ( FilterNotFoundException $_ ) {
-						unset( $filtersList[$index] );
-						$foundInvalid = true;
-						continue;
-					}
-					if ( $filter->isProtected() ) {
-						unset( $filtersList[$index] );
-						$searchedForProtected = true;
-					}
-				}
-				if ( $searchedForProtected ) {
-					$out->addWikiMsg( 'abusefilter-log-protected-not-included' );
-				}
+			// Add warning messages if any filters were excluded due to specific permission restrictions
+			if ( $excludedDueToSuppression ) {
+				$out->addWikiMsg( 'abusefilter-log-suppressed-not-included' );
 			}
+			// Note: The message for "hidden" is 'abusefilter-log-private-not-included'
+			if ( $excludedDueToHidden ) {
+				$out->addWikiMsg( 'abusefilter-log-private-not-included' );
+			}
+			if ( $excludedDueToProtected ) {
+				$out->addWikiMsg( 'abusefilter-log-protected-not-included' );
+			}
+
+			// Continue with building the list of filters to search and warning for invalid IDs
 
 			if ( $foundInvalid ) {
+				$out->addModuleStyles( 'mediawiki.codex.messagebox.styles' );
 				// @todo Tell what the invalid IDs are
 				$out->addHTML(
 					Html::rawElement(
@@ -589,14 +563,12 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 			if ( $filterConds['local'] ) {
 				$filterWhere[] = $dbr->andExpr( [
 					'afl_global' => 0,
-					// @phan-suppress-previous-line PhanTypeMismatchArgument Array is non-empty
 					'afl_filter_id' => $filterConds['local'],
 				] );
 			}
 			if ( $filterConds['global'] ) {
 				$filterWhere[] = $dbr->andExpr( [
 					'afl_global' => 1,
-					// @phan-suppress-previous-line PhanTypeMismatchArgument Array is non-empty
 					'afl_filter_id' => $filterConds['global'],
 				] );
 			}
@@ -625,18 +597,7 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 
 		if ( $this->mSearchActionTaken ) {
 			if ( in_array( $this->mSearchActionTaken, $this->consequencesRegistry->getAllActionNames() ) ) {
-				$conds[] = $dbr->expr( 'afl_actions', '=', $this->mSearchActionTaken )
-					->or( 'afl_actions', IExpression::LIKE, new LikeValue(
-						$this->mSearchActionTaken, ',', $dbr->anyString()
-					) )
-					->or( 'afl_actions', IExpression::LIKE, new LikeValue(
-						$dbr->anyString(), ',', $this->mSearchActionTaken
-					) )
-					->or( 'afl_actions', IExpression::LIKE, new LikeValue(
-						$dbr->anyString(),
-						',', $this->mSearchActionTaken, ',',
-						$dbr->anyString()
-					) );
+				$conds[] = AbuseFilter::findInSet( $dbr, 'afl_actions', $this->mSearchActionTaken );
 			} elseif ( $this->mSearchActionTaken === 'noactions' ) {
 				$conds['afl_actions'] = '';
 			}
@@ -658,6 +619,8 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 			$this->linkBatchFactory,
 			$this->permissionManager,
 			$this->afPermissionManager,
+			$this->filterLookup,
+			$this->varBlobStore,
 			$this->getName()
 		);
 		$pager->doQuery();
@@ -725,6 +688,8 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 			$this->linkBatchFactory,
 			$this->permissionManager,
 			$this->afPermissionManager,
+			$this->filterLookup,
+			$this->varBlobStore,
 			$this->getName()
 		);
 
@@ -743,50 +708,88 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 			->joinConds( $join_conds )
 			->fetchRow();
 
-		$error = null;
-		$privacyLevel = Flags::FILTER_PUBLIC;
 		if ( !$row ) {
-			$error = 'abusefilter-log-nonexistent';
+			$out->addWikiMsg( 'abusefilter-log-nonexistent' );
+			return;
+		}
+
+		$error = null;
+		$filterID = $row->afl_filter_id;
+		$global = $row->afl_global;
+
+		try {
+			$filter = $this->filterLookup->getFilter( $filterID, $global );
+		} catch ( CentralDBNotAvailableException ) {
+			// Conservatively assume that it's hidden and protected, like in AbuseLogPager::doFormatRow
+			$filter = MutableFilter::newDefault();
+			$filter->setHidden( true );
+			$filter->setProtected( true );
+		}
+
+		if ( !$this->afPermissionManager->canSeeLogDetailsForFilter( $performer, $filter ) ) {
+			$error = 'abusefilter-log-cannot-see-details';
 		} else {
-			$filterID = $row->afl_filter_id;
-			$global = $row->afl_global;
-
-			$privacyLevel = $row->af_hidden;
-			if ( $global ) {
-				try {
-					$privacyLevel = AbuseFilterServices::getFilterLookup()->getFilter( $filterID, $global )
-						->getPrivacyLevel();
-				} catch ( CentralDBNotAvailableException $_ ) {
-					// Conservatively assume that it's hidden and protected, like in AbuseLogPager::doFormatRow
-					$privacyLevel = Flags::FILTER_HIDDEN | Flags::FILTER_USES_PROTECTED_VARS;
-				}
-			}
-
-			if ( !$this->afPermissionManager->canSeeLogDetailsForFilter( $performer, $privacyLevel ) ) {
-				$error = 'abusefilter-log-cannot-see-details';
-			} else {
-				$visibility = self::getEntryVisibilityForUser( $row, $performer, $this->afPermissionManager );
-				if ( $visibility === self::VISIBILITY_HIDDEN ) {
-					$error = 'abusefilter-log-details-hidden';
-				} elseif ( $visibility === self::VISIBILITY_HIDDEN_IMPLICIT ) {
-					$error = 'abusefilter-log-details-hidden-implicit';
-				}
-			}
-
-			// Only show the preference error if another error isn't already set
-			// as this error shouldn't take precedence over a view permission error
-			if (
-				FilterUtils::isProtected( $privacyLevel ) &&
-				!$this->afPermissionManager->canViewProtectedVariableValues( $performer ) &&
-				!$error
-			) {
-				$error = 'abusefilter-examine-protected-vars-permission';
+			$visibility = self::getEntryVisibilityForUser( $row, $performer, $this->afPermissionManager );
+			if ( $visibility === self::VISIBILITY_HIDDEN ) {
+				$error = 'abusefilter-log-details-hidden';
+			} elseif ( $visibility === self::VISIBILITY_HIDDEN_IMPLICIT ) {
+				$error = 'abusefilter-log-details-hidden-implicit';
+			} elseif ( $visibility === self::VISIBILITY_SUPPRESSED ) {
+				$error = 'abusefilter-log-details-suppressed';
 			}
 		}
 
 		if ( $error ) {
 			$out->addWikiMsg( $error );
 			return;
+		}
+
+		// Load data
+		$vars = $this->varBlobStore->loadVarDump( $row );
+		$varsArray = $this->varManager->dumpAllVars( $vars, $this->afPermissionManager->getProtectedVariables() );
+
+		// Prevent users seeing logs which contain protected variables that the user cannot see.
+		if ( $filter->isProtected() ) {
+			$permStatus = $this->afPermissionManager->canViewProtectedVariables(
+				$performer, array_keys( $vars->getVars() )
+			);
+			if ( !$permStatus->isGood() ) {
+				if ( $permStatus->getPermission() ) {
+					$out->addWikiMsg( $this->msg(
+						'abusefilter-examine-error-protected-due-to-permission',
+						$this->msg( "action-{$permStatus->getPermission()}" )->plain()
+					) );
+					return;
+				}
+
+				// Add any messages in the status after a generic error message.
+				$additional = '';
+				foreach ( $permStatus->getMessages() as $message ) {
+					$additional .= $this->msg( $message )->parseAsBlock();
+				}
+
+				$out->addWikiMsg( $this->msg( 'abusefilter-examine-error-protected' )->rawParams( $additional ) );
+				return;
+			}
+
+			$userAuthority = $this->getAuthority();
+			$protectedVariableValuesShown = [];
+			foreach ( $this->afPermissionManager->getProtectedVariables() as $protectedVariable ) {
+				if ( isset( $varsArray[$protectedVariable] ) ) {
+					$protectedVariableValuesShown[] = $protectedVariable;
+				}
+			}
+
+			if ( count( $protectedVariableValuesShown ) ) {
+				$this->checkReadOnly();
+
+				$logger = $this->abuseLoggerFactory->getProtectedVarsAccessLogger();
+				$logger->logViewProtectedVariableValue(
+					$userAuthority->getUser(),
+					$varsArray['user_name'] ?? $varsArray['account_name'],
+					$protectedVariableValuesShown
+				);
+			}
 		}
 
 		$output = Html::element(
@@ -797,52 +800,6 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 				->text()
 		);
 		$output .= Html::rawElement( 'p', [], $pager->doFormatRow( $row, false ) );
-
-		// Load data
-		$vars = $this->varBlobStore->loadVarDump( $row );
-		$varsArray = $this->varManager->dumpAllVars( $vars, true );
-		$shouldLogProtectedVarAccess = false;
-
-		// If a non-protected filter and a protected filter have overlapping conditions,
-		// it's possible for a hit to contain a protected variable and for that variable
-		// to be dumped and displayed on a detail page that wouldn't be considered
-		// protected (because it caught on the public filter).
-		// We shouldn't block access to the details of an otherwise public filter hit so
-		// instead only check for access to the protected variables and redact them if the user
-		// shouldn't see them.
-		$userAuthority = $this->getAuthority();
-		$canViewProtectedVars = $this->afPermissionManager->canViewProtectedVariableValues( $userAuthority );
-		foreach ( $this->afPermissionManager->getProtectedVariables() as $protectedVariable ) {
-			if ( isset( $varsArray[$protectedVariable] ) ) {
-				if ( !$canViewProtectedVars ) {
-					$varsArray[$protectedVariable] = '';
-				} else {
-					// Protected variables in protected filters logs access in the general permission check
-					// Log access to non-protected filters that happen to expose protected variables here
-					if ( !FilterUtils::isProtected( $privacyLevel ) ) {
-						$shouldLogProtectedVarAccess = true;
-					}
-				}
-			}
-		}
-		$vars = VariableHolder::newFromArray( $varsArray );
-
-		// Log if protected variables are accessed
-		if (
-			FilterUtils::isProtected( $privacyLevel ) &&
-			$canViewProtectedVars
-		) {
-			$shouldLogProtectedVarAccess = true;
-		}
-
-		if ( $shouldLogProtectedVarAccess ) {
-			$logger = $this->abuseLoggerFactory->getProtectedVarsAccessLogger();
-			$logger->logViewProtectedVariableValue(
-				$userAuthority->getUser(),
-				$varsArray['user_name'] ?? $varsArray['accountname']
-			);
-		}
-
 		$out->addJsConfigVars( 'wgAbuseFilterVariables', $varsArray );
 		$out->addModuleStyles( 'mediawiki.interface.helpers.styles' );
 
@@ -852,12 +809,12 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 			// No need to lazy-load as these come from a DB dump.
 			try {
 				$old_wikitext = $vars->getComputedVariable( 'old_wikitext' )->toString();
-			} catch ( UnsetVariableException $_ ) {
+			} catch ( UnsetVariableException ) {
 				$old_wikitext = '';
 			}
 			try {
 				$new_wikitext = $vars->getComputedVariable( 'new_wikitext' )->toString();
-			} catch ( UnsetVariableException $_ ) {
+			} catch ( UnsetVariableException ) {
 				$new_wikitext = '';
 			}
 
@@ -909,48 +866,43 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 	/**
 	 * Helper function to select a row with private details and some more context
 	 * for an AbuseLog entry.
-	 * @todo Create a service for this
 	 *
+	 * @deprecated Since 1.45. Use {@link AbuseFilterLogDetailsLookup::getIPForAbuseFilterLog} instead.
 	 * @param Authority $authority The user who's trying to view the row
 	 * @param int $id The ID of the log entry
-	 * @return Status A status object with the requested row stored in the value property,
+	 * @return Status<stdClass> A status object with the requested row stored in the value property,
 	 *  or an error and no row.
 	 */
 	public static function getPrivateDetailsRow( Authority $authority, $id ) {
-		$afPermissionManager = AbuseFilterServices::getPermissionManager();
-		$dbr = MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase();
+		$afLogPrivateDetailsLookup = AbuseFilterServices::getLogDetailsLookup();
 
+		$ipForAbuseFilterLogStatus = $afLogPrivateDetailsLookup->getIPForAbuseFilterLog( $authority, $id );
+		if ( !$ipForAbuseFilterLogStatus->isGood() ) {
+			return Status::wrap( $ipForAbuseFilterLogStatus );
+		}
+
+		$dbr = MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase();
 		$row = $dbr->newSelectQueryBuilder()
-			->select( [ 'afl_id', 'afl_user_text', 'afl_filter_id', 'afl_global', 'afl_timestamp', 'afl_ip',
-				'af_id', 'af_public_comments', 'af_hidden' ] )
+			->select( [ 'afl_id', 'afl_user_text', 'afl_filter_id', 'afl_global', 'afl_timestamp' ] )
 			->from( 'abuse_filter_log' )
-			->leftJoin( 'abuse_filter', null, [ 'af_id=afl_filter_id', 'afl_global' => 0 ] )
 			->where( [ 'afl_id' => $id ] )
 			->caller( __METHOD__ )
 			->fetchRow();
 
-		$status = Status::newGood();
 		if ( !$row ) {
-			$status->fatal( 'abusefilter-log-nonexistent' );
-			return $status;
+			return Status::newFatal( 'abusefilter-log-nonexistent' );
 		}
 
-		$filterID = $row->afl_filter_id;
-		$global = $row->afl_global;
+		// Append the afl_ip to the row
+		$row->afl_ip = $ipForAbuseFilterLogStatus->getValue();
 
-		if ( $global ) {
-			$lookup = AbuseFilterServices::getFilterLookup();
-			$privacyLevel = $lookup->getFilter( $filterID, $global )->getPrivacyLevel();
-		} else {
-			$privacyLevel = $row->af_hidden;
-		}
+		// Append details about the filter to the row.
+		$filter = AbuseFilterServices::getFilterLookup()->getFilter( $row->afl_filter_id, $row->afl_global );
+		$row->af_id = (string)$filter->getId();
+		$row->af_public_comments = $filter->getName();
+		$row->af_hidden = $filter->getPrivacyLevel();
 
-		if ( !$afPermissionManager->canSeeLogDetailsForFilter( $authority, $privacyLevel ) ) {
-			$status->fatal( 'abusefilter-log-cannot-see-details' );
-			return $status;
-		}
-		$status->setResult( true, $row );
-		return $status;
+		return Status::newGood( $row );
 	}
 
 	/**
@@ -1030,7 +982,7 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 
 		// IP address
 		if ( $row->afl_ip !== '' ) {
-			if ( ExtensionRegistry::getInstance()->isLoaded( 'CheckUser' ) &&
+			if ( $this->extensionRegistry->isLoaded( 'CheckUser' ) &&
 				$this->permissionManager->userHasRight( $this->getUser(), 'checkuser' )
 			) {
 				$CULink = '&nbsp;&middot;&nbsp;' . $linkRenderer->makeKnownLink(
@@ -1052,7 +1004,9 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 					Html::rawElement(
 						'td',
 						[],
-						self::getUserLinks( 0, $row->afl_ip ) . $CULink
+						$linkRenderer->makeUserLink( new UserIdentityValue( 0, $row->afl_ip ), $this->getContext() )
+							. Linker::userToolLinks( 0, $row->afl_ip, true )
+							. $CULink
 					)
 				);
 		} else {
@@ -1112,6 +1066,7 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 		// Make sure it is a valid request
 		$token = $request->getVal( 'wpEditToken' );
 		if ( !$request->wasPosted() || !$user->matchEditToken( $token ) ) {
+			$out->addModuleStyles( 'mediawiki.codex.messagebox.styles' );
 			$out->addHTML(
 				Html::rawElement(
 					'p',
@@ -1148,6 +1103,66 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 	}
 
 	/**
+	 * Returns an array with the conditions required for filtering out entries
+	 * not associated with the provided username.
+	 *
+	 * If temporary accounts are enabled and the user can reveal their IP
+	 * addresses, the filter returned allows to:
+	 *
+	 * - Lookup temporary accounts that used the IP via afl_ip_hex
+	 * - Lookup temporary accounts that used an IP in a range via afl_ip_hex
+	 * - Lookup historical anonymous edits via matches on afl_user_text
+	 *
+	 * Otherwise, if the provided username corresponds to an existing account,
+	 * this method lists entries by the given user (using both its ID and name);
+	 * if it doesn't (i.e. "IP users"), this lists entries where the name matches
+	 * the account and the user ID is zero.
+	 *
+	 * @param Authority $performer Authority accessing the AbuseLog.
+	 * @param ?string $userName Username or IP address to filter for.
+	 */
+	private function getUserFilter(
+		Authority $performer,
+		?string $userName
+	): array {
+		if ( $userName === null ) {
+			return [];
+		}
+
+		$conditions = [];
+
+		if (
+			IPUtils::isIPAddress( $userName ) &&
+			$this->tempUserConfig->isKnown() &&
+			$this->canAccessTemporaryAccountIPAddresses( $performer )
+		) {
+			$expression = $this->abuseLogConditionFactory
+				->getUserFilterByIPAddress( $userName );
+
+			if ( $expression ) {
+				$conditions[] = $expression;
+			}
+		} else {
+			// Otherwise search only afl_user and afl_user_text
+			$searchedUser = $this->userIdentityLookup
+				->getUserIdentityByName( $userName );
+
+			if ( !$searchedUser ) {
+				$searchedUser = new UserIdentityValue( 0, $userName );
+			}
+
+			$conditions = array_merge(
+				$conditions,
+				$this->abuseLogConditionFactory->getUserFilterByUserIdentity(
+					$searchedUser
+				)
+			);
+		}
+
+		return $conditions;
+	}
+
+	/**
 	 * If specifying a reason for viewing private details of abuse log is required
 	 * then it makes sure that a reason is provided.
 	 *
@@ -1180,22 +1195,6 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 	}
 
 	/**
-	 * @param int $userId
-	 * @param string $userName
-	 * @return string
-	 */
-	public static function getUserLinks( $userId, $userName ) {
-		static $cache = [];
-
-		if ( !isset( $cache[$userName][$userId] ) ) {
-			$cache[$userName][$userId] = Linker::userLink( $userId, $userName ) .
-				Linker::userToolLinks( $userId, $userName, true );
-		}
-
-		return $cache[$userName][$userId];
-	}
-
-	/**
 	 * @param stdClass $row
 	 * @param Authority $authority
 	 * @param AbuseFilterPermissionManager $afPermissionManager
@@ -1206,20 +1205,45 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 		Authority $authority,
 		AbuseFilterPermissionManager $afPermissionManager
 	): string {
+		// Check if the filter related to the log entry is suppressed.
+		// This check takes precedence over other visibility states.
+		$filter = AbuseFilterServices::getFilterLookup()->getFilter( $row->afl_filter_id, (bool)$row->afl_global );
+		if ( $filter->isSuppressed() ) {
+			if ( !$afPermissionManager->canViewSuppressed( $authority ) ) {
+				return self::VISIBILITY_SUPPRESSED;
+			}
+		}
+
 		if ( $row->afl_deleted && !$afPermissionManager->canSeeHiddenLogEntries( $authority ) ) {
 			return self::VISIBILITY_HIDDEN;
 		}
 		if ( !$row->afl_rev_id ) {
 			return self::VISIBILITY_VISIBLE;
 		}
-		$revRec = MediaWikiServices::getInstance()
+		$vis = (int)MediaWikiServices::getInstance()
 			->getRevisionLookup()
-			->getRevisionById( (int)$row->afl_rev_id );
-		if ( !$revRec || $revRec->getVisibility() === 0 ) {
+			->getRevisionById( (int)$row->afl_rev_id )
+			?->getVisibility();
+		if ( $vis === 0 ) {
 			return self::VISIBILITY_VISIBLE;
 		}
-		return $revRec->audienceCan( RevisionRecord::SUPPRESSED_ALL, RevisionRecord::FOR_THIS_USER, $authority )
+
+		// Check if this specific revision (not the entire filter) is suppressed or hidden.
+		return AbuseFilterPermissionManager::hasRevisionAccess( $vis, $authority )
 			? self::VISIBILITY_VISIBLE
 			: self::VISIBILITY_HIDDEN_IMPLICIT;
+	}
+
+	private function canAccessTemporaryAccountIPAddresses(
+		Authority $performer
+	): bool {
+		if ( !$this->extensionRegistry->isLoaded( 'CheckUser' ) ) {
+			return false;
+		}
+
+		return MediaWikiServices::getInstance()
+			->getService( 'CheckUserPermissionManager' )
+			->canAccessTemporaryAccountIPAddresses( $performer )
+			->isGood();
 	}
 }

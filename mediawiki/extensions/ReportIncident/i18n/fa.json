@@ -1,0 +1,17 @@
+{
+	"@metadata": {
+		"authors": [
+			"Jeeputer"
+		]
+	},
+	"reportincident-dialog-violator-label": "کاربری که {{GENDER:|می‌خواهید}} او را گزارش {{GENDER:|کنید}}",
+	"reportincident-email-body": "کاربر گزارش‌کننده: $1\nکاربر گزارش‌شده: $2\n$3: $4\n\nرفتار: $5\nجزئیات: $6\n\nارسال ایمیل به $1: $7",
+	"reportincident-email-link-to-page-prefix": "پیوند به صفحه",
+	"reportincident-email-link-to-comment-prefix": "پیوند به پیام گزارش‌شده",
+	"reportincident-email-link-to-topic-prefix": "پیوند به مبحث گزارش‌شده",
+	"reportincident-emaildialog-title": "به نشانی ایمیل تأییدشده نیاز است",
+	"reportincident-emaildialog-close-button": "لغو",
+	"reportincident-emaildialog-content": "ما برای ارسال به‌روزرسانی‌ها دربارهٔ گزارش، یا در صورت نیاز برای پی‌گیری، به نشانی ایمیل تأییدشدهٔ {{GENDER:|شما}} نیازمندیم. لطفاً پیش از تنظیم گزارش، از طریق تنظیمات کاربری {{GENDER:|خود}} نشانی ایمیل {{GENDER:|خود}} را بیافزایید یا آن را تأیید کنید.",
+	"reportincident-emaildialog-primary": "رفتن به تنظیمات",
+	"reportincident-confirmedemail-required": "برای ثبت گزارش یک واقعه، به یک نشانی ایمیل تأییدشده نیاز است."
+}

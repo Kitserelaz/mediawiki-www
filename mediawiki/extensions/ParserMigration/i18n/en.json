@@ -1,0 +1,24 @@
+{
+	"@metadata": {
+		"authors": [
+			"Tim Starling"
+		]
+	},
+	"parsermigration-desc": "Parser migration tool",
+	"parsermigration-edit-subtitle": "with parser migration tool",
+	"parsermigration-current": "Old",
+	"parsermigration-new": "New",
+	"parsermigration-pref-label": "Enable parser migration tool",
+	"parsermigration-pref-help": "This adds a sidebar link giving access to [https://www.mediawiki.org/wiki/Special:MyLanguage/Extension:ParserMigration a tool] for migrating page text to new versions of the MediaWiki parser.",
+	"parsermigration-toolbox-label": "Edit with migration tool",
+	"parsermigration-parsoid-readviews-selector-label": "Use the new Parsoid wikitext parser:",
+	"parsermigration-parsoid-readviews-selector-help": "When Parsoid is used, a sidebar link will be provided to allow using the legacy parser in case of issues.",
+	"parsermigration-parsoid-readviews-always": "Always (opt-in)",
+	"parsermigration-parsoid-readviews-default": "According to wiki configuration (default)",
+	"parsermigration-parsoid-readviews-never": "Never (opt-out)",
+	"parsermigration-use-legacy-parser-toolbox-label": "Switch to legacy parser",
+	"parsermigration-use-parsoid-toolbox-label": "Switch to new parser (Parsoid)",
+	"parsermigration-notice-title": "Experimental feature",
+	"parsermigration-notice-body": "You are using the new Parsoid wikitext parser to display this page. [https://www.mediawiki.org/wiki/Special:MyLanguage/Parsoid/Parser_Unification/Migration Learn more about this feature].",
+	"parsermigration-parsoid-chip-label": "Rendered with Parsoid"
+}

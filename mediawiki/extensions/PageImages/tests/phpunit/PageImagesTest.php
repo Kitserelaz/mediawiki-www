@@ -4,12 +4,13 @@ namespace PageImages\Tests;
 
 use MediaWiki\Config\HashConfig;
 use MediaWiki\Context\IContextSource;
+use MediaWiki\MainConfigNames;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Request\FauxRequest;
+use MediaWiki\Skin\SkinTemplate;
 use MediaWiki\Title\Title;
 use MediaWikiIntegrationTestCase;
 use PageImages\PageImages;
-use SkinTemplate;
 
 /**
  * @covers \PageImages\PageImages
@@ -22,14 +23,9 @@ use SkinTemplate;
  */
 class PageImagesTest extends MediaWikiIntegrationTestCase {
 
-	private function newPageImages() {
+	private function getInstance(): PageImages {
 		$services = $this->getServiceContainer();
-		return new PageImages(
-			$services->getMainConfig(),
-			$services->getDBLoadBalancerFactory(),
-			$services->getRepoGroup(),
-			$services->getUserOptionsLookup()
-		);
+		return $services->getService( 'PageImages.PageImages' );
 	}
 
 	public function testPagePropertyNames() {
@@ -37,15 +33,9 @@ class PageImagesTest extends MediaWikiIntegrationTestCase {
 		$this->assertSame( 'page_image_free', PageImages::PROP_NAME_FREE );
 	}
 
-	public function testConstructor() {
-		$pageImages = $this->newPageImages();
-		$this->assertInstanceOf( PageImages::class, $pageImages );
-	}
-
 	public function testGivenNonExistingPageGetPageImageReturnsFalse() {
 		$title = $this->newTitle();
-		$this->assertNull( $this->newPageImages()->getPageImageInternal( $title ) );
-		$this->assertFalse( PageImages::getPageImage( $title ) );
+		$this->assertNull( $this->getInstance()->getImage( $title ) );
 	}
 
 	public function testGetPropName() {
@@ -72,7 +62,7 @@ class PageImagesTest extends MediaWikiIntegrationTestCase {
 			->method( 'addMeta' );
 
 		$skinTemplate = new SkinTemplate();
-		$this->newPageImages()->onBeforePageDisplay( $outputPage, $skinTemplate );
+		$this->getInstance()->onBeforePageDisplay( $outputPage, $skinTemplate );
 	}
 
 	public function testGivenNonExistingPageOnBeforePageDisplayDoesNotAddMeta() {
@@ -84,7 +74,7 @@ class PageImagesTest extends MediaWikiIntegrationTestCase {
 			->method( 'addMeta' );
 
 		$skinTemplate = new SkinTemplate();
-		$this->newPageImages()->onBeforePageDisplay( $outputPage, $skinTemplate );
+		$this->getInstance()->onBeforePageDisplay( $outputPage, $skinTemplate );
 	}
 
 	public static function provideFallbacks() {
@@ -99,7 +89,7 @@ class PageImagesTest extends MediaWikiIntegrationTestCase {
 	 * @dataProvider provideFallbacks
 	 */
 	public function testGivenFallbackImageOnBeforePageDisplayAddMeta( $expected, $fallback ) {
-		$this->overrideConfigValue( 'CanonicalServer', 'http://wiki.test' );
+		$this->overrideConfigValue( MainConfigNames::CanonicalServer, 'http://wiki.test' );
 		$outputPage = $this->mockOutputPage( [
 			'PageImagesOpenGraph' => true,
 			'PageImagesOpenGraphFallbackImage' => $fallback
@@ -109,14 +99,10 @@ class PageImagesTest extends MediaWikiIntegrationTestCase {
 			->with( 'og:image', $expected );
 
 		$skinTemplate = new SkinTemplate();
-		$this->newPageImages()->onBeforePageDisplay( $outputPage, $skinTemplate );
+		$this->getInstance()->onBeforePageDisplay( $outputPage, $skinTemplate );
 	}
 
-	/**
-	 * @param array $config
-	 * @return OutputPage
-	 */
-	private function mockOutputPage( $config ) {
+	private function mockOutputPage( array $config ): OutputPage {
 		$context = $this->createMock( IContextSource::class );
 		$context->method( 'getTitle' )
 			->willReturn( $this->newTitle() );
@@ -134,10 +120,7 @@ class PageImagesTest extends MediaWikiIntegrationTestCase {
 		return $outputPage;
 	}
 
-	/**
-	 * @return Title
-	 */
-	private function newTitle() {
+	private function newTitle(): Title {
 		$title = Title::newFromText( 'New' );
 		$title->resetArticleID( 0 );
 		return $title;

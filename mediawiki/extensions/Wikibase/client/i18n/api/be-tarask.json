@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": [
+			"Red Winged Duck",
+			"Renessaince"
+		]
+	},
+	"apihelp-query+pageterms-example-simple": "Атрымаць усе тэрміны, асацыяваныя з старонкай «London», мовай удзельніка."
+}

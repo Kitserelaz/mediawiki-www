@@ -1,0 +1,306 @@
+<?php
+
+namespace SMW\MediaWiki\Search;
+
+use SearchEngine;
+use SMW\Formatters\InfoLink;
+use Wikimedia\Rdbms\IConnectionProvider;
+
+/**
+ * Facade to the MediaWiki `SearchEngine` which doesn't allow any factory
+ * or callable to construct an instance.
+ *
+ * @license GPL-2.0-or-later
+ * @since   2.1
+ *
+ * @author  Stephan Gambke
+ */
+class ExtendedSearchEngine extends SearchEngine {
+
+	private ExtendedSearch $extendedSearch;
+
+	private ?SearchEngine $fallbackSearchEngine = null;
+
+	/**
+	 * @see SearchEngineFactory::create
+	 *
+	 * @since 3.1
+	 */
+	public function __construct( ?IConnectionProvider $connection = null ) {
+		// It is common practice to avoid construction work in the constructor
+		// but we are unable to define a factory or callable and this is the only
+		// place to create an instance.
+		$searchEngineFactory = new SearchEngineFactory();
+
+		$this->fallbackSearchEngine = $searchEngineFactory->newFallbackSearchEngine(
+			$connection
+		);
+
+		$this->extendedSearch = $searchEngineFactory->newExtendedSearch(
+			$this->fallbackSearchEngine
+		);
+
+		$this->extendedSearch->setPrefix( $this->prefix );
+		$this->extendedSearch->setNamespaces( $this->namespaces );
+	}
+
+	/**
+	 * Whether the given `$wgSearchType` value selects this extended search
+	 * engine, accepting both the canonical class name and the deprecated
+	 * `SMWSearch` alias.
+	 *
+	 * @since 7.0.0
+	 */
+	public static function isActiveSearchType( ?string $type ): bool {
+		return $type === self::class || $type === 'SMWSearch';
+	}
+
+	/**
+	 * @since 3.1
+	 */
+	public function setExtendedSearch( ExtendedSearch $extendedSearch ): void {
+		$this->extendedSearch = $extendedSearch;
+	}
+
+	/**
+	 * @since 2.1
+	 */
+	public function setFallbackSearchEngine( ?SearchEngine $fallbackSearchEngine = null ): void {
+		$this->fallbackSearchEngine = $fallbackSearchEngine;
+	}
+
+	/**
+	 * @since 2.1
+	 */
+	public function getFallbackSearchEngine(): ?SearchEngine {
+		return $this->fallbackSearchEngine;
+	}
+
+	/**
+	 * @see SearchEngine::getValidSorts
+	 *
+	 * {@inheritDoc}
+	 */
+	public function getValidSorts(): array {
+		return $this->extendedSearch->getValidSorts();
+	}
+
+	/**
+	 * @see SearchEngine::searchTitle
+	 *
+	 * {@inheritDoc}
+	 */
+	public function searchTitle( $term ) {
+		$this->extendedSearch->setNamespaces(
+			$this->namespaces
+		);
+
+		return $this->extendedSearch->searchTitle( $term );
+	}
+
+	/**
+	 * @see SearchEngine::searchText
+	 *
+	 * {@inheritDoc}
+	 */
+	public function searchText( $term ) {
+		$this->extendedSearch->setNamespaces(
+			$this->namespaces
+		);
+
+		return $this->extendedSearch->searchText( $term );
+	}
+
+	/**
+	 * @see SearchEngine::supports
+	 *
+	 * {@inheritDoc}
+	 */
+	public function supports( $feature ) {
+		return $this->fallbackSearchEngine->supports( $feature );
+	}
+
+	/**
+	 * @see SearchEngine::normalizeText
+	 *
+	 * {@inheritDoc}
+	 */
+	public function normalizeText( $string ) {
+		return $this->fallbackSearchEngine->normalizeText( $string );
+	}
+
+	/**
+	 * @see SearchEngine::update
+	 *
+	 * {@inheritDoc}
+	 */
+	public function update( $id, $title, $text ): void {
+		$this->fallbackSearchEngine->update( $id, $title, $text );
+	}
+
+	/**
+	 * @see SearchEngine::updateTitle
+	 *
+	 * {@inheritDoc}
+	 */
+	public function updateTitle( $id, $title ): void {
+		$this->fallbackSearchEngine->updateTitle( $id, $title );
+	}
+
+	/**
+	 * @see SearchEngine::delete
+	 *
+	 * {@inheritDoc}
+	 */
+	public function delete( $id, $title ): void {
+		$this->fallbackSearchEngine->delete( $id, $title );
+	}
+
+	/**
+	 * @see SearchEngine::setFeatureData
+	 *
+	 * {@inheritDoc}
+	 */
+	public function setFeatureData( $feature, $data ): void {
+		parent::setFeatureData( $feature, $data );
+		$this->fallbackSearchEngine->setFeatureData( $feature, $data );
+	}
+
+	/**
+	 * @see SearchEngine::getFeatureData
+	 *
+	 * @param string $feature
+	 *
+	 * @return array|null
+	 */
+	public function getFeatureData( $feature ) {
+		if ( array_key_exists( $feature, $this->features ) ) {
+			return $this->features[$feature];
+		}
+
+		return null;
+	}
+
+	/**
+	 * @see SearchEngine::transformSearchTerm
+	 *
+	 * {@inheritDoc}
+	 */
+	public function transformSearchTerm( $term ) {
+		return $term;
+	}
+
+	/**
+	 * @see SearchEngine::setLimitOffset
+	 *
+	 * {@inheritDoc}
+	 */
+	public function setLimitOffset( $limit, $offset = 0 ): void {
+		parent::setLimitOffset( $limit, $offset );
+		$this->extendedSearch->setLimitOffset( $limit, $offset );
+		$this->fallbackSearchEngine->setLimitOffset( $limit, $offset );
+	}
+
+	/**
+	 * @see SearchEngine::setNamespaces
+	 *
+	 * {@inheritDoc}
+	 */
+	public function setNamespaces( $namespaces ): void {
+		parent::setNamespaces( $namespaces );
+
+		$this->extendedSearch->setNamespaces(
+			$this->namespaces
+		);
+
+		$this->fallbackSearchEngine->setNamespaces( $namespaces );
+	}
+
+	/**
+	 * @see SearchEngine::setShowSuggestion
+	 *
+	 * {@inheritDoc}
+	 */
+	public function setShowSuggestion( $showSuggestion ): void {
+		parent::setShowSuggestion( $showSuggestion );
+		$this->fallbackSearchEngine->setShowSuggestion( $showSuggestion );
+	}
+
+	/**
+	 * @see SearchEngine::completionSearchWithVariants
+	 *
+	 * Called by `ApiQueryPrefixSearch.php`, `ApiOpenSearch.php`
+	 *
+	 * {@inheritDoc}
+	 */
+	public function completionSearchWithVariants( $search ) {
+		// #4342
+		//
+		// This method runs before `SearchEngine::completionSearchBackend`.
+		//
+		// Hold on to the original search term because `SearchEngine::completionSearch`
+		// and `SearchEngine::completionSearchWithVariants` do normalize the string
+		// and remove any namespace prefix they encounter.
+		//
+		// We may need the orginal search term when it is required to run the
+		// fallbacksearch to complete the search request and no SMW specific query
+		// component was detected.
+		$this->extendedSearch->setCompletionSearchTerm(
+			$search
+		);
+
+		return parent::completionSearchWithVariants( $search );
+	}
+
+	/**
+	 * @see SearchEngine::completionSearchBackend
+	 *
+	 * {@inheritDoc}
+	 */
+	protected function completionSearchBackend( $search ) {
+		$this->extendedSearch->setNamespaces(
+			$this->namespaces
+		);
+
+		return $this->extendedSearch->completionSearch( $search );
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function getErrors(): array {
+		return $this->extendedSearch->getErrors();
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function getQueryString(): ?string {
+		return $this->extendedSearch->getQueryString();
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function getQueryLink(): ?InfoLink {
+		return $this->extendedSearch->getQueryLink();
+	}
+
+	public function getLimit(): int {
+		return $this->limit;
+	}
+
+	public function getOffset(): int {
+		return $this->offset;
+	}
+
+	public function getShowSuggestion(): bool {
+		return $this->showSuggestion;
+	}
+
+}
+
+/**
+ * @deprecated since 7.0.0
+ */
+class_alias( ExtendedSearchEngine::class, 'SMWSearch' );

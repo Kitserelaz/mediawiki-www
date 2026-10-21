@@ -10,13 +10,13 @@ function postToRestApi( type, id, dataContext, retryOnTokenMismatch ) {
 			'/ipinfo/v0/' +
 			type + '/' + id +
 			'?dataContext=' + dataContext +
-			'&language=' + mw.config.values.wgUserLanguage,
+			'&language=' + mw.config.get( 'wgUserLanguage' ),
 			{ token: token }
 		).then(
 			( data ) => {
 				deferred.resolve( data );
 			},
-			( err, errObject ) => {
+			( _err, errObject ) => {
 				if (
 					retryOnTokenMismatch &&
 					errObject.xhr &&
@@ -35,12 +35,12 @@ function postToRestApi( type, id, dataContext, retryOnTokenMismatch ) {
 						}
 					);
 				} else {
-					deferred.reject( err, errObject );
+					deferred.reject( errObject );
 				}
 			}
 		);
-	} ).fail( ( err, errObject ) => {
-		deferred.reject( err, errObject );
+	} ).fail( ( errObject ) => {
+		deferred.reject( errObject );
 	} );
 	return deferred.promise();
 }

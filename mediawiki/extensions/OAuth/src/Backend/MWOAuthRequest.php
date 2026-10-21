@@ -7,23 +7,27 @@ use MediaWiki\Extension\OAuth\Lib\OAuthUtil;
 use MediaWiki\Request\WebRequest;
 
 /**
- * @file
  * @ingroup OAuth
  *
  * @license GPL-2.0-or-later
  * @author Chris Steipp
  */
-
 class MWOAuthRequest extends OAuthRequest {
 	/** @var string|false */
 	private $sourceIP;
 
+	/**
+	 * @param string $httpMethod
+	 * @param string $httpUrl
+	 * @param array|null $parameters
+	 * @param string|false $sourcIP
+	 */
 	public function __construct( $httpMethod, $httpUrl, $parameters, $sourcIP = false ) {
 		$this->sourceIP = $sourcIP;
 		parent::__construct( $httpMethod, $httpUrl, $parameters );
 	}
 
-	public function getConsumerKey() {
+	public function getConsumerKey(): string {
 		return $this->parameters['oauth_consumer_key'] ?? '';
 	}
 
@@ -35,7 +39,7 @@ class MWOAuthRequest extends OAuthRequest {
 		return $this->sourceIP;
 	}
 
-	public static function fromRequest( WebRequest $request ) {
+	public static function fromRequest( WebRequest $request ): self {
 		$httpMethod = strtoupper( $request->getMethod() );
 		$httpUrl = $request->getFullRequestURL();
 

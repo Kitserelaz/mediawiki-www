@@ -4,15 +4,16 @@ namespace MediaWiki\Extension\OAuth\Repository;
 
 use MediaWiki\Extension\OAuth\Backend\Utils;
 use Wikimedia\Rdbms\IDatabase;
+use Wikimedia\Rdbms\IReadableDatabase;
 
 abstract class DatabaseRepository {
 
 	/**
 	 * @param int $index
-	 * @return IDatabase
+	 * @return IDatabase|IReadableDatabase
 	 */
 	public function getDB( $index = DB_REPLICA ) {
-		return Utils::getCentralDB( $index );
+		return Utils::getOAuthDB( $index );
 	}
 
 	/**

@@ -1,0 +1,132 @@
+<?php
+
+namespace SMW\SQLStore\TableBuilder\Examiner;
+
+use Onoi\MessageReporter\MessageReporterAwareTrait;
+use SMW\SQLStore\SQLStore;
+use SMW\TypesRegistry;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 3.1
+ *
+ * @author mwjames
+ */
+class FixedProperties {
+
+	use MessageReporterAwareTrait;
+
+	/**
+	 * @var array
+	 */
+	private array $fixedProperties = [];
+
+	/**
+	 * @var array
+	 */
+	private array $properties = [];
+
+	/**
+	 * @since 3.1
+	 */
+	public function __construct( private SQLStore $store ) {
+	}
+
+	/**
+	 * @since 3.1
+	 *
+	 * @param array $fixedProperties
+	 */
+	public function setFixedProperties( array $fixedProperties = [] ): void {
+		$this->fixedProperties = $fixedProperties;
+	}
+
+	/**
+	 * @since 3.1
+	 *
+	 * @param array $properties
+	 */
+	public function setProperties( array $properties = [] ): void {
+		$this->properties = $properties;
+	}
+
+	/**
+	 * @since 3.1
+	 *
+	 * @param array $opts
+	 */
+	public function check( array $opts = [] ): void {
+		$this->messageReporter->reportMessage( "Checking selected fixed properties IDs ...\n" );
+
+		if ( $this->fixedProperties === [] ) {
+			$this->fixedProperties = TypesRegistry::getFixedProperties( 'id' );
+		}
+
+		if ( $this->properties === [] ) {
+			$this->properties = TypesRegistry::getFixedProperties( 'id_conversion' );
+		}
+
+		foreach ( $this->properties as $prop ) {
+			$this->checkAndMove( $prop );
+		}
+
+		$this->messageReporter->reportMessage( "   ... done.\n" );
+	}
+
+	private function checkAndMove( $prop ) {
+		if ( !isset( $this->fixedProperties[$prop] ) ) {
+			return;
+		}
+
+		$target_id = (int)$this->fixedProperties[$prop];
+
+		$connection = $this->store->getConnection( DB_PRIMARY );
+		$this->messageReporter->reportMessage( "   ... reading `$prop` ...\n" );
+
+		$row = $connection->newSelectQueryBuilder()
+			->select( [ 'smw_id' ] )
+			->from( SQLStore::ID_TABLE )
+			->where( [
+				'smw_title' => $prop,
+				'smw_namespace' => SMW_NS_PROPERTY,
+				'smw_subobject' => ''
+			] )
+			->caller( __METHOD__ )
+			->fetchRow();
+
+		if ( $row === false || (int)$row->smw_id == $target_id ) {
+			return $this->messageReporter->reportMessage( "   ... done.\n" );
+		}
+
+		$current_id = (int)$row->smw_id;
+
+		$this->messageReporter->reportMessage( "   ... moving from $current_id to $target_id ...\n" );
+
+		// Avoid "Error: 1062 Duplicate entry '52' for key 'PRIMARY' ..." before moving
+		$connection->newDeleteQueryBuilder()
+			->deleteFrom( SQLStore::ID_TABLE )
+			->where( [ 'smw_id' => $target_id ] )
+			->caller( __METHOD__ )
+			->execute();
+
+		$this->store->getObjectIds()->moveSMWPageID(
+			$current_id,
+			$target_id
+		);
+
+		$connection->newUpdateQueryBuilder()
+			->update( SQLStore::QUERY_LINKS_TABLE )
+			->set( [ 'o_id' => $target_id ] )
+			->where( [ 'o_id' => $current_id ] )
+			->caller( __METHOD__ )
+			->execute();
+
+		$connection->newUpdateQueryBuilder()
+			->update( SQLStore::PROPERTY_STATISTICS_TABLE )
+			->set( [ 'p_id' => $target_id ] )
+			->where( [ 'p_id' => $current_id ] )
+			->caller( __METHOD__ )
+			->execute();
+	}
+
+}

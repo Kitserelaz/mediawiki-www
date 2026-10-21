@@ -1,0 +1,116 @@
+<?php
+
+namespace SMW\MediaWiki\Specials\Admin;
+
+use MediaWiki\Html\Html;
+use MediaWiki\Request\WebRequest;
+use SMW\Localizer\Message;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since   3.1
+ *
+ * @author mwjames
+ */
+class SupplementTaskHandler extends TaskHandler implements ActionableTask {
+
+	/**
+	 * @since 3.1
+	 */
+	public function __construct(
+		private readonly OutputFormatter $outputFormatter,
+		private readonly array $taskHandlers = [],
+	) {
+	}
+
+	/**
+	 * @since 3.1
+	 *
+	 * {@inheritDoc}
+	 */
+	public function getSection(): string {
+		return self::SECTION_SUPPLEMENT;
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * {@inheritDoc}
+	 */
+	public function getTask(): string {
+		return '';
+	}
+
+	/**
+	 * @since 3.1
+	 *
+	 * {@inheritDoc}
+	 */
+	public function isTaskFor( string $action ): bool {
+		foreach ( $this->taskHandlers as $taskHandler ) {
+			if ( $taskHandler->isTaskFor( $action ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * @since 3.1
+	 *
+	 * {@inheritDoc}
+	 */
+	public function getHtml(): string {
+		$html = $this->buildHTML();
+		$list = '';
+
+		foreach ( $this->taskHandlers as $key => $taskHandler ) {
+			$list .= $taskHandler->getHtml();
+		}
+
+		$html .= Html::rawElement( 'ul', [], $list );
+
+		return $html;
+	}
+
+	/**
+	 * @since 3.1
+	 *
+	 * {@inheritDoc}
+	 */
+	public function handleRequest( WebRequest $webRequest ): void {
+		$action = $webRequest->getText( 'action' );
+
+		foreach ( $this->taskHandlers as $taskHandler ) {
+
+			if ( !$taskHandler->isTaskFor( $action ) ) {
+				continue;
+			}
+
+			if ( $taskHandler instanceof TaskHandler ) {
+				$taskHandler->setStore( $this->getStore() );
+			}
+
+			$taskHandler->handleRequest( $webRequest );
+			return;
+		}
+	}
+
+	private function buildHTML(): string {
+		$html = Html::rawElement(
+			'p',
+			[
+				'class' => 'plainlinks'
+			],
+			$this->msg( 'smw-admin-supplementary-section-intro', Message::PARSE )
+		) . Html::rawElement(
+			'h2',
+			[],
+			$this->msg( 'smw-admin-supplementary-section-subtitle' )
+		);
+
+		return $html;
+	}
+
+}

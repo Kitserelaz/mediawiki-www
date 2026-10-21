@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Fryed-peach",
+			"MathXplore",
+			"Omotecho",
+			"Otokoume"
+		]
+	},
+	"kartographer-wv-group": "グループ:",
+	"kartographer-wv-warning-external-source-title": "外部データソース",
+	"kartographer-wv-warning-external-source-message": "このコンテンツは外部にてホストされており、有効化するとあなたのIPアドレスその他のデータは、地図提供者のサイトに共有されます。",
+	"kartographer-wv-warning-external-source-agree": "分かりました",
+	"kartographer-wv-warning-external-source-disagree": "キャンセル"
+}

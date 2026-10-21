@@ -1,0 +1,3 @@
+ Container cloudwiki-upgrade-rollback1462-counter-run-2c2df3d05063 Creating 
+ Container cloudwiki-upgrade-rollback1462-counter-run-2c2df3d05063 Created 
+Old counter snapshot restored.

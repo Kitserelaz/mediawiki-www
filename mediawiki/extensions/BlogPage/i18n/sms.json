@@ -1,0 +1,26 @@
+{
+	"@metadata": {
+		"authors": [
+			"Yupik"
+		]
+	},
+	"blog-author-comments": "{{PLURAL:$1|$1 kommeʹntted|1=Õhtt kommeʹntt|2=2 kommeeʹnt|3=3 kommeeʹnt|4=4 kommeeʹnt|5=5 kommeeʹnt|6=6 kommeeʹnt}}",
+	"blog-author-votes": "$1 {{PLURAL:$1|jiõnn|jiõn|jiõnnâd}}",
+	"blog-in-the-news": "Ođđsin",
+	"blog-last-edited": "mââimõssân muttum $1",
+	"blog-new-articles": "Ođđ artikkeeʹl",
+	"blog-permission-required": "Tuʹst ij leäkku vuõiggâdvuõtt artikeeʹlid raajjâd.",
+	"articlelists": "Ođđ bloggartikkeeʹl",
+	"blog-ah-new-articles": "Ođđ artikkeeʹl",
+	"blog-ah-write-article": "Raaj artikkeeʹl",
+	"blog-ah-todays-articles": "Täʹbbjaž artikkeeʹl",
+	"createblogpost": "Ǩeeʹrjteškuäʹđ bloggpoʹsttjõõzz",
+	"blog-create-text": "Teʹkstt",
+	"blog-create-categories": "Kategoria",
+	"blog-create-button": "Raaj!",
+	"blog-time-hours": "{{PLURAL:$1|õhtt čiâss|$1 čiâss|$1 čiâssâd}}",
+	"blog-time-minutes": "{{PLURAL:$1|õhtt minutt|$1 minuutt|$1 minuttâd}}",
+	"blog-time-seconds": "{{PLURAL:$1|õhtt sekuntt|$1 sekuunt|$1 sekunttâd}}",
+	"action-createblogpost": "raajjâd ođđ bloggpoʹsttjõõzzid",
+	"right-createblogpost": "[[Special:CreateBlogPost|Raajjâd ođđ bloggpoʹsttjõõzzid]]"
+}

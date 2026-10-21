@@ -1,0 +1,205 @@
+<?php
+
+namespace SMW\MediaWiki\Search;
+
+use SearchSuggestion;
+use SearchSuggestionSet;
+use SMW\DataItems\WikiPage;
+use SMW\Query\Excerpts;
+use SMW\Query\QueryResult;
+use SMW\Query\QueryToken;
+use SMW\Utils\CharExaminer;
+
+/**
+ * @ingroup SMW
+ *
+ * @license GPL-2.0-or-later
+ * @since   2.1
+ *
+ * @author  Stephan Gambke
+ */
+class SearchResultSet extends \SearchResultSet {
+
+	private array $pages;
+
+	private ?QueryToken $queryToken;
+
+	private ?Excerpts $excerpts;
+
+	public function __construct(
+		QueryResult $result,
+		private $count = null,
+	) {
+		$this->pages = $result->getResults();
+		$this->queryToken = $result->getQuery()->getQueryToken();
+		$this->excerpts = $result->getExcerpts();
+	}
+
+	/**
+	 * Return number of rows included in this result set.
+	 */
+	public function numRows(): int {
+		return count( $this->pages );
+	}
+
+	/**
+	 * Return true if results are included in this result set.
+	 *
+	 * @return bool
+	 */
+	public function hasResults(): bool {
+		return $this->numRows() > 0;
+	}
+
+	/**
+	 * Fetches next search result, or false.
+	 *
+	 * @return SearchResult
+	 */
+	public function next(): SearchResult|false {
+		$page = current( $this->pages );
+		$searchResult = false;
+
+		if ( $page instanceof WikiPage ) {
+			$searchResult = new SearchResult( $page->getTitle() );
+		}
+
+		// Attempt to use excerpts available from a different back-end
+		if ( $searchResult && $this->excerpts !== null ) {
+			$excerpt = $this->excerpts->getExcerpt( $page );
+			if ( $excerpt !== false ) {
+				$searchResult->setExcerpt( $excerpt, $this->excerpts->hasHighlight() );
+			}
+		}
+
+		next( $this->pages );
+
+		return $searchResult;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @return SearchSuggestionSet
+	 */
+	public function newSearchSuggestionSet(): SearchSuggestionSet {
+		$suggestions = [];
+		$filter = [];
+
+		$hasMoreResults = false;
+		$score = count( $this->pages );
+
+		foreach ( $this->pages as $page ) {
+			$title = $page->getTitle();
+			if ( $title !== null ) {
+				$key = $title->getPrefixedDBKey() ?? '';
+
+				if ( $title->getNamespace() !== SMW_NS_PROPERTY && !$title->exists() ) {
+					continue;
+				}
+
+				if ( isset( $filter[$key] ) ) {
+					continue;
+				}
+
+				// Filter subobjects which are not distinguishable in MW
+				$filter[$key] = true;
+				$suggestions[] = SearchSuggestion::fromTitle( $score--, $title );
+			}
+		}
+
+		return new SearchSuggestionSet( $suggestions, $hasMoreResults );
+	}
+
+	/**
+	 * @see SearchResultSet::extractResults
+	 *
+	 * @since 3.0
+	 */
+	public function extractResults() {
+		// #3204
+		// https://github.com/wikimedia/mediawiki/commit/720fdfa7901cbba93b5695ed5f00f982272ced27
+		//
+		// MW 1.32+:
+		// - Remove SearchResultSet::next, SearchResultSet::numRows
+		// - Move QueryResult::getResults, QueryResult::getExcerpts into this
+		//   method to avoid constructor work
+
+		if ( $this->pages === [] ) {
+			$this->results = [];
+			return [];
+		}
+
+		foreach ( $this->pages as $page ) {
+
+			$searchResult = null;
+			if ( $page instanceof WikiPage ) {
+				$searchResult = new SearchResult( $page->getTitle() );
+			}
+
+			if ( $searchResult === null ) {
+				continue;
+			}
+
+			// Attempt to use excerpts available from a different back-end
+			if ( $searchResult && $this->excerpts !== null ) {
+				$excerpt = $this->excerpts->getExcerpt( $page );
+				if ( $excerpt !== false ) {
+					$searchResult->setExcerpt( $excerpt, $this->excerpts->hasHighlight() );
+				}
+			}
+
+			$this->results[] = $searchResult;
+		}
+
+		return $this->results;
+	}
+
+	/**
+	 * Returns true, so Special:Search won't offer the user a link to a create
+	 * a page named by the search string because the name would contain the
+	 * search syntax, i.e. the SMW query.
+	 *
+	 * @return bool
+	 */
+	public function searchContainedSyntax(): bool {
+		return true;
+	}
+
+	public function getTotalHits(): ?int {
+		return $this->count;
+	}
+
+	/**
+	 * Return an array of regular expression fragments for matching
+	 * the search terms as parsed by the engine in a text extract.
+	 *
+	 * @return string[]
+	 */
+	public function termMatches(): array {
+		return $this->getTokens();
+	}
+
+	/**
+	 * @return string[]
+	 */
+	private function getTokens(): array {
+		$tokens = [];
+
+		if ( $this->queryToken === null ) {
+			return $tokens;
+		}
+
+		// Use tokens gathered from a query context [[in:Foo]] (~~*Foo*), a filter context
+		// such as [[Category:Foo]] is not considered eligible to provide a
+		// token.
+		foreach ( $this->queryToken->getTokens() as $key => $value ) {
+			// Avoid add \b boundary checks for CJK where whitespace is not used
+			// as word break
+			$tokens[] = CharExaminer::isCJK( $key ) ? "$key" : "\b$key\b";
+		}
+
+		return $tokens;
+	}
+
+}

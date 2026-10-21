@@ -1,0 +1,145 @@
+<?php
+
+namespace SMW\Query;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 2.5
+ *
+ * @author mwjames
+ */
+class QueryStringifier {
+
+	/**
+	 * @since 2.5
+	 *
+	 * @param Query $query
+	 *
+	 * @return string
+	 */
+	public static function rawUrlEncode( Query $query ): string {
+		return rawurlencode( self::toString( $query ) );
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param Query $query
+	 * @param bool $printParameters
+	 *
+	 * @return array
+	 */
+	public static function toArray( Query $query, $printParameters = false ): array {
+		$serialized = [];
+		$serialized['conditions'] = $query->getQueryString();
+
+		$serialized['parameters'] = [
+			'limit' => $query->getLimit(),
+			'offset' => $query->getOffset(),
+			'mainlabel' => $query->getMainlabel()
+		];
+
+		if ( $query->getQuerySource() !== null && $query->getQuerySource() !== '' ) {
+			$serialized['parameters']['source'] = $query->getQuerySource();
+		}
+
+		[ $serialized['sort'], $serialized['order'] ] = self::sortKeys(
+			$query
+		);
+
+		if ( $serialized['sort'] !== [] ) {
+			$serialized['parameters']['sort'] = implode( ',', $serialized['sort'] );
+		}
+
+		if ( $serialized['order'] !== [] ) {
+			$serialized['parameters']['order'] = implode( ',', $serialized['order'] );
+		}
+
+		unset( $serialized['sort'] );
+		unset( $serialized['order'] );
+
+		$serialized['printouts'] = self::printouts(
+			$query,
+			$printParameters
+		);
+
+		return $serialized;
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * @param Query $query
+	 *
+	 * @return string
+	 */
+	public static function toJson( Query $query, $printParameters = false ): string|false {
+		return json_encode( self::toArray( $query, $printParameters ) );
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * @param Query $query
+	 *
+	 * @return string
+	 */
+	public static function toString( Query $query, $printParameters = false ) {
+		$serialized = self::toArray( $query, $printParameters );
+
+		$string = $serialized['conditions'];
+
+		if ( $serialized['printouts'] !== [] ) {
+			$string .= '|' . implode( '|', $serialized['printouts'] );
+		}
+
+		foreach ( $serialized['parameters'] as $key => $value ) {
+			$string .= "|$key=$value";
+		}
+
+		return $string;
+	}
+
+	/**
+	 * @return mixed[]
+	 */
+	private static function printouts( Query $query, $showParams = false ): array {
+		$printouts = [];
+
+		foreach ( $query->getExtraPrintouts() as $printout ) {
+			$serialisation = $printout->getSerialisation( $showParams );
+			if ( $serialisation !== '' ) {
+				$printouts[] = $serialisation;
+			}
+		}
+
+		return $printouts;
+	}
+
+	/**
+	 * @return mixed[][][]|string[][]
+	 */
+	private static function sortKeys( Query $query ): array {
+		// `order=none` carries no sort keys; re-emit the directive explicitly
+		// so a re-serialised query stays unsorted.
+		if ( $query->getOption( Query::SORT_DISABLED ) ) {
+			return [ [], [ 'none' ] ];
+		}
+
+		$sort = [];
+		$order = [];
+
+		foreach ( $query->getSortKeys() as $key => $value ) {
+
+			if ( $key === '' ) {
+				continue;
+			}
+
+			$sort[] = str_replace( '_', ' ', $key );
+			$order[] = strtolower( $value );
+		}
+
+		return [ $sort, $order ];
+	}
+
+}

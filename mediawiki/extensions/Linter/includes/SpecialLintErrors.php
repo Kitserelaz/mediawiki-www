@@ -20,10 +20,11 @@
 
 namespace MediaWiki\Linter;
 
-use MediaWiki\Cache\LinkCache;
 use MediaWiki\Html\Html;
 use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Page\LinkCache;
+use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Permissions\PermissionManager;
 use MediaWiki\Request\WebRequest;
 use MediaWiki\SpecialPage\SpecialPage;
@@ -33,47 +34,23 @@ use MediaWiki\Title\TitleParser;
 
 class SpecialLintErrors extends SpecialPage {
 
-	private NamespaceInfo $namespaceInfo;
-	private TitleParser $titleParser;
-	private LinkCache $linkCache;
-	private PermissionManager $permissionManager;
-	private CategoryManager $categoryManager;
-	private TotalsLookup $totalsLookup;
-
 	/**
 	 * @var string|null
 	 */
 	private $category;
 
-	/**
-	 * @param NamespaceInfo $namespaceInfo
-	 * @param TitleParser $titleParser
-	 * @param LinkCache $linkCache
-	 * @param PermissionManager $permissionManager
-	 * @param CategoryManager $categoryManager
-	 * @param TotalsLookup $totalsLookup
-	 */
 	public function __construct(
-		NamespaceInfo $namespaceInfo,
-		TitleParser $titleParser,
-		LinkCache $linkCache,
-		PermissionManager $permissionManager,
-		CategoryManager $categoryManager,
-		TotalsLookup $totalsLookup
+		private readonly NamespaceInfo $namespaceInfo,
+		private readonly TitleParser $titleParser,
+		private readonly LinkCache $linkCache,
+		private readonly PermissionManager $permissionManager,
+		private readonly CategoryManager $categoryManager,
+		private readonly TotalsLookup $totalsLookup,
 	) {
 		parent::__construct( 'LintErrors' );
-		$this->namespaceInfo = $namespaceInfo;
-		$this->titleParser = $titleParser;
-		$this->linkCache = $linkCache;
-		$this->permissionManager = $permissionManager;
-		$this->categoryManager = $categoryManager;
-		$this->totalsLookup = $totalsLookup;
 	}
 
-	/**
-	 * @param string $titleLabel
-	 */
-	protected function showFilterForm( $titleLabel ) {
+	protected function showFilterForm( string $titleLabel ): void {
 		$selectOptions = [
 			(string)$this->msg( 'linter-form-exact-match' )->escaped() => true,
 			(string)$this->msg( 'linter-form-prefix-match' )->escaped() => false,
@@ -129,7 +106,13 @@ class SpecialLintErrors extends SpecialPage {
 		$form = HTMLForm::factory( 'ooui', $fields, $this->getContext() );
 		$form->setWrapperLegend( true );
 		if ( $this->category !== null ) {
-			$form->addHeaderHtml( $this->msg( "linter-category-{$this->category}-desc" )->parse() );
+			$temps = $this->titleParser->parseTitle( 'Special:LintTemplateErrors/' . $this->category );
+			$form->addHeaderHtml(
+				$this->msg( "linter-category-{$this->category}-desc" )->parse() . " " .
+					$this->getLinkRenderer()->makeLink(
+						$temps, $this->msg( "category-by-template-view" )->text()
+					)
+			);
 		}
 		$form->setMethod( 'get' );
 		$form->prepareForm()->displayForm( false );
@@ -143,11 +126,11 @@ class SpecialLintErrors extends SpecialPage {
 	 * @param array $namespaces
 	 * @return array
 	 */
-	public function cleanTitle( string $title, $namespaces ): array {
+	public function cleanTitle( string $title, array $namespaces ): array {
 		// Check all titles for malformation regardless of exact match or prefix match
 		try {
 			$titleElements = $this->titleParser->parseTitle( $title );
-		} catch ( MalformedTitleException  $e ) {
+		} catch ( MalformedTitleException ) {
 			return [ 'titlefield' => null, 'error' => 'linter-invalid-title' ];
 		}
 
@@ -164,7 +147,7 @@ class SpecialLintErrors extends SpecialPage {
 		$titleNamespace = $titleElements->getNamespace();
 		// Determine if the user entered ':' (resolves to main) as the namespace part of the title,
 		// or was it was set by default by parseTitle() to 0, but the user intended to search across 'all' namespaces.
-		if ( $titleNamespace === 0 && $title[0] !== ':' ) {
+		if ( $titleElements->inNamespace( NS_MAIN ) && !str_starts_with( $title, ':' ) ) {
 			$titleNamespace = null;
 		}
 
@@ -193,11 +176,8 @@ class SpecialLintErrors extends SpecialPage {
 	/**
 	 * Extract namespace settings from the request object,
 	 * returning an array of namespace id numbers
-	 *
-	 * @param WebRequest $request
-	 * @return array
 	 */
-	protected function findNamespaces( $request ) {
+	protected function findNamespaces( WebRequest $request ): array {
 		$namespaceRequestValues = $request->getRawVal( 'wpNamespaceRestrictions' ) ?? '';
 		if ( $namespaceRequestValues === '' ) {
 			return [];
@@ -208,16 +188,17 @@ class SpecialLintErrors extends SpecialPage {
 			array_intersect(
 				// Remove -2 = "media" and -1 = "Special" namespace elements
 				array_filter(
-					array_keys(
-						$this->namespaceInfo->getCanonicalNamespaces()
-					),
-					static function ( $x ) {
-						return $x >= 0;
-					}
+					array_keys( $this->namespaceInfo->getCanonicalNamespaces() ),
+					static fn ( $id ) => $id >= NS_MAIN
 				),
 				array_map( 'intval', explode( "\n", $namespaceRequestValues ) )
 			)
 		);
+	}
+
+	private function getTemplate(): string {
+		$template = $this->getRequest()->getText( 'template' );
+		return in_array( $template, [ 'with', 'without', 'all' ], true ) ? $template : 'all';
 	}
 
 	/**
@@ -226,6 +207,7 @@ class SpecialLintErrors extends SpecialPage {
 	public function execute( $subPage ) {
 		$request = $this->getRequest();
 		$out = $this->getOutput();
+		$out->addModuleStyles( 'ext.linter.styles' );
 
 		$params = $request->getQueryValues();
 
@@ -240,7 +222,7 @@ class SpecialLintErrors extends SpecialPage {
 		$htmlTags = new HtmlTags( $this );
 		$allowedHtmlTags = $htmlTags->getAllowedHTMLTags();
 		$tag = $allowedHtmlTags[ $tagName ] ?? 'all';
-		$template = $this->getRequest()->getText( 'template' );
+		$template = $this->getTemplate();
 
 		// If the request contains a 'titlesearch' parameter, then the user entered a page title
 		// or just the first few characters of the title. They also may have entered the first few characters
@@ -265,10 +247,17 @@ class SpecialLintErrors extends SpecialPage {
 					$this->getLinkRenderer(),
 					$this->permissionManager,
 					null,
+					// FIXME: Should this be $titleSearch['namespaces']?
 					$namespaces,
-					$exactMatch, $titleSearch[ 'titlefield' ], $template, $tag
+					$exactMatch,
+					$titleSearch[ 'titlefield' ],
+					$template,
+					$tag
 				);
-				$out->addParserOutput( $pager->getFullOutput() );
+				$out->addParserOutput(
+					$pager->getFullOutput(),
+					ParserOptions::newFromContext( $this->getContext() )
+				);
 			} else {
 				$this->displayError( $out, $titleSearch[ 'error' ] );
 			}
@@ -297,7 +286,7 @@ class SpecialLintErrors extends SpecialPage {
 			$title = $request->getText( 'titlecategorysearch' );
 			// For category-based searches, allow an undefined title to display all records
 			if ( $title === '' ) {
-				$titleCategorySearch = [ 'titlefield' => '', 'namespace' => $namespaces, 'pageid' => null ];
+				$titleCategorySearch = [ 'titlefield' => '', 'namespace' => $namespaces ];
 			} else {
 				$titleCategorySearch = $this->cleanTitle( $title, $namespaces );
 			}
@@ -311,10 +300,17 @@ class SpecialLintErrors extends SpecialPage {
 					$this->getLinkRenderer(),
 					$this->permissionManager,
 					$this->category,
+					// FIXME: Should this be $titleSearch['namespaces']?
 					$namespaces,
-					$exactMatch, $titleCategorySearch[ 'titlefield' ], $template, $tag
+					$exactMatch,
+					$titleCategorySearch[ 'titlefield' ],
+					$template,
+					$tag
 				);
-				$out->addParserOutput( $pager->getFullOutput() );
+				$out->addParserOutput(
+					$pager->getFullOutput(),
+					ParserOptions::newFromContext( $this->getContext() )
+				);
 			} else {
 				$this->displayError( $out, $titleCategorySearch[ 'error' ] );
 			}
@@ -323,22 +319,20 @@ class SpecialLintErrors extends SpecialPage {
 
 	/**
 	 * @param string $priority
-	 * @param int[] $totals name => count
+	 * @param array<string,int> $totals name => count
 	 * @param string[] $categories
 	 */
-	private function displayList( $priority, $totals, array $categories ) {
+	private function displayList( string $priority, array $totals, array $categories ): void {
 		$out = $this->getOutput();
 		$msgName = 'linter-heading-' . $priority . '-priority';
 		$out->addHTML( Html::element( 'h2', [], $this->msg( $msgName )->text() ) );
 		$out->addHTML( $this->buildCategoryList( $categories, $totals ) );
 	}
 
-	/**
-	 */
 	private function displaySearchPage() {
 		$out = $this->getOutput();
 		$out->addHTML( Html::element( 'h2', [],
-			$this->msg( "linter-lints-prefix-search-page-desc" )->text() ) );
+		$this->msg( "linter-lints-prefix-search-page-desc" )->text() ) );
 		$this->showFilterForm( 'titlesearch' );
 	}
 
@@ -355,10 +349,10 @@ class SpecialLintErrors extends SpecialPage {
 
 	/**
 	 * @param string[] $cats
-	 * @param int[] $totals name => count
+	 * @param array<string,int> $totals name => count
 	 * @return string
 	 */
-	private function buildCategoryList( array $cats, array $totals ) {
+	private function buildCategoryList( array $cats, array $totals ): string {
 		$linkRenderer = $this->getLinkRenderer();
 		$html = Html::openElement( 'ul' ) . "\n";
 		foreach ( $cats as $cat ) {

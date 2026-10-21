@@ -3,30 +3,33 @@ namespace MediaWiki\IPInfo\Special;
 
 use MediaWiki\Config\Config;
 use MediaWiki\Config\ServiceOptions;
+use MediaWiki\Exception\ThrottledError;
+use MediaWiki\Exception\UserBlockedError;
 use MediaWiki\Html\Html;
 use MediaWiki\Html\TemplateParser;
 use MediaWiki\HTMLForm\HTMLForm;
+use MediaWiki\IPInfo\HookHandler\PreferencesHandler;
 use MediaWiki\IPInfo\InfoManager;
 use MediaWiki\IPInfo\InfoRetriever\GeoLite2InfoRetriever;
 use MediaWiki\IPInfo\InfoRetriever\IPoidInfoRetriever;
 use MediaWiki\IPInfo\Rest\Presenter\DefaultPresenter;
 use MediaWiki\IPInfo\TempUserIPLookup;
 use MediaWiki\Linker\Linker;
+use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\Message\Message;
 use MediaWiki\Permissions\PermissionManager;
 use MediaWiki\SpecialPage\FormSpecialPage;
 use MediaWiki\Status\Status;
-use MediaWiki\User\Options\UserOptionsLookup;
 use MediaWiki\User\Options\UserOptionsManager;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityLookup;
 use MediaWiki\User\UserNameUtils;
-use UserBlockedError;
 use Wikimedia\IPUtils;
 use Wikimedia\ObjectCache\BagOStuff;
 
 /**
- * A special page that displays IP information for all IP addresses used by a temporary user.
+ * A special page that displays IP information for all IP addresses used by a temporary user,
+ * or for a single arbitrary IP address.
  */
 class SpecialIPInfo extends FormSpecialPage {
 	private const CONSTRUCTOR_OPTIONS = [
@@ -39,39 +42,35 @@ class SpecialIPInfo extends FormSpecialPage {
 	private const SORT_ASC = 'asc';
 	private const SORT_DESC = 'desc';
 
-	private UserOptionsLookup $userOptionsManager;
-	private UserNameUtils $userNameUtils;
-	private TemplateParser $templateParser;
-	private TempUserIPLookup $tempUserIPLookup;
-	private UserIdentityLookup $userIdentityLookup;
-	private InfoManager $infoManager;
-	private DefaultPresenter $defaultPresenter;
-	private ServiceOptions $serviceOptions;
+	private readonly TemplateParser $templateParser;
+	private readonly DefaultPresenter $defaultPresenter;
+	private readonly ServiceOptions $serviceOptions;
 
 	private UserIdentity $targetUser;
+	private ?string $targetIp = null;
 
 	public function __construct(
-		UserOptionsManager $userOptionsManager,
-		UserNameUtils $userNameUtils,
+		private readonly UserOptionsManager $userOptionsManager,
+		private readonly UserNameUtils $userNameUtils,
 		BagOStuff $srvCache,
-		TempUserIPLookup $tempUserIPLookup,
-		UserIdentityLookup $userIdentityLookup,
-		InfoManager $infoManager,
-		PermissionManager $permissionManager,
+		private readonly TempUserIPLookup $tempUserIPLookup,
+		private readonly UserIdentityLookup $userIdentityLookup,
+		private readonly InfoManager $infoManager,
+		private readonly PermissionManager $permissionManager,
 		Config $config
 	) {
-		parent::__construct( 'IPInfo', 'ipinfo' );
+		parent::__construct( 'IPInfo' );
 		$serviceOptions = new ServiceOptions( self::CONSTRUCTOR_OPTIONS, $config );
 		$serviceOptions->assertRequiredOptions( self::CONSTRUCTOR_OPTIONS );
 
-		$this->userOptionsManager = $userOptionsManager;
-		$this->userNameUtils = $userNameUtils;
 		$this->templateParser = new TemplateParser( __DIR__ . '/templates', $srvCache );
-		$this->tempUserIPLookup = $tempUserIPLookup;
-		$this->userIdentityLookup = $userIdentityLookup;
-		$this->infoManager = $infoManager;
-		$this->defaultPresenter = new DefaultPresenter( $permissionManager );
+		$this->defaultPresenter = new DefaultPresenter( $this->permissionManager );
 		$this->serviceOptions = $serviceOptions;
+	}
+
+	/** @inheritDoc */
+	public function getRestriction(): string {
+		return 'ipinfo';
 	}
 
 	/** @inheritDoc */
@@ -92,13 +91,42 @@ class SpecialIPInfo extends FormSpecialPage {
 	}
 
 	private function didNotAcceptIPInfoAgreement(): bool {
-		return !$this->userOptionsManager->getBoolOption( $this->getAuthority()->getUser(), 'ipinfo-use-agreement' );
+		return !$this->userOptionsManager->getBoolOption(
+			$this->getAuthority()->getUser(), PreferencesHandler::IPINFO_USE_AGREEMENT
+		);
+	}
+
+	/**
+	 * Check and accept the IP info data use agreement if needed.
+	 *
+	 * @param array $data Form data
+	 * @return Status|null Fatal status if agreement is required but not accepted, null otherwise
+	 */
+	private function maybeAcceptAgreement( array $data ): ?Status {
+		if ( $this->didNotAcceptIPInfoAgreement() ) {
+			if ( !( $data[self::IP_INFO_AGREEMENT_FIELD] ?? false ) ) {
+				return Status::newFatal( 'ipinfo-preference-agreement-error' );
+			}
+
+			$user = $this->getUser();
+			$this->userOptionsManager->setOption(
+				$user, PreferencesHandler::IPINFO_USE_AGREEMENT, '1', UserOptionsManager::GLOBAL_CREATE
+			);
+			$this->userOptionsManager->saveOptions( $user );
+		}
+
+		return null;
 	}
 
 	/** @inheritDoc */
 	public function requiresPost(): bool {
 		// POST the form if the agreement needs to be accepted to allow DB writes
 		// for updating the corresponding preference.
+		return $this->didNotAcceptIPInfoAgreement();
+	}
+
+	/** @inheritDoc */
+	public function doesWrites(): bool {
 		return $this->didNotAcceptIPInfoAgreement();
 	}
 
@@ -112,8 +140,8 @@ class SpecialIPInfo extends FormSpecialPage {
 				'type' => 'user',
 				'label-message' => 'ipinfo-special-ipinfo-target',
 				'excludenamed' => true,
+				'ipallowed' => true,
 				'autocomplete' => 'on',
-				'exists' => true,
 				'required' => true
 			]
 		];
@@ -140,9 +168,14 @@ class SpecialIPInfo extends FormSpecialPage {
 	}
 
 	protected function alterForm( HTMLForm $form ): void {
-		$legend = $this->msg( 'ipinfo-special-ipinfo-legend' )
-			->numParams( $this->serviceOptions->get( 'IPInfoMaxDistinctIPResults' ) )
-			->parseAsBlock();
+		$target = $this->getRequest()->getVal( 'wpTarget', $this->par ?? '' );
+		if ( IPUtils::isValid( $target ) ) {
+			$legend = $this->msg( 'ipinfo-special-ipinfo-ip-legend' )->parseAsBlock();
+		} else {
+			$legend = $this->msg( 'ipinfo-special-ipinfo-legend' )
+				->numParams( $this->serviceOptions->get( 'IPInfoMaxDistinctIPResults' ) )
+				->parseAsBlock();
+		}
 
 		$form->addHeaderHtml( $legend );
 	}
@@ -169,12 +202,42 @@ class SpecialIPInfo extends FormSpecialPage {
 	}
 
 	/**
+	 * @codeCoverageIgnore Merely declarative
+	 * @return string
+	 */
+	protected function getGroupName(): string {
+		return 'users';
+	}
+
+	/**
 	 * Process form data on submission.
 	 * @param array $data Map of form data keyed by unprefixed field name
 	 * @return Status
 	 */
 	public function onSubmit( array $data ): Status {
-		$targetName = $data[self::TARGET_FIELD];
+		$targetName = trim( $data[self::TARGET_FIELD] );
+
+		// Arbitrary IP address lookup
+		if ( IPUtils::isValid( $targetName ) ) {
+			if ( !$this->permissionManager->userHasRight(
+				$this->getUser(), 'ipinfo-view-arbitrary-ip'
+			) ) {
+				return Status::newFatal( 'ipinfo-special-ipinfo-no-right-ip' );
+			}
+
+			if ( $this->getUser()->pingLimiter( 'ipinfo-ip-lookup' ) ) {
+				throw new ThrottledError();
+			}
+
+			$this->targetIp = IPUtils::sanitizeIP( $targetName );
+
+			$agreementStatus = $this->maybeAcceptAgreement( $data );
+			if ( $agreementStatus !== null ) {
+				return $agreementStatus;
+			}
+
+			return Status::newGood();
+		}
 
 		if ( !$this->userNameUtils->isTemp( $targetName ) ) {
 			return Status::newFatal( 'htmlform-user-not-valid', $targetName );
@@ -185,14 +248,9 @@ class SpecialIPInfo extends FormSpecialPage {
 			return Status::newFatal( 'htmlform-user-not-valid', $targetName );
 		}
 
-		if ( $this->didNotAcceptIPInfoAgreement() ) {
-			if ( !( $data[self::IP_INFO_AGREEMENT_FIELD] ?? false ) ) {
-				return Status::newFatal( 'ipinfo-preference-agreement-error' );
-			}
-
-			$user = $this->getUser()->getInstanceForUpdate();
-			$this->userOptionsManager->setOption( $user, 'ipinfo-use-agreement', '1' );
-			$user->saveSettings();
+		$agreementStatus = $this->maybeAcceptAgreement( $data );
+		if ( $agreementStatus !== null ) {
+			return $agreementStatus;
 		}
 
 		$this->targetUser = $targetUser;
@@ -202,6 +260,185 @@ class SpecialIPInfo extends FormSpecialPage {
 
 	/** @inheritDoc */
 	public function onSuccess(): void {
+		if ( $this->targetIp !== null ) {
+			$this->onSuccessForIp();
+		} else {
+			$this->onSuccessForTempUser();
+		}
+	}
+
+	/**
+	 * Build table headers for IP information display.
+	 *
+	 * @param bool $sortable Whether the columns should be sortable.
+	 * @return array[] Table header definitions.
+	 */
+	private function getTableHeaders( bool $sortable ): array {
+		return [
+			[
+				'name' => 'address',
+				'title' => $this->msg( 'ipinfo-special-ipinfo-column-ip' )->text(),
+				'sortable' => false
+			],
+			[
+				'name' => 'location',
+				'title' => $this->msg( 'ipinfo-property-label-location' )->text(),
+				'sortable' => $sortable
+			],
+			[
+				'name' => 'asn',
+				'title' => $this->msg( 'ipinfo-property-label-asn' )->text(),
+				'sortable' => $sortable
+			],
+			[
+				'name' => 'organization',
+				'title' => $this->msg( 'ipinfo-property-label-organization' )->text(),
+				'sortable' => $sortable
+			],
+			[
+				'name' => 'ipversion',
+				'title' => $this->msg( 'ipinfo-property-label-ipversion' )->text(),
+				'sortable' => $sortable
+			],
+			[
+				'name' => 'behaviors',
+				'title' => $this->msg( 'ipinfo-property-label-behaviors' )->text(),
+				'sortable' => $sortable
+			],
+			[
+				'name' => 'risks',
+				'title' => $this->msg( 'ipinfo-property-label-risks' )->text(),
+				'sortable' => $sortable
+			],
+			[
+				'name' => 'connectiontypes',
+				'title' => $this->msg( 'ipinfo-property-label-connectiontypes' )->text(),
+				'sortable' => $sortable
+			],
+			[
+				'name' => 'tunneloperators',
+				'title' => $this->msg( 'ipinfo-property-label-tunneloperators' )->text(),
+				'sortable' => $sortable
+			],
+			[
+				'name' => 'proxies',
+				'title' => $this->msg( 'ipinfo-property-label-proxies' )->text(),
+				'sortable' => $sortable
+			],
+			[
+				'name' => 'usercount',
+				'title' => $this->msg( 'ipinfo-property-label-usercount' )->text(),
+				'sortable' => $sortable
+			],
+		];
+	}
+
+	/**
+	 * Convert presented IP info data into a table row.
+	 *
+	 * @param array $presented The output of DefaultPresenter::present()
+	 * @param string $ip The IP address
+	 * @return array Table row data
+	 */
+	private function buildTableRow( array $presented, string $ip ): array {
+		$commaMsg = $this->msg( 'comma-separator' )->text();
+
+		$locations = array_map(
+			static fn ( array $loc ): string => $loc['label'],
+			$presented['data']['ipinfo-source-geoip2']['location'] ?? []
+		);
+
+		$risks = array_map(
+			function ( string $riskType ): string {
+				$riskType = preg_replace( '/_/', '', $riskType );
+				$riskType = mb_strtolower( $riskType );
+
+				// See https://docs.spur.us/data-types?id=risk-enums
+				// * ipinfo-property-value-risk-adfraud
+				// * ipinfo-property-value-risk-callbackproxy
+				// * ipinfo-property-value-risk-geomismatch
+				// * ipinfo-property-value-risk-loginbruteforce
+				// * ipinfo-property-value-risk-tunnel
+				// * ipinfo-property-value-risk-webscraping
+				// * ipinfo-property-value-risk-unknown
+				return $this->msg( "ipinfo-property-value-risk-$riskType" )->text();
+			},
+			$presented['data']['ipinfo-source-ipoid']['risks'] ?? []
+		);
+
+		$connectionTypes = array_map(
+			function ( string $connectionType ): string {
+				$connectionType = mb_strtolower( $connectionType );
+
+				// See https://docs.spur.us/data-types?id=client-enums
+				// * ipinfo-property-value-connectiontype-desktop
+				// * ipinfo-property-value-connectiontype-headless
+				// * ipinfo-property-value-connectiontype-iot
+				// * ipinfo-property-value-connectiontype-mobile
+				// * ipinfo-property-value-connectiontype-unknown
+				return $this->msg( "ipinfo-property-value-connectiontype-$connectionType" )->text();
+			},
+			$presented['data']['ipinfo-source-ipoid']['connectionTypes'] ?? []
+		);
+
+		$userCount = $presented['data']['ipinfo-source-ipoid']['numUsersOnThisIP'] ?? null;
+
+		return [
+			'location' => implode( $commaMsg, $locations ),
+			'asn' => $presented['data']['ipinfo-source-geoip2']['asn'] ?? '',
+			'organization' => $presented['data']['ipinfo-source-geoip2']['organization'] ?? '',
+			'ipversion' => IPUtils::isIPv4( $ip )
+				? $this->msg( 'ipinfo-value-ipversion-ipv4' )->text()
+				: $this->msg( 'ipinfo-value-ipversion-ipv6' )->text(),
+			'behaviors' => $presented['data']['ipinfo-source-ipoid']['behaviors'] ?? '',
+			'risks' => $risks,
+			'connectiontypes' => $connectionTypes,
+			'tunneloperators' => $presented['data']['ipinfo-source-ipoid']['tunnelOperators'] ?? [],
+			'proxies' => $presented['data']['ipinfo-source-ipoid']['proxies'] ?? [],
+			'usercount' => $userCount !== null ? $this->getLanguage()->formatNum( $userCount ) : ''
+		];
+	}
+
+	/**
+	 * Display IP information for a single arbitrary IP address.
+	 */
+	private function onSuccessForIp(): void {
+		LoggerFactory::getInstance( 'IPInfo' )->info(
+			'Special:IPInfo arbitrary IP lookup by {user}',
+			[ 'user' => $this->getUser()->getName() ]
+		);
+
+		$out = $this->getOutput();
+		$out->addModuleStyles( [ 'codex-styles', 'ext.ipInfo.specialIpInfo' ] );
+
+		$ip = $this->targetIp;
+		$info = $this->infoManager->retrieveFor( $ip, $ip );
+		$presented = $this->defaultPresenter->present( $info, $this->getContext()->getUser() );
+
+		$prettyIp = IPUtils::prettifyIP( $ip );
+
+		// Exclude the address column header since the IP is already shown in the caption
+		$headers = array_values( array_filter(
+			$this->getTableHeaders( false ),
+			static fn ( array $header ) => $header['name'] !== 'address'
+		) );
+
+		$out->addHTML(
+			$this->templateParser->processTemplate( 'IPInfo', [
+				'caption' => $this->msg( 'ipinfo-special-ipinfo-table-caption-ip', $prettyIp )->text(),
+				'sortExplainerCaption' => '',
+				'showAddress' => false,
+				'target' => $prettyIp,
+				'headers' => $headers,
+				'rows' => [ $this->buildTableRow( $presented, $ip ) ],
+			] )
+		);
+	}
+
+	/**
+	 * Display IP information for all IP addresses used by a temporary user.
+	 */
+	private function onSuccessForTempUser(): void {
 		$out = $this->getOutput();
 		$out->addModuleStyles( [ 'codex-styles', 'ext.ipInfo.specialIpInfo' ] );
 
@@ -218,74 +455,7 @@ class SpecialIPInfo extends FormSpecialPage {
 			return;
 		}
 
-		$tableHeaders = [
-			[
-				'name' => 'address',
-				'title' => $this->msg( 'ipinfo-special-ipinfo-column-ip' )->text(),
-				'sortable' => false
-			],
-			[
-				'name' => 'location',
-				'title' => $this->msg( 'ipinfo-property-label-location' )->text(),
-				'sortable' => true
-			],
-			[
-				'name' => 'isp',
-				'title' => $this->msg( 'ipinfo-property-label-isp' )->text(),
-				'sortable' => true
-			],
-			[
-				'name' => 'asn',
-				'title' => $this->msg( 'ipinfo-property-label-asn' )->text(),
-				'sortable' => true
-			],
-			[
-				'name' => 'organization',
-				'title' => $this->msg( 'ipinfo-property-label-organization' )->text(),
-				'sortable' => true
-			],
-			[
-				'name' => 'ipversion',
-				'title' => $this->msg( 'ipinfo-property-label-ipversion' )->text(),
-				'sortable' => true
-			],
-			[
-				'name' => 'behaviors',
-				'title' => $this->msg( 'ipinfo-property-label-behaviors' )->text(),
-				'sortable' => true
-			],
-			[
-				'name' => 'risks',
-				'title' => $this->msg( 'ipinfo-property-label-risks' )->text(),
-				'sortable' => true
-			],
-			[
-				'name' => 'connectiontypes',
-				'title' => $this->msg( 'ipinfo-property-label-connectiontypes' )->text(),
-				'sortable' => true
-			],
-			[
-				'name' => 'tunneloperators',
-				'title' => $this->msg( 'ipinfo-property-label-tunneloperators' )->text(),
-				'sortable' => true
-			],
-			[
-				'name' => 'proxies',
-				'title' => $this->msg( 'ipinfo-property-label-proxies' )->text(),
-				'sortable' => true
-			],
-			[
-				'name' => 'usercount',
-				'title' => $this->msg( 'ipinfo-property-label-usercount' )->text(),
-				'sortable' => true
-			],
-		];
-
-		$tableRows = [];
-
-		$commaMsg = $this->msg( 'comma-separator' )->text();
-		$ipv4Msg = $this->msg( 'ipinfo-value-ipversion-ipv4' )->text();
-		$ipv6Msg = $this->msg( 'ipinfo-value-ipversion-ipv6' )->text();
+		$tableHeaders = $this->getTableHeaders( true );
 
 		$batch = $this->infoManager->retrieveBatch(
 			$this->targetUser,
@@ -296,64 +466,16 @@ class SpecialIPInfo extends FormSpecialPage {
 			]
 		);
 
+		$tableRows = [];
 		foreach ( $records as $record ) {
 			$info = $batch[$record->getIp()];
-			$info = $this->defaultPresenter->present( $info, $this->getContext()->getUser() );
+			$presented = $this->defaultPresenter->present( $info, $this->getContext()->getUser() );
 
-			$locations = array_map(
-				fn ( array $loc ): string => $loc['label'],
-				$info['data']['ipinfo-source-geoip2']['location'] ?? []
-			);
+			$row = $this->buildTableRow( $presented, $record->getIp() );
+			$row['revId'] = $record->getRevisionId();
+			$row['logId'] = $record->getLogId();
 
-			$risks = array_map(
-				function ( string $riskType ): string {
-					$riskType = preg_replace( '/_/', '', $riskType );
-					$riskType = mb_strtolower( $riskType );
-
-					// See https://docs.spur.us/data-types?id=risk-enums
-					// * ipinfo-property-value-risk-callbackproxy
-					// * ipinfo-property-value-risk-geomismatch
-					// * ipinfo-property-value-risk-loginbruteforce
-					// * ipinfo-property-value-risk-tunnel
-					// * ipinfo-property-value-risk-webscraping
-					// * ipinfo-property-value-risk-unknown
-					return $this->msg( "ipinfo-property-value-risk-$riskType" )->text();
-				},
-				$info['data']['ipinfo-source-ipoid']['risks'] ?? []
-			);
-
-			$connectionTypes = array_map(
-				function ( string $connectionType ): string {
-					$connectionType = mb_strtolower( $connectionType );
-
-					// See https://docs.spur.us/data-types?id=client-enums
-					// * ipinfo-property-value-connectiontype-desktop
-					// * ipinfo-property-value-connectiontype-headless
-					// * ipinfo-property-value-connectiontype-iot
-					// * ipinfo-property-value-connectiontype-mobile
-					// * ipinfo-property-value-connectiontype-unknown
-					return $this->msg( "ipinfo-property-value-connectionType-$connectionType" )->text();
-				},
-				$info['data']['ipinfo-source-ipoid']['risks'] ?? []
-			);
-
-			$userCount = $info['data']['ipinfo-source-ipoid']['numUsersOnThisIP'] ?? null;
-
-			$tableRows[] = [
-				'revId' => $record->getRevisionId(),
-				'logId' => $record->getLogId(),
-				'location' => implode( $commaMsg, $locations ),
-				'isp' => $info['data']['ipinfo-source-geoip2']['isp'] ?? '',
-				'asn' => $info['data']['ipinfo-source-geoip2']['asn'] ?? '',
-				'organization' => $info['data']['ipinfo-source-geoip2']['organization'] ?? '',
-				'ipversion' => IPUtils::isIPv4( $record->getIp() ) ? $ipv4Msg : $ipv6Msg,
-				'behaviors' => $info['data']['ipinfo-source-ipoid']['behaviors'] ?? '',
-				'risks' => $risks,
-				'connectiontypes' => $connectionTypes,
-				'tunneloperators' => $info['data']['ipinfo-source-ipoid']['tunneloperators'] ?? [],
-				'proxies' => $info['data']['ipinfo-source-ipoid']['proxies'] ?? [],
-				'usercount' => $userCount !== null ? $this->getLanguage()->formatNum( $userCount ) : ''
-			];
+			$tableRows[] = $row;
 		}
 
 		$sortField = $this->getRequest()->getRawVal( 'wpSortField' );
@@ -393,6 +515,7 @@ class SpecialIPInfo extends FormSpecialPage {
 				// Describe the functionality of sorting buttons to assistive technologies
 				// such as screen readers.
 				'sortExplainerCaption' => $this->msg( 'ipinfo-special-ipinfo-sort-explainer' )->text(),
+				'showAddress' => true,
 				'target' => $this->targetUser->getName(),
 				'headers' => $tableHeaders,
 				'rows' => $tableRows,

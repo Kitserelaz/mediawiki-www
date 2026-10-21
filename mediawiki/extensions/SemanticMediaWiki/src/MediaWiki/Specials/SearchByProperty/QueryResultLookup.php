@@ -1,0 +1,246 @@
+<?php
+
+namespace SMW\MediaWiki\Specials\SearchByProperty;
+
+use SMW\DataItems\DataItem;
+use SMW\DataItems\Property;
+use SMW\DataItems\WikiPage;
+use SMW\DataTypeRegistry;
+use SMW\DataValueFactory;
+use SMW\Query\DescriptionFactory;
+use SMW\Query\PrintRequest;
+use SMW\Query\Query;
+use SMW\RequestOptions;
+use SMW\SQLStore\QueryDependencyLinksStoreFactory;
+use SMW\Store;
+
+// phpcs:disable MediaWiki.Commenting.ClassAnnotations.UnrecognizedAnnotation
+
+/**
+ * @license GPL-2.0-or-later
+ * @since   2.1
+ *
+ * @author Denny Vrandecic
+ * @author Daniel Herzig
+ * @author Markus Kroetzsch
+ * @author mwjames
+ * @reviewer thomas-topway-it for KM-A
+ */
+class QueryResultLookup {
+
+	/**
+	 * @since 2.1
+	 */
+	public function __construct( private readonly Store $store ) {
+	}
+
+	/**
+	 * @since 2.5
+	 */
+	public function doQueryLinksReferences( PageRequestOptions $pageRequestOptions ): array {
+		$requestOptions = new RequestOptions();
+		$requestOptions->setLimit( $pageRequestOptions->limit + 1 );
+		$requestOptions->setOffset( $pageRequestOptions->offset );
+		$requestOptions->sort = true;
+
+		$queryDependencyLinksStoreFactory = new QueryDependencyLinksStoreFactory();
+
+		$queryReferenceLinks = $queryDependencyLinksStoreFactory->newQueryReferenceBacklinks(
+			$this->store
+		);
+
+		$queryBacklinks = $queryReferenceLinks->findReferenceLinks(
+			$pageRequestOptions->value->getDataItem(),
+			$requestOptions
+		);
+
+		$results = [];
+
+		$dataValueFactory = DataValueFactory::getInstance();
+
+		foreach ( $queryBacklinks as $result ) {
+			$results[] = [
+				$dataValueFactory->newDataValueByItem( WikiPage::doUnserialize( $result ), null ),
+				$pageRequestOptions->value
+			];
+		}
+
+		return $results;
+	}
+
+	/**
+	 * @since 2.1
+	 */
+	public function doQuery( PageRequestOptions $pageRequestOptions ): array {
+		$requestOptions = new RequestOptions();
+		$requestOptions->limit = $pageRequestOptions->limit + 1;
+		$requestOptions->offset = $pageRequestOptions->offset;
+		$requestOptions->sort = true;
+
+		if ( $pageRequestOptions->value === null || !$pageRequestOptions->value->isValid() ) {
+			$res = $this->doQueryForNonValue( $pageRequestOptions, $requestOptions );
+		} else {
+			$res = $this->doQueryForExactValue( $pageRequestOptions, $requestOptions );
+		}
+
+		$results = [];
+
+		$dataValueFactory = DataValueFactory::getInstance();
+
+		foreach ( $res as $result ) {
+			$results[] = [
+				$dataValueFactory->newDataValueByItem( $result, null ),
+				$pageRequestOptions->value
+			];
+		}
+
+		return $results;
+	}
+
+	/**
+	 * Returns all results that have a value near to the searched for value
+	 * on the property, ordered, and sorted by ending with the smallest
+	 * one.
+	 *
+	 * @param PageRequestOptions $pageRequestOptions
+	 * @param int $count How many entities have the exact same value on the property?
+	 * @param bool $greater Should the values be bigger? Set false for smaller values.
+	 */
+	public function doQueryForNearbyResults( PageRequestOptions $pageRequestOptions, $count, $greater = true ): array {
+		$comparator = $greater ? SMW_CMP_GRTR : SMW_CMP_LESS;
+		$sortOrder = $greater ? 'ASC' : 'DESC';
+
+		if ( $pageRequestOptions->value !== null && $pageRequestOptions->value->getTypeID() === '_txt' && strlen( $pageRequestOptions->valueString ) > 72 ) {
+			$comparator = SMW_CMP_LIKE;
+		}
+
+		$descriptionFactory = new DescriptionFactory();
+
+		if ( $pageRequestOptions->valueString === '' || $pageRequestOptions->valueString === null ) {
+			$description = $descriptionFactory->newThingDescription();
+		} else {
+			$description = $descriptionFactory->newValueDescription(
+				$pageRequestOptions->value->getDataItem(),
+				$pageRequestOptions->property->getDataItem(),
+				$comparator
+			);
+
+			$description = $descriptionFactory->newSomeProperty(
+				$pageRequestOptions->property->getDataItem(),
+				$description
+			);
+		}
+
+		$query = new Query( $description );
+
+		$query->setLimit( $pageRequestOptions->limit );
+		$query->setOffset( $pageRequestOptions->offset );
+		$query->sort = true;
+		$query->sortkeys = [
+			$pageRequestOptions->property->getDataItem()->getKey() => $sortOrder
+		];
+
+		// Note: printrequests change the caption of properties they
+		// get (they expect properties to be given to them).
+		// Since we want to continue using the property for our
+		// purposes, we give a clone to the print request.
+		$printout = new PrintRequest(
+			PrintRequest::PRINT_PROP,
+			'',
+			clone $pageRequestOptions->property
+		);
+
+		// No more than one value is displayed therefore limit the query
+		// to only look for one and not all
+		$printout->setParameter( 'limit', 1 );
+
+		$printouts = [
+			new PrintRequest( PrintRequest::PRINT_THIS, '' ),
+			$printout
+		];
+
+		$query->setExtraPrintouts( $printouts );
+
+		$queryResults = $this->store->getQueryResult( $query );
+
+		$result = [];
+
+		$resultArrays = $queryResults->getNext();
+		while ( $resultArrays ) {
+			$r = [];
+
+			foreach ( $resultArrays as $resultArray ) {
+				$r[] = $resultArray->getNextDataValue();
+			}
+			// Note: if results have multiple values for the property
+			// then this code just pick the first, which may not be
+			// the reason why the result is shown here, i.e., it could
+			// be out of order.
+			$result[] = $r;
+			$resultArrays = $queryResults->getNext();
+		}
+
+		if ( !$greater ) {
+			$result = array_reverse( $result );
+		}
+
+		return $result;
+	}
+
+	private function doQueryForNonValue( PageRequestOptions $pageRequestOptions, RequestOptions $requestOptions ) {
+		return $this->store->getPropertyValues(
+			null,
+			$pageRequestOptions->property->getDataItem(),
+			$requestOptions
+		);
+	}
+
+	private function destructureDIContainer( Property $DIProperty, DataItem $dataItem, PageRequestOptions $pageRequestOptions ): array {
+		$multiValue = DataValueFactory::getInstance()->newDataValueByItem(
+			$dataItem,
+			$DIProperty
+		);
+		$properties = $multiValue->getPropertyDataItems( $DIProperty );
+
+		// Property for the reference value
+		$DIPropertyReferenceValue = $properties[0];
+
+		// retrieve the dataitem for this property
+		// as is done in the method below (through
+		// pageRequestOptions). This avoids to
+		// create the correct dataItem manually
+		// despite some of the parameters below could
+		// be unnecessary
+		$requestOptions = [
+			'limit'    => $pageRequestOptions->limit,
+			'offset'   => $pageRequestOptions->offset,
+			'property' => $DIPropertyReferenceValue->getCanonicalLabel(),
+			'value'    => $pageRequestOptions->valueString,
+			'nearbySearchForType' => $pageRequestOptions->nearbySearch
+		];
+		$pageRequestOptions = new PageRequestOptions( '', $requestOptions );
+		$pageRequestOptions->initialize();
+
+		return [ $DIPropertyReferenceValue, $pageRequestOptions->value->getDataItem() ];
+	}
+
+	private function doQueryForExactValue( PageRequestOptions $pageRequestOptions, RequestOptions $requestOptions ) {
+		$pageRequestOptions->value->setOption( 'is.search', true );
+
+		$DIProperty = $pageRequestOptions->property->getDataItem();
+		$dataItem = $pageRequestOptions->value->getDataItem();
+
+		// override $DIProperty for reference datatype
+		// with the first multiValue property
+		if ( DataTypeRegistry::getInstance()->isRecordType( $DIProperty->findPropertyValueType() ) ) {
+			[ $DIProperty, $dataItem ] = $this->destructureDIContainer( $DIProperty, $dataItem, $pageRequestOptions );
+		}
+
+		return $this->store->getPropertySubjects(
+			$DIProperty,
+			$dataItem,
+			$requestOptions
+		);
+	}
+
+}

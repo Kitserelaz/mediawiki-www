@@ -1,0 +1,7 @@
+{
+  "component": "mediawiki/extensions/GlobalUsage",
+  "baseline": "adc611ce6ffc19d2c253f89394f1f7b432c809c9",
+  "target": "26f01ac90f010b36d4cf7275d58b276d441fbcd1",
+  "preserved_changes": [],
+  "dependency_status": "No runtime Composer packages or component lockfile; uses core platform dependencies"
+}

@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Raymond",
+			"Vedmaka"
+		]
+	},
+	"lockauthor-desc": "{{desc|name=Lock Author|url=https://www.mediawiki.org/wiki/Extension:LockAuthor}}",
+	"action-editall": "{{doc-action|editall}}",
+	"right-editall": "{{doc-right|editall}}"
+}

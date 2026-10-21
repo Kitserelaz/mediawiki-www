@@ -39,6 +39,12 @@ $specialPageAliases['av'] = [
 	'Gadgets' => [ 'Гаджетал', 'Гаджеты' ],
 ];
 
+/** Azerbaijani (Azərbaycanca) */
+$specialPageAliases['az'] = [
+	'Gadgets' => [ 'Qadcetlər' ],
+	'GadgetUsage' => [ 'Qadcetİstifadəsi' ],
+];
+
 /** Bulgarian (български) */
 $specialPageAliases['bg'] = [
 	'Gadgets' => [ 'Джаджи' ],
@@ -295,7 +301,8 @@ $specialPageAliases['nds-nl'] = [
 
 /** Dutch (Nederlands) */
 $specialPageAliases['nl'] = [
-	'Gadgets' => [ 'Extensies' ],
+	'Gadgets' => [ 'Gadgets', 'Extensies' ],
+	'GadgetUsage' => [ 'Gadgetgebruik' ],
 ];
 
 /** Norwegian Nynorsk (norsk nynorsk) */
@@ -429,6 +436,12 @@ $specialPageAliases['vec'] = [
 /** Vietnamese (Tiếng Việt) */
 $specialPageAliases['vi'] = [
 	'Gadgets' => [ 'Tiện_ích', 'Công_cụ_đa_năng' ],
+];
+
+/** Chinese (中文) */
+$specialPageAliases['zh'] = [
+	'Gadgets' => [ 'Gadgets' ],
+	'GadgetUsage' => [ 'GadgetUsage' ],
 ];
 
 /** Simplified Chinese (中文（简体）) */

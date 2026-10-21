@@ -1,0 +1,20 @@
+{
+	"@metadata": {
+		"authors": [
+			"S.Örvarr.S",
+			"Stefán Örvar Sigmundsson",
+			"Sveinn í Felli"
+		]
+	},
+	"stabilization-page": "Síðunafn:",
+	"stabilization-submit": "Staðfesta",
+	"stabilization-comment": "Ástæða:",
+	"stabilization-otherreason": "Önnur ástæða:",
+	"stabilization-expiry": "Fyrnist:",
+	"stabilization-othertime": "Annar tími:",
+	"stabilization-def-short": "Sjálfgefið",
+	"stabilization-def-short-0": "Núverandi",
+	"stabilization-def-short-1": "Stöðugt",
+	"stabilize_denied": "Heimild hafnað.",
+	"stabilize-expiring": "fyrnist $1 (UTC)"
+}

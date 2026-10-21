@@ -1,0 +1,112 @@
+<?php
+
+namespace SMW\Query\ResultPrinters\ListResultPrinter;
+
+use SMW\MediaWiki\Renderer\WikitextTemplateRenderer;
+use SMW\Query\Query;
+use SMW\Query\QueryProcessor;
+use SMW\Query\QueryResult;
+use SMW\Services\ServicesFactory as ApplicationFactory;
+
+/**
+ * Class TemplateRendererFactory
+ *
+ * @license GPL-2.0-or-later
+ * @since 3.0
+ *
+ * @author Stephan Gambke
+ */
+class TemplateRendererFactory {
+
+	private ?WikitextTemplateRenderer $templateRenderer = null;
+	private $numberOfPages;
+	private $userparam = '';
+
+	/**
+	 * TemplateRendererFactory constructor.
+	 */
+	public function __construct( private $queryResult ) {
+	}
+
+	/**
+	 * @param mixed $userparam
+	 */
+	public function setUserparam( $userparam ): void {
+		$this->userparam = $userparam;
+	}
+
+	/**
+	 * @return WikitextTemplateRenderer
+	 */
+	public function getTemplateRenderer() {
+		if ( $this->templateRenderer === null ) {
+			$this->templateRenderer = ApplicationFactory::getInstance()->newMwCollaboratorFactory()->newWikitextTemplateRenderer();
+			$this->addCommonTemplateFields( $this->templateRenderer );
+		}
+
+		return clone $this->templateRenderer;
+	}
+
+	/**
+	 * @param WikitextTemplateRenderer $templateRenderer
+	 */
+	private function addCommonTemplateFields( WikitextTemplateRenderer $templateRenderer ): void {
+		if ( $this->userparam !== '' ) {
+
+			$templateRenderer->addField(
+				'#userparam',
+				$this->userparam
+			);
+		}
+
+		$query = $this->getQueryResult()->getQuery();
+
+		$templateRenderer->addField(
+			'#querycondition',
+			$query->getQueryString()
+		);
+
+		$templateRenderer->addField(
+			'#querylimit',
+			$query->getLimit()
+		);
+
+		$templateRenderer->addField(
+			'#resultoffset',
+			$query->getOffset()
+		);
+
+		$templateRenderer->addField(
+			'#rowcount',
+			$this->getRowCount()
+		// $query->getCount()  // FIXME: Re-activate if another query takes too long.
+		);
+	}
+
+	/**
+	 * @return QueryResult
+	 */
+	private function getQueryResult() {
+		return $this->queryResult;
+	}
+
+	/**
+	 * @return int
+	 */
+	private function getRowCount() {
+		if ( $this->numberOfPages === null ) {
+
+			$queryResult = $this->getQueryResult();
+
+			$countQuery = QueryProcessor::createQuery( $queryResult->getQueryString(), QueryProcessor::getProcessedParams( [] ) );
+			$countQuery->querymode = Query::MODE_COUNT;
+
+			$countQueryResult = $queryResult->getStore()->getQueryResult( $countQuery );
+
+			$this->numberOfPages = $countQueryResult instanceof QueryResult ? $countQueryResult->getCountValue() : $countQueryResult;
+		}
+
+		return $this->numberOfPages;
+	}
+
+}

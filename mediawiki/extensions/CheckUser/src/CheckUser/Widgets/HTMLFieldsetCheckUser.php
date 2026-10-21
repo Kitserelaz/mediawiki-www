@@ -1,6 +1,6 @@
 <?php
 
-namespace MediaWiki\CheckUser\CheckUser\Widgets;
+namespace MediaWiki\Extension\CheckUser\CheckUser\Widgets;
 
 use MediaWiki\HTMLForm\CollapsibleFieldsetLayout;
 use MediaWiki\HTMLForm\OOUIHTMLForm;
@@ -29,7 +29,7 @@ class HTMLFieldsetCheckUser extends OOUIHTMLForm {
 				'collapsed' => $this->mCollapsed,
 				'items' => [
 					new Widget( [
-						'content' => new HtmlSnippet( $html )
+						'content' => new HtmlSnippet( $html ),
 					] ),
 				],
 			] + Element::configFromHtmlAttributes( $this->mWrapperAttributes ) );

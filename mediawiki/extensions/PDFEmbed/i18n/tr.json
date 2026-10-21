@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Hedda"
+		]
+	},
+	"action-embed_pdf": "PDF'leri göm",
+	"pdfembed": "PDF Gömme",
+	"pdfembed_description": "PDF dosyaları için medya işleyici uzantısı.",
+	"embed_pdf_no_permission": "PDF dosyalarını gömme izniniz yok.",
+	"embed_pdf_blank_file": "PDF gömmek için verilen URL veya dosya yolu boş.",
+	"embed_pdf_invalid_file": "Verilen URL veya dosya yolu mevcut değil.",
+	"embed_pdf_invalid_user": "Bu PDF'yi gömmek için izin testi için geçersiz bir kullanıcı belirtildi.",
+	"right-embed_pdf": "PDF'leri sayfalara gömün"
+}

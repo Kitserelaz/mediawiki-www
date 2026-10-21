@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"Base",
+			"Macofe",
+			"Piramidion",
+			"Ua2004",
+			"Ата"
+		]
+	},
+	"linksuggest-desc": "Підказки з посиланнями на вже існуючі сторінки у режимі редагування",
+	"tog-disablelinksuggest": "Не показувати пропозиції посилань"
+}

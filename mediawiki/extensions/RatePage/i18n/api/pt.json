@@ -1,0 +1,22 @@
+{
+	"@metadata": {
+		"authors": [
+			"Hamilton Abreu"
+		]
+	},
+	"apihelp-ratepage-summary": "Permite que um utilizador vote numa página e obtém a avaliação de uma página. Requer a especificação de um de dois parâmetros: \"pageid\" ou \"pagetitle\".",
+	"apihelp-ratepage-param-pageid": "Identificador da página",
+	"apihelp-ratepage-param-pagetitle": "Título da página",
+	"apihelp-ratepage-param-answer": "Avaliação da página pelo utilizador (entre 1 e 5 inclusive por padrão, podendo ser alteradas pelas definições de configuração)",
+	"apihelp-ratepage-param-contest": "Identificador do concurso",
+	"apihelp-ratepage-example-1": "Obter a avaliação atual da página \"Example\".",
+	"apihelp-ratepage-example-2": "Avaliar a página \"Example\" com um 2.",
+	"apihelp-query+pagerating-summary": "Devolve os votos nesta página e as permissões de votação deste utilizador.",
+	"apihelp-query+pagerating-param-contest": "Identificador do concurso",
+	"apierror-ratepage-contest-id-too-long": "O comprimento do identificador do concurso excede o limite (255 caracteres).",
+	"apierror-ratepage-contest-id-allowed-chars": "O identificador do concurso só pode conter algarismos e letras do alfabeto latino. Não são permitidos outros carateres.",
+	"apierror-ratepage-contest-not-exists": "O concurso $1 não existe.",
+	"apierror-ratepage-page-not-exists": "A página especificada não existe.",
+	"apierror-ratepage-cannot-vote-in-contest": "Não tem permissões para votar neste concurso.",
+	"apierror-ratepage-invalid-answer": "Foi especificada uma resposta inválida. A resposta deve ser maior ou igual a $1 e menor ou igual a $2."
+}

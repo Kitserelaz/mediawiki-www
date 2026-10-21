@@ -1,0 +1,469 @@
+{
+  "component": "mediawiki/extensions/DiscussionTools",
+  "baseline": "3067e8052c0ee62f3d1cb6a1f95cde3bb50e7312",
+  "target": "b3110c270f35b9fd3d5c66dc37e2ec6deb459f26",
+  "preserved_changes": [
+    {
+      "path": ".eslintignore",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".eslintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".gitignore",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".gitreview",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".phan/config.php",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".phan/stubs/DomImpl.php",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".phpcs.xml",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".stylelintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".svgo.config.mjs",
+      "change": "local-deletion"
+    },
+    {
+      "path": "Gruntfile.js",
+      "change": "local-deletion"
+    },
+    {
+      "path": "i18n/af.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/api/ar.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/api/fi.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/api/ko.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/api/tr.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/api/vi.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ar.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/az.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ban.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/be-tarask.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/be.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/bew.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/bol.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/br.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/bs.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/cbk-zam.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ce.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ckb.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/cko.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/crh-latn.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/cs.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/cv.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/da.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/dlg.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/el.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/es.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/et.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/fi.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/fr.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/frp.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/gl.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/got.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/he.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/hil.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/hoc-latn.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/hr.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/hu.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/id.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ie.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ig.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ilo.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/io.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/is.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ja.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ka.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/kaa.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/kab.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/kai.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/kaj.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/kk-cyrl.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ko.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ks-arab.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ks.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ky.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/lb.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/lo.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/lt.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/lua.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/mag.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/mfa.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/mg.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ml.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/mrh.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/mrt.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ms.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/nap.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ne.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ng.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/nqo.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/nup.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/oc.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/pa.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/pcm.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ps.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/pt-br.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/qqq.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/rki.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/sh-latn.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/shi.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/sk.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/sl.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/smn.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/sr-ec.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/sr-el.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/sw.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ta.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/tcy.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/te.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/tg-cyrl.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/tl.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/tly.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/tok.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/udm.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/vec.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/vi.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/wal.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/xmm.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/xon.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/yua.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/zgh.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/zh-hans.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "modules/.eslintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "package-lock.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "package.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "tests/qunit/.eslintrc.json",
+      "change": "local-deletion"
+    }
+  ],
+  "dependency_status": "Runtime requirements unchanged; uses root dependencies",
+  "translation_contract_migrations": "docs/upgrade-translation-contract-migrations.json"
+}

@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Ajeje Brazorf"
+		]
+	},
+	"deleteuserpages-desc": "Pirmetti a l'utenti di cancillari li propri pàggini utenti",
+	"action-delete-rootuserpages": "cancillari la tò pàggina utenti e la tò pàggina di discussioni utenti",
+	"right-delete-rootuserpages": "Cancella la sò pàggina utenti e la sò pàggina di discussioni utenti",
+	"action-delete-usersubpages": "cancillari li suttapàggini dâ tò pàggina utenti",
+	"right-delete-usersubpages": "Cancella li suttapàggini dâ sò pàggina utenti"
+}

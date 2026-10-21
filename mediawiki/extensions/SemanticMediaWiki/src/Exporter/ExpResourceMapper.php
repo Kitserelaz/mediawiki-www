@@ -1,0 +1,266 @@
+<?php
+
+namespace SMW\Exporter;
+
+use RuntimeException;
+use SMW\DataItems\DataItem;
+use SMW\DataItems\Property;
+use SMW\DataItems\WikiPage;
+use SMW\DataValueFactory;
+use SMW\Export\Exporter;
+use SMW\Exporter\Element\ExpNsResource;
+use SMW\InMemoryPoolCache;
+use SMW\Store;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 2.2
+ *
+ * @author mwjames
+ * @author Markus Krötzsch
+ */
+class ExpResourceMapper {
+
+	/**
+	 * Identifies auxiliary data (helper values)
+	 */
+	const AUX_MARKER = 'aux';
+
+	private DataValueFactory $dataValueFactory;
+
+	private InMemoryPoolCache $inMemoryPoolCache;
+
+	/**
+	 * @note Legacy setting expected to vanish with 3.0
+	 */
+	private bool $bcAuxiliaryUse = true;
+
+	private bool $seekImportVocabulary = true;
+
+	/**
+	 * @since 2.2
+	 */
+	public function __construct( private readonly Store $store ) {
+		$this->dataValueFactory = DataValueFactory::getInstance();
+		$this->inMemoryPoolCache = InMemoryPoolCache::getInstance();
+	}
+
+	/**
+	 * @since 2.3
+	 */
+	public function reset(): void {
+		$this->inMemoryPoolCache->resetPoolCacheById( 'exporter.expresource.mapper' );
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * @param bool $bcAuxiliaryUse
+	 */
+	public function setBCAuxiliaryUse( $bcAuxiliaryUse ): void {
+		$this->bcAuxiliaryUse = (bool)$bcAuxiliaryUse;
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * @param WikiPage $subject
+	 */
+	public function invalidateCache( WikiPage $subject ): void {
+		$hash = $subject->getHash();
+
+		$poolCache = $this->inMemoryPoolCache->getPoolCacheById(
+			'exporter.expresource.mapper'
+		);
+
+		foreach ( [ $hash, $hash . self::AUX_MARKER . (string)$this->seekImportVocabulary ] as $key ) {
+			$poolCache->delete( $key );
+		}
+	}
+
+	/**
+	 * Create an ExpElement for some internal resource, given by an
+	 * DIProperty object.
+	 *
+	 * This code is only applied to user-defined properties, since the
+	 * code for special properties in
+	 * Exporter::getSpecialPropertyResource may require information
+	 * about the namespace in which some special property is used.
+	 *
+	 * @note $useAuxiliaryModifier is to determine whether an auxiliary
+	 * property resource is to store a helper value
+	 * (see Exporter::newAuxiliaryExpElement) should be generated
+	 *
+	 * @throws RuntimeException
+	 */
+	public function mapPropertyToResourceElement(
+		Property $property,
+		bool $useAuxiliaryModifier = false,
+		bool $seekImportVocabulary = true
+	): ExpNsResource {
+		// We want the a canonical representation to ensure that resources
+		// are language independent
+		$this->seekImportVocabulary = $seekImportVocabulary;
+		$diWikiPage = $property->getCanonicalDiWikiPage();
+
+		if ( $diWikiPage === null ) {
+			throw new RuntimeException( 'Only non-inverse, user-defined properties are permitted.' );
+		}
+
+		// No need for any aux properties besides those listed here
+		if ( !$this->bcAuxiliaryUse && $property->findPropertyValueType() !== '_dat' && $property->findPropertyValueType() !== '_geo' ) {
+			$useAuxiliaryModifier = false;
+		}
+
+		$expResource = $this->mapWikiPageToResourceElement( $diWikiPage, $useAuxiliaryModifier );
+		$this->seekImportVocabulary = true;
+
+		return $expResource;
+	}
+
+	/**
+	 * Create an ExpElement for some internal resource, given by an
+	 * DIWikiPage object. This is the one place in the code where URIs
+	 * of wiki pages and user-defined properties are determined. A modifier
+	 * can be given to make variants of a URI, typically done for
+	 * auxiliary properties. In this case, the URI is modiied by appending
+	 * "-23$modifier" where "-23" is the URI encoding of "#" (a symbol not
+	 * occurring in MW titles).
+	 */
+	public function mapWikiPageToResourceElement(
+		WikiPage $diWikiPage,
+		bool $useAuxiliaryModifier = false
+	): ExpNsResource {
+		$modifier = $useAuxiliaryModifier ? self::AUX_MARKER : '';
+
+		$hash = $diWikiPage->getHash() . $modifier . (string)$this->seekImportVocabulary;
+
+		$poolCache = $this->inMemoryPoolCache->getPoolCacheById( 'exporter.expresource.mapper' );
+
+		if ( $poolCache->contains( $hash ) ) {
+			return $poolCache->fetch( $hash );
+		}
+
+		if ( $diWikiPage->getSubobjectName() !== '' ) {
+			$modifier = $diWikiPage->getSubobjectName();
+		}
+
+		$resource = $this->newExpNsResource(
+			$diWikiPage,
+			$modifier
+		);
+
+		$poolCache->save(
+			$hash,
+			$resource
+		);
+
+		return $resource;
+	}
+
+	private function newExpNsResource( WikiPage $diWikiPage, $modifier ): ExpNsResource {
+		$importDataItem = $this->findImportDataItem( $diWikiPage );
+
+		if ( $this->seekImportVocabulary && $importDataItem instanceof DataItem ) {
+			[ $localName, $namespace, $namespaceId ] = $this->defineElementsForImportDataItem( $importDataItem );
+		} else {
+			[ $localName, $namespace, $namespaceId ] = $this->defineElementsForDiWikiPage( $diWikiPage, $modifier );
+		}
+
+		$resource = new ExpNsResource(
+			$localName,
+			$namespace,
+			$namespaceId,
+			$diWikiPage
+		);
+
+		$resource->isImported = $importDataItem instanceof DataItem;
+		$dbKey = (string)$diWikiPage->getDBkey();
+
+		if ( $diWikiPage->getNamespace() === SMW_NS_PROPERTY && $dbKey !== '' && $dbKey[0] !== '-' ) {
+			$resource->isUserDefined = Property::newFromUserLabel( $diWikiPage->getDBkey() )->isUserDefined();
+		}
+
+		return $resource;
+	}
+
+	private function defineElementsForImportDataItem( DataItem $dataItem ): array {
+		$importValue = $this->dataValueFactory->newDataValueByItem(
+			$dataItem,
+			new Property( '_IMPO' )
+		);
+
+		return [
+			$importValue->getLocalName(),
+			$importValue->getNS(),
+			$importValue->getNSID()
+		];
+	}
+
+	private function defineElementsForDiWikiPage( WikiPage $diWikiPage, $modifier ): array {
+		$namespace = '';
+		$namespaceId = '';
+		$localName = '';
+		$hasFixedNamespace = false;
+
+		if ( $diWikiPage->getNamespace() === NS_CATEGORY ) {
+			$namespace = Exporter::getInstance()->getNamespaceUri( 'category' );
+			$namespaceId = 'category';
+			$localName = Escaper::encodeUri( $diWikiPage->getDBkey() );
+			$hasFixedNamespace = true;
+		}
+
+		if ( $diWikiPage->getNamespace() === SMW_NS_PROPERTY ) {
+			$namespace = Exporter::getInstance()->getNamespaceUri( 'property' );
+			$namespaceId = 'property';
+			$localName = Escaper::encodeUri( $diWikiPage->getDBkey() );
+			$hasFixedNamespace = true;
+		}
+
+		if ( ( $localName === '' ) ||
+			 ( in_array( $localName[0], [ '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' ] ) ) ||
+			 ( $hasFixedNamespace && strpos( $localName, '/' ) !== false )
+			 ) {
+			$namespace = Exporter::getInstance()->getNamespaceUri( 'wiki' );
+			$namespaceId = 'wiki';
+			$localName = Escaper::encodePage( $diWikiPage );
+		}
+
+		if ( $hasFixedNamespace && strpos( $localName, '/' ) !== false ) {
+			$namespace = Exporter::getInstance()->getNamespaceUri( 'wiki' );
+			$namespaceId = 'wiki';
+			$localName = Escaper::armorChars( Escaper::encodePage( $diWikiPage ) );
+		}
+
+		// "-23$modifier" where "-23" is the URI encoding of "#" (a symbol not
+		// occurring in MW titles).
+		if ( $modifier !== '' ) {
+			$localName .= '-23' . Escaper::encodeUri( $modifier );
+		}
+
+		return [
+			$localName,
+			$namespace,
+			$namespaceId
+		];
+	}
+
+	private function findImportDataItem( WikiPage $diWikiPage ) {
+		$importDataItems = null;
+
+		// Only try to find an import vocab for a matchable entity
+		if ( ( $this->seekImportVocabulary && $diWikiPage->getNamespace() === NS_CATEGORY ) || $diWikiPage->getNamespace() === SMW_NS_PROPERTY ) {
+			$importDataItems = $this->store->getPropertyValues(
+				$diWikiPage,
+				new Property( '_IMPO' )
+			);
+		}
+
+		if ( $importDataItems !== null && $importDataItems !== [] ) {
+			$importDataItems = current( $importDataItems );
+		}
+
+		return $importDataItems;
+	}
+
+}

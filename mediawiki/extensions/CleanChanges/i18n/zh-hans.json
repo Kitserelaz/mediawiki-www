@@ -1,0 +1,17 @@
+{
+	"@metadata": {
+		"authors": [
+			"Chenxiaoqino",
+			"Chenzw",
+			"Lakejason0",
+			"Liangent",
+			"Liuxinyu970226",
+			"NekoCharm",
+			"Xiaomingyan"
+		]
+	},
+	"cleanchanges-desc": "更简洁的显示[[Special:RecentChanges|最近更改列表]]",
+	"cleanchanges-language": "语言：",
+	"cleanchanges-language-na": "所有",
+	"cleanchanges-users": "用户（用“|”分隔）："
+}

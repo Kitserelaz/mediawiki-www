@@ -21,6 +21,10 @@
  * @author Aaron Schulz
  * @ingroup Maintenance
  */
+
+namespace MediaWiki\Extension\ConfirmEdit\Maintenance;
+
+// @codeCoverageIgnoreStart
 if ( getenv( 'MW_INSTALL_PATH' ) ) {
 	$IP = getenv( 'MW_INSTALL_PATH' );
 } else {
@@ -28,12 +32,18 @@ if ( getenv( 'MW_INSTALL_PATH' ) ) {
 }
 
 require_once "$IP/maintenance/Maintenance.php";
+// @codeCoverageIgnoreEnd
 
+use FilesystemIterator;
 use MediaWiki\Extension\ConfirmEdit\FancyCaptcha\FancyCaptcha;
 use MediaWiki\Extension\ConfirmEdit\Hooks;
 use MediaWiki\Maintenance\Maintenance;
 use MediaWiki\Shell\Shell;
 use MediaWiki\Status\Status;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use Shellbox\Command\UnboxedResult;
+use SplFileInfo;
 
 /**
  * Maintenance script to generate fancy captchas using a python script and copy them into storage.
@@ -53,10 +63,6 @@ class GenerateFancyCaptchas extends Maintenance {
 		$this->addOption(
 			"verbose",
 			"Show debugging information when running the captcha python script"
-		);
-		$this->addOption(
-			"oldcaptcha",
-			"DEPRECATED: Whether to use captcha-old.py which doesn't have OCR fighting improvements"
 		);
 		$this->addOption( "delete", "Deletes all the old captchas" );
 		$this->addOption( "threads", "The number of threads to use to generate the images",
@@ -109,16 +115,9 @@ class GenerateFancyCaptchas extends Maintenance {
 			$this->fatalError( "Could not create temp directory.\n", 1 );
 		}
 
-		$captchaScript = 'captcha.py';
-
-		if ( $this->hasOption( 'oldcaptcha' ) ) {
-			$this->output( "Using --oldcaptcha is deprecated, and captcha-old.py will be removed in the future!" );
-			$captchaScript = 'captcha-old.py';
-		}
-
 		$cmd = [
 			"python3",
-			dirname( __DIR__ ) . '/' . $captchaScript,
+			dirname( __DIR__ ) . '/captcha.py',
 			"--key",
 			$wgCaptchaSecret,
 			"--output",
@@ -139,17 +138,14 @@ class GenerateFancyCaptchas extends Maintenance {
 
 		$this->output( "Generating $countGen new captchas.." );
 		$captchaTime = -microtime( true );
-		$result = Shell::command( [] )
-			->params( $cmd )
-			->limits( [ 'time' => 0, 'memory' => 0, 'walltime' => 0, 'filesize' => 0 ] )
-			->disableSandbox()
-			->execute();
+
+		$result = $this->generateFancyCaptchas( $cmd );
 		if ( $result->getExitCode() !== 0 ) {
 			$this->output( " Failed.\n" );
 			wfRecursiveRemoveDir( $tmpDir );
 
 			$this->fatalError(
-				"An error occurred when running $captchaScript:\n{$result->getStderr()}\n",
+				"An error occurred when running captcha.py:\n{$result->getStderr()}\n",
 				1
 			);
 		}
@@ -159,7 +155,7 @@ class GenerateFancyCaptchas extends Maintenance {
 
 		$this->output(
 			sprintf(
-				"\nGeneration script for %d captchas ran in %.1f seconds\n",
+				"\nGeneration script for %d captchas ran in %.1f seconds.\n",
 				$countGen,
 				$captchaTime
 			)
@@ -193,7 +189,7 @@ class GenerateFancyCaptchas extends Maintenance {
 		$tmpCountTime += microtime( true );
 		$this->output(
 			sprintf(
-				"\nEnumerated %d temporary captchas in %.1f seconds\n",
+				"\nEnumerated %d temporary captchas in %.1f seconds.\n",
 				$captchasGenerated,
 				$tmpCountTime
 			)
@@ -201,9 +197,9 @@ class GenerateFancyCaptchas extends Maintenance {
 
 		if ( $captchasGenerated === 0 ) {
 			wfRecursiveRemoveDir( $tmpDir );
-			$this->error( "No generated captchas found in temporary directory; did captcha.py actually succeed?" );
+			$this->fatalError( "No generated captchas found in temporary directory; did captcha.py actually succeed?" );
 		} elseif ( $captchasGenerated < $countGen ) {
-			$this->output( "Expecting $countGen new captchas, only $captchasGenerated found on disk; continuing\n." );
+			$this->output( "Expecting $countGen new captchas, only $captchasGenerated found on disk; continuing.\n" );
 		}
 
 		$filesToDelete = [];
@@ -211,6 +207,17 @@ class GenerateFancyCaptchas extends Maintenance {
 			$this->output( "Getting a list of old captchas to delete..." );
 			$path = $backend->getRootStoragePath() . '/' . $instance->getStorageDir();
 			foreach ( $backend->getFileList( [ 'dir' => $path ] ) as $file ) {
+
+				// T388531: Avoid invalid response deleting an entire Swift container.
+				// SwiftFileBackend::getFileList sometimes (Swift error? something else?) returns an
+				// array with an empty string. This isn't a real or valid filename, but if we treat it
+				// as one, it would refer to the root of the Swift container recursively delete it...
+				//
+				// TODO: Figure out the root cause and fix it there instead.
+				if ( $file === '' ) {
+					continue;
+				}
+
 				$filesToDelete[] = [
 					'op' => 'delete',
 					'src' => $path . '/' . $file,
@@ -230,7 +237,7 @@ class GenerateFancyCaptchas extends Maintenance {
 			$this->output( " Done.\n" );
 			$this->output(
 				sprintf(
-					"\nCopied %d captchas to storage in %.1f seconds\n",
+					"\nCopied %d captchas to storage in %.1f seconds.\n",
 					$ret->successCount,
 					$storeTime
 				)
@@ -244,7 +251,7 @@ class GenerateFancyCaptchas extends Maintenance {
 			}
 			if ( $ret->failCount ) {
 				$storeSucceeded = false;
-				$this->error( sprintf( "\nFailed to copy %d captchas\n", $ret->failCount ) );
+				$this->error( sprintf( "\nFailed to copy %d captchas.\n", $ret->failCount ) );
 			}
 			if ( $ret->successCount + $ret->failCount !== $captchasGenerated ) {
 				$storeSucceeded = false;
@@ -265,7 +272,7 @@ class GenerateFancyCaptchas extends Maintenance {
 
 		if ( $storeSucceeded && $deleteOldCaptchas ) {
 			$numOriginalFiles = count( $filesToDelete );
-			$this->output( "Deleting {$numOriginalFiles} old captchas...\n" );
+			$this->output( "Deleting {$numOriginalFiles} old captchas..." );
 			$deleteTime = -microtime( true );
 			$ret = $backend->doQuickOperations( $filesToDelete );
 
@@ -274,7 +281,7 @@ class GenerateFancyCaptchas extends Maintenance {
 				$this->output( "Done.\n" );
 				$this->output(
 					sprintf(
-						"\nDeleted %d old captchas in %.1f seconds\n",
+						"\nDeleted %d old captchas in %.1f seconds.\n",
 						$numOriginalFiles,
 						$deleteTime
 					)
@@ -302,12 +309,30 @@ class GenerateFancyCaptchas extends Maintenance {
 		$totalTime += microtime( true );
 		$this->output(
 			sprintf(
-				"\nWhole captchas generation process took %.1f seconds\n",
+				"\nWhole captchas generation process took %.1f seconds.\n",
 				$totalTime
 			)
 		);
 	}
+
+	/**
+	 * Generates FancyCaptcha images using the provided command.
+	 *
+	 * This method is protected so that it can be mocked in tests, because we cannot run python in PHPUnit tests.
+	 *
+	 * @param array $cmd The command to execute which generates the FancyCaptcha images
+	 * @return UnboxedResult
+	 */
+	protected function generateFancyCaptchas( array $cmd ): UnboxedResult {
+		return Shell::command( [] )
+			->params( $cmd )
+			->limits( [ 'time' => 0, 'memory' => 0, 'walltime' => 0, 'filesize' => 0 ] )
+			->disableSandbox()
+			->execute();
+	}
 }
 
+// @codeCoverageIgnoreStart
 $maintClass = GenerateFancyCaptchas::class;
 require_once RUN_MAINTENANCE_IF_MAIN;
+// @codeCoverageIgnoreEnd

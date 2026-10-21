@@ -1,0 +1,223 @@
+<?php
+
+namespace SMW\Elastic\Jobs;
+
+use MediaWiki\Logger\LoggerFactory;
+use MediaWiki\Title\Title;
+use SMW\DataItems\WikiPage;
+use SMW\Elastic\Connection\Client as ElasticClient;
+use SMW\Elastic\ElasticStore;
+use SMW\Elastic\Indexer\Document;
+use SMW\Elastic\Indexer\Indexer;
+use SMW\MediaWiki\Job;
+use SMW\MediaWiki\JobFactory;
+use SMW\Services\ServicesFactory as ApplicationFactory;
+use SMW\Store;
+use SMW\Utils\HmacSerializer;
+use Wikimedia\ObjectCache\BagOStuff;
+
+/**
+ * Partial DI: Store and Cache are injected via the JobClasses ObjectFactory
+ * spec. The PSR-3 logger is still resolved lazily via
+ * `LoggerFactory::getInstance( 'smw-elastic' )` rather than constructor
+ * injection.
+ *
+ * @license GPL-2.0-or-later
+ * @since 3.0
+ *
+ * @author mwjames
+ */
+class IndexerRecoveryJob extends Job {
+
+	/**
+	 * Name of the job
+	 */
+	const JOB_COMMAND = 'smw.elasticIndexerRecovery';
+
+	/**
+	 * Repository specific namespace
+	 */
+	const CACHE_NAMESPACE = 'smw:elastic:document';
+
+	const TTL_DAY = 86400; // 24 * 3600
+	const TTL_WEEK = 604800; // 7 * 24 * 3600
+
+	private Indexer $indexer;
+
+	/**
+	 * @since 3.0
+	 */
+	public function __construct(
+		Title $title,
+		array $params,
+		Store $store,
+		private readonly BagOStuff $cache,
+		private readonly JobFactory $jobFactory
+	) {
+		parent::__construct( self::JOB_COMMAND, $title, $params );
+		$this->setStore( $store );
+		$this->removeDuplicates = true;
+	}
+
+	/**
+	 * @since 3.2
+	 */
+	public static function makeCacheKey( $subject ): string {
+		if ( $subject instanceof Title ) {
+			$subject = WikiPage::newFromTitle( $subject );
+		}
+
+		return smwfCacheKey( self::CACHE_NAMESPACE, $subject->getHash() );
+	}
+
+	/**
+	 * @since 3.2
+	 */
+	public static function pushFromDocument( Document $document ): void {
+		$cache = ApplicationFactory::getInstance()->getObjectCache();
+		$subject = $document->getSubject();
+
+		$cache->set(
+			self::makeCacheKey( $subject ),
+			HmacSerializer::compress( $document ),
+			self::TTL_WEEK
+		);
+
+		$indexerRecoveryJob = ApplicationFactory::getInstance()->getJobFactory()->newIndexerRecoveryJob(
+			$subject->getTitle(),
+			[ 'index' => $subject->getHash() ]
+		);
+
+		$indexerRecoveryJob->insert();
+	}
+
+	/**
+	 * @since 3.2
+	 */
+	public static function pushFromParams( Title $title, array $params ): void {
+		$indexerRecoveryJob = ApplicationFactory::getInstance()->getJobFactory()->newIndexerRecoveryJob(
+			$title,
+			$params
+		);
+
+		$indexerRecoveryJob->insert();
+	}
+
+	/**
+	 * @see Job::run
+	 *
+	 * @since  3.0
+	 */
+	public function allowRetries(): bool {
+		return false;
+	}
+
+	/**
+	 * @see Job::run
+	 *
+	 * @since  3.0
+	 */
+	public function run(): bool {
+		// The Elastic-specific store accessor falls back to ElasticStore if
+		// the wired Store is not already one (e.g. via test override).
+		$store = $this->store instanceof ElasticStore
+			? $this->store
+			: ApplicationFactory::getInstance()->getStore( ElasticStore::class );
+
+		$connection = $store->getConnection( 'elastic' );
+
+		// Make sure a node is available
+		if ( $connection->hasLock( ElasticClient::TYPE_DATA ) || !$connection->ping() ) {
+
+			if ( $connection->hasLock( ElasticClient::TYPE_DATA ) ) {
+				$this->params['retryCount'] = 0;
+			}
+
+			return $this->requeueRetry( $connection->getConfig() );
+		}
+
+		$elasticFactory = $store->getElasticFactory();
+
+		$this->indexer = $elasticFactory->newIndexer(
+			$store
+		);
+
+		$this->indexer->setOrigin( __METHOD__ );
+
+		$this->indexer->setLogger(
+			LoggerFactory::getInstance( 'smw-elastic' )
+		);
+
+		if ( $this->hasParameter( 'delete' ) ) {
+			$this->delete( $this->getParameter( 'delete' ) );
+		}
+
+		if ( $this->hasParameter( 'create' ) ) {
+			$this->create( $this->getParameter( 'create' ) );
+		}
+
+		if ( $this->hasParameter( 'index' ) ) {
+			$this->index(
+				$this->cache,
+				$this->getParameter( 'index' )
+			);
+		}
+
+		return true;
+	}
+
+	private function requeueRetry( $config ): bool {
+		// Give up!
+		if ( $this->getParameter( 'retryCount' ) >= $config->dotGet( 'indexer.job.recovery.retries' ) ) {
+			return true;
+		}
+
+		if ( !isset( $this->params['retryCount'] ) ) {
+			$this->params['retryCount'] = 1;
+		} else {
+			$this->params['retryCount']++;
+		}
+
+		if ( !isset( $this->params['createdAt'] ) ) {
+			$this->params['createdAt'] = time();
+		}
+
+		$job = $this->jobFactory->newIndexerRecoveryJob(
+			$this->title,
+			$this->params
+		);
+		$job->setDelay( 60 * 10 );
+
+		$job->insert();
+
+		return true;
+	}
+
+	private function delete( array $idList ): void {
+		$this->indexer->delete( $idList );
+	}
+
+	private function create( $hash ): void {
+		$this->indexer->create( WikiPage::doUnserialize( $hash ) );
+	}
+
+	private function index( $cache, $hash ): void {
+		$key = self::makeCacheKey(
+			WikiPage::doUnserialize( $hash )
+		);
+
+		$document = null;
+
+		$data = $cache->get( $key );
+		if ( $data !== false ) {
+			$document = HmacSerializer::uncompress( $data );
+		}
+
+		if ( $document instanceof Document ) {
+			$this->indexer->indexDocument( $document, false );
+		}
+
+		$cache->delete( $key );
+	}
+
+}

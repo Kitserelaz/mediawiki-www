@@ -1,0 +1,18 @@
+{
+	"@metadata": {
+		"authors": [
+			"Andreyyshore",
+			"Firilacroco",
+			"Stelistcristi"
+		]
+	},
+	"masseditregex-matchtxt": "Caută:",
+	"masseditregex-replacetxt": "Înlocuiește cu:",
+	"masseditregex-executebtn": "Execută",
+	"masseditregex-before": "Înainte",
+	"masseditregex-after": "După",
+	"masseditregex-hint-headmatch": "Potrivire",
+	"masseditregex-hint-headreplace": "Înlocuiește",
+	"masseditregex-hint-headeffect": "Efect",
+	"masseditregex-editfailed": "Editare eșuată:"
+}

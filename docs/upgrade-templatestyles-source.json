@@ -1,0 +1,48 @@
+{
+  "component": "mediawiki/extensions/TemplateStyles",
+  "baseline": "f8062128bf418c0590d1e2245cbf9edd7543b4d9",
+  "target": "77e8308ca940918ac7a9a6e1c41380501bb845d6",
+  "preserved_changes": [
+    {
+      "path": "composer.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ja.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/lb.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/pl.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/sr-ec.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/sv.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/zh-hans.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "package-lock.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "tests/phpunit/TemplateStylesContentTest.php",
+      "change": "local-source-edit"
+    }
+  ],
+  "dependency_status": "Regenerated component lock and installed css-sanitizer 6.2.1 matching core; no-dev runtime Composer audit clean",
+  "baseline_proof": {
+    "matched_runtime_and_manifest_files": 11,
+    "method": "Exact Git blobs for all installed non-test, non-vendor PHP and extension.json"
+  }
+}

@@ -1,0 +1,28 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ErrorSavingEditConflict matches the snapshot 1`] = `
+<div
+  class="wb-db-error-saving-edit-conflict"
+>
+  <h2
+    class="wb-db-error-saving-edit-conflict__heading"
+  >
+    ⧼wikibase-client-data-bridge-edit-conflict-error-heading⧽
+  </h2>
+  <icon-message-box-stub
+    class="wb-db-error-saving-edit-conflict__message"
+    inline="false"
+    type="error"
+  />
+  <event-emitting-button-stub
+    class="wb-db-error-saving-edit-conflict__reload"
+    disabled="false"
+    message="⧼wikibase-client-data-bridge-error-reload-page⧽"
+    newtab="false"
+    preventdefault="true"
+    size="M"
+    squary="false"
+    type="primaryProgressive"
+  />
+</div>
+`;

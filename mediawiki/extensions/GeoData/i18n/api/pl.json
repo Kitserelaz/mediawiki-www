@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"Chrumps"
+		]
+	},
+	"apihelp-query+coordinates-paramvalue-prop-name": "Nazwa obiektu.",
+	"apierror-geodata-invalidbox": "Nieprawidłowa obwiednia.",
+	"apierror-geodata-boxtoobig": "Obwiednia jest zbyt duża"
+}

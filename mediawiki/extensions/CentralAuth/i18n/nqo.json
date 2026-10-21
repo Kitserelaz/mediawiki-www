@@ -1,0 +1,32 @@
+{
+	"@metadata": {
+		"authors": [
+			"Lancine.kounfantoh.fofana",
+			"Lanciné.kounfantoh.fofana"
+		]
+	},
+	"abusefilter-edit-builder-vars-global-user-editcount": "ߟߊ߬ߓߊ߰ߙߊ߬ߟߊ ߟߊ߫ ߡߊ߬ߦߟߍ߬ߡߊ߲߬ߠߌ߲߫ ߖߊ߯ߓߡߊ ߦߙߌߞߊ ߟߎ߫",
+	"abusefilter-edit-builder-vars-global-user-groups": "ߟߊ߬ߓߊ߰ߙߊ߬ߟߊ ߦߋ߫ ߞߙߎ߫ ߖߊ߯ߓߡߊ ߡߍ߲ ߘߐ߫",
+	"action-centralauth-createlocal": "ߘߌ߲߬ߞߌߙߊ ߖߊ߬ߕߋ߬ߘߊ ߘߏ߫ ߛߌ߲ߘߌ߫ ߝߊ߲߬ߞߊ ߟߊ߫",
+	"action-centralauth-lock": "ߖߊ߬ߕߋ߬ߘߊ߫ ߖߊ߯ߓߡߊ ߟߎ߫ ߛߐ߰ ߥߟߊ߫ ߞߵߊ߬ߟߎ߫ ߛߐ߰ߣߍ߲ ߓߐ߫",
+	"action-centralauth-merge": "ߊ߬ߟߎ߬ ߟߊ߫ ߖߊ߬ߕߋ߬ߘߊ ߟߎ߫ ߞߍ߫ ߢߐ߲߮ ߞߊ߲߬",
+	"action-centralauth-suppress": "ߖߊ߬ߕߋ߬ߘߊ߫ ߖߊ߯ߓߡߊ ߟߎ߫ ߖߏ߰ߛߌ߫ ߥߟߊ߫ ߞߵߊ߬ߟߎ߫ ߢߡߊߘߏ߲߰",
+	"action-centralauth-rename": "ߖߊ߬ߕߋ߬ߘߊ߫ ߖߊ߯ߓߡߊ ߟߎ߫ ߕߐ߯ߟߊ߫",
+	"action-centralauth-unmerge": "ߖߊ߬ߕߋ߬ߘߊ߫ ߖߊ߯ߓߡߊ ߟߎ߫ ߝߘߊ߫ ߢߐ߲߯ ߠߊ߫",
+	"action-globalgroupmembership": "ߞߙߎ߫ ߖߊ߯ߓߡߊ ߛߌ߲߬ߝߏ߲߬ߦߊ ߡߊߦߟߍ߬ߡߊ߲߫",
+	"action-globalgrouppermissions": "ߞߙߎ߫ ߖߊ߯ߓߡߊ ߟߎ߫ ߘߐߛߌ߰",
+	"centralauth": "ߞߙߎ߫ ߖߊ߯ߓߡߊ ߘߐߛߌ߰ߟߊ߲",
+	"centralauth-abortlogin-renamed": "ߌ ߟߊ߫ ߖߊ߬ߕߋ߬ߘߊ ߓߘߊ߫ ߡߊߦߟߍ߬ߡߊ߲߫ ߞߵߊ߬ ߞߍ߫ «\"$1\"» ߘߌ߫. ߟߊ߬ߓߊ߰ߙߊ߬ߟߌ߫ ߕߐ߮ ߏ߬ ߟߊߓߊ߯ߙߊ߫ ߡߎ߬ߕߎ߲߫ ߛߊ߫.",
+	"centralauth-account-exists": "ߖߊ߬ߕߋ߬ߘߊ ߕߍߣߊ߬ ߛߐ߲߬ ߠߊ߫ ߛߌ߲ߘߌ߫ ߟߊ߫: ߟߊ߬ߓߊ߰ߙߊ߬ߟߌ߫ ߕߐ߮ ߓߘߊ߫ ߓߊ߲߫ ߕߊ߬ ߟߊ߫ ߟߊ߬ߓߊ߰ߙߊ߬ߟߊ ߘߏ߫ ߓߟߏ߫ ߥߞߌ߫ ߜߘߍ߫ ߞߊ߲߬.",
+	"centralauth-admin-blocklog": "ߜߊ߲߬ߞߎ߲߬ߠߌ߲ ߓߊ߬ߟߊ߲߬",
+	"centralauth-admin-lookup-ro": "ߟߊ߬ߓߊ߰ߙߊ߬ߟߊ ߞߎ߲߬ߠߊ߬ߝߏߣߌ߲ ߦߋ߫",
+	"centralauth-admin-lookup-rw": "ߖߊ߬ߕߋ߬ߘߊ߫ ߟߊߓߊ߯ߙߕߊ ߡߊߡߙߊ߬",
+	"centralauth-admin-no": "ߊ߬ߦߌ߫",
+	"centralauth-admin-no-unified": "ߖߊ߬ߕߋ߬ߘߊ߫ ߘߟߊߘߍ߰ߣߍ߲߫ ߕߍ߫ ߟߊ߬ߓߊ߰ߙߊ߬ ߕߐ߮ ߣߌ߲߬ ߦߋ߫.",
+	"centralauth-admin-none-selected": "ߖߊ߬ߕߋ߬ߘߊ߫ ߓߊߕߐ߬ߡߐ߲߬ߣߍ߲߫ ߕߍ߫ ߞߊ߬ ߡߊߦߟߍ߬ߡߊ߲߫",
+	"centralauth-admin-unmerge": "ߓߊߕߐ߬ߡߐ߲߬ߣߍ߲ ߓߐ߫ ߢߐ߲߮ ߞߊ߲߬",
+	"centralauth-foreign-contributions": "$1 {{PLURAL:$1|contribution|contributions}} ߦߴߊ߬ ߟߊ߫ $2",
+	"centralauth-foreign-link": "ߟߊ߬ߓߊ߰ߙߊ߬ߟߊ $1 ߦߴߊ߬ ߟߊ߫ $2",
+	"centralauth-merge-method-login": "ߊ߬ ߓߘߊ߫ ߟߊߞߊ߬߸ ߌ ߜߊ߲߬ߞߎ߲߬",
+	"globalrenamerequest-forced": "ߥߞߌ ߝߏ߬ߘߏ ߣߌ߲߬ ߦߋ߫ ߕߐ߯ߟߊߓߊ߯ߙߕߊ ߟߎ߬ ߟߊߞߊ߬ߝߏ ߞߊ߲߬ ߞߊ߬ ߝߘߊ߫ ߖߊ߬ߕߋ߬ߘߐ߬ߛߌ߮ ߟߎ߬ ߓߍ߯ ߟߊ߫. ߟߊ߬ߓߊ߰ߙߊ߬ߕߐ߮ ߣߌ߲߬ ߓߘߊ߫ ߡߊߟߐ߲߫ ߞߴߊ߬ ߓߘߊ߫ ߓߊ߯ߙߊ߫ ߥߞߌ߫ ߜߘߍ ߟߎ߬ ߘߐ߫߸ ߊ߬ ߣߴߊ߬ ߓߘߊ߫ ߡߊߝߊ߬ߟߋ߲߬ ߛߴߊ߬ ߘߌ߫ ߛߋ߫ ߟߞߊ߬ߝߏ߬ߟߌ ߣߌ߲߬ ߞߎ߲߬ߝߊ߰ ߟߊ߫. ߏ߬ ߞߐߝߟߌ ߡߊ߬߸ ߌ ߦߋ߫ ߟߊ߬ߓߊ߰ߙߊ߬ߕߐ߰ ߜߘߍ߫ ߛߎߥߊ߲ߘߌ߫."
+}

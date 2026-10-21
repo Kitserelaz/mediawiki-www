@@ -3,10 +3,9 @@
  * @class
  * @constructor
  * @param {RealtimePreview} realtimePreview
- * @param {OO.ui.ButtonWidget} reloadHoverButton
  */
-function ManualWidget( realtimePreview, reloadHoverButton ) {
-	var config = {
+function ManualWidget( realtimePreview ) {
+	const config = {
 		classes: [ 'ext-WikiEditor-ManualWidget' ],
 		$element: $( '<a>' )
 	};
@@ -22,12 +21,10 @@ function ManualWidget( realtimePreview, reloadHoverButton ) {
 		title: mw.msg( 'wikieditor-realtimepreview-reload-title' )
 	} );
 
-	this.reloadHoverButton = reloadHoverButton;
-
 	// UI elements.
-	var $reloadLabel = $( '<span>' )
+	const $reloadLabel = $( '<span>' )
 		.text( mw.msg( 'wikieditor-realtimepreview-manual' ) );
-	var $reloadButton = $( '<span>' )
+	const $reloadButton = $( '<span>' )
 		.addClass( 'ext-WikiEditor-realtimepreview-manual-reload' )
 		.text( mw.msg( 'wikieditor-realtimepreview-reload' ) );
 	this.connect( realtimePreview, {
@@ -51,14 +48,5 @@ OO.mixinClass( ManualWidget, OO.ui.mixin.AccessKeyedElement );
 OO.mixinClass( ManualWidget, OO.ui.mixin.ButtonElement );
 OO.mixinClass( ManualWidget, OO.ui.mixin.IconElement );
 OO.mixinClass( ManualWidget, OO.ui.mixin.TitledElement );
-
-ManualWidget.prototype.toggle = function ( show ) {
-	ManualWidget.super.prototype.toggle.call( this, show );
-	if ( show ) {
-		this.reloadHoverButton.$element.remove();
-		// Use the same access key as the hover reload button, because this won't ever be displayed at the same time as that.
-		this.setAccessKey( mw.msg( 'accesskey-wikieditor-realtimepreview' ) );
-	}
-};
 
 module.exports = ManualWidget;

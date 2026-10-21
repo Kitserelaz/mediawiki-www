@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Armin1392",
+			"Jeeputer",
+			"Mjbmr"
+		]
+	},
+	"forcepreview": "$1 (ابتدا از پیش‌نمایش استفاده کنید)",
+	"forcepreview-desc": "اجبار پیش‌نمایش برای کاربران بدون امتیاز",
+	"right-forcepreviewexempt": "ذخیره‌سازی بدون استفاده از پیش‌نمایش"
+}

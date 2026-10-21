@@ -1,15 +1,20 @@
 <?php
 
-namespace MediaWiki\CheckUser\Tests\Integration\CheckUser\Pagers;
+namespace MediaWiki\Extension\CheckUser\Tests\Integration\CheckUser\Pagers;
 
-use MediaWiki\CheckUser\HookHandler\Preferences;
 use MediaWiki\Context\RequestContext;
+use MediaWiki\Extension\CheckUser\HookHandler\Preferences;
+use MediaWiki\Extension\CheckUser\Services\TokenManager;
 use MediaWiki\Extension\GlobalBlocking\GlobalBlockingServices;
 use MediaWiki\Html\FormOptions;
 use MediaWiki\MainConfigNames;
 use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
+use MediaWiki\Tests\User\TempUser\TempUserTestTrait;
+use MediaWiki\Title\Title;
 use MediaWiki\User\UserIdentityValue;
 use MediaWikiIntegrationTestCase;
+use Wikimedia\Parsoid\Core\DOMCompat;
+use Wikimedia\Parsoid\Ext\DOMUtils;
 use Wikimedia\Rdbms\IResultWrapper;
 use Wikimedia\TestingAccessWrapper;
 use Wikimedia\Timestamp\ConvertibleTimestamp;
@@ -20,11 +25,12 @@ use Wikimedia\Timestamp\ConvertibleTimestamp;
  * @group CheckUser
  * @group Database
  *
- * @covers \MediaWiki\CheckUser\CheckUser\Pagers\AbstractCheckUserPager
+ * @covers \MediaWiki\Extension\CheckUser\CheckUser\Pagers\AbstractCheckUserPager
  */
 class AbstractCheckUserPagerTest extends MediaWikiIntegrationTestCase {
 
 	use MockAuthorityTrait;
+	use TempUserTestTrait;
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -42,21 +48,24 @@ class AbstractCheckUserPagerTest extends MediaWikiIntegrationTestCase {
 		$opts->add( 'limit', $params['limit'] ?? 0 );
 		$opts->add( 'dir', $params['dir'] ?? '' );
 		$opts->add( 'offset', $params['offset'] ?? '' );
+		$opts->add( 'wpHideTemporaryAccounts', $params['HideTemporaryAccounts'] ?? false );
 		$services = $this->getServiceContainer();
 		return [
 			$opts,
-			UserIdentityValue::newAnonymous( '1.2.3.4' ),
+			UserIdentityValue::newAnonymous( $params['target'] ?? '1.2.3.4' ),
 			'userips',
 			$services->getService( 'CheckUserTokenQueryManager' ),
 			$services->getUserGroupManager(),
 			$services->getCentralIdLookup(),
-			$services->getDBLoadBalancerFactory(),
+			$services->getConnectionProvider(),
 			$services->getSpecialPageFactory(),
 			$services->getUserIdentityLookup(),
 			$services->getService( 'CheckUserLogService' ),
 			$services->getUserFactory(),
 			$services->get( 'CheckUserLookupUtils' ),
-			$services->getUserOptionsLookup()
+			$services->getUserOptionsLookup(),
+			$services->getDatabaseBlockStore(),
+			$services->getTempUserConfig(),
 		];
 	}
 
@@ -66,7 +75,7 @@ class AbstractCheckUserPagerTest extends MediaWikiIntegrationTestCase {
 	 */
 	protected function setUpObject( $params = [] ) {
 		RequestContext::getMain()->setUser( $this->getTestUser( 'checkuser' )->getUser() );
-		$object = new DeAbstractedCheckUserPagerTest(
+		$object = new DeAbstractedCheckUserPager(
 			...$this->setUpObjectArguments( $params )
 		);
 		return TestingAccessWrapper::newFromObject( $object );
@@ -109,7 +118,7 @@ class AbstractCheckUserPagerTest extends MediaWikiIntegrationTestCase {
 	public static function provideUserWasBlocked() {
 		return [
 			'User was previously blocked' => [ true ],
-			'User never previously blocked' => [ false ]
+			'User never previously blocked' => [ false ],
 		];
 	}
 
@@ -131,7 +140,10 @@ class AbstractCheckUserPagerTest extends MediaWikiIntegrationTestCase {
 		$user = UserIdentityValue::newAnonymous( $ip );
 		// Globally block the IP
 		GlobalBlockingServices::wrap( $this->getServiceContainer() )->getGlobalBlockManager()->block(
-			$ip, 'test', '1 week', $this->getTestUser( [ 'steward' ] )->getUserIdentity()
+			$ip,
+			'test',
+			'1 week',
+			$this->getTestUser( [ 'steward' ] )->getUserIdentity()
 		);
 		$this->assertSame(
 			[ '<strong>(' . wfMessage( 'checkuser-gblocked' )->escaped() . ')</strong>' ],
@@ -150,7 +162,10 @@ class AbstractCheckUserPagerTest extends MediaWikiIntegrationTestCase {
 		$user = $this->getMutableTestUser()->getUserIdentity();
 		// Globally block the test user
 		GlobalBlockingServices::wrap( $this->getServiceContainer() )->getGlobalBlockManager()->block(
-			$user->getName(), 'test', '1 week', $this->getTestUser( [ 'steward' ] )->getUserIdentity()
+			$user->getName(),
+			'test',
+			'1 week',
+			$this->getTestUser( [ 'steward' ] )->getUserIdentity()
 		);
 		$this->assertContains(
 			'<strong>(' . wfMessage( 'checkuser-gblocked' )->escaped() . ')</strong>',
@@ -193,7 +208,10 @@ class AbstractCheckUserPagerTest extends MediaWikiIntegrationTestCase {
 
 	/** @dataProvider provideGetCheckUserHelperFieldset */
 	public function testGetCheckUserHelperFieldset(
-		$collapseByDefaultConfigValue, $userPreferenceValue, $shouldBeByDefaultCollapsed, $resultRowCount
+		$collapseByDefaultConfigValue,
+		$userPreferenceValue,
+		$shouldBeByDefaultCollapsed,
+		$resultRowCount
 	) {
 		$this->overrideConfigValue( 'CheckUserCollapseCheckUserHelperByDefault', $collapseByDefaultConfigValue );
 		$object = $this->setUpObject();
@@ -261,6 +279,71 @@ class AbstractCheckUserPagerTest extends MediaWikiIntegrationTestCase {
 			],
 			'User preference set to integer less than row count' => [ false, 3, true, 5 ],
 			'User preference set to integer more than row count' => [ true, 10, false, 3 ],
+		];
+	}
+
+	/** @dataProvider provideGetCheckUserResultsFilterFieldset */
+	public function testGetCheckUserResultsFilterFieldset( $temporaryAccountsKnown, $target, $expectedFilterFields ) {
+		// Needed for HTMLForm to work in the code we are testing
+		RequestContext::getMain()->setTitle( Title::newFromText( 'CheckUser', NS_SPECIAL ) );
+
+		$this->disableAutoCreateTempUser( [ 'known' => $temporaryAccountsKnown ] );
+
+		$object = $this->setUpObject( [
+			'dir' => 'prev', 'limit' => 123, 'period' => 0, 'offset' => '20250504050405', 'reason' => 'testing',
+			'target' => $target,
+		] );
+
+		$this->setUserLang( 'qqx' );
+		$fieldset = $object->getCheckUserResultsFilterFieldset();
+
+		if ( count( $expectedFilterFields ) === 0 ) {
+			$this->assertSame( '', $fieldset );
+			return;
+		}
+
+		$fieldsetDocument = DOMUtils::parseHTML( $fieldset );
+
+		foreach ( $expectedFilterFields as $fieldName ) {
+			$filterField = DOMCompat::querySelector( $fieldsetDocument, 'input[name=' . $fieldName . ']' );
+			$this->assertNotNull( $filterField );
+		}
+
+		/** @var TokenManager $tokenManager */
+		$tokenManager = $this->getServiceContainer()->get( 'CheckUserTokenManager' );
+
+		$tokenField = DOMCompat::querySelector( $fieldsetDocument, 'input[name=token]' );
+		$actualToken = $tokenField->getAttribute( 'value' );
+		$this->assertArrayEquals(
+			[
+				'period' => 0, 'limit' => 123, 'reason' => 'testing', 'offset' => '20250504050405',
+				'dir' => 'prev', 'user' => $target,
+			],
+			$tokenManager->decode( RequestContext::getMain()->getRequest()->getSession(), $actualToken ),
+			false,
+			true,
+			'CheckUser JWT token for paging returned unexpected data'
+		);
+
+		$editTokenField = DOMCompat::querySelector( $fieldsetDocument, 'input[name=wpEditToken]' );
+		$this->assertNotNull( $editTokenField );
+
+		$collapsedFieldset = DOMCompat::querySelector( $fieldsetDocument, '.mw-collapsible.mw-collapsed' );
+		$this->assertNotNull( $collapsedFieldset, 'Filters form should be collapsible and initially collapsed' );
+	}
+
+	public static function provideGetCheckUserResultsFilterFieldset(): array {
+		return [
+			'Temporary accounts are not known' => [
+				'temporaryAccountsKnown' => false, 'target' => '1.2.3.4', 'expectedFilterFields' => [],
+			],
+			'Temporary accounts are known, but target is not an IP or IP range' => [
+				'temporaryAccountsKnown' => true, 'target' => 'Abc', 'expectedFilterFields' => [],
+			],
+			'Temporary accounts are known and target is an IP' => [
+				'temporaryAccountsKnown' => true, 'target' => '1.2.3.4',
+				'expectedFilterFields' => [ 'wpHideTemporaryAccounts' ],
+			],
 		];
 	}
 }

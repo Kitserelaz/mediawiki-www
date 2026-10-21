@@ -1,0 +1,22 @@
+{
+	"@metadata": {
+		"authors": [
+			"Verdy p"
+		]
+	},
+	"apihelp-ratepage-summary": "Permet à un utilisateur de voter sur une page et obtient l’évaluation d’une page. Nécessite la spécification d’un des deux paramètres : « pageid » ou « pagetitle ».",
+	"apihelp-ratepage-param-pageid": "Identifiant de la page",
+	"apihelp-ratepage-param-pagetitle": "Titre de la page",
+	"apihelp-ratepage-param-answer": "Évaluation de la page par l’utilisateur (par défaut de 1 à 5 bornes incluses, peut être ajusté par des paramètres de configuration)",
+	"apihelp-ratepage-param-contest": "Identifiant du concours",
+	"apihelp-ratepage-example-1": "Obtient l’évaluation actuelle pour la page Exemple.",
+	"apihelp-ratepage-example-2": "Évaluer la page Exemple avec un 2.",
+	"apihelp-query+pagerating-summary": "Retourne les votes sur cette page et les permissions de vote de cet utilisateur.",
+	"apihelp-query+pagerating-param-contest": "Identifiant du concours",
+	"apierror-ratepage-contest-id-too-long": "La longueur de l’ID du concours dépasse la limite (255 caractères).",
+	"apierror-ratepage-contest-id-allowed-chars": "L’identifiant du concours ne doit contenir que des chiffres ou des lettres latines, aucun autre caractère n’est autorisé.",
+	"apierror-ratepage-contest-not-exists": "Le concours $1 n’existe pas.",
+	"apierror-ratepage-page-not-exists": "La page spécifiée n’existe pas.",
+	"apierror-ratepage-cannot-vote-in-contest": "Vous n’avez pas la permission de voter dans ce concours.",
+	"apierror-ratepage-invalid-answer": "Une réponse non valide a été spécifiée. La réponse doit être supérieure ou égale à $1 et inférieure ou égale à $2."
+}

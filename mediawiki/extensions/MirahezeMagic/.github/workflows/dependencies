@@ -1,0 +1,24 @@
+AbuseFilter:
+  branch: auto
+  repo: auto
+CentralAuth:
+  branch: auto
+  repo: auto
+CreateWiki:
+  branch: main
+  repo: https://github.com/miraheze/CreateWiki
+DataDump:
+  branch: main
+  repo: https://github.com/miraheze/DataDump
+Echo:
+  branch: auto
+  repo: auto
+GlobalUserPage:
+  branch: auto
+  repo: auto
+ImportDump:
+  branch: main
+  repo: https://github.com/miraheze/ImportDump
+ManageWiki:
+  branch: main
+  repo: https://github.com/miraheze/ManageWiki

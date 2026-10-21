@@ -1,0 +1,123 @@
+{
+	"name": "mediawiki/semantic-media-wiki",
+	"type": "mediawiki-extension",
+	"description": "An extension to MediaWiki that lets you store and query structured data within wiki pages",
+	"keywords": [
+		"SMW",
+		"Semantic MediaWiki",
+		"Wiki",
+		"MediaWiki"
+	],
+	"homepage": "https://www.semantic-mediawiki.org/wiki/",
+	"license": "GPL-2.0-or-later",
+	"authors": [
+		{
+			"name": "Markus Krötzsch",
+			"homepage": "https://www.korrekt.org/",
+			"role": "Original author"
+		},
+		{
+			"name": "Jeroen De Dauw",
+			"email": "jeroendedauw@gmail.com",
+			"homepage": "https://www.entropywins.wtf/",
+			"role": "Core developer"
+		},
+		{
+			"name": "James Hong Kong",
+			"homepage": "https://www.semantic-mediawiki.org/wiki/User:MWJames",
+			"role": "Core developer"
+		},
+		{
+			"name": "Professional Wiki",
+			"email": "info@professional.wiki",
+			"homepage": "https://professional.wiki",
+			"role": "Developer"
+		}
+	],
+	"support": {
+		"email": "semediawiki-user@lists.sourceforge.net",
+		"issues": "https://github.com/SemanticMediaWiki/SemanticMediaWiki/issues",
+		"forum": "https://www.semantic-mediawiki.org/wiki/semantic-mediawiki.org_talk:Community_portal",
+		"wiki": "https://www.semantic-mediawiki.org/wiki/",
+		"source": "https://github.com/SemanticMediaWiki/SemanticMediaWiki"
+	},
+	"require": {
+		"php": ">=8.1",
+		"ext-mbstring": "*",
+		"composer/installers": "^2.2.0|^1.0.1",
+		"param-processor/param-processor": "~1.13",
+		"serialization/serialization": "~4.0",
+		"jeroen/message-reporter": "~1.0",
+		"jeroen/file-fetcher": "^6|^5|^4.4",
+		"wikimedia/textcat": "^2|^1.1"
+	},
+	"require-dev": {
+		"mediawiki/mediawiki-codesniffer": "48.0.0",
+		"mediawiki/mediawiki-phan-config": "0.20.0",
+		"mediawiki/minus-x": "1.1.3",
+		"php-parallel-lint/php-console-highlighter": "1.0.0",
+		"php-parallel-lint/php-parallel-lint": "1.4.0",
+		"symfony/css-selector": "^5"
+	},
+	"suggest": {
+		"mediawiki/semantic-result-formats": "Provides additional result formats for queries of structured data"
+	},
+	"autoload": {
+		"files": [
+			"src/Defines.php",
+			"src/enableSemantics.php"
+		]
+	},
+	"extra": {
+		"branch-alias": {
+			"dev-master": "7.x-dev"
+		}
+	},
+	"config": {
+		"process-timeout": 0,
+		"allow-plugins": {
+			"composer/installers": true,
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		}
+	},
+	"scripts": {
+		"test": [
+			"@lint",
+			"@phpcs",
+			"minus-x check .",
+			"@phan",
+			"@phpunit:unit",
+			"@phpunit:integration"
+		],
+		"test-coverage": [
+			"@phpunit-coverage"
+		],
+		"analyze": [
+			"@lint",
+			"@phpcs"
+		],
+		"analyze:ci": [
+			"@lint",
+			"@phpcs",
+			"@minus-x",
+			"@phan"
+		],
+		"fix": [
+			"@phpcs-fix"
+		],
+		"lint": "parallel-lint . --exclude vendor --exclude node_modules",
+		"phan": "phan -d . --long-progress-bar",
+		"phpcs": "phpcs -sp --cache --parallel=$(nproc || sysctl -n hw.logicalcpu || powershell \"Get-WmiObject Win32_Processor | Select-Object -ExpandProperty NumberOfCores .trim()\" || echo 4 )",
+		"phpcs-fix": "phpcbf",
+		"phpunit": [
+			"Composer\\Config::disableProcessTimeout",
+			"cd ${MW_INSTALL_PATH:-../..} && { [ -f tests/phpunit/generatePHPUnitConfig.php ] && { php tests/phpunit/generatePHPUnitConfig.php >/dev/null 2>&1 || true; [ -f phpunit.xml ] || printf '%s' '<phpunit><!-- generatePHPUnitConfig --></phpunit>' > phpunit.xml; } || true; } && MEDIAWIKI_HAS_INTEGRATION_TESTS=1 vendor/bin/phpunit -c extensions/SemanticMediaWiki/phpunit.xml.dist --bootstrap tests/phpunit/bootstrap.php"
+		],
+		"phpunit:unit": "@phpunit --testsuite=semantic-mediawiki-unit",
+		"phpunit:integration": "@phpunit --testsuite semantic-mediawiki-check,semantic-mediawiki-integration,semantic-mediawiki-import,semantic-mediawiki-structure",
+		"phpunit-coverage": "@phpunit --testdox --coverage-text --coverage-clover extensions/SemanticMediaWiki/coverage/php/coverage.xml",
+		"minus-x": "minus-x check .",
+		"benchmark": "composer phpunit  -- --group semantic-mediawiki-benchmark",
+		"quick-benchmark": "cd ${MW_INSTALL_PATH:-../..} && MEDIAWIKI_HAS_INTEGRATION_TESTS=1 vendor/bin/phpunit -c extensions/SemanticMediaWiki/tests/phpunit/Benchmark/phpunit.quick.xml.dist --bootstrap tests/phpunit/bootstrap.php --group semantic-mediawiki-benchmark"
+	}
+}

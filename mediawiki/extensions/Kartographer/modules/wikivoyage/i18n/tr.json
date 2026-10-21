@@ -1,0 +1,16 @@
+{
+	"@metadata": {
+		"authors": [
+			"BaRaN6161 TURK",
+			"Can",
+			"SaldırganSincap",
+			"TmY e12",
+			"ToprakM"
+		]
+	},
+	"kartographer-wv-group": "Grup:",
+	"kartographer-wv-warning-external-source-title": "Dış veri kaynağı",
+	"kartographer-wv-warning-external-source-message": "Bu içerik harici olarak barındırılır, bu nedenle IP adresinizi ve diğer verilerinizi harita sağlayıcısıyla paylaşmasını sağlar.",
+	"kartographer-wv-warning-external-source-agree": "Anladım",
+	"kartographer-wv-warning-external-source-disagree": "İptal"
+}

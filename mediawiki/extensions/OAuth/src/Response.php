@@ -9,10 +9,6 @@ use Psr\Http\Message\StreamInterface;
 
 class Response extends RestResponse implements ResponseInterface {
 
-	public function __construct( $bodyContents = '' ) {
-		parent::__construct( $bodyContents );
-	}
-
 	/**
 	 * Return an instance with the specified HTTP protocol version.
 	 *
@@ -24,9 +20,9 @@ class Response extends RestResponse implements ResponseInterface {
 	 * new protocol version.
 	 *
 	 * @param string $version HTTP protocol version
-	 * @return static
+	 * @return self
 	 */
-	public function withProtocolVersion( $version ) {
+	public function withProtocolVersion( string $version ): self {
 		$response = clone $this;
 		$response->setProtocolVersion( $version );
 		return $response;
@@ -44,10 +40,10 @@ class Response extends RestResponse implements ResponseInterface {
 	 *
 	 * @param string $name Case-insensitive header field name.
 	 * @param string|string[] $value Header value(s).
-	 * @return static
+	 * @return self
 	 * @throws InvalidArgumentException for invalid header names or values.
 	 */
-	public function withHeader( $name, $value ) {
+	public function withHeader( string $name, $value ): self {
 		$response = clone $this;
 		$response->setHeader( $name, $value );
 		return $response;
@@ -66,10 +62,10 @@ class Response extends RestResponse implements ResponseInterface {
 	 *
 	 * @param string $name Case-insensitive header field name to add.
 	 * @param string|string[] $value Header value(s).
-	 * @return static
+	 * @return self
 	 * @throws InvalidArgumentException for invalid header names or values.
 	 */
-	public function withAddedHeader( $name, $value ) {
+	public function withAddedHeader( string $name, $value ): self {
 		$response = clone $this;
 		$response->addHeader( $name, $value );
 		return $response;
@@ -85,9 +81,9 @@ class Response extends RestResponse implements ResponseInterface {
 	 * the named header.
 	 *
 	 * @param string $name Case-insensitive header field name to remove.
-	 * @return static
+	 * @return self
 	 */
-	public function withoutHeader( $name ) {
+	public function withoutHeader( string $name ): self {
 		$response = clone $this;
 		$response->removeHeader( $name );
 		return $response;
@@ -103,10 +99,10 @@ class Response extends RestResponse implements ResponseInterface {
 	 * new body stream.
 	 *
 	 * @param StreamInterface $body
-	 * @return static
+	 * @return self
 	 * @throws InvalidArgumentException When the body is not valid.
 	 */
-	public function withBody( StreamInterface $body ) {
+	public function withBody( StreamInterface $body ): self {
 		$response = clone $this;
 		$response->setBody( $body );
 		return $response;
@@ -129,10 +125,10 @@ class Response extends RestResponse implements ResponseInterface {
 	 * @param string $reasonPhrase The reason phrase to use with the
 	 *     provided status code; if none is provided, implementations MAY
 	 *     use the defaults as suggested in the HTTP specification.
-	 * @return static
+	 * @return self
 	 * @throws InvalidArgumentException For invalid status code arguments.
 	 */
-	public function withStatus( $code, $reasonPhrase = '' ) {
+	public function withStatus( int $code, string $reasonPhrase = '' ): self {
 		$response = clone $this;
 		$response->setStatus( $code, $reasonPhrase );
 		return $response;

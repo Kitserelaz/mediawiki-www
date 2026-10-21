@@ -16,6 +16,8 @@ function farmSiteConfiguration(): void {
     $settings = [
         'wgCreateWikiDatabase' => 'wikidb', 'wgCreateWikiGlobalWiki' => 'metawiki',
         'wgCreateWikiCacheDirectory' => '/var/www/mediawiki/cw_cache',
+        'wgManageWikiCacheDirectory' => '/var/www/mediawiki/cw_cache',
+        'wgManageWikiServers' => [],
         'wgCreateWikiDatabaseClusters' => [], 'wgCentralAuthDatabase' => 'centralauth',
         'wgCookieDomain' => '', 'wgCookieSecure' => true, 'wgForceHTTPS' => true,
         'wgJobRunRate' => 0,
@@ -45,6 +47,9 @@ function farmSiteConfiguration(): void {
         }
     }
     $wgConf->settings['wgServer'] = $servers;
+    // Share the populated farm configuration for ManageWiki remote lookups.
+    require_once '/var/www/mediawiki/FarmSiteConfiguration.php';
+    $GLOBALS['wgManageWikiSiteConfiguration'] = new FarmManageWikiSiteConfiguration($wgConf);
     if (farmEnv('MW_LEGACY_BRANDING', '1') === '0') {
         $wgConf->settings['+wgFooterIcons']['default'] = [];
         $wgConf->settings['wgLogo']['default'] = '/resources/assets/change-your-logo.svg';
@@ -93,13 +98,28 @@ function farmRuntime(): void {
         file_put_contents('/var/www/mediawiki/cw_cache/.provision-' . $wiki, gmdate('c'));
     };
     $wgCreateWikiCacheDirectory = '/var/www/mediawiki/cw_cache';
+    $GLOBALS['wgManageWikiCacheDirectory'] = $wgCreateWikiCacheDirectory;
+    $GLOBALS['wgManageWikiServers'] = [];
+    if (isset($GLOBALS['wgConf'])) {
+        require_once '/var/www/mediawiki/FarmSiteConfiguration.php';
+        $GLOBALS['wgManageWikiSiteConfiguration'] = new FarmManageWikiSiteConfiguration($GLOBALS['wgConf']);
+    }
     $wgVirtualDomainsMapping['virtual-createwiki'] = ['db' => 'wikidb'];
     $wgVirtualDomainsMapping['virtual-createwiki-central'] = ['db' => 'metawiki'];
     $wgVirtualDomainsMapping['virtual-managewiki'] = ['db' => 'wikidb'];
+    $wgVirtualDomainsMapping['virtual-managewiki-central'] = ['db' => 'metawiki'];
     $wgVirtualDomainsMapping['virtual-centralauth'] = ['db' => 'centralauth'];
+    $wgVirtualDomainsMapping['virtual-botpasswords'] = ['db' => 'centralauth'];
+    $wgVirtualDomainsMapping['virtual-globalblocking'] = ['db' => 'centralauth'];
+    $wgVirtualDomainsMapping['virtual-oathauth'] = ['db' => 'centralauth'];
+    $wgVirtualDomainsMapping['virtual-importdump'] = ['db' => 'metawiki'];
     $wgOAuth2PrivateKey = '/run/secrets/oauth-private.key';
     $wgOAuth2PublicKey = '/run/secrets/oauth-public.key';
-    $wgLocalisationCacheConf = ['class' => LocalisationCache::class, 'store' => 'files', 'storeDirectory' => '/var/www/mediawiki/cache/' . ($wgDBname ?? 'bootstrap')];
+    $wgLocalisationCacheConf = array_replace($wgLocalisationCacheConf ?? [], [
+        'class' => MediaWiki\Language\LocalisationCache::class,
+        'store' => 'files', 'storeClass' => false,
+        'storeDirectory' => '/var/www/mediawiki/cache/' . ($wgDBname ?? 'bootstrap'),
+    ]);
     $wgDebugLogFile = '';
     $wgDebugLogGroups = [];
     $wgDataDumpDirectory = farmEnv('MW_DUMP_DIRECTORY', '/var/www/dumps');
@@ -140,7 +160,12 @@ function farmRuntime(): void {
     if (farmEnv('MW_ENV', 'development') !== 'production') {
         $GLOBALS['wgOATHRequiredForGroups'] = [];
         $domain = farmEnv('MW_DOMAIN', 'localhost');
-        $wgServer = 'https://' . preg_replace('/wiki$/', '', $wgDBname ?? 'metawiki') . ".$domain";
+        // Retain deliberately configured local custom domains while translating
+        // restored production hosts into the isolated development farm.
+        $configuredHost = parse_url($wgServer, PHP_URL_HOST);
+        if (!$configuredHost || ($configuredHost !== $domain && !str_ends_with($configuredHost, ".$domain"))) {
+            $wgServer = 'https://' . preg_replace('/wiki$/', '', $wgDBname ?? 'metawiki') . ".$domain";
+        }
         $wgCanonicalServer = (($_SERVER['HTTP_HOST'] ?? '') === "auth.$domain") ? "https://auth.$domain" : $wgServer;
         $wgCookieDomain = $wgCentralAuthCookieDomain = '';
         // CentralAuth uses redirects for host-only local cookies.
@@ -170,5 +195,6 @@ function farmRuntime(): void {
         $GLOBALS['wgEventLoggingBaseUri'] = false;
         $GLOBALS['wgEventLoggingServiceUri'] = false;
         if (getenv('MW_AUTH_DEBUG') === '1') { $wgDebugLogGroups['authentication'] = '/var/www/mediawiki/cache/authentication-debug.log'; $wgDebugLogGroups['session'] = '/var/www/mediawiki/cache/session-debug.log'; }
+        if (getenv('MW_EXCEPTION_DEBUG') === '1') { $wgDebugLogGroups['exception'] = '/var/www/mediawiki/cache/exception-debug.log'; }
     }
 }

@@ -43,7 +43,7 @@ ve.dm.MWBlockImageNode.static.name = 'mwBlockImage';
 
 ve.dm.MWBlockImageNode.static.preserveHtmlAttributes = function ( attribute ) {
 	const attributes = [ 'typeof', 'class', 'src', 'resource', 'width', 'height', 'href', 'rel', 'data-mw', 'alt' ];
-	return attributes.indexOf( attribute ) === -1;
+	return !attributes.includes( attribute );
 };
 
 ve.dm.MWBlockImageNode.static.handlesOwnChildren = true;
@@ -105,7 +105,7 @@ ve.dm.MWBlockImageNode.static.toDataElement = function ( domElements, converter 
 		mediaTag: img.nodeName.toLowerCase(),
 		type: types.frameType,
 		src: img.getAttribute( 'src' ) || img.getAttribute( 'poster' ),
-		href: href,
+		href,
 		imageClassAttr: img.getAttribute( 'class' ),
 		imgWrapperClassAttr: imgWrapper.getAttribute( 'class' ),
 		resource: img.getAttribute( 'resource' ),
@@ -113,8 +113,8 @@ ve.dm.MWBlockImageNode.static.toDataElement = function ( domElements, converter 
 		height: height !== null && height !== '' ? +height : null,
 		alt: img.getAttribute( 'alt' ),
 		mw: mwData,
-		isError: isError,
-		errorText: errorText
+		isError,
+		errorText
 	};
 
 	this.setClassAttributes( attributes, classAttr );
@@ -157,7 +157,7 @@ ve.dm.MWBlockImageNode.static.toDataElement = function ( domElements, converter 
 		];
 	}
 
-	const dataElement = { type: this.name, attributes: attributes };
+	const dataElement = { type: this.name, attributes };
 
 	this.storeGeneratedContents( dataElement, dataElement.attributes.src, converter.getStore() );
 

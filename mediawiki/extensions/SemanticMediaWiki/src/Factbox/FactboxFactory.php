@@ -1,0 +1,93 @@
+<?php
+
+namespace SMW\Factbox;
+
+use MediaWiki\Logger\LoggerFactory;
+use MediaWiki\Parser\ParserOutput;
+use MediaWiki\Title\Title;
+use SMW\Services\ServicesFactory as ApplicationFactory;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 2.0
+ *
+ * @author mwjames
+ */
+class FactboxFactory {
+
+	/**
+	 * @since 3.1
+	 *
+	 * @param array $options
+	 *
+	 * @return CheckMagicWords
+	 */
+	public function newCheckMagicWords( array $options ): CheckMagicWords {
+		return new CheckMagicWords( $options );
+	}
+
+	/**
+	 * @since 2.0
+	 *
+	 * @return CachedFactbox
+	 */
+	public function newCachedFactbox(): CachedFactbox {
+		$applicationFactory = ApplicationFactory::getInstance();
+		$settings = $applicationFactory->getSettings();
+
+		$cachedFactbox = new CachedFactbox(
+			$applicationFactory->getEntityCache(),
+			$applicationFactory->getFactboxText()
+		);
+
+		// Month = 30 * 24 * 3600
+		$cachedFactbox->setCacheTTL( 2592000 );
+
+		$cachedFactbox->isEnabled(
+			$settings->isFlagSet( 'smwgFactboxFeatures', SMW_FACTBOX_CACHE )
+		);
+
+		$cachedFactbox->setFeatureSet(
+			$settings->get( 'smwgFactboxFeatures' )
+		);
+
+		$cachedFactbox->setShowFactboxEdit(
+			$settings->get( 'smwgShowFactboxEdit' )
+		);
+
+		$cachedFactbox->setShowFactbox(
+			$settings->get( 'smwgShowFactbox' )
+		);
+
+		$cachedFactbox->setLogger(
+			LoggerFactory::getInstance( 'smw' )
+		);
+
+		return $cachedFactbox;
+	}
+
+	/**
+	 * @since 2.0
+	 *
+	 * @param Title $title
+	 * @param ParserOutput $parserOutput
+	 *
+	 * @return Factbox
+	 */
+	public function newFactbox( Title $title, ParserOutput $parserOutput ): Factbox {
+		$applicationFactory = ApplicationFactory::getInstance();
+
+		$factbox = new Factbox(
+			$applicationFactory->getStore(),
+			$applicationFactory->newParserData( $title, $parserOutput ),
+			$applicationFactory->singleton( 'DisplayTitleFinder' )
+		);
+
+		$factbox->setFeatureSet(
+			$applicationFactory->getSettings()->get( 'smwgFactboxFeatures' )
+		);
+
+		return $factbox;
+	}
+
+}

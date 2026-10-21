@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"McDutchie",
+			"SPQRobin",
+			"Siebrand"
+		]
+	},
+	"rightfunctions-desc": "Op machtigingen gebaseerde parserfuncties",
+	"rightfunctions-casc": "(van cascadebronnen)",
+	"rightfunctions-local": "(van lokale pagina)",
+	"rightfunctions-ns": "(van naamruimtebeveiliging)"
+}

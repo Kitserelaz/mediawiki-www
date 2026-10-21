@@ -7,8 +7,10 @@
 			"Otokoume",
 			"Rxy",
 			"Shirayuki",
+			"Tensama0415",
 			"かしわのはみん",
-			"ネイ"
+			"ネイ",
+			"Waki285"
 		]
 	},
 	"botpasswords": "ボット用パスワード",
@@ -17,7 +19,7 @@
 	"botpasswords-no-central-id": "ボット用パスワードを利用する場合、中央管理ログイン (CentralAuth) に対応した統一アカウントにログインする必要があります。",
 	"botpasswords-existing": "既存のボット用パスワード",
 	"botpasswords-createnew": "ボット用パスワードの新規作成",
-	"botpasswords-editexisting": "既存のボットのパスワードを編集",
+	"botpasswords-editexisting": "既存のボット用パスワードを編集",
 	"botpasswords-label-needsreset": "(パスワードのリセットが必要です)",
 	"botpasswords-label-appid": "ボット名:",
 	"botpasswords-label-create": "作成",
@@ -31,6 +33,7 @@
 	"botpasswords-bad-appid": "ボット「$1」は有効ではありません。",
 	"botpasswords-toolong-restrictions": "入力された IP アドレスもしくはその範囲が多すぎます。",
 	"botpasswords-toolong-grants": "選択した権限群が多すぎます。",
+	"botpasswords-too-many": "{{PLURAL:ボットパスワード}}の上限である$1個に達しました。新しいボットパスワードを作成する前に、既存のボットパスワードをいくつか削除してください。",
 	"botpasswords-insert-failed": "ボット「$1」の追加に失敗しました。既に追加されていないか確認してください。",
 	"botpasswords-update-failed": "ボット「$1」の更新に失敗しました。削除されていないか確認してください。",
 	"botpasswords-created-title": "ボット用パスワードが作成されました",

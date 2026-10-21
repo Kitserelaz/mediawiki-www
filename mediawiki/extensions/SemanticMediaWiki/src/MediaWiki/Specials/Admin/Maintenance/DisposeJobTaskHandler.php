@@ -1,0 +1,159 @@
+<?php
+
+namespace SMW\MediaWiki\Specials\Admin\Maintenance;
+
+use MediaWiki\Html\Html;
+use MediaWiki\Request\WebRequest;
+use MediaWiki\SpecialPage\SpecialPage;
+use SMW\DataItems\WikiPage;
+use SMW\Localizer\Message;
+use SMW\MediaWiki\JobFactory;
+use SMW\MediaWiki\JobQueue;
+use SMW\MediaWiki\Renderer\HtmlFormRenderer;
+use SMW\MediaWiki\Specials\Admin\ActionableTask;
+use SMW\MediaWiki\Specials\Admin\OutputFormatter;
+use SMW\MediaWiki\Specials\Admin\TaskHandler;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since   2.5
+ *
+ * @author mwjames
+ */
+class DisposeJobTaskHandler extends TaskHandler implements ActionableTask {
+
+	public bool $isApiTask = true;
+
+	/**
+	 * @since 2.5
+	 */
+	public function __construct(
+		private readonly HtmlFormRenderer $htmlFormRenderer,
+		private readonly OutputFormatter $outputFormatter,
+		private readonly JobFactory $jobFactory,
+		private readonly JobQueue $jobQueue,
+	) {
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * {@inheritDoc}
+	 */
+	public function getSection(): string {
+		return self::SECTION_MAINTENANCE;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * {@inheritDoc}
+	 */
+	public function isApiTask(): bool {
+		return $this->isApiTask;
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * {@inheritDoc}
+	 */
+	public function getTask(): string {
+		return 'dispose';
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * {@inheritDoc}
+	 */
+	public function isTaskFor( string $action ): bool {
+		return $action === $this->getTask();
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * {@inheritDoc}
+	 */
+	public function getHtml() {
+		$subject = WikiPage::newFromTitle( SpecialPage::getTitleFor( 'SMWAdmin' ) );
+
+		// smw-admin-outdateddisposal
+		$this->htmlFormRenderer
+				->addHeader( 'h3', $this->msg( 'smw-admin-outdateddisposal-title' ) )
+				->addParagraph(
+					$this->msg( 'smw-admin-outdateddisposal-intro', Message::PARSE ),
+					[
+						'id' => 'smw-admin-outdated-disposal',
+						'class' => 'plainlinks'
+					]
+				);
+
+		if ( $this->hasFeature( SMW_ADM_DISPOSAL ) && !$this->hasPendingJob() ) {
+			$this->htmlFormRenderer
+				->setMethod( 'post' )
+				->addHiddenField( 'action', 'dispose' )
+				->addSubmitButton(
+					$this->msg( 'smw-admin-outdateddisposal-button' ),
+					[
+						'class' => $this->isApiTask() ? 'smw-admin-api-job-task' : '',
+						'data-job' => 'smw.entityIdDisposer',
+						'data-subject' => $subject->getHash()
+					]
+				);
+		} elseif ( $this->hasFeature( SMW_ADM_DISPOSAL ) ) {
+			$this->htmlFormRenderer->addParagraph(
+					Html::element(
+						'span',
+						[
+							'class' => 'smw-admin-circle-orange'
+						]
+					) . Html::element(
+						'span',
+						[
+							'style' => 'font-style:italic; margin-left:25px;'
+						],
+						$this->msg( 'smw-admin-outdateddisposal-active' )
+					),
+					[ 'id' => 'smw-admin-outdated-disposal-status' ]
+				);
+		} else {
+			$this->htmlFormRenderer->addParagraph(
+				$this->msg( 'smw-admin-feature-disabled' )
+			);
+		}
+
+		return Html::rawElement(
+			'div',
+			[],
+			$this->htmlFormRenderer->getForm()
+		);
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * {@inheritDoc}
+	 */
+	public function handleRequest( WebRequest $webRequest ): void {
+		if ( !$this->hasFeature( SMW_ADM_DISPOSAL ) || $this->hasPendingJob() || $this->isApiTask() ) {
+			$this->outputFormatter->redirectToRootPage( '', [ 'tab' => 'maintenance' ] );
+			return;
+		}
+
+		$job = $this->jobFactory->newByType(
+			'smw.entityIdDisposer',
+			SpecialPage::getTitleFor( 'SMWAdmin' )
+		);
+
+		$job->insert();
+
+		$this->outputFormatter->redirectToRootPage( '', [ 'tab' => 'maintenance' ] );
+	}
+
+	private function hasPendingJob(): bool {
+		return $this->jobQueue->hasPendingJob( 'smw.entityIdDisposer' );
+	}
+
+}

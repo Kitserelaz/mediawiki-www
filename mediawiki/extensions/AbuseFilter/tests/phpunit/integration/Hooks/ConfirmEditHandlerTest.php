@@ -7,9 +7,10 @@ use MediaWiki\Context\RequestContext;
 use MediaWiki\Extension\AbuseFilter\Consequences\Parameters;
 use MediaWiki\Extension\AbuseFilter\Hooks\Handlers\ConfirmEditHandler;
 use MediaWiki\Extension\ConfirmEdit\AbuseFilter\CaptchaConsequence;
+use MediaWiki\Extension\ConfirmEdit\CaptchaTriggers;
 use MediaWiki\Extension\ConfirmEdit\Hooks;
+use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\Status\Status;
-use MediaWiki\Title\Title;
 use MediaWiki\User\User;
 use MediaWikiIntegrationTestCase;
 
@@ -19,17 +20,30 @@ use MediaWikiIntegrationTestCase;
  */
 class ConfirmEditHandlerTest extends MediaWikiIntegrationTestCase {
 
+	protected function setUp(): void {
+		parent::setUp();
+		$this->markTestSkippedIfExtensionNotLoaded( 'ConfirmEdit' );
+	}
+
 	protected function tearDown(): void {
+		if ( ExtensionRegistry::getInstance()->isLoaded( 'ConfirmEdit' ) ) {
+			Hooks::getInstance()->setForceShowCaptcha( false );
+		}
 		parent::tearDown();
-		Hooks::getInstance()->setForceShowCaptcha( false );
 	}
 
 	public function testOnEditFilterMergedContent() {
-		$this->markTestSkippedIfExtensionNotLoaded( 'ConfirmEdit' );
+		$this->overrideConfigValue(
+			'CaptchaTriggers',
+			[ 'edit' => [
+				'trigger' => true,
+				'class' => 'SimpleCaptcha',
+			] ]
+		);
+		$this->editPage( 'Test', 'Foo' );
 		$confirmEditHandler = new ConfirmEditHandler();
 		$status = Status::newGood();
-		$title = $this->createMock( Title::class );
-		$title->method( 'canExist' )->willReturn( true );
+		$title = $this->getServiceContainer()->getTitleFactory()->newFromText( 'Test' );
 		$context = RequestContext::getMain();
 		$context->setTitle( $title );
 		$confirmEditHandler->onEditFilterMergedContent(
@@ -42,10 +56,12 @@ class ConfirmEditHandlerTest extends MediaWikiIntegrationTestCase {
 		);
 		$this->assertStatusGood( $status, 'The default is to not show a CAPTCHA' );
 
-		$simpleCaptcha = Hooks::getInstance();
+		$simpleCaptcha = Hooks::getInstance( CaptchaTriggers::EDIT );
 		$simpleCaptcha->setEditFilterMergedContentHandlerInvoked();
-		$simpleCaptcha->setAction( 'edit' );
-		$captchaConsequence = new CaptchaConsequence( $this->createMock( Parameters::class ) );
+		$simpleCaptcha->setAction( CaptchaTriggers::EDIT );
+		$parameters = $this->createMock( Parameters::class );
+		$parameters->method( 'getAction' )->willReturn( 'edit' );
+		$captchaConsequence = new CaptchaConsequence( $parameters );
 		$captchaConsequence->execute();
 		$confirmEditHandler->onEditFilterMergedContent(
 			$context,
@@ -55,10 +71,7 @@ class ConfirmEditHandlerTest extends MediaWikiIntegrationTestCase {
 			$this->createMock( User::class ),
 			false
 		);
-		$message = $status->getMessages( 'error' );
 
-		// FIXME: Change to `$this->assertStatusError( 'captcha-edit' );` after
-		// Ie13181b78b8e2903c6cc0f0f778689bcc8b8ce2e is merged.
-		$this->assertContains( $message[0]->getKey(), [ 'captcha-edit', 'captcha-edit-fail' ] );
+		$this->assertStatusError( 'captcha-edit', $status );
 	}
 }

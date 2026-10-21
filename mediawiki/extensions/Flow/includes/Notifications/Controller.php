@@ -19,6 +19,7 @@ use MediaWiki\Extension\Notifications\Model\Event;
 use MediaWiki\Language\Language;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Parser\ParserOptions;
+use MediaWiki\Parser\ParserOutputLinkTypes;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
@@ -125,7 +126,7 @@ class Controller {
 		$user = $revision->getUser();
 		[ $mentionedUsers, $mentionsSkipped ] = $this->getMentionedUsersAndSkipState( $revision );
 
-		$extraData['content'] = Utils::htmlToPlaintext( $revision->getContent(), $this->truncateLength, $this->language );
+		$extraData['content'] = Utils::htmlToPlaintext( $revision->getContent(), $this->language, $this->truncateLength );
 		$extraData['revision-id'] = $revision->getRevisionId();
 		$extraData['collection-id'] = $revision->getCollectionId();
 		$extraData['target-page'] = $boardWorkflow->getArticleTitle()->getArticleID();
@@ -148,19 +149,17 @@ class Controller {
 		if ( $title->getNamespace() === NS_USER_TALK ) {
 			$events[] = Event::create( [ 'type' => 'flowusertalk-description-edited' ] + $info );
 		}
-		if ( $mentionedUsers ) {
-			$mentionEvents = $this->generateMentionEvents(
+		return [
+			...$events,
+			...$this->generateMentionEvents(
 				$revision,
 				null,
 				$boardWorkflow,
 				$user,
 				$mentionedUsers,
 				$mentionsSkipped
-			);
-			$events = array_merge( $events, $mentionEvents );
-		}
-
-		return $events;
+			)
+		];
 	}
 
 	/**
@@ -215,8 +214,10 @@ class Controller {
 			case 'flow-post-reply':
 				$extraData += [
 					'reply-to' => $revision->getReplyToId(),
-					'content' => Utils::htmlToPlaintext( $revision->getContent(), $this->truncateLength, $this->language ),
-					'topic-title' => $this->language->truncateForVisual( $topicRevision->getContent( 'topic-title-plaintext' ), 200 ),
+					'content' => Utils::htmlToPlaintext( $revision->getContent(), $this->language, $this->truncateLength ),
+					'topic-title' => $this->language->truncateForVisual(
+						$topicRevision->getContent( 'topic-title-plaintext' ), 200
+					),
 				];
 
 				// if we're looking at the initial post (submitted along with the topic
@@ -248,14 +249,20 @@ class Controller {
 			case 'flow-topic-renamed':
 				$previousRevision = $revision->getCollection()->getPrevRevision( $revision );
 				$extraData += [
-					'old-subject' => $this->language->truncateForVisual( $previousRevision->getContent( 'topic-title-plaintext' ), 200 ),
-					'new-subject' => $this->language->truncateForVisual( $revision->getContent( 'topic-title-plaintext' ), 200 ),
+					'old-subject' => $this->language->truncateForVisual(
+						$previousRevision->getContent( 'topic-title-plaintext' ), 200
+					),
+					'new-subject' => $this->language->truncateForVisual(
+						$revision->getContent( 'topic-title-plaintext' ), 200
+					),
 				];
 				break;
 			case 'flow-post-edited':
 				$extraData += [
-					'content' => Utils::htmlToPlaintext( $revision->getContent(), $this->truncateLength, $this->language ),
-					'topic-title' => $this->language->truncateForVisual( $topicRevision->getContent( 'topic-title-plaintext' ), 200 ),
+					'content' => Utils::htmlToPlaintext( $revision->getContent(), $this->language, $this->truncateLength ),
+					'topic-title' => $this->language->truncateForVisual(
+						$topicRevision->getContent( 'topic-title-plaintext' ), 200
+					),
 				];
 				break;
 		}
@@ -276,19 +283,17 @@ class Controller {
 			$usertalkEvent = str_replace( 'flow-', 'flowusertalk-', $eventName );
 			$events[] = Event::create( [ 'type' => $usertalkEvent ] + $info );
 		}
-		if ( $mentionedUsers ) {
-			$mentionEvents = $this->generateMentionEvents(
+		return [
+			...$events,
+			...$this->generateMentionEvents(
 				$revision,
 				$topicRevision,
 				$topicWorkflow,
 				$user,
 				$mentionedUsers,
 				$mentionsSkipped
-			);
-			$events = array_merge( $events, $mentionEvents );
-		}
-
-		return $events;
+			)
+		];
 	}
 
 	/**
@@ -323,11 +328,13 @@ class Controller {
 		[ $mentionedUsers, $mentionsSkipped ] = $this->getMentionedUsersAndSkipState( $revision );
 
 		$extraData = [];
-		$extraData['content'] = Utils::htmlToPlaintext( $revision->getContent(), $this->truncateLength, $this->language );
+		$extraData['content'] = Utils::htmlToPlaintext( $revision->getContent(), $this->language, $this->truncateLength );
 		$extraData['revision-id'] = $revision->getRevisionId();
 		$extraData['prev-revision-id'] = $revision->getPrevRevisionId();
 		$extraData['topic-workflow'] = $topicWorkflow->getId();
-		$extraData['topic-title'] = $this->language->truncateForVisual( $topicRevision->getContent( 'topic-title-plaintext' ), 200 );
+		$extraData['topic-title'] = $this->language->truncateForVisual(
+			$topicRevision->getContent( 'topic-title-plaintext' ), 200
+		);
 		$extraData['target-page'] = $topicWorkflow->getArticleTitle()->getArticleID();
 		// pass along mentioned users to other notification, so it knows who to ignore
 		$extraData['mentioned-users'] = $mentionedUsers;
@@ -348,19 +355,17 @@ class Controller {
 		if ( $title->getNamespace() === NS_USER_TALK ) {
 			$events[] = Event::create( [ 'type' => 'flowusertalk-summary-edited' ] + $info );
 		}
-		if ( $mentionedUsers ) {
-			$mentionEvents = $this->generateMentionEvents(
+		return [
+			...$events,
+			...$this->generateMentionEvents(
 				$revision,
 				$topicRevision,
 				$topicWorkflow,
 				$user,
 				$mentionedUsers,
 				$mentionsSkipped
-			);
-			$events = array_merge( $events, $mentionEvents );
-		}
-
-		return $events;
+			)
+		];
 	}
 
 	/**
@@ -412,7 +417,7 @@ class Controller {
 				'post-id' => $firstPost ? $firstPost->getRevisionId() : null,
 				'topic-title' => $this->language->truncateForVisual( $topicTitle->getContent( 'topic-title-plaintext' ), 200 ),
 				'content' => $firstPost
-					? Utils::htmlToPlaintext( $firstPost->getContent(), $this->truncateLength, $this->language )
+					? Utils::htmlToPlaintext( $firstPost->getContent(), $this->language, $this->truncateLength )
 					: null,
 				// Force a read from primary database since this could be a new page
 				'target-page' => [
@@ -431,19 +436,17 @@ class Controller {
 			$events[] = Event::create( [ 'type' => 'flowusertalk-new-topic' ] + $eventData );
 		}
 
-		if ( $mentionedUsers ) {
-			$mentionEvents = $this->generateMentionEvents(
+		return [
+			...$events,
+			...$this->generateMentionEvents(
 				$topicTitle,
 				$topicTitle,
 				$topicWorkflow,
 				$user,
 				$mentionedUsers,
 				$mentionsSkipped
-			);
-			$events = array_merge( $events, $mentionEvents );
-		}
-
-		return $events;
+			)
+		];
 	}
 
 	/**
@@ -469,7 +472,7 @@ class Controller {
 
 		$extraData = [];
 		$extraData['topic-workflow'] = $topicWorkflow->getId();
-		$extraData['topic-title'] = Utils::htmlToPlaintext( $revision->getContent( 'topic-title-html' ), 200, $this->language );
+		$extraData['topic-title'] = Utils::htmlToPlaintext( $revision->getContent( 'topic-title-html' ), $this->language, 200 );
 		$extraData['target-page'] = $topicWorkflow->getArticleTitle()->getArticleID();
 		// I'll treat resolve & reopen as the same notification type, but pass the
 		// different type so presentation models can differentiate
@@ -530,7 +533,7 @@ class Controller {
 	): array {
 		global $wgEchoMentionStatusNotifications, $wgFlowMaxMentionCount;
 
-		if ( count( $mentionedUsers ) === 0 ) {
+		if ( !$mentionedUsers ) {
 			return [];
 		}
 
@@ -539,7 +542,7 @@ class Controller {
 		$extraData['target-page'] = $workflow->getArticleTitle()->getArticleID();
 		// don't include topic content again if the notification IS in the title
 		$extraData['content'] = $content === $topic ? '' :
-			Utils::htmlToPlaintext( $content->getContent(), $this->truncateLength, $this->language );
+			Utils::htmlToPlaintext( $content->getContent(), $this->language, $this->truncateLength );
 		// lets us differentiate between different revision types
 		$extraData['revision-type'] = $content->getRevisionType();
 
@@ -664,16 +667,10 @@ class Controller {
 		$output = MediaWikiServices::getInstance()->getParser()
 			->parse( $wikitext, $title, $options );
 
-		$links = $output->getLinks();
-
-		if ( !isset( $links[NS_USER] ) || !is_array( $links[NS_USER] ) ) {
-			// Nothing
-			return [];
-		}
-
 		$users = [];
-		foreach ( $links[NS_USER] as $dbk => $page_id ) {
-			$user = User::newFromName( $dbk );
+		foreach ( $output->getLinkList( ParserOutputLinkTypes::LOCAL, NS_USER )
+				  as [ 'link' => $link ] ) {
+			$user = User::newFromName( $link->getDBkey() );
 			if ( !$user || !$user->isRegistered() ) {
 				continue;
 			}

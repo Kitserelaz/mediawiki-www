@@ -1,0 +1,43 @@
+{
+	"@metadata": {
+		"authors": [
+			"Afalau",
+			"Ceirios"
+		]
+	},
+	"reportincident-report-btn-label": "Adrodd",
+	"reportincident-dialog-close-btn": "Cau",
+	"reportincident-dialog-proceed-btn": "Ymlaen i ffeilio adroddiad",
+	"reportincident-dialog-back-btn": "Nôl",
+	"reportincident-dialog-submit-btn": "Cyflwyno",
+	"reportincident-dialog-title": "Rhoi gwybod am ddigwyddiad",
+	"reportincident-dialog-first-step-cancel-btn": "Dydw i ddim eisiau ffeilio adroddiad",
+	"reportincident-dialog-harassment-type-label": "Pa fath o ymddygiad?",
+	"reportincident-dialog-additional-details-input-label": "Manylion ychwanegol",
+	"reportincident-dialog-additional-details-input-placeholder": "Ychwanegwch gyd-destun a allai fod yn ddefnyddiol i adolygydd. Gallwch chi gynnwys dolenni sy'n amlygu'r digwyddiad.",
+	"reportincident-dialog-optional-label": "(dewisol)",
+	"reportincident-dialog-violator-label": "Y defnyddiwch {{GENDER:|eich}} bod eisiau ei adrodd",
+	"reportincident-dialog-violator-placeholder-text": "Pwy ydych {{GENDER:|chi}}'n adrodd?",
+	"reportincident-dialog-harassment-type-hate-speech-or-discrimination": "Casineb neu wahaniaethu",
+	"reportincident-dialog-harassment-type-sexual-harassment": "Aflonyddu rhywiol",
+	"reportincident-dialog-harassment-type-threats-of-violence": "Bygythiadau trais",
+	"reportincident-dialog-harassment-type-intimidation": "Bygythiad, ymosodiad, galw enwau",
+	"reportincident-dialog-harassment-type-something-else": "Rhywbeth arall",
+	"reportincident-dialog-harassment-intro-text": "Nid oes lle am ymddygiad anaddas ar {{SITENAME}}.",
+	"reportincident-dialog-harassment-example-insults": "Sarhad ailadroddus",
+	"reportincident-dialog-harassment-example-sexual-harassment": "Aflonyddu Rhywiol",
+	"reportincident-dialog-harassment-example-threats": "Bygythiadau",
+	"reportincident-dialog-harassment-example-encouraging-harm": "Annog niwed i eraill",
+	"reportincident-dialog-harassment-example-doxing": "Rhannu data personol (Saesneg: Doxing)",
+	"reportincident-dialog-harassment-example-hounding": "Aflonyddu",
+	"reportincident-dialog-harassment-example-trolling": "Trolio",
+	"reportincident-dialog-engage-header": "Sut i gymryd rhan mewn trafodaeth",
+	"reportincident-success-message-close": "Cau",
+	"reportincident-email-link-to-page-prefix": "Dolen i dudalen",
+	"reportincident-email-link-to-comment-prefix": "Dolen i'r sylw ag adroddwyd",
+	"reportincident-email-something-else": "Rhywbeth arall: \"$1\"",
+	"right-reportincident": "Rhoi gwybod am ddigwyddiad",
+	"action-reportincident": "roi gwybod am ddigwyddiad",
+	"reportincident-emaildialog-close-button": "Canslo",
+	"reportincident-emaildialog-primary": "Mynd i'ch gosodiadau"
+}

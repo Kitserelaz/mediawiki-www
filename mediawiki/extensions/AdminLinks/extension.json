@@ -1,6 +1,6 @@
 {
 	"name": "Admin Links",
-	"version": "0.6.3",
+	"version": "0.7.1",
 	"author": [
 		"Yaron Koren"
 	],
@@ -9,7 +9,7 @@
 	"license-name": "GPL-2.0-or-later",
 	"type": "specialpage",
 	"requires": {
-		"MediaWiki": ">= 1.35.0"
+		"MediaWiki": ">= 1.41.0"
 	},
 	"GroupPermissions": {
 		"sysop": {
@@ -41,7 +41,7 @@
 		"ALItem": "includes/ALItem.php"
 	},
 	"ConfigRegistry": {
-		"AdminLinks": "GlobalVarConfig::newInstance"
+		"AdminLinks": "MediaWiki\\Config\\GlobalVarConfig::newInstance"
 	},
 	"config": {
 		"AdminLinksDelimiter": "·"
@@ -52,6 +52,19 @@
 	"HookHandlers": {
 		"main": {
 			"class": "AdminLinksHooks"
+		}
+	},
+	"ResourceModules": {
+		"ext.adminlinks": {
+			"selectorWithVariant": ".vector-icon.mw-ui-icon-wikimedia-{name}-{variant}",
+			"selectorWithoutVariant": ".vector-icon.mw-ui-icon-wikimedia-{name}",
+			"useDataURI": false,
+			"defaultColor": "#000",
+			"class": "MediaWiki\\ResourceLoader\\OOUIIconPackModule",
+			"useMaskImage": true,
+			"icons": [
+				"link"
+			]
 		}
 	},
 	"manifest_version": 1

@@ -1,0 +1,25 @@
+{
+	"@metadata": {
+		"authors": [
+			"Ciphers",
+			"Meno25",
+			"OsamaK",
+			"ديفيد",
+			"علاء",
+			"محمد أحمد عبد الفتاح"
+		]
+	},
+	"unreviewedpages": "صفحات غير مراجعة",
+	"unreviewedpages-legend": "عرض صفحات المحتوى غير المراجعة",
+	"unreviewedpages-category": "التصنيف:",
+	"unreviewedpages-showhide-redirect": "$1 التحويلات",
+	"unreviewedpages-diff": "راجع",
+	"unreviewedpages-unwatched": "(غير مراقبة)",
+	"unreviewedpages-watched": "({{PLURAL:$1|لا مستخدمون نشطون يراقبون|مستخدم واحد نشط يراقب|مستخدمان نشطان يراقبان|$1 مستخدمين نشطين يراقبون|$1 مستخدمًا نشطًا يراقبون|$1 مستخدم نشط يراقبون}})",
+	"unreviewedpages-list": "تسرد هذه الصفحة صفحات المحتوى التي '''لم''' [[{{MediaWiki:Validationpage}}|تراجع]] بعد إلى المستوى المحدد.",
+	"unreviewedpages-none": "لا توجد حاليا صفحات تلبي هذه المعايير.",
+	"unreviewedpages-viewing": "(تحت المراجعة)",
+	"unreviewedpages-hours": "({{PLURAL:$1||ساعة واحد|ساعتان|$1 ساعات|$1 ساعة}})",
+	"unreviewedpages-days": "({{PLURAL:$1||يوم واحد|يومان|$1 أيام|$1 يومًا|$1 يوم}})",
+	"unreviewedpages-recent": "(أقل من ساعة واحدة)"
+}

@@ -122,12 +122,12 @@ ve.ui.MWTemplateTitleInputWidget.prototype.getLookupRequest = function () {
 
 			// T54448: Filter out matches which end in /doc or as configured on-wiki
 			if ( templateDataInstalled ) {
-				newPages = newPages.filter(
-					// Can't use String.endsWith() as that's ES6.
-					// page.title.endsWith( templateDocPageFragment )
-					( page ) => page.title.slice( -templateDocPageFragment.length ) !== templateDocPageFragment
-				);
+				newPages = newPages.filter( ( page ) => !page.title.endsWith( templateDocPageFragment ) );
 			}
+
+			// T390005: Filter out matches which end in /sandbox or as configured on-wiki
+			const sandboxPageFragment = '/' + mw.message( 'visualeditor-template-sandbox-subpage' ).text();
+			newPages = newPages.filter( ( page ) => !page.title.endsWith( sandboxPageFragment ) );
 
 			// Ensure everything goes into the order defined by the page's index key
 			newPages.sort( ( a, b ) => {
@@ -148,7 +148,7 @@ ve.ui.MWTemplateTitleInputWidget.prototype.getLookupRequest = function () {
 			if ( titles.length > 0 ) {
 				const xhr = this.getApi().get( {
 					action: 'templatedata',
-					titles: titles,
+					titles,
 					redirects: !!this.showRedirects,
 					includeMissingTitles: '1',
 					lang: mw.config.get( 'wgUserLanguage' )

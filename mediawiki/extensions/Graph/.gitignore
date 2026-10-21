@@ -1,0 +1,10 @@
+*swp
+*swo
+*swn
+/coverage/
+node_modules/
+/vendor
+composer.lock
+.eslintcache
+
+/.stylelintcache

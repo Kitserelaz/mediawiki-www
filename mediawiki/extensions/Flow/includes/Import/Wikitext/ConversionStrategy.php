@@ -8,6 +8,7 @@ use Flow\Import\ArchiveNameHelper;
 use Flow\Import\IConversionStrategy;
 use Flow\Import\SourceStore\SourceStoreInterface;
 use MediaWiki\Content\WikitextContent;
+use MediaWiki\Deferred\LinksUpdate\TemplateLinksTable;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Parser\Parser;
 use MediaWiki\Registration\ExtensionRegistry;
@@ -59,7 +60,6 @@ class ConversionStrategy implements IConversionStrategy {
 	/** @var User User doing the conversion actions (e.g. initial description, wikitext
 	 *    archive edit).  However, actions will be attributed to the original user when
 	 *    possible (e.g. the user who did the original LQT reply)
-	 *
 	 */
 	protected $user;
 
@@ -209,7 +209,9 @@ class ConversionStrategy implements IConversionStrategy {
 			return false;
 		}
 
-		$dbr = MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase();
+		$dbr = MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase(
+			TemplateLinksTable::VIRTUAL_DOMAIN
+		);
 		$batch = MediaWikiServices::getInstance()->getLinkBatchFactory()->newLinkBatch( $this->noConvertTemplates );
 		return (bool)$dbr->newSelectQueryBuilder()
 			->select( 'tl_from' )

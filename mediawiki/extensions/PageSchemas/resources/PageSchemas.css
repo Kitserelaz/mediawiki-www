@@ -1,0 +1,256 @@
+/**
+ * Used to display page schema information directly on the category page.
+ */
+table.pageSchema {
+	border: 1px solid #ccc;
+}
+
+table.pageSchema td {
+	padding-right: 5px;
+}
+
+body.rtl .pageSchema td {
+	padding-right: auto;
+	padding-left: 5px;
+}
+
+table.pageSchema .pageSchemaHeader {
+	padding-left: 5px;
+}
+
+body.rtl .pageSchema .pageSchemaHeader {
+	padding-left: auto;
+	padding-right: 5px;
+}
+
+table.pageSchema .pageSchemaHeader span.rowValue {
+	font-weight: bold;
+}
+
+.pageSchema .schemaExtensionRow {
+	padding-left: 5px;
+}
+
+body.rtl .pageSchema .schemaExtensionRow {
+	padding-left: auto;
+	padding-right: 5px;
+}
+
+.pageSchema .schemaAttrRow {
+	padding-left: 25px;
+	background: #fff;
+	font-weight: bold;
+}
+
+body.rtl .pageSchema .schemaAttrRow {
+	padding-left: auto;
+	padding-left: 25px;
+}
+
+table.pageSchema .templateRow {
+	background: #d3c2a0;
+	padding-left: 5px;
+}
+
+body.rtl .pageSchema .templaterow {
+	padding-left: auto;
+	padding-right: 5px;
+}
+
+/* stylelint-disable-next-line no-descending-specificity */
+.pageSchema span.rowValue {
+	font-weight: bold;
+}
+
+.pageSchema .fieldRow {
+	background: #edb;
+	padding-left: 25px;
+}
+
+body.rtl .pageSchema .fieldRow {
+	padding-left: auto;
+	padding-right: 25px;
+}
+
+.pageSchema .fieldExtensionRow {
+	padding-left: 26px;
+	border-top: 1px solid #ddd;
+}
+
+body.rtl .pageSchema .fieldExtensionRow {
+	padding-left: auto;
+	padding-right: 26px;
+}
+
+.pageSchema .fieldAttrRow {
+	padding-left: 45px;
+	background: #fff;
+	font-weight: bold;
+}
+
+body.rtl .pageSchema .fieldAttrRow {
+	padding-left: auto;
+	padding-left: 45px;
+}
+
+.pageSchema .paramData {
+	padding-left: 5px;
+	background: #7d7;
+}
+
+body.rtl .pageSchema .paramData {
+	padding-left: auto;
+	padding-right: 5px;
+}
+
+/* stylelint-disable-next-line no-descending-specificity */
+.pageSchema .paramData span.rowValue {
+	font-weight: bold;
+}
+
+.pageSchema .paramDataField {
+	background: #9f9;
+	padding-left: 35px;
+}
+
+body.rtl .pageSchema .paramDataField {
+	padding-left: auto;
+	padding-right: 35px;
+}
+
+.pageSchema .msg {
+	padding-left: 5px;
+	background: #fff;
+}
+
+body.rtl .pageSchema .msg {
+	padding-left: auto;
+	padding-right: 5px;
+}
+
+/**
+ * Used in Special:EditSchema
+ */
+div.editSchemaSection {
+	position: relative;
+	border: 1px #999 solid;
+	background: #fff;
+	/* stylelint-disable-next-line length-zero-no-unit */
+	padding: 0px;
+	margin-bottom: 10px;
+	margin-top: 10px;
+}
+
+div.editSchemaTemplateSection {
+	background: #eee;
+}
+
+div.editSchemaFieldSection {
+	background: #ccc;
+}
+
+div.editSchemaFieldSection table {
+	width: 100%;
+}
+
+td.fieldRearranger {
+	cursor: move;
+	width: 32px;
+}
+
+a.addAboveButton {
+	display: block;
+	background: center / contain no-repeat #000 url( PS_add_above.svg );
+	background-size: 14px;
+}
+
+a.removeButton {
+	display: block;
+	background: center / contain no-repeat #000 url( PS_remove.svg );
+	background-size: 9px;
+}
+
+td.fieldAddAbove a.addAboveButton,
+td.fieldRemove a.removeButton {
+	width: 21px;
+	height: 21px;
+	cursor: pointer;
+	border-radius: 100%;
+	opacity: 0.9;
+	transition: 0.1s;
+}
+
+td.fieldAddAbove,
+td.fieldRemove {
+	padding: 0;
+	width: 34px;
+	overflow: visible;
+	position: absolute;
+	opacity: 0;
+	transition: opacity 0.25s;
+}
+
+td.fieldAddAbove {
+	right: 30px;
+	top: -11px;
+}
+
+td.fieldRemove {
+	right: 4px;
+	top: -11px;
+}
+
+div.editSchemaFieldSection:hover .fieldAddAbove,
+div.editSchemaFieldSection:hover .fieldRemove {
+	opacity: 1;
+}
+
+div.pageSection {
+	background: #d0dae6;
+}
+
+div.editSchemaPageSection {
+	background: #fff;
+}
+
+div.editSchemaSection .sectionHeader {
+	font-weight: bold;
+	padding: 4px 7px;
+	border-bottom: 1px #bbb solid;
+}
+
+div.editSchemaSection .sectionBody {
+	padding: 5px 15px;
+}
+
+div.editSchemaMinorFields {
+	font-size: smaller;
+	margin-left: 5px;
+	padding-left: 15px;
+	border-left: 3px solid #aaa;
+}
+
+/* Style for touch-screen devices */
+
+@media ( hover: none ), ( pointer: none ), ( pointer: coarse ) {
+	td.fieldAddAbove,
+	td.fieldRemove {
+		opacity: 1;
+		position: initial;
+	}
+
+	td.fieldAddAbove {
+		width: 42px;
+	}
+
+	td.instanceAddAbove a.addAboveButton,
+	td.instanceRemove a.removeButton {
+		background-size: 21px;
+		width: 30px;
+		height: 30px;
+	}
+
+	td.instanceRemove a.removeButton {
+		background-size: 14px;
+	}
+}

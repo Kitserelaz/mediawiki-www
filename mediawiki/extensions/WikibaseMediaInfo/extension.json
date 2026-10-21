@@ -1,0 +1,452 @@
+{
+	"name": "WikibaseMediaInfo",
+	"version": "0.1.0",
+	"author": [
+		"The Wikidata team",
+		"Anne Tomasevich",
+		"Cormac Parle",
+		"Eric Gardner",
+		"Mark Holmquist",
+		"Matthias Mullie"
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:WikibaseMediaInfo",
+	"descriptionmsg": "wikibasemediainfo-desc",
+	"license-name": "GPL-2.0-or-later",
+	"type": "wikibase",
+	"requires": {
+		"MediaWiki": ">= 1.43",
+		"extensions": {
+			"UniversalLanguageSelector": "*",
+			"WikibaseCirrusSearch": "*"
+		}
+	},
+	"AutoloadNamespaces": {
+		"Wikibase\\MediaInfo\\": "src/"
+	},
+	"TestAutoloadNamespaces": {
+		"Wikibase\\MediaInfo\\Tests\\": "tests/phpunit/composer/",
+		"Wikibase\\MediaInfo\\Tests\\MediaWiki\\": "tests/phpunit/mediawiki/",
+		"Wikibase\\MediaInfo\\Tests\\Integration\\": "tests/phpunit/integration/",
+		"Wikibase\\MediaInfo\\": "tests/phpunit/unit/"
+	},
+	"ConfigRegistry": {
+		"WikibaseMediaInfo": "GlobalVarConfig::newInstance"
+	},
+	"config": {
+		"MediaInfoProperties": {
+			"description": "Map of { indicative name: property id }. E.g. { depicts: 'P1' }. The key doesn't really matter, except to construct a title (grep for wikibasemediainfo-statements-title-)",
+			"value": {}
+		},
+		"MediaInfoHelpUrls": {
+			"description": "Links to pages to learn more about wikibase properties. E.g. { P1: 'https://commons.wikimedia.org/wiki/Special:MyLanguage/Commons:Depicts' }",
+			"value": {}
+		},
+		"MediaInfoExternalEntitySearchBaseUri": {
+			"description": "URI of the api.php endpoint where entities can be searched.",
+			"value": ""
+		},
+		"MediaInfoMediaSearchTitleMatchBaseUri": {
+			"description": "URI of the api.php endpoint where page titles can be searched. The 2-character language code will be sprintf'ed into this value.",
+			"value": ""
+		},
+		"MediaInfoSupportedDataTypes": {
+			"description": "List of property datatypes which are supported in the UI",
+			"value": [
+				"wikibase-item",
+				"string",
+				"quantity",
+				"time",
+				"monolingualtext",
+				"external-id",
+				"globe-coordinate",
+				"url"
+			]
+		},
+		"MediaInfoCustomMatchFeature": {
+			"description": "Configuration for the 'custommatch' search feature, see Wikibase\\MediaInfo\\Search\\Feature\\CustomMatchFeature for expected format",
+			"value": {}
+		},
+		"MediaInfoMediaSearchProfiles": {
+			"description": "Map of { profile key: settings } MediaSearch profiles",
+			"value": {}
+		}
+	},
+	"ServiceWiringFiles": [
+		"src/Services/MediaInfoServiceWiring.php"
+	],
+	"callback": "Wikibase\\MediaInfo\\WikibaseMediaInfoHooks::onRegistration",
+	"HookHandlers": {
+		"main": {
+			"class": "Wikibase\\MediaInfo\\WikibaseMediaInfoHooks"
+		},
+		"services": {
+			"class": "Wikibase\\MediaInfo\\WikibaseMediaInfoServicesHooks"
+		},
+		"mediainfo_searchdata": {
+			"class": "\\Wikibase\\MediaInfo\\MediaInfoDataForSearchIndex",
+			"services": [
+				"ContentHandlerFactory"
+			]
+		}
+	},
+	"Hooks": {
+		"MediaWikiServices": "services",
+		"WikibaseRepoEntityNamespaces": "Wikibase\\MediaInfo\\WikibaseMediaInfoHooks::onWikibaseRepoEntityNamespaces",
+		"WikibaseRepoEntityTypes": "Wikibase\\MediaInfo\\WikibaseMediaInfoHooks::onWikibaseEntityTypes",
+		"WikibaseClientEntityTypes": "Wikibase\\MediaInfo\\WikibaseMediaInfoHooks::onWikibaseEntityTypes",
+		"GetEntityByLinkedTitleLookup": "Wikibase\\MediaInfo\\WikibaseMediaInfoHooks::onGetEntityByLinkedTitleLookup",
+		"GetEntityContentModelForTitle": "Wikibase\\MediaInfo\\WikibaseMediaInfoHooks::onGetEntityContentModelForTitle",
+		"BeforePageDisplay": "main",
+		"ParserOutputPostCacheTransform": "main",
+		"GetPreferences": "main",
+		"ScribuntoExternalLibraries": "Wikibase\\MediaInfo\\WikibaseMediaInfoHooks::onScribuntoExternalLibraries",
+		"RevisionUndeleted": "main",
+		"ArticleUndelete": "main",
+		"CirrusSearchProfileService": "Wikibase\\MediaInfo\\WikibaseMediaInfoHooks::onCirrusSearchProfileService",
+		"CirrusSearchRegisterFullTextQueryClassifiers": "Wikibase\\MediaInfo\\WikibaseMediaInfoHooks::onCirrusSearchRegisterFullTextQueryClassifiers",
+		"SidebarBeforeOutput": "main",
+		"CirrusSearchAddQueryFeatures": "Wikibase\\MediaInfo\\WikibaseMediaInfoHooks::onCirrusSearchAddQueryFeatures",
+		"MultiContentSave": "main",
+		"SearchDataForIndex2": "mediainfo_searchdata"
+	},
+	"MessagesDirs": {
+		"WikibaseMediaInfo": [
+			"i18n"
+		]
+	},
+	"ResourceModules": {
+		"mediawiki.template.mustache+dom": {
+			"scripts": [
+				"resources/mediawiki.template.mustache+dom.js"
+			],
+			"dependencies": [
+				"mediawiki.template.mustache"
+			]
+		},
+		"wikibase.mediainfo.base": {
+			"packageFiles": [
+				"resources/base/index.js",
+				"resources/base/ComponentWidget.js",
+				"resources/base/DOMLessGroupWidget.js",
+				"resources/base/FormatValueElement.js"
+			],
+			"dependencies": [
+				"oojs",
+				"oojs-ui-core"
+			]
+		},
+		"wikibase.mediainfo.readme": {
+			"packageFiles": [
+				"resources/README/index.js",
+				"resources/README/1.ExampleComponentWidget.js",
+				"resources/README/2.TemplatingFeatures.js",
+				"resources/README/3.BestPractices.js"
+			],
+			"templates": [
+				"templates/README/1.ExampleComponentWidget.mustache+dom",
+				"templates/README/2.TemplatingFeatures.mustache+dom",
+				"templates/README/3.BestPractices.mustache+dom"
+			],
+			"dependencies": [
+				"wikibase.mediainfo.base"
+			]
+		},
+		"wikibase.mediainfo.uls": {
+			"packageFiles": [
+				"resources/UlsWidget.js"
+			],
+			"dependencies": [
+				"ext.uls.mediawiki",
+				"oojs",
+				"oojs-ui-core",
+				"oojs-ui-widgets"
+			]
+		},
+		"wikibase.mediainfo.getDeserializer": {
+			"scripts": "resources/getDeserializer.js",
+			"dependencies": [
+				"wikibase.mediainfo.serialization.MediaInfoDeserializer"
+			]
+		},
+		"wikibase.mediainfo.serialization.MediaInfoDeserializer": {
+			"packageFiles": [
+				"resources/serialization/MediaInfoDeserializer.js",
+				"resources/datamodel/MediaInfo.js"
+			],
+			"dependencies": [
+				"util.inherit",
+				"wikibase.datamodel",
+				"wikibase.serialization"
+			]
+		},
+		"wikibase.mediainfo.filePageDisplay": {
+			"packageFiles": [
+				"resources/filepage/init.js",
+				"resources/filepage/AnonWarning.js",
+				"resources/filepage/LicenseDialogWidget.js",
+				"resources/filepage/CancelPublishWidget.js",
+				"resources/filepage/CaptionsEditActionsWidget.js",
+				"resources/filepage/CaptionData.js",
+				"resources/filepage/CaptionDataEditor.js",
+				"resources/filepage/CaptionsPanel.js",
+				"resources/filepage/StatementPanel.js",
+				"resources/filepage/ProtectionMsgWidget.js"
+			],
+			"dependencies": [
+				"wikibase.mediainfo.uls",
+				"mediawiki.action.edit.editWarning",
+				"mediawiki.language",
+				"mediawiki.template.mustache+dom",
+				"mediawiki.tempUserCreated",
+				"oojs",
+				"oojs-ui-core",
+				"oojs-ui-widgets",
+				"oojs-ui-windows",
+				"oojs-ui.styles.icons-editing-core",
+				"oojs-ui.styles.icons-interactions",
+				"oojs-ui.styles.icons-movement",
+				"wikibase.mediainfo.filepage.styles",
+				"wikibase.mediainfo.statements",
+				"wikibase",
+				"wikibase.api.RepoApi",
+				"wikibase.serialization"
+			],
+			"messages": [
+				"wikibasemediainfo-entitytermsforlanguagelistview-caption",
+				"wikibasemediainfo-filepage-structured-data-heading",
+				"wikibasemediainfo-filepage-captions-title",
+				"wikibasemediainfo-filepage-more-languages",
+				"wikibasemediainfo-filepage-fewer-languages",
+				"wikibasemediainfo-filepage-add-caption",
+				"wikibasemediainfo-filepage-edit-captions",
+				"wikibasemediainfo-filepage-edit-depicts",
+				"wikibasemediainfo-filepage-publish",
+				"wikibasemediainfo-filepage-cancel",
+				"wikibasemediainfo-filepage-cancel-confirm",
+				"wikibasemediainfo-filepage-cancel-confirm-title",
+				"wikibasemediainfo-filepage-cancel-confirm-accept",
+				"wikibasemediainfo-filepage-edit",
+				"wikibasemediainfo-filepage-caption-empty",
+				"wikibasemediainfo-filepage-caption-too-short",
+				"wikibasemediainfo-filepage-caption-too-long",
+				"wikibasemediainfo-filepage-caption-approaching-limit",
+				"wikibasemediainfo-filepage-license-title",
+				"wikibasemediainfo-filepage-license-content",
+				"wikibasemediainfo-filepage-license-content-acceptance",
+				"wikibasemediainfo-filepage-license-agree",
+				"wikibasemediainfo-statements-unsupported-property-title",
+				"wikibasemediainfo-statements-unsupported-property-content",
+				"wikibasemediainfo-statements-unsupported-property-type-content",
+				"protectedpagetext",
+				"cascadeprotected",
+				"postedit-temp-created-label",
+				"postedit-temp-created"
+			],
+			"templates": [
+				"templates/filepage/ProtectionMsgWidget.mustache+dom",
+				"templates/filepage/CaptionsPanel.mustache+dom"
+			]
+		},
+		"wikibase.mediainfo.filepage.styles": {
+			"styles": [
+				"resources/filepage/styles/mediainfo-filepage.less",
+				"resources/filepage/styles/mediainfo-filepage-captionspanel.less",
+				"resources/filepage/styles/mediainfo-filepage-protectionmsgwidget.less",
+				"resources/filepage/styles/mediainfo-filepage-statementpanel.less"
+			]
+		},
+		"wikibase.mediainfo.statements": {
+			"packageFiles": [
+				"resources/statements/index.js",
+				"resources/statements/StatementWidget.js",
+				"resources/statements/ItemWidget.js",
+				"resources/statements/SnakListWidget.js",
+				"resources/statements/SnakWidget.js",
+				"resources/statements/AddPropertyWidget.js",
+				"resources/statements/LinkNoticeWidget.js",
+				"resources/statements/ConstraintsReportHandlerElement.js",
+				"resources/statements/inputs/index.js",
+				"resources/statements/inputs/EntityAutocompleteInputWidget.js",
+				"resources/statements/inputs/AbstractInputWidget.js",
+				"resources/statements/inputs/EntityInputWidget.js",
+				"resources/statements/inputs/GlobeCoordinateInputWidget.js",
+				"resources/statements/inputs/MonolingualTextInputWidget.js",
+				"resources/statements/inputs/QuantityInputWidget.js",
+				"resources/statements/inputs/StringInputWidget.js",
+				"resources/statements/inputs/TimeInputWidget.js",
+				"resources/statements/inputs/UnsupportedInputWidget.js",
+				"resources/statements/inputs/MultiTypeInputWrapperWidget.js",
+				"resources/statements/config/index.js",
+				{
+					"name": "resources/statements/config/wbTermsLanguages.json",
+					"callback": "Wikibase\\MediaInfo\\WikibaseMediaInfoHooks::generateWbTermsLanguages"
+				},
+				{
+					"name": "resources/statements/config/wbMonolingualTextLanguages.json",
+					"callback": "Wikibase\\MediaInfo\\WikibaseMediaInfoHooks::generateWbMonolingualTextLanguages"
+				}
+			],
+			"dependencies": [
+				"wikibase.mediainfo.base",
+				"wikibase.mediainfo.uls",
+				"mediawiki.template.mustache+dom",
+				"mw.config.values.wbDataTypes",
+				"oojs",
+				"oojs-ui-core",
+				"oojs-ui-widgets",
+				"oojs-ui-windows",
+				"oojs-ui.styles.icons-interactions",
+				"oojs-ui.styles.icons-location",
+				"wikibase.api.RepoApi",
+				"wikibase.mediainfo.statements.styles",
+				"wikibase.serialization",
+				"wikibase.datamodel",
+				"wikibase.utilities.ClaimGuidGenerator",
+				"dataValues.values"
+			],
+			"messages": [
+				"wikibasemediainfo-add-property",
+				"wikibasemediainfo-add-statement",
+				"wikibasemediainfo-property-placeholder",
+				"wikibasemediainfo-remove-all-statements-confirm",
+				"wikibasemediainfo-remove-all-statements-confirm-title",
+				"wikibasemediainfo-remove-all-statements-confirm-accept",
+				"wikibasemediainfo-filepage-cancel-confirm",
+				"wikibasemediainfo-filepage-cancel-confirm-title",
+				"wikibasemediainfo-filepage-cancel-confirm-accept",
+				"wikibasemediainfo-filepage-cancel",
+				"wikibasemediainfo-filepage-publish",
+				"wikibasemediainfo-filepage-edit",
+				"wikibasemediainfo-filepage-edit-depicts",
+				"wikibasemediainfo-statements-depicts-title",
+				"wikibasemediainfo-statements-item-input-placeholder",
+				"wikibasemediainfo-statements-item-input-label",
+				"wikibasemediainfo-statements-item-is-prominent",
+				"wikibasemediainfo-statements-item-mark-as-prominent",
+				"wikibasemediainfo-statements-item-remove",
+				"wikibasemediainfo-statements-item-qualifiers",
+				"wikibasemediainfo-statements-item-add-qualifier",
+				"wikibasemediainfo-statements-item-reference",
+				"wikibasemediainfo-statements-item-references",
+				"wikibasemediainfo-statements-item-add-reference",
+				"wikibasemediainfo-statements-item-add-reference-snak",
+				"wikibasemediainfo-statements-link-notice-text",
+				"wikibasemediainfo-statements-link-notice-dismiss",
+				"wikibasemediainfo-filepage-statement-no-results",
+				"wikibasemediainfo-statements-remove",
+				"wikibasemediainfo-statements-learn-more",
+				"wikibasemediainfo-coordinate-input-label",
+				"wikibasemediainfo-coordinate-input-placeholder",
+				"wikibasemediainfo-precision-input-label",
+				"wikibasemediainfo-select-precision-label",
+				"wikibasemediainfo-arcminute-label",
+				"wikibasemediainfo-arcsecond-label",
+				"wikibasemediainfo-tenth-of-arcsecond-label",
+				"wikibasemediainfo-hundreth-of-arcsecond-label",
+				"wikibasemediainfo-thousanth-of-arcsecond-label",
+				"wikibasemediainfo-string-input-button-text",
+				"wikibasemediainfo-monolingualtext-input-button-text",
+				"wikibasemediainfo-monolingualtext-input-placeholder",
+				"wikibasemediainfo-monolingualtext-language-label",
+				"wikibasemediainfo-quantity-input-button-text",
+				"wikibasemediainfo-time-input-button-text",
+				"wikibasemediainfo-time-input-placeholder",
+				"wikibasemediainfo-time-timestamp-empty",
+				"wikibasemediainfo-time-timestamp-invalid",
+				"wikibasemediainfo-time-timestamp-formatted",
+				"wikibasemediainfo-time-precision-label",
+				"wikibasemediainfo-time-precision-year1g",
+				"wikibasemediainfo-time-precision-year100m",
+				"wikibasemediainfo-time-precision-year10m",
+				"wikibasemediainfo-time-precision-year1m",
+				"wikibasemediainfo-time-precision-year100k",
+				"wikibasemediainfo-time-precision-year10k",
+				"wikibasemediainfo-time-precision-year1k",
+				"wikibasemediainfo-time-precision-year100",
+				"wikibasemediainfo-time-precision-year10",
+				"wikibasemediainfo-time-precision-year",
+				"wikibasemediainfo-time-precision-month",
+				"wikibasemediainfo-time-precision-day",
+				"wikibasemediainfo-time-precision-hour",
+				"wikibasemediainfo-time-precision-minute",
+				"wikibasemediainfo-time-precision-second",
+				"wikibasemediainfo-time-calendar-label",
+				"wikibasemediainfo-time-calendar-gregorian",
+				"wikibasemediainfo-time-calendar-julian",
+				"wikibasemediainfo-quantity-unit-placeholder",
+				"wikibasemediainfo-quantity-unit-label",
+				"wikibasemediainfo-quantity-unit-button-text",
+				"wikibasemediainfo-globecoordinate-input-button-text",
+				"wikibasemediainfo-globecoordinate-map-button-text",
+				"wikibasemediainfo-filepage-statement-value-type-dropdown-title",
+				"wikibasemediainfo-filepage-statement-custom-value-option",
+				"wikibasemediainfo-filepage-statement-some-value-option",
+				"wikibasemediainfo-filepage-statement-no-value-option",
+				"wikibasemediainfo-filepage-statement-no-value",
+				"wikibasemediainfo-filepage-statement-some-value",
+				"colon-separator",
+				"word-separator",
+				"parentheses"
+			],
+			"templates": [
+				"templates/statements/AddPropertyWidget.mustache+dom",
+				"templates/statements/ItemWidget.mustache+dom",
+				"templates/statements/LinkNoticeWidget.mustache+dom",
+				"templates/statements/SnakListWidget.mustache+dom",
+				"templates/statements/SnakWidget.mustache+dom",
+				"templates/statements/StatementWidget.mustache+dom",
+				"templates/statements/inputs/EntityAutocompleteInputWidgetLabel.mustache+dom",
+				"templates/statements/inputs/EntityInputWidget.mustache+dom",
+				"templates/statements/inputs/GlobeCoordinateInputWidget.mustache+dom",
+				"templates/statements/inputs/MonolingualTextInputWidget.mustache+dom",
+				"templates/statements/inputs/QuantityInputWidget.mustache+dom",
+				"templates/statements/inputs/StringInputWidget.mustache+dom",
+				"templates/statements/inputs/TimeInputWidget.mustache+dom",
+				"templates/statements/inputs/UnsupportedInputWidget.mustache+dom",
+				"templates/statements/inputs/MultiTypeInputWrapperWidget.mustache+dom"
+			]
+		},
+		"wikibase.mediainfo.statements.styles": {
+			"styles": [
+				"resources/statements/AddPropertyWidget.less",
+				"resources/statements/StatementWidget.less",
+				"resources/statements/ItemWidget.less",
+				"resources/statements/SnakListWidget.less",
+				"resources/statements/SnakWidget.less",
+				"resources/statements/LinkNoticeWidget.less",
+				"resources/statements/ConstraintsReportHandlerElement.less",
+				"resources/statements/inputs/EntityAutocompleteInputWidget.less",
+				"resources/statements/inputs/GlobeCoordinateInputWidget.less",
+				"resources/statements/inputs/TimeInputWidget.less",
+				"resources/statements/inputs/QuantityInputWidget.less",
+				"resources/statements/inputs/InputWidget.less",
+				"resources/statements/inputs/MultiTypeInputWrapperWidget.less"
+			]
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "",
+		"remoteExtPath": "WikibaseMediaInfo"
+	},
+	"DefaultUserOptions": {
+		"wbmi-cc0-confirmed": 0,
+		"wbmi-wikidata-link-notice-dismissed": 0
+	},
+	"manifest_version": 2,
+	"GroupPermissions": {
+		"*": {
+			"mediainfo-term": true
+		}
+	},
+	"GrantPermissions": {
+		"editpage": {
+			"mediainfo-term": true
+		}
+	},
+	"AvailableRights": [
+		"mediainfo-term"
+	],
+	"RawHtmlMessages": [
+		"wikibasemediainfo-time-timestamp-formatted"
+	]
+}

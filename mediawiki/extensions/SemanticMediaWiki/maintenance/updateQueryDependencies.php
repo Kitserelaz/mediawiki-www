@@ -1,0 +1,205 @@
+<?php
+
+namespace SMW\Maintenance;
+
+use MediaWiki\Maintenance\Maintenance;
+use Onoi\MessageReporter\MessageReporter;
+use SMW\DataItems\Property;
+use SMW\MediaWiki\JobFactory;
+use SMW\Services\ServicesFactory as ApplicationFactory;
+use SMW\Setup;
+use SMW\SQLStore\SQLStore;
+use SMW\Store;
+use SMW\Utils\PeriodicStatsFlusher;
+
+$basePath = getenv( 'MW_INSTALL_PATH' ) !== false ? getenv( 'MW_INSTALL_PATH' ) : __DIR__ . '/../../..';
+
+// @codeCoverageIgnoreStart
+require_once $basePath . '/maintenance/Maintenance.php';
+// @codeCoverageIgnoreEnd
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 3.1
+ *
+ * @author mwjames
+ */
+class updateQueryDependencies extends Maintenance {
+
+	private ?Store $store = null;
+
+	private ?JobFactory $jobFactory = null;
+
+	/**
+	 * @var MessageReporter
+	 */
+	private $messageReporter;
+
+	/**
+	 * @since 3.1
+	 */
+	public function __construct() {
+		$this->mDescription = 'Update queries and query dependencies.';
+		parent::__construct();
+	}
+
+	/**
+	 * @since 7.0.0
+	 */
+	public function setStore( Store $store ) {
+		$this->store = $store;
+	}
+
+	/**
+	 * @since 7.0.0
+	 */
+	public function setJobFactory( JobFactory $jobFactory ) {
+		$this->jobFactory = $jobFactory;
+	}
+
+	/**
+	 * @since 3.1
+	 */
+	public function setMessageReporter( MessageReporter $messageReporter ) {
+		$this->messageReporter = $messageReporter;
+	}
+
+	/**
+	 * @since 3.1
+	 *
+	 * @param string $message
+	 */
+	public function reportMessage( $message ) {
+		if ( $this->messageReporter !== null ) {
+			return $this->messageReporter->reportMessage( $message );
+		}
+
+		$this->output( $message );
+	}
+
+	/**
+	 * @see Maintenance::execute
+	 */
+	public function execute() {
+		if ( !Setup::isEnabled() ) {
+			$this->dieMessage(
+				"\nYou need to have SMW enabled in order to run the maintenance script!\n"
+			);
+		}
+
+		if ( !Setup::isValid( true ) ) {
+			$this->dieMessage(
+				"\nYou need to run `update.php` or `setupStore.php` first before continuing" .
+				"\nwith any maintenance tasks!\n"
+			);
+		}
+
+		$this->reportMessage(
+			"\nThe script schedules updates for entities known to contain queries." .
+			"\nA re-parse of the entity content will ensure to find new or missing" .
+			"\nquery dependencies and trigger updates to the `smw_query_links`" .
+			"\ntable.\n"
+		);
+
+		$settings = ApplicationFactory::getInstance()->getSettings();
+
+		if ( $settings->get( 'smwgQueryProfiler' ) === false ) {
+			return $this->reportMessage(
+				"\nThe `smwgQueryProfiler` has been disabled therefore making it impossible" .
+				"\nto track embedded queries.\n"
+			);
+		}
+
+		if ( $settings->get( 'smwgEnabledQueryDependencyLinksStore' ) === false ) {
+			$this->reportMessage(
+				"\nThe `smwgEnabledQueryDependencyLinksStore` is disabled therefore" .
+				"\nno query dependency updates (see `smw_query_links` table) will occur.\n"
+			);
+		}
+
+		return $this->runUpdate();
+	}
+
+	/**
+	 * @see Maintenance::addDefaultParams
+	 *
+	 * @since 3.0
+	 */
+	protected function addDefaultParams() {
+		parent::addDefaultParams();
+	}
+
+	private function dieMessage( $message ): never {
+		$this->reportMessage( $message );
+		exit;
+	}
+
+	private function runUpdate() {
+		$applicationFactory = ApplicationFactory::getInstance();
+		$this->store ??= $applicationFactory->getStore( SQLStore::class );
+		$this->jobFactory ??= $applicationFactory->newJobFactory();
+
+		$connection = $this->store->getConnection( 'mw.db' );
+
+		$tableName = $this->store->getPropertyTableInfoFetcher()->findTableIdForProperty(
+			new Property( '_ASK' )
+		);
+
+		$res = $connection->newSelectQueryBuilder()
+			->select( [
+				'smw_id',
+				'smw_title',
+				'smw_namespace'
+			] )
+			->from( SQLStore::ID_TABLE )
+			->join( $tableName, 'p', [ 'p.s_id=smw_id' ] )
+			->where( [
+				'smw_iw!=' . $connection->addQuotes( SMW_SQL3_SMWIW_OUTDATED ),
+				'smw_iw!=' . $connection->addQuotes( SMW_SQL3_SMWDELETEIW ),
+			] )
+			->groupBy( 'smw_id' )
+			->caller( __METHOD__ )
+			->fetchResultSet();
+
+		$expected = $res->numRows();
+		$i = 0;
+
+		$this->reportMessage(
+			"\nPerforming the update ..."
+		);
+
+		$this->reportMessage( "\n   ... found $expected entities ..." );
+		$this->reportMessage( "\n" );
+
+		$statsFlusher = PeriodicStatsFlusher::newFromGlobalState();
+
+		$titleFactory = $this->getServiceContainer()->getTitleFactory();
+		foreach ( $res as $row ) {
+			$statsFlusher->tick();
+			$i++;
+
+			$this->reportMessage(
+				"\r" . sprintf( "%-55s%s", "   ... update ...", sprintf( "%4.0f%% (%s/%s)", ( $i / $expected ) * 100, $i, $expected ) )
+			);
+
+			$updateJob = $this->jobFactory->newUpdateJob(
+				$titleFactory->makeTitleSafe( $row->smw_namespace, $row->smw_title ),
+				[
+					'origin' => 'updateQueryDependencies.php'
+				]
+			);
+
+			$updateJob->run();
+		}
+
+		$this->reportMessage( "\n" );
+
+		return true;
+	}
+
+}
+
+// @codeCoverageIgnoreStart
+$maintClass = updateQueryDependencies::class;
+require_once RUN_MAINTENANCE_IF_MAIN;
+// @codeCoverageIgnoreEnd

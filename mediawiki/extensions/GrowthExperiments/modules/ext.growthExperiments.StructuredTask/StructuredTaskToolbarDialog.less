@@ -1,0 +1,64 @@
+@import 'mediawiki.skin.variables.less';
+@import '../utils/variables.less';
+
+@navHeight: 48px;
+
+.mw-ge-structuredTaskToolbarDialog {
+	background-color: @background-color-base;
+
+	&.ve-ui-toolbarDialog-position-below {
+		border-top: @border-subtle;
+		box-shadow: 0 -1px 1px 0 rgba( 0, 0, 0, 0.1 );
+		transition: transform 500ms;
+		transform: translateY( 0 );
+
+		&.animate-below {
+			transform: translateY( 100vh );
+		}
+
+		&.collapsed {
+			transform: translateY( ~'calc(100% - @{navHeight})' );
+		}
+
+		.oo-ui-window-head {
+			height: @navHeight;
+		}
+	}
+
+	.mw-ge-help-panel-button {
+		position: absolute;
+		// button is always above the header
+		top: ~'calc(-1 * ( @{navHeight} + 16px) )';
+		right: 8px;
+	}
+
+	&-chevron {
+		margin-left: auto;
+	}
+
+	.oo-ui-window-head {
+		min-height: 44px;
+		padding: 0 16px;
+		display: flex;
+		align-items: center;
+		box-sizing: content-box;
+		background-color: @suggestedEditsBackgroundColor;
+		position: relative;
+
+		.mw-ge-structuredTaskToolbarDialog-head-robot-icon {
+			opacity: @opacity-icon-subtle;
+		}
+	}
+
+	&-headerButton {
+		cursor: pointer;
+	}
+}
+
+.mw-footer {
+	// Additional specificity to override default styles
+	.footer-places--with-mw-ge-structuredTaskToolbarDialog {
+		// Prevent the footer links from being covered when the toolbar dialog is collapsed on desktop
+		padding-bottom: @navHeight;
+	}
+}

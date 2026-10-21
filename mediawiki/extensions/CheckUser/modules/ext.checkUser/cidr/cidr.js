@@ -2,12 +2,16 @@
 ( function () {
 	const showResults = function ( size, cidr, $form, hasCheckUserRight, hasCheckUserLogRight ) {
 		if ( cidr.toString() === '!' ) {
-			cidr = mw.message( 'checkuser-cidr-too-small' ).text();
+			cidr = mw.msg( 'checkuser-cidr-too-small' );
 		}
 		$( '.mw-checkuser-cidr-res input', $form ).val( cidr );
 		if ( mw.util.isIPAddress( cidr, true ) ) {
 			$( '.mw-checkuser-cidr-tool-links', $form ).removeClass( 'mw-checkuser-cidr-tool-links-hidden' );
 			$( '.mw-checkuser-cidr-tool-links', $form ).html(
+				// Uses:
+				// * checkuser-cidr-tool-links-checkuser
+				// * checkuser-cidr-tool-links-checkuserlog
+				// * checkuser-cidr-tool-links-prefix
 				mw.message( 'checkuser-cidr-tool-links', cidr ).parse()
 			);
 			if ( !hasCheckUserRight ) {
@@ -20,7 +24,7 @@
 			$( '.mw-checkuser-cidr-tool-links', $form ).addClass( 'mw-checkuser-cidr-tool-links-hidden' );
 		}
 		$( '.mw-checkuser-cidr-ipnote', $form ).text(
-			mw.message( 'checkuser-cidr-affected-ips' ).text() + ' ' + size.toLocaleString()
+			mw.msg( 'checkuser-cidr-affected-ips' ) + ' ' + size.toLocaleString()
 		);
 	};
 
@@ -41,7 +45,7 @@
 		for ( const i in delimiters ) {
 			// If the delimiter is present in the IPs list, use it
 			// to split into a list of IPs.
-			if ( text.indexOf( delimiters[ i ] ) !== -1 ) {
+			if ( text.includes( delimiters[ i ] ) ) {
 				const ips = text.split( delimiters[ i ] );
 				for ( const j in ips ) {
 					// Trim to remove excess whitespace.
@@ -252,8 +256,8 @@
 
 	$( () => {
 		mw.user.getRights( ( rights ) => {
-			const hasCheckUserRight = rights.indexOf( 'checkuser' ) !== -1;
-			const hasCheckUserLogRight = rights.indexOf( 'checkuser-log' ) !== -1;
+			const hasCheckUserRight = rights.includes( 'checkuser' );
+			const hasCheckUserLogRight = rights.includes( 'checkuser-log' );
 			$( '.mw-checkuser-cidrform' ).each( ( index, form ) => {
 				updateCIDRresult( $( form ), hasCheckUserRight, hasCheckUserLogRight );
 			} );

@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Universal Omega"
+		]
+	},
+	"action-viewglobalprivatefiles": "{{doc-action|viewglobalprivatefiles}}",
+	"globalnewfiles": "{{doc-special}}",
+	"globalnewfiles-description": "{{desc|what=extension|name=GlobalNewFiles|url=https://github.com/miraheze/GlobalNewFiles}}",
+	"globalnewfiles-label-dbname": "Used as a label for dbname.\n{{Identical|Database name}}",
+	"right-viewglobalprivatefiles": "{{doc-right|viewglobalprivatefiles}}"
+}

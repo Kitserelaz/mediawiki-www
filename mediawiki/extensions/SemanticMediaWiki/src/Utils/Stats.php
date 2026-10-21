@@ -1,0 +1,219 @@
+<?php
+
+namespace SMW\Utils;
+
+use SMW\Services\ServicesFactory as ApplicationFactory;
+use Wikimedia\ObjectCache\BagOStuff;
+
+/**
+ * Collect statistics in a provisional schema-free storage that depends on the
+ * availability of the cache back-end.
+ *
+ * @license GPL-2.0-or-later
+ * @since 2.5
+ *
+ * @author mwjames
+ */
+class Stats {
+
+	/**
+	 * Update this version number when the serialization format
+	 * changes.
+	 */
+	const VERSION = '0.2';
+
+	/**
+	 * Available operations
+	 */
+	const STATS_INIT = 'init';
+	const STATS_INCR = 'incr';
+	const STATS_SET = 'set';
+	const STATS_MEDIAN = 'median';
+
+	/**
+	 * Namespace occupied by the Cache
+	 */
+	const CACHE_NAMESPACE = 'smw:stats';
+
+	private bool $shouldRecord = true;
+
+	/**
+	 * @var array
+	 */
+	private $stats = [];
+
+	private array $operations = [];
+
+	/**
+	 * @since 2.5
+	 */
+	public function __construct(
+		private readonly BagOStuff $cache,
+		private $id,
+	) {
+		$this->initRecord();
+	}
+
+	/**
+	 * @since 3.1
+	 */
+	public function makeCacheKey( $id ): string {
+		return smwfCacheKey( self::CACHE_NAMESPACE, [ $id, self::VERSION ] );
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function initRecord(): void {
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * @param bool $shouldRecord
+	 */
+	public function shouldRecord( $shouldRecord ): void {
+		$this->shouldRecord = (bool)$shouldRecord;
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * @return array
+	 */
+	public function getStats(): array {
+		$stats = $this->cache->get( $this->makeCacheKey( $this->id ) );
+		if ( $stats === false ) {
+			return [];
+		}
+
+		return StatsFormatter::getStatsFromFlatKey( $stats, '.' );
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * @param string $key
+	 */
+	public function incr( string $key ): void {
+		if ( !isset( $this->stats[$key] ) ) {
+			$this->stats[$key] = 0;
+		}
+
+		$this->stats[$key]++;
+		$this->operations[$key] = self::STATS_INCR;
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * @param string $key
+	 * @param string|int|array $default
+	 */
+	public function init( $key, $default ): void {
+		$this->stats[$key] = $default;
+		$this->operations[$key] = self::STATS_INIT;
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * @param string $key
+	 * @param string|int|array $value
+	 */
+	public function set( $key, $value ): void {
+		$this->stats[$key] = $value;
+		$this->operations[$key] = self::STATS_SET;
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * @param string $key
+	 * @param int $value
+	 */
+	public function calcMedian( $key, $value ): void {
+		if ( !isset( $this->stats[$key] ) ) {
+			$this->stats[$key] = $value;
+		} else {
+			$this->stats[$key] = ( $this->stats[$key] + $value ) / 2;
+		}
+
+		$this->operations[$key] = self::STATS_MEDIAN;
+	}
+
+	/**
+	 * @since 2.5
+	 */
+	public function saveStats(): void {
+		if ( $this->stats === [] ) {
+			return;
+		}
+
+		$container = $this->cache->get( $this->makeCacheKey( $this->id ) );
+
+		if ( $container === false || $container === null ) {
+			$container = [];
+		}
+
+		foreach ( $this->stats as $key => $value ) {
+
+			if ( isset( $container[$key] ) ) {
+				$old = $container[$key];
+			} else {
+				$old = 0;
+			}
+
+			if ( $this->operations[$key] === self::STATS_INIT && $old != 0 ) {
+				$value = $old;
+			}
+
+			if ( $this->operations[$key] === self::STATS_INCR ) {
+				$value = $old + $value;
+			}
+
+			// Use as-is
+			// $this->operations[$key] === self::STATS_SET
+
+			if ( $this->operations[$key] === self::STATS_MEDIAN ) {
+				$value = $old > 0 ? ( $old + $value ) / 2 : $value;
+			}
+
+			$container[$key] = $value;
+		}
+
+		$this->cache->set( $this->makeCacheKey( $this->id ), $container );
+		$this->stats = [];
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * @param bool $asPending
+	 */
+	public function recordStats( $asPending = false ) {
+		if ( !$this->shouldRecord ) {
+			$this->stats = [];
+			return $this->stats;
+		}
+
+		// #2046
+		// __destruct as event trigger has shown to be unreliable in a MediaWiki
+		// environment therefore rely on the deferred update and any caller
+		// that invokes the recordStats method
+
+		$deferredUpdate = ApplicationFactory::getInstance()->newDeferredTransactionalCallableUpdate(
+			[ $this, 'saveStats' ]
+		);
+
+		// "static::class" to get the name of the called class
+		$fname = static::class . '::recordStats';
+
+		$deferredUpdate->setOrigin( $fname );
+		$deferredUpdate->waitOnTransactionIdle();
+
+		$deferredUpdate->markAsPending( $asPending );
+		$deferredUpdate->pushUpdate();
+	}
+
+}

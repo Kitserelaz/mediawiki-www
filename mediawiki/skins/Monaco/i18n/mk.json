@@ -1,0 +1,35 @@
+{
+	"@metadata": {
+		"authors": [
+			"Bjankuloski06"
+		]
+	},
+	"monaco-desc": "Небрендирано руво „Монако“ за употреба со ванилино МедијаВики.",
+	"dynamic-links": "Можете да додавате назнаки на динамички врски во „Монако“ користејќи ја оваа порака, да додадете назнака во секој ред\n (можете да употребите * на почетокот како во страничник и Монако-страничник за да го направите ова да биде список)\n Редовите што почнуваат со празно место ќе се сметаат за коментари.\n Откако ќе додадете нова назнака во списокот можете да ја употребите пораката „dynamic-links-<id>“\n за да го прилагодите текстот на врската и порака „dynamic-links-<id>-url“ со името\n на насловот на страницата на викито каде би водела динамичката врска.",
+	"dynamic-links-write-article": "Создај нова статија",
+	"dynamic-links-add-image": "Подигни нова слика",
+	"monaco-footer-improve": "Направете подобрувања на {{SITENAME}} $1",
+	"monaco-footer-improve-linktext": "уредувајќи ја оваа страница",
+	"monaco-footer-lastedit": "$1 направи уредување на $2",
+	"viewrandompage": "Дај случајна страница",
+	"masthead-anonymous-user": "Анонимен корисник",
+	"skinname-monaco": "Монако",
+	"monaco-tab-addsection": "Остави порака",
+	"monaco-theme-prefs-label": "Изглед:",
+	"theme-name-monaco-beach": "Плажа",
+	"theme-name-monaco-brick": "Цигла",
+	"theme-name-monaco-carbon": "Јаглерод",
+	"theme-name-monaco-default": "по основно",
+	"theme-name-monaco-forest": "Шума",
+	"theme-name-monaco-gaming": "Играње",
+	"theme-name-monaco-jade": "Жад",
+	"theme-name-monaco-moonlight": "Месечевина",
+	"theme-name-monaco-obsession": "Опседнатост",
+	"theme-name-monaco-ruby": "Рубин",
+	"theme-name-monaco-sapphire": "Сафир",
+	"theme-name-monaco-sky": "Небо",
+	"theme-name-monaco-slate": "Шкрилец",
+	"theme-name-monaco-smoke": "Чад",
+	"theme-name-monaco-spring": "Пролет",
+	"theme-selection-deactivated": "Изборот на изгледи е деактивиран."
+}

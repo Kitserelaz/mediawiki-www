@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"IJzeren Jan"
+		]
+	},
+	"skinname-medik": "Medik",
+	"medik-default": "standardne",
+	"medik-desc": "Prosta i čista vizualna tema, osnovana na bibliotekě Bootstrap.",
+	"medik-font-label": "Razměr fonta",
+	"medik-tools-menu": "Pravjenje i orudja"
+}

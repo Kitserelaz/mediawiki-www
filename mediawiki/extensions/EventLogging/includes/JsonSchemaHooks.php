@@ -9,8 +9,6 @@
  * @author Ori Livneh <ori@wikimedia.org>
  */
 
-// phpcs:disable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
-
 namespace MediaWiki\Extension\EventLogging;
 
 use MediaWiki\Api\ApiModuleManager;
@@ -23,28 +21,23 @@ use MediaWiki\Hook\EditFilterMergedContentHook;
 use MediaWiki\Hook\MovePageIsValidMoveHook;
 use MediaWiki\Output\Hook\BeforePageDisplayHook;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Skin\Skin;
 use MediaWiki\Status\Status;
+use MediaWiki\Title\Hook\CanonicalNamespacesHook;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
-use Skin;
 
 class JsonSchemaHooks implements
 	BeforePageDisplayHook,
 	EditFilterMergedContentHook,
 	MovePageIsValidMoveHook,
-	ApiMain__moduleManagerHook
+	ApiMain__moduleManagerHook,
+	CanonicalNamespacesHook
 {
+	private JsonSchemaHooksHelper $jsonSchemaHooksHelper;
 
-	/**
-	 * Convenience function to determine whether the
-	 * Schema namespace is enabled
-	 *
-	 * @return bool
-	 */
-	public static function isSchemaNamespaceEnabled() {
-		global $wgEventLoggingDBname, $wgDBname;
-
-		return $wgEventLoggingDBname === $wgDBname;
+	public function __construct( JsonSchemaHooksHelper $jsonSchemaHooksHelper ) {
+		$this->jsonSchemaHooksHelper = $jsonSchemaHooksHelper;
 	}
 
 	/**
@@ -54,27 +47,12 @@ class JsonSchemaHooks implements
 	 * @param ApiModuleManager $moduleManager
 	 */
 	public function onApiMain__moduleManager( $moduleManager ): void {
-		if ( self::isSchemaNamespaceEnabled() ) {
+		if ( $this->jsonSchemaHooksHelper->isSchemaNamespaceEnabled() ) {
 			$moduleManager->addModule(
 				'jsonschema',
 				'action',
 				ApiJsonSchema::class
 			);
-		}
-	}
-
-	/**
-	 * Declares JSON as the code editor language for Schema: pages.
-	 * This hook only runs if the CodeEditor extension is enabled.
-	 *
-	 * @param Title $title
-	 * @param string &$lang Page language.
-	 */
-	public static function onCodeEditorGetPageLanguage( $title, &$lang ): void {
-		if ( self::isSchemaNamespaceEnabled()
-			&& $title->inNamespace( NS_SCHEMA )
-		) {
-			$lang = 'json';
 		}
 	}
 
@@ -100,7 +78,7 @@ class JsonSchemaHooks implements
 	): bool {
 		$title = $context->getTitle();
 
-		if ( !self::isSchemaNamespaceEnabled()
+		if ( $this->jsonSchemaHooksHelper->isSchemaNamespaceEnabled()
 			|| !$title->inNamespace( NS_SCHEMA )
 		) {
 			return true;
@@ -138,7 +116,7 @@ class JsonSchemaHooks implements
 		$title = $out->getTitle();
 		$revId = $out->getRevisionId();
 
-		if ( self::isSchemaNamespaceEnabled()
+		if ( $this->jsonSchemaHooksHelper->isSchemaNamespaceEnabled()
 			&& $title->inNamespace( NS_SCHEMA )
 			&& $revId !== null
 		) {
@@ -162,7 +140,7 @@ class JsonSchemaHooks implements
 	public function onMovePageIsValidMove(
 		$currentTitle, $newTitle, $status
 	) {
-		if ( !self::isSchemaNamespaceEnabled() ) {
+		if ( !$this->jsonSchemaHooksHelper->isSchemaNamespaceEnabled() ) {
 			// Namespace isn't even enabled
 			return true;
 		} elseif ( $currentTitle->inNamespace( NS_SCHEMA ) ) {
@@ -173,5 +151,15 @@ class JsonSchemaHooks implements
 			return false;
 		}
 		return true;
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function onCanonicalNamespaces( &$namespaces ): void {
+		if ( $this->jsonSchemaHooksHelper->isSchemaNamespaceEnabled() ) {
+			$namespaces[ NS_SCHEMA ] = 'Schema';
+			$namespaces[ NS_SCHEMA_TALK ] = 'Schema_talk';
+		}
 	}
 }

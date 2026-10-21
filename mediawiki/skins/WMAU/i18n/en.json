@@ -1,0 +1,17 @@
+{
+	"@metadata": {
+		"authors": [
+			"Sam Wilson"
+		]
+	},
+	"skinname-wmau": "WMAU",
+	"wmau-desc": "A new skin created in 2021 for the main Wikimedia Australia wiki.",
+	"wmau-site-full-title": "{{SITENAME}}",
+	"wmau-site-email": "",
+	"wmau-config.json": "{\"header_menu\": [{\"page\": \"About\",\"icon\":\"\",\"title\":\"\",\"url\":\"\",\"text\":\"\",\"class\":\"\"}, {\"page\": \"News and Events\"}, {\"page\": \"Contact\"}], \"footer_menu\":[{\"url\":\"https://twitter.com/wm_au\", \"text\":\"Twitter\"}, {\"page\":\"Donate\"}]}",
+	"wmau-footer-blurb": "",
+	"wmau-logo-wordmark-alt": "The website logo's wordmark.",
+	"wmau-logo-icon-alt": "The website logo's icon.",
+	"wmau-talk-link": "Discuss this page",
+	"wmau-subject-link": "Return to article"
+}

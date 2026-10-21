@@ -4,60 +4,43 @@ namespace MediaWiki\Extension\TemplateData;
 
 use MediaWiki\CommentStore\CommentStoreComment;
 use MediaWiki\Config\Config;
-use MediaWiki\Context\RequestContext;
 use MediaWiki\EditPage\EditPage;
-use MediaWiki\Extension\EventLogging\EventLogging;
-use MediaWiki\Hook\EditPage__showEditForm_fieldsHook;
 use MediaWiki\Hook\EditPage__showEditForm_initialHook;
-use MediaWiki\Hook\ParserFetchTemplateDataHook;
-use MediaWiki\Hook\ParserFirstCallInitHook;
 use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\Hook\OutputPageBeforeHTMLHook;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Parser\Hook\ParserFetchTemplateDataHook;
+use MediaWiki\Parser\Hook\ParserFirstCallInitHook;
 use MediaWiki\Parser\Parser;
 use MediaWiki\Parser\PPFrame;
-use MediaWiki\Registration\ExtensionRegistry;
+use MediaWiki\Preferences\Hook\GetPreferencesHook;
 use MediaWiki\ResourceLoader\Hook\ResourceLoaderRegisterModulesHook;
 use MediaWiki\ResourceLoader\ResourceLoader;
 use MediaWiki\Revision\RenderedRevision;
-use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Status\Status;
 use MediaWiki\Storage\Hook\MultiContentSaveHook;
 use MediaWiki\Title\Title;
+use MediaWiki\User\Options\Hook\SaveUserOptionsHook;
+use MediaWiki\User\User;
 use MediaWiki\User\UserIdentity;
 
 /**
  * @license GPL-2.0-or-later
- * phpcs:disable MediaWiki.NamingConventions.LowerCamelFunctionsName
  */
 class Hooks implements
-	EditPage__showEditForm_fieldsHook,
 	ParserFirstCallInitHook,
 	MultiContentSaveHook,
 	ResourceLoaderRegisterModulesHook,
 	EditPage__showEditForm_initialHook,
 	ParserFetchTemplateDataHook,
-	OutputPageBeforeHTMLHook
+	OutputPageBeforeHTMLHook,
+	GetPreferencesHook,
+	SaveUserOptionsHook
 {
 
-	private Config $config;
-
-	public function __construct( Config $mainConfig ) {
-		$this->config = $mainConfig;
-	}
-
-	/**
-	 * @param EditPage $editPage
-	 * @param OutputPage $out
-	 */
-	public function onEditPage__showEditForm_fields( $editPage, $out ) {
-		// TODO: Remove when not needed any more, see T267926
-		if ( $out->getRequest()->getBool( 'TemplateDataGeneratorUsed' ) ) {
-			// Recreate the dynamically created field after the user clicked "preview"
-			$out->addHTML( Html::hidden( 'TemplateDataGeneratorUsed', true ) );
-		}
+	public function __construct( private readonly Config $config ) {
 	}
 
 	/**
@@ -65,14 +48,12 @@ class Hooks implements
 	 * @param Parser $parser
 	 */
 	public function onParserFirstCallInit( $parser ) {
-		$parser->setHook( 'templatedata', [ __CLASS__, 'render' ] );
+		$parser->setHook( 'templatedata', [ $this, 'render' ] );
 	}
 
 	/**
 	 * Conditionally register the jquery.uls.data module, in case they've already been
 	 * registered by the UniversalLanguageSelector extension or the VisualEditor extension.
-	 *
-	 * @param ResourceLoader $resourceLoader
 	 */
 	public function onResourceLoaderRegisterModules( ResourceLoader $resourceLoader ): void {
 		$resourceModules = $resourceLoader->getConfig()->get( 'ResourceModules' );
@@ -83,8 +64,8 @@ class Hooks implements
 					'localBasePath' => dirname( __DIR__ ),
 					'remoteExtPath' => 'TemplateData',
 					'scripts' => [
-						'lib/jquery.uls/src/jquery.uls.data.js',
-						'lib/jquery.uls/src/jquery.uls.data.utils.js',
+						'modules/lib/jquery.uls/jquery.uls.data.js',
+						'modules/lib/jquery.uls/jquery.uls.data.utils.js',
 					],
 				]
 			] );
@@ -121,53 +102,7 @@ class Hooks implements
 			return false;
 		}
 
-		// TODO: Remove when not needed any more, see T267926
-		self::logChangeEvent( $revisionRecord, $parserOutput->getPageProperty( 'templatedata' ), $user );
-
 		return true;
-	}
-
-	private static function logChangeEvent(
-		RevisionRecord $revisionRecord,
-		?string $newPageProperty,
-		UserIdentity $user
-	): void {
-		if ( !ExtensionRegistry::getInstance()->isLoaded( 'EventLogging' ) ) {
-			return;
-		}
-
-		$services = MediaWikiServices::getInstance();
-		$page = $revisionRecord->getPage();
-		$props = $services->getPageProps()->getProperties( $page, 'templatedata' );
-
-		$pageId = $page->getId();
-		// The JSON strings here are guaranteed to be normalized (and possibly compressed) the same
-		// way. No need to normalize them again for this comparison.
-		if ( $newPageProperty === ( $props[$pageId] ?? null ) ) {
-			return;
-		}
-
-		$generatorUsed = RequestContext::getMain()->getRequest()->getBool( 'TemplateDataGeneratorUsed' );
-		$userEditCount = $services->getUserEditTracker()->getUserEditCount( $user );
-		$userId = $services->getUserIdentityUtils()->isTemp( $user ) ? 0 : $user->getId();
-		// Note: We know that irrelevant changes (e.g. whitespace changes) aren't logged here
-		EventLogging::submit(
-			'eventlogging_TemplateDataEditor',
-			[
-				'$schema' => '/analytics/legacy/templatedataeditor/1.0.0',
-				'event' => [
-					// Note: The "Done" button is disabled unless something changed, which means it's
-					// very likely (but not guaranteed) the generator was used to make the changes
-					'action' => $generatorUsed ? 'save-tag-edit-generator-used' : 'save-tag-edit-no-generator',
-					'page_id' => $pageId,
-					'page_namespace' => $page->getNamespace(),
-					'page_title' => $page->getDBkey(),
-					'rev_id' => $revisionRecord->getId() ?? 0,
-					'user_edit_count' => $userEditCount ?? 0,
-					'user_id' => $userId,
-				],
-			]
-		);
 	}
 
 	/**
@@ -178,16 +113,17 @@ class Hooks implements
 	 */
 	public function onEditPage__showEditForm_initial( $editPage, $output ) {
 		if ( $this->config->get( 'TemplateDataUseGUI' ) ) {
-			$isTemplate = $output->getTitle()->inNamespace( NS_TEMPLATE );
-			if ( !$isTemplate ) {
-				// If we're outside the Template namespace, allow access to GUI
+			$editorNamespaces = $this->config->get( 'TemplateDataEditorNamespaces' );
+			$isEditorNamespace = $output->getTitle()->inNamespaces( $editorNamespaces );
+			if ( !$isEditorNamespace ) {
+				// If we're outside the editor namespaces, allow access to GUI
 				// if it's an existing page with <templatedate> (e.g. User template sandbox,
 				// or some other page that's intended to be transcluded for any reason).
 				$services = MediaWikiServices::getInstance();
 				$props = $services->getPageProps()->getProperties( $editPage->getTitle(), 'templatedata' );
-				$isTemplate = (bool)$props;
+				$isEditorNamespace = (bool)$props;
 			}
-			if ( $isTemplate ) {
+			if ( $isEditorNamespace ) {
 				$output->addModuleStyles( 'ext.templateDataGenerator.editTemplatePage.loading' );
 				$output->addHTML( '<div class="tdg-editscreen-placeholder"></div>' );
 				$output->addModules( 'ext.templateDataGenerator.editTemplatePage' );
@@ -208,7 +144,7 @@ class Hooks implements
 	 *
 	 * @return string HTML to insert in the page.
 	 */
-	public static function render( ?string $input, array $args, Parser $parser, PPFrame $frame ): string {
+	public function render( ?string $input, array $args, Parser $parser, PPFrame $frame ): string {
 		$parserOutput = $parser->getOutput();
 		$dbr = MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase();
 		$ti = TemplateDataBlob::newFromJSON( $dbr, $input ?? '' );
@@ -216,7 +152,7 @@ class Hooks implements
 		$status = $ti->getStatus();
 		if ( !$status->isOK() ) {
 			$parserOutput->setExtensionData( 'TemplateDataStatus', TemplateDataStatus::jsonSerialize( $status ) );
-			return Html::errorBox( $status->getHTML() );
+			return Html::errorBox( Status::wrap( $status )->getHTML() );
 		}
 
 		// Store the blob as page property for retrieval by ApiTemplateData.
@@ -343,6 +279,72 @@ class Hooks implements
 			$tplData[$tplTitle] = $tdb->getData();
 		}
 		return true;
+	}
+
+	/**
+	 * GetPreferences hook handler
+	 *
+	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/GetPreferences
+	 *
+	 * @param User $user
+	 * @param array &$defaultPreferences
+	 * @return bool|void True or no return value to continue or false to abort
+	 */
+	public function onGetPreferences( $user, &$defaultPreferences ) {
+		$defaultPreferences['templatedata-favorite-templates'] = [
+			'type' => 'api',
+		];
+	}
+
+	/**
+	 * SaveUserOptions hook handler
+	 *
+	 * Validates the favorite templates JSON array before saving it to the database.
+	 * - Removes duplicates
+	 * - Removes non-integer values
+	 * - Removes values less than 1
+	 * - Aborts if the array has more than wgTemplateDataMaxFavorites values
+	 *
+	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/SaveUserOptions
+	 *
+	 * @param UserIdentity $user
+	 * @param array &$modifiedOptions
+	 * @param array $originalOptions
+	 */
+	public function onSaveUserOptions( $user, &$modifiedOptions, $originalOptions ) {
+		if ( isset( $modifiedOptions['templatedata-favorite-templates'] ) ) {
+			$maximumFavorites = $this->config->get( 'TemplateDataMaxFavorites' );
+
+			$favoriteTemplates = json_decode( $modifiedOptions['templatedata-favorite-templates'] );
+			// If we can't decode the JSON, we don't want to save it
+			if ( $favoriteTemplates === null ) {
+				unset( $modifiedOptions['templatedata-favorite-templates'] );
+				return;
+			}
+
+			// Remove duplicates
+			$favoriteTemplates = array_unique( $favoriteTemplates );
+			// Filter out non-integers and values less than 1
+			$favoriteTemplates = array_filter( $favoriteTemplates, static function ( $favorite ) {
+				return is_int( $favorite ) && $favorite > 0;
+			} );
+			// Check if we have more than wgTemplateDataMaxFavorites values
+			if ( count( $favoriteTemplates ) > intval( $maximumFavorites ) ) {
+				unset( $modifiedOptions['templatedata-favorite-templates'] );
+				return;
+			}
+			// After these steps the indexes are not preserved, so we need to 're-index' the array
+			$favoriteTemplates = array_values( $favoriteTemplates );
+
+			$encodedFavorites = json_encode( $favoriteTemplates );
+			// If we can't encode the array, we don't want to save it
+			if ( $encodedFavorites === false ) {
+				unset( $modifiedOptions['templatedata-favorite-templates'] );
+				return;
+			}
+
+			$modifiedOptions['templatedata-favorite-templates'] = $encodedFavorites;
+		}
 	}
 
 }

@@ -1,0 +1,51 @@
+{
+	"name": "samwilson/unlinked-wikibase",
+	"description": "MediaWiki extension providing access to Wikibase entities from wikis that are not linked to a Wikibase site.",
+	"license": "gpl-2.0-or-later",
+	"type": "mediawiki-extension",
+	"homepage": "https://www.mediawiki.org/wiki/Extension:UnlinkedWikibase",
+	"keywords": [
+		"MediaWiki",
+		"Wikibase"
+	],
+	"authors": [
+		{
+			"name": "Sam Wilson",
+			"homepage": "https://samwilson.id.au",
+			"role": "developer"
+		}
+	],
+	"support": {
+		"issues": "https://phabricator.wikimedia.org/tag/mediawiki-extensions-unlinkedwikibase",
+		"source": "https://gerrit.wikimedia.org/r/mediawiki/extensions/UnlinkedWikibase"
+	},
+	"require-dev": {
+		"mediawiki/mediawiki-codesniffer": "45.0.0",
+		"mediawiki/mediawiki-phan-config": "0.14.0",
+		"mediawiki/minus-x": "1.1.3",
+		"php-parallel-lint/php-console-highlighter": "1.0.0",
+		"php-parallel-lint/php-parallel-lint": "1.4.0"
+	},
+	"scripts": {
+		"test": [
+			"composer validate",
+			"parallel-lint . --exclude vendor --exclude node_modules",
+			"@phpcs",
+			"minus-x check ."
+		],
+		"fix": [
+			"minus-x fix .",
+			"phpcbf"
+		],
+		"phan": "phan -d . --long-progress-bar",
+		"phpcs": "phpcs -sp --cache"
+	},
+	"extra": {
+		"installer-name": "UnlinkedWikibase"
+	},
+	"config": {
+		"allow-plugins": {
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		}
+	}
+}

@@ -1,0 +1,7 @@
+{
+  "component": "mediawiki/extensions/WikiCategoryTagCloud",
+  "baseline": "06f3d4674fa952b765ad6e776a648e2f987242b2",
+  "target": "521274a1db4a98dd46bd1344778308d4dd5ed25a",
+  "preserved_changes": [],
+  "dependency_status": "No runtime Composer packages or component lock; uses core platform dependencies"
+}

@@ -1,0 +1,26 @@
+{
+	"@metadata": {
+		"authors": [
+			"Augustus A C",
+			"Gazimagomedov",
+			"Omarov M.",
+			"Soul Train"
+		]
+	},
+	"nimbus-desc": "Nimbus куцлъи",
+	"nimbus-advertise": "Реклама",
+	"nimbus-contribute": "ХӀалтӀи",
+	"nimbus-didyouknow": "Лъалищ нужеда",
+	"nimbus-featuredimage": "Рекомендатинабулеб сурат",
+	"nimbus-featureduser": "Рекомендатинавулев гӀахьалчи",
+	"nimbus-login": "Жанире лӀугьине",
+	"nimbus-logout": "КъватӀире лӀугьинищ?",
+	"nimbus-more-actions": "ТӀадеги гьабелал",
+	"nimbus-more-wikis": "Цогидал вики-проектал",
+	"nimbus-pages-can-be-edited": "Гьаб гьумер хисизабизе бегьула.<br />\n\nГьеб тӀубараб гьечӀищ? Гьениб щиб букӀаниги мекъийищ бугеб?<br />\n\n<b>Хисизабе гьеб!</b>",
+	"nimbus-profile": "Профил",
+	"nimbus-recent-contributors": "Гьаб гьумералда ахирисел хӀалтӀаби гьарурал",
+	"nimbus-recent-contributors-info": "Хадусел гӀадамаз дагьалъ цебегӀан хӀалтӀи гьабуна гьаб гьумералда.",
+	"nimbus-signup": "Регистрация",
+	"nimbus-welcome": "{{GENDER:$2|ЛъикӀ щварав|ЛъикӀ щварай}}, $1"
+}

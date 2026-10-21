@@ -3,14 +3,14 @@
 const featuresEnabled = mw.config.get( 'wgDiscussionToolsFeaturesEnabled' ) || {},
 	MemoryStorage = require( './MemoryStorage.js' ),
 	STORAGE_EXPIRY = 60 * 60 * 24 * 30,
-	Parser = require( './Parser.js' ),
-	ThreadItemSet = require( './ThreadItemSet.js' ),
+	Parser = require( './commentparser/Parser.js' ),
+	ThreadItemSet = require( './commentparser/ThreadItemSet.js' ),
 	CommentDetails = require( './CommentDetails.js' ),
-	HeadingItem = require( './HeadingItem.js' ),
+	HeadingItem = require( './commentparser/HeadingItem.js' ),
 	ReplyLinksController = require( './ReplyLinksController.js' ),
-	utils = require( './utils.js' ),
+	clientUtils = require( './clientUtils.js' ),
+	commentUtils = require( './commentparser/commentUtils.js' ),
 	highlighter = require( './highlighter.js' ),
-	topicSubscriptions = require( './topicsubscriptions.js' ),
 	permalinks = require( './permalinks.js' ),
 	defaultEditMode = mw.user.options.get( 'discussiontools-editmode' ) || mw.config.get( 'wgDiscussionToolsFallbackEditMode' ),
 	defaultVisual = defaultEditMode === 'visual',
@@ -20,6 +20,7 @@ let
 	$pageContainer, linksController,
 	pageThreads,
 	lastControllerScrollOffset,
+	topicSubscriptions,
 	pageDataCache = {},
 	pageHandlersSetup = false;
 
@@ -27,9 +28,11 @@ let mobile = null;
 if ( OO.ui.isMobile() && mw.config.get( 'skin' ) === 'minerva' ) {
 	mobile = require( './mobile.js' );
 }
-require( './thanks.js' );
+if ( mw.loader.getState( 'ext.thanks' ) ) {
+	require( './thanks.js' );
+}
 
-mw.messages.set( require( './controller/contLangMessages.json' ) );
+mw.messages.set( require( './contLangMessages.json' ) );
 
 /**
  * Get an MW API instance
@@ -96,11 +99,11 @@ function getPageData( pageName, oldId, apiParams ) {
 			linterrors: linterrors,
 			transcludedfrom: transcludedfrom,
 			metadata: metadata
-		} ), () => {
+		} ), ( ...args ) => {
 			// Clear on failure
 			pageDataCache[ pageName ][ oldId ] = null;
 			// Let caller handle the error
-			return $.Deferred().rejectWith( this, arguments );
+			return $.Deferred().reject( ...args );
 		} );
 
 	if ( $.isEmptyObject( apiParams ) ) {
@@ -120,7 +123,7 @@ function getPageData( pageName, oldId, apiParams ) {
  *  Rejects with error data if the comment is transcluded, or there are lint errors on the page.
  */
 function checkThreadItemOnPage( pageName, oldId, threadItem ) {
-	const isNewTopic = threadItem.id === utils.NEW_TOPIC_COMMENT_ID;
+	const isNewTopic = threadItem.id === commentUtils.NEW_TOPIC_COMMENT_ID;
 	const defaultMode = mw.user.options.get( 'discussiontools-editmode' ) || mw.config.get( 'wgDiscussionToolsFallbackEditMode' );
 	let apiParams = null;
 	if ( isNewTopic ) {
@@ -318,12 +321,13 @@ function init( $container, state ) {
 		);
 	} );
 
-	const parser = new Parser( require( './parser/data.json' ) );
+	const parser = new Parser( require( './commentparser/data.json' ) );
 
 	const commentNodes = $pageContainer[ 0 ].querySelectorAll( '[data-mw-thread-id]' );
 	pageThreads = ThreadItemSet.static.newFromJSON( mw.config.get( 'wgDiscussionToolsPageThreads' ) || [], $pageContainer[ 0 ], parser );
 
 	if ( featuresEnabled.topicsubscription ) {
+		topicSubscriptions = require( './topicsubscriptions.js' );
 		topicSubscriptions.initTopicSubscriptions( $container, pageThreads );
 	}
 
@@ -349,7 +353,8 @@ function init( $container, state ) {
 	 * @param {jQuery} $link Add section link for new topic controller
 	 * @param {Object} [options] Options, see CommentController
 	 * @param {string} [options.mode] Optionally force a mode, 'visual' or 'source'
-	 * @param {boolean} [options.hideErrors] Suppress errors, e.g. when restoring auto-save
+	 * @param {boolean} [options.fromAutoSave] The comment has been restored from auto-save. Open the
+	 *   reply widget even if there are loading errors, to allow user to backup or discard it (T345986).
 	 * @param {boolean} [options.suppressNotifications] Don't notify the user if recovering auto-save
 	 * @param {MemoryStorage} [storage] Storage object for autosave
 	 */
@@ -359,7 +364,7 @@ function init( $container, state ) {
 		}
 
 		let commentController, $addSectionLink;
-		if ( comment.id === utils.NEW_TOPIC_COMMENT_ID ) {
+		if ( comment.id === commentUtils.NEW_TOPIC_COMMENT_ID ) {
 			// eslint-disable-next-line no-jquery/no-global-selector
 			$addSectionLink = $( '#ca-addsection' ).find( 'a' );
 			// When opening new topic tool using any link, always activate the link in page tabs too
@@ -409,7 +414,7 @@ function init( $container, state ) {
 
 	function newTopicComment( data ) {
 		const comment = new HeadingItem( {}, 2 );
-		comment.id = utils.NEW_TOPIC_COMMENT_ID;
+		comment.id = commentUtils.NEW_TOPIC_COMMENT_ID;
 		comment.isNewTopic = true;
 		Object.assign( comment, data );
 		return comment;
@@ -429,7 +434,7 @@ function init( $container, state ) {
 		}
 
 		let teardownPromise = $.Deferred().resolve();
-		if ( commentId === utils.NEW_TOPIC_COMMENT_ID ) {
+		if ( commentId === commentUtils.NEW_TOPIC_COMMENT_ID ) {
 			// If this is a new topic link, and a reply widget is open, attempt to close it first.
 			if ( activeController ) {
 				teardownPromise = activeController.tryTeardown();
@@ -452,7 +457,7 @@ function init( $container, state ) {
 				return;
 			}
 			let comment;
-			if ( commentId !== utils.NEW_TOPIC_COMMENT_ID ) {
+			if ( commentId !== commentUtils.NEW_TOPIC_COMMENT_ID ) {
 				comment = pageThreads.findCommentById( commentId );
 			} else {
 				comment = newTopicComment( data );
@@ -489,7 +494,7 @@ function init( $container, state ) {
 					setTimeout( () => {
 						setupController( comment, $link, {
 							mode: mode,
-							hideErrors: true,
+							fromAutoSave: true,
 							suppressNotifications: !state.firstLoad
 						}, replyStorage );
 					} );
@@ -498,12 +503,12 @@ function init( $container, state ) {
 			}
 			return true;
 		} );
-		const newTopicStorage = new MemoryStorage( mw.storage, 'mw-ext-DiscussionTools-reply/' + utils.NEW_TOPIC_COMMENT_ID, STORAGE_EXPIRY );
+		const newTopicStorage = new MemoryStorage( mw.storage, 'mw-ext-DiscussionTools-reply/' + commentUtils.NEW_TOPIC_COMMENT_ID, STORAGE_EXPIRY );
 		if ( newTopicStorage.get( 'saveable' ) || newTopicStorage.get( 'title' ) ) {
 			const mode = newTopicStorage.get( 'mode' );
 			setupController( newTopicComment(), $( [] ), {
 				mode: mode,
-				hideErrors: true,
+				fromAutoSave: true,
 				suppressNotifications: !state.firstLoad
 			}, newTopicStorage );
 		} else if ( mw.config.get( 'wgDiscussionToolsStartNewTopicTool' ) ) {
@@ -519,7 +524,7 @@ function init( $container, state ) {
 		if ( state.repliedTo ) {
 			highlighter.highlightPublishedComment( pageThreads, state.repliedTo );
 
-			if ( state.repliedTo === utils.NEW_TOPIC_COMMENT_ID ) {
+			if ( state.repliedTo === commentUtils.NEW_TOPIC_COMMENT_ID ) {
 				mw.hook( 'postEdit' ).fire( {
 					tempUserCreated: state.tempUserCreated,
 					message: mw.msg( 'discussiontools-postedit-confirmation-topicadded', mw.user )
@@ -536,7 +541,7 @@ function init( $container, state ) {
 
 		// Check topic subscription states if the user has automatic subscriptions enabled
 		// and has recently edited this page.
-		if ( featuresEnabled.autotopicsub && mw.user.options.get( 'discussiontools-autotopicsub' ) ) {
+		if ( topicSubscriptions && featuresEnabled.autotopicsub && mw.user.options.get( 'discussiontools-autotopicsub' ) ) {
 			topicSubscriptions.updateAutoSubscriptionStates( $container, pageThreads, state.repliedTo );
 		}
 	} );
@@ -553,7 +558,7 @@ function init( $container, state ) {
 		} );
 		// eslint-disable-next-line no-jquery/no-global-selector
 		$( 'body' ).on( 'click', ( e ) => {
-			if ( utils.isUnmodifiedLeftClick( e ) && !e.target.closest( 'a' ) ) {
+			if ( clientUtils.isUnmodifiedLeftClick( e ) && !e.target.closest( 'a' ) ) {
 				// Remove the highlight and the hash from the URL, unless clicking on another link
 				highlighter.clearHighlightTargetComment( pageThreads );
 			}
@@ -579,10 +584,23 @@ function init( $container, state ) {
 			// Only do the replacement if the original hash doesn't correspond to a target
 			// element, but the fixed hash does, to avoid affects on other apps which
 			// may use fragments with spaces.
-			if ( location.hash && !mw.util.getTargetFromFragment() && location.hash.indexOf( '%20' ) !== -1 ) {
+			if ( location.hash && !mw.util.getTargetFromFragment() && location.hash.includes( '%20' ) ) {
 				const fixedHash = location.hash.slice( 1 ).replace( /%20/g, '_' );
 				if ( mw.util.getTargetFromFragment( fixedHash ) ) {
 					location.hash = fixedHash;
+				}
+			}
+			// It's very common for automatic linking elsewhere (Slack!) to
+			// strip trailing punctuation, so do a very simple check on
+			// missing fragments for whether a version of them with common
+			// trailing punctuation exists.
+			if ( location.hash && !mw.util.getTargetFromFragment() ) {
+				for ( const punctuation of [ '?', '!', ':', '.', '"', '\'' ] ) {
+					const fixedHash = location.hash.slice( 1 ) + punctuation;
+					if ( mw.util.getTargetFromFragment( fixedHash ) ) {
+						location.hash = fixedHash;
+						break;
+					}
 				}
 			}
 			if (
@@ -619,16 +637,14 @@ function init( $container, state ) {
 				findCommentQuery = {
 					idorname: mw.util.percentDecodeFragment( highlightResult.requested[ 0 ] )
 				};
-				isHeading = highlightResult.requested[ 0 ].slice( 0, 1 ) === 'h';
+				isHeading = highlightResult.requested[ 0 ].startsWith( 'h' );
 			}
 			if ( findCommentQuery ) {
 				// TODO: Support multiple commentIds being requested and not all being found
-				const dtConf = require( './config.json' );
-				const findCommentRequest = dtConf.enablePermalinksFrontend ?
-					getApi().get( Object.assign( {
-						action: 'discussiontoolsfindcomment'
-					}, findCommentQuery ) ) :
-					$.Deferred().resolve( [ {} ] ).promise();
+				const findCommentRequest = getApi().get( Object.assign( {
+					action: 'discussiontoolsfindcomment'
+				}, findCommentQuery ) );
+
 				dismissableNotificationPromise = $.when(
 					findCommentRequest,
 					mw.loader.using( 'mediawiki.notification' )
@@ -701,7 +717,8 @@ function init( $container, state ) {
  * @param {Object} data Data from action=parse API
  */
 function updatePageContents( $container, data ) {
-	$container.find( '.mw-parser-output' ).first().replaceWith( data.parse.text );
+	// T386078: Use a more specified selector to prevent selecting the wrong element
+	$container.find( '> .mw-parser-output' ).first().replaceWith( data.parse.text );
 
 	mw.util.clearSubtitle();
 	mw.util.addSubtitle( data.parse.subtitle );

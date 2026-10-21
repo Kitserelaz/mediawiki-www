@@ -1,9 +1,9 @@
 <?php
 namespace MediaWiki\IPInfo\Test\Unit;
 
-use DatabaseLogEntry;
 use MediaWiki\Config\ServiceOptions;
 use MediaWiki\IPInfo\TempUserIPLookup;
+use MediaWiki\Logging\DatabaseLogEntry;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\User\UserIdentityUtils;
@@ -11,6 +11,7 @@ use MediaWiki\User\UserIdentityValue;
 use MediaWikiUnitTestCase;
 use Psr\Log\NullLogger;
 use Wikimedia\Assert\ParameterAssertionException;
+use Wikimedia\IPUtils;
 use Wikimedia\Rdbms\IConnectionProvider;
 use Wikimedia\Rdbms\IReadableDatabase;
 use Wikimedia\Rdbms\SelectQueryBuilder;
@@ -120,8 +121,10 @@ class TempUserIPLookupTest extends MediaWikiUnitTestCase {
 			->willReturn( true );
 
 		$this->extensionRegistry->method( 'isLoaded' )
-			->with( 'CheckUser' )
-			->willReturn( false );
+			->willReturnMap( [
+				[ 'CheckUser', '*', false ],
+				[ 'AbuseFilter', '*', false ]
+			] );
 
 		$this->connectionProvider->expects( $this->never() )
 			->method( 'getReplicaDatabase' );
@@ -135,7 +138,7 @@ class TempUserIPLookupTest extends MediaWikiUnitTestCase {
 	 * @dataProvider provideMostRecentAddressLookupResults
 	 */
 	public function testGetMostRecentAddressShouldCacheLookupsForTemporaryUser(
-		$result
+		mixed $result, ?string $expected
 	): void {
 		$user = new UserIdentityValue( 5, '~2024-8' );
 
@@ -147,18 +150,20 @@ class TempUserIPLookupTest extends MediaWikiUnitTestCase {
 			->willReturn( true );
 
 		$this->extensionRegistry->method( 'isLoaded' )
-			->with( 'CheckUser' )
-			->willReturn( true );
+			->willReturnMap( [
+				[ 'CheckUser', '*', true ],
+				[ 'AbuseFilter', '*', false ]
+			] );
 
 		$selectQueryBuilder = $this->createMock( SelectQueryBuilder::class );
 		$selectQueryBuilder->method( $this->logicalNot( $this->equalTo( 'fetchRow' ) ) )
 			->willReturnSelf();
 
 		$queryResults = [
-			$result ? (object)[ 'cuc_timestamp' => wfTimestampNow(), 'cuc_ip' => $result ] : false,
+			$result ? (object)[ 'cuc_timestamp' => wfTimestampNow(), 'cuc_ip_hex' => $result ] : false,
 			false
 		];
-		$selectQueryBuilder->expects( $this->exactly( 2 ) )
+		$selectQueryBuilder->expects( $this->exactly( 3 ) )
 			->method( 'fetchRow' )
 			->willReturnCallback( static function () use ( &$queryResults ) {
 				return array_shift( $queryResults );
@@ -175,15 +180,15 @@ class TempUserIPLookupTest extends MediaWikiUnitTestCase {
 		$address = $this->tempUserIPLookup->getMostRecentAddress( $user );
 		$secondLookup = $this->tempUserIPLookup->getMostRecentAddress( $user );
 
-		$expected = $result ?: null;
+		$expected ??= $result ?: null;
 
 		$this->assertSame( $expected, $address );
 		$this->assertSame( $expected, $secondLookup );
 	}
 
 	public static function provideMostRecentAddressLookupResults(): iterable {
-		yield 'valid IP' => [ '192.0.2.7' ];
-		yield 'missing data' => [ false ];
+		yield 'valid IP' => [ IPUtils::toHex( '192.0.2.7' ), '192.0.2.7' ];
+		yield 'missing data' => [ false, null ];
 	}
 
 	public function testGetMostRecentAddressShouldVaryCachePerUser(): void {
@@ -203,20 +208,25 @@ class TempUserIPLookupTest extends MediaWikiUnitTestCase {
 			->willReturn( true );
 
 		$this->extensionRegistry->method( 'isLoaded' )
-			->with( 'CheckUser' )
-			->willReturn( true );
+			->willReturnMap( [
+				[ 'CheckUser', '*', true ],
+				[ 'AbuseFilter', '*', false ]
+			] );
 
 		$selectQueryBuilder = $this->createMock( SelectQueryBuilder::class );
 		$selectQueryBuilder->method( $this->logicalNot( $this->equalTo( 'fetchRow' ) ) )
 			->willReturnSelf();
 
+		// Mock queries to cu_changes, cu_log_event, cu_private_event in that order x2
 		$queryResults = [
-			(object)[ 'cuc_timestamp' => wfTimestampNow(), 'cuc_ip' => '192.0.2.7' ],
+			(object)[ 'cuc_timestamp' => wfTimestampNow(), 'cuc_ip_hex' => IPUtils::toHex( '192.0.2.7' ) ],
 			false,
-			(object)[ 'cuc_timestamp' => wfTimestampNow(), 'cuc_ip' => '192.0.2.85' ],
-			false
+			false,
+			(object)[ 'cuc_timestamp' => wfTimestampNow(), 'cuc_ip_hex' => IPUtils::toHex( '192.0.2.85' ) ],
+			false,
+			false,
 		];
-		$selectQueryBuilder->expects( $this->exactly( 4 ) )
+		$selectQueryBuilder->expects( $this->exactly( 6 ) )
 			->method( 'fetchRow' )
 			->willReturnCallback( static function () use ( &$queryResults ) {
 				return array_shift( $queryResults );
@@ -251,14 +261,16 @@ class TempUserIPLookupTest extends MediaWikiUnitTestCase {
 			->willReturn( true );
 
 		$this->extensionRegistry->method( 'isLoaded' )
-			->with( 'CheckUser' )
-			->willReturn( true );
+			->willReturnMap( [
+				[ 'CheckUser', '*', true ],
+				[ 'AbuseFilter', '*', false ]
+			] );
 
 		$selectQueryBuilder = $this->createMock( SelectQueryBuilder::class );
 		$selectQueryBuilder->method( $this->logicalNot( $this->equalTo( 'fetchRow' ) ) )
 			->willReturnSelf();
 
-		$selectQueryBuilder->expects( $this->exactly( 2 ) )
+		$selectQueryBuilder->expects( $this->exactly( 3 ) )
 			->method( 'fetchRow' )
 			->willReturnCallback( static function () use ( &$queryResults ) {
 				return array_shift( $queryResults );
@@ -281,21 +293,47 @@ class TempUserIPLookupTest extends MediaWikiUnitTestCase {
 		yield 'no data in cu_changes' => [
 			[
 				false,
-				(object)[ 'cule_timestamp' => wfTimestampNow(), 'cule_ip' => '192.0.2.85' ],
+				(object)[ 'cule_timestamp' => wfTimestampNow(), 'cule_ip_hex' => IPUtils::toHex( '192.0.2.85' ) ],
+				false,
 			]
 		];
 
 		yield 'more recent data in cu_changes' => [
 			[
-				(object)[ 'cuc_timestamp' => wfTimestampNow(), 'cuc_ip' => '192.0.2.85' ],
-				(object)[ 'cule_timestamp' => wfTimestamp( TS_MW, wfTimestamp() - 1_000 ), 'cule_ip' => '192.0.2.7' ],
+				(object)[ 'cuc_timestamp' => wfTimestampNow(), 'cuc_ip_hex' => IPUtils::toHex( '192.0.2.85' ) ],
+				false,
+				false,
 			]
 		];
 
-		yield 'more recent data in cu_log_events' => [
+		yield 'more recent data in cu_log_event' => [
 			[
-				(object)[ 'cuc_timestamp' => wfTimestamp( TS_MW, wfTimestamp() - 1_000 ), 'cuc_ip' => '192.0.2.7' ],
-				(object)[ 'cule_timestamp' => wfTimestampNow(), 'cule_ip' => '192.0.2.85' ],
+				(object)[
+					'cuc_timestamp' => wfTimestamp( TS_MW, wfTimestamp() - 1_000 ),
+					'cuc_ip_hex' => IPUtils::toHex( '192.0.2.7' ),
+				],
+				(object)[
+					'cule_timestamp' => wfTimestampNow(),
+					'cule_ip_hex' => IPUtils::toHex( '192.0.2.85' ),
+				],
+				false,
+			]
+		];
+
+		yield 'more recent data in cu_private_event' => [
+			[
+				(object)[
+					'cuc_timestamp' => wfTimestamp( TS_MW, wfTimestamp() - 1_000 ),
+					'cuc_ip_hex' => IPUtils::toHex( '192.0.2.7' ),
+				],
+				(object)[
+					'cule_timestamp' => wfTimestamp( TS_MW, wfTimestamp() - 1_000 ),
+					'cule_ip_hex' => IPUtils::toHex( '192.0.2.7' ),
+				],
+				(object)[
+					'cupe_timestamp' => wfTimestampNow(),
+					'cupe_ip_hex' => IPUtils::toHex( '192.0.2.85' ),
+				],
 			]
 		];
 	}

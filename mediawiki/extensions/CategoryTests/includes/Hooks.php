@@ -1,0 +1,32 @@
+<?php
+
+namespace MediaWiki\Extension\CategoryTests;
+
+use MediaWiki\Parser\MagicWordFactory;
+use MediaWiki\Parser\Parser;
+use Wikimedia\Rdbms\IConnectionProvider;
+
+class Hooks implements
+	\MediaWiki\Hook\ParserFirstCallInitHook
+{
+	private readonly CategoryTests $categoryTests;
+
+	public function __construct(
+		IConnectionProvider $dbProvider,
+		MagicWordFactory $magicWordFactory,
+	) {
+		$this->categoryTests = new CategoryTests(
+			$dbProvider,
+			$magicWordFactory
+		);
+	}
+
+	/**
+	 * @param Parser $parser
+	 */
+	public function onParserFirstCallInit( $parser ) {
+		$parser->setFunctionHook( 'ifcategory', [ $this->categoryTests, 'ifcategory' ] );
+		$parser->setFunctionHook( 'ifnocategories', [ $this->categoryTests, 'ifnocategories' ] );
+		$parser->setFunctionHook( 'switchcategory', [ $this->categoryTests, 'switchcategory' ] );
+	}
+}

@@ -2,12 +2,12 @@
 
 namespace MediaWiki\Extension\AbuseFilter;
 
-use ManualLogEntry;
 use MediaWiki\Extension\AbuseFilter\ChangeTags\ChangeTagsManager;
 use MediaWiki\Extension\AbuseFilter\Consequences\ConsequencesRegistry;
 use MediaWiki\Extension\AbuseFilter\Filter\Filter;
 use MediaWiki\Extension\AbuseFilter\Filter\Flags;
 use MediaWiki\Extension\AbuseFilter\Special\SpecialAbuseFilter;
+use MediaWiki\Logging\ManualLogEntry;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Status\Status;
 use MediaWiki\User\ActorNormalization;
@@ -18,66 +18,19 @@ use Wikimedia\Rdbms\LBFactory;
  * @internal
  */
 class FilterStore {
-	public const SERVICE_NAME = 'AbuseFilterFilterStore';
+	public const SERVICE_NAME = ServiceNames::FilterStore;
 
-	/** @var ConsequencesRegistry */
-	private $consequencesRegistry;
-
-	/** @var LBFactory */
-	private $lbFactory;
-
-	/** @var ActorNormalization */
-	private $actorNormalization;
-
-	/** @var FilterProfiler */
-	private $filterProfiler;
-
-	/** @var FilterLookup */
-	private $filterLookup;
-
-	/** @var ChangeTagsManager */
-	private $tagsManager;
-
-	/** @var FilterValidator */
-	private $filterValidator;
-
-	/** @var FilterCompare */
-	private $filterCompare;
-
-	/** @var EmergencyCache */
-	private $emergencyCache;
-
-	/**
-	 * @param ConsequencesRegistry $consequencesRegistry
-	 * @param LBFactory $lbFactory
-	 * @param ActorNormalization $actorNormalization
-	 * @param FilterProfiler $filterProfiler
-	 * @param FilterLookup $filterLookup
-	 * @param ChangeTagsManager $tagsManager
-	 * @param FilterValidator $filterValidator
-	 * @param FilterCompare $filterCompare
-	 * @param EmergencyCache $emergencyCache
-	 */
 	public function __construct(
-		ConsequencesRegistry $consequencesRegistry,
-		LBFactory $lbFactory,
-		ActorNormalization $actorNormalization,
-		FilterProfiler $filterProfiler,
-		FilterLookup $filterLookup,
-		ChangeTagsManager $tagsManager,
-		FilterValidator $filterValidator,
-		FilterCompare $filterCompare,
-		EmergencyCache $emergencyCache
+		private readonly ConsequencesRegistry $consequencesRegistry,
+		private readonly LBFactory $lbFactory,
+		private readonly ActorNormalization $actorNormalization,
+		private readonly FilterProfiler $filterProfiler,
+		private readonly FilterLookup $filterLookup,
+		private readonly ChangeTagsManager $tagsManager,
+		private readonly FilterValidator $filterValidator,
+		private readonly FilterCompare $filterCompare,
+		private readonly EmergencyCache $emergencyCache
 	) {
-		$this->consequencesRegistry = $consequencesRegistry;
-		$this->lbFactory = $lbFactory;
-		$this->actorNormalization = $actorNormalization;
-		$this->filterProfiler = $filterProfiler;
-		$this->filterLookup = $filterLookup;
-		$this->tagsManager = $tagsManager;
-		$this->filterValidator = $filterValidator;
-		$this->filterCompare = $filterCompare;
-		$this->emergencyCache = $emergencyCache;
 	}
 
 	/**
@@ -112,9 +65,8 @@ class FilterStore {
 		}
 
 		// Everything went fine, so let's save the filter
-		$wasGlobal = $originalFilter->isGlobal();
 		[ $newID, $historyID ] = $this->doSaveFilter(
-			$performer->getUser(), $newFilter, $originalFilter, $differences, $filterId, $wasGlobal );
+			$performer->getUser(), $newFilter, $originalFilter, $differences, $filterId );
 		return Status::newGood( [ $newID, $historyID ] );
 	}
 
@@ -126,7 +78,6 @@ class FilterStore {
 	 * @param Filter $originalFilter
 	 * @param array $differences
 	 * @param int|null $filterId
-	 * @param bool $wasGlobal
 	 * @return int[] first element is new ID, second is history ID
 	 */
 	private function doSaveFilter(
@@ -134,8 +85,7 @@ class FilterStore {
 		Filter $newFilter,
 		Filter $originalFilter,
 		array $differences,
-		?int $filterId,
-		bool $wasGlobal
+		?int $filterId
 	): array {
 		$dbw = $this->lbFactory->getPrimaryDatabase();
 		$newRow = $this->filterToDatabaseRow( $newFilter, $originalFilter );
@@ -208,6 +158,9 @@ class FilterStore {
 		$afhRow['afh_changed_fields'] = implode( ',', $differences );
 
 		$flags = [];
+		if ( FilterUtils::isSuppressed( $newRow['af_hidden'] ) ) {
+			$flags[] = 'suppressed';
+		}
 		if ( FilterUtils::isHidden( $newRow['af_hidden'] ) ) {
 			$flags[] = 'hidden';
 		}
@@ -253,7 +206,7 @@ class FilterStore {
 		$dbw->endAtomic( __METHOD__ );
 
 		// Invalidate cache if this was a global rule
-		if ( $wasGlobal || $newRow['af_global'] ) {
+		if ( $originalFilter->isGlobal() || $newRow['af_global'] ) {
 			$this->filterLookup->purgeGroupWANCache( $newRow['af_group'] );
 		}
 
@@ -291,6 +244,9 @@ class FilterStore {
 
 		// If the filter is already protected, it must remain protected even if
 		// the current filter doesn't use a protected variable anymore
+		// FIXME: Responsibility for this is currently unclear. It should be
+		// enforced prior to the FilterCompare::compareVersions call to avoid
+		// dummy filter versions.
 		$privacyLevel = $filter->getPrivacyLevel();
 		if ( $originalFilter->isProtected() ) {
 			$privacyLevel |= Flags::FILTER_USES_PROTECTED_VARS;

@@ -1,0 +1,61 @@
+{
+	"manifest_version": 2,
+	"name": "ArticleCreationWorkflow",
+	"type": "other",
+	"author": [
+		"Max Semenik",
+		"Niharika Kohli"
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:ArticleCreationWorkflow",
+	"descriptionmsg": "acw-desc",
+	"license-name": "MIT",
+	"requires": {
+		"MediaWiki": ">= 1.42"
+	},
+	"Hooks": {
+		"GetActionName": "main",
+		"BeforeDisplayNoArticleText": "main",
+		"TitleQuickPermissions": "main"
+	},
+	"HookHandlers": {
+		"main": {
+			"class": "ArticleCreationWorkflow\\Hooks"
+		}
+	},
+	"AutoloadNamespaces": {
+		"ArticleCreationWorkflow\\": "includes/"
+	},
+	"MessagesDirs": {
+		"ArticleCreationWorkflow": [
+			"i18n"
+		]
+	},
+	"GroupPermissions": {
+		"*": {
+			"createpagemainns": true
+		},
+		"user": {
+			"createpagemainns": true
+		},
+		"autoconfirmed": {
+			"createpagemainns": true
+		}
+	},
+	"GrantPermissions": {
+		"createeditmovepage": {
+			"createpagemainns": true
+		}
+	},
+	"AvailableRights": [
+		"createpagemainns"
+	],
+	"config": {
+		"ArticleCreationLandingPage": {
+			"description": "The name of the wiki page which should replace the default message when intercepting.",
+			"value": "Project:Article wizard"
+		}
+	},
+	"ConfigRegistry": {
+		"ArticleCreationWorkflow": "GlobalVarConfig::newInstance"
+	}
+}

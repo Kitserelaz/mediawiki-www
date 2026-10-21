@@ -1,0 +1,7 @@
+{
+  "component": "mediawiki/extensions/GoogleNewsSitemap",
+  "baseline": "03c6043020858760b211f1d6609707fb04ceeb45",
+  "target": "b9a33f1bdfe1a4897923c40f05c9419bd2e5ae01",
+  "preserved_changes": [],
+  "dependency_status": "No runtime Composer packages or component lock; uses core platform dependencies"
+}

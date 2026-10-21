@@ -1,6 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
+			"BOKOBA VEROLY",
 			"Cgmbo",
 			"Woytecr"
 		]
@@ -30,7 +31,6 @@
 	"discussiontools-newtopic-placeholder-title": "Ntu-diambu",
 	"discussiontools-notification-subscribed-new-comment-header": "$1{{GENDER:$2|}} pesaka mvutu na “<strong>$4</strong>”.",
 	"discussiontools-notification-subscribed-new-comment-header-bundled": "{{PLURAL:$1|Mvutu mosi ya mpa|$1 bamvutu ya mpa|100=99+ bamvutu ya mpa}} na \"<strong>$3</strong>\".",
-	"discussiontools-notification-subscribed-new-comment-header-compact": "$1: <em>$3</em>.",
 	"discussiontools-notification-subscribed-new-comment-view": "Tala komantere",
 	"discussiontools-postedit-confirmation-published": "Bo me basisa komantere na nge.",
 	"discussiontools-postedit-confirmation-topicadded": "Bo me yika disolo na nge.",
@@ -65,17 +65,16 @@
 	"discussiontools-replywidget-mention-tool-title": "Tubila muntu mosi",
 	"discussiontools-replywidget-mode-source": "Kisina",
 	"discussiontools-replywidget-mode-visual": "Ya ke monana",
-	"discussiontools-replywidget-newtopic": "Yika disolo",
+	"discussiontools-replywidget-newtopic": "Yika disolo{{GENDER:|}}",
 	"discussiontools-replywidget-placeholder-newtopic": "Ntendula",
 	"discussiontools-replywidget-placeholder-reply": "Mvutu na {{BIDI:$1}}",
 	"discussiontools-replywidget-preview": "Kutala na ntwala",
-	"discussiontools-replywidget-reply": "Mvutu",
+	"discussiontools-replywidget-reply": "Mvutu\n\n Katula",
 	"discussiontools-replywidget-signature-body": "$1 me kuma siniatire na nge. Sambu na kukatula yo, sonika $2. Zaba nde nge fwete tula ve siniatire na komantere na kisadilu yai. Siniatire na nge ta yikama yo mosi.",
 	"discussiontools-replywidget-signature-title": "Beto me mona kidimbu ya siniatire",
 	"discussiontools-replywidget-summary": "Bunkufi",
 	"discussiontools-replywidget-terms-click": "Kana nge bweta na \"$1\", nge me ndima kusadila mambu ya kuzitisa na ntwala ya kusadila wiki yai.",
 	"discussiontools-replywidget-transcluded": "Bo ta buma komantere na nge na [[$1]].",
-	"discussiontools-signature-prefix": "&#32;",
 	"discussiontools-topicsubscription-action-unsubscribe-button": "Katula zina",
 	"discussiontools-topicsubscription-action-unsubscribe-prompt": "Katula zina na disolo yai?",
 	"discussiontools-topicsubscription-button-subscribe": "sonikisa zina",
@@ -94,9 +93,9 @@
 	"tag-discussiontools-description": "Nge me sonika na nzila ya BisadiluyaDisolo",
 	"tag-discussiontools-edit": "Bongisa komantere",
 	"tag-discussiontools-edit-description": "Muntu me yidika komantere ya ntama na BisadiluyaDisolo",
-	"tag-discussiontools-newtopic": "[{{int:discussiontools-replywidget-newtopic-link}} Disolo ya mpa]",
+	"tag-discussiontools-newtopic": "Disolo ya mpa",
 	"tag-discussiontools-newtopic-description": "Muntu me yika disolo ya mpa na lutiti na nsadisa ya BisadiluyaDisolo",
-	"tag-discussiontools-reply": "[{{int:discussiontools-replywidget-reply-link}} Mvutu]",
+	"tag-discussiontools-reply": "Mvutu",
 	"tag-discussiontools-reply-description": "Muntu me pesa mvutu na komantere na nsadisa ya BisadiluyaDisolo",
 	"tag-discussiontools-source-description": "BisadiluyaDisolo vandaka na mode kisina",
 	"tag-discussiontools-source-enhanced-description": "Bo me tomisa BisadiluyaDisolo na mode kisina na nsadisa ya barre ya bisadilu",

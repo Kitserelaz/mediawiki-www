@@ -1,0 +1,130 @@
+{
+	"name": "Nimbus",
+	"namemsg": "skinname-nimbus",
+	"version": "3.6.0",
+	"author": [
+		"Aaron Wright",
+		"David Pean",
+		"Inez Korczyński",
+		"Jack Phoenix"
+	],
+	"url": "https://www.mediawiki.org/wiki/Skin:Nimbus",
+	"license-name": "GPL-2.0-or-later",
+	"descriptionmsg": "nimbus-desc",
+	"type": "skin",
+	"requires": {
+		"MediaWiki": ">= 1.39"
+	},
+	"ConfigRegistry": {
+		"nimbus": "GlobalVarConfig::newInstance"
+	},
+	"ValidSkinNames": {
+		"nimbus": {
+			"class": "SkinNimbus",
+			"args": [
+				{
+					"name": "nimbus",
+					"bodyOnly": true,
+					"styles": [
+						"skins.nimbus"
+					]
+				}
+			]
+		}
+	},
+	"MessagesDirs": {
+		"SkinNimbus": [
+			"i18n"
+		]
+	},
+	"AutoloadClasses": {
+		"NimbusTemplate": "includes/NimbusTemplate.php",
+		"SkinNimbus": "includes/SkinNimbus.php"
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "",
+		"remoteSkinPath": "Nimbus"
+	},
+	"ResourceModules": {
+		"skins.nimbus": {
+			"class": "MediaWiki\\ResourceLoader\\SkinModule",
+			"features": {
+				"content-links": true,
+				"content-links-external": true,
+				"content-media": true,
+				"interface-message-box": true,
+				"interface-category": true,
+				"content-tables": true,
+				"i18n-ordered-lists": true,
+				"i18n-all-lists-margins": true,
+				"i18n-headings": true,
+				"elements": true,
+				"interface": true,
+				"logo": true
+			},
+			"styles": {
+				"nimbus/Nimbus.css": {
+					"media": "screen"
+				},
+				"resources/extensions/extensions.less": {
+					"media": "screen"
+				},
+				"resources/styles/skin.nimbus.buttons.less": {
+					"media": "screen"
+				},
+				"resources/styles/skin.nimbus.navigation.less": {
+					"media": "screen"
+				},
+				"resources/styles/skin.nimbus.actiontabs.less": {
+					"media": "screen"
+				},
+				"resources/styles/skin.nimbus.footer.less": {
+					"media": "screen"
+				},
+				"resources/styles/skin.nimbus.login.less": {
+					"media": "screen"
+				},
+				"resources/styles/skin.nimbus.hacks.clear.less": {
+					"media": "screen"
+				},
+				"resources/styles/skin.nimbus.hacks.shoutwiki.less": {
+					"media": "screen"
+				},
+				"resources/styles/print.less": {
+					"media": "print"
+				}
+			}
+		},
+		"skins.nimbus.menu": {
+			"scripts": "nimbus/Menu.js"
+		}
+	},
+	"ResourceModuleSkinStyles": {
+		"nimbus": {
+			"+ext.blogPage": "resources/extensions/BlogPage/ext.blogPage.css",
+			"+ext.blogPage.articlesHome": "resources/extensions/BlogPage/articlesHome.css",
+			"+ext.blogPage.create.css": "resources/extensions/BlogPage/create.css",
+			"ext.echo.ui": "resources/extensions/Echo/echo.ui.overlay.css",
+			"+ext.echo.styles.badge": "resources/extensions/Echo/echo.ui.css",
+			"+ext.miniInvite.css": "resources/extensions/ext.miniInvite.css",
+			"+ext.pollNY.css": "resources/extensions/ext.pollNY.css",
+			"+ext.quizGame.css": "resources/extensions/ext.quizGame.css",
+			"+ext.socialprofile.userboard.boardblast.css": "resources/extensions/SocialProfile/userboard.boardblast.css",
+			"+ext.socialprofile.usergifts.css": "resources/extensions/SocialProfile/usergifts.css",
+			"+ext.socialprofile.userprofile.css": "resources/extensions/SocialProfile/userprofile.css",
+			"+ext.socialprofile.userrelationship.css": "resources/extensions/SocialProfile/userrelationship.css",
+			"+oojs-ui-core.styles": "resources/ooui.less"
+		}
+	},
+	"config": {
+		"NimbusRecentEditors": {
+			"value": false,
+			"description": "Show recent editors' avatars in the page footer (for pages in the namespaces defined in $wgNimbusRecentEditorsNamespaces, by default: NS_MAIN, NS_FILE and NS_VIDEO)? Note that this requires the SocialProfile extension to be installed."
+		},
+		"NimbusRecentEditorsNamespaces": {
+			"value": [ 0, 6, 400 ],
+			"description": "Namespaces for which the \"recent editors' avatars\" feature ($wgNimbusRecentEditors) is enabled; by default these are 0 (NS_MAIN), 6 (NS_FILE) and 400 (NS_VIDEO, defined by the Video extension)"
+		}
+	},
+	"manifest_version": 2
+}

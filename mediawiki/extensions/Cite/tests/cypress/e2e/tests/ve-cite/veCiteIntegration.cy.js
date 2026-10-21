@@ -1,3 +1,4 @@
+require( '@cypress/skip-test/support' );
 import * as helper from './../../utils/functions.helper.js';
 import * as veHelper from './../../utils/ve.helper.js';
 
@@ -15,16 +16,17 @@ let usesCitoid;
 
 describe( 'Visual Editor Cite Integration', () => {
 	before( () => {
+		veHelper.checkModuleDependencies().then( ( deps ) => {
+			cy.skipOn( !deps.visualEditor );
+			usesCitoid = deps.citoid;
+		} );
+
 		helper.editPage( title, wikiText );
 	} );
 
 	beforeEach( () => {
 		helper.visitTitle( title );
 		helper.waitForMWLoader();
-
-		cy.window().then( async ( win ) => {
-			usesCitoid = win.mw.loader.getModuleNames().includes( 'ext.citoid.visualEditor' );
-		} );
 
 		veHelper.setVECookiesToDisableDialogs();
 		veHelper.openVEForEditingReferences( title, usesCitoid );
@@ -49,7 +51,7 @@ describe( 'Visual Editor Cite Integration', () => {
 
 	it( 'should display existing references in the Cite re-use dialog', () => {
 		if ( usesCitoid ) {
-			veHelper.openVECiteoidReuseDialog();
+			veHelper.openVECitoidReuseDialog();
 
 		} else {
 			veHelper.openVECiteReuseDialog();

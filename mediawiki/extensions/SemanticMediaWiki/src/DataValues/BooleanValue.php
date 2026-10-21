@@ -1,0 +1,290 @@
+<?php
+
+namespace SMW\DataValues;
+
+use MediaWiki\Parser\Sanitizer;
+use SMW\DataItems\Boolean;
+use SMW\DataItems\DataItem;
+use SMW\Localizer\Localizer;
+use SMW\Localizer\Message;
+
+/**
+ * This datavalue implements the handling of Boolean datavalues.
+ *
+ * @license GPL-2.0-or-later
+ * @since 2.4
+ *
+ * @author Markus Krötzsch
+ * @author mwjames
+ */
+class BooleanValue extends DataValue {
+
+	/**
+	 * The text to write for "true" if a custom output format was set.
+	 *
+	 * @var string|int
+	 */
+	protected $trueCaption;
+
+	/**
+	 * The text to write for "false" if a custom output format was set.
+	 *
+	 * @var string|int
+	 */
+	protected $falseCaption;
+
+	/**
+	 * @param string $typeid
+	 */
+	public function __construct( $typeid = '' ) {
+		parent::__construct( $typeid );
+	}
+
+	/**
+	 * @see DataValue::parseUserValue
+	 */
+	protected function parseUserValue( $value ): void {
+		$value = trim( $value );
+
+		if ( $this->m_caption === false ) {
+			$this->m_caption = $value;
+		}
+
+		$this->m_dataitem = new Boolean(
+			$this->doParseBoolValue( $value )
+		);
+	}
+
+	/**
+	 * @see DataValue::loadDataItem
+	 *
+	 * @param DataItem $dataItem
+	 *
+	 * @return bool
+	 */
+	protected function loadDataItem( DataItem $dataItem ): bool {
+		if ( $dataItem->getDIType() !== DataItem::TYPE_BOOLEAN ) {
+			return false;
+		}
+
+		$this->m_dataitem = $dataItem;
+		$this->m_caption = $this->getStandardCaption( true );
+
+		return true;
+	}
+
+	/**
+	 * @see DataValue::setOutputFormat
+	 */
+	public function setOutputFormat( $formatstring ): void {
+		if ( $formatstring == $this->m_outformat ) {
+			return;
+		}
+
+		// @phan-suppress-next-line PhanTypeObjectUnsetDeclaredProperty
+		unset( $this->trueCaption );
+		// @phan-suppress-next-line PhanTypeObjectUnsetDeclaredProperty
+		unset( $this->falseCaption );
+
+		if ( $formatstring === '' ) { // no format
+			// (unsetting the captions is exactly the right thing here)
+		} elseif ( strtolower( $formatstring ) == '-' ) { // "plain" format
+			$this->trueCaption = 'true';
+			$this->falseCaption = 'false';
+		} elseif ( strtolower( $formatstring ) == 'num' ) { // "numeric" format
+			$this->trueCaption = 1;
+			$this->falseCaption = 0;
+		} elseif ( strtolower( $formatstring ) == 'tick' ) { // "tick" format
+			$this->trueCaption = '✓';
+			$this->falseCaption = '✕';
+		} elseif ( strtolower( $formatstring ) == 'x' ) { // X format
+			$this->trueCaption = '<span style="font-family: sans-serif; ">X</span>';
+			$this->falseCaption = '&nbsp;';
+		} else { // format "truelabel, falselabel" (hopefully)
+			$captions = explode( ',', $formatstring, 2 );
+			if ( count( $captions ) == 2 ) {
+				// note: escaping needed to be safe; MW-sanitising would be an alternative
+				$this->trueCaption = Sanitizer::removeSomeTags( trim( $captions[0] ) );
+				$this->falseCaption = Sanitizer::removeSomeTags( trim( $captions[1] ) );
+			} // else: no format that is recognised, ignore
+		}
+
+		// Localized version
+		if ( strpos( $formatstring, 'LOCL' ) !== false ) {
+			$this->setLocalizedCaptions( $formatstring );
+		}
+
+		$this->m_caption = $this->getStandardCaption( true );
+		$this->m_outformat = $formatstring;
+	}
+
+	/**
+	 * @see DataValue::getShortWikiText
+	 */
+	public function getShortWikiText( $linker = null ) {
+		return $this->m_caption;
+	}
+
+	/**
+	 * @see DataValue::getShortHTMLText
+	 */
+	public function getShortHTMLText( $linker = null ) {
+		return $this->m_caption;
+	}
+
+	/**
+	 * @see DataValue::getLongWikiText
+	 */
+	public function getLongWikiText( $linker = null ) {
+		return $this->isValid() ? $this->getStandardCaption( true ) : $this->getErrorText();
+	}
+
+	/**
+	 * @see DataValue::getLongHTMLText
+	 */
+	public function getLongHTMLText( $linker = null ) {
+		return $this->isValid() ? $this->getStandardCaption( true ) : $this->getErrorText();
+	}
+
+	/**
+	 * @see DataValue::getWikiValue
+	 */
+	public function getWikiValue(): mixed {
+		return $this->getFirstBooleanCaptionFrom(
+			$this->isValid() && $this->m_dataitem->getBoolean() ? 'smw_true_words' : 'smw_false_words',
+			Message::CONTENT_LANGUAGE
+		);
+	}
+
+	/**
+	 * @since 1.6
+	 *
+	 * @return bool
+	 */
+	public function getBoolean(): bool {
+		return !$this->isValid() ? false : $this->m_dataitem->getBoolean();
+	}
+
+	/**
+	 * Get text for displaying the value of this property, or false if not
+	 * valid.
+	 *
+	 * @param $useformat bool, true if the output format should be used, false if the returned text should be parsable
+	 *
+	 * @return string|int|false
+	 */
+	protected function getStandardCaption( $useformat ) {
+		if ( !$this->isValid() ) {
+			return false;
+		}
+
+		// @phan-suppress-next-line MediaWikiNoIssetIfDefined
+		if ( $useformat && ( isset( $this->trueCaption ) ) ) {
+			return $this->m_dataitem->getBoolean() ? $this->trueCaption : $this->falseCaption;
+		}
+
+		return $this->getFirstBooleanCaptionFrom(
+			$this->m_dataitem->getBoolean() ? 'smw_true_words' : 'smw_false_words',
+			$this->getOption( 'content.language' )
+		);
+	}
+
+	private function doParseBoolValue( string $value ): bool {
+		// Use either the global or page related content language
+		$contentLanguage = $this->getOption( 'content.language' );
+
+		$lcv = mb_strtolower( $value );
+
+		if ( $lcv === '1' ) {
+			return true;
+		}
+
+		if ( $lcv === '0' ) {
+			return false;
+		}
+
+		if (
+			in_array(
+				$lcv,
+				$this->getBooleanWordsFrom(
+					'smw_true_words',
+					$contentLanguage,
+					'true'
+				),
+				true
+			)
+		) {
+			return true;
+		}
+
+		if (
+			in_array(
+				$lcv,
+				$this->getBooleanWordsFrom(
+					'smw_false_words',
+					$contentLanguage,
+					'false'
+				),
+				true
+			)
+		) {
+			return false;
+		}
+
+		$this->addErrorMsg(
+			[ 'smw_noboolean', $value ],
+			Message::TEXT
+		);
+
+		return false;
+	}
+
+	private function setLocalizedCaptions( string &$formatstring ): void {
+		$languageCode = Localizer::getAnnotatedLanguageCodeFrom( $formatstring );
+		if ( !$languageCode ) {
+			$languageCode = $this->getOption( 'user.language' );
+
+			// Without an annotated language code the caption is rendered in the
+			// viewer's interface language (e.g. a `LOCL` output format applied
+			// via $smwgDefaultOutputFormatters), so the output is not
+			// cache-stable across languages.
+			$this->recordUserLanguageOutput();
+		}
+
+		$this->trueCaption = $this->getFirstBooleanCaptionFrom(
+			'smw_true_words',
+			$languageCode
+		);
+
+		$this->falseCaption = $this->getFirstBooleanCaptionFrom(
+			'smw_false_words',
+			$languageCode
+		);
+	}
+
+	private function getFirstBooleanCaptionFrom( string $msgKey, $languageCode = null ): mixed {
+		$vals = $this->getBooleanWordsFrom(
+			$msgKey,
+			$languageCode
+		);
+
+		return reset( $vals );
+	}
+
+	/**
+	 * @return mixed[]
+	 */
+	private function getBooleanWordsFrom( string $msgKey, $languageCode = null, $canonicalForm = null ): array {
+		$vals = explode(
+			',',
+			Message::get( $msgKey, Message::TEXT, $languageCode )
+		);
+
+		if ( $canonicalForm !== null ) {
+			$vals[] = $canonicalForm;
+		}
+
+		return $vals;
+	}
+
+}

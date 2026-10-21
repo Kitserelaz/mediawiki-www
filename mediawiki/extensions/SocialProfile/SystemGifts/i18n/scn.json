@@ -1,0 +1,26 @@
+{
+	"@metadata": {
+		"authors": [
+			"Ajeje Brazorf",
+			"GianAntonucci"
+		]
+	},
+	"ga-addnew": "+ Agghiunci un rijalu novu",
+	"ga-choosefile": "Scegghi file:",
+	"ga-create-gift": "Crìa rijalu",
+	"ga-created": "Criasti lu rijalu",
+	"ga-currentimage": "Mmàggini attuali",
+	"ga-gift": "rijalu",
+	"ga-giftdesc": "discrizzioni dû rijalu",
+	"ga-giftimage": "mmàggini dû rijalu",
+	"ga-giftname": "nomu dû rijalu",
+	"ga-gifttype": "tipu di rijalu",
+	"ga-new": "Novu",
+	"ga-small": "Nicu",
+	"ga-viewlist": "Talìa la lista di rijali",
+	"ga-remove": "Leva",
+	"ga-remove-title": "Leva \"$1\"?",
+	"ga-remove-success-message": "Lu rijalu \"$1\" àvi statu livatu.",
+	"topawards-edits": "Canci",
+	"topawards-comments": "Cummenti"
+}

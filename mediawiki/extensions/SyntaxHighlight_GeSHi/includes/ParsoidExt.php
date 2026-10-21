@@ -15,7 +15,12 @@ class ParsoidExt implements ExtensionModule {
 			'tags' => [
 				[
 					'name' => 'source',
-					'handler' => SyntaxHighlight::class,
+					'handler' => [
+						'class' => ParsoidSourceTagHandler::class,
+						'services' => [
+							'SyntaxHighlight.SyntaxHighlight',
+						],
+					],
 					'options' => [
 						// Strip nowiki markers from #tag parser-function arguments.
 						// This will be used to resolve T299103.
@@ -26,7 +31,12 @@ class ParsoidExt implements ExtensionModule {
 				],
 				[
 					'name' => 'syntaxhighlight',
-					'handler' => SyntaxHighlight::class,
+					'handler' => [
+						'class' => ParsoidTagHandler::class,
+						'services' => [
+							'SyntaxHighlight.SyntaxHighlight',
+						],
+					],
 					'options' => [
 						// Strip nowiki markers from #tag parser-function arguments.
 						// This will be used to resolve T299103.

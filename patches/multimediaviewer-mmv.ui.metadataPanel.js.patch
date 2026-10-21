@@ -1,0 +1,25 @@
+--- a/mediawiki/extensions/MultimediaViewer/resources/mmv/ui/mmv.ui.metadataPanel.js
++++ b/mediawiki/extensions/MultimediaViewer/resources/mmv/ui/mmv.ui.metadataPanel.js
+@@ -469,15 +469,13 @@
+ 			.addClass( 'mw-mmv-author' );
+ 
+ 		if ( authorCount > 1 ) {
+-			const $moreLink = $( '<a>' )
+-				.addClass( 'mw-mmv-more-authors' )
+-				.text( mw.msg( 'multimediaviewer-multiple-authors', authorCount - 1 ) )
+-				.attr( 'href', filepageUrl );
+-			$wrapper.append( mw.message(
+-				'multimediaviewer-multiple-authors-combine',
+-				$( $.parseHTML( author ) ),
+-				$moreLink
+-			).parseDom() );
++			const moreText = HtmlUtils.jqueryToHtml(
++				$( '<a>' )
++					.addClass( 'mw-mmv-more-authors' )
++					.text( mw.msg( 'multimediaviewer-multiple-authors', authorCount - 1 ) )
++					.attr( 'href', filepageUrl )
++			);
++			$wrapper.append( mw.message( 'multimediaviewer-multiple-authors-combine', author, moreText ).escaped() );
+ 		} else {
+ 			$wrapper.append( author );
+ 		}

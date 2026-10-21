@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Dr Lotus Black"
+		]
+	},
+	"uploadslink-portlet-label": "တင်ထားသည်များ",
+	"tooltip-pt-uploads": "အက်ပလုဒ်တင်ထားသည့်ဖိုင်များ",
+	"uploadslink-toobox-label": "{{GENDER:$1|အသုံးပြုသူ}} တင်ထားသည်များ",
+	"tooltip-tb-uploads": "ဤ{{GENDER:$1|အသုံးပြုသူ}}တင်ထားသည့် စာရင်း"
+}

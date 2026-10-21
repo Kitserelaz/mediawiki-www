@@ -3,17 +3,16 @@
  * A single section of the Admin Links 'tree', composed of a header and rows
  */
 class ALSection {
-	/** @var string */
-	public $header;
+	public string $header;
 	/** @var ALRow[] */
-	public $rows;
+	public array $rows;
 
-	function __construct( $header ) {
+	public function __construct( string $header ) {
 		$this->header = $header;
 		$this->rows = [];
 	}
 
-	function getRow( $row_name ) {
+	public function getRow( string $row_name ): ?ALRow {
 		foreach ( $this->rows as $cur_row ) {
 			if ( $cur_row->name === $row_name ) {
 				return $cur_row;
@@ -22,8 +21,8 @@ class ALSection {
 		return null;
 	}
 
-	function addRow( $row, $next_row_name = null ) {
-		if ( $next_row_name == null ) {
+	public function addRow( ALRow $row, ?string $next_row_name = null ): void {
+		if ( $next_row_name === null ) {
 			$this->rows[] = $row;
 			return;
 		}
@@ -36,7 +35,7 @@ class ALSection {
 		$this->rows[] = $row;
 	}
 
-	function toString() {
+	public function toString(): string {
 		$text = '	<h2 class="mw-specialpagesgroup">' .
 			htmlspecialchars( $this->header ) . "</h2>\n";
 		foreach ( $this->rows as $row ) {

@@ -7,13 +7,15 @@
  * @license MIT
  */
 
+const MWReferencesListNode = require( './ve.dm.MWReferencesListNode.js' );
+
 /**
  * Context item for a MWReferencesList.
  *
  * @constructor
  * @extends ve.ui.LinearContextItem
  * @param {ve.ui.LinearContext} context Context the item is in
- * @param {ve.dm.Model} model Model the item is related to
+ * @param {ve.dm.MWReferencesListNode} model Model the item is related to
  * @param {Object} [config]
  */
 ve.ui.MWReferencesListContextItem = function VeUiMWReferencesListContextItem() {
@@ -37,7 +39,7 @@ ve.ui.MWReferencesListContextItem.static.icon = 'references';
 ve.ui.MWReferencesListContextItem.static.label =
 	OO.ui.deferMsg( 'cite-ve-dialogbutton-referenceslist-tooltip' );
 
-ve.ui.MWReferencesListContextItem.static.modelClasses = [ ve.dm.MWReferencesListNode ];
+ve.ui.MWReferencesListContextItem.static.modelClasses = [ MWReferencesListNode ];
 
 ve.ui.MWReferencesListContextItem.static.commandName = 'referencesList';
 
@@ -67,11 +69,12 @@ ve.ui.MWReferencesListContextItem.prototype.renderBody = function () {
 ve.ui.MWReferencesListContextItem.prototype.getDescription = function () {
 	const group = this.model.getAttribute( 'refGroup' );
 
-	return group ?
-		ve.msg( 'cite-ve-dialog-referenceslist-contextitem-description-named', group ) :
-		ve.msg( 'cite-ve-dialog-referenceslist-contextitem-description-general' );
+	return ve.msg(
+		group ?
+			'cite-ve-dialog-referenceslist-contextitem-description-named' :
+			'cite-ve-dialog-referenceslist-contextitem-description-general',
+		group
+	);
 };
 
-/* Registration */
-
-ve.ui.contextItemFactory.register( ve.ui.MWReferencesListContextItem );
+module.exports = ve.ui.MWReferencesListContextItem;

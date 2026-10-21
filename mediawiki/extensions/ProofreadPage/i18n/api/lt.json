@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Albertas",
+			"Tomasdd"
+		]
+	},
+	"apihelp-query+proofread-example-1": "Pateikia tinkamumo statusą puslapių, esančių vardų srityje 250",
+	"apihelp-query+proofreadinfo-param-prop": "Kurią koregavimo savybę naudoti:",
+	"apihelp-query+proofreadinfo-example-1": "Pateikti numatytąją informaciją",
+	"apihelp-query+proofreadinfo-example-3": "Pateikti vardų srities informaciją"
+}

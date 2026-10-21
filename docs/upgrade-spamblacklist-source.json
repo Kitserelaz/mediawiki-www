@@ -1,0 +1,27 @@
+{
+  "component": "mediawiki/extensions/SpamBlacklist",
+  "baseline": "b293eb55c6a0a2ac73759741ede7acc5bc5dad1b",
+  "target": "14ca7561b4717b2e02f819eec9eac558f0e2445b",
+  "preserved_changes": [
+    {
+      "path": "i18n/br.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/vi.json",
+      "change": "local-source-edit"
+    }
+  ],
+  "dependency_status": "No production Composer requirements and no component lockfile; uses core dependencies",
+  "restored_packaging_omissions": [
+    ".eslintrc.json",
+    ".gitignore",
+    ".gitreview",
+    ".phan/config.php",
+    ".phpcs.xml",
+    "Gruntfile.js",
+    "modules/ve-spamblacklist/.eslintrc.json",
+    "package-lock.json",
+    "package.json"
+  ]
+}

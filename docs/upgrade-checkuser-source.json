@@ -1,0 +1,7 @@
+{
+  "component": "mediawiki/extensions/CheckUser",
+  "baseline": "2bb9906a611e0a99acf481439339c15111102863",
+  "target": "360229201c78d3a2883d1d806aa8b2b448ff34a6",
+  "preserved_changes": [],
+  "dependency_status": "requires-lock-regeneration"
+}

@@ -1,0 +1,4 @@
+ Container cloudwiki-upgrade-restore1462-init-run-dd74289b01b7 Creating 
+ Container cloudwiki-upgrade-restore1462-init-run-dd74289b01b7 Created 
+{"server":"https:\/\/upgradealias.localhost","article_path":"\/wiki\/$1"}
+Management acceptance phase passed: verify-local

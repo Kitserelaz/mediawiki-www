@@ -1,0 +1,102 @@
+{
+	"name": "Global Usage",
+	"version": "2.2.0",
+	"author": "Bryan Tong Minh",
+	"url": "https://www.mediawiki.org/wiki/Extension:GlobalUsage",
+	"descriptionmsg": "globalusage-desc",
+	"license-name": "MIT",
+	"requires": {
+		"MediaWiki": ">= 1.46"
+	},
+	"type": "specialpage",
+	"SpecialPages": {
+		"MostGloballyLinkedFiles": {
+			"class": "MediaWiki\\Extension\\GlobalUsage\\SpecialMostGloballyLinkedFiles",
+			"services": [
+				"ConnectionProvider",
+				"LinkBatchFactory"
+			]
+		},
+		"GloballyWantedFiles": {
+			"class": "MediaWiki\\Extension\\GlobalUsage\\SpecialGloballyWantedFiles",
+			"services": [
+				"ConnectionProvider",
+				"LinkBatchFactory",
+				"RepoGroup"
+			]
+		},
+		"GlobalUsage": {
+			"class": "MediaWiki\\Extension\\GlobalUsage\\SpecialGlobalUsage",
+			"services": [
+				"RepoGroup",
+				"SearchEngineFactory"
+			]
+		}
+	},
+	"JobClasses": {
+		"globalUsageCachePurge": "MediaWiki\\Extension\\GlobalUsage\\GlobalUsageCachePurgeJob"
+	},
+	"APIPropModules": {
+		"globalusage": {
+			"class": "MediaWiki\\Extension\\GlobalUsage\\ApiQueryGlobalUsage",
+			"services": [
+				"SiteLookup",
+				"UrlUtils"
+			]
+		}
+	},
+	"MessagesDirs": {
+		"GlobalUsage": [
+			"i18n",
+			"i18n/api"
+		]
+	},
+	"ExtensionMessagesFiles": {
+		"GlobalUsageAliases": "GlobalUsage.alias.php"
+	},
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\GlobalUsage\\": "includes/"
+	},
+	"Hooks": {
+		"LinksUpdateComplete": "main",
+		"ArticleDeleteComplete": "main",
+		"FileDeleteComplete": "main",
+		"FileUndeleteComplete": "main",
+		"UploadComplete": "main",
+		"ImagePageAfterImageLinks": "imagepage",
+		"ImagePageShowTOC": "imagepage",
+		"PageMoveComplete": "main",
+		"LoadExtensionSchemaUpdates": "schema",
+		"wgQueryPages": "main"
+	},
+	"HookHandlers": {
+		"main": {
+			"class": "MediaWiki\\Extension\\GlobalUsage\\Hooks",
+			"services": [
+				"RepoGroup",
+				"JobQueueGroup",
+				"ConnectionProvider"
+			]
+		},
+		"imagepage": {
+			"class": "MediaWiki\\Extension\\GlobalUsage\\GlobalUsageImagePageHooks"
+		},
+		"schema": {
+			"class": "MediaWiki\\Extension\\GlobalUsage\\SchemaHooks"
+		}
+	},
+	"config": {
+		"GlobalUsageSharedRepoWiki": {
+			"description": "Name of the shared repo that backlinks are shared for",
+			"value": false
+		},
+		"GlobalUsagePurgeBacklinks": {
+			"description": "If set to true, this will purge pages on the wikis that use a file when it changes. This works by directly inserting HTMLCacheUpdate jobs into the local wikis. @see $wgGlobalUsagePurgeBacklinks",
+			"value": false
+		}
+	},
+	"DatabaseVirtualDomains": [
+		"virtual-globalusage"
+	],
+	"manifest_version": 2
+}

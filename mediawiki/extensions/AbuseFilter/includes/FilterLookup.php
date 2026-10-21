@@ -10,6 +10,7 @@ use MediaWiki\Extension\AbuseFilter\Filter\Flags;
 use MediaWiki\Extension\AbuseFilter\Filter\HistoryFilter;
 use MediaWiki\Extension\AbuseFilter\Filter\LastEditInfo;
 use MediaWiki\Extension\AbuseFilter\Filter\Specs;
+use MediaWiki\User\UserIdentityValue;
 use RuntimeException;
 use stdClass;
 use Wikimedia\ObjectCache\WANObjectCache;
@@ -24,7 +25,7 @@ use Wikimedia\Rdbms\SelectQueryBuilder;
  * @todo Cache exceptions
  */
 class FilterLookup implements IDBAccessObject {
-	public const SERVICE_NAME = 'AbuseFilterFilterLookup';
+	public const SERVICE_NAME = ServiceNames::FilterLookup;
 
 	// Used in getClosestVersion
 	public const DIR_PREV = 'prev';
@@ -54,19 +55,9 @@ class FilterLookup implements IDBAccessObject {
 	private $lastVersionCache = [];
 
 	/**
-	 * @var int[][] [ filter => [ historyID => [ prev, next ] ] ]
-	 * @phan-var array<int,array<int,array{prev?:int,next?:int}>>
+	 * @var array<int,array<int,array{prev?:int,next?:int}>> [ filter => [ historyID => [ prev, next ] ] ]
 	 */
 	private $closestVersionsCache = [];
-
-	/** @var ILoadBalancer */
-	private $loadBalancer;
-
-	/** @var WANObjectCache */
-	private $wanCache;
-
-	/** @var CentralDBManager */
-	private $centralDBManager;
 
 	/**
 	 * @var bool Flag used in PHPUnit tests to "hide" local filters when testing global ones, so that we can use the
@@ -74,19 +65,11 @@ class FilterLookup implements IDBAccessObject {
 	 */
 	private bool $localFiltersHiddenForTest = false;
 
-	/**
-	 * @param ILoadBalancer $loadBalancer
-	 * @param WANObjectCache $cache
-	 * @param CentralDBManager $centralDBManager
-	 */
 	public function __construct(
-		ILoadBalancer $loadBalancer,
-		WANObjectCache $cache,
-		CentralDBManager $centralDBManager
+		private readonly ILoadBalancer $loadBalancer,
+		private readonly WANObjectCache $wanCache,
+		private readonly CentralDBManager $centralDBManager
 	) {
-		$this->loadBalancer = $loadBalancer;
-		$this->wanCache = $cache;
-		$this->centralDBManager = $centralDBManager;
 	}
 
 	/**
@@ -115,7 +98,7 @@ class FilterLookup implements IDBAccessObject {
 			}
 			$fname = __METHOD__;
 			$getActionsCB = function () use ( $dbr, $fname, $row ): array {
-				return $this->getActionsFromDB( $dbr, $fname, $row->af_id );
+				return $this->getActionsFromDB( $dbr, $fname, (int)$row->af_id );
 			};
 			$this->cache[$cacheKey] = $this->filterFromRow( $row, $getActionsCB );
 		}
@@ -147,7 +130,7 @@ class FilterLookup implements IDBAccessObject {
 					[
 						'checkKeys' => [ $globalRulesKey ],
 						'lockTSE' => 300,
-						'version' => 3
+						'version' => 4
 					]
 				);
 			} else {
@@ -191,9 +174,9 @@ class FilterLookup implements IDBAccessObject {
 		$fname = __METHOD__;
 		$ret = [];
 		foreach ( $rows as $row ) {
-			$filterKey = $this->getCacheKey( $row->af_id, $global );
+			$filterKey = $this->getCacheKey( (int)$row->af_id, $global );
 			$getActionsCB = function () use ( $dbr, $fname, $row ): array {
-				return $this->getActionsFromDB( $dbr, $fname, $row->af_id );
+				return $this->getActionsFromDB( $dbr, $fname, (int)$row->af_id );
 			};
 			$ret[$filterKey] = $this->filterFromRow(
 				$row,
@@ -373,14 +356,13 @@ class FilterLookup implements IDBAccessObject {
 	private function getGlobalRulesKey( string $group ): string {
 		if ( !$this->centralDBManager->filterIsCentral() ) {
 			return $this->wanCache->makeGlobalKey(
-				'abusefilter',
-				'rules',
+				'abusefilter-rules',
 				$this->centralDBManager->getCentralDBName(),
 				$group
 			);
 		}
 
-		return $this->wanCache->makeKey( 'abusefilter', 'rules', $group );
+		return $this->wanCache->makeKey( 'abusefilter-rules', $group );
 	}
 
 	/**
@@ -394,18 +376,25 @@ class FilterLookup implements IDBAccessObject {
 		$protected = in_array( 'protected', $flags, true ) ?
 			Flags::FILTER_USES_PROTECTED_VARS :
 			0;
-		return $hidden | $protected;
+		$suppressed = in_array( 'suppressed', $flags, true ) ?
+			Flags::FILTER_SUPPRESSED :
+			0;
+		return $hidden | $protected | $suppressed;
 	}
 
 	/**
-	 * Note: this is private because no external caller should access DB rows directly.
-	 * @param stdClass $row
+	 * Constructs an {@link HistoryFilter} instance from the provided DB row.
+	 *
+	 * Where possible, it is preferable to use {@link self::getFilterVersion}.
+	 *
+	 * @param stdClass $row The abuse_filter_history row
 	 * @return HistoryFilter
 	 */
-	private function filterFromHistoryRow( stdClass $row ): HistoryFilter {
+	public function filterFromHistoryRow( stdClass $row ): HistoryFilter {
 		$actionsRaw = unserialize( $row->afh_actions );
 		$actions = is_array( $actionsRaw ) ? $actionsRaw : [];
 		$flags = $row->afh_flags ? explode( ',', $row->afh_flags ) : [];
+
 		return new HistoryFilter(
 			new Specs(
 				trim( $row->afh_pattern ),
@@ -424,8 +413,7 @@ class FilterLookup implements IDBAccessObject {
 			),
 			$actions,
 			new LastEditInfo(
-				(int)$row->afh_user,
-				$row->afh_user_text,
+				new UserIdentityValue( (int)$row->afh_user, (string)$row->afh_user_text ),
 				$row->afh_timestamp
 			),
 			(int)$row->afh_filter,
@@ -434,12 +422,15 @@ class FilterLookup implements IDBAccessObject {
 	}
 
 	/**
-	 * Note: this is private because no external caller should access DB rows directly.
-	 * @param stdClass $row
+	 * Constructs an {@link ExistingFilter} instance from the provided DB row.
+	 *
+	 * Where possible, it is preferable to use {@link self::getFilter}.
+	 *
+	 * @param stdClass $row The abuse_filter row
 	 * @param array[]|callable $actions
 	 * @return ExistingFilter
 	 */
-	private function filterFromRow( stdClass $row, $actions ): ExistingFilter {
+	public function filterFromRow( stdClass $row, $actions ): ExistingFilter {
 		return new ExistingFilter(
 			new Specs(
 				trim( $row->af_pattern ),
@@ -457,8 +448,7 @@ class FilterLookup implements IDBAccessObject {
 			),
 			$actions,
 			new LastEditInfo(
-				(int)$row->af_user,
-				$row->af_user_text,
+				new UserIdentityValue( (int)$row->af_user, (string)$row->af_user_text ),
 				$row->af_timestamp
 			),
 			(int)$row->af_id,
@@ -467,7 +457,17 @@ class FilterLookup implements IDBAccessObject {
 		);
 	}
 
-	private function getAbuseFilterQueryBuilder( IReadableDatabase $dbr ): SelectQueryBuilder {
+	/**
+	 * Gets a {@link SelectQueryBuilder} instance which can be used to fetch rows
+	 * from the abuse_filter table and where these rows can be constructed into
+	 * {@link ExistingFilter} instances by {@link self::newFromRow}.
+	 *
+	 * Where possible, it is preferable to use {@link self::getFilter}.
+	 *
+	 * @param IReadableDatabase $dbr
+	 * @return SelectQueryBuilder
+	 */
+	public function getAbuseFilterQueryBuilder( IReadableDatabase $dbr ): SelectQueryBuilder {
 		return $dbr->newSelectQueryBuilder()
 			->select( [
 				'af_id',
@@ -491,7 +491,17 @@ class FilterLookup implements IDBAccessObject {
 			->join( 'actor', 'actor_af_user', 'actor_af_user.actor_id = af_actor' );
 	}
 
-	private function getAbuseFilterHistoryQueryBuilder( IReadableDatabase $dbr ): SelectQueryBuilder {
+	/**
+	 * Gets a {@link SelectQueryBuilder} instance which can be used to fetch rows
+	 * from the abuse_filter table and where these rows can be constructed into
+	 * {@link HistoryFilter} instances by {@link self::newFromHistoryRow}.
+	 *
+	 * Where possible, it is preferable to use {@link self::getFilterVersion}.
+	 *
+	 * @param IReadableDatabase $dbr
+	 * @return SelectQueryBuilder
+	 */
+	public function getAbuseFilterHistoryQueryBuilder( IReadableDatabase $dbr ): SelectQueryBuilder {
 		return $dbr->newSelectQueryBuilder()
 			->select( [
 				'afh_id',

@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Evs",
+			"Okras",
+			"Pacha Tchernof"
+		]
+	},
+	"kartographer-wv-group": "Группа:",
+	"kartographer-wv-layer-wikimedia": "Фонд Викимедиа",
+	"kartographer-wv-warning-external-source-title": "Внешний источник данных",
+	"kartographer-wv-warning-external-source-message": "Это содержимое размещается на внешнем сервере, поэтому его включение потребует передачи вашего IP-адреса и других данных поставщику карты.",
+	"kartographer-wv-warning-external-source-agree": "Я понимаю",
+	"kartographer-wv-warning-external-source-disagree": "Отмена"
+}

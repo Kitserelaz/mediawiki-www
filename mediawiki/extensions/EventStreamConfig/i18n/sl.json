@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Eleassar"
+		]
+	},
+	"eventstreamconfig-desc": "Izpostavi konfiguracijo toka dogodkov v končni točki API. Uporablja se lahko tudi za izpostavljanje konfiguracij prek ResourceLoaderja.",
+	"apihelp-streamconfigs-summary": "Izpostavi konfiguracijo toka dogodkov. Vrne samo format=json s formatversion=2.",
+	"apihelp-streamconfigs-param-streams": "Seznam tokov, za katere želite pridobiti konfiguracijo",
+	"apihelp-streamconfigs-param-all_settings": "V rezultate konfiguracije toka vključi vse nastavitve. Opuščeno od 1.41. Vse nastavitve so vključene po privzetem.",
+	"apihelp-streamconfigs-param-constraints": "Filtriraj rezultate za vnose konfiguracije toka, ki imajo te nastavitve",
+	"apihelp-streamconfigs-example-1": "Pridobitev konfiguracij tokov za seznam tokov",
+	"apihelp-streamconfigs-example-2": "Pridobitev konfiguracije toka za tokove z vsemi nastavitvami",
+	"apihelp-streamconfigs-example-3": "Pridobitev konfiguracije toka za tokove, ki imajo nastavitve, ki ustrezajo tem omejitvam"
+}

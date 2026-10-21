@@ -17,10 +17,10 @@ class ExtractFormatterTest extends MediaWikiIntegrationTestCase {
 	 * @dataProvider provideExtracts
 	 */
 	public function testExtracts( $expected, $text, $plainText ) {
-		$fmt = new ExtractFormatter( $text, $plainText );
+		$fmt = new ExtractFormatter( $text );
 		// .metadata class will be added via $wgExtractsRemoveClasses on WMF
 		$fmt->remove( [ 'div', 'figure', '.metadata' ] );
-		$text = $fmt->getText();
+		$text = $plainText ? $fmt->getText() : $fmt->getHtml();
 		$this->assertSame( $expected, $text );
 	}
 
@@ -35,6 +35,13 @@ class ExtractFormatterTest extends MediaWikiIntegrationTestCase {
 
 		return [
 			[
+				'<b>Dutch</b> (<span><span> <i>Nederlands</i></span> </span>) ' .
+					'is a West Germanic language and the native language of most of the ' .
+					'population of the Netherlands',
+				$dutch,
+				false,
+			],
+			[
 				'Dutch ( Nederlands ) is a West Germanic language and the native language of ' .
 					'most of the population of the Netherlands',
 				$dutch,
@@ -42,13 +49,13 @@ class ExtractFormatterTest extends MediaWikiIntegrationTestCase {
 			],
 
 			'HTML cleanup in HTML mode' => [
-				"\u{00A0}A &amp; <b>B</b>",
-				"&#x0A;&nbsp;<a>A</a> &amp; <b>&#x42;</b>\r\n",
+				"<!--comment-->\n\u{00A0}A &amp; <b>B</b>",
+				"<!--comment-->&#x0A;&nbsp;<a>A</a> &amp; <b>&#x42;</b>\r\n",
 				false
 			],
 			'HTML cleanup in plain text mode' => [
-				'A & B',
-				"&#x0A;&nbsp;<a>A</a> &amp; <b>&#x42;</b>\r\n",
+				"A & B",
+				"<!--comment-->&#x0A;&nbsp;<a>A</a> &amp; <b>&#x42;</b>\r\n",
 				true
 			],
 
@@ -65,17 +72,6 @@ class ExtractFormatterTest extends MediaWikiIntegrationTestCase {
 			[
 				"<span><span lang=\"qux\">quux</span></span>",
 				'<span class="foo"><span style="bar: baz;" lang="qux">quux</span></span>',
-				false,
-			],
-			[
-				// New heading markup from T13555 (T363445)
-				"<p>hello</p><h2 id=\"heading\">heading</h2><p>bye</p>",
-				'<p>hello</p>' .
-					'<div class="mw-heading mw-heading2">' .
-					'<h2 id="heading">heading</h2>' .
-					'<span class="mw-editsection">xxx</span>' .
-					'</div>' .
-					'<p>bye</p>',
 				false,
 			],
 			[

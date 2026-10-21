@@ -17,8 +17,7 @@
  * @param {Object} [config] Configuration options
  * @param {mw.Title} [config.importTitle] Title to import
  */
-ve.init.mw.CollabTarget = function VeInitMwCollabTarget( title, rebaserUrl, config ) {
-	config = config || {};
+ve.init.mw.CollabTarget = function VeInitMwCollabTarget( title, rebaserUrl, config = {} ) {
 	config.toolbarConfig = ve.extendObject( {
 		shadow: true,
 		actions: true,
@@ -62,17 +61,17 @@ ve.init.mw.CollabTarget.static.toolbarGroups.splice( 4, 0, {
 	name: 'commentAnnotation',
 	include: [ 'commentAnnotation' ]
 } );
-// HACK: Disable references until supported (T194838)
-ve.init.mw.CollabTarget.static.toolbarGroups = ve.init.mw.CollabTarget.static.toolbarGroups.filter( ( group ) => group.name !== 'reference' );
 ve.init.mw.CollabTarget.static.toolbarGroups.push(
 	{
 		name: 'help',
 		align: 'after',
+		excludeFromTargetWidget: true,
 		include: [ 'help' ]
 	},
 	{
 		name: 'pageMenu',
 		align: 'after',
+		excludeFromTargetWidget: true,
 		type: 'list',
 		icon: 'menu',
 		indicator: null,
@@ -84,11 +83,13 @@ ve.init.mw.CollabTarget.static.toolbarGroups.push(
 	{
 		name: 'authorList',
 		align: 'after',
+		excludeFromTargetWidget: true,
 		include: [ 'authorList' ]
 	},
 	{
 		name: 'export',
 		align: 'after',
+		excludeFromTargetWidget: true,
 		include: [ 'export' ]
 	}
 );

@@ -251,7 +251,13 @@ abstract class AbstractBlock implements Block {
 	protected function checkSpamFilters( ?AbstractRevision $old, AbstractRevision $new ) {
 		/** @var \Flow\SpamFilter\Controller $spamFilter */
 		$spamFilter = Container::get( 'controller.spamfilter' );
-		$status = $spamFilter->validate( $this->context, $new, $old, $this->workflow->getArticleTitle(), $this->workflow->getOwnerTitle() );
+		$status = $spamFilter->validate(
+			$this->context,
+			$new,
+			$old,
+			$this->workflow->getArticleTitle(),
+			$this->workflow->getOwnerTitle()
+		);
 		if ( $status->isOK() ) {
 			return true;
 		}
@@ -274,9 +280,6 @@ abstract class AbstractBlock implements Block {
 		return $this->context->getUser()->getEditToken();
 	}
 
-	/**
-	 * @param OutputPage $out
-	 */
 	public function setPageTitle( OutputPage $out ) {
 		if ( $out->getPageTitle() ) {
 			// Don't override page title if another block has already set it.

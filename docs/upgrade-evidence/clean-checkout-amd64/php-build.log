@@ -1,0 +1,120 @@
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 3.75kB done
+#1 DONE 0.1s
+
+#2 resolve image config for docker-image://docker.io/docker/dockerfile:1.4
+#2 DONE 0.8s
+
+#3 docker-image://docker.io/docker/dockerfile:1.4@sha256:9ba7531bd80fb0a858632727cf7a112fbfd19b17e94c4e84ced81e24ef1a0dbc
+#3 resolve docker.io/docker/dockerfile:1.4@sha256:9ba7531bd80fb0a858632727cf7a112fbfd19b17e94c4e84ced81e24ef1a0dbc 0.0s done
+#3 CACHED
+
+#4 [internal] load .dockerignore
+#4 transferring context: 735B done
+#4 DONE 0.0s
+
+#5 [internal] load metadata for docker.io/library/php:8.4.26-fpm-bookworm@sha256:6bfef8e416977aa41f48e3e42a40c1e08050d24e4a938c6edb421400bff24601
+#5 DONE 0.6s
+
+#6 [php  1/21] FROM docker.io/library/php:8.4.26-fpm-bookworm@sha256:6bfef8e416977aa41f48e3e42a40c1e08050d24e4a938c6edb421400bff24601
+#6 resolve docker.io/library/php:8.4.26-fpm-bookworm@sha256:6bfef8e416977aa41f48e3e42a40c1e08050d24e4a938c6edb421400bff24601 0.0s done
+#6 DONE 0.0s
+
+#7 [internal] load build context
+#7 transferring context: 48.15MB 4.4s
+#7 transferring context: 136.19MB 9.5s
+#7 transferring context: 217.33MB 14.5s
+#7 transferring context: 285.48MB 19.5s
+#7 transferring context: 309.70MB 24.6s
+#7 transferring context: 409.61MB 29.6s
+#7 transferring context: 499.55MB 34.7s
+#7 transferring context: 553.03MB 39.9s
+#7 transferring context: 632.20MB 44.9s
+#7 transferring context: 697.38MB 50.0s
+#7 transferring context: 767.72MB 55.2s
+#7 transferring context: 832.79MB 60.3s
+#7 transferring context: 947.24MB 65.4s
+#7 transferring context: 1.04GB 70.5s
+#7 transferring context: 1.13GB 75.5s
+#7 transferring context: 1.18GB 79.3s done
+#7 DONE 80.8s
+
+#8 [php  4/21] RUN apt-get update && apt-get install -y --no-install-recommends poppler-utils djvulibre-bin libtiff-tools python3 python3-pygments && rm -rf /var/lib/apt/lists/*
+#8 CACHED
+
+#9 [php  5/21] WORKDIR /var/www/mediawiki
+#9 CACHED
+
+#10 [php  2/21] RUN printf 'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/%s/ bookworm main\ndeb [check-valid-until=no] https://snapshot.debian.org/archive/debian/%s/ bookworm-updates main\ndeb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/%s/ bookworm-security main\n' "20261015T000000Z" "20261015T000000Z" "20261015T000000Z" > /etc/apt/sources.list     && rm -f /etc/apt/sources.list.d/debian.sources
+#10 CACHED
+
+#11 [php  3/21] RUN apt-get update && apt-get install -y --no-install-recommends     libicu-dev libonig-dev libxml2-dev libzip-dev libpng-dev libjpeg62-turbo-dev     libfreetype6-dev libgmp-dev libldap2-dev libmemcached-dev zlib1g-dev libssl-dev     imagemagick ffmpeg lua5.1 zip unzip diffutils fonts-freefont-ttf     librsvg2-bin ghostscript graphviz ploticus curl ca-certificates mariadb-client tini     && docker-php-ext-configure gd --with-freetype --with-jpeg     && docker-php-ext-install -j"$(nproc)" intl mbstring mysqli pdo_mysql gd zip gmp bcmath ldap exif calendar pcntl sockets opcache     && pecl install redis-6.2.0 memcached-3.3.0     && docker-php-ext-enable redis memcached     && rm -rf /var/lib/apt/lists/* /tmp/pear
+#11 CACHED
+
+#12 [php  6/21] COPY --link mediawiki/vendor/ ./vendor/
+#12 CACHED
+
+#13 [php  7/21] COPY --link mediawiki/extensions/ ./extensions/
+#13 DONE 33.8s
+
+#14 [php  8/21] COPY --link mediawiki/skins/ ./skins/
+#14 DONE 0.0s
+
+#15 [php  9/21] COPY --link mediawiki/resources/ ./resources/
+#15 DONE 0.0s
+
+#16 [php 10/21] COPY --link mediawiki/languages/ ./languages/
+#16 DONE 0.0s
+
+#17 [php 11/21] COPY --link mediawiki/includes/ ./includes/
+#17 DONE 0.0s
+
+#18 [php 12/21] COPY --link mediawiki/maintenance/ ./maintenance/
+#18 DONE 0.0s
+
+#19 [php 13/21] COPY --link mediawiki/sql/ ./sql/
+#19 DONE 0.0s
+
+#20 [php 14/21] COPY --link mediawiki/ErrorPages/ ./ErrorPages/
+#20 DONE 0.0s
+
+#21 [php 15/21] COPY --link mediawiki/docs/ ./docs/
+#21 DONE 0.0s
+
+#22 [php 16/21] COPY --link mediawiki/*.php ./
+#22 DONE 0.0s
+
+#23 [php 17/21] COPY --link mediawiki/composer.json mediawiki/composer.local.json mediawiki/composer.lock mediawiki/README.md mediawiki/INSTALL mediawiki/UPGRADE mediawiki/FAQ mediawiki/COPYING mediawiki/CREDITS mediawiki/HISTORY mediawiki/SECURITY mediawiki/RELEASE-NOTES-1.46 ./
+#23 DONE 0.0s
+
+#24 [php 18/21] COPY --link docker/mediawiki/ /opt/farm/
+#24 DONE 0.0s
+
+#25 [php 19/21] COPY --link docker/mediawiki/ ./docker/mediawiki/
+#25 DONE 0.0s
+
+#26 [php 20/21] COPY --link docker/mediawiki/private.php ./PrivateSettings.php
+#26 DONE 0.0s
+
+#26 [php 20/21] COPY --link docker/mediawiki/private.php ./PrivateSettings.php
+#26 merging
+#26 merging 26.1s done
+#26 DONE 26.1s
+
+#27 [php 21/21] RUN mkdir -p images cw_cache cache /var/www/dumps /var/log/mediawiki     && chown -R www-data:www-data images cw_cache cache /var/www/dumps /var/log/mediawiki     && chmod +x /opt/farm/entrypoint.sh     && printf 'upload_max_filesize=100M\npost_max_size=110M\nmemory_limit=512M\nexpose_php=Off\n' > /usr/local/etc/php/conf.d/farm.ini
+#27 DONE 1.6s
+
+#28 exporting to image
+#28 exporting layers
+#28 exporting layers 37.5s done
+#28 exporting manifest sha256:375f30bf812c1b98b98f81ef6b4a1e89135f678eaffa6b27a97983c3b64731a6 0.0s done
+#28 exporting config sha256:f1162f7739e8474365bc59a6d4826a963d51e41a312dd387df8d8bf8f175eb9a 0.0s done
+#28 exporting attestation manifest sha256:c973f9fc4d9c2b84f4e99d1fe70133041b2916a82660d081a6fdbb83fc1336c5 0.0s done
+#28 exporting manifest list sha256:9a34a313317dff3c59fd24069c16976e6b29dd6e7962e68ce466db6a4e80e994 0.0s done
+#28 naming to docker.io/library/cloudwiki-php:upgrade-clean-20261018-amd64 done
+#28 DONE 37.7s
+
+#29 resolving provenance for metadata file
+#29 DONE 0.1s

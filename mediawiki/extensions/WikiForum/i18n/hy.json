@@ -1,0 +1,20 @@
+{
+	"@metadata": {
+		"authors": [
+			"Kareyac",
+			"Vadgt",
+			"Xelgen",
+			"Սերգեյ Սաֆարյան"
+		]
+	},
+	"wikiforum-forum-name": "Խորհրդարան $1",
+	"wikiforum-button-preview": "Նախադիտում",
+	"wikiforum-preview": "Նախադիտում",
+	"wikiforum-preview-with-title": "Նախադիտում՝ $1",
+	"wikiforum-search-thread": "Թեմա՝ $1",
+	"wikiforum-topic-name": "Խորհրդարան - $1",
+	"wikiforum-thread": "Թեմա",
+	"wikiforum-threads": "Դերձաններ",
+	"wikiforum-add-category": "Ավելացնել կատեգորիա",
+	"wikiforum-edit-category": "Խմբագրել կատեգորիա"
+}

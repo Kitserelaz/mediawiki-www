@@ -1,0 +1,157 @@
+<?php
+
+namespace SMW\Tests\Integration;
+
+use MediaWiki\Interwiki\ClassicInterwikiLookup;
+use MediaWiki\MediaWikiServices;
+use SMW\DataItems\WikiPage;
+use SMW\Exporter\ExporterFactory;
+use SMW\Query\Query;
+use SMW\Services\ServicesFactory as ApplicationFactory;
+use SMW\Tests\SMWIntegrationTestCase;
+use SMW\Tests\Utils\UtilityFactory;
+
+/**
+ * @group semantic-mediawiki
+ * @group Database
+ * @group medium
+ *
+ * @license GPL-2.0-or-later
+ * @since 2.2
+ *
+ * @author mwjames
+ */
+class InterwikiDBIntegrationTest extends SMWIntegrationTestCase {
+
+	private $stringValidator;
+	private $subjects = [];
+
+	private $stringBuilder;
+
+	private $queryResultValidator;
+	private $queryParser;
+	private $semanticDataFactory;
+	private $pageCreator;
+	private $oldInterwikiCache;
+
+	protected function setUp(): void {
+		parent::setUp();
+
+		$utilityFactory = UtilityFactory::getInstance();
+
+		$this->semanticDataFactory = $utilityFactory->newSemanticDataFactory();
+		$this->stringValidator = $utilityFactory->newValidatorFactory()->newStringValidator();
+		$this->stringBuilder = $utilityFactory->newStringBuilder();
+		$this->pageCreator = $utilityFactory->newPageCreator();
+
+		$this->queryResultValidator = $utilityFactory->newValidatorFactory()->newQueryResultValidator();
+		$this->queryParser = ApplicationFactory::getInstance()->getQueryFactory()->newQueryParser();
+
+		// Register a test interwiki prefix via the interwiki cache.
+		$this->oldInterwikiCache = $GLOBALS['wgInterwikiCache'] ?? false;
+		$GLOBALS['wgInterwikiCache'] = ClassicInterwikiLookup::buildCdbHash( [
+			[
+				'iw_prefix' => 'iw-test',
+				'iw_url' => 'http://www.example.org/$1',
+				'iw_api' => '',
+				'iw_wikiid' => 'foo',
+				'iw_local' => 1,
+			],
+		] );
+		MediaWikiServices::getInstance()->resetServiceForTesting( 'InterwikiLookup' );
+	}
+
+	protected function tearDown(): void {
+		$GLOBALS['wgInterwikiCache'] = $this->oldInterwikiCache;
+		parent::tearDown();
+	}
+
+	public function testRdfSerializationForInterwikiAnnotation() {
+		$titleFactory = MediaWikiServices::getInstance()->getTitleFactory();
+
+		$this->stringBuilder
+			->addString( '[[Has type::Page]]' );
+
+		$this->pageCreator
+			->createPage( $titleFactory->newFromText( 'Use for interwiki annotation', SMW_NS_PROPERTY ) )
+			->doEdit( $this->stringBuilder->getString() );
+
+		$this->stringBuilder
+			->addString( '[[Use for interwiki annotation::Interwiki link]]' )
+			->addString( '[[Use for interwiki annotation::iw-test:Interwiki link]]' );
+
+		// parent::editPage( $wikiPageTwo, $this->stringBuilder->getString() );
+
+		$this->pageCreator
+			->createPage( $titleFactory->newFromText( __METHOD__ ) )
+			->doEdit( $this->stringBuilder->getString() );
+
+		$output = $this->fetchSerializedRdfOutputFor(
+			[ __METHOD__ ]
+		);
+
+		$expectedOutputContent = [
+			'<property:Use_for_interwiki_annotation rdf:resource="&wiki;Interwiki_link"/>',
+			'<property:Use_for_interwiki_annotation rdf:resource="&wiki;Iw-2Dtest-3AInterwiki_link"/>'
+		];
+
+		$this->stringValidator->assertThatStringContains(
+			$expectedOutputContent,
+			$output
+		);
+	}
+
+	public function testQueryForInterwikiAnnotation() {
+		$titleFactory = MediaWikiServices::getInstance()->getTitleFactory();
+
+		$this->stringBuilder
+			->addString( '[[Has type::Page]]' );
+
+		$this->pageCreator
+			->createPage( $titleFactory->newFromText( 'Use for interwiki annotation', SMW_NS_PROPERTY ) )
+			->doEdit( $this->stringBuilder->getString() );
+		$this->pageCreator
+			->createPage( $titleFactory->newFromText( __METHOD__ . '-1' ) )
+			->doEdit( '[[Use for interwiki annotation::Interwiki link]]' );
+		$this->pageCreator
+			->createPage( $titleFactory->newFromText( __METHOD__ . '-2' ) )
+			->doEdit( '[[Use for interwiki annotation::iw-test:Interwiki link]]' );
+
+		$this->stringBuilder
+			->addString( '[[Use for interwiki annotation::iw-test:Interwiki link]]' );
+
+		$description = $this->queryParser->getQueryDescription( $this->stringBuilder->getString() );
+
+		$query = new Query(
+			$description,
+			false,
+			false
+		);
+
+		$query->querymode = Query::MODE_INSTANCES;
+		$query->setLimit( 10 );
+
+		// Expects only one result with an interwiki being used as differentiator
+		$this->subjects[] = WikiPage::newFromTitle( $titleFactory->newFromText( __METHOD__ . '-2' ) );
+
+		$this->queryResultValidator->assertThatQueryResultHasSubjects(
+			$this->subjects,
+			$this->getStore()->getQueryResult( $query )
+		);
+
+		$this->subjects[] = WikiPage::newFromTitle( $titleFactory->newFromText( __METHOD__ . '-1' ) );
+	}
+
+	private function fetchSerializedRdfOutputFor( array $pages ) {
+		$this->subjects = $pages;
+		$exporterFactory = new ExporterFactory();
+
+		$instance = $exporterFactory->newExportController(
+			$exporterFactory->newRDFXMLSerializer()
+		);
+
+		ob_start();
+		$instance->printPages( $pages );
+		return ob_get_clean();
+	}
+}

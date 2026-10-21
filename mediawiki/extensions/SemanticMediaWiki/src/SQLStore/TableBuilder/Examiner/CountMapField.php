@@ -1,0 +1,72 @@
+<?php
+
+namespace SMW\SQLStore\TableBuilder\Examiner;
+
+use Onoi\MessageReporter\MessageReporterAwareTrait;
+use SMW\Maintenance\updateEntityCountMap;
+use SMW\SetupFile;
+use SMW\SQLStore\SQLStore;
+use SMW\SQLStore\TableBuilder;
+use SMW\Utils\CliMsgFormatter;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 3.2
+ *
+ * @author mwjames
+ */
+class CountMapField {
+
+	use MessageReporterAwareTrait;
+
+	private ?SetupFile $setupFile = null;
+
+	/**
+	 * @since 3.2
+	 */
+	public function __construct( private SQLStore $store ) {
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @param SetupFile $setupFile
+	 */
+	public function setSetupFile( SetupFile $setupFile ): void {
+		$this->setupFile = $setupFile;
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @param array $log
+	 */
+	public function check( array $log = [] ): void {
+		$cliMsgFormatter = new CliMsgFormatter();
+
+		$this->messageReporter->reportMessage(
+			$cliMsgFormatter->firstCol( "Checking smw_countmap field consistency ..." )
+		);
+
+		$connection = $this->store->getConnection( DB_PRIMARY );
+		$tableName = $connection->tableName( SQLStore::ID_AUXILIARY_TABLE ) ?? '';
+
+		if (
+			isset( $log[$tableName]['smw_countmap'] ) &&
+			$log[$tableName]['smw_countmap'] === TableBuilder::PROC_FIELD_NEW ) {
+
+			$this->messageReporter->reportMessage(
+				"\n   ... adding incomplete task for `smw_countmap` conversion ...\n"
+			);
+
+			$this->setupFile->addIncompleteTask( UpdateEntityCountMap::COUNTMAP_INCOMPLETE );
+		} else {
+			$this->messageReporter->reportMessage(
+				$cliMsgFormatter->secondCol( CliMsgFormatter::OK )
+			);
+		}
+
+		$this->messageReporter->reportMessage( "   ... done.\n" );
+	}
+
+}

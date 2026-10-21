@@ -1,18 +1,28 @@
-const DEFAULT_EVENTGATE_ORIGIN = 'https://intake-analytics.wikimedia.org';
-const DELAYED_SUBMIT_TIMEOUT = 5; // (s)
+// Types
+// =====
 
 /**
- * @param {string} [origin]
- * @return {string}
+ * @interface EventSubmitter
+ * @memberof MetricsPlatform
  */
-function getEventGateUrl( origin ) {
-	const result = new URL( origin || DEFAULT_EVENTGATE_ORIGIN );
 
-	result.pathname = '/v1/events';
-	result.searchParams.set( 'hasty', 'true' );
+/**
+ * Submits to the event intake service or enqueues the event for submission to the event
+ * intake service.
+ *
+ * @method
+ * @name MetricsPlatform.EventSubmitter#submitEvent
+ * @param {EventPlatform.EventData} event
+ */
 
-	return result.toString();
-}
+// Constants
+// =========
+
+const DEFAULT_EVENT_INTAKE_URL = 'https://intake-analytics.wikimedia.org/v1/events?hasty=true';
+const DELAYED_SUBMIT_TIMEOUT = 5; // (s)
+
+// API
+// ===
 
 /**
  * The default event submitter used by {@link MetricsClient}.
@@ -30,14 +40,16 @@ function getEventGateUrl( origin ) {
  * [0]: https://developer.mozilla.org/en-US/docs/Web/API/Navigator/sendBeacon
  * [1]: https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
  *
- * @param {string} [eventGateOrigin] The origin of the EventGate event intake service to send
- *  events to. `https://intake-analytics.wikimedia.org` by default
+ * @param {string} [eventIntakeUrl] The URL of the EventGate event intake service to send events
+ *  to. `https://intake-analytics.wikimedia.org/v1/events?hasty=true` by default
  * @constructor
+ * @implements {MetricsPlatform.EventSubmitter}
+ * @memberof MetricsPlatform
  */
-function DefaultEventSubmitter( eventGateOrigin ) {
-	this.eventGateUrl = getEventGateUrl( eventGateOrigin );
+function DefaultEventSubmitter( eventIntakeUrl ) {
+	this.eventIntakeUrl = eventIntakeUrl || DEFAULT_EVENT_INTAKE_URL;
 
-	/** @type {EventData[]} */
+	/** @type {EventPlatform.EventData[]} */
 	this.events = [];
 
 	const eventSubmitter = this;
@@ -65,7 +77,7 @@ function DefaultEventSubmitter( eventGateOrigin ) {
  * Submits to the event intake service or enqueues the event for submission to the event
  * intake service.
  *
- * @param {EventData} eventData
+ * @param {EventPlatform.EventData} eventData
  */
 DefaultEventSubmitter.prototype.submitEvent = function ( eventData ) {
 	this.events.push( eventData );
@@ -88,7 +100,7 @@ DefaultEventSubmitter.prototype.doSubmitEvents = function () {
 	if ( this.events.length ) {
 		try {
 			navigator.sendBeacon(
-				this.eventGateUrl,
+				this.eventIntakeUrl,
 				JSON.stringify( this.events )
 			);
 		} catch ( e ) {
@@ -133,14 +145,11 @@ DefaultEventSubmitter.prototype.doDelayedSubmit = function () {
 /**
  * Called when an event is enqueued for submission to the event intake service.
  *
- * @param {EventData} eventData
+ * @param {EventPlatform.EventData} eventData
  */
 DefaultEventSubmitter.prototype.onSubmitEvent = function ( eventData ) {
 	// eslint-disable-next-line no-console
 	console.info( 'Submitted the following event:', eventData );
 };
 
-module.exports = {
-	DefaultEventSubmitter,
-	getEventGateUrl
-};
+module.exports = DefaultEventSubmitter;

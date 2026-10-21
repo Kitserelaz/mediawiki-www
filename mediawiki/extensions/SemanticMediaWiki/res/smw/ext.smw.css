@@ -1,0 +1,1079 @@
+/*!
+ * This file is part of the Semantic MediaWiki Extension
+ * @see https://www.semantic-mediawiki.org/
+ *
+ * @section LICENSE
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
+ *
+ * @since 1.8
+ *
+ * @file
+ * @ingroup SMW
+ *
+ * @licence GNU GPL v2+
+ * @author Jeroen De Dauw <jeroendedauw at gmail dot com>
+ * @author mwjames
+ */
+
+.float-right {
+	float: right;
+	margin-left: 10px;
+	clear: right;
+}
+
+.float-left {
+	float: left;
+	margin-right: 10px;
+	clear: left;
+}
+
+.clear-both {
+	clear: both;
+}
+
+.clientnojs {
+  display: none;
+}
+
+.client-nojs .clientnojs {
+  display: block;
+}
+
+.client-nojs .smw-schema-placeholder-message {
+  display: none;
+}
+
+.smw-json-data {
+    display: none;
+}
+
+.client-nojs .smw-json-data {
+    display: block;
+}
+
+.client-nojs .smw-overlay-spinner {
+	 display: none;
+}
+
+.smw-placeholder {
+	list-style: none;
+	background-color: #f5f5f5;
+	border-radius: 4px;
+	font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+	font-size: 14px;
+	line-height: 1.42857143;
+}
+
+/**
+ * Use to hide server-rendered message boxes
+ * For example, an error box is rendered in DuplicateLookupTaskHandler.php server-side,
+ * then being enabled in ext.smw.special.admin.js client-side.
+ */
+ .smw-message--hidden {
+	display: none !important;
+}
+
+.client-nojs .smw-placeholder::after {
+	content: "JavaScript is disabled or could not be detected!";
+	top: 80%;
+	text-align: center;
+	color:red;
+}
+
+.smw-personal-jobqueue-watchlist:hover, .smw-personal-jobqueue-watchlist:focus, .smw-personal-jobqueue-watchlist:active {
+	text-decoration: none;
+	color: #0645ad;
+}
+
+.smw-personal-table {
+	width: 100%;
+	font-size: 90%;
+}
+
+/* highlighting for builtin elements */
+.smwttcontent {
+	display:none;
+}
+
+span.smwbuiltin {
+	font-style: italic;
+}
+
+.item-count {
+	display: inline-block;
+    padding: 2px 5px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+    background-color: rgba(27,31,35,0.04);
+    border-radius: 4px;
+    color: #bbb;
+    margin-left: 10px;
+}
+
+.item-count.active {
+    background-color: rgba(27,31,35,0.08);
+    color: #444d56;
+}
+
+/* make divs look like <pre> */
+.smwpre {
+	font-family: monospace;
+	padding: 1em;
+	border: 1px dashed #2f6fab;
+	color: black;
+	background-color: #f9f9f9;
+	line-height: 1.1em;
+	margin-bottom: 0.5em;
+	margin-top: 0.5em;
+	white-space: pre-wrap;
+	white-space: -moz-pre-wrap;
+	white-space: -pre-wrap;
+	white-space: -o-pre-wrap;
+	word-wrap: break-word;
+	word-break: break-word;
+	margin-right: 5px;
+}
+
+.smwpre-no-margin {
+	margin: 0px;
+	margin-bottom: 0.5em;
+	margin-top: 0.5em;
+}
+
+.smw-debug-box {
+	border: 5px dotted #ffcc00;
+	background: #FFF0BD;
+	padding: 15px;
+	margin-bottom: 10px;
+}
+
+.smw-debug-box-header {
+	font-family: sans-serif;
+	padding-bottom: 15px;
+	padding-top: 10px;
+	font-weight: bolder;
+	font-size: 16px;
+	border-bottom: 1px dotted #ffcc00;
+	margin-bottom: 15px;
+}
+
+/* terminate page contents when inserting stuff below a page, typically used in <br> */
+#smwfootbr {
+	clear: both;
+}
+
+/* hide keys for sorting table entries */
+span.smwsortkey {
+	display: none;
+}
+
+/* buttons for sort-arrows */
+a.sortheader:hover {
+	text-decoration: none;
+}
+
+/* "semantic" span classes for Timeline */
+div.smwtimeline {
+	border: 1px solid #aaa;
+	background-color: #f9f9f9;
+	/*text-align: center;*/
+	/* After hours of debugging and frustration I now can safely say: IE sucks. (mak)
+	   You can support Semantic MediaWiki development by not using Internet Explorer. Thanks.
+	   (IE centers the Timeline *elements*, which messes up the whole layout) */
+}
+
+span.smwtlevent,
+span.smwtlband,
+span.smwtlsize,
+span.smwtlposition {
+	display: none;
+	speak: none;
+}
+
+span.smwtlcomment {
+	font-style: italic;
+	padding: 5px;
+}
+
+span.smw-chain-marker {
+    margin-left: 0.2em;
+}
+
+.smwtable-striped tbody > tr:nth-child(even) {
+	background-color: #f5f5f5;
+}
+
+.smwtable-striped tbody > tr:nth-child(odd) {
+	background-color: #fff;
+}
+
+.smwtable-striped tbody > tr:hover {
+	background-color: #eee;
+}
+
+.smwtable-clean {
+	width: auto;
+	max-width: 100%;
+	margin-bottom: 20px;
+	background-color: transparent;
+	border-spacing: 0px;
+}
+
+.smwtable-clean tr {
+	border-top: 1px solid #dddddd;
+}
+
+.smwtable-clean th {
+	text-align: left;
+}
+
+.smwtable-clean td, .smwtable-clean th {
+	padding: 0;
+}
+
+.smwtable-clean tr > th {
+	padding: 8px !important;
+	line-height: 1.42857143;
+	vertical-align: top;
+	border-top: 1px solid #dddddd;
+	border-collapse: collapse;
+	border-spacing: 0;
+	text-align: center;
+	vertical-align: middle;
+}
+
+.smwtable-clean tr > td {
+	padding: 8px !important;
+	line-height: 1.42857143;
+	vertical-align: top;
+	border-top: 1px solid #dddddd;
+	border-collapse: collapse;
+	border-spacing: 0;
+}
+
+.smwtable-clean tbody > tr:nth-child(even) {
+	background-color: #f5f5f5;
+}
+
+.smwtable-clean tr > th.headerSort {
+	padding-right: 21px !important;
+}
+
+/* Make it work for inline broadtable */
+.smwtable-clean.broadtable {
+	width: 100%;
+}
+
+div.smwhr hr {
+	background-color: #ddd;
+	color: #ddd;
+}
+
+/* warning messages */
+span.smwwarning {
+	color: #888;
+	font-style: italic;
+	font-size: 90%;
+}
+
+.smw-protection-indicator .smw-edit-protection {
+	background: url( assets/smw-icon-edit-protection.svg );
+    background-size: 25px 20px;
+    background-repeat: no-repeat;
+    display: inline-block;
+    padding: 20px 0 0px 26px;
+    top: 5px;
+    position: relative;
+}
+
+/**
+ * Search, browse, RDF icons/ FIXME: this was only used for Factbox docu, should be removed from code
+ * TODO: Change icons to #000 and toggle them by opacity and scale instead of using multiple version
+ * TODO: Perhaps we can use Codex/OOUI icons
+ */
+
+span.smwsearch a,
+span.smwbrowse a {
+	background-position: right center;
+	background-repeat: no-repeat;
+	padding-right: 18px;
+	color: #ccc;
+	text-decoration: none;
+	margin-right: 4px;
+}
+
+span.smwsearch a:hover,
+span.smwbrowse a:hover {
+	padding-right: 20px;
+	color: #888;
+	text-decoration: none;
+	margin-right: 2px;
+}
+
+span.smwsearch a {
+	background-image: url( assets/smw-icon-search-subtle.svg );
+}
+
+span.smwsearch a:hover {
+	background-image: url( assets/smw-icon-search.svg );
+}
+
+span.smwbrowse a {
+	background-image: url( assets/smw-icon-browse-subtle.svg );
+}
+
+span.smwbrowse a:hover {
+	background-image: url( assets/smw-icon-browse.svg );
+}
+
+.concept-documenation {
+	border-top: 1px dotted #aaa;
+}
+
+/* @since 1.9; Spinner */
+.smw-spinner .text {
+	padding-left: 2.1em;
+	font-size: 12px;
+	vertical-align: middle;
+}
+
+/* @since 1.9; Spinner for left side in-text */
+.smw-spinner.left.mw-small-spinner {
+	background-position: left;
+	vertical-align: middle;
+	display: inline-block;
+	padding: 0px !important;
+}
+
+/* @since 1.9; Sppinner for image center */
+.smw-spinner.center.mw-small-spinner {
+	vertical-align: middle;
+	display: inline-block;
+	padding: 0px !important;
+}
+
+/* @since 1.9.1 */
+table.smw-ask-query .smw-ask-query-condition {
+	width: 100%;
+}
+
+table.smw-ask-query .smw-ask-query-printout {
+	width: 100%;
+}
+
+hr.smw-form-horizontalrule {
+	margin-bottom: 10px;
+ 	background-color: #ddd;
+ }
+
+.smw-horizontalrule {
+	margin-bottom: 10px;
+	border-bottom: 1px solid #ddd;
+ }
+
+.smw-form-select,
+.smw-form-input {
+	padding: 1px 1px;
+}
+
+.smw-form-checkbox {
+	vertical-align: middle;
+	cursor: pointer;
+}
+
+label.smw-form-checkbox {
+	vertical-align: middle;
+	cursor: pointer;
+}
+
+.smw-editpage-help {
+	background-color: #f0f0f0;
+	border: 1px solid silver;
+	/* border-top: none; */
+	padding: 0.5em 1em 0.5em 1em;
+	margin-bottom: 1em;
+}
+
+.smw-column-header {
+	font-weight: bold;
+	font-size: 1.17em;
+	line-height: 1.6;
+	margin-top: 0.5em;
+	margin-bottom: 0;
+	padding-bottom: 0;
+	color: black;
+	overflow: hidden;
+}
+
+.smw-column-header:first-of-type {
+	margin-top: 0em;
+}
+
+.smw-column {
+	float: left;
+	word-wrap: break-word;
+	box-decoration-break: clone;
+	-webkit-box-decoration-break: clone;
+}
+
+.smw-column-responsive {
+	-webkit-columns: 3 20em;
+	-moz-columns: 3 20em;
+	columns: 3 20em;
+	-webkit-column-gap: 1em;
+	-moz-column-gap: 1em;
+	column-gap: 1em;
+}
+
+.smw-column-twofold-responsive {
+	-webkit-columns: 2 20em;
+	-moz-columns: 2 20em;
+	columns: 2 20em;
+	-webkit-column-gap: 1em;
+	-moz-column-gap: 1em;
+	column-gap: 1em;
+}
+
+.smw-column-twofold-responsive li:first-child {
+	margin-top: -3px;
+}
+
+.smw-column[dir="rtl"] {
+	float: right;
+}
+
+.smw-column-responsive[dir="rtl"], .smw-column-twofold-responsive[dir="rtl"] {
+	float: right;
+}
+
+.smw-columnlist-container .smw-column-responsive {
+	margin-bottom: -1em;
+}
+
+.smw-note {
+	padding: 8px 15px;
+	list-style: none;
+	background-color: #f5f5f5;
+	border-radius: 4px;
+	font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+	font-size: 14px;
+	line-height: 1.42857143;
+}
+
+.smw-svg-icon {
+	display: inline-flex;
+	align-self: center;
+	position: relative;
+	height: 1em;
+	width: 1em;
+}
+
+.smw-svg-icon svg {
+	height: 1em;
+	width: 1em;
+}
+
+.smw-svg-icon.svg-baseline svg {
+	bottom: -0.125em;
+	position: absolute;
+}
+
+.smw-icon-info {
+	background: url( assets/smw-icon-info.svg ) no-repeat left center;
+	padding: 0 0 5px 25px;
+}
+
+.smw-icon-pen {
+	background-image: url( assets/smw-icon-pen.svg );
+	background-repeat: no-repeat;
+	padding: 0 0 0 25px;
+	background-position: center;
+}
+
+.smw-icon-bookmark {
+	background-image: url( assets/smw-icon-bookmark.svg );
+	background-repeat: no-repeat;
+	padding: 0 0 0 20px;
+	background-position: center;
+}
+
+.smw-icon-compact {
+	background-image: url( assets/smw-icon-compact.svg );
+	background-repeat: no-repeat;
+	padding: 0 0 0 15px;
+	background-position: center;
+}
+
+/* Handling Long Words and URLs (Forcing Breaks, Hyphenation, Ellipsis */
+.smwprops,
+.smwpropname,
+.smwtype_uri {
+	word-break: break-word;
+	word-wrap: break-word;
+	-webkit-hyphens: auto;
+	-moz-hyphens: auto;
+	hyphens: auto;
+	box-decoration-break: clone;
+	-webkit-box-decoration-break: clone;
+}
+
+/* Distinguish subobjects from other titles */
+
+.smw-subobject-entity {
+	font-style: italic;
+}
+
+/* jquery-autocomplete
+.autocomplete-suggestions {
+	border: 1px solid #999;
+	background: #fff;
+	overflow: auto;
+}
+
+.autocomplete-suggestion {
+	padding: 2px 5px;
+	white-space: nowrap;
+	overflow: hidden;
+	font-size: 0.8em;
+}
+
+.autocomplete-selected {
+	background: #f0f0f0;
+}
+
+.autocomplete-suggestions strong {
+	font-weight: normal;
+	color: #39f;
+}
+
+.autocomplete-group {
+	padding: 2px 5px;
+}
+
+.autocomplete-group strong {
+	display: block;
+	border-bottom: 1px solid #000;
+}
+*/
+
+.autocomplete-suggestions {
+	background: white;
+	border: 1px solid rgb( 221, 221, 221 );
+	border-radius: 3px;
+	box-shadow: rgba( 0, 0, 0, 0.1 ) 0px 0px 5px;
+	min-width: 120px;
+	color: rgb( 111, 128, 146 );
+	float: right;
+	padding-top: 2px;
+	margin-right: -15px;
+	font-size: 16px;
+	font-weight: normal;
+	z-index: 11110 !important;
+	overflow-y: auto;
+	overflow-x: hidden;
+}
+
+.autocomplete-arrow.cdx-text-input__input {
+	background-position-y: 4px;
+}
+
+[dir='rtl'] .autocomplete-suggestions {
+	margin-right: 0px;
+}
+
+.autocomplete-suggestion {
+	display: block;
+	padding: 5px 10px;
+	border-bottom: 1px solid #ddd;
+	cursor: pointer;
+}
+
+.autocomplete-selected {
+	background: #f0f0f0;
+}
+
+.autocomplete-suggestions strong {
+	font-weight: normal;
+	color: #3399ff;
+}
+
+.autocomplete-group {
+	padding: 2px 5px;
+}
+
+.autocomplete-group strong {
+	display: block;
+	border-bottom: 1px solid #000;
+}
+
+.autocomplete-loading {
+	background: url( assets/smw-icon-autocomplete-loading.gif ) no-repeat left center;
+	padding-right: 30px;
+	vertical-align: middle;
+	background-position: right 10px center;
+}
+
+/* https://codepen.io/vkjgr/pen/VYMeXp */
+.autocomplete-arrow-light {
+	background-image: linear-gradient(45deg, transparent 50%, gray 50%), linear-gradient(135deg, gray 50%, transparent 50%), linear-gradient(to right, #ffffff, #ffff);
+    background-position: calc(100% - 17px) calc(1em + 2px), calc(100% - 12px) calc(1em + 2px), calc(100% - 2.5em) 0.5em;
+    background-size: 5px 5px, 5px 5px, 1px 1.5em;
+    background-repeat: no-repeat;
+}
+
+.autocomplete-arrow {
+	background-image: url( assets/smw-icon-arrow-down.svg );
+	background-repeat: no-repeat;
+	background-position-x: calc(100% - 6px);
+	background-position-y: 5px;
+}
+
+.autocomplete-arrow.cdx-text-input__input {
+	background-position-y: 4px;
+}
+
+[dir='rtl'] .autocomplete-arrow {
+	background-position-x:6px;
+}
+
+.skin-vector input#smw-property-input.autocomplete-suggestions {
+	height: 1.15em;
+	padding: 2px 2px;
+}
+
+.skin-chameleon input#smw-property-input.autocomplete-suggestions {
+	height: 30px;
+	padding: 2px 2px;
+}
+
+.skin-foreground input#smw-property-input.autocomplete-suggestions {
+	height: 32px;
+	padding: 2px 0px 0px 8px;
+}
+
+.skin-chameleon .autocomplete-suggestion,
+.skin-foreground .autocomplete-suggestion {
+	padding: 2px 5px;
+	white-space: nowrap;
+	overflow: hidden;
+	font-size: 0.9em;
+}
+
+.smw-breadcrumb-link {
+	color: #7d7d7d;
+	font-size: 84%;
+	line-height: 1.2em;
+	margin: 0.4em 0 0.6em 0;
+	width: auto;
+}
+
+.smw-breadcrumb-arrow-right {
+	border-top: 5px solid transparent;
+	border-bottom: 5px solid transparent;
+	border-left: 5px solid #aaa;
+	display: inline-block;
+	position: relative;
+	margin-left: 0px;
+	margin-right: 4px;
+}
+
+.smw-ask-action-btn,
+.smw-action-btn {
+	display: inline-block;
+	padding: 3px 6px;
+	margin-bottom: 0;
+	font-size: 12px;
+	font-weight: 400;
+	line-height: 1.42857143;
+	text-align: center;
+	white-space: nowrap;
+	vertical-align: middle;
+	-ms-touch-action: manipulation;
+	touch-action: manipulation;
+	cursor: pointer;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	background-image: none;
+	border: 1px solid transparent;
+	border-radius: 4px;
+}
+
+.smw-action-btn-min200 {
+	min-width: 200px;
+}
+
+.smw-ask-action-btn-lgrey,
+a.smw-ask-action-btn-lgrey:visited,
+.smw-action-btn-lgrey,
+.smw-action-btn-lgrey:visited {
+	color: #222;
+	background-color: #eee;
+	border-color: #ddd;
+	text-decoration:none;
+}
+
+a.smw-ask-action-btn-lgrey:hover,
+.smw-action-btn-lgrey:hover {
+	color: #222;
+	background-color: #ddd;
+	border-color: #ddd;
+	text-decoration:none;
+}
+
+.smw-ask-action-btn-lblue,
+a.smw-ask-action-btn-lblue:visited {
+	color: #fff;
+	background-color: #5bc0de;
+	border-color: #46b8da;
+	text-decoration: none;
+}
+
+a.smw-ask-action-btn-lblue:hover {
+	color: #fff;
+	background-color: #31b0d5;
+	border-color: #269abc;
+	text-decoration: none;
+}
+
+.smw-ask-action-btn-dblue,
+a.smw-ask-action-btn-dblue:visited {
+	color: #fff;
+	background-color: #337ab7;
+	border-color: #2e6da4;
+	text-decoration: none;
+}
+
+.smw-ask-action-btn-dblue:hover,
+.smw-ask-action-btn-dblue:focus,
+a.smw-ask-action-btn-dblue:hover,
+a.smw-ask-action-btn-dblue:focus {
+	color: #fff;
+	background-image:none;
+	background-color: #286090;
+	border-color: #204d74;
+	text-decoration: none;
+}
+
+.smw-concept-page-indicator a.external.text,
+.smw-page-indicator a.external.text {
+	background-image: none;
+	padding-right: 0;
+}
+
+.smw-page-indicator {
+	display: inline-block;
+	font-weight: normal;
+	line-height: 1.25;
+	text-align: center;
+	white-space: nowrap;
+	vertical-align: middle;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	border: 1px solid transparent;
+	padding: 0.5rem 1rem;
+	/* font-size: 1rem; */
+	border-radius: 0.25rem;
+	-webkit-transition: all 0.2s ease-in-out;
+	-o-transition: all 0.2s ease-in-out;
+	transition: all 0.2s ease-in-out;
+	padding: 0.25rem 0.5rem;
+	/* font-size: 0.875rem; */
+	border-radius: 0.2rem;
+	color: #292b2c;
+	/* background-color: #e6e6e6; */
+	border-color: #ddd;
+}
+
+.smw-protection-indicator {
+	display: inline-block;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	/* font-size: 1rem; */
+	border-radius: 0.25rem;
+	-webkit-transition: all 0.2s ease-in-out;
+	-o-transition: all 0.2s ease-in-out;
+	transition: all 0.2s ease-in-out;
+	/* font-size: 0.875rem; */
+	border-radius: 0.2rem;
+	color: #292b2c;
+	border-color: transparent;
+}
+
+.smw-protection-indicator.with-border {
+	border-color: #ddd;
+}
+
+.smw-page-indicator.usage-count.moderate {
+	background-color: #f2d29b;
+	border: 1px solid #f2d29b;
+	color: #aa4c2c;
+}
+
+.smw-page-indicator.usage-count.high {
+	background-color: #ff887f;
+	border: 1px solid #ffB79e;
+	color: #800000;
+}
+
+.smw-page-indicator-rdflink {
+	line-height: 24px;
+	margin-right: 10px;
+}
+
+.smw-page-indicator-rdflink a {
+	background: url( assets/smw-icon-rdf.svg ) center left no-repeat;
+	padding-left: 28px;
+	display: inline-block;
+	height: 24px;
+	line-height: 24px;
+}
+
+.smw-reference-indicator {
+	vertical-align: super;
+	margin-left: 2px;
+	font-size: 10px;
+}
+
+.smw-reference-indicator::before {
+	content: '';
+}
+
+.smw-reference-indicator::after {
+	content: '≡';
+}
+
+.smw-admin-circle-orange {
+	width: 14px;
+	height: 14px;
+	background: orange;
+	position: absolute;
+	display: block;
+	border-radius: 50%;
+	display: inline-block;
+	margin-right: 20px;
+	margin-top: 3px;
+}
+
+.is-disabled {
+	opacity: .5;
+	position: relative;
+	pointer-events: none;
+}
+
+.is-disabled::after {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	content: ' ';
+}
+
+.smw-break-word {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  -ms-hyphens: auto;
+  -moz-hyphens: auto;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+}
+
+.smw-break-word a {
+  -ms-word-break: break-all;
+  word-break: break-all;
+  word-break: break-word;
+}
+
+.smw-flex-center {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.smw-absolute {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+}
+
+/* http://stackoverflow.com/questions/6091253/overlay-with-spinner */
+
+.smw-margin-small {
+	margin-top: 10px;
+	margin-bottom: 10px;
+}
+
+.smw-margin-extra {
+	margin-top: 10px;
+	margin-bottom: 10px;
+	padding: 100px;
+}
+
+.smw-loading-image-dots {
+	background: url( assets/smw-icon-loading-dots.gif ) no-repeat left center;
+	padding: 5px 0 5px 35px;
+	vertical-align: middle;
+}
+
+.smw-overlay-spinner.mini {
+	height: 15px;
+	width: 15px;
+	border-left: 3px solid rgba( 0, 174, 239, .15 );
+	border-right: 3px solid rgba( 0, 174, 239, .15 );
+	border-bottom: 3px solid rgba( 0, 174, 239, .15 );
+	border-top: 3px solid rgba( 0, 174, 239, .8 );
+}
+
+.smw-overlay-spinner.small {
+	height: 20px;
+	width: 20px;
+}
+
+.smw-overlay-spinner.medium {
+	height: 40px;
+	width: 40px;
+}
+
+.smw-overlay-spinner.large {
+	height: 60px;
+	width: 60px;
+}
+
+.smw-overlay-spinner.flex {
+	left: unset;
+	top: unset;
+}
+
+.smw-overlay-spinner.flex-all {
+	left: unset;
+	top: unset;
+	position: unset;
+}
+
+.smw-overlay-spinner {
+	position: absolute;
+	left: 47%;
+	top: 30%;
+	height: 60px;
+	width: 60px;
+	margin: 0px auto;
+	-webkit-animation: rotation 1.0s infinite linear;
+	-moz-animation: rotation 1.0s infinite linear;
+	-o-animation: rotation 1.0s infinite linear;
+	animation: rotation 1.0s infinite linear;
+	border-left: 6px solid rgba( 0, 174, 239, .15 );
+	border-right: 6px solid rgba( 0, 174, 239, .15 );
+	border-bottom: 6px solid rgba( 0, 174, 239, .15 );
+	border-top: 6px solid rgba( 0, 174, 239, .8 );
+	border-radius: 100%;
+}
+
+@-webkit-keyframes rotation {
+	from {-webkit-transform: rotate(0deg);}
+	to {-webkit-transform: rotate(359deg);}
+}
+
+@-moz-keyframes rotation {
+	from {-moz-transform: rotate(0deg);}
+	to {-moz-transform: rotate(359deg);}
+}
+
+@-o-keyframes rotation {
+	from {-o-transform: rotate(0deg);}
+	to {-o-transform: rotate(359deg);}
+}
+
+@keyframes rotation {
+	from {transform: rotate(0deg);}
+	to {transform: rotate(359deg);}
+}
+
+/* MobileFrontend overrides some desktop rules */
+.content table.broadtable,
+.smw-ask-result table.broadtable {
+	width: 100% !important;
+}
+
+/**
+ * Responsive settings (#see smw.table.css)
+ */
+@media screen and (max-width: 800px) {
+
+}
+
+/**
+ * JSON
+ */
+.mw-json .value, .mw-json-single-value {
+    word-break: break-word;
+}
+
+.ns-112.action-submit .error {
+	color:#721c24;
+	padding: 10px;
+	margin: 0.5em 0;
+	border-radius: 1px;
+	background-color: #f2dede;
+	border: 0px solid;
+	padding: .8em 1em;
+	background: #f2dede;
+	margin: 0.5rem 0;
+	border-left: 5px solid #ce4844;
+	margin-bottom: 15px;
+}
+
+.ns-112.action-submit .error a.external {
+	background: none !important;
+	padding: 0 !important;
+}
+
+.ns-112.action-submit .error ul {
+	margin: 0 0 0 25px;
+	font-size: 14px;
+}
+
+.ns-112.action-submit .error ul li:first-child {
+	margin-top: 30px;
+	display: block;
+	margin-left: -20px;
+	margin-bottom: 5px;
+}
+
+.ns-112.action-submit .error ul li:not(:first-child) {
+	margin-left: 10px;
+}
+
+.ns-112.action-submit .error:before {
+	content: "Error";
+    font-weight: bold;
+    padding: 0px 5px 0px 5px;
+    /* display: block; */
+    /* margin-bottom: 5px; */
+    color: #721c24;
+    font-weight: 600;
+    float: left;
+    border-radius: 3px;
+    margin-bottom: 10px;
+    width: 100%;
+}

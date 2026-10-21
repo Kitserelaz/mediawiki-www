@@ -1,0 +1,101 @@
+{
+    "bool": {
+        "must": [
+            {
+                "bool": {
+                    "should": [
+                        {
+                            "multi_match": {
+                                "query": "yet another search term",
+                                "fields": [
+                                    "all_near_match^5",
+                                    "all_near_match.asciifolding^3.75"
+                                ]
+                            }
+                        },
+                        {
+                            "function_score": {
+                                "query": {
+                                    "bool": {
+                                        "minimum_should_match": 1,
+                                        "should": [
+                                            {
+                                                "dis_max": {
+                                                    "tie_breaker": 1,
+                                                    "queries": [
+                                                        {
+                                                            "bool": {
+                                                                "minimum_should_match": 0,
+                                                                "filter": [
+                                                                    {
+                                                                        "multi_match": {
+                                                                            "query": "yet another search term",
+                                                                            "fields": [
+                                                                                "all",
+                                                                                "all.plain"
+                                                                            ],
+                                                                            "operator": "and"
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "should": [
+                                                                    {
+                                                                        "match": {
+                                                                            "descriptions.de.plain": {
+                                                                                "query": "yet another search term",
+                                                                                "boost": 2
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "match": {
+                                                                            "descriptions.fr": {
+                                                                                "query": "yet another search term",
+                                                                                "boost": 2
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            },
+                                            {
+                                                "match_none": {}
+                                            }
+                                        ]
+                                    }
+                                },
+                                "boost_mode": "replace",
+                                "functions": [
+                                    {
+                                        "script_score": {
+                                            "script": {
+                                                "source": "100 \/ ( 1 + exp( -1 * ( _score + intercept ) ) )",
+                                                "params": {
+                                                    "intercept": 1
+                                                },
+                                                "lang": "expression"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ],
+                    "minimum_should_match": 1
+                }
+            }
+        ],
+        "filter": [
+            {
+                "terms": {
+                    "namespace": [
+                        0
+                    ]
+                }
+            }
+        ]
+    }
+}

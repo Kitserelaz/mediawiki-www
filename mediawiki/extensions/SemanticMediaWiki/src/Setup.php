@@ -1,0 +1,375 @@
+<?php
+
+namespace SMW;
+
+use MediaWiki\HookContainer\HookContainer;
+use MediaWiki\MediaWikiServices;
+use MediaWiki\Output\OutputPage;
+use SMW\Localizer\Localizer;
+use SMW\Localizer\Message;
+use SMW\MediaWiki\Hooks\BeforePageDisplay;
+use SMW\Query\ResultFormat;
+use SMW\Services\ServicesFactory as ApplicationFactory;
+use SMW\Utils\Logo;
+
+/**
+ * Extension setup and registration
+ *
+ * @license GPL-2.0-or-later
+ * @since 1.9
+ *
+ * @author mwjames
+ */
+final class Setup {
+
+	private ?HookContainer $hookContainer = null;
+
+	/**
+	 * @since 7.0.0
+	 */
+	public function setHookContainer( HookContainer $hookContainer ): void {
+		$this->hookContainer = $hookContainer;
+	}
+
+	/**
+	 * Describes the minimum requirements for the database version that Semantic
+	 * MediaWiki expects and may differ from what is defined in:
+	 *
+	 * - `MysqlInstaller`
+	 * - `PostgresInstaller`
+	 * - `SqliteInstaller`
+	 *
+	 * Any change to a version will modify the key computed by `SetupFile::makeKey`.
+	 *
+	 * @var array
+	 */
+	const MINIMUM_DB_VERSION = [
+		'postgres' => '9.5',
+		'sqlite' => '3.3.7',
+		'mysql' => '5.5.8'
+	];
+
+	/**
+	 * Registers a hook even before the "early" registration to allow checking
+	 * whether the extension is loaded and enabled.
+	 *
+	 * @since 3.1
+	 *
+	 * @param array &$vars
+	 *
+	 * @return void
+	 */
+	public static function registerExtensionCheck( array &$vars ): void {
+		$uncaughtExceptionHandler = new UncaughtExceptionHandler(
+			SetupCheck::newFromDefaults()
+		);
+
+		// Register an exception handler to fetch the "Uncaught Exception" which
+		// can be thrown by the `ExtensionRegistry` in case the deprecated
+		// `enableSemantics` and `wfLoadExtension` were used simultaneously
+		// by emitting something like:
+		//
+		// "... It was attempted to load SemanticMediaWiki twice ..."
+		set_exception_handler( [ $uncaughtExceptionHandler, 'registerHandler' ] );
+
+		if ( $vars['smwgIgnoreExtensionRegistrationCheck'] ) {
+			return;
+		}
+
+		// This hook is registered imperatively (not via extension.json HookHandlers)
+		// because it must fire ONLY when SMW failed to load. A declarative entry
+		// would invoke the handler on every page view; this form skips
+		// registration entirely when SMW loaded successfully (see initExtension()).
+		$vars['wgHooks']['BeforePageDisplay']['smw-extension-check'] = static function ( OutputPage $outputPage ): bool {
+			BeforePageDisplay::informAboutExtensionAvailability( $outputPage );
+
+			return true;
+		};
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @param array &$vars
+	 *
+	 * @return void
+	 */
+	public static function releaseExtensionCheck( &$vars ): void {
+		// Restore the exception handler from before Setup::registerExtensionCheck
+		// and before MediaWiki setup has added its own in `Setup.php` after
+		// declaring `MW_SERVICE_BOOTSTRAP_COMPLETE` using
+		// `MWExceptionHandler::installHandler`.
+		if ( !defined( 'MW_SERVICE_BOOTSTRAP_COMPLETE' ) ) {
+			restore_exception_handler();
+		}
+	}
+
+	/**
+	 * Runs at the earliest possible event to initialize functions or hooks that
+	 * are otherwise too late for the hook system to be recognized.
+	 *
+	 * @since 3.0
+	 *
+	 * @param array $vars
+	 *
+	 * @return array
+	 */
+	public static function initExtension( array $vars ): array {
+		// Remove the early-load BeforePageDisplay hook installed in
+		// registerExtensionCheck() now that we know SMW loaded successfully;
+		// the declarative SemanticMediaWiki.BeforePageDisplay handler takes
+		// over from here.
+		if ( defined( 'SMW_EXTENSION_LOADED' ) ) {
+			unset( $vars['wgHooks']['BeforePageDisplay']['smw-extension-check'] );
+		}
+
+		return $vars;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @return bool
+	 */
+	public static function isEnabled(): bool {
+		return defined( 'SMW_VERSION' ) && defined( 'SMW_EXTENSION_LOADED' );
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param bool $isCli
+	 *
+	 * @return bool
+	 */
+	public static function isValid( bool $isCli = false ): bool {
+		return SetupFile::isGoodSchema( $isCli );
+	}
+
+	/**
+	 * @since 1.9
+	 *
+	 * @param array $vars
+	 * @param string $rootDir
+	 *
+	 * @return array
+	 */
+	public function init( array $vars, string $rootDir ): array {
+		$setupFile = new SetupFile();
+		$vars = $setupFile->loadSchema( $vars );
+		Globals::replace( $vars );
+
+		if ( !$vars['smwgIgnoreUpgradeKeyCheck'] ) {
+			$this->runUpgradeKeyCheck( $setupFile, $vars );
+		}
+
+		$this->initConnectionProviders();
+		$this->initMessageCallbackHandler();
+		$this->addDefaultConfigurations( $vars, $rootDir );
+
+		$this->registerPermissions( $vars );
+
+		$this->registerParamDefinitions( $vars );
+		$this->registerFooterIcon( $vars );
+
+		// All hook handlers are wired declaratively via extension.json's
+		// HookHandlers / Hooks blocks. The early-load BeforePageDisplay hook
+		// is installed imperatively from registerExtensionCheck() above; it
+		// is removed in initExtension() once SMW is known to have loaded.
+
+		$this->hookContainer->run( 'SMW::Setup::AfterInitializationComplete', [ &$vars ] );
+
+		return $vars;
+	}
+
+	/**
+	 * @param SetupFile $setupFile
+	 * @param array $vars
+	 *
+	 * @return void
+	 */
+	private function runUpgradeKeyCheck( SetupFile $setupFile, array $vars ): void {
+		$setupCheck = new SetupCheck(
+			[
+				'SMW_VERSION' => SMW_VERSION,
+				'MW_VERSION'  => MW_VERSION,
+				'wgLanguageCode' => $vars['wgLanguageCode'],
+				'smwgUpgradeKey' => $vars['smwgUpgradeKey']
+			],
+			$setupFile
+		);
+
+		if ( $setupCheck->hasError() ) {
+
+			// If classified as `ERROR_EXTENSION_LOAD` then it means `extension.json`
+			// was invoked by `wfLoadExtension( 'SemanticMediaWiki' )` at this
+			// point which we don't allow as it conflicts with the setup of
+			// namespaces and other settings hence we reclassify the error as an
+			// invalid access.
+			if ( $setupCheck->isError( SetupCheck::ERROR_EXTENSION_LOAD ) ) {
+				$setupCheck->setErrorType( SetupCheck::ERROR_EXTENSION_INVALID_ACCESS );
+			}
+
+			$setupCheck->showErrorAndAbort( $setupCheck->isCli() );
+		}
+	}
+
+	/**
+	 * @param array &$vars
+	 * @param string $rootDir
+	 *
+	 * @return void
+	 */
+	private function addDefaultConfigurations( array &$vars, string $rootDir ): void {
+		// Convenience function for extensions depending on a SMW specific
+		// test infrastructure
+		if ( !defined( 'SMW_PHPUNIT_AUTOLOADER_FILE' ) ) {
+			$smwDir = dirname( $rootDir );
+			define( 'SMW_PHPUNIT_AUTOLOADER_FILE', "$smwDir/tests/autoloader.php" );
+		}
+
+		if ( !defined( 'SMW_PHPUNIT_DIR' ) ) {
+			define( 'SMW_PHPUNIT_DIR', __DIR__ . '/../tests/phpunit' );
+		}
+
+		$vars['smwgMasterStore'] = null;
+		$vars['smwgIQRunningNumber'] = 0;
+	}
+
+	/**
+	 * @return void
+	 */
+	private function initConnectionProviders(): void {
+		$applicationFactory = ApplicationFactory::getInstance();
+
+		$mwCollaboratorFactory = $applicationFactory->newMwCollaboratorFactory();
+		$connectionManager = $applicationFactory->getConnectionManager();
+
+		$connectionManager->registerConnectionProvider(
+			DB_PRIMARY,
+			$mwCollaboratorFactory->newLoadBalancerConnectionProvider( DB_PRIMARY )
+		);
+
+		$connectionManager->registerConnectionProvider(
+			DB_REPLICA,
+			$mwCollaboratorFactory->newLoadBalancerConnectionProvider( DB_REPLICA )
+		);
+
+		$connectionManager->registerConnectionProvider(
+			'mw.db',
+			$mwCollaboratorFactory->newConnectionProvider( 'mw.db' )
+		);
+
+		// Connection can be used to redirect queries to another DB cluster
+		$connectionManager->registerConnectionProvider(
+			'mw.db.queryengine',
+			$mwCollaboratorFactory->newConnectionProvider( 'mw.db.queryengine' )
+		);
+
+		$connectionManager->registerConnectionProvider(
+			'elastic',
+			$applicationFactory->singleton( 'ElasticFactory' )->newConnectionProvider()
+		);
+	}
+
+	private function initMessageCallbackHandler(): void {
+		Message::registerCallbackHandler( Message::TEXT, static function ( $arguments, $language ) {
+			if ( $language === Message::CONTENT_LANGUAGE ) {
+				$language = Localizer::getInstance()->getContentLanguage();
+			}
+
+			if ( $language === Message::USER_LANGUAGE ) {
+				$language = Localizer::getInstance()->getUserLanguage();
+			}
+
+			return call_user_func_array( 'wfMessage', $arguments )->inLanguage( $language )->text();
+		} );
+
+		Message::registerCallbackHandler( Message::ESCAPED, static function ( $arguments, $language ) {
+			if ( $language === Message::CONTENT_LANGUAGE ) {
+				$language = Localizer::getInstance()->getContentLanguage();
+			}
+
+			if ( $language === Message::USER_LANGUAGE ) {
+				$language = Localizer::getInstance()->getUserLanguage();
+			}
+
+			return call_user_func_array( 'wfMessage', $arguments )->inLanguage( $language )->escaped();
+		} );
+
+		Message::registerCallbackHandler( Message::PARSE, static function ( $arguments, $language ) {
+			if ( $language === Message::CONTENT_LANGUAGE ) {
+				$language = Localizer::getInstance()->getContentLanguage();
+			}
+
+			if ( $language === Message::USER_LANGUAGE ) {
+				$language = Localizer::getInstance()->getUserLanguage();
+			}
+
+			$message = call_user_func_array( 'wfMessage', $arguments )->inLanguage( $language );
+
+			// 1.27+
+			// [GlobalTitleFail] MessageCache::parse called by ...
+			// Message::parseText/MessageCache::parse with no title set.
+			//
+			// Message::setInterfaceMessageFlag "... used to restore the flag
+			// after setting a language"
+			$title = $GLOBALS['wgTitle'] ?? MediaWikiServices::getInstance()->getTitleFactory()->newFromText( 'Blank', NS_SPECIAL );
+
+			return $message->setInterfaceMessageFlag( true )->title( $title )->parse();
+		} );
+	}
+
+	/**
+	 * @see https://www.mediawiki.org/wiki/Manual:$wgRestrictionLevels
+	 */
+	private function registerPermissions( array &$vars ): void {
+		if ( !defined( 'SMW_EXTENSION_LOADED' ) ) {
+			return;
+		}
+
+		$settings = ApplicationFactory::getInstance()->getSettings();
+
+		// Add an additional protection level restricting edit/move/etc
+		$editProtectionRight = $settings->get( 'smwgEditProtectionRight' );
+		if ( $editProtectionRight !== false ) {
+			$vars['wgRestrictionLevels'][] = $editProtectionRight;
+		}
+	}
+
+	/**
+	 * @param array &$vars
+	 *
+	 * @return void
+	 */
+	private function registerParamDefinitions( array &$vars ): void {
+		$vars['wgParamDefinitions']['smwformat'] = [
+			'definition' => ResultFormat::class,
+		];
+	}
+
+	/**
+	 * @see https://www.mediawiki.org/wiki/Manual:$wgFooterIcons
+	 *
+	 * @param array &$vars
+	 *
+	 * @return void
+	 */
+	private function registerFooterIcon( array &$vars ): void {
+		if ( !defined( 'SMW_EXTENSION_LOADED' ) ) {
+			return;
+		}
+
+		if ( isset( $vars['wgFooterIcons']['poweredbysmw']['semanticmediawiki'] ) ) {
+			return;
+		}
+
+		$vars['wgFooterIcons']['poweredbysmw']['semanticmediawiki'] = [
+			'src' => Logo::get( 'footer' ),
+			'url' => 'https://www.semantic-mediawiki.org/wiki/Semantic_MediaWiki',
+			'alt' => 'Powered by Semantic MediaWiki',
+			'class' => 'smw-footer'
+		];
+	}
+
+}

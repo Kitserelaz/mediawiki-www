@@ -33,7 +33,7 @@ Set `output_path` to a file to have valid events be output to a file instead
 of stdout.
 
 If you are developing schemas, you'll want to clone a schema repository
-(likely [schemas/event/secondary](https://gerrit.wikimedia.org/g/schemas/event/secondary/+/refs/heads/master)) and edit `devserver/eventgate.config.yaml`
+(likely [schemas/event/secondary](https://gitlab.wikimedia.org/repos/data-engineering/schemas-event-secondary)) and edit `devserver/eventgate.config.yaml`
 and change `schema_base_uris` to include the path to your clone of that repository.
 
 ### Configure EventLogging to send events to the eventgate-devserver
@@ -50,7 +50,7 @@ $wgEventLoggingServiceUri = 'http://localhost:8192/v1/events';
 // batches of queued events.  That's annoying in a dev env.
 $wgEventLoggingQueueLingerSeconds = 1;
 
-// By settings $wgEventLoggingStreamNames to false, we instruct EventLogging
+// By setting $wgEventLoggingStreamNames to false, we instruct EventLogging
 // to not use any EventStreamConfig. Instead, all streams will be seen as
 // if they are configured and registered. See the EventStreamConfig
 // [README](https://gerrit.wikimedia.org/r/plugins/gitiles/mediawiki/extensions/EventStreamConfig/+/master/README.md//mediawiki-config)

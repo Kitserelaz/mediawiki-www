@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Les Meloures",
+			"Robby",
+			"Volvox"
+		]
+	},
+	"skinname-medik": "Medik",
+	"medik-default": "Standard",
+	"medik-desc": "Einfach a propper Benotzeruewerfläch, déi op der Bootstrap-Bibliothéik baséiert.",
+	"medik-font-label": "Schrëftgréisst",
+	"medik-tools-menu": "Änneren a Geschier"
+}

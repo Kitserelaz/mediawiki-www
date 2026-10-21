@@ -1,0 +1,63 @@
+@import 'mediawiki.skin.variables.less';
+@import '../../utils/variables.less';
+@import '../../utils/mixins.less';
+
+.mw-ge-addImageSaveDialog {
+	color: @color-base;
+
+	&-summaryLabel {
+		.rel-font-size-and-line-height( @parentFontSize: 16px, @targetFontSize: 16px, @targetLineHeight: 22.8px );
+		padding-bottom: 7px;
+		border-bottom: @border-width-base @border-style-base #eaecf0;
+	}
+
+	&-imageSummary {
+		display: flex;
+		justify-content: space-between;
+		padding: 10px 0 15px 0;
+
+		// accepted/rejected icon
+		& > .oo-ui-iconElement {
+			// approximate @color-subtle which has 36% brightness in HSB
+			opacity: @opacity-icon-subtle;
+			margin-left: 8px;
+		}
+	}
+
+	&-imageInfo {
+		.oo-ui-iconElement {
+			margin-right: 8px;
+		}
+		font-weight: bold;
+		display: flex;
+		align-items: flex-start;
+
+		&-filename {
+			padding-top: 4px;
+			overflow-wrap: anywhere;
+		}
+	}
+
+	&-imagePreview {
+		background-repeat: no-repeat;
+		background-position: center;
+		background-color: @background-color-growth-apparent;
+		background-size: contain;
+		margin-bottom: 8px;
+	}
+
+	&-bodyContent,
+	&-copyrightWarning {
+		.rel-font-size-and-line-height( @parentFontSize: 16px, @targetFontSize: 13px, @targetLineHeight: 19.5px );
+		padding-bottom: 12px;
+	}
+
+	&-bodyContent {
+		border-bottom: @border-width-base @border-style-base #eaecf0;
+	}
+
+	&-copyrightWarning {
+		padding: 16px 0;
+		color: @color-subtle;
+	}
+}

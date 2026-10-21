@@ -1,0 +1,42 @@
+{
+	"@metadata": {
+		"authors": [
+			"Kly",
+			"SunAfterRain",
+			"Sunny00217",
+			"Winston Sung",
+			"Xiplus"
+		]
+	},
+	"apihelp-growthstarmentee-summary": "由目前使用者將學員標記或取消標記星號（私密存儲且不記錄）",
+	"apihelp-growthstarmentee-param-gesaction": "要採取的行動（<kbd>加上標記</kbd>或<kbd>移除標記</kbd>）",
+	"apihelp-growthstarmentee-param-gesmentee": "（取消）標記學員",
+	"apihelp-query+growthstarredmentees-summary": "取得當前登入導師標記星號的學員名單",
+	"apihelp-growthsetmentorstatus-summary": "設定目前使用者的導師狀態為活躍/離開",
+	"apihelp-growthsetmentorstatus-param-gesstatus": "新狀態",
+	"apihelp-growthsetmentorstatus-param-gesbackindays": "當導師設定成離開時，必須要有以日為單位的離開狀態長度",
+	"apihelp-query+growthmentorstatus-summary": "查詢目前使用者的導師狀態",
+	"apihelp-growthmentordashboardupdatedata-summary": "安排導師控制面版中學員總覽的特別更新。由於性能原因您每兩個小時只能安排一次更新。",
+	"apihelp-growthsetmenteestatus-summary": "設定學員的狀態（允許學員啟用/停用導師計畫模組或完全退出以刪除學員和導師的關係）",
+	"apihelp-growthsetmenteestatus-param-state": "學員的新狀態（警告：將此設為optout將會永久刪除學員和導師的關係）",
+	"apihelp-growthsetmenteestatus-param-state-enabled": "導師計畫模組已啟用",
+	"apihelp-growthsetmenteestatus-param-state-disabled": "導師計畫模組完全停用，這通常是由軟體設定並用於A/B測試。",
+	"apihelp-growthsetmenteestatus-param-state-optout": "學員從導師計畫退出；學員和導師的關係將會被刪除，導師計畫模組將被替換成可以重新加入",
+	"apihelp-query+growthmenteestatus-summary": "查詢目前使用者的學員狀態，請查看 action=growthsetmenteestatus 的文件以了解個別狀態的詳細資訊。",
+	"apihelp-query+growthmentormentee-summary": "取得分配給指定導師的全部學員。",
+	"apihelp-query+growthmentormentee-param-gemmmentor": "要查詢學員的導師",
+	"apihelp-growthmanagementorlist-summary": "管理在結構化導師清單中的資訊（通常存放在 [[MediaWiki:GrowthMentors.json]] 中）。此模組可被目前與往後的導師（新增他們自己或是變更他們的詳細資訊）以及管理員（適用於所有使用者）來使用。",
+	"apihelp-growthmanagementorlist-param-geaction": "操作",
+	"apihelp-growthmanagementorlist-param-message": "介紹訊息（導師訊息預設為空字串）",
+	"apihelp-growthmanagementorlist-param-weight": "權重",
+	"apihelp-growthmanagementorlist-param-isaway": "導師目前不在嗎？這必須設定（預設為 false）。",
+	"apihelp-growthmanagementorlist-param-awaytimestamp": "導師要離開到什麼時候？最長期限為從今天起的 1 年。若 isaway 為 true，則將其忽略。",
+	"apihelp-growthmanagementorlist-param-summary": "變更的原因",
+	"apihelp-growthmanagementorlist-param-username": "被變更給影響到的導師使用者名稱。若未提供，會使用目前登入的使用者。這僅給特權使用者利用。",
+	"growthexperiments-api-managementors-error-no-away-timestamp": "若 isaway 為 true，必須提供 awaytimestamp。",
+	"apihelp-growthinvalidatepersonalizedpraisesuggestion-summary": "讓導師面板上個性化表揚模組的值得表揚學員建議無效",
+	"apihelp-growthinvalidatepersonalizedpraisesuggestion-param-mentee": "無效學員",
+	"apihelp-growthinvalidatepersonalizedpraisesuggestion-param-reason": "讓建議無效的原因",
+	"apihelp-growthinvalidatepersonalizedpraisesuggestion-param-skipreason": "略過讓建議無效的原因",
+	"apihelp-query+growthmentorlist-summary": "列出所有導師"
+}

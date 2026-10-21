@@ -1,0 +1,17 @@
+{
+	"@metadata": {
+		"authors": [
+			"Fahimrazick",
+			"Kanags",
+			"TRYPPN",
+			"Ulmo"
+		]
+	},
+	"validationstatistics": "பக்கத்தின் மறுபார்வை பற்றிய புள்ளிவிவரங்கள்",
+	"validationstatistics-ns": "பெயர்வெளி",
+	"validationstatistics-total": "பக்கங்கள்",
+	"validationstatistics-stable": "சரிபார்த்தது",
+	"validationstatistics-old": "காலாவதியானது",
+	"validationstatistics-user": "பயனர்",
+	"validationstatistics-reviews": "மதிப்பீடுகள்"
+}

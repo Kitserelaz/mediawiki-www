@@ -1,0 +1,37 @@
+{
+	"@metadata": {
+		"authors": [
+			"Hanna Tardos",
+			"Tacsipacsi"
+		]
+	},
+	"reportincident-report-btn-label": "Jelentés",
+	"reportincident-dialog-close-btn": "Bezárás",
+	"reportincident-dialog-proceed-btn": "Tovább a jelentéshez",
+	"reportincident-dialog-back-btn": "Vissza",
+	"reportincident-dialog-submit-btn": "Elküldés",
+	"reportincident-dialog-title": "Incidens jelentése",
+	"reportincident-dialog-first-step-cancel-btn": "Nem akarok jelentés tenni",
+	"reportincident-dialog-harassment-type-label": "Milyen típusú viselkedés?",
+	"reportincident-dialog-additional-details-input-label": "További részletek",
+	"reportincident-dialog-additional-details-input-placeholder": "Adj kontextust, ami hasznos lehet a jelentésed átnézőjének",
+	"reportincident-dialog-optional-label": "(nem kötelező)",
+	"reportincident-dialog-violator-label": "Felhasználónév, akit jelenteni szeretnél",
+	"reportincident-dialog-violator-placeholder-text": "Kit jelentesz?",
+	"reportincident-dialog-harassment-type-hate-speech-or-discrimination": "Gyűlöletbeszéd vagy diszkrimináció",
+	"reportincident-dialog-harassment-type-sexual-harassment": "Szexuális zaklatás",
+	"reportincident-dialog-harassment-type-threats-of-violence": "Erőszakkal való fenyegetés",
+	"reportincident-dialog-harassment-type-intimidation": "Megfélemlítés, agresszió, rágalmazás",
+	"reportincident-dialog-harassment-type-something-else": "Valami más",
+	"reportincident-dialog-harassment-lead-in-to-harassment-examples": "Az [[Foundation:Special:MyLanguage/Policy:Universal_Code_of_Conduct|Általános Viselkedési Szabályzat]] értelmében elfogadhatatlan viselkedés többek között:",
+	"reportincident-dialog-harassment-example-insults": "Az ismételt sértések",
+	"reportincident-dialog-harassment-example-sexual-harassment": "A szexuális zaklatás",
+	"reportincident-dialog-harassment-example-threats": "A fenyegetés",
+	"reportincident-dialog-harassment-example-encouraging-harm": "Mások károkozásának ösztönzése",
+	"reportincident-dialog-harassment-example-doxing": "Személyes adatok nyilvánosságra hozatala (Doxing)",
+	"reportincident-dialog-harassment-example-trolling": "A trollkodás",
+	"reportincident-dialog-engage-header": "Párbeszéd kezdeményezése",
+	"reportincident-dialog-engage-text": "Ha nem érzed kellemetlennek, megpróbálhatsz párbeszédet kezdeményezni a téged zavaró személlyel. Tájékoztathatod az általános viselkedési szabályzatról {{SITENAME}} és, hogy legyenek tisztelettel. Mindez segíthet a zaklatás leállításában.",
+	"reportincident-dialog-admin-review": "Jelentésed egy [$1 adminisztrátorhoz] kerül, átnézésre.",
+	"reportincident-email-something-else": "Más: \"$1\""
+}

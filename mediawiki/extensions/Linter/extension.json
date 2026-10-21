@@ -10,7 +10,7 @@
 	"descriptionmsg": "linter-desc",
 	"type": "specialpage",
 	"requires": {
-		"MediaWiki": ">= 1.43"
+		"MediaWiki": ">= 1.46"
 	},
 	"AutoloadClasses": {
 		"MediaWiki\\Linter\\Maintenance\\MigrateNamespace": "maintenance/migrateNamespace.php",
@@ -34,6 +34,7 @@
 			"services": [
 				"LinkRenderer",
 				"JobQueueGroup",
+				"StatsFactory",
 				"WikiPageFactory",
 				"ParserOutputAccess",
 				"Linter.CategoryManager",
@@ -51,11 +52,23 @@
 		"BeforePageDisplay": "main",
 		"APIQuerySiteInfoGeneralInfo": "main",
 		"InfoAction": "main",
-		"WikiPageDeletionUpdates": "main",
-		"RevisionFromEditComplete": "main",
+		"PageDeletionDataUpdates": "main",
 		"ParserLogLinterData": "main",
-		"RevisionDataUpdates": "main"
+		"RevisionDataUpdates": "main",
+		"wgQueryPages": "main"
 	},
+	"DomainEventIngresses": [
+		{
+			"events": [
+				"PageLatestRevisionChanged"
+			],
+			"class": "MediaWiki\\Linter\\LintEventIngress",
+			"services": [
+				"Linter.TotalsLookup",
+				"Linter.Database"
+			]
+		}
+	],
 	"APIListModules": {
 		"linterrors": {
 			"class": "MediaWiki\\Linter\\ApiQueryLintErrors",
@@ -83,6 +96,16 @@
 				"Linter.CategoryManager",
 				"Linter.TotalsLookup"
 			]
+		},
+		"LintTemplateErrors": {
+			"class": "MediaWiki\\Linter\\SpecialLintTemplateErrors",
+			"services": [
+				"ConnectionProvider",
+				"TitleParser",
+				"LinkCache",
+				"PermissionManager",
+				"Linter.CategoryManager"
+			]
 		}
 	},
 	"JobClasses": {
@@ -99,7 +122,13 @@
 		"ext.linter.edit": {
 			"scripts": "ext.linter.edit.js",
 			"dependencies": [
-				"jquery.textSelection"
+				"jquery.textSelection",
+				"user.options"
+			]
+		},
+		"ext.linter.styles": {
+			"styles": [
+				"special.less"
 			]
 		}
 	},
@@ -248,6 +277,17 @@
 				},
 				"duplicate-ids": {
 					"dbid": 25,
+					"enabled": true,
+					"priority": "high"
+				},
+				"empty-heading": {
+					"dbid": 26,
+					"enabled": true,
+					"priority": "low",
+					"no-params": true
+				},
+				"template-arg-in-extension-tag": {
+					"dbid": 27,
 					"enabled": true,
 					"priority": "high"
 				}

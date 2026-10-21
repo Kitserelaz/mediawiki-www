@@ -2,22 +2,24 @@
 
 namespace MediaWiki\Extension\AbuseFilter\View;
 
-use LogEventsList;
-use LogPage;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Extension\AbuseFilter\AbuseFilterChangesList;
 use MediaWiki\Extension\AbuseFilter\AbuseFilterPermissionManager;
+use MediaWiki\Extension\AbuseFilter\AbuseLoggerFactory;
 use MediaWiki\Extension\AbuseFilter\EditBox\EditBoxBuilderFactory;
 use MediaWiki\Extension\AbuseFilter\EditBox\EditBoxField;
 use MediaWiki\Extension\AbuseFilter\Parser\RuleCheckerFactory;
 use MediaWiki\Extension\AbuseFilter\VariableGenerator\VariableGeneratorFactory;
+use MediaWiki\Extension\AbuseFilter\Variables\LazyLoadedVariable;
 use MediaWiki\Html\Html;
 use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\Linker\LinkRenderer;
-use MediaWiki\Revision\RevisionRecord;
+use MediaWiki\Message\Message;
+use MediaWiki\RecentChanges\RecentChange;
+use MediaWiki\RecentChanges\RecentChangeFactory;
 use MediaWiki\Title\Title;
-use RecentChange;
 use Wikimedia\Rdbms\LBFactory;
+use Wikimedia\Rdbms\ReadOnlyMode;
 use Wikimedia\Rdbms\SelectQueryBuilder;
 
 class AbuseFilterViewTestBatch extends AbuseFilterView {
@@ -27,53 +29,25 @@ class AbuseFilterViewTestBatch extends AbuseFilterView {
 	private static $mChangeLimit = 100;
 
 	/**
-	 * @var LBFactory
-	 */
-	private $lbFactory;
-	/**
 	 * @var string The text of the rule to test changes against
 	 */
 	private $testPattern;
-	/**
-	 * @var EditBoxBuilderFactory
-	 */
-	private $boxBuilderFactory;
-	/**
-	 * @var RuleCheckerFactory
-	 */
-	private $ruleCheckerFactory;
-	/**
-	 * @var VariableGeneratorFactory
-	 */
-	private $varGeneratorFactory;
 
-	/**
-	 * @param LBFactory $lbFactory
-	 * @param AbuseFilterPermissionManager $afPermManager
-	 * @param EditBoxBuilderFactory $boxBuilderFactory
-	 * @param RuleCheckerFactory $ruleCheckerFactory
-	 * @param VariableGeneratorFactory $varGeneratorFactory
-	 * @param IContextSource $context
-	 * @param LinkRenderer $linkRenderer
-	 * @param string $basePageName
-	 * @param array $params
-	 */
 	public function __construct(
-		LBFactory $lbFactory,
+		private readonly LBFactory $lbFactory,
 		AbuseFilterPermissionManager $afPermManager,
-		EditBoxBuilderFactory $boxBuilderFactory,
-		RuleCheckerFactory $ruleCheckerFactory,
-		VariableGeneratorFactory $varGeneratorFactory,
+		private readonly EditBoxBuilderFactory $boxBuilderFactory,
+		private readonly RuleCheckerFactory $ruleCheckerFactory,
+		private readonly VariableGeneratorFactory $varGeneratorFactory,
+		private readonly AbuseLoggerFactory $abuseLoggerFactory,
+		private readonly RecentChangeFactory $recentChangeFactory,
+		private readonly ReadOnlyMode $readOnlyMode,
 		IContextSource $context,
 		LinkRenderer $linkRenderer,
 		string $basePageName,
 		array $params
 	) {
 		parent::__construct( $afPermManager, $context, $linkRenderer, $basePageName, $params );
-		$this->lbFactory = $lbFactory;
-		$this->boxBuilderFactory = $boxBuilderFactory;
-		$this->ruleCheckerFactory = $ruleCheckerFactory;
-		$this->varGeneratorFactory = $varGeneratorFactory;
 	}
 
 	/**
@@ -100,6 +74,7 @@ class AbuseFilterViewTestBatch extends AbuseFilterView {
 			$usedVars = $ruleChecker->getUsedVars( $this->testPattern );
 			if ( $this->afPermManager->getForbiddenVariables( $this->getAuthority(), $usedVars ) ) {
 				$this->testPattern = '';
+				$out->addModuleStyles( 'mediawiki.codex.messagebox.styles' );
 				$out->addHtml(
 					Html::errorBox( $this->msg( 'abusefilter-test-protectedvarerr' )->parse() )
 				);
@@ -108,7 +83,7 @@ class AbuseFilterViewTestBatch extends AbuseFilterView {
 
 		$out->setPageTitleMsg( $this->msg( 'abusefilter-test' ) );
 		$out->addHelpLink( 'Extension:AbuseFilter/Rules format' );
-		$out->addWikiMsg( 'abusefilter-test-intro', self::$mChangeLimit );
+		$out->addWikiMsg( 'abusefilter-test-intro', Message::numParam( self::$mChangeLimit ) );
 		$out->enableOOUI();
 
 		$boxBuilder = $this->boxBuilderFactory->newEditBoxBuilder( $this, $this->getAuthority(), $out );
@@ -182,6 +157,7 @@ class AbuseFilterViewTestBatch extends AbuseFilterView {
 		} );
 		$allFields = array_merge( $rulesFields, $optionsFields );
 
+		$out->addModuleStyles( 'mediawiki.codex.messagebox.styles' );
 		HTMLForm::factory( 'ooui', $allFields, $this->getContext() )
 			->setTitle( $this->getTitle( 'test' ) )
 			->setId( 'wpFilterForm' )
@@ -240,7 +216,8 @@ class AbuseFilterViewTestBatch extends AbuseFilterView {
 
 		$action = $formData['TestAction'] !== '0' ? $formData['TestAction'] : false;
 		$conds[] = $this->buildTestConditions( $dbr, $action );
-		$conds = array_merge( $conds, $this->buildVisibilityConditions( $dbr, $this->getAuthority() ) );
+		$authority = $this->getAuthority();
+		$conds = array_merge( $conds, $this->buildVisibilityConditions( $dbr, $authority ) );
 
 		$res = $dbr->newSelectQueryBuilder()
 			->tables( $rcQuery['tables'] )
@@ -260,31 +237,18 @@ class AbuseFilterViewTestBatch extends AbuseFilterView {
 
 		$counter = 1;
 
+		$readOnlyErrorShown = false;
 		$contextUser = $this->getUser();
 		$ruleChecker->toggleConditionLimit( false );
 		foreach ( $res as $row ) {
-			$rc = RecentChange::newFromRow( $row );
-			if ( !$formData['ShowNegative'] ) {
-				$type = (int)$rc->getAttribute( 'rc_type' );
-				$deletedValue = (int)$rc->getAttribute( 'rc_deleted' );
-				if (
-					(
-						$type === RC_LOG &&
-						!LogEventsList::userCanBitfield(
-							$deletedValue,
-							LogPage::SUPPRESSED_ACTION | LogPage::SUPPRESSED_USER,
-							$contextUser
-						)
-					) || (
-						$type !== RC_LOG &&
-						!RevisionRecord::userCanBitfield( $deletedValue, RevisionRecord::SUPPRESSED_ALL, $contextUser )
-					)
-				) {
-					// If the RC is deleted, the user can't see it, and we're only showing matches,
-					// always skip this row. If ShowNegative is true, we can still show the row
-					// because we won't tell whether it matches the given filter.
-					continue;
-				}
+			$rc = $this->recentChangeFactory->newRecentChangeFromRow( $row );
+			if ( !$formData['ShowNegative'] &&
+				!$this->afPermManager::hasRCEntryAccess( $rc, $authority )
+			) {
+				// If the RC is deleted, the user can't see it, and we're only showing matches,
+				// always skip this row. If ShowNegative is true, we can still show the row
+				// because we won't tell whether it matches the given filter.
+				continue;
 			}
 
 			$varGenerator = $this->varGeneratorFactory->newRCGenerator( $rc, $contextUser );
@@ -296,6 +260,46 @@ class AbuseFilterViewTestBatch extends AbuseFilterView {
 
 			$ruleChecker->setVariables( $vars );
 			$result = $ruleChecker->checkConditions( $this->testPattern )->getResult();
+
+			// If the test filter pattern contains protected variables and this entry had a value set for the
+			// protected variables that were in the pattern, then log that protected variables were accessed.
+			// This is to avoid a user being able to know the value of the variable if they repeatedly try values to
+			// find the actual value through trial-and-error.
+			$usedVars = $ruleChecker->getUsedVars( $this->testPattern );
+			$protectedVariableValuesShown = [];
+			foreach ( $this->afPermManager->getUsedProtectedVariables( $usedVars ) as $protectedVariable ) {
+				if ( $vars->varIsSet( $protectedVariable ) ) {
+					$protectedVariableValue = $vars->getVarThrow( $protectedVariable );
+					if (
+						!( $protectedVariableValue instanceof LazyLoadedVariable ) &&
+						$protectedVariableValue->toNative() !== null
+					) {
+						$protectedVariableValuesShown[] = $protectedVariable;
+					}
+				}
+			}
+
+			if ( count( $protectedVariableValuesShown ) ) {
+				if ( $this->readOnlyMode->isReadOnly() ) {
+					if ( !$readOnlyErrorShown ) {
+						$form->addPreHtml( Html::errorBox(
+							$this->msg( 'readonlytext', $this->readOnlyMode->getReason() )->parse()
+						) );
+						$readOnlyErrorShown = true;
+					}
+					continue;
+				}
+
+				// Either 'user_name' or 'account_name' should be set which are not lazily loaded, so get one of
+				// them to use as the target
+				if ( $vars->varIsSet( 'user_name' ) ) {
+					$target = $vars->getComputedVariable( 'user_name' )->toNative();
+				} else {
+					$target = $vars->getComputedVariable( 'account_name' )->toNative();
+				}
+				$logger = $this->abuseLoggerFactory->getProtectedVarsAccessLogger();
+				$logger->logViewProtectedVariableValue( $this->getUser(), $target, $protectedVariableValuesShown );
+			}
 
 			if ( $result || $formData['ShowNegative'] ) {
 				$changesList->setRCResult( $rc, $result );

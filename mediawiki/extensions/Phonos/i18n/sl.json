@@ -1,0 +1,34 @@
+{
+	"@metadata": {
+		"authors": [
+			"Eleassar"
+		]
+	},
+	"phonos-desc": "Zagotavlja funkcionalnost pretvorbe besedila v govor za vrsto jezikov",
+	"phonos-error-category": "Strani z napakami pri upodabljanju Phonos",
+	"phonos-error-category-desc": "Pri upodabljanju Phonosa je prišlo do napake.",
+	"phonos-audio-conversion-error": "Pretvorba zvoka v MP3 ni uspela:\n$1",
+	"phonos-directory-error": "Imenika shrambe $1 ni bilo mogoče ustvariti",
+	"phonos-engine-error": "Spodletelo ustvarjanje zvočne datoteke z motorjem $1:\n$2",
+	"phonos-storage-error": "Zvočne datoteke ni bilo mogoče shraniti na končni cilj:\n$1",
+	"phonos-purge-needed-error": "Zvoka ni mogoče predvajati.",
+	"phonos-purge-needed-error-link": "Osvežite stran in poskusite znova.",
+	"phonos-tracking-category": "Strani s Phonos",
+	"phonos-tracking-category-desc": "Stran uporablja razširitev [[:mw:Extension:Phonos|Phonos]].",
+	"phonos-invalid-title": "Zvočna datoteka »$1« ima neveljaven naslov.",
+	"phonos-file-not-found": "Zvočna datoteka »[$1 $2]« ni bila najdena.",
+	"phonos-file-not-audio": "Datoteka »[[$1|$2]]« ni zvočna datoteka.",
+	"phonos-player-aria-description": "Predvajaj avdio",
+	"phonos-aria-error": "Zvoka ni mogoče predvajati.",
+	"phonos-ipa-too-long": "Transkripcija IPA je predolga za prikaz.",
+	"phonos-wikibase-api-error": "Ni mogoče pridobiti entitete iz Wikibase: $1",
+	"phonos-wikibase-invalid-entity-lexeme": "Neveljavna entiteta ali leksem: $1",
+	"phonos-wikibase-not-found": "Ni najdenega zvoka za predmet Wikibase: $1",
+	"phonos-wikibase-no-ipa": "Prepis IPA ni bil najden.",
+	"phonos-empty-file-error": "Zdi se, da je generirani zvok prazen. Navedena transkripcija IPA je morda neveljavna ali pa je pogon ne podpira. Mogoče lahko pomaga uporaba parametra »$1«.",
+	"phonos-param-error": "Zagotoviti je treba IPA, datoteko ali element Wikibase.",
+	"phonos-rendering-disabled": "Upodabljanje IPA je trenutno onemogočeno.",
+	"phonos-unsupported-language": "Phonos ne podpira jezika $1.",
+	"phonos-unsupported-language-with-suggestions": "Phonos ne podpira jezika $1. Podprti so naslednji morda sorodni jeziki: $2.",
+	"phonos-inline-audio-player-mode": "V načinu znotrajvrstičnega predvajalnika zvoka je mogoče zagotoviti samo zvočno datoteko ali predmet Wikibase z lastnostjo zvoka izgovarjave ($1)."
+}

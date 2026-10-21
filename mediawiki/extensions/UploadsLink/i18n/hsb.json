@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"J budissin"
+		]
+	},
+	"uploadslink-portlet-label": "Dataje",
+	"tooltip-pt-uploads": "Lisćina datajow, kotrež sy nahrał(a)",
+	"uploadslink-toobox-label": "Nahrate dataje {{GENDER:$1|wužiwarja|wužiwarki}}",
+	"tooltip-tb-uploads": "Lisćina nahratych datajow {{GENDER:$1|tutoho wužiwarja|tuteje wužiwarki}}"
+}

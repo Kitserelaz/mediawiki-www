@@ -1,0 +1,16 @@
+{
+	"@metadata": {
+		"authors": [
+			"Abijeet Patro"
+		]
+	},
+	"reportincident-report-btn-label": "रिपोर्ट करें",
+	"reportincident-dialog-close-btn": "बंद करें",
+	"reportincident-dialog-back-btn": "पीछे",
+	"reportincident-dialog-submit-btn": "जमा करें",
+	"reportincident-dialog-optional-label": "(वैकल्पिक)",
+	"reportincident-dialog-harassment-example-threats": "धमकियां",
+	"reportincident-success-message-close": "बंद करें",
+	"reportincident-email-something-else": "कुछ और: \"$1\"",
+	"reportincident-emaildialog-close-button": "रद्द करें"
+}

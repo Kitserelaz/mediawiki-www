@@ -45,6 +45,13 @@ $specialPageAliases['av'] = [
 	'AbuseFilter' => [ 'Ихтияразда_мугъ_чІван_бегьуоарел_пишаби_гьабиял_рацІцІин' ],
 ];
 
+/** Azerbaijani (Azərbaycanca) */
+$specialPageAliases['az'] = [
+	'AbuseLog' => [ 'DəyişiklikSüzgəciJurnalı' ],
+	'AbuseFilter' => [ 'DəyişiklikSüzgəci' ],
+	'BlockedExternalDomains' => [ 'BloklanmışXariciDomenlər' ],
+];
+
 /** Bashkir (башҡортса) */
 $specialPageAliases['ba'] = [
 	'AbuseLog' => [ 'Насарға_ҡулланыуҙар_журналы' ],
@@ -278,6 +285,7 @@ $specialPageAliases['ja'] = [
 $specialPageAliases['ko'] = [
 	'AbuseLog' => [ '편집필터기록', '부정행위기록' ],
 	'AbuseFilter' => [ '편집필터', '부정행위필터' ],
+	'BlockedExternalDomains' => [ '차단된외부도메인' ],
 ];
 
 /** Colognian (Ripoarisch) */
@@ -527,16 +535,23 @@ $specialPageAliases['yue'] = [
 	'AbuseFilter' => [ '濫用過濾器' ],
 ];
 
-/** Simplified Chinese (中文（简体）‎) */
+/** Chinese (中文) */
+$specialPageAliases['zh'] = [
+	'AbuseLog' => [ 'AbuseLog' ],
+	'AbuseFilter' => [ 'AbuseFilter' ],
+	'BlockedExternalDomains' => [ 'BlockedExternalDomains' ],
+];
+
+/** Simplified Chinese (中文（简体）) */
 $specialPageAliases['zh-hans'] = [
 	'AbuseLog' => [ '滥用日志', '过滤日志' ],
 	'AbuseFilter' => [ '滥用过滤器', '防滥用过滤器' ],
 	'BlockedExternalDomains' => [ '已封禁的外部域名' ],
 ];
 
-/** Traditional Chinese (中文（繁體）‎) */
+/** Traditional Chinese (中文（繁體）) */
 $specialPageAliases['zh-hant'] = [
 	'AbuseLog' => [ '濫用日誌' ],
-	'AbuseFilter' => [ '濫用過濾器' ],
+	'AbuseFilter' => [ '防濫用過濾器', '濫用過濾器' ],
 	'BlockedExternalDomains' => [ '已封鎖的外部網域' ],
 ];

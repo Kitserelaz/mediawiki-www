@@ -1,0 +1,28 @@
+{
+	"@metadata": {
+		"authors": [
+			"Lolekek",
+			"Meno25"
+		]
+	},
+	"action-noanalytics": "غير متعقب من قبل ماتومو",
+	"analytics": "تحليلات الويكي",
+	"matomoanalytics-desc": "يدمج تحليلات ماتومو مع ميدياويكي",
+	"matomoanalytics-header": "بإمكانك استخدام القوائم أدناه لمعرفة البيانات التي نجمعها من خلال ماتومو جميع البيانات المخزنة هي للثلاثين يومًا الماضية بدءًا من البارحة (محدث يوميًا).",
+	"matomoanalytics-labels-browser": "المتصفحات",
+	"matomoanalytics-labels-continent": "القارات",
+	"matomoanalytics-labels-country": "الدول",
+	"matomoanalytics-labels-devices": "الأجهزة",
+	"matomoanalytics-labels-os": "أنظمة التشغيل",
+	"matomoanalytics-labels-referrer": "أنواع الإحالات",
+	"matomoanalytics-labels-resolution": "دقة الشاشة",
+	"matomoanalytics-labels-search": "كلمات البحث الرئيسية",
+	"matomoanalytics-labels-social": "الإحالات عبر الشبكات الاجتماعية",
+	"matomoanalytics-labels-visitday": "عدد المشاهدات يوميا",
+	"matomoanalytics-labels-visitduration": "مدة الزيارة",
+	"matomoanalytics-labels-visithour": "الساعات",
+	"matomoanalytics-labels-visitpages": "الصفحات التي تمت مشاهدتها لكل زيارة",
+	"matomoanalytics-labels-visitpass": "الوقت الذي مر بين الزيارات المتكررة",
+	"matomoanalytics-labels-website": "إحالات الموقع",
+	"right-noanalytics": "غير متعقب من قبل ماتومو"
+}

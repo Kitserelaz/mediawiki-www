@@ -1,0 +1,271 @@
+{
+  "schema_version": 1,
+  "changes": [
+    {
+      "path": "mediawiki/extensions/Cite/i18n/tr.json",
+      "message": "cite-wikieditor-help-content-reference-example-text3",
+      "before": "[$1 Bağlantı yazısı]",
+      "after": "Bir kitap",
+      "reason": "Target message no longer supplies one or more placeholders referenced by the old translation. Use matching upstream translation; retain old wording here for review/recovery."
+    },
+    {
+      "path": "mediawiki/extensions/Cite/i18n/mk.json",
+      "message": "cite-wikieditor-help-content-reference-example-text3",
+      "before": "[$1 Текст на врската]",
+      "after": "Книга",
+      "reason": "Target message no longer supplies one or more placeholders referenced by the old translation. Use matching upstream translation; retain old wording here for review/recovery."
+    },
+    {
+      "path": "mediawiki/extensions/Cite/i18n/bn.json",
+      "message": "cite-wikieditor-help-content-reference-example-text3",
+      "before": "[$1 লিঙ্কের পাঠ্য]",
+      "after": "একটি বই",
+      "reason": "Target message no longer supplies one or more placeholders referenced by the old translation. Use matching upstream translation; retain old wording here for review/recovery."
+    },
+    {
+      "path": "mediawiki/extensions/Cite/i18n/nl.json",
+      "message": "cite-wikieditor-help-content-reference-example-text3",
+      "before": "[$1 Linktekst]",
+      "after": "Een boek",
+      "reason": "Target message no longer supplies one or more placeholders referenced by the old translation. Use matching upstream translation; retain old wording here for review/recovery."
+    },
+    {
+      "path": "mediawiki/extensions/Cite/i18n/ms.json",
+      "message": "cite-wikieditor-help-content-reference-example-text3",
+      "before": "[$1 Teks pautan]",
+      "after": "Buku",
+      "reason": "Target message no longer supplies one or more placeholders referenced by the old translation. Use matching upstream translation; retain old wording here for review/recovery."
+    },
+    {
+      "path": "mediawiki/extensions/Cite/i18n/smn.json",
+      "message": "cite-wikieditor-help-content-reference-example-text3",
+      "before": "[$1 Liŋkkâtekstâ]",
+      "after": "Kirje",
+      "reason": "Target message no longer supplies one or more placeholders referenced by the old translation. Use matching upstream translation; retain old wording here for review/recovery."
+    },
+    {
+      "path": "mediawiki/extensions/Cite/i18n/qqq.json",
+      "message": "cite-wikieditor-help-content-reference-example-text3",
+      "before": "Short sample of external link syntax.\n\nParameters:\n* $1 - a URL\n\n{{doc-jqueryMsg}}",
+      "after": "Short sample of some wikitext that can be put inside a &lt;ref> tag.\n\n{{doc-jqueryMsg}}",
+      "reason": "Target message no longer supplies one or more placeholders referenced by the old translation. Use matching upstream translation; retain old wording here for review/recovery."
+    },
+    {
+      "path": "mediawiki/extensions/Cite/i18n/ja.json",
+      "message": "cite-wikieditor-help-content-reference-example-text3",
+      "before": "[$1 リンクタイトル]",
+      "after": "書籍",
+      "reason": "Target message no longer supplies one or more placeholders referenced by the old translation. Use matching upstream translation; retain old wording here for review/recovery."
+    },
+    {
+      "path": "mediawiki/extensions/Cite/i18n/de.json",
+      "message": "cite-wikieditor-help-content-reference-example-text3",
+      "before": "[$1 Linktext]",
+      "after": "Ein Buch",
+      "reason": "Target message no longer supplies one or more placeholders referenced by the old translation. Use matching upstream translation; retain old wording here for review/recovery."
+    },
+    {
+      "path": "mediawiki/extensions/Cite/i18n/ru.json",
+      "message": "cite-wikieditor-help-content-reference-example-text3",
+      "before": "[$1 Текст ссылки]",
+      "after": "Книга",
+      "reason": "Target message no longer supplies one or more placeholders referenced by the old translation. Use matching upstream translation; retain old wording here for review/recovery."
+    },
+    {
+      "path": "mediawiki/extensions/Cite/i18n/pl.json",
+      "message": "cite-wikieditor-help-content-reference-example-text3",
+      "before": "[$1 Treść linku]",
+      "after": "Książka",
+      "reason": "Target message no longer supplies one or more placeholders referenced by the old translation. Use matching upstream translation; retain old wording here for review/recovery."
+    },
+    {
+      "path": "mediawiki/extensions/Cite/i18n/uk.json",
+      "message": "cite-wikieditor-help-content-reference-example-text3",
+      "before": "[$1 Текст посилання]",
+      "after": "Книга",
+      "reason": "Target message no longer supplies one or more placeholders referenced by the old translation. Use matching upstream translation; retain old wording here for review/recovery."
+    },
+    {
+      "path": "mediawiki/extensions/Cite/i18n/sr-ec.json",
+      "message": "cite-wikieditor-help-content-reference-example-text3",
+      "before": "[$1 Текст линка]",
+      "after": "Књига",
+      "reason": "Target message no longer supplies one or more placeholders referenced by the old translation. Use matching upstream translation; retain old wording here for review/recovery."
+    },
+    {
+      "path": "mediawiki/extensions/Cite/i18n/fi.json",
+      "message": "cite-wikieditor-help-content-reference-example-text3",
+      "before": "[$1 Linkin teksti]",
+      "after": "kirja",
+      "reason": "Target message no longer supplies one or more placeholders referenced by the old translation. Use matching upstream translation; retain old wording here for review/recovery."
+    },
+    {
+      "path": "mediawiki/extensions/Cite/i18n/az.json",
+      "message": "cite-wikieditor-help-content-reference-example-text3",
+      "before": "[$1 Keçid mətni]",
+      "after": "Kitab",
+      "reason": "Target message no longer supplies one or more placeholders referenced by the old translation. Use matching upstream translation; retain old wording here for review/recovery."
+    },
+    {
+      "path": "mediawiki/extensions/Cite/i18n/hil.json",
+      "message": "cite-wikieditor-help-content-reference-example-text3",
+      "before": "[$1 Link text]",
+      "after": "Isa ka libro",
+      "reason": "Target message no longer supplies one or more placeholders referenced by the old translation. Use matching upstream translation; retain old wording here for review/recovery."
+    },
+    {
+      "path": "mediawiki/extensions/Cite/i18n/pt.json",
+      "message": "cite-wikieditor-help-content-reference-example-text3",
+      "before": "[$1 Texto da hiperligação]",
+      "after": "Um livro",
+      "reason": "Target message no longer supplies one or more placeholders referenced by the old translation. Use matching upstream translation; retain old wording here for review/recovery."
+    },
+    {
+      "path": "mediawiki/extensions/Cite/i18n/en.json",
+      "message": "cite-wikieditor-help-content-reference-example-text3",
+      "before": "[$1 Link text]",
+      "after": "A book",
+      "reason": "Target message no longer supplies one or more placeholders referenced by the old translation. Use matching upstream translation; retain old wording here for review/recovery."
+    },
+    {
+      "path": "mediawiki/extensions/Cite/i18n/ia.json",
+      "message": "cite-wikieditor-help-content-reference-example-text3",
+      "before": "[$1 Texto del ligamine]",
+      "after": "Un libro",
+      "reason": "Target message no longer supplies one or more placeholders referenced by the old translation. Use matching upstream translation; retain old wording here for review/recovery."
+    },
+    {
+      "path": "mediawiki/extensions/Cite/i18n/it.json",
+      "message": "cite-wikieditor-help-content-reference-example-text3",
+      "before": "[$1 Testo del collegamento]",
+      "after": "Un libro",
+      "reason": "Target message no longer supplies one or more placeholders referenced by the old translation. Use matching upstream translation; retain old wording here for review/recovery."
+    },
+    {
+      "path": "mediawiki/extensions/Cite/i18n/et.json",
+      "message": "cite-wikieditor-help-content-reference-example-text3",
+      "before": "[$1 Lingi tekst]",
+      "after": "Raamat",
+      "reason": "Target message no longer supplies one or more placeholders referenced by the old translation. Use matching upstream translation; retain old wording here for review/recovery."
+    },
+    {
+      "path": "mediawiki/extensions/Cite/i18n/zh-hans.json",
+      "message": "cite-wikieditor-help-content-reference-example-text3",
+      "before": "[$1 链接文本]",
+      "after": "一本书",
+      "reason": "Target message no longer supplies one or more placeholders referenced by the old translation. Use matching upstream translation; retain old wording here for review/recovery."
+    },
+    {
+      "path": "mediawiki/extensions/Cite/i18n/fr.json",
+      "message": "cite-wikieditor-help-content-reference-example-text3",
+      "before": "[$1 Texte du lien]",
+      "after": "Un livre",
+      "reason": "Target message no longer supplies one or more placeholders referenced by the old translation. Use matching upstream translation; retain old wording here for review/recovery."
+    },
+    {
+      "path": "mediawiki/extensions/Cite/i18n/br.json",
+      "message": "cite-wikieditor-help-content-reference-example-text3",
+      "before": "[$1 Testenn al liamm]",
+      "after": "Ul levr",
+      "reason": "Target message no longer supplies one or more placeholders referenced by the old translation. Use matching upstream translation; retain old wording here for review/recovery."
+    },
+    {
+      "path": "mediawiki/extensions/Cite/i18n/el.json",
+      "message": "cite-wikieditor-help-content-reference-example-text3",
+      "before": "[$1 Κείμενο συνδέσμου]",
+      "after": "Ένα βιβλίο",
+      "reason": "Target message no longer supplies one or more placeholders referenced by the old translation. Use matching upstream translation; retain old wording here for review/recovery."
+    },
+    {
+      "path": "mediawiki/extensions/Cite/i18n/pt-br.json",
+      "message": "cite-wikieditor-help-content-reference-example-text3",
+      "before": "[$1 Texto do link]",
+      "after": "Um livro",
+      "reason": "Target message no longer supplies one or more placeholders referenced by the old translation. Use matching upstream translation; retain old wording here for review/recovery."
+    },
+    {
+      "path": "mediawiki/extensions/Cite/i18n/sms.json",
+      "message": "cite-wikieditor-help-content-reference-example-text3",
+      "before": "[$1 Liŋkkteʹkstt]",
+      "after": "ǩeʹrjj",
+      "reason": "Target message no longer supplies one or more placeholders referenced by the old translation. Use matching upstream translation; retain old wording here for review/recovery."
+    },
+    {
+      "path": "mediawiki/extensions/Cite/i18n/gl.json",
+      "message": "cite-wikieditor-help-content-reference-example-text3",
+      "before": "[$1 Texto da ligazón]",
+      "after": "Un libro",
+      "reason": "Target message no longer supplies one or more placeholders referenced by the old translation. Use matching upstream translation; retain old wording here for review/recovery."
+    },
+    {
+      "path": "mediawiki/extensions/Cite/i18n/he.json",
+      "message": "cite-wikieditor-help-content-reference-example-text3",
+      "before": "[$1 טקסט הקישור]",
+      "after": "ספר",
+      "reason": "Target message no longer supplies one or more placeholders referenced by the old translation. Use matching upstream translation; retain old wording here for review/recovery."
+    },
+    {
+      "path": "mediawiki/extensions/Cite/i18n/cs.json",
+      "message": "cite-wikieditor-help-content-reference-example-text3",
+      "before": "[$1 Text odkazu]",
+      "after": "Kniha",
+      "reason": "Target message no longer supplies one or more placeholders referenced by the old translation. Use matching upstream translation; retain old wording here for review/recovery."
+    },
+    {
+      "path": "mediawiki/extensions/Cite/i18n/id.json",
+      "message": "cite-wikieditor-help-content-reference-example-text3",
+      "before": "[$1 Teks pranala]",
+      "after": "Sebuah buku",
+      "reason": "Target message no longer supplies one or more placeholders referenced by the old translation. Use matching upstream translation; retain old wording here for review/recovery."
+    },
+    {
+      "path": "mediawiki/extensions/Cite/i18n/lv.json",
+      "message": "cite-wikieditor-help-content-reference-example-text3",
+      "before": "[$1 Saites teksts]",
+      "after": "Grāmata",
+      "reason": "Target message no longer supplies one or more placeholders referenced by the old translation. Use matching upstream translation; retain old wording here for review/recovery."
+    },
+    {
+      "path": "mediawiki/extensions/Cite/i18n/da.json",
+      "message": "cite-wikieditor-help-content-reference-example-text3",
+      "before": "[$1 Linktekst]",
+      "after": "En bog",
+      "reason": "Target message no longer supplies one or more placeholders referenced by the old translation. Use matching upstream translation; retain old wording here for review/recovery."
+    },
+    {
+      "path": "mediawiki/extensions/Cite/i18n/sv.json",
+      "message": "cite-wikieditor-help-content-reference-example-text3",
+      "before": "[$1 Länktext]",
+      "after": "En bok",
+      "reason": "Target message no longer supplies one or more placeholders referenced by the old translation. Use matching upstream translation; retain old wording here for review/recovery."
+    },
+    {
+      "path": "mediawiki/extensions/Cite/i18n/ar.json",
+      "message": "cite-wikieditor-help-content-reference-example-text3",
+      "before": "[ نص الرابط $1 ]",
+      "after": "كتاب",
+      "reason": "Target message no longer supplies one or more placeholders referenced by the old translation. Use matching upstream translation; retain old wording here for review/recovery."
+    },
+    {
+      "path": "mediawiki/extensions/Cite/i18n/zh-hant.json",
+      "message": "cite-wikieditor-help-content-reference-example-text3",
+      "before": "[$1 連結文字]",
+      "after": "一本書",
+      "reason": "Target message no longer supplies one or more placeholders referenced by the old translation. Use matching upstream translation; retain old wording here for review/recovery."
+    },
+    {
+      "path": "mediawiki/extensions/Cite/i18n/nb.json",
+      "message": "cite-wikieditor-help-content-reference-example-text3",
+      "before": "[$1 Lenketekst]",
+      "after": "Ei bok",
+      "reason": "Target message no longer supplies one or more placeholders referenced by the old translation. Use matching upstream translation; retain old wording here for review/recovery."
+    },
+    {
+      "path": "mediawiki/extensions/DiscussionTools/i18n/ne.json",
+      "message": "discussiontools-replywidget-reply",
+      "before": "{{GENDER:$1|जवाफ दिनुहोस्}}",
+      "after": "{{GENDER:|उत्तर}}",
+      "reason": "Target message no longer supplies one or more placeholders referenced by the old translation. Use matching upstream translation; retain old wording here for review/recovery."
+    }
+  ]
+}

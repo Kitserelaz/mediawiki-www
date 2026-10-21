@@ -1,6 +1,5 @@
 <?php
 /**
- *
  * Copyright © 2007 Xarax <jodeldi@gmx.de>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -21,17 +20,18 @@
 
 namespace MediaWiki\Extension\PdfHandler;
 
-use BitmapMetadataHandler;
+use MediaWiki\Config\Config;
 use MediaWiki\Logger\LoggerFactory;
+use MediaWiki\MainConfigNames;
+use MediaWiki\Media\BitmapMetadataHandler;
 use MediaWiki\MediaWikiServices;
 use UtfNormal\Validator;
 use Wikimedia\XMPReader\Reader as XMPReader;
 
 /**
- * inspired by djvuimage from Brion Vibber
- * modified and written by xarax
+ * Inspired by djvuimage from Brion Vibber
+ * Modified and written by xarax
  */
-
 class PdfImage {
 
 	/**
@@ -39,13 +39,17 @@ class PdfImage {
 	 */
 	private $mFilename;
 
+	private Config $config;
+
 	public const ITEMS_FOR_PAGE_SIZE = [ 'Pages', 'pages', 'Page size', 'Page rot' ];
 
 	/**
 	 * @param string $filename
+	 * @param Config $config
 	 */
-	public function __construct( $filename ) {
+	public function __construct( $filename, Config $config ) {
 		$this->mFilename = $filename;
+		$this->config = $config;
 	}
 
 	/**
@@ -58,11 +62,9 @@ class PdfImage {
 	/**
 	 * @param array $data
 	 * @param int $page
-	 * @return array|bool
+	 * @return array{width: int, height: int}|false
 	 */
 	public static function getPageSize( $data, $page ) {
-		global $wgPdfHandlerDpi;
-
 		if ( isset( $data['pages'][$page]['Page size'] ) ) {
 			$pageSize = $data['pages'][$page]['Page size'];
 		} elseif ( isset( $data['Page size'] ) ) {
@@ -72,6 +74,7 @@ class PdfImage {
 		}
 
 		if ( $pageSize ) {
+			$dpi = MediaWikiServices::getInstance()->getMainConfig()->get( 'PdfHandlerDpi' );
 			if ( isset( $data['pages'][$page]['Page rot'] ) ) {
 				$pageRotation = $data['pages'][$page]['Page rot'];
 			} elseif ( isset( $data['Page rot'] ) ) {
@@ -81,9 +84,9 @@ class PdfImage {
 			}
 			$size = explode( 'x', $pageSize, 2 );
 
-			$width  = intval( (int)trim( $size[0] ) / 72 * $wgPdfHandlerDpi );
+			$width  = intval( (int)trim( $size[0] ) / 72 * $dpi );
 			$height = explode( ' ', trim( $size[1] ), 2 );
-			$height = intval( (int)trim( $height[0] ) / 72 * $wgPdfHandlerDpi );
+			$height = intval( (int)trim( $height[0] ) / 72 * $dpi );
 			if ( ( $pageRotation / 90 ) & 1 ) {
 				// Swap width and height for landscape pages
 				$temp = $width;
@@ -104,7 +107,9 @@ class PdfImage {
 	 * @return array
 	 */
 	public function retrieveMetaData(): array {
-		global $wgPdfInfo, $wgPdftoText, $wgShellboxShell;
+		$pdfInfo = $this->config->get( 'PdfInfo' );
+		$pdftoText = $this->config->get( 'PdftoText' );
+		$shellboxShell = $this->config->get( MainConfigNames::ShellboxShell );
 
 		$command = MediaWikiServices::getInstance()->getShellCommandFactory()
 			->createBoxed( 'pdfhandler' )
@@ -113,7 +118,7 @@ class PdfImage {
 			->routeName( 'pdfhandler-metadata' );
 
 		$result = $command
-			->params( $wgShellboxShell, 'scripts/retrieveMetaData.sh' )
+			->params( $shellboxShell, 'scripts/retrieveMetaData.sh' )
 			->inputFileFromFile(
 				'scripts/retrieveMetaData.sh',
 				__DIR__ . '/../scripts/retrieveMetaData.sh' )
@@ -123,8 +128,8 @@ class PdfImage {
 			->outputFileToString( 'text' )
 			->outputFileToString( 'text_exit_code' )
 			->environment( [
-				'PDFHANDLER_INFO' => $wgPdfInfo,
-				'PDFHANDLER_TOTEXT' => $wgPdftoText,
+				'PDFHANDLER_INFO' => $pdfInfo,
+				'PDFHANDLER_TOTEXT' => $pdftoText,
 			] )
 			->execute();
 

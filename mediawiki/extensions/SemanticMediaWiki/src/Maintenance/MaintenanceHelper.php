@@ -1,0 +1,110 @@
+<?php
+
+namespace SMW\Maintenance;
+
+use SMW\Services\ServicesFactory as ApplicationFactory;
+use SMW\Utils\CliMsgFormatter;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 2.2
+ *
+ * @author mwjames
+ */
+class MaintenanceHelper {
+
+	private array $globals = [];
+
+	private array $runtime = [
+		'start'  => 0,
+		'memory' => 0
+	];
+
+	/**
+	 * @since 2.2
+	 */
+	public function initRuntimeValues(): void {
+		$this->runtime['start'] = microtime( true );
+		$this->runtime['memory'] = memory_get_peak_usage( false );
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * @return array
+	 */
+	public function getRuntimeValues(): array {
+		$memory = memory_get_peak_usage( false );
+		$time = microtime( true ) - $this->runtime['start'];
+
+		$hTime = round( $time, 2 ) . ' sec';
+		$hTime .= ( $time > 60 ? ' (' . round( $time / 60, 2 ) . ' min)' : '' );
+
+		return [
+			'time' => $time,
+			'humanreadable-time' => $hTime,
+			'memory-before' => $this->runtime['memory'],
+			'memory-after'  => $memory,
+			'memory-used'   => $memory - $this->runtime['memory']
+		];
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * @return string
+	 */
+	public function getFormattedRuntimeValues( $indent = '' ): string {
+		$cliMsgFormatter = new CliMsgFormatter();
+		$output = '';
+
+		foreach ( $this->getRuntimeValues() as $key => $value ) {
+
+			if ( $key === 'time' ) {
+				continue;
+			}
+
+			if ( $key === 'humanreadable-time' ) {
+				$key = 'Time (used)';
+			}
+
+			if ( strpos( $key, 'memory-' ) !== false ) {
+				$key = str_replace( 'memory-', 'Memory (', $key ) . ')';
+			}
+
+			$output .= $cliMsgFormatter->twoCols( "- $key", $value, 0, '.' );
+		}
+
+		return $output;
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * @param string $key
+	 * @param string|array $value
+	 */
+	public function setGlobalToValue( $key, $value ): void {
+		if ( !isset( $GLOBALS[$key] ) ) {
+			return;
+		}
+
+		$this->globals[$key] = $GLOBALS[$key];
+		$GLOBALS[$key] = $value;
+		ApplicationFactory::getInstance()->getSettings()->set( $key, $value );
+	}
+
+	/**
+	 * @since 2.2
+	 */
+	public function reset(): void {
+		foreach ( $this->globals as $key => $value ) {
+			$GLOBALS[$key] = $value;
+			ApplicationFactory::getInstance()->getSettings()->set( $key, $value );
+		}
+
+		$this->runtime['start'] = 0;
+		$this->runtime['memory'] = 0;
+	}
+
+}

@@ -1,0 +1,61 @@
+{
+	"name": "professional-wiki/wikibase-local-media",
+	"type": "mediawiki-extension",
+	"description": "Adds the local media data type to Wikibase",
+	"keywords": [
+		"MediaWiki",
+		"Wikibase",
+		"local media",
+		"localmedia",
+		"images",
+		"files",
+		"datatype",
+		"extension",
+		"wiki",
+		"structured data",
+		"semantic web",
+		"wikidata"
+	],
+	"homepage": "https://professional.wiki/en/extension/wikibase-local-media",
+	"license": "GPL-2.0-or-later",
+	"authors": [
+		{
+			"name": "Professional Wiki",
+			"email": "info@professional.wiki",
+			"homepage": "https://Professional.Wiki",
+			"role": "Creator"
+		},
+		{
+			"name": "Jeroen De Dauw",
+			"email": "jeroendedauw@gmail.com",
+			"homepage": "https://www.EntropyWins.wtf/mediawiki",
+			"role": "Creator and developer"
+		},
+		{
+			"name": "Jonas Kress",
+			"role": "Creator and developer"
+		},
+		{
+			"name": "Wikidata Team",
+			"role": "Author of copied code"
+		}
+	],
+	"support": {
+		"issues": "https://github.com/ProfessionalWiki/WikibaseLocalMedia/issues",
+		"source": "https://github.com/ProfessionalWiki/WikibaseLocalMedia"
+	},
+	"require": {
+		"php": ">=7.4",
+		"composer/installers": "^2|^1.0.1"
+	},
+	"require-dev": {
+		"phpstan/phpstan": "^2.1.6",
+		"mediawiki/mediawiki-codesniffer": "^46.0.0"
+	},
+	"config": {
+		"allow-plugins": {
+			"composer/installers": true,
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		}
+	}
+}

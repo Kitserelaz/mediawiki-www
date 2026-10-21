@@ -36,11 +36,6 @@ class SpecialAbuseFilter extends AbuseFilterSpecialPage {
 
 	private const PAGE_NAME = 'AbuseFilter';
 
-	/**
-	 * @var ObjectFactory
-	 */
-	private $objectFactory;
-
 	private const SERVICES_PER_VIEW = [
 		AbuseFilterViewDiff::class => [
 			AbuseFilterPermissionManager::SERVICE_NAME,
@@ -49,7 +44,6 @@ class SpecialAbuseFilter extends AbuseFilterSpecialPage {
 		],
 		AbuseFilterViewEdit::class => [
 			'DBLoadBalancerFactory',
-			'PermissionManager',
 			AbuseFilterPermissionManager::SERVICE_NAME,
 			FilterProfiler::SERVICE_NAME,
 			FilterLookup::SERVICE_NAME,
@@ -68,7 +62,9 @@ class SpecialAbuseFilter extends AbuseFilterSpecialPage {
 			VariablesFormatter::SERVICE_NAME,
 			VariablesManager::SERVICE_NAME,
 			VariableGeneratorFactory::SERVICE_NAME,
-			AbuseLoggerFactory::SERVICE_NAME
+			AbuseLoggerFactory::SERVICE_NAME,
+			'RecentChangeStore',
+			'ReadOnlyMode',
 		],
 		AbuseFilterViewHistory::class => [
 			'UserNameUtils',
@@ -87,6 +83,7 @@ class SpecialAbuseFilter extends AbuseFilterSpecialPage {
 			FilterProfiler::SERVICE_NAME,
 			SpecsFormatter::SERVICE_NAME,
 			CentralDBManager::SERVICE_NAME,
+			FilterLookup::SERVICE_NAME,
 		],
 		AbuseFilterViewRevert::class => [
 			'DBLoadBalancerFactory',
@@ -103,6 +100,9 @@ class SpecialAbuseFilter extends AbuseFilterSpecialPage {
 			EditBoxBuilderFactory::SERVICE_NAME,
 			RuleCheckerFactory::SERVICE_NAME,
 			VariableGeneratorFactory::SERVICE_NAME,
+			AbuseLoggerFactory::SERVICE_NAME,
+			'RecentChangeFactory',
+			'ReadOnlyMode',
 		],
 		AbuseFilterViewTools::class => [
 			AbuseFilterPermissionManager::SERVICE_NAME,
@@ -110,16 +110,16 @@ class SpecialAbuseFilter extends AbuseFilterSpecialPage {
 		],
 	];
 
-	/**
-	 * @param AbuseFilterPermissionManager $afPermissionManager
-	 * @param ObjectFactory $objectFactory
-	 */
 	public function __construct(
 		AbuseFilterPermissionManager $afPermissionManager,
-		ObjectFactory $objectFactory
+		private readonly ObjectFactory $objectFactory
 	) {
-		parent::__construct( self::PAGE_NAME, 'abusefilter-view', $afPermissionManager );
-		$this->objectFactory = $objectFactory;
+		parent::__construct( self::PAGE_NAME, $afPermissionManager );
+	}
+
+	/** @inheritDoc */
+	public function getRestriction(): string {
+		return 'abusefilter-view';
 	}
 
 	/**
@@ -156,6 +156,7 @@ class SpecialAbuseFilter extends AbuseFilterSpecialPage {
 			$out->setSubtitle( $this->msg( 'abusefilter-edit-done-subtitle' ) );
 			$changedFilter = intval( $request->getVal( 'changedfilter' ) );
 			$changeId = intval( $request->getVal( 'changeid' ) );
+			$out->addModuleStyles( 'mediawiki.codex.messagebox.styles' );
 			$out->addHTML( Html::successBox(
 				$this->msg(
 					'abusefilter-edit-done',
@@ -178,8 +179,6 @@ class SpecialAbuseFilter extends AbuseFilterSpecialPage {
 	/**
 	 * Instantiate the view class
 	 *
-	 * @suppress PhanTypeInvalidCallableArraySize
-	 *
 	 * @param class-string<AbuseFilterView> $viewClass
 	 * @param array $params
 	 * @return AbuseFilterView
@@ -196,20 +195,14 @@ class SpecialAbuseFilter extends AbuseFilterSpecialPage {
 	 * Determine the view class to instantiate
 	 *
 	 * @param string|null $subpage
-	 * @return array A tuple of three elements:
+	 * @return array{0:class-string,1:string,2:array} A tuple of three elements:
 	 *      - a subclass of AbuseFilterView
 	 *      - type of page for addNavigationLinks
 	 *      - array of parameters for the class
-	 * @phan-return array{0:class-string,1:string,2:array}
 	 */
-	public function getViewClassAndPageType( $subpage ): array {
+	public function getViewClassAndPageType( ?string $subpage ): array {
 		// Filter by removing blanks.
-		$params = array_values( array_filter(
-			explode( '/', $subpage ?: '' ),
-			static function ( $value ) {
-				return $value !== '';
-			}
-		) );
+		$params = preg_split( '{/+}', $subpage ?: '' );
 
 		if ( $subpage === 'tools' ) {
 			return [ AbuseFilterViewTools::class, 'tools', [] ];

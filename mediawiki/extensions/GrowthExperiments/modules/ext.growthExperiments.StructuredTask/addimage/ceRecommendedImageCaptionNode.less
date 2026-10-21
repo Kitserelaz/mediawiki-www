@@ -1,0 +1,55 @@
+@import 'mediawiki.skin.variables.less';
+
+// Add bottom padding for help button.
+@spacing-ve-ce-paragraph-node: 7px 8px 27px 8px;
+
+.mw-ge-recommendedImageCaption {
+	border: @border-width-thick @border-style-base @border-color-base;
+	position: relative;
+
+	.mw-ge-recommendedImageCaption-placeholder,
+	.ve-ce-paragraphNode {
+		padding: @spacing-ve-ce-paragraph-node;
+	}
+
+	.ve-ce-paragraphNode {
+		color: @color-base;
+	}
+
+	.mw-ge-recommendedImageCaption-placeholder {
+		color: @color-placeholder;
+		pointer-events: none;
+	}
+
+	&--with-placeholder {
+		background-color: @background-color-progressive-subtle;
+		border-color: @border-color-progressive;
+
+		.ve-ce-paragraphNode {
+			display: none;
+		}
+	}
+
+	&--with-warning {
+		// TODO: Is error the right color for a class called `--with-warning`?
+		border-color: @border-color-error;
+	}
+
+	.mw-ge-recommendedImageCaption-help-button {
+		position: absolute;
+		right: 8px;
+		bottom: 8px;
+		opacity: @opacity-icon-subtle;
+
+		// Override OOUI ButtonWidget's size
+		&.oo-ui-buttonElement-frameless.oo-ui-iconElement > .oo-ui-buttonElement-button {
+			min-height: 20px;
+			min-width: 20px;
+			padding: 0;
+
+			.oo-ui-iconElement-icon {
+				left: 0;
+			}
+		}
+	}
+}

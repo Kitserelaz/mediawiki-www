@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"З. ӘЙЛЕ",
+			"Лилиә",
+			"Янмурза Баки"
+		]
+	},
+	"apihelp-featuredfeed-param-feedformat": "Канал форматы.",
+	"apihelp-featuredfeed-param-feed": "Канал исеме.",
+	"apihelp-featuredfeed-param-language": "Каналдың тел коды. Ҡайһы бер каналдарҙа кодҡа иғтибар бирелмәй.",
+	"apihelp-featuredfeed-example-1": "«$1» каналын алырға"
+}

@@ -1,17 +1,18 @@
 <?php
 
-namespace MediaWiki\CheckUser\Tests\Unit\Investigate\Services;
+namespace MediaWiki\Extension\CheckUser\Tests\Unit\Investigate\Services;
 
-use MediaWiki\CheckUser\Investigate\Services\CompareService;
-use MediaWiki\CheckUser\Services\CheckUserLookupUtils;
 use MediaWiki\Config\ServiceOptions;
+use MediaWiki\Extension\CheckUser\Investigate\Services\CompareService;
+use MediaWiki\Extension\CheckUser\Services\CheckUserLookupUtils;
+use MediaWiki\User\TempUser\TempUserConfig;
 use MediaWiki\User\UserIdentityLookup;
 use MediaWikiUnitTestCase;
 use Wikimedia\Rdbms\IConnectionProvider;
 use Wikimedia\Rdbms\IReadableDatabase;
 
 /**
- * @covers \MediaWiki\CheckUser\Investigate\Services\CompareService
+ * @covers \MediaWiki\Extension\CheckUser\Investigate\Services\CompareService
  */
 class CompareServiceTest extends MediaWikiUnitTestCase {
 	public function testGetTargetsOverLimitWhenDBDoesNotSupportOrderAndLimitInUnion() {
@@ -30,10 +31,12 @@ class CompareServiceTest extends MediaWikiUnitTestCase {
 			$mockConnectionProvider,
 			$this->createMock( UserIdentityLookup::class ),
 			$this->createMock( CheckUserLookupUtils::class ),
+			$this->createMock( TempUserConfig::class ),
 		);
 		$targets = $compareService->getTargetsOverLimit( [ '1.2.3.4' ], [], '' );
 		$this->assertCount(
-			0, $targets,
+			0,
+			$targets,
 			'The return value of ::getTargetsOverLimit() should be an empty array when the ' .
 			'database does not support ORDER BY and LIMIT in UNION queries.'
 		);

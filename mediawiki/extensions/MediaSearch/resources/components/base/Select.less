@@ -1,0 +1,109 @@
+@import 'mediawiki.mixins';
+@import './../../sd-base-variables.less';
+
+.sd-select {
+	max-width: @sd-max-width-input-base;
+	position: relative;
+
+	&__sr-only {
+		position: absolute;
+		display: block;
+		left: -1000px;
+		overflow: hidden;
+	}
+
+	// Expand indicator.
+	&__handle {
+		transition: color @transition-duration-base;
+		color: @color-base;
+		position: absolute;
+		right: @sd-padding-horizontal-base;
+		top: 50%;
+		transform: translateY( -50% );
+	}
+
+	&__content {
+		transition-property: background-color, border-color, box-shadow;
+		transition-duration: @transition-duration-base;
+		background-color: @background-color-interactive-subtle;
+		border: @border-base;
+		border-radius: @border-radius-base;
+		box-sizing: border-box;
+		color: @color-base;
+		cursor: pointer;
+		min-height: @min-size-interactive-pointer;
+		padding:
+ @sd-padding-vertical-mobile @sd-padding-end-dropdown
+			@sd-padding-vertical-mobile @sd-padding-horizontal-base;
+		position: relative;
+		width: 100%;
+
+		@media screen and ( min-width: @min-width-breakpoint-tablet ) {
+			padding:
+ @sd-padding-vertical-base @sd-padding-end-dropdown
+				@sd-padding-vertical-base @sd-padding-horizontal-base;
+		}
+
+		&:last-child {
+			margin-right: 0;
+		}
+
+		&:hover {
+			background-color: @background-color-base;
+			color: @color-base--hover;
+			border-color: @border-color-base;
+
+			.sd-select__handle {
+				color: @color-base--hover;
+			}
+		}
+
+		&:focus {
+			box-shadow: @box-shadow-inset-small @box-shadow-color-progressive--focus;
+			border-color: @border-color-progressive--focus;
+			outline: @outline-base--focus;
+		}
+
+		&:active {
+			color: @color-emphasized;
+			border-color: @border-color-interactive;
+		}
+	}
+
+	&--open {
+		.sd-select__content {
+			background-color: @background-color-base;
+		}
+
+		// stylelint-disable-next-line no-descending-specificity
+		.sd-select__handle {
+			color: @color-base;
+		}
+	}
+
+	&--disabled {
+		.sd-select__content {
+			background-color: @background-color-disabled-subtle;
+			border-color: @border-color-disabled;
+			color: @color-disabled;
+			cursor: auto;
+
+			&:hover {
+				.sd-select__handle {
+					color: @color-disabled;
+				}
+			}
+
+			&:focus {
+				box-shadow: none;
+				border-color: @border-color-disabled;
+				outline: @outline-base--focus;
+			}
+		}
+
+		// stylelint-disable-next-line no-descending-specificity
+		.sd-select__handle {
+			color: @color-disabled;
+		}
+	}
+}

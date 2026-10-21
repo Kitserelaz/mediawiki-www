@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Gomoko",
+			"Orlodrim",
+			"Verdy p",
+			"Wladek92"
+		]
+	},
+	"uploadslink-desc": "Ajoute un lien vers la liste des téléversements de l’utilisateur actuel au menu des outils personnel, ainsi qu’un lien vers la liste des téléversements de l’utilisateur concerné dans le menu Outils de la barre latérale.",
+	"uploadslink-portlet-label": "Imports",
+	"tooltip-pt-uploads": "Liste des fichiers que vous avez importés",
+	"uploadslink-toobox-label": "Imports de {{GENDER:$1|l’utilisateur|l’utilisatrice}}",
+	"tooltip-tb-uploads": "Une liste des imports effectués par {{GENDER:$1|cet utilisateur|cette utilisatrice}}"
+}

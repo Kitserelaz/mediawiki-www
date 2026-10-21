@@ -1,0 +1,18 @@
+{
+	"@metadata": {
+		"authors": [
+			"David1010"
+		]
+	},
+	"score-page": "გვერდი $1",
+	"score-visualeditor-mwscoredialog-audio": "აუდიო ფაილის ჩართვა (ჩვეულებრივ ავტომატურად გენერირდება)",
+	"score-visualeditor-mwscoredialog-card-advanced": "გაფართოებული",
+	"score-visualeditor-mwscoredialog-card-audio": "აუდიო",
+	"score-visualeditor-mwscoredialog-lang": "ენა",
+	"score-visualeditor-mwscoredialog-notelanguage": "აღნიშვნის ენა",
+	"score-visualeditor-mwscoredialog-override-audio": "არსებული აუდიო ფაილის გამოყენება",
+	"score-visualeditor-mwscoredialog-override-midi": "არსებული MIDI ფაილის გამოყენება",
+	"score-visualeditor-mwscoredialog-override-midi-placeholder": "არსებული MIDI ფაილის სახელი",
+	"score-visualeditor-mwscoredialog-raw": "ეს არის დასრულებული LilyPond ფაილი",
+	"score-visualeditor-mwscoredialog-title": "მუსიკალური ნოტები"
+}

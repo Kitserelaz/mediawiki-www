@@ -1,34 +1,32 @@
 'use strict';
 
-QUnit.module( 've.ui.MWUseExistingReferenceCommand (Cite)', ve.test.utils.newMwEnvironment() );
+{
+	const { MWUseExistingReferenceCommand } = require( 'ext.cite.visualEditor' ).test;
 
-function getFragmentMock( hasRefs ) {
-	const docRefsMock = {
-		hasRefs: () => hasRefs
-	};
+	QUnit.module( 've.ui.MWUseExistingReferenceCommand (Cite)', ve.test.utils.newMwEnvironment() );
 
-	return {
+	const getFragmentMock = ( hasRefs ) => ( {
 		getDocument: () => ( {
-			getOriginalDocument: () => undefined,
-			getStorage: () => docRefsMock,
-			setStorage: () => undefined
+			getInternalList: () => ( {
+				getItemNodeCount: () => hasRefs ? 1 : 0
+			} )
 		} ),
 		getSelection: () => ( {
 			getName: () => 'linear'
 		} )
-	};
+	} );
+
+	QUnit.test( 'Constructor', ( assert ) => {
+		const command = new MWUseExistingReferenceCommand();
+		assert.strictEqual( command.name, 'reference/existing' );
+		assert.strictEqual( command.action, 'window' );
+		assert.strictEqual( command.method, 'open' );
+	} );
+
+	QUnit.test( 'isExecutable', ( assert ) => {
+		const command = new MWUseExistingReferenceCommand();
+
+		assert.false( command.isExecutable( getFragmentMock( false ) ) );
+		assert.true( command.isExecutable( getFragmentMock( true ) ) );
+	} );
 }
-
-QUnit.test( 'Constructor', ( assert ) => {
-	const command = new ve.ui.MWUseExistingReferenceCommand();
-	assert.strictEqual( command.name, 'reference/existing' );
-	assert.strictEqual( command.action, 'window' );
-	assert.strictEqual( command.method, 'open' );
-} );
-
-QUnit.test( 'isExecutable', ( assert ) => {
-	const command = new ve.ui.MWUseExistingReferenceCommand();
-
-	assert.false( command.isExecutable( getFragmentMock( false ) ) );
-	assert.true( command.isExecutable( getFragmentMock( true ) ) );
-} );

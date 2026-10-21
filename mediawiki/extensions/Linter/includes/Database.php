@@ -49,24 +49,12 @@ class Database {
 	public const MAX_TAG_LENGTH = 30;
 	public const MAX_TEMPLATE_LENGTH = 250;
 
-	private ServiceOptions $options;
-	private CategoryManager $categoryManager;
-	private LBFactory $dbLoadBalancerFactory;
-
-	/**
-	 * @param ServiceOptions $options
-	 * @param CategoryManager $categoryManager
-	 * @param LBFactory $dbLoadBalancerFactory
-	 */
 	public function __construct(
-		ServiceOptions $options,
-		CategoryManager $categoryManager,
-		LBFactory $dbLoadBalancerFactory
+		private readonly ServiceOptions $options,
+		private readonly CategoryManager $categoryManager,
+		private readonly LBFactory $dbLoadBalancerFactory,
 	) {
 		$options->assertRequiredOptions( self::CONSTRUCTOR_OPTIONS );
-		$this->options = $options;
-		$this->categoryManager = $categoryManager;
-		$this->dbLoadBalancerFactory = $dbLoadBalancerFactory;
 	}
 
 	/**
@@ -77,9 +65,6 @@ class Database {
 		return $this->dbLoadBalancerFactory->getMainLB()->getConnection( $mode );
 	}
 
-	/**
-	 * @return IReadableDatabase
-	 */
 	public function getReplicaDBConnection(): IReadableDatabase {
 		return $this->dbLoadBalancerFactory->getReplicaDatabase();
 	}
@@ -116,7 +101,7 @@ class Database {
 	public static function makeLintError( CategoryManager $categoryManager, $row ) {
 		try {
 			$name = $categoryManager->getCategoryName( $row->linter_cat );
-		} catch ( MissingCategoryException $e ) {
+		} catch ( MissingCategoryException ) {
 			LoggerFactory::getInstance( 'Linter' )->error(
 				'Could not find name for id: {linter_cat}',
 				[ 'linter_cat' => $row->linter_cat ]
@@ -181,6 +166,8 @@ class Database {
 		if ( is_array( $templateInfo ) ) {
 			if ( isset( $templateInfo[ 'multiPartTemplateBlock' ] ) ) {
 				$templateInfo = 'multi-part-template-block';
+			} elseif ( isset( $templateInfo[ 'parserFunction' ] ) ) {
+				$templateInfo = 'parser-function';
 			} else {
 				$templateInfo = $templateInfo[ 'name' ] ?? '';
 			}
@@ -346,7 +333,7 @@ class Database {
 		foreach ( $rows as $row ) {
 			try {
 				$catName = $this->categoryManager->getCategoryName( $row->linter_cat );
-			} catch ( MissingCategoryException $e ) {
+			} catch ( MissingCategoryException ) {
 				continue;
 			}
 			// Only set visible categories.  Alternatively, we could add another
@@ -359,10 +346,8 @@ class Database {
 		return $ret;
 	}
 
-	/**
-	 * @return int[]
-	 */
-	public function getTotals() {
+	/** @return array<string,int> */
+	public function getTotals(): array {
 		$ret = [];
 		foreach ( $this->categoryManager->getVisibleCategories() as $cat ) {
 			$id = $this->categoryManager->getCategoryId( $cat );
@@ -522,6 +507,8 @@ class Database {
 				if ( is_object( $templateInfo ) ) {
 					if ( isset( $templateInfo->multiPartTemplateBlock ) ) {
 						$templateInfo = 'multi-part-template-block';
+					} elseif ( isset( $templateInfo->parserFunction ) ) {
+						$templateInfo = 'parser-function';
 					} else {
 						$templateInfo = $templateInfo->name ?? '';
 					}

@@ -1,0 +1,43 @@
+{
+	"@metadata": {
+		"authors": [
+			"Mainframe98",
+			"McDutchie"
+		]
+	},
+	"mirage-skin-desc": "Mirage is een responsieve vormgeving die zich richt op het weergeven van inhoud met een balk aan de rechterkant",
+	"mirage.css": "/* CSS die hier wordt geplaatst heeft alleen invloed op het uiterlijk Mirage */",
+	"mirage.js": "/* JavaScript die hier wordt geplaatst heeft alleen invloed op gebruikers die het uiterlijk Mirage gebruiken */",
+	"mirage-community-messages-header": "Gemeenschapsberichten",
+	"mirage-interface-messages-module-edit-this-message": "Dit bericht bewerken",
+	"mirage-page-actions": "Pagina-handelingen",
+	"mirage-jumptonavigation": "Naar navigatie springen",
+	"mirage-jumptocontent": "Naar inhoud springen",
+	"mirage-action-addsection": "Onderwerp toevoegen",
+	"mirage-userpage": "{{GENDER:$1|Gebruiker}}spagina",
+	"mirage-footer-places": "Plaatsen",
+	"mirage-footer-feeds": "Feeds",
+	"mirage-footer-info": "Paginagegevens",
+	"mirage-expand-submenu": "De vermeldingen voor het submenu weergeven",
+	"mirage-talkpage": "Overlegpagina",
+	"mirage-user-tools": "Gebruikershulpmiddelen",
+	"mirage-no-new-messages": "U hebt geen nieuwe berichten.",
+	"mirage-notifications": "Meldingen",
+	"mirage-page-tools": "Paginahulpmiddelen",
+	"mirage-hidden-categories": "Verborgen categorieën",
+	"mirage-recent-changes-module": "Recente wijzigingen",
+	"mirage-more": "Meer",
+	"mirage-more-recent-changes": "Meer wijzigingen bekijken",
+	"mirage-toggle-right-rail": "Rechterrail omschakelen",
+	"prefs-mirage-max-width-label": "Mirage-inhoudsbreedte:",
+	"prefs-mirage-max-width": "Pas altijd de maximale paginabreedte toe",
+	"prefs-mirage-partial-max-width": "Pas de maximale paginabreedte alleen toe op artikelen",
+	"prefs-mirage-no-max-width": "De maximale paginabreedte uitschakelen",
+	"prefs-mirage-show-right-rail": "De rechterrail weergeven",
+	"prefs-mirage-toc": "Locatie van de inhoudsopgave:",
+	"prefs-mirage-toc-legacy": "Toon de inhoudsopgave in de artikeltekst",
+	"prefs-mirage-toc-hybrid": "Toon de inhoudsopgave in de artikeltekst en als rechterrailmodule",
+	"prefs-mirage-toc-right-rail-only": "Toon de inhoudsopgave als een rechterrailmodule",
+	"mirage-toggle-toc": "Inhoudsopgave omschakelen",
+	"mirage-wordmark-file-warning": "Dit bestand wordt momenteel gebruikt als het woordmerk voor de Mirage vormgeving."
+}

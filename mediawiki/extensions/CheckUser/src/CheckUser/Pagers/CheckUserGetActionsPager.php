@@ -1,40 +1,41 @@
 <?php
 
-namespace MediaWiki\CheckUser\CheckUser\Pagers;
+namespace MediaWiki\Extension\CheckUser\CheckUser\Pagers;
 
-use HtmlArmor;
-use LogEventsList;
-use LogFormatter;
-use LogFormatterFactory;
 use LogicException;
-use LogPage;
-use ManualLogEntry;
-use MediaWiki\Cache\LinkBatchFactory;
-use MediaWiki\CheckUser\CheckUser\SpecialCheckUser;
-use MediaWiki\CheckUser\ClientHints\ClientHintsBatchFormatterResults;
-use MediaWiki\CheckUser\ClientHints\ClientHintsReferenceIds;
-use MediaWiki\CheckUser\Hook\HookRunner;
-use MediaWiki\CheckUser\Services\CheckUserLogService;
-use MediaWiki\CheckUser\Services\CheckUserLookupUtils;
-use MediaWiki\CheckUser\Services\CheckUserUtilityService;
-use MediaWiki\CheckUser\Services\TokenQueryManager;
-use MediaWiki\CheckUser\Services\UserAgentClientHintsFormatter;
-use MediaWiki\CheckUser\Services\UserAgentClientHintsLookup;
-use MediaWiki\CheckUser\Services\UserAgentClientHintsManager;
+use MediaWiki\Block\DatabaseBlockStore;
 use MediaWiki\CommentFormatter\CommentFormatter;
 use MediaWiki\CommentStore\CommentStore;
 use MediaWiki\Context\IContextSource;
+use MediaWiki\Extension\CheckUser\CheckUser\SpecialCheckUser;
+use MediaWiki\Extension\CheckUser\ClientHints\ClientHintsBatchFormatterResults;
+use MediaWiki\Extension\CheckUser\ClientHints\ClientHintsReferenceIds;
+use MediaWiki\Extension\CheckUser\Hook\HookRunner;
+use MediaWiki\Extension\CheckUser\Services\CheckUserLogService;
+use MediaWiki\Extension\CheckUser\Services\CheckUserLookupUtils;
+use MediaWiki\Extension\CheckUser\Services\CheckUserUtilityService;
+use MediaWiki\Extension\CheckUser\Services\TokenQueryManager;
+use MediaWiki\Extension\CheckUser\Services\UserAgentClientHintsFormatter;
+use MediaWiki\Extension\CheckUser\Services\UserAgentClientHintsLookup;
+use MediaWiki\Extension\CheckUser\Services\UserAgentClientHintsManager;
 use MediaWiki\Html\FormOptions;
 use MediaWiki\Html\Html;
 use MediaWiki\Linker\Linker;
 use MediaWiki\Linker\LinkRenderer;
 use MediaWiki\Logger\LoggerFactory;
+use MediaWiki\Logging\LogEventsList;
+use MediaWiki\Logging\LogFormatter;
+use MediaWiki\Logging\LogFormatterFactory;
+use MediaWiki\Logging\LogPage;
+use MediaWiki\Logging\ManualLogEntry;
+use MediaWiki\Page\LinkBatchFactory;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\SpecialPage\SpecialPageFactory;
 use MediaWiki\Title\Title;
 use MediaWiki\User\CentralId\CentralIdLookup;
 use MediaWiki\User\Options\UserOptionsLookup;
+use MediaWiki\User\TempUser\TempUserConfig;
 use MediaWiki\User\UserEditTracker;
 use MediaWiki\User\UserFactory;
 use MediaWiki\User\UserGroupManager;
@@ -43,10 +44,12 @@ use MediaWiki\User\UserIdentityLookup;
 use MediaWiki\User\UserIdentityValue;
 use Psr\Log\LoggerInterface;
 use stdClass;
+use Wikimedia\HtmlArmor\HtmlArmor;
 use Wikimedia\IPUtils;
 use Wikimedia\Rdbms\IConnectionProvider;
+use Wikimedia\Rdbms\IExpression;
 
-class CheckUserGetActionsPager extends AbstractCheckUserPager {
+class CheckUserGetActionsPager extends AbstractCheckUserPager implements CheckUsernameResultInterface {
 
 	/**
 	 * @var string[] Used to cache frequently used messages
@@ -70,45 +73,11 @@ class CheckUserGetActionsPager extends AbstractCheckUserPager {
 	 */
 	protected ClientHintsBatchFormatterResults $formattedClientHintsData;
 
-	private LoggerInterface $logger;
-	private LinkBatchFactory $linkBatchFactory;
-	private CommentFormatter $commentFormatter;
-	private UserEditTracker $userEditTracker;
-	private HookRunner $hookRunner;
-	private CheckUserUtilityService $checkUserUtilityService;
-	private CommentStore $commentStore;
-	private UserAgentClientHintsLookup $clientHintsLookup;
-	private UserAgentClientHintsFormatter $clientHintsFormatter;
-	private LogFormatterFactory $logFormatterFactory;
+	/** @var array<int, string> User IDs to username for registered and temp users in results */
+	private array $resultUserIds = [];
 
-	/**
-	 * @param FormOptions $opts
-	 * @param UserIdentity $target
-	 * @param bool|null $xfor
-	 * @param string $logType
-	 * @param TokenQueryManager $tokenQueryManager
-	 * @param UserGroupManager $userGroupManager
-	 * @param CentralIdLookup $centralIdLookup
-	 * @param LinkBatchFactory $linkBatchFactory
-	 * @param IConnectionProvider $dbProvider
-	 * @param SpecialPageFactory $specialPageFactory
-	 * @param UserIdentityLookup $userIdentityLookup
-	 * @param UserFactory $userFactory
-	 * @param CheckUserLookupUtils $checkUserLookupUtils
-	 * @param CheckUserLogService $checkUserLogService
-	 * @param CommentFormatter $commentFormatter
-	 * @param UserEditTracker $userEditTracker
-	 * @param HookRunner $hookRunner
-	 * @param CheckUserUtilityService $checkUserUtilityService
-	 * @param CommentStore $commentStore
-	 * @param UserAgentClientHintsLookup $clientHintsLookup
-	 * @param UserAgentClientHintsFormatter $clientHintsFormatter
-	 * @param LogFormatterFactory $logFormatterFactory
-	 * @param UserOptionsLookup $userOptionsLookup
-	 * @param IContextSource|null $context
-	 * @param LinkRenderer|null $linkRenderer
-	 * @param ?int $limit
-	 */
+	private readonly LoggerInterface $logger;
+
 	public function __construct(
 		FormOptions $opts,
 		UserIdentity $target,
@@ -117,42 +86,51 @@ class CheckUserGetActionsPager extends AbstractCheckUserPager {
 		TokenQueryManager $tokenQueryManager,
 		UserGroupManager $userGroupManager,
 		CentralIdLookup $centralIdLookup,
-		LinkBatchFactory $linkBatchFactory,
+		private readonly LinkBatchFactory $linkBatchFactory,
 		IConnectionProvider $dbProvider,
 		SpecialPageFactory $specialPageFactory,
 		UserIdentityLookup $userIdentityLookup,
 		UserFactory $userFactory,
 		CheckUserLookupUtils $checkUserLookupUtils,
 		CheckUserLogService $checkUserLogService,
-		CommentFormatter $commentFormatter,
-		UserEditTracker $userEditTracker,
-		HookRunner $hookRunner,
-		CheckUserUtilityService $checkUserUtilityService,
-		CommentStore $commentStore,
-		UserAgentClientHintsLookup $clientHintsLookup,
-		UserAgentClientHintsFormatter $clientHintsFormatter,
-		LogFormatterFactory $logFormatterFactory,
+		private readonly CommentFormatter $commentFormatter,
+		private readonly UserEditTracker $userEditTracker,
+		private readonly HookRunner $hookRunner,
+		private readonly CheckUserUtilityService $checkUserUtilityService,
+		private readonly CommentStore $commentStore,
+		private readonly UserAgentClientHintsLookup $clientHintsLookup,
+		private readonly UserAgentClientHintsFormatter $clientHintsFormatter,
+		private readonly LogFormatterFactory $logFormatterFactory,
 		UserOptionsLookup $userOptionsLookup,
+		DatabaseBlockStore $blockStore,
+		TempUserConfig $tempUserConfig,
 		?IContextSource $context = null,
 		?LinkRenderer $linkRenderer = null,
-		?int $limit = null
+		?int $limit = null,
 	) {
-		parent::__construct( $opts, $target, $logType, $tokenQueryManager,
-			$userGroupManager, $centralIdLookup, $dbProvider, $specialPageFactory,
-			$userIdentityLookup, $checkUserLogService, $userFactory, $checkUserLookupUtils,
-			$userOptionsLookup, $context, $linkRenderer, $limit );
+		parent::__construct(
+			$opts,
+			$target,
+			$logType,
+			$tokenQueryManager,
+			$userGroupManager,
+			$centralIdLookup,
+			$dbProvider,
+			$specialPageFactory,
+			$userIdentityLookup,
+			$checkUserLogService,
+			$userFactory,
+			$checkUserLookupUtils,
+			$userOptionsLookup,
+			$blockStore,
+			$tempUserConfig,
+			$context,
+			$linkRenderer,
+			$limit
+		);
 		$this->checkType = SpecialCheckUser::SUBTYPE_GET_ACTIONS;
 		$this->logger = LoggerFactory::getInstance( 'CheckUser' );
 		$this->xfor = $xfor;
-		$this->linkBatchFactory = $linkBatchFactory;
-		$this->commentFormatter = $commentFormatter;
-		$this->userEditTracker = $userEditTracker;
-		$this->hookRunner = $hookRunner;
-		$this->checkUserUtilityService = $checkUserUtilityService;
-		$this->commentStore = $commentStore;
-		$this->clientHintsLookup = $clientHintsLookup;
-		$this->clientHintsFormatter = $clientHintsFormatter;
-		$this->logFormatterFactory = $logFormatterFactory;
 		$this->preCacheMessages();
 		$this->mGroupByDate = true;
 	}
@@ -168,8 +146,8 @@ class CheckUserGetActionsPager extends AbstractCheckUserPager {
 		$templateParams['timestamp'] =
 			$this->getLanguage()->userTime( wfTimestamp( TS_MW, $row->timestamp ), $this->getUser() );
 		// Use the IP as the $user_text if the actor ID is NULL and the IP is not NULL (T353953).
-		if ( $row->actor === null && $row->ip ) {
-			$row->user_text = $row->ip;
+		if ( $row->actor === null && $row->ip_hex !== null ) {
+			$row->user_text = IPUtils::formatHex( $row->ip_hex );
 		}
 		// Normalise user text if IP for clarity and compatibility with ipLink below
 		$user_text = $row->user_text;
@@ -203,17 +181,20 @@ class CheckUserGetActionsPager extends AbstractCheckUserPager {
 			$userIsHidden = $this->userFactory->newFromUserIdentity( $user )->isHidden()
 				&& !$this->getAuthority()->isAllowed( 'hideuser' );
 		}
+
 		// Create diff/hist/page links
 		$templateParams['links'] = $this->getLinksFromRow( $row, $user, $logEntry );
 		$templateParams['showLinks'] = $templateParams['links'] !== '';
+
 		if ( $userIsHidden ) {
+			$templateParams['userName'] = $this->msg( 'rev-deleted-user' )->text();
 			$templateParams['userLink'] = Html::element(
 				'span',
 				[ 'class' => 'history-deleted' ],
 				$this->msg( 'rev-deleted-user' )->text()
 			);
 		} else {
-			if ( !IPUtils::isIPAddress( $user ) && !$user->isRegistered() ) {
+			if ( !IPUtils::isIPAddress( $user->getName() ) && !$user->isRegistered() ) {
 				$templateParams['userLinkClass'] = 'mw-checkuser-nonexistent-user';
 			}
 			$userLinks = self::buildUserLinks(
@@ -221,12 +202,15 @@ class CheckUserGetActionsPager extends AbstractCheckUserPager {
 				$user_text,
 				$this->userEditTracker->getUserEditCount( $user )
 			);
+			$templateParams['userName'] = $user_text;
 			$templateParams['userLink'] = $userLinks['userLink'];
 			$templateParams['userToolLinks'] = $userLinks['userToolLinks'];
 			// Add any block information
 			$templateParams['flags'] = $this->flagCache[$row->user_text];
 		}
+
 		$templateParams['actionText'] = $this->getActionText( $logEntry );
+
 		// Comment
 		if ( $row->type == RC_EDIT || $row->type == RC_NEW ) {
 			$templateParams['comment'] = $this->formattedRevisionComments[$row->this_oldid] ?? '';
@@ -242,40 +226,46 @@ class CheckUserGetActionsPager extends AbstractCheckUserPager {
 			}
 			$templateParams['comment'] = $this->commentFormatter->formatBlock( $comment );
 		}
+
 		// IP
-		$ip = IPUtils::prettifyIP( $row->ip ) ?? $row->ip ?? '';
-		$templateParams['ipLink'] = $this->getSelfLink( $ip,
-			[
-				'user' => $ip,
-				'reason' => $this->opts->getValue( 'reason' )
-			]
-		);
+		$ip = null;
+		if ( $row->ip_hex !== null ) {
+			$ip = IPUtils::prettifyIP( IPUtils::formatHex( $row->ip_hex ) );
+			$templateParams['ipLink'] = $this->getSelfLink(
+				$ip,
+				[
+					'user' => $ip,
+					'reason' => $this->opts->getValue( 'reason' ),
+				]
+			);
+		}
+		$templateParams['ipIsSet'] = $ip !== null;
+
 		// XFF
 		if ( $row->xff != null ) {
 			// Flag our trusted proxies
 			[ $client ] = $this->checkUserUtilityService->getClientIPfromXFF( $row->xff );
 			// XFF was trusted if client came from it
-			$trusted = ( $client === $row->ip );
+			$trusted = $ip !== null && $client === IPUtils::canonicalize( $ip );
 			$templateParams['xffTrusted'] = $trusted;
-			$templateParams['xff'] = $this->getSelfLink( $row->xff,
+			$templateParams['xff'] = $this->getSelfLink(
+				$row->xff,
 				[
 					'user' => $client . '/xff',
-					'reason' => $this->opts->getValue( 'reason' )
+					'reason' => $this->opts->getValue( 'reason' ),
 				]
 			);
 		}
 		// User agent
-		$templateParams['userAgent'] = $row->agent;
-		// Display Client Hints data if display is enabled
-		if ( $this->displayClientHints ) {
-			// If ::getStringForReferenceId returns null, the mustache template will
-			// interpret this as false and then not display the Client Hints data
-			// in the same way that if $this->displayClientHints data was false.
-			$templateParams['clientHints'] = $this->formattedClientHintsData->getStringForReferenceId(
-				$row->client_hints_reference_id,
-				$row->client_hints_reference_type
-			);
-		}
+		$templateParams['userAgent'] = $this->getDisplayableUserAgent( $row->agent );
+
+		// Display Client Hints data
+		// If ::getStringForReferenceId returns null, the mustache template will
+		// interpret this as false and then not display the Client Hints data.
+		$templateParams['clientHints'] = $this->formattedClientHintsData->getStringForReferenceId(
+			$row->client_hints_reference_id,
+			$row->client_hints_reference_type
+		);
 
 		return $this->templateParser->processTemplate( 'GetActionsLine', $templateParams );
 	}
@@ -313,7 +303,9 @@ class CheckUserGetActionsPager extends AbstractCheckUserPager {
 			$title = Title::makeTitle( $row->namespace, $row->title );
 			$links['log'] = '';
 			if ( isset( $row->log_id ) && $row->log_id ) {
-				$links['log'] = Html::rawElement( 'span', [],
+				$links['log'] = Html::rawElement(
+					'span',
+					[],
 					$this->getLinkRenderer()->makeKnownLink(
 						SpecialPage::getTitleFor( 'Log' ),
 						new HtmlArmor( $this->message['checkuser-log-link-text'] ),
@@ -345,7 +337,9 @@ class CheckUserGetActionsPager extends AbstractCheckUserPager {
 				}
 			}
 			if ( !$hidden ) {
-				$links['log'] .= Html::rawElement( 'span', [],
+				$links['log'] .= Html::rawElement(
+					'span',
+					[],
 					$this->getLinkRenderer()->makeKnownLink(
 						SpecialPage::getTitleFor( 'Log' ),
 						new HtmlArmor( $this->message['checkuser-logs-link-text'] ),
@@ -370,7 +364,9 @@ class CheckUserGetActionsPager extends AbstractCheckUserPager {
 				$links['diffHistLinks'] = Html::rawElement( 'span', [], $this->message['diff'] );
 			} else {
 				// Diff link
-				$links['diffHistLinks'] = Html::rawElement( 'span', [],
+				$links['diffHistLinks'] = Html::rawElement(
+					'span',
+					[],
 					$this->getLinkRenderer()->makeKnownLink(
 						$title,
 						new HtmlArmor( $this->message['diff'] ),
@@ -378,20 +374,22 @@ class CheckUserGetActionsPager extends AbstractCheckUserPager {
 						[
 							'curid' => $row->page_id,
 							'diff' => $row->this_oldid,
-							'oldid' => $row->last_oldid
+							'oldid' => $row->last_oldid,
 						]
 					)
 				);
 			}
 			// History link
-			$links['diffHistLinks'] .= ' ' . Html::rawElement( 'span', [],
+			$links['diffHistLinks'] .= ' ' . Html::rawElement(
+				'span',
+				[],
 				$this->getLinkRenderer()->makeKnownLink(
 					$title,
 					new HtmlArmor( $this->message['hist'] ),
 					[],
 					[
 						'curid' => $title->exists() ? $row->page_id : null,
-						'action' => 'history'
+						'action' => 'history',
 					]
 				)
 			);
@@ -443,7 +441,7 @@ class CheckUserGetActionsPager extends AbstractCheckUserPager {
 		if ( $this->message === [] ) {
 			$msgKeys = [
 				'diff', 'hist', 'minoreditletter', 'newpageletter',
-				'blocklink', 'checkuser-log-link-text', 'checkuser-logs-link-text'
+				'blocklink', 'checkuser-log-link-text', 'checkuser-logs-link-text',
 			];
 			foreach ( $msgKeys as $msg ) {
 				$this->message[$msg] = $this->msg( $msg )->escaped();
@@ -474,7 +472,7 @@ class CheckUserGetActionsPager extends AbstractCheckUserPager {
 					$edits,
 					// don't render parentheses in HTML markup (CSS will provide)
 					false
-				)
+				),
 			];
 		}
 
@@ -499,7 +497,7 @@ class CheckUserGetActionsPager extends AbstractCheckUserPager {
 		}
 
 		$queryInfo['options']['USE INDEX'] = [
-			$table => $this->checkUserLookupUtils->getIndexName( $this->xfor, $table )
+			$table => $this->checkUserLookupUtils->getIndexName( $this->xfor, $table ),
 		];
 
 		if ( $this->xfor === null ) {
@@ -510,13 +508,32 @@ class CheckUserGetActionsPager extends AbstractCheckUserPager {
 				$queryInfo['conds'][] = $ipExpr;
 			}
 		}
+
+		// Hide temporary accounts if requested (this is set to false by default)
+		if (
+			$this->tempUserConfig->isKnown() &&
+			IPUtils::isIPAddress( $this->target->getName() ) &&
+			$this->opts->getValue( 'wpHideTemporaryAccounts' )
+		) {
+			$temporaryAccountsFilterExpr = $this->tempUserConfig->getMatchCondition(
+				$this->getDatabase(),
+				'actor_name',
+				IExpression::NOT_LIKE
+			);
+			if ( $table === self::PRIVATE_LOG_EVENT_TABLE ) {
+				$temporaryAccountsFilterExpr = $this->getDatabase()->expr( 'cupe_actor', '=', null )
+					->orExpr( $temporaryAccountsFilterExpr );
+			}
+			$queryInfo['conds'][] = $temporaryAccountsFilterExpr;
+		}
+
 		return $queryInfo;
 	}
 
 	/** @inheritDoc */
 	protected function getQueryInfoForCuChanges(): array {
 		$commentQuery = $this->commentStore->getJoin( 'cuc_comment' );
-		$queryInfo = [
+		return [
 			'fields' => [
 				'namespace' => 'cuc_namespace',
 				'title' => 'cuc_title',
@@ -526,32 +543,28 @@ class CheckUserGetActionsPager extends AbstractCheckUserPager {
 				'type' => 'cuc_type',
 				'this_oldid' => 'cuc_this_oldid',
 				'last_oldid' => 'cuc_last_oldid',
-				'ip' => 'cuc_ip',
+				'ip_hex' => 'cuc_ip_hex',
 				'xff' => 'cuc_xff',
-				'agent' => 'cuc_agent',
+				'agent' => 'cuua_text',
 				'actor' => 'cuc_actor',
 				'user' => 'actor_user',
 				'user_text' => 'actor_name',
 				// Needed for rows with cuc_type other than RC_NEW or RC_EDIT (such as RC_FLOW if Flow is installed).
 				'comment_text',
 				'comment_data',
+				'client_hints_reference_id' => UserAgentClientHintsManager::IDENTIFIER_TO_COLUMN_NAME_MAP[
+					UserAgentClientHintsManager::IDENTIFIER_CU_CHANGES
+				],
+				'client_hints_reference_type' => UserAgentClientHintsManager::IDENTIFIER_CU_CHANGES,
 			],
-			'tables' => [ 'cu_changes', 'actor_cuc_user' => 'actor' ] + $commentQuery['tables'],
+			'tables' => [ 'cu_changes', 'actor_cuc_user' => 'actor', 'cu_useragent' ] + $commentQuery['tables'],
 			'conds' => [],
 			'join_conds' => [
-				'actor_cuc_user' => [ 'JOIN', 'actor_cuc_user.actor_id=cuc_actor' ]
+				'actor_cuc_user' => [ 'JOIN', 'actor_cuc_user.actor_id=cuc_actor' ],
+				'cu_useragent' => [ 'LEFT JOIN', 'cuua_id = cuc_agent_id' ],
 			] + $commentQuery['joins'],
 			'options' => [],
 		];
-		// When displaying Client Hints data, add the reference type and reference ID to each row.
-		if ( $this->displayClientHints ) {
-			$queryInfo['fields']['client_hints_reference_id'] =
-				UserAgentClientHintsManager::IDENTIFIER_TO_COLUMN_NAME_MAP[
-					UserAgentClientHintsManager::IDENTIFIER_CU_CHANGES
-				];
-			$queryInfo['fields']['client_hints_reference_type'] = UserAgentClientHintsManager::IDENTIFIER_CU_CHANGES;
-		}
-		return $queryInfo;
 	}
 
 	/** @inheritDoc */
@@ -563,11 +576,10 @@ class CheckUserGetActionsPager extends AbstractCheckUserPager {
 				'title' => 'log_title',
 				'page_id' => 'log_page',
 				'namespace' => 'log_namespace',
-				'ip' => 'cule_ip',
 				'ip_hex' => 'cule_ip_hex',
 				'xff' => 'cule_xff',
 				'xff_hex' => 'cule_xff_hex',
-				'agent' => 'cule_agent',
+				'agent' => 'cuua_text',
 				'actor' => 'cule_actor',
 				'user' => 'actor_user',
 				'user_text' => 'actor_name',
@@ -578,37 +590,37 @@ class CheckUserGetActionsPager extends AbstractCheckUserPager {
 				'log_params' => 'log_params',
 				'log_deleted' => 'log_deleted',
 				'log_id' => 'cule_log_id',
+				'client_hints_reference_id' => UserAgentClientHintsManager::IDENTIFIER_TO_COLUMN_NAME_MAP[
+					UserAgentClientHintsManager::IDENTIFIER_CU_LOG_EVENT
+				],
+				'client_hints_reference_type' => UserAgentClientHintsManager::IDENTIFIER_CU_LOG_EVENT,
 			],
 			'tables' => [
-				'cu_log_event', 'logging_cule_log_id' => 'logging', 'actor_log_actor' => 'actor'
+				'cu_log_event', 'logging_cule_log_id' => 'logging', 'actor_log_actor' => 'actor',
+				'cu_useragent',
 			] + $commentQuery['tables'],
 			'conds' => [],
 			'join_conds' => [
 				'logging_cule_log_id' => [ 'JOIN', 'logging_cule_log_id.log_id=cule_log_id' ],
 				'actor_log_actor' => [ 'JOIN', 'actor_log_actor.actor_id=cule_actor' ],
+				'cu_useragent' => [ 'LEFT JOIN', 'cuua_id = cule_agent_id' ],
 			] + $commentQuery['joins'],
 			'options' => [],
 		];
+
 		if ( $this->mDb->getType() == 'postgres' ) {
 			// On postgres the cuc_type type is a smallint.
 			$queryInfo['fields'] += [
-				'type' => 'CAST(' . RC_LOG . ' AS smallint)'
+				'type' => 'CAST(' . RC_LOG . ' AS smallint)',
 			];
 		} else {
 			// Other DBs can handle converting RC_LOG to the
 			// correct type.
 			$queryInfo['fields'] += [
-				'type' => RC_LOG
+				'type' => RC_LOG,
 			];
 		}
-		// When displaying Client Hints data, add the reference type and reference ID to each row.
-		if ( $this->displayClientHints ) {
-			$queryInfo['fields']['client_hints_reference_id'] =
-				UserAgentClientHintsManager::IDENTIFIER_TO_COLUMN_NAME_MAP[
-					UserAgentClientHintsManager::IDENTIFIER_CU_LOG_EVENT
-				];
-			$queryInfo['fields']['client_hints_reference_type'] = UserAgentClientHintsManager::IDENTIFIER_CU_LOG_EVENT;
-		}
+
 		return $queryInfo;
 	}
 
@@ -624,11 +636,10 @@ class CheckUserGetActionsPager extends AbstractCheckUserPager {
 				'title' => 'cupe_title',
 				'page_id' => 'cupe_page',
 				'namespace' => 'cupe_namespace',
-				'ip' => 'cupe_ip',
 				'ip_hex' => 'cupe_ip_hex',
 				'xff' => 'cupe_xff',
 				'xff_hex' => 'cupe_xff_hex',
-				'agent' => 'cupe_agent',
+				'agent' => 'cuua_text',
 				'actor' => 'cupe_actor',
 				'user' => 'actor_user',
 				'user_text' => 'actor_name',
@@ -639,42 +650,43 @@ class CheckUserGetActionsPager extends AbstractCheckUserPager {
 				'log_params' => 'cupe_params',
 				// cu_private_event log events cannot be deleted or suppressed.
 				'log_deleted' => 0,
+				'client_hints_reference_id' => UserAgentClientHintsManager::IDENTIFIER_TO_COLUMN_NAME_MAP[
+					UserAgentClientHintsManager::IDENTIFIER_CU_PRIVATE_EVENT
+				],
+				'client_hints_reference_type' => UserAgentClientHintsManager::IDENTIFIER_CU_PRIVATE_EVENT,
 			],
-			'tables' => [ 'cu_private_event', 'actor_cupe_actor' => 'actor' ] + $commentQuery['tables'],
+			'tables' => [
+				'cu_private_event', 'actor_cupe_actor' => 'actor', 'cu_useragent',
+			] + $commentQuery['tables'],
 			'conds' => [],
 			'join_conds' => [
-				'actor_cupe_actor' => [ $joinType, 'actor_cupe_actor.actor_id=cupe_actor' ]
+				'actor_cupe_actor' => [ $joinType, 'actor_cupe_actor.actor_id=cupe_actor' ],
+				'cu_useragent' => [ 'LEFT JOIN', 'cuua_id = cupe_agent_id' ],
 			] + $commentQuery['joins'],
 			'options' => [],
 		];
+
 		if ( $this->mDb->getType() == 'postgres' ) {
 			// On postgres the cuc_type type is a smallint.
 			$queryInfo['fields'] += [
-				'type' => 'CAST(' . RC_LOG . ' AS smallint)'
+				'type' => 'CAST(' . RC_LOG . ' AS smallint)',
 			];
 		} else {
 			// Other DBs can handle converting RC_LOG to the
 			// correct type.
 			$queryInfo['fields'] += [
-				'type' => RC_LOG
+				'type' => RC_LOG,
 			];
 		}
-		// When displaying Client Hints data, add the reference type and reference ID to each row.
-		if ( $this->displayClientHints ) {
-			$queryInfo['fields']['client_hints_reference_id'] =
-				UserAgentClientHintsManager::IDENTIFIER_TO_COLUMN_NAME_MAP[
-					UserAgentClientHintsManager::IDENTIFIER_CU_PRIVATE_EVENT
-				];
-			$queryInfo['fields']['client_hints_reference_type'] =
-				UserAgentClientHintsManager::IDENTIFIER_CU_PRIVATE_EVENT;
-		}
+
 		return $queryInfo;
 	}
 
 	/** @inheritDoc */
 	protected function getStartBody(): string {
-		return $this->getCheckUserHelperFieldsetHTML() . $this->getNavigationBar()
-			. '<div id="checkuserresults" class="mw-checkuser-get-actions-results mw-checkuser-get-edits-results">';
+		return $this->getCheckUserResultsFilterFieldset() . $this->getCheckUserHelperFieldsetHTML() .
+			$this->getNavigationBar() .
+			'<div id="checkuserresults" class="mw-checkuser-get-actions-results mw-checkuser-get-edits-results">';
 	}
 
 	/** @inheritDoc */
@@ -685,27 +697,29 @@ class CheckUserGetActionsPager extends AbstractCheckUserPager {
 		$referenceIds = new ClientHintsReferenceIds();
 		foreach ( $result as $row ) {
 			// Use the IP as the user_text if the actor ID is NULL and the IP is not NULL (T353953).
-			if ( $row->actor === null && $row->ip ) {
-				$row->user_text = $row->ip;
+			if ( $row->actor === null && $row->ip_hex !== null ) {
+				$row->user_text = IPUtils::formatHex( $row->ip_hex );
 			}
-			if ( $this->displayClientHints ) {
-				$referenceIds->addReferenceIds( $row->client_hints_reference_id, $row->client_hints_reference_type );
-			}
+			$referenceIds->addReferenceIds( $row->client_hints_reference_id, $row->client_hints_reference_type );
 			if ( $row->title !== '' ) {
 				$lb->add( $row->namespace, $row->title );
 			}
+
+			$user = new UserIdentityValue( $row->user ?? 0, $row->user_text );
+
 			if ( $this->xfor === null ) {
-				$userText = str_replace( ' ', '_', $row->user_text );
-				$lb->add( NS_USER, $userText );
-				$lb->add( NS_USER_TALK, $userText );
+				$lb->addUser( $user );
 			}
+
 			// Add the row to the flag cache
 			if ( !isset( $this->flagCache[$row->user_text] ) ) {
-				$user = new UserIdentityValue( $row->user ?? 0, $row->user_text );
 				$ip = IPUtils::isIPAddress( $row->user_text ) ? $row->user_text : '';
 				$flags = $this->userBlockFlags( $ip, $user );
 				$this->flagCache[$row->user_text] = $flags;
 			}
+
+			$this->addUsersFromRow( $row );
+
 			// Batch process comments
 			if (
 				( $row->type == RC_EDIT || $row->type == RC_NEW ) &&
@@ -735,16 +749,25 @@ class CheckUserGetActionsPager extends AbstractCheckUserPager {
 		// Lookup the Client Hints data objects from the DB
 		// and then batch format the ClientHintsData objects
 		// for display.
-		if ( $this->displayClientHints ) {
-			// When no Client Hints data was found for a edit or for all edits in the results,
-			// no associated formatted Client Hints data string will be stored in
-			// $this->formattedClientHintsData for the edits without Client Hints data.
-			// Calling the getter method will handle this by returning null.
-			$clientHintsData = $this->clientHintsLookup->getClientHintsByReferenceIds( $referenceIds );
-			$this->formattedClientHintsData = $this->clientHintsFormatter
-				->batchFormatClientHintsData( $clientHintsData );
-		}
+		// When no Client Hints data was found for a edit or for all edits in the results,
+		// no associated formatted Client Hints data string will be stored in
+		// $this->formattedClientHintsData for the edits without Client Hints data.
+		// Calling the getter method will handle this by returning null.
+		$clientHintsData = $this->clientHintsLookup->getClientHintsByReferenceIds( $referenceIds );
+		$this->formattedClientHintsData = $this->clientHintsFormatter
+			->batchFormatClientHintsData( $clientHintsData );
 		$result->seek( 0 );
+	}
+
+	private function addUsersFromRow( stdClass $row ): void {
+		if ( ( $row->user ?? 0 ) > 0 && !IPUtils::isIPAddress( $row->user_text ) ) {
+			$this->resultUserIds[$row->user] = $row->user_text;
+		}
+	}
+
+	/** @inheritDoc */
+	public function getResultUsernameMap(): array {
+		return $this->resultUserIds;
 	}
 
 	/**
@@ -752,8 +775,6 @@ class CheckUserGetActionsPager extends AbstractCheckUserPager {
 	 * so that the user can reduce the size of the page if they
 	 * are interested in one or two items from the top. The only
 	 * exception to this is when there are no results.
-	 *
-	 * @return bool
 	 */
 	protected function isNavigationBarShown(): bool {
 		return $this->getNumRows() !== 0;

@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": [
+			"Hamilton Abreu"
+		]
+	},
+	"perpagelanguage-desc": "Define a língua da interface para corresponder à língua do conteúdo da página",
+	"perpagelanguage-label": "Definir língua"
+}

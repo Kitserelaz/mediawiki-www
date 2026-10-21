@@ -1,56 +1,29 @@
 <?php
 
-namespace MediaWiki\CheckUser\Investigate\Pagers;
+namespace MediaWiki\Extension\CheckUser\Investigate\Pagers;
 
-use LogFormatterFactory;
-use MediaWiki\CheckUser\Services\CheckUserLookupUtils;
 use MediaWiki\CommentFormatter\CommentFormatter;
 use MediaWiki\CommentStore\CommentStore;
+use MediaWiki\Extension\CheckUser\Services\CheckUserLookupUtils;
 use MediaWiki\Language\Language;
 use MediaWiki\Linker\LinkRenderer;
+use MediaWiki\Logging\LogFormatterFactory;
 use MediaWiki\SpecialPage\SpecialPageFactory;
 use MediaWiki\Title\TitleFormatter;
 use MediaWiki\User\User;
 use MediaWiki\User\UserFactory;
 
 class TimelineRowFormatterFactory {
-	private LinkRenderer $linkRenderer;
-	private CheckUserLookupUtils $checkUserLookupUtils;
-	private TitleFormatter $titleFormatter;
-	private SpecialPageFactory $specialPageFactory;
-	private CommentFormatter $commentFormatter;
-	private UserFactory $userFactory;
-	private CommentStore $commentStore;
-	private LogFormatterFactory $logFormatterFactory;
-
-	/**
-	 * @param LinkRenderer $linkRenderer
-	 * @param CheckUserLookupUtils $checkUserLookupUtils
-	 * @param TitleFormatter $titleFormatter
-	 * @param SpecialPageFactory $specialPageFactory
-	 * @param CommentFormatter $commentFormatter
-	 * @param UserFactory $userFactory
-	 * @param CommentStore $commentStore
-	 * @param LogFormatterFactory $logFormatterFactory
-	 */
 	public function __construct(
-		LinkRenderer $linkRenderer,
-		CheckUserLookupUtils $checkUserLookupUtils,
-		TitleFormatter $titleFormatter,
-		SpecialPageFactory $specialPageFactory,
-		CommentFormatter $commentFormatter,
-		UserFactory $userFactory,
-		CommentStore $commentStore,
-		LogFormatterFactory $logFormatterFactory
+		private readonly LinkRenderer $linkRenderer,
+		private readonly CheckUserLookupUtils $checkUserLookupUtils,
+		private readonly TitleFormatter $titleFormatter,
+		private readonly SpecialPageFactory $specialPageFactory,
+		private readonly CommentFormatter $commentFormatter,
+		private readonly UserFactory $userFactory,
+		private readonly CommentStore $commentStore,
+		private readonly LogFormatterFactory $logFormatterFactory,
 	) {
-		$this->linkRenderer = $linkRenderer;
-		$this->checkUserLookupUtils = $checkUserLookupUtils;
-		$this->titleFormatter = $titleFormatter;
-		$this->specialPageFactory = $specialPageFactory;
-		$this->commentFormatter = $commentFormatter;
-		$this->userFactory = $userFactory;
-		$this->commentStore = $commentStore;
-		$this->logFormatterFactory = $logFormatterFactory;
 	}
 
 	/**

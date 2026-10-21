@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<psalm
+    errorLevel="2"
+    resolveFromConfigFile="true"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="https://getpsalm.org/schema/config"
+    xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
+>
+    <projectFiles>
+        <directory name="src" />
+    </projectFiles>
+	<extraFiles>
+		<directory name="../../includes" />
+		<directory name="../../vendor/wikimedia" />
+	</extraFiles>
+	<issueHandlers>
+		<MissingPropertyType errorLevel="suppress" />
+		<MissingClosureReturnType errorLevel="suppress" />
+		<MissingConstructor>
+			<errorLevel type="suppress">
+				<file name="src/NetworkFunction/RequestModel.php" />
+				<file name="src/NetworkFunction/ResponseModel.php" />
+			</errorLevel>
+		</MissingConstructor>
+		<MissingParamType>
+			<errorLevel type="suppress">
+				<file name="../../includes/specialpage/IncludableSpecialPage.php" />
+			</errorLevel>
+		</MissingParamType>
+		<UndefinedDocblockClass>
+			<errorLevel type="suppress">
+				<file name="src/EntryPoints/SpecialNetwork.php" />
+			</errorLevel>
+		</UndefinedDocblockClass>
+	</issueHandlers>
+</psalm>

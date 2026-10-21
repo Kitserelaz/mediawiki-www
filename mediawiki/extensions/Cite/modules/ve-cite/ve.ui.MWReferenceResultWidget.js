@@ -15,15 +15,11 @@
  * @param {Object} config
  * @param {Object} config.item An item from the search index in ve.ui.MWReferenceSearchWidget
  * @param {ve.dm.MWReferenceModel} config.item.reference
- * @param {string} config.item.name
- * @param {string} config.item.footnoteLabel e.g. "note 1"
- * @param {OO.ui.Element} [config.reuseMenu]
+ * @param {jQuery} config.item.$refContent Rendered HTML preview
+ * @param {string} config.item.name Plain name as in the wikitext
+ * @param {string} config.item.footnoteLabel Formatted footnote marker, e.g. "note 1"
  */
 ve.ui.MWReferenceResultWidget = function VeUiMWReferenceResultWidget( config ) {
-	config = ve.extendObject( {
-		title: ve.msg( 'cite-ve-dialog-reference-useexisting-long-tool' )
-	}, config );
-
 	// Parent constructor
 	ve.ui.MWReferenceResultWidget.super.apply( this, arguments );
 
@@ -32,7 +28,7 @@ ve.ui.MWReferenceResultWidget = function VeUiMWReferenceResultWidget( config ) {
 
 	this.$element
 		.addClass( 've-ui-mwReferenceResultWidget' );
-	if ( item.reference.extendsRef ) {
+	if ( item.reference.isSubRef() ) {
 		this.$element.addClass( 've-ui-mwReferenceResultWidget-sub' );
 	}
 
@@ -48,11 +44,10 @@ ve.ui.MWReferenceResultWidget = function VeUiMWReferenceResultWidget( config ) {
 	this.setLabel( $footnoteLabel.add( $name ).add( item.$refContent ) );
 	this.setData( item.reference );
 
-	if ( mw.config.get( 'wgCiteBookReferencing' ) && config.reuseMenu ) {
-		this.$element.append( config.reuseMenu.$element );
-	}
 };
 
 /* Inheritance */
 
 OO.inheritClass( ve.ui.MWReferenceResultWidget, OO.ui.OptionWidget );
+
+module.exports = ve.ui.MWReferenceResultWidget;

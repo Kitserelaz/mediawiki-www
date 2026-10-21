@@ -5,26 +5,12 @@ namespace MediaWiki\Extension\OAuth\Frontend\SpecialPages;
 /**
  * (c) Aaron Schulz 2013, GPL
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 
-use ErrorPageError;
-use LogEventsList;
-use LogPage;
 use MediaWiki\Context\IContextSource;
+use MediaWiki\Exception\ErrorPageError;
+use MediaWiki\Exception\PermissionsError;
 use MediaWiki\Extension\OAuth\Backend\Consumer;
 use MediaWiki\Extension\OAuth\Backend\Utils;
 use MediaWiki\Extension\OAuth\Control\ConsumerAccessControl;
@@ -34,17 +20,19 @@ use MediaWiki\Extension\OAuth\Frontend\Pagers\ManageConsumersPager;
 use MediaWiki\Extension\OAuth\Frontend\UIUtils;
 use MediaWiki\Html\Html;
 use MediaWiki\HTMLForm\HTMLForm;
-use MediaWiki\MediaWikiServices;
+use MediaWiki\Logging\LogEventsList;
+use MediaWiki\Logging\LogPage;
 use MediaWiki\Permissions\GrantsLocalization;
+use MediaWiki\Permissions\PermissionManager;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Status\Status;
 use MediaWiki\Title\Title;
-use MediaWiki\Xml\Xml;
-use MWRestrictions;
+use MediaWiki\Utils\MWRestrictions;
+use MediaWiki\Utils\UrlUtils;
+use MediaWiki\WikiMap\WikiMap;
 use OOUI\HtmlSnippet;
-use PermissionsError;
 use stdClass;
-use Wikimedia\Rdbms\IDatabase;
+use Wikimedia\Rdbms\IReadableDatabase;
 
 /**
  * Special page for listing the queue of consumer requests and managing
@@ -70,31 +58,47 @@ class SpecialMWOAuthManageConsumers extends SpecialPage {
 	public static $listStages = [ Consumer::STAGE_APPROVED,
 		Consumer::STAGE_DISABLED ];
 
-	/** @var GrantsLocalization */
-	private $grantsLocalization;
-
-	/**
-	 * @param GrantsLocalization $grantsLocalization
-	 */
-	public function __construct( GrantsLocalization $grantsLocalization ) {
-		parent::__construct( 'OAuthManageConsumers', 'mwoauthmanageconsumer' );
-		$this->grantsLocalization = $grantsLocalization;
+	public function __construct(
+		private readonly GrantsLocalization $grantsLocalization,
+		private readonly PermissionManager $permissionManager,
+		private readonly UrlUtils $urlUtils,
+	) {
+		parent::__construct( 'OAuthManageConsumers' );
 	}
 
+	/** @inheritDoc */
+	public function getRestriction(): string {
+		return 'mwoauthmanageconsumer';
+	}
+
+	/** @inheritDoc */
 	public function doesWrites() {
 		return true;
 	}
 
+	/** @inheritDoc */
 	public function execute( $par ) {
-		$user = $this->getUser();
-		$permissionManager = MediaWikiServices::getInstance()->getPermissionManager();
-
 		$this->setHeaders();
 		$this->getOutput()->disallowUserJs();
 		$this->addHelpLink( 'Help:OAuth' );
+
+		if ( !Utils::isCentralWiki() ) {
+			$this->getOutput()->addWikiMsg( 'mwoauth-consumers-central-wiki' );
+			$wiki = WikiMap::getWiki( Utils::getCentralWiki() ?: WikiMap::getCurrentWikiId() );
+			if ( $wiki ) {
+				$this->getOutput()->addHTML( Html::element( 'a', [
+					// Cross-wiki, so don't localize
+					'href' => $wiki->getUrl( 'Special:OAuthManageConsumers' . ( $par !== null ? "/$par" : '' ) ),
+				], $this->msg( 'mwoauth-consumers-central-wiki-go', $wiki->getDisplayName() )->text() ) );
+			}
+			return;
+		}
+
 		$this->requireNamedUser( 'mwoauth-available-only-to-registered' );
 
-		if ( !$permissionManager->userHasRight( $user, 'mwoauthmanageconsumer' ) ) {
+		$user = $this->getUser();
+
+		if ( !$this->permissionManager->userHasRight( $user, 'mwoauthmanageconsumer' ) ) {
 			throw new PermissionsError( 'mwoauthmanageconsumer' );
 		}
 
@@ -192,7 +196,7 @@ class SpecialMWOAuthManageConsumers extends SpecialPage {
 
 		$out->addWikiMsg( 'mwoauthmanageconsumers-maintext' );
 
-		$counts = Utils::getConsumerStateCounts( Utils::getCentralDB( DB_REPLICA ) );
+		$counts = Utils::getConsumerStateCounts( Utils::getOAuthDB( DB_REPLICA ) );
 
 		$out->wrapWikiMsg( "<p><strong>$1</strong></p>", 'mwoauthmanageconsumers-queues' );
 		$out->addHTML( '<ul>' );
@@ -238,16 +242,15 @@ class SpecialMWOAuthManageConsumers extends SpecialPage {
 	 */
 	protected function handleConsumerForm( $consumerKey ) {
 		$user = $this->getUser();
-		$dbr = Utils::getCentralDB( DB_REPLICA );
+		$dbr = Utils::getOAuthDB( DB_REPLICA );
 		$cmrAc = ConsumerAccessControl::wrap(
 			Consumer::newFromKey( $dbr, $consumerKey ), $this->getContext() );
-		$permissionManager = MediaWikiServices::getInstance()->getPermissionManager();
 
 		if ( !$cmrAc ) {
 			$this->getOutput()->addWikiMsg( 'mwoauth-invalid-consumer-key' );
 			return;
 		} elseif ( $cmrAc->getDeleted()
-			&& !$permissionManager->userHasRight( $user, 'mwoauthviewsuppressed' ) ) {
+			&& !$this->permissionManager->userHasRight( $user, 'mwoauthviewsuppressed' ) ) {
 			throw new PermissionsError( 'mwoauthviewsuppressed' );
 		}
 		$startingStage = $cmrAc->getStage();
@@ -259,7 +262,7 @@ class SpecialMWOAuthManageConsumers extends SpecialPage {
 				$this->msg( 'mwoauthmanageconsumers-approve' )->escaped() => 'approve',
 				$this->msg( 'mwoauthmanageconsumers-reject' )->escaped()  => 'reject'
 			];
-			if ( $permissionManager->userHasRight( $this->getUser(), 'mwoauthsuppress' ) ) {
+			if ( $this->permissionManager->userHasRight( $this->getUser(), 'mwoauthsuppress' ) ) {
 				$msg = $this->msg( 'mwoauthmanageconsumers-rsuppress' )->escaped();
 				$opts["<strong>$msg</strong>"] = 'rsuppress';
 			}
@@ -268,13 +271,13 @@ class SpecialMWOAuthManageConsumers extends SpecialPage {
 				$this->msg( 'mwoauthmanageconsumers-disable' )->escaped() => 'disable',
 				$this->msg( 'mwoauthmanageconsumers-reenable' )->escaped()  => 'reenable'
 			];
-			if ( $permissionManager->userHasRight( $this->getUser(), 'mwoauthsuppress' ) ) {
+			if ( $this->permissionManager->userHasRight( $this->getUser(), 'mwoauthsuppress' ) ) {
 				$msg = $this->msg( 'mwoauthmanageconsumers-dsuppress' )->escaped();
 				$opts["<strong>$msg</strong>"] = 'dsuppress';
 			}
 		}
 
-		$dbw = Utils::getCentralDB( DB_PRIMARY );
+		$dbw = Utils::getOAuthDB( DB_PRIMARY );
 		$control = new ConsumerSubmitControl( $this->getContext(), [], $dbw );
 		$form = HTMLForm::factory( 'ooui',
 			$control->registerValidators( [
@@ -331,7 +334,6 @@ class SpecialMWOAuthManageConsumers extends SpecialPage {
 		$status = $form->show();
 		if ( $status instanceof Status && $status->isOK() ) {
 			/** @var Consumer $cmr */
-			// @phan-suppress-next-line PhanTypeArraySuspiciousNullable
 			$cmr = $status->value['result'];
 			'@phan-var Consumer $cmr';
 			$oldStageKey = Consumer::$stageNames[$startingStage];
@@ -349,7 +351,7 @@ class SpecialMWOAuthManageConsumers extends SpecialPage {
 			$out = $this->getOutput();
 			// Show all of the status updates
 			$logPage = new LogPage( 'mwoauthconsumer' );
-			$out->addHTML( Xml::element( 'h2', null, $logPage->getName()->text() ) );
+			$out->addHTML( Html::element( 'h2', [], $logPage->getName()->text() ) );
 			LogEventsList::showLogExtract( $out, 'mwoauthconsumer', '', '', [
 				'conds' => [
 					'ls_field' => 'OAuthConsumer',
@@ -455,7 +457,7 @@ class SpecialMWOAuthManageConsumers extends SpecialPage {
 	protected function formatCallbackUrl( ConsumerAccessControl $cmrAc ) {
 		$url = $cmrAc->getCallbackUrl();
 		if ( $cmrAc->getDAO()->getCallbackIsPrefix() ) {
-			$urlParts = wfParseUrl( $cmrAc->getDAO()->getCallbackUrl() );
+			$urlParts = $this->urlUtils->parse( $cmrAc->getDAO()->getCallbackUrl() );
 			if ( ( $urlParts['port'] ?? null ) === 1 ) {
 				$warning = Html::element( 'span', [ 'class' => 'warning' ],
 					$this->msg( 'mwoauth-consumer-callbackurl-warning' )->text() );
@@ -482,16 +484,16 @@ class SpecialMWOAuthManageConsumers extends SpecialPage {
 		}
 		# Every 30th view, prune old deleted items
 		if ( mt_rand( 0, 29 ) == 0 ) {
-			Utils::runAutoMaintenance( Utils::getCentralDB( DB_PRIMARY ) );
+			Utils::runAutoMaintenance( Utils::getOAuthDB( DB_PRIMARY ) );
 		}
 	}
 
 	/**
-	 * @param IDatabase $db
+	 * @param IReadableDatabase $db
 	 * @param stdClass $row
 	 * @return string
 	 */
-	public function formatRow( IDatabase $db, $row ) {
+	public function formatRow( IReadableDatabase $db, $row ) {
 		$cmrAc = ConsumerAccessControl::wrap(
 			Consumer::newFromRow( $db, $row ), $this->getContext()
 		);
@@ -509,6 +511,7 @@ class SpecialMWOAuthManageConsumers extends SpecialPage {
 
 		$encStageKey = htmlspecialchars( $stageKey );
 		$r = "<li class='mw-mwoauthmanageconsumers-{$encStageKey}'>";
+		$r .= "<span class='mw-mwoauth-stage-icon'></span> ";
 
 		$r .= $time . " (<strong>{$link}</strong>)";
 
@@ -544,11 +547,10 @@ class SpecialMWOAuthManageConsumers extends SpecialPage {
 			'mwoauthmanageconsumers-lastchange' => $logHtml,
 		];
 
-		$r .= "<table class='mw-mwoauthmanageconsumers-body' " .
-			"cellspacing='1' cellpadding='3' border='1' width='100%'>";
+		$r .= "<table class='mw-mwoauthmanageconsumers-body mw-datatable'>";
 		foreach ( $data as $msg => $encValue ) {
 			$r .= '<tr>' .
-				'<td><strong>' . $this->msg( $msg )->escaped() . '</strong></td>' .
+				'<th>' . $this->msg( $msg )->escaped() . '</th>' .
 				'<td width=\'90%\'>' . $encValue . '</td>' .
 				'</tr>';
 		}
@@ -559,6 +561,7 @@ class SpecialMWOAuthManageConsumers extends SpecialPage {
 		return $r;
 	}
 
+	/** @inheritDoc */
 	protected function getGroupName() {
 		return 'users';
 	}

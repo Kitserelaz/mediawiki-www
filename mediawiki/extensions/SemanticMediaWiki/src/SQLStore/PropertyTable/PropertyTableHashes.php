@@ -1,0 +1,155 @@
+<?php
+
+namespace SMW\SQLStore\PropertyTable;
+
+use RuntimeException;
+use SMW\MediaWiki\Connection\Database;
+use SMW\SQLStore\EntityStore\IdCacheManager;
+use SMW\SQLStore\SQLStore;
+
+/**
+ * @private
+ *
+ * @license GPL-2.0-or-later
+ * @since 3.1
+ *
+ * @author mwjames
+ */
+class PropertyTableHashes {
+
+	/**
+	 * @since 3.1
+	 */
+	public function __construct(
+		private readonly Database $connection,
+		private readonly IdCacheManager $idCacheManager,
+	) {
+	}
+
+	/**
+	 * Update the proptable_hash for a given page.
+	 *
+	 * @since 3.1
+	 *
+	 * @param int $id ID of the page as stored in SMW IDs table
+	 * @param string[]|null $hash of hash values with table names as keys
+	 */
+	public function setPropertyTableHashes( $id, $hash = null ): void {
+		$update = [];
+
+		if ( $hash === null ) {
+			$update = [ 'smw_proptable_hash' => $hash, 'smw_rev' => null ];
+		} elseif ( is_array( $hash ) ) {
+			$update = [ 'smw_proptable_hash' => serialize( $hash ) ];
+		} else {
+			throw new RuntimeException( "Expected a null or an array as value!" );
+		}
+
+		$this->connection->newUpdateQueryBuilder()
+			->update( SQLStore::ID_TABLE )
+			->set( $update )
+			->where( [ 'smw_id' => $id ] )
+			->caller( __METHOD__ )
+			->execute();
+
+/*
+		$smw_proptable = $hash === null ? null : serialize( $hash );
+
+		$this->connection->upsert(
+			SQLStore::ID_AUXILIARY_TABLE,
+			[
+				'smw_id' => $id,
+				'smw_proptable' => $smw_proptable
+			],
+			[ 'smw_id' ],
+			[
+				'smw_proptable' => $smw_proptable
+			],
+			__METHOD__
+		);
+*/
+		$this->setPropertyTableHashesCache( $id, $hash );
+
+		if ( $hash === null ) {
+			$this->idCacheManager->deleteCacheById( (string)$id );
+		}
+	}
+
+	/**
+	 * Return an array of hashes with table names as keys. These
+	 * hashes are used to compare new data with old data for each
+	 * property-value table when updating data
+	 *
+	 * @since 1.8
+	 *
+	 * @param int $id ID of the page as stored in the SMW IDs table
+	 *
+	 * @return mixed
+	 */
+	public function getPropertyTableHashesById( $id ): mixed {
+		if ( $id == 0 ) {
+			return [];
+		}
+
+		$cache = $this->idCacheManager->get( 'propertytable.hash' );
+
+		$hash = $cache->fetch( (string)$id );
+		if ( $hash !== false ) {
+			return $hash;
+		}
+
+		$row = $this->connection->newSelectQueryBuilder()
+			->select( [ 'smw_proptable_hash' ] )
+			->from( SQLStore::ID_TABLE )
+			->where( [ 'smw_id' => $id ] )
+			->caller( __METHOD__ )
+			->fetchRow();
+
+		if ( $row !== false ) {
+			$hash = $row->smw_proptable_hash;
+		}
+
+		if ( $hash !== null && $hash !== false ) {
+			$hash = $this->connection->unescape_bytea( $hash );
+		}
+
+		$hash = $hash === null || $hash === false || strlen( $hash ) <= 1 ? [] : unserialize( $hash );
+
+		$cache->save( (string)$id, $hash );
+
+		return $hash;
+	}
+
+	/**
+	 * @since 3.1
+	 *
+	 * @param int $id
+	 */
+	public function clearPropertyTableHashCacheById( $id ): void {
+		$this->setPropertyTableHashesCache( $id, null );
+	}
+
+	/**
+	 * @since 3.1
+	 *
+	 * @param int $id
+	 * @param string|array|null $hash
+	 *
+	 * @return void
+	 */
+	public function setPropertyTableHashesCache( $id, $hash = null ): void {
+		// never cache 0
+		if ( $id == 0 ) {
+			return;
+		}
+
+		if ( $hash === null ) {
+			$hash = [];
+		} elseif ( is_string( $hash ) ) {
+			$hash = unserialize( $hash );
+		}
+
+		$this->idCacheManager->get( 'propertytable.hash' )->save( (string)$id, $hash );
+	}
+
+}

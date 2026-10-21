@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"NMW03",
+			"Nemoralis"
+		]
+	},
+	"newusermessage-desc": "Yeni yaradılmış istifadəçinin müzakirə səhifələrinə mesaj əlavə edir",
+	"newuseredit-summary": "Yeni istifadəçinin müzakirə səhifəsinə [[{{int:newusermessage-template}}|xoş gəlmisiniz mesajı]] əlavə edilir"
+}

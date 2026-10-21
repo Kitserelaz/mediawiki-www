@@ -1,0 +1,331 @@
+<?php
+
+namespace SMW\ParserFunctions;
+
+use SMW\DataItems\Property;
+use SMW\DataModel\SemanticData;
+use SMW\DataModel\Subobject;
+use SMW\DataValueFactory;
+use SMW\Formatters\MessageFormatter;
+use SMW\HashBuilder;
+use SMW\Localizer\Message;
+use SMW\MediaWiki\StripMarkerDecoder;
+use SMW\Parser\AnnotationProcessor;
+use SMW\ParserData;
+use SMW\ParserParameterProcessor;
+
+/**
+ * @private This class should not be instantiated directly, please use
+ * ParserFunctionFactory::newSubobjectParserFunction
+ *
+ * Provides the {{#subobject}} parser function
+ *
+ * @see http://www.semantic-mediawiki.org/wiki/Help:ParserFunction
+ *
+ * @license GPL-2.0-or-later
+ * @since 1.9
+ *
+ * @author mwjames
+ */
+class SubobjectParserFunction {
+
+	/**
+	 * Fixed identifier that describes the sortkey annotation parameter
+	 */
+	const PARAM_SORTKEY = '@sortkey';
+
+	/**
+	 * Fixed identifier that describes a category parameter
+	 *
+	 * Those will not be visible by the "standard" category list as the handling
+	 * of assigned categories is SMW specific for subobjects.
+	 */
+	const PARAM_CATEGORY = '@category';
+
+	/**
+	 * Fixed identifier that describes a property that can auto-linked the
+	 * embeddedding subject
+	 */
+	const PARAM_LINKWITH = '@linkWith';
+
+	protected ParserData $parserData;
+
+	protected Subobject $subobject;
+
+	protected MessageFormatter $messageFormatter;
+
+	private ?StripMarkerDecoder $stripMarkerDecoder = null;
+
+	private bool $useFirstElementAsPropertyLabel = false;
+
+	/**
+	 * @var bool
+	 */
+	private $isCapitalLinks = true;
+
+	private bool $isComparableContent = false;
+
+	/**
+	 * @since 1.9
+	 *
+	 * @param ParserData $parserData
+	 * @param Subobject $subobject
+	 * @param MessageFormatter $messageFormatter
+	 */
+	public function __construct( ParserData $parserData, Subobject $subobject, MessageFormatter $messageFormatter ) {
+		$this->parserData = $parserData;
+		$this->subobject = $subobject;
+		$this->messageFormatter = $messageFormatter;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param StripMarkerDecoder $stripMarkerDecoder
+	 */
+	public function setStripMarkerDecoder( StripMarkerDecoder $stripMarkerDecoder ): void {
+		$this->stripMarkerDecoder = $stripMarkerDecoder;
+	}
+
+	/**
+	 * @see $wgCapitalLinks
+	 *
+	 * @since 2.5
+	 *
+	 * @param bool $isCapitalLinks
+	 */
+	public function isCapitalLinks( $isCapitalLinks ): void {
+		$this->isCapitalLinks = $isCapitalLinks;
+	}
+
+	/**
+	 * Ensures that unordered parameters and property names are normalized and
+	 * sorted to produce the same hash even if elements of the same literal
+	 * representation are placed differently.
+	 *
+	 * @since 3.0
+	 *
+	 * @param bool $isComparableContent
+	 */
+	public function isComparableContent( $isComparableContent = true ): void {
+		$this->isComparableContent = (bool)$isComparableContent;
+	}
+
+	/**
+	 * @since 1.9
+	 *
+	 * @param bool $useFirstElementAsPropertyLabel
+	 *
+	 * @return SubobjectParserFunction
+	 */
+	public function useFirstElementAsPropertyLabel( $useFirstElementAsPropertyLabel = true ): static {
+		$this->useFirstElementAsPropertyLabel = (bool)$useFirstElementAsPropertyLabel;
+		return $this;
+	}
+
+	/**
+	 * @since 3.1
+	 *
+	 * @return SemanticData
+	 */
+	public function getSemanticData() {
+		return $this->subobject->getSemanticData();
+	}
+
+	/**
+	 * @since 1.9
+	 *
+	 * @param ParserParameterProcessor $parameters
+	 *
+	 * @return string|null
+	 */
+	public function parse( ParserParameterProcessor $parameters ) {
+		if (
+			$this->parserData->canUse() &&
+			$this->addDataValuesToSubobject( $parameters ) &&
+			!$this->subobject->getSemanticData()->isEmpty()
+		) {
+			$this->parserData->getSemanticData()->addSubobject( $this->subobject );
+		}
+
+		$this->parserData->copyToParserOutput();
+
+		$html = $this->messageFormatter->addFromArray( $this->subobject->getErrors() )
+			->addFromArray( $this->parserData->getErrors() )
+			->addFromArray( $parameters->getErrors() )
+			->getHtml();
+
+		// An empty output in MW forces an extra <br> element.
+		//if ( $html == '' ) {
+		//	$html = '<p></p>';
+		//}
+
+		return $html;
+	}
+
+	protected function addDataValuesToSubobject( ParserParameterProcessor $parserParameterProcessor ) {
+		// Named subobjects containing a "." in the first five characters are
+		// reserved to be used by extensions only in order to separate them from
+		// user land and avoid having them accidentally to refer to the same
+		// named ID (i.e. different access restrictions etc.)
+		if ( strpos( mb_substr( $parserParameterProcessor->getFirstParameter() ?? '', 0, 5 ), '.' ) !== false ) {
+			return $this->parserData->addError(
+				Message::encode( [ 'smw-subobject-parser-invalid-naming-scheme', $parserParameterProcessor->getFirstParameter() ] )
+			);
+		}
+
+		[ $parameters, $id ] = $this->getParameters(
+			$parserParameterProcessor
+		);
+
+		$this->subobject->setEmptyContainerForId(
+			$id
+		);
+
+		$subject = $this->subobject->getSubject();
+
+		$annotationProcessor = new AnnotationProcessor(
+			$this->subobject->getSemanticData(),
+			DataValueFactory::getInstance()
+		);
+
+		foreach ( $parameters as $property => $values ) {
+
+			if ( $property === self::PARAM_SORTKEY ) {
+				$property = Property::TYPE_SORTKEY;
+			}
+
+			if ( $property === self::PARAM_CATEGORY ) {
+				$property = Property::TYPE_CATEGORY;
+			}
+
+			foreach ( $values as $value ) {
+
+				$dataValue = $annotationProcessor->newDataValueByText(
+						$property,
+						$value,
+						false,
+						$subject
+					);
+
+				$this->subobject->addDataValue( $dataValue );
+
+			}
+		}
+
+		$this->augment( $this->subobject->getSemanticData() );
+
+		$annotationProcessor->release();
+
+		return true;
+	}
+
+	private function getParameters( ParserParameterProcessor $parserParameterProcessor ): array {
+		$id = $parserParameterProcessor->getFirstParameter();
+		$isAnonymous = in_array( $id, [ null, '', '-' ] );
+
+		$useFirst = $this->useFirstElementAsPropertyLabel && !$isAnonymous;
+
+		$parameters = $this->preprocess(
+			$parserParameterProcessor,
+			$useFirst
+		);
+
+		// FIXME remove the check with 3.1, should be standard by then!
+		if ( !$this->isComparableContent ) {
+			$p = $parameters;
+		} else {
+			$p = $parameters;
+			// Sort the copy not the parameters itself
+			$parserParameterProcessor->sort( $p );
+		}
+
+		// Reclaim the ID to be content hash based
+		if ( $useFirst || $isAnonymous ) {
+			$id = HashBuilder::createFromContent( $p, '_' );
+		}
+
+		return [ $parameters, $id ];
+	}
+
+	private function preprocess( ParserParameterProcessor $parserParameterProcessor, bool $useFirst ) {
+		if ( $parserParameterProcessor->hasParameter( self::PARAM_LINKWITH ) ) {
+			$val = $parserParameterProcessor->getParameterValuesByKey( self::PARAM_LINKWITH );
+			$parserParameterProcessor->addParameter(
+				end( $val ),
+				$this->parserData->getTitle()->getPrefixedText()
+			);
+
+			$parserParameterProcessor->removeParameterByKey( self::PARAM_LINKWITH );
+		}
+
+		if ( $useFirst ) {
+			$parserParameterProcessor->addParameter(
+				$parserParameterProcessor->getFirstParameter(),
+				$this->parserData->getTitle()->getPrefixedText()
+			);
+		}
+
+		$parameters = $this->decode(
+			$parserParameterProcessor->toArray()
+		);
+
+		foreach ( $parameters as $property => $values ) {
+
+			$prop = $property;
+			$property = (string)$property;
+
+			// Normalize property names to generate the same hash for when
+			// CapitalLinks is enabled (has foo === Has foo)
+			if ( $property !== '' && $property[0] !== '@' && $this->isCapitalLinks ) {
+				$property = mb_strtoupper( mb_substr( $property, 0, 1 ) ) . mb_substr( $property, 1 );
+			}
+
+			unset( $parameters[$prop] );
+			$parameters[$property] = $values;
+		}
+
+		return $parameters;
+	}
+
+	private function decode( $parameters ) {
+		if ( $this->stripMarkerDecoder === null || !$this->stripMarkerDecoder->canUse() ) {
+			return $parameters;
+		}
+
+		// Any decoding has to happen before the subject ID is generated otherwise
+		// the value would contain something like `UNIQ--nowiki-00000011-QINU`
+		// and be part of the hash. `UNIQ--nowiki-00000011-QINU` isn't stable
+		// and changes to text will create new marker positions therefore it
+		// cannot be part of the hash computation
+		foreach ( $parameters as $property => &$values ) {
+			foreach ( $values as &$value ) {
+				$value = $this->stripMarkerDecoder->decode( $value );
+			}
+		}
+
+		return $parameters;
+	}
+
+	private function augment( $semanticData ): void {
+		// Data block created by a user
+		$semanticData->setOption( SemanticData::PROC_USER, true );
+
+		$sortkey = new Property( Property::TYPE_SORTKEY );
+		$displayTitle = new Property( Property::TYPE_DISPLAYTITLE );
+
+		if ( $semanticData->hasProperty( $sortkey ) || !$semanticData->hasProperty( $displayTitle ) ) {
+			return;
+		}
+
+		$pv = $semanticData->getPropertyValues(
+			$displayTitle
+		);
+
+		$semanticData->addPropertyObjectValue(
+			$sortkey,
+			end( $pv )
+		);
+	}
+
+}

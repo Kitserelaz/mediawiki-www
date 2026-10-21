@@ -1,0 +1,30 @@
+{
+	"root": true,
+	"extends": [
+		"wikimedia/language/es2020",
+		"wikimedia/client-common",
+		"wikimedia/mediawiki",
+		"wikimedia/jquery"
+	],
+	"plugins": [ "jest" ],
+	"env": {
+		"jest/globals": true
+	},
+	"globals": {
+		"global": false
+	},
+	"rules": {
+		"no-implicit-globals": "off",
+		"no-var": "off",
+		"prefer-const": "off",
+		"max-len": [
+			"warn",
+			{
+				"code": 110,
+				"ignoreComments": true,
+				"ignoreStrings": true,
+				"ignoreTemplateLiterals": true
+			}
+		]
+	}
+}

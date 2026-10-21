@@ -10,18 +10,19 @@ use MediaWiki\MediaWikiServices;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\User\UserFactory;
 
+// @codeCoverageIgnoreStart
 $IP = getenv( 'MW_INSTALL_PATH' );
 if ( $IP === false ) {
 	$IP = __DIR__ . '/../../..';
 }
 
 require_once "$IP/maintenance/Maintenance.php";
+// @codeCoverageIgnoreEnd
 
 /**
  * A maintenance script to programatically generate successful or failed login attempts for any
  * user, from any given IP address and with any given user-agent string. This script makes testing
- * LoginNotify and its interaction with other extensions (such as CheckUser) much easier for the
- * developers.
+ * LoginNotify much easier for the developers.
  */
 class LoginAttempt extends Maintenance {
 	/**
@@ -81,5 +82,7 @@ class LoginAttempt extends Maintenance {
 	}
 }
 
+// @codeCoverageIgnoreStart
 $maintClass = LoginAttempt::class;
 require_once RUN_MAINTENANCE_IF_MAIN;
+// @codeCoverageIgnoreEnd

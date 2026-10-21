@@ -120,6 +120,12 @@ ve.ui.MWSaveDialog.static.actions = [
  * @event ve.ui.MWSaveDialog#retry
  */
 
+/**
+ * Emitted when the save dialog changes panel, and when it opens
+ *
+ * @event ve.ui.MWSaveDialog#changePanel
+ */
+
 /* Methods */
 
 /**
@@ -278,7 +284,7 @@ ve.ui.MWSaveDialog.prototype.clearDiff = function () {
  * @throws {Error} Unknown saveDialog panel
  */
 ve.ui.MWSaveDialog.prototype.swapPanel = function ( panel, noFocus ) {
-	if ( ( [ 'save', 'review', 'preview', 'conflict' ].indexOf( panel ) ) === -1 ) {
+	if ( ![ 'save', 'review', 'preview', 'conflict' ].includes( panel ) ) {
 		throw new Error( 'Unknown saveDialog panel: ' + panel );
 	}
 
@@ -354,17 +360,21 @@ ve.ui.MWSaveDialog.prototype.swapPanel = function ( panel, noFocus ) {
 					title: ve.init.target.getPageName(),
 					prop: '',
 					summary: currentEditSummaryWikitext
-				} ).done( ( result ) => {
+				} );
+				this.editSummaryXhr.then( ( result ) => {
 					if ( result.parse.parsedsummary === '' ) {
 						this.$previewEditSummary.parent().addClass( 'oo-ui-element-hidden' );
 						this.$previewEditSummary.empty();
 					} else {
+						// Escape message before inserting parameter to prevent i18n XSS
+						const wrappedSummary = ve.escapeHtml( ve.msg( 'parentheses' ) )
+							.replace( '$1', () => result.parse.parsedsummary );
 						// Intentionally treated as HTML
 						// eslint-disable-next-line no-jquery/no-html
-						this.$previewEditSummary.html( ve.msg( 'parentheses', result.parse.parsedsummary ) );
+						this.$previewEditSummary.html( wrappedSummary );
 						ve.targetLinksToNewWindow( this.$previewEditSummary[ 0 ] );
 					}
-				} ).fail( () => {
+				}, () => {
 					this.$previewEditSummary.parent().addClass( 'oo-ui-element-hidden' );
 					this.$previewEditSummary.empty();
 				} ).always( () => {
@@ -411,7 +421,7 @@ ve.ui.MWSaveDialog.prototype.showMessage = function ( name, label, config ) {
 	if ( !this.messages[ name ] ) {
 		const messageWidget = new OO.ui.MessageWidget( ve.extendObject( {
 			classes: [ 've-ui-mwSaveDialog-message' ],
-			label: label,
+			label,
 			inline: true,
 			type: 'warning'
 		}, config ) );
@@ -484,7 +494,7 @@ ve.ui.MWSaveDialog.prototype.reset = function () {
  * @param {OO.ui.FieldLayout[]} checkboxFields Checkbox fields
  */
 ve.ui.MWSaveDialog.prototype.setupCheckboxes = function ( checkboxFields ) {
-	this.setupDeferred.done( () => {
+	this.setupDeferred.then( () => {
 		checkboxFields.forEach( ( field ) => {
 			this.$saveCheckboxes.append( field.$element );
 		} );
@@ -500,7 +510,7 @@ ve.ui.MWSaveDialog.prototype.setupCheckboxes = function ( checkboxFields ) {
  * @param {string} summary Edit summary to prefill
  */
 ve.ui.MWSaveDialog.prototype.setEditSummary = function ( summary ) {
-	this.setupDeferred.done( () => {
+	this.setupDeferred.then( () => {
 		this.editSummaryInput.setValue( summary );
 	} );
 };
@@ -516,6 +526,8 @@ ve.ui.MWSaveDialog.prototype.initialize = function () {
 
 	// Properties
 	this.panels = new OO.ui.StackLayout( { scrollable: false } );
+	this.panels.connect( this, { set: [ 'emit', 'changePanel' ] } );
+
 	this.savePanel = new OO.ui.PanelLayout( {
 		expanded: false,
 		padded: true,
@@ -799,15 +811,25 @@ ve.ui.MWSaveDialog.prototype.getSetupProcess = function ( data ) {
 			// HACK: Change layout when wpWatchlistExpiry is present to force wpWatchthis
 			// onto a new line, hopefully with the expiry dropdown
 			this.$saveCheckboxes.toggleClass( 've-ui-mwSaveDialog-checkboxes-withExpiry', !!this.checkboxesByName.wpWatchlistExpiry );
+			this.$saveCheckboxes.toggleClass( 've-ui-mwSaveDialog-checkboxes-withWatchlistLabels', !!this.checkboxesByName.wpWatchlistLabels );
 			// Toggle the watchlist-expiry dropdown's disabled state according to the
 			// selected state of the watchthis checkbox.
-			if ( this.checkboxesByName.wpWatchthis && this.checkboxesByName.wpWatchlistExpiry ) {
-				// Set initial state to match the watchthis checkbox.
-				this.checkboxesByName.wpWatchlistExpiry.setDisabled( !this.checkboxesByName.wpWatchthis.isSelected() );
-				// Change state on every change of the watchthis checkbox.
-				this.checkboxesByName.wpWatchthis.on( 'change', ( enabled ) => {
-					this.checkboxesByName.wpWatchlistExpiry.setDisabled( !enabled );
-				} );
+			if ( this.checkboxesByName.wpWatchthis ) {
+				const setWatchDependentFieldsDisabled = ( enabled ) => {
+					if ( this.checkboxesByName.wpWatchlistExpiry ) {
+						this.checkboxesByName.wpWatchlistExpiry.setDisabled( !enabled );
+					}
+					if ( this.checkboxesByName.wpWatchlistLabels ) {
+						this.checkboxesByName.wpWatchlistLabels.setDisabled( !enabled );
+					}
+				};
+
+				setWatchDependentFieldsDisabled( this.checkboxesByName.wpWatchthis.isSelected() );
+				if ( this.onWatchCheckboxChange ) {
+					this.checkboxesByName.wpWatchthis.off( 'change', this.onWatchCheckboxChange );
+				}
+				this.onWatchCheckboxChange = setWatchDependentFieldsDisabled;
+				this.checkboxesByName.wpWatchthis.on( 'change', this.onWatchCheckboxChange );
 			}
 
 			function trackCheckbox( n ) {
@@ -863,6 +885,7 @@ ve.ui.MWSaveDialog.prototype.getReadyProcess = function ( data ) {
 				// This includes a #focus call
 				this.editSummaryInput.moveCursorToEnd();
 			}
+			this.emit( 'changePanel' );
 		} );
 };
 
@@ -879,15 +902,30 @@ ve.ui.MWSaveDialog.prototype.getTeardownProcess = function ( data ) {
 /**
  * @inheritdoc
  */
+ve.ui.MWSaveDialog.prototype.getEscapeAction = function () {
+	const backOrClose = this.actions.get( { flags: [ 'back', 'close' ], visible: true } );
+	if ( backOrClose.length ) {
+		return backOrClose[ 0 ].getAction();
+	}
+	return null;
+};
+
+/**
+ * @inheritdoc
+ */
 ve.ui.MWSaveDialog.prototype.getActionProcess = function ( action ) {
 	ve.track( 'activity.' + this.constructor.static.name, { action: 'dialog-' + ( action || 'abort' ) } );
 
 	if ( action === 'save' ) {
 		return new OO.ui.Process( () => {
-			const saveDeferred = ve.createDeferred();
-			this.clearMessage( 'keyboard-shortcut-submit' );
-			this.emit( 'save', saveDeferred );
-			return saveDeferred.promise();
+			if ( this.panels.getCurrentItem() !== this.savePanel ) {
+				this.swapPanel( 'save' );
+			} else {
+				const saveDeferred = ve.createDeferred();
+				this.clearMessage( 'keyboard-shortcut-submit' );
+				this.emit( 'save', saveDeferred );
+				return saveDeferred.promise();
+			}
 		} );
 	}
 	if ( action === 'review' || action === 'preview' || action === 'resolve' ) {

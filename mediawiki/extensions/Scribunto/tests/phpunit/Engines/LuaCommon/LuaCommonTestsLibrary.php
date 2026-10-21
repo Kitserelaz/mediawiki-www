@@ -5,9 +5,10 @@ namespace MediaWiki\Extension\Scribunto\Tests\Engines\LuaCommon;
 use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LibraryBase;
 
 class LuaCommonTestsLibrary extends LibraryBase {
+	/** @inheritDoc */
 	public function register() {
 		$lib = [
-			'test' => [ $this, 'test' ],
+			'test' => $this->test( ... ),
 		];
 		$opts = [
 			'test' => 'Test option',
@@ -16,7 +17,8 @@ class LuaCommonTestsLibrary extends LibraryBase {
 		return $this->getEngine()->registerInterface( __DIR__ . '/CommonTests-lib.lua', $lib, $opts );
 	}
 
-	public function test() {
+	/** @inheritDoc */
+	private function test() {
 		return [ 'Test function' ];
 	}
 }

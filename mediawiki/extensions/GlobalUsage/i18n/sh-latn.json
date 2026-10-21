@@ -1,0 +1,25 @@
+{
+	"@metadata": {
+		"authors": [
+			"Aca",
+			"Winston Sung"
+		]
+	},
+	"globalusage": "Globalna upotreba datoteke",
+	"globalusage-for": "Globalna upotreba za \"$1\"",
+	"globalusage-filename": "Ime datoteke:",
+	"globalusage-desc": "[[Special:GlobalUsage|Posebna stranica]] za pregled globalne upotrebe datoteke",
+	"globalusage-ok": "Traži",
+	"globalusage-text": "Pretraga globalne upotrebe datoteke",
+	"globalusage-no-results": "[[:$1]] se ne koristi na drugim wikijima.",
+	"globalusage-on-wiki": "Upotreba na projektu $2",
+	"globalusage-of-file": "Ovu datoteku koriste i sljedeći projekti:",
+	"globalusage-more": "[[{{#Special:GlobalUsage}}/$1|Potpunija globalna upotreba datoteke]]",
+	"globalusage-filterlocal": "Ne prikazuj lokalnu upotrebu",
+	"mostgloballylinkedfiles": "Datoteke s najviše linkova globalno",
+	"mostgloballylinkedfiles-summary": "Lista najupotrebljenih datoteka na globalnom nivou (uzimajući u obzir sve wikije). Listu najčešće korištenih datoteka na {{SITENAME}} naći ćete na [[{{#special:MostLinkedFiles}}]].",
+	"globallywantedfiles": "Globalno tražene datoteke",
+	"globallywantedfiles-summary": "Lista najupotrebljenih datoteka na globalnom nivou (uzimajući u obzir sve wikije) iako ne postoje. Listu najčešće korištenih datoteka na {{SITENAME}} naći ćete na [[{{#special:WantedFiles}}]]. Korištenje datoteka na wikijima što razlikuju prvo veliko i malo slovo mogu neispravno se smatrati potrebnim.",
+	"globallywantedfiles-foreign-repo": "<strong>Upozorenje:</strong> Ovaj wiki koristi vanjsko skladište podataka. Datoteke iz vanjskog skladišta bit će prikazane kao precrtane plave veze na listi, iako postoje.",
+	"globalusage-header": "Ova stranica navodi sve lokacije na drugim wikijama gdje se koristi data datoteka. Te informacije možete pronaći i na dnu njene stranice s opisom."
+}

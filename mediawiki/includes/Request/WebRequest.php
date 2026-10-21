@@ -11,7 +11,6 @@
 
 namespace MediaWiki\Request;
 
-use HashBagOStuff;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Exception\FatalError;
 use MediaWiki\Exception\MWException;
@@ -25,6 +24,7 @@ use MediaWiki\Session\Session;
 use MediaWiki\Session\SessionId;
 use MediaWiki\User\UserIdentity;
 use Wikimedia\IPUtils;
+use Wikimedia\ObjectCache\HashBagOStuff;
 
 // The point of this class is to be a wrapper around super globals
 // phpcs:disable MediaWiki.Usage.SuperGlobalsUsage.SuperGlobals
@@ -607,7 +607,8 @@ class WebRequest {
 	public function getIntArray( $name, $default = null ) {
 		$val = $this->getArray( $name, $default );
 		if ( is_array( $val ) ) {
-			$val = array_map( 'intval', $val );
+			// Drop multi-dimensional array elements
+			$val = array_map( intval( ... ), array_filter( $val, is_string( ... ) ) );
 		}
 		return $val;
 	}
@@ -1531,7 +1532,7 @@ class WebRequest {
 	 *   - user_exists_locally: whether the user account exists on the current wiki
 	 *   More fields can be added via the GetSecurityLogContext hook.
 	 *
-	 * @since 1.45
+	 * @since 1.45 (also backported to 1.43.9, 1.44.6)
 	 * @see GetSecurityLogContextHook
 	 */
 	public function getSecurityLogContext( ?UserIdentity $user = null ): array {
@@ -1558,15 +1559,17 @@ class WebRequest {
 			$context['originalUserAgent'] = $userAgent;
 		}
 
+		$services = MediaWikiServices::getInstance();
 		if ( $user ) {
 			$context += [
 				'user' => $user->getName(),
 				'user_exists_locally' => $user->isRegistered(),
+				'user_is_bot' => $services->getUserFactory()->newFromUserIdentity( $user )->isBot(),
 			];
 		}
 
 		$info = [ 'request' => $this, 'user' => $user ];
-		$hookRunner = new HookRunner( MediaWikiServices::getInstance()->getHookContainer() );
+		$hookRunner = new HookRunner( $services->getHookContainer() );
 		$hookRunner->onGetSecurityLogContext( $info, $context );
 
 		$this->securityLogContext->set( $cacheKey, $context );

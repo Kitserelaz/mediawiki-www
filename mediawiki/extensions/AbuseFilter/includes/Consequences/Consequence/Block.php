@@ -2,15 +2,14 @@
 
 namespace MediaWiki\Extension\AbuseFilter\Consequences\Consequence;
 
-use ManualLogEntry;
 use MediaWiki\Block\BlockUserFactory;
 use MediaWiki\Block\DatabaseBlockStore;
+use MediaWiki\Block\UnblockUserFactory;
 use MediaWiki\Extension\AbuseFilter\Consequences\Parameters;
 use MediaWiki\Extension\AbuseFilter\FilterUser;
 use MediaWiki\Extension\AbuseFilter\GlobalNameUtils;
-use MediaWiki\Title\TitleValue;
-use MediaWiki\User\UserIdentity;
-use MessageLocalizer;
+use MediaWiki\Language\MessageLocalizer;
+use MediaWiki\Permissions\Authority;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -18,32 +17,18 @@ use Psr\Log\LoggerInterface;
  */
 class Block extends BlockingConsequence implements ReversibleConsequence {
 
-	private bool $preventsTalkEdit;
-	private DatabaseBlockStore $databaseBlockStore;
-
-	/**
-	 * @param Parameters $params
-	 * @param string $expiry
-	 * @param bool $preventTalkEdit
-	 * @param BlockUserFactory $blockUserFactory
-	 * @param DatabaseBlockStore $databaseBlockStore
-	 * @param FilterUser $filterUser
-	 * @param MessageLocalizer $messageLocalizer
-	 * @param LoggerInterface $logger
-	 */
 	public function __construct(
 		Parameters $params,
 		string $expiry,
-		bool $preventTalkEdit,
+		private readonly bool $preventTalkEdit,
 		BlockUserFactory $blockUserFactory,
-		DatabaseBlockStore $databaseBlockStore,
+		private readonly UnblockUserFactory $unblockUserFactory,
+		private readonly DatabaseBlockStore $databaseBlockStore,
 		FilterUser $filterUser,
 		MessageLocalizer $messageLocalizer,
 		LoggerInterface $logger
 	) {
 		parent::__construct( $params, $expiry, $blockUserFactory, $filterUser, $messageLocalizer, $logger );
-		$this->databaseBlockStore = $databaseBlockStore;
-		$this->preventsTalkEdit = $preventTalkEdit;
 	}
 
 	/**
@@ -55,8 +40,8 @@ class Block extends BlockingConsequence implements ReversibleConsequence {
 			$this->parameters->getFilter()->getID(),
 			$this->parameters->getUser()->getName(),
 			$this->expiry,
-			$autoblock = true,
-			$this->preventsTalkEdit
+			true,
+			$this->preventTalkEdit
 		);
 		// TODO: Should we reblock in case of partial blocks? At that point we could return
 		// the status of doBlockInternal
@@ -65,29 +50,20 @@ class Block extends BlockingConsequence implements ReversibleConsequence {
 
 	/**
 	 * @inheritDoc
-	 * @todo This could use UnblockUser, but we need to check if the block was performed by the AF user
 	 */
-	public function revert( UserIdentity $performer, string $reason ): bool {
-		$block = $this->databaseBlockStore->newFromTarget( $this->parameters->getUser()->getName() );
-		if ( !( $block && $block->getBy() === $this->filterUser->getUserIdentity()->getId() ) ) {
-			// Not blocked by abuse filter
-			return false;
+	public function revert( Authority $performer, string $reason ): bool {
+		$blocks = $this->databaseBlockStore->newListFromTarget(
+			$this->parameters->getUser()->getName(), null, false, DatabaseBlockStore::AUTO_NONE );
+		foreach ( $blocks as $block ) {
+			if ( $block->getBy() === $this->filterUser->getUserIdentity()->getId() ) {
+				return $this->unblockUserFactory->newRemoveBlock(
+					$block,
+					$performer,
+					$reason,
+				)->unblockUnsafe()->isOK();
+			}
 		}
-		if ( !$this->databaseBlockStore->deleteBlock( $block ) ) {
-			return false;
-		}
-		$logEntry = new ManualLogEntry( 'block', 'unblock' );
-		$logEntry->setTarget( new TitleValue( NS_USER, $this->parameters->getUser()->getName() ) );
-		$logEntry->setComment( $reason );
-		$logEntry->setPerformer( $performer );
-		if ( !defined( 'MW_PHPUNIT_TEST' ) ) {
-			// This has a bazillion of static dependencies all around the place, and a nightmare to deal with in tests
-			// TODO: Remove this check once T253717 is resolved
-			// @codeCoverageIgnoreStart
-			$logEntry->publish( $logEntry->insert() );
-			// @codeCoverageIgnoreEnd
-		}
-		return true;
+		return false;
 	}
 
 	/**

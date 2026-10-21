@@ -1,0 +1,147 @@
+<?php
+
+namespace SMW\MediaWiki\Search\ProfileForm\Forms;
+
+use MediaWiki\Html\Html;
+use MediaWiki\Request\WebRequest;
+
+/**
+ * @private
+ *
+ * @license GPL-2.0-or-later
+ * @since 3.0
+ *
+ * @author mwjames
+ */
+class OpenForm {
+
+	private Field $field;
+
+	private bool $isActiveForm = false;
+
+	private array $parameters = [];
+
+	/**
+	 * @since 3.0
+	 */
+	public function __construct( private readonly WebRequest $request ) {
+		$this->field = new Field();
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function getParameters(): array {
+		return $this->parameters;
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function isActiveForm( bool $isActiveForm ): void {
+		$this->isActiveForm = $isActiveForm;
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function makeFields(): string {
+		$this->parameters = [];
+
+		$group = '';
+		$properties = [];
+		$values = [];
+		$op = [];
+
+		if ( $this->isActiveForm ) {
+			$properties = (array)$this->request->getArray( 'property', [] );
+			$values = (array)$this->request->getArray( 'pvalue', [] );
+			$op = (array)$this->request->getArray( 'op', [] );
+		}
+
+		$this->parameters = [
+			'property' => [],
+			'pvalue' => [],
+			'op' => []
+		];
+
+		foreach ( $properties as $i => $property ) {
+
+			if ( $property === '' ) {
+				continue;
+			}
+
+			$this->parameters['property'][] = $property;
+			$this->parameters['pvalue'][] = $values[$i];
+			$this->parameters['op'][] = $op[$i];
+
+			$group .= $this->makeFieldGroup( $property, $values[$i], $op[$i] );
+		}
+
+		// At least one empty group
+		$group .= $this->makeFieldGroup( '', '', '' );
+
+		return $group;
+	}
+
+	private function makeFieldGroup( $property, $value, $op ): string {
+		$display = $this->isActiveForm ? 'inline-block' : 'none';
+
+		$attributes = [
+			'multifield' => true,
+			'display' => $display,
+			'name' => 'property',
+			'value' => $property,
+			'data-autocomplete-indicator' => true,
+			'placeholder' => 'Property ...',
+			'class' => 'smw-property-input autocomplete-arrow'
+		];
+
+		$prop = $this->field->create( 'input', $attributes );
+
+		$attributes = [
+			'multifield' => true,
+			'display' => $display,
+			'name' => 'pvalue',
+			'value' => $value,
+			'data-autocomplete-indicator' => true,
+			'data-property' => $property,
+			'placeholder' => 'Value ...',
+			'class' => 'smw-propertyvalue-input autocomplete-arrow'
+		];
+
+		if ( $value === '' ) {
+			$attributes['class'] .= ' is-disabled';
+		}
+
+		$pvalue = $this->field->create( 'input', $attributes );
+		$disabled = $property === '' && $value === '' ? 'disabled' : '';
+
+		$list = [
+			''    => '',
+			'OR'  => 'OR',
+			' '    => [ '————', 'disabled' ],
+			'del' => [ 'del', $disabled ]
+		];
+
+		$attributes = [
+			'list' => $list,
+			'selected' => $op,
+			'multifield' => true,
+			'name' => 'op',
+			'display' => $display,
+			'class' => 'smw-select-field'
+		];
+
+		$select = $this->field->create( 'select', $attributes );
+
+		return Html::rawElement(
+			'div',
+			[
+				'class' => 'smw-input-group'
+			],
+			$prop . $pvalue . $select
+		);
+	}
+
+}

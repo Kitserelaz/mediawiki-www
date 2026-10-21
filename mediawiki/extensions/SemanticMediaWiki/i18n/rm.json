@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Albinfo",
+			"Kazu89"
+		]
+	},
+	"smw-categories": "Categorias",
+	"browse": "Navigar en il wiki",
+	"smw-ui-tooltip-title-legend": "Legenda",
+	"smw-livepreview-loading": "Chargiar…",
+	"smw-listingcontinuesabbrev": "cuntinuaziun",
+	"smw-showingresults": "Sutvart èn enfin {{PLURAL:$1|'''in''' resultat|'''$1''' resultats}} cumenzond cun il numer '''$2'''."
+}

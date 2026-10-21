@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Vlad5250"
+		]
+	},
+	"action-embed_pdf": "уградите PDF-ове",
+	"pdfembed_description": "Пружа уграђивање PDF-датотека.",
+	"embed_pdf_no_permission": "Немате допуштење да уграђујете PDF-датотеке.",
+	"embed_pdf_blank_file": "URL или путања датотеке задана за уграђивање PDF-а је празна.",
+	"embed_pdf_invalid_file": "Наведени URL или путања датотеке не постоји.",
+	"embed_pdf_invalid_user": "Наведен је неважећи корисник.",
+	"right-embed_pdf": "Уграђивање PDF-ова у странице"
+}

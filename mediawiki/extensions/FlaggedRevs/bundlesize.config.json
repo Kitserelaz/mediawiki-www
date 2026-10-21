@@ -1,0 +1,16 @@
+[
+	{
+		"resourceModule": "mediawiki.codex.messagebox.styles",
+		"maxSize": null
+	},
+	{
+		"resourceModule": "ext.flaggedRevs.basic",
+		"maxSize": "2.3 kB"
+	},
+	{
+		"@note": "See https://phabricator.wikimedia.org/T350514",
+		"ignoreDependencies": true,
+		"resourceModule": "ext.flaggedRevs.advanced",
+		"maxSize": "2.6 kB"
+	}
+]

@@ -1,0 +1,35 @@
+@import 'mediawiki.mixins';
+@import '../../mediasearch-variables.less';
+
+.sdms-other-result {
+	.flex-display();
+	margin-bottom: @sdms-spacing-base * 1.5;
+
+	h3,
+	p {
+		margin: 0;
+		padding: 0;
+	}
+
+	p {
+		display: inline-block;
+	}
+
+	&__thumbnail-wrapper {
+		.flex( 0, 0, auto, 0 );
+		margin: 0 @sdms-spacing-base 0 0;
+
+		img {
+			width: 100%;
+			height: 100%;
+		}
+	}
+
+	&__meta {
+		color: @color-subtle;
+	}
+
+	&__extension {
+		font-weight: bold;
+	}
+}

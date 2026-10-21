@@ -1,0 +1,18 @@
+{
+	"@metadata": {
+		"authors": [
+			"paladox"
+		]
+	},
+	"metrolook-prefs-talkpage": "[[mw:Skin talk:Metrolook|{{int:talk}}]]",
+	"skinname-metrolook": "Metrolook",
+	"metrolook-desc": "Metrolook is a [https://en.wikipedia.org/wiki/Metro_(design_language) Metro-inspired] fork of the Vector skin",
+	"metrolook.css": "/* All CSS here will be loaded for users of the Metrolook skin */",
+	"metrolook.js": "/* All JavaScript here will be loaded for users of the Metrolook skin */",
+	"skinmetrolook-collapsiblenav-preference": "Enable collapsing of items in the sidebar in Metrolook skin",
+	"metrolook-guest": "Guest",
+	"metrolook-jump-to-navigation": "Jump to navigation",
+	"metrolook-jump-to-search": "Jump to search",
+	"metrolook-tiles": "",
+	"metrolook-tiles-second": ""
+}

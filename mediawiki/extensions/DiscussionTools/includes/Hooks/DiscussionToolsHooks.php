@@ -14,20 +14,20 @@ use MediaWiki\Config\ConfigFactory;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Extension\DiscussionTools\OverflowMenuItem;
 use MediaWiki\Registration\ExtensionRegistry;
+use MediaWiki\User\Options\UserOptionsLookup;
 use MediaWiki\User\UserNameUtils;
 
 class DiscussionToolsHooks implements
 	DiscussionToolsAddOverflowMenuItemsHook
 {
-	private Config $config;
-	private UserNameUtils $userNameUtils;
+	private readonly Config $config;
 
 	public function __construct(
 		ConfigFactory $configFactory,
-		UserNameUtils $userNameUtils
+		private readonly UserNameUtils $userNameUtils,
+		private readonly UserOptionsLookup $userOptionsLookup,
 	) {
 		$this->config = $configFactory->makeConfig( 'discussiontools' );
-		$this->userNameUtils = $userNameUtils;
 	}
 
 	/**
@@ -51,27 +51,25 @@ class DiscussionToolsHooks implements
 			$overflowMenuItems[] = new OverflowMenuItem(
 				'edit',
 				'edit',
-				$contextSource->msg( 'skin-view-edit' ),
+				'skin-view-edit',
 				2
 			);
 		}
 
-		if ( $this->config->get( 'DiscussionToolsEnableThanks' ) ) {
-			$user = $contextSource->getUser();
-			$showThanks = ExtensionRegistry::getInstance()->isLoaded( 'Thanks' );
-			if ( $showThanks && ( $threadItemData['type'] ?? null ) === 'comment' && $user->isNamed() ) {
-				$recipient = $this->userNameUtils->getCanonical( $threadItemData['author'], UserNameUtils::RIGOR_NONE );
+		$user = $contextSource->getUser();
+		$showThanks = ExtensionRegistry::getInstance()->isLoaded( 'Thanks' );
+		if ( $showThanks && ( $threadItemData['type'] ?? null ) === 'comment' && $user->isNamed() ) {
+			$recipient = $this->userNameUtils->getCanonical( $threadItemData['author'], UserNameUtils::RIGOR_NONE );
 
-				if (
-					$recipient !== $user->getName() &&
-					!$this->userNameUtils->isIP( $recipient )
-				) {
-					$overflowMenuItems[] = new OverflowMenuItem(
-						'thank',
-						'heart',
-						$contextSource->msg( 'thanks-button-thank' ),
-					);
-				}
+			if (
+				$recipient !== $user->getName() &&
+				!$this->userNameUtils->isIP( $recipient )
+			) {
+				$overflowMenuItems[] = new OverflowMenuItem(
+					'thank',
+					'heart',
+					'thanks-button-thank'
+				);
 			}
 		}
 	}

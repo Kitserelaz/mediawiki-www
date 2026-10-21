@@ -3,10 +3,11 @@
 namespace MediaWiki\IPInfo\Test\Unit\HookHandler;
 
 use MediaWiki\IPInfo\HookHandler\PreferencesHandler;
+use MediaWiki\IPInfo\IPInfoPermissionManager;
 use MediaWiki\IPInfo\Logging\Logger;
 use MediaWiki\IPInfo\Logging\LoggerFactory;
-use MediaWiki\Permissions\PermissionManager;
-use MediaWiki\User\Options\UserOptionsLookup;
+use MediaWiki\Registration\ExtensionRegistry;
+use MediaWiki\User\Options\UserOptionsManager;
 use MediaWiki\User\User;
 use MediaWiki\User\UserGroupManager;
 use MediaWiki\User\UserIdentity;
@@ -15,154 +16,257 @@ use MediaWikiIntegrationTestCase;
 /**
  * @group IPInfo
  * @covers \MediaWiki\IPInfo\HookHandler\PreferencesHandler
+ * @covers \MediaWiki\IPInfo\HookHandler\AbstractPreferencesHandler
  */
 class PreferencesHandlerTest extends MediaWikiIntegrationTestCase {
 
-	private function getPreferencesHandler( array $options = [] ): PreferencesHandler {
-		return new PreferencesHandler( ...array_values( array_merge(
-			[
-				'permissionManager' => $this->createMock( PermissionManager::class ),
-				'userOptionsLookup' => $this->createMock( UserOptionsLookup::class ),
-				'userGroupManager' => $this->createMock( UserGroupManager::class ),
-				'loggerFactory' => $this->createMock( LoggerFactory::class ),
-			],
-			$options
-		) ) );
+	private IPInfoPermissionManager $ipInfoPermissionManager;
+	private UserGroupManager $userGroupManager;
+	private UserOptionsManager $userOptionsManager;
+	private ExtensionRegistry $extensionRegistry;
+	private LoggerFactory $loggerFactory;
+
+	private Logger $logger;
+
+	private PreferencesHandler $handler;
+
+	protected function setUp(): void {
+		parent::setUp();
+
+		$this->ipInfoPermissionManager = $this->createMock( IPInfoPermissionManager::class );
+		$this->userGroupManager = $this->createMock( UserGroupManager::class );
+		$this->userOptionsManager = $this->createMock( UserOptionsManager::class );
+		$this->extensionRegistry = $this->createMock( ExtensionRegistry::class );
+		$this->loggerFactory = $this->createMock( LoggerFactory::class );
+
+		$this->logger = $this->createMock( Logger::class );
+
+		$this->loggerFactory->method( 'getLogger' )
+			->willReturn( $this->logger );
+
+		$this->handler = new PreferencesHandler(
+			$this->ipInfoPermissionManager,
+			$this->userGroupManager,
+			$this->userOptionsManager,
+			$this->extensionRegistry,
+			$this->loggerFactory
+		);
 	}
 
 	/**
-	 * @dataProvider provideOnSaveUserOptionsNoAccessChange
+	 * @dataProvider provideOnLocalUserOptionsStoreSave
 	 */
-	public function testOnSaveUserOptionsNoAccessChange( $originalOptions, $modifiedOptions ) {
+	public function testOnLocalUserOptionsStoreSaveNoAccessChange(
+		array $oldOptions,
+		array $newOptions,
+		bool $isBetaFeatureOptInRequired
+	) {
 		$user = $this->createMock( UserIdentity::class );
 
-		$logger = $this->createMock( Logger::class );
-		$logger->expects( $this->never() )
+		$this->ipInfoPermissionManager->method( 'requiresBetaFeatureToggle' )
+			->willReturn( $isBetaFeatureOptInRequired );
+		$this->userOptionsManager->method( 'getDefaultOption' )->willReturn( '0' );
+
+		$this->logger->expects( $this->never() )
 			->method( 'logAccessDisabled' );
-		$logger->expects( $this->never() )
+		$this->logger->expects( $this->never() )
 			->method( 'logAccessEnabled' );
 
-		$loggerFactory = $this->createMock( LoggerFactory::class );
-		$loggerFactory->method( 'getLogger' )
-			->willReturn( $logger );
-
-		$handler = $this->getPreferencesHandler( [
-			'loggerFactory' => $loggerFactory,
-		] );
-
-		$handler->onSaveUserOptions( $user, $modifiedOptions, $originalOptions );
+		$this->handler->onLocalUserOptionsStoreSave( $user, $oldOptions, $newOptions );
 	}
 
-	public static function provideOnSaveUserOptionsNoAccessChange() {
+	public static function provideOnLocalUserOptionsStoreSave() {
 		return [
-			'Enabled to begin with, then not set' => [
-				[
-					'ipinfo-use-agreement' => true,
-				],
-				[],
-			],
 			'Enabled to begin with, then both option set to truthy' => [
 				[
-					'ipinfo-use-agreement' => true,
+					PreferencesHandler::IPINFO_USE_AGREEMENT => true,
 				],
 				[
-					'ipinfo-use-agreement' => '1',
+					PreferencesHandler::IPINFO_USE_AGREEMENT => '1',
 				],
+				false,
 			],
 			'Disabled to begin with, then not set' => [
 				[
-					'ipinfo-use-agreement' => false,
+					PreferencesHandler::IPINFO_USE_AGREEMENT => false,
 				],
 				[],
+				false,
 			],
 			'Disabled to begin with, then set to falsey' => [
 				[
-					'ipinfo-use-agreement' => 0,
+					PreferencesHandler::IPINFO_USE_AGREEMENT => 0,
 				],
 				[
-					'ipinfo-use-agreement' => false,
+					PreferencesHandler::IPINFO_USE_AGREEMENT => false,
 				],
+				false,
 			],
 			'No options set to begin with, then no options set' => [
 				[],
 				[],
+				false,
+			],
+			'Opting out of BetaFeature without accepting the agreement' => [
+				[
+					'ipinfo-beta-feature-enable' => true,
+					PreferencesHandler::IPINFO_USE_AGREEMENT => false,
+				],
+				[
+					'ipinfo-beta-feature-enable' => false,
+					PreferencesHandler::IPINFO_USE_AGREEMENT => false,
+				],
+				true,
+			],
+			'Opting into BetaFeature without accepting the agreement' => [
+				[
+					'ipinfo-beta-feature-enable' => false,
+					PreferencesHandler::IPINFO_USE_AGREEMENT => false,
+				],
+				[
+					'ipinfo-beta-feature-enable' => true,
+					PreferencesHandler::IPINFO_USE_AGREEMENT => false,
+				],
+				true,
 			],
 		];
 	}
 
 	/**
-	 * @dataProvider provideOnSaveUserOptionsRestoreDefaultPreferences
+	 * @dataProvider provideOnLocalUserOptionsStoreSaveAccessChange
 	 */
-	public function testOnSaveUserOptionsRestoreDefaultPreferences( $originalOptions, $modifiedOptions ) {
+	public function testOnLocalUserOptionsStoreSaveAccessChange(
+		array $originalOptions,
+		array $modifiedOptions,
+		bool $isBetaFeatureOptInRequired,
+		bool $willBeEnabled
+	) {
 		$user = $this->createMock( UserIdentity::class );
-		$logger = $this->createMock( Logger::class );
 
-		$loggerFactory = $this->createMock( LoggerFactory::class );
-		$loggerFactory->method( 'getLogger' )
-			->willReturn( $logger );
-		$handler = $this->getPreferencesHandler( [
-			'loggerFactory' => $loggerFactory,
-		] );
+		$this->ipInfoPermissionManager->method( 'requiresBetaFeatureToggle' )
+			->willReturn( $isBetaFeatureOptInRequired );
+		$this->userOptionsManager->method( 'getDefaultOption' )->willReturn( '0' );
 
-		$handler->onSaveUserOptions( $user, $modifiedOptions, $originalOptions );
+		$this->logger->expects( $this->once() )
+			->method( $willBeEnabled ? 'logAccessEnabled' : 'logAccessDisabled' );
 
-		$this->assertFalse( $modifiedOptions[ 'ipinfo-use-agreement' ] );
+		$this->handler->onLocalUserOptionsStoreSave( $user, $originalOptions, $modifiedOptions );
 	}
 
-	public static function provideOnSaveUserOptionsRestoreDefaultPreferences() {
-		return [
-			'Disable beta feature' => [
-				[
-					'ipinfo-beta-feature-enable' => true
-				],
-				[
-					'ipinfo-beta-feature-enable' => false
-				],
+	public static function provideOnLocalUserOptionsStoreSaveAccessChange(): iterable {
+		yield 'accepting agreement without BetaFeatures' => [
+			'originalOptions' => [ PreferencesHandler::IPINFO_USE_AGREEMENT => false ],
+			'modifiedOptions' => [ PreferencesHandler::IPINFO_USE_AGREEMENT => true ],
+			'isBetaFeatureOptInRequired' => false,
+			'willBeEnabled' => true,
+		];
+
+		yield 'accepting agreement with BetaFeatures' => [
+			'originalOptions' => [
+				'ipinfo-beta-feature-enable' => true,
+				PreferencesHandler::IPINFO_USE_AGREEMENT => false,
 			],
-			'Enable beta feature' => [
-				[
-					'ipinfo-beta-feature-enable' => false
-				],
-				[
-					'ipinfo-beta-feature-enable' => true
-				],
+			'modifiedOptions' => [
+				'ipinfo-beta-feature-enable' => true,
+				PreferencesHandler::IPINFO_USE_AGREEMENT => true,
 			],
-			'Enable auto enroll' => [
-				[
-					'ipinfo-beta-feature-enable' => false,
-					'betafeatures-auto-enroll' => false
-				],
-				[
-					'betafeatures-auto-enroll' => true
-				],
+			'isBetaFeatureOptInRequired' => true,
+			'willBeEnabled' => true,
+		];
+
+		yield 'accepting agreement without BetaFeatures, having previously opted out of the feature' => [
+			'originalOptions' => [
+				'ipinfo-beta-feature-enable' => false,
+				PreferencesHandler::IPINFO_USE_AGREEMENT => false,
 			],
+			'modifiedOptions' => [
+				'ipinfo-beta-feature-enable' => false,
+				PreferencesHandler::IPINFO_USE_AGREEMENT => true,
+			],
+			'isBetaFeatureOptInRequired' => false,
+			'willBeEnabled' => true,
+		];
+
+		yield 'opting out of agreement without BetaFeatures' => [
+			'originalOptions' => [ PreferencesHandler::IPINFO_USE_AGREEMENT => true ],
+			'modifiedOptions' => [ PreferencesHandler::IPINFO_USE_AGREEMENT => false ],
+			'isBetaFeatureOptInRequired' => false,
+			'willBeEnabled' => false,
+		];
+
+		yield 'opting out of agreement with BetaFeatures' => [
+			'originalOptions' => [
+				'ipinfo-beta-feature-enable' => true,
+				PreferencesHandler::IPINFO_USE_AGREEMENT => true,
+			],
+			'modifiedOptions' => [
+				'ipinfo-beta-feature-enable' => true,
+				PreferencesHandler::IPINFO_USE_AGREEMENT => false,
+			],
+			'isBetaFeatureOptInRequired' => true,
+			'willBeEnabled' => false,
+		];
+
+		yield 'disabling the BetaFeatures toggle after having accepted the agreement' => [
+			'originalOptions' => [
+				'ipinfo-beta-feature-enable' => true,
+				PreferencesHandler::IPINFO_USE_AGREEMENT => true,
+			],
+			'modifiedOptions' => [
+				'ipinfo-beta-feature-enable' => false,
+				PreferencesHandler::IPINFO_USE_AGREEMENT => true,
+			],
+			'isBetaFeatureOptInRequired' => true,
+			'willBeEnabled' => false,
+		];
+
+		yield 'disabling the BetaFeatures toggle and opting out of the agreement' => [
+			'originalOptions' => [
+				'ipinfo-beta-feature-enable' => true,
+				PreferencesHandler::IPINFO_USE_AGREEMENT => true,
+			],
+			'modifiedOptions' => [
+				'ipinfo-beta-feature-enable' => false,
+				PreferencesHandler::IPINFO_USE_AGREEMENT => false,
+			],
+			'isBetaFeatureOptInRequired' => true,
+			'willBeEnabled' => false,
+		];
+
+		yield 'reenabling the BetaFeatures toggle with a previously accepted agreement' => [
+			'originalOptions' => [
+				'ipinfo-beta-feature-enable' => false,
+				PreferencesHandler::IPINFO_USE_AGREEMENT => true,
+			],
+			'modifiedOptions' => [
+				'ipinfo-beta-feature-enable' => true,
+				PreferencesHandler::IPINFO_USE_AGREEMENT => true,
+			],
+			'isBetaFeatureOptInRequired' => true,
+			'willBeEnabled' => true,
 		];
 	}
 
-	public function testOnGetPreferences() {
+	/**
+	 * @dataProvider provideGetPreferences
+	 */
+	public function testOnGetPreferences(
+		bool $hasEnabledIPInfo,
+		array $expectedPreferenceNames
+	) {
 		$user = $this->createMock( User::class );
 
-		$logger = $this->createMock( Logger::class );
-		$loggerFactory = $this->createMock( LoggerFactory::class );
-		$loggerFactory->method( 'getLogger' )
-			->willReturn( $logger );
-
-		$permissionManager = $this->createMock( PermissionManager::class );
-		$permissionManager->method( 'userHasRight' )
-			->willReturn( true );
-
-		$userOptionsLookup = $this->createMock( UserOptionsLookup::class );
-		$userOptionsLookup->method( 'getOption' )
-			->with( $user, 'ipinfo-beta-feature-enable' )->willReturn( true );
-
-		$handler = $this->getPreferencesHandler( [
-			'loggerFactory' => $loggerFactory,
-			'permissionManager' => $permissionManager,
-			'userOptionsLookup' => $userOptionsLookup,
-		] );
+		$this->ipInfoPermissionManager->method( 'hasEnabledIPInfo' )
+			->with( $user )
+			->willReturn( $hasEnabledIPInfo );
 
 		$preferences = [];
-		$handler->onGetPreferences( $user, $preferences );
-		$this->assertArrayHasKey( 'ipinfo-use-agreement', $preferences );
+		$this->handler->onGetPreferences( $user, $preferences );
+		$this->assertSame( $expectedPreferenceNames, array_keys( $preferences ) );
+	}
+
+	public static function provideGetPreferences(): iterable {
+		yield 'user with IPInfo access enabled' => [ true, [ PreferencesHandler::IPINFO_USE_AGREEMENT ] ];
+		yield 'user with IPInfo access disabled' => [ false, [] ];
 	}
 }

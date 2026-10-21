@@ -1,0 +1,104 @@
+<?php
+
+namespace SMW\DataValues;
+
+use SMW\DataItems\Blob;
+use SMW\DataItems\DataItem;
+use SMW\Localizer\Message;
+
+/**
+ * Handling of a language dependent error message encoded by Message::encode.
+ *
+ * @license GPL-2.0-or-later
+ * @since 2.5
+ *
+ * @author mwjames
+ */
+class ErrorMsgTextValue extends DataValue {
+
+	/**
+	 * @see DataValue::__construct
+	 */
+	public function __construct( $typeId = '' ) {
+		parent::__construct( '__errt' );
+	}
+
+	/**
+	 * @see DataValue::parseUserValue
+	 *
+	 * @param string $value
+	 */
+	protected function parseUserValue( $value ): void {
+		if ( $value === '' ) {
+			$this->addErrorMsg( 'smw_emptystring' );
+		}
+
+		$this->m_dataitem = new Blob( $value );
+	}
+
+	/**
+	 * @see DataValue::loadDataItem
+	 */
+	protected function loadDataItem( DataItem $dataItem ): bool {
+		if ( !$dataItem instanceof Blob ) {
+			return false;
+		}
+
+		$this->m_caption = false;
+		$this->m_dataitem = $dataItem;
+
+		return true;
+	}
+
+	/**
+	 * @see DataValue::getShortWikiText
+	 */
+	public function getShortWikiText( $linker = null ) {
+		return $this->constructErrorText( null );
+	}
+
+	/**
+	 * @see DataValue::getShortHTMLText
+	 */
+	public function getShortHTMLText( $linker = null ) {
+		return $this->constructErrorText( $linker );
+	}
+
+	/**
+	 * @see DataValue::getLongWikiText
+	 */
+	public function getLongWikiText( $linker = null ) {
+		return $this->constructErrorText( $linker );
+	}
+
+	/**
+	 * @see DataValue::getLongHTMLText
+	 */
+	public function getLongHTMLText( $linker = null ) {
+		return $this->constructErrorText( $linker );
+	}
+
+	/**
+	 * @see DataValue::getWikiValue
+	 */
+	public function getWikiValue() {
+		return $this->constructErrorText();
+	}
+
+	private function constructErrorText( $linker = null ) {
+		if ( !$this->isValid() ) {
+			return '';
+		}
+
+		$string = $this->getDataItem()->getString();
+		$type = $linker !== null ? Message::PARSE : Message::TEXT;
+
+		$message = Message::decode( $string, $type, $this->getOption( self::OPT_USER_LANGUAGE ) );
+		if ( $message !== false ) {
+			return $message;
+		}
+
+		return $string;
+	}
+
+}

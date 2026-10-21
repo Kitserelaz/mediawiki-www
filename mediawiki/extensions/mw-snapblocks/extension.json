@@ -1,0 +1,89 @@
+{
+	"name": "Snapblocks",
+	"version": "1.3.1",
+	"author": [
+		"ErnieParke",
+		"blob8108",
+		"apple502j",
+		"kenny2github",
+		"ego-lay_atman-bay",
+		"R4356th"
+	],
+	"url": "https://github.com/snap-blocks/mw-snapblocks",
+	"descriptionmsg": "snap-desc",
+	"license-name": "MIT",
+	"type": "parserhook",
+	"AutoloadClasses": {
+		"SnapBlocksHook": "SnapblocksHooks.php"
+	},
+	"ResourceModules": {
+		"ext.snapblocks": {
+			"scripts": [
+				"run_snapblocks.js"
+			],
+			"styles": "/inline.css",
+			"dependencies": [
+				"ext.snapblocks.sb",
+				"ext.snapblocks.translations"
+			]
+		},
+		"ext.snapblocks.sb": {
+			"scripts": [
+				"lib/snapblocks.min.js"
+			]
+		},
+		"ext.snapblocks.translations": {
+			"scripts": [
+				"lib/translations-all.js"
+			],
+			"dependencies": [
+				"ext.snapblocks.sb"
+			]
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "",
+		"remoteExtPath": "mw-snapblocks"
+	},
+	"Hooks": {
+		"ParserFirstCallInit": "main",
+		"ResourceLoaderGetConfigVars": "main"
+	},
+	"HookHandlers": {
+		"main": {
+			"class": "SnapBlocksHook"
+		}
+	},
+	"MessagesDirs": {
+		"SnapBlocks": [
+			"i18n"
+		]
+	},
+	"config": {
+		"SnapBlocksLangs": {
+			"value": []
+		},
+		"SnapBlocksBlockVersion": {
+			"value": "snap"
+		},
+		"SnapBlocksWrap": {
+			"value": true
+		},
+		"SnapBlocksWrapSize": {
+			"value": null
+		},
+		"SnapBlocksZebraColoring": {
+			"value": true
+		},
+		"SnapBlocksShowSpaces": {
+			"value": true
+		},
+		"SnapBlocksSantaHats": {
+			"value": false
+		}
+	},
+	"manifest_version": 2,
+	"requires": {
+		"MediaWiki": ">= 1.35.0"
+	}
+}

@@ -1,0 +1,16 @@
+{
+	"@metadata": {
+		"authors": [
+			"Sam Wilson"
+		]
+	},
+	"unlinkedwikibase": "UnlinkedWikibase",
+	"unlinkedwikibase-desc": "A Lua module to connect a wiki's pages to, and fetch data from, an external Wikibase wiki (such as Wikidata).",
+	"unlinkedwikibase-error-label": "UnlinkedWikibase error:",
+	"unlinkedwikibase-error-missing-id": "The 'id' parameter must be supplied.",
+	"unlinkedwikibase-error-invalid-id": "ID '$1' is not in the required format of an integer prefixed with 'Q'.",
+	"unlinkedwikibase-error-property-name-not-found": "Property '$1' could not be found.",
+	"unlinkedwikibase-sidebar-link": "Wikibase entity",
+	"unlinkedwikibase-infoaction-label": "Wikibase entity ID",
+	"unlinkedwikibase-infoaction-other-usage": "(used on $1 {{PLURAL:$1|page|pages}})"
+}

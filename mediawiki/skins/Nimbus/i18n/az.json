@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"NMW03",
+			"Nemoralis",
+			"Wertuose"
+		]
+	},
+	"nimbus-login": "Daxil ol",
+	"nimbus-welcome": "{{GENDER:$2|Xoş gəlmisiniz}}, $1"
+}

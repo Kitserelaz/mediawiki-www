@@ -1,0 +1,37 @@
+{
+	"@metadata": {
+		"authors": [
+			"Cekli829",
+			"Nemoralis",
+			"Wertuose"
+		]
+	},
+	"wminc-desc": "Wikimedia Incubator üçün test viki sistemi",
+	"wminc-manual": "Əl ilə",
+	"wminc-listwikis": "Vikilərin siyahısı",
+	"wminc-testwiki": "Test viki:",
+	"wminc-testwiki-code": "Test viki dili:",
+	"wminc-testwiki-none": "Heç biri/Hamısı",
+	"wminc-testwiki-site": "(Texniki baxış)",
+	"wminc-recentchanges-all": "Bütün son dəyişikliklər",
+	"wminc-prefinfo-language": "İnterfeys diliniz - test vikinizdən asılı olmayaraq",
+	"wminc-prefinfo-code": "Sizin burada istifadə etdiyiniz dilin ISO 639-dakı kodu",
+	"wminc-prefinfo-project": "Burada üzərində işlədiyiniz Vikimedia layihəsini seçin",
+	"wminc-prefinfo-error": "Siz dil kodu tələb edən layihə seçdiniz.",
+	"randombytest": "Test vikisindən təsadüfi səhifə",
+	"wminc-viewuserlang-user": "İstifadəçi adı:",
+	"wminc-viewuserlang-go": "Keç",
+	"wminc-userdoesnotexist": "İstifadəçi \"$1\" mövcud deyil",
+	"wminc-ip": "\"$1\" bir IP ünvanı və ya müvəqqəti istifadəçidir.",
+	"right-viewuserlang": "İstifadəçinin dilini və test vikisini görmək",
+	"group-test-sysop": "Test viki idarəçiləri",
+	"grouppage-test-sysop": "{{ns:project}}:Test viki idarəçisi",
+	"wminc-infopage-enter": "Ana Səhifəyə get",
+	"wminc-infopage-title-p": "$1 Vikipediya",
+	"wminc-infopage-title-b": "$1 Vikikitab",
+	"wminc-infopage-title-t": "$1 Vikilüğət",
+	"wminc-infopage-title-q": "$1 Vikisitat",
+	"wminc-infopage-title-n": "$1 Vikixəbər",
+	"wminc-infopage-title-s": "$1 Vikimənbə",
+	"wminc-infopage-title-v": "$1 Vikiversitet"
+}

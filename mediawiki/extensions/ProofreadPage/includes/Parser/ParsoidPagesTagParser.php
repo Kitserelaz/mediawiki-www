@@ -1,0 +1,109 @@
+<?php
+
+namespace ProofreadPage\Parser;
+
+use MediaWiki\Language\Language;
+use MediaWiki\Language\LanguageFactory;
+use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
+use ProofreadPage\Context;
+use Wikimedia\Parsoid\Core\DOMCompat;
+use Wikimedia\Parsoid\DOM\DocumentFragment;
+use Wikimedia\Parsoid\Ext\ExtensionTagHandler;
+use Wikimedia\Parsoid\Ext\ParsoidExtensionAPI;
+use Wikimedia\Parsoid\Fragments\WikitextPFragment;
+
+/**
+ * Parsoid implementation of the <pages> tag handler
+ */
+class ParsoidPagesTagParser extends ExtensionTagHandler {
+	use ParsoidTrait;
+	use PagesTagRendererTrait;
+
+	private ParsoidExtensionAPI $extApi;
+	private Context $context;
+	private LanguageFactory $languageFactory;
+	private bool $useParsoid;
+
+	public function __construct() {
+		$this->languageFactory = MediaWikiServices::getInstance()->getLanguageFactory();
+		$this->useParsoid = MediaWikiServices::getInstance()->getMainConfig()->get( 'ProofreadPageUseParsoid' );
+	}
+
+	/**
+	 * Get the target language for the current page.
+	 *
+	 * @return Language The target language
+	 */
+	public function getTargetLanguage(): Language {
+		$pageConfig = $this->extApi->getPageConfig();
+		$language = $pageConfig->getPageLanguageBcp47();
+		return $this->languageFactory->getLanguage( $language );
+	}
+
+	/**
+	 * @param ParsoidExtensionAPI $extApi
+	 * @param string $src
+	 * @param array $extArgs
+	 * @return DocumentFragment|false|null
+	 * @throws \DOMException
+	 */
+	public function sourceToDom( ParsoidExtensionAPI $extApi, string $src, array $extArgs ) {
+		if ( !$this->useParsoid ) {
+			return false;
+		}
+
+		$extName = $extApi->extTag->getName();
+		if ( $extName === 'pageseparator' ) {
+			return $extApi->htmlToDom( '<span />' );
+		}
+
+		$this->context = Context::getDefaultContext( true );
+		$args = $extApi->extArgsToArray( $extArgs );
+		$this->extApi = $extApi;
+		try {
+			[ 'output' => $out, 'contentLang' => $contentLang ] = $this->renderTag( $this->context, $args );
+		} catch ( ParserError $e ) {
+			return $e->getDocumentFragment( $extApi );
+		}
+
+		$placeholder = $this->context->getConfig()->get( 'ProofreadPagePageSeparatorPlaceholder' );
+		$out = str_replace( $placeholder, '<pageseparator />', $out );
+
+		$domFragment = $extApi->wikitextToDOM( $out, [
+			'processInNewFrame' => true,
+			'parseOpts' => [],
+			'clearDSROffsets' => true
+		], true );
+
+		$doc = $domFragment->ownerDocument;
+		$wrapper = $doc->createElement( 'div' );
+		$wrapper->setAttribute( 'class', 'prp-pages-output' );
+
+		if ( $contentLang !== null ) {
+			$wrapper->setAttribute( 'lang', $contentLang );
+		}
+
+		DOMCompat::appendChild( $wrapper, $domFragment );
+		$domFragment->appendChild( $wrapper );
+
+		return $domFragment;
+	}
+
+	/**
+	 * @param string $wikitext
+	 * @param Title $title
+	 * @return string
+	 */
+	public function preprocessWikitext( string $wikitext, Title $title ): string {
+		$error = false;
+		$fragment = $this->extApi->preprocessFragment(
+			WikitextPFragment::newFromWt( $wikitext, null ),
+			$error
+		);
+		if ( !$error ) {
+			return $fragment->killMarkers();
+		}
+		return $wikitext;
+	}
+}

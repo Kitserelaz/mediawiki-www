@@ -14,10 +14,7 @@
 	"license-name": "GPL-3.0-or-later",
 	"type": "specialpage",
 	"requires": {
-		"MediaWiki": ">= 1.43.0",
-		"platform": {
-			"php": ">= 8.1"
-		}
+		"MediaWiki": ">= 1.46.0"
 	},
 	"MessagesDirs": {
 		"CreateWiki": [
@@ -61,6 +58,7 @@
 				"CreateWikiConfig",
 				"CreateWikiLogger",
 				"HttpRequestFactory",
+				"StatsFactory",
 				"WikiRequestManager"
 			],
 			"needsPage": false
@@ -87,21 +85,17 @@
 		"requestwiki"
 	],
 	"LogActionsHandlers": {
-		"farmer/createwiki": "LogFormatter",
-		"farmer/comment": "LogFormatter",
-		"farmer/create-failure": "LogFormatter",
-		"farmer/requestapprove": "LogFormatter",
-		"farmer/requestdecline": "LogFormatter",
-		"farmer/requestmoredetails": "LogFormatter",
-		"farmer/requestonhold": "LogFormatter",
-		"farmer/requestreopen": "LogFormatter",
-		"farmer/requestwiki": {
-			"class": "Miraheze\\CreateWiki\\LogFormatter\\FarmerLogFormatter",
-			"services": [
-				"LinkRenderer"
-			]
-		},
-		"farmersuppression/*": "LogFormatter"
+		"farmer/createwiki": "MediaWiki\\Logging\\LogFormatter",
+		"farmer/comment": "MediaWiki\\Logging\\LogFormatter",
+		"farmer/create-failure": "MediaWiki\\Logging\\LogFormatter",
+		"farmer/requestapprove": "MediaWiki\\Logging\\LogFormatter",
+		"farmer/requestabandon": "MediaWiki\\Logging\\LogFormatter",
+		"farmer/requestdecline": "MediaWiki\\Logging\\LogFormatter",
+		"farmer/requestmoredetails": "MediaWiki\\Logging\\LogFormatter",
+		"farmer/requestonhold": "MediaWiki\\Logging\\LogFormatter",
+		"farmer/requestreopen": "MediaWiki\\Logging\\LogFormatter",
+		"farmer/requestwiki": "Miraheze\\CreateWiki\\LogFormatter\\FarmerLogFormatter",
+		"farmersuppression/*": "MediaWiki\\Logging\\LogFormatter"
 	},
 	"LogHeaders": {
 		"farmer": "farmer-log-header",
@@ -131,6 +125,9 @@
 			],
 			"requestapprove": [
 				"requestapprove"
+			],
+			"requestabandon": [
+				"requestabandon"
 			],
 			"requestdecline": [
 				"requestdecline"
@@ -175,6 +172,7 @@
 				"CreateWikiDatabaseUtils",
 				"CreateWikiHookRunner",
 				"CreateWikiValidator",
+				"StatsFactory",
 				"WikiRequestManager"
 			]
 		},
@@ -230,7 +228,7 @@
 			"services": [
 				"CreateWikiConfig",
 				"CreateWikiDatabaseUtils",
-				"CreateWikiDataFactory",
+				"CreateWikiDataStore",
 				"RemoteWikiFactory"
 			]
 		},
@@ -239,7 +237,7 @@
 			"services": [
 				"CreateWikiConfig",
 				"CreateWikiDatabaseUtils",
-				"CreateWikiDataFactory",
+				"CreateWikiDataStore",
 				"CreateWikiHookRunner",
 				"JobQueueGroupFactory"
 			]
@@ -283,7 +281,11 @@
 			"scripts": "ext.createwiki.oouiform.ooui.js",
 			"dependencies": [
 				"mediawiki.storage",
-				"oojs-ui-widgets"
+				"oojs-ui-widgets",
+				"oojs-ui-windows"
+			],
+			"messages": [
+				"requestwiki-abandon-confirm"
 			]
 		},
 		"ext.createwiki.oouiform.styles": {
@@ -307,7 +309,7 @@
 			"value": []
 		},
 		"CreateWikiCacheDirectory": {
-			"description": "String. The path to store CreateWiki cache files at.",
+			"description": "String. The path to store CreateWiki cache files at. Defaults to $wgCacheDirectory if not set.",
 			"value": ""
 		},
 		"CreateWikiCacheType": {
@@ -320,6 +322,10 @@
 		},
 		"CreateWikiCategories": {
 			"description": "Array. An array of categories used for wiki categorization. If this is an empty array, categories will not be used at all.",
+			"value": []
+		},
+		"CreateWikiClosedReasons": {
+			"description": "Array. Possible options for the reason a wiki was closed.",
 			"value": []
 		},
 		"CreateWikiCollation": {
@@ -364,6 +370,10 @@
 			"description": "Boolean. Whether the CreateWiki REST API should be enabled.",
 			"value": true
 		},
+		"CreateWikiInactiveExemptExpiryOptions": {
+			"description": "Array. Possible options for setting an expiry date for a wiki exempt from inactivity.",
+			"value": []
+		},
 		"CreateWikiInactiveExemptReasonOptions": {
 			"description": "Array. Possible options for marking a wiki as exempt from inactivity.",
 			"value": []
@@ -373,10 +383,11 @@
 			"value": "root@localhost"
 		},
 		"CreateWikiOpenAIConfig": {
-			"description": "Array. OpenAI configuration array, including dry run status, Assistant ID and API Key.",
+			"description": "Array. OpenAI configuration array, including dry run status, model, instructions and API Key.",
 			"value": {
 				"dryrun": true,
-				"assistantid": null,
+				"model": null,
+				"instructions": null,
 				"apikey": null
 			}
 		},
@@ -477,6 +488,12 @@
 	"DatabaseVirtualDomains": [
 		"virtual-createwiki",
 		"virtual-createwiki-central"
+	],
+	"InstallerTasks": [
+		{
+			"class": "Miraheze\\CreateWiki\\Installer\\PopulateCentralWikiTask",
+			"profile": "installer"
+		}
 	],
 	"load_composer_autoloader": true,
 	"manifest_version": 2

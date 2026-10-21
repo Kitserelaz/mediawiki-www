@@ -1,0 +1,18 @@
+{
+	"@metadata": {
+		"authors": [
+			"Pisceskaze",
+			"SongNgu.xyz"
+		]
+	},
+	"rottenlinks": "Trạng thái của các liên kết bên ngoài",
+	"rottenlinks-desc": "Hiển thị [[Special:RottenLinks|trạng thái của tất cả các liên kết bên ngoài]] trên wiki",
+	"rottenlinks-header": "Tinh chỉnh hiển thị kết quả liên kết bên ngoài",
+	"rottenlinks-header-info": "Bạn có thể chọn số liệu thống kê bạn muốn hiển thị hoặc số lượng kết quả bạn muốn hiển thị trên mỗi trang.",
+	"rottenlinks-table-external": "Liên kết ngoài",
+	"rottenlinks-table-response": "Phản hồi HTTP",
+	"rottenlinks-table-usage": "Sử dụng trong trang",
+	"rottenlinks-showbad": "Chỉ hiển thị các liên kết bị hỏng",
+	"rottenlinks-statistics": "Thống kê liên kết hỏng",
+	"rottenlinks-stats": "Hiện thống kê liên kết"
+}

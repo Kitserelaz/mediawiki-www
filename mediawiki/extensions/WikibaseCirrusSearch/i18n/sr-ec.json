@@ -1,0 +1,28 @@
+{
+	"@metadata": {
+		"authors": [
+			"Acamicamacaraca",
+			"BadDog",
+			"Ladsgroup",
+			"Milicevic01",
+			"Obsuser",
+			"Rancher",
+			"Srdjan m",
+			"Zenfiric",
+			"Zoranzoki21",
+			"Милан Јелисавчић",
+			"Сербијана",
+			"Aca"
+		]
+	},
+	"wikibasecirrus-search-bad-entity-type": "Погрешна врста ентитета: $1",
+	"special-entitieswithoutdescription": "Ентитети без описа",
+	"wikibasecirrus-entitieswithoutdescription-legend": "Набављање листе ентитета без описа",
+	"special-entitieswithoutlabel": "Ентитети без ознаке",
+	"wikibasecirrus-entitieswithoutlabel-legend": "Набави листу ентитета без ознаке",
+	"wikibasecirrus-entitieswithoutlabel-label-language": "Језички код:",
+	"wikibasecirrus-entitieswithoutlabel-label-type": "Врста:",
+	"wikibasecirrus-entitieswithoutlabel-submit": "Пронађи",
+	"wikibasecirrus-entitieswithoutlabel-invalid-language": "„$1” није важећи језички код.",
+	"wikibasecirrus-entitieswithoutlabel-invalid-type": "„$1“ није важећа врста ентитета."
+}

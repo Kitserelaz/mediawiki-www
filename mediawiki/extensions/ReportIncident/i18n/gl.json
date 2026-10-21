@@ -1,0 +1,28 @@
+{
+	"@metadata": {
+		"authors": [
+			"Toliño"
+		]
+	},
+	"reportincident-desc": "Extensión para o sistema de denuncia de incidentes.",
+	"reportincident-report-btn-label": "Denunciar",
+	"reportincident-dialog-close-btn": "Pechar",
+	"reportincident-dialog-back-btn": "Volver",
+	"reportincident-dialog-optional-label": "(opcional)",
+	"reportincident-dialog-violator-placeholder-text": "A quen {{GENDER:|estás}} denunciando?",
+	"reportincident-dialog-harassment-type-hate-speech-or-discrimination": "Discurso de odio ou discriminación",
+	"reportincident-dialog-harassment-type-sexual-harassment": "Acoso sexual",
+	"reportincident-dialog-harassment-type-something-else": "Outra cousa",
+	"reportincident-dialog-something-else-input-placeholder": "Especifica os comportamentos non enumerados anteriormente.",
+	"reportincident-dialog-harassment-empty": "{{GENDER:|Debes}} seleccionar polo menos un comportamento.",
+	"reportincident-dialog-something-else-empty": "Indica unha breve descrición do comportamento.",
+	"reportincident-dialog-server-error": "Semella que o noso servidor non responde. Intenta reenviar.",
+	"reportincident-dialog-generic-error": "A {{GENDER:|túa}} solicitude non se puido enviar debido a un erro. Intenta reenviar.",
+	"right-reportincident": "Denunciar un incidente",
+	"action-reportincident": "denunciar un incidente",
+	"reportincident-emaildialog-title": "Cómpre un enderezo de correo electrónico verificado",
+	"reportincident-emaildialog-close-button": "Cancelar",
+	"reportincident-emaildialog-content": "Necesitamos o {{GENDER:|teu}} enderezo de correo electrónico verificado para proporcionar actualizacións sobre a denuncia ou facer un seguimento se fose necesario. Engade ou verifica o {{GENDER:|teu}} enderezo de correo electrónico desde a configuración da túa conta antes de presentares a denuncia.",
+	"reportincident-emaildialog-primary": "Ir á configuración",
+	"reportincident-confirmedemail-required": "Cómpre un enderezo de correo electrónico confirmado para denunciar un incidente."
+}

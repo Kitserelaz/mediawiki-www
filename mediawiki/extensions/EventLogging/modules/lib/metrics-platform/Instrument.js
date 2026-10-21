@@ -1,7 +1,3 @@
-// TypeScript can't parse the MetricsClient type without explicitly importing it. On the other
-// hand, JSDoc can. Prioritise documentation over type checking for now.
-// @ts-nocheck
-
 /**
  * Provides a convenient API for writing an instrument.
  *
@@ -33,16 +29,20 @@
  * i.submitInteraction( 'init' );
  * ```
  *
- * @param {MetricsClient} metricsClient
+ * @see https://wikitech.wikimedia.org/wiki/Metrics_Platform/JavaScript_API
+ *
+ * @param {MetricsPlatform.MetricsClient} metricsClient
  * @param {string} streamName
  * @param {string} schemaID
  * @constructor
+ * @memberof MetricsPlatform
  */
 function Instrument( metricsClient, streamName, schemaID ) {
 	this.metricsClient = metricsClient;
 	this.streamName = streamName;
 	this.schemaID = schemaID;
 	this.eventSequencePosition = 1;
+	this.instrumentName = null;
 }
 
 /**
@@ -65,7 +65,7 @@ Instrument.prototype.isEnabled = function () {
  * See {@link MetricsClient#submitInteraction}.
  *
  * @param {string} action
- * @param {InteractionContextData} [interactionData]
+ * @param {MetricsPlatform.InteractionContextData} [interactionData]
  */
 Instrument.prototype.submitInteraction = function ( action, interactionData ) {
 	interactionData = Object.assign(
@@ -76,6 +76,11 @@ Instrument.prototype.submitInteraction = function ( action, interactionData ) {
 			funnel_event_sequence_position: this.eventSequencePosition++
 		}
 	);
+
+	if ( this.instrumentName ) {
+		// eslint-disable-next-line camelcase
+		interactionData.instrument_name = this.instrumentName;
+	}
 
 	this.metricsClient.submitInteraction(
 		this.streamName,
@@ -88,14 +93,39 @@ Instrument.prototype.submitInteraction = function ( action, interactionData ) {
 /**
  * See {@link MetricsClient#submitClick}.
  *
- * @param {ElementInteractionData} interactionData
+ * @param {MetricsPlatform.ElementInteractionData} interactionData
  */
 Instrument.prototype.submitClick = function ( interactionData ) {
 
-	// eslint-disable-next-line camelcase
+	/* eslint-disable camelcase */
 	interactionData.funnel_event_sequence_position = this.eventSequencePosition++;
 
+	if ( this.instrumentName ) {
+		interactionData.instrument_name = this.instrumentName;
+	}
+	/* eslint-enable camelcase */
+
 	this.metricsClient.submitClick( this.streamName, interactionData );
+};
+
+/**
+ * @param {string} instrumentName
+ * @return {Instrument} Chainable
+ */
+Instrument.prototype.setInstrumentName = function ( instrumentName ) {
+	this.instrumentName = instrumentName;
+
+	return this;
+};
+
+/**
+ * @param {string} schemaID
+ * @return {Instrument} Chainable
+ */
+Instrument.prototype.setSchemaID = function ( schemaID ) {
+	this.schemaID = schemaID;
+
+	return this;
 };
 
 module.exports = Instrument;

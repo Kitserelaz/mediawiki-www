@@ -1,0 +1,25 @@
+{
+	"@metadata": {
+		"authors": [
+			"JSantos",
+			"Joao Xavier"
+		]
+	},
+	"apihelp-commentlatestid-summary": "La programo (API) nomizita ''commentlatestID'' posibligas rekuperar l'identifiko (ID) de la lasta komento, pos kompletigar la sequanta parametri: ''ID de pagino''",
+	"apihelp-commentlatestid-param-pageID": "ID di la pagino ube skribesis la maxim recenta komento",
+	"comments-comment": "Komento",
+	"comments-loading": "Karganta...",
+	"comments-cancel-reply": "Anular",
+	"comments-sort-by-date": "Klasifikar segun dato",
+	"comments-sort-by-score": "Ordinar segun nombro di punti",
+	"comments-reply": "Respondar",
+	"comments-permalink": "Permananta ligilo",
+	"comments-ignore-unblock": "Desblokusar",
+	"comments-ignore-cancel": "Anular",
+	"comments-time-ago": "$1 ante nun",
+	"comments-time-months": "{{PLURAL:$1|1 monato|$1 monati}}",
+	"comments-time-days": "{{PLURAL:$1|un dio|$1 dii}}",
+	"comments-time-hours": "{{PLURAL:$1|1 horo|$1 hori}}",
+	"comments-time-minutes": "{{PLURAL:$1|1 minuto|$1 minuti}}",
+	"comments-time-seconds": "{{PLURAL:$1|1 sekundo|$1 sekundi}}"
+}

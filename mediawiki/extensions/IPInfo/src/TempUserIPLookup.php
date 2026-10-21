@@ -1,9 +1,8 @@
 <?php
 namespace MediaWiki\IPInfo;
 
-use DatabaseLogEntry;
-use MapCacheLRU;
 use MediaWiki\Config\ServiceOptions;
+use MediaWiki\Logging\DatabaseLogEntry;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\User\UserIdentity;
@@ -11,6 +10,7 @@ use MediaWiki\User\UserIdentityUtils;
 use Psr\Log\LoggerInterface;
 use Wikimedia\Assert\Assert;
 use Wikimedia\IPUtils;
+use Wikimedia\ObjectCache\MapCacheLRU;
 use Wikimedia\Rdbms\IConnectionProvider;
 use Wikimedia\Rdbms\SelectQueryBuilder;
 use Wikimedia\Rdbms\Subquery;
@@ -27,19 +27,14 @@ class TempUserIPLookup {
 		'IPInfoMaxDistinctIPResults'
 	];
 
-	private IConnectionProvider $connectionProvider;
-	private ExtensionRegistry $extensionRegistry;
-	private MapCacheLRU $recentAddressCache;
-	private UserIdentityUtils $userIdentityUtils;
-	private LoggerInterface $logger;
-	private ServiceOptions $serviceOptions;
+	private readonly MapCacheLRU $recentAddressCache;
 
 	public function __construct(
-		IConnectionProvider $connectionProvider,
-		UserIdentityUtils $userIdentityUtils,
-		ExtensionRegistry $extensionRegistry,
-		LoggerInterface $logger,
-		ServiceOptions $serviceOptions
+		private readonly IConnectionProvider $connectionProvider,
+		private readonly UserIdentityUtils $userIdentityUtils,
+		private readonly ExtensionRegistry $extensionRegistry,
+		private readonly LoggerInterface $logger,
+		private readonly ServiceOptions $serviceOptions,
 	) {
 		$serviceOptions->assertRequiredOptions( self::CONSTRUCTOR_OPTIONS );
 		Assert::parameter(
@@ -49,12 +44,7 @@ class TempUserIPLookup {
 			'IPInfoMaxDistinctIPResults must be a positive integer'
 		);
 
-		$this->connectionProvider = $connectionProvider;
-		$this->userIdentityUtils = $userIdentityUtils;
-		$this->extensionRegistry = $extensionRegistry;
 		$this->recentAddressCache = new MapCacheLRU( 8 );
-		$this->logger = $logger;
-		$this->serviceOptions = $serviceOptions;
 	}
 
 	/**
@@ -76,7 +66,11 @@ class TempUserIPLookup {
 			return $user->getName();
 		}
 
-		if ( !$this->extensionRegistry->isLoaded( 'CheckUser' ) ) {
+		// Return early if neither extensions to look data up in are loaded
+		if (
+			!$this->extensionRegistry->isLoaded( 'CheckUser' ) &&
+			!$this->extensionRegistry->isLoaded( 'Abuse Filter' )
+		) {
 			return null;
 		}
 
@@ -87,49 +81,97 @@ class TempUserIPLookup {
 		}
 
 		$dbr = $this->connectionProvider->getReplicaDatabase();
-		$latestChange = $dbr->newSelectQueryBuilder()
-			->select( [ 'cuc_ip', 'cuc_timestamp' ] )
-			->from( 'cu_changes' )
-			// T338276
-			->useIndex( 'cuc_actor_ip_time' )
-			->join( 'actor', null, 'cuc_actor=actor_id' )
-			->where( [
-				'actor_name' => $user->getName(),
-			] )
-			->orderBy( 'cuc_timestamp', SelectQueryBuilder::SORT_DESC )
-			->limit( 1 )
-			->caller( __METHOD__ )
-			->fetchRow();
 
-		$latestLogEvent = $dbr->newSelectQueryBuilder()
-			->select( [ 'cule_ip', 'cule_timestamp' ] )
-			->from( 'cu_log_event' )
-			// T338276
-			->useIndex( 'cule_actor_ip_time' )
-			->join( 'actor', null, 'cule_actor=actor_id' )
-			->where( [
-				'actor_name' => $user->getName(),
-			] )
-			->orderBy( 'cule_timestamp', SelectQueryBuilder::SORT_DESC )
-			->limit( 1 )
-			->caller( __METHOD__ )
-			->fetchRow();
+		// Capture the latest found log entry. Subsequent queries will use this
+		// timestamp to look for more recent entries than the previous query.
+		$latestHit = [
+			'ip' => null,
+			'timestamp' => 0,
+		];
 
-		// Pick the most recent of the cu_changes and the cu_log_event event, if any.
-		if ( $latestChange !== false ) {
-			$latestLogTimestamp = $latestLogEvent ? $latestLogEvent->cule_timestamp : '0';
-			if ( $latestLogTimestamp > $latestChange->cuc_timestamp ) {
-				$address = $latestLogEvent->cule_ip;
-			} else {
-				$address = $latestChange->cuc_ip;
+		if ( $this->extensionRegistry->isLoaded( 'CheckUser' ) ) {
+			$latestChange = $dbr->newSelectQueryBuilder()
+				->select( [ 'cuc_ip_hex', 'cuc_timestamp' ] )
+				->from( 'cu_changes' )
+				// T338276
+				->useIndex( 'cuc_actor_ip_hex_time' )
+				->join( 'actor', null, 'cuc_actor=actor_id' )
+				->where( [
+					'actor_name' => $user->getName(),
+					$dbr->expr( 'cuc_ip_hex', '!=', null ),
+				] )
+				->orderBy( 'cuc_timestamp', SelectQueryBuilder::SORT_DESC )
+				->limit( 1 )
+				->caller( __METHOD__ )
+				->fetchRow();
+			if ( $latestChange ) {
+				$latestHit['ip'] = IPUtils::formatHex( $latestChange->cuc_ip_hex );
+				$latestHit['timestamp'] = $latestChange->cuc_timestamp;
 			}
-		} else {
-			$address = $latestLogEvent ? $latestLogEvent->cule_ip : null;
+
+			$latestLogEvent = $dbr->newSelectQueryBuilder()
+				->select( [ 'cule_ip_hex', 'cule_timestamp' ] )
+				->from( 'cu_log_event' )
+				// T338276
+				->useIndex( 'cule_actor_ip_hex_time' )
+				->join( 'actor', null, 'cule_actor=actor_id' )
+				->where( [
+					'actor_name' => $user->getName(),
+					$dbr->expr( 'cule_timestamp', '>', $latestHit['timestamp'] ),
+					$dbr->expr( 'cule_ip_hex', '!=', null ),
+				] )
+				->orderBy( 'cule_timestamp', SelectQueryBuilder::SORT_DESC )
+				->limit( 1 )
+				->caller( __METHOD__ )
+				->fetchRow();
+			if ( $latestLogEvent ) {
+				$latestHit['ip'] = IPUtils::formatHex( $latestLogEvent->cule_ip_hex );
+				$latestHit['timestamp'] = $latestLogEvent->cule_timestamp;
+			}
+
+			$latestPrivateEvent = $dbr->newSelectQueryBuilder()
+				->select( [ 'cupe_ip_hex', 'cupe_timestamp' ] )
+				->from( 'cu_private_event' )
+				// T338276
+				->useIndex( 'cupe_actor_ip_hex_time' )
+				->join( 'actor', null, 'cupe_actor=actor_id' )
+				->where( [
+					'actor_name' => $user->getName(),
+					$dbr->expr( 'cupe_timestamp', '>', $latestHit['timestamp'] ),
+					$dbr->expr( 'cupe_ip_hex', '!=', null ),
+				] )
+				->orderBy( 'cupe_timestamp', SelectQueryBuilder::SORT_DESC )
+				->limit( 1 )
+				->caller( __METHOD__ )
+				->fetchRow();
+			if ( $latestPrivateEvent ) {
+				$latestHit['ip'] = IPUtils::formatHex( $latestPrivateEvent->cupe_ip_hex );
+				$latestHit['timestamp'] = $latestPrivateEvent->cupe_timestamp;
+			}
 		}
 
-		$this->recentAddressCache->set( $user->getName(), $address );
+		if ( $this->extensionRegistry->isLoaded( 'Abuse Filter' ) ) {
+			$latestAbuseFilterHit = $dbr->newSelectQueryBuilder()
+				->select( [ 'afl_ip_hex', 'afl_timestamp' ] )
+				->from( 'abuse_filter_log' )
+				->where( [
+					'afl_user_text' => $user->getName(),
+					$dbr->expr( 'afl_ip_hex', '!=', '\'\'' ),
+					$dbr->expr( 'afl_timestamp', '>', $latestHit['timestamp'] ),
+				] )
+				->useIndex( 'afl_ip_hex_timestamp' )
+				->orderBy( 'afl_timestamp', SelectQueryBuilder::SORT_DESC )
+				->limit( 1 )
+				->caller( __METHOD__ )
+				->fetchRow();
+			if ( $latestAbuseFilterHit ) {
+				$latestHit['ip'] = IPUtils::formatHex( $latestAbuseFilterHit->afl_ip_hex );
+				$latestHit['timestamp'] = $latestAbuseFilterHit->afl_timestamp;
+			}
+		}
 
-		return $address;
+		$this->recentAddressCache->set( $user->getName(), $latestHit['ip'] );
+		return $latestHit['ip'];
 	}
 
 	/**
@@ -168,7 +210,7 @@ class TempUserIPLookup {
 			->caller( __METHOD__ )
 			->fetchField();
 
-		return $ip ? IPUtils::formatHex( $ip ) : null;
+		return $ip !== null ? IPUtils::formatHex( $ip ) : null;
 	}
 
 	/**
@@ -207,7 +249,7 @@ class TempUserIPLookup {
 			->caller( __METHOD__ )
 			->fetchField();
 
-		return $ip ? IPUtils::formatHex( $ip ) : null;
+		return $ip !== null ? IPUtils::formatHex( $ip ) : null;
 	}
 
 	/**
@@ -229,32 +271,36 @@ class TempUserIPLookup {
 
 		$dbr = $this->connectionProvider->getReplicaDatabase();
 
-		$distinctCuChangesIPs = $dbr->newSelectQueryBuilder()
-			->select( 'DISTINCT cuc_ip' )
+		$distinctCuChangesIPHexes = $dbr->newSelectQueryBuilder()
+			->select( 'cuc_ip_hex' )
+			->distinct()
 			->from( 'cu_changes' )
 			->join( 'actor', null, 'cuc_actor=actor_id' )
 			->where( [
 				'actor_name' => $user->getName(),
+				$dbr->expr( 'cuc_ip_hex', '!=', null ),
 			] )
 			->caller( __METHOD__ )
 			->fetchFieldValues();
 
 		$cuLogQuery = $dbr->newSelectQueryBuilder()
-			->select( 'DISTINCT cule_ip' )
+			->select( 'cule_ip_hex' )
+			->distinct()
 			->from( 'cu_log_event' )
 			->join( 'actor', null, 'cule_actor=actor_id' )
 			->where( [
-				'actor_name' => $user->getName()
+				'actor_name' => $user->getName(),
+				$dbr->expr( 'cule_ip_hex', '!=', null ),
 			] )
 			->caller( __METHOD__ );
 
-		if ( count( $distinctCuChangesIPs ) > 0 ) {
-			$cuLogQuery->andWhere( $dbr->expr( 'cule_ip', '!=', $distinctCuChangesIPs ) );
+		if ( count( $distinctCuChangesIPHexes ) > 0 ) {
+			$cuLogQuery->andWhere( $dbr->expr( 'cule_ip_hex', '!=', $distinctCuChangesIPHexes ) );
 		}
 
-		$distinctCuLogEventIPs = $cuLogQuery->fetchFieldValues();
+		$distinctCuLogEventIPHexes = $cuLogQuery->fetchFieldValues();
 
-		return count( $distinctCuChangesIPs ) + count( $distinctCuLogEventIPs );
+		return count( $distinctCuChangesIPHexes ) + count( $distinctCuLogEventIPHexes );
 	}
 
 	/**
@@ -292,7 +338,7 @@ class TempUserIPLookup {
 			->from( 'cu_changes', 'cuc' )
 			->where( [
 				'cuc.cuc_actor=actor',
-				'cuc.cuc_ip=ip'
+				'cuc.cuc_ip_hex=ip_hex'
 			] )
 			->limit( 1 );
 
@@ -301,7 +347,7 @@ class TempUserIPLookup {
 			->from( 'cu_log_event', 'cule' )
 			->where( [
 				'cule.cule_actor=actor',
-				'cule.cule_ip=ip'
+				'cule.cule_ip_hex=ip_hex'
 			] )
 			->limit( 1 );
 
@@ -316,29 +362,35 @@ class TempUserIPLookup {
 			->add(
 				$dbr->newSelectQueryBuilder()
 					->select( [
-						'ip' => 'cuc_ip',
+						'ip_hex' => 'cuc_ip_hex',
 						'actor' => 'cuc_actor',
 						'rev_id' => new Subquery( $oldIdQuery->getSQL() ),
 						'NULL as log_id',
 					] )
 					->from( 'cu_changes' )
 					->join( 'actor', null, 'cuc_actor = actor_id' )
-					->where( [ 'actor_name' => $user->getName() ] )
-					->groupBy( [ 'cuc_actor', 'cuc_ip' ] )
+					->where( [
+						'actor_name' => $user->getName(),
+						$dbr->expr( 'cuc_ip_hex', '!=', null ),
+					] )
+					->groupBy( [ 'cuc_actor', 'cuc_ip_hex' ] )
 					->limit( $queryLimit )
 			)
 			->add(
 				$dbr->newSelectQueryBuilder()
 					->select( [
-						'ip' => 'cule_ip',
+						'ip_hex' => 'cule_ip_hex',
 						'actor' => 'cule_actor',
 						'NULL as rev_id',
 						'log_id' => new Subquery( $logIdQuery->getSQL() )
 					] )
 					->from( 'cu_log_event' )
 					->join( 'actor', null, 'cule_actor = actor_id' )
-					->where( [ 'actor_name' => $user->getName() ] )
-					->groupBy( [ 'cule_actor', 'cule_ip' ] )
+					->where( [
+						'actor_name' => $user->getName(),
+						$dbr->expr( 'cule_ip_hex', '!=', null ),
+					] )
+					->groupBy( [ 'cule_actor', 'cule_ip_hex' ] )
 					->limit( $queryLimit )
 			)
 			->caller( __METHOD__ )
@@ -354,8 +406,9 @@ class TempUserIPLookup {
 				break;
 			}
 
-			$recordsByIp[$row->ip] = new TempUserIPRecord(
-				$row->ip,
+			$ip = IPUtils::formatHex( $row->ip_hex );
+			$recordsByIp[$ip] = new TempUserIPRecord(
+				$ip,
 				$row->rev_id ?? null,
 				$row->log_id ?? null
 			);

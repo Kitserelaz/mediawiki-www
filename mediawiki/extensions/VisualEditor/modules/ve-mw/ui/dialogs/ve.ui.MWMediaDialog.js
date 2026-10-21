@@ -176,6 +176,17 @@ ve.ui.MWMediaDialog.static.getImportRules = function () {
 /**
  * @inheritdoc
  */
+ve.ui.MWMediaDialog.prototype.getEscapeAction = function () {
+	const backOrClose = this.actions.get( { flags: [ 'back', 'close' ], visible: true } );
+	if ( backOrClose.length ) {
+		return backOrClose[ 0 ].getAction();
+	}
+	return null;
+};
+
+/**
+ * @inheritdoc
+ */
 ve.ui.MWMediaDialog.prototype.getBodyHeight = function () {
 	// FIXME: This should vary on panel.
 	return 600;
@@ -666,7 +677,7 @@ ve.ui.MWMediaDialog.prototype.buildMediaInfoPanel = function ( imageinfo ) {
 	$thumbContainer
 		.append( $image.prop( 'src', imageinfo.thumburl ) );
 
-	this.$infoPanelWrapper.append(
+	this.$infoPanelWrapper.empty().append(
 		$thumbContainer,
 		$info
 	);
@@ -707,7 +718,7 @@ ve.ui.MWMediaDialog.prototype.buildMediaInfoPanel = function ( imageinfo ) {
 
 	// Call for a bigger image
 	this.fetchThumbnail( imageTitleText, newDimensions )
-		.done( ( thumburl ) => {
+		.then( ( thumburl ) => {
 			if ( thumburl ) {
 				$image.prop( 'src', thumburl );
 			}
@@ -795,7 +806,7 @@ ve.ui.MWMediaDialog.prototype.getFileType = function ( url ) {
 	// WEBM, OGV, OGX;
 	// APNG;
 	// PDF, DJVU
-	return url.split( '.' ).pop().toUpperCase();
+	return mw.util.parseImageUrl( url ).name.split( '.' ).pop().toUpperCase();
 };
 
 /**
@@ -866,7 +877,6 @@ ve.ui.MWMediaDialog.prototype.onSearchQueryClear = function () {
  * @param {Object} info Image info
  */
 ve.ui.MWMediaDialog.prototype.chooseImageInfo = function ( info ) {
-	this.$infoPanelWrapper.empty();
 	// Switch panels
 	this.selectedImageInfo = info;
 	this.switchPanels( 'imageInfo' );
@@ -946,15 +956,15 @@ ve.ui.MWMediaDialog.prototype.confirmSelectedImage = function () {
  */
 ve.ui.MWMediaDialog.prototype.updateFilenameFieldset = function () {
 	const title = mw.Title.newFromText( mw.libs.ve.normalizeParsoidResourceName( this.imageModel.getResourceName() ) );
+	const $link = $( '<a>' )
+		.addClass( 've-ui-mwMediaDialog-description-link' )
+		.text( ve.msg( 'visualeditor-dialog-media-content-description-link' ) );
+	ve.setAttributeSafe( $link[ 0 ], 'href', title.getUrl() );
+	ve.targetLinksToNewWindow( $link[ 0 ] );
 	this.filenameFieldset.setLabel(
 		$( '<span>' ).append(
 			$( document.createTextNode( this.imageModel.getFilename() + ' ' ) ),
-			$( '<a>' )
-				.addClass( 've-ui-mwMediaDialog-description-link' )
-				.attr( 'href', title.getUrl() )
-				.attr( 'target', '_blank' )
-				.attr( 'rel', 'noopener' )
-				.text( ve.msg( 'visualeditor-dialog-media-content-description-link' ) )
+			$link
 		)
 	);
 };
@@ -1439,7 +1449,7 @@ ve.ui.MWMediaDialog.prototype.getActionProcess = function ( action ) {
 					this.fragment = this.imageModel.insertImageNode( this.getFragment() );
 				}
 
-				this.close( { action: action } );
+				this.close( { action } );
 			};
 			break;
 		default:

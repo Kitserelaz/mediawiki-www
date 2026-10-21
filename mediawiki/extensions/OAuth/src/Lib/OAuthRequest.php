@@ -43,6 +43,11 @@ class OAuthRequest {
 	/** @var LoggerInterface */
 	protected $logger;
 
+	/**
+	 * @param string $http_method
+	 * @param string $http_url
+	 * @param array|null $parameters
+	 */
 	function __construct( $http_method, $http_url, $parameters = null ) {
 		$parameters = $parameters ?: array();
 		$parameters = array_merge(
@@ -232,6 +237,8 @@ class OAuthRequest {
 
 	/**
 	 * builds the Authorization: header
+	 *
+	 * @throws OAuthException
 	 */
 	public function to_header( $realm = null ) {
 		$first = true;

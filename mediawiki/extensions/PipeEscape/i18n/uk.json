@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"DDPAT",
+			"Ice bulldog",
+			"Prima klasy4na"
+		]
+	},
+	"pipeescape-desc": "Функція парсера <code>#!</code> для випадків, коли ви хочете використовувати символ вертикальної риски тільки як символ",
+	"pipeescape-extensionname": "Втеча з труби"
+}

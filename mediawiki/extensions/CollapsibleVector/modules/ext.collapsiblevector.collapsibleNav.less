@@ -1,0 +1,82 @@
+/**
+ * LESS Stylesheet for collapsible nav
+ */
+
+#mw-panel.collapsible-nav {
+	.portal {
+
+		.vector-menu-heading {
+			background-position: left center;
+			background-repeat: no-repeat;
+			background-image: url( images/arrow-expanded.svg );
+			background-size: auto;
+			padding: 4px 0 3px 1.5em;
+
+			&:hover {
+				cursor: pointer;
+				text-decoration: none;
+			}
+
+			a {
+				color: #4d4d4d;
+				text-decoration: none;
+			}
+		}
+
+		.vector-menu-content {
+			margin: 0 0 0 1.25em;
+			background-image: none !important;
+			padding-top: 0;
+			display: none;
+
+			ul {
+				li {
+					padding: 0.25em 0;
+				}
+			}
+		}
+
+
+		/* First */
+		&.first {
+			background-image: none;
+			margin-top: 0;
+
+			.vector-menu-heading {
+				display: none;
+			}
+		}
+
+		/* Persistent */
+		&.persistent {
+			.vector-menu-content {
+				display: block;
+				margin-left: 0.5em;
+			}
+
+			.vector-menu-heading {
+				background-image: none !important;
+				padding-left: 0.7em;
+				cursor: default;
+			}
+		}
+
+		/* Collapsed */
+		&.collapsed {
+			.vector-menu-heading {
+				color: #0645ad;
+				background-position: left center;
+				background-repeat: no-repeat;
+				background-image: url( images/arrow-collapsed-ltr.svg );
+
+				&:hover {
+					text-decoration: underline;
+				}
+
+				a {
+					color: #0645ad;
+				}
+			}
+		}
+	}
+}

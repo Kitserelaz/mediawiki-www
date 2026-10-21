@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Dbc334",
+			"Eleassar"
+		]
+	},
+	"kartographer-wv-group": "Skupina:",
+	"kartographer-wv-layer-wikimedia": "Wikimedia",
+	"kartographer-wv-warning-external-source-title": "Vir zunanjih podatkov",
+	"kartographer-wv-warning-external-source-message": "Ta vsebina gostuje zunanje in bo delila vaš IP-naslov in druge podatke s ponudnikom zemljevida.",
+	"kartographer-wv-warning-external-source-agree": "Razumem",
+	"kartographer-wv-warning-external-source-disagree": "Prekliči"
+}

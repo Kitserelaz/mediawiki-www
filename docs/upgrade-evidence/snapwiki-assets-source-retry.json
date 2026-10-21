@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "gate": "skin-render",
+  "environment": {
+    "gate": "skin-render",
+    "mode": "isolated-development-source-overlay",
+    "composer_lock_sha256": "781089ddc1d8c848c78432e5c6f086b0ae9d84ec4a90967f37497c658fc549c8",
+    "upgrade_targets_sha256": "e5509fadd4b8fccd43c1ab76e2ec84fe2deb94928475e65c0c22dd58373602b5",
+    "farm_sources_sha256": "f06353397c13c94e27a5e168761bd8202c216a82b070bf74aefa1af3712daf86"
+  },
+  "expected_manifests": 1,
+  "components": [
+    {
+      "manifest": "skins/snapwikiskin/skin.json",
+      "manifest_sha256": "e7c70a1353eb24cf87dc8aa9a78c4cb4a3155a44ef65ec79cb4f06d1dbf5d4e3",
+      "source_sha256": "957559ee6885482bb840c4ba5c2b2dae365902069541e638acab278768a9be12",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 48.18,
+      "log": "skins_snapwikiskin_skin.json.log",
+      "evidence": {
+        "manifest": "skins/snapwikiskin/skin.json",
+        "skin_render": "passed",
+        "skins": [
+          {
+            "name": "snapwikiskin",
+            "bytes": 7759,
+            "html_sha256": "fbbe3ca101aa44e98a02d704686a21d36e60eb32d489f8db9395fa9a134e2527",
+            "resource_modules": {
+              "skins.snapwikiskin.search": "9b5e25aa0b824107c4fe62a42317fe2c2e1e0fa4724642bcaefcc1f91c8b989b",
+              "mediawiki.Uri": "f23bbc18c2224295356dcc3497f030359a9d002b03dc1a9b12c3228b79483e5d",
+              "mediawiki.util": "0ee7e33a844e960e8cd49794f0b414f32f8c0fa419a16051de08cb829b883038",
+              "jquery.client": "a25472aeb50d26d1a6045b976a49a4ac940a44057d14ce3e31a8f77c58499118",
+              "web2017-polyfills": "ab6225f0e7298ffd8c1985f12205bc3f9f6a3ef5c2768dbb34259aa25a947c80",
+              "mediawiki.codex.typeaheadSearch": "f250e1088a4619f9eb52832c179396f576eb83da5b6dfe01b72fe7a30dae6361",
+              "vue": "a897d1835b0ecebf26c0c1d07304030d3d255d71d27ecac69346f452ba8472c6",
+              "mediawiki.page.ready": "976dc609822adef1a401313eac465cd45882628fbe6796d72ff3e533f10742bb",
+              "mediawiki.api": "864240c85a4032ba5eed9dd7eb4db194dd26a0e75ba9f7ac6849bc33d065786b",
+              "mediawiki.Title": "26560dbe3cf0a4ca731277555b104a6a79c83fc6b9b6b965fcb00a53e15b9183",
+              "mediawiki.String": "724c03179a5e8a5e635e0158b87fecb7199ba7e3d875a3e6a8a6f1c827e6fcef",
+              "mediawiki.jqueryMsg": "96838c94b7955a25aea87ce12b094c5096be05a09685179fbceca4ac8c5710a7",
+              "mediawiki.language": "2ea03f3322af18e2e2668f27d87ebe479a60eb3d2d210e6bc81165214edb911a",
+              "mediawiki.cldr": "60dc9b320b0d351c13a30150931550147b5885a89435a838356494ce9292f216",
+              "mediawiki.libs.pluralruleparser": "0644974cf1265deab9c40590e6ede22fc11b0f42c46973e375072f4d6d024268",
+              "user.options": "66825400b14d88f63962d54bbbafc2b6623d74a1c2b5c13ba405896a62e6dc87",
+              "mediawiki.user": "ac8d46508028bde4c93e28b64be6aa9c56b5e269b05727f361d6812ba985e44b",
+              "mediawiki.cookie": "5e625957e4dc8fb6f282da4098539d025f6bb19a8ccf1cab4850d0ba96659951",
+              "skins.snapwikiskin": "c973d2216a527651e171a715a7b9924821ccf51df327ab0c3dd747b7cad3640d"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

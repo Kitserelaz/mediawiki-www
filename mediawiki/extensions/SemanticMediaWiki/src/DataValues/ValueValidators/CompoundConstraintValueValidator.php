@@ -1,0 +1,102 @@
+<?php
+
+namespace SMW\DataValues\ValueValidators;
+
+use Psr\Log\LoggerAwareTrait;
+use RuntimeException;
+use SMW\DataValues\DataValue;
+
+/**
+ * @private
+ *
+ * @license GPL-2.0-or-later
+ * @since 2.4
+ *
+ * @author mwjames
+ */
+class CompoundConstraintValueValidator implements ConstraintValueValidator {
+
+	use LoggerAwareTrait;
+
+	/**
+	 * @var bool
+	 */
+	private $hasConstraintViolation = false;
+
+	private float $time = 0;
+	private int $count = 0;
+	private $contextPage = '';
+
+	private array $constraintValueValidators = [];
+
+	/**
+	 * @since 2.4
+	 *
+	 * @param ConstraintValueValidator $constraintValueValidator
+	 */
+	public function registerConstraintValueValidator(
+		ConstraintValueValidator $constraintValueValidator
+	): void {
+		$this->constraintValueValidators[] = $constraintValueValidator;
+	}
+
+	/**
+	 * @since 2.4
+	 *
+	 * {@inheritDoc}
+	 */
+	public function hasConstraintViolation(): bool {
+		return $this->hasConstraintViolation;
+	}
+
+	/**
+	 * @since 2.4
+	 *
+	 * {@inheritDoc}
+	 */
+	public function validate( $dataValue ): void {
+		$this->hasConstraintViolation = false;
+		$time = -microtime( true );
+
+		if ( $this->constraintValueValidators === [] ) {
+			throw new RuntimeException( "Missing a registered ConstraintValueValidator" );
+		}
+
+		foreach ( $this->constraintValueValidators as $constraintValueValidator ) {
+
+			// Any constraint violation by a ConstraintValueValidator registered
+			// will force an immediate halt without checking any other possible
+			// constraints/validators
+			if ( $this->hasConstraintViolation ) {
+				break;
+			}
+
+			$constraintValueValidator->validate( $dataValue );
+			$this->hasConstraintViolation = $constraintValueValidator->hasConstraintViolation();
+		}
+
+		$this->count++;
+		$this->time += microtime( true ) + $time;
+
+		if ( $dataValue instanceof DataValue ) {
+			$contextPage = $dataValue->getContextPage();
+			if ( $contextPage !== null ) {
+				$this->contextPage = $contextPage->asBase()->getSerialization();
+			}
+		}
+	}
+
+	public function __destruct() {
+		$this->logger->info(
+			'CompoundConstraintValueValidator Page: {contextPage} '
+				. 'Validation count: {count} procTime (total in sec.): {procTime}',
+			[
+				'role' => 'developer',
+				'count' => $this->count,
+				'procTime' => $this->time,
+				'contextPage' => $this->contextPage
+			]
+		);
+	}
+
+}

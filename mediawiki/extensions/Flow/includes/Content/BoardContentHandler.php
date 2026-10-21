@@ -2,7 +2,6 @@
 
 namespace Flow\Content;
 
-use Article;
 use Flow\Actions\FlowAction;
 use Flow\Container;
 use Flow\Diff\FlowBoardContentDiffView;
@@ -21,6 +20,7 @@ use MediaWiki\Context\RequestContext;
 use MediaWiki\Json\FormatJson;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Page\Article;
 use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\Title\Title;
@@ -192,9 +192,9 @@ class BoardContentHandler extends ContentHandler {
 					->getUserFactory()
 					->newFromUserIdentity( $parserOptions->getUserIdentity() );
 				$this->generateHtml( $title, $user, $content, $output );
-			} catch ( \Exception $e ) {
+			} catch ( \Exception ) {
 				// Workflow does not yet exist (may be in the process of being created)
-				$output->setText( '' );
+				$output->setContentHolderText( '' );
 			}
 		}
 
@@ -208,7 +208,7 @@ class BoardContentHandler extends ContentHandler {
 				->getTimestampFromId( $revId );
 		}
 
-		$output->setTimestamp( $timestamp );
+		$output->setRevisionTimestamp( $timestamp );
 
 		/** @var LinksTableUpdater $updater */
 		$updater = Container::get( 'reference.updater.links-tables' );
@@ -246,7 +246,7 @@ class BoardContentHandler extends ContentHandler {
 		$view->show( $loader, 'view' );
 
 		// Extract data from derivative context
-		$output->setText( $childContext->getOutput()->getHTML() );
+		$output->setContentHolderText( $childContext->getOutput()->getHTML() );
 		$output->addModules( $childContext->getOutput()->getModules() );
 		$output->addModuleStyles( $childContext->getOutput()->getModuleStyles() );
 	}

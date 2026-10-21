@@ -1,13 +1,12 @@
 <?php
 
-namespace MediaWiki\CheckUser\HookHandler;
+namespace MediaWiki\Extension\CheckUser\HookHandler;
 
-use MediaWiki\CheckUser\CheckUserQueryInterface;
+use MediaWiki\Extension\CheckUser\CheckUserQueryInterface;
 use MediaWiki\Extension\GlobalBlocking\GlobalBlock;
 use MediaWiki\Extension\GlobalBlocking\Hooks\GlobalBlockingGetRetroactiveAutoblockIPsHook;
 use MediaWiki\User\ActorStoreFactory;
 use MediaWiki\User\CentralId\CentralIdLookup;
-use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityValue;
 use Wikimedia\IPUtils;
 use Wikimedia\Rdbms\IConnectionProvider;
@@ -16,18 +15,11 @@ use Wikimedia\Timestamp\ConvertibleTimestamp;
 
 class GlobalBlockingHandler implements GlobalBlockingGetRetroactiveAutoblockIPsHook, CheckUserQueryInterface {
 
-	private IConnectionProvider $dbProvider;
-	private CentralIdLookup $centralIdLookup;
-	private ActorStoreFactory $actorStoreFactory;
-
 	public function __construct(
-		IConnectionProvider $dbProvider,
-		CentralIdLookup $centralIdLookup,
-		ActorStoreFactory $actorStoreFactory
+		private readonly IConnectionProvider $dbProvider,
+		private readonly CentralIdLookup $centralIdLookup,
+		private readonly ActorStoreFactory $actorStoreFactory,
 	) {
-		$this->dbProvider = $dbProvider;
-		$this->centralIdLookup = $centralIdLookup;
-		$this->actorStoreFactory = $actorStoreFactory;
 	}
 
 	/** @inheritDoc */
@@ -35,13 +27,15 @@ class GlobalBlockingHandler implements GlobalBlockingGetRetroactiveAutoblockIPsH
 		$centralIndexDbr = $this->dbProvider->getReplicaDatabase( self::VIRTUAL_GLOBAL_DB_DOMAIN );
 
 		// Get the target of the block, and if this is not set then return as we cannot then get IP addresses for it.
-		$target = $globalBlock->getTargetUserIdentity();
+		// Fetch the name and not UserIdentity, as ::getTargetName still returns a string if the user does not exist
+		// on the local wiki where the global block was performed.
+		$target = $globalBlock->getTargetName();
 		if ( !$target ) {
 			return true;
 		}
 
 		// Get the central ID for the target, and if this fails then return because we need a central ID for lookups.
-		$centralIdForTarget = $this->centralIdLookup->centralIdFromLocalUser( $target, CentralIdLookup::AUDIENCE_RAW );
+		$centralIdForTarget = $this->centralIdLookup->centralIdFromName( $target, CentralIdLookup::AUDIENCE_RAW );
 		if ( !$centralIdForTarget ) {
 			return true;
 		}
@@ -117,7 +111,7 @@ class GlobalBlockingHandler implements GlobalBlockingGetRetroactiveAutoblockIPsH
 	 * Fetch IP addresses used by the $target on the $wikiID and were last used between $upperBound and $lowerBound.
 	 *
 	 * @param string $wikiID The wiki ID for the local wiki
-	 * @param UserIdentity $target The target of the global block that is autoblocking
+	 * @param string $target The target of the global block that is autoblocking
 	 * @param int $limit The number of IPs which are requested
 	 * @param string|null $upperBound IP addresses selected should not have their last usage timestamp as after this
 	 *   timestamp.
@@ -128,15 +122,24 @@ class GlobalBlockingHandler implements GlobalBlockingGetRetroactiveAutoblockIPsH
 	 * @return void
 	 */
 	private function fetchIPAddressesFromLocalWiki(
-		string $wikiID, UserIdentity $target, int $limit, ?string $upperBound, ?string $lowerBound, array &$foundIps
+		string $wikiID,
+		string $target,
+		int $limit,
+		?string $upperBound,
+		?string $lowerBound,
+		array &$foundIps
 	) {
 		$localDbr = $this->dbProvider->getReplicaDatabase( $wikiID );
 
 		// Try to get the local UserIdentity for the global block target. If it does not exist or is not attached,
 		// then return as we should not fetch IPs for this wiki.
 		$localUserIdentityLookup = $this->actorStoreFactory->getUserIdentityLookup( $wikiID );
-		$localUser = $localUserIdentityLookup->getUserIdentityByName( $target->getName() );
-		if ( !$localUser || !$localUser->isRegistered() || !$this->centralIdLookup->isAttached( $localUser ) ) {
+		$localUser = $localUserIdentityLookup->getUserIdentityByName( $target );
+		if (
+			!$localUser ||
+			!$localUser->isRegistered() ||
+			!$this->centralIdLookup->isAttached( $localUser, $wikiID )
+		) {
 			return;
 		}
 
@@ -146,32 +149,36 @@ class GlobalBlockingHandler implements GlobalBlockingGetRetroactiveAutoblockIPsH
 			// result table.
 			$wikiIDForGetIdCall = $this->dbProvider->getReplicaDatabase()->getDomainID() === $wikiID ?
 				UserIdentityValue::LOCAL : $wikiID;
-			$ipsSubQuery = $localDbr->newSelectQueryBuilder()
-				->select( [ 'ip' => $columnPrefix . 'ip', 'timestamp' => "MAX({$columnPrefix}timestamp)" ] )
+			$ipHexesSubQuery = $localDbr->newSelectQueryBuilder()
+				->select( [ 'ip_hex' => $columnPrefix . 'ip_hex', 'timestamp' => "MAX({$columnPrefix}timestamp)" ] )
 				->from( $table )
 				->join( 'actor', null, "actor_id = {$columnPrefix}actor" )
-				->where( [ 'actor_user' => $localUser->getId( $wikiIDForGetIdCall ) ] )
-				->groupBy( $columnPrefix . 'ip' )
+				->where( [
+					'actor_user' => $localUser->getId( $wikiIDForGetIdCall ),
+					$localDbr->expr( $columnPrefix . 'ip_hex', '!=', null ),
+				] )
+				->groupBy( $columnPrefix . 'ip_hex' )
 				->orderBy( 'timestamp', SelectQueryBuilder::SORT_DESC );
 
-			$ipsQuery = $localDbr->newSelectQueryBuilder()
-				->select( [ 'ip', 'timestamp' ] )
-				->from( $ipsSubQuery );
+			$ipHexesQuery = $localDbr->newSelectQueryBuilder()
+				->select( [ 'ip_hex', 'timestamp' ] )
+				->from( $ipHexesSubQuery );
 			if ( $lowerBound ) {
-				$ipsQuery->where( $localDbr->expr( 'timestamp', '>=', $lowerBound ) );
+				$ipHexesQuery->where( $localDbr->expr( 'timestamp', '>=', $lowerBound ) );
 			}
 			if ( $upperBound ) {
-				$ipsQuery->where( $localDbr->expr( 'timestamp', '<', $upperBound ) );
+				$ipHexesQuery->where( $localDbr->expr( 'timestamp', '<', $upperBound ) );
 			}
 			// We can add a LIMIT here, because if we get $limit IPs then we will not need to do another batch
 			// for this table and wiki (because we have all the IPs needed).
-			$ipsFromTableResult = $ipsQuery
+			$ipHexesFromTableResult = $ipHexesQuery
 				->limit( $limit )
+				->caller( __METHOD__ )
 				->fetchResultSet();
 
 			// Store the found IPs with the most recent use of the IP address in an array to process later.
-			foreach ( $ipsFromTableResult as $row ) {
-				$ip = IPUtils::sanitizeIP( $row->ip );
+			foreach ( $ipHexesFromTableResult as $row ) {
+				$ip = IPUtils::formatHex( $row->ip_hex );
 				$timestamp = ConvertibleTimestamp::convert( TS_MW, $row->timestamp );
 
 				$foundIps[$ip] = max( $foundIps[$ip] ?? false, $timestamp );

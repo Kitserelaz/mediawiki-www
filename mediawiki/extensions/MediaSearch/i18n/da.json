@@ -1,0 +1,25 @@
+{
+	"@metadata": {
+		"authors": [
+			"C960657",
+			"Saederup92",
+			"Weblars"
+		]
+	},
+	"mediasearch-tab-image": "Billeder",
+	"mediasearch-tab-audio": "Lyd",
+	"mediasearch-tab-video": "Video",
+	"mediasearch-filter-size": "Billedestørrelse",
+	"mediasearch-filter-size-any": "Alle billedestørrelser",
+	"mediasearch-filter-size-small": "Lille",
+	"mediasearch-filter-size-medium": "Mellem",
+	"mediasearch-filter-size-large": "Stor",
+	"mediasearch-filter-file-type-any": "Filtype",
+	"mediasearch-filter-license-any": "Alle licenser",
+	"mediasearch-clear-title": "Fjern",
+	"mediasearch-load-more-results": "Indlæs mere",
+	"mediasearch-quickview-button-text": "Flere detaljer",
+	"mediasearch-quickview-next-button-text": "Vis næste resultat",
+	"mediasearch-filter-assessment-picture-of-the-day": "Dagens billede",
+	"mediasearch-filter-assessment-picture-of-the-year": "Årets billede"
+}

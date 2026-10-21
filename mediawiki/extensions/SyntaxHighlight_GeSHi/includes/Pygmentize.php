@@ -21,6 +21,7 @@
 namespace MediaWiki\SyntaxHighlight;
 
 use MediaWiki\MediaWikiServices;
+use Psr\Http\Client\ClientExceptionInterface;
 use Shellbox\Command\BoxedCommand;
 use Shellbox\ShellboxError;
 
@@ -79,7 +80,7 @@ class Pygmentize {
 					$wanCache->makeGlobalKey( 'pygmentize-version' ),
 					// Must be under 55 min to avoid renewing stale data in upper layer
 					30 * $wanCache::TTL_MINUTE,
-					[ __CLASS__, 'fetchVersion' ]
+					self::fetchVersion( ... )
 				);
 			}
 		);
@@ -96,6 +97,7 @@ class Pygmentize {
 	 * Shell out to get installed pygments version
 	 *
 	 * @internal For use by WANObjectCache/BagOStuff only
+	 * @throws PygmentsException
 	 */
 	public static function fetchVersion(): string {
 		$result = self::boxedCommand()
@@ -129,7 +131,7 @@ class Pygmentize {
 		return $cache->getWithSetCallback(
 			$cache->makeGlobalKey( 'pygmentize-css', self::getVersion() ),
 			$cache::TTL_WEEK,
-			[ __CLASS__, 'fetchGeneratedCSS' ]
+			self::fetchGeneratedCSS( ... )
 		);
 	}
 
@@ -137,6 +139,7 @@ class Pygmentize {
 	 * Shell out to get generated CSS from pygments
 	 *
 	 * @internal Only public for updateCSS.php
+	 * @throws PygmentsException
 	 */
 	public static function fetchGeneratedCSS(): string {
 		$lightModeRun = self::boxedCommand()
@@ -201,7 +204,7 @@ class Pygmentize {
 		return $cache->getWithSetCallback(
 			$cache->makeGlobalKey( 'pygmentize-lexers', self::getVersion() ),
 			$cache::TTL_WEEK,
-			[ __CLASS__, 'fetchLexers' ]
+			self::fetchLexers( ... )
 		);
 	}
 
@@ -220,6 +223,7 @@ class Pygmentize {
 	 *
 	 * @internal Only public for updateLexerList.php
 	 * @return array<string,true>
+	 * @throws PygmentsException
 	 */
 	public static function fetchLexers(): array {
 		$cliParams = [ self::getPath(), '-L', 'lexer' ];
@@ -252,6 +256,7 @@ class Pygmentize {
 	 *
 	 * @param string $output JSON formatted output of pygments lexers list
 	 * @return array
+	 * @throws PygmentsException
 	 */
 	private static function parseLexersFromJson( $output ): array {
 		$data = json_decode( $output, true );
@@ -296,6 +301,7 @@ class Pygmentize {
 	 * @param string $code Code to highlight
 	 * @param array $options Options to pass to pygments
 	 * @return string
+	 * @throws PygmentsException
 	 */
 	public static function highlight( $lexer, $code, array $options ): string {
 		$optionPairs = [];
@@ -322,6 +328,8 @@ class Pygmentize {
 			// PygmentsException. This permits the Parser tag to fallback to
 			// plainCodeWrap(), thus avoiding a fatal on pageviews (T292663).
 			throw new PygmentsException( 'ShellboxError', 0, $exception );
+		} catch ( ClientExceptionInterface $exception ) {
+			throw new PygmentsException( 'Http client error', 0, $exception );
 		}
 
 		$output = $result->getStdout();

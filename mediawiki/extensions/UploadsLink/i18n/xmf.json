@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Narazeni"
+		]
+	},
+	"uploadslink-portlet-label": "ეხარგუეფი",
+	"tooltip-pt-uploads": "თქვანი ენახარგა ფაილეფიშ ერკებული",
+	"uploadslink-toobox-label": "{{GENDER:$1|მახვარებუშ}} ეხარგუეფი",
+	"tooltip-tb-uploads": "ათე {{GENDER:$1|მახვარებუშ}} ეხარგუეფიშ ერკებული"
+}

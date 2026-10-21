@@ -62,14 +62,14 @@
 		progressBar.toggle( true );
 		form.toggle( false );
 
-		modulePromise.done( () => {
-			target = ve.init.mw.targetFactory.create( 'collab', title, conf.rebaserUrl, { importTitle: importTitle } );
+		modulePromise.then( () => {
+			target = ve.init.mw.targetFactory.create( 'collab', title, conf.rebaserURL, { importTitle } );
 			// If the target emits a 'close' event (via the toolbar back button on mobile) then go to the landing page.
 			target.once( 'close', () => {
 				showForm( true );
 			} );
 
-			$( 'body' ).addClass( 've-activated ve-active' );
+			$( 'html' ).addClass( 've-activated ve-active' );
 
 			$targetContainer.prepend( target.$element );
 
@@ -86,7 +86,7 @@
 			surfaceModel.createSynchronizer(
 				mw.config.get( 'wgWikiID' ) + '/' + title.toString(),
 				{
-					server: conf.rebaserUrl,
+					server: conf.rebaserURL,
 					// TODO: server could communicate with MW (via oauth?) to know the
 					// current-user's name. Disable changing name if logged in?
 					// Communicate an I-am-a-valid-user flag to other clients?
@@ -174,20 +174,19 @@
 
 						// Look for import metadata in document
 						surfaceModel = target.getSurface().getModel();
-						surfaceModel.getDocument().getMetaList().getItemsInGroup( 'misc' ).some( ( item ) => {
-							const importedDocument = item.getAttribute( 'importedDocument' );
-							if ( importedDocument ) {
-								target.importTitle = mw.Title.newFromText( importedDocument.title );
-								target.etag = importedDocument.etag;
-								target.baseTimeStamp = importedDocument.baseTimeStamp;
-								target.startTimeStamp = importedDocument.startTimeStamp;
-								target.revid = importedDocument.revid;
-								return true;
-							}
-							return false;
-						} );
+						const importedDocumentItem = surfaceModel.getDocument().getMetaList().getItemsInGroup( 'misc' ).find(
+							( item ) => item.getAttribute( 'importedDocument' )
+						);
+						if ( importedDocumentItem ) {
+							const importedDocument = importedDocumentItem.getAttribute( 'importedDocument' );
+							target.importTitle = mw.Title.newFromText( importedDocument.title );
+							target.etag = importedDocument.etag;
+							target.baseTimeStamp = importedDocument.baseTimeStamp;
+							target.startTimeStamp = importedDocument.startTimeStamp;
+							target.revid = importedDocument.revid;
+						}
 					}
-					initPromise.fail( ( err ) => {
+					initPromise.then( null, ( err ) => {
 						setTimeout( () => {
 							throw new Error( err );
 						} );
@@ -198,12 +197,12 @@
 				} );
 			} );
 
+		}, ( err ) => {
+			mw.log.error( err );
+			showForm( true );
 		} ).always( () => {
 			form.toggle( false );
 			progressBar.toggle( false );
-		} ).fail( ( err ) => {
-			mw.log.error( err );
-			showForm( true );
 		} );
 	}
 
@@ -219,7 +218,7 @@
 			target.restorePage();
 			target.destroy();
 
-			$( 'body' ).removeClass( 've-activated ve-active' );
+			$( 'html' ).removeClass( 've-activated ve-active' );
 		}
 
 		setTitle( mw.msg( 'collabpad' ) );
@@ -242,7 +241,7 @@
 	}
 
 	function getRandomTitle() {
-		return Math.random().toString( 36 ).slice( 2 );
+		return ve.init.platform.generateUniqueId();
 	}
 
 	function onNameChange() {

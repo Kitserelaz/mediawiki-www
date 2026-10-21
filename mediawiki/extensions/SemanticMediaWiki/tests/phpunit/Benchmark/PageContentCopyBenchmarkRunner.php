@@ -1,0 +1,136 @@
+<?php
+
+namespace SMW\Tests\Benchmark;
+
+use MediaWiki\MediaWikiServices;
+use RuntimeException;
+use SMW\Tests\Utils\PageCreator;
+use SMW\Tests\Utils\PageReader;
+
+/**
+ * @group semantic-mediawiki-benchmark
+ *
+ * @license GPL-2.0-or-later
+ * @since 2.5
+ *
+ * @author mwjames
+ */
+class PageContentCopyBenchmarkRunner {
+
+	/**
+	 * @var array
+	 */
+	private $benchmarkReport = [];
+
+	/**
+	 * @var int|null
+	 */
+	private $copyCount = null;
+
+	/**
+	 * @since 2.5
+	 */
+	public function __construct(
+		private readonly PageImportBenchmarkRunner $pageImportBenchmarkRunner,
+		private readonly Benchmarker $benchmarker,
+		private readonly PageCreator $pageCreator,
+		private readonly PageReader $pageReader,
+	) {
+	}
+
+	/**
+	 * @since 2.5
+	 */
+	public function getBenchmarkReport() {
+		return $this->benchmarkReport;
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * @param int|null $copyCount
+	 */
+	public function setCopyCount( $copyCount = null ) {
+		$this->copyCount = $copyCount;
+	}
+
+	/**
+	 * @since 2.5
+	 */
+	public function run( array $case ) {
+		$this->benchmarkReport = [];
+		$this->benchmarker->clear();
+		$start = microtime( true );
+
+		$this->pageImportBenchmarkRunner->run( $case );
+		$importBenchmarkReport = $this->pageImportBenchmarkRunner->getBenchmarkReport();
+
+		if ( !isset( $case['copyFrom'] ) ) {
+			throw new RuntimeException( 'Copy title is not available.' );
+		}
+
+		if ( !isset( $case['copyCount'] ) ) {
+			throw new RuntimeException( 'Copy count is not available.' );
+		}
+
+		$titleFactory = MediaWikiServices::getInstance()->getTitleFactory();
+		$copyFrom = $titleFactory->newFromText( $case['copyFrom'] );
+
+		if ( !$copyFrom->exists() ) {
+			throw new RuntimeException( $case['copyFrom'] . ' is not available or readable for the copy process.' );
+		}
+
+		if ( !$this->canOverrideCount( $case ) ) {
+			$this->copyCount = $case['copyCount'];
+		}
+
+		$copyMemory = $this->doCopy( $copyFrom, $case );
+
+		$this->benchmarkReport = [
+			'type'   => $case['type'],
+			'source' => $case['name'],
+			'import' => [
+				'memory' => $importBenchmarkReport['memory'],
+				'time'   => $importBenchmarkReport['time']
+			],
+			'copy' => [
+				'copyFrom'  => $case['copyFrom'],
+				'copyCount' => $this->copyCount,
+				'memory'    => $copyMemory,
+				'time'      => [
+					'sum'  => $this->benchmarker->getSum(),
+					'mean' => $this->benchmarker->getMean(),
+					'sd'   => $this->benchmarker->getStandardDeviation(),
+					'norm' => $this->benchmarker->getNormalizedValueBy( $this->copyCount )
+				]
+			],
+			'time' => microtime( true ) - $start
+		];
+	}
+
+	private function doCopy( $copyFrom, array $case ) {
+		$copyText = $this->pageReader->getContentAsText( $copyFrom );
+		$copyName = 'BenchmarkCopy-' . $copyFrom->getText();
+
+		$memoryBefore = memory_get_peak_usage( false );
+
+		$titleFactory = MediaWikiServices::getInstance()->getTitleFactory();
+		for ( $i = 0; $i < $this->copyCount; $i++ ) {
+
+			$start = microtime( true );
+
+			$this->pageCreator->createPage(
+				$titleFactory->newFromText( $copyName . '-' . $i ),
+				$copyText
+			);
+
+			$this->benchmarker->addBenchmarkPoint( microtime( true ) - $start );
+		}
+
+		return memory_get_peak_usage( false ) - $memoryBefore;
+	}
+
+	private function canOverrideCount( $case ) {
+		return isset( $case['canOverrideCopyCount'] ) && $case['canOverrideCopyCount'] && $this->copyCount !== null;
+	}
+}

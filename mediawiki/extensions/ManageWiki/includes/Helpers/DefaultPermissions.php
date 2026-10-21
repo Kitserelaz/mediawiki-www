@@ -9,13 +9,13 @@ use function array_diff;
 
 class DefaultPermissions {
 
-	public const CONSTRUCTOR_OPTIONS = [
+	public const array CONSTRUCTOR_OPTIONS = [
 		ConfigNames::PermissionsDefaultPrivateGroup,
 	];
 
 	public function __construct(
 		private readonly ModuleFactory $moduleFactory,
-		private readonly ServiceOptions $options
+		private readonly ServiceOptions $options,
 	) {
 		$options->assertRequiredOptions( self::CONSTRUCTOR_OPTIONS );
 	}

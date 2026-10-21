@@ -5,24 +5,12 @@ namespace MediaWiki\Extension\OAuth\Frontend\SpecialPages;
 /**
  * (c) Chris Steipp, Aaron Schulz 2013, GPL
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 
 use Firebase\JWT\JWT;
 use MediaWiki\Context\IContextSource;
+use MediaWiki\Exception\MWException;
 use MediaWiki\Extension\OAuth\Backend\Consumer;
 use MediaWiki\Extension\OAuth\Backend\ConsumerAcceptance;
 use MediaWiki\Extension\OAuth\Backend\MWOAuthException;
@@ -31,6 +19,7 @@ use MediaWiki\Extension\OAuth\Backend\MWOAuthToken;
 use MediaWiki\Extension\OAuth\Backend\Utils;
 use MediaWiki\Extension\OAuth\Control\ConsumerAcceptanceSubmitControl;
 use MediaWiki\Extension\OAuth\Control\ConsumerAccessControl;
+use MediaWiki\Extension\OAuth\Control\SubmitControl;
 use MediaWiki\Extension\OAuth\Lib\OAuthException;
 use MediaWiki\Extension\OAuth\Lib\OAuthToken;
 use MediaWiki\Extension\OAuth\Lib\OAuthUtil;
@@ -43,6 +32,7 @@ use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\Message\Message;
 use MediaWiki\Permissions\GrantsLocalization;
 use MediaWiki\Request\WebRequest;
+use MediaWiki\Skin\SkinFactory;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\SpecialPage\UnlistedSpecialPage;
 use MediaWiki\Status\Status;
@@ -50,40 +40,34 @@ use MediaWiki\Title\Title;
 use MediaWiki\User\User;
 use MediaWiki\Utils\UrlUtils;
 use MediaWiki\WikiMap\WikiMap;
-use MWException;
 use OOUI;
 use OOUI\HtmlSnippet;
 use Psr\Log\LoggerInterface;
-use SkinFactory;
 
 /**
  * Page that handles OAuth consumer authorization and token exchange
  */
 class SpecialMWOAuth extends UnlistedSpecialPage {
-	protected LoggerInterface $logger;
-	private GrantsLocalization $grantsLocalization;
-	private SkinFactory $skinFactory;
-	private UrlUtils $urlUtils;
+	protected readonly LoggerInterface $logger;
 
 	/** @var int Defaults to OAuth1 */
 	protected $oauthVersion = Consumer::OAUTH_VERSION_1;
 
 	public function __construct(
-		GrantsLocalization $grantsLocalization,
-		SkinFactory $skinFactory,
-		UrlUtils $urlUtils
+		private readonly GrantsLocalization $grantsLocalization,
+		private readonly SkinFactory $skinFactory,
+		private readonly UrlUtils $urlUtils,
 	) {
 		parent::__construct( 'OAuth' );
 		$this->logger = LoggerFactory::getInstance( 'OAuth' );
-		$this->grantsLocalization = $grantsLocalization;
-		$this->skinFactory = $skinFactory;
-		$this->urlUtils = $urlUtils;
 	}
 
+	/** @inheritDoc */
 	public function doesWrites() {
 		return true;
 	}
 
+	/** @inheritDoc */
 	public function getLocalName() {
 		// Force the canonical name when OAuth headers are present,
 		// otherwise SpecialPageFactory redirects and breaks the signature.
@@ -93,6 +77,7 @@ class SpecialMWOAuth extends UnlistedSpecialPage {
 		return parent::getLocalName();
 	}
 
+	/** @inheritDoc */
 	public function execute( $subpage ) {
 		if ( $this->getRequest()->getRawVal( 'display' ) === 'popup' ) {
 			// Replace the default skin with a "micro-skin" that omits most of the interface. (T362706)
@@ -205,7 +190,7 @@ class SpecialMWOAuth extends UnlistedSpecialPage {
 					// for RSA we don't need to return a token secret, so HTTP is ok.
 					if ( $config->get( 'MWOAuthSecureTokenTransfer' ) && !$isRsa
 						&& $request->detectProtocol() == 'http'
-						&& substr( wfExpandUrl( '/', PROTO_HTTPS ), 0, 8 ) === 'https://'
+						&& substr( $this->urlUtils->expand( '/', PROTO_HTTPS ) ?? '', 0, 8 ) === 'https://'
 					) {
 						$redirUrl = str_replace(
 							'http://', 'https://', $request->getFullRequestURL()
@@ -273,8 +258,14 @@ class SpecialMWOAuth extends UnlistedSpecialPage {
 					/** @var MWOAuthToken $token */
 
 					$wiki = WikiMap::getCurrentWikiId();
-					$dbr = Utils::getCentralDB( DB_REPLICA );
+					$dbr = Utils::getOAuthDB( DB_REPLICA );
 					$access = ConsumerAcceptance::newFromToken( $dbr, $token->key );
+					if ( !$access ) {
+						throw new MWOAuthException( 'mwoauth-access-token-not-found', [
+							'consumer' => $consumer->getConsumerKey(),
+							'consumer_name' => $consumer->getName(),
+						] );
+					}
 					$localUser = Utils::getLocalUserFromCentralId( $access->getUserId() );
 					if ( !$localUser || !$localUser->isNamed() ) {
 						throw new MWOAuthException( 'mwoauth-invalid-authorization-invalid-user', [
@@ -345,7 +336,7 @@ class SpecialMWOAuth extends UnlistedSpecialPage {
 				default:
 					$format = $request->getVal( 'format', 'html' );
 					'@phan-var string $format';
-					$dbr = Utils::getCentralDB( DB_REPLICA );
+					$dbr = Utils::getOAuthDB( DB_REPLICA );
 					$cmrAc = ConsumerAccessControl::wrap(
 						Consumer::newFromKey(
 							$dbr,
@@ -400,7 +391,7 @@ class SpecialMWOAuth extends UnlistedSpecialPage {
 	 * @throws MWOAuthException
 	 */
 	protected function showCancelPage( $consumerKey ) {
-		$dbr = Utils::getCentralDB( DB_REPLICA );
+		$dbr = Utils::getOAuthDB( DB_REPLICA );
 		$cmrAc = ConsumerAccessControl::wrap(
 			Consumer::newFromKey( $dbr, $consumerKey ),
 			$this->getContext()
@@ -456,6 +447,7 @@ class SpecialMWOAuth extends UnlistedSpecialPage {
 	 * @param string|null $requestToken
 	 * @param string|null $consumerKey
 	 * @param bool $authenticate
+	 * @throws MWOAuthException
 	 */
 	protected function handleAuthorizationForm( $requestToken, $consumerKey, $authenticate ) {
 		$output = $this->getOutput();
@@ -470,7 +462,7 @@ class SpecialMWOAuth extends UnlistedSpecialPage {
 		}
 
 		$cmrAc = ConsumerAccessControl::wrap(
-			Consumer::newFromKey( Utils::getCentralDB( DB_REPLICA ), $consumerKey ),
+			Consumer::newFromKey( Utils::getOAuthDB( DB_REPLICA ), $consumerKey ),
 			$this->getContext()
 		);
 
@@ -513,7 +505,8 @@ class SpecialMWOAuth extends UnlistedSpecialPage {
 		if ( $existing && $authenticate &&
 			$existing->getWiki() === $cmrAc->getDAO()->getWiki() &&
 			$existing->getGrants() === $cmrAc->getDAO()->getGrants() &&
-			 !array_diff( $existing->getGrants(), [ 'mwoauth-authonly', 'mwoauth-authonlyprivate' ] )
+			!array_diff( $existing->getGrants(), SubmitControl::AUTH_ONLY_GRANTS ) &&
+			$cmrAc->getDAO()->isConfidential()
 		) {
 			if ( $this->oauthVersion === Consumer::OAUTH_VERSION_2 ) {
 				$this->redirectToREST( [
@@ -529,7 +522,7 @@ class SpecialMWOAuth extends UnlistedSpecialPage {
 		}
 
 		$control = new ConsumerAcceptanceSubmitControl(
-			$this->getContext(), [], Utils::getCentralDB( DB_PRIMARY ), $this->oauthVersion
+			$this->getContext(), [], Utils::getOAuthDB( DB_PRIMARY ), $this->oauthVersion
 		);
 
 		$form = HTMLForm::factory( 'ooui',
@@ -636,7 +629,7 @@ class SpecialMWOAuth extends UnlistedSpecialPage {
 		$form->prepareForm();
 		$status = $form->tryAuthorizedSubmit();
 
-		$out->addHtml( new OOUI\PanelLayout( [
+		$out->addHtml( (string)new OOUI\PanelLayout( [
 			'id' => 'mw-mwoauth-authorize-panel',
 			'expanded' => false,
 			'content' => new HtmlSnippet( $form->getHTML( $status ) ),
@@ -649,13 +642,12 @@ class SpecialMWOAuth extends UnlistedSpecialPage {
 				] );
 			} else {
 				// Redirect to callback url
-				// @phan-suppress-next-line PhanTypeArraySuspiciousNullable
 				$output->redirect( $status->value['result']['callbackUrl'] );
 			}
 		}
 	}
 
-	private function redirectToREST( $queryAppend = [] ) {
+	private function redirectToREST( array $queryAppend = [] ) {
 		$redirectParams = [
 			'returnto' => $this->getRequest()->getText(
 				'returnto', $this->getRequest()->getText( 'returnto' )
@@ -667,7 +659,7 @@ class SpecialMWOAuth extends UnlistedSpecialPage {
 			)
 		];
 
-		$expanded = wfExpandUrl( $redirectParams['returnto'] );
+		$expanded = $this->urlUtils->expand( $redirectParams['returnto'] );
 		if ( !$expanded ) {
 			return;
 		}
@@ -681,7 +673,7 @@ class SpecialMWOAuth extends UnlistedSpecialPage {
 		$output = $this->getOutput();
 		$output->disable();
 		$output->getRequest()->response()->header(
-			'Location: ' . "$expanded?{$returnToQuery}"
+			"Location: $expanded?$returnToQuery"
 		);
 	}
 
@@ -874,7 +866,7 @@ class SpecialMWOAuth extends UnlistedSpecialPage {
 		}
 	}
 
-	private function makePrivacyLink() {
+	private function makePrivacyLink(): string {
 		// If the link description has been disabled in the default language,
 		if ( $this->msg( 'privacy' )->inContentLanguage()->isDisabled() ) {
 			// then it is disabled, for all languages.

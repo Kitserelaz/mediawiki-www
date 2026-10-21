@@ -1,12 +1,12 @@
 <?php
 
-namespace MediaWiki\CheckUser\Api;
+namespace MediaWiki\Extension\CheckUser\Api;
 
 use MediaWiki\Api\ApiBase;
 use MediaWiki\Api\ApiQuery;
 use MediaWiki\Api\ApiQueryBase;
-use MediaWiki\CheckUser\Services\CheckUserLogService;
 use MediaWiki\CommentStore\CommentStore;
+use MediaWiki\Extension\CheckUser\Services\CheckUserLogService;
 use MediaWiki\User\UserFactory;
 use Wikimedia\IPUtils;
 use Wikimedia\ParamValidator\ParamValidator;
@@ -16,27 +16,14 @@ use Wikimedia\ParamValidator\TypeDef\IntegerDef;
  * CheckUser API Query Module
  */
 class ApiQueryCheckUserLog extends ApiQueryBase {
-	private CommentStore $commentStore;
-	private CheckUserLogService $checkUserLogService;
-	private UserFactory $userFactory;
-
-	/**
-	 * @param ApiQuery $query
-	 * @param string $moduleName
-	 * @param CommentStore $commentStore
-	 * @param CheckUserLogService $checkUserLogService
-	 * @param UserFactory $userFactory
-	 */
 	public function __construct(
-		$query, $moduleName,
-		CommentStore $commentStore,
-		CheckUserLogService $checkUserLogService,
-		UserFactory $userFactory
+		ApiQuery $query,
+		string $moduleName,
+		private readonly CommentStore $commentStore,
+		private readonly CheckUserLogService $checkUserLogService,
+		private readonly UserFactory $userFactory,
 	) {
 		parent::__construct( $query, $moduleName, 'cul' );
-		$this->commentStore = $commentStore;
-		$this->checkUserLogService = $checkUserLogService;
-		$this->userFactory = $userFactory;
 	}
 
 	public function execute() {
@@ -52,7 +39,7 @@ class ApiQueryCheckUserLog extends ApiQueryBase {
 		$this->addOption( 'LIMIT', $limit + 1 );
 		$this->addTimestampWhereRange( 'cul_timestamp', $dir, $params['from'], $params['to'] );
 		$fields = [
-			'cul_id', 'cul_timestamp', 'cul_type', 'cul_target_text', 'actor_name'
+			'cul_id', 'cul_timestamp', 'cul_type', 'cul_target_text', 'actor_name',
 		];
 		$this->addJoinConds( [ 'actor' => [ 'JOIN', 'actor_id=cul_actor' ] ] );
 
@@ -172,7 +159,7 @@ class ApiQueryCheckUserLog extends ApiQueryBase {
 				ParamValidator::PARAM_DEFAULT => 'older',
 				ParamValidator::PARAM_TYPE => [
 					'newer',
-					'older'
+					'older',
 				],
 				ApiBase::PARAM_HELP_MSG => 'checkuser-api-help-param-direction',
 				ApiBase::PARAM_HELP_MSG_PER_VALUE => [

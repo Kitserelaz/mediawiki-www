@@ -1,25 +1,29 @@
 <?php
 
-namespace MediaWiki\CheckUser\Tests\Unit\ClientHints;
+namespace MediaWiki\Extension\CheckUser\Tests\Unit\ClientHints;
 
 use LogicException;
-use MediaWiki\CheckUser\ClientHints\ClientHintsBatchFormatterResults;
-use MediaWiki\CheckUser\Services\UserAgentClientHintsManager;
-use MediaWiki\CheckUser\Tests\CheckUserClientHintsCommonTraitTest;
+use MediaWiki\Extension\CheckUser\ClientHints\ClientHintsBatchFormatterResults;
+use MediaWiki\Extension\CheckUser\Services\UserAgentClientHintsManager;
+use MediaWiki\Extension\CheckUser\Tests\CheckUserClientHintsCommonTestTrait;
 use MediaWikiUnitTestCase;
 use TypeError;
 
 /**
  * @group CheckUser
  *
- * @covers \MediaWiki\CheckUser\ClientHints\ClientHintsBatchFormatterResults
+ * @covers \MediaWiki\Extension\CheckUser\ClientHints\ClientHintsBatchFormatterResults
  */
 class ClientHintsBatchFormatterResultsTest extends MediaWikiUnitTestCase {
-	use CheckUserClientHintsCommonTraitTest;
+	use CheckUserClientHintsCommonTestTrait;
 
 	/** @dataProvider provideGetStringForReferenceId */
 	public function testGetStringForReferenceId(
-		$referenceIdsToIndexMap, $formattedStringsArray, $referenceId, $referenceType, $expectedReturnValue
+		$referenceIdsToIndexMap,
+		$formattedStringsArray,
+		$referenceId,
+		$referenceType,
+		$expectedReturnValue
 	) {
 		$objectUnderTest = new ClientHintsBatchFormatterResults( $referenceIdsToIndexMap, $formattedStringsArray );
 		$this->assertSame(
@@ -74,7 +78,7 @@ class ClientHintsBatchFormatterResultsTest extends MediaWikiUnitTestCase {
 			[
 				'Brand: Not.A/Brand 99.0.0.0, Brand: Google Chrome 115.0.5790.171, Brand: Chromium 115.0.5790.171, ' .
 				'Platform: Windows 15.0.0 and Mobile: No',
-				''
+				'',
 			],
 			123,
 			UserAgentClientHintsManager::IDENTIFIER_CU_PRIVATE_EVENT,

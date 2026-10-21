@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"Njardarlogar"
+		]
+	},
+	"uploadslink-portlet-label": "Opplastingar",
+	"tooltip-pt-uploads": "Liste over filer du har lasta opp",
+	"uploadslink-toobox-label": "{{GENDER:$1|Brukaropplastingar}}"
+}

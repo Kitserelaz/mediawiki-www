@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Jeeputer"
+		]
+	},
+	"apihelp-growthsetmentorstatus-param-gesstatus": "وضعیت تازه",
+	"apihelp-growthmanagementorlist-param-geaction": "عمل",
+	"apihelp-growthmanagementorlist-param-weight": "وزن",
+	"apihelp-growthmanagementorlist-param-summary": "دلیل تغییر"
+}

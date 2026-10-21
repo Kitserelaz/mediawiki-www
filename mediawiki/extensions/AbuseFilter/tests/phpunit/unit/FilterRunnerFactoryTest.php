@@ -13,7 +13,6 @@ use MediaWiki\Extension\AbuseFilter\FilterRunner;
 use MediaWiki\Extension\AbuseFilter\FilterRunnerFactory;
 use MediaWiki\Extension\AbuseFilter\Hooks\AbuseFilterHookRunner;
 use MediaWiki\Extension\AbuseFilter\Parser\RuleCheckerFactory;
-use MediaWiki\Extension\AbuseFilter\VariableGenerator\VariableGeneratorFactory;
 use MediaWiki\Extension\AbuseFilter\Variables\VariableHolder;
 use MediaWiki\Extension\AbuseFilter\Variables\VariablesManager;
 use MediaWiki\Extension\AbuseFilter\Watcher\EmergencyWatcher;
@@ -23,7 +22,7 @@ use MediaWiki\User\User;
 use MediaWikiUnitTestCase;
 use Psr\Log\NullLogger;
 use Wikimedia\ObjectCache\HashBagOStuff;
-use Wikimedia\Stats\IBufferingStatsdDataFactory;
+use Wikimedia\Stats\NullStatsdDataFactory;
 
 /**
  * @group Test
@@ -50,14 +49,13 @@ class FilterRunnerFactoryTest extends MediaWikiUnitTestCase {
 			$this->createMock( ConsequencesExecutorFactory::class ),
 			$this->createMock( AbuseLoggerFactory::class ),
 			$this->createMock( VariablesManager::class ),
-			$this->createMock( VariableGeneratorFactory::class ),
 			$this->createMock( EmergencyCache::class ),
 			$this->createMock( UpdateHitCountWatcher::class ),
 			$this->createMock( EmergencyWatcher::class ),
 			new HashBagOStuff(),
 			new NullLogger(),
 			new NullLogger(),
-			$this->createMock( IBufferingStatsdDataFactory::class ),
+			new NullStatsdDataFactory(),
 			$opts
 		);
 

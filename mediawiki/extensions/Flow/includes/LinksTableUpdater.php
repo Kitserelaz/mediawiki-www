@@ -80,25 +80,13 @@ class LinksTableUpdater {
 		$linkCache = MediaWikiServices::getInstance()->getLinkCache();
 
 		foreach ( $internalLinks as $title ) {
-			$ns = $title->getNamespace();
-			$dbk = $title->getDBkey();
-			if ( !isset( $parserOutput->getLinks()[$ns] ) ) {
-				$parserOutput->getLinks()[$ns] = [];
-			}
-
 			$id = $linkCache->getGoodLinkID( $title->getPrefixedDBkey() );
-			$parserOutput->getLinks()[$ns][$dbk] = $id;
+			$parserOutput->addLink( $title, $id );
 		}
 
 		foreach ( $templates as $title ) {
-			$ns = $title->getNamespace();
-			$dbk = $title->getDBkey();
-			if ( !isset( $parserOutput->getTemplates()[$ns] ) ) {
-				$parserOutput->getTemplates()[$ns] = [];
-			}
-
 			$id = $linkCache->getGoodLinkID( $title->getPrefixedDBkey() );
-			$parserOutput->getTemplates()[$ns][$dbk] = $id;
+			$parserOutput->addTemplate( $title, $id, $title->getLatestRevID() );
 		}
 	}
 

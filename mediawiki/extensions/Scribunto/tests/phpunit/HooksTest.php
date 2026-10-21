@@ -33,8 +33,13 @@ class HooksTest extends TestCase {
 	) {
 		$title = Title::newFromText( $name );
 		$model = $before;
+		$services = MediaWikiServices::getInstance();
 		( new Hooks(
-			MediaWikiServices::getInstance()->getMainConfig()
+			$services->getMainConfig(),
+			$services->getContentHandlerFactory(),
+			$services->getObjectCacheFactory(),
+			$services->getStatsFactory(),
+			$services->getService( 'Scribunto.EngineFactory' ),
 		) )->onContentHandlerDefaultModelFor( $title, $model );
 		$this->assertSame( $expected, $model );
 	}

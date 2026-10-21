@@ -1,0 +1,28 @@
+{
+	"@metadata": {
+		"authors": [
+			"U.ayaao.p"
+		]
+	},
+	"action-delete-dump": "дамптарды жою",
+	"action-generate-dump": "дамптарды жасау",
+	"action-view-dump": "дамптарды қарау",
+	"apihelp-deletedumps-example": "Бұл дамптарды жоюдың мысалы.",
+	"apihelp-deletedumps-summary": "Дамптарды жою.",
+	"apihelp-generatedumps-example": "Бұл дамптарды жасаудың мысалы.",
+	"apihelp-generatedumps-summary": "Дамптарды жасау.",
+	"datadump-delete-button": "Жою",
+	"datadump-label-generate": "Жасау",
+	"datadump-log-header": "Бұл журнал DataDump арқылы жойылған немесе жасалған барлық дамптарды бақылайды.",
+	"datadump-log-name": "DataDump журналы",
+	"datadump-table-column-completed": "Аяқталды",
+	"datadump-table-column-failed": "Сәтсіз аяқталды.",
+	"datadump-table-column-in-progress": "Орындалуда",
+	"datadump-table-column-queued": "Кезектелді",
+	"datadump-table-header-date": "Ай-күні",
+	"datadump-table-header-delete": "Жою",
+	"datadump-table-header-name": "Атауы",
+	"datadump-table-header-size": "Өлшемі",
+	"datadump-table-header-status": "Күйі",
+	"datadump-table-header-type": "Түрі"
+}

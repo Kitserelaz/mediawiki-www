@@ -16,18 +16,20 @@
  */
 
 const { Config } = require( 'mmv.bootstrap' );
-const HtmlUtils = require( './mmv.HtmlUtils.js' );
+const {
+	HtmlUtils,
+	Api,
+	GuessedThumbnailInfo,
+	ImageProvider,
+	ImageInfo,
+	ThumbnailInfo,
+	ImageModel,
+	License,
+	Thumbnail,
+	ThumbnailWidth,
+	ThumbnailWidthCalculator
+} = require( 'mmv.common' );
 const ViewLogger = require( './logging/mmv.logging.ViewLogger.js' );
-const Api = require( './provider/mmv.provider.Api.js' );
-const GuessedThumbnailInfo = require( './provider/mmv.provider.GuessedThumbnailInfo.js' );
-const ImageProvider = require( './provider/mmv.provider.Image.js' );
-const ImageInfo = require( './provider/mmv.provider.ImageInfo.js' );
-const ThumbnailInfo = require( './provider/mmv.provider.ThumbnailInfo.js' );
-const ImageModel = require( './model/mmv.model.Image.js' );
-const License = require( './model/mmv.model.License.js' );
-const TaskQueue = require( './model/mmv.model.TaskQueue.js' );
-const Thumbnail = require( './model/mmv.model.Thumbnail.js' );
-const ThumbnailWidth = require( './model/mmv.model.ThumbnailWidth.js' );
 const Canvas = require( './ui/mmv.ui.canvas.js' );
 const CanvasButtons = require( './ui/mmv.ui.canvasButtons.js' );
 const Description = require( './ui/mmv.ui.description.js' );
@@ -40,11 +42,9 @@ const ProgressBar = require( './ui/mmv.ui.progressBar.js' );
 const StripeButtons = require( './ui/mmv.ui.stripeButtons.js' );
 const TruncatableTextField = require( './ui/mmv.ui.truncatableTextField.js' );
 const LightboxInterface = require( './mmv.lightboxinterface.js' );
-const ThumbnailWidthCalculator = require( './mmv.ThumbnailWidthCalculator.js' );
-const { extensions, useThumbnailGuessing } = require( './config.json' );
+const config = require( './config.json' );
 
 const router = require( 'mediawiki.router' );
-let comingFromHashChange = false;
 
 /**
  * Analyses the page, looks for image content and sets up the hooks
@@ -57,13 +57,13 @@ class MultimediaViewer {
 		const api = new mw.Api();
 
 		/**
-		 * @property {ImageProvider}
+		 * @type {ImageProvider}
 		 * @private
 		 */
 		this.imageProvider = new ImageProvider();
 
 		/**
-		 * @property {ImageInfo}
+		 * @type {ImageInfo}
 		 * @private
 		 */
 		this.imageInfoProvider = new ImageInfo( api, {
@@ -72,14 +72,14 @@ class MultimediaViewer {
 		} );
 
 		/**
-		 * @property {ThumbnailInfo}
+		 * @type {ThumbnailInfo}
 		 * @private
 		 */
 		this.thumbnailInfoProvider = new ThumbnailInfo( api,
 			{ maxage: apiCacheMaxAge } );
 
 		/**
-		 * @property {ThumbnailInfo}
+		 * @type {ThumbnailInfo}
 		 * @private
 		 */
 		this.guessedThumbnailInfoProvider = new GuessedThumbnailInfo();
@@ -87,30 +87,33 @@ class MultimediaViewer {
 		/**
 		 * Image index on page.
 		 *
-		 * @property {number}
+		 * @type {number}
 		 */
 		this.currentIndex = 0;
 
 		/**
-		 * @property {OO.Router} router
+		 * @type {OO.Router}
 		 */
 		this.router = router;
-		this.setupRouter();
-		comingFromHashChange = false;
+		this.comingFromHashChange = false;
 
 		/**
 		 * UI object used to display the pictures in the page.
 		 *
-		 * @property {LightboxInterface}
+		 * @type {LightboxInterface}
 		 * @private
 		 */
 		this.ui = new LightboxInterface();
 
-		/** @property {string} documentTitle base document title, MediaViewer will expand this */
+		/**
+		 * base document title, MediaViewer will expand this
+		 *
+		 * @type {string}
+		 */
 		this.documentTitle = document.title;
 
 		/**
-		 * @property {ViewLogger} view -
+		 * @type {ViewLogger}
 		 */
 		this.viewLogger = new ViewLogger( window );
 
@@ -145,7 +148,7 @@ class MultimediaViewer {
 		if ( image ) {
 			const imageWidths = this.ui.canvas.getCurrentImageWidths();
 
-			this.fetchThumbnailForLightboxImage(
+			this.fetchThumbnail(
 				image, imageWidths.real
 			).then( ( thumbnail, image2 ) => {
 				// eslint-disable-next-line mediawiki/class-doc
@@ -156,7 +159,7 @@ class MultimediaViewer {
 			} );
 		}
 
-		this.ui.updateControls( this.thumbs.length > 1 );
+		this.ui.updateControls( this.currentIndex, this.thumbs.length );
 	}
 
 	/**
@@ -168,7 +171,7 @@ class MultimediaViewer {
 	 */
 	setImage( thumbnail, imageElement, imageWidths ) {
 		this.ui.canvas.setImageAndMaxDimensions( thumbnail, imageElement, imageWidths );
-		this.ui.updateControls( this.thumbs.length > 1 );
+		this.ui.updateControls( this.currentIndex, this.thumbs.length );
 	}
 
 	/**
@@ -182,7 +185,6 @@ class MultimediaViewer {
 		const pluginsPromise = this.loadExtensionPlugins( image.filePageTitle.getExtension().toLowerCase() );
 
 		this.currentIndex = image.index;
-
 		this.currentImage = image;
 
 		if ( !this.isOpen ) {
@@ -211,7 +213,7 @@ class MultimediaViewer {
 		this.preloadThumbnails();
 		const imageWidths = this.ui.canvas.getCurrentImageWidths();
 
-		const imagePromise = this.fetchThumbnailForLightboxImage( image, imageWidths.real );
+		const imagePromise = this.fetchThumbnail( image, imageWidths.real );
 
 		if ( imagePromise.state() === 'pending' ) {
 			this.displayPlaceholderThumbnail( image, $initialImage, imageWidths );
@@ -366,7 +368,7 @@ class MultimediaViewer {
 				// business, so we make a sense check
 				throw new Error( 'MediaViewer internal error: displayPlaceholderThumbnail recursion' );
 			}
-			this.imageInfoProvider.get( image.filePageTitle ).done( ( imageInfo ) => {
+			this.imageInfoProvider.get( image.filePageTitle ).then( ( imageInfo ) => {
 				// Make sure the user has not navigated away while we were waiting for the size
 				if ( this.currentIndex === image.index ) {
 					image.originalWidth = imageInfo.width;
@@ -448,88 +450,39 @@ class MultimediaViewer {
 	}
 
 	/**
-	 * Orders lightboximage indexes for preloading. Works similar to $.each, except it only takes
-	 * the callback argument. Calls the callback with each lightboximage index in some sequence
-	 * that is ideal for preloading.
-	 *
-	 * @private
-	 * @param {function(number, LightboxImage)} callback
-	 */
-	eachPreloadableLightboxIndex( callback ) {
-		for ( let i = 0; i <= this.preloadDistance; i++ ) {
-			if ( this.currentIndex + i < this.thumbs.length ) {
-				callback(
-					this.currentIndex + i,
-					this.thumbs[ this.currentIndex + i ]
-				);
-			}
-			if ( i && this.currentIndex - i >= 0 ) { // skip duplicate for i==0
-				callback(
-					this.currentIndex - i,
-					this.thumbs[ this.currentIndex - i ]
-				);
-			}
-		}
-	}
-
-	/**
 	 * A helper function to fill up the preload queues.
 	 * taskFactory(lightboxImage) should return a preload task for the given lightboximage.
 	 *
 	 * @private
 	 * @param {function(LightboxImage)} taskFactory
-	 * @return {TaskQueue}
+	 * @return {void}
 	 */
 	pushLightboxImagesIntoQueue( taskFactory ) {
-		const queue = new TaskQueue();
+		const current = this.currentIndex;
+		if ( current < this.thumbs.length ) {
+			taskFactory( this.thumbs[ current ] )();
+		}
 
-		this.eachPreloadableLightboxIndex( ( i, lightboxImage ) => {
-			queue.push( taskFactory( lightboxImage ) );
-		} );
-
-		return queue;
-	}
-
-	/**
-	 * Cancels in-progress image metadata preloading.
-	 */
-	cancelImageMetadataPreloading() {
-		if ( this.metadataPreloadQueue ) {
-			this.metadataPreloadQueue.cancel();
+		const next = this.currentIndex + 1;
+		if ( next < this.thumbs.length ) {
+			taskFactory( this.thumbs[ next ] )();
 		}
 	}
 
 	/**
-	 * Cancels in-progress image thumbnail preloading.
-	 */
-	cancelThumbnailsPreloading() {
-		if ( this.thumbnailPreloadQueue ) {
-			this.thumbnailPreloadQueue.cancel();
-		}
-	}
-
-	/**
-	 * Preload metadata for next and prev N image (N = MMVP.preloadDistance).
-	 * Two images will be loaded at a time (one forward, one backward), with closer images
-	 * being loaded sooner.
+	 * Preload metadata for current and next image.
 	 */
 	preloadImagesMetadata() {
-		this.cancelImageMetadataPreloading();
-
-		this.metadataPreloadQueue = this.pushLightboxImagesIntoQueue( ( lightboxImage ) => () => this.fetchSizeIndependentLightboxInfo( lightboxImage.filePageTitle ) );
-
-		this.metadataPreloadQueue.execute();
+		this.pushLightboxImagesIntoQueue( ( lightboxImage ) => () => {
+			this.fetchSizeIndependentLightboxInfo( lightboxImage.filePageTitle );
+		} );
 	}
 
 	/**
-	 * Preload thumbnails for next and prev N image (N = MMVP.preloadDistance).
-	 * Two images will be loaded at a time (one forward, one backward), with closer images
-	 * being loaded sooner.
+	 * Preload thumbnail for current and next image.
 	 */
 	preloadThumbnails() {
-		this.cancelThumbnailsPreloading();
-
-		this.thumbnailPreloadQueue = this.pushLightboxImagesIntoQueue( ( lightboxImage ) => () => {
+		this.pushLightboxImagesIntoQueue( ( lightboxImage ) => () => {
 			// viewer.ui.canvas.getLightboxImageWidths needs the viewer to be open
 			// because it needs to read the size of visible elements
 			if ( !this.isOpen ) {
@@ -538,10 +491,8 @@ class MultimediaViewer {
 
 			const imageWidths = this.ui.canvas.getLightboxImageWidths( lightboxImage );
 
-			return this.fetchThumbnailForLightboxImage( lightboxImage, imageWidths.real );
+			return this.fetchThumbnail( lightboxImage, imageWidths.real );
 		} );
-
-		this.thumbnailPreloadQueue.execute();
 	}
 
 	/**
@@ -558,34 +509,22 @@ class MultimediaViewer {
 	/**
 	 * Loads size-dependent components of a lightbox - the thumbnail model and the image itself.
 	 *
-	 * @param {LightboxImage} image
-	 * @param {number} width the width of the requested thumbnail
-	 * @return {jQuery.Promise.<Thumbnail, HTMLImageElement>}
-	 */
-	fetchThumbnailForLightboxImage( image, width ) {
-		return this.fetchThumbnail(
-			image.filePageTitle,
-			width,
-			image.src,
-			image.originalWidth,
-			image.originalHeight
-		);
-	}
-
-	/**
-	 * Loads size-dependent components of a lightbox - the thumbnail model and the image itself.
-	 *
-	 * @param {mw.Title} fileTitle
-	 * @param {number} width the width of the requested thumbnail
-	 * @param {string} [sampleUrl] a thumbnail URL for the same file (but with different size) (might be missing)
-	 * @param {number} [originalWidth] the width of the original, full-sized file (might be missing)
-	 * @param {number} [originalHeight] the height of the original, full-sized file (might be missing)
-	 * @param {boolean} [useThumbnailGuessing0] the useThumbnailGuessing flag
+	 * @param {LightboxImage} image This must have
+	 *  - mw.Title `filePageTitle`
+	 *  - string `src`
+	 *  - number `originalWidth` (might be missing/NaN)
+	 *  - number `originalHeight` (might be missing/NaN)
+	 * @param {number} width The width of the requested thumbnail
 	 * @return {jQuery.Promise.<Thumbnail, HTMLImageElement>} A promise resolving to
 	 *  a thumbnail model and an <img> element. It might or might not have progress events which
 	 *  return a single number.
 	 */
-	fetchThumbnail( fileTitle, width, sampleUrl, originalWidth, originalHeight, useThumbnailGuessing0 = useThumbnailGuessing ) {
+	fetchThumbnail( image, width ) {
+		const fileTitle = image.filePageTitle;
+		const sampleUrl = image.src;
+		const originalWidth = image.originalWidth;
+		const originalHeight = image.originalHeight;
+
 		let guessing = false;
 		const combinedDeferred = $.Deferred();
 		let thumbnailPromise;
@@ -596,7 +535,7 @@ class MultimediaViewer {
 			width = originalWidth;
 		}
 
-		if ( sampleUrl && originalWidth && originalHeight && useThumbnailGuessing0 ) {
+		if ( originalWidth && originalHeight && config.useThumbnailGuessing ) {
 			guessing = true;
 			thumbnailPromise = this.guessedThumbnailInfoProvider.get(
 				fileTitle, sampleUrl, width, originalWidth, originalHeight
@@ -686,8 +625,8 @@ class MultimediaViewer {
 		this.viewLogger.recordViewDuration();
 		this.viewLogger.unattach();
 
-		if ( comingFromHashChange ) {
-			comingFromHashChange = false;
+		if ( this.comingFromHashChange ) {
+			this.comingFromHashChange = false;
 		} else {
 			this.router.back();
 		}
@@ -698,25 +637,6 @@ class MultimediaViewer {
 		$( document ).trigger( $.Event( 'mmv-cleanup-overlay' ) );
 
 		this.isOpen = false;
-	}
-
-	/**
-	 * Sets up the route handlers
-	 */
-	setupRouter() {
-		// handle empty hashes, and anchor links (page sections, possibly including /)
-		this.router.addRoute( /.*$/, () => {
-			if ( this.isOpen ) {
-				comingFromHashChange = true;
-				document.title = this.createDocumentTitle( null );
-				if ( this.ui ) {
-					// FIXME triggers mmv-close event, which calls viewer.close()
-					this.ui.unattach();
-				} else {
-					this.close();
-				}
-			}
-		} );
 	}
 
 	/**
@@ -795,7 +715,7 @@ class MultimediaViewer {
 				return $.Deferred().reject();
 			}
 		} ).on( 'mmv-viewfile.mmvp', () => {
-			this.imageInfoProvider.get( this.currentImage.filePageTitle ).done( ( imageInfo ) => {
+			this.imageInfoProvider.get( this.currentImage.filePageTitle ).then( ( imageInfo ) => {
 				document.location = imageInfo.url;
 			} );
 		} );
@@ -817,17 +737,11 @@ class MultimediaViewer {
 	 * @return {jQuery.Promise}
 	 */
 	loadExtensionPlugins( extension ) {
-		const deferred = $.Deferred();
-
-		if ( !( extension in extensions ) || extensions[ extension ] === 'default' ) {
-			return deferred.resolve();
+		if ( !( extension in config.extensions ) || config.extensions[ extension ] === 'default' ) {
+			return $.Deferred().resolve();
 		}
 
-		mw.loader.using( extensions[ extension ], () => {
-			deferred.resolve();
-		} );
-
-		return deferred;
+		return mw.loader.using( config.extensions[ extension ] );
 	}
 }
 
@@ -839,29 +753,6 @@ class MultimediaViewer {
  * @property {Object.<string, number>}
  */
 MultimediaViewer.prototype.progressCache = {};
-
-/**
- * Preload this many prev/next images to speed up navigation.
- * (E.g. preloadDistance = 3 means that the previous 3 and the next 3 images will be loaded.)
- * Preloading only happens when the viewer is open.
- *
- * @property {number}
- */
-MultimediaViewer.prototype.preloadDistance = 1;
-
-/**
- * Stores image metadata preloads, so they can be cancelled.
- *
- * @property {TaskQueue}
- */
-MultimediaViewer.prototype.metadataPreloadQueue = null;
-
-/**
- * Stores image thumbnail preloads, so they can be cancelled.
- *
- * @property {TaskQueue}
- */
-MultimediaViewer.prototype.thumbnailPreloadQueue = null;
 
 module.exports = {
 	Api,
@@ -882,7 +773,6 @@ module.exports = {
 	Permission,
 	ProgressBar,
 	StripeButtons,
-	TaskQueue,
 	Thumbnail,
 	ThumbnailInfo,
 	ThumbnailWidth,

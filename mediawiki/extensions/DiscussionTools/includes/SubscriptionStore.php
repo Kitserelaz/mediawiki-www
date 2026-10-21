@@ -25,24 +25,16 @@ class SubscriptionStore {
 	public const STATE_SUBSCRIBED = 1;
 	public const STATE_AUTOSUBSCRIBED = 2;
 
-	private Config $config;
-	private IConnectionProvider $dbProvider;
-	private ReadOnlyMode $readOnlyMode;
-	private UserFactory $userFactory;
-	private UserIdentityUtils $userIdentityUtils;
+	private readonly Config $config;
 
 	public function __construct(
 		ConfigFactory $configFactory,
-		IConnectionProvider $dbProvider,
-		ReadOnlyMode $readOnlyMode,
-		UserFactory $userFactory,
-		UserIdentityUtils $userIdentityUtils
+		private readonly IConnectionProvider $dbProvider,
+		private readonly ReadOnlyMode $readOnlyMode,
+		private readonly UserFactory $userFactory,
+		private readonly UserIdentityUtils $userIdentityUtils,
 	) {
 		$this->config = $configFactory->makeConfig( 'discussiontools' );
-		$this->dbProvider = $dbProvider;
-		$this->readOnlyMode = $readOnlyMode;
-		$this->userFactory = $userFactory;
-		$this->userIdentityUtils = $userIdentityUtils;
 	}
 
 	/**
@@ -137,7 +129,6 @@ class SubscriptionStore {
 	 * @param string $itemName
 	 * @param int[]|null $state An array of SubscriptionStore::STATE_* constants
 	 * @param array $options
-	 * @return array
 	 */
 	public function getSubscriptionItemsForTopic(
 		string $itemName,
@@ -281,7 +272,6 @@ class SubscriptionStore {
 	 * @param string $field Timestamp field name
 	 * @param UserIdentity|null $user
 	 * @param string $itemName
-	 * @return bool
 	 */
 	private function updateSubscriptionTimestamp(
 		string $field,

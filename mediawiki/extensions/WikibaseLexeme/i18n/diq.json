@@ -1,0 +1,22 @@
+{
+	"@metadata": {
+		"authors": [
+			"1917 Ekim Devrimi",
+			"Mirzali",
+			"Orbot707"
+		]
+	},
+	"datatypes-type-wikibase-form": "Form",
+	"datatypes-type-wikibase-lexeme": "Lexeme",
+	"datatypes-type-wikibase-sense": "Maney cı",
+	"wikibase-listdatatypes-wikibase-form-head": "Form",
+	"wikibase-listdatatypes-wikibase-lexeme-head": "Lexeme",
+	"wikibase-listdatatypes-wikibase-sense-head": "Maney cı",
+	"wikibaselexeme-gloss-field-gloss-label": "Dipnot",
+	"wikibaselexeme-gloss-field-language-label": "Zıwan",
+	"wikibaselexeme-header-forms": "Formi",
+	"wikibaselexeme-header-senses": "Maneyi",
+	"wikibaselexeme-lemma-field-lemma-label": "Lemma",
+	"wikibaselexeme-newlexeme-lemma": "Lemma",
+	"wikibaselexeme-unknown-category": "Nêzanaye"
+}

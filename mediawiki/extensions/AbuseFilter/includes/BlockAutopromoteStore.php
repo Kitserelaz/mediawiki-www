@@ -2,7 +2,7 @@
 
 namespace MediaWiki\Extension\AbuseFilter;
 
-use ManualLogEntry;
+use MediaWiki\Logging\ManualLogEntry;
 use MediaWiki\Title\TitleValue;
 use MediaWiki\User\UserIdentity;
 use Psr\Log\LoggerInterface;
@@ -13,30 +13,13 @@ use Wikimedia\ObjectCache\BagOStuff;
  */
 class BlockAutopromoteStore {
 
-	public const SERVICE_NAME = 'AbuseFilterBlockAutopromoteStore';
+	public const SERVICE_NAME = ServiceNames::BlockAutopromoteStore;
 
-	/**
-	 * @var BagOStuff
-	 */
-	private $store;
-
-	/**
-	 * @var LoggerInterface
-	 */
-	private $logger;
-
-	/** @var FilterUser */
-	private $filterUser;
-
-	/**
-	 * @param BagOStuff $store
-	 * @param LoggerInterface $logger
-	 * @param FilterUser $filterUser
-	 */
-	public function __construct( BagOStuff $store, LoggerInterface $logger, FilterUser $filterUser ) {
-		$this->store = $store;
-		$this->logger = $logger;
-		$this->filterUser = $filterUser;
+	public function __construct(
+		private readonly BagOStuff $store,
+		private readonly LoggerInterface $logger,
+		private readonly FilterUser $filterUser
+	) {
 	}
 
 	/**
@@ -133,11 +116,8 @@ class BlockAutopromoteStore {
 		return true;
 	}
 
-	/**
-	 * @param UserIdentity $target
-	 * @return string
-	 */
 	private function getAutoPromoteBlockKey( UserIdentity $target ): string {
+		// TODO: Migration strategy to abusefilter-block-autopromote keygroup
 		return $this->store->makeKey( 'abusefilter', 'block-autopromote', $target->getId() );
 	}
 }

@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": []
+	},
+	"reportincident-report-btn-label": "Prijavi",
+	"reportincident-dialog-close-btn": "Zatvori",
+	"reportincident-dialog-back-btn": "Nazad",
+	"reportincident-dialog-optional-label": "neobavezno",
+	"reportincident-dialog-harassment-type-hate-speech-or-discrimination": "Govor mržnje ili diskriminacija",
+	"reportincident-dialog-harassment-type-sexual-harassment": "Seksualno uznemiravanje",
+	"reportincident-dialog-harassment-type-something-else": "Nešto drugo",
+	"reportincident-emaildialog-title": "Potrebna verifikovana imejl adresa",
+	"reportincident-emaildialog-close-button": "Otkaži",
+	"reportincident-emaildialog-primary": "Idi u podešavanja"
+}

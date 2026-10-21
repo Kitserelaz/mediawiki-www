@@ -1,0 +1,39 @@
+{
+	"@metadata": {
+		"authors": [
+			"Anterdc99",
+			"CrownedWharf566",
+			"GuoPC",
+			"Liuxinyu970226",
+			"Shizhao",
+			"Xiplus"
+		]
+	},
+	"apihelp-query+imageforpage-summary": "为“Page”命名空间中的给定页面预呈现图像并提供图像URL。",
+	"apihelp-query+imageforpage-param-prop": "为“Page:”命名空间中的给定页面返回图像的类型或属性。",
+	"apihelp-query+imageforpage-paramvalue-prop-filename": "返回与被查询页面相关联的文件名",
+	"apihelp-query+imageforpage-paramvalue-prop-size": "返回与被查询页面相关联的图像大小",
+	"apihelp-query+imageforpage-paramvalue-prop-fullsize": "返回与被查询页面相关联的全尺寸图像的URL",
+	"apihelp-query+imageforpage-paramvalue-prop-responsiveimages": "返回与被查询页面相关联的全尺寸图像的1倍、1.5倍和2倍大小的图像URL列表",
+	"apierror-proofreadpage-invalidindex": "无效的索引标题“ $1 ”。",
+	"apihelp-query+defaultcontentforpage-summary": "为“Page:”命名空间中的给定页面提供默认内容。\n\n默认内容是原始wikitext（可能包括来自不可信的书籍文本层的原始HTML标签）。不得在未转义/未解析的HTML中使用！",
+	"apihelp-query+proofread-summary": "返回指定页面当前校对状态的信息。",
+	"apihelp-query+proofread-example-1": "返回命名空间250页面的校对状态",
+	"apihelp-query+proofreadinfo-summary": "返回有关ProofreadPage扩展配置的信息。",
+	"apihelp-query+proofreadinfo-param-prop": "要获取的校对属性：",
+	"apihelp-query+proofreadinfo-paramvalue-prop-namespaces": "关于“{{ns:Page}}”和“{{ns:Index}}”命名空间的信息。",
+	"apihelp-query+proofreadinfo-paramvalue-prop-qualitylevels": "校对质量等级列表。",
+	"apihelp-query+proofreadinfo-example-1": "返回默认信息",
+	"apihelp-query+proofreadinfo-example-3": "返回命名空间信息",
+	"apihelp-query+proofreadpagesinindex-summary": "列出给定索引中的页面",
+	"apihelp-query+proofreadpagesinindex-param-limit": "限制将返回多少页",
+	"apihelp-query+proofreadpagesinindex-param-pageid": "要获取页面的索引页面的页面ID",
+	"apihelp-query+proofreadpagesinindex-param-prop": "各页面要获取的属性",
+	"apihelp-query+proofreadpagesinindex-paramvalue-prop-ids": "返回链接到索引页面的每个页面的页面ID",
+	"apihelp-query+proofreadpagesinindex-paramvalue-prop-title": "返回链接到索引页面的每个页面的页面标题",
+	"apihelp-query+proofreadpagesinindex-paramvalue-prop-pageid": "返回链接到索引页面的每个页面的页面ID",
+	"apihelp-query+proofreadpagesinindex-paramvalue-prop-formattedpagenumber": "返回链接到索引页面的每个页面的格式化页码",
+	"apihelp-query+proofreadpagesinindex-paramvalue-prop-formattedpagenumber-deprecated": "返回链接到索引页面的每个页面的格式化页码。已弃用，请改用“formattedpagenumber”。",
+	"apihelp-query+proofreadpagesinindex-param-title": "要获取页面的索引页面的标题",
+	"apihelp-query+proofreadpagesinindex-example-1": "返回默认信息"
+}

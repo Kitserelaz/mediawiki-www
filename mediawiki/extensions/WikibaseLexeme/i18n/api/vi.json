@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"Harriettruong3"
+		]
+	},
+	"apierror-wikibaselexeme-lexeme-term-language-cannot-be-empty": "Không thể để trống ngôn ngữ",
+	"apierror-wikibaselexeme-lexeme-term-text-cannot-be-empty": "Không thể để trống văn bản thuật ngữ",
+	"apihelp-wblremoveform-summary": "Version đã được sửa của cụm từ này"
+}

@@ -3,11 +3,11 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Poem\Parsoid;
 
+use Wikimedia\Parsoid\Core\DOMCompat;
 use Wikimedia\Parsoid\DOM\DocumentFragment;
 use Wikimedia\Parsoid\Ext\ExtensionTagHandler;
 use Wikimedia\Parsoid\Ext\ParsoidExtensionAPI;
 use Wikimedia\Parsoid\Ext\PHPUtils;
-use Wikimedia\Parsoid\Utils\DOMCompat;
 
 class Poem extends ExtensionTagHandler {
 	/** @inheritDoc */
@@ -17,7 +17,7 @@ class Poem extends ExtensionTagHandler {
 		/*
 		 * Transform wikitext found in <poem>...</poem>
 		 * 1. Strip leading & trailing newlines
-		 * 2. Suppress indent-pre by replacing leading space with &nbsp;
+		 * 2. Suppress indent-pre by replacing leading spaces with &nbsp;
 		 * 3. Replace colons with <span class='...' style='...'>...</span>
 		 * 4. Add <br/> for newlines except (a) in nowikis (b) after ----
 		 */
@@ -28,7 +28,13 @@ class Poem extends ExtensionTagHandler {
 			$content = PHPUtils::stripSuffix( $content, "\n" );
 
 			// 2. above
-			$content = preg_replace( '/^ /m', '&nbsp;', $content );
+			$content = preg_replace_callback(
+				'/^ +/m',
+				static function ( array $matches ) {
+					return str_repeat( '&nbsp;', strlen( $matches[0] ) );
+				},
+				$content
+			);
 
 			// 3. above
 			$contentArray = explode( "\n", $content );

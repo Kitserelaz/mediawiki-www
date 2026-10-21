@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Eleassar"
+		]
+	},
+	"action-viewglobalprivatefiles": "ogled globalnih zasebnih datotek",
+	"globalnewfiles": "Nove globalne datoteke",
+	"globalnewfiles-description": "Posebna stran za nove globalne datoteke",
+	"right-viewglobalprivatefiles": "Ogled globalnih datotek, filtriranih iz zasebnih vikijev"
+}

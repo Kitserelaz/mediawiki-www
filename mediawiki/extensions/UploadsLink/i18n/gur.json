@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Akakiiri"
+		]
+	},
+	"uploadslink-desc": "Pa'asɛ linki nananawa tuntuna kɛ'ɛsegɔ puan 'listing to the personal tools' menu' dee linkɛ bu bo tuntuna tuunsuma ti a dikɛ kɛ'ɛsɛ 'listing to the sidebar Tools menu' puan",
+	"uploadslink-portlet-label": "Dikɛ kɛ'ɛsɛ",
+	"tooltip-pt-uploads": "Faali duma ti fu dikɛ kɛ'ɛsɛ yu'ura",
+	"uploadslink-toobox-label": "{{GENDER:$1|User}} dikɛ kɛ'ɛsɛ",
+	"tooltip-tb-uploads": "Sɛba ti fu dikɛ kɛ'ɛsɛ yu'ura {{GENDER:$1|user}}"
+}

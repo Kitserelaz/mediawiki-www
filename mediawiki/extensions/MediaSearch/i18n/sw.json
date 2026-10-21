@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Edwingudfriend",
+			"Jon Harald Søby"
+		]
+	},
+	"mediasearch-continue": "Inayofuata",
+	"mediasearch-tab-page": "Jamii na Kurasa",
+	"mediasearch-filter-sort-label": "Panga kwa:",
+	"mediasearch-filter-sort-default": "Umuhimu",
+	"mediasearch-filter-sort-recency": "Hivi karibuni",
+	"mediasearch-filter-sort-popularity": "Umaarufu",
+	"mediasearch-category-info": "{{PLURAL:$1|mwanachama|wanachama}} $1 - {{PLURAL:$2|kijamii|vijamii}} $2, {{{PLURAL:$3|faili}} $3"
+}

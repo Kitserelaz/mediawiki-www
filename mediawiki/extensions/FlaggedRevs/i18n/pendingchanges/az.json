@@ -1,0 +1,40 @@
+{
+	"@metadata": {
+		"authors": [
+			"A smart kitten",
+			"Cekli829",
+			"NMW03",
+			"Nemoralis",
+			"Neriman2003",
+			"Wertuose",
+			"Şeyx Şamil"
+		]
+	},
+	"pendingchanges": "Gözləyən dəyişiklikləri olan səhifələr",
+	"pendingchanges-legend": "Gözlənilən dəyişiklikləri nəzərdən keçirən səhifələr siyahısı",
+	"pendingchanges-list": "Bu səhifə [[{{MediaWiki:Validationpage}}|nəzərdən keçirilmiş]] səhifələri nəzərdən keçirmək üçün bir və ya bir neçə redaktəyə malikdir.",
+	"pendingchanges-none": "Bu kriteriyalara müvafiq olan bir səhifə mövcud deyil.",
+	"pendingchanges-hours": "$1 {{PLURAL:$1|saat}}",
+	"pendingchanges-days": "$1 {{PLURAL:$1|gün}}",
+	"pendingchanges-recent": "1 saatdan az",
+	"pendingchanges-category": "Kateqoriya:",
+	"pendingchanges-limit": "Limit:",
+	"pendingchanges-edit-tag": "Redaktə etiketi:",
+	"pendingchanges-edit-tag-any": "İstənilən teq",
+	"pendingchanges-onwatchlist": "İzləmə siyahımdakı səhifələr",
+	"pendingchanges-stable": "Sabit versiya standartdır",
+	"pendingchanges-diff": "Yoxla",
+	"pendingchanges-size": "Maksimal dəyişiklik (baytlarla):",
+	"pendingchanges-unwatched": "izlənilmir",
+	"pendingchanges-table-caption": "Gözləyən Dəyişikliklər",
+	"pendingchanges-table-page": "Səhifə",
+	"pendingchanges-table-size": "Ölçü",
+	"pendingchanges-table-pending-since": "Tarix",
+	"pendingchanges-table-quality": "Keyfiyyət",
+	"pendingchanges-table-watching": "Aktiv İzləyicilər",
+	"pendingchanges-table-history": "Tarixçə",
+	"pendingchanges-table-review": "Yoxla",
+	"pendingchanges-table-revision-history": "Tarixçə",
+	"pendingchanges-table-footer": "Hazırda {{PLURAL:$2|$1 dəyişiklik}} gözləyir",
+	"pendingchanges-filter-submit-button-text": "Gözləyən dəyişiklikləri filtrlə"
+}

@@ -1,0 +1,71 @@
+<?php
+
+namespace SMW\MediaWiki\Api\Tasks;
+
+use Iterator;
+use SMW\Store;
+use Wikimedia\ObjectCache\BagOStuff;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 3.1
+ *
+ * @author mwjames
+ */
+class DuplicateLookupTask extends Task {
+
+	private ?array $cacheUsage = null;
+
+	/**
+	 * @since 3.1
+	 */
+	public function __construct(
+		private readonly Store $store,
+		private readonly BagOStuff $cache,
+	) {
+	}
+
+	/**
+	 * @since 3.1
+	 */
+	public function setCacheUsage( array $cacheUsage ): void {
+		$this->cacheUsage = $cacheUsage;
+	}
+
+	/**
+	 * @since 3.1
+	 */
+	public function process( array $parameters ): array {
+		$cacheTTL = 3600;
+
+		if ( isset( $this->cacheUsage['api.task'] ) ) {
+			$cacheTTL = $this->cacheUsage['api.task'];
+		}
+
+		$key = self::makeCacheKey( 'duplicate-lookup' );
+
+		// Guard against repeated API calls (or fuzzing)
+		$result = $this->cache->get( $key );
+		if ( $result !== false && $cacheTTL !== false ) {
+			return $result + [ 'isFromCache' => true ];
+		}
+
+		$rows = $this->store->getObjectIds()->findDuplicates();
+
+		// Avoid "Exception caught: Serialization of 'Closure' is not allowedException ..."
+		if ( $rows instanceof Iterator ) {
+			$rows = iterator_to_array( $rows );
+		}
+
+		$result = [
+			'list'  => $rows,
+			'count' => count( $rows ),
+			'time'  => date( 'Y-m-d H:i:s' )
+		];
+
+		$this->cache->set( $key, $result, $cacheTTL );
+
+		return $result;
+	}
+
+}

@@ -1,0 +1,134 @@
+<?php
+
+namespace SMW\MediaWiki;
+
+use MediaWiki\Content\TextContent;
+use MediaWiki\Revision\RevisionLookup;
+use MediaWiki\Revision\RevisionRecord;
+use MediaWiki\Title\Title;
+use MediaWiki\User\User;
+use SMW\PageInfo;
+use WikiFilePage;
+use Wikimedia\Rdbms\IDBAccessObject;
+use WikiPage;
+
+/**
+ * Provide access to MediaWiki objects relevant for the predefined property
+ * annotation process
+ *
+ * @ingroup SMW
+ *
+ * @license GPL-2.0-or-later
+ * @since 1.9
+ *
+ * @author mwjames
+ */
+class PageInfoProvider implements PageInfo {
+
+	use RevisionGuardAwareTrait;
+
+	private ?RevisionLookup $revisionLookup = null;
+
+	/**
+	 * @since 1.9
+	 */
+	public function __construct(
+		private WikiPage $wikiPage,
+		private ?RevisionRecord $revision = null,
+		private ?User $user = null,
+		private ?bool $isReUpload = null,
+	) {
+	}
+
+	/**
+	 * @since 1.9
+	 */
+	public function getModificationDate(): string {
+		return $this->wikiPage->getTimestamp();
+	}
+
+	/**
+	 * @note getFirstRevision() is expensive as it initiates a read on the
+	 * revision table which is not cached
+	 *
+	 * @since 1.9
+	 */
+	public function getCreationDate(): string {
+		return $this->revisionLookup->getFirstRevision(
+			$this->wikiPage->getTitle(),
+			IDBAccessObject::READ_LATEST
+		)->getTimestamp();
+	}
+
+	/**
+	 * @note Using isNewPage() is expensive due to access to the database
+	 *
+	 * @since 1.9
+	 */
+	public function isNewPage(): bool {
+		if ( $this->isFilePage() ) {
+			return $this->isReUpload !== null ? !$this->isReUpload : false;
+		}
+
+		$revision = $this->revision ??
+			$this->revisionGuard->newRevisionFromPage( $this->wikiPage );
+
+		return $revision->getParentId() === 0;
+	}
+
+	/**
+	 * @since 1.9
+	 */
+	public function getLastEditor(): ?Title {
+		return $this->user ? $this->user->getUserPage() : null;
+	}
+
+	/**
+	 * @since 1.9.1
+	 */
+	public function isFilePage(): bool {
+		return $this->wikiPage instanceof WikiFilePage;
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function getNativeData(): mixed {
+		$content = $this->wikiPage->getContent();
+		if ( $content === null ) {
+			return '';
+		}
+
+		return $content instanceof TextContent ? $content->getText() : '';
+	}
+
+	/**
+	 * @since 1.9.1
+	 */
+	public function getMediaType(): ?string {
+		if ( !$this->isFilePage() ) {
+			return null;
+		}
+
+		return $this->wikiPage->getFile()->getMediaType();
+	}
+
+	/**
+	 * @since 1.9.1
+	 */
+	public function getMimeType(): ?string {
+		if ( !$this->isFilePage() ) {
+			return null;
+		}
+
+		return $this->wikiPage->getFile()->getMimeType();
+	}
+
+	/**
+	 * @since 4.0
+	 */
+	public function setRevisionLookup( RevisionLookup $revisionLookup ): void {
+		$this->revisionLookup = $revisionLookup;
+	}
+
+}

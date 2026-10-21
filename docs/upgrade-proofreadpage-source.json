@@ -1,0 +1,7 @@
+{
+  "component": "mediawiki/extensions/ProofreadPage",
+  "baseline": "77adec63b66198a8d54a3f267a23e837c4871d4b",
+  "target": "7b34246b450c8958e603e2d414146f4f1ddd9751",
+  "preserved_changes": [],
+  "dependency_status": "Runtime dependencies satisfied by pinned root Composer packages; no component lock or runtime vendor tree"
+}

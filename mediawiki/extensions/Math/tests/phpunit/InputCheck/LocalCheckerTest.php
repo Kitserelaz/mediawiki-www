@@ -78,6 +78,19 @@ class LocalCheckerTest extends MediaWikiIntegrationTestCase {
 		);
 	}
 
+	public function testSpecialError() {
+		$checker = new LocalChecker( WANObjectCache::newEmpty(), '\tripledash' );
+		$this->assertFalse( $checker->isValid() );
+		$this->assertStringContainsString(
+			Message::newFromKey( 'math_other_error', 'virtual mhchemtexified package required.' )
+				->inContentLanguage()
+				->escaped(),
+			$checker->getError()
+				->inContentLanguage()
+				->escaped()
+		);
+	}
+
 	public function testGetMML() {
 		$checker = new LocalChecker( WANObjectCache::newEmpty(), 'e^{i \pi} + 1 = 0' );
 		$mml = $checker->getPresentationMathMLFragment();
@@ -124,5 +137,21 @@ class LocalCheckerTest extends MediaWikiIntegrationTestCase {
 		$checker = new LocalChecker( WANObjectCache::newEmpty(), '\sin x^2', 'tex' );
 		$actual = $checker->runCheck();
 		$this->assertArrayEquals( $fakeContent, $actual );
+	}
+
+	public function testBrokenResult() {
+		$fakeWAN = new WANObjectCache( [ 'cache' => new HashBagOStuff() ] );
+		$fakeContent = [
+			'status' => 'i',
+			'broken' => 'content',
+		];
+		$fakeWAN->set( self::SAMPLE_KEY,
+			$fakeContent,
+			WANObjectCache::TTL_INDEFINITE,
+			[ 'version' => LocalChecker::VERSION ] );
+		$checker = new LocalChecker( $fakeWAN, '\sin x^2', 'tex' );
+		$checker->run();
+		$this->assertNull( $checker->getPresentationMathMLFragment() );
+		$this->assertEquals( 'math_unknown_error', $checker->getError()->getKey() );
 	}
 }

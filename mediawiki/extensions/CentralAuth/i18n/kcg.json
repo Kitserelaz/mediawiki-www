@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"Kambai Akau"
+		]
+	},
+	"centralauth-admin-blocklog": "ri̱jista fwun",
+	"centralauth-foreign-contributions": "$1 {{PLURAL:$1|nwuat|jhyet}} mi̱ $2",
+	"centralauth-foreign-link": "A̱tyuta̱m $1 da̱ $2",
+	"centralauth-merge-method-login": "á̱ khwuk di̱ nwuai",
+	"centralauth-rename-form-overrideantispoof": "Swuo cet kuzang zók AntiSpoof",
+	"centralauth-state-mismatch": "Ghyuap: Á̱ shai li a̱la̱n a̱tyunta̱m wuni mi̱ di̱ yong huni. Ma̱sa̱kut cat a̱cucuk li hu mi̱ di̱ yong huni a bu kwan, ka̱ ku yet mi̱ ta hwa."
+}

@@ -1,0 +1,102 @@
+@import 'mediawiki.skin.variables.less';
+
+.ext-phonos {
+	white-space: nowrap;
+}
+
+// Not strictly part of the button.
+.ext-phonos-attribution {
+	margin-inline-start: 3px;
+}
+
+// Make the button look better as an inline text component.
+// We have to override a bunch of OOUI button styles, but it's worth it because
+// we also *don't* have to add a bunch of button behaviour and styles ourselves.
+.ext-phonos-PhonosButton {
+	margin: 0;
+
+	&.oo-ui-buttonElement-frameless.oo-ui-iconElement > .oo-ui-buttonElement-button > .oo-ui-iconElement-icon {
+		left: 0;
+	}
+
+	&.oo-ui-buttonElement-frameless.oo-ui-widget-disabled,
+	&.oo-ui-buttonElement-frameless.oo-ui-buttonWidget.oo-ui-iconElement,
+	&.oo-ui-buttonElement-frameless.oo-ui-buttonWidget.oo-ui-iconElement:first-child {
+		vertical-align: baseline;
+		// Avoid the default negative left margin on buttons.
+		margin-left: 0;
+	}
+
+	&.oo-ui-buttonElement-frameless.oo-ui-buttonWidget {
+		// Avoid the default 8px right margin
+		margin-right: 0;
+	}
+
+	// Hide empty labels so they don't mess up spacing with text following the button.
+	&.ext-phonos-PhonosButton-emptylabel .oo-ui-labelElement-label {
+		display: none;
+	}
+
+	&.oo-ui-buttonElement-frameless.oo-ui-buttonWidget > .oo-ui-buttonElement-button {
+		display: inline;
+		vertical-align: baseline;
+		padding: 0;
+		min-height: 22px;
+		min-width: 0;
+		user-select: auto;
+
+		&:hover {
+			background-color: @background-color-progressive-subtle;
+		}
+
+		.oo-ui-iconElement-icon {
+			position: relative;
+			display: inline-block;
+			width: 1em;
+			height: 1em;
+			min-width: 0;
+			min-height: 0;
+			top: 0.1em;
+			background-size: cover;
+			background-position: left;
+		}
+
+		.oo-ui-labelElement-label {
+			display: inline-block;
+			font-weight: normal;
+			margin-inline-start: 0.3em;
+		}
+	}
+
+	&.oo-ui-buttonElement-frameless.oo-ui-buttonWidget.oo-ui-flaggedElement-progressive > .oo-ui-buttonElement-button {
+		animation: phonos-playing linear;
+		background-image: linear-gradient( to right, @background-color-progressive-subtle 100%, transparent 100% );
+		background-repeat: no-repeat;
+		background-color: transparent;
+		// To flip it in RTL
+		background-position: left;
+	}
+
+	&.oo-ui-buttonElement-frameless.oo-ui-labelElement.oo-ui-iconElement > .oo-ui-buttonElement-button {
+		// Override the default left padding
+		padding-left: 0;
+	}
+
+	// Emulate the disabled look in case of an error.
+	/* stylelint-disable-next-line no-descending-specificity */
+	&.oo-ui-buttonElement-frameless.ext-phonos-error > .oo-ui-buttonElement-button,
+	&.oo-ui-buttonElement-frameless.ext-phonos-error > .oo-ui-buttonElement-button:hover {
+		background-color: @background-color-disabled-subtle;
+		color: @color-base;
+	}
+}
+
+@keyframes phonos-playing {
+	from {
+		background-size: 0 100%;
+	}
+
+	to {
+		background-size: 100% 100%;
+	}
+}

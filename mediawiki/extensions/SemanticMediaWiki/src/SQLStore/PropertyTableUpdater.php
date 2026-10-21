@@ -1,0 +1,275 @@
+<?php
+
+namespace SMW\SQLStore;
+
+use SMW\DataItems\Property;
+use SMW\Listener\ChangeListener\ChangeListeners\PropertyChangeListener;
+use SMW\Parameters;
+use SMW\SQLStore\Exception\TableMissingIdFieldException;
+use SMW\Store;
+
+/**
+ * @private
+ *
+ * @license GPL-2.0-or-later
+ * @since 3.0
+ *
+ * @author mwjames
+ */
+class PropertyTableUpdater {
+
+	private ?PropertyChangeListener $propertyChangeListener = null;
+
+	private array $stats = [];
+
+	/**
+	 * @since 3.0
+	 */
+	public function __construct(
+		private readonly Store $store,
+		private readonly PropertyStatisticsStore $propertyStatisticsStore,
+	) {
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @param PropertyChangeListener $propertyChangeListener
+	 */
+	public function setPropertyChangeListener( PropertyChangeListener $propertyChangeListener ): void {
+		$this->propertyChangeListener = $propertyChangeListener;
+	}
+
+	/**
+	 * Update all property tables and any dependent data (hashes,
+	 * statistics, etc.) by inserting/deleting the given values. The ID of
+	 * the page that is updated, and the hashes of the properties must be
+	 * given explicitly (the hashes could not be computed from the insert
+	 * and delete data alone anyway).
+	 *
+	 * @since 3.0
+	 *
+	 * @param int $id
+	 * @param Parameters $parameters
+	 */
+	public function update( $id, Parameters $parameters ): void {
+		$this->stats = [];
+
+		$insert_rows = $parameters->get( 'insert_rows' );
+		$delete_rows = $parameters->get( 'delete_rows' );
+
+		$this->doUpdate( $insert_rows, $delete_rows );
+		$new_hashes = $parameters->get( 'new_hashes' );
+
+		// If only rows are marked for deletion then modify hashs to ensure that
+		// any inbalance can be corrected by the next insert operation for which
+		// the new_hashes are computed (seen in connection with redirects)
+		if ( $insert_rows === [] && $delete_rows !== [] ) {
+			foreach ( $new_hashes as $key => $hash ) {
+				$new_hashes[$key] = $hash . '.d';
+			}
+		}
+
+		if ( $insert_rows !== [] || $delete_rows !== [] ) {
+			$this->store->getObjectIds()->setPropertyTableHashes( $id, $new_hashes );
+		}
+
+		$this->propertyStatisticsStore->addToUsageCounts(
+			$this->stats
+		);
+	}
+
+	/**
+	 * It is assumed and required that the tables mentioned in
+	 * $tablesInsertRows and $tablesDeleteRows are the same, and that all
+	 * $rows in these datasets refer to the same subject ID.
+	 *
+	 * @param array $insert_rows
+	 * @param array $delete_rows
+	 */
+	private function doUpdate( array $insert_rows, array $delete_rows ): void {
+		$propertyTables = $this->store->getPropertyTables();
+		$ids = [];
+
+		// Note: by construction, the inserts and deletes have the same table keys.
+		// Note: by construction, the inserts and deletes are currently disjoint;
+		// yet we delete first to make the method more robust/versatile.
+		foreach ( $insert_rows as $tableName => $insertRows ) {
+
+			$propertyTable = $propertyTables[$tableName];
+
+			// Should not occur, but let's be strict
+			if ( !$propertyTable->usesIdSubject() ) {
+				throw new TableMissingIdFieldException( $propertyTable->getName() );
+			}
+
+			// Delete
+			$this->update_rows( $propertyTable, $delete_rows[$tableName], false );
+
+			// Insert
+			$this->update_rows( $propertyTable, $insertRows, true );
+
+			$this->aggregate_ids( $ids, $propertyTable, $insertRows );
+			$this->aggregate_ids( $ids, $propertyTable, $delete_rows[$tableName] );
+		}
+
+		$this->update_touched( array_keys( $ids ) );
+	}
+
+	/**
+	 * Update one property table by inserting or deleting rows, and compute
+	 * the changes that this entails for the property usage counts. The
+	 * given rows are inserted into the table if $insert is true; otherwise
+	 * they are deleted. The property usage counts are recorded in the
+	 * call-by-ref parameter $propertyUseIncrements.
+	 *
+	 * The method assumes that all of the given rows are about the same
+	 * subject. This is ensured by callers.
+	 *
+	 * @param PropertyTableDefinition $propertyTable
+	 * @param array $rows array of rows to insert/delete
+	 * @param bool $insert
+	 */
+	private function update_rows( PropertyTableDefinition $propertyTable, array $rows, bool $insert ): void {
+		if ( $rows === [] ) {
+			return;
+		}
+
+		if ( $insert ) {
+			$this->insert( $propertyTable, $rows );
+		} else {
+			$this->delete( $propertyTable, $rows );
+		}
+
+		if ( $propertyTable->isFixedPropertyTable() ) {
+
+			$property = new Property(
+				$propertyTable->getFixedProperty()
+			);
+
+			$pid = $this->store->getObjectIds()->makeSMWPropertyID( $property );
+		}
+
+		foreach ( $rows as $row ) {
+
+			if ( !$propertyTable->isFixedPropertyTable() ) {
+				$pid = $row['p_id'];
+			}
+
+			if ( !isset( $pid ) ) {
+				continue;
+			}
+
+			$this->propertyChangeListener->recordChange(
+				$pid,
+				[ 'row' => $row, 'is_insert' => $insert ]
+			);
+
+			if ( !array_key_exists( $pid, $this->stats ) ) {
+				$this->stats[$pid] = 0;
+			}
+
+			$this->stats[$pid] += ( $insert ? 1 : -1 );
+		}
+	}
+
+	private function insert( PropertyTableDefinition $propertyTable, array $rows ): void {
+		$connection = $this->store->getConnection( 'mw.db' );
+		$tableName = $propertyTable->getName();
+
+		$connection->newInsertQueryBuilder()
+			->insertInto( $tableName )
+			->rows( $rows )
+			->caller( __METHOD__ . "-$tableName" )
+			->execute();
+	}
+
+	private function delete( PropertyTableDefinition $propertyTable, array $rows ): void {
+		$condition = '';
+		$connection = $this->store->getConnection( 'mw.db' );
+
+		// We build a condition that mentions s_id only once,
+		// since it must be the same for all rows. This should
+		// help the DBMS in selecting the rows (it would not be
+		// easy for to detect that all tuples share one s_id).
+		$sid = false;
+		$tableName = $propertyTable->getName();
+
+		foreach ( $rows as $row ) {
+			if ( $sid === false ) {
+				if ( !array_key_exists( 's_id', (array)$row ) ) {
+					// FIXME: The assumption that s_id is present does not hold.
+					// This return is there to prevent fatal errors, but does
+					// not fix the issue of this code being broken
+					return;
+				}
+
+				// 's_id' exists for all tables with $propertyTable->usesIdSubject()
+				$sid = $row['s_id'];
+			}
+
+			unset( $row['s_id'] );
+
+			if ( $condition != '' ) {
+				$condition .= ' OR ';
+			}
+
+			$condition .= '(' . $connection->makeList( $row, LIST_AND ) . ')';
+		}
+
+		$condition = "s_id=" . $connection->addQuotes( $sid ) . " AND ($condition)";
+
+		$connection->newDeleteQueryBuilder()
+			->deleteFrom( $tableName )
+			->where( $condition )
+			->caller( __METHOD__ . "-$tableName" )
+			->execute();
+	}
+
+	private function aggregate_ids( array &$ids, $propertyTable, $rows ): void {
+		$isCategory = false;
+
+		if ( $propertyTable->isFixedPropertyTable() ) {
+
+			$property = new Property(
+				$propertyTable->getFixedProperty()
+			);
+
+			$pid = $this->store->getObjectIds()->makeSMWPropertyID( $property );
+			$isCategory = $property->getKey() === '_INST';
+			$ids[$pid] = true;
+		}
+
+		foreach ( $rows as $row ) {
+			$sid = $isCategory ? $row['o_id'] : $row['s_id'];
+			$ids[$sid] = true;
+
+			// Individual pid for non-fixed tables
+			if ( isset( $row['p_id'] ) ) {
+				$ids[$row['p_id']] = true;
+			}
+		}
+	}
+
+	private function update_touched( array $ids ): void {
+		if ( $ids === [] ) {
+			return;
+		}
+
+		$connection = $this->store->getConnection( 'mw.db' );
+		$touched = $connection->timestamp();
+
+		// Updating across the entity table with some properties (Modification
+		// date etc.) to see more frequent updates than others. Do we need to use
+		// onTransctionIdle( ... ) to avoid locking the rows for succeeding
+		// updates?
+
+		$connection->newUpdateQueryBuilder()
+			->update( SQLStore::ID_TABLE )
+			->set( [ 'smw_touched' => $touched ] )
+			->where( [ 'smw_id' => $ids ] )
+			->caller( __METHOD__ )
+			->execute();
+	}
+
+}

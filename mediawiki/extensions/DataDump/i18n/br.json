@@ -1,0 +1,35 @@
+{
+	"@metadata": {
+		"authors": [
+			"Adriendelucca",
+			"Fulup",
+			"Huñvreüs"
+		]
+	},
+	"action-delete-dump": "dilemel dumpoù ar wiki",
+	"action-generate-dump": "genel dumpoù ar wiki",
+	"action-view-dump": "gwelet a dumpoù ar wiki",
+	"apihelp-viewdumps-example-1": "Setu aze ur skouer eus an doare da adtapout an holl dumpoù.",
+	"apihelp-viewdumps-param-timestamp": "Kavout un dump gant an eurdeiziañ-mañ.",
+	"apihelp-viewdumps-param-type": "Kavout un dump gant ar seurt spisaet-mañ.",
+	"apihelp-viewdumps-summary": "Gwelet an dumpoù evit ar seurt, anv ar restr pe an eurdeiziañ spisaet.",
+	"datadump": "Enrollañ rannoù eus ar wiki-mañ",
+	"datadump-delete-button": "Diverkañ",
+	"datadump-delete-failed": "C'hwitet eo bet an dump dibabet ganeoc'h da vezañ diverket.",
+	"datadump-delete-success": "Dilamet hoc'h eus an dump ervat.",
+	"datadump-label-generate": "Genel",
+	"datadump-log-name": "Marilh saveteiñ ar wiki",
+	"datadump-refresh": "Freskaat ar bajenn",
+	"datadump-table-column-completed": "Kaset da benn",
+	"datadump-table-column-failed": "C'hwitet",
+	"datadump-table-column-in-progress": "War ober",
+	"datadump-table-column-queued": "Lakaet el lostennad",
+	"datadump-table-header-date": "Deiziad",
+	"datadump-table-header-delete": "Diverkañ",
+	"datadump-table-header-name": "Anv",
+	"datadump-table-header-size": "Ment",
+	"datadump-table-header-status": "Statud",
+	"datadump-table-header-type": "Seurt",
+	"logentry-datadump-delete": "saveteiñ '$4' {{GENDER:$2|dilamet}} gant $1.",
+	"logentry-datadump-generate": "genel saveteiñ anvet '$4' {{GENDER:$2|lakaet}} er steudad c'hortoz gant $1"
+}

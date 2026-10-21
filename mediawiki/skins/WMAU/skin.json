@@ -1,0 +1,108 @@
+{
+	"name": "WMAU",
+	"version": "0.6.0",
+	"author": [
+		"[https://www.caddiebrain.com Caddie Brain]",
+		"[https://samwilson.id.au Sam Wilson]"
+	],
+	"url": "https://www.mediawiki.org/wiki/Skin:WMAU",
+	"descriptionmsg": "wmau-desc",
+	"namemsg": "skinname-wmau",
+	"license-name": "GPL-3.0+",
+	"type": "skin",
+	"requires": {
+		"MediaWiki": ">= 1.39.0"
+	},
+	"ValidSkinNames": {
+		"wmau": {
+			"displayname": "WMAU",
+			"class": "SkinWMAU",
+			"args": [ {
+				"name": "wmau",
+				"responsive": true,
+				"templateDirectory": "templates",
+				"styles": [
+					"skins.wmau"
+				],
+				"scripts": [
+					"skins.wmau.js"
+				],
+				"messages": [
+					"sitetitle",
+					"toolbox",
+					"wmau-site-full-title",
+					"wmau-logo-wordmark-alt",
+					"wmau-logo-icon-alt"
+				]
+			} ]
+		}
+	},
+	"Hooks": {
+		"SidebarBeforeOutput": "WMAUHooks",
+		"SkinTemplateNavigation::Universal": "WMAUHooks"
+	},
+	"HookHandlers": {
+		"WMAUHooks": {
+			"class": "WMAUHooks"
+		}
+	},
+	"MessagesDirs": {
+		"WMAU": [
+			"i18n"
+		]
+	},
+	"ResourceModules": {
+		"skins.wmau": {
+			"class": "MediaWiki\\ResourceLoader\\SkinModule",
+			"features": {
+				"normalize": false,
+				"logo": false,
+				"content-media": false,
+				"content-links": false,
+				"content-links-external": false,
+				"content-parser-output": false,
+				"content-tables": false,
+				"interface": false,
+				"interface-category": false,
+				"interface-message-box": false,
+				"elements": false,
+				"legacy": false,
+				"i18n-ordered-lists": false,
+				"i18n-all-lists-margins": false,
+				"i18n-headings": false,
+				"toc": false
+			},
+			"styles": {
+				"less/style.less": {
+					"media": "all"
+				},
+				"less/print.less": {
+					"media": "print"
+				},
+				"less/mobile.less": {
+					"media": "screen and (max-width: 750px)"
+				}
+			}
+		},
+		"skins.wmau.js": {
+			"packageFiles": [
+				"js/index.js"
+			]
+		}
+	},
+	"ResourceModuleSkinStyles": {
+		"wmau": {
+			"+ext.echo.styles.badge": "less/ext-echo.less",
+			"+ext.WikidataPageBanner": "less/ext-wikidata-page-banner.less"
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "resources/",
+		"remoteSkinPath": "WMAU/resources/"
+	},
+	"AutoloadClasses": {
+		"SkinWMAU": "includes/SkinWMAU.php",
+		"WMAUHooks": "includes/WMAUHooks.php"
+	},
+	"manifest_version": 2
+}

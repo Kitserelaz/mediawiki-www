@@ -1,0 +1,98 @@
+{
+	"name": "Anisa",
+	"version": "1.0",
+	"author": "...",
+	"url": "https://www.mediawiki.org/wiki/Skin:Anisa",
+	"descriptionmsg": "anisa-desc",
+	"namemsg": "skinname-anisa",
+	"license-name": "GPL-2.0-or-later",
+	"type": "skin",
+	"requires": {
+		"MediaWiki": ">= 1.39.0"
+	},
+	"ValidSkinNames": {
+		"anisa": {
+			"displayname": "Anisa",
+			"class": "SkinTemplate",
+			"args": [
+				{
+					"name": "anisa",
+					"responsive": "true",
+					"template": "AnisaTemplate",
+					"bodyOnly": true,
+					"styles": [
+						"skins.anisa"
+					],
+					"scripts": [
+						"skins.anisa.js"
+					]
+				}
+			]
+		}
+	},
+	"MessagesDirs": {
+		"Anisa": [
+			"i18n"
+		]
+	},
+	"ResourceModules": {
+		"skins.anisa": {
+			"targets": [
+				"desktop",
+				"mobile"
+			],
+			"class": "MediaWiki\\ResourceLoader\\SkinModule",
+			"features": {
+				"logo": true,
+				"content-links": true,
+				"content-links-external": true,
+				"interface-message-box": true,
+				"interface-category": true,
+				"content-tables": true,
+				"i18n-ordered-lists": true,
+				"i18n-all-lists-margins": true,
+				"i18n-headings": true,
+				"elements": true,
+				"content-media": true,
+				"interface": true,
+				"normalize": true
+			},
+			"styles": {
+				"resources/screen-common.less": {
+					"media": "screen"
+				},
+				"resources/screen-desktop.less": {
+					"media": "screen and (min-width: 751px)"
+				},
+				"resources/screen-mobile.less": {
+					"media": "screen and (max-width: 750px)"
+				},
+				"resources/print.css": {
+					"media": "print"
+				}
+			}
+		},
+		"skins.anisa.js": {
+			"targets": [
+				"desktop",
+				"mobile"
+			],
+			"scripts": [
+				"resources/main.js"
+			]
+		}
+	},
+	"ResourceModuleSkinStyles": {
+		"anisa": {
+			"+ext.echo.styles.badge": "resources/extensions/Echo.less"
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "",
+		"remoteSkinPath": "Anisa"
+	},
+	"AutoloadClasses": {
+		"AnisaTemplate": "includes/AnisaTemplate.php"
+	},
+	"manifest_version": 1
+}

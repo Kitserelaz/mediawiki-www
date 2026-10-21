@@ -1,23 +1,40 @@
 <?php
 
-namespace MediaWiki\CheckUser\HookHandler;
+namespace MediaWiki\Extension\CheckUser\HookHandler;
 
+use MediaWiki\Api\ApiLogout;
+use MediaWiki\Api\Hook\APIGetAllowedParamsHook;
 use MediaWiki\Config\Config;
+use MediaWiki\Context\RequestContext;
+use MediaWiki\Extension\CheckUser\ClientHints\UserAgentClientHintsManagerHelperTrait;
+use MediaWiki\Extension\CheckUser\Services\UserAgentClientHintsManager;
+use MediaWiki\JobQueue\JobQueueGroup;
 use MediaWiki\Output\Hook\BeforePageDisplayHook;
+use MediaWiki\Output\OutputPage;
 use MediaWiki\SpecialPage\Hook\SpecialPageBeforeExecuteHook;
+use MediaWiki\SpecialPage\SpecialPageFactory;
+use MediaWiki\Storage\Hook\PageSaveCompleteHook;
+use Psr\Log\LoggerInterface;
+use Wikimedia\ParamValidator\ParamValidator;
 
 /**
  * HookHandler for entry points related to requesting User-Agent Client Hints data.
  */
-class ClientHints implements SpecialPageBeforeExecuteHook, BeforePageDisplayHook {
+class ClientHints implements
+	SpecialPageBeforeExecuteHook,
+	BeforePageDisplayHook,
+	APIGetAllowedParamsHook,
+	PageSaveCompleteHook
+{
+	use UserAgentClientHintsManagerHelperTrait;
 
-	private Config $config;
-
-	/**
-	 * @param Config $config
-	 */
-	public function __construct( Config $config ) {
-		$this->config = $config;
+	public function __construct(
+		private readonly Config $config,
+		private readonly SpecialPageFactory $specialPageFactory,
+		private readonly UserAgentClientHintsManager $userAgentClientHintsManager,
+		private readonly JobQueueGroup $jobQueueGroup,
+		private readonly LoggerInterface $logger,
+	) {
 	}
 
 	/** @inheritDoc */
@@ -27,51 +44,120 @@ class ClientHints implements SpecialPageBeforeExecuteHook, BeforePageDisplayHook
 		}
 
 		$request = $special->getRequest();
-		if ( $request->wasPosted() ) {
-			// It's too late to ask for client hints when a user is POST'ing a form.
-			if ( $this->config->get( 'CheckUserClientHintsUnsetHeaderWhenPossible' ) ) {
-				$request->response()->header( $this->getEmptyClientHintsHeaderString() );
+
+		$specialPagesList = $this->config->get( 'CheckUserClientHintsSpecialPages' );
+
+		$headerSent = false;
+		if ( in_array( $special->getName(), $specialPagesList ) ) {
+			// If the special page name is a value in the config, then this is the old format and we should
+			// consider it as collecting the data via the header.
+			$request->response()->header( $this->getClientHintsHeaderString() );
+			$headerSent = true;
+		} elseif ( array_key_exists( $special->getName(), $specialPagesList ) ) {
+			// If the special page name is a key in the config, then the value is the method which the data is
+			// collected.
+			$types = $specialPagesList[$special->getName()];
+			if ( !is_array( $types ) ) {
+				$types = [ $types ];
 			}
-			return;
+			if ( in_array( 'header', $types ) ) {
+				$request->response()->header( $this->getClientHintsHeaderString() );
+				$headerSent = true;
+			}
 		}
 
-		if ( in_array( $special->getName(), $this->config->get( 'CheckUserClientHintsSpecialPages' ) ) ) {
-			$request->response()->header( $this->getClientHintsHeaderString() );
-		} elseif ( $this->config->get( 'CheckUserClientHintsUnsetHeaderWhenPossible' ) ) {
+		if ( $this->config->get( 'CheckUserClientHintsUnsetHeaderWhenPossible' ) && !$headerSent ) {
 			$request->response()->header( $this->getEmptyClientHintsHeaderString() );
 		}
 	}
 
 	/** @inheritDoc */
 	public function onBeforePageDisplay( $out, $skin ): void {
-		// We handle special pages in BeforeSpecialPageBeforeExecute.
-		if ( $out->getTitle()->isSpecialPage() ||
-			// ClientHints is globally disabled
-			!$this->config->get( 'CheckUserClientHintsEnabled' )
-		) {
+		if ( !$this->config->get( 'CheckUserClientHintsEnabled' ) ) {
 			return;
 		}
 
-		$out->addJsConfigVars( [
-			// Roundabout way to ensure we have a list of values like "architecture", "bitness"
-			// etc for use with the client-side JS API. Make sure we get 1) just the values
-			// from the configuration, 2) filter out any empty entries, 3) convert to a list
-			'wgCheckUserClientHintsHeadersJsApi' => array_values( array_filter( array_values(
-				$this->config->get( 'CheckUserClientHintsHeaders' )
-			) ) ),
-		] );
-		$out->addModules( 'ext.checkUser.clientHints' );
+		// Add the module to all pages (all namespaces, and special pages).
+		// All pages are needed in order to handle logouts via the personal tools
+		// menu, which could happen from any page.
+		$this->addJsClientHintsModule( $out );
 
-		if ( $this->config->get( 'CheckUserClientHintsUnsetHeaderWhenPossible' ) ) {
+		$title = $out->getTitle();
+		if ( $title->isSpecialPage() ) {
+			$specialPage = $this->specialPageFactory->getPage( $title->getDBkey() );
+			if ( $specialPage ) {
+				$specialPagesList = $this->config->get( 'CheckUserClientHintsSpecialPages' );
+				if ( array_key_exists( $specialPage->getName(), $specialPagesList ) ) {
+					// If the special page name is a key in the config, then the value is the method which the data is
+					// collected.
+					$types = $specialPagesList[$specialPage->getName()];
+					if ( !is_array( $types ) ) {
+						$types = [ $types ];
+					}
+					if ( in_array( 'header', $types ) ) {
+						// If this is a special page in the list of special page that client hints
+						// knows about, then assume that the client hints server-side header handling
+						// has already been done in onSpecialPageBeforeExecute
+						return;
+					}
+				}
+			}
+		}
+
+		if ( $this->config->get( 'CheckUserAlwaysSetClientHintHeaders' ) ) {
+			$request = $out->getRequest();
+			$request->response()->header( $this->getClientHintsHeaderString() );
+		} elseif ( $this->config->get( 'CheckUserClientHintsUnsetHeaderWhenPossible' ) ) {
 			$request = $out->getRequest();
 			$request->response()->header( $this->getEmptyClientHintsHeaderString() );
 		}
 	}
 
 	/**
-	 * Get the list of headers to use with Accept-CH.
+	 * Add the JS Client Hints module to the given OutputPage instance.
 	 *
-	 * @return string
+	 * @param OutputPage $out
+	 * @return void
+	 */
+	private function addJsClientHintsModule( OutputPage $out ): void {
+		$out->addJsConfigVars( [
+			// Roundabout way to ensure we have a list of values like "architecture", "bitness"
+			// etc for use with the client-side JS API. Make sure we get 1) just the values
+			// from the configuration, 2) filter out any empty entries, 3) convert to a list
+			'wgCheckUserClientHintsHeadersJsApi' => array_values( array_filter(
+				$this->config->get( 'CheckUserClientHintsHeaders' )
+			) ),
+		] );
+		$out->addModules( 'ext.checkUser.clientHints' );
+	}
+
+	/** @inheritDoc */
+	public function onAPIGetAllowedParams( $module, &$params, $flags ) {
+		if ( $module instanceof ApiLogout && $this->config->get( 'CheckUserClientHintsEnabled' ) ) {
+			$params['checkuserclienthints'] = [
+				ParamValidator::PARAM_TYPE => 'string',
+				ParamValidator::PARAM_SENSITIVE => true,
+			];
+		}
+	}
+
+	/** @inheritDoc */
+	public function onPageSaveComplete( $wikiPage, $user, $summary, $flags, $revisionRecord, $editResult ): void {
+		// Don't process null edits, as the revision ID will not be performed by the user
+		// who just attempted to edit
+		if ( $editResult->isNullEdit() ) {
+			return;
+		}
+
+		$this->storeHeaderOnlyClientHintsData(
+			$revisionRecord->getId(),
+			'revision',
+			RequestContext::getMain()->getRequest()
+		);
+	}
+
+	/**
+	 * Get the list of headers to use with Accept-CH.
 	 */
 	private function getClientHintsHeaderString(): string {
 		$headers = implode(
@@ -83,8 +169,6 @@ class ClientHints implements SpecialPageBeforeExecuteHook, BeforePageDisplayHook
 
 	/**
 	 * Get an Accept-CH header string to tell the client to stop sending client-hint data.
-	 *
-	 * @return string
 	 */
 	private function getEmptyClientHintsHeaderString(): string {
 		return "Accept-CH: ";

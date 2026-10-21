@@ -1,0 +1,32 @@
+{
+	"name": "VariablesLua",
+	"version": "1.6.0",
+	"author": [
+		"[https://fo-nttax.de Alex Winkler]"
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:VariablesLua",
+	"descriptionmsg": "variableslua-desc",
+	"license-name": "MIT",
+	"type": "other",
+	"requires": {
+		"MediaWiki": ">= 1.35.0",
+		"extensions": {
+			"Scribunto": "*",
+			"Variables": ">= 2.0"
+		}
+	},
+	"MessagesDirs": {
+		"VariablesLua": [
+			"i18n"
+		]
+	},
+	"AutoloadNamespaces": {
+		"Liquipedia\\Extension\\VariablesLua\\": "src/"
+	},
+	"Hooks": {
+		"ScribuntoExternalLibraries": [
+			"Liquipedia\\Extension\\VariablesLua\\Hooks\\LegacyHooks::onScribuntoExternalLibraries"
+		]
+	},
+	"manifest_version": 2
+}

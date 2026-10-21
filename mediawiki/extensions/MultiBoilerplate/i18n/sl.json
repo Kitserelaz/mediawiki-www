@@ -1,0 +1,16 @@
+{
+	"@metadata": {
+		"authors": [
+			"Eleassar"
+		]
+	},
+	"multiboilerplate-desc": "Pri urejanju strani omogoča izbiro standardnega besedila v spustnem meniju nad urejevalnim poljem",
+	"multiboilerplate-legend": "Izbira standardnega besedila",
+	"multiboilerplate-submit": "Naloži",
+	"boilerplates": "Standardna besedila",
+	"multiboilerplate-special-pagetext": "Te predloge je mogoče vnaprej naložiti ob ustvarjanju strani. (<span class=plainlinks>[{{fullurl:Ta stran ne obstaja|action=edit}} prikaz]</span>)",
+	"multiboilerplate-special-define-in-localsettings": "Standardna besedila so opredeljena v LocalSettings.",
+	"multiboilerplate-special-define-in-interface": "Standardna besedila so opredeljena v [[MediaWiki:Multiboilerplate]].",
+	"multiboilerplate-special-no-boilerplates": "Nikjer ni opredeljeno nobeno standardno besedilo.",
+	"multiboilerplate-nonexistant-page": "Stran standardnega besedila ne obstaja: »$1«"
+}

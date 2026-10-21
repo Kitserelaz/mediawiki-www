@@ -32,8 +32,6 @@ use Memcached;
 use MessageCache;
 use Miraheze\CreateWiki\Hooks\CreateWikiStatePrivateHook;
 use Miraheze\CreateWiki\Hooks\CreateWikiTablesHook;
-use Miraheze\ManageWiki\Helpers\ManageWikiExtensions;
-use Miraheze\ManageWiki\Helpers\ManageWikiSettings;
 use Miraheze\ImportDump\Hooks\ImportDumpJobGetFileHook;
 use Redis;
 use Skin;
@@ -312,8 +310,9 @@ class Main implements
 
 			// Filter out those databases that don't have GlobalUserPage enabled
 			$list = array_filter( $dbList, static function ( $dbname ) {
-				$extensions = new ManageWikiExtensions( $dbname );
-				return in_array( 'globaluserpage', $extensions->list() );
+				$extensions = MediaWikiServices::getInstance()->get( 'ManageWikiModuleFactory' )
+					->extensions( $dbname );
+				return in_array( 'globaluserpage', $extensions->list(), true );
 			} );
 
 			return false;

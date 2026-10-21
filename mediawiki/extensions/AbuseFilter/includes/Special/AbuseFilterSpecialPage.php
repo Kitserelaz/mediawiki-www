@@ -2,58 +2,43 @@
 
 namespace MediaWiki\Extension\AbuseFilter\Special;
 
-use HtmlArmor;
 use MediaWiki\Extension\AbuseFilter\AbuseFilterPermissionManager;
 use MediaWiki\Html\Html;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Title\TitleValue;
+use Wikimedia\HtmlArmor\HtmlArmor;
 
 /**
  * Parent class for AbuseFilter special pages.
  */
 abstract class AbuseFilterSpecialPage extends SpecialPage {
-
-	/** @var AbuseFilterPermissionManager */
-	protected $afPermissionManager;
-
 	/**
 	 * @param string $name
-	 * @param string $restriction
 	 * @param AbuseFilterPermissionManager $afPermissionManager
 	 */
 	public function __construct(
 		$name,
-		$restriction,
-		AbuseFilterPermissionManager $afPermissionManager
+		protected readonly AbuseFilterPermissionManager $afPermissionManager
 	) {
-		parent::__construct( $name, $restriction );
-		$this->afPermissionManager = $afPermissionManager;
+		parent::__construct( $name );
 	}
 
 	/**
 	 * @inheritDoc
 	 */
 	public function getShortDescription( string $path = '' ): string {
-		switch ( $path ) {
-			case 'AbuseFilter':
-				return $this->msg( 'abusefilter-topnav-home' )->text();
-			case 'AbuseFilter/history':
-				return $this->msg( 'abusefilter-topnav-recentchanges' )->text();
-			case 'AbuseFilter/examine':
-				return $this->msg( 'abusefilter-topnav-examine' )->text();
-			case 'AbuseFilter/test':
-				return $this->msg( 'abusefilter-topnav-test' )->text();
-			case 'AbuseFilter/tools':
-				return $this->msg( 'abusefilter-topnav-tools' )->text();
-			default:
-				return parent::getShortDescription( $path );
-		}
+		return match ( $path ) {
+			'AbuseFilter' => $this->msg( 'abusefilter-topnav-home' )->text(),
+			'AbuseFilter/history' => $this->msg( 'abusefilter-topnav-recentchanges' )->text(),
+			'AbuseFilter/examine' => $this->msg( 'abusefilter-topnav-examine' )->text(),
+			'AbuseFilter/test' => $this->msg( 'abusefilter-topnav-test' )->text(),
+			'AbuseFilter/tools' => $this->msg( 'abusefilter-topnav-tools' )->text(),
+			default => parent::getShortDescription( $path ),
+		};
 	}
 
 	/**
 	 * Get topbar navigation links definitions
-	 *
-	 * @return array
 	 */
 	private function getNavigationLinksInternal(): array {
 		$performer = $this->getAuthority();

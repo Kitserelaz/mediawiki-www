@@ -1,0 +1,239 @@
+<?php
+
+namespace SMW\Tests\Integration\Query;
+
+use SMW\DataItems\Property;
+use SMW\DataItems\WikiPage;
+use SMW\Query\Language\ClassDescription;
+use SMW\Query\Language\Disjunction;
+use SMW\Query\Language\SomeProperty;
+use SMW\Query\Language\ValueDescription;
+use SMW\Query\Query;
+use SMW\Services\ServicesFactory as ApplicationFactory;
+use SMW\Tests\SMWIntegrationTestCase;
+use SMW\Tests\Utils\UtilityFactory;
+
+/**
+ * @group SMW
+ * @group SMWExtension
+ * @group semantic-mediawiki-integration
+ * @group semantic-mediawiki-query
+ * @group mediawiki-database
+ * @group Database
+ * @group medium
+ *
+ * @license GPL-2.0-or-later
+ * @since 2.0
+ *
+ * @author mwjames
+ */
+class DisjunctionQueryDBIntegrationTest extends SMWIntegrationTestCase {
+
+	private $subjectsToBeCleared = [];
+	private $semanticDataFactory;
+	private $queryResultValidator;
+	private $queryParser;
+
+	protected function setUp(): void {
+		parent::setUp();
+
+		if ( $GLOBALS['wgLanguageCode'] !== 'en' ) {
+			$this->markTestSkipped( 'Category title produces different fingerprint!' );
+		}
+
+		$this->queryResultValidator = UtilityFactory::getInstance()->newValidatorFactory()->newQueryResultValidator();
+		$this->semanticDataFactory = UtilityFactory::getInstance()->newSemanticDataFactory();
+		$this->queryParser = ApplicationFactory::getInstance()->getQueryFactory()->newQueryParser();
+
+	// $this->getStore()->getSparqlDatabase()->deleteAll();
+	}
+
+	protected function tearDown(): void {
+		foreach ( $this->subjectsToBeCleared as $subject ) {
+			$this->getStore()->deleteSubject( $subject->getTitle() );
+		}
+
+		parent::tearDown();
+	}
+
+	/**
+	 * {{#ask: [[Category:WickedPlaces]] OR [[LocatedIn.MemberOf::Wonderland]] }}
+	 */
+	public function testDisjunctionSubqueryForPageTypePropertyChainThatComparesEqualToValue() {
+		/**
+		 * Page ...-dangerland annotated with [[Category:WickedPlaces]]
+		 */
+		$semanticDataOfDangerland = $this->semanticDataFactory
+			->setTitle( __METHOD__ . '-dangerland' )
+			->newEmptySemanticData();
+
+		$semanticDataOfDangerland->addPropertyObjectValue(
+			new Property( '_INST' ),
+			new WikiPage( 'WickedPlaces', NS_CATEGORY )
+		);
+
+		$this->subjectsToBeCleared[] = $semanticDataOfDangerland->getSubject();
+		$this->getStore()->updateData( $semanticDataOfDangerland );
+
+		/**
+		 * Page ...-dreamland annotated with [[LocatedIn::BananaWonderland]]
+		 */
+		$semanticDataOfDreamland = $this->semanticDataFactory
+			->setTitle( __METHOD__ . '-dreamland' )
+			->newEmptySemanticData();
+
+		$semanticDataOfDreamland->addPropertyObjectValue(
+			Property::newFromUserLabel( 'LocatedIn' )->setPropertyValueType( '_wpg' ),
+			new WikiPage( 'BananaWonderland', NS_MAIN )
+		);
+
+		$this->subjectsToBeCleared[] = $semanticDataOfDreamland->getSubject();
+		$this->getStore()->updateData( $semanticDataOfDreamland );
+
+		/**
+		 * Page BananaWonderland annotated with [[MemberOf::Wonderland]]
+		 */
+		$semanticDataOfWonderland = $this->semanticDataFactory
+			->setTitle( 'BananaWonderland' )
+			->newEmptySemanticData();
+
+		$semanticDataOfWonderland->addPropertyObjectValue(
+			Property::newFromUserLabel( 'MemberOf' )->setPropertyValueType( '_wpg' ),
+			new WikiPage( 'Wonderland', NS_MAIN )
+		);
+
+		$this->subjectsToBeCleared[] = $semanticDataOfWonderland->getSubject();
+		$this->getStore()->updateData( $semanticDataOfWonderland );
+
+		/**
+		 * Query with [[Category:WickedPlaces]] OR [[LocatedIn.MemberOf::Wonderland]]
+		 */
+		$someProperty = new SomeProperty(
+			Property::newFromUserLabel( 'LocatedIn' )->setPropertyValueType( '_wpg' ),
+			new SomeProperty(
+				Property::newFromUserLabel( 'MemberOf' )->setPropertyValueType( '_wpg' ),
+				new ValueDescription(
+					new WikiPage( 'Wonderland', NS_MAIN, '' ),
+					Property::newFromUserLabel( 'MemberOf' )->setPropertyValueType( '_wpg' ), SMW_CMP_EQ
+				)
+			)
+		);
+
+		$classDescription = new ClassDescription(
+			new WikiPage( 'WickedPlaces', NS_CATEGORY, '' )
+		);
+
+		$description = new Disjunction();
+		$description->addDescription( $classDescription );
+		$description->addDescription( $someProperty );
+
+		$this->assertEquals(
+			$description,
+			$this->queryParser->getQueryDescription( '[[Category:WickedPlaces]] OR [[LocatedIn.MemberOf::Wonderland]]' )
+		);
+
+		$this->assertEquals(
+			$description,
+			$this->queryParser->getQueryDescription( '[[Category:WickedPlaces]] OR [[LocatedIn::<q>[[MemberOf::Wonderland]]</q>]]' )
+		);
+
+		$query = new Query(
+			$description,
+			false,
+			false
+		);
+
+		$query->querymode = Query::MODE_INSTANCES;
+
+		$queryResult = $this->getStore()->getQueryResult( $query );
+
+		$expectedSubjects = [
+			$semanticDataOfDreamland->getSubject(),
+			$semanticDataOfDangerland->getSubject()
+		];
+
+		$this->assertEquals(
+			2,
+			$queryResult->getCount()
+		);
+
+		$this->queryResultValidator->assertThatQueryResultHasSubjects(
+			$expectedSubjects,
+			$queryResult
+		);
+	}
+
+	public function testSubqueryDisjunction() {
+		$property = new Property( 'HasSomeProperty' );
+		$property->setPropertyValueType( '_wpg' );
+
+		/**
+		 * Page annotated with [[HasSomeProperty:Foo]]
+		 */
+		$semanticData = $this->semanticDataFactory->newEmptySemanticData( __METHOD__ . '1' );
+
+		$semanticData->addPropertyObjectValue(
+			$property,
+			new WikiPage( 'Foo', NS_MAIN )
+		);
+
+		$expectedSubjects[] = $semanticData->getSubject();
+		$this->subjectsToBeCleared[] = $semanticData->getSubject();
+
+		$this->getStore()->updateData( $semanticData );
+
+		/**
+		 * Page annotated with [[HasSomeProperty:Bar]]
+		 */
+		$semanticData = $this->semanticDataFactory->newEmptySemanticData( __METHOD__ . '2' );
+
+		$semanticData->addPropertyObjectValue(
+			$property,
+			new WikiPage( 'Bar', NS_MAIN )
+		);
+
+		$expectedSubjects[] = $semanticData->getSubject();
+		$this->subjectsToBeCleared[] = $semanticData->getSubject();
+
+		$this->getStore()->updateData( $semanticData );
+
+		/**
+		 * Query with [[HasSomeProperty::Foo||Bar]]
+		 */
+		$disjunction = new Disjunction( [
+			new ValueDescription( new WikiPage( 'Foo', NS_MAIN ), $property ),
+			new ValueDescription( new WikiPage( 'Bar', NS_MAIN ), $property )
+		] );
+
+		$description = new SomeProperty(
+			$property,
+			$disjunction
+		);
+
+		$query = new Query(
+			$description,
+			false,
+			false
+		);
+
+		$this->assertEquals(
+			$description,
+			$this->queryParser->getQueryDescription( '[[HasSomeProperty::Foo||Bar]]' )
+		);
+
+		$query->querymode = Query::MODE_INSTANCES;
+
+		$queryResult = $this->getStore()->getQueryResult( $query );
+
+		$this->assertEquals(
+			2,
+			$queryResult->getCount()
+		);
+
+		$this->queryResultValidator->assertThatQueryResultHasSubjects(
+			$expectedSubjects,
+			$queryResult
+		);
+	}
+
+}

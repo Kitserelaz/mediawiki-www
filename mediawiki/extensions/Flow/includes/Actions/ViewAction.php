@@ -2,18 +2,15 @@
 
 namespace Flow\Actions;
 
-use Article;
 use MediaWiki\Context\IContextSource;
+use MediaWiki\Deferred\LinksUpdate\CategoryLinksTable;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Page\Article;
 use MediaWiki\Title\Title;
 
 class ViewAction extends FlowAction {
 
-	/**
-	 * @param Article $article
-	 * @param IContextSource $context
-	 */
 	public function __construct( Article $article, IContextSource $context ) {
 		parent::__construct( $article, $context, 'view' );
 	}
@@ -39,17 +36,21 @@ class ViewAction extends FlowAction {
 			return [];
 		}
 
-		$dbr = MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase();
+		$dbr = MediaWikiServices::getInstance()
+			->getConnectionProvider()
+			->getReplicaDatabase( CategoryLinksTable::VIRTUAL_DOMAIN );
+
 		$res = $dbr->newSelectQueryBuilder()
-			->select( [ 'cl_to', 'cl_sortkey' ] )
+			->select( [ 'lt_title', 'cl_sortkey' ] )
 			->from( 'categorylinks' )
+			->join( 'linktarget', null, 'lt_id = cl_target_id' )
 			->where( [ 'cl_from' => $id ] )
 			->caller( __METHOD__ )
 			->fetchResultSet();
 
 		$categories = [];
 		foreach ( $res as $row ) {
-			$categories[$row->cl_to] = $row->cl_sortkey;
+			$categories[$row->lt_title] = $row->cl_sortkey;
 		}
 
 		return $categories;

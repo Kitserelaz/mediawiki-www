@@ -1,0 +1,205 @@
+<?php
+
+namespace SMW\MediaWiki\Specials\FacetedSearch;
+
+use MediaWiki\Html\TemplateParser;
+use MediaWiki\Title\Title;
+use SMW\Localizer\MessageLocalizerTrait;
+use SMW\Utils\UrlArgs;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since   3.2
+ *
+ * @author mwjames
+ */
+class FacetBuilder {
+
+	use MessageLocalizerTrait;
+
+	/**
+	 * @since 3.2
+	 */
+	public function __construct(
+		private Profile $profile,
+		private TemplateParser $templateParser,
+		private FilterFactory $filterFactory,
+		private ResultFetcher $resultFetcher,
+	) {
+	}
+
+	/**
+	 * @since 3.2
+	 */
+	public function getPropertyFilterFacet( Title $title, UrlArgs $urlArgs ): string {
+		$params = [
+			'min_item' => $this->profile->get( 'filters.property_filter.filter_input.min_item' ),
+			'hierarchy_tree' => $this->profile->get( 'filters.property_filter.hierarchy_tree', false )
+		];
+
+		$propertyFilter = $this->filterFactory->newPropertyFilter( $params );
+
+		$html = $propertyFilter->create(
+			$urlArgs,
+			$this->resultFetcher->getPropertyFilters()
+		);
+
+		// If some value filter is active then close the property filter by
+		// default if the users hasn't set any other preference
+		$cardState = $urlArgs->getArray( 'cstate' );
+		$collapsed = isset( $cardState['card-prop'] ) && $cardState['card-prop'] === 'c';
+
+		if ( $collapsed ) {
+			$cssClass = 'mw-collapsed property-filter';
+		} else {
+			$cssClass = 'property-filter';
+		}
+
+		$pv = $urlArgs->getArray( 'pv' );
+		$clear = '';
+
+		if ( $pv !== [] ) {
+			$clear = $this->createClearFilter( 'clear[p.all]', count( $pv ) );
+		}
+
+		return $this->templateParser->processTemplate(
+			'facet',
+			[
+				'id' => 'card-prop',
+				'label' => $this->msg( 'properties' ),
+				'filterfacet' => $html,
+				'class' => $cssClass,
+				'clear' => $clear
+			]
+		);
+	}
+
+	/**
+	 * @since 3.2
+	 */
+	public function getCategoryFilterFacet( Title $title, UrlArgs $urlArgs ): string {
+		$params = [
+			'min_item' => $this->profile->get( 'filters.category_filter.filter_input.min_item', 10 ),
+			'hierarchy_tree' => $this->profile->get( 'filters.category_filter.hierarchy_tree', false )
+		];
+
+		$categoryFilter = $this->filterFactory->newCategoryFilter( $params );
+
+		$html = $categoryFilter->create(
+			$urlArgs,
+			$this->resultFetcher->getCategoryFilters()
+		);
+
+		// If some value filter is active then close the property filter by
+		// default if the users hasn't set any other preference
+		$cardState = $urlArgs->getArray( 'cstate' );
+		$collapsed = isset( $cardState['card-cat'] ) && $cardState['card-cat'] === 'c';
+
+		if ( $collapsed ) {
+			$cssClass = 'mw-collapsed category-filter';
+		} else {
+			$cssClass = 'category-filter';
+		}
+
+		$args = $urlArgs->clone();
+		$c = $args->getArray( 'c' );
+		$clear = '';
+
+		if ( $c !== [] ) {
+			$clear = $this->createClearFilter( 'clear[c.all]', count( $c ) );
+		}
+
+		return $this->templateParser->processTemplate(
+			'facet',
+			[
+				'id' => 'card-cat',
+				'label' => $this->msg( 'smw-categories' ),
+				'filterfacet' => $html,
+				'class' => $cssClass,
+				'clear' => $clear
+			]
+		);
+	}
+
+	/**
+	 * @since 3.2
+	 */
+	public function getValueFilterFacets( Title $title, UrlArgs $urlArgs ): string {
+		$params = [
+			'default_filter' => $this->profile->get( 'filters.value_filter.default_filter' ),
+			'min_item' => $this->profile->get( 'filters.value_filter.filter_input.min_item' ),
+			'filter_type' => $this->profile->get( 'filters.value_filter.filter_type' ),
+			'condition_field' => $this->profile->get( 'filters.value_filter.condition_field', false ),
+			'range_group_filter_preference' => $this->profile->get( 'filters.value_filter.filter_type.range_group_filter_preference' )
+		];
+
+		$valueFilter = $this->filterFactory->newValueFilter( $params );
+
+		$filterList = $valueFilter->create(
+			$urlArgs,
+			$this->resultFetcher->getValueFilters()
+		);
+
+		$html = '';
+
+		foreach ( $filterList as $property => $filters ) {
+
+			$id = 'v-' . strtolower( str_replace( ' ', '-', $property ) );
+			$args = $urlArgs->clone();
+			$pv = $args->getArray( 'pv' );
+
+			if ( $property === $urlArgs->find( 'clear.p' ) ) {
+				continue;
+			}
+
+			$clear = $urlArgs->getArray( 'clear' );
+
+			if (
+				isset( $pv[$property] ) &&
+				is_array( $pv[$property] ) &&
+				array_filter( $pv[$property] ) !== [] &&
+				$filters !== [] &&
+				!isset( $clear[$property] ) ) {
+				$clear = $this->createClearFilter( 'clear[' . $property . ']', count( $pv[$property] ) );
+			} else {
+				$clear = '';
+			}
+
+			// If some value filter is active then close the property filter by
+			// default if the users hasn't set any other preference
+			$cardState = $urlArgs->getArray( 'cstate' );
+			$collapsed = isset( $cardState["card-$id"] ) && $cardState["card-$id"] === 'c';
+
+			if ( $collapsed ) {
+				$cssClass = 'mw-collapsed value-filter';
+			} else {
+				$cssClass = 'value-filter';
+			}
+
+			$html .= $this->templateParser->processTemplate(
+				'facet',
+				[
+					'id' => "card-$id",
+					'label' => $property,
+					'filterfacet' => $filters,
+					'class' => $cssClass,
+					'clear' => $clear
+				]
+			);
+		}
+
+		return $html;
+	}
+
+	private function createClearFilter( string $name, int $count = 1 ) {
+		return $this->templateParser->processTemplate(
+			'items.clear.button',
+			[
+				'name' => $name,
+				'value' => '',
+				'title' => $this->msg( [ 'smw-facetedsearch-clear-filters', $count ] )
+			]
+		);
+	}
+
+}

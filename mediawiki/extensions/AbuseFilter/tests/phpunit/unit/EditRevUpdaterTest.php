@@ -6,6 +6,7 @@ use InvalidArgumentException;
 use MediaWiki\Extension\AbuseFilter\CentralDBManager;
 use MediaWiki\Extension\AbuseFilter\EditRevUpdater;
 use MediaWiki\Linker\LinkTarget;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Revision\MutableRevisionRecord;
 use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Title\Title;
@@ -14,7 +15,6 @@ use MediaWikiUnitTestCase;
 use Wikimedia\Rdbms\IDatabase;
 use Wikimedia\Rdbms\LBFactory;
 use Wikimedia\Rdbms\UpdateQueryBuilder;
-use WikiPage;
 
 /**
  * @group Test
@@ -62,10 +62,6 @@ class EditRevUpdaterTest extends MediaWikiUnitTestCase {
 		);
 	}
 
-	/**
-	 * @param LinkTarget $target
-	 * @return array
-	 */
 	private function getPageAndRev( LinkTarget $target ): array {
 		$title = Title::newFromLinkTarget( $target );
 		// Legacy code. Yay.
@@ -73,6 +69,12 @@ class EditRevUpdaterTest extends MediaWikiUnitTestCase {
 
 		$wikiPage = $this->createMock( WikiPage::class );
 		$wikiPage->method( 'getTitle' )->willReturn( $title );
+		$wikiPage->method( 'isSamePageAs' )->willReturnCallback(
+			static function ( $other ) use ( $target ) {
+				return $target->getNamespace() === $other->getTitle()->getNamespace()
+					&& $target->getDBkey() === $other->getTitle()->getDBkey();
+			}
+		);
 
 		return [ $wikiPage, new MutableRevisionRecord( $title ) ];
 	}
@@ -150,8 +152,7 @@ class EditRevUpdaterTest extends MediaWikiUnitTestCase {
 			->willReturnCallback( static function () use ( $localDB ) {
 				return new UpdateQueryBuilder( $localDB );
 			} );
-		$centralDB = $this->createMock( IDatabase::class );
-		$centralDB->expects( $this->never() )->method( 'newUpdateQueryBuilder' );
+		$centralDB = $this->createNoOpMock( IDatabase::class );
 		$updater = $this->getUpdater( $localDB, $centralDB );
 		$updater->setLastEditPage( $page );
 		$updater->setLogIdsForTarget( $goodTitleValue, $goodIDs );

@@ -1,0 +1,20 @@
+{
+	"@metadata": {
+		"authors": [
+			"Func",
+			"GuoPC",
+			"LittlePaw365",
+			"Liuxinyu970226",
+			"Shinjiman",
+			"Shizhao",
+			"Simon Shek"
+		]
+	},
+	"intersection-desc": "输出一个分类或多个分类交集内最新项目的无序列表",
+	"intersection_toomanycats": "错误：分类过多！",
+	"intersection_noresults": "没有符合这些标准的页面。",
+	"intersection_noincludecats": "错误：需要包含至少一个分类，或指定一个命名空间！",
+	"intersection_pcerror": "由于服务器过载，无法显示此列表。请稍后再试。",
+	"intersection-category": "使用DynamicPageList扩展的页面",
+	"intersection-category-desc": "页面包含<code>&lt;DynamicPageList&gt;</code>标签。"
+}

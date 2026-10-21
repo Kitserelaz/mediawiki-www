@@ -1,0 +1,280 @@
+<?php
+
+namespace SMW\SQLStore\QueryEngine\Fulltext;
+
+use Psr\Log\LoggerAwareTrait;
+use SMW\DataItems\WikiPage;
+use SMW\MediaWiki\Connection\Database;
+use SMW\MediaWiki\JobFactory;
+use SMW\SQLStore\ChangeOp\ChangeDiff;
+use SMW\SQLStore\ChangeOp\ChangeOp;
+use SMW\SQLStore\ChangeOp\TableChangeOp;
+use SMW\Utils\Timer;
+use Wikimedia\ObjectCache\BagOStuff;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 2.5
+ *
+ * @author mwjames
+ */
+class TextChangeUpdater {
+
+	use LoggerAwareTrait;
+
+	private bool $asDeferredUpdate = true;
+
+	private bool $isCommandLineMode = false;
+
+	/**
+	 * @var bool
+	 */
+	private $isPrimary = false;
+
+	/**
+	 * @since 2.5
+	 */
+	public function __construct(
+		private readonly Database $connection,
+		private readonly BagOStuff $cache,
+		private readonly SearchTableUpdater $searchTableUpdater,
+		private readonly JobFactory $jobFactory,
+	) {
+	}
+
+	/**
+	 * @note See `docs/config.md` and the `description` field for the
+	 *  `smwgFulltextDeferredUpdate` setting in `extension.json`.
+	 *
+	 * @since 2.5
+	 *
+	 * @param bool $asDeferredUpdate
+	 */
+	public function asDeferredUpdate( $asDeferredUpdate ): void {
+		$this->asDeferredUpdate = (bool)$asDeferredUpdate;
+	}
+
+	/**
+	 * When running from commandLine, push updates directly to avoid overhead when
+	 * it is known that within that mode transactions are FIFO (i.e. the likelihood
+	 * for race conditions of unfinished updates are diminishable).
+	 *
+	 * @since 2.5
+	 *
+	 * @param bool $isCommandLineMode
+	 */
+	public function isCommandLineMode( $isCommandLineMode ): void {
+		$this->isCommandLineMode = (bool)$isCommandLineMode;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param bool $isPrimary
+	 */
+	public function isPrimary( $isPrimary ): void {
+		$this->isPrimary = $isPrimary;
+	}
+
+	/**
+	 * @see SMW::SQLStore::AfterDataUpdateComplete hook
+	 *
+	 * @since 2.5
+	 *
+	 * @param ChangeOp $changeOp
+	 */
+	public function pushUpdates( ChangeOp $changeOp ): void {
+		if ( !$this->searchTableUpdater->isEnabled() ) {
+			return;
+		}
+
+		Timer::start( __METHOD__ );
+
+		// Update within the same transaction as started by SMW::SQLStore::AfterDataUpdateComplete
+		if ( !$this->asDeferredUpdate || $this->isCommandLineMode || $this->isPrimary ) {
+			$this->doUpdateFromChangeDiff( $changeOp->newChangeDiff() );
+			return;
+		}
+
+		if ( !$this->canPostUpdate( $changeOp ) ) {
+			return;
+		}
+
+		$title = $changeOp->getSubject()->getTitle();
+
+		if ( $title === null ) {
+			return;
+		}
+
+		$fulltextSearchTableUpdateJob = $this->jobFactory->newFulltextSearchTableUpdateJob(
+			$title,
+			[
+				'slot:id' => $changeOp->getSubject()->getHash()
+			]
+		);
+
+		$fulltextSearchTableUpdateJob->lazyPush();
+
+		$this->logger->info(
+			'Fulltext TextChangeUpdater Table update (as job) scheduled procTime '
+				. 'in sec: {procTime}',
+			[
+				'method' => __METHOD__,
+				'role' => 'developer',
+				'procTime' => Timer::getElapsedTime( __METHOD__, 5 )
+			]
+		);
+	}
+
+	/**
+	 * @see SearchTableUpdateJob::run
+	 *
+	 * @since 2.5
+	 *
+	 * @param array|bool $parameters
+	 */
+	public function pushUpdatesFromJobParameters( $parameters ): void {
+		if ( !$this->searchTableUpdater->isEnabled() || !isset( $parameters['slot:id'] ) || $parameters['slot:id'] === false ) {
+			return;
+		}
+
+		$subject = WikiPage::doUnserialize( $parameters['slot:id'] );
+		$changeDiff = ChangeDiff::fetch( $this->cache, $subject );
+
+		if ( $changeDiff !== false ) {
+			$this->doUpdateFromChangeDiff( $changeDiff );
+			return;
+		}
+
+		$this->logger->info(
+			'Fulltext TextChangeUpdater Failed update (ChangeDiff) on {id}',
+			[
+				'method' => __METHOD__,
+				'role' => 'developer',
+				'id' => $parameters['slot:id']
+			]
+		);
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * @param ChangeDiff|null $changeDiff
+	 */
+	public function doUpdateFromChangeDiff( ?ChangeDiff $changeDiff = null ): void {
+		if ( !$this->searchTableUpdater->isEnabled() || $changeDiff === null ) {
+			return;
+		}
+
+		Timer::start( __METHOD__ );
+
+		$textItems = $changeDiff->getTextItems();
+		$diffChangeOps = $changeDiff->getTableChangeOps();
+
+		$changeList = $changeDiff->getChangeListByType( 'insert' );
+		$updates = [];
+
+		// Ensure that any delete operation is being accounted for to avoid that
+		// removed value annotation remain
+		if ( $diffChangeOps !== [] ) {
+			$this->doDeleteFromTableChangeOps( $diffChangeOps );
+		}
+
+		// Build a composite of replacements where a change occurred, this my
+		// contain some false positives
+		foreach ( $textItems as $sid => $textItem ) {
+
+			if ( !isset( $changeList[$sid] ) ) {
+				continue;
+			}
+
+			$this->collectUpdates( $sid, $textItem, $updates );
+		}
+
+		foreach ( $updates as $key => $value ) {
+			[ $sid, $pid ] = explode( ':', $key, 2 );
+
+			if ( !$this->searchTableUpdater->exists( $sid, $pid ) ) {
+				$this->searchTableUpdater->insert( $sid, $pid );
+			}
+
+			$this->searchTableUpdater->update(
+				$sid,
+				$pid,
+				$value
+			);
+		}
+
+		$this->logger->info(
+			'Fulltext TextChangeUpdater Table update completed '
+				. 'procTime in sec: {procTime}',
+			[
+				'method' => __METHOD__,
+				'role' => 'developer',
+				'procTime' => Timer::getElapsedTime( __METHOD__, 5 )
+			]
+		);
+	}
+
+	private function collectUpdates( int|string $sid, array $textItem, array &$updates ): void {
+		$searchTable = $this->searchTableUpdater->getSearchTable();
+
+		foreach ( $textItem as $pid => $text ) {
+
+			// Exempted property -> out
+			if ( $searchTable->isExemptedPropertyById( $pid ) ) {
+				continue;
+			}
+
+			$text = implode( ' ', $text );
+			$key = $sid . ':' . $pid;
+
+			$updates[$key] = !isset( $updates[$key] ) ? $text : $updates[$key] . ' ' . $text;
+		}
+	}
+
+	private function doDeleteFromTableChangeOps( array $tableChangeOps ): void {
+		foreach ( $tableChangeOps as $tableChangeOp ) {
+			$this->doDeleteFromTableChangeOp( $tableChangeOp );
+		}
+	}
+
+	private function doDeleteFromTableChangeOp( TableChangeOp $tableChangeOp ): void {
+		foreach ( $tableChangeOp->getFieldChangeOps( 'delete' ) as $fieldChangeOp ) {
+
+			// Replace s_id for subobjects etc. with the o_id
+			if ( $tableChangeOp->isFixedPropertyOp() ) {
+				$fieldChangeOp->set( 's_id', $fieldChangeOp->has( 'o_id' ) ? $fieldChangeOp->get( 'o_id' ) : $fieldChangeOp->get( 's_id' ) );
+				$fieldChangeOp->set( 'p_id', $tableChangeOp->getFixedPropertyValByField( 'p_id' ) );
+			}
+
+			if ( !$fieldChangeOp->has( 'p_id' ) ) {
+				continue;
+			}
+
+			$this->searchTableUpdater->delete(
+				$fieldChangeOp->get( 's_id' ),
+				$fieldChangeOp->get( 'p_id' )
+			);
+		}
+	}
+
+	private function canPostUpdate( ChangeOp $changeOp ): bool {
+		$searchTable = $this->searchTableUpdater->getSearchTable();
+		$canPostUpdate = false;
+
+		// Find out whether we should actual initiate an update
+		foreach ( $changeOp->getChangedEntityIdSummaryList() as $id ) {
+			$dataItem = $searchTable->getDataItemById( $id );
+			if ( $dataItem instanceof WikiPage && $dataItem->getNamespace() === SMW_NS_PROPERTY ) {
+				if ( !$searchTable->isExemptedPropertyById( $id ) ) {
+					$canPostUpdate = true;
+					break;
+				}
+			}
+		}
+
+		return $canPostUpdate;
+	}
+
+}

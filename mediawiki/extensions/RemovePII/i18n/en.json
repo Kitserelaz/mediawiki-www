@@ -1,0 +1,30 @@
+{
+	"@metadata": {
+		"authors": [
+			"Universal Omega"
+		]
+	},
+	"removepii-desc": "Creates the special pages, Special:GenerateRandomHash and Special:RemovePII to handle removing of personal identifiable information.",
+	"removepii-extensionname": "RemovePII",
+	"generaterandomhash": "Generate Random Hash",
+	"removepii": "RemovePII",
+	"action-generate-random-hash": "generate a random hash",
+	"action-handle-pii": "handle/remove personal identifiable information",
+	"right-generate-random-hash": "Generate random username hashes",
+	"right-handle-pii": "Handle/remove personal identifiable information",
+	"removepii-hash-length-help": "Enter the number of characters the generated hash should contain. Min. 8, Max. 32",
+	"removepii-hash-prefix-help": "Select from the dropdown, the appropriate option to use for the prefix for hash generation.",
+	"removepii-oldname-label": "Old username:",
+	"removepii-newname-label": "New username:",
+	"removepii-dpa_id-label": "DPA ID:",
+	"removepii-action-label": "Select the action you wish to preform.",
+	"removepii-action-help": "Renames should '''always''' be done before RemovePII. RemovePII will also lock the user's global account.",
+	"removepii-warning-irreversible": "'''Warning:''' you are about to perform the RemovePII action. This process is irreversible. Please make sure you have the information correct before proceeding further.",
+	"removepii-wiki-disabled": "RemovePII has been disabled on this wiki. It is currently configured to only be enabled on a central wiki. You must initiate it from there.",
+	"removepii-success": "Successfully submitted.",
+	"removepii-centralauth-notinstalled": "The CentralAuth extension is not installed.",
+	"removepii-log-name": "RemovePII log",
+	"removepii-log-header": "This is a basic log of all RemovePII actions.",
+	"removepii-invalid-dpa": "Unable to validate associating DPA request. Either the server is experiencing difficulties and we are unable to connect to the endpoint, or the given old username does not match the requester's username given in the associated DPA request.",
+	"logentry-removepii-action": "$1 removed personal identifiable information from a user."
+}

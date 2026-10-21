@@ -49,7 +49,11 @@ ve.ui.MWPopupTool.prototype.onPopupOpened = function () {
  * Handle to call when popup is closing
  */
 ve.ui.MWPopupTool.prototype.onPopupClosing = function () {
-	this.$link.trigger( 'focus' );
+	// Giving focus to the sticky toolbar causes scroll to jump:
+	// https://issues.chromium.org/issues/40749247
+	// this.$link.trigger( 'focus' );
+	// This could be restored if we only trigger focus when the
+	// close button is pressed, not when the popup is autoclosed.
 };
 
 /**
@@ -107,10 +111,13 @@ ve.ui.MWNoticesPopupTool.static.autoAddToCatchall = false;
 ve.ui.MWNoticesPopupTool.prototype.setNotices = function ( notices ) {
 	const count = notices.length;
 
-	this.popup.setLabel( ve.msg(
+	const noticeMsg = ve.msg(
 		'visualeditor-editnotices-tool',
 		mw.language.convertNumber( count )
-	) );
+	);
+
+	this.popup.setLabel( noticeMsg );
+	this.setTitle( noticeMsg );
 
 	if ( this.$items ) {
 		this.$items.remove();
@@ -126,10 +133,7 @@ ve.ui.MWNoticesPopupTool.prototype.setNotices = function ( notices ) {
 			.html( typeof item === 'string' ? item : item.message );
 		ve.targetLinksToNewWindow( $element[ 0 ] );
 
-		this.noticeItems.push( {
-			$element: $element,
-			type: item.type
-		} );
+		this.noticeItems.push( { $element, type: item.type } );
 
 		this.$items.append( $element );
 	} );
@@ -139,18 +143,6 @@ ve.ui.MWNoticesPopupTool.prototype.setNotices = function ( notices ) {
 	mw.hook( 'wikipage.content' ).fire( this.popup.$body );
 
 	ve.track( 'activity.notices', { action: 'show' } );
-};
-
-/**
- * Get the tool title.
- *
- * @inheritdoc
- */
-ve.ui.MWNoticesPopupTool.prototype.getTitle = function () {
-	const items = this.toolbar.getTarget().getEditNotices();
-
-	// eslint-disable-next-line mediawiki/msg-doc
-	return ve.msg( this.constructor.static.title, items.length );
 };
 
 /* Registration */

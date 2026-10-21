@@ -1,0 +1,252 @@
+{
+	"name": "Flex Diagrams",
+	"version": "0.8",
+	"author": [
+		"Yaron Koren",
+		"Sahaj Khandelwal"
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:Flex_Diagrams",
+	"descriptionmsg": "flexdiagrams-desc",
+	"license-name": "GPL-2.0-or-later",
+	"type": "specialpage",
+	"namespaces": [
+		{
+			"id": 740,
+			"constant": "FD_NS_BPMN",
+			"name": "BPMN",
+			"conditional": true,
+			"defaultcontentmodel": "flexdiagrams-bpmn"
+		},
+		{
+			"id": 741,
+			"constant": "FD_NS_BPMN_TALK",
+			"name": "BPMN_talk",
+			"conditional": true
+		},
+		{
+			"id": 742,
+			"constant": "FD_NS_GANTT",
+			"name": "Gantt",
+			"conditional": true,
+			"defaultcontentmodel": "flexdiagrams-gantt"
+		},
+		{
+			"id": 743,
+			"constant": "FD_NS_GANTT_TALK",
+			"name": "Gantt_talk",
+			"conditional": true
+		},
+		{
+			"id": 744,
+			"constant": "FD_NS_MERMAID",
+			"name": "Mermaid",
+			"conditional": true,
+			"defaultcontentmodel": "flexdiagrams-mermaid"
+		},
+		{
+			"id": 745,
+			"constant": "FD_NS_MERMAID_TALK",
+			"name": "Mermaid_talk",
+			"conditional": true
+		},
+		{
+			"id": 746,
+			"constant": "FD_NS_DRAWIO",
+			"name": "Drawio",
+			"conditional": true,
+			"defaultcontentmodel": "flexdiagrams-drawio"
+		},
+		{
+			"id": 747,
+			"constant": "FD_NS_DRAWIO_TALK",
+			"name": "Drawio_talk",
+			"conditional": true
+		},
+		{
+			"id": 748,
+			"constant": "FD_NS_DOT",
+			"name": "DOT",
+			"conditional": true,
+			"defaultcontentmodel": "flexdiagrams-dot"
+		},
+		{
+			"id": 749,
+			"constant": "FD_NS_DOT_TALK",
+			"name": "DOT_talk",
+			"conditional": true
+		}
+	],
+	"requires": {
+		"MediaWiki": ">= 1.40.0"
+	},
+	"callback": "FDHooks::registerExtension",
+	"Actions": {
+		"editdiagram": "FDEditDiagramAction"
+	},
+	"ContentHandlers": {
+		"flexdiagrams-bpmn": "FDBPMNContentHandler",
+		"flexdiagrams-gantt": "FDGanttContentHandler",
+		"flexdiagrams-drawio": "FDDrawioContentHandler",
+		"flexdiagrams-mermaid": "FDMermaidContentHandler",
+		"flexdiagrams-dot": "FDDOTContentHandler"
+	},
+	"SpecialPages": {
+		"EditDiagram": "FDSpecialEditDiagram"
+	},
+	"MessagesDirs": {
+		"FlexDiagrams": [
+			"i18n"
+		]
+	},
+	"ExtensionMessagesFiles": {
+		"FlexDiagramsAlias": "FlexDiagrams.i18n.aliases.php",
+		"FlexDiagramsNamespaces": "FlexDiagrams.i18n.namespaces.php",
+		"FlexDiagramsMagic": "FlexDiagrams.i18n.magic.php"
+	},
+	"AutoloadClasses": {
+		"FDHooks": "FDHooks.php",
+		"FDEditDiagramAction": "includes/FD_EditDiagramAction.php",
+		"FDEditPage": "includes/FD_EditPage.php",
+		"FDDisplayDiagram": "includes/FD_DisplayDiagram.php",
+		"FDSpecialEditDiagram": "includes/FD_SpecialEditDiagram.php",
+		"FDGanttContent": "includes/FD_GanttContent.php",
+		"FDGanttContentHandler": "includes/FD_GanttContentHandler.php",
+		"FDDrawioContent": "includes/FD_DrawioContent.php",
+		"FDDrawioContentHandler": "includes/FD_DrawioContentHandler.php",
+		"FDBPMNContent": "includes/FD_BPMNContent.php",
+		"FDBPMNContentHandler": "includes/FD_BPMNContentHandler.php",
+		"FDMermaidContent": "includes/FD_MermaidContent.php",
+		"FDMermaidContentHandler": "includes/FD_MermaidContentHandler.php",
+		"FDDOTContent": "includes/FD_DOTContent.php",
+		"FDDOTContentHandler": "includes/FD_DOTContentHandler.php"
+	},
+	"ResourceModules": {
+		"ext.flexdiagrams.bpmn": {
+			"scripts": [
+				"resources/bpmn-js/bpmn-modeler.development.js",
+				"resources/ext.flexdiagrams.bpmn.js"
+			],
+			"styles": [
+				"resources/bpmn-js/diagram-js.css",
+				"resources/bpmn-js/bpmn.css",
+				"resources/bpmn-js/bpmn-codes.css",
+				"resources/bpmn-js/bpmn-js.css",
+				"resources/bpmn-js/bpmn-embedded.css",
+				"resources/FD_BPMN.css"
+			],
+			"dependencies": [
+				"ext.flexdiagrams"
+			]
+		},
+		"ext.flexdiagrams.bpmn.viewer": {
+			"scripts": [
+				"resources/bpmn-js/bpmn-navigated-viewer.development.js",
+				"resources/ext.flexdiagrams.bpmn.js"
+			],
+			"styles": [
+				"resources/bpmn-js/diagram-js.css",
+				"resources/bpmn-js/bpmn.css",
+				"resources/FD_BPMN.css"
+			],
+			"dependencies": [
+				"ext.flexdiagrams"
+			]
+		},
+		"ext.flexdiagrams.gantt": {
+			"scripts": [
+				"resources/dhtmlxgantt/dhtmlxgantt.js",
+				"resources/ext.flexdiagrams.gantt.js"
+			],
+			"styles": [
+				"resources/dhtmlxgantt/dhtmlxgantt.css",
+				"resources/FD_Gantt.css"
+			],
+			"dependencies": [
+				"ext.flexdiagrams",
+				"oojs-ui-widgets"
+			],
+			"messages": [
+				"flexdiagrams-gantt-zoomlevel",
+				"flexdiagrams-gantt-hours",
+				"flexdiagrams-gantt-days",
+				"flexdiagrams-gantt-weeks",
+				"flexdiagrams-gantt-months",
+				"flexdiagrams-gantt-years"
+			]
+		},
+		"ext.flexdiagrams.drawio": {
+			"scripts": [
+				"resources/ext.flexdiagrams.drawio.js"
+			],
+			"styles": [
+				"resources/FD_Drawio.css"
+			],
+			"dependencies": [
+				"ext.flexdiagrams",
+				"oojs-ui-widgets"
+			],
+			"messages": [
+				"flexdiagrams-drawio-saveinfo"
+			]
+		},
+		"ext.flexdiagrams.dot": {
+			"scripts": [
+				"resources/viz-js/viz-standalone.js",
+				"resources/ext.flexdiagrams.dot.js"
+			],
+			"styles": [
+				"resources/FD_DOT.css"
+			],
+			"dependencies": [
+				"ext.flexdiagrams"
+			]
+		},
+		"ext.flexdiagrams.mermaid": {
+			"scripts": [
+				"resources/mermaid.min.js",
+				"resources/ext.flexdiagrams.mermaid.js"
+			],
+			"styles": [
+				"resources/FD_Mermaid.css"
+			],
+			"dependencies": [
+				"ext.flexdiagrams"
+			]
+		},
+		"ext.flexdiagrams": {
+			"scripts": [
+				"resources/ext.flexdiagrams.js",
+				"resources/ext.flexdiagrams.base.js"
+			],
+			"styles": [
+				"resources/FlexDiagrams.css"
+			]
+		},
+		"ext.flexdiagrams.editwarning": {
+			"scripts": "resources/FD_editWarning.js",
+			"dependencies": [
+				"mediawiki.confirmCloseWindow",
+				"jquery.textSelection"
+			]
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "",
+		"remoteExtPath": "FlexDiagrams"
+	},
+	"Hooks": {
+		"SkinTemplateNavigation::Universal": "FDEditDiagramAction::displayTab",
+		"ParserFirstCallInit": "FDHooks::registerParserFunctions",
+		"MakeGlobalVariablesScript": "FDHooks::setGlobalJSVariables",
+		"CanonicalNamespaces": "FDHooks::registerNamespaces",
+		"ArticleRevisionViewCustom": "FDHooks::displayIncomingLinks",
+		"ParserAfterTidy": "FDHooks::disableParserCache",
+		"HtmlPageLinkRendererEnd": "FDHooks::linkToEditDiagramAction"
+	},
+	"config": {
+		"FlexDiagramsEnabledFormats": {
+			"value": [ 740, 742, 744, 746, 748 ]
+		}
+	},
+	"manifest_version": 2
+}

@@ -8,6 +8,7 @@ use MediaWiki\Extension\AbuseFilter\KeywordsManager;
 use MediaWiki\Extension\AbuseFilter\Parser\Exception\InternalException;
 use MediaWiki\Extension\AbuseFilter\Parser\Exception\UserVisibleException;
 use MediaWiki\Message\Message;
+use Wikimedia\Message\ListType;
 
 /**
  * SyntaxChecker statically analyzes the code without actually running it.
@@ -32,9 +33,6 @@ class SyntaxChecker {
 	 * @var AFPTreeNode|null Root of the AST to check
 	 */
 	private $treeRoot;
-
-	/** @var KeywordsManager */
-	private $keywordsManager;
 
 	public const MCONSERVATIVE = 'MODE_CONSERVATIVE';
 	public const MLIBERAL = 'MODE_LIBERAL';
@@ -62,27 +60,14 @@ class SyntaxChecker {
 	 */
 	private $mode;
 
-	/**
-	 * @var bool Whether we want to check for unused variables
-	 */
-	private $checkUnusedVars;
-
-	/**
-	 * @param AFPSyntaxTree $tree
-	 * @param KeywordsManager $keywordsManager
-	 * @param string $mode
-	 * @param bool $checkUnusedVars
-	 */
 	public function __construct(
 		AFPSyntaxTree $tree,
-		KeywordsManager $keywordsManager,
+		private readonly KeywordsManager $keywordsManager,
 		string $mode = self::MCONSERVATIVE,
-		bool $checkUnusedVars = false
+		private readonly bool $checkUnusedVars = false
 	) {
 		$this->treeRoot = $tree->getRoot();
-		$this->keywordsManager = $keywordsManager;
 		$this->mode = $mode;
-		$this->checkUnusedVars = $checkUnusedVars;
 	}
 
 	/**
@@ -95,14 +80,12 @@ class SyntaxChecker {
 			return;
 		}
 		$bound = $this->check( $this->desugar( $this->treeRoot ), [] );
-		$unused = array_keys( array_filter( $bound, static function ( $v ) {
-			return !$v;
-		} ) );
+		$unused = array_keys( $bound, false, true );
 		if ( $this->checkUnusedVars && $unused ) {
 			throw new UserVisibleException(
 				'unusedvars',
 				self::DUMMYPOS,
-				[ Message::listParam( $unused, 'comma' ) ]
+				[ Message::listParam( $unused, ListType::COMMA ) ]
 			);
 		}
 	}
@@ -406,8 +389,8 @@ class SyntaxChecker {
 	 *	   a literal string.
 	 *
 	 * @param AFPTreeNode $node
-	 * @param bool[] $bound Map of [ variable_name => used ]
-	 * @return bool[] Map of [ variable_name => used ]
+	 * @param array<string,bool> $bound Map of [ variable_name => used ]
+	 * @return array<string,bool> Map of [ variable_name => used ]
 	 * @throws UserVisibleException
 	 * @throws InternalException
 	 */
@@ -416,25 +399,13 @@ class SyntaxChecker {
 			// phpcs:ignore PSR2.ControlStructures.SwitchDeclaration.TerminatingComment
 			case AFPTreeNode::ATOM:
 				$tok = $node->children;
-				switch ( $tok->type ) {
-					case AFPToken::TID:
-						return $this->lookupVar(
-							$tok->value,
-							$tok->pos,
-							$bound
-						);
-
-					case AFPToken::TSTRING:
-					case AFPToken::TFLOAT:
-					case AFPToken::TINT:
-					case AFPToken::TKEYWORD:
-						return $bound;
-
-					default:
-						// @codeCoverageIgnoreStart
-						throw new InternalException( "Unknown token {$tok->type} provided in the ATOM node" );
-						// @codeCoverageIgnoreEnd
-				}
+				return match ( $tok->type ) {
+					AFPToken::TID => $this->lookupVar( $tok->value, $tok->pos, $bound ),
+					AFPToken::TSTRING, AFPToken::TFLOAT, AFPToken::TINT, AFPToken::TKEYWORD => $bound,
+					// @codeCoverageIgnoreStart
+					default => throw new InternalException( "Unknown token {$tok->type} provided in the ATOM node" ),
+					// @codeCoverageIgnoreEnd
+				};
 			case AFPTreeNode::ARRAY_DEFINITION:
 				// @phan-suppress-next-line PhanTypeSuspiciousNonTraversableForeach children is array here
 				foreach ( $node->children as $el ) {
@@ -500,16 +471,13 @@ class SyntaxChecker {
 				$bound = $this->check( $condition, $bound );
 				$boundLeft = $this->check( $exprIfTrue, $bound );
 				$boundRight = $this->check( $exprIfFalse, $bound );
-				switch ( $this->mode ) {
-					case self::MCONSERVATIVE:
-						return $this->mapUnion( $boundLeft, $boundRight );
-					case self::MLIBERAL:
-						return $this->mapIntersect( $boundLeft, $boundRight );
-					default:
-						// @codeCoverageIgnoreStart
-						throw new LogicException( "Unknown mode: {$this->mode}" );
-						// @codeCoverageIgnoreEnd
-				}
+				return match ( $this->mode ) {
+					self::MCONSERVATIVE => $this->mapUnion( $boundLeft, $boundRight ),
+					self::MLIBERAL => $this->mapIntersect( $boundLeft, $boundRight ),
+					// @codeCoverageIgnoreStart
+					default => throw new LogicException( "Unknown mode: {$this->mode}" ),
+					// @codeCoverageIgnoreEnd
+				};
 
 			case AFPTreeNode::INDEX_ASSIGNMENT:
 				[ $varName, $offset, $value ] = $node->children;
@@ -545,9 +513,9 @@ class SyntaxChecker {
 	}
 
 	/**
-	 * @param array $left
-	 * @param array $right
-	 * @return array
+	 * @param array<string,bool> $left
+	 * @param array<string,bool> $right
+	 * @return array<string,bool>
 	 */
 	private function mapUnion( array $left, array $right ): array {
 		foreach ( $right as $key => $val ) {
@@ -561,9 +529,9 @@ class SyntaxChecker {
 	}
 
 	/**
-	 * @param array $left
-	 * @param array $right
-	 * @return array
+	 * @param array<string,bool> $left
+	 * @param array<string,bool> $right
+	 * @return array<string,bool>
 	 */
 	private function mapIntersect( array $left, array $right ): array {
 		$keys = array_intersect_key( $left, $right );
@@ -577,8 +545,8 @@ class SyntaxChecker {
 	/**
 	 * @param string $var
 	 * @param int $pos
-	 * @param array $bound
-	 * @return array
+	 * @param array<string,bool> $bound
+	 * @return array<string,bool>
 	 */
 	private function assignVar( string $var, int $pos, array $bound ): array {
 		$var = strtolower( $var );
@@ -596,8 +564,8 @@ class SyntaxChecker {
 	/**
 	 * @param string $var
 	 * @param int $pos
-	 * @param array $bound
-	 * @return array
+	 * @param array<string,bool> $bound
+	 * @return array<string,bool>
 	 */
 	private function lookupVar( string $var, int $pos, array $bound ): array {
 		$var = strtolower( $var );

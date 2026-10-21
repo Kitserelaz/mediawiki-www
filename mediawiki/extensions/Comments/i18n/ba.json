@@ -1,0 +1,31 @@
+{
+	"@metadata": {
+		"authors": [
+			"Айбикә",
+			"З. ӘЙЛЕ",
+			"Ләйсән"
+		]
+	},
+	"comments-comment": "Комментарий",
+	"comments-voted-label": "Тауыш бирҙе",
+	"comments-loading": "Йөкләү...",
+	"comments-reply-to": "{{GENDER:$2|$1}} яуап бирергә",
+	"comments-cancel-reply": "Кире алырға",
+	"comments-block-warning-anon": "Был аноним ҡатнашыусының (IP-адресы аша) комментарийҙарына даими иғтибар бирмәҫкә теләйһегеҙме?",
+	"comments-block-warning-user": "$1 барлыҡ комментарийҙарына даими иғтибар бирмәҫкә теләйһегеҙме?",
+	"comments-delete-warning": "Был комментарийҙы ысынлап та юйырға теләйһегеҙме?",
+	"comments-sort-by-date": "Датаһы буйынса тәртипкә килтереү",
+	"comments-sort-by-score": "Мәрәй иҫәбе буйынса тәртипкә килтереү",
+	"comments-show-comment-link": "Комментарийҙы күрһәтергә",
+	"comments-you": "Һеҙ",
+	"comments-reply": "Яуап бирергә",
+	"comments-not-allowed": "Һеҙ комментарийҙар ҡалдыра алмайһығыҙ.",
+	"comments-post": "Комментарий яҙығыҙ",
+	"comments-submit": "Комментарийығыҙҙы өҫтәгеҙ",
+	"comments-score-text": "Баһа",
+	"comments-permalink": "Даими һылтанма",
+	"comments-delete-link": "Комментарийҙы юйырға",
+	"comments-anon-name": "Аноним ҡатнашыусы",
+	"comments-links-are-forbidden": "Комментарийҙарҙа эске һылтанмалар күрһәтеү тыйыла!",
+	"comments-is-spam": "Комментарий тексы спам тип ҡабул ителде."
+}

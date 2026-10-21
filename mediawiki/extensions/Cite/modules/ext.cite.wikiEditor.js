@@ -31,17 +31,13 @@ mw.hook( 'wikiEditor.toolbarReady' ).add( ( $textarea ) => {
 	} );
 
 	/* Add reference help to the Help section */
-	const parsedRef = function ( number ) {
-		return $( '<sup>' )
-			.addClass( 'reference' )
-			.append(
-				$( '<a>' )
-					.attr( 'href', '#' )
-					.text(
-						mw.message( 'cite-wikieditor-help-content-reference-example-ref-result', mw.language.convertNumber( number ) ).text()
-					)
-			);
-	};
+	const parsedRef = ( number ) => $( '<sup>' )
+		.addClass( 'reference' )
+		.append( $( '<a>' )
+			.text( mw.message( 'cite-wikieditor-help-content-reference-example-ref-result',
+				number
+			).text() )
+		);
 
 	const helpRows = [
 		{
@@ -52,18 +48,22 @@ mw.hook( 'wikiEditor.toolbarReady' ).add( ( $textarea ) => {
 				)
 			},
 			result: {
-				html: mw.message( 'cite-wikieditor-help-content-reference-example-text1', parsedRef( 1 ) ).parse()
+				html: mw.message( 'cite-wikieditor-help-content-reference-example-text1',
+					parsedRef( mw.language.convertNumber( 1 ) )
+				).parse()
 			}
 		},
 		{
 			description: { html: mw.message( 'cite-wikieditor-help-content-named-reference-description' ).parse() },
 			syntax: {
 				html: mw.html.escape(
-					mw.message( 'cite-wikieditor-help-content-reference-example-text1', mw.message( 'cite-wikieditor-help-content-reference-example-ref-named', mw.message( 'cite-wikieditor-help-content-reference-example-ref-id' ).plain(), mw.message( 'cite-wikieditor-help-content-reference-example-text3', 'https://www.example.org/' ).plain() ).plain() ).plain()
+					mw.message( 'cite-wikieditor-help-content-reference-example-text1', mw.message( 'cite-wikieditor-help-content-reference-example-ref-named', mw.message( 'cite-wikieditor-help-content-reference-example-ref-id' ).plain(), mw.message( 'cite-wikieditor-help-content-reference-example-text3' ).plain() ).plain() ).plain()
 				)
 			},
 			result: {
-				html: mw.message( 'cite-wikieditor-help-content-reference-example-text1', parsedRef( 2 ) ).parse()
+				html: mw.message( 'cite-wikieditor-help-content-reference-example-text1',
+					parsedRef( mw.language.convertNumber( 2 ) )
+				).parse()
 			}
 		},
 		{
@@ -74,7 +74,30 @@ mw.hook( 'wikiEditor.toolbarReady' ).add( ( $textarea ) => {
 				)
 			},
 			result: {
-				html: mw.message( 'cite-wikieditor-help-content-reference-example-text1', parsedRef( 2 ) ).parse()
+				html: mw.message( 'cite-wikieditor-help-content-reference-example-text1',
+					parsedRef( mw.language.convertNumber( 2 ) )
+				).parse()
+			}
+		},
+		{
+			description: {
+				html: mw.message( 'cite-wikieditor-help-content-sub-reference-description' ).parse()
+			},
+			syntax: {
+				html: mw.html.escape(
+					mw.message( 'cite-wikieditor-help-content-reference-example-text1',
+						mw.message( 'cite-wikieditor-help-content-reference-example-ref-details',
+							mw.message( 'cite-wikieditor-help-content-reference-example-ref-id' ).plain(),
+							mw.message( 'cite-wikieditor-help-content-reference-example-extra-details' ).plain()
+						).plain()
+					).plain()
+				)
+			},
+			result: {
+				html: mw.message( 'cite-wikieditor-help-content-reference-example-text1',
+					// The dot in the sub-ref number is currently also hard-coded everywhere else
+					parsedRef( mw.language.convertNumber( 2 ) + '.' + mw.language.convertNumber( 1 ) )
+				).parse()
 			}
 		},
 		{
@@ -83,48 +106,30 @@ mw.hook( 'wikiEditor.toolbarReady' ).add( ( $textarea ) => {
 				html: mw.message( 'cite-wikieditor-help-content-reference-example-reflist' ).escaped()
 			},
 			result: {
-				html: '<ol class="references">' +
-					'<li><span class="mw-cite-backlink"><a href="#">' +
+				html: '<ol class="references" style="margin-top: 0; margin-left: 1.2em;">' +
+					'<li><span class="mw-cite-backlink"><a>' +
 					mw.message( 'cite_reference_backlink_symbol' ).parse() + '</a></span> ' +
-					mw.message( 'cite-wikieditor-help-content-reference-example-text2', window.location.href + '#' ).parse() +
+					mw.message( 'cite-wikieditor-help-content-reference-example-text2', window.location.href + '#wikiEditor-ui-toolbar' ).parse() +
 					'</li>' +
-					'<li><span class="mw-cite-backlink"><a href="#">' +
+					'<li><span class="mw-cite-backlink"><a>' +
 					mw.message( 'cite_reference_backlink_symbol' ).parse() +
 					'</a></span> ' +
-					mw.message( 'cite-wikieditor-help-content-reference-example-text3', window.location.href + '#' ).parse() +
+					mw.message( 'cite-wikieditor-help-content-reference-example-text3' ).parse() +
 
-					( mw.config.get( 'wgCiteBookReferencing' ) ?
-						'<ol style="list-style-type: none; padding-left: 0; margin-top: 0;">' +
-						'<li style="margin-left: -1em;">' +
-						'2.1 ' + mw.message( 'cite-wikieditor-help-content-reference-example-extra-details' ).parse() +
+					( mw.config.get( 'wgCiteSubReferencing' ) ?
+						'<ol class="mw-subreference-list" style="margin-top: 0;">' +
+						'<li>' +
+						mw.message( 'cite-wikieditor-help-content-reference-example-extra-details' ).parse() +
 						'</li></ol>' :
 						'' ) +
 
 					'</li></ol>'
 			}
 		}
-
 	];
 
-	if ( mw.config.get( 'wgCiteBookReferencing' ) ) {
-
-		const extendedRefObj = {
-			description: {
-				html: mw.message( 'cite-wikieditor-help-content-extended-reference-description' ).parse()
-			},
-			syntax: {
-				html: mw.html.escape(
-					mw.message( 'cite-wikieditor-help-content-reference-example-text1', mw.message( 'cite-wikieditor-help-content-reference-example-ref-extends', mw.message( 'cite-wikieditor-help-content-reference-example-ref-id' ).plain(), mw.message( 'cite-wikieditor-help-content-reference-example-extra-details' ).plain() ).plain() ).plain()
-				)
-			},
-			result: {
-				html: mw.message( 'cite-wikieditor-help-content-reference-example-text1', parsedRef( 2.1 ) ).parse()
-			}
-		};
-
-		// Insert extendedRefObj right after the row for named refs with the description message key "Additional use of the same reference"
-		const indexOfNamedRefItem = helpRows.findIndex( ( obj ) => mw.message( 'cite-wikieditor-help-content-rereference-description' ).plain() === obj.description.html );
-		helpRows.splice( indexOfNamedRefItem + 1, 0, extendedRefObj );
+	if ( !mw.config.get( 'wgCiteSubReferencing' ) ) {
+		helpRows.splice( -2, 1 );
 	}
 
 	$textarea.wikiEditor( 'addToToolbar', {
@@ -134,9 +139,9 @@ mw.hook( 'wikiEditor.toolbarReady' ).add( ( $textarea ) => {
 				label: mw.msg( 'cite-wikieditor-help-page-references' ),
 				layout: 'table',
 				headings: [
-					{ html: mw.message( 'wikieditor-toolbar-help-heading-description' ).parse() },
-					{ html: mw.message( 'wikieditor-toolbar-help-heading-syntax' ).parse() },
-					{ html: mw.message( 'wikieditor-toolbar-help-heading-result' ).parse() }
+					{ msg: 'wikieditor-toolbar-help-heading-description' },
+					{ msg: 'wikieditor-toolbar-help-heading-syntax' },
+					{ msg: 'wikieditor-toolbar-help-heading-result' }
 				],
 				rows: helpRows
 			}

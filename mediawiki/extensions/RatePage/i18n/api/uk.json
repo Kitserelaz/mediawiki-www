@@ -1,0 +1,24 @@
+{
+	"@metadata": {
+		"authors": [
+			"DDPAT",
+			"Ice bulldog",
+			"Ата"
+		]
+	},
+	"apihelp-ratepage-summary": "Дозволяє користувачеві голосувати на сторінці та отримує рейтинг сторінки. Потрібно вказати один з двох параметрів: pageid або pagetitle.",
+	"apihelp-ratepage-param-pageid": "Ідентифікатор сторінки",
+	"apihelp-ratepage-param-pagetitle": "Назва сторінки",
+	"apihelp-ratepage-param-answer": "Рейтинг сторінки користувача (від 1 до 5 включно за замовчуванням, може бути змінений налаштуваннями конфігурації)",
+	"apihelp-ratepage-param-contest": "Ідентифікатор конкурсу",
+	"apihelp-ratepage-example-1": "Отримайте поточний рейтинг для прикладу сторінки.",
+	"apihelp-ratepage-example-2": "Оцінити приклад сторінки з 2.",
+	"apihelp-query+pagerating-summary": "Повертає голоси на цій сторінці та дозволи на голосування цього користувача.",
+	"apihelp-query+pagerating-param-contest": "Ідентифікатор конкурсу",
+	"apierror-ratepage-contest-id-too-long": "Довжина ідентифікатора конкурсу перевищує ліміт (255 символів).",
+	"apierror-ratepage-contest-id-allowed-chars": "Ідентифікатор конкурсу повинен складатися лише з цифр та латинських літер. Інші символи не допускаються.",
+	"apierror-ratepage-contest-not-exists": "Конкурс $1 не існує.",
+	"apierror-ratepage-page-not-exists": "Вказана сторінка не існує.",
+	"apierror-ratepage-cannot-vote-in-contest": "У вас немає дозволу голосувати у цьому конкурсі.",
+	"apierror-ratepage-invalid-answer": "Вказано недійсну відповідь. Відповідь має бути більшою або рівною $1 та меншою чи рівною $2."
+}

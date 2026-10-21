@@ -1,0 +1,10 @@
+code[class^=blocks] {
+	display: inline-block;
+}
+
+#content [class^=blocks] {
+	border: none;
+	background-color: inherit;
+	overflow-x: auto;
+	overflow-y: auto;
+}

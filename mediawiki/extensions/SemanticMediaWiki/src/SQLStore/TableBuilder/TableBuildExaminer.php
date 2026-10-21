@@ -1,0 +1,217 @@
+<?php
+
+namespace SMW\SQLStore\TableBuilder;
+
+use Onoi\MessageReporter\MessageReporterAwareTrait;
+use Onoi\MessageReporter\NullMessageReporter;
+use SMW\PropertyRegistry;
+use SMW\SQLStore\EntityStore\EntityIdManager;
+use SMW\SQLStore\SQLStore;
+use SMW\SQLStore\TableBuilder as ITableBuilder;
+use Wikimedia\Rdbms\IDatabase;
+use Wikimedia\Rdbms\RawSQLValue;
+
+/**
+ * @private
+ *
+ * Allows to execute SQLStore or table specific examination tasks that are
+ * expected to be part of the installation or removal routine.
+ *
+ * @license GPL-2.0-or-later
+ * @since 2.5
+ *
+ * @author mwjames
+ */
+class TableBuildExaminer {
+
+	use MessageReporterAwareTrait;
+
+	private array $predefinedPropertyList = [];
+
+	/**
+	 * @since 2.5
+	 */
+	public function __construct(
+		private SQLStore $store,
+		private TableBuildExaminerFactory $tableBuildExaminerFactory,
+	) {
+		$this->messageReporter = new NullMessageReporter();
+		$this->setPredefinedPropertyList( PropertyRegistry::getInstance()->getPropertyList() );
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @return string
+	 */
+	public function getDatabaseInfo(): string {
+		$connection = $this->store->getConnection(
+			DB_PRIMARY
+		);
+
+		return $connection->getType() . ' (' . $connection->getServerInfo() . ')';
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * @param array $propertyList
+	 */
+	public function setPredefinedPropertyList( array $propertyList ): void {
+		$fixedPropertyList = EntityIdManager::$special_ids;
+		$predefinedPropertyList = [];
+
+		foreach ( $propertyList as $key => $val ) {
+			$predefinedPropertyList[$key] = null;
+
+			if ( isset( $fixedPropertyList[$key] ) && is_int( $fixedPropertyList[$key] ) ) {
+				$predefinedPropertyList[$key] = $fixedPropertyList[$key];
+			} elseif ( is_int( $val ) ) {
+				$predefinedPropertyList[$key] = $val;
+			}
+		}
+
+		$this->predefinedPropertyList = $predefinedPropertyList;
+	}
+
+	/**
+	 * Run migrations that must complete before table schemas are altered.
+	 *
+	 * @since 7.0
+	 */
+	public function runPreCreationMigrations(): void {
+		// Skip on fresh install — tables don't exist yet
+		if ( !$this->store->getConnection( 'mw.db' )->tableExists( SQLStore::ID_TABLE, __METHOD__ ) ) {
+			return;
+		}
+
+		$hashField = $this->tableBuildExaminerFactory->newHashField(
+			$this->store
+		);
+
+		$hashField->setMessageReporter( $this->messageReporter );
+		$hashField->migrateHexHashes();
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * @param TableBuilder $tableBuilder
+	 */
+	public function checkOnPostCreation( ITableBuilder $tableBuilder ): void {
+		$fixedProperties = $this->tableBuildExaminerFactory->newFixedProperties(
+			$this->store
+		);
+
+		$fixedProperties->setMessageReporter( $this->messageReporter );
+		$fixedProperties->check();
+
+		$idBorder = $this->tableBuildExaminerFactory->newIdBorder(
+			$this->store
+		);
+
+		$idBorder->setMessageReporter( $this->messageReporter );
+
+		$idBorder->check(
+			[
+				// #3314 (3.0-)
+				$idBorder::LEGACY_BOUND => 50,
+				$idBorder::UPPER_BOUND => SQLStore::FIXED_PROPERTY_ID_UPPERBOUND
+			]
+		);
+
+		$predefinedProperties = $this->tableBuildExaminerFactory->newPredefinedProperties(
+			$this->store
+		);
+
+		$predefinedProperties->setMessageReporter( $this->messageReporter );
+
+		$predefinedProperties->setPredefinedPropertyList(
+			$this->predefinedPropertyList
+		);
+
+		$predefinedProperties->check();
+
+		$hashField = $this->tableBuildExaminerFactory->newHashField(
+			$this->store
+		);
+
+		$hashField->setMessageReporter( $this->messageReporter );
+		$hashField->check();
+
+		$this->checkSortField( $tableBuilder->getLog() );
+
+		$touchedField = $this->tableBuildExaminerFactory->newTouchedField(
+			$this->store
+		);
+
+		$touchedField->setMessageReporter( $this->messageReporter );
+		$touchedField->check();
+
+		$countMapField = $this->tableBuildExaminerFactory->newCountMapField(
+			$this->store
+		);
+
+		$countMapField->setMessageReporter( $this->messageReporter );
+		$countMapField->check( $tableBuilder->getLog() );
+
+		$entityCollation = $this->tableBuildExaminerFactory->newEntityCollation(
+			$this->store
+		);
+
+		$entityCollation->setMessageReporter( $this->messageReporter );
+		$entityCollation->check();
+
+		// Call out for RDBMS specific implementations
+		$tableBuilder->checkOn( TableBuilder::POST_CREATION );
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * @param TableBuilder $tableBuilder
+	 */
+	public function checkOnPostDestruction( ITableBuilder $tableBuilder ): void {
+		$connection = $this->store->getConnection( DB_PRIMARY );
+
+		// Find orphaned tables that have not been removed but were produced and
+		// handled by SMW
+		foreach ( $connection->listTables() as $table ) {
+			if ( strpos( $table, TableBuilder::TABLE_PREFIX ) !== false ) {
+
+				// Remove any MW specific prefix at this point which will be
+				// handled by the DB class (abcsmw_foo -> smw_foo)
+				$tableBuilder->drop( new Table( strstr( $table, TableBuilder::TABLE_PREFIX ) ) );
+			}
+		}
+
+		// Call out for RDBMS specific implementations
+		$tableBuilder->checkOn( TableBuilder::POST_DESTRUCTION );
+	}
+
+	private function checkSortField( array $log ): void {
+		$connection = $this->store->getConnection( DB_PRIMARY );
+
+		$tableName = $connection->tableName( SQLStore::ID_TABLE );
+		$this->messageReporter->reportMessage( "Checking smw_sortkey, smw_sort fields ...\n" );
+
+		// #2429, copy smw_sortkey content to the new smw_sort field once
+		if ( isset( $log[$tableName]['smw_sort'] ) && $log[$tableName]['smw_sort'] === TableBuilder::PROC_FIELD_NEW ) {
+			$emptyField = 'smw_sort';
+			$copyField = 'smw_sortkey';
+
+			$this->messageReporter->reportMessage( "   Table " . SQLStore::ID_TABLE . " ...\n" );
+			$this->messageReporter->reportMessage( "   ... copying $copyField to $emptyField ... " );
+			$connection->newUpdateQueryBuilder()
+				->update( SQLStore::ID_TABLE )
+				->set( [ $emptyField => new RawSQLValue( $copyField ) ] )
+				->where( IDatabase::ALL_ROWS )
+				->caller( __METHOD__ )
+				->execute();
+			$this->messageReporter->reportMessage( "done.\n" );
+		}
+
+		$this->messageReporter->reportMessage( "   ... done.\n" );
+	}
+
+}

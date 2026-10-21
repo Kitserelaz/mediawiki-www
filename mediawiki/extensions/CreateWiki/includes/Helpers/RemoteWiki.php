@@ -2,29 +2,33 @@
 
 namespace Miraheze\CreateWiki\Helpers;
 
-use JobSpecification;
 use MediaWiki\Config\ServiceOptions;
 use MediaWiki\JobQueue\JobQueueGroupFactory;
+use MediaWiki\JobQueue\JobSpecification;
 use Miraheze\CreateWiki\ConfigNames;
 use Miraheze\CreateWiki\Exceptions\MissingWikiError;
 use Miraheze\CreateWiki\Hooks\CreateWikiHookRunner;
 use Miraheze\CreateWiki\Jobs\SetContainersAccessJob;
 use Miraheze\CreateWiki\Services\CreateWikiDatabaseUtils;
-use Miraheze\CreateWiki\Services\CreateWikiDataFactory;
+use Miraheze\CreateWiki\Services\CreateWikiDataStore;
 use UnexpectedValueException;
 use Wikimedia\Rdbms\IReadableDatabase;
+use Wikimedia\Rdbms\Platform\ISQLPlatform;
 use function array_keys;
 use function array_merge;
 use function implode;
 use function json_decode;
 use function json_encode;
+use function strtotime;
 
 class RemoteWiki {
 
 	public const CONSTRUCTOR_OPTIONS = [
 		ConfigNames::Categories,
+		ConfigNames::ClosedReasonOptions,
 		ConfigNames::DatabaseClusters,
 		ConfigNames::DatabaseClustersInactive,
+		ConfigNames::InactiveExemptExpiryOptions,
 		ConfigNames::InactiveExemptReasonOptions,
 		ConfigNames::UseClosedWikis,
 		ConfigNames::UseExperimental,
@@ -57,26 +61,29 @@ class RemoteWiki {
 	private bool $experimental = false;
 	private bool $resetDatabaseLists = true;
 	private ?string $inactiveExemptReason = null;
+	private ?string $inactiveExemptExpiry = null;
 
 	private ?string $deletedTimestamp;
 	private ?string $closedTimestamp = null;
+	private ?string $closedReason = null;
 	private ?string $inactiveTimestamp = null;
 
 	private ?string $log = null;
 
+	/** @throws MissingWikiError */
 	public function __construct(
 		private readonly CreateWikiDatabaseUtils $databaseUtils,
-		private readonly CreateWikiDataFactory $dataFactory,
+		private readonly CreateWikiDataStore $dataStore,
 		private readonly CreateWikiHookRunner $hookRunner,
 		private readonly JobQueueGroupFactory $jobQueueGroupFactory,
 		protected readonly ServiceOptions $options,
-		protected readonly string $dbname
+		protected readonly string $dbname,
 	) {
 		$options->assertRequiredOptions( self::CONSTRUCTOR_OPTIONS );
 
 		$this->dbr = $this->databaseUtils->getGlobalReplicaDB();
 		$row = $this->dbr->newSelectQueryBuilder()
-			->select( '*' )
+			->select( ISQLPlatform::ALL_ROWS )
 			->from( 'cw_wikis' )
 			->where( [ 'wiki_dbname' => $this->dbname ] )
 			->caller( __METHOD__ )
@@ -107,6 +114,7 @@ class RemoteWiki {
 		if ( $this->options->get( ConfigNames::UseClosedWikis ) ) {
 			$this->closed = (bool)$row->wiki_closed;
 			$this->closedTimestamp = $row->wiki_closed_timestamp;
+			$this->closedReason = $row->wiki_closed_reason ?? null;
 		}
 
 		if ( $this->options->get( ConfigNames::UseInactiveWikis ) ) {
@@ -114,6 +122,7 @@ class RemoteWiki {
 			$this->inactiveTimestamp = $row->wiki_inactive_timestamp;
 			$this->inactiveExempt = (bool)$row->wiki_inactive_exempt;
 			$this->inactiveExemptReason = $row->wiki_inactive_exempt_reason ?? null;
+			$this->inactiveExemptExpiry = $row->wiki_inactive_exempt_expiry ?? null;
 		}
 
 		if ( $this->options->get( ConfigNames::UseExperimental ) ) {
@@ -168,11 +177,13 @@ class RemoteWiki {
 		$this->inactive = false;
 		$this->closed = false;
 		$this->closedTimestamp = null;
+		$this->closedReason = null;
 		$this->inactiveTimestamp = null;
 
 		$this->newRows = array_merge( $this->newRows, [
 			'wiki_closed' => 0,
 			'wiki_closed_timestamp' => null,
+			'wiki_closed_reason' => null,
 			'wiki_inactive' => 0,
 			'wiki_inactive_timestamp' => null,
 		] );
@@ -199,6 +210,9 @@ class RemoteWiki {
 
 		$this->inactiveExemptReason = null;
 		$this->newRows['wiki_inactive_exempt_reason'] = null;
+
+		$this->inactiveExemptExpiry = null;
+		$this->newRows['wiki_inactive_exempt_expiry'] = null;
 	}
 
 	public function setInactiveExemptReason( string $reason ): void {
@@ -212,6 +226,34 @@ class RemoteWiki {
 
 	public function getInactiveExemptReason(): ?string {
 		return $this->inactiveExemptReason;
+	}
+
+	public function setInactiveExemptExpiry( string $expiry ): void {
+		if ( $expiry === '' ) {
+			return;
+		}
+		if ( $expiry === 'indefinite' ) {
+			$expiry = 'infinity';
+		} else {
+			$unix = strtotime( $expiry );
+			if ( $unix === false ) {
+				return;
+			}
+			$expiry = $this->dbr->timestamp( $unix );
+		}
+
+		if ( $expiry === $this->inactiveExemptExpiry ) {
+			return;
+		}
+
+		$this->trackChange( 'inactive-exempt-expiry', $this->inactiveExemptExpiry, $expiry );
+
+		$this->inactiveExemptExpiry = $expiry;
+		$this->newRows['wiki_inactive_exempt_expiry'] = $expiry;
+	}
+
+	public function getInactiveExemptExpiry(): ?string {
+		return $this->inactiveExemptExpiry;
 	}
 
 	public function isPrivate(): bool {
@@ -253,6 +295,7 @@ class RemoteWiki {
 	public function markClosed(): void {
 		$this->trackChange( 'closed', 0, 1 );
 		$this->hooks[] = 'CreateWikiStateClosed';
+		$this->log = 'closed';
 		$this->closed = true;
 		$this->inactive = false;
 		$this->closedTimestamp = $this->dbr->timestamp();
@@ -264,6 +307,20 @@ class RemoteWiki {
 			'wiki_inactive' => 0,
 			'wiki_inactive_timestamp' => null,
 		] );
+	}
+
+	public function setClosedReason( string $reason ): void {
+		$reason = $reason === '' ? null : $reason;
+
+		$this->trackChange( 'closed-reason', $this->closedReason, $reason );
+
+		$this->closedReason = $reason;
+		$this->newRows['wiki_closed_reason'] = $reason;
+		$this->logParams['5::reason'] = $reason ?? '';
+	}
+
+	public function getClosedReason(): ?string {
+		return $this->closedReason;
 	}
 
 	public function getClosedTimestamp(): ?string {
@@ -282,6 +339,7 @@ class RemoteWiki {
 		$this->deleted = true;
 		$this->deletedTimestamp = $this->dbr->timestamp();
 		$this->closedTimestamp = null;
+		$this->closedReason = null;
 		$this->inactiveTimestamp = null;
 
 		$this->newRows = array_merge( $this->newRows, [
@@ -289,6 +347,7 @@ class RemoteWiki {
 			'wiki_deleted_timestamp' => $this->deletedTimestamp,
 			'wiki_closed' => 0,
 			'wiki_closed_timestamp' => null,
+			'wiki_closed_reason' => null,
 			'wiki_inactive' => 0,
 			'wiki_inactive_timestamp' => null,
 		] );
@@ -467,12 +526,11 @@ class RemoteWiki {
 				}
 			}
 
-			$data = $this->dataFactory->newInstance( $this->dbname );
 			if ( $this->resetDatabaseLists ) {
-				$data->resetDatabaseLists( isNewChanges: true );
+				$this->dataStore->resetDatabaseLists( isNewChanges: true );
 			}
 
-			$data->resetWikiData( isNewChanges: true );
+			$this->hookRunner->onCreateWikiRemoteWikiCommit( $this->dbname );
 
 			if ( $this->log === null ) {
 				$this->log = 'settings';

@@ -29,15 +29,12 @@ use Wikimedia\Rdbms\IResultWrapper;
  * Caches Category::class objects
  */
 class CategoryCache {
-	/** @var (?Category)[] Keys are category database names, values are either a Category object or null */
+	/** @var array<string,?Category> Keys are category database names, values are either a Category object or null */
 	private array $cache = [];
 
-	private IConnectionProvider $dbProvider;
-
 	public function __construct(
-		IConnectionProvider $dbProvider
+		private readonly IConnectionProvider $dbProvider,
 	) {
-		$this->dbProvider = $dbProvider;
 	}
 
 	/**
@@ -91,7 +88,10 @@ class CategoryCache {
 
 	public function fillFromQuery( IResultWrapper $rows ): void {
 		foreach ( $rows as $row ) {
-			$this->cache[$row->cat_title] = Category::newFromRow( $row );
+			$category = Category::newFromRow( $row );
+			if ( $category ) {
+				$this->cache[$row->cat_title] = $category;
+			}
 		}
 	}
 

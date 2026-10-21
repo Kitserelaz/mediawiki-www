@@ -1,0 +1,203 @@
+<?php
+
+namespace SMW\Query\Language;
+
+use InvalidArgumentException;
+use SMW\DataItems\WikiPage;
+use SMW\DataValueFactory;
+use SMW\Localizer\Localizer;
+
+/**
+ * Description of a single class as given by a wiki category, or of a
+ * disjunction of such classes. Corresponds to (disjunctions of) atomic classes
+ * in OWL and to (unions of) classes in RDF.
+ *
+ * @license GPL-2.0-or-later
+ * @since 1.6
+ *
+ * @author Markus Krötzsch
+ */
+class ClassDescription extends Description {
+
+	/**
+	 * @var array of WikiPage
+	 */
+	protected $m_diWikiPages;
+
+	/**
+	 * @var int|null
+	 */
+	protected $hierarchyDepth;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param mixed $content WikiPage or array of WikiPage
+	 *
+	 * @throws InvalidArgumentException
+	 */
+	public function __construct( $content ) {
+		if ( $content instanceof WikiPage ) {
+			$this->m_diWikiPages = [ $content ];
+		} elseif ( is_array( $content ) ) {
+			$this->m_diWikiPages = $content;
+		} else {
+			throw new InvalidArgumentException( "ClassDescription::__construct(): parameter must be a WikiPage Object or an array of such objects." );
+		}
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param int $hierarchyDepth
+	 */
+	public function setHierarchyDepth( $hierarchyDepth ): void {
+		if ( $hierarchyDepth > $GLOBALS['smwgQSubcategoryDepth'] ) {
+			$hierarchyDepth = $GLOBALS['smwgQSubcategoryDepth'];
+		}
+
+		$this->hierarchyDepth = $hierarchyDepth;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @return int|null
+	 */
+	public function getHierarchyDepth() {
+		return $this->hierarchyDepth;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param ClassDescription $description
+	 *
+	 * @return bool
+	 */
+	public function isMergableDescription( ClassDescription $description ): bool {
+		if ( $this->isNegation && $description->isNegation ) {
+			return true;
+		}
+
+		if ( !$this->isNegation && !$description->isNegation ) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * @since  3.0
+	 *
+	 * @param WikiPage $dataItem
+	 */
+	public function addClass( WikiPage $dataItem ): void {
+		$this->m_diWikiPages[] = $dataItem;
+	}
+
+	/**
+	 * @param ClassDescription $description
+	 */
+	public function addDescription( ClassDescription $description ): void {
+		$this->m_diWikiPages = array_merge( $this->m_diWikiPages, $description->getCategories() );
+	}
+
+	/**
+	 * @see Description::getFingerprint
+	 * @since 2.5
+	 *
+	 * @return string
+	 */
+	public function getFingerprint(): string {
+		$hash = [];
+
+		foreach ( $this->m_diWikiPages as $subject ) {
+			$hash[$subject->getHash()] = true;
+		}
+
+		ksort( $hash );
+		$extra = ( $this->isNegation ? '|' . (string)$this->isNegation : '' );
+
+		return 'Cl:' . md5( implode( '|', array_keys( $hash ) ) . $this->hierarchyDepth . $extra );
+	}
+
+	/**
+	 * @return array of WikiPage
+	 */
+	public function getCategories() {
+		return $this->m_diWikiPages;
+	}
+
+	public function getQueryString( $asValue = false ): string {
+		$first = true;
+		$namespaceText = Localizer::getInstance()->getNsText( NS_CATEGORY );
+
+		foreach ( $this->m_diWikiPages as $wikiPage ) {
+			$wikiValue = DataValueFactory::getInstance()->newDataValueByItem( $wikiPage, null );
+			if ( $first ) {
+				$result = '[[' . $namespaceText . ':' . ( $this->isNegation ? '!' : '' ) . $wikiValue->getText();
+				$first = false;
+			} else {
+				$result .= '||' . ( $this->isNegation ? '!' : '' ) . $wikiValue->getText();
+			}
+		}
+
+		if ( $this->hierarchyDepth !== null ) {
+			$result .= '|+depth=' . $this->hierarchyDepth;
+		}
+
+		$result .= ']]';
+
+		if ( $asValue ) {
+			return ' <q>' . $result . '</q> ';
+		}
+
+		return $result;
+	}
+
+	public function isSingleton(): bool {
+		return false;
+	}
+
+	public function getSize(): int {
+		if ( $GLOBALS['smwgQSubcategoryDepth'] > 0 ) {
+			return 1; // disj. of cats should not cause much effort if we compute cat-hierarchies anyway!
+		}
+
+		return count( $this->m_diWikiPages );
+	}
+
+	public function getQueryFeatures(): int {
+		if ( count( $this->m_diWikiPages ) > 1 ) {
+			return SMW_CATEGORY_QUERY | SMW_DISJUNCTION_QUERY;
+		}
+
+		return SMW_CATEGORY_QUERY;
+	}
+
+	public function prune( &$maxsize, &$maxdepth, &$log ): Description {
+		if ( $maxsize >= $this->getSize() ) {
+			$maxsize -= $this->getSize();
+			return $this;
+		} elseif ( $maxsize <= 0 ) {
+			$log[] = $this->getQueryString();
+			$result = new ThingDescription();
+		} else {
+			$result = new ClassDescription( array_slice( $this->m_diWikiPages, 0, $maxsize ) );
+			$rest = new ClassDescription( array_slice( $this->m_diWikiPages, $maxsize ) );
+
+			$result->setHierarchyDepth(
+				$this->getHierarchyDepth()
+			);
+
+			$log[] = $rest->getQueryString();
+			$maxsize = 0;
+		}
+
+		$result->setPrintRequests( $this->getPrintRequests() );
+
+		return $result;
+	}
+
+}

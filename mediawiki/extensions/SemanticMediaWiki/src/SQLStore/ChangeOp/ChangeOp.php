@@ -1,0 +1,336 @@
+<?php
+
+namespace SMW\SQLStore\ChangeOp;
+
+use ArrayIterator;
+use IteratorAggregate;
+use RuntimeException;
+use SMW\DataItems\WikiPage;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 2.3
+ *
+ * @author mwjames
+ */
+class ChangeOp implements IteratorAggregate {
+
+	/**
+	 * Type of change operations
+	 */
+	const OP_INSERT = 'insert';
+	const OP_DELETE = 'delete';
+
+	private array $data = [];
+
+	private array $textItems = [];
+
+	private array $orderedDiff = [];
+
+	private array $fixedPropertyRecords = [];
+
+	private array $propertyList = [];
+
+	private bool $textItemsFlag = false;
+
+	/**
+	 * @since 2.3
+	 */
+	public function __construct(
+		private readonly ?WikiPage $subject = null,
+		private array $diff = [],
+	) {
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param bool $textItemsFlag
+	 */
+	public function setTextItemsFlag( $textItemsFlag ): void {
+		$this->textItemsFlag = (bool)$textItemsFlag;
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * @return ?WikiPage
+	 */
+	public function getSubject(): ?WikiPage {
+		return $this->subject;
+	}
+
+	/**
+	 * @since 2.3
+	 *
+	 * @return ArrayIterator
+	 */
+	public function getIterator(): ArrayIterator {
+		return new ArrayIterator( $this->diff );
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * @return string
+	 */
+	public function getHash() {
+		return $this->subject->getHash();
+	}
+
+	/**
+	 * @since 2.3
+	 *
+	 * @param string $tableName
+	 * @param array $fixedPropertyRecord
+	 */
+	public function addFixedPropertyRecord( $tableName, array $fixedPropertyRecord ): void {
+		$this->fixedPropertyRecords[$tableName] = $fixedPropertyRecord;
+	}
+
+	/**
+	 * @since 2.4
+	 *
+	 * @return array
+	 */
+	public function getFixedPropertyRecords(): array {
+		return $this->fixedPropertyRecords;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param array $propertyList
+	 *
+	 * @return void
+	 */
+	public function addPropertyList( $propertyList ): void {
+		$this->propertyList = array_merge( $this->propertyList, $propertyList );
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @return array
+	 */
+	public function getPropertyList(): array {
+		return $this->propertyList;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param string $hash
+	 * @param array $data
+	 */
+	public function addDataOp( $hash, array $data ): void {
+		$this->data[$hash] = $data;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @return TableChangeOp[]
+	 */
+	public function getDataOps(): array {
+		$dataChangeOps = [];
+
+		foreach ( $this->data as $hash => $data ) {
+			foreach ( $data as $tableName => $d ) {
+
+				if ( isset( $this->fixedPropertyRecords[$tableName] ) ) {
+					$d['property'] = $this->fixedPropertyRecords[$tableName];
+				}
+
+				$dataChangeOps[] = new TableChangeOp( $tableName, $d );
+			}
+		}
+
+		return $dataChangeOps;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param int $id
+	 * @param array $textItems
+	 */
+	public function addTextItems( $id, array $textItems ): void {
+		if ( $this->textItemsFlag ) {
+			$this->textItems[$id] = $textItems;
+		}
+	}
+
+	/**
+	 * @since 2.3
+	 *
+	 * @param array $insertOp
+	 * @param array $deleteOp
+	 */
+	public function addDiffOp( array $insertOp, array $deleteOp ): void {
+		$diff = [
+			'insert' => $insertOp,
+			'delete' => $deleteOp
+		];
+
+		$this->diff[] = $diff;
+	}
+
+	/**
+	 * ChangeOp (TableChangeOp/FieldChangeOp) representation of the composite
+	 * diff.
+	 *
+	 * @since 2.4
+	 *
+	 * @param string|null $table
+	 *
+	 * @return TableChangeOp[]
+	 */
+	public function getTableChangeOps( $table = null ): array {
+		$tableChangeOps = [];
+
+		foreach ( $this->getOrderedDiffByTable( $table ) as $tableName => $diff ) {
+			$tableChangeOps[] = new TableChangeOp( $tableName, $diff );
+		}
+
+		return $tableChangeOps;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @return ChangeDiff
+	 * @throws RuntimeException
+	 */
+	public function newChangeDiff(): ChangeDiff {
+		if ( $this->subject === null ) {
+			throw new RuntimeException(
+				'ChangeDiff requires a subject.'
+			);
+		}
+
+		$changeDiff = new ChangeDiff(
+			$this->subject,
+			$this->getTableChangeOps(),
+			$this->getDataOps(),
+			$this->getPropertyList(),
+			$this->textItems
+		);
+
+		$changeDiff->setChangeList(
+			self::OP_INSERT,
+			$this->getChangedEntityIdListByType( self::OP_INSERT )
+		);
+
+		$changeDiff->setChangeList(
+			self::OP_DELETE,
+			$this->getChangedEntityIdListByType( self::OP_DELETE )
+		);
+
+		return $changeDiff;
+	}
+
+	/**
+	 * Simplified (ordered by table) diff array to allow for an easier
+	 * post-processing
+	 *
+	 * @since 2.3
+	 *
+	 * @return array
+	 */
+	public function getOrderedDiffByTable( $table = null ): array {
+		if ( $table === null && $this->orderedDiff !== [] ) {
+			return $this->orderedDiff;
+		}
+
+		$ordered = [];
+
+		foreach ( $this as $diff ) {
+			foreach ( $diff as $key => $value ) {
+				foreach ( $value as $tableName => $val ) {
+
+					if ( $val === [] || ( $table !== null && $table !== $tableName ) ) {
+						continue;
+					}
+
+					if ( isset( $this->fixedPropertyRecords[$tableName] ) ) {
+						$ordered[$tableName]['property'] = $this->fixedPropertyRecords[$tableName];
+					}
+
+					if ( !isset( $ordered[$tableName] ) ) {
+						$ordered[$tableName] = [];
+					}
+
+					if ( !isset( $ordered[$tableName][$key] ) ) {
+						$ordered[$tableName][$key] = [];
+					}
+
+					foreach ( $val as $v ) {
+						$ordered[$tableName][$key][] = $v;
+					}
+				}
+			}
+		}
+
+		if ( $table === null ) {
+			$this->orderedDiff = $ordered;
+		}
+
+		return $ordered;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param string|null $type
+	 *
+	 * @return array
+	 */
+	public function getChangedEntityIdListByType( $type = null ): array {
+		$changedEntities = [];
+
+		foreach ( $this->getOrderedDiffByTable() as $diff ) {
+
+			if ( ( $type === 'insert' || $type === null ) && isset( $diff['insert'] ) ) {
+				$this->addToIdList( $changedEntities, $diff['insert'] );
+			}
+
+			if ( ( $type === 'delete' || $type === null ) && isset( $diff['delete'] ) ) {
+				$this->addToIdList( $changedEntities, $diff['delete'] );
+			}
+
+			if ( $type === null && isset( $diff['property'] ) ) {
+				$changedEntities[$diff['property']['p_id']] = true;
+			}
+		}
+
+		return $changedEntities;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @return array
+	 */
+	public function getChangedEntityIdSummaryList(): array {
+		return array_keys( $this->getChangedEntityIdListByType() );
+	}
+
+	private function addToIdList( array &$list, $value ): void {
+		foreach ( $value as $element ) {
+
+			if ( isset( $element['p_id'] ) ) {
+				$list[$element['p_id']] = true;
+			}
+
+			if ( isset( $element['s_id'] ) ) {
+				$list[$element['s_id']] = true;
+			}
+
+			if ( isset( $element['o_id'] ) ) {
+				$list[$element['o_id']] = true;
+			}
+		}
+	}
+
+}

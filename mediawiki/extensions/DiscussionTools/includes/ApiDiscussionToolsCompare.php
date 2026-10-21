@@ -11,25 +11,17 @@ use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Title\Title;
 use Wikimedia\ParamValidator\ParamValidator;
-use Wikimedia\Parsoid\Core\ResourceLimitExceededException;
 
 class ApiDiscussionToolsCompare extends ApiBase {
-
-	private CommentParser $commentParser;
-	private VisualEditorParsoidClientFactory $parsoidClientFactory;
-	private RevisionLookup $revisionLookup;
 
 	public function __construct(
 		ApiMain $main,
 		string $name,
-		VisualEditorParsoidClientFactory $parsoidClientFactory,
-		CommentParser $commentParser,
-		RevisionLookup $revisionLookup
+		private readonly VisualEditorParsoidClientFactory $parsoidClientFactory,
+		private readonly CommentParser $commentParser,
+		private readonly RevisionLookup $revisionLookup,
 	) {
 		parent::__construct( $main, $name );
-		$this->parsoidClientFactory = $parsoidClientFactory;
-		$this->commentParser = $commentParser;
-		$this->revisionLookup = $revisionLookup;
 	}
 
 	/**
@@ -89,12 +81,16 @@ class ApiDiscussionToolsCompare extends ApiBase {
 			return;
 		}
 
-		try {
-			$fromItemSet = HookUtils::parseRevisionParsoidHtml( $fromRev, __METHOD__ );
-			$toItemSet = HookUtils::parseRevisionParsoidHtml( $toRev, __METHOD__ );
-		} catch ( ResourceLimitExceededException $e ) {
-			$this->dieWithException( $e );
+		$fromStatus = HookUtils::parseRevisionParsoidHtml( $fromRev, __METHOD__ );
+		$toStatus = HookUtils::parseRevisionParsoidHtml( $toRev, __METHOD__ );
+		if ( !$fromStatus->isOK() ) {
+			$this->dieStatus( $fromStatus );
 		}
+		if ( !$toStatus->isOK() ) {
+			$this->dieStatus( $toStatus );
+		}
+		$fromItemSet = $fromStatus->getValueOrThrow();
+		$toItemSet = $toStatus->getValueOrThrow();
 
 		$removedComments = [];
 		foreach ( $fromItemSet->getCommentItems() as $fromComment ) {
@@ -124,12 +120,8 @@ class ApiDiscussionToolsCompare extends ApiBase {
 	protected function addResult(
 		RevisionRecord $fromRev, RevisionRecord $toRev, array $removedComments = [], array $addedComments = []
 	) {
-		$fromTitle = Title::newFromLinkTarget(
-			$fromRev->getPageAsLinkTarget()
-		);
-		$toTitle = Title::newFromLinkTarget(
-			$toRev->getPageAsLinkTarget()
-		);
+		$fromTitle = Title::newFromPageIdentity( $fromRev->getPage() );
+		$toTitle = Title::newFromPageIdentity( $toRev->getPage() );
 		$result = [
 			'fromrevid' => $fromRev->getId(),
 			'fromtitle' => $fromTitle->getPrefixedText(),

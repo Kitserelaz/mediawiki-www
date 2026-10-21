@@ -165,7 +165,7 @@ ve.ui.MWSettingsPage.static.extraMetaCheckboxes = [];
  * @param {string} label The label to show next to the checkbox
  */
 ve.ui.MWSettingsPage.static.addMetaCheckbox = function ( metaName, label ) {
-	this.extraMetaCheckboxes.push( { metaName: metaName, label: label } );
+	this.extraMetaCheckboxes.push( { metaName, label } );
 };
 
 /* Methods */
@@ -325,9 +325,7 @@ ve.ui.MWSettingsPage.prototype.setup = function ( fragment, config ) {
  *
  * @param {Object} [data] Dialog tear down data
  */
-ve.ui.MWSettingsPage.prototype.teardown = function ( data ) {
-	// Data initialisation
-	data = data || {};
+ve.ui.MWSettingsPage.prototype.teardown = function ( data = {} ) {
 	if ( data.action !== 'done' ) {
 		return;
 	}

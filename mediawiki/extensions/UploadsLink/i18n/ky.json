@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Bosogo"
+		]
+	},
+	"uploadslink-portlet-label": "Жүктөөлөр",
+	"tooltip-pt-uploads": "Сиз жүктөгөн файлдардын тизмеси",
+	"uploadslink-toobox-label": "{{GENDER:$1|колдонуучунун}} жүктөөлөрү",
+	"tooltip-tb-uploads": "Бул {{GENDER:$1|колдонуучунун}} жүктөөлөр тизмеси"
+}

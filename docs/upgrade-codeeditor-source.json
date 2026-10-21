@@ -1,0 +1,75 @@
+{
+  "component": "mediawiki/extensions/CodeEditor",
+  "baseline": "38051ed25e8f9b296c5d610894b95e62ac39806d",
+  "target": "ed800f5bf87bb22ca4acec0fa47bed2ca1e86f3d",
+  "preserved_changes": [
+    {
+      "path": ".eslintignore",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".eslintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".gitignore",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".gitreview",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".phan/config.php",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".phpcs.xml",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".stylelintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "Gruntfile.js",
+      "change": "local-deletion"
+    },
+    {
+      "path": "composer.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ps.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "modules/.eslintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "package-lock.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "package.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "tests/.eslintrc.json",
+      "change": "local-deletion"
+    }
+  ],
+  "dependency_status": "Review runtime dependencies before final verification",
+  "manual_resolutions": {
+    "reason": "Retain disabled live autocompletion and status border-top; adopt target const syntax",
+    "patches": [
+      "patches/codeeditor-jquery.codeEditor.js.patch",
+      "patches/codeeditor-jquery.codeEditor.less.patch"
+    ],
+    "resolved_files": {
+      "modules/jquery.codeEditor.js": "c42aff42baff80efd403eb353f6c741e84f713da304acb6e3f8615df0faebf93",
+      "modules/jquery.codeEditor.less": "0405882cec988a95bcf8fc0708ef98b1902ef76af9b5798686b63f042e45b6df"
+    }
+  }
+}

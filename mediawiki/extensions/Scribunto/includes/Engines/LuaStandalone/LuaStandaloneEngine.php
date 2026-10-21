@@ -7,16 +7,14 @@ use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LuaEngine;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\Parser\ParserOutput;
 
+/**
+ * @property LuaStandaloneInterpreter|null $interpreter
+ */
 class LuaStandaloneEngine extends LuaEngine {
 	/** @var int|null */
 	protected static $clockTick;
 	/** @var array|false */
 	public $initialStatus;
-
-	/**
-	 * @var LuaStandaloneInterpreter
-	 */
-	protected $interpreter;
 
 	public function load() {
 		parent::load();
@@ -38,7 +36,7 @@ class LuaStandaloneEngine extends LuaEngine {
 	public function reportLimitData( ParserOutput $parserOutput ) {
 		try {
 			$this->load();
-		} catch ( Exception $e ) {
+		} catch ( Exception ) {
 			return;
 		}
 		if ( $this->initialStatus ) {
@@ -107,9 +105,9 @@ class LuaStandaloneEngine extends LuaEngine {
 		$ver = LuaStandaloneInterpreter::getLuaVersion( $this->options );
 		if ( $ver !== null ) {
 			if ( substr( $ver, 0, 6 ) === 'LuaJIT' ) {
-				$software['[http://luajit.org/ LuaJIT]'] = str_replace( 'LuaJIT ', '', $ver );
+				$software['[https://luajit.org/ LuaJIT]'] = str_replace( 'LuaJIT ', '', $ver );
 			} else {
-				$software['[http://www.lua.org/ Lua]'] = str_replace( 'Lua ', '', $ver );
+				$software['[https://www.lua.org/ Lua]'] = str_replace( 'Lua ', '', $ver );
 			}
 		}
 	}

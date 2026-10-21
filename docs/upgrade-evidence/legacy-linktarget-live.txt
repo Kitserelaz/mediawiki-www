@@ -1,0 +1,3 @@
+ Container cloudwiki-upgrade1462-init-run-56aacb76c4f7 Creating 
+ Container cloudwiki-upgrade1462-init-run-56aacb76c4f7 Created 
+DataTransfer category export, category highlighting/redirects and SMW seed ownership queries passed on linktarget schema.

@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Bosogo"
+		]
+	},
+	"poll-admin-closed": "Жабык",
+	"poll-admin-panel": "Администратор",
+	"poll-cancel-button": "Жокко чыгаруу",
+	"poll-edit-button": "Баракты сактоо",
+	"poll-js-loading": "Жүктөлүүдө...",
+	"poll-next": "кийинки",
+	"poll-time-days": "{{PLURAL:$1|бир күн|$1 күн}}",
+	"poll-time-minutes": "{{PLURAL:$1|бир мүнөт|$1 мүнөт}}"
+}

@@ -3,13 +3,13 @@
 		"authors": [
 			"Fitoschido",
 			"Ikiwaner",
+			"Joeamj",
 			"Kisare",
 			"Kwisha",
 			"Lloffiwr",
 			"Rance",
 			"Stephenwanjau",
-			"Wangombe",
-			"Joeamj"
+			"Wangombe"
 		]
 	},
 	"right-abusefilter-modify": "Rekebisha cinchungi vya unyanyasaji",
@@ -18,6 +18,7 @@
 	"abusefilter-log-search-title": "Kichwa:",
 	"abusefilter-log-search-wiki": "Wiki:",
 	"abusefilter-log-search-submit": "Tafuta",
+	"abusefilter-log-detailedentry-meta-without-action-links": "$1 : $2 {{GENDER:$9| triggered}} $3 , {{GENDER:$9| performing}} kitendo \" $4 \" kwenye $5 .\nHatua zilizochukuliwa: $6 ;\nMaelezo ya kichujio: $7",
 	"abusefilter-log-detailslink": "Maelezo zaidi",
 	"abusefilter-log-details-var": "Kibadili",
 	"abusefilter-log-details-val": "Thamani",
@@ -98,7 +99,7 @@
 	"abusefilter-edit-builder-op-arithmetic-divide": "Mgawanyo (/)",
 	"abusefilter-edit-builder-group-misc": "Mseto",
 	"abusefilter-edit-builder-group-vars": "Vibadili",
-	"abusefilter-edit-builder-vars-accountname": "Jina la akaunti (wakati wa kufungua akaunti)",
+	"abusefilter-edit-builder-vars-account-name": "Jina la akaunti (wakati wa kufungua akaunti)",
 	"abusefilter-edit-builder-vars-action": "Tendo",
 	"abusefilter-edit-builder-vars-addedlines": "Laini zilizo ongezwa katika hariri",
 	"abusefilter-edit-builder-vars-delta": "Badiliko katika ukubwa wa hariri",
@@ -116,9 +117,8 @@
 	"abusefilter-edit-builder-vars-user-emailconfirm": "Wakati anwani ya barua pepe ilidhibitishwa",
 	"abusefilter-edit-builder-vars-added-links": "Viungo vyote vya nje vilivyoongezwa katika hariri",
 	"abusefilter-edit-builder-vars-removed-links": "Viungo vyote vya nje vilivyotolewa katika hariri",
-	"abusefilter-edit-builder-vars-all-links": "Viungo vyote vya nje katika hati mpya",
-	"abusefilter-edit-builder-vars-recent-contributors": "Watumiaji kumi wa mwisho kuchangia ukurasa huu",
 	"abusefilter-edit-builder-vars-old-links": "Viungo katika ukurasa, kabla ya harir",
+	"abusefilter-edit-builder-vars-recent-contributors": "Watumiaji kumi wa mwisho kuchangia ukurasa huu",
 	"abusefilter-filter-log": "Mabadiliko ya hivi karibuni ya chujio",
 	"abusefilter-history": "Badili historia ya matumizi mabaya ya chujio #$1",
 	"abusefilter-history-foruser": "Mabadiliko na $1",

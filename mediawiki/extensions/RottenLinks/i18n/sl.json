@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Eleassar"
+		]
+	},
+	"rottenlinks": "Stanje zunanjih povezav",
+	"rottenlinks-desc": "V vikiju prikaže [[Special:RottenLinks|stanje vseh zunanjih povezav]]",
+	"rottenlinks-table-external": "Zunanja povezava",
+	"rottenlinks-table-response": "HTTP-odgovor",
+	"rottenlinks-table-usage": "Uporaba strani",
+	"rottenlinks-showbad": "Pokaži samo nedelujoče povezave",
+	"rottenlinks-statistics": "Statistika nedelujočih povezav",
+	"rottenlinks-stats": "Prikaži statistiko povezav"
+}

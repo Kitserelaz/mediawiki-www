@@ -1,0 +1,40 @@
+{
+	"@metadata": {
+		"authors": [
+			"Martin Urbanec",
+			"Martin Urbanec (WMF)",
+			"Matěj Suchánek"
+		]
+	},
+	"apihelp-growthstarmentee-summary": "Nastavit nováčka jako označeného hvězdičkou (uloženo soukromě a nelogováno)",
+	"apihelp-growthstarmentee-param-gesaction": "Akce k provedení (<kbd>star</kbd> nebo <kbd>unstar</kbd>)",
+	"apihelp-growthstarmentee-param-gesmentee": "Nováček k (od)hvězdičkování",
+	"apihelp-query+growthstarredmentees-summary": "Získat seznam uživatelů mentorovaných uživatelem, který je v tuto chvíli přihlášen",
+	"apihelp-growthsetmentorstatus-summary": "Nastavit stav současného uživatele na aktivní/pryč",
+	"apihelp-growthsetmentorstatus-param-gesstatus": "Nový stav",
+	"apihelp-growthsetmentorstatus-param-gesbackindays": "Pokud nastavujete stav mentora na \"pryč\", zde musí být délka ve dnech, po kterou má být aplikován.",
+	"apihelp-query+growthmentorstatus-summary": "Zjistit stav současného uživatele",
+	"apihelp-growthmentordashboardupdatedata-summary": "Naplánovat mimořádnou aktualizaci modulu \"Vaši nováčci\". Z výkonnostních důvodů můžete naplánovat maximálně jednu aktualizaci každé dvě hodiny.",
+	"apihelp-growthsetmenteestatus-summary": "Nastavit stav nováčka (dovoluje uživateli vypnout/zapnout modul mentorství, anebo se zcela z mentorského programu vyvázat, což smaže vztah mezi mentorem a mentorovaným).",
+	"apihelp-growthsetmenteestatus-param-state": "Nový stav nováčka (varování: pokud toto nastavíte na optout, vztah mentor/mentorovaný bude trvale smazán)",
+	"apihelp-growthsetmenteestatus-param-state-enabled": "Modul mentorství je aktivní",
+	"apihelp-growthsetmenteestatus-param-state-disabled": "Modul mentorství je plně deaktivován. Toto je obyčejně nastaveno softwarem a používáno pro A/B testování.",
+	"apihelp-growthsetmenteestatus-param-state-optout": "Nováček si mentorství vypnul; vztah mentor/mentorovaný bude smazán, modul mentorství bude nahrazen tlačítkem pro novou aktivaci mentorského modulu.",
+	"apihelp-query+growthmenteestatus-summary": "Zjistit současný stav právě přihlášeného nováčka; viz dokumentaci pro action=growthsetmenteestatus, která obsahuje podrobnější informace o jednotlivých stavech.",
+	"apihelp-query+growthmentormentee-summary": "Získat seznam všech nováčků přiřazených danému mentorovi",
+	"apihelp-query+growthmentormentee-param-gemmmentor": "Uživatelské jméno mentora, pro kterého vrátit seznam nováčků",
+	"apihelp-growthmanagementorlist-summary": "Spravovat informace ve strukturovaném seznamu mentorů (obvykle uložené na stránce [[MediaWiki:GrowthMentors.json]]). Tento modul mohou používat jak současní, tak budoucí mentoři (aby se přidali nebo změnili informace o sobě). Modul mohou použít také správci, kteří mohou změnit informace o všech uživatelích.",
+	"apihelp-growthmanagementorlist-param-geaction": "Akce",
+	"apihelp-growthmanagementorlist-param-message": "Představení se jako mentor (pokud chcete použít výchozí zprávu, použijte prázdný řetězec)",
+	"apihelp-growthmanagementorlist-param-weight": "Váha",
+	"apihelp-growthmanagementorlist-param-isaway": "Je mentor momentálně pryč? Musí být nastaveno (výchozí hodnota je false).",
+	"apihelp-growthmanagementorlist-param-awaytimestamp": "Do jaké doby je mentor pryč? Maximum je jeden rok ode dneška. Ignorováno, pokud isaway není zaškrtnuto.",
+	"apihelp-growthmanagementorlist-param-summary": "Důvod změny",
+	"apihelp-growthmanagementorlist-param-username": "Uživatelské jméno mentora ovlivněného touto změnou. Pokud není vyplněno, použije se uživatelské jméno momentálně přihlášeného uživatele. Může být použito pouze oprávněnými uživateli.",
+	"growthexperiments-api-managementors-error-no-away-timestamp": "Pokud je isaway zaškrtnuté, potom musí být parameter awaytimestamp vyplněný.",
+	"apihelp-growthinvalidatepersonalizedpraisesuggestion-summary": "Zneplatní návrh nováčka k ocenění v modulu Zašlete ocenění svým nováčkům na Nástěnce mentora",
+	"apihelp-growthinvalidatepersonalizedpraisesuggestion-param-mentee": "Nováček ke zneplatnění",
+	"apihelp-growthinvalidatepersonalizedpraisesuggestion-param-reason": "Důvod zneplatnění návrhu",
+	"apihelp-growthinvalidatepersonalizedpraisesuggestion-param-skipreason": "Přeskočit důvod na zneplatnění návrhu",
+	"apihelp-query+growthmentorlist-summary": "Seznam všech mentorů"
+}

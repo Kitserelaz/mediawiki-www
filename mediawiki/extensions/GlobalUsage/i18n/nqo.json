@@ -1,0 +1,24 @@
+{
+	"@metadata": {
+		"authors": [
+			"Babamamadidiane",
+			"Lancine.kounfantoh.fofana",
+			"Lanciné.kounfantoh.fofana",
+			"Youssoufkadialy"
+		]
+	},
+	"globalusage": "ߞߐߕߐ߮ ߟߊߓߊ߯ߙߊߟߌ߫ ߞߙߎߞߙߍ",
+	"globalusage-for": "ߖߊ߯ߓߊ ߟߊ߬ߓߊ߰ߙߊ߬ߟߌ \"$1\" ߢߍ߫",
+	"globalusage-filename": "ߞߐߕߐ߮ ߕߐ߮:",
+	"globalusage-desc": "[[Special:GlobalUsage|ߞߐߜߍ߫ ߞߙߍߞߙߍߣߍ߲]] ߛߊ߫ ߞߊ߬ ߖߌ߬ߦߊ߬ߓߍ ߘߏ߫ ߟߊߓߊ߯ߙߊߟߌ ߦߋ߫ ߖߊ߯ߓߊ ߞߣߐ߫",
+	"globalusage-ok": "ߢߌߣߌ߲ߠߌ߲",
+	"globalusage-text": "ߖߊ߯ߓߊ ߞߐߕߐ߮ ߟߊ߬ߓߊ߰ߙߊ߬ߟߌ ߟߎ߬ ߢߌߣߌ߲߫",
+	"globalusage-no-results": "[[:$1]] ߟߊߓߊ߯ߙߊߣߍ߲߫ ߕߍ߫ ߥߞߌ߫ ߜߘߍ ߟߎ߬ ߓߟߏ߫.",
+	"globalusage-on-wiki": "ߊ߬ ߟߊߓߊ߯ߙߊ߫ $2 ߘߐ߫",
+	"globalusage-of-file": "ߥߞߌ߫ ߕߐ߭ ߢߌ߲߬ ߠߎ߬ ߦߋ߫ ߞߐߕߐ߮ ߣߌ߲߬ ߠߊߓߊ߯ߙߊ߫ ߟߊ߫:",
+	"globalusage-more": "ߞߐߕߐ߮ ߣߌ߲߬  [[{{#Special:GlobalUsage}}/$1|more global usage]] ߦߋߟߌ.",
+	"globalusage-filterlocal": "ߕߌ߲߬ߞߎߘߎ߲ ߟߊ߬ߓߊ߰ߙߊ߬ߟߌ ߟߎ߬ ߞߊߣߊ߬ ߦߌ߬ߘߊ߬",
+	"mostgloballylinkedfiles": "ߞߐߕߐ߮ ߡߍ߲ ߠߎ߬ ߜߋ߲߬ߞߘߎ߬ߣߍ߲߬ߓߊ ߦߋ߫ ߖߊ߯ߓߊ ߞߊߓߋ ߟߊ߫",
+	"mostgloballylinkedfiles-summary": "ߞߐߕߐ߮ ߟߎ߬ ߛߙߍߘߍ ߡߍ߲ ߠߎ߬ ߓߘߊ߫ ߟߊߕߘߍ߬ ߛߋ߲߬ߧߊ߫ ߦߙߌߞߊ߫ ߥߞߌ ߟߎ߬ ߓߍ߯ ߘߐ߫. ߡߍ߲ ߟߐ߬ ߕߐ߫ ߦߋ߫ ߛߙߍߘߍ߫ ߟߎ߫ ߡߊ߬ ߡߍ߲ ߠߎ߬ ߕߍ߫ ߘߏ߫ ߜߘߍ߫ ߖߊ߬ߕߋ߬ ߟߊ߫ ߝߏ߫ ߡߍ߲ ߠߎ߬ ߟߊߓߊ߯ߙߊߣߍ߲߫ ߦߋ߫ {{SITENAME}} ߞߊ߲߬߸ ߣߌ߲߬ ߘߐߜߍ߫ [[{{#special:MostLinkedFiles}}]].",
+	"globallywantedfiles": "ߖߊ߯ߓߊ ߞߐߕߐ߯ ߞߊ߬ߣߌ߲߬ߣߍ߲ ߠߎ߬"
+}

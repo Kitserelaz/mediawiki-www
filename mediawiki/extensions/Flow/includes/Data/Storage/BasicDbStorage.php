@@ -47,7 +47,7 @@ class BasicDbStorage extends DbStorage {
 	 * Inserts a set of rows into the database
 	 *
 	 * @param array $rows The rows to insert. Also accepts a single row.
-	 * @return array|false An array of the rows that now exist
+	 * @return array An array of the rows that now exist
 	 * in the database. Integrity of keys is guaranteed.
 	 */
 	public function insert( array $rows ) {
@@ -58,13 +58,12 @@ class BasicDbStorage extends DbStorage {
 		} else {
 			$insertRows = [ $this->preprocessSqlArray( $rows ) ];
 		}
-
-		// insert returns boolean true/false
-		$this->dbFactory->getDB( DB_PRIMARY )->newInsertQueryBuilder()
+		$queryBuilder = $this->dbFactory->getDB( DB_PRIMARY )->newInsertQueryBuilder()
 			->insertInto( $this->table )
 			->rows( $insertRows )
-			->caller( __METHOD__ . " ({$this->table})" )
-			->execute();
+			->caller( __METHOD__ . " ({$this->table})" );
+		DbStorage::maybeSetInsertIgnore( $queryBuilder );
+		$queryBuilder->execute();
 
 		return $rows;
 	}

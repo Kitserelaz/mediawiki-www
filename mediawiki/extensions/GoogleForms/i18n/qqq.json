@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"BlankEclair"
+		]
+	},
+	"googleforms-desc": "{{desc|name=GoogleForms|url=https://www.mediawiki.org/wiki/Extension:GoogleForms}}",
+	"googleforms-missing-parameter": "This is a message that is shown when the tag extension is called without a required parameter (currently only 'id')",
+	"googleforms-bad-parameter": "This is a message that is shown when the tag extension is called with a parameter that failed validation checks"
+}

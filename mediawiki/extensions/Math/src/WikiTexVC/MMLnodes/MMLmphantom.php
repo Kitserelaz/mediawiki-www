@@ -12,7 +12,8 @@ namespace MediaWiki\Extension\Math\WikiTexVC\MMLnodes;
  */
 class MMLmphantom extends MMLbase {
 
-	public function __construct( string $texclass = "", array $attributes = [] ) {
-		parent::__construct( "mphantom", $texclass, $attributes );
+	/** @inheritDoc */
+	public function __construct( string $texclass = "", array $attributes = [], ...$children ) {
+		parent::__construct( "mphantom", $texclass, $attributes, ...$children );
 	}
 }

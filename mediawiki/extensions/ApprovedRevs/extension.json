@@ -1,0 +1,165 @@
+{
+	"name": "Approved Revs",
+	"version": "2.2.2",
+	"author": [
+		"Yaron Koren",
+		"..."
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:Approved_Revs",
+	"descriptionmsg": "approvedrevs-desc",
+	"license-name": "GPL-2.0-or-later",
+	"type": "hook",
+	"requires": {
+		"MediaWiki": ">= 1.40.0"
+	},
+	"GroupPermissions": {
+		"sysop": {
+			"viewapprover": true,
+			"approverevisions": true
+		},
+		"*": {
+			"viewlinktolatest": true
+		}
+	},
+	"GrantPermissions": {
+		"approvedrevs": {
+			"approverevisions": true,
+			"viewlinktolatest": true,
+			"viewapprover": true
+		}
+	},
+	"GrantPermissionGroups": {
+		"approvedrevs": "approvedrevs"
+	},
+	"AvailableRights": [
+		"approverevisions",
+		"viewlinktolatest",
+		"viewapprover"
+	],
+	"LogTypes": [
+		"approval"
+	],
+	"LogNames": {
+		"approval": "approvedrevs-logname"
+	},
+	"LogHeaders": {
+		"approval": "approvedrevs-logdesc"
+	},
+	"LogActions": {
+		"approval/approve": "approvedrevs-approveaction",
+		"approval/approvefile": "approvedrevs-approvefileaction",
+		"approval/unapprove": "approvedrevs-unapproveaction"
+	},
+	"SpecialPages": {
+		"ApprovedRevs": "SpecialApprovedRevs"
+	},
+	"APIModules": {
+		"approve": "ApiApprove"
+	},
+	"MessagesDirs": {
+		"ApprovedRevs": [
+			"i18n"
+		]
+	},
+	"ExtensionMessagesFiles": {
+		"ApprovedRevsAlias": "ApprovedRevs.alias.php",
+		"ApprovedRevsMagic": "ApprovedRevs.i18n.magic.php"
+	},
+	"AutoloadClasses": {
+		"ApprovedRevs": "includes/ApprovedRevs.php",
+		"ApprovedRevsHooks": "includes/ApprovedRevsHooks.php",
+		"ARParserFunctions": "includes/ARParserFunctions.php",
+		"SpecialApprovedRevs": "includes/specials/SpecialApprovedRevs.php",
+		"ApiApprove": "includes/ApiApprove.php",
+		"ARApproveAction": "includes/ARApproveAction.php",
+		"ARUnapproveAction": "includes/ARUnapproveAction.php",
+		"ARApproveFileAction": "includes/ARApproveFileAction.php",
+		"ARUnapproveFileAction": "includes/ARUnapproveFileAction.php"
+	},
+	"ResourceModules": {
+		"ext.ApprovedRevs": {
+			"styles": "resources/ApprovedRevs.css"
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "",
+		"remoteExtPath": "ApprovedRevs"
+	},
+	"Actions": {
+		"approve": "ARApproveAction",
+		"unapprove": "ARUnapproveAction",
+		"approvefile": "ARApproveFileAction",
+		"unapprovefile": "ARUnapproveFileAction"
+	},
+	"Hooks": {
+		"PageSaveComplete": "ApprovedRevsHooks::onPageSaveComplete",
+		"PageMoveComplete": "ApprovedRevsHooks::setPageMoveAsApproved",
+		"RevisionDataUpdates": "ApprovedRevsHooks::onRevisionDataUpdates",
+		"SearchResultInitFromTitle": "ApprovedRevsHooks::setSearchRevisionID",
+		"ParserBeforeInternalParse": "ApprovedRevsHooks::removeRobotsTag",
+		"ArticleFromTitle": "ApprovedRevsHooks::showApprovedRevision",
+		"ArticleRevisionViewCustom": "ApprovedRevsHooks::showBlankIfUnapproved",
+		"DisplayOldSubtitle": "ApprovedRevsHooks::setSubtitle",
+		"SkinTemplateNavigation::Universal": "ApprovedRevsHooks::changeEditLink",
+		"PageHistoryLineEnding": "ApprovedRevsHooks::addApprovalLink",
+		"PageDeleteComplete": "ApprovedRevsHooks::deleteRevisionApproval",
+		"DiffTools": "ApprovedRevsHooks::addApprovalDiffLink",
+		"BeforeParserFetchTemplateRevisionRecord": "ApprovedRevsHooks::setTranscludedPageRev",
+		"GetMagicVariableIDs": "ApprovedRevsHooks::addMagicWordVariableIDs",
+		"ParserAfterTidy": "ApprovedRevsHooks::handleMagicWords",
+		"ParserGetVariableValueSwitch": "ApprovedRevsHooks::assignAValue",
+		"ParserFirstCallInit": "ApprovedRevsHooks::registerFunctions",
+		"AdminLinks": "ApprovedRevsHooks::addToAdminLinks",
+		"LoadExtensionSchemaUpdates": "ApprovedRevsHooks::describeDBSchema",
+		"TitleGetEditNotices": "ApprovedRevsHooks::addEditNotice",
+		"PageForms::HTMLBeforeForm": "ApprovedRevsHooks::addWarningToPFForm",
+		"ArticleViewHeader": [
+			"ApprovedRevsHooks::setArticleHeader",
+			"ApprovedRevsHooks::displayNotApprovedHeader"
+		],
+		"OutputPageBodyAttributes": "ApprovedRevsHooks::addBodyClass",
+		"ImagePageFileHistoryLine": "ApprovedRevsHooks::onImagePageFileHistoryLine",
+		"UploadComplete": "ApprovedRevsHooks::setLatestFileRevAsApproved",
+		"BeforeParserFetchFileAndTitle": "ApprovedRevsHooks::modifyFileLinks",
+		"ImagePageFindFile": "ApprovedRevsHooks::onImagePageFindFile",
+		"FileDeleteComplete": "ApprovedRevsHooks::onFileDeleteComplete",
+		"wgQueryPages": "ApprovedRevsHooks::onwgQueryPages",
+		"MpdfGetArticle": "ApprovedRevsHooks::onMpdfGetArticle"
+	},
+	"config_prefix": "eg",
+	"config": {
+		"ApprovedRevsEnabledNamespaces": {
+			"value": {
+				"0": true,
+				"2": true,
+				"4": true,
+				"6": true,
+				"10": true,
+				"12": true
+			},
+			"merge_strategy": "array_plus"
+		},
+		"ApprovedRevsSelfOwnedNamespaces": {
+			"value": []
+		},
+		"ApprovedRevsBlankIfUnapproved": {
+			"value": false
+		},
+		"ApprovedRevsBlankFileIfUnapproved": {
+			"value": false
+		},
+		"ApprovedRevsAutomaticApprovals": {
+			"value": true
+		},
+		"ApprovedRevsFileAutomaticApprovals": {
+			"value": true
+		},
+		"ApprovedRevsShowApproveLatest": {
+			"value": false
+		},
+		"ApprovedRevsShowNotApprovedMessage": {
+			"value": false
+		}
+	},
+	"manifest_version": 2
+}

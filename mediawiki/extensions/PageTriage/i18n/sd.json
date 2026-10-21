@@ -1,0 +1,36 @@
+{
+	"@metadata": {
+		"authors": [
+			"Mehtab ahmed",
+			"Tweety"
+		]
+	},
+	"pagetriage-new-page-patrol": "نئين صفحي جو گشت",
+	"pagetriage-bytes": "$1 {{PLURAL:$1|بائيٽ|بائيٽون}}",
+	"pagetriage-edits": "$1 {{PLURAL:$1|سنوار|سنوارون}}",
+	"pagetriage-author-bot": "بوٽ",
+	"pagetriage-filter-predicted-issues-spam": "اسپام",
+	"pagetriage-filter-predicted-issues-none": "ڪوبہ نہ",
+	"pagetriage-triage": "نظرثاني",
+	"pagetriage-filter-date-range-from": "کان",
+	"pagetriage-filter-bot-edits": "بوٽس",
+	"pagetriage-filter-article": "مضمون",
+	"pagetriage-filter-username": "واپرائيندڙنانءُ",
+	"pagetriage-filter-blocked": "بندشيل واپرائيندڙ",
+	"pagetriage-filter-ns-all": "سڀ",
+	"pagetriage-filter-pending-ores-score": "ميسر ناهي",
+	"pagetriage-filter-stat-all": "سڀ",
+	"pagetriage-filter-stat-unreviewed": "اڻـجائزو-ورتل",
+	"pagetriage-filter-stat-bots": "بوٽس پاران",
+	"pagetriage-filter-stat-redirects": "چورڻا",
+	"pagetriage-filter-stat-username": "واپرائيندڙ طرفان: $1",
+	"pagetriage-filter-stat-namespace": "نانءُپولار",
+	"pagetriage-filter-stat-predicted-issues-none": "ڪوبہ نہ",
+	"pagetriage-refresh-list": "فھرست تازي ڪريو",
+	"pagetriage-tags-param-article-label": "مضمون:",
+	"pagetriage-toolbar-learn-more": "وڌيڪ ڄاڻيو »",
+	"pagetriage-wikilove-edit-count": "$1 {{PLURAL:$1|سنوار|سنوارون}}",
+	"pagetriage-toolbar-close": "بند ڪريو",
+	"pagetriage-afc-state-all": "سڀ",
+	"tag-pagetriage-description": "[[mw:Special:MyLanguage/Extension:PageTriage|پيج.ٽرائيج وڌاء]] سان ڪيل سنوارن لاءِ"
+}

@@ -1,0 +1,211 @@
+<?php
+
+namespace SMW\Indicator\EntityExaminerIndicators;
+
+use MediaWiki\Html\TemplateParser;
+use SMW\DataItems\WikiPage;
+use SMW\Indicator\IndicatorProviders\CompositeIndicatorProvider;
+use SMW\Indicator\IndicatorProviders\DeferrableIndicatorProvider;
+use SMW\Indicator\IndicatorProviders\TypableSeverityIndicatorProvider;
+use SMW\Localizer\Message;
+use SMW\Localizer\MessageLocalizerTrait;
+use SMW\MediaWiki\Permission\PermissionAware;
+use SMW\MediaWiki\Permission\PermissionExaminer;
+use SMW\MediaWiki\Permission\PermissionExaminerAware;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 3.2
+ *
+ * @author mwjames
+ */
+class EntityExaminerDeferrableCompositeIndicatorProvider implements DeferrableIndicatorProvider, CompositeIndicatorProvider, PermissionExaminerAware {
+
+	use MessageLocalizerTrait;
+
+	private ?PermissionExaminer $permissionExaminer = null;
+
+	private array $indicators = [];
+
+	private array $modules = [ 'smw.entityexaminer' ];
+
+	private bool $isDeferredMode = false;
+
+	private mixed $languageCode = '';
+
+	/**
+	 * @since 3.2
+	 */
+	public function __construct( private array $indicatorProviders, private TemplateParser $templateParser ) {
+	}
+
+	/**
+	 * @see PermissionExaminerAware::setPermissionExaminer
+	 * @since 3.2
+	 */
+	public function setPermissionExaminer( PermissionExaminer $permissionExaminer ): void {
+		$this->permissionExaminer = $permissionExaminer;
+	}
+
+	/**
+	 * @since 3.2
+	 */
+	public function setDeferredMode( bool $isDeferredMode ): void {
+		$this->isDeferredMode = $isDeferredMode;
+	}
+
+	/**
+	 * @since 3.2
+	 */
+	public function isDeferredMode(): bool {
+		return $this->isDeferredMode;
+	}
+
+	/**
+	 * @since 3.2
+	 */
+	public function getName(): string {
+		return 'deferrablecompoundintegrityexaminer';
+	}
+
+	/**
+	 * @since 3.2
+	 */
+	public function hasIndicator( WikiPage $subject, array $options ): bool {
+		return $this->checkIndicators( $subject, $options ) !== [];
+	}
+
+	/**
+	 * @since 3.2
+	 */
+	public function getIndicators(): array {
+		return $this->indicators;
+	}
+
+	/**
+	 * @since 3.2
+	 */
+	public function getModules(): array {
+		return $this->modules;
+	}
+
+	/**
+	 * @since 3.2
+	 */
+	public function getInlineStyle(): string {
+		return '';
+	}
+
+	private function checkIndicators( WikiPage $subject, array $options ): array {
+		$indicatorProviders = [];
+		$options['dir'] = isset( $options['isRTL'] ) && $options['isRTL'] ? 'rtl' : 'ltr';
+		$options['error_count'] = 0;
+		$options['warning_count'] = 0;
+
+		$this->languageCode = $options['uselang'] ?? Message::USER_LANGUAGE;
+
+		foreach ( $this->indicatorProviders as $indicatorProvider ) {
+
+			if ( $indicatorProvider instanceof PermissionExaminerAware ) {
+				$indicatorProvider->setPermissionExaminer( $this->permissionExaminer );
+			}
+
+			if (
+				$indicatorProvider instanceof PermissionAware &&
+				!$indicatorProvider->hasPermission( $this->permissionExaminer ) ) {
+				continue;
+			}
+
+			if ( !$indicatorProvider instanceof DeferrableIndicatorProvider ) {
+				continue;
+			}
+
+			$indicatorProvider->setDeferredMode( $this->isDeferredMode );
+
+			if ( !$indicatorProvider->hasIndicator( $subject, $options ) ) {
+				continue;
+			}
+
+			$this->modules = array_merge( $this->modules, $indicatorProvider->getModules() );
+			$indicatorProviders[$indicatorProvider->getName()] = $indicatorProvider;
+		}
+
+		if ( $indicatorProviders !== [] ) {
+			$this->buildHTML( $subject, $indicatorProviders, $options );
+		}
+
+		return $this->indicators;
+	}
+
+	private function buildHTML( WikiPage $subject, array $indicatorProviders, array $options ): void {
+		$count = count( $indicatorProviders );
+
+		foreach ( $indicatorProviders as $key => $indicatorProvider ) {
+
+			$severityClass = '';
+
+			if ( $indicatorProvider instanceof TypableSeverityIndicatorProvider ) {
+				if ( $indicatorProvider->isSeverityType( TypableSeverityIndicatorProvider::SEVERITY_ERROR ) ) {
+					$options['error_count']++;
+					$severityClass = 'smw-indicator-severity-error';
+				} elseif ( $indicatorProvider->isSeverityType( TypableSeverityIndicatorProvider::SEVERITY_WARNING ) ) {
+					$options['warning_count']++;
+					$severityClass = 'smw-indicator-severity-warning';
+				}
+			}
+
+			$args = [
+				'tab_id' => $key,
+				'dir' => $options['dir'],
+				'subject' => $subject->getHash(),
+				'checked' => '',
+				'background' => '',
+				'color' => '',
+				'count' => $count
+			];
+
+			$content = $this->getContent( $indicatorProvider, $args );
+
+			if ( $content === '' ) {
+				$count--;
+			}
+
+			$this->indicators[$key] = [
+				'title' => $this->msg( $indicatorProvider->getName(), Message::TEXT, $this->languageCode ),
+				'severity_class' => $severityClass,
+				'error_count' => $options['error_count'],
+				'warning_count' => $options['warning_count'],
+				'content' => $content
+			];
+		}
+	}
+
+	private function getContent( $indicatorProvider, array $args ) {
+		if ( $this->isDeferredMode ) {
+			$args += $indicatorProvider->getIndicators();
+			$args['checked'] = $args['count'] == 1 ? 'checked' : '';
+		} else {
+			$args['title'] = $this->msg( $indicatorProvider->getName(), Message::TEXT, $this->languageCode );
+
+			$args['content'] = $this->templateParser->processTemplate(
+				'Text',
+				[
+					'html-text' => $this->msg( [ 'smw-entity-examiner-deferred-check-awaiting-response', $args['title'] ], Message::TEXT, $this->languageCode )
+				]
+			);
+		}
+
+		if ( $args['content'] === '' ) {
+			return '';
+		}
+
+		return $this->templateParser->processTemplate(
+			'Tab',
+			[
+				'data-tab-id' => $args['tab_id'],
+				'html-content' => $args['content']
+			]
+		);
+	}
+
+}

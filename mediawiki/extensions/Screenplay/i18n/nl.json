@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Esketti",
+			"McDutchie",
+			"Siebrand"
+		]
+	},
+	"screenplay-desc": "Voegt een <code>&lt;screenplay/&gt;</code>-tag toe voor het opmaken van scenario’s",
+	"screenplay-tracking-category": "Pagina's die Screenplay gebruiken"
+}

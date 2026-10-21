@@ -2,6 +2,7 @@
 	"@metadata": {
 		"authors": [
 			"Amire80",
+			"Ats384",
 			"Guycn2",
 			"IKhitron",
 			"Matma Rex",
@@ -10,7 +11,8 @@
 			"Yona b",
 			"לואיקה",
 			"מקף",
-			"עמד"
+			"עמד",
+			"שמזן"
 		]
 	},
 	"discussiontools-autotopicsubpopup-body": "{{GENDER:|תקבל|תקבלי}} התראה כשמישהו כותב תגובה חדשה בדיון הזה. {{GENDER:|אתה יכול|את יכולה}} לכוונן את הגדרות ההתראות שלך בהעדפות.",
@@ -27,7 +29,7 @@
 	"discussiontools-emptystate-desc-self": "אנשים באתר {{SITENAME}} יכולים להשתמש ב[[{{MediaWiki:discussiontools-emptystate-link-userpage}}|דף השיחה]] הזה לשליחת הודעה ציבורית בשבילך, {{GENDER:|ותקבל|ותקבלי|ותישלח לך}} התראה כשזה יקרה.",
 	"discussiontools-emptystate-desc-self-anon": "אנשים באתר {{SITENAME}} יכולים להשתמש ב[[{{MediaWiki:discussiontools-emptystate-link-userpage-anon}}|דף השיחה]] הזה כדי לפרסם הודעה ציבורית על עריכות שנעשו מכתובת ה־IP {{GENDER:|שהתחברת}} דרכה עכשיו.\n\nכתובות IP רבות משתנות לעיתים קרובות, ולפעמים משמשות כמה אנשים. באפשרותך [$1 ליצור חשבון] או [$2 להיכנס לחשבון] כדי להימנע מבלבול עתידי עם משתמשים אחרים שלא נכנסו. יצירת חשבון גם מסתירה את כתובת ה־IP שלך.",
 	"discussiontools-emptystate-desc-self-temp": "אנשים באתר {{SITENAME}} יכולים להשתמש ב[[{{MediaWiki:discussiontools-emptystate-link-userpage}}|דף השיחה]] הזה כדי לפרסם הודעה ציבורית {{GENDER:|אליך|אלייך}}.\n\nבסוף, [[{{MediaWiki:tempuser-helppage}}|הדף הזה יפוג]]. כדי להמשיך לקבל התראות ולקבל גישה לאפשרויות אחרות, יש [$1 ליצור חשבון] או [$2 להיכנס].",
-	"discussiontools-emptystate-desc-user": "[[{{MediaWiki:discussiontools-emptystate-link-userpage}}|דפי שיחה]] הם המקום שבו אנשים דנים איך לגרום לתוכן באתר {{SITENAME}} להיות הכי טוב שהוא יכול. {{GENDER:|תתחיל|תתחילי}} להשתמש בדף השיחה הזה כדי ליצור קשר עם [[:{{SUBJECTPAGENAME}}|{{PAGENAME}}]] ולשתף פעולה {{GENDER:{{PAGENAME}}|איתו|איתה}}. מה {{GENDER:|שתגיד|שתגידי}} כאן יהיה ציבורי ואחרים יראו את זה.",
+	"discussiontools-emptystate-desc-user": "[[{{MediaWiki:discussiontools-emptystate-link-userpage}}|דפי שיחה]] הם המקום שבו אנשים דנים איך לשפר את התוכן באתר {{SITENAME}}. {{GENDER:|תתחיל|תתחילי}} להשתמש בדף השיחה הזה כדי ליצור קשר עם [[:{{SUBJECTPAGENAME}}|{{PAGENAME}}]] ולשתף פעולה {{GENDER:{{PAGENAME}}|איתו|איתה}}. מה {{GENDER:|שתגיד|שתגידי}} כאן יהיה פומבי ואחרים יראו את זה.",
 	"discussiontools-emptystate-desc-user-anon": "[[{{MediaWiki:discussiontools-emptystate-link-userpage-anon}}|דפי שיחה]] הם המקום שאנשים דנים בו על איך לשפר את התוכן באתר {{SITENAME}}. ניתן להשתמש בדף הזה כדי להתחיל דיון על עריכות שנעשו מכתובת ה־IP הזו. מה שייכתב כאן יהיה ציבורי ואחרים יראו את זה. כתובות IP רבות משתנות לעיתים קרובות, ולפעמים משמשות כמה אנשים.",
 	"discussiontools-emptystate-desc-user-temp": "{{GENDER:|השתמש|השתמשי}} ב[[{{MediaWiki:discussiontools-emptystate-link-userpage-temp}}|דף השיחה]] הזה כדי להתחיל דיון {{GENDER:{{PAGENAME}}|עם}} [[:{{SUBJECTPAGENAME}}|{{PAGENAME}}]] על איך לשפר את {{SITENAME}}. מה {{GENDER:|שאתה אומר|שאת אומרת}} יהיה גלוי לציבור ואנשים אחרים יראו את זה. [[:{{SUBJECTPAGENAME}}|{{PAGENAME}}]] הוא [[{{MediaWiki:tempuser-helppage}}|חשבון חולף]] ולכן בסופו של דבר דף השיחה הזה יחלוף. [[{{MediaWiki:tempuser-helppage}}|למידע נוסף]].",
 	"discussiontools-emptystate-title": "להתחיל דיון על {{SUBJECTPAGENAME}}",
@@ -37,7 +39,7 @@
 	"discussiontools-emptystate-title-user": "להתחיל דיון {{GENDER:{{PAGENAME}}|עם}} {{PAGENAME}}",
 	"discussiontools-emptystate-title-user-anon": "{{GENDER:|ברוך הבא|ברוכה הבאה|ברוך בואך}} לדף השיחה הזה",
 	"discussiontools-emptystate-title-user-temp": "להתחיל דיון {{GENDER:{{PAGENAME}}|עם}} {{PAGENAME}}",
-	"discussiontools-error-comment-conflict": "לא היה אפשר לשמור את התגובה {{GENDER:|שלך}} כי מישהו הגיב באותו זמן כמוך. נא לנסות שוב, לא לרענן את הדף כדי לראות את התגובות האחרונות.",
+	"discussiontools-error-comment-conflict": "לא היה אפשר לשמור את התגובה {{GENDER:|שלך}} כי מישהו הגיב באותו זמן כמוך. נא לנסות שוב, או לרענן את הדף כדי לראות את התגובות האחרונות.",
 	"discussiontools-error-comment-disappeared": "לא היה אפשר למצוא את התגובה {{GENDER:|שאתה מגיב|שאת מגיבה|שניסית להגיב}} עליה בדף. אולי היא נמחקה או הועברה לדף אחר.",
 	"discussiontools-error-comment-disappeared-reload": "נא {{GENDER:|לרענן}} את הדף ולנסות שוב.",
 	"discussiontools-error-comment-is-transcluded": "הקישור \"{{int:discussiontools-replylink}}\" אינו יכול לשמש כדי להגיב לשיחה הזאת. כדי להגיב, {{GENDER:|השתמש|השתמשי|נא להשתמש}} בעורך הדף המלא באמצעות לחיצה על \"$1\".",
@@ -74,7 +76,7 @@
 	"discussiontools-newtopicssubscription-notify-subscribed-title": "{{GENDER:|עשית}} מינוי!",
 	"discussiontools-newtopicssubscription-notify-unsubscribed-body": "לא {{GENDER:|תקבל|תקבלי|יתקבלו אצלך}} עוד התראות כאשר יתחילו נושאים חדשים בדף הזה.",
 	"discussiontools-newtopicssubscription-notify-unsubscribed-title": "{{GENDER:|ביטלת}} את המינוי.",
-	"discussiontools-notification-added-topic-header": "הנושא החדש \"<strong>$4</strong>\" נוצר בדף <strong>$3</strong> על־ידי $2.",
+	"discussiontools-notification-added-topic-header": "הנושא החדש \"<strong>$4</strong>\" {{GENDER:$2|נוצר}} בדף <strong>$3</strong> על־ידי $1.",
 	"discussiontools-notification-added-topic-header-bundled": "{{PLURAL:$1|נושא חדש אחד|$1 נושאים חדשים|100=99+ נושאים חדשים}} בדף \"<strong>$2</strong>\".",
 	"discussiontools-notification-added-topic-view": "הצגת הנושא",
 	"discussiontools-notification-comment-thank-header": "$1 {{GENDER:$2|הודה|הודתה}} {{GENDER:$4|לך}} על תגובתך בנושא \"<strong>$3</strong>\".",
@@ -198,9 +200,9 @@
 	"tag-discussiontools-description": "עריכה שנעשתה באמצעות כלי שיחה",
 	"tag-discussiontools-edit": "נערכה תגובה",
 	"tag-discussiontools-edit-description": "משתמש ערך תגובה קיימת באמצעות כלי שיחה",
-	"tag-discussiontools-newtopic": "[{{int:discussiontools-replywidget-newtopic-link}} נושא חדש]",
+	"tag-discussiontools-newtopic": "נושא חדש",
 	"tag-discussiontools-newtopic-description": "משתמש הוסיף נושא חדש לדף באמצעות כלי שיחה",
-	"tag-discussiontools-reply": "[{{int:discussiontools-replywidget-reply-link}} תגובה]",
+	"tag-discussiontools-reply": "תגובה",
 	"tag-discussiontools-reply-description": "משתמש הגיב לשיחה באמצעות כלי שיחה",
 	"tag-discussiontools-source-description": "כלי שיחה היו במצב קוד מקור",
 	"tag-discussiontools-source-enhanced-description": "כלי שיחה היו במצב קוד מקור מורחב עם סרגל כלים",

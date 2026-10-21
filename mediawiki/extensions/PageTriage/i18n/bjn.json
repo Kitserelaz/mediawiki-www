@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Ezagren"
+		]
+	},
+	"pagetriage-filter-all": "Tampaiakan samunyaan",
+	"pagetriage-toolbar-learn-more": "Palajari salangkapnya »",
+	"pagetriage-thank-link": "{{GENDER:$1|{{GENDER:$2|Batarima kasih}}}}",
+	"echo-pref-tooltip-page-review": "Padahi ulun amun sasaurang maulas laman nang ulun ulah."
+}

@@ -2,47 +2,59 @@
 
 namespace MediaWiki\Extension\OAuth\Frontend;
 
-use LogEntry;
-use LogFormatter;
 use MediaWiki\Linker\Linker;
 use MediaWiki\Linker\LinkRenderer;
+use MediaWiki\Logging\LogEntry;
+use MediaWiki\Logging\LogFormatter;
 use MediaWiki\Message\Message;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleFactory;
 use MediaWiki\User\UserEditTracker;
+use MediaWiki\User\UserFactory;
 use MediaWiki\User\UserIdentity;
+use MediaWiki\User\UserRigorOptions;
+use Wikimedia\Message\ScalarParam;
 
 /**
  * Formatter for OAuth log events
  */
 class OAuthLogFormatter extends LogFormatter {
-	protected ExtensionRegistry $extensionRegistry;
-	protected LinkRenderer $linkRenderer;
-	protected TitleFactory $titleFactory;
-	protected UserEditTracker $userEditTracker;
+	protected readonly ExtensionRegistry $extensionRegistry;
 
 	public function __construct(
 		LogEntry $entry,
-		LinkRenderer $linkRenderer,
-		TitleFactory $titleFactory,
-		UserEditTracker $userEditTracker
+		protected readonly LinkRenderer $linkRenderer,
+		protected readonly TitleFactory $titleFactory,
+		protected readonly UserEditTracker $userEditTracker,
+		protected readonly UserFactory $userFactory,
 	) {
 		parent::__construct( $entry );
 		$this->extensionRegistry = ExtensionRegistry::getInstance();
-		$this->linkRenderer = $linkRenderer;
-		$this->titleFactory = $titleFactory;
-		$this->userEditTracker = $userEditTracker;
 	}
 
+	/** @inheritDoc */
 	protected function getMessageParameters() {
 		$params = parent::getMessageParameters();
+		if ( $this->entry->getTargetPage()->getNamespace() === NS_USER ) {
+			$user = $this->userFactory->newFromName(
+				$this->entry->getTarget()->getText(),
+				UserRigorOptions::RIGOR_NONE
+			);
+			if ( $user ) {
+				$params[2] = Message::rawParam( $this->makeUserLink( $user ) );
+			}
+		}
 		if ( isset( $params[3] ) ) {
 			$params[3] = $this->getConsumerLink( $params[3] );
 		}
 		return $params;
 	}
 
+	/**
+	 * @param string $consumerKey
+	 * @return string|ScalarParam
+	 */
 	protected function getConsumerLink( $consumerKey ) {
 		$title = Title::newFromText( 'Special:OAuthListConsumers/view/' . $consumerKey );
 		if ( $this->plaintext ) {

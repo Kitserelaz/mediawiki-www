@@ -1,0 +1,34 @@
+@import 'mediawiki.mixins';
+@import '../mirage.less/mirage.variables';
+
+.skin-mirage-personaltools-dropdown {
+	.skin-mirage-ooui-icon-userAvatar::before {
+		margin-left: 0;
+	}
+
+	.skin-mirage-dropdown-header .skin-mirage-username {
+		display: none;
+	}
+}
+
+// The right rail is below the content in mobile mode,
+// making the button useless.
+label#mirage-right-rail-button {
+	display: none;
+}
+
+#mirage-right-rail {
+	.column-width( @right-rail-space );
+	.column-count( 2 );
+	padding: 0 1.5rem;
+	margin-top: 0;
+
+	section + section {
+		margin-top: @standard-margin;
+	}
+}
+
+.skin-mirage-right-rail-module {
+	.column-break-inside-avoid();
+	min-width: @right-rail-space - @standard-margin - @standard-margin;
+}

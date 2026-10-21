@@ -1,6 +1,7 @@
 <?php
 
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
 
 /**
  * Displays an interface to let the user export pages from the wiki in XML form
@@ -34,7 +35,11 @@ class DTViewXML extends SpecialPage {
 
 	static function getCategoriesList() {
 		$dbr = self::getReadDB();
-		$categories = $dbr->selectFieldValues( 'categorylinks', 'DISTINCT cl_to' );
+		$categories = $dbr->selectFieldValues(
+			[ 'categorylinks', 'linktarget' ], 'DISTINCT lt_title',
+			[ 'lt_namespace' => NS_CATEGORY ], __METHOD__, [],
+			[ 'linktarget' => [ 'INNER JOIN', 'cl_target_id = lt_id' ] ]
+		);
 		return $categories;
 	}
 
@@ -63,12 +68,14 @@ class DTViewXML extends SpecialPage {
 			$newcategories = [];
 			foreach ( $checkcategories as $category ) {
 				$res = $db->select( // make the query
-					[ 'categorylinks', 'page' ],
+					[ 'categorylinks', 'linktarget', 'page' ],
 					[ 'page_id', 'page_title', 'page_namespace' ],
-					[ 'cl_from = page_id',
-						'cl_to = ' . $db->addQuotes( $category )
+					[ 'lt_title' => $category,
+						'lt_namespace' => NS_CATEGORY
 					],
-					$fname
+					$fname, [],
+					[ 'linktarget' => [ 'INNER JOIN', 'cl_target_id = lt_id' ],
+						'page' => [ 'INNER JOIN', 'cl_from = page_id' ] ]
 				);
 				foreach ( $res as $row ) {
 					$page_namespace = $row->page_namespace;

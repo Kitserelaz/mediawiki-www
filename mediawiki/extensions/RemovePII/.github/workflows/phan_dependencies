@@ -1,0 +1,12 @@
+AntiSpoof:
+  branch: auto
+  repo: auto
+CentralAuth:
+  branch: auto
+  repo: auto
+SocialProfile:
+  branch: master
+  repo: auto
+SimpleBlogPage:
+  branch: main
+  repo: https://github.com/Universal-Omega/SimpleBlogPage

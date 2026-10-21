@@ -1,0 +1,116 @@
+<?php
+
+namespace SMW\MediaWiki\Connection;
+
+use RuntimeException;
+use Wikimedia\Rdbms\ILBFactory;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 3.1
+ *
+ * @author mwjames
+ */
+class TransactionHandler {
+
+	private ?string $sectionTransaction = null;
+
+	/**
+	 * @since 3.1
+	 */
+	public function __construct( private readonly ILBFactory $loadBalancerFactory ) {
+	}
+
+	/**
+	 * @since 3.1
+	 */
+	public function inSectionTransaction( string $fname = __METHOD__ ): bool {
+		return $this->sectionTransaction === $fname;
+	}
+
+	/**
+	 * @since 3.1
+	 */
+	public function hasActiveSectionTransaction(): bool {
+		return $this->sectionTransaction !== null;
+	}
+
+	/**
+	 * Register a `section` as transaction
+	 *
+	 * The intent is to make it possible to mark a section and disable any other
+	 * atomic transaction request while being part of a section hereby allowing
+	 * to bundle all requests and encapsulate them into one coherent atomic
+	 * transaction without changing pending callers that may require individual
+	 * atomic transactions when they are not part of a section request.
+	 *
+	 * Only one active a section transaction is allowed at a time otherwise an
+	 * `Exception` is thrown.
+	 *
+	 * @since 3.1
+	 *
+	 * @throws RuntimeException
+	 */
+	public function markSectionTransaction( string $fname = __METHOD__ ): void {
+		if ( $this->sectionTransaction !== null ) {
+			throw new RuntimeException(
+				"Trying to begin a new section transaction while {$this->sectionTransaction} is still active!"
+			);
+		}
+
+		$this->sectionTransaction = $fname;
+	}
+
+	/**
+	 * @since 3.1
+	 */
+	public function detachSectionTransaction( string $fname = __METHOD__ ): void {
+		if ( $this->sectionTransaction !== $fname ) {
+			throw new RuntimeException(
+				"Trying to end an invalid section transaction (registered: {$this->sectionTransaction}, requested: {$fname})"
+			);
+		}
+
+		$this->sectionTransaction = null;
+	}
+
+	/**
+	 * @note Only supported with 1.28+
+	 *
+	 * @since 3.1
+	 */
+	public function getEmptyTransactionTicket( string $fname = __METHOD__ ): ?int {
+		$ticket = null;
+
+		// @see LBFactory::getEmptyTransactionTicket
+		// We don't try very hard at this point and will continue without a ticket
+		// if the check fails and hereby avoid a "... does not have outer scope" error
+
+		if ( !$this->primaryDbHasChanges() ) {
+			$ticket = $this->loadBalancerFactory->getEmptyTransactionTicket( $fname );
+		}
+
+		return $ticket;
+	}
+
+	/**
+	 * Convenience method for safely running commitMasterChanges/waitForReplication
+	 * where it will allow to commit and wait for when a TransactionTicket is
+	 * available.
+	 *
+	 * @note Only supported with 1.28+
+	 *
+	 * @since 3.1
+	 */
+	public function commitAndWaitForReplication( string $fname, mixed $ticket, array $opts = [] ) {
+		if ( !is_int( $ticket ) ) {
+			return;
+		}
+
+		return $this->loadBalancerFactory->commitAndWaitForReplication( $fname, $ticket, $opts );
+	}
+
+	private function primaryDbHasChanges(): bool {
+		return $this->loadBalancerFactory->hasPrimaryChanges();
+	}
+}

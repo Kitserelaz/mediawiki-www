@@ -20,26 +20,24 @@
  * @ingroup Pager
  */
 
-namespace MediaWiki\CheckUser\Investigate\Pagers;
+namespace MediaWiki\Extension\CheckUser\Investigate\Pagers;
 
 use DateTime;
-use MediaWiki\CheckUser\Investigate\Services\CompareService;
-use MediaWiki\CheckUser\Investigate\Utilities\DurationManager;
-use MediaWiki\CheckUser\Services\TokenQueryManager;
 use MediaWiki\Context\IContextSource;
+use MediaWiki\Extension\CheckUser\Investigate\Services\CompareService;
+use MediaWiki\Extension\CheckUser\Investigate\Utilities\DurationManager;
+use MediaWiki\Extension\CheckUser\Services\TokenQueryManager;
 use MediaWiki\Html\Html;
 use MediaWiki\Linker\Linker;
 use MediaWiki\Linker\LinkRenderer;
+use MediaWiki\Page\LinkBatchFactory;
 use MediaWiki\Pager\TablePager;
 use MediaWiki\User\UserFactory;
+use MediaWiki\User\UserIdentityValue;
 use Wikimedia\IPUtils;
 use Wikimedia\Rdbms\FakeResultWrapper;
 
 class ComparePager extends TablePager {
-	private CompareService $compareService;
-	private TokenQueryManager $tokenQueryManager;
-	private UserFactory $userFactory;
-
 	/** @var array */
 	private $fieldNames;
 
@@ -62,6 +60,11 @@ class ComparePager extends TablePager {
 	private $excludeTargets;
 
 	/**
+	 * If set, makes the pager to not show temporary accounts in the results.
+	 */
+	private readonly bool $excludeTempAccounts;
+
+	/**
 	 * Targets that have been added to the investigation but that are not
 	 * present in $excludeTargets. These are the targets that will actually
 	 * be investigated.
@@ -73,30 +76,20 @@ class ComparePager extends TablePager {
 	/** @var string */
 	private $start;
 
-	/**
-	 * @param IContextSource $context
-	 * @param LinkRenderer $linkRenderer
-	 * @param TokenQueryManager $tokenQueryManager
-	 * @param DurationManager $durationManager
-	 * @param CompareService $compareService
-	 * @param UserFactory $userFactory
-	 */
 	public function __construct(
 		IContextSource $context,
 		LinkRenderer $linkRenderer,
-		TokenQueryManager $tokenQueryManager,
+		private readonly TokenQueryManager $tokenQueryManager,
 		DurationManager $durationManager,
-		CompareService $compareService,
-		UserFactory $userFactory
+		private readonly CompareService $compareService,
+		private readonly UserFactory $userFactory,
+		private readonly LinkBatchFactory $linkBatchFactory,
 	) {
 		parent::__construct( $context, $linkRenderer );
-		$this->compareService = $compareService;
-		$this->tokenQueryManager = $tokenQueryManager;
-		$this->userFactory = $userFactory;
 
 		$tokenData = $tokenQueryManager->getDataFromRequest( $context->getRequest() );
 		$this->mOffset = $tokenData['offset'] ?? '';
-
+		$this->excludeTempAccounts = $tokenData['FilterTempAccounts'] ?? false;
 		$this->excludeTargets = $tokenData['exclude-targets'] ?? [];
 		$this->filteredTargets = array_diff(
 			$tokenData['targets'] ?? [],
@@ -115,7 +108,7 @@ class ComparePager extends TablePager {
 			parent::getTableClass(),
 			$sortableClass,
 			'ext-checkuser-investigate-table',
-			'ext-checkuser-investigate-table-compare'
+			'ext-checkuser-investigate-table-compare',
 		] );
 	}
 
@@ -128,29 +121,29 @@ class ComparePager extends TablePager {
 
 		$row = $this->mCurrentRow;
 		switch ( $field ) {
-			case 'ip':
+			case 'ip_hex':
+				$ip = IPUtils::formatHex( $value );
 				foreach ( $this->filteredTargets as $target ) {
-					if ( IPUtils::isIPAddress( $target ) && IPUtils::isInRange( $value, $target ) ) {
-						// If the current cuc_ip is either in the range of a filtered target or is the filtered target,
+					if ( IPUtils::isIPAddress( $target ) && IPUtils::isInRange( $ip, $target ) ) {
+						// If the current IP is either in the range of a filtered target or is the filtered target,
 						// then mark the cell as a target.
 						$attributes['class'] .= ' ext-checkuser-compare-table-cell-target';
 						break;
 					}
 				}
-				$ipHex = $row->ip_hex;
 				$attributes['class'] .= ' ext-checkuser-investigate-table-cell-interactive';
 				$attributes['class'] .= ' ext-checkuser-investigate-table-cell-pinnable';
 				$attributes['class'] .= ' ext-checkuser-compare-table-cell-ip-target';
 				$attributes['data-field'] = $field;
-				$attributes['data-value'] = $value;
-				$attributes['data-sort-value'] = $ipHex;
+				$attributes['data-value'] = $ip;
+				$attributes['data-sort-value'] = $value;
 				$attributes['data-actions'] = $row->total_actions;
-				$attributes['data-all-actions'] = $this->ipTotalActions[$ipHex];
+				$attributes['data-all-actions'] = $this->ipTotalActions[$value];
 				break;
 			case 'user_text':
 				// Use the IP as the $row->user_text if the actor ID is NULL and the IP is not NULL (T353953).
-				if ( $row->actor === null && $row->ip ) {
-					$value = $row->ip;
+				if ( $row->actor === null && $row->ip_hex !== null ) {
+					$value = IPUtils::formatHex( $row->ip_hex );
 				}
 				// Hide the username if it is hidden from the current authority.
 				$user = $this->userFactory->newFromName( $value );
@@ -209,42 +202,41 @@ class ComparePager extends TablePager {
 		switch ( $name ) {
 			case 'user_text':
 				// Use the IP as the $row->user_text if the actor ID is NULL and the IP is not NULL (T353953).
-				if ( $row->actor === null && $row->ip ) {
-					$value = $row->ip;
+				if ( $row->actor === null && $row->ip_hex !== null ) {
+					$value = IPUtils::formatHex( $row->ip_hex );
 				}
 				'@phan-var string $value';
 				// Hide the username if it is hidden from the current authority.
 				$user = $this->userFactory->newFromName( $value );
 				if ( $user !== null && $user->isHidden() && !$this->getAuthority()->isAllowed( 'hideuser' ) ) {
-					return $this->msg( 'rev-deleted-user' )->text();
+					return $this->msg( 'rev-deleted-user' )->escaped();
 				}
 				if ( IPUtils::isValid( $value ) ) {
-					$formatted = $this->msg( 'checkuser-investigate-compare-table-cell-unregistered' )->text();
+					$formatted = $this->msg( 'checkuser-investigate-compare-table-cell-unregistered' )->escaped();
 				} else {
 					$formatted = Linker::userLink( $row->user ?? 0, $value );
 				}
 				break;
-			case 'ip':
-				$formatted = Html::rawElement(
+			case 'ip_hex':
+				$formatted = Html::element(
 					'span',
 					[ 'class' => "ext-checkuser-compare-table-cell-ip" ],
-					htmlspecialchars( $value )
+					IPUtils::formatHex( $value )
 				);
 
 				// get other actions
 				$otherActions = '';
-				$ipHex = $row->ip_hex;
-				if ( !isset( $this->ipTotalActions[$ipHex] ) ) {
-					$this->ipTotalActions[$ipHex] = $this->compareService->getTotalActionsFromIP( $ipHex );
+				if ( !isset( $this->ipTotalActions[$value] ) ) {
+					$this->ipTotalActions[$value] = $this->compareService->getTotalActionsFromIP( $value );
 				}
 
-				if ( $this->ipTotalActions[$ipHex] ) {
+				if ( $this->ipTotalActions[$value] ) {
 					$otherActions = Html::rawElement(
 						'span',
 						[],
 						$this->msg(
 							'checkuser-investigate-compare-table-cell-other-actions',
-							$this->ipTotalActions[$ipHex]
+							$this->ipTotalActions[$value]
 						)->parse()
 					);
 				}
@@ -288,7 +280,7 @@ class ComparePager extends TablePager {
 		if ( $this->fieldNames === null ) {
 			$this->fieldNames = [
 				'user_text' => 'checkuser-investigate-compare-table-header-username',
-				'ip' => 'checkuser-investigate-compare-table-header-ip',
+				'ip_hex' => 'checkuser-investigate-compare-table-header-ip',
 				'agent' => 'checkuser-investigate-compare-table-header-useragent',
 				'activity' => 'checkuser-investigate-compare-table-header-activity',
 			];
@@ -318,10 +310,29 @@ class ComparePager extends TablePager {
 	/**
 	 * @inheritDoc
 	 */
+	protected function doBatchLookups() {
+		$lb = $this->linkBatchFactory->newLinkBatch();
+		$lb->setCaller( __METHOD__ );
+
+		foreach ( $this->mResult as $row ) {
+			$username = $row->user_text;
+			if ( $username === null && $row->ip_hex !== null ) {
+				$username = IPUtils::formatHex( $row->ip_hex );
+			}
+			$lb->addUser( new UserIdentityValue( $row->user ?? 0, $username ?? '' ) );
+		}
+
+		$lb->execute();
+	}
+
+	/**
+	 * @inheritDoc
+	 */
 	public function getQueryInfo() {
 		return $this->compareService->getQueryInfo(
 			$this->filteredTargets,
 			$this->excludeTargets,
+			$this->excludeTempAccounts,
 			$this->start
 		);
 	}
@@ -360,7 +371,8 @@ class ComparePager extends TablePager {
 	 */
 	public function getPagingQueries() {
 		return $this->tokenQueryManager->getPagingQueries(
-			$this->getRequest(), parent::getPagingQueries()
+			$this->getRequest(),
+			parent::getPagingQueries()
 		);
 	}
 }

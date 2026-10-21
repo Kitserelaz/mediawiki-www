@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use MediaWiki\Api\ApiBase;
 use MediaWiki\Api\ApiMessage;
 use MediaWiki\Api\Hook\ApiCheckCanExecuteHook;
+use MediaWiki\Block\BlockManager;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Extension\OAuth\Backend\Consumer;
 use MediaWiki\Extension\OAuth\Backend\ConsumerAcceptance;
@@ -15,11 +16,15 @@ use MediaWiki\Extension\OAuth\Backend\MWOAuthException;
 use MediaWiki\Extension\OAuth\Backend\MWOAuthRequest;
 use MediaWiki\Extension\OAuth\Backend\Utils;
 use MediaWiki\Extension\OAuth\Repository\AccessTokenRepository;
-use MediaWiki\Hook\MarkPatrolledHook;
-use MediaWiki\Hook\RecentChange_saveHook;
+use MediaWiki\Json\JwtException;
 use MediaWiki\Linker\Linker;
+use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Message\Message;
+use MediaWiki\Permissions\GrantsInfo;
+use MediaWiki\RecentChanges\Hook\MarkPatrolledHook;
+use MediaWiki\RecentChanges\Hook\RecentChange_saveHook;
+use MediaWiki\RecentChanges\RecentChange;
 use MediaWiki\Request\WebRequest;
 use MediaWiki\Session\ImmutableSessionProviderWithCookie;
 use MediaWiki\Session\SessionBackend;
@@ -27,11 +32,12 @@ use MediaWiki\Session\SessionInfo;
 use MediaWiki\Session\SessionManager;
 use MediaWiki\Session\UserInfo;
 use MediaWiki\Title\Title;
+use MediaWiki\User\CentralId\CentralIdLookup;
 use MediaWiki\User\User;
 use MediaWiki\User\UserIdentity;
+use MediaWiki\Utils\MWRestrictions;
 use MediaWiki\WikiMap\WikiMap;
-use MWRestrictions;
-use RecentChange;
+use Psr\Http\Message\ResponseInterface;
 use Wikimedia\Rdbms\DBError;
 
 /**
@@ -53,18 +59,27 @@ class SessionProvider
 	implements ApiCheckCanExecuteHook, RecentChange_saveHook, MarkPatrolledHook
 {
 
-	public function __construct( array $params = [] ) {
+	public function __construct(
+		private readonly BlockManager $blockManager,
+		private readonly GrantsInfo $grantsInfo,
+		array $params = []
+	) {
 		parent::__construct( $params );
 	}
 
 	protected function postInitSetup() {
-		$hookContainer = MediaWikiServices::getInstance()->getHookContainer();
+		parent::postInitSetup();
 
+		$hookContainer = MediaWikiServices::getInstance()->getHookContainer();
+		// @phan-suppress-next-line PhanTypeMismatchArgument
 		$hookContainer->register( 'ApiCheckCanExecute', $this );
+		// @phan-suppress-next-line PhanTypeMismatchArgument
 		$hookContainer->register( 'RecentChange_save', $this );
+		// @phan-suppress-next-line PhanTypeMismatchArgument
 		$hookContainer->register( 'MarkPatrolled', $this );
 	}
 
+	/** @inheritDoc */
 	public function provideSessionInfo( WebRequest $request ) {
 		$oauthVersion = $this->getOAuthVersionFromRequest( $request );
 		if ( $oauthVersion === null ) {
@@ -72,8 +87,10 @@ class SessionProvider
 			return null;
 		}
 
-		// OAuth is restricted to be API-only.
-		if ( !defined( 'MW_API' ) && !defined( 'MW_REST_API' ) ) {
+		// OAuth is restricted to be API-only or test environments.
+		if ( !defined( 'MW_API' ) && !defined( 'MW_REST_API' ) &&
+			!defined( 'MW_PHPUNIT_TEST' )
+		) {
 			$globalRequest = RequestContext::getMain()->getRequest();
 			if ( $request !== $globalRequest ) {
 				// We are looking at something other than the global request. No easy way to
@@ -100,21 +117,20 @@ class SessionProvider
 			'result' => 'fail',
 		];
 
-		$dbr = Utils::getCentralDB( DB_REPLICA );
+		$dbr = Utils::getOAuthDB( DB_REPLICA );
 		$access = null;
 		try {
 			if ( $oauthVersion === Consumer::OAUTH_VERSION_2 ) {
 				$resourceServer = ResourceServer::factory();
 				$accessTokenKey = $this->verifyOAuth2Request( $resourceServer, $request );
-				$accessTokenRepo = new AccessTokenRepository( $this->config->get( 'CanonicalServer' ) );
+				$accessTokenRepo = new AccessTokenRepository(
+					$this->config->get( MainConfigNames::CanonicalServer )
+				);
 				$accessId = $accessTokenRepo->getApprovalId( $accessTokenKey );
 				if ( $accessId === 0 ) {
-					if (
-						$resourceServer->getUser()->getId() === 0 &&
-						$resourceServer->getClient()->getOwnerOnly() === false
-					) {
-						// This tell us, with good degree of certainty, that the AT
-						// was issued to a machine and represents no particular user
+					if ( $resourceServer->getClient()->getOwnerOnly() === false ) {
+						// Access token created via client credentials flow.
+						// Requests signed by such tokens are intentionally anonymous (for now).
 						$access = ConsumerAcceptance::newFromArray( [
 							'id'           => null,
 							'wiki'         => $resourceServer->getClient()->getWiki(),
@@ -128,9 +144,7 @@ class SessionProvider
 						] );
 					}
 				} else {
-					$access = ConsumerAcceptance::newFromId(
-						Utils::getCentralDB( DB_REPLICA ), $accessId
-					);
+					$access = ConsumerAcceptance::newFromId( $dbr, $accessId );
 				}
 				if ( !$access ) {
 					$logData['consumer'] = $resourceServer->getClient()->getConsumerKey();
@@ -181,9 +195,8 @@ class SessionProvider
 			$this->logger->debug( 'OAuth request for locked user {user}', $logData );
 			return $this->makeException( 'mwoauth-invalid-authorization-blocked-user' );
 		}
-		if ( $this->config->get( 'BlockDisablesLogin' ) ) {
-			$block = MediaWikiServices::getInstance()->getBlockManager()
-				->getBlock( $localUser, null );
+		if ( $this->config->get( MainConfigNames::BlockDisablesLogin ) ) {
+			$block = $this->blockManager->getBlock( $localUser, null );
 			if ( $block && $block->isSitewide() ) {
 				$this->logger->debug( 'OAuth request for blocked user {user}', $logData );
 				return $this->makeException( 'mwoauth-invalid-authorization-blocked-user' );
@@ -219,14 +232,14 @@ class SessionProvider
 			$forceUse = true;
 		} else {
 			$id = $this->getSessionIdFromCookie( $request );
-			$persisted = $id !== null;
+			$persisted = ( $id !== null );
 			$forceUse = false;
 		}
 
 		$logData['result'] = 'success';
 		$this->logger->debug( 'OAuth request for consumer {consumer} by user {user}', $logData );
 
-		return new SessionInfo( SessionInfo::MAX_PRIORITY, [
+		$sessionInfo = new SessionInfo( SessionInfo::MAX_PRIORITY, [
 			'provider' => $this,
 			'id' => $id,
 			'userInfo' => UserInfo::newFromUser( $localUser, true ),
@@ -236,12 +249,59 @@ class SessionProvider
 				'oauthVersion' => $oauthVersion,
 				'consumerId' => $consumer->getOwnerOnly() ? null : $consumer->getId(),
 				'key' => $accessTokenKey,
-				'rights' => MediaWikiServices::getInstance()
-					->getGrantsInfo()
-					->getGrantRights( $access->getGrants() ),
+				'rights' => $this->grantsInfo->getGrantRights( $access->getGrants() ),
 				'restrictions' => $consumer->getRestrictions()->toJson(),
 			],
 		] );
+
+		if ( $this->shouldUseJwtCookie( $sessionInfo ) ) {
+			$sessionInfo = $this->provideSessionInfoWithJwtCookie( $sessionInfo, $request );
+		}
+
+		return $sessionInfo;
+	}
+
+	/**
+	 * Provide SessionInfo with a JWT session cookie available so
+	 * that the server can use it for request validation. This is called
+	 * only when the use of JWT cookie is enabled.
+	 *
+	 * @param SessionInfo $sessionInfo
+	 * @param WebRequest $request
+	 *
+	 * @return SessionInfo
+	 */
+	private function provideSessionInfoWithJwtCookie( SessionInfo $sessionInfo, WebRequest $request ) {
+		try {
+			// OAuth cannot use the 'refresh' flag, so set it in the metadata instead.
+			// Use a fake sessioninfo because only persisted sessions can be refreshed
+			// (and to avoid actually setting the refresh flag).
+			$sessionInfoCopy = new SessionInfo( $sessionInfo->getPriority(), [
+				'persisted' => true,
+				'copyFrom' => $sessionInfo,
+			] );
+			$this->jwtSessionCookieHelper->verifyJwtCookie(
+				$request,
+				$sessionInfoCopy,
+				$this->getJwtCookieOptions(),
+				$this->getJwtClaimOverrides( $this->jwtSessionCookieHelper->getJwtCookieSessionExpiration() )
+			);
+		} catch ( JwtException $e ) {
+			$this->logger->info( 'JWT validation failed: ' . $e->getNormalizedMessage(),
+				$e->getMessageContext() + [ 'exception' => $e ] );
+			return $this->makeException( 'mwoauth-invalid-authorization-jwt', $e->getMessage() );
+		}
+		if ( $sessionInfoCopy->needsRefresh() ) {
+			// Indicate to the request using sessionWasAttachedToRequest() that the JWT would
+			// need to be refreshed after verifying the JWT session. A refresh can be triggered
+			// when the JWT session cookie is near expiry.
+			$sessionInfo = new SessionInfo( $sessionInfo->getPriority(), [
+				'metadata' => [ 'refreshJwtCookie' => true ] + $sessionInfo->getProviderMetadata(),
+				'copyFrom' => $sessionInfo,
+			] );
+		}
+
+		return $sessionInfo;
 	}
 
 	/**
@@ -262,12 +322,12 @@ class SessionProvider
 	}
 
 	/**
-	 * @param ResourceServer &$resourceServer
+	 * @param ResourceServer $resourceServer
 	 * @param WebRequest $request
 	 * @return string
 	 * @throws MWOAuthException
 	 */
-	private function verifyOAuth2Request( ResourceServer &$resourceServer, WebRequest $request ) {
+	private function verifyOAuth2Request( ResourceServer $resourceServer, WebRequest $request ) {
 		$request = ServerRequest::fromGlobals()->withHeader(
 			'authorization',
 			$request->getHeader( 'authorization' )
@@ -278,8 +338,9 @@ class SessionProvider
 		$resourceServer->verify(
 			$request,
 			$response,
-			static function ( $request, $response ) use ( &$valid ) {
+			static function ( ResponseInterface $response ) use ( &$valid ) {
 				$valid = true;
+				return $response;
 			}
 		);
 
@@ -290,9 +351,33 @@ class SessionProvider
 		throw new MWOAuthException( 'mwoauth-oauth2-invalid-access-token' );
 	}
 
+	/** @inheritDoc */
+	public function mergeMetadata( array $savedMetadata, array $providedMetadata ) {
+		// In the unlikely case that we have saved metadata (because someone used OAuth to access
+		// some API endpoint that explicitly requested a session save), make sure the 'refreshJwtCookie'
+		// flag, which is only meant to be used within the current request, is ignored.
+		unset( $savedMetadata['refreshJwtCookie'] );
+		return parent::mergeMetadata( $savedMetadata, $providedMetadata );
+	}
+
+	/** @inheritDoc */
+	public function sessionWasAttachedToRequest( SessionInfo $sessionInfo, WebRequest $request ): void {
+		if ( $this->shouldUseJwtCookie( $sessionInfo )
+			&& ( $sessionInfo->getProviderMetadata()['refreshJwtCookie'] ?? false )
+		) {
+			$this->jwtSessionCookieHelper->setJwtCookie(
+				$sessionInfo->getUserInfo()->getUser(),
+				$request,
+				$this->getJwtCookieOptions(),
+				$this->getJwtClaimOverrides( $this->jwtSessionCookieHelper->getJwtCookieSessionExpiration() )
+			);
+		}
+	}
+
+	/** @inheritDoc */
 	public function preventSessionsForUser( $username ) {
-		$id = Utils::getCentralIdFromUserName( $username );
-		$dbw = Utils::getCentralDB( DB_PRIMARY );
+		$id = Utils::getCentralIdFromUserName( $username, CentralIdLookup::AUDIENCE_RAW );
+		$dbw = Utils::getOAuthDB( DB_PRIMARY );
 
 		$dbw->startAtomic( __METHOD__ );
 		try {
@@ -324,6 +409,7 @@ class SessionProvider
 		$dbw->endAtomic( __METHOD__ );
 	}
 
+	/** @inheritDoc */
 	public function getVaryHeaders() {
 		return [
 			'Authorization' => null,
@@ -354,6 +440,7 @@ class SessionProvider
 		return null;
 	}
 
+	/** @inheritDoc */
 	public function getAllowedUserRights( SessionBackend $backend ) {
 		if ( $backend->getProvider() !== $this ) {
 			throw new InvalidArgumentException( 'Backend\'s provider isn\'t $this' );
@@ -372,7 +459,7 @@ class SessionProvider
 		if ( $data && isset( $data['restrictions'] ) && is_string( $data['restrictions'] ) ) {
 			try {
 				return MWRestrictions::newFromJson( $data['restrictions'] );
-			} catch ( \InvalidArgumentException $e ) {
+			} catch ( \InvalidArgumentException ) {
 				$this->logger->warning( __METHOD__ . ': Failed to parse restrictions: {restrictions}', [
 					'restrictions' => $data['restrictions']
 				] );
@@ -438,8 +525,8 @@ class SessionProvider
 
 	/**
 	 * Record the fact that OAuth was used for marking an existing RecentChange as patrolled.
-	 * (RecentChange::doMarkPatrolled() does not use RecentChange::save()
-	 * and therefore bypasses the above hook handler.)
+	 * (RecentChange::markPatrolled does not use RecentChange::save,
+	 * and therefore bypasses our onRecentChange_save hook handler.)
 	 *
 	 * @param int $rcid
 	 * @param User $user
@@ -471,4 +558,34 @@ class SessionProvider
 	public function safeAgainstCsrf() {
 		return true;
 	}
+
+	/**
+	 * Should we output a JWT cookie to supplement the information in the access token?
+	 */
+	private function shouldUseJwtCookie( SessionInfo $sessionInfo ): bool {
+		// Use a cookie when JWT cookies are enabled generally, and
+		// the consumer uses OAuth 1 (the access token is not readable
+		// outside MediaWiki) or is an owner-only consumer (the access
+		// token is valid forever so its contents are outdated).
+		//
+		// Note that we intentionally avoid using parent's useJwtCookie() mechanism.
+		// In part because that can't depend on the consumer, in part because it
+		// assumes sessions get persisted, but we don't want to persist OAuth
+		// sessions (which would lead to unnecessary session writes).
+		$providerMetadata = $sessionInfo->getProviderMetadata() ?? [];
+		return $this->jwtSessionCookieHelper->useJwtCookie()
+			&& $this->config->get( OAuthConfigNames::OAuthUseJwtCookie )
+			// Ignore empty session info returned by makeException()
+			&& $providerMetadata
+			&& ( $providerMetadata['oauthVersion'] === Consumer::OAUTH_VERSION_1
+				// owner-only
+				|| $providerMetadata['consumerId'] === null );
+	}
+
+	protected function getJwtClaimOverrides( int $expirationDuration ): array {
+		return [
+			'iss' => Utils::getJwtIssuer(),
+		] + parent::getJwtClaimOverrides( $expirationDuration );
+	}
+
 }

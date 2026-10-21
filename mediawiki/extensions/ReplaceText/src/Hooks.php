@@ -21,34 +21,27 @@
  */
 namespace MediaWiki\Extension\ReplaceText;
 
+use MediaWiki\ChangeTags\Hook\ChangeTagsListActiveHook;
+use MediaWiki\ChangeTags\Hook\ListDefinedTagsHook;
 use MediaWiki\Config\Config;
-use MediaWiki\Hook\SpecialMovepageAfterMoveHook;
 use MediaWiki\SpecialPage\SpecialPageFactory;
+use MediaWiki\Specials\Hook\SpecialMovepageAfterMoveHook;
 use MediaWiki\Specials\SpecialMovePage;
 use MediaWiki\Title\Title;
 use MediaWiki\User\Hook\UserGetReservedNamesHook;
 
 class Hooks implements
+	ChangeTagsListActiveHook,
+	ListDefinedTagsHook,
 	SpecialMovepageAfterMoveHook,
 	UserGetReservedNamesHook
 {
+	public const TAG_NAME = 'replacetext';
 
-	/** @var Config */
-	private $config;
-
-	/** @var SpecialPageFactory */
-	private $specialPageFactory;
-
-	/**
-	 * @param Config $config
-	 * @param SpecialPageFactory $specialPageFactory
-	 */
 	public function __construct(
-		Config $config,
-		SpecialPageFactory $specialPageFactory
+		private readonly Config $config,
+		private readonly SpecialPageFactory $specialPageFactory,
 	) {
-		$this->config = $config;
-		$this->specialPageFactory = $specialPageFactory;
 	}
 
 	/**
@@ -81,5 +74,19 @@ class Hooks implements
 		if ( $replaceTextUser !== null ) {
 			$names[] = $replaceTextUser;
 		}
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function onChangeTagsListActive( &$tags ) {
+		$tags[] = self::TAG_NAME;
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function onListDefinedTags( &$tags ) {
+		$tags[] = self::TAG_NAME;
 	}
 }

@@ -5,12 +5,6 @@
  * @license The MIT License (MIT); see LICENSE.txt
  */
 
-/* stylelint-disable-next-line selector-class-pattern */
-.mw-body a.external.ve-ce-linkAnnotation.ve-ce-annotation-active {
-	/* Monobook sets a background:url(); rule which overrides the colour. TODO: Fix upstream */
-	background-color: #e6f1ff;
-}
-
 .ve-ui-debugBar {
 	border-top: 1px solid #ccc;
 }
@@ -25,7 +19,8 @@
 	font-size: 0.9921875em; /* 1/ ( 0.8em / x-small / 127% ) */
 }
 
-.ve-ui-overlay-local {
+.ve-ui-overlay-local,
+.ve-ui-sidebarDialogWindowManager {
 	/* Fix font-size for overlays inside surfaces */
 	font-size: 1.007874em; /* 12.8/12.7 */
 }

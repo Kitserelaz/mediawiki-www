@@ -1,0 +1,23 @@
+{
+	"@metadata": {
+		"authors": [
+			"Kly",
+			"捍粵者"
+		]
+	},
+	"apihelp-ratepage-summary": "允許使用者為頁面投票並取得頁面評分，須指定參數pageid或pagetitle。",
+	"apihelp-ratepage-param-pageid": "頁面 ID",
+	"apihelp-ratepage-param-pagetitle": "頁面標題",
+	"apihelp-ratepage-param-answer": "使用者的頁面評分（預設從 1 分到 5 分，可透過配置設定更改）",
+	"apihelp-ratepage-param-contest": "競賽標識",
+	"apihelp-ratepage-example-1": "取得頁面範例的目前評分。",
+	"apihelp-ratepage-example-2": "對頁面範例評 2 分。",
+	"apihelp-query+pagerating-summary": "回傳此頁面上的投票與該使用者的投票權限。",
+	"apihelp-query+pagerating-param-contest": "競賽標識",
+	"apierror-ratepage-contest-id-too-long": "競賽 ID 長度超過限制（255 個字元）。",
+	"apierror-ratepage-contest-id-allowed-chars": "競賽 ID 只能由數字和拉丁字母組成，不允許使用其他字元。",
+	"apierror-ratepage-contest-not-exists": "競賽$1不存在。",
+	"apierror-ratepage-page-not-exists": "指定的頁面不存在。",
+	"apierror-ratepage-cannot-vote-in-contest": "您沒有權限在此競賽裡投票。",
+	"apierror-ratepage-invalid-answer": "指定了無效的回答。回答應大於或等於$1，並且要小於或等於$2。"
+}

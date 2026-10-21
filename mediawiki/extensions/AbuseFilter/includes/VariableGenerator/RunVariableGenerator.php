@@ -7,67 +7,36 @@ use MediaWiki\Content\Content;
 use MediaWiki\Extension\AbuseFilter\Hooks\AbuseFilterHookRunner;
 use MediaWiki\Extension\AbuseFilter\TextExtractor;
 use MediaWiki\Extension\AbuseFilter\Variables\VariableHolder;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Page\WikiPageFactory;
 use MediaWiki\Revision\MutableRevisionRecord;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Title\Title;
+use MediaWiki\Upload\UploadBase;
 use MediaWiki\User\User;
 use MediaWiki\User\UserFactory;
-use MWFileProps;
-use UploadBase;
+use MediaWiki\Utils\MWFileProps;
 use Wikimedia\Assert\PreconditionException;
 use Wikimedia\Mime\MimeAnalyzer;
-use WikiPage;
 
 /**
  * This class contains the logic used to create variable holders before filtering
  * an action.
  */
 class RunVariableGenerator extends VariableGenerator {
-	/**
-	 * @var User
-	 */
-	private $user;
 
-	/**
-	 * @var Title
-	 */
-	private $title;
-
-	/** @var TextExtractor */
-	private $textExtractor;
-	/** @var MimeAnalyzer */
-	private $mimeAnalyzer;
-	/** @var WikiPageFactory */
-	private $wikiPageFactory;
-
-	/**
-	 * @param AbuseFilterHookRunner $hookRunner
-	 * @param UserFactory $userFactory
-	 * @param TextExtractor $textExtractor
-	 * @param MimeAnalyzer $mimeAnalyzer
-	 * @param WikiPageFactory $wikiPageFactory
-	 * @param User $user
-	 * @param Title $title
-	 * @param VariableHolder|null $vars
-	 */
 	public function __construct(
 		AbuseFilterHookRunner $hookRunner,
 		UserFactory $userFactory,
-		TextExtractor $textExtractor,
-		MimeAnalyzer $mimeAnalyzer,
-		WikiPageFactory $wikiPageFactory,
-		User $user,
-		Title $title,
+		private readonly TextExtractor $textExtractor,
+		private readonly MimeAnalyzer $mimeAnalyzer,
+		private readonly WikiPageFactory $wikiPageFactory,
+		private readonly User $user,
+		private readonly Title $title,
 		?VariableHolder $vars = null
 	) {
 		parent::__construct( $hookRunner, $userFactory, $vars );
-		$this->textExtractor = $textExtractor;
-		$this->mimeAnalyzer = $mimeAnalyzer;
-		$this->wikiPageFactory = $wikiPageFactory;
-		$this->user = $user;
-		$this->title = $title;
 	}
 
 	/**
@@ -129,7 +98,7 @@ class RunVariableGenerator extends VariableGenerator {
 		// Don't treat content model change as null edit though.
 		if (
 			$content->equals( $oldContent ) ||
-			( $oldContent->getModel() === $content->getModel() && strcmp( $oldAfText, $text ) === 0 )
+			( $oldContent->getModel() === $content->getModel() && $oldAfText === $text )
 		) {
 			return null;
 		}
@@ -174,13 +143,19 @@ class RunVariableGenerator extends VariableGenerator {
 		try {
 			$update = $page->getCurrentUpdate();
 			$update->getParserOutputForMetaData();
-		} catch ( PreconditionException | LogicException $exception ) {
+		} catch ( PreconditionException | LogicException ) {
 			// Temporary workaround until this becomes
 			// a hook parameter
 			$update = null;
 		}
-		$this->addEditVars( $page, $this->user, true, $update );
 
+		if ( $update ) {
+			$this->addEditVarsFromUpdate( $update, $this->user );
+		} else {
+			$this->addEditVars( $page, $this->user );
+		}
+
+		$this->addGenericVars();
 		return $this->vars;
 	}
 
@@ -231,7 +206,7 @@ class RunVariableGenerator extends VariableGenerator {
 		} elseif ( $from instanceof Title ) {
 			$this->vars->setLazyLoadVar(
 				$varName,
-				'revision-age-by-title',
+				'revision-age',
 				[ 'title' => $from, 'asof' => wfTimestampNow() ]
 			);
 		} else {
@@ -259,6 +234,7 @@ class RunVariableGenerator extends VariableGenerator {
 		$this->setLastEditAge( $this->title, 'moved_from' );
 		$this->setLastEditAge( $newTitle, 'moved_to' );
 		// TODO: add old_wikitext etc. (T320347)
+		$this->addGenericVars();
 		return $this->vars;
 	}
 
@@ -276,10 +252,9 @@ class RunVariableGenerator extends VariableGenerator {
 
 		$this->vars->setVar( 'summary', $reason );
 		$this->vars->setVar( 'action', 'delete' );
-		// FIXME: this is an unnecessary round-trip, we could obtain WikiPage from
-		// the hook and call WikiPage::getRevisionRecord, but then ProofreadPage tests fail
 		$this->setLastEditAge( $this->title, 'page' );
 		// TODO: add old_wikitext etc. (T173663)
+		$this->addGenericVars();
 		return $this->vars;
 	}
 
@@ -337,7 +312,9 @@ class RunVariableGenerator extends VariableGenerator {
 
 				$this->setLastEditAge( $revRec, 'page' );
 				$oldcontent = $revRec->getContent( SlotRecord::MAIN, RevisionRecord::RAW );
-				'@phan-var Content $oldcontent';
+				if ( $oldcontent === null ) {
+					throw new \UnexpectedValueException( 'Failed to retrieve the old page content' );
+				}
 				$oldtext = $this->textExtractor->contentToString( $oldcontent );
 
 				// Page text is ignored for uploads when the page already exists
@@ -352,8 +329,9 @@ class RunVariableGenerator extends VariableGenerator {
 			$this->vars->setVar( 'old_wikitext', $oldtext );
 			$this->vars->setVar( 'new_wikitext', $text );
 			// TODO: set old_content_model and new_content_model vars, use them
-			$this->addEditVars( $page, $this->user, true );
+			$this->addEditVars( $page, $this->user );
 		}
+		$this->addGenericVars();
 		return $this->vars;
 	}
 
@@ -379,10 +357,30 @@ class RunVariableGenerator extends VariableGenerator {
 				'user-type',
 				[ 'user-identity' => $this->user ]
 			);
+
+			// Extra security layer to make user_unnamed_ip accessible only for temp account creation
+			// See also LazyVariableComputer::compute(), which conditionally exposes the source IP
+			if ( $autocreate && $createdUser->isTemp() ) {
+				$this->vars->setLazyLoadVar(
+					'user_unnamed_ip',
+					'user-unnamed-ip',
+					[ 'user' => $this->user, 'rc' => null ]
+				);
+			}
 		}
 
 		$this->vars->setVar( 'action', $autocreate ? 'autocreateaccount' : 'createaccount' );
-		$this->vars->setVar( 'accountname', $createdUser->getName() );
+		$this->vars->setVar( 'account_name', $createdUser->getName() );
+		$this->vars->setLazyLoadVar(
+			'account_type',
+			'account-type',
+			[ 'autocreate' => $autocreate, 'createdUser' => $createdUser ]
+		);
+		$this->addGenericVars();
+
+		$this->hookRunner->onAbuseFilterGenerateAccountCreationVars(
+			$this->vars, $this->user, $createdUser, $autocreate, null
+		);
 		return $this->vars;
 	}
 }

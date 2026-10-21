@@ -1,0 +1,20 @@
+[
+	{
+		"name": "wb_id_counters",
+		"comment": "Unique ID generator.",
+		"columns": [
+			{
+				"name": "id_value",
+				"type": "integer",
+				"options": { "unsigned": true, "notnull": true }
+			},
+			{
+				"name": "id_type",
+				"type": "binary",
+				"options": { "length": 32, "notnull": true }
+			}
+		],
+		"indexes": [],
+		"pk": [ "id_type" ]
+	}
+]

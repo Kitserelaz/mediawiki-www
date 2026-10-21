@@ -1,18 +1,13 @@
-'use strict';
+import Page from 'wdio-mediawiki/Page.js';
 
-const Page = require( 'wdio-mediawiki/Page' );
-
-// Copied from mediawiki-core edit.page.js
 class EditPage extends Page {
-	async openForEditing( title, cm6enable = false ) {
-		const queryParams = {
+	async openForEditing( title, queryParams = {} ) {
+		queryParams = Object.assign( {
 			action: 'edit',
 			vehidebetadialog: 1,
-			hidewelcomedialog: 1
-		};
-		if ( cm6enable ) {
-			queryParams.cm6enable = '1';
-		}
+			hidewelcomedialog: 1,
+			cm6enable: 1
+		}, queryParams );
 		await super.openTitle( title, queryParams );
 	}
 
@@ -20,61 +15,74 @@ class EditPage extends Page {
 		return $( '#wikiEditor-ui-toolbar' );
 	}
 
-	get legacyTextInput() {
+	get textInput() {
 		return $( '#wpTextbox1' );
 	}
 
-	get legacyCodeMirrorButton() {
+	get codeMirrorButton() {
 		return $( '#mw-editbutton-codemirror' );
 	}
 
+	get codeMirrorContentEditable() {
+		return $( '.cm-content' );
+	}
+
 	async clickText() {
-		if ( await this.visualEditorSave.isDisplayed() ) {
-			await this.visualEditorSurface.click();
-		} else if ( await this.legacyTextInput.isDisplayed() ) {
-			await this.legacyTextInput.click();
+		await this.codeMirrorContentEditable.isDisplayed();
+		if ( await this.visualEditorContentEditable.isDisplayed() ) {
+			await this.visualEditorContentEditable.click();
 		} else {
-			// Click the container, if using WikiEditor etc.
-			await this.legacyTextInput.parentElement().click();
+			await this.codeMirrorContentEditable.click();
 		}
 	}
 
-	get visualEditorSave() {
-		return $( '.ve-ui-toolbar-saveButton' );
+	get visualEditorContentEditable() {
+		return $( '.ve-ce-attachedRootNode' );
 	}
 
-	get visualEditorSurface() {
-		return $( '.ve-ui-surface-source' );
+	get visualEditorPageMenu() {
+		return $( '.ve-ui-toolbar-group-pageMenu' );
 	}
 
-	get codeMirrorTemplateFoldingButton() {
+	get visualEditorCodeMirrorButton() {
+		return $( '.oo-ui-tool-name-codeMirror' );
+	}
+
+	get visualEditorMessageDialog() {
+		return $( '.oo-ui-messageDialog-actions' );
+	}
+
+	get visualEditorDestructiveButton() {
+		return $( '.oo-ui-flaggedElement-destructive' );
+	}
+
+	async visualEditorToggleCodeMirror() {
+		await this.visualEditorPageMenu.waitForDisplayed();
+		await this.visualEditorPageMenu.click();
+		await this.visualEditorCodeMirrorButton.waitForDisplayed();
+		await this.visualEditorCodeMirrorButton.click();
+	}
+
+	get codeMirrorCodeFoldingButton() {
 		return $( '.cm-tooltip-fold' );
 	}
 
-	get codeMirrorTemplateFoldingPlaceholder() {
+	get codeMirrorCodeFoldingPlaceholder() {
 		return $( '.cm-foldPlaceholder' );
 	}
 
-	async cursorToPosition( index ) {
-		await this.clickText();
-
-		// Second "Control" deactivates the modifier.
-		const keys = [ 'Control', 'Home', 'Control' ];
-		for ( let i = 0; i < index; i++ ) {
-			keys.push( 'ArrowRight' );
-		}
-		await browser.keys( keys );
+	get highlightedBracket() {
+		return $( '.cm-line .cm-matchingBracket' );
 	}
 
 	get highlightedBrackets() {
-		return $$( '.CodeMirror-line .cm-mw-matchingbracket' );
+		return $$( '.cm-line .cm-matchingBracket' );
 	}
 
 	async getHighlightedMatchingBrackets() {
-		await this.highlightedBrackets[ 0 ].waitForDisplayed();
 		const matchingTexts = await this.highlightedBrackets.map( ( el ) => el.getText() );
 		return matchingTexts.join( '' );
 	}
 }
 
-module.exports = new EditPage();
+export default new EditPage();

@@ -1,0 +1,95 @@
+{
+	"name": "Wikibase Local Media",
+	"type": "wikibase",
+
+	"version": "2.0.0",
+
+	"author": [
+		"[https://www.EntropyWins.wtf/mediawiki Jeroen De Dauw]",
+		"[https://professional.wiki/ Professional Wiki]"
+	],
+
+	"url": "https://professional.wiki/en/extension/wikibase-local-media",
+
+	"descriptionmsg": "wblm-desc",
+
+	"license-name": "GPL-2.0-or-later",
+
+	"requires": {
+		"MediaWiki": ">= 1.40.0",
+		"extensions": {
+			"WikibaseRepository": "*"
+		}
+	},
+
+	"MessagesDirs": {
+		"WikibaseLocalMedia": [
+			"i18n"
+		]
+	},
+
+	"AutoloadNamespaces": {
+		"Wikibase\\LocalMedia\\": "src/",
+		"Wikibase\\LocalMedia\\Tests\\": "tests/"
+	},
+
+	"Hooks": {
+		"WikibaseRepoDataTypes": "Wikibase\\LocalMedia\\HookHandlers::onWikibaseRepoDataTypes",
+		"WikibaseClientDataTypes": "Wikibase\\LocalMedia\\HookHandlers::onWikibaseClientDataTypes",
+		"ResourceLoaderGetConfigVars": "Wikibase\\LocalMedia\\HookHandlers::onResourceLoaderGetConfigVars"
+	},
+
+	"config": {
+		"WikibaseLocalMediaRemoteApiUrl": {
+			"value": null,
+			"description": "Optional wiki API URL, works in conjunction with $wgForeignFileRepos for retrieving images from any wiki"
+		}
+	},
+
+	"ResourceFileModulePaths": {
+		"localBasePath": "resources",
+		"remoteExtPath": "WikibaseLocalMedia/resources"
+	},
+
+	"ResourceModules": {
+		"jquery.ui.mediasuggester": {
+			"scripts": [
+				"jquery.ui.mediasuggester.js"
+			],
+			"styles": [
+				"jquery.ui.mediasuggester.css"
+			],
+			"dependencies": [
+				"jquery.ui.suggester",
+				"jquery.ui",
+				"util.highlightSubstring"
+			],
+			"targets": [ "desktop", "mobile" ]
+		},
+		"jquery.valueview.experts.LocalMediaType": {
+			"scripts": [
+				"LocalMediaType.js"
+			],
+			"dependencies": [
+				"jquery.event.special.eachchange",
+				"jquery.ui.mediasuggester",
+				"jquery.valueview.experts.StringValue",
+				"jquery.valueview.Expert"
+			],
+			"targets": [ "desktop", "mobile" ]
+		}
+	},
+
+	"QUnitTestModule": {
+		"localBasePath": "tests/js",
+		"remoteExtPath": "WikibaseLocalMedia/tests/js",
+		"scripts": [
+			"jquery.ui.mediasuggester.tests.js"
+		],
+		"dependencies": [
+			"jquery.ui.mediasuggester"
+		]
+	},
+
+	"manifest_version": 2
+}

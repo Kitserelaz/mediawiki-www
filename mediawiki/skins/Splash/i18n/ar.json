@@ -1,0 +1,20 @@
+{
+	"@metadata": {
+		"authors": [
+			"Meno25",
+			"Mido",
+			"محمد أحمد عبد الفتاح"
+		]
+	},
+	"splash-skin-desc": "واجهة سبلاش للميدياويكي، كما صُممت لموقع zaori.org",
+	"splash-notloggedin": "غير مسجل الدخول",
+	"splash-userpage": "صفحة المستخدم",
+	"splash-talkpage": "صفحة النقاش",
+	"splash-page-tools": "أدوات الصفحة",
+	"splash-talk": "ناقش",
+	"splash-jumptonavigation": "اذهب إلى التصفح",
+	"splash-jumptocontent": "انتقل إلى المحتوى",
+	"splash-jumptosearch": "اذهب إلى البحث",
+	"splash-toolbox": "أدوات أخرى",
+	"global-links": "تصفح آخر"
+}

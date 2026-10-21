@@ -1,0 +1,11 @@
+.oredict-import-textarea {
+    padding-bottom: 0.5em;
+}
+
+.oredict-import-textarea textarea {
+    width: 145.5%;
+}
+
+.oo-ui-checkboxInputWidget {
+    display: inline-block;
+}

@@ -1,0 +1,22 @@
+{
+	"@metadata": {
+		"authors": [
+			"Robby",
+			"Volvox"
+		]
+	},
+	"flexdiagrams-desc": "Änneren a Maache vun Diagrammen",
+	"editdiagram": "Diagramm änneren",
+	"flexdiagrams-edit-title": "Diagramm änneren: $1",
+	"flexdiagrams-creatediagram": "Diagramm maachen",
+	"flexdiagrams-viewdiagram": "Diagramm weisen",
+	"flexdiagrams-linkingpages": "Déi follgend Säite verlinken op dësen Diagramm: $1",
+	"flexdiagrams-edit-code": "Code:",
+	"flexdiagrams-edit-preview": "Kucken ouni ze späicheren:",
+	"flexdiagrams-embedding-unsupported": "Diagramm-Säite kënnen net agebonne ginn.",
+	"flexdiagrams-gantt-hours": "Stonnen",
+	"flexdiagrams-gantt-days": "Deeg",
+	"flexdiagrams-gantt-weeks": "Wochen",
+	"flexdiagrams-gantt-months": "Méint",
+	"flexdiagrams-gantt-years": "Joer"
+}

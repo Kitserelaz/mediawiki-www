@@ -1,0 +1,286 @@
+<?php
+
+namespace SMW\SPARQLStore\QueryEngine\DescriptionInterpreters;
+
+use SMW\DataItems\Blob;
+use SMW\DataItems\Uri;
+use SMW\DataItems\WikiPage;
+use SMW\Export\Exporter;
+use SMW\Exporter\Element\ExpElement;
+use SMW\Exporter\Element\ExpNsResource;
+use SMW\Exporter\Serializer\TurtleSerializer;
+use SMW\Query\Language\Description;
+use SMW\Query\Language\ValueDescription;
+use SMW\SPARQLStore\QueryEngine\Condition\Condition;
+use SMW\SPARQLStore\QueryEngine\Condition\FalseCondition;
+use SMW\SPARQLStore\QueryEngine\Condition\FilterCondition;
+use SMW\SPARQLStore\QueryEngine\Condition\SingletonCondition;
+use SMW\SPARQLStore\QueryEngine\ConditionBuilder;
+use SMW\SPARQLStore\QueryEngine\DescriptionInterpreter;
+use UnexpectedValueException;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 2.1
+ *
+ * @author Markus Krötzsch
+ * @author mwjames
+ */
+class ValueDescriptionInterpreter implements DescriptionInterpreter {
+
+	private Exporter $exporter;
+
+	/**
+	 * @since 2.1
+	 */
+	public function __construct( private readonly ?ConditionBuilder $conditionBuilder = null ) {
+		$this->exporter = Exporter::getInstance();
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * {@inheritDoc}
+	 */
+	public function canInterpretDescription( Description $description ): bool {
+		return $description instanceof ValueDescription;
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * {@inheritDoc}
+	 *
+	 * @return Condition
+	 */
+	public function interpretDescription( Description $description ) {
+		$joinVariable = $this->conditionBuilder->getJoinVariable();
+		$orderByProperty = $this->conditionBuilder->getOrderByProperty();
+		$asNoCase = $this->conditionBuilder->isSetFlag( SMW_SPARQL_QF_NOCASE );
+
+		$dataItem = $description->getDataItem();
+		$property = $description->getProperty();
+
+		switch ( $description->getComparator() ) {
+			case SMW_CMP_EQ:
+				$comparator = '=';
+				break;
+			case SMW_CMP_LESS:
+				$comparator = '<';
+				break;
+			case SMW_CMP_GRTR:
+				$comparator = '>';
+				break;
+			case SMW_CMP_LEQ:
+				$comparator = '<=';
+				break;
+			case SMW_CMP_GEQ:
+				$comparator = '>=';
+				break;
+			case SMW_CMP_NEQ:
+				$comparator = '!=';
+				break;
+			case SMW_CMP_PRIM_LIKE:
+			case SMW_CMP_LIKE:
+				$comparator = 'regex';
+				break;
+			case SMW_CMP_PRIM_NLKE:
+			case SMW_CMP_NLKE:
+				$comparator = '!regex';
+				break;
+			default:
+				$comparator = ''; // unkown, unsupported
+		}
+
+		if ( $comparator === '' ) {
+			return $this->createConditionForEmptyComparator( $joinVariable, $orderByProperty );
+		} elseif ( $comparator == '=' && !$asNoCase ) {
+			return $this->createConditionForEqualityComparator( $dataItem, $property, $joinVariable, $orderByProperty );
+		} elseif ( $comparator == 'regex' || $comparator == '!regex' ) {
+			return $this->createConditionForRegexComparator( $dataItem, $joinVariable, $orderByProperty, $comparator );
+		}
+
+		return $this->createFilterConditionForAnyOtherComparator(
+			$dataItem,
+			$joinVariable,
+			$comparator
+		);
+	}
+
+	private function createConditionForEmptyComparator( $joinVariable, $orderByProperty ) {
+		return $this->conditionBuilder->newTrueCondition( $joinVariable, $orderByProperty );
+	}
+
+	private function createConditionForEqualityComparator( $dataItem, $property, $joinVariable, $orderByProperty ): Condition {
+		$expElement = $this->exporter->newAuxiliaryExpElement( $dataItem );
+
+		if ( $expElement === null ) {
+			$expElement = $this->exporter->newExpElement( $dataItem );
+		}
+
+		if ( $expElement === null || !$expElement instanceof ExpElement ) {
+			return new FalseCondition();
+		}
+
+		$condition = new SingletonCondition( $expElement );
+
+		$redirectByVariable = $this->conditionBuilder->tryToFindRedirectVariableForDataItem(
+			$dataItem
+		);
+
+		// If it is a standalone value (e.g [[:Foo]] with no property) construct a
+		// filter condition otherwise just assign the variable and the succeeding
+		// process the ensure the replacement
+		if ( $redirectByVariable !== null && $property === null ) {
+
+			$condition = $this->createFilterConditionForAnyOtherComparator(
+				$dataItem,
+				$joinVariable,
+				'='
+			);
+
+			$condition->filter = "?$joinVariable = $redirectByVariable";
+		} elseif ( $redirectByVariable !== null ) {
+			$condition->matchElement = $redirectByVariable;
+		}
+
+		$this->conditionBuilder->addOrderByDataForProperty(
+			$condition,
+			$joinVariable,
+			$orderByProperty,
+			$dataItem->getDIType()
+		);
+
+		return $condition;
+	}
+
+	private function createConditionForRegexComparator( $dataItem, $joinVariable, $orderByProperty, string $comparator ) {
+		if ( !$dataItem instanceof Blob && !$dataItem instanceof WikiPage && !$dataItem instanceof Uri ) {
+			return $this->conditionBuilder->newTrueCondition( $joinVariable, $orderByProperty );
+		}
+
+		if ( $dataItem instanceof Blob ) {
+			$search = $dataItem->getString();
+		} else {
+			$search = $dataItem->getSortKey();
+		}
+
+		// @codingStandardsIgnoreStart phpcs, ignore --sniffs=Generic.Files.LineLength
+		$pattern = '^' . str_replace(
+			[ 'https://', 'http://', '%2A', '.', '+', '{', '}', '(', ')', '|', '^', '$', '[', ']', '*', '?', "'", '\\\.', '\\', '"', '\\\\\\\"' ],
+			[ '*', '*', '*', '\.', '\+', '\{', '\}', '\(', '\)', '\|', '\^', '\$', '\[', '\]', '.*', '.' , "\'", '\\\\\.', '\\\\', '\\\\\"', '\\\\\\\\\\\"' ],
+			$search
+		) . '$';
+		// @codingStandardsIgnoreEnd
+
+		$condition = $this->createFilterConditionToMatchRegexPattern(
+			$dataItem,
+			$joinVariable,
+			$comparator,
+			$pattern
+		);
+
+		$redirectByVariable = $this->conditionBuilder->tryToFindRedirectVariableForDataItem(
+			$dataItem
+		);
+
+		if ( $condition instanceof SingletonCondition && $redirectByVariable !== null ) {
+			$condition->matchElement = $redirectByVariable;
+		}
+
+		$this->conditionBuilder->addOrderByDataForProperty(
+			$condition,
+			$joinVariable,
+			$orderByProperty,
+			$dataItem->getDIType()
+		);
+
+		return $condition;
+	}
+
+	private function createFilterConditionForAnyOtherComparator( $dataItem, $joinVariable, string $comparator ): FilterCondition {
+		$result = new FilterCondition( '', [] );
+
+		$this->conditionBuilder->addOrderByData(
+			$result,
+			$joinVariable,
+			$dataItem->getDIType()
+		);
+
+		$orderByVariable = '?' . $result->orderByVariable;
+
+		if ( $dataItem instanceof WikiPage ) {
+			$expElement = $this->exporter->newExpElement( new Blob( $dataItem->getSortKey() ) );
+		} else {
+			$expElement = $this->exporter->newAuxiliaryExpElement( $dataItem );
+			if ( $expElement === null ) {
+				$expElement = $this->exporter->newExpElement( $dataItem );
+			}
+		}
+
+		if ( $expElement === null ) {
+			throw new UnexpectedValueException(
+				'Expected ExpElement for Turtle serialization'
+			);
+		}
+
+		$valueName = TurtleSerializer::getTurtleNameForExpElement( $expElement );
+
+		if ( $expElement instanceof ExpNsResource ) {
+			$result->namespaces[$expElement->getNamespaceId()] = $expElement->getNamespace();
+			$dataItem = $expElement->getDataItem();
+		}
+
+		$this->lcase( $dataItem, $orderByVariable, $valueName );
+
+		$result->filter = "$orderByVariable $comparator $valueName";
+
+		return $result;
+	}
+
+	private function createFilterConditionToMatchRegexPattern( Uri|WikiPage|Blob $dataItem, &$joinVariable, string $comparator, string $pattern ): Condition {
+		$flag = $this->conditionBuilder->isSetFlag( SMW_SPARQL_QF_NOCASE ) ? 'i' : 's';
+
+		if ( $dataItem instanceof Blob ) {
+			return new FilterCondition( "$comparator( ?$joinVariable, \"$pattern\", \"$flag\")", [] );
+		}
+
+		if ( $dataItem instanceof Uri ) {
+			return new FilterCondition( "$comparator( str( ?$joinVariable ), \"$pattern\", \"i\")", [] );
+		}
+
+		// Pattern search for a wikipage object can only be done on the sortkey
+		// literal and not on it's resource
+		$skeyExpElement = Exporter::getInstance()->getSpecialPropertyResource( '_SKEY' );
+
+		$expElement = $this->exporter->newExpElement( $dataItem->getSortKeyDataItem() );
+
+		if ( !$expElement instanceof ExpElement ) {
+			return new FalseCondition();
+		}
+
+		$condition = new SingletonCondition( $expElement );
+
+		$filterVariable = $this->conditionBuilder->getNextVariable();
+
+		$condition->condition = "?$joinVariable " . $skeyExpElement->getQName() . " ?$filterVariable .\n";
+		$condition->matchElement = "?$joinVariable";
+
+		$filterCondition = new FilterCondition( "$comparator( ?$filterVariable, \"$pattern\", \"$flag\")", [] );
+
+		$condition->weakConditions = [ $filterVariable => $filterCondition->getCondition() ];
+
+		return $condition;
+	}
+
+	private function lcase( $dataItem, string &$orderByVariable, string &$valueName ): void {
+		$isValidDataItem = $dataItem instanceof Blob || $dataItem instanceof Uri || $dataItem instanceof WikiPage;
+
+		// https://stackoverflow.com/questions/10660030/how-to-write-sparql-query-that-efficiently-matches-string-literals-while-ignorin
+		if ( $this->conditionBuilder->isSetFlag( SMW_SPARQL_QF_NOCASE ) && $isValidDataItem ) {
+			$orderByVariable = "lcase(str($orderByVariable) )";
+			$valueName = mb_strtolower( $valueName );
+		}
+	}
+
+}

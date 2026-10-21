@@ -1,0 +1,54 @@
+@import '../../mediasearch-variables.less';
+
+.sdms-audio-result {
+	border-bottom:
+ @border-width-base @border-style-base
+		@sdms-border-color-result;
+	box-sizing: border-box;
+	padding: @sdms-spacing-base * 0.75 0;
+
+	&:last-child {
+		border-bottom: 0;
+	}
+
+	h3 {
+		margin: 0;
+		padding: 0;
+	}
+
+	&__title + &__meta {
+		margin-top: 0;
+		padding-top: 0;
+	}
+
+	&__duration {
+		border-radius: @border-radius-base;
+		color: @color-subtle;
+		display: inline-block;
+		background-color: #eaecf0;
+		font-weight: normal;
+		padding: 0 @sdms-spacing-xs;
+		margin-right: @sdms-spacing-sm;
+
+		.cdx-icon {
+			color: inherit;
+		}
+
+		&__text {
+			vertical-align: middle;
+		}
+	}
+
+	&__mime {
+		color: @color-subtle;
+		font-weight: normal;
+	}
+
+	&__icon {
+		.cdx-mixin-css-icon(
+			@cdx-icon-volume-up,
+			@color-subtle,
+			@size-icon-small
+		);
+	}
+}

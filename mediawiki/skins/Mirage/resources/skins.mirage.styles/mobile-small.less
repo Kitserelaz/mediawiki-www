@@ -1,0 +1,42 @@
+@import '../mirage.less/mirage.mixins';
+@import '../mirage.less/mirage.variables';
+
+.skin-mirage-main-container {
+	margin: 0 0 0.5rem;
+}
+
+#mw-navigation {
+	margin-top: 4.25rem;
+}
+
+.mw-body {
+	padding: 0.75rem 1rem 1rem;
+}
+
+#mirage-right-rail {
+	padding: 0 1rem;
+}
+
+// This is hacked together from icons.less. Try to keep these in sync.
+#module-site-tools > ul > li:first-child a {
+	overflow: hidden;
+	white-space: nowrap;
+	.user-select-none();
+
+	&,
+	&:hover {
+		color: transparent;
+	}
+
+	&::before {
+		margin-right: 0;
+	}
+
+	&.skin-mirage-ooui-icon-small {
+		width: @min-size-icon-small;
+	}
+
+	&.skin-mirage-ooui-icon-medium {
+		width: @min-size-icon-medium;
+	}
+}

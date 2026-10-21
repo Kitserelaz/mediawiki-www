@@ -77,14 +77,19 @@ local tests = {
 		args = { '&lt;&gt;&amp;&quot; &#102;&#111;&#x6f; &#x0066;&#00111;&#x6F; &hearts; &amp;quot;', true },
 		expect = { '<>&" foo foo ♥ &quot;' }
 	},
+	{ name = 'decode named entity aliases',
+		func = mw.text.decode,
+		args = { '&epsi;&epsilon;&thinsp;&ThinSpace;&hearts;&heartsuit;', true },
+		expect = { 'εε\226\128\137\226\128\137♥♥' }
+	},
 
 	{ name = 'nowiki',
 		func = mw.text.nowiki,
-		args = { '*"&\'<=>[]{|}#*:;\n*\n#\n:\n;\nhttp://example.com:80/\nRFC 123, ISBN 456' },
+		args = { '*"&\'<=>[]{|}#*:;\n*\n#\n:\n;\nhttp://example.com:80/\nRFC 123, ISBN 456, ＿ ' },
 		expect = {
 			'&#42;&#34;&#38;&#39;&#60;&#61;&#62;&#91;&#93;&#123;&#124;&#125;#*:&#59;' ..
 			'\n&#42;\n&#35;\n&#58;\n&#59;\nhttp&#58;//example.com:80/' ..
-			'\nRFC&#32;123, ISBN&#32;456'
+			'\nRFC&#32;123, ISBN&#32;456, &#xFF3F; '
 		}
 	},
 
@@ -147,6 +152,11 @@ local tests = {
 		args = { '_FOO__' },
 		expect = { '&#95;FOO_&#95;' },
 	},
+	{ name = 'nowiki left-side context: ＿＿FOO＿＿',
+		func = mw.text.nowiki,
+		args = { '＿FOO＿＿' },
+		expect = { '&#xFF3F;FOO&#xFF3F;&#xFF3F;' },
+	},
 	{ name = 'nowiki left-side context: ~~~',
 		func = mw.text.nowiki,
 		args = { '~~ long string here' },
@@ -166,6 +176,11 @@ local tests = {
 		func = mw.text.nowiki,
 		args = { '__FOO_' },
 		expect = { '&#95;&#95;FOO&#95;' },
+	},
+	{ name = 'nowiki right-side context: ＿＿FOO＿＿',
+		func = mw.text.nowiki,
+		args = { '＿＿FOO＿' },
+		expect = { '&#xFF3F;&#xFF3F;FOO&#xFF3F;' },
 	},
 	{ name = 'nowiki right-side context: newlines',
 		func = mw.text.nowiki,

@@ -2,10 +2,9 @@
 
 namespace MediaWiki\Extension\AbuseFilter\Pager;
 
-use HtmlArmor;
-use MediaWiki\Cache\LinkBatchFactory;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Extension\AbuseFilter\AbuseFilter;
+use MediaWiki\Extension\AbuseFilter\AbuseFilterPermissionManager;
 use MediaWiki\Extension\AbuseFilter\Filter\Flags;
 use MediaWiki\Extension\AbuseFilter\FilterLookup;
 use MediaWiki\Extension\AbuseFilter\Special\SpecialAbuseFilter;
@@ -13,71 +12,36 @@ use MediaWiki\Extension\AbuseFilter\SpecsFormatter;
 use MediaWiki\Html\Html;
 use MediaWiki\Linker\Linker;
 use MediaWiki\Linker\LinkRenderer;
+use MediaWiki\Page\LinkBatchFactory;
 use MediaWiki\Pager\TablePager;
 use MediaWiki\Title\Title;
+use MediaWiki\User\UserIdentityValue;
 use UnexpectedValueException;
+use Wikimedia\HtmlArmor\HtmlArmor;
+use Wikimedia\Rdbms\FakeResultWrapper;
 use Wikimedia\Rdbms\IResultWrapper;
 
 class AbuseFilterHistoryPager extends TablePager {
 
-	/** @var LinkBatchFactory */
-	private $linkBatchFactory;
-
-	/** @var FilterLookup */
-	private $filterLookup;
-
-	/** @var SpecsFormatter */
-	private $specsFormatter;
-
-	/** @var int|null The filter ID */
-	private $filter;
-
-	/** @var string|null The user whose changes we're looking up for */
-	private $user;
-
-	/** @var bool */
-	private $canViewPrivateFilters;
-
-	/** @var bool */
-	private $canViewProtectedVars;
-
-	/**
-	 * @param IContextSource $context
-	 * @param LinkRenderer $linkRenderer
-	 * @param LinkBatchFactory $linkBatchFactory
-	 * @param FilterLookup $filterLookup
-	 * @param SpecsFormatter $specsFormatter
-	 * @param ?int $filter
-	 * @param ?string $user User name
-	 * @param bool $canViewPrivateFilters
-	 * @param bool $canViewProtectedVars
-	 */
 	public function __construct(
 		IContextSource $context,
 		LinkRenderer $linkRenderer,
-		LinkBatchFactory $linkBatchFactory,
-		FilterLookup $filterLookup,
-		SpecsFormatter $specsFormatter,
-		?int $filter,
-		?string $user,
-		bool $canViewPrivateFilters = false,
-		bool $canViewProtectedVars = false
+		private readonly LinkBatchFactory $linkBatchFactory,
+		private readonly FilterLookup $filterLookup,
+		private readonly SpecsFormatter $specsFormatter,
+		private readonly AbuseFilterPermissionManager $afPermManager,
+		private readonly ?int $filter,
+		private readonly ?string $user,
+		private readonly bool $canViewPrivateFilters = false,
+		private readonly bool $canViewSuppressedFilters = false
 	) {
-		// needed by parent's constructor call
-		$this->filter = $filter;
 		parent::__construct( $context, $linkRenderer );
-		$this->linkBatchFactory = $linkBatchFactory;
-		$this->filterLookup = $filterLookup;
-		$this->specsFormatter = $specsFormatter;
-		$this->user = $user;
-		$this->canViewPrivateFilters = $canViewPrivateFilters;
-		$this->canViewProtectedVars = $canViewProtectedVars;
 		$this->mDefaultDirection = true;
 	}
 
 	/**
 	 * Note: this method is called by parent::__construct
-	 * @return array
+	 * @return array<string,string>
 	 * @see MediaWiki\Pager\Pager::getFieldNames()
 	 */
 	public function getFieldNames() {
@@ -168,21 +132,36 @@ class AbuseFilterHistoryPager extends TablePager {
 					// @todo Should we also hide actions?
 					$prevFilter = $this->filterLookup->getClosestVersion(
 						$row->afh_id, $row->afh_filter, FilterLookup::DIR_PREV );
-					if (
-							( $this->canViewPrivateFilters ||
-							(
-								!in_array( 'hidden', explode( ',', $row->afh_flags ) ) &&
-								!$prevFilter->isHidden()
-							)
-						) &&
-						(
-							$this->canViewProtectedVars ||
-							(
-								!in_array( 'protected', explode( ',', $row->afh_flags ) ) &&
-								!$prevFilter->isProtected()
-							)
-						)
-					) {
+					$filter = $this->filterLookup->filterFromHistoryRow( $row );
+					$userCanSeeFilterDiff = true;
+
+					// Protected variables permission check
+					if ( $filter->isProtected() ) {
+						$userCanSeeFilterDiff = $this->afPermManager
+							->canViewProtectedVariablesInFilter( $this->getAuthority(), $filter )
+							->isGood();
+					}
+
+					if ( $prevFilter->isProtected() && $userCanSeeFilterDiff ) {
+						$userCanSeeFilterDiff = $this->afPermManager
+							->canViewProtectedVariablesInFilter( $this->getAuthority(), $prevFilter )
+							->isGood();
+					}
+
+					// Private filter visibility check
+					if ( !$this->canViewPrivateFilters && $userCanSeeFilterDiff ) {
+						$userCanSeeFilterDiff = !$filter->isHidden() && !$prevFilter->isHidden();
+					}
+
+					// Suppressed filter visibility check
+					if ( $userCanSeeFilterDiff && !$this->canViewSuppressedFilters ) {
+						// Use the filters' own suppressed state rather than parsing flags again
+						if ( $filter->isSuppressed() || $prevFilter->isSuppressed() ) {
+							$userCanSeeFilterDiff = false;
+						}
+					}
+
+					if ( $userCanSeeFilterDiff ) {
 						$title = SpecialAbuseFilter::getTitleForSubpage(
 							'history/' . $row->afh_filter . "/diff/prev/$value" );
 						$formatted = $linkRenderer->makeLink(
@@ -203,53 +182,87 @@ class AbuseFilterHistoryPager extends TablePager {
 	 * @return array
 	 */
 	public function getQueryInfo() {
-		$info = [
-			'tables' => [ 'abuse_filter_history', 'abuse_filter', 'actor' ],
-			// All fields but afh_deleted on abuse_filter_history
-			'fields' => [
-				'afh_filter',
-				'afh_timestamp',
-				'afh_public_comments',
-				'afh_user' => 'actor_user',
-				'afh_user_text' => 'actor_name',
-				'afh_flags',
-				'afh_comments',
-				'afh_actions',
-				'afh_id',
-				'afh_changed_fields',
-				'afh_pattern',
-				'af_hidden'
-			],
-			'conds' => [],
-			'join_conds' => [
-				'abuse_filter' =>
-					[
-						'LEFT JOIN',
-						'afh_filter=af_id',
-					],
-				'actor' => [ 'JOIN', 'actor_id = afh_actor' ],
-			]
-		];
+		$queryBuilder = $this->filterLookup->getAbuseFilterHistoryQueryBuilder( $this->getDatabase() )
+			->fields( [ 'af_hidden', 'afh_changed_fields' ] )
+			->leftJoin( 'abuse_filter', null, 'afh_filter=af_id' );
 
 		if ( $this->user !== null ) {
-			$info['conds']['actor_name'] = $this->user;
+			$queryBuilder->andWhere( [ 'actor_name' => $this->user ] );
 		}
 
 		if ( $this->filter ) {
-			$info['conds']['afh_filter'] = $this->filter;
+			$queryBuilder->andWhere( [ 'afh_filter' => $this->filter ] );
 		}
 
+		// Hide data the user can't see.
+		if ( !$this->canViewSuppressedFilters ) {
+			$queryBuilder->andWhere( $this->mDb->bitAnd( 'af_hidden', Flags::FILTER_SUPPRESSED ) . ' = 0' );
+		}
 		if ( !$this->canViewPrivateFilters ) {
-			// Hide data the user can't see.
-			$info['conds'][] = $this->mDb->bitAnd( 'af_hidden', Flags::FILTER_HIDDEN ) . ' = 0';
+			$queryBuilder->andWhere( $this->mDb->bitAnd( 'af_hidden', Flags::FILTER_HIDDEN ) . ' = 0' );
 		}
 
-		if ( !$this->canViewProtectedVars ) {
+		// We cannot know the variables used in the filters when we are running the SQL query, so
+		// assume no variables are used and the filter is just protected. We will filter out
+		// any filters which the user cannot see due to a specific variable later.
+		if ( !$this->afPermManager->canViewProtectedVariables( $this->getAuthority(), [] )->isGood() ) {
 			// Hide data the user can't see.
-			$info['conds'][] = $this->mDb->bitAnd( 'af_hidden', Flags::FILTER_USES_PROTECTED_VARS ) . ' = 0';
+			$queryBuilder->andWhere( $this->mDb->bitAnd( 'af_hidden', Flags::FILTER_USES_PROTECTED_VARS ) . ' = 0' );
 		}
 
-		return $info;
+		return $queryBuilder->getQueryInfo();
+	}
+
+	/**
+	 * Excludes rows which are for protected filters where the filter currently uses protected variables
+	 * the user cannot see, to be consistent with how we exclude access to see the history of filters
+	 * the user cannot currently see.
+	 *
+	 * This method repeats the query to get $limit rows that the user can see, so that we do not expose
+	 * how many versions have been hidden.
+	 *
+	 * @inheritDoc
+	 */
+	public function reallyDoQuery( $offset, $limit, $order ) {
+		$foundRows = [];
+		$currentOffset = $offset;
+
+		do {
+			$result = parent::reallyDoQuery( $currentOffset, $limit, $order );
+
+			// Loop over each row in the result, and check that the user can see the the current version of
+			// the filter which this is associated with.
+			foreach ( $result as $row ) {
+				$historyFilter = $this->filterLookup->filterFromHistoryRow( $row );
+				$currentFilterVersion = $this->filterLookup->getFilter(
+					$historyFilter->getID(), $historyFilter->isGlobal()
+				);
+				if (
+					!$currentFilterVersion->isProtected() ||
+					$this->afPermManager
+						->canViewProtectedVariablesInFilter( $this->getAuthority(), $currentFilterVersion )
+						->isGood()
+				) {
+					$foundRows[] = $row;
+				}
+			}
+
+			// If we excluded rows in the above foreach, we will need to perform another query to get more rows so
+			// that the page contains a full list of results and does not expose the number of versions that
+			// the user cannot see.
+			// To do this we need to get a new offset value, which will be used to get rows we have not checked yet
+			// and is the timestamp of the last row we fetched.
+			$numRows = $result->numRows();
+
+			if ( $numRows ) {
+				$result->seek( $numRows - 1 );
+				$row = $result->fetchRow();
+				$currentOffset = $row['afh_timestamp'];
+			}
+		} while ( count( $foundRows ) <= $limit && $numRows );
+
+		$foundRows = array_slice( $foundRows, 0, $limit );
+		return new FakeResultWrapper( $foundRows );
 	}
 
 	/**
@@ -263,8 +276,7 @@ class AbuseFilterHistoryPager extends TablePager {
 		$lb = $this->linkBatchFactory->newLinkBatch();
 		$lb->setCaller( __METHOD__ );
 		foreach ( $result as $row ) {
-			$lb->add( NS_USER, $row->afh_user_text );
-			$lb->add( NS_USER_TALK, $row->afh_user_text );
+			$lb->addUser( new UserIdentityValue( $row->afh_user ?? 0, $row->afh_user_text ) );
 		}
 		$lb->execute();
 		$result->seek( 0 );
@@ -313,6 +325,11 @@ class AbuseFilterHistoryPager extends TablePager {
 		$attrs = parent::getCellAttrs( $field, $value );
 		$attrs['class'] .= $class;
 		return $attrs;
+	}
+
+	/** @inheritDoc */
+	protected function getRowClass( $row ) {
+		return 'mw-abusefilter-history-id-' . $row->afh_id;
 	}
 
 	/**

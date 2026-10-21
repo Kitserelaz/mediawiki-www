@@ -1,0 +1,84 @@
+{
+	"name": "IncidentReporting",
+	"author": [
+		"John Lewis",
+		"Universal Omega"
+	],
+	"url": "https://github.com/miraheze/IncidentReporting",
+	"version": "1.3.1",
+	"descriptionmsg": "incidentreporting-desc",
+	"license-name": "GPL-3.0-or-later",
+	"type": "specialpage",
+	"requires": {
+		"MediaWiki": ">= 1.43.0"
+	},
+	"AvailableRights": [
+		"viewincidents",
+		"editincidents"
+	],
+	"SpecialPages": {
+		"IncidentReports": "Miraheze\\IncidentReporting\\Specials\\SpecialIncidentReports"
+	},
+	"LogActionsHandlers": {
+		"incidentreporting/modify": "LogFormatter"
+	},
+	"LogTypes": [
+		"incidentreporting"
+	],
+	"MessagesDirs": {
+		"IncidentReporting": [
+			"i18n"
+		]
+	},
+	"ExtensionMessagesFiles": {
+		"IncidentReportingAliases": "IncidentReportingAliases.php"
+	},
+	"AutoloadNamespaces": {
+		"Miraheze\\IncidentReporting\\": "includes/"
+	},
+	"ResourceModules": {
+		"ext.incidentreporting.oouiform": {
+			"scripts": "ext.incidentreporting.oouiform.ooui.js",
+			"dependencies": [
+				"mediawiki.storage",
+				"oojs-ui-widgets"
+			]
+		},
+		"ext.incidentreporting.oouiform.styles": {
+			"styles": "ext.incidentreporting.oouiform.ooui.less"
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "modules",
+		"remoteExtPath": "IncidentReporting/modules"
+	},
+	"config": {
+		"IncidentReportingServices": {
+			"description": "Human readable list of service components with page URLs. Set to false for no link. Format: 'name' => 'url'.",
+			"public": true,
+			"value": []
+		},
+		"IncidentReportingInactiveServices": {
+			"description": "Same as $wgIncidentReportingServices but for inactive services. Services in this array won't appear when creating incident reports.",
+			"public": true,
+			"value": []
+		},
+		"IncidentReportingTaskUrl": {
+			"description": "Full url of task tracking software minus the task ID. e.g. https://issue-tracker.miraheze.org/",
+			"public": true,
+			"value": false
+		}
+	},
+	"Hooks": {
+		"LoadExtensionSchemaUpdates": [
+			"Miraheze\\IncidentReporting\\Hooks::onLoadExtensionSchemaUpdates"
+		]
+	},
+	"ConfigRegistry": {
+		"IncidentReporting": "MediaWiki\\Config\\GlobalVarConfig::newInstance"
+	},
+	"DatabaseVirtualDomains": [
+		"virtual-incidentreporting"
+	],
+	"manifest_version": 2
+}

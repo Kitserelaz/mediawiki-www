@@ -1,0 +1,43 @@
+{
+	"@metadata": {
+		"authors": [
+			"Nemoralis"
+		]
+	},
+	"reportincident-desc": "Hadisə Bildiriş Sistemi uzantısı.",
+	"reportincident-report-btn-label": "Şikayət et",
+	"reportincident-dialog-close-btn": "Bağla",
+	"reportincident-dialog-back-btn": "Geriyə",
+	"reportincident-dialog-harassment-type-label": "Nə cür davranışdır?",
+	"reportincident-dialog-optional-label": "(məcburi deyil)",
+	"reportincident-dialog-violator-placeholder-text": "Kimi şikayət edirsiniz?",
+	"reportincident-dialog-harassment-type-hate-speech-or-discrimination": "Nifrət nitqi və ya ayrı-seçkilik",
+	"reportincident-dialog-harassment-type-sexual-harassment": "Cinsi zorakılıq",
+	"reportincident-dialog-harassment-type-threats-of-violence": "Zorakılıq təhdidləri",
+	"reportincident-dialog-harassment-type-intimidation": "Hədə-qorxu, aqressiya, ad qoymaq",
+	"reportincident-dialog-harassment-type-something-else": "Başqa bir şey",
+	"reportincident-dialog-something-else-input-placeholder": "Yuxarıda sadalanmayan davranışlardan bəhs edin.",
+	"reportincident-dialog-harassment-empty": "Ən azı bir davranış {{GENDER:|seçməlisiniz}}.",
+	"reportincident-dialog-violator-empty": "İstifadəçi adı göstərməlisiniz.",
+	"reportincident-dialog-something-else-empty": "Zəhmət olmasa davranışın qısa təsvirini yazın.",
+	"reportincident-dialog-violator-nonexistent": "{{GENDER:|Siz}} şikayət etmək üçün mövcud istifadəçi adını təqdim etməlisiniz.",
+	"reportincident-dialog-internet-disconnected-error": "Deyəsən internet bağlantınız yoxdur. Zəhmət olmasa, bağlantınız bərpa edildikdə yenidən göndərməyə cəhd edin.",
+	"reportincident-dialog-server-error": "Üzr istəyirik, deyəsən serverimiz cavab vermir. Zəhmət olmasa, yenidən cəhd edin.",
+	"reportincident-dialog-generic-error": "{{GENDER:|Sizin}} sorğunuz xəta səbəbindən göndərilə bilmədi. Zəhmət olmasa, yenidən cəhd edin.",
+	"reportincident-success-message": "Şikayət uğurla göndərildi. İnzibatçılar bunun siyasətlərimizi pozub-pozmadığını yoxlayacaq və müəyyən edəcək. {{SITENAME}} saytını təhlükəsiz saxlamaqda bizə kömək etdiyiniz üçün təşəkkür edirik.",
+	"reportincident-success-message-close": "Bağla",
+	"reportincident-unable-to-send": "Şikayəti e-poçtla göndərmək mümkün deyil.",
+	"reportincident-email-subject": "{{SITENAME}}: \"$1\" istifadəçisindən yeni şikayət",
+	"reportincident-email-body": "Şikayət edən: $1\nŞikayət edilən: $2\n$3: $4\n\nDavranışlar: $5\nTəfərrüatlar: $6\n\n$1 istifadəçisinə e-poçt göndər: $7",
+	"reportincident-email-link-to-page-prefix": "Səhifəyə keçid",
+	"reportincident-email-link-to-comment-prefix": "Şikayət edilmiş şərhə keçid",
+	"reportincident-email-link-to-topic-prefix": "Şikayət edilən mövzuya keçid",
+	"reportincident-email-something-else": "Başqa bir şey: \"$1\"",
+	"right-reportincident": "Hadisə barədə bildiriş göndərmək",
+	"action-reportincident": "hadisə barədə bildiriş göndərmək",
+	"reportincident-emaildialog-title": "Təsdiqlənmiş e-poçt ünvanı tələb olunur",
+	"reportincident-emaildialog-close-button": "İmtina",
+	"reportincident-emaildialog-content": "Şikayətiniz ilə bağlı yenilikləri təqdim etmək və ya zəruri hallarda izləmək üçün bizə {{GENDER:|sizin}} təsdiqlənmiş e-poçt ünvanınız lazımdır. Zəhmət olmasa, şikayət etməzdən əvvəl e-poçt ünvanınızı istifadəçi hesabı parametrlərindən əlavə edin və ya təsdiqləyin.",
+	"reportincident-emaildialog-primary": "Parametrlərə get",
+	"reportincident-confirmedemail-required": "Şikayət göndərə bilmək üçün təsdiqlənmiş e-poçt ünvanı tələb olunur."
+}

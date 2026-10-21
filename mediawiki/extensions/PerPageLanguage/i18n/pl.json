@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": [
+			"Rail"
+		]
+	},
+	"perpagelanguage-desc": "Ustawia język interfejsu, aby pasował do języka treści strony",
+	"perpagelanguage-label": "Ustaw język"
+}

@@ -1,16 +1,19 @@
 <?php
 
-namespace MediaWiki\CheckUser\Tests\Integration\CheckUser\Pagers;
+declare( strict_types=1 );
 
-use LogEntryBase;
-use LogFormatter;
-use LogPage;
-use ManualLogEntry;
-use MediaWiki\CheckUser\CheckUser\SpecialCheckUser;
-use MediaWiki\CheckUser\ClientHints\ClientHintsBatchFormatterResults;
-use MediaWiki\CheckUser\Services\UserAgentClientHintsManager;
-use MediaWiki\CheckUser\Tests\Integration\CheckUser\Pagers\Mocks\MockTemplateParser;
+namespace MediaWiki\Extension\CheckUser\Tests\Integration\CheckUser\Pagers;
+
+use MediaWiki\Extension\CheckUser\CheckUser\Pagers\CheckUsernameResultInterface;
+use MediaWiki\Extension\CheckUser\CheckUser\SpecialCheckUser;
+use MediaWiki\Extension\CheckUser\ClientHints\ClientHintsBatchFormatterResults;
+use MediaWiki\Extension\CheckUser\Services\UserAgentClientHintsManager;
+use MediaWiki\Extension\CheckUser\Tests\Integration\CheckUser\Pagers\Mocks\MockTemplateParser;
 use MediaWiki\Linker\Linker;
+use MediaWiki\Logging\LogEntryBase;
+use MediaWiki\Logging\LogFormatter;
+use MediaWiki\Logging\LogPage;
+use MediaWiki\Logging\ManualLogEntry;
 use MediaWiki\Title\Title;
 use MediaWiki\User\UserIdentityValue;
 use Wikimedia\IPUtils;
@@ -22,7 +25,7 @@ use Wikimedia\Rdbms\FakeResultWrapper;
  * @group CheckUser
  * @group Database
  *
- * @covers \MediaWiki\CheckUser\CheckUser\Pagers\CheckUserGetActionsPager
+ * @covers \MediaWiki\Extension\CheckUser\CheckUser\Pagers\CheckUserGetActionsPager
  */
 class CheckUserGetActionsPagerTest extends CheckUserPagerTestBase {
 
@@ -57,8 +60,8 @@ class CheckUserGetActionsPagerTest extends CheckUserPagerTestBase {
 		return [
 			'All message keys to be cached' => [ [
 				'diff', 'hist', 'minoreditletter', 'newpageletter',
-				'blocklink', 'checkuser-log-link-text', 'checkuser-logs-link-text'
-			] ]
+				'blocklink', 'checkuser-log-link-text', 'checkuser-logs-link-text',
+			] ],
 		];
 	}
 
@@ -70,10 +73,13 @@ class CheckUserGetActionsPagerTest extends CheckUserPagerTestBase {
 	 * @dataProvider provideFormatRow
 	 */
 	public function testFormatRow(
-		$row, $flagCache, $usernameVisibility, $formattedRevisionComments, $formattedClientHintsData,
-		$expectedTemplateParams, $displayClientHints
+		$row,
+		$flagCache,
+		$usernameVisibility,
+		$formattedRevisionComments,
+		$formattedClientHintsData,
+		$expectedTemplateParams
 	) {
-		$this->overrideConfigValue( 'CheckUserDisplayClientHints', $displayClientHints );
 		$object = $this->setUpObject();
 		$object->templateParser = new MockTemplateParser();
 		$row = array_merge( $this->getDefaultRowFieldValues(), $row );
@@ -95,12 +101,9 @@ class CheckUserGetActionsPagerTest extends CheckUserPagerTestBase {
 		);
 		$this->assertArrayEquals(
 			$expectedTemplateParams,
-			array_filter(
+			array_intersect_key(
 				$object->templateParser->lastCalledWith[1],
-				static function ( $key ) use ( $expectedTemplateParams ) {
-					return array_key_exists( $key, $expectedTemplateParams );
-				},
-				ARRAY_FILTER_USE_KEY
+				$expectedTemplateParams
 			),
 			false,
 			true,
@@ -134,8 +137,35 @@ class CheckUserGetActionsPagerTest extends CheckUserPagerTestBase {
 				'actionText' => $this->getServiceContainer()->getLogFormatterFactory()
 					->newFromEntry( $deleteLogEntry )->getActionText(),
 				'clientHints' => 'Test Client Hints data', 'userAgent' => 'Test',
+			]
+		);
+	}
+
+	public function testFormatRowForLogCleansInvalidUtf8Agent() {
+		$deleteLogEntry = new ManualLogEntry( 'delete', 'delete' );
+		$deleteLogEntry->setPerformer( UserIdentityValue::newAnonymous( '127.0.0.1' ) );
+		$deleteLogEntry->setTarget( Title::newFromText( 'Testing page' ) );
+		$this->testFormatRow(
+			[
+				'log_type' => $deleteLogEntry->getType(),
+				'log_action' => $deleteLogEntry->getSubtype(),
+				'title' => $deleteLogEntry->getTarget()->getText(),
+				'log_deleted' => 0,
+				'type' => RC_LOG,
+				'user_text' => $deleteLogEntry->getPerformerIdentity()->getName(),
+				'user' => $deleteLogEntry->getPerformerIdentity()->getId(),
+				'client_hints_reference_id' => 1,
+				'client_hints_reference_type' => UserAgentClientHintsManager::IDENTIFIER_CU_CHANGES,
+				'agent' => "Testing \xE4 user agent",
 			],
-			true,
+			[ $deleteLogEntry->getPerformerIdentity()->getName() => '' ],
+			[ $deleteLogEntry->getPerformerIdentity()->getId() => true ],
+			[],
+			new ClientHintsBatchFormatterResults( [ 0 => [ 1 => 0 ] ], [ 0 => 'Test Client Hints data' ] ),
+			[
+				'clientHints' => 'Test Client Hints data',
+				'userAgent' => "Testing \u{FFFD} user agent",
+			]
 		);
 	}
 
@@ -162,43 +192,45 @@ class CheckUserGetActionsPagerTest extends CheckUserPagerTestBase {
 			[ $deleteLogEntry->getPerformerIdentity()->getId() => true ],
 			[],
 			new ClientHintsBatchFormatterResults( [], [] ),
-			[ 'actionText' => $logFormatter->getActionText() ],
-			false,
+			[ 'actionText' => $logFormatter->getActionText() ]
 		);
 	}
 
 	public function testFormatRowLogFromUnnormalisedIPv6() {
-		$user_text = '2A02:EC80:101:0:0:0:2:8';
 		$ip = '2a02:ec80:101::2:8';
+		$normalisedIP = IPUtils::prettifyIP( $ip );
 
-		$normalisedIP = IPUtils::prettifyIP( $user_text ) ?? $user_text;
 		$wrapper = $this->setUpObject();
 
 		$this->testFormatRow(
 			[
-				'user_text' => $user_text,
-				'ip' => $ip,
+				'user_text' => $ip,
+				'ip_hex' => IPUtils::toHex( $ip ),
+				'client_hints_reference_id' => 1,
+				'client_hints_reference_type' => UserAgentClientHintsManager::IDENTIFIER_CU_LOG_EVENT,
 			],
-			[ $user_text => '' ],
+			[ $ip => '' ],
 			[],
 			[],
-			null,
+			new ClientHintsBatchFormatterResults( [], [] ),
 			[
 				'userLink' => Linker::userLink( 0, $normalisedIP, $normalisedIP ),
-				'ipLink' => $wrapper->getSelfLink( $normalisedIP,
+				'ipIsSet' => true,
+				'ipLink' => $wrapper->getSelfLink(
+					$normalisedIP,
 					[
 						'user' => $normalisedIP,
-						'reason' => ''
+						'reason' => '',
 					]
-				)
-			],
-			false,
+				),
+			]
 		);
 	}
 
 	/** @dataProvider provideFormatRowForLogWithLogParameters */
 	public function testFormatRowForLogWithLogParameters(
-		$logParametersAsArray, $logParametersAsBlob
+		$logParametersAsArray,
+		$logParametersAsBlob
 	) {
 		$moveLogEntry = new ManualLogEntry( 'move', 'move' );
 		$moveLogEntry->setPerformer( UserIdentityValue::newAnonymous( '127.0.0.1' ) );
@@ -225,8 +257,7 @@ class CheckUserGetActionsPagerTest extends CheckUserPagerTestBase {
 				'actionText' => $this->getServiceContainer()->getLogFormatterFactory()
 					->newFromEntry( $moveLogEntry )->getActionText(),
 				'clientHints' => 'Test Client Hints data',
-			],
-			true,
+			]
 		);
 	}
 
@@ -235,23 +266,23 @@ class CheckUserGetActionsPagerTest extends CheckUserPagerTestBase {
 			'Legacy log parameters' => [
 				[
 					'4::target' => 'Testing',
-					'5::noredir' => '0'
+					'5::noredir' => '0',
 				],
 				LogPage::makeParamBlob( [
 					'4::target' => 'Testing',
-					'5::noredir' => '0'
+					'5::noredir' => '0',
 				] ),
 			],
 			'Normal log parameters' => [
 				[
 					'4::target' => 'Testing',
-					'5::noredir' => '0'
+					'5::noredir' => '0',
 				],
 				LogEntryBase::makeParamBlob( [
 					'4::target' => 'Testing',
-					'5::noredir' => '0'
+					'5::noredir' => '0',
 				] ),
-			]
+			],
 		];
 	}
 
@@ -261,7 +292,7 @@ class CheckUserGetActionsPagerTest extends CheckUserPagerTestBase {
 		$moveLogEntry->setTarget( Title::newFromText( 'Testing page' ) );
 		$moveLogEntry->setParameters( [
 			'4::target' => 'Testing',
-			'5::noredir' => '0'
+			'5::noredir' => '0',
 		] );
 		$this->testFormatRow(
 			[
@@ -274,7 +305,7 @@ class CheckUserGetActionsPagerTest extends CheckUserPagerTestBase {
 				'user' => $moveLogEntry->getPerformerIdentity()->getId(),
 				'log_params' => LogEntryBase::makeParamBlob( [
 					'4::target' => 'Testing',
-					'5::noredir' => '0'
+					'5::noredir' => '0',
 				] ),
 				'comment_text' => 'test',
 				'client_hints_reference_id' => 1,
@@ -289,8 +320,7 @@ class CheckUserGetActionsPagerTest extends CheckUserPagerTestBase {
 					->newFromEntry( $moveLogEntry )->getActionText(),
 				'clientHints' => 'Test Client Hints data',
 				'comment' => '',
-			],
-			true,
+			]
 		);
 	}
 
@@ -326,8 +356,7 @@ class CheckUserGetActionsPagerTest extends CheckUserPagerTestBase {
 			[ $hiddenUser->getId() => true ],
 			[],
 			new ClientHintsBatchFormatterResults( [], [] ),
-			[ 'showLinks' => false ],
-			true,
+			[ 'showLinks' => false ]
 		);
 	}
 
@@ -336,7 +365,11 @@ class CheckUserGetActionsPagerTest extends CheckUserPagerTestBase {
 		return [
 			'Test non-existent user has appropriate CSS class' => [
 				// $row as an array
-				[ 'user' => 0, 'user_text' => 'Non existent user 1234' ],
+				[
+					'user' => 0, 'user_text' => 'Non existent user 1234',
+					'client_hints_reference_id' => 1,
+					'client_hints_reference_type' => UserAgentClientHintsManager::IDENTIFIER_CU_CHANGES,
+				],
 				// The $object->flagCache
 				[ 'Non existent user 1234' => '' ],
 				// The $object->usernameVisibility
@@ -344,29 +377,47 @@ class CheckUserGetActionsPagerTest extends CheckUserPagerTestBase {
 				// The $object->formattedRevisionComments
 				[],
 				// The $object->formattedClientHintsData
-				null,
+				new ClientHintsBatchFormatterResults( [], [] ),
 				// The expected template parameters
 				[ 'userLinkClass' => 'mw-checkuser-nonexistent-user' ],
-				// Whether Client Hints are enabled
-				false
 			],
 			'Testing using a user that is hidden who made an edit' => [
-				[ 'user' => 10, 'user_text' => 'User1234', 'type' => RC_EDIT ],
+				[
+					'user' => 10, 'user_text' => 'User1234', 'type' => RC_EDIT,
+					'client_hints_reference_id' => 1,
+					'client_hints_reference_type' => UserAgentClientHintsManager::IDENTIFIER_CU_LOG_EVENT,
+				],
 				[],
 				[ 0 => false ],
 				[ 0 => 'Test' ],
-				null,
+				new ClientHintsBatchFormatterResults( [], [] ),
 				[ 'comment' => 'Test' ],
-				false
 			],
 			'Row for IP address when temporary accounts are enabled' => [
-				[ 'user_text' => null, 'user' => null, 'actor' => null, 'ip' => '127.0.0.1' ],
+				[
+					'user_text' => null, 'user' => null, 'actor' => null,
+					'ip_hex' => IPUtils::toHex( '127.0.0.1' ),
+					'client_hints_reference_id' => 1,
+					'client_hints_reference_type' => UserAgentClientHintsManager::IDENTIFIER_CU_PRIVATE_EVENT,
+				],
 				[ '127.0.0.1' => 'test-flag' ],
 				[ 0 => true ],
 				[],
-				null,
+				new ClientHintsBatchFormatterResults( [], [] ),
 				[ 'flags' => 'test-flag' ],
-				false
+			],
+			'Row when IP address is null' => [
+				[
+					'user_text' => 'User1234',
+					'ip_hex' => null,
+					'client_hints_reference_id' => 1,
+					'client_hints_reference_type' => UserAgentClientHintsManager::IDENTIFIER_CU_CHANGES,
+				],
+				[ 'User1234' => '' ],
+				[],
+				[],
+				new ClientHintsBatchFormatterResults( [], [] ),
+				[ 'ipIsSet' => false ],
 			],
 		];
 	}
@@ -390,15 +441,51 @@ class CheckUserGetActionsPagerTest extends CheckUserPagerTestBase {
 		);
 	}
 
+	public function testGetResultUsernameMapAfterPreprocessResults(): void {
+		$object = $this->setUpObject();
+		$this->assertInstanceOf( CheckUsernameResultInterface::class, $object->object );
+		$object->preprocessResults( new FakeResultWrapper( [
+			// Registered user — should appear in the map
+			array_merge( $this->getDefaultRowFieldValues(), [
+				'user_text' => 'Alice',
+				'user' => 42,
+				'actor' => 1,
+				'type' => RC_LOG,
+				'client_hints_reference_id' => 1,
+				'client_hints_reference_type' => UserAgentClientHintsManager::IDENTIFIER_CU_CHANGES,
+			] ),
+			// Anon row (user=0) — should be excluded
+			array_merge( $this->getDefaultRowFieldValues(), [
+				'user_text' => 'SomeUser',
+				'user' => 0,
+				'actor' => 2,
+				'type' => RC_LOG,
+				'client_hints_reference_id' => 2,
+				'client_hints_reference_type' => UserAgentClientHintsManager::IDENTIFIER_CU_CHANGES,
+			] ),
+			// Registered user with IP name — should be excluded
+			array_merge( $this->getDefaultRowFieldValues(), [
+				'user_text' => '1.2.3.4',
+				'user' => 43,
+				'actor' => 3,
+				'type' => RC_LOG,
+				'client_hints_reference_id' => 3,
+				'client_hints_reference_type' => UserAgentClientHintsManager::IDENTIFIER_CU_CHANGES,
+			] ),
+		] ) );
+
+		$this->assertSame( [ 42 => 'Alice' ], $object->getResultUsernameMap() );
+	}
+
 	/** @dataProvider provideGetQueryInfo */
-	public function testGetQueryInfo( $target, $xfor, $table, $expectedQueryInfo ) {
+	public function testGetQueryInfo( UserIdentityValue $target, $xfor, $table, $expectedQueryInfo ) {
 		$this->overrideConfigValue( 'CheckUserCIDRLimit', [ 'IPv4' => 16, 'IPv6' => 19 ] );
 		if ( IPUtils::isIPAddress( $target->getName() ) ) {
 			// Add the IExpression for the IP target as a string to the expected query info for comparison.
 			// This is done for IP targets as we cannot add the SQL representation of the IExpression result
 			// in the static data provider because it does not have access to the service container.
 			$expectedQueryInfo['conds'][] = $this->getServiceContainer()->get( 'CheckUserLookupUtils' )
-				->getIPTargetExpr( $target, $xfor, $table )
+				->getIPTargetExpr( $target->getName(), $xfor, $table )
 				->toSql( $this->getDb() );
 		}
 		$this->commonTestGetQueryInfo( $target, $xfor, $table, $expectedQueryInfo );
@@ -421,7 +508,7 @@ class CheckUserGetActionsPagerTest extends CheckUserPagerTestBase {
 					'options' => [ 'USE INDEX' => [ 'cu_changes' => 'cuc_ip_hex_time' ] ],
 					// Verify that fields and join_conds set as arrays, but we are not testing their values.
 					'fields' => [], 'join_conds' => [],
-				]
+				],
 			],
 			'cu_log_event table for IP address' => [
 				UserIdentityValue::newAnonymous( '127.0.0.1' ), false, 'cu_log_event',
@@ -430,7 +517,7 @@ class CheckUserGetActionsPagerTest extends CheckUserPagerTestBase {
 					'conds' => [],
 					'options' => [ 'USE INDEX' => [ 'cu_log_event' => 'cule_ip_hex_time' ] ],
 					'fields' => [], 'join_conds' => [],
-				]
+				],
 			],
 			'cu_private_event table for IP address' => [
 				UserIdentityValue::newAnonymous( '127.0.0.1' ), false, 'cu_private_event',
@@ -439,7 +526,7 @@ class CheckUserGetActionsPagerTest extends CheckUserPagerTestBase {
 					'conds' => [],
 					'options' => [ 'USE INDEX' => [ 'cu_private_event' => 'cupe_ip_hex_time' ] ],
 					'fields' => [], 'join_conds' => [],
-				]
+				],
 			],
 			'cu_private_event table for XFF IP address' => [
 				UserIdentityValue::newAnonymous( '127.0.0.1' ), true, 'cu_private_event',
@@ -448,16 +535,16 @@ class CheckUserGetActionsPagerTest extends CheckUserPagerTestBase {
 					'conds' => [],
 					'options' => [ 'USE INDEX' => [ 'cu_private_event' => 'cupe_xff_hex_time' ] ],
 					'fields' => [], 'join_conds' => [],
-				]
+				],
 			],
 			'cu_log_event table for user target' => [
 				UserIdentityValue::newRegistered( 1, 'Testing' ), null, 'cu_log_event',
 				[
 					'tables' => [ 'cu_log_event' ],
 					'conds' => [ 'actor_user' => 1 ],
-					'options' => [ 'USE INDEX' => [ 'cu_log_event' => 'cule_actor_ip_time' ] ],
+					'options' => [ 'USE INDEX' => [ 'cu_log_event' => 'cule_actor_ip_hex_time' ] ],
 					'fields' => [], 'join_conds' => [],
-				]
+				],
 			],
 		];
 	}
@@ -477,7 +564,7 @@ class CheckUserGetActionsPagerTest extends CheckUserPagerTestBase {
 			'last_oldid' => 0,
 			'type' => RC_EDIT,
 			'timestamp' => $this->getDb()->timestamp(),
-			'ip' => '127.0.0.1',
+			'ip_hex' => IPUtils::toHex( '127.0.0.1' ),
 			'xff' => '',
 			'agent' => '',
 			'comment_id' => 0,

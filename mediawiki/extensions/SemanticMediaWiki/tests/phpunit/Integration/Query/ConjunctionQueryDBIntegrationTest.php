@@ -1,0 +1,249 @@
+<?php
+
+namespace SMW\Tests\Integration\Query;
+
+use SMW\DataItems\Property;
+use SMW\DataItems\WikiPage;
+use SMW\Query\Language\ClassDescription;
+use SMW\Query\Language\Conjunction;
+use SMW\Query\Language\SomeProperty;
+use SMW\Query\Language\ValueDescription;
+use SMW\Query\Query;
+use SMW\Services\ServicesFactory as ApplicationFactory;
+use SMW\Tests\SMWIntegrationTestCase;
+use SMW\Tests\Utils\UtilityFactory;
+
+/**
+ * @group SMW
+ * @group SMWExtension
+ *
+ * @group semantic-mediawiki-integration
+ * @group semantic-mediawiki-query
+ *
+ * @group mediawiki-database
+ * @group Database
+ * @group medium
+ *
+ * @license GPL-2.0-or-later
+ * @since 2.0
+ *
+ * @author mwjames
+ */
+class ConjunctionQueryDBIntegrationTest extends SMWIntegrationTestCase {
+
+	private $subjectsToBeCleared = [];
+	private $semanticDataFactory;
+	private $queryResultValidator;
+	private $fixturesProvider;
+	private $queryParser;
+
+	protected function setUp(): void {
+		parent::setUp();
+
+		if ( $GLOBALS['wgLanguageCode'] !== 'en' ) {
+			$this->markTestSkipped( 'Category title produces different fingerprint!' );
+		}
+
+		$utilityFactory = UtilityFactory::getInstance();
+
+		$this->semanticDataFactory  = $utilityFactory->newSemanticDataFactory();
+		$this->queryResultValidator = $utilityFactory->newValidatorFactory()->newQueryResultValidator();
+
+		$this->fixturesProvider = $utilityFactory->newFixturesFactory()->newFixturesProvider();
+		$this->fixturesProvider->setupDependencies( $this->getStore() );
+
+		$this->queryParser = ApplicationFactory::getInstance()->getQueryFactory()->newQueryParser();
+	}
+
+	protected function tearDown(): void {
+		$fixturesCleaner = UtilityFactory::getInstance()->newFixturesFactory()->newFixturesCleaner();
+		$fixturesCleaner
+			->purgeSubjects( $this->subjectsToBeCleared )
+			->purgeAllKnownFacts();
+
+		parent::tearDown();
+	}
+
+	/**
+	 * {{#ask: [[Category:HappyPlaces]] [[LocatedIn.MemberOf::Wonderland]] }}
+	 */
+	public function testConjunctionForCategoryAndPropertyChainSubqueryThatComparesEqualToSpecifiedValue() {
+		/**
+		 * Page ...-neverland annotated with [[LocatedIn::BananaWonderland]]
+		 */
+		$semanticDataOfNeverland = $this->semanticDataFactory
+			->setTitle( __METHOD__ . '-neverland' )
+			->newEmptySemanticData();
+
+		$semanticDataOfNeverland->addPropertyObjectValue(
+			Property::newFromUserLabel( 'LocatedIn' )->setPropertyValueType( '_wpg' ),
+			new WikiPage( 'BananaWonderland', NS_MAIN )
+		);
+
+		$this->getStore()->updateData( $semanticDataOfNeverland );
+
+		/**
+		 * Page ...-dreamland annotated with [[Category:HappyPlaces]] [[LocatedIn::BananaWonderland]]
+		 */
+		$semanticDataOfDreamland = $this->semanticDataFactory
+			->setTitle( __METHOD__ . '-dreamland' )
+			->newEmptySemanticData();
+
+		$semanticDataOfDreamland->addPropertyObjectValue(
+			Property::newFromUserLabel( 'LocatedIn' )->setPropertyValueType( '_wpg' ),
+			new WikiPage( 'BananaWonderland', NS_MAIN )
+		);
+
+		$semanticDataOfDreamland->addPropertyObjectValue(
+			new Property( '_INST' ),
+			new WikiPage( 'HappyPlaces', NS_CATEGORY )
+		);
+
+		$this->getStore()->updateData( $semanticDataOfDreamland );
+
+		/**
+		 * Page BananaWonderland annotated with [[MemberOf::Wonderland]]
+		 */
+		$semanticDataOfWonderland = $this->semanticDataFactory
+			->setTitle( 'BananaWonderland' )
+			->newEmptySemanticData();
+
+		$semanticDataOfWonderland->addPropertyObjectValue(
+			Property::newFromUserLabel( 'MemberOf' )->setPropertyValueType( '_wpg' ),
+			new WikiPage( 'Wonderland', NS_MAIN )
+		);
+
+		$this->getStore()->updateData( $semanticDataOfWonderland );
+
+		$someProperty = new SomeProperty(
+			Property::newFromUserLabel( 'LocatedIn' )->setPropertyValueType( '_wpg' ),
+			new SomeProperty(
+				Property::newFromUserLabel( 'MemberOf' )->setPropertyValueType( '_wpg' ),
+				new ValueDescription(
+					new WikiPage( 'Wonderland', NS_MAIN, '' ),
+					Property::newFromUserLabel( 'MemberOf' )->setPropertyValueType( '_wpg' ), SMW_CMP_EQ
+				)
+			)
+		);
+
+		$classDescription = new ClassDescription(
+			new WikiPage( 'HappyPlaces', NS_CATEGORY, '' )
+		);
+
+		$description = new Conjunction();
+		$description->addDescription( $classDescription );
+		$description->addDescription( $someProperty );
+
+		$this->assertEquals(
+			$description,
+			$this->queryParser->getQueryDescription( '[[Category:HappyPlaces]] [[LocatedIn.MemberOf::Wonderland]]' )
+		);
+
+		$this->assertEquals(
+			$description,
+			$this->queryParser->getQueryDescription( '[[Category:HappyPlaces]] [[LocatedIn::<q>[[MemberOf::Wonderland]]</q>]]' )
+		);
+
+		$query = new Query(
+			$description,
+			false,
+			false
+		);
+
+		$query->querymode = Query::MODE_INSTANCES;
+
+		$queryResult = $this->getStore()->getQueryResult( $query );
+
+		$expectedSubjects = [
+			$semanticDataOfDreamland->getSubject()
+		];
+
+		$this->assertSame(
+			1,
+			$queryResult->getCount()
+		);
+
+		$this->queryResultValidator->assertThatQueryResultHasSubjects(
+			$expectedSubjects,
+			$queryResult
+		);
+
+		$this->subjectsToBeCleared = [
+			$semanticDataOfWonderland->getSubject(),
+			$semanticDataOfDreamland->getSubject(),
+			$semanticDataOfNeverland->getSubject()
+		];
+	}
+
+	public function testNestedPropertyConjunction() {
+		/**
+		 * Page annotated with [[Born in::Paris]]
+		 */
+		$property = Property::newFromUserLabel( 'Born in' );
+		$property->setPropertyValueType( '_wpg' );
+
+		$semanticData = $this->semanticDataFactory->newEmptySemanticData( __METHOD__ . 'PageOughtToBeSelected' );
+
+		$semanticData->addPropertyObjectValue(
+			$property,
+			new WikiPage( 'Paris', NS_MAIN )
+		);
+
+		$expectedSubjects = $semanticData->getSubject();
+		$this->subjectsToBeCleared[] = $semanticData->getSubject();
+
+		$this->getStore()->updateData( $semanticData );
+
+		$this->getStore()->updateData(
+			$this->fixturesProvider->getFactsheet( 'Paris' )->asEntity()
+		);
+
+		/**
+		 * @query [[Born in::<q>[[Category:City]] [[Located in::France]]</q>]]
+		 */
+		$cityCategory = $this->fixturesProvider->getCategory( 'city' )->asSubject();
+		$locatedInProperty = $this->fixturesProvider->getProperty( 'locatedin' );
+
+		$conjunction = new Conjunction( [
+			new ClassDescription( $cityCategory ),
+			new SomeProperty(
+				$locatedInProperty,
+				new ValueDescription(
+					$this->fixturesProvider->getFactsheet( 'France' )->asSubject(),
+					$locatedInProperty )
+				)
+			]
+		);
+
+		$description = new SomeProperty(
+			$property,
+			$conjunction
+		);
+
+		$this->assertEquals(
+			$description,
+			$this->queryParser->getQueryDescription( '[[Born in::<q>[[Category:City]] [[Located in::France]]</q>]]' )
+		);
+
+		$query = new Query(
+			$description,
+			false,
+			false
+		);
+
+		$query->querymode = Query::MODE_INSTANCES;
+
+		$queryResult = $this->getStore()->getQueryResult( $query );
+
+		$this->assertSame(
+			1,
+			$queryResult->getCount()
+		);
+
+		$this->queryResultValidator->assertThatQueryResultHasSubjects(
+			$expectedSubjects,
+			$queryResult
+		);
+	}
+
+}

@@ -1,0 +1,35 @@
+/* Styles for print view and printing. Only loaded for print. */
+
+/* Hide some extra stuff from print view (some of the navigation is already hidden automatically, but not all) */
+.mw-indicators,
+.mw-editsection,
+#p-logo,
+#catlinks,
+header nav,
+.skin-wmau-action-drawer,
+.skin-wmau-talk-link,
+#mw-footer,
+footer .skin-wmau-footer-right {
+	display: none;
+}
+
+.skin-wmau-retrievedfrom {
+	display: block;
+}
+
+.skin-wmau-container {
+	max-width: none;
+}
+
+footer .skin-wmau-container {
+	display: block;
+}
+
+header,
+footer {
+	background-color: transparent;
+}
+
+div.thumbinner {
+	box-shadow: none;
+}

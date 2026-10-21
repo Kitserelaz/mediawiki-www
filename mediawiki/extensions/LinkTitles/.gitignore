@@ -1,0 +1,12 @@
+*~
+*#
+*.swp
+*.bak
+gpl-2.0.txt
+Maintenance.php
+doxygen_sqlite3.db
+/LinkTitles.phpproj
+/LinkTitles.phpproj.user
+/LinkTitles.sln
+/LinkTitles.v12.suo
+release/

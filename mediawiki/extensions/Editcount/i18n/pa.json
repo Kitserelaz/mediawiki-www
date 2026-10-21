@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Babanwalia",
+			"Cabal",
+			"Gman124",
+			"TariButtar"
+		]
+	},
+	"editcount-desc": "ਦਿੱਤੇ ਗਏ ਵਰਤੋਂਕਾਰ ਦੀਆਂ [[Special:Editcount|ਸੋਧਾਂ ਦੀ ਗਿਣਤੀ]] ਵਿਖਾਉਂਦਾ ਹੈ",
+	"editcount_username": "ਵਰਤੋਂਕਾਰ:",
+	"editcount_submit": "ਹਵਾਲੇ ਕਰੋ",
+	"editcount_edits": "ਸੋਧਾਂ",
+	"editcount_total": "ਕੁੱਲ"
+}

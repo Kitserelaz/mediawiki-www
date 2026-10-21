@@ -1,0 +1,485 @@
+<?php
+
+namespace SMW\SQLStore;
+
+use MediaWiki\HookContainer\HookContainer;
+use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
+use SMW\DataItems\Blob;
+use SMW\DataItems\Property;
+use SMW\DataItems\WikiPage;
+use SMW\DataModel\SemanticData;
+use SMW\Enum;
+use SMW\MediaWiki\Connection\Database;
+use SMW\Parameters;
+use SMW\Services\ServicesFactory as ApplicationFactory;
+use SMW\SQLStore\EntityStore\CachingSemanticDataLookup;
+use SMW\SQLStore\EntityStore\IdChanger;
+use SMW\Status;
+use SMW\Store;
+use Throwable;
+
+/**
+ * Class Handling all the write and update methods for SQLStore.
+ *
+ * @license GPL-2.0-or-later
+ * @since 1.8
+ *
+ * @author Markus Krötzsch
+ * @author Jeroen De Dauw
+ * @author Nischay Nahata
+ * @author mwjames
+ */
+class SQLStoreUpdater {
+
+	/**
+	 * @var PropertyTableRowDiffer
+	 */
+	private $propertyTableRowDiffer;
+
+	/**
+	 * @var PropertyTableUpdater
+	 */
+	private $propertyTableUpdater;
+
+	/**
+	 * @var CachingSemanticDataLookup
+	 */
+	private $semanticDataLookup;
+
+	/**
+	 * @var IdChanger
+	 */
+	private $idChanger;
+
+	/**
+	 * @var RedirectUpdater
+	 */
+	private $redirectUpdater;
+
+	private HookContainer $hookContainer;
+
+	/**
+	 * @since 1.8
+	 */
+	public function __construct(
+		private readonly SQLStore $store,
+		private $factory,
+	) {
+		$this->propertyTableRowDiffer = $this->factory->newPropertyTableRowDiffer();
+		$this->propertyTableUpdater = $this->factory->newPropertyTableUpdater();
+		$this->semanticDataLookup = $this->factory->newSemanticDataLookup();
+		$this->redirectUpdater = $this->factory->newRedirectUpdater();
+		$this->hookContainer = MediaWikiServices::getInstance()->getHookContainer();
+	}
+
+	/**
+	 * @see Store::deleteSubject
+	 *
+	 * @since 1.8
+	 *
+	 * @param Title $title
+	 */
+	public function deleteSubject( Title $title ): Status {
+		$this->hookContainer->run( 'SMW::SQLStore::BeforeDeleteSubjectComplete', [ $this->store, $title ] );
+
+		// Fetch all possible matches (including any duplicates created by
+		// incomplete rollback or DB deadlock)
+		$idList = $this->store->getObjectIds()->findIdsByTitle(
+			$title->getDBkey(),
+			$title->getNamespace()
+		);
+
+		$deleteList = array_flip( $idList );
+		$subject = WikiPage::newFromTitle( $title );
+
+		$emptySemanticData = new SemanticData( $subject );
+		$emptySemanticData->setOption( SemanticData::PROC_DELETE, true );
+
+		$subobjectListFinder = $this->factory->newSubobjectListFinder();
+		$propertyTableIdReferenceFinder = $this->store->service( 'PropertyTableIdReferenceFinder' );
+
+		foreach ( $idList as $id ) {
+			$this->doDelete( $id, $subject, $subobjectListFinder, $deleteList );
+			$this->doDataUpdate( $emptySemanticData );
+
+			if ( $propertyTableIdReferenceFinder->hasResidualPropertyTableReference( $id ) === false ) {
+				// Mark subject/subobjects with a special IW, the final removal is being
+				// triggered by the `EntityRebuildDispatcher`
+				$this->store->getObjectIds()->updateInterwikiField(
+					$id,
+					$subject,
+					SMW_SQL3_SMWDELETEIW
+				);
+			} else {
+				// Convert the subject into a simple object instance
+				$this->store->getObjectIds()->setPropertyTableHashes(
+					$id,
+					null
+				);
+			}
+		}
+
+		$status = new Status(
+			[
+				'delete_list' => array_keys( $deleteList )
+			]
+		);
+
+		$this->hookContainer->run( 'SMW::SQLStore::AfterDeleteSubjectComplete', [ $this->store, $title ] );
+
+		return $status;
+	}
+
+	private function doDelete( $id, WikiPage $subject, $subobjectListFinder, array &$extensionList ): void {
+		$this->semanticDataLookup->invalidateCache( $id );
+
+		if ( $subject->getNamespace() === SMW_NS_CONCEPT ) { // make sure to clear caches
+			$db = $this->store->getConnection();
+
+			$db->newDeleteQueryBuilder()
+				->deleteFrom( SQLStore::CONCEPT_TABLE )
+				->where( [ 's_id' => $id ] )
+				->caller( 'SMW::deleteSubject::Conc' )
+				->execute();
+
+			$db->newDeleteQueryBuilder()
+				->deleteFrom( SQLStore::CONCEPT_CACHE_TABLE )
+				->where( [ 'o_id' => $id ] )
+				->caller( 'SMW::deleteSubject::Conccache' )
+				->execute();
+		}
+
+		$subject->setId( $id );
+
+		foreach ( $subobjectListFinder->find( $subject ) as $subobject ) {
+			$extensionList[$subobject->getId()] = true;
+
+			$this->store->getObjectIds()->updateInterwikiField(
+				$subobject->getId(),
+				$subobject,
+				SMW_SQL3_SMWDELETEIW
+			);
+		}
+	}
+
+	/**
+	 * @see Store::doDataUpdate
+	 *
+	 * @since 1.8
+	 *
+	 * @param SemanticData $semanticData
+	 *
+	 * @throws Throwable Whatever the update threw; rethrown after the section
+	 *  transaction is rolled back.
+	 */
+	public function doDataUpdate( SemanticData $semanticData ): Status {
+		// Deprecated since 3.1, use SMW::SQLStore::BeforeDataUpdateComplete
+		$this->hookContainer->run( 'SMWSQLStore3::updateDataBefore', [ $this->store, $semanticData ] );
+
+		$this->hookContainer->run( 'SMW::SQLStore::BeforeDataUpdateComplete', [ $this->store, $semanticData ] );
+
+		$subject = $semanticData->getSubject();
+
+		$connection = $this->store->getConnection( 'mw.db' );
+
+		// MW 1.33+, #3780
+		$connection->beginSectionTransaction( SQLStore::UPDATE_TRANSACTION );
+
+		try {
+			$subobjectListFinder = $this->factory->newSubobjectListFinder();
+
+			$changeOp = $this->factory->newChangeOp(
+				$subject
+			);
+
+			$this->propertyTableRowDiffer->setChangeOp(
+				$changeOp
+			);
+
+			$propertyChangeListener = $this->factory->newPropertyChangeListener();
+
+			$this->propertyTableUpdater->setPropertyChangeListener(
+				$propertyChangeListener
+			);
+
+			if ( $semanticData->getOption( SemanticData::OPT_CHECK_REMNANT_ENTITIES ) ) {
+				$this->propertyTableRowDiffer->checkRemnantEntities( true );
+			}
+
+			// Update data about our main subject
+			$this->doFlatDataUpdate( $semanticData );
+			$sid = $subject->getId();
+
+			// Update data about our subobjects
+			$subSemanticData = $semanticData->getSubSemanticData();
+			$connection = $this->store->getConnection( 'mw.db' );
+			$isForcedUpdate = $semanticData->getOption( Enum::FORCED_UPDATE, false );
+
+			foreach ( $subSemanticData as $subobjectData ) {
+
+				// Inherit the option from the parent to ensure all associated
+				// entities are going to be updated
+				if ( $isForcedUpdate ) {
+					$subobjectData->setOption( Enum::FORCED_UPDATE, $isForcedUpdate );
+				}
+
+				$this->doFlatDataUpdate( $subobjectData );
+			}
+
+			$deleteList = [];
+
+			// Mark subobjects without reference to be deleted
+			foreach ( $subobjectListFinder->find( $subject ) as $subobject ) {
+				if ( !$semanticData->hasSubSemanticData( $subobject->getSubobjectName() ) ) {
+
+					$this->doFlatDataUpdate( new SemanticData( $subobject ) );
+					$deleteList[] = $subobject->getId();
+
+					$this->store->getObjectIds()->updateInterwikiField(
+						$subobject->getId(),
+						$subobject,
+						SMW_SQL3_SMWDELETEIW
+					);
+				}
+			}
+
+			$rev_id = $semanticData->getExtensionData( 'revision_id' );
+			if ( $rev_id !== null ) {
+				$this->store->getObjectIds()->updateRevField( $sid, $rev_id );
+			}
+
+			// Store the diff in cache so any post processing has a chance to find
+			// what entities and values were changed
+			$changeDiff = $changeOp->newChangeDiff();
+			$changeDiff->save( ApplicationFactory::getInstance()->getObjectCache() );
+
+			$status = new Status(
+				[
+					'delete_list' => $deleteList,
+					'change_diff' => $changeDiff
+				]
+			);
+
+			$this->hookContainer->run(
+				'SMW::SQLStore::AfterDataUpdateComplete',
+				[
+					$this->store,
+					$semanticData,
+					$changeOp
+				]
+			);
+
+			$connection->endSectionTransaction( SQLStore::UPDATE_TRANSACTION );
+		} catch ( Throwable $e ) {
+			// Without this, an exception mid-update leaves the section
+			// transaction (and its atomic) open: every following update then
+			// throws "section transaction still active" and the run crashes at
+			// shutdown with "Explicit transaction still active". Roll the
+			// section back and rethrow so callers (e.g. rebuildData
+			// --ignore-exceptions) can log and skip this entity and continue.
+			$this->cancelUpdateSectionTransaction( $connection, $subject, $e );
+
+			throw $e;
+		}
+
+		$propertyChangeListener->runChangeListeners();
+
+		return $status;
+	}
+
+	/**
+	 * The rollback can fail on its own, e.g. MariaDB 1305 when the savepoint is
+	 * already gone. Report that failure but let $updateError remain the
+	 * exception that propagates: it is the one that says why the update failed.
+	 */
+	private function cancelUpdateSectionTransaction(
+		Database $connection,
+		WikiPage $subject,
+		Throwable $updateError
+	): void {
+		try {
+			$connection->cancelSectionTransaction( SQLStore::UPDATE_TRANSACTION );
+		} catch ( Throwable $rollbackError ) {
+			$this->factory->getLogger()->error(
+				'Section rollback for {subject} failed with "{rollback_error}" while handling "{update_error}"',
+				[
+					'subject' => $subject->getHash(),
+					'rollback_error' => $rollbackError->getMessage(),
+					'update_error' => $updateError->getMessage(),
+					'exception' => $rollbackError
+				]
+			);
+		}
+	}
+
+	/**
+	 * Update the store to contain the given data, without taking any
+	 * subobject data into account.
+	 *
+	 * @since 1.8
+	 *
+	 * @param SemanticData $data
+	 */
+	protected function doFlatDataUpdate( SemanticData $data ) {
+		$subject = $data->getSubject();
+
+		// Take care of redirects
+		$redirects = $data->getPropertyValues( new Property( '_REDI' ) );
+
+		// Redirects:
+		// * Generally, there is no support for annotations on redirect pages
+		// * Any data on a redirect page will be removed where the subject is
+		//   classified as redirect
+		// * If the redirect equality support was disabled (=== SMW_EQ_NONE) then
+		//   under certain circumstances, annotations are allowed to remain
+		if ( $this->redirectUpdater->shouldCleanUpAnnotationsAndRedirects( $redirects ) ) {
+			return $this->redirectUpdater->cleanUpAnnotationsAndRedirects( $subject, $redirects );
+		}
+
+		$this->redirectUpdater->discardRemnantRedirects( $subject );
+
+		// Find an approriate sortkey, the field is influenced by various
+		// elements incl. DEFAULTSORT and can be altered without modifying
+		// any other annotation.
+		$sortKey = $this->makeSortKey( $subject, $data );
+
+		// Always fetch an ID which is either recalled from cache or is created.
+		// Doing so ensures that the sortkey and namespace data are updated
+		// to both the DB and the cache.
+		$sid = $this->store->getObjectIds()->makeSMWPageID(
+			$subject->getDBkey(),
+			$subject->getNamespace(),
+			$subject->getInterwiki(),
+			$subject->getSubobjectName(),
+			true,
+			$sortKey,
+			true
+		);
+
+		$subject->setSortKey( $sortKey );
+		$subject->setId( $sid );
+
+		// Find any potential duplicate entries for the current subject and
+		// if matched, mark them as to be deleted
+		$idList = $this->store->getObjectIds()->findIdsByTitle(
+			$subject->getDBkey(),
+			$subject->getNamespace(),
+			$subject->getInterwiki(),
+			$subject->getSubobjectName()
+		);
+
+		foreach ( $idList as $id ) {
+			if ( $id != $sid ) {
+				$this->store->getObjectIds()->updateInterwikiField(
+					$id,
+					$subject,
+					SMW_SQL3_SMWDELETEIW
+				);
+			}
+		}
+
+		// Take care of all remaining property table data
+		[ $insertRows, $deleteRows, $newHashes ] = $this->propertyTableRowDiffer->computeTableRowDiff(
+			$sid,
+			$data
+		);
+
+		$params = new Parameters(
+			[
+				'insert_rows' => $insertRows,
+				'delete_rows' => $deleteRows,
+				'new_hashes' => $newHashes
+			]
+		);
+
+		$this->propertyTableUpdater->update( $sid, $params );
+
+		if ( $redirects === [] && $subject->getSubobjectName() === '' ) {
+
+			$dataItemFromId = $this->store->getObjectIds()->getDataItemById( $sid );
+
+			// If for some reason the internal redirect marker is still set but no
+			// redirect annotations are known then do update the interwiki field
+			if ( $dataItemFromId !== null && $dataItemFromId->getInterwiki() === SMW_SQL3_SMWREDIIW ) {
+				$this->store->getObjectIds()->updateInterwikiField( $sid, $subject );
+			}
+		}
+
+		// Update caches (may be important if jobs are directly following this call)
+		$this->semanticDataLookup->setLookupCache( $sid, $data );
+
+		$this->store->getObjectIds()->updateFieldMaps(
+			$sid,
+			$data->getSequenceMap(),
+			$data->getCountMap()
+		);
+	}
+
+	private function makeSortKey( WikiPage $subject, SemanticData $data ): string|array {
+		// Don't mind the delete process
+		if ( $data->getOption( SemanticData::PROC_DELETE ) ) {
+			return '';
+		}
+
+		$property = new Property( '_SKEY' );
+
+		// Take care of the sortkey
+		$pv = $data->getPropertyValues( $property );
+		$dataItem = end( $pv );
+
+		if ( $dataItem instanceof Blob ) {
+			$sortkey = $dataItem->getString();
+		} elseif ( $data->getExtensionData( 'sort.extension' ) !== null ) {
+			$sortkey = $data->getExtensionData( 'sort.extension' );
+		} else {
+			$sortkey = $subject->getSortKey();
+		}
+
+		// Extend the subobject sortkey in case no @sortkey was given for an
+		// entity
+		if ( $subject->getSubobjectName() !== '' && !$dataItem instanceof Blob ) {
+
+			// Add sort data from some dedicated containers (of a record or
+			// reference type etc.) otherwise use the sobj name as extension
+			// to distinguish each entity
+			if ( $data->getExtensionData( 'sort.data' ) !== null ) {
+				$sortkey .= '#' . $data->getExtensionData( 'sort.data' );
+			} else {
+				$sortkey .= '#' . $subject->getSubobjectName();
+			}
+		}
+
+		// #649 Be consistent about how sortkeys are stored therefore always
+		// normalize even for usages like {{DEFAULTSORT: Foo_bar }}
+		$sortkey = str_replace( '_', ' ', $sortkey );
+
+		return $sortkey;
+	}
+
+	public function changeTitle( Title $oldTitle, Title $newTitle, $pageId, $redirectId = 0 ): Status {
+		$options = [
+			'page_id' => $pageId,
+			'redirect_id' => $redirectId
+		];
+
+		$this->redirectUpdater->doUpdate(
+			WikiPage::newFromTitle( $oldTitle ),
+			WikiPage::newFromTitle( $newTitle ),
+			$options
+		);
+
+		$this->redirectUpdater->invalidateLookupCache(
+			$this->semanticDataLookup
+		);
+
+		$this->redirectUpdater->triggerChangeTitleUpdate(
+			$oldTitle,
+			$newTitle,
+			$options
+		);
+
+		return new Status();
+	}
+
+}

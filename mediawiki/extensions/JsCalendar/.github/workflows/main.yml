@@ -1,0 +1,118 @@
+name: JSON linter + luacheck
+
+on: [push, pull_request, workflow_dispatch]
+
+env:
+  DBTYPE: mysql
+  DBUSER: root
+
+jobs:
+  # PHPUnit testsuite (integration tests)
+  phpunit:
+    strategy:
+      fail-fast: false
+      matrix:
+        php: [8.1]
+        branch: [REL1_39, REL1_40, REL1_41, REL1_42, REL1_43, REL1_44]
+        dbtype: [mysql, postgres]
+
+    env:
+      branch: ${{ matrix.branch }}
+      DBTYPE: ${{ matrix.dbtype }}
+    runs-on: ubuntu-22.04
+    services:
+      memcached:
+        image: memcached:latest
+        ports:
+          - 11211:11211
+        options: --health-cmd "timeout 5 bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/11211'" --health-interval 10s --health-timeout 5s --health-retries 5
+      mariadb:
+        image: mariadb
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: 1
+        ports:
+          - 3306:3306
+        options: --health-cmd="healthcheck.sh --connect --innodb_initialized" --health-interval=10s --health-timeout=5s --health-retries=3
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_USER: root
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: |
+            buildcache
+          key: buildcache-${{ env.branch }}-${{ hashFiles('**/no/files/need/to/invalidate/cache/for/now') }}
+
+      - uses: shivammathur/setup-php@v2
+        with:
+            php-version: ${{ matrix.php }}
+            extensions: mbstring, intl, opcache, mysqli
+            tools: composer
+      - uses: edwardspec/github-action-build-mediawiki@v1
+        with:
+          branch: ${{ env.branch }}
+          extraLocalSettings: tests/ci/JsCalendarSettings.php
+          dbtype: ${{ env.DBTYPE }}
+          dbserver: ${{ env.DBTYPE == 'mysql' && '127.0.0.1:3306' || '127.0.0.1' }}
+      - name: Finalize the installation of MediaWiki
+        run: |
+          rsync -a --exclude buildcache --exclude mediawiki --exclude .git . mediawiki/extensions/JsCalendar/
+          cd mediawiki
+          echo '{{CURRENTVERSION}}' | php maintenance/parse.php
+
+      - name: RUN -- phpunit
+        run: |
+          cd mediawiki
+          php tests/phpunit/phpunit.php extensions/JsCalendar/tests/phpunit/
+
+  # PHP linters: phpcs, parallel-lint, etc.
+  linter:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+            php-version: '8.1'
+            tools: composer
+      - uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: buildcache-linter
+      - run: sudo apt-get install -y composer && composer install
+      - run: composer test
+
+  # Phan (PHP static analyzer)
+  phan:
+    runs-on: ubuntu-22.04
+    env:
+      branch: REL1_43
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+            php-version: '8.1'
+            extensions: ast
+            tools: composer
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.composer/cache
+            buildcache
+          key: buildcache-phan
+      - uses: edwardspec/github-action-build-mediawiki@v1
+        with:
+          branch: ${{ env.branch }}
+          noinstall: 1
+      - name: Install dependencies
+        run: |
+          rsync -a --exclude buildcache --exclude mediawiki --exclude .git . mediawiki/extensions/JsCalendar/
+          cd mediawiki/extensions/JsCalendar
+          composer install
+      - name: RUN -- phan
+        run: cd mediawiki/extensions/JsCalendar && ./vendor/bin/phan --analyze-twice

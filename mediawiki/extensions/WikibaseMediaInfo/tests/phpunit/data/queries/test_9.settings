@@ -1,0 +1,48 @@
+{
+	"title": "Entities with synonyms found, no lang fallbacks",
+	"term": "some search term",
+	"entitiesForTerm": {
+		"some search term": [
+			{
+				"id": "Q1",
+				"synonyms": [
+					"Some similar term",
+					"Something similar"
+				]
+			},
+			{
+				"id": "Q2",
+				"synonyms": [
+					"A very different entity",
+					"Yet something similar"
+				]
+			}
+		]
+	},
+	"userLanguage": "en",
+	"settings": {
+		"useSynonyms": true,
+		"boost": {
+			"statement": {"P1": 20, "P2": 20},
+			"descriptions.$language": 7.5,
+			"descriptions.$language.plain": 2.5,
+			"category": 0.525,
+			"category.plain": 0.175,
+			"title": 0.45,
+			"title.plain": 0.15,
+			"redirect.title": 0.375,
+			"redirect.title.plain": 0.125,
+			"text": 0.3,
+			"text.plain": 0.1,
+			"auxiliary_text": 0.225,
+			"auxiliary_text.plain": 0.075,
+			"file_text": 0.15,
+			"file_text.plain": 0.05
+		},
+		"synonymsMaxAmount": 5,
+		"synonymsMinScoreThreshold": 0.5,
+		"synonymsMinByteLength": 2,
+		"synonymsMinSimilarityToCanonicalForm": 0.75,
+		"synonymsMinDifferenceFromOthers": 0.25
+	}
+}

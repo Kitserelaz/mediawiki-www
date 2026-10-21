@@ -12,7 +12,12 @@ compose() {
     if [ -n "$farmEnvFile" ]; then docker compose --env-file "$farmEnvFile" "$@";
     else docker compose "$@"; fi
 }
-[ "$#" = 1 ] || { echo 'Usage: scripts/snapshot NAME'; exit 1; }
+snapshotKeepStopped=false
+if [ "${1:-}" = --keep-stopped ]; then
+    snapshotKeepStopped=true
+    shift
+fi
+[ "$#" = 1 ] || { echo 'Usage: scripts/snapshot [--env-file FILE] [--keep-stopped] NAME'; exit 1; }
 case "$1" in *[!a-zA-Z0-9_-]*|'') echo 'Use letters, digits, underscores or hyphens'; exit 1;; esac
 compose stop web php worker scheduler counter redis
 # Keep writers stopped on failure so an operator can inspect a partial backup.
@@ -21,5 +26,9 @@ mkdir -p "backups/$1/secrets"
 snapshotSecretsDir=$(compose config --format json | python3 -c 'import json,sys;from pathlib import Path;print(Path(json.load(sys.stdin)["secrets"]["farm"]["file"]).parent)')
 cp "$snapshotSecretsDir/farm.json" "$snapshotSecretsDir/oauth-private.key" "$snapshotSecretsDir/oauth-public.key" "backups/$1/secrets/"
 chmod -R go-rwx "backups/$1"
-compose up -d redis counter php worker scheduler web
+if [ "$snapshotKeepStopped" = false ]; then
+    compose up -d redis counter php worker scheduler web
+else
+    echo 'Writers remain stopped for maintenance; start them explicitly after verification.'
+fi
 printf 'Snapshot saved to backups/%s; copy it off-host.\n' "$1"

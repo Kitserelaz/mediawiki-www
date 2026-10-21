@@ -1,0 +1,40 @@
+{
+	"@metadata": {
+		"authors": [
+			"Borhan",
+			"আফতাবুজ্জামান"
+		]
+	},
+	"reportincident-desc": "ব্যক্তিগত ঘটনা অভিযোগ ব্যবস্থা এক্সটেনশন।",
+	"reportincident-report-btn-label": "অভিযোগ করুন",
+	"reportincident-dialog-close-btn": "বন্ধ করুন",
+	"reportincident-dialog-proceed-btn": "অভিযোগ দাখিল করতে অগ্রসর হোন",
+	"reportincident-dialog-back-btn": "পিছনে",
+	"reportincident-dialog-submit-btn": "জমা দিন",
+	"reportincident-dialog-additional-details-input-label": "অতিরিক্ত তথ্য",
+	"reportincident-dialog-optional-label": "(ঐচ্ছিক)",
+	"reportincident-dialog-harassment-type-hate-speech-or-discrimination": "বিদ্বেষমূলক বক্তব্য বা বৈষম্য",
+	"reportincident-dialog-harassment-type-sexual-harassment": "যৌন হয়রানি",
+	"reportincident-dialog-harassment-type-threats-of-violence": "সহিংসতার হুমকি",
+	"reportincident-dialog-harassment-type-intimidation": "ভীতি প্রদর্শন, আগ্রাসন, কুবচন",
+	"reportincident-dialog-harassment-type-something-else": "অন্য কিছু",
+	"reportincident-dialog-harassment-example-insults": "বারবার অপমান",
+	"reportincident-dialog-harassment-example-sexual-harassment": "যৌন হয়রানি",
+	"reportincident-dialog-harassment-example-threats": "হুমকি",
+	"reportincident-dialog-harassment-example-encouraging-harm": "অন্যের ক্ষতিকরণে উৎসাহিত করা",
+	"reportincident-dialog-harassment-example-doxing": "ব্যক্তিগত তথ্য প্রকাশ (ডক্সিং)",
+	"reportincident-dialog-harassment-example-trolling": "ট্রোল করা",
+	"reportincident-dialog-engage-header": "কিভাবে সংলাপে অংশ নেবেন",
+	"reportincident-dialog-violator-nonexistent": "রিপোর্ট করার জন্য {{GENDER:|আপনাকে}} অবশ্যই {{GENDER:|}}একটি বিদ্যমান ব্যবহারকারী নাম প্রদান করতে হবে।",
+	"reportincident-dialog-internet-disconnected-error": "মনে হচ্ছে আপনার ইন্টারনেট সংযোগ নেই। অনুগ্রহ করে আপনার সংযোগ ফিরে এলে পুনরায় জমা দেওয়ার চেষ্টা করুন।",
+	"reportincident-dialog-server-error": "দুঃখিত, মনে হচ্ছে আমাদের সার্ভার সাড়া দিচ্ছে না। অনুগ্রহ করে পুনরায় জমা দেওয়ার চেষ্টা করুন।",
+	"reportincident-dialog-generic-error": "{{GENDER:|আপনার}} অনুরোধ একটি ত্রুটির কারণে জমা দেওয়া যায়নি। অনুগ্রহ করে পুনরায় জমা দেওয়ার চেষ্টা করুন।",
+	"reportincident-success-message": "রিপোর্ট সফলভাবে দায়ের করা হয়েছে। একজন প্রশাসক শীঘ্রই পর্যালোচনা করবেন এবং এটি আমাদের নীতিমালা লঙ্ঘন করছে কিনা তা নির্ধারণ করবেন। আমাদেরকে {{SITENAME}} সুরক্ষিত রাখতে সাহায্য করার জন্য ধন্যবাদ৷",
+	"reportincident-success-message-close": "বন্ধ করুন",
+	"reportincident-email-link-to-page-prefix": "পাতার সাথে সংযুক্ত করুন",
+	"right-reportincident": "একটি ঘটনা রিপোর্ট করুন",
+	"action-reportincident": "একটি ঘটনা রিপোর্ট করুন",
+	"reportincident-emaildialog-title": "যাচাইকৃত ইমেইল ঠিকানা প্রয়োজন",
+	"reportincident-emaildialog-close-button": "বাতিল",
+	"reportincident-emaildialog-primary": "সেটিংসে যান"
+}

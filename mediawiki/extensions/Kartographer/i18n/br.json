@@ -1,0 +1,19 @@
+{
+	"@metadata": {
+		"authors": [
+			"Fulup",
+			"Huñvreüs",
+			"VIGNERON",
+			"Y-M D"
+		]
+	},
+	"kartographer-broken-category": "Pajennoù gant kartennoù faziek",
+	"kartographer-tracking-category": "Pajennoù a ra gant an astenn Kartografer",
+	"kartographer-specialmap-world": "Kartenn ar bed",
+	"kartographer-sidebar-mapdetails": "Kartennoù diavaez",
+	"kartographer-sidebar-togglebutton": "Kartennoù diavaez",
+	"kartographer-fullscreen-text": "Diskouez er skramm leun",
+	"visualeditor-mwmapsdialog-area": "Takad kartenn",
+	"visualeditor-mwmapsdialog-title": "Kartenn",
+	"visualeditor-mwmapscontextitem-title": "Kartenn"
+}

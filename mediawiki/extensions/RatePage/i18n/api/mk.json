@@ -1,0 +1,22 @@
+{
+	"@metadata": {
+		"authors": [
+			"Bjankuloski06"
+		]
+	},
+	"apihelp-ratepage-summary": "Му овозможува на корисникот да гласа за страница и дава оценка на страницата. Бара да се укаже еден од два параметра: pageid (назнака на страницата) или pagetitle (наслов на страницата).",
+	"apihelp-ratepage-param-pageid": "Назнака на страницата",
+	"apihelp-ratepage-param-pagetitle": "Наслов на страницата",
+	"apihelp-ratepage-param-answer": "Оценка на страницата од корисникот (по основно од 1 до 5, но може да се измени во поставките)",
+	"apihelp-ratepage-param-contest": "Назнака на натпреварот",
+	"apihelp-ratepage-example-1": "Дај ја тековната оценка на страницата Пример.",
+	"apihelp-ratepage-example-2": "Оцени ја страницата Пример со 2.",
+	"apihelp-query+pagerating-summary": "Дава гласови за страницата и гласачките дозволи на овој корисник.",
+	"apihelp-query+pagerating-param-contest": "Назнака на натпреварот",
+	"apierror-ratepage-contest-id-too-long": "Натпреварот има предолга назнака (се допушаат највеќе 255 знаци).",
+	"apierror-ratepage-contest-id-allowed-chars": "Назнаката мора да се состои само од бројки и латинични букви. Не се допуштени други знаци.",
+	"apierror-ratepage-contest-not-exists": "Натпреварот $1 не постои.",
+	"apierror-ratepage-page-not-exists": "Укажаната страница на постои.",
+	"apierror-ratepage-cannot-vote-in-contest": "Немате дозвола да гласате на овој натпревар.",
+	"apierror-ratepage-invalid-answer": "Укажан е неважечки одговор. Треба да биде поголем или еднаков на $1, а помал или еднаков на $2."
+}

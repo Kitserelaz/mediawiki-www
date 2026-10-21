@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"Rupalichinchure",
+			"V.narsikar"
+		]
+	},
+	"newsletter-api-error-notfound": "वृत्तपत्र अस्तित्वात नाही",
+	"newsletter-api-error-invalidpublisher-registered": "\nप्रकाशक नोंदणीकृत वापरकर्ता नाही"
+}

@@ -1,0 +1,276 @@
+@import 'mediawiki.skin.variables.less';
+@import 'mediawiki.mixins';
+@import '../utils/variables.less';
+
+.stop-scrolling {
+	height: 100%;
+	width: 100%;
+	overflow-y: hidden;
+	position: fixed;
+}
+
+.growthexperiments-homepage-container {
+	.flex-display();
+}
+
+.growthexperiments-homepage-overlay-container {
+	display: none;
+}
+
+.mw-body-content,
+.overlay-content,
+.content {
+	.growthexperiments-homepage-module-help,
+	.growthexperiments-homepage-module-mentorship {
+		ul {
+			list-style: none;
+			margin: 0.3em 0 0 1em;
+
+			li::before {
+				content: '\2022';
+				color: #0645ad;
+				margin-right: 0.3em;
+				margin-left: -0.6em;
+			}
+		}
+	}
+
+	.recent-questions-growthexperiments-mentor-questions {
+		background-color: @background-color-growth-subtle;
+		margin: 16px -16px;
+		padding: 16px;
+
+		h3 {
+			margin-top: 0;
+		}
+	}
+
+	.recent-questions-growthexperiments-help-questions {
+		h3 {
+			margin-top: 1.4em;
+		}
+	}
+
+	.recent-questions-growthexperiments-help-questions,
+	.recent-questions-growthexperiments-mentor-questions {
+		h3 {
+			font-family: @homepageHeaderFont;
+			font-size: 1em;
+			color: @color-subtle;
+			padding-top: 0;
+		}
+
+		.question-link-wrapper {
+			overflow: hidden;
+			text-overflow: ellipsis;
+			display: inline;
+			margin-left: 0.2em;
+		}
+
+		.question-archived .question-text {
+			font-style: italic;
+			color: @color-subtle;
+		}
+
+		.question-posted-on {
+			font-size: 0.85em;
+			color: @color-subtle;
+			display: block;
+			margin-left: 0.3em;
+			margin-bottom: 0.6em;
+			line-height: 1.3em;
+		}
+	}
+
+	.recent-questions-growthexperiments-mentor-questions:empty,
+	.recent-questions-growthexperiments-help-questions:empty {
+		display: none;
+	}
+}
+
+body.mw-special-Homepage {
+	&.growthexperiments-homepage-mobile-summary {
+		// Enforce a minimum width to avoid breaking the connecting lines of the start modules.
+		min-width: 320px;
+		// Make sure the body is the containing block for fixed positioned elements such as dialogs
+		// Without this, overlays have incorrect widths on Firefox Android.
+		transform: translate( 0 );
+
+		&--opening-overlay {
+			// Hide the homepage when the overlay should be shown directly
+			.client-js & {
+				display: none;
+			}
+		}
+
+		// FIXME: #section_0 rule can be removed when I2ffdedd64414ffb3c6e441391a75fd6e744847a4
+		// has been in production for > 1 week.
+		#content .mw-first-heading,
+		#content #section_0 {
+			// Need !important to override the other !important in
+			// skins/MinervaNeue/skinStyles/mobile.special.styles/minerva.less
+			font-family: 'Linux Libertine', 'Georgia', 'Times', serif !important; // stylelint-disable-line declaration-no-important
+			font-size: 1.7em;
+			font-weight: normal;
+		}
+
+		.minerva__tab-container {
+			border-bottom: @border-subtle;
+		}
+
+		.growthexperiments-homepage-container {
+			flex-direction: column;
+
+			> a {
+				text-decoration: none;
+			}
+
+			> .growthexperiments-homepage-module,
+			> a {
+				margin: 1em 0 0 0;
+				box-shadow: none;
+
+				h2.growthexperiments-homepage-module-section-header {
+					padding: 0;
+					margin-bottom: 0.625em;
+
+					.growthexperiments-homepage-module-header-text {
+						font-size: 0.729em;
+						line-height: 1.429em;
+						padding: 0;
+					}
+				}
+			}
+		}
+	}
+
+	&.growthexperiments-homepage-desktop {
+		.growthexperiments-homepage-container {
+			align-items: start;
+			.flex-wrap();
+
+			.growthexperiments-homepage-group-sidebar {
+				.flex( 1, 1, 300px );
+				.flex-display();
+				.flex-wrap();
+
+				&-subgroup-primary,
+				&-subgroup-secondary {
+					.flex( 1, 0, 300px );
+				}
+
+				.growthexperiments-homepage-module {
+					margin-right: 0;
+				}
+			}
+
+			.growthexperiments-homepage-group-main {
+				.flex( 1, 0, 480px );
+
+				&-subgroup-primary {
+					.flex-display();
+					.flex-wrap();
+					width: 100%;
+
+					.growthexperiments-homepage-module-start {
+						width: 100%;
+					}
+				}
+
+				&-subgroup-secondary {
+					// Define a minimum height so as to avoid height change once the
+					// card/controls/pager etc are loaded.
+					min-height: 631.533px;
+				}
+			}
+		}
+	}
+
+	&.growthexperiments-homepage-mobile-details {
+		.heading-holder {
+			display: none;
+		}
+
+		#content {
+			padding-bottom: 0;
+
+			#bodyContent {
+				margin: 0;
+			}
+		}
+	}
+
+	.overlay-header .overlay-title {
+		// This padding is the same size as the back button on the left.
+		// Adding it makes the title centered on the screen instead of
+		// on the space between the back button and the right edge.
+		padding-right: 56px;
+		text-align: center;
+		font-weight: bold;
+	}
+
+	.overlay-content .growthexperiments-homepage-module-mobile-overlay,
+	.growthexperiments-homepage-container > .growthexperiments-homepage-module-mobile-details {
+		border: 0;
+		box-shadow: none;
+		margin: 0;
+		width: 100%;
+		background-color: unset;
+
+		.growthexperiments-homepage-module-section-header {
+			text-align: center;
+			font-weight: normal;
+			font-size: 1.2em;
+			margin-top: 0;
+			margin-bottom: 0;
+
+			.growthexperiments-homepage-module-header-text {
+				margin-right: 2em;
+			}
+
+			.growthexperiments-homepage-module-header-icon {
+				.oo-ui-iconElement {
+					left: 0;
+				}
+			}
+		}
+
+		> .growthexperiments-homepage-module-section {
+			padding-left: 1em;
+			padding-right: 1em;
+		}
+
+		.question-posted-on {
+			font-size: 0.8em;
+		}
+	}
+}
+
+// Tweaks for dark support support (T357699).
+// FIXME: This should be removed when there is capacity for updating the extension
+// to use Codex design tokens.
+@media screen {
+	html.skin-theme-clientpref-night {
+		.mw-no-invert,
+		.mw-body-content img {
+			filter: invert( 1 ) hue-rotate( 180deg );
+		}
+
+		.cdx-no-invert {
+			filter: none;
+		}
+	}
+}
+
+@media screen and ( prefers-color-scheme: dark ) {
+	html.skin-theme-clientpref-os {
+		.mw-no-invert,
+		.mw-body-content img {
+			filter: invert( 1 ) hue-rotate( 180deg );
+		}
+
+		.cdx-no-invert {
+			filter: none;
+		}
+	}
+}

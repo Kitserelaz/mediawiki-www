@@ -1,0 +1,29 @@
+{
+	"@metadata": {
+		"authors": [
+			"Римма",
+			"Stjn"
+		]
+	},
+	"reportincident-dialog-additional-details-input-placeholder": "Содтӧ доналісьлӧ колана контекст. Ті вермат пыртны зык йылісь юӧртан ыстісьӧммез.",
+	"reportincident-dialog-violator-label": "Вӧдитчись {{РӦД:|тійӧ}} кӧсйис бы юӧртны",
+	"reportincident-dialog-something-else-input-placeholder": "Мыччалӧ иньдӧт,кӧда абу гижӧм вылын",
+	"reportincident-dialog-violator-nonexistent": "{{GENDER:|Ті}} Колӧ иньдыны вӧдитчисьлісь быльнӧй ним, медбы юӧртны",
+	"reportincident-dialog-internet-disconnected-error": "Вермас лоны, тіян абу ӧтуввезкӧт йитӧм.Пожалуйста, ыстӧ мӧдпырся, кор лоас дзоньтӧм йитӧмыс.",
+	"reportincident-dialog-server-error": "Извинитӧ, миян сервер оз видз очакыв.Пожалуйста, пондылӧ ыстыны мӧдпырся.",
+	"reportincident-dialog-generic-error": "{{GENDER:|Тіян}} шыӧтчӧм эз артмы ыстыны сорсьӧм понда.Пожалуйста, пондылӧ ыстыны шыӧтчӧм мӧдпырся.",
+	"reportincident-success-message": "Отчёт бура ыстӧма. Администратор видзӧтлас и шуас, дзугӧ-ӧ зыкыс миянлісь иньдӧттэз. Аттьӧ, что отсалітӧ видзны {{SITENAME}}торкавтӧг.",
+	"reportincident-success-message-close": "Пӧднавны",
+	"reportincident-unable-to-send": "Эз артмы ыстыны зык йылісь отчёт электроннӧй почта пыр",
+	"reportincident-email-body": "Отчет сетісь вӧдитчись:$1\n\nГижсьӧтӧм вӧдитчись:$2 $3: $4\n\n\nИньдӧт :$5\n\nСодтӧт:$6\n\nЭлектроннӧй почта $1: $7",
+	"reportincident-email-link-to-page-prefix": "Листбок вылӧ ыстісьӧм",
+	"reportincident-email-link-to-comment-prefix": "Лэдзӧм комментарий вылӧ ыстісьӧм",
+	"reportincident-email-link-to-topic-prefix": "Сёрнитан тема вылӧ ыстісьӧм",
+	"right-reportincident": "Юӧртӧ зык йылісь",
+	"action-reportincident": "Юӧртӧ зык йылісь",
+	"reportincident-emaildialog-title": "Колӧ электроннӧй почталӧн вынсьӧтӧм адрес",
+	"reportincident-emaildialog-close-button": "Дугдӧтны",
+	"reportincident-emaildialog-content": "Миянлӧ колӧ {{GENDER:|your}}электроннӧй почталӧн вынсьӧтӧм адрес, медбы сетны вильмӧтӧм отчет или,колӧ кӧ,керны одзлань оськӧв.Пожалуйста,отчет мӧдӧтӧм одзас{{GENDER:|your}} содтӧ или вынсьӧтӧ {{GENDER:|your}} электроннӧй почталісь адрес водитчисьлӧн аккаунт лӧсьӧтаннэзын.",
+	"reportincident-emaildialog-primary": "Пырӧ лӧсьӧтаннэзӧ",
+	"reportincident-confirmedemail-required": "Зык йылісь отчёт ыстӧм вылӧ колӧ электроннӧй почталӧн вынсьӧтӧм адрес"
+}

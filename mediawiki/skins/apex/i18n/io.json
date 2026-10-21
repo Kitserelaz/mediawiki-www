@@ -1,0 +1,17 @@
+{
+	"@metadata": {
+		"authors": [
+			"Joao Xavier"
+		]
+	},
+	"apex-action-addsection": "Adjuntez nova diskuto",
+	"apex-action-delete": "Efacar",
+	"apex-action-move": "Movar",
+	"apex-action-protect": "Protektar",
+	"apex-action-undelete": "Rekuperez",
+	"apex-view-create": "Kreez",
+	"apex-view-edit": "Redaktar",
+	"apex-view-history": "Kronologio",
+	"apex-view-view": "Lektita",
+	"apex-view-viewsource": "Vidar origino"
+}

@@ -3,6 +3,7 @@
 namespace MediaWiki\Extension\DiscussionTools\ThreadItem;
 
 use DateTimeImmutable;
+use DateTimeZone;
 use MediaWiki\Page\ProperPageIdentity;
 use MediaWiki\Revision\RevisionRecord;
 
@@ -11,9 +12,6 @@ class DatabaseCommentItem extends DatabaseThreadItem implements CommentItem {
 		getHeading as protected traitGetHeading;
 		getSubscribableHeading as protected traitGetSubscribableHeading;
 	}
-
-	private string $timestamp;
-	private string $author;
 
 	/**
 	 * @param ProperPageIdentity $page
@@ -29,11 +27,10 @@ class DatabaseCommentItem extends DatabaseThreadItem implements CommentItem {
 	public function __construct(
 		ProperPageIdentity $page, RevisionRecord $rev,
 		string $name, string $id, ?DatabaseThreadItem $parent, $transcludedFrom, int $level,
-		string $timestamp, string $author
+		private readonly string $timestamp,
+		private readonly string $author,
 	) {
 		parent::__construct( $page, $rev, 'comment', $name, $id, $parent, $transcludedFrom, $level );
-		$this->timestamp = $timestamp;
-		$this->author = $author;
 	}
 
 	/**
@@ -47,7 +44,7 @@ class DatabaseCommentItem extends DatabaseThreadItem implements CommentItem {
 	 * @inheritDoc
 	 */
 	public function getTimestamp(): DateTimeImmutable {
-		return new DateTimeImmutable( $this->timestamp );
+		return new DateTimeImmutable( $this->timestamp, new DateTimeZone( 'UTC' ) );
 	}
 
 	/**

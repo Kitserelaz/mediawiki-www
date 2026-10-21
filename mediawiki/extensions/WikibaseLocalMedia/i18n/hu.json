@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": [
+			"Hanna Tardos"
+		]
+	},
+	"wblm-desc": "Támogatás Wikibase-en belül a helyi médiafájlok számára megfelelő adattípussal",
+	"datatypes-type-localMedia": "Médiafájl"
+}

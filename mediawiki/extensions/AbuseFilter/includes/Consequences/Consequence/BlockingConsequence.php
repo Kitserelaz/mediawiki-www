@@ -2,12 +2,12 @@
 
 namespace MediaWiki\Extension\AbuseFilter\Consequences\Consequence;
 
-use LogPage;
 use MediaWiki\Block\BlockUserFactory;
 use MediaWiki\Extension\AbuseFilter\Consequences\Parameters;
 use MediaWiki\Extension\AbuseFilter\FilterUser;
+use MediaWiki\Language\MessageLocalizer;
+use MediaWiki\Logging\LogPage;
 use MediaWiki\Status\Status;
-use MessageLocalizer;
 use Psr\Log\LoggerInterface;
 use Wikimedia\IPUtils;
 
@@ -15,43 +15,16 @@ use Wikimedia\IPUtils;
  * Base class for consequences that block a user
  */
 abstract class BlockingConsequence extends Consequence implements HookAborterConsequence {
-	/** @var BlockUserFactory */
-	private $blockUserFactory;
 
-	/** @var FilterUser */
-	protected $filterUser;
-
-	/** @var MessageLocalizer */
-	private $messageLocalizer;
-
-	/** @var LoggerInterface */
-	private $logger;
-
-	/** @var string Expiry of the block */
-	protected $expiry;
-
-	/**
-	 * @param Parameters $params
-	 * @param string $expiry
-	 * @param BlockUserFactory $blockUserFactory
-	 * @param FilterUser $filterUser
-	 * @param MessageLocalizer $messageLocalizer
-	 * @param LoggerInterface $logger
-	 */
 	public function __construct(
 		Parameters $params,
-		string $expiry,
-		BlockUserFactory $blockUserFactory,
-		FilterUser $filterUser,
-		MessageLocalizer $messageLocalizer,
-		LoggerInterface $logger
+		protected readonly string $expiry,
+		private readonly BlockUserFactory $blockUserFactory,
+		protected readonly FilterUser $filterUser,
+		private readonly MessageLocalizer $messageLocalizer,
+		private readonly LoggerInterface $logger
 	) {
 		parent::__construct( $params );
-		$this->expiry = $expiry;
-		$this->blockUserFactory = $blockUserFactory;
-		$this->filterUser = $filterUser;
-		$this->messageLocalizer = $messageLocalizer;
-		$this->logger = $logger;
 	}
 
 	/**
@@ -91,8 +64,8 @@ abstract class BlockingConsequence extends Consequence implements HookAborterCon
 			]
 		);
 		if (
-			strpos( $this->parameters->getAction(), 'createaccount' ) !== false &&
-			IPUtils::isIPAddress( $target )
+			str_contains( $this->parameters->getAction(), 'createaccount' )
+			&& IPUtils::isIPAddress( $target )
 		) {
 			$blockUser->setLogDeletionFlags( LogPage::SUPPRESSED_ACTION );
 		}

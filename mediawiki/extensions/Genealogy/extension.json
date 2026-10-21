@@ -1,0 +1,44 @@
+{
+	"name": "Genealogy",
+	"namemsg": "genealogy",
+	"version": "2.4.0",
+	"author": [
+		"[https://samwilson.id.au/ Sam Wilson]"
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:Genealogy",
+	"descriptionmsg": "genealogy-desc",
+	"license-name": "GPL-3.0-or-later",
+	"type": "parserhook",
+	"requires": {
+		"MediaWiki": ">= 1.39"
+	},
+	"ExtensionMessagesFiles": {
+		"GenealogyMagic": "Genealogy.i18n.magic.php"
+	},
+	"MessagesDirs": {
+		"Genealogy": [
+			"i18n"
+		]
+	},
+	"TestAutoloadNamespaces": {
+		"MediaWiki\\Extension\\Genealogy\\Test\\": "tests/phpunit/"
+	},
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\Genealogy\\": "src/"
+	},
+	"Hooks": {
+		"ParserFirstCallInit": "main",
+		"EditPage::showEditForm:initial": "main"
+	},
+	"HookHandlers": {
+		"main": {
+			"class": "MediaWiki\\Extension\\Genealogy\\Hooks",
+			"services": [
+				"LinkRenderer",
+				"DBLoadBalancer",
+				"WikiPageFactory"
+			]
+		}
+	},
+	"manifest_version": 1
+}

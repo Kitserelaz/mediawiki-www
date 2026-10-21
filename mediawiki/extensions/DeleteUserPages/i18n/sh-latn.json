@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Winston Sung"
+		]
+	},
+	"deleteuserpages-desc": "Dozvoli korisnike da brišu sopstvene korisničke stranice",
+	"action-delete-rootuserpages": "brisanje vlastite korisničke stranice i stranice za razgovor",
+	"right-delete-rootuserpages": "Brisanje vlastite korisničke stranice i stranice za razgovor",
+	"action-delete-usersubpages": "brisanje podstranica vlastite korisničke stranice",
+	"right-delete-usersubpages": "Brisanje podstranica vlastite korisničke stranice"
+}

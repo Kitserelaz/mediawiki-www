@@ -1,0 +1,87 @@
+{
+        "name": "LinkTitles",
+        "author": [
+                "[https://www.mediawiki.org/wiki/User:Bovender Daniel Kraus (bovender)]",
+                "Adrian (bluedreamer)",
+                "j-zero",
+                "Bertrand Gorge (bertrandgorge)",
+                "Brent Laabs (labster)",
+                "Caleb Mingle (dentafrice)",
+                "paladox",
+                "Ulrich Strauss (c0nnex)",
+                "tetsuya-zama",
+                "yoshida"
+        ],
+        "type": "parserhook",
+        "url": "https://www.mediawiki.org/wiki/Extension:LinkTitles",
+        "version": "8.1.1",
+        "license-name": "GPL-2.0+",
+        "descriptionmsg": "linktitles-desc",
+        "requires": {
+                "MediaWiki": ">= 1.35.0"
+        },
+        "config": {
+                "LinkTitlesParseOnEdit": true,
+                "LinkTitlesParseOnRender": false,
+                "LinkTitlesParseHeadings": false,
+                "LinkTitlesSkipTemplates": true,
+                "LinkTitlesPreferShortTitles": true,
+                "LinkTitlesCheckRedirect": true,
+                "LinkTitlesEnableNoTargetMagicWord": false,
+                "LinkTitlesMinimumTitleLength": 4,
+                "LinkTitlesBlackList": [],
+                "LinkTitlesFirstOnly": true,
+                "LinkTitlesSmartMode": true,
+                "LinkTitlesWordStartOnly": true,
+                "LinkTitlesWordEndOnly": true,
+                "LinkTitlesSpecialPageReloadAfter": 1,
+                "LinkTitlesSourceNamespaces": [],
+                "LinkTitlesTargetNamespaces": [],
+                "LinkTitlesSameNamespace": true
+        },
+        "AutoloadClasses": {
+                "LinkTitles\\Extension": "includes/Extension.php",
+                "LinkTitles\\Linker": "includes/Linker.php",
+                "LinkTitles\\Source": "includes/Source.php",
+                "LinkTitles\\Target": "includes/Target.php",
+                "LinkTitles\\Targets": "includes/Targets.php",
+                "LinkTitles\\Splitter": "includes/Splitter.php",
+                "LinkTitles\\Config": "includes/Config.php",
+                "LinkTitles\\Special": "includes/Special.php",
+                "LinkTitles\\TestCase": "tests/phpunit/TestCase.php"
+        },
+        "SpecialPages": {
+                "LinkTitles": "LinkTitles\\Special"
+        },
+        "AvailableRights": [
+                "linktitles-batch"
+        ],
+        "GroupPermissions": {
+                "sysop": {
+                        "linktitles-batch": true
+                }
+        },
+        "Hooks": {
+                "MultiContentSave": [
+                        "LinkTitles\\Extension::onMultiContentSave"
+                ],
+                "InternalParseBeforeLinks": [
+                        "LinkTitles\\Extension::onInternalParseBeforeLinks"
+                ],
+                "GetDoubleUnderscoreIDs": [
+                        "LinkTitles\\Extension::onGetDoubleUnderscoreIDs"
+                ],
+                "ParserFirstCallInit": [
+                        "LinkTitles\\Extension::onParserFirstCallInit"
+                ]
+        },
+        "ExtensionMessagesFiles": {
+                "LinkTitlesMagic": "includes/Magic.php"
+        },
+        "MessagesDirs": {
+                "LinkTitles": [
+                        "i18n"
+                ]
+        },
+        "manifest_version": 1
+}

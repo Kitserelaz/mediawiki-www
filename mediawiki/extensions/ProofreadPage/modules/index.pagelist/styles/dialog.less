@@ -1,0 +1,73 @@
+@import 'mediawiki.skin.variables.less';
+
+.prp-pagelist-dialog-main-panel {
+	display: flex;
+	justify-content: space-between;
+}
+
+.prp-pagelist-dialog-main-panel > .oo-ui-panelLayout {
+	position: relative;
+	width: 50%;
+}
+
+.prp-pagelist-dialog-stack-layout {
+	border-left: 1px solid @border-color-subtle;
+}
+
+.prp-pagelist-dialog-stack-layout > .oo-ui-panelLayout {
+	border-bottom: 1px solid @border-color-subtle;
+}
+
+.prp-pagelist-dialog-image-panel img {
+	width: 100%;
+}
+
+.prp-pagelist-dialog-image-panel {
+	height: 100%;
+}
+
+.prp-pagelist-dialog-stack-layout > .oo-ui-panelLayout:first-child {
+	background: @background-color-base;
+	box-shadow: 0 1px 4px 1px rgba( 0, 0, 0, 0.25 );
+}
+
+.prp-pagelist-dialog-wikitext-form-panel > .prp-pagelist-dialog-text-input {
+	max-width: 100%;
+}
+
+.prp-pagelist-dialog-wikitext-submit-button-row {
+	margin-top: 12px;
+}
+
+.prp-pagelist-dialog-config-not-found-message {
+	margin-top: 0.5em;
+}
+
+.prp-pagelist-dialog-visual-submit-button-row {
+	margin-top: 12px;
+}
+
+.prp-pagelist-dialog-left-panel {
+	display: flex;
+	flex-direction: column;
+}
+
+.prp-pagelist-dialog-right-panel > .oo-ui-panelLayout:first-child {
+	position: sticky;
+	top: 0;
+	z-index: 2;
+}
+
+.prp-pagelist-dialog-left-panel > .oo-ui-panelLayout:first-child {
+	display: flex;
+	justify-content: space-between;
+}
+
+.prp-pagelist-openseadragon-nav-div {
+	margin-top: auto;
+}
+
+#prp-pagelist-openseadragon { /* stylelint-disable-line selector-max-id */
+	height: 100%;
+	width: auto;
+}

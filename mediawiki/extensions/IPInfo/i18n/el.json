@@ -9,7 +9,6 @@
 	"ipinfo-infobox-title": "Πληροφορίες IP",
 	"ipinfo-property-label-location": "Τοποθεσία",
 	"ipinfo-property-label-ipversion": "Έκδοση",
-	"ipinfo-property-label-isp": "ISP",
 	"ipinfo-property-label-asn": "ASN",
 	"ipinfo-property-label-organization": "Οργανισμός",
 	"ipinfo-property-label-connectiontype": "Μέθοδος Σύνδεσης",
@@ -56,7 +55,7 @@
 	"ipinfo-widget-error-default": "Δεν μπόρεσε να ανακτηθεί η διεύθυνση IP.",
 	"ipinfo-widget-error-no-data": "Δεν υπάρχουν δεδομένα για αυτή τη διεύθυνση IP από το $1.",
 	"ipinfo-widget-error-wrong-ip": "Η διεύθυνση IP που παρέχεται δεν ταιριάζει με το αρχείο καταγραφής ή την αναθεώρηση.",
-	"ipinfo-widget-error-ip-no-edits": "Δεν είναι δυνατή η ανάκτηση πληροφοριών IP για αυτήν τη διεύθυνση, καθώς δεν έχουν γίνει επεξεργασίες από αυτήν.",
+	"ipinfo-widget-error-ip-no-contributions": "Δεν είναι δυνατή η ανάκτηση πληροφοριών IP για αυτήν τη διεύθυνση, καθώς δεν έχουν γίνει επεξεργασίες από αυτήν.",
 	"ipinfo-preference-enable": "Εμφάνιση του εργαλείου IP Information στη σελίδα Special:Contributions για μη εγγεγραμμένους συνεισφέροντες.",
 	"ipinfo-preference-use-agreement": "Συμφωνώ να χρησιμοποιήσω αυτές τις πληροφορίες για το έργο περιπολίας και κατά των βανδαλισμών.",
 	"ipinfo-preference-agreement-error": "Πρέπει να ενεργοποιήσετε το εργαλείο πληροφοριών IP προτού συμφωνήσετε με τους όρους χρήσης του.",
@@ -72,7 +71,6 @@
 	"ipinfo-rest-log-nonexistent": "Δεν υπάρχει καταχώριση καταγραφής",
 	"ipinfo-rest-log-registered": "Δεν είναι δυνατή η ανάκτηση πληροφοριών IP για αρχεία καταγραφής εγγεγραμμένων χρηστών",
 	"ipinfo-rest-log-denied": "Ο λογαριασμός σας δεν έχει πρόσβαση για προβολή του εκτελεστή της καταχώρισης αρχείου καταγραφής ή της ίδιας της καταχώρισης αρχείου καταγραφής",
-	"ipinfo-source-geoip2": "Οι πληροφορίες που εμφανίζονται εδώ προέρχονται από τις βάσεις δεδομένων GeoIP2 της MaxMind. Μπορεί να μην είναι πλήρως ακριβείς.",
 	"ipinfo-beta-feature-title": "Πληροφορίες IP",
 	"ipinfo-beta-feature-description": "Το εργαλείο IP Information στοχεύει να εξοπλίσει όσους περιπολούν τις επεξεργασίες με ζωτικής σημασίας πληροφορίες σχετικά με τις διευθύνσεις IP για να τους βοηθήσει στον ρόλο τους. Αυτές οι πληροφορίες θα είναι διαθέσιμες στη σελίδα Special:Contributions για τον χρήστη IP. Μια συνοπτική έκδοση αυτών των πληροφοριών θα είναι διαθέσιμη σε ένα αναδυόμενο παράθυρο δίπλα στις διευθύνσεις IP στις σελίδες [[Special:Log|Μητρώου]], [[Special:Contributions|Συνεισφορών ]], και [[Special:RecentChanges|Πρόσφατες Αλλαγές]]",
 	"prefs-ipinfo": "Πληροφορίες ΙΡ",
@@ -94,5 +92,8 @@
 	"log-action-filter-ipinfo-view_infobox": "Δεδομένα που προβάλλονται στο πλαίσιο πληροφοριών",
 	"log-action-filter-ipinfo-view_popup": "Τα δεδομένα προβάλλονται σε αναδυόμενο παράθυρο",
 	"ipinfo-property-tooltip-asn": "Ένα μοναδικό αναγνωριστικό για δίκτυα που έχουν εκχωρηθεί σε μια περιοχή και περαιτέρω σε οργανισμούς όπως κυβερνήσεις και ISP",
-	"ipinfo-blocklist-url-text": "Κατάλογος φραγών"
+	"ipinfo-blocklist-url-text": "Κατάλογος φραγών",
+	"ipinfo-special-ipinfo-target": "Όνομα χρήστη ή διεύθυνση IP-στόχου:",
+	"ipinfo-special-ipinfo-ip-legend": "Αναζητήστε πληροφορίες IP για μια διεύθυνση IP.",
+	"ipinfo-special-ipinfo-no-right-ip": "Δεν έχετε άδεια να αναζητήσετε πληροφορίες IP για αυθαίρετες διευθύνσεις IP."
 }

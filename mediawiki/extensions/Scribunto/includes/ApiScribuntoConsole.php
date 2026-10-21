@@ -5,7 +5,7 @@ namespace MediaWiki\Extension\Scribunto;
 use MediaWiki\Api\ApiBase;
 use MediaWiki\Api\ApiMain;
 use MediaWiki\Html\Html;
-use MediaWiki\MediaWikiServices;
+use MediaWiki\ObjectCache\ObjectCacheFactory;
 use MediaWiki\Parser\Parser;
 use MediaWiki\Parser\ParserFactory;
 use MediaWiki\Parser\ParserOptions;
@@ -18,25 +18,17 @@ use Wikimedia\ParamValidator\ParamValidator;
 class ApiScribuntoConsole extends ApiBase {
 	private const SC_MAX_SIZE = 500000;
 	private const SC_SESSION_EXPIRY = 3600;
-	private ParserFactory $parserFactory;
 
-	/**
-	 * @param ApiMain $main
-	 * @param string $action
-	 * @param ParserFactory $parserFactory
-	 */
 	public function __construct(
 		ApiMain $main,
-		$action,
-		ParserFactory $parserFactory
+		string $action,
+		private readonly ObjectCacheFactory $objectCacheFactory,
+		private readonly ParserFactory $parserFactory,
+		private readonly EngineFactory $engineFactory,
 	) {
 		parent::__construct( $main, $action );
-		$this->parserFactory = $parserFactory;
 	}
 
-	/**
-	 * @suppress PhanTypePossiblyInvalidDimOffset
-	 */
 	public function execute() {
 		$params = $this->extractRequestParams();
 
@@ -51,16 +43,14 @@ class ApiScribuntoConsole extends ApiBase {
 			$sessionId = mt_rand( 0, 0x7fffffff );
 		}
 
-		$services = MediaWikiServices::getInstance();
-
-		$cache = $services->getObjectCacheFactory()->getInstance( CACHE_ANYTHING );
+		$cache = $this->objectCacheFactory->getInstance( CACHE_ANYTHING );
 		$sessionKey = $cache->makeKey( 'scribunto-console', $this->getUser()->getId(), $sessionId );
 		$session = null;
 		$sessionIsNew = false;
 		if ( $params['session'] ) {
 			$session = $cache->get( $sessionKey );
 		}
-		if ( !isset( $session['version'] ) ) {
+		if ( !is_array( $session ) || !isset( $session['version'] ) ) {
 			$session = $this->newSession();
 			$sessionIsNew = true;
 		}
@@ -120,16 +110,17 @@ class ApiScribuntoConsole extends ApiBase {
 	 *  - 'question': (string) Lua code to run.
 	 * @return array Result data
 	 */
-	protected function runConsole( array $params ) {
+	private function runConsole( array $params ) {
 		$parser = $this->parserFactory->getInstance();
 		$options = new ParserOptions( $this->getUser() );
 		$parser->startExternalParse( $params['title'], $options, Parser::OT_HTML, true );
-		$engine = Scribunto::getParserEngine( $parser );
+		$engine = $this->engineFactory->getEngineForParser( $parser );
 		try {
 			$result = $engine->runConsole( $params );
 		} catch ( ScribuntoException $e ) {
 			$trace = $e->getScriptTraceHtml();
 			$message = $e->getMessage();
+			$log = $e->getLog() ? [ 'print' => $e->getLog() ] : [];
 			$html = Html::element( 'p', [], $message );
 			if ( $trace !== false ) {
 				$html .= Html::element( 'p',
@@ -142,7 +133,8 @@ class ApiScribuntoConsole extends ApiBase {
 				'type' => 'error',
 				'html' => $html,
 				'message' => $message,
-				'messagename' => $e->getMessageName() ];
+				'messagename' => $e->getMessageName()
+			] + $log;
 		}
 		return [
 			'type' => 'normal',
@@ -154,7 +146,7 @@ class ApiScribuntoConsole extends ApiBase {
 	/**
 	 * @return array
 	 */
-	protected function newSession() {
+	private function newSession() {
 		return [
 			'content' => '',
 			'questions' => [],

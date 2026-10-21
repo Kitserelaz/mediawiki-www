@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": [
+			"Jon Harald Søby"
+		]
+	},
+	"elastica-desc": "Grunnleggende [https://www.elastic.co/ Elasticsearch]-funksjonalitet for andre utvidelser ved å tilby et [https://elastica.io/ Elastica]-bibliotek"
+}

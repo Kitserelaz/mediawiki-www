@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"Kly",
+			"Liuxinyu970226"
+		]
+	},
+	"kartographer-wv-group": "群組：",
+	"kartographer-wv-warning-external-source-title": "外部資料來源",
+	"kartographer-wv-warning-external-source-message": "此內容為外部託管，因此啟用它會分享您的 IP 位置與其他資料給地圖提供方。",
+	"kartographer-wv-warning-external-source-agree": "我了解",
+	"kartographer-wv-warning-external-source-disagree": "取消"
+}

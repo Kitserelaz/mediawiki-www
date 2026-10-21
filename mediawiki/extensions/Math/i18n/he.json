@@ -76,6 +76,7 @@
 	"math_invalidresponse": "$1: תשובה בלתי־תקינה (\"$3\") מהשרת \"$2\":",
 	"math_invalidxml": "קוד XML של MathML או SVG אינו תקין.",
 	"math_mathoid_error": "שגיאת המרה. השרת (\"$1\") השיב: \"$2\"",
+	"math_other_error": "שגיאה אחרת: $1",
 	"math-status-introduction": "הדף הזה מציג מידע על {{PLURAL:$1|מצב תיצוג המתמטיקה המופעל|מצבי תיצוג המתמטיקה המופעלים}}.\n\n{{PLURAL:$1|מצב התיצוג הבא מופעל|מצבי התיצוג הבאים מופעלים}} כאן.",
 	"math_syntax_error": "שגיאת תחביר",
 	"math_timeout": "הזמן להכנת $1 מהשרת \"$2\" פג.",
@@ -119,5 +120,7 @@
 	"math-wikibase-special-form-button": "בקשת מידע",
 	"math-wikibase-special-error-header": "שגיאה",
 	"math-wikibase-special-error-invalid-argument": "מזהה פריט הוויקיבייס אינו קיים.",
-	"math-wikibase-special-error-unknown": "אירעה שגיאה בלתי־ידועה באחזור נתונים מוויקיבייס."
+	"math-wikibase-special-error-unknown": "אירעה שגיאה בלתי־ידועה באחזור נתונים מוויקיבייס.",
+	"math-editpage-insert-inline": "נוסחת מתמטיקה (בשורה)",
+	"math-editpage-insert-block": "נוסחת מתמטית (בפסקה נפרדת)"
 }

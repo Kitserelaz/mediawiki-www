@@ -1,0 +1,86 @@
+{
+	"name": "PropertySuggester",
+	"version": "3.2.1",
+	"author": [
+		"Christian Dullweber",
+		"Moritz Finke",
+		"Felix Niemeyer",
+		"Virginia Weidhaas"
+	],
+	"url": "https://github.com/Wikidata-lib/PropertySuggester",
+	"descriptionmsg": "propertysuggester-desc",
+	"license-name": "GPL-2.0-or-later",
+	"type": "wikibase",
+	"requires": {
+		"MediaWiki": ">= 1.43"
+	},
+	"AutoloadNamespaces": {
+		"PropertySuggester\\": "src/",
+		"PropertySuggester\\Maintenance\\": "maintenance/"
+	},
+	"APIModules": {
+		"wbsgetsuggestions": "PropertySuggester\\GetSuggestions"
+	},
+	"MessagesDirs": {
+		"PropertySuggester": [
+			"i18n",
+			"i18n/api"
+		]
+	},
+	"ExtensionMessagesFiles": {
+		"PropertySuggesterAlias": "PropertySuggester.alias.php"
+	},
+	"Hooks": {
+		"BeforePageDisplay": "main",
+		"LoadExtensionSchemaUpdates": "schema",
+		"ResourceLoaderRegisterModules": "main"
+	},
+	"HookHandlers": {
+		"main": {
+			"class": "PropertySuggester\\Hooks"
+		},
+		"schema": {
+			"class": "PropertySuggester\\SchemaHooks"
+		}
+	},
+	"attributes": {
+		"EventLogging": {
+			"Schemas": {
+				"PropertySuggesterServerSidePropertyRequest": "/analytics/mediawiki/wd_propertysuggester/server_side_property_request/1.0.0",
+				"PropertySuggesterClientSidePropertyRequest": "/analytics/mediawiki/wd_propertysuggester/client_side_property_request/1.0.0"
+			}
+		}
+	},
+	"config": {
+		"PropertySuggesterDeprecatedIds": {
+			"value": []
+		},
+		"PropertySuggesterClassifyingPropertyIds": {
+			"value": []
+		},
+		"PropertySuggesterInitialSuggestions": {
+			"value": []
+		},
+		"PropertySuggesterMinProbability": {
+			"value": 0.05
+		},
+		"PropertySuggesterSchemaTreeUrl": {
+			"value": "",
+			"description": "If the SchemaTree suggester is used, the value should contain the URL of the endpoint for the SchemaTree suggester"
+		},
+		"PropertySuggesterABTestingState": {
+			"value": false,
+			"description": "The state of A/B testing. When set to true, additional properties will be suggested from both the PropertySuggester and the SchemaTree suggester, additionally, event logging will be enabled"
+		},
+		"PropertySuggesterDefaultSuggester": {
+			"value": "PropertySuggester",
+			"description": "When PropertySuggesterABTestingState is set to false additional properties will be suggested using PropertySuggesterDefaultSuggester. Value can be either PropertySuggester or SchemaTreeSuggester"
+		},
+		"PropertySuggesterTestingRatio": {
+			"value": 2,
+			"description": "Ratio of suggesters used when A/B testing is enabled. Value of 2 will result in an approximate 50/50 split, values greater than 2 will result in the PropertySuggester being used more often"
+		}
+	},
+	"load_composer_autoloader": true,
+	"manifest_version": 2
+}

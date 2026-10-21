@@ -13,9 +13,6 @@ class MultiGetList {
 	 */
 	protected $cache;
 
-	/**
-	 * @param FlowObjectCache $cache
-	 */
 	public function __construct( FlowObjectCache $cache ) {
 		$this->cache = $cache;
 	}
@@ -57,12 +54,7 @@ class MultiGetList {
 		$multiRes = $this->cache->getMulti( array_keys( $cacheKeys ) );
 		// Memcached BagOStuff only returns found keys, but the redis bag
 		// returns false for not found keys.
-		$multiRes = array_filter(
-			$multiRes,
-			static function ( $val ) {
-				return $val !== false;
-			}
-		);
+		$multiRes = array_filter( $multiRes, static fn ( $v ) => $v !== false );
 		foreach ( $multiRes as $key => $value ) {
 			$idx = $cacheKeys[$key];
 			if ( $idx instanceof UUID ) {

@@ -1,0 +1,18 @@
+{
+	"@metadata": {
+		"authors": [
+			"Amire80",
+			"ערן"
+		]
+	},
+	"apihelp-query+globalusage-summary": "החזרת שימוש גלובלי בתמונה עבור תמונה מסוימת.",
+	"apihelp-query+globalusage-param-prop": "אילו מאפיינים להחזיר:",
+	"apihelp-query+globalusage-paramvalue-prop-url": "הוספת url.",
+	"apihelp-query+globalusage-paramvalue-prop-pageid": "הוספת מזהה דף.",
+	"apihelp-query+globalusage-paramvalue-prop-namespace": "הוספת מהה מרחב שם.",
+	"apihelp-query+globalusage-param-limit": "כמה קישורים להחזיר.",
+	"apihelp-query+globalusage-param-filterlocal": "סינון לפי השימוש המקומי בקובץ.",
+	"apihelp-query+globalusage-param-namespace": "להגביל את התוצאת למרחבי השמות האלה.",
+	"apihelp-query+globalusage-param-site": "להגביל את התוצאות לאתרים האלה.",
+	"apihelp-query+globalusage-example-1": "קבלת שימוש בקובץ [[:File:Example.jpg]]"
+}

@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Winston Sung"
+		]
+	},
+	"uploadslink-portlet-label": "Postavljanja",
+	"tooltip-pt-uploads": "Spisak datoteka koje ste postavili",
+	"uploadslink-toobox-label": "Postavljene datoteke {{GENDER:$1|suradnika|suradnice}}",
+	"tooltip-tb-uploads": "Spisak postavljenih datoteka {{GENDER:$1|ovog suradnika|ove suradnice}}"
+}

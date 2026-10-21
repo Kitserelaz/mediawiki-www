@@ -1,0 +1,91 @@
+<?php
+
+namespace SMW\Tests\Utils;
+
+use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
+use RuntimeException;
+use SMW\Services\ServicesFactory as ApplicationFactory;
+use WikiPage;
+
+/**
+ * @group SMW
+ * @group SMWExtension
+ *
+ * @license GPL-2.0-or-later
+ * @since 2.0
+ */
+class PageRefresher {
+
+	/**
+	 * @since 2.0
+	 *
+	 * @param mixed $title
+	 *
+	 * @return PageRefresher
+	 */
+	public function doRefresh( $title ) {
+		if ( $title instanceof WikiPage || $title instanceof \SMW\DataItems\WikiPage ) {
+			$title = $title->getTitle();
+		}
+
+		if ( !$title instanceof Title ) {
+			throw new RuntimeException( 'Expected a title instance' );
+		}
+
+		$applicationFactory = ApplicationFactory::getInstance();
+
+		$contentParser = $applicationFactory->newContentParser(
+			$title
+		);
+
+		$parserData = $applicationFactory->newParserData(
+			$title,
+			$contentParser->parse()->getOutput()
+		);
+
+		$parserData->updateStore();
+
+		return $this;
+	}
+
+	/**
+	 * @since 2.1
+	 *
+	 * @param array $pages
+	 *
+	 * @return PageRefresher
+	 */
+	public function doRefreshPoolOfPages( array $pages ) {
+		foreach ( $pages as $page ) {
+			$this->doRefreshByUpdateJob( $page );
+		}
+	}
+
+	/**
+	 * @since 2.1
+	 *
+	 * @param mixed $title
+	 *
+	 * @return PageRefresher
+	 */
+	public function doRefreshByUpdateJob( $title ) {
+		if ( $title instanceof WikiPage || $title instanceof \SMW\DataItems\WikiPage ) {
+			$title = $title->getTitle();
+		}
+
+		if ( is_string( $title ) ) {
+			$title = MediaWikiServices::getInstance()->getTitleFactory()->newFromText( $title );
+		}
+
+		if ( !$title instanceof Title ) {
+			throw new RuntimeException( 'Expected a title instance' );
+		}
+
+		$job = ApplicationFactory::getInstance()->getJobFactory()->newUpdateJob( $title );
+		$job->run();
+
+		return $this;
+	}
+
+}

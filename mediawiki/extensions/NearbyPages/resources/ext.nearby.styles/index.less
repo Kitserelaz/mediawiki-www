@@ -1,0 +1,13 @@
+.client-js {
+	// note this also means non-ResourceLoader enabled browsers hence not using tag
+	.noscript {
+		display: none;
+	}
+
+	// For IE11 and older browsers.
+	&.ext-nearby-skipped {
+		.noscript {
+			display: block;
+		}
+	}
+}

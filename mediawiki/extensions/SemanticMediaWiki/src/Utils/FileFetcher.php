@@ -1,0 +1,117 @@
+<?php
+
+namespace SMW\Utils;
+
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use RecursiveRegexIterator;
+use RegexIterator;
+use RuntimeException;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 3.1
+ *
+ * @author mwjames
+ */
+class FileFetcher {
+
+	private int $maxDepth = -1;
+
+	private ?string $sort = null;
+
+	/**
+	 * @since 3.1
+	 */
+	public function __construct( private string $dir = '' ) {
+	}
+
+	/**
+	 * @since 3.1
+	 *
+	 * @param string $dir
+	 */
+	public function setDir( string $dir ): void {
+		$this->dir = $dir;
+	}
+
+	/**
+	 * @since 3.1
+	 *
+	 * @param string $sort
+	 */
+	public function sort( $sort ): void {
+		$sort = strtolower( $sort );
+
+		if ( in_array( $sort, [ 'asc', 'desc' ] ) ) {
+			$this->sort = $sort;
+		}
+	}
+
+	/**
+	 * @since 3.1
+	 *
+	 * @param string $file
+	 *
+	 * @return string
+	 */
+	public static function normalize( $file ): string {
+		return str_replace( [ '\\', '//', '/', '\\\\' ], DIRECTORY_SEPARATOR, $file );
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @param int $maxDepth
+	 */
+	public function setMaxDepth( int $maxDepth ): void {
+		$this->maxDepth = $maxDepth;
+	}
+
+	/**
+	 * @since 3.1
+	 *
+	 * @param string $extension
+	 *
+	 * @return RegexIterator|array
+	 */
+	public function findByExtension( string $extension ): RegexIterator|array {
+		if ( !is_dir( $this->dir ) ) {
+			throw new RuntimeException( "Unable to access {$this->dir}!" );
+		}
+
+		$iterator = new RecursiveIteratorIterator(
+			new RecursiveDirectoryIterator( $this->dir )
+		);
+
+		$iterator->setMaxDepth( $this->maxDepth );
+
+		$matches = new RegexIterator(
+			$iterator, '/^.+\.' . $extension . '$/i',
+			RecursiveRegexIterator::GET_MATCH
+		);
+
+		if ( $this->sort !== null ) {
+			$matches = iterator_to_array(
+				$matches
+			);
+
+			/**
+			 * @uses sort_asc
+			 * @uses sort_desc
+			 */
+			usort( $matches, [ $this, "sort_$this->sort" ] );
+		}
+
+		return $matches;
+	}
+
+	private function sort_asc( $a, $b ): int {
+		return strnatcasecmp( $a[0], $b[0] );
+	}
+
+	private function sort_desc( $a, $b ): int {
+		return strnatcasecmp( $b[0], $a[0] );
+	}
+
+}

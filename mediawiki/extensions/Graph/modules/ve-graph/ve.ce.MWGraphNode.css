@@ -1,0 +1,16 @@
+.mw-graph {
+	display: inline-block;
+	border: 1px solid transparent;
+	position: relative;
+	background-repeat: no-repeat;
+	background-position: 50% 50%;
+	background-image: url( ../../styles/images/ajax-loader.gif );
+}
+
+.ve-ce-mwGraphNode-plot {
+	position: absolute;
+}
+
+.mw-graph canvas {
+	background: #fff;
+}

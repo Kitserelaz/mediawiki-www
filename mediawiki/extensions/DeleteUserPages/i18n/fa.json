@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"FarsiNevis",
+			"Jeeputer"
+		]
+	},
+	"deleteuserpages-desc": "به کاربران اجازه دهید که صفحهٔ کاربری خودشان را حذف کنند",
+	"action-delete-rootuserpages": "حذف صفحهٔ کاربری و صفحهٔ بحث خود",
+	"right-delete-rootuserpages": "حذف صفحهٔ کاربری و صفحهٔ بحث خود"
+}

@@ -1,0 +1,355 @@
+<?php
+
+namespace SMW\Query\ResultPrinters;
+
+use SMW\DataItems\DataItem;
+use SMW\DataItems\WikiPage;
+use SMW\Localizer\DeferredLocalizedMessage;
+use SMW\Localizer\Localizer;
+use SMW\MediaWiki\Collator;
+use SMW\MediaWiki\Renderer\WikitextTemplateRenderer;
+use SMW\Query\QueryResult;
+use SMW\Services\ServicesFactory as ApplicationFactory;
+use SMW\Utils\HtmlColumns;
+
+/**
+ * Print query results in alphabetic groups displayed in columns, a la the
+ * standard Category pages.
+ *
+ * @license GPL-2.0-or-later
+ * @since 1.6
+ *
+ * @author David Loomer
+ * @author Yaron Koren
+ * @author Jeroen De Dauw < jeroendedauw@gmail.com >
+ */
+class CategoryResultPrinter extends ResultPrinter {
+
+	private ?string $delim = null;
+
+	/**
+	 * @var string
+	 */
+	private $template;
+
+	private ?string $userParam = null;
+
+	/**
+	 * @var int
+	 */
+	private $numColumns;
+
+	private HtmlColumns $htmlColumns;
+	private WikitextTemplateRenderer $templateRenderer;
+	private Collator $collator;
+
+	/**
+	 * @see ResultPrinter::getName
+	 *
+	 * {@inheritDoc}
+	 */
+	public function getName() {
+		return wfMessage( 'smw_printername_' . $this->mFormat )->text();
+	}
+
+	/**
+	 * @see ResultPrinter::isDeferrable
+	 *
+	 * {@inheritDoc}
+	 */
+	public function isDeferrable(): bool {
+		return true;
+	}
+
+	/**
+	 * @see ResultPrinter::dependsOnUserLanguage
+	 *
+	 * {@inheritDoc}
+	 */
+	public function dependsOnUserLanguage(): bool {
+		return false;
+	}
+
+	/**
+	 * @see ResultPrinter::supportsRecursiveAnnotation
+	 *
+	 * @since 3.0
+	 *
+	 * {@inheritDoc}
+	 */
+	public function supportsRecursiveAnnotation(): bool {
+		return true;
+	}
+
+	/**
+	 * @see ResultPrinter::getParamDefinitions
+	 *
+	 * {@inheritDoc}
+	 */
+	public function getParamDefinitions( array $definitions ): array {
+		$definitions = parent::getParamDefinitions( $definitions );
+
+		$definitions[] = [
+			'name' => 'columns',
+			'type' => 'integer',
+			'message' => 'smw-paramdesc-columns',
+			'lowerbound' => 0,
+			'default' => 3,
+		];
+
+		$definitions[] = [
+			'name' => 'delim',
+			'message' => 'smw-paramdesc-category-delim',
+			'default' => '',
+		];
+
+		$definitions[] = [
+			'name' => 'template',
+			'message' => 'smw-paramdesc-category-template',
+			'default' => '',
+		];
+
+		$definitions[] = [
+			'name' => 'userparam',
+			'message' => 'smw-paramdesc-category-userparam',
+			'default' => '',
+		];
+
+		$definitions[] = [
+			'name' => 'named args',
+			'type' => 'boolean',
+			'message' => 'smw-paramdesc-named_args',
+			'default' => false,
+			'aliases' => [ 'namedargs' ]
+		];
+
+		return $definitions;
+	}
+
+	/**
+	 * @see ResultPrinter::handleParameters
+	 *
+	 * {@inheritDoc}
+	 */
+	protected function handleParameters( array $params, $outputmode ): void {
+		parent::handleParameters( $params, $outputmode );
+
+		$this->userParam = isset( $params['userparam'] ) ? trim( $params['userparam'] ) : '';
+		$this->delim = isset( $params['delim'] ) ? trim( $params['delim'] ) : '';
+		$this->numColumns = $params['columns'] ?? 3;
+		$this->template = $params['template'] ?? '';
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	protected function initServices(): void {
+		$mwCollaboratorFactory = ApplicationFactory::getInstance()->newMwCollaboratorFactory();
+
+		$this->htmlColumns = new HtmlColumns();
+		$this->templateRenderer = $mwCollaboratorFactory->newWikitextTemplateRenderer();
+		$this->collator = Collator::singleton();
+	}
+
+	/**
+	 * @see ResultPrinter::getResultText
+	 *
+	 * {@inheritDoc}
+	 */
+	protected function getResultText( QueryResult $res, $outputMode ) {
+		$this->initServices();
+		$contents = $this->getContents( $res, $outputMode );
+
+		if ( $contents === [] ) {
+			return $res->addErrors( [ 'smw-qp-empty-data' ] );
+		}
+
+		$language = Localizer::getInstance()->getUserLanguage();
+
+		$this->htmlColumns->setContinueAbbrev( $this->getContinueAbbrev() );
+		$this->htmlColumns->setColumns( $this->numColumns );
+		$this->htmlColumns->isRTL( $language->isRTL() );
+
+		// 0 indicates to use responsive columns
+		$this->htmlColumns->setResponsiveCols(
+			$this->params['columns'] == 0
+		);
+
+		$this->htmlColumns->setResponsiveColsThreshold( 5 );
+		$this->htmlColumns->addContents( $contents, HtmlColumns::INDEXED_LIST );
+
+		return $this->htmlColumns->getHtml();
+	}
+
+	/**
+	 * The column-continuation abbreviation. Deferred to a post-cache marker for
+	 * inline (parser-cached) queries so the format stays language-neutral;
+	 * rendered directly in the user language for live (Special:Ask) output.
+	 *
+	 * @since 7.0.0
+	 */
+	protected function getContinueAbbrev(): string {
+		return $this->isParserCacheRender()
+			? DeferredLocalizedMessage::newMarker( 'category-continues' )
+			: wfMessage( 'smw-listingcontinuesabbrev' )->text();
+	}
+
+	/**
+	 * @return non-empty-list[]
+	 */
+	private function getContents( QueryResult $res, $outputMode ): array {
+		$contents = [];
+
+		// Print all result rows:
+		$rowindex = 0;
+		$row = $res->getNext();
+
+		while ( $row !== false ) {
+			$nextrow = $res->getNext(); // look ahead
+
+			if ( !isset( $row[0] ) ) {
+				$row = $nextrow;
+				continue;
+			}
+
+			$content = $row[0]->getContent();
+
+			if ( !isset( $content[0] ) || !( $content[0] instanceof DataItem ) ) {
+				$row = $nextrow;
+				continue;
+			}
+
+			$first_letter = $this->first_letter( $res, $content[0] );
+
+			if ( !isset( $contents[$first_letter] ) ) {
+				$contents[$first_letter] = [];
+				$last_letter = $first_letter;
+			}
+
+			if ( $this->template !== '' ) { // build template code
+
+				$first_col = true;
+				$this->hasTemplates = true;
+
+				if ( $this->userParam ) {
+					$this->templateRenderer->addField( 'userparam', $this->userParam );
+				}
+
+				$this->row_to_template( $row, $first_col );
+
+				$this->templateRenderer->addField( '#', $rowindex );
+				$this->templateRenderer->packFieldsForTemplate( $this->template );
+
+				// str_replace('|', '&#x007C;', // encode '|' for use in templates (templates fail otherwise) --
+				// this is not the place for doing this, since even DV-Wikitexts contain proper "|"!
+				$contents[$first_letter][] = $this->templateRenderer->render();
+			} else {  // build simple list
+				$first_col = true;
+				$contents[$first_letter][] = $this->row_to_contents( $row, $first_col );
+			}
+
+			$row = $nextrow;
+			$rowindex++;
+		}
+
+		// Make label for finding further results
+		if ( $this->linkFurtherResults( $res ) ) {
+			$index = $last_letter ?? $first_letter ?? '';
+			$contents[$index][] = $this->getFurtherResultsLink( $res, $outputMode )->getText( SMW_OUTPUT_WIKI, $this->mLinker );
+		}
+
+		return $contents;
+	}
+
+	private function first_letter( QueryResult $res, DataItem $dataItem ) {
+		$sortKey = $dataItem->getSortKey();
+
+		if ( $dataItem instanceof WikiPage && $dataItem->getDIType() === DataItem::TYPE_WIKIPAGE ) {
+			$sortKey = $res->getStore()->getWikiPageSortKey( $dataItem );
+		}
+
+		return $this->collator->getFirstLetter( $sortKey );
+	}
+
+	private function row_to_contents( array $row, bool &$first_col ): string {
+		// has anything but the first column been printed?
+		$found_values = false;
+		$result = '';
+
+		foreach ( $row as $field ) {
+			$first_value = true;
+			$fieldValues = [];
+
+			$text = $field->getNextText( SMW_OUTPUT_WIKI, $this->getLinker( $first_col ) );
+			while ( $text !== false ) {
+
+				// first values after first column
+				if ( !$first_col && !$found_values ) {
+					$result .= '(';
+					$found_values = true;
+				}
+
+				// first value in any column, print header
+				if ( $first_value ) {
+					$first_value = false;
+					$printRequest = $field->getPrintRequest();
+
+					if ( $this->mShowHeaders && ( $printRequest->getLabel() !== '' ) ) {
+						$linker = $this->mShowHeaders === SMW_HEADERS_PLAIN ? null : $this->mLinker;
+						$result .= $printRequest->getText( SMW_OUTPUT_WIKI, $linker );
+						$result .= ' ';
+					}
+				}
+
+				$fieldValues[] = $text;
+
+				$text = $field->getNextText( SMW_OUTPUT_WIKI, $this->getLinker( $first_col ) );
+			}
+
+			$first_col = false;
+
+			// Always sort the column value list in the same order
+			natsort( $fieldValues );
+			$result .= implode( ( $this->delim ?: ',' ) . ' ', $fieldValues ) . ' ';
+		}
+
+		if ( $found_values ) {
+			$result = trim( $result ) . ')';
+		}
+
+		return $result;
+	}
+
+	private function row_to_template( array $row, bool &$first_col ): void {
+		// explicitly number parameters for more robust parsing (values may contain "=")
+		$i = 0;
+
+		foreach ( $row as $field ) {
+			$i++;
+
+			$fieldName = '';
+
+			if ( $this->params['named args'] ) {
+				$fieldName = $field->getPrintRequest()->getLabel();
+			}
+
+			if ( $fieldName === '' || $fieldName === '?' ) {
+				$fieldName .= $i;
+			}
+
+			$fieldValues = [];
+
+			$text = $field->getNextText( SMW_OUTPUT_WIKI, $this->getLinker( $first_col ) );
+			while ( $text !== false ) {
+				$fieldValues[] = $text;
+				$text = $field->getNextText( SMW_OUTPUT_WIKI, $this->getLinker( $first_col ) );
+			}
+
+			natsort( $fieldValues );
+
+			$this->templateRenderer->addField( $fieldName, implode( $this->delim . ' ', $fieldValues ) );
+			$first_col = false;
+		}
+	}
+
+}

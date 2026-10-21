@@ -1,0 +1,135 @@
+<?php
+
+namespace SMW\SQLStore\EntityStore;
+
+use SMW\DataItems\Property;
+use SMW\DataItems\WikiPage;
+use SMW\IteratorFactory;
+use SMW\Iterators\MappingIterator;
+use SMW\Iterators\ResultIterator;
+use SMW\SQLStore\SQLStore;
+
+/**
+ * @private
+ *
+ * @license GPL-2.0-or-later
+ * @since 2.5
+ *
+ * @author mwjames
+ */
+class SubobjectListFinder {
+
+	/**
+	 * @var WikiPage
+	 */
+	private $subject;
+
+	/**
+	 * @var array
+	 */
+	private array $mappingIterator = [];
+
+	/**
+	 * @var array
+	 */
+	private array $skipConditions = [];
+
+	/**
+	 * @since 2.5
+	 */
+	public function __construct(
+		private readonly SQLStore $store,
+		private readonly IteratorFactory $iteratorFactory,
+	) {
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param WikiPage $subject
+	 *
+	 * @return MappingIterator
+	 */
+	public function find( WikiPage $subject ) {
+		$key = $subject->getHash() . ':' . $subject->getId();
+
+		if ( !isset( $this->mappingIterator[$key] ) ) {
+			$this->mappingIterator[$key] = $this->newMappingIterator( $subject );
+		}
+
+		return $this->mappingIterator[$key];
+	}
+
+	/**
+	 * Fetch all subobjects for a given subject using a lazy-mapping iterator
+	 * in order to only resolve one subobject per iteration step.
+	 *
+	 * @since 2.5
+	 *
+	 * @param WikiPage $subject
+	 *
+	 * @return MappingIterator
+	 */
+	private function newMappingIterator( WikiPage $subject ): MappingIterator {
+		$callback = static function ( $row ) use ( $subject ): ?WikiPage {
+			// #1955
+			if ( $subject->getNamespace() === SMW_NS_PROPERTY ) {
+				$property = new Property( $subject->getDBkey() );
+				$subobject = $property->getCanonicalDiWikiPage( $row->smw_subobject );
+			} else {
+				$subobject = new WikiPage(
+					$subject->getDBkey(),
+					$subject->getNamespace(),
+					$subject->getInterwiki(),
+					$row->smw_subobject
+				);
+			}
+
+			$subobject->setSortKey( $row->smw_sortkey );
+			$subobject->setId( $row->smw_id );
+
+			return $subobject;
+		};
+
+		return $this->iteratorFactory->newMappingIterator(
+			$this->newResultIterator( $subject ),
+			$callback
+		);
+	}
+
+	private function newResultIterator( WikiPage $subject ): ResultIterator {
+		$connection = $this->store->getConnection( 'mw.db' );
+		$key = $subject->getDBkey();
+
+		// #1955 Ensure to match a possible predefined property
+		// (Modification date -> _MDAT)
+		if ( $subject->getNamespace() === SMW_NS_PROPERTY ) {
+			$key = Property::newFromUserLabel( $key )->getKey();
+		}
+
+		$conditions = [
+			'smw_title' => $key,
+			'smw_namespace' => $subject->getNamespace(),
+			'smw_iw' => $subject->getInterwiki(),
+			$connection->expr( 'smw_subobject', '!=', '' ),
+		];
+
+		foreach ( $this->skipConditions as $skipOn ) {
+			$conditions[] = $connection->expr( 'smw_subobject', '!=', $skipOn );
+		}
+
+		$res = $connection->newSelectQueryBuilder()
+			->select( [
+				'smw_id',
+				'smw_subobject',
+				'smw_sortkey'
+			] )
+			->from( SQLStore::ID_TABLE )
+			->where( $conditions )
+			->caller( __METHOD__ )
+			->fetchResultSet();
+
+		return $this->iteratorFactory->newResultIterator( $res );
+	}
+
+}

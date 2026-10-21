@@ -1,0 +1,94 @@
+@import 'mediawiki.skin.variables.less';
+@import '../utils/variables.less';
+
+// Copied from the MachineVision extension
+
+.fade-in( @duration ) {
+	@keyframes fadeIn {
+		0% {
+			opacity: 0;
+		}
+
+		100% {
+			opacity: 1;
+		}
+	}
+	animation: fadeIn @duration;
+}
+
+.mw-ge-suggestion-wrapper {
+	display: inline-block;
+	margin: 0 16px 16px 0;
+
+	label {
+		cursor: pointer;
+	}
+
+	.mw-ge-suggestion {
+		background-color: @background-color-growth-subtle;
+		border: @border-base;
+		color: @color-base;
+		cursor: pointer;
+		padding: 6px 20px;
+		border-radius: 18px;
+		white-space: nowrap;
+		transition-property: color;
+		transition-duration: @transition-duration-base;
+
+		&:hover,
+		&:focus {
+			color: @color-emphasized;
+		}
+	}
+
+	.mw-ge-suggestion--confirmed {
+		background-color: @background-color-progressive-subtle;
+		border-color: @border-color-progressive--active;
+		color: @color-emphasized;
+		position: relative;
+
+		.oo-ui-labelWidget {
+			@keyframes slideLeft {
+				0% {
+					transform: translateX( 0 );
+				}
+
+				100% {
+					transform: translateX( -10px );
+				}
+			}
+			transform: translateX( -10px );
+			animation: slideLeft 0.2s;
+		}
+
+		.oo-ui-iconElement {
+			.fade-in( 0.2s );
+			min-height: 0;
+			min-width: 0;
+			position: absolute;
+			right: 0.714em;
+			top: 0.5em;
+			width: 1em;
+		}
+	}
+
+	// Animate the process of moving a label back to center when unconfirmed.
+	.mw-ge-suggestion--unconfirmed {
+		.oo-ui-labelWidget {
+			@keyframes slideRight {
+				0% {
+					transform: translateX( -0.5em );
+				}
+
+				100% {
+					transform: translateX( 0 );
+				}
+			}
+			animation: slideRight 0.2s;
+		}
+	}
+}
+
+.mw-ge-hide-outline .mw-ge-suggestion-wrapper {
+	outline: 0;
+}

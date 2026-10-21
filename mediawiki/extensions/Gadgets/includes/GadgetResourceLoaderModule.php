@@ -3,6 +3,7 @@
 namespace MediaWiki\Extension\Gadgets;
 
 use InvalidArgumentException;
+use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\ResourceLoader as RL;
 
@@ -21,9 +22,6 @@ class GadgetResourceLoaderModule extends RL\WikiModule {
 	 */
 	private $gadget;
 
-	/**
-	 * @param array $options
-	 */
 	public function __construct( array $options ) {
 		$this->id = $options['id'];
 	}
@@ -37,7 +35,7 @@ class GadgetResourceLoaderModule extends RL\WikiModule {
 			$repo = MediaWikiServices::getInstance()->getService( 'GadgetsRepo' );
 			try {
 				$this->gadget = $repo->getGadget( $this->id );
-			} catch ( InvalidArgumentException $e ) {
+			} catch ( InvalidArgumentException ) {
 				// Fallback to a placeholder object...
 				$this->gadget = Gadget::newEmptyGadget( $this->id );
 			}
@@ -47,11 +45,21 @@ class GadgetResourceLoaderModule extends RL\WikiModule {
 	}
 
 	/**
-	 * Overrides the function from RL\WikiModule class
 	 * @param RL\Context $context
 	 * @return array
 	 */
 	protected function getPages( RL\Context $context ) {
+		// In theory we could support these separately, but
+		// * gadget definitions assume both
+		// * it doesn't make sense to load half a gadget
+		// * it's poor UX to have some gadgets work and some not
+		// * historically this extension is only used when
+		//   a community permits both.
+		$config = $this->getConfig();
+		if ( !$config->get( MainConfigNames::UseSiteJs ) || !$config->get( MainConfigNames::UseSiteCss ) ) {
+			return [];
+		}
+
 		$gadget = $this->getGadget();
 		$pages = [];
 
@@ -64,6 +72,9 @@ class GadgetResourceLoaderModule extends RL\WikiModule {
 				$pages[$script] = [ 'type' => 'script' ];
 			}
 			if ( $gadget->isPackaged() ) {
+				foreach ( $gadget->getVues() as $vue ) {
+					$pages[$vue] = [ 'type' => 'script-vue' ];
+				}
 				foreach ( $gadget->getJSONs() as $json ) {
 					$pages[$json] = [ 'type' => 'data' ];
 				}
@@ -74,7 +85,22 @@ class GadgetResourceLoaderModule extends RL\WikiModule {
 	}
 
 	/**
-	 * Overrides RL\WikiModule::getRequireKey()
+	 * @inheritDoc
+	 */
+	public function getScript( RL\Context $context ) {
+		$module = parent::getScript( $context );
+
+		if ( $this->isPackaged() && $this->gadget->getCodexIcons() ) {
+			// Add codex icons to the gadget module
+			$module['files']['icons.json'] = [
+				'type' => 'data',
+				'content' => RL\CodexModule::getIcons( $context, $this->getConfig(), $this->gadget->getCodexIcons() ),
+			];
+		}
+		return $module;
+	}
+
+	/**
 	 * @param string $titleText
 	 * @return string
 	 */
@@ -100,16 +126,13 @@ class GadgetResourceLoaderModule extends RL\WikiModule {
 	}
 
 	/**
-	 * Overrides RL\WikiModule::isPackaged()
 	 * Returns whether this gadget is packaged.
-	 * @return bool
 	 */
 	public function isPackaged(): bool {
 		return $this->getGadget()->isPackaged();
 	}
 
 	/**
-	 * Overrides RL\Module::getDependencies()
 	 * @param RL\Context|null $context
 	 * @return string[] Names of resources this module depends on
 	 */
@@ -118,7 +141,6 @@ class GadgetResourceLoaderModule extends RL\WikiModule {
 	}
 
 	/**
-	 * Overrides RL\WikiModule::getType()
 	 * @return string RL\Module::LOAD_STYLES or RL\Module::LOAD_GENERAL
 	 */
 	public function getType() {
@@ -127,18 +149,22 @@ class GadgetResourceLoaderModule extends RL\WikiModule {
 			: RL\Module::LOAD_GENERAL;
 	}
 
+	/** @inheritDoc */
 	public function getMessages() {
 		return $this->getGadget()->getMessages();
 	}
 
+	/** @inheritDoc */
 	public function getSkins(): ?array {
 		return $this->getGadget()->getRequiredSkins() ?: null;
 	}
 
+	/** @inheritDoc */
 	public function requiresES6(): bool {
 		return $this->getGadget()->requiresES6();
 	}
 
+	/** @inheritDoc */
 	public function getGroup() {
 		return $this->requiresES6() ? 'es6-gadget' : self::GROUP_SITE;
 	}

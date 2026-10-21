@@ -1,13 +1,14 @@
 {
 	"@metadata": {
 		"authors": [
+			"Bennylin",
 			"Diki Ananta",
 			"NoiX180",
 			"Sumbukompor"
 		]
 	},
 	"thanks-desc": "Nambah pranala atur panuwun marang naraguna awit besutané, tanggapané, lsp.",
-	"thanks-thank": "{{GENDER:$1|{{GENDER:$2|matur nuwun}}}}",
+	"thanks-thank": "matur nuwun",
 	"thanks-thanked": "{{GENDER:$1|{{GENDER:$2|wis matur nuwun}}}}",
 	"thanks-button-thank": "{{GENDER:$1|{{GENDER:$2|Matur nuwun}}}}",
 	"thanks-button-thanked": "{{GENDER:$1|{{GENDER:$2|Wis matur nuwun}}}}",
@@ -17,7 +18,6 @@
 	"thanks-error-log-deleted": "Èntri log kang kaarepaké wis kabusek lan ora bisa kawènèhan atur panuwun.",
 	"thanks-error-invalidrevision": "ID révisi ora trep.",
 	"thanks-error-revdeleted": "Ora bisa ngirim atur panuwun amarga révisi wis kabusek.",
-	"thanks-error-notitle": "Sesirah kaca ora bisa kajupuk",
 	"thanks-error-invalidrecipient": "Ora ana kang nampa kang trep",
 	"thanks-error-invalidrecipient-bot": "Ora bisa matur nuwun marang bot",
 	"thanks-error-invalidrecipient-self": "Kowé ora bisa matur nuwun marang kowé dhéwé",

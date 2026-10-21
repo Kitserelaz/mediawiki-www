@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Balajijagadesh"
+		]
+	},
+	"cirrussearch-pref-label": "புதிய தேடல்",
+	"cirrussearch-give-feedback": "உங்களுடைய கருத்தைத் தெரிவியுங்கள்",
+	"prefs-completion": "தேடல் முழுமை",
+	"cirrussearch-completion-profile-fuzzy-pref-name": "இயல்பிருப்பு (பரிந்துரைக்கப்படுகிறது)",
+	"cirrussearch-explore-similar-related-none": "தொடர்புடைய பக்கங்கள் இல்லை"
+}

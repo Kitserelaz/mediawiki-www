@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Soumaya"
+		]
+	},
+	"uploadslink-desc": "Adds a link to the current user's uploads listing to the personal tools menu and a link to a user's upload listing to a sidebar Tools menu",
+	"uploadslink-portlet-label": "kẽesgo",
+	"tooltip-pt-uploads": "Y sẽn talld faayls nins sõorã",
+	"uploadslink-toobox-label": "{{GENDER:$1 User}} uploads yaa",
+	"tooltip-tb-uploads": "Sõre ningã for sēn na kin {{GENDER:$1|user}}"
+}

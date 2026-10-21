@@ -8,7 +8,10 @@
 			"Liuxinyu970226",
 			"Mywood",
 			"Onecountry",
+			"Peterxy12",
 			"PhiLiP",
+			"SaoMikoto",
+			"Saoutax",
 			"Xiplus",
 			"Xzonn",
 			"Yfdyh000",
@@ -56,5 +59,8 @@
 	"replacetext_no_compress": "您的wiki会无法使用ReplaceText：当$wgCompressRevisions设置为true时文字替换无法运行。",
 	"replacetext_no_external_stores": "您的wiki会无法使用ReplaceText：当$wgExternalStores不为空时文字替换无法运行。",
 	"right-replacetext": "在整个wiki进行字符串替换",
-	"action-replacetext": "在整个wiki进行字符串替换"
+	"action-replacetext": "在整个wiki进行字符串替换",
+	"replacetext-summary-label": "替换编辑的摘要（留空则使用默认摘要）",
+	"tag-replacetext": "[[Special:ReplaceText|ReplaceText]]",
+	"tag-replacetext-description": "通过[[{{#Special:ReplaceText}}]]作出的自动编辑。"
 }

@@ -9,9 +9,9 @@
  * Abstract base class for dialogs that allow to insert and edit MediaWiki transclusions, i.e. a
  * sequence of one or more template invocations that strictly belong to each other (e.g. because
  * they are unbalanced), possibly mixed with raw wikitext snippets. Currently used for:
- * - {@see ve.ui.MWTransclusionDialog} for arbitrary transclusions. Registered via the name
+ * - {@link ve.ui.MWTransclusionDialog} for arbitrary transclusions. Registered via the name
  *   "transclusion".
- * - {@see ve.ui.MWCitationDialog} in the Cite extension for the predefined citation types from
+ * - {@link ve.ui.MWCitationDialog} in the Cite extension for the predefined citation types from
  *   [[MediaWiki:visualeditor-cite-tool-definition.json]]. These are strictly limited to a single
  *   template invocation. Registered via the name "cite".
  *
@@ -49,7 +49,7 @@ OO.inheritClass( ve.ui.MWTemplateDialog, ve.ui.NodeDialog );
 ve.ui.MWTemplateDialog.static.modelClasses = [ ve.dm.MWTransclusionNode ];
 
 /**
- * Configuration for the {@see ve.ui.MWTwoPaneTransclusionDialogLayout} used in this dialog.
+ * Configuration for the {@link ve.ui.MWTwoPaneTransclusionDialogLayout} used in this dialog.
  *
  * @static
  * @property {Object}
@@ -250,11 +250,8 @@ ve.ui.MWTemplateDialog.prototype.getPageFromPart = function ( part ) {
 /**
  * @inheritdoc
  */
-ve.ui.MWTemplateDialog.prototype.getSelectedNode = function ( data ) {
+ve.ui.MWTemplateDialog.prototype.getSelectedNode = function ( data = {} ) {
 	const selectedNode = ve.ui.MWTemplateDialog.super.prototype.getSelectedNode.call( this );
-
-	// Data initialization
-	data = data || {};
 
 	// Require template to match if specified
 	if ( selectedNode && data.template && !selectedNode.isSingleTemplate( data.template ) ) {
@@ -360,7 +357,7 @@ ve.ui.MWTemplateDialog.prototype.getActionProcess = function ( action ) {
 	if ( action === 'done' ) {
 		return new OO.ui.Process( () => {
 			const deferred = ve.createDeferred();
-			this.checkRequiredParameters().done( () => {
+			this.checkRequiredParameters().then( () => {
 				const surfaceModel = this.getFragment().getSurface(),
 					obj = this.transclusionModel.getPlainObject();
 
@@ -390,7 +387,7 @@ ve.ui.MWTemplateDialog.prototype.getActionProcess = function ( action ) {
 				}
 				const parts = this.transclusionModel.getParts();
 				for ( let i = 0; i < parts.length; i++ ) {
-					// Only {@see ve.dm.MWTemplateModel} have a title
+					// Only {@link ve.dm.MWTemplateModel} have a title
 					const title = parts[ i ].getTitle && parts[ i ].getTitle();
 					if ( title ) {
 						templateEvent.template_names.push( title );
@@ -399,7 +396,7 @@ ve.ui.MWTemplateDialog.prototype.getActionProcess = function ( action ) {
 				mw.track( 'event.VisualEditorTemplateDialogUse', templateEvent );
 
 				return modelPromise.then( () => {
-					this.close( { action: action } ).closed.always( this.popPending.bind( this ) );
+					this.close( { action } ).closed.always( this.popPending.bind( this ) );
 				} );
 			} ).always( deferred.resolve );
 
@@ -413,8 +410,7 @@ ve.ui.MWTemplateDialog.prototype.getActionProcess = function ( action ) {
 /**
  * @inheritdoc
  */
-ve.ui.MWTemplateDialog.prototype.getSetupProcess = function ( data ) {
-	data = data || {};
+ve.ui.MWTemplateDialog.prototype.getSetupProcess = function ( data = {} ) {
 	return ve.ui.MWTemplateDialog.super.prototype.getSetupProcess.call( this, data )
 		.next( () => {
 			let promise;

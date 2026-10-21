@@ -2,9 +2,6 @@
 
 namespace Flow\Maintenance;
 
-use BatchRowIterator;
-use BatchRowUpdate;
-use BatchRowWriter;
 use Exception;
 use Flow\Container;
 use Flow\Model\UUID;
@@ -17,8 +14,11 @@ use MediaWiki\MediaWikiServices;
 use MediaWiki\Status\Status;
 use MediaWiki\StubObject\StubUserLang;
 use MediaWiki\Title\Title;
+use MediaWiki\Utils\BatchRowIterator;
+use MediaWiki\Utils\BatchRowUpdate;
+use MediaWiki\Utils\BatchRowWriter;
+use MediaWiki\Utils\RowUpdateGenerator;
 use MediaWiki\WikiMap\WikiMap;
-use RowUpdateGenerator;
 use RuntimeException;
 use stdClass;
 use Wikimedia\Rdbms\IDBAccessObject;
@@ -50,7 +50,7 @@ class FlowUpdateWorkflowPageId extends LoggedUpdateMaintenance {
 	 * @return true
 	 */
 	public function doDbUpdates() {
-		global $wgFlowCluster, $wgLang;
+		global $wgFlowCluster;
 
 		$dbw = Container::get( 'db.factory' )->getDB( DB_PRIMARY );
 
@@ -66,7 +66,8 @@ class FlowUpdateWorkflowPageId extends LoggedUpdateMaintenance {
 		] );
 		$it->setCaller( __METHOD__ );
 
-		$gen = new WorkflowPageIdUpdateGenerator( $wgLang );
+		$lang = $this->getServiceContainer()->getContentLanguage();
+		$gen = new WorkflowPageIdUpdateGenerator( $lang );
 		$writer = new BatchRowWriter( $dbw, 'flow_workflow', $wgFlowCluster );
 		$writer->setCaller( __METHOD__ );
 		$updater = new BatchRowUpdate( $it, $writer, $gen );

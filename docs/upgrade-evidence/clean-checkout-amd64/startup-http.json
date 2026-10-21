@@ -1,0 +1,58 @@
+{
+  "project": "cloudwiki-upgrade-restore1462",
+  "environment": "local development rehearsal",
+  "checks": [
+    {
+      "url": "https://test.localhost/api.php?action=query&meta=siteinfo&format=json",
+      "http_status": 200,
+      "redirects_followed": true
+    },
+    {
+      "url": "https://test.localhost/wiki/Main_Page",
+      "http_status": 200,
+      "redirects_followed": true
+    },
+    {
+      "url": "https://meta.localhost/api.php?action=query&meta=siteinfo&format=json",
+      "http_status": 200,
+      "redirects_followed": true
+    },
+    {
+      "url": "https://meta.localhost/wiki/Main_Page",
+      "http_status": 200,
+      "redirects_followed": true
+    },
+    {
+      "url": "https://login.localhost/api.php?action=query&meta=siteinfo&format=json",
+      "http_status": 200,
+      "redirects_followed": true
+    },
+    {
+      "url": "https://login.localhost/wiki/Main_Page",
+      "http_status": 200,
+      "redirects_followed": true
+    },
+    {
+      "url": "https://test.localhost/wiki/Special:UserLogin",
+      "http_status": 200,
+      "redirects_followed": true
+    },
+    {
+      "url": "https://counter.localhost/heart-beat",
+      "http_status": 200,
+      "redirects_followed": true
+    },
+    {
+      "url": "https://test.localhost/extensions/MobileFrontend/resources/dist/mobile.startup.js",
+      "http_status": 200,
+      "redirects_followed": true
+    }
+  ],
+  "status": "passed",
+  "update_exit_code": 0,
+  "browser_login_sso_global_logout": "passed",
+  "browser_http_500_responses": 0,
+  "source_mounts": false,
+  "env_file": ".env.upgrade-candidate",
+  "left_running": true
+}

@@ -2,7 +2,6 @@
 
 namespace Flow\Maintenance;
 
-use BatchRowIterator;
 use Flow\BoardMover;
 use Flow\Container;
 use Flow\Content\BoardContent;
@@ -14,6 +13,7 @@ use MediaWiki\Maintenance\Maintenance;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Title\Title;
+use MediaWiki\Utils\BatchRowIterator;
 use MediaWiki\WikiMap\WikiMap;
 
 $IP = getenv( 'MW_INSTALL_PATH' );
@@ -56,7 +56,7 @@ class FlowFixInconsistentBoards extends Maintenance {
 		parent::__construct();
 
 		$this->addDescription( 'Changes Flow boards and their topics to be associated with their ' .
-			'current title, based on the JSON content.  Must be run separately for each affected wiki.' );
+			'current title, based on the JSON content. Must be run separately for each affected wiki.' );
 
 		$this->addOption( 'dry-run', 'Only prints the board names, without changing anything.' );
 		$this->addOption( 'namespaceName', 'Name of namespace to check, otherwise all', false, true );
@@ -72,8 +72,6 @@ class FlowFixInconsistentBoards extends Maintenance {
 	 * @return false|void
 	 */
 	public function execute() {
-		global $wgLang;
-
 		$this->dbFactory = Container::get( 'db.factory' );
 		$this->workflowLoaderFactory = Container::get( 'factory.loader.workflow' );
 		$this->boardMover = Container::get( 'board_mover' );
@@ -94,7 +92,8 @@ class FlowFixInconsistentBoards extends Maintenance {
 
 		if ( $this->hasOption( 'namespaceName' ) ) {
 			$namespaceName = $this->getOption( 'namespaceName' );
-			$namespaceId = $wgLang->getNsIndex( $namespaceName );
+			$lang = $this->getServiceContainer()->getContentLanguage();
+			$namespaceId = $lang->getNsIndex( $namespaceName );
 
 			if ( !$namespaceId ) {
 				$this->error( "'$namespaceName' is not a valid namespace name" );
@@ -135,10 +134,10 @@ class FlowFixInconsistentBoards extends Maintenance {
 				}
 				$workflowId = $content->getWorkflowId();
 				if ( $workflowId === null ) {
-					// See T153320.  If the workflow exists, it could
+					// See T153320. If the workflow exists, it could
 					// be looked up by title/page ID and the JSON could
 					// be fixed with an edit.
-					// Otherwise, the core revision has to be deleted.  This
+					// Otherwise, the core revision has to be deleted. This
 					// script does not do either of these things.
 					$this->error( "ERROR: '$coreTitle' JSON content does not have a valid workflow ID." );
 					continue;
@@ -148,7 +147,7 @@ class FlowFixInconsistentBoards extends Maintenance {
 
 				try {
 					$workflow = $this->workflowLoaderFactory->loadWorkflowById( false, $workflowId );
-				} catch ( UnknownWorkflowIdException $ex ) {
+				} catch ( UnknownWorkflowIdException ) {
 					// This is a different error (a core page refers to
 					// a non-existent workflow), which this script can not fix.
 					$this->error( "ERROR: '$coreTitle' refers to workflow ID " .
@@ -193,7 +192,7 @@ class FlowFixInconsistentBoards extends Maintenance {
 			}
 
 			$action = $dryRun ? 'identified as fixable' : 'fixed';
-			$this->output( "\nChecked a total of $checkedCount Flow boards.  Of those, " .
+			$this->output( "\nChecked a total of $checkedCount Flow boards. Of those, " .
 				"$inconsistentCount boards had an inconsistent title; $fixableInconsistentCount " .
 				"were $action.\n" );
 			if ( $limit !== null && $fixableInconsistentCount >= $limit ) {

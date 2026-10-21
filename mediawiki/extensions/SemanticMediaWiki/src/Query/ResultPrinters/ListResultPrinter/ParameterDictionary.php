@@ -1,0 +1,51 @@
+<?php
+
+namespace SMW\Query\ResultPrinters\ListResultPrinter;
+
+/**
+ * Class ParameterDictionary
+ *
+ * @license GPL-2.0-or-later
+ * @since 3.0
+ *
+ * @author Stephan Gambke
+ */
+class ParameterDictionary {
+
+	private array $configuration = [];
+
+	/**
+	 * @param string|array<string,mixed> $setting
+	 * @param mixed $value
+	 */
+	public function set( $setting, $value = null ): void {
+		if ( !is_array( $setting ) ) {
+			$setting = [ $setting => $value ];
+		}
+
+		$this->configuration = array_replace( $this->configuration, $setting );
+	}
+
+	/**
+	 * @param string $setting
+	 * @param mixed $default
+	 *
+	 * @return mixed
+	 */
+	public function get( $setting, $default = '' ) {
+		return $this->configuration[$setting] ?? $default;
+	}
+
+	/**
+	 * @param string|string[] $setting
+	 * @param mixed $value
+	 */
+	public function setDefault( $setting, $value = null ): void {
+		if ( !is_array( $setting ) ) {
+			$setting = [ $setting => $value ];
+		}
+
+		$this->configuration = array_replace( $setting, $this->configuration );
+	}
+
+}

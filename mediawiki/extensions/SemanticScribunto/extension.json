@@ -1,0 +1,40 @@
+{
+	"name": "SemanticScribunto",
+	"version": "2.3.2",
+	"author": [
+		"James Hong Kong",
+		"[https://www.semantic-mediawiki.org/wiki/User:Oetterer Tobias Oetterer]"
+	],
+	"url": "https://github.com/SemanticMediaWiki/SemanticScribunto/",
+	"descriptionmsg": "smw-scribunto-desc",
+	"namemsg": "smw-scribunto-title",
+	"license-name": "GPL-2.0-or-later",
+	"type": "semantic",
+	"requires": {
+		"MediaWiki": ">= 1.39",
+		"extensions": {
+			"Scribunto": "*",
+			"SemanticMediaWiki": ">= 4.1"
+		}
+	},
+	"AutoloadNamespaces": {
+		"SMW\\Scribunto\\": "src/"
+	},
+	"TestAutoloadNamespaces": {
+		"SMW\\Scribunto\\Tests\\": "tests/phpunit/"
+	},
+	"Hooks": {
+		"ScribuntoExternalLibraries": "SMW\\Scribunto\\HooksHandler::onScribuntoExternalLibraries"
+	},
+	"callback": "SMW\\Scribunto\\SemanticScribunto::initExtension",
+	"MessagesDirs": {
+		"SemanticScribunto": [
+			"i18n"
+		]
+	},
+	"ExtensionFunctions": [
+		"SMW\\Scribunto\\SemanticScribunto::onExtensionFunction"
+	],
+	"load_composer_autoloader":true,
+	"manifest_version": 2
+}

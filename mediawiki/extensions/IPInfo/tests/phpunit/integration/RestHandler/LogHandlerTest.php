@@ -2,15 +2,16 @@
 
 namespace MediaWiki\IPInfo\Test\Integration\RestHandler;
 
-use ArrayUtils;
-use DatabaseLogEntry;
-use LogPage;
-use ManualLogEntry;
+use MediaWiki\Block\Restriction\ActionRestriction;
 use MediaWiki\Context\RequestContext;
+use MediaWiki\IPInfo\HookHandler\PreferencesHandler;
 use MediaWiki\IPInfo\Info\BlockInfo;
 use MediaWiki\IPInfo\Rest\Handler\LogHandler;
 use MediaWiki\IPInfo\Rest\Presenter\DefaultPresenter;
 use MediaWiki\Linker\LinkTarget;
+use MediaWiki\Logging\DatabaseLogEntry;
+use MediaWiki\Logging\LogPage;
+use MediaWiki\Logging\ManualLogEntry;
 use MediaWiki\MainConfigNames;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Request\FauxRequest;
@@ -20,6 +21,8 @@ use MediaWiki\Rest\RequestData;
 use MediaWiki\Title\TitleValue;
 use MediaWiki\User\UserFactory;
 use MediaWiki\User\UserIdentity;
+use Wikimedia\ArrayUtils\ArrayUtils;
+use Wikimedia\IPUtils;
 use Wikimedia\Message\MessageValue;
 
 /**
@@ -75,13 +78,16 @@ class LogHandlerTest extends HandlerTestCase {
 			$services->getService( 'IPInfoInfoManager' ),
 			$services->getConnectionProvider(),
 			$services->getPermissionManager(),
-			$services->getUserOptionsLookup(),
 			$services->getUserFactory(),
 			$services->getJobQueueGroup(),
 			$services->getLanguageFallback(),
 			$services->getUserIdentityUtils(),
 			$services->getUserIdentityLookup(),
-			$services->get( 'IPInfoTempUserIPLookup' )
+			$services->get( 'IPInfoTempUserIPLookup' ),
+			$services->get( 'IPInfoAnonymousUserIPLookup' ),
+			$services->get( 'IPInfoPermissionManager' ),
+			$services->getReadOnlyMode(),
+			$services->getHookContainer()
 		);
 	}
 
@@ -167,7 +173,7 @@ class LogHandlerTest extends HandlerTestCase {
 			->getUser();
 
 		$anonTarget = new TitleValue( NS_USER, self::$anonUser->getName() );
-		$otherTarget = new TitleValue( NS_MAIN, 'Test' );
+		$otherTarget = new TitleValue( NS_MAIN, $this->getTestUser()->getUser()->getName() );
 
 		self::$logEntryByTempUserId = $this->makeLogEntry(
 			self::TEST_LOG_TYPE,
@@ -263,98 +269,98 @@ class LogHandlerTest extends HandlerTestCase {
 
 	public static function provideErrorCases(): iterable {
 		yield 'anonymous user without permission' => [
-			fn () => self::$anonUser,
-			fn () => self::$logEntryByAnonId,
+			static fn () => self::$anonUser,
+			static fn () => self::$logEntryByAnonId,
 			self::VALID_CSRF_TOKEN,
 			[],
 			[ 'ipinfo-rest-access-denied', 401 ]
 		];
 
 		yield 'regular user without permission' => [
-			fn () => self::$regularUser,
-			fn () => self::$logEntryByAnonId,
+			static fn () => self::$regularUser,
+			static fn () => self::$logEntryByAnonId,
 			self::VALID_CSRF_TOKEN,
 			[],
 			[ 'ipinfo-rest-access-denied', 403 ]
 		];
 
 		yield 'user with correct permissions but without accepted agreement' => [
-			fn () => self::$testSysop,
-			fn () => self::$logEntryByAnonId,
+			static fn () => self::$testSysop,
+			static fn () => self::$logEntryByAnonId,
 			self::VALID_CSRF_TOKEN,
 			[ 'ipinfo-beta-feature-enable' => 1 ],
 			[ 'ipinfo-rest-access-denied', 403 ]
 		];
 
 		yield 'blocked user with correct permissions and accepted agreement' => [
-			fn () => self::$blockedSysop,
-			fn () => self::$logEntryByAnonId,
+			static fn () => self::$blockedSysop,
+			static fn () => self::$logEntryByAnonId,
 			self::VALID_CSRF_TOKEN,
-			[ 'ipinfo-beta-feature-enable' => 1, 'ipinfo-use-agreement' => 1 ],
+			[ 'ipinfo-beta-feature-enable' => 1, PreferencesHandler::IPINFO_USE_AGREEMENT => 1 ],
 			[ 'ipinfo-rest-access-denied', 403 ]
 		];
 
 		yield 'missing CSRF token' => [
-			fn () => self::$testSysop,
-			fn () => self::$logEntryByAnonId,
+			static fn () => self::$testSysop,
+			static fn () => self::$logEntryByAnonId,
 			null,
-			[ 'ipinfo-beta-feature-enable' => 1, 'ipinfo-use-agreement' => 1 ],
+			[ 'ipinfo-beta-feature-enable' => 1, PreferencesHandler::IPINFO_USE_AGREEMENT => 1 ],
 			[ 'rest-badtoken-missing', 403 ]
 		];
 
 		yield 'mismatched CSRF token' => [
-			fn () => self::$testSysop,
-			fn () => self::$logEntryByAnonId,
+			static fn () => self::$testSysop,
+			static fn () => self::$logEntryByAnonId,
 			'some-bad-token',
-			[ 'ipinfo-beta-feature-enable' => 1, 'ipinfo-use-agreement' => 1 ],
+			[ 'ipinfo-beta-feature-enable' => 1, PreferencesHandler::IPINFO_USE_AGREEMENT => 1 ],
 			[ 'rest-badtoken', 403 ]
 		];
 
 		yield 'missing log entry' => [
-			fn () => self::$testSysop,
+			static fn () => self::$testSysop,
 			fn () => self::TEST_MISSING_LOG_ID,
 			self::VALID_CSRF_TOKEN,
-			[ 'ipinfo-beta-feature-enable' => 1, 'ipinfo-use-agreement' => 1 ],
+			[ 'ipinfo-beta-feature-enable' => 1, PreferencesHandler::IPINFO_USE_AGREEMENT => 1 ],
 			[ 'ipinfo-rest-log-nonexistent', 404 ]
 		];
 
 		yield 'restricted log entry with user not authorized to view it' => [
-			fn () => self::$testSysop,
-			fn () => self::$restrictedLogEntryByAnonId,
+			static fn () => self::$testSysop,
+			static fn () => self::$restrictedLogEntryByAnonId,
 			self::VALID_CSRF_TOKEN,
-			[ 'ipinfo-beta-feature-enable' => 1, 'ipinfo-use-agreement' => 1 ],
+			[ 'ipinfo-beta-feature-enable' => 1, PreferencesHandler::IPINFO_USE_AGREEMENT => 1 ],
 			[ 'ipinfo-rest-log-denied', 403 ]
 		];
 
 		yield 'fully deleted log entry with user not authorized to view it' => [
-			fn () => self::$ipInfoViewer,
-			fn () => self::$fullyDeletedLogEntryByAnonId,
+			static fn () => self::$ipInfoViewer,
+			static fn () => self::$fullyDeletedLogEntryByAnonId,
 			self::VALID_CSRF_TOKEN,
-			[ 'ipinfo-beta-feature-enable' => 1, 'ipinfo-use-agreement' => 1 ],
+			[ 'ipinfo-beta-feature-enable' => 1, PreferencesHandler::IPINFO_USE_AGREEMENT => 1 ],
 			[ 'ipinfo-rest-log-denied', 403 ]
 		];
 
 		yield 'partially deleted log entry with user not authorized to view it' => [
-			fn () => self::$ipInfoViewer,
-			fn () => self::$deletedLogEntryByAnonId,
+			static fn () => self::$ipInfoViewer,
+			static fn () => self::$deletedLogEntryByAnonId,
 			self::VALID_CSRF_TOKEN,
-			[ 'ipinfo-beta-feature-enable' => 1, 'ipinfo-use-agreement' => 1 ],
+			[ 'ipinfo-beta-feature-enable' => 1, PreferencesHandler::IPINFO_USE_AGREEMENT => 1 ],
 			[ 'ipinfo-rest-log-registered', 404 ]
 		];
 
 		yield 'suppressed log entry with user not authorized to view it' => [
-			fn () => self::$ipInfoViewer,
-			fn () => self::$suppressedLogEntryByAnonId,
+			static fn () => self::$ipInfoViewer,
+			static fn () => self::$suppressedLogEntryByAnonId,
 			self::VALID_CSRF_TOKEN,
-			[ 'ipinfo-beta-feature-enable' => 1, 'ipinfo-use-agreement' => 1 ],
+			[ 'ipinfo-beta-feature-enable' => 1, PreferencesHandler::IPINFO_USE_AGREEMENT => 1 ],
 			[ 'ipinfo-rest-log-registered', 404 ]
 		];
 
 		yield 'log entry by named user' => [
-			fn () => self::$testSysop,
-			fn () => self::$logEntryByNamedUserId,
+			static fn () => self::$testSysop,
+			static fn () => self::$logEntryByNamedUserId,
 			self::VALID_CSRF_TOKEN,
-			[ 'ipinfo-beta-feature-enable' => 1, 'ipinfo-use-agreement' => 1 ],
+			[ 'ipinfo-beta-feature-enable' => 1, PreferencesHandler::IPINFO_USE_AGREEMENT => 1 ],
 			[ 'ipinfo-rest-log-registered', 404 ]
 		];
 	}
@@ -386,7 +392,7 @@ class LogHandlerTest extends HandlerTestCase {
 		$user = $authorityProvider();
 		$this->setUserOptions( $user, [
 			'ipinfo-beta-feature-enable' => 1,
-			'ipinfo-use-agreement' => 1
+			PreferencesHandler::IPINFO_USE_AGREEMENT => 1
 		] );
 
 		$blockInfo = new BlockInfo();
@@ -408,15 +414,18 @@ class LogHandlerTest extends HandlerTestCase {
 			$expectedSubjects = [ $performer->getName() ];
 		}
 
+		$this->assertSame( 200, $response->getStatusCode() );
+
 		foreach ( $body['info'] as $i => $item ) {
 			$geoData = $item['data']['ipinfo-source-geoip2'];
 
-			$this->assertSame( 200, $response->getStatusCode() );
 			$this->assertSame( $expectedSubjects[$i], $item['subject'] );
 			$this->assertSame( 'United States', $geoData['countryNames']['en'] );
 			$this->assertArrayNotHasKey( 'coordinates', $geoData );
 
 			$this->assertSame( $blockInfo->jsonSerialize(), $item['data']['ipinfo-source-block'] );
+
+			$this->assertSame( 'ipv4', $item['data']['ipinfo-source-ipversion']['version'] );
 
 			$contribsInfo = $item['data']['ipinfo-source-contributions'];
 
@@ -450,18 +459,18 @@ class LogHandlerTest extends HandlerTestCase {
 
 	public static function provideLogEntryCases(): iterable {
 		$allUsers = [
-			'user with basic IPInfo access' => fn () => self::$ipInfoViewer,
-			'user with IPInfo and deleted history access' => fn () => self::$testSysop
+			'user with basic IPInfo access' => static fn () => self::$ipInfoViewer,
+			'user with IPInfo and deleted history access' => static fn () => self::$testSysop
 		];
 
 		$singleResultLogEntries = [
-			'log entry by temporary user' => fn () => self::$logEntryByTempUserId,
-			'log entry by anonymous user' => fn () => self::$logEntryByAnonId,
-			'log entry with anonymous target' => fn () => self::$logEntryWithAnonTargetId,
+			'log entry by temporary user' => static fn () => self::$logEntryByTempUserId,
+			'log entry by anonymous user' => static fn () => self::$logEntryByAnonId,
+			'log entry with anonymous target' => static fn () => self::$logEntryWithAnonTargetId,
 		];
 
 		$logEntriesWithTwoResults = [
-			'log entry by anonymous user with anonymous target' => fn () => self::$logEntryByAnonWithAnonTargetId,
+			'log entry by anonymous user with anonymous target' => static fn () => self::$logEntryByAnonWithAnonTargetId,
 		];
 
 		$tempUserConfig = [
@@ -473,37 +482,135 @@ class LogHandlerTest extends HandlerTestCase {
 		yield from ArrayUtils::cartesianProduct( $allUsers, $logEntriesWithTwoResults, $tempUserConfig, [ 2 ] );
 
 		$deletedLogEntries = [
-			'fully deleted log entry' => fn () => self::$fullyDeletedLogEntryByAnonId,
-			'partially deleted log entry' => fn () => self::$deletedLogEntryByAnonId,
+			'fully deleted log entry' => static fn () => self::$fullyDeletedLogEntryByAnonId,
+			'partially deleted log entry' => static fn () => self::$deletedLogEntryByAnonId,
 		];
 
 		yield from ArrayUtils::cartesianProduct(
-			[ fn () => self::$testSysop ],
+			[ static fn () => self::$testSysop ],
 			$deletedLogEntries,
 			$tempUserConfig,
 			[ 1 ]
 		);
 
 		$restrictedLogEntries = [
-			'log entry with restricted log type' => fn () => self::$restrictedLogEntryByAnonId
+			'log entry with restricted log type' => static fn () => self::$restrictedLogEntryByAnonId
 		];
 
 		yield from ArrayUtils::cartesianProduct(
-			[ fn () => self::$ipInfoViewer ],
+			[ static fn () => self::$ipInfoViewer ],
 			$restrictedLogEntries,
 			$tempUserConfig,
 			[ 1 ]
 		);
 
 		$suppressedLogEntries = [
-			'suppressed log entry with user authorized to view it' => fn () => self::$suppressedLogEntryByAnonId,
+			'suppressed log entry with user authorized to view it' => static fn () => self::$suppressedLogEntryByAnonId,
 		];
 
 		yield from ArrayUtils::cartesianProduct(
-			[ fn () => self::$suppressedIpInfoViewer ],
+			[ static fn () => self::$suppressedIpInfoViewer ],
 			$suppressedLogEntries,
 			$tempUserConfig,
 			[ 1 ]
 		);
+	}
+
+	public function testAccessAllowedForPartiallyBlockedUser(): void {
+		$performer = $this->getTestUser( [ 'sysop' ] )->getAuthority();
+		$this->setUserOptions( $performer, [
+			'ipinfo-beta-feature-enable' => 1,
+			PreferencesHandler::IPINFO_USE_AGREEMENT => 1
+		] );
+
+		$blockStatus = $this->getServiceContainer()
+			->getBlockUserFactory()
+			->newBlockUser(
+				$performer->getUser(),
+				$this->getTestSysop()->getAuthority(),
+				'infinity',
+				'',
+				[],
+				[ new ActionRestriction( 0, 'move' ) ]
+			)
+			->placeBlock();
+		$this->assertStatusGood( $blockStatus, 'Block was not placed' );
+
+		$request = self::getRequestData( self::$logEntryByAnonId );
+		$response = $this->executeWithUser( $request, $performer );
+		$body = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertCount( 1, $body['info'] );
+	}
+
+	public function testShouldHandleAnonymousUserIsKnownLogEntry() {
+		$this->markTestSkippedIfExtensionNotLoaded( 'Abuse Filter' );
+
+		// Stub out an AbuseFilter hit for the IP being target. Only AF will know about this IP.
+		$this->getDb()->newInsertQueryBuilder()
+			->insertInto( 'abuse_filter_log' )
+			->row( [
+				'afl_global' => 0,
+				'afl_filter_id' => 1,
+				'afl_user' => 0,
+				'afl_user_text' => '1.2.3.5',
+				'afl_ip_hex' => IPUtils::toHex( '1.2.3.5' ),
+				'afl_action' => 'edit',
+				'afl_actions' => 'disallow',
+				'afl_var_dump' => 'tt:1',
+				'afl_timestamp' => $this->getDB()->timestamp( '20240101000000' ),
+				'afl_namespace' => 0,
+				'afl_title' => 'Main Page'
+			] )
+			->caller( __METHOD__ )
+			->execute();
+
+		// Mock a log entry targeting the IP
+		$anonTarget = new TitleValue( NS_USER, '1.2.3.5' );
+		$performer = $this->getTestSysop();
+		$this->setUserOptions(
+			$performer->getAuthority(),
+			[ 'ipinfo-beta-feature-enable' => 1, 'ipinfo-use-agreement' => 1 ]
+		);
+		$logId = $this->makeLogEntry(
+			self::TEST_LOG_TYPE,
+			$performer->getUserIdentity(),
+			$anonTarget
+		);
+
+		// Assert that the user is still found, assuming the performer has all relevant access permissions,
+		$request = self::getRequestData( $logId, self::VALID_CSRF_TOKEN );
+		$response = $this->executeWithUser( $request, $performer->getAuthority() );
+		$body = json_decode( $response->getBody()->getContents(), true );
+		$this->assertCount( 1, $body['info'] );
+	}
+
+	public function testShouldHandleUnknownIPLogEntry() {
+		$this->expectExceptionObject(
+			new LocalizedHttpException(
+				new MessageValue( 'ipinfo-rest-log-default' ),
+				404
+			)
+		);
+
+		// Mock a log entry targeting the IP
+		$anonTarget = new TitleValue( NS_USER, '1.2.3.7' );
+		$performer = $this->getTestSysop();
+		$this->setUserOptions(
+			$performer->getAuthority(),
+			[ 'ipinfo-beta-feature-enable' => 1, 'ipinfo-use-agreement' => 1 ]
+		);
+		$logId = $this->makeLogEntry(
+			self::TEST_LOG_TYPE,
+			$performer->getUserIdentity(),
+			$anonTarget
+		);
+
+		// Assert that the user cannot be found, assuming the performer has all relevant access permissions,
+		// because the target is not known
+		$request = self::getRequestData( $logId, self::VALID_CSRF_TOKEN );
+		$response = $this->executeWithUser( $request, $performer->getAuthority() );
 	}
 }

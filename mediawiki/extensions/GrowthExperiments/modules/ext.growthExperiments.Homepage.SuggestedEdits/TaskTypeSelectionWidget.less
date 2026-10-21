@@ -1,0 +1,129 @@
+@import 'mediawiki.skin.variables.less';
+@import '../utils/variables.less';
+@import '../utils/mixins.less';
+
+.mw-ge-homepage-taskTypeSelectionWidget {
+	&-error {
+		margin-bottom: 1em;
+	}
+
+	&-intro {
+		margin-bottom: 24px;
+	}
+
+	&-difficulty-level {
+		padding-top: 24px;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+
+		&-easy {
+			// Ideally we'd use :first-child but since each combination of
+			// icon, checkbox, label etc is not grouped in a single div, we can't
+			// do that. For now just use "easy" as the first child stand-in since
+			// we know it's listed first.
+			padding-top: 0;
+			color: @easyColor;
+		}
+
+		&-medium {
+			color: @mediumColor;
+		}
+
+		&-hard {
+			color: @hardColor;
+		}
+
+		.oo-ui-icon-difficulty-easy,
+		.oo-ui-icon-difficulty-medium,
+		.oo-ui-icon-difficulty-hard {
+			// align icon w/baseline of the h4
+			transform: translateY( 1px );
+			background-position: center bottom;
+		}
+	}
+
+	h4&-difficulty-level-label {
+		display: inline-block;
+		font-size: @headerFontSize;
+		color: inherit;
+		padding-top: 0;
+		padding-bottom: 0;
+		margin-top: 0;
+		margin-bottom: 0;
+		padding-left: 8px;
+	}
+
+	.oo-ui-checkboxMultiselectWidget {
+		padding-top: 5px;
+	}
+
+	p&-difficulty-level-desc {
+		font-size: 0.925em;
+		font-weight: bold;
+		color: @color-base;
+		padding-top: 5px;
+		flex-basis: 100%;
+	}
+
+	.oo-ui-widget&-checkbox-create,
+	.oo-ui-widget&-checkbox-image-recommendation,
+	.oo-ui-widget&-checkbox-section-image-recommendation,
+	.oo-ui-widget&-checkbox-link-recommendation {
+		.oo-ui-labelElement-label {
+			display: block;
+		}
+
+		.mw-ge-homepage-taskTypeSelectionWidget-additional-msg {
+			display: block;
+			padding-left: 6px;
+			margin-top: 4px;
+			.rel-font-size-and-line-height( @parentFontSize: 16px, @targetFontSize: 13px, @targetLineHeight: 19.5px );
+			color: @color-subtle;
+
+			.oo-ui-iconElement-icon {
+				// To overwrite ooui default icon min-width/height
+				min-height: unset;
+				min-width: unset;
+				width: 16px;
+				height: 16px;
+				margin: 0 4px 0 0;
+				// "Equals `#555` on `background-color: `#fff`, closest to `#54595d`."
+				opacity: @opacity-icon-subtle;
+			}
+
+			&-link-recommendation,
+			&-image-recommendation,
+			&-section-image-recommendation {
+				padding-left: unset;
+
+				span {
+					display: flex;
+					align-items: flex-start;
+				}
+			}
+
+			&-desktop {
+				.rel-font-size-and-line-height( @parentFontSize: 14px, @targetFontSize: 12.4px, @targetLineHeight: 17px );
+			}
+		}
+	}
+
+	&-create-title {
+		margin-top: 18px;
+		font-size: 0.925em;
+		font-weight: bold;
+		// TODO: Replace with Codex token.
+		color: #b32424;
+	}
+
+	&-create-body {
+		margin: 4px 0 12px;
+		.rel-font-size-and-line-height( @parentFontSize: 16px, @targetFontSize: 13px, @targetLineHeight: 19.5px );
+		color: @color-subtle;
+
+		&-desktop {
+			.rel-font-size-and-line-height( @parentFontSize: 14px, @targetFontSize: 12.4px, @targetLineHeight: 17px );
+		}
+	}
+}

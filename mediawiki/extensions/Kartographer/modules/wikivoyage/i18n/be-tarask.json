@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"Red Winged Duck",
+			"Renessaince"
+		]
+	},
+	"kartographer-wv-group": "Група:",
+	"kartographer-wv-warning-external-source-title": "Вонкавая крыніца зьвестак",
+	"kartographer-wv-warning-external-source-message": "Гэты зьмест знаходзіцца на вонкавым рэсурсе, яго падключэньне прывядзе да перадачы IP-адрасу й іншых вашых зьвестак прадстаўніку мапы.",
+	"kartographer-wv-warning-external-source-agree": "Я разумею",
+	"kartographer-wv-warning-external-source-disagree": "Скасаваць"
+}

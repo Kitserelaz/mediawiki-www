@@ -1,0 +1,1 @@
+ALTER TABLE /*_*/ratepage_contest ADD COLUMN `rpc_see_before_vote` tinyint(1) NOT NULL DEFAULT 0;

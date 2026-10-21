@@ -1,0 +1,16 @@
+{
+	"@metadata": {
+		"authors": [
+			"Brazal.dang",
+			"Jojit fb",
+			"Mrkczr"
+		]
+	},
+	"wikibasemediainfo-filepage-cancel-confirm": "Ang mga pagbabagong iyong nagawa ay hindi maidadagdag.",
+	"wikibasemediainfo-filepage-cancel-confirm-title": "Itapon an mga binago?",
+	"wikibasemediainfo-filepage-cancel-confirm-accept": "Itapon (ibasura)",
+	"wikibasemediainfo-statements-link-notice-dismiss": "Ipagwalang-bahala (dismiss)",
+	"wikibasemediainfo-remove-all-statements-confirm-title": "Tanggalin lahat",
+	"wikibasemediainfo-remove-all-statements-confirm-accept": "Tanggalin",
+	"wikibasemediainfo-time-calendar-julian": "Huliyano"
+}

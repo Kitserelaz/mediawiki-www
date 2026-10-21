@@ -68,10 +68,10 @@ ve.ui.MWHelpListToolGroup.prototype.setActive = function () {
 				$version
 					.removeClass( 'oo-ui-pendingElement-pending' )
 					.empty()
+					// API response 'vcs-url' is trusted to be safe
+					// eslint-disable-next-line local/no-unsanitized-href
 					.append( $( '<a>' )
 						.addClass( 've-ui-mwHelpListToolGroup-version-link' )
-						.attr( 'target', '_blank' )
-						.attr( 'rel', 'noopener' )
 						.attr( 'href', extension[ 'vcs-url' ] )
 						.append( $( '<span>' )
 							.addClass( 've-ui-mwHelpListToolGroup-version-label' )
@@ -83,6 +83,7 @@ ve.ui.MWHelpListToolGroup.prototype.setActive = function () {
 						.addClass( 've-ui-mwHelpListToolGroup-version-date' )
 						.text( extension[ 'vcs-date' ] )
 					);
+				ve.targetLinksToNewWindow( $version[ 0 ] );
 			} else {
 				$version.remove();
 			}
@@ -124,7 +125,7 @@ ve.ui.MWUserGuideTool.prototype.onUpdateState = function () {};
 ve.ui.MWUserGuideTool.prototype.onSelect = function () {
 	this.setActive( false );
 	const urlOrTitle = ve.msg( 'visualeditor-help-link' );
-	if ( urlOrTitle.indexOf( '//' ) !== -1 ) {
+	if ( urlOrTitle.includes( '//' ) ) {
 		window.open( urlOrTitle );
 	} else {
 		// This link used to be internal link to mw:, but that doesn't work
@@ -177,8 +178,8 @@ ve.ui.MWFeedbackDialogTool.prototype.onSelect = function () {
 
 			// If so configured, tell mw.feedback that we're posting to a remote wiki and set the title
 			const veConfig = mw.config.get( 'wgVisualEditorConfig' );
-			if ( veConfig.feedbackApiUrl ) {
-				feedbackConfig.apiUrl = veConfig.feedbackApiUrl;
+			if ( veConfig.feedbackAPIURL ) {
+				feedbackConfig.apiUrl = veConfig.feedbackAPIURL;
 				feedbackConfig.title = new mw.Title(
 					mode === 'source' ?
 						veConfig.sourceFeedbackTitle : veConfig.feedbackTitle
@@ -193,7 +194,7 @@ ve.ui.MWFeedbackDialogTool.prototype.onSelect = function () {
 			return new mw.Feedback( feedbackConfig );
 		} );
 	}
-	this.feedbackPromise.done( ( feedback ) => {
+	this.feedbackPromise.then( ( feedback ) => {
 		feedback.launch( {
 			message: ve.msg( 'visualeditor-feedback-defaultmessage', location.toString() )
 		} );

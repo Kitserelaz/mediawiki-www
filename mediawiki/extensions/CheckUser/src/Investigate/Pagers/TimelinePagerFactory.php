@@ -1,49 +1,27 @@
 <?php
 
-namespace MediaWiki\CheckUser\Investigate\Pagers;
+namespace MediaWiki\Extension\CheckUser\Investigate\Pagers;
 
-use MediaWiki\CheckUser\Hook\CheckUserFormatRowHook;
-use MediaWiki\CheckUser\Investigate\Services\TimelineService;
-use MediaWiki\CheckUser\Investigate\Utilities\DurationManager;
-use MediaWiki\CheckUser\Services\TokenQueryManager;
 use MediaWiki\Context\IContextSource;
+use MediaWiki\Extension\CheckUser\Hook\CheckUserFormatRowHook;
+use MediaWiki\Extension\CheckUser\Investigate\Services\TimelineService;
+use MediaWiki\Extension\CheckUser\Investigate\Utilities\DurationManager;
+use MediaWiki\Extension\CheckUser\Services\TokenQueryManager;
 use MediaWiki\Linker\LinkRenderer;
+use MediaWiki\Page\LinkBatchFactory;
 use Psr\Log\LoggerInterface;
 
 class TimelinePagerFactory implements PagerFactory {
-	private LinkRenderer $linkRenderer;
-	private CheckUserFormatRowHook $formatRowHookRunner;
-	private TokenQueryManager $tokenQueryManager;
-	private DurationManager $durationManager;
-	private TimelineService $service;
-	private TimelineRowFormatterFactory $rowFormatterFactory;
-	private LoggerInterface $logger;
-
-	/**
-	 * @param LinkRenderer $linkRenderer
-	 * @param CheckUserFormatRowHook $formatRowHookRunner
-	 * @param TokenQueryManager $tokenQueryManager
-	 * @param DurationManager $durationManager
-	 * @param TimelineService $service
-	 * @param TimelineRowFormatterFactory $rowFormatterFactory
-	 * @param LoggerInterface $logger
-	 */
 	public function __construct(
-		LinkRenderer $linkRenderer,
-		CheckUserFormatRowHook $formatRowHookRunner,
-		TokenQueryManager $tokenQueryManager,
-		DurationManager $durationManager,
-		TimelineService $service,
-		TimelineRowFormatterFactory $rowFormatterFactory,
-		LoggerInterface $logger
+		private readonly LinkRenderer $linkRenderer,
+		private readonly CheckUserFormatRowHook $formatRowHookRunner,
+		private readonly TokenQueryManager $tokenQueryManager,
+		private readonly DurationManager $durationManager,
+		private readonly TimelineService $service,
+		private readonly TimelineRowFormatterFactory $rowFormatterFactory,
+		private readonly LinkBatchFactory $linkBatchFactory,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->linkRenderer = $linkRenderer;
-		$this->formatRowHookRunner = $formatRowHookRunner;
-		$this->tokenQueryManager = $tokenQueryManager;
-		$this->durationManager = $durationManager;
-		$this->service = $service;
-		$this->rowFormatterFactory = $rowFormatterFactory;
-		$this->logger = $logger;
 	}
 
 	/**
@@ -51,7 +29,8 @@ class TimelinePagerFactory implements PagerFactory {
 	 */
 	public function createPager( IContextSource $context ): TimelinePager {
 		$rowFormatter = $this->rowFormatterFactory->createRowFormatter(
-			$context->getUser(), $context->getLanguage()
+			$context->getUser(),
+			$context->getLanguage()
 		);
 
 		return new TimelinePager(
@@ -62,7 +41,8 @@ class TimelinePagerFactory implements PagerFactory {
 			$this->durationManager,
 			$this->service,
 			$rowFormatter,
+			$this->linkBatchFactory,
 			$this->logger
-		 );
+		);
 	}
 }

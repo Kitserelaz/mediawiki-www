@@ -41,11 +41,12 @@ class ApiQueryGadgetCategories extends ApiQueryBase {
 	 */
 	private $neededNames;
 
-	private GadgetRepo $gadgetRepo;
-
-	public function __construct( ApiQuery $queryModule, $moduleName, GadgetRepo $gadgetRepo ) {
+	public function __construct(
+		ApiQuery $queryModule,
+		string $moduleName,
+		private readonly GadgetRepo $gadgetRepo,
+	) {
 		parent::__construct( $queryModule, $moduleName, 'gc' );
-		$this->gadgetRepo = $gadgetRepo;
 	}
 
 	public function execute() {
@@ -69,17 +70,17 @@ class ApiQueryGadgetCategories extends ApiQueryBase {
 		$gadgets = $this->gadgetRepo->getStructuredList();
 
 		if ( $gadgets ) {
-			foreach ( $gadgets as $category => $list ) {
-				if ( $this->neededNames && !isset( $this->neededNames[$category] ) ) {
+			foreach ( $gadgets as $section => $list ) {
+				if ( $this->neededNames && !isset( $this->neededNames[$section] ) ) {
 					continue;
 				}
 				$row = [];
 				if ( isset( $this->props['name'] ) ) {
-					$row['name'] = $category;
+					$row['name'] = $section;
 				}
 
-				if ( ( $category !== "" ) && isset( $this->props['title'] ) ) {
-					$row['desc'] = $this->msg( "gadget-section-$category" )->parse();
+				if ( ( $section !== "" ) && isset( $this->props['title'] ) ) {
+					$row['desc'] = $this->msg( "gadget-section-$section" )->parse();
 				}
 
 				if ( isset( $this->props['members'] ) ) {
@@ -93,6 +94,7 @@ class ApiQueryGadgetCategories extends ApiQueryBase {
 		$result->addValue( 'query', $this->getModuleName(), $data );
 	}
 
+	/** @inheritDoc */
 	public function getAllowedParams() {
 		return [
 			'prop' => [

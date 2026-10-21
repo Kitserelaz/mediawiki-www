@@ -1,5 +1,7 @@
 # Docker plan audit
 
+> Historical baseline: this document records the pre-upgrade MediaWiki 1.45.1 / PHP 8.3 containerization checks. It does not establish acceptance of the current 1.46.2 / PHP 8.4 candidate. See [current upgrade status](UPGRADE-PROGRESS.md), [clean-checkout/AMD64 results](UPGRADE-BUILD-VERIFICATION.md), and the [upgrade/recovery runbook](CREATEWIKI-MANAGEWIKI-UPGRADE-RUNBOOK.md).
+
 This maps the requested plan to implementation and evidence. Consult `VERIFICATION.md` for executed checks; configuration alone is not acceptance evidence. The production target is a new farm, as confirmed by the operator, so fresh production initialization replaces a historical-data migration rehearsal. Public deployment remains separate.
 
 | Requirement | Implementation | Evidence / remaining work |

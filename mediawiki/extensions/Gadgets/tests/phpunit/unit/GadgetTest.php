@@ -2,6 +2,7 @@
 
 use MediaWiki\Extension\Gadgets\Gadget;
 use MediaWiki\ResourceLoader\Module;
+use MediaWiki\Skin\SkinFallback;
 use MediaWiki\User\User;
 
 /**
@@ -31,7 +32,7 @@ class GadgetTest extends MediaWikiUnitTestCase {
 				'namespaces' => [],
 				'categories' => [],
 				'contentModels' => [],
-				'category' => 'misc',
+				'section' => 'misc',
 				'supportsUrlLoad' => false,
 				'requiresES6' => false,
 			],
@@ -40,6 +41,7 @@ class GadgetTest extends MediaWikiUnitTestCase {
 				'datas' => [],
 				'dependencies' => [ 'moment' ],
 				'peers' => [],
+				'codexIcons' => [],
 				'messages' => [ 'blanknamespace' ],
 				'type' => 'general',
 			]
@@ -57,6 +59,7 @@ class GadgetTest extends MediaWikiUnitTestCase {
 		$this->assertCount( 0, $g->getJSONs() );
 		$this->assertCount( 1, $g->getDependencies() );
 		$this->assertCount( 1, $g->getMessages() );
+		$this->assertCount( 0, $g->getCodexIcons() );
 
 		// Ensure parity and internal consistency
 		// between Gadget::serializeDefinition and Gadget::toArray
@@ -92,14 +95,15 @@ class GadgetTest extends MediaWikiUnitTestCase {
 	}
 
 	public function testPackaged() {
-		$g = $this->makeGadget( '* foo bar[ResourceLoader|package]| foo.css|foo.js|foo.bar|foo.json' );
+		$g = $this->makeGadget( '* foo bar[ResourceLoader|package]| foo.css|foo.js|foo.bar|foo.json|foo.vue' );
 		$this->assertEquals( 'foo_bar', $g->getName() );
 		$this->assertEquals( 'ext.gadget.foo_bar', Gadget::getModuleName( $g->getName() ) );
 		$this->assertEquals( [ 'MediaWiki:Gadget-foo.js' ], $g->getScripts() );
 		$this->assertEquals( [ 'MediaWiki:Gadget-foo.css' ], $g->getStyles() );
 		$this->assertEquals( [ 'MediaWiki:Gadget-foo.json' ], $g->getJSONs() );
-		$this->assertEquals( [ 'MediaWiki:Gadget-foo.js', 'MediaWiki:Gadget-foo.css', 'MediaWiki:Gadget-foo.json' ],
-			$g->getScriptsAndStyles() );
+		$this->assertEquals( [ 'MediaWiki:Gadget-foo.vue' ], $g->getVues() );
+		$this->assertEquals( [ 'MediaWiki:Gadget-foo.js', 'MediaWiki:Gadget-foo.css', 'MediaWiki:Gadget-foo.json',
+			'MediaWiki:Gadget-foo.vue' ], $g->getScriptsAndStyles() );
 		$this->assertEquals( [], $g->getLegacyScripts() );
 		$this->assertTrue( $g->supportsResourceLoader() );
 		$this->assertTrue( $g->hasModule() );
@@ -121,14 +125,10 @@ class GadgetTest extends MediaWikiUnitTestCase {
 		$user = $this->getMockBuilder( User::class )
 			->onlyMethods( [ 'isAllowedAll' ] )
 			->getMock();
-		$user->method( 'isAllowedAll' )
-			->willReturnCallback(
-				static function ( ...$rights ) {
-					return array_diff( $rights, [ 'test' ] ) === [];
-				}
-			);
+		$user->method( 'isAllowedAll' )->willReturnCallback(
+			static fn ( string ...$rights ) => !array_diff( $rights, [ 'test' ] )
+		);
 
-		/** @var User $user */
 		$gUnset = $this->makeGadget( '*foo[ResourceLoader]|foo.js' );
 		$gAllowed = $this->makeGadget( '*bar[ResourceLoader|rights=test]|bar.js' );
 		$gNotAllowed = $this->makeGadget( '*baz[ResourceLoader|rights=nope]|baz.js' );
@@ -189,21 +189,21 @@ class GadgetTest extends MediaWikiUnitTestCase {
 		$gCategoryFoo = $this->makeGadget( '*foo[ResourceLoader|categories=Foo]|foo.js' );
 		$gMultiCategory = $this->makeGadget( '*foo[ResourceLoader|categories=Foo,Bar baz,quux]|foo.js' );
 
-		$this->assertTrue( $gUnsetCategory->isCategorySupported( [ 'Foo' ] ) );
+		$this->assertTrue( $gUnsetCategory->isCategorySupported( [ 'Foo' => 1 ] ) );
 
-		$this->assertTrue( $gCategoryFoo->isCategorySupported( [ 'Foo' ] ) );
-		$this->assertFalse( $gCategoryFoo->isCategorySupported( [ 'Bar' ] ) );
-		$this->assertFalse( $gCategoryFoo->isCategorySupported( [ 'Bar baz' ] ) );
+		$this->assertTrue( $gCategoryFoo->isCategorySupported( [ 'Foo' => 1 ] ) );
+		$this->assertFalse( $gCategoryFoo->isCategorySupported( [ 'Bar' => 1 ] ) );
+		$this->assertFalse( $gCategoryFoo->isCategorySupported( [ 'Bar baz' => 1 ] ) );
 
-		$this->assertTrue( $gMultiCategory->isCategorySupported( [ 'Foo' ] ) );
-		$this->assertFalse( $gMultiCategory->isCategorySupported( [ 'Bar' ] ) );
-		$this->assertTrue( $gMultiCategory->isCategorySupported( [ 'Spam', 'Bar baz', 'Eggs' ] ) );
-		$this->assertFalse( $gMultiCategory->isCategorySupported( [ 'Spam', 'Eggs' ] ) );
+		$this->assertTrue( $gMultiCategory->isCategorySupported( [ 'Foo' => 1 ] ) );
+		$this->assertFalse( $gMultiCategory->isCategorySupported( [ 'Bar' => 1 ] ) );
+		$this->assertTrue( $gMultiCategory->isCategorySupported( [ 'Spam' => 1, 'Bar baz' => 1, 'Eggs' => 1 ] ) );
+		$this->assertFalse( $gMultiCategory->isCategorySupported( [ 'Spam' => 1, 'Eggs' => 1 ] ) );
 		// Load condition must use title text form
-		$this->assertFalse( $gMultiCategory->isCategorySupported( [ 'foo' ] ) );
-		$this->assertFalse( $gMultiCategory->isCategorySupported( [ 'Bar_baz' ] ) );
+		$this->assertFalse( $gMultiCategory->isCategorySupported( [ 'foo' => 1 ] ) );
+		$this->assertFalse( $gMultiCategory->isCategorySupported( [ 'Bar_baz' => 1 ] ) );
 		// Definition must use title text form, too
-		$this->assertFalse( $gMultiCategory->isCategorySupported( [ 'Quux' ] ) );
+		$this->assertFalse( $gMultiCategory->isCategorySupported( [ 'Quux' => 1 ] ) );
 	}
 
 	public function testContentModelsTags() {

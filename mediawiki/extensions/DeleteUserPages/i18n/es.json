@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"DannyS712",
+			"DiegoAmbrocio",
+			"Fitoschido"
+		]
+	},
+	"deleteuserpages-desc": "Permitir a los usuarios borrar sus propias páginas de usuario",
+	"action-delete-rootuserpages": "eliminar el propio usuario y la página de discusión del usuario",
+	"right-delete-rootuserpages": "Borrar sus propias páginas de usuario y de discusión",
+	"action-delete-usersubpages": "eliminar subpáginas de su propia página de usuario",
+	"right-delete-usersubpages": "Borrar subpáginas de su propia página de usuario"
+}

@@ -2,12 +2,17 @@
 	"name": "DiscussionTools",
 	"license-name": "MIT",
 	"version": "0.0.0",
+	"author": [
+		"Bartosz Dziewoński",
+		"Ed Sanders",
+		"David Lynch"
+	],
 	"url": "https://www.mediawiki.org/wiki/Extension:DiscussionTools",
 	"namemsg": "discussiontools",
 	"descriptionmsg": "discussiontools-desc",
 	"manifest_version": 2,
 	"requires": {
-		"MediaWiki": ">= 1.43.0",
+		"MediaWiki": ">= 1.46",
 		"extensions": {
 			"VisualEditor": "*",
 			"Linter": "*"
@@ -30,7 +35,15 @@
 	},
 	"ResourceModules": {
 		"ext.discussionTools.init.styles": {
-			"styles": "dt.init.less"
+			"styles": [
+				"init.styles/dt.init.less",
+				"init.styles/dt.init.mobilelede.less",
+				"init.styles/dt.init.newtopic.less",
+				"init.styles/dt.init.pageframe.less",
+				"init.styles/dt.init.replybuttons.less",
+				"init.styles/dt.init.topiccontainers.less",
+				"init.styles/dt.init.topicsubscriptions.less"
+			]
 		},
 		"ext.discussionTools.debug.styles": {
 			"styles": "dt.debug.less"
@@ -41,21 +54,13 @@
 				"controller.js",
 				"highlighter.js",
 				"permalinks.js",
-				"topicsubscriptions.js",
-				"mobile.js",
 				"overflowMenu.js",
-				"thanks.js",
 				"LedeSectionDialog.js",
 				{
-					"name": "controller/contLangMessages.json",
+					"name": "contLangMessages.json",
 					"callback": "\\MediaWiki\\Extension\\DiscussionTools\\ResourceLoaderData::getContentLanguageMessages",
 					"callbackParam": [
-						"discussiontools-defaultsummary-reply",
-						"newsectionsummary",
-						"discussiontools-replywidget-feedback-link",
-						"discussiontools-replywidget-feedback-link-newtopic",
-						"discussiontools-replywidget-mention-prefix",
-						"discussiontools-replywidget-mention-suffix"
+						"newsectionsummary"
 					]
 				},
 				{
@@ -63,30 +68,31 @@
 					"config": {
 						"replyIndentation": "DiscussionToolsReplyIndentation",
 						"switchTime": "DiscussionToolsTimestampFormatSwitchTime",
-						"showFeedbackLinks": "DiscussionToolsShowFeedbackLinks",
-						"enablePermalinksFrontend": "DiscussionToolsEnablePermalinksFrontend"
+						"showFeedbackLinks": "DiscussionToolsShowFeedbackLinks"
 					}
 				},
 				"ReplyLinksController.js",
 				"CommentController.js",
 				"NewTopicController.js",
-				"modifier.js",
-				"utils.js",
-				"Parser.js",
-				"ThreadItemSet.js",
-				"ThreadItem.js",
-				"CommentItem.js",
-				"HeadingItem.js",
 				"CommentDetails.js",
 				"MemoryStorage.js",
 				"lib/moment-timezone/moment-timezone-with-data-1970-2030.js",
+				"clientUtils.js",
+				"commentparser/commentUtils.js",
+				"commentparser/modifier.js",
+				"commentparser/Parser.js",
+				"commentparser/ThreadItemSet.js",
+				"commentparser/ThreadItem.js",
+				"commentparser/CommentItem.js",
+				"commentparser/HeadingItem.js",
 				{
-					"name": "parser/data.json",
+					"name": "commentparser/data.json",
 					"callback": "\\MediaWiki\\Extension\\DiscussionTools\\ResourceLoaderData::getLocalData"
 				}
 			],
 			"styles": [
-				"dt.ui.NewTopicController.less"
+				"dt.ui.NewTopicController.less",
+				"dt.highlighter.less"
 			],
 			"dependencies": [
 				"ext.discussionTools.init.styles",
@@ -106,14 +112,9 @@
 			"messages": [
 				"discussiontools-postedit-confirmation-published",
 				"discussiontools-postedit-confirmation-topicadded",
-				"discussiontools-autotopicsubpopup-title",
-				"discussiontools-autotopicsubpopup-body",
-				"discussiontools-autotopicsubpopup-dismiss",
-				"discussiontools-autotopicsubpopup-preferences",
 				"discussiontools-error-comment-conflict",
 				"discussiontools-error-comment-disappeared",
 				"discussiontools-error-comment-disappeared-reload",
-				"discussiontools-error-comment-not-saved",
 				"discussiontools-error-comment-is-transcluded",
 				"discussiontools-error-comment-is-transcluded-title",
 				"discussiontools-error-lint",
@@ -126,14 +127,6 @@
 				"discussiontools-newtopic-placeholder-title",
 				"discussiontools-newtopic-missing-title",
 				"discussiontools-newtopic-missing-title-prompt",
-				"discussiontools-newtopicssubscription-button-subscribe-label",
-				"discussiontools-newtopicssubscription-button-subscribe-tooltip",
-				"discussiontools-newtopicssubscription-button-unsubscribe-label",
-				"discussiontools-newtopicssubscription-button-unsubscribe-tooltip",
-				"discussiontools-newtopicssubscription-notify-subscribed-body",
-				"discussiontools-newtopicssubscription-notify-subscribed-title",
-				"discussiontools-newtopicssubscription-notify-unsubscribed-body",
-				"discussiontools-newtopicssubscription-notify-unsubscribed-title",
 				"discussiontools-pagetitle-newtopic",
 				"discussiontools-pagetitle-reply",
 				"discussiontools-permalink-comment-copied",
@@ -145,24 +138,57 @@
 				"discussiontools-target-comments-missing",
 				"discussiontools-target-comment-found-moved",
 				"discussiontools-target-heading-found-moved",
-				"discussiontools-topicsubscription-button-subscribe",
-				"discussiontools-topicsubscription-button-subscribe-label",
-				"discussiontools-topicsubscription-button-subscribe-tooltip",
-				"discussiontools-topicsubscription-button-unsubscribe",
-				"discussiontools-topicsubscription-button-unsubscribe-label",
-				"discussiontools-topicsubscription-button-unsubscribe-tooltip",
-				"discussiontools-topicsubscription-notify-subscribed-body",
-				"discussiontools-topicsubscription-notify-subscribed-title",
-				"discussiontools-topicsubscription-notify-unsubscribed-body",
-				"discussiontools-topicsubscription-notify-unsubscribed-title",
-				"pagetitle",
-				"skin-view-edit",
-				"cancel",
-				"thanks-button-thank",
-				"thanks-button-thanked",
-				"thanks-confirmation2",
-				"thanks-thanked-notice"
-			]
+				"pagetitle"
+			],
+			"optional": {
+				"Thanks": {
+					"packageFiles": [
+						"thanks.js"
+					],
+					"messages": [
+						"cancel",
+						"thanks-button-thank",
+						"thanks-button-thanked",
+						"thanks-confirmation2",
+						"thanks-thanked-notice"
+					]
+				},
+				"Echo": {
+					"packageFiles": [
+						"topicsubscriptions.js"
+					],
+					"messages": [
+						"discussiontools-autotopicsubpopup-title",
+						"discussiontools-autotopicsubpopup-body",
+						"discussiontools-autotopicsubpopup-dismiss",
+						"discussiontools-autotopicsubpopup-preferences",
+						"discussiontools-newtopicssubscription-button-subscribe-label",
+						"discussiontools-newtopicssubscription-button-subscribe-tooltip",
+						"discussiontools-newtopicssubscription-button-unsubscribe-label",
+						"discussiontools-newtopicssubscription-button-unsubscribe-tooltip",
+						"discussiontools-newtopicssubscription-notify-subscribed-body",
+						"discussiontools-newtopicssubscription-notify-subscribed-title",
+						"discussiontools-newtopicssubscription-notify-unsubscribed-body",
+						"discussiontools-newtopicssubscription-notify-unsubscribed-title",
+						"discussiontools-topicsubscription-button-subscribe",
+						"discussiontools-topicsubscription-button-subscribe-label",
+						"discussiontools-topicsubscription-button-subscribe-tooltip",
+						"discussiontools-topicsubscription-button-unsubscribe",
+						"discussiontools-topicsubscription-button-unsubscribe-label",
+						"discussiontools-topicsubscription-button-unsubscribe-tooltip",
+						"discussiontools-topicsubscription-notify-subscribed-body",
+						"discussiontools-topicsubscription-notify-subscribed-title",
+						"discussiontools-topicsubscription-notify-unsubscribed-body",
+						"discussiontools-topicsubscription-notify-unsubscribed-title"
+					]
+				},
+				"MobileFrontend": {
+					"packageFiles": [
+						"mobile.js"
+					]
+				}
+			},
+			"factory": "\\MediaWiki\\Extension\\DiscussionTools\\ResourceLoaderData::addOptional"
 		},
 		"ext.discussionTools.minervaicons": {
 			"selectorWithoutVariant": ".minerva-icon--{name}",
@@ -198,6 +224,11 @@
 					"name": "contLangMessages.json",
 					"callback": "\\MediaWiki\\Extension\\DiscussionTools\\ResourceLoaderData::getContentLanguageMessages",
 					"callbackParam": [
+						"discussiontools-defaultsummary-reply",
+						"discussiontools-replywidget-feedback-link",
+						"discussiontools-replywidget-feedback-link-newtopic",
+						"discussiontools-replywidget-mention-prefix",
+						"discussiontools-replywidget-mention-suffix",
 						"tempuser-helppage"
 					]
 				},
@@ -222,6 +253,7 @@
 				"dt-ve/CommentTargetWidget.less"
 			],
 			"messages": [
+				"discussiontools-error-comment-disappeared",
 				"discussiontools-replywidget-abandon",
 				"discussiontools-replywidget-abandon-discard",
 				"discussiontools-replywidget-abandon-keep",
@@ -253,9 +285,6 @@
 				"discussiontools-replywidget-summary",
 				"discussiontools-replywidget-transcluded",
 				"ooui-popup-widget-close-button-aria-label",
-				"visualeditor-key-ctrl",
-				"visualeditor-key-enter",
-				"visualeditor-key-escape",
 				"visualeditor-mweditmode-tooltip"
 			],
 			"dependencies": [
@@ -273,10 +302,12 @@
 				"oojs-ui-widgets",
 				"oojs-ui.styles.indicators"
 			],
-			"optionalDependencies": {
-				"ConfirmEdit": "ext.confirmEdit.CaptchaInputWidget"
+			"optional": {
+				"ConfirmEdit": {
+					"dependencies": "ext.confirmEdit.CaptchaInputWidget"
+				}
 			},
-			"factory": "\\MediaWiki\\Extension\\DiscussionTools\\ResourceLoaderData::addOptionalDependencies"
+			"factory": "\\MediaWiki\\Extension\\DiscussionTools\\ResourceLoaderData::addOptional"
 		}
 	},
 	"ForeignResourcesDir": "modules/lib",
@@ -353,8 +384,7 @@
 		"discussiontoolsgetsubscriptions": {
 			"class": "MediaWiki\\Extension\\DiscussionTools\\ApiDiscussionToolsGetSubscriptions",
 			"services": [
-				"DiscussionTools.SubscriptionStore",
-				"ConfigFactory"
+				"DiscussionTools.SubscriptionStore"
 			]
 		},
 		"discussiontoolspageinfo": {
@@ -378,8 +408,7 @@
 		"discussiontoolssubscribe": {
 			"class": "MediaWiki\\Extension\\DiscussionTools\\ApiDiscussionToolsSubscribe",
 			"services": [
-				"DiscussionTools.SubscriptionStore",
-				"ConfigFactory"
+				"DiscussionTools.SubscriptionStore"
 			]
 		}
 	},
@@ -419,6 +448,7 @@
 		"discussiontools-comments-before-first-heading-category"
 	],
 	"Hooks": {
+		"ArticleParserOptions": "page",
 		"BeforeCreateEchoEvent": "echo",
 		"EchoGetBundleRules": "echo",
 		"EchoGetEventsForRevision": "echo",
@@ -426,6 +456,8 @@
 		"LoadExtensionSchemaUpdates": "installer",
 		"GetDoubleUnderscoreIDs": "parser",
 		"ApiMain::moduleManager": "api",
+		"APIGetAllowedParams": "api",
+		"APIAfterExecute": "api",
 		"ParserAfterTidy": "parser",
 		"ParserOutputPostCacheTransform": "parser",
 		"BeforeDisplayNoArticleText": "page",
@@ -462,6 +494,9 @@
 				"DiscussionTools.SubscriptionStore",
 				"UserNameUtils",
 				"UserOptionsLookup"
+			],
+			"optional_services": [
+				"MobileFrontend.Context"
 			]
 		},
 		"parser": {
@@ -488,7 +523,8 @@
 			"class": "MediaWiki\\Extension\\DiscussionTools\\Hooks\\DiscussionToolsHooks",
 			"services": [
 				"ConfigFactory",
-				"UserNameUtils"
+				"UserNameUtils",
+				"UserOptionsLookup"
 			]
 		},
 		"tags": {
@@ -533,7 +569,10 @@
 		"echo-subscriptions-email-dt-subscription": [
 			[
 				true,
-				[ "registered-after", "20240617000000" ]
+				[
+					"registered-after",
+					"20240617000000"
+				]
 			]
 		]
 	},
@@ -546,14 +585,6 @@
 			"value": "default",
 			"description": "Override availability of DiscussionTools visual enhancements. 'default', 'available', or 'unavailable'."
 		},
-		"DiscussionTools_visualenhancements_pageframe": {
-			"value": "default",
-			"description": "Override availability of DiscussionTools visual enhancements's page frame sub-feature. 'default', 'available', or 'unavailable'."
-		},
-		"DiscussionTools_visualenhancements_reply": {
-			"value": "default",
-			"description": "Override availability of DiscussionTools visual enhancements's reply buttons sub-feature. 'default', 'available', or 'unavailable'."
-		},
 		"DiscussionTools_visualenhancements_reply_icon_languages": {
 			"value": {
 				"ar": true,
@@ -564,18 +595,6 @@
 			},
 			"description": "A dictionary of language codes which will receive an icon in their enhanced reply-button treatment, due to translation being very short (T323537). Language fallbacks will be checked unless a language is explicitly set to `false` (T352289). Normalized language codes are lower case.",
 			"merge_strategy": "provide_default"
-		},
-		"DiscussionToolsEnablePermalinksBackend": {
-			"value": true,
-			"description": "Enable the permalinks backend. Do not enable this unless the database tables exist."
-		},
-		"DiscussionToolsEnablePermalinksFrontend": {
-			"value": true,
-			"description": "Enable permalinks frontend features: 1. Convert signature timestamps to comment links. 2. Show notification when the target comment is found on another page."
-		},
-		"DiscussionToolsEnableThanks": {
-			"value": true,
-			"description": "Show a button to thank individual comments. Requires the 'Thanks' extension."
 		},
 		"DiscussionToolsAutoTopicSubEditor": {
 			"value": "any",
@@ -603,7 +622,7 @@
 		}
 	},
 	"ConfigRegistry": {
-		"discussiontools": "GlobalVarConfig::newInstance"
+		"discussiontools": "MediaWiki\\Config\\GlobalVarConfig::newInstance"
 	},
 	"type": "other"
 }

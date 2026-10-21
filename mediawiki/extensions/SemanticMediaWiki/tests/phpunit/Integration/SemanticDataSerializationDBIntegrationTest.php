@@ -1,0 +1,52 @@
+<?php
+
+namespace SMW\Tests\Integration;
+
+use MediaWiki\MediaWikiServices;
+use SMW\DataItems\WikiPage;
+use SMW\DataModel\SemanticData;
+use SMW\DataModel\Subobject;
+use SMW\DataValueFactory;
+use SMW\SerializerFactory;
+use SMW\Tests\SMWIntegrationTestCase;
+
+/**
+ * @group semantic-mediawiki-integration
+ * @group Database
+ * @group medium
+ *
+ * @license GPL-2.0-or-later
+ * @since 2.0
+ *
+ * @author mwjames
+ */
+class SemanticDataSerializationDBIntegrationTest extends SMWIntegrationTestCase {
+
+	public function testRoundtripOfSerializedSemanticDataAfterStoreUpdate() {
+		$subject = WikiPage::newFromTitle( MediaWikiServices::getInstance()->getTitleFactory()->newFromText( __METHOD__ ) );
+		$semanticDataBeforeUpdate = new SemanticData( $subject );
+
+		$subobject = new Subobject( $subject->getTitle() );
+		$subobject->setEmptyContainerForId( 'SomeSubobjectToSerialize' );
+
+		$subobject->getSemanticData()->addDataValue(
+			DataValueFactory::getInstance()->newDataValueByText( 'Foo', 'Bar' )
+		);
+
+		$semanticDataBeforeUpdate->addSubobject( $subobject );
+
+		$this->getStore()->updateData( $semanticDataBeforeUpdate );
+
+		$semanticDataAfterUpdate = $this->getStore()->getSemanticData( $subject );
+
+		$serializerFactory = new SerializerFactory( $this->getStore() );
+
+		$serialization = $serializerFactory->getSerializerFor( $semanticDataAfterUpdate )->serialize( $semanticDataAfterUpdate );
+
+		$this->assertEquals(
+			$semanticDataAfterUpdate->getHash(),
+			$serializerFactory->getDeserializerFor( $serialization )->deserialize( $serialization )->getHash()
+		);
+	}
+
+}

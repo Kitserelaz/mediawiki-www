@@ -2,13 +2,13 @@
 
 namespace Flow\Maintenance;
 
-use BatchRowIterator;
 use Flow\Container;
 use Flow\Data\ManagerGroup;
 use Flow\DbFactory;
 use Flow\Model\AbstractRevision;
 use Flow\Model\UUID;
 use MediaWiki\Maintenance\LoggedUpdateMaintenance;
+use MediaWiki\Utils\BatchRowIterator;
 use MediaWiki\WikiMap\WikiMap;
 use ReflectionProperty;
 
@@ -78,12 +78,10 @@ class FlowUpdateRevisionContentLength extends LoggedUpdateMaintenance {
 			AbstractRevision::class,
 			'contentLength'
 		);
-		$this->contentLengthProperty->setAccessible( true );
 		$this->previousContentLengthProperty = new ReflectionProperty(
 			AbstractRevision::class,
 			'previousContentLength'
 		);
-		$this->previousContentLengthProperty->setAccessible( true );
 
 		$dbw = $this->dbFactory->getDB( DB_PRIMARY );
 		// Walk through the flow_revision table

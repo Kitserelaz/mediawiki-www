@@ -4,6 +4,7 @@ namespace MediaWiki\Extension\AbuseFilter\Consequences;
 
 use MediaWiki\Block\BlockUserFactory;
 use MediaWiki\Block\DatabaseBlockStore;
+use MediaWiki\Block\UnblockUserFactory;
 use MediaWiki\Config\ServiceOptions;
 use MediaWiki\Extension\AbuseFilter\BlockAutopromoteStore;
 use MediaWiki\Extension\AbuseFilter\ChangeTags\ChangeTagger;
@@ -16,19 +17,20 @@ use MediaWiki\Extension\AbuseFilter\Consequences\Consequence\Tag;
 use MediaWiki\Extension\AbuseFilter\Consequences\Consequence\Throttle;
 use MediaWiki\Extension\AbuseFilter\Consequences\Consequence\Warn;
 use MediaWiki\Extension\AbuseFilter\FilterUser;
+use MediaWiki\Extension\AbuseFilter\ServiceNames;
 use MediaWiki\Extension\AbuseFilter\Variables\VariableHolder;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\Session\Session;
 use MediaWiki\Session\SessionManager;
+use MediaWiki\User\Registration\UserRegistrationLookup;
 use MediaWiki\User\UserEditTracker;
-use MediaWiki\User\UserFactory;
 use MediaWiki\User\UserGroupManager;
 use MediaWiki\User\UserIdentityUtils;
-use MessageLocalizer;
 use Psr\Log\LoggerInterface;
 use Wikimedia\ObjectCache\BagOStuff;
 
 class ConsequencesFactory {
-	public const SERVICE_NAME = 'AbuseFilterConsequencesFactory';
+	public const SERVICE_NAME = ServiceNames::ConsequencesFactory;
 
 	public const CONSTRUCTOR_OPTIONS = [
 		'AbuseFilterCentralDB',
@@ -37,94 +39,30 @@ class ConsequencesFactory {
 		'BlockCIDRLimit',
 	];
 
-	/** @var ServiceOptions */
-	private $options;
-
-	/** @var LoggerInterface */
-	private $logger;
-
-	/** @var BlockUserFactory */
-	private $blockUserFactory;
-
-	/** @var DatabaseBlockStore */
-	private $databaseBlockStore;
-
-	/** @var UserGroupManager */
-	private $userGroupManager;
-
-	/** @var BagOStuff */
-	private $mainStash;
-
-	/** @var ChangeTagger */
-	private $changeTagger;
-
-	/** @var BlockAutopromoteStore */
-	private $blockAutopromoteStore;
-
-	/** @var FilterUser */
-	private $filterUser;
-
-	/** @var MessageLocalizer */
-	private $messageLocalizer;
-
-	/** @var UserEditTracker */
-	private $userEditTracker;
-
-	/** @var UserFactory */
-	private $userFactory;
-
-	/** @var UserIdentityUtils */
-	private $userIdentityUtils;
-
 	/** @var ?Session */
 	private $session;
 
 	/**
 	 * @todo This might drag in unwanted dependencies. The alternative is to use ObjectFactory, but that's harder
 	 *   to understand for humans and static analysis tools, so do that only if the dependencies list starts growing.
-	 * @param ServiceOptions $options
-	 * @param LoggerInterface $logger
-	 * @param BlockUserFactory $blockUserFactory
-	 * @param DatabaseBlockStore $databaseBlockStore
-	 * @param UserGroupManager $userGroupManager
-	 * @param BagOStuff $mainStash
-	 * @param ChangeTagger $changeTagger
-	 * @param BlockAutopromoteStore $blockAutopromoteStore
-	 * @param FilterUser $filterUser
-	 * @param MessageLocalizer $messageLocalizer
-	 * @param UserEditTracker $userEditTracker
-	 * @param UserFactory $userFactory
-	 * @param UserIdentityUtils $userIdentityUtils
 	 */
 	public function __construct(
-		ServiceOptions $options,
-		LoggerInterface $logger,
-		BlockUserFactory $blockUserFactory,
-		DatabaseBlockStore $databaseBlockStore,
-		UserGroupManager $userGroupManager,
-		BagOStuff $mainStash,
-		ChangeTagger $changeTagger,
-		BlockAutopromoteStore $blockAutopromoteStore,
-		FilterUser $filterUser,
-		MessageLocalizer $messageLocalizer,
-		UserEditTracker $userEditTracker,
-		UserFactory $userFactory,
-		UserIdentityUtils $userIdentityUtils
+		private readonly ServiceOptions $options,
+		private readonly LoggerInterface $logger,
+		private readonly BlockUserFactory $blockUserFactory,
+		private readonly UnblockUserFactory $unblockUserFactory,
+		private readonly DatabaseBlockStore $databaseBlockStore,
+		private readonly UserGroupManager $userGroupManager,
+		private readonly BagOStuff $mainStash,
+		private readonly ChangeTagger $changeTagger,
+		private readonly BlockAutopromoteStore $blockAutopromoteStore,
+		private readonly FilterUser $filterUser,
+		private readonly MessageLocalizer $messageLocalizer,
+		private readonly UserEditTracker $userEditTracker,
+		private readonly UserRegistrationLookup $userRegistrationLookup,
+		private readonly UserIdentityUtils $userIdentityUtils
 	) {
 		$options->assertRequiredOptions( self::CONSTRUCTOR_OPTIONS );
-		$this->options = $options;
-		$this->logger = $logger;
-		$this->blockUserFactory = $blockUserFactory;
-		$this->databaseBlockStore = $databaseBlockStore;
-		$this->userGroupManager = $userGroupManager;
-		$this->mainStash = $mainStash;
-		$this->changeTagger = $changeTagger;
-		$this->blockAutopromoteStore = $blockAutopromoteStore;
-		$this->filterUser = $filterUser;
-		$this->messageLocalizer = $messageLocalizer;
-		$this->userEditTracker = $userEditTracker;
-		$this->userFactory = $userFactory;
-		$this->userIdentityUtils = $userIdentityUtils;
 	}
 
 	// Each class has its factory method for better type inference and static analysis
@@ -141,6 +79,7 @@ class ConsequencesFactory {
 			$expiry,
 			$preventsTalk,
 			$this->blockUserFactory,
+			$this->unblockUserFactory,
 			$this->databaseBlockStore,
 			$this->filterUser,
 			$this->messageLocalizer,
@@ -194,8 +133,7 @@ class ConsequencesFactory {
 
 	/**
 	 * @param Parameters $params
-	 * @param array $throttleParams
-	 * @phan-param array{id:int|string,count:int,period:int,groups:string[]} $throttleParams
+	 * @param array{id:int|string,count:int,period:int,groups:string[]} $throttleParams
 	 * @return Throttle
 	 */
 	public function newThrottle( Parameters $params, array $throttleParams ): Throttle {
@@ -204,7 +142,7 @@ class ConsequencesFactory {
 			$throttleParams,
 			$this->mainStash,
 			$this->userEditTracker,
-			$this->userFactory,
+			$this->userRegistrationLookup,
 			$this->logger,
 			$this->options->get( 'AbuseFilterIsCentral' ),
 			$this->options->get( 'AbuseFilterCentralDB' )
@@ -238,17 +176,10 @@ class ConsequencesFactory {
 		return new Tag( $params, $tags, $this->changeTagger );
 	}
 
-	/**
-	 * @param Session $session
-	 * @return void
-	 */
 	public function setSession( Session $session ): void {
 		$this->session = $session;
 	}
 
-	/**
-	 * @return Session
-	 */
 	private function getSession(): Session {
 		if ( $this->session === null ) {
 			$this->session = SessionManager::getGlobalSession();

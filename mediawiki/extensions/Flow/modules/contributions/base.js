@@ -4,7 +4,7 @@
  */
 ( function () {
 	function clickedFlowLink( event ) {
-		var $container = $( event.delegateTarget ),
+		const $container = $( event.delegateTarget ),
 			onComplete = function () {
 				$( event.target ).trigger( 'click' );
 			};
@@ -19,13 +19,13 @@
 		// If that failed still run the onComplete, it will not trigger
 		// our handler and be a normal click this time.
 		mw.loader.using(
-			[ 'ext.flow', 'mediawiki.ui.input' ],
+			[ 'ext.flow', 'ext.flow.styles.base' ],
 			onComplete,
 			onComplete
 		);
 	}
 
-	$( function () {
+	$( () => {
 		// eslint-disable-next-line no-jquery/no-global-selector
 		$( '#bodyContent' ).one( 'click', '.flow-click-interactive', clickedFlowLink );
 	} );

@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Aftabuzzaman",
+			"Yahya",
+			"আফতাবুজ্জামান"
+		]
+	},
+	"kartographer-wv-group": "দল:",
+	"kartographer-wv-layer-wikimedia": "উইকিমিডিয়া",
+	"kartographer-wv-warning-external-source-title": "বাহ্যিক উপাত্তের উৎস",
+	"kartographer-wv-warning-external-source-message": "এই বিষয়বস্তুর বাইরে হোস্ট করা হয়, তাই এটি সক্রিয় করলে আপনার উপাত্ত অন্যান্য সাইটের সঙ্গে ভাগ করা হবে।",
+	"kartographer-wv-warning-external-source-agree": "আমি বুঝেছি",
+	"kartographer-wv-warning-external-source-disagree": "বাতিল"
+}

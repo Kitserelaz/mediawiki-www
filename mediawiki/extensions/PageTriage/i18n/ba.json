@@ -1,0 +1,22 @@
+{
+	"@metadata": {
+		"authors": [
+			"Assele",
+			"Haqmar",
+			"Kareyac",
+			"Lifeway",
+			"Sagan",
+			"З. ӘЙЛЕ"
+		]
+	},
+	"pagetriage-author-not-autoconfirmed": "Яңы мөхәррир",
+	"pagetriage-author-blocked": "Бикләнгән",
+	"pagetriage-author-bot": "Бот",
+	"pagetriage-showing": "Күрһәтелгәндәр:",
+	"pagetriage-filter-list-prompt": "Фильтрҙар ҡуйырға",
+	"pagetriage-sort-by": "Айырырға:",
+	"pagetriage-newest": "Иң яңы",
+	"pagetriage-oldest": "Иң иҫке",
+	"pagetriage-filter-show-heading": "Торош:",
+	"pagetriage-filter-bot-edits": "Боттар"
+}

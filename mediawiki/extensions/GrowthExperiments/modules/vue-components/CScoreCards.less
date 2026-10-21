@@ -1,0 +1,22 @@
+@import 'mediawiki.skin.variables.less';
+@import '../utils/mixins.less';
+@import 'mixins.less';
+
+.ext-growthExperiments-ScoreCards {
+	.scorecards-grid();
+	// Expand scores stripe over homepage modules padding
+	margin: 0 -16px;
+
+	&__link {
+		.disabled-visited();
+	}
+
+	&__scorecard__info {
+		max-width: 280px;
+		margin-top: 0.5em;
+	}
+
+	&__info-button {
+		.codex-icon-only-button( @color-subtle, 20px );
+	}
+}

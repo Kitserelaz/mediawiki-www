@@ -1,0 +1,124 @@
+@import 'mediawiki.skin.variables.less';
+
+.mw-pt-languages {
+	background-color: @background-color-interactive-subtle;
+	color: @color-base;
+	display: table;
+	border-bottom: @border-base;
+	box-sizing: border-box;
+	line-height: 1.2;
+	width: 100%;
+	clear: both;
+	overflow: auto;
+
+	/* Ensure bullets are on the same side and handle ::after in mixed-directionality context */
+	&[ dir='ltr' ] .mw-pt-progress[ dir='rtl' ],
+	&[ dir='rtl' ] .mw-pt-progress[ dir='ltr' ] {
+		flex-direction: row-reverse;
+	}
+}
+
+/* Visually merge languages box border into translate box where available */
+.mw-pt-translate-header ~ .mw-parser-output .mw-pt-languages {
+	margin-top: -1px;
+}
+
+.mw-pt-languages-label {
+	padding: 0.5em;
+	font-weight: bold;
+	white-space: nowrap;
+}
+
+/* Increased specificity to override .mw-content-(rtl|ltr) ul { padding: 0; } */
+.mw-pt-languages .mw-pt-languages-list {
+	padding: 0.5em;
+}
+
+.mw-pt-languages-list li {
+	display: inline-block;
+	margin: 0 0.2em 0 0.2em;
+}
+
+.mw-pt-languages-selected,
+.mw-pt-languages-ui {
+	font-weight: bold;
+}
+
+.mw-pt-progress {
+	display: flex;
+	align-items: baseline;
+}
+
+.mw-pt-progress::after {
+	content: '';
+	height: 0.7em;
+	width: 0.7em;
+	border-radius: 50%;
+	border: 2px solid #a2a9b1;
+	box-sizing: border-box;
+	margin-left: 3px;
+	flex-shrink: 0;
+}
+
+.uls-language-list .mw-pt-progress::after {
+	margin-right: 4px;
+}
+
+.mw-pt-progress > a {
+	flex-grow: 1;
+}
+
+/** Remove default Vector image that appears when JS is disabled */
+.client-nojs ul li.mw-pt-progress--none {
+	list-style-image: none;
+	list-style-type: none;
+}
+
+/* Need very high specificity to override skin styles in the sidebar */
+#mw-panel .portal .body .mw-pt-progress--none a,
+.interwiki-x-pagetranslation.mw-pt-progress--none a {
+	color: #ba0000;
+}
+
+#mw-panel .portal .body .mw-pt-progress--none a:visited,
+.interwiki-x-pagetranslation.mw-pt-progress--none a:visited {
+	color: #a55858;
+}
+
+/* @noflip */
+.mw-pt-progress--low::after {
+	background: conic-gradient( #36c 0%, #fff 0% 100% );
+}
+
+/* @noflip */
+.mw-pt-progress--med::after {
+	border: 1px solid #36c;
+	/* Blue filling up to a half. Adding 0.1% for white to reduce jagged edges. */
+	background: conic-gradient( #36c 0% 50%, #fff 50.1% 100% );
+}
+
+/* @noflip */
+.mw-pt-progress--high::after {
+	border: 1px solid #36c;
+	/* Blue filling almost the full circle. Adding 0.1% for white to reduce jagged edges. */
+	background: conic-gradient( #36c 0% 70%, #fff 70.1% 100% );
+}
+
+/* @noflip */
+.mw-pt-progress--complete::after {
+	/* Fully blue */
+	border: 1px solid #36c;
+	background: conic-gradient( #fff 0, #36c 0 );
+}
+
+@media screen and ( min-width: @min-width-breakpoint-tablet ) {
+	.mw-pt-languages-label {
+		display: table-cell;
+		/* Given `white-space: nowrap` above, label never shrinks underneath textual content. */
+		width: 1%;
+	}
+
+	.mw-pt-languages-list {
+		display: table-cell;
+	}
+}

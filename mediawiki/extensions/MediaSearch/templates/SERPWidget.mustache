@@ -1,0 +1,400 @@
+{{!
+	SERPWidget template. This file sets up the no-JS fallback UI for
+	Special:MediaSearch using simple HTML form tags.
+}}
+<form method="get" action="{{page}}">
+	{{#queryParams}}
+		{{^isSearch}}
+			{{^isType}}
+				<input type="hidden" name="{{key}}" value="{{value}}" />
+			{{/isType}}
+		{{/isSearch}}
+	{{/queryParams}}
+
+	<div class="sd-input sd-input--button sdms-search-input">
+		<div class="sd-input__wrapper">
+			<label
+				id="sdms-search-input__label"
+				for="sdms-search-input__input"
+				class="sd-input__label"
+			>
+				{{searchLabel}}
+			</label>
+
+
+			<div class="cdx-text-input cdx-text-input--has-start-icon sd-input__input">
+				<input type="hidden" name="type" value="{{activeType}}" />
+				<input
+					value="{{term}}"
+					name="search"
+					id="sdms-search-input__input"
+					dir="auto"
+					class="cdx-text-input__input"
+					type="text"
+					placeholder="{{searchPlaceholder}}"
+				>
+				<span class="cdx-text-input__icon cdx-text-input__start-icon sd-input__css-icon--search"></span>
+			</div>
+		</div>
+		<button type="submit" class="sd-input__button cdx-button cdx-button--action-progressive cdx-button--weight-primary">
+			<span class="sd-button__content">{{searchButton}}</span>
+		</button>
+	</div>
+</form>
+
+{{!
+	CSS-only version of the Codex Tabs component. For more information about this,
+	see https://doc.wikimedia.org/codex/main/components/demos/tabs.html#css-only-version
+}}
+<div class="cdx-tabs">
+	<div class="cdx-tabs__header">
+		<form
+			class="cdx-tabs__header"
+			action="{{page}}"
+			method="get"
+		>
+			<div
+				class="cdx-tabs__list"
+				role="tablist"
+				tabindex="-1"
+			>
+			{{#tabs}}
+				<button
+					id="cdx-tab-{{type}}-label"
+					class="cdx-tabs__list__item"
+					role="tab"
+					{{#isActive}}aria-selected="true"{{/isActive}}
+					aria-controls="cdx-tab-{{activeType}}"
+					name="type"
+					value="{{type}}"
+				>
+					{{label}}
+				</button>
+			{{/tabs}}
+
+			{{#queryParams}}
+				{{#isSort}}
+					<input type="hidden" name="{{key}}" value="{{value}}" />
+				{{/isSort}}
+				{{#isTitle}}
+					<input type="hidden" name="{{key}}" value="{{value}}" />
+				{{/isTitle}}
+			{{/queryParams}}
+			<input type="hidden" name="search" value="{{term}}" />
+			</div>
+		</form>
+	</div>
+
+	<div class="cdx-tabs__content">
+		{{#tabs}}
+			{{#isActive}}
+				<div
+					id="cdx-tab-{{activeType}}"
+					aria-labeledby="cdx-tab-{{activeType}}-label"
+					role="tabpanel"
+					class="cdx-tab"
+				>
+					<div class="sdms-search-filters">
+						{{#filtersForDisplay}}
+						<div class="sd-select sd-select--disabled">
+							<div class="sd-select__content">
+								<span class="sd-select__current-selection">{{ . }}</span>
+								<span class="cdx-icon sd-select__handle">
+									<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20" aria-hidden="true">
+										<g fill="currentColor">
+											<path d="M17.5 4.75l-7.5 7.5-7.5-7.5L1 6.25l9 9 9-9z"></path>
+										</g>
+									</svg>
+								</span>
+							</div>
+						</div>
+						{{/filtersForDisplay}}
+
+						{{#hasFilters}}
+						<div class="sdms-search-filters__spacer"></div>
+						<div class="sdms-search-filters__clear--no-js">
+							<a href="{{ clearFiltersUrl }}">{{ clearFiltersText }}</a>
+						</div>
+						{{/hasFilters}}
+
+						{{#showResultsCount}}
+						<span class="sdms-search-results-count">
+							{{ resultsCount }}
+						</span>
+						{{/showResultsCount}}
+					</div>
+
+					{{#didYouMean}}
+					<div class="sdms-did-you-mean">
+						{{{ didYouMeanMessage }}}
+					</div>
+					{{/didYouMean}}
+
+					<div class="sdms-search-results">
+						<div class="sdms-search-results__list-wrapper">
+							<div class="sdms-search-results__list sdms-search-results__list--{{type}}">
+								{{#isImage}}
+									{{#results}}
+										<a
+											ref="link"
+											class="{{imageResultClass}}"
+											href="{{canonicalurl}}"
+											title="{{title}}"
+											style="{{wrapperStyle}}"
+										>
+											<img
+												src="{{imageinfo.0.thumburl}}"
+												data-src="{{imageinfo.0.thumburl}}"
+												alt="{{name}}"
+												loading="lazy"
+												class="sd-image"
+												style="{{imageStyle}}"
+											>
+										</a>
+									{{/results}}
+								{{/isImage}}
+
+								{{#isAudio}}
+									{{#results}}
+										<div class="sdms-audio-result">
+											<h3 class="sdms-audio-result__title">
+												<a ref="link"
+													href="{{canonicalurl}}"
+													title="{{title}}"
+												>
+													{{name}}
+												</a>
+											</h3>
+
+											<h4 class="sdms-audio-result__meta">
+												<span class="sdms-audio-result__duration">
+													<span class="sdms-audio-result__icon"></span>
+													{{! note: duration formatting is implemented in JS - not worth reimplementing here }}
+												</span>
+												{{#imageinfo.0.mime}}
+													<span class="sdms-audio-result__mime">{{.}}</span>
+												{{/imageinfo.0.mime}}
+											</h4>
+
+											{{#entityterms.label}}
+												<p>{{.}}</p>
+											{{/entityterms.label}}
+										</div>
+									{{/results}}
+								{{/isAudio}}
+
+								{{#isVideo}}
+									{{#results}}
+										<a ref="link"
+											class="sdms-video-result"
+											href="{{canonicalurl}}"
+											title="{{title}}"
+										>
+											<img
+												src="{{imageinfo.0.thumburl}}"
+												alt="{{name}}"
+												class="sdms-video-result__thumbnail"
+												loading="lazy"
+											>
+
+											<div class="sdms-video-result__body">
+												<h3 class="sdms-video-result__title">
+													{{name}}
+												</h3>
+
+												<h4 class="sdms-video-result__meta">
+													<span class="sdms-video-result__duration">
+														<span class="sdms-video-result__icon"></span>
+														{{! note: duration formatting is implemented in JS - not worth reimplementing here }}
+													</span>
+													{{#imageinfo.0.mime}}
+														<span class="sdms-video-result__mime">{{.}}</span>
+													{{/imageinfo.0.mime}}
+												</h4>
+											</div>
+										</a>
+									{{/results}}
+								{{/isVideo}}
+
+								{{#isPage}}
+									{{#results}}
+										<div class="sdms-page-result">
+											<div class="sdms-page-result__title">
+												<span class="sdms-page-result__namespace">
+													{{ namespacePrefix }}
+												</span>
+												<h3>
+													<a href="{{canonicalurl}}"
+														title="{{title}}"
+													>
+														{{name}}
+													</a>
+												</h3>
+											</div>
+
+											{{#snippet}}
+												<div>{{{.}}}</div>
+											{{/snippet}}
+
+											{{#categoryInfoText}}
+												<p class="sdms-page-result__category-info">{{.}}</p>
+											{{/categoryInfoText}}
+
+											{{^categoryInfoText}}
+												{{#formattedPageSize}}
+													<p class="sdms-page-result__size">{{.}}</p>
+												{{/formattedPageSize}}
+
+												{{#wordcountMessage}}
+													<p class="sdms-page-result__wordcount">{{.}}</p>
+												{{/wordcountMessage}}
+											{{/categoryInfoText}}
+
+											{{#lastEdited}}
+												<p>- {{.}}</p>
+											{{/lastEdited}}
+										</div>
+									{{/results}}
+								{{/isPage}}
+
+								{{#isOther}}
+									{{#results}}
+										<div class="sdms-other-result">
+											<a class="sdms-other-result__thumbnail-wrapper"
+												href="{{canonicalurl}}"
+												title="{{title}}"
+												style="width: 120px; height: calc({{imageinfo.0.thumbheight}} / {{imageinfo.0.thumbwidth}} * 120px);"
+											>
+												<img
+													src="{{imageinfo.0.thumburl}}"
+													alt="{{name}}"
+													loading="lazy"
+												>
+											</a>
+											<div class="sdms-other-result__text">
+												<h3>
+													<a href="{{canonicalurl}}"
+														title="{{title}}"
+													>
+														{{ name }}
+													</a>
+												</h3>
+												<p class="sdms-other-result__meta">
+													{{#extension}}
+														<span class="sd-other-result__extension">{{.}}</span>
+													{{/extension}}
+													{{#resolution}}
+														<span class="sd-other-result__resolution" dir="ltr">{{.}}</span>
+													{{/resolution}}
+													{{#imageSizeMessage}}
+														<span class="sd-other-result__imageSize">{{.}}</span>
+													{{/imageSizeMessage}}
+												</p>
+											</div>
+										</div>
+									{{/results}}
+								{{/isOther}}
+							</div>
+
+							{{#hasMore}}
+								<form method="get" action="{{page}}">
+									{{#queryParams}}
+										{{^isType}}
+											{{^isContinue}}
+												<input type="hidden" name="{{key}}" value="{{value}}" />
+											{{/isContinue}}
+										{{/isType}}
+									{{/queryParams}}
+									<input type="hidden" name="type" value="{{activeType}}" />
+									<input type="hidden" name="continue" value="{{continue}}" />
+									<button type="submit" class="cdx-button sdms-load-more cdx-button--action-progressive">
+										<span class="sd-button__content">{{continueMessage}}</span>
+									</button>
+								</form>
+							{{/hasMore}}
+
+							{{#endOfResults}}
+								<div class="sdms-end-of-results">
+									<p>
+										{{endOfResultsMessage}}
+									</p>
+								</div>
+							{{/endOfResults}}
+
+							<div class="sdms-pagination">
+								{{#hasLess}}
+									<form method="get" action="{{page}}">
+										{{#queryParams}}
+											{{^isType}}
+												{{^isContinue}}
+													<input type="hidden" name="{{key}}" value="{{value}}" />
+												{{/isContinue}}
+											{{/isType}}
+										{{/queryParams}}
+										<input type="hidden" name="type" value="{{activeType}}" />
+										<input type="hidden" name="continue" value="{{previousStart}}" />
+										<button type="submit">
+											{{previousMessage}}
+										</button>
+									</form>
+								{{/hasLess}}
+
+								{{#hasMore}}
+									<form method="get" action="{{page}}">
+										{{#queryParams}}
+											{{^isType}}
+												{{^isContinue}}
+													<input type="hidden" name="{{key}}" value="{{value}}" />
+												{{/isContinue}}
+											{{/isType}}
+										{{/queryParams}}
+										<input type="hidden" name="type" value="{{activeType}}" />
+										<input type="hidden" name="continue" value="{{continue}}" />
+										<button type="submit" >
+											{{continueMessage}}
+										</button>
+									</form>
+								{{/hasMore}}
+							</div>
+
+							{{^results}}
+								{{#error}}
+								<div class="sdms-error">
+									<div class="sdms-error__icon"></div>
+									<p>
+										{{errorTitle}}
+										<span class="sdms-error__message">
+											{{errorText}}
+										</span>
+									</p>
+								</div>
+								{{/error}}
+								{{^error}}
+									{{#hasTerm}}
+										<div class="sdms-no-results">
+											<div class="sdms-no-results__icon"></div>
+											<p>
+												{{noResultsMessage}}
+												<span class="sdms-no-results__tips">
+													{{noResultsMessageExtra}}
+												</span>
+											</p>
+										</div>
+									{{/hasTerm}}
+									{{^hasTerm}}
+										<div class="sdms-empty-state">
+											<div class="sdms-empty-state__icon"></div>
+											<p>
+												{{emptyMessage}}
+											</p>
+										</div>
+									{{/hasTerm}}
+								{{/error}}
+							{{/results}}
+						</div>
+					</div>
+				</div>
+			{{/isActive}}
+		{{/tabs}}
+	</div>
+</div>

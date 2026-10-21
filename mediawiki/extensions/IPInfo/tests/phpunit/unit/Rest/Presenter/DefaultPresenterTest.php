@@ -3,12 +3,13 @@
 namespace MediaWiki\IPInfo\Test\Unit\Rest\Presenter;
 
 use Generator;
+use MediaWiki\Extension\IPReputation\IPoid\IPoidResponse;
 use MediaWiki\IPInfo\Info\BlockInfo;
 use MediaWiki\IPInfo\Info\ContributionInfo;
 use MediaWiki\IPInfo\Info\Coordinates;
 use MediaWiki\IPInfo\Info\Info;
 use MediaWiki\IPInfo\Info\IPCountInfo;
-use MediaWiki\IPInfo\Info\IPoidInfo;
+use MediaWiki\IPInfo\Info\IPVersionInfo;
 use MediaWiki\IPInfo\Info\Location;
 use MediaWiki\IPInfo\Info\ProxyType;
 use MediaWiki\IPInfo\Rest\Presenter\DefaultPresenter;
@@ -64,7 +65,6 @@ class DefaultPresenterTest extends MediaWikiUnitTestCase {
 					[
 						new Location( 123456789, 'London' )
 					],
-					'qux',
 					'quux',
 					'residential',
 					new ProxyType(
@@ -99,15 +99,17 @@ class DefaultPresenterTest extends MediaWikiUnitTestCase {
 				'quuz' => new BlockInfo( 1 ),
 			]
 		];
-		yield [
-			[
-				'quuz' => []
+		if ( class_exists( IPoidResponse::class ) ) {
+			yield [
+				[
+					'quuz' => []
 				],
 				[
-					'quuz' => new IPoidInfo(),
+					'quuz' => IPoidResponse::newFromArray( [] )
 				]
 
-		];
+			];
+		}
 		yield [
 			[ 'quuz' => [] ],
 			[ 'quuz' => new IPCountInfo( null ) ]
@@ -119,6 +121,10 @@ class DefaultPresenterTest extends MediaWikiUnitTestCase {
 		yield [
 			[ 'quuz' => [] ],
 			[ 'quuz' => new IPCountInfo( 2 ) ]
+		];
+		yield [
+			[ 'quuz' => [ 'version' => 'ipv6' ] ],
+			[ 'quuz' => new IPVersionInfo( 'ipv6' ) ]
 		];
 	}
 
@@ -156,7 +162,6 @@ class DefaultPresenterTest extends MediaWikiUnitTestCase {
 					'countryNames' => null,
 					'location' => null,
 					'asn' => null,
-					'isp' => null,
 					'connectionType' => null,
 					'userType' => null,
 					'proxyType' => null,
@@ -178,7 +183,6 @@ class DefaultPresenterTest extends MediaWikiUnitTestCase {
 						],
 					],
 					'asn' => 0,
-					'isp' => 'qux',
 					'connectionType' => 'quux',
 					'userType' => 'residential',
 					'proxyType' => array_fill_keys( [
@@ -200,7 +204,6 @@ class DefaultPresenterTest extends MediaWikiUnitTestCase {
 					[
 						new Location( 123456789, 'London' )
 					],
-					'qux',
 					'quux',
 					'residential',
 					new ProxyType(
@@ -225,6 +228,10 @@ class DefaultPresenterTest extends MediaWikiUnitTestCase {
 		yield [
 			[ 'quuz' => [ 'numIPAddresses' => 2 ] ],
 			[ 'quuz' => new IPCountInfo( 2 ) ]
+		];
+		yield [
+			[ 'quuz' => [ 'version' => 'ipv6' ] ],
+			[ 'quuz' => new IPVersionInfo( 'ipv6' ) ]
 		];
 	}
 
@@ -284,16 +291,22 @@ class DefaultPresenterTest extends MediaWikiUnitTestCase {
 	}
 
 	public function testPresentIPoidInfo() {
-		$info = new IPoidInfo( [], [ 'GEO_MISMATCH', 'CALLBACK_PROXY' ], [], [], [], 2 );
+		if ( !class_exists( IPoidResponse::class ) ) {
+			$this->markTestSkipped( 'Extension:IPReputation is required for this test.' );
+		}
+		$info = IPoidResponse::newFromArray( [
+			'risks' => [ 'GEO_MISMATCH', 'CALLBACK_PROXY' ],
+			'client_count' => 2,
+		] );
 		$permissionManager = $this->createMock( PermissionManager::class );
 		$wrapper = TestingAccessWrapper::newFromObject( new DefaultPresenter( $permissionManager ) );
 
 		$this->assertArrayEquals( [
-			'behaviors' => [],
+			'behaviors' => null,
 			'risks' => [ 'GEO_MISMATCH', 'CALLBACK_PROXY' ],
-			'connectionTypes' => [],
-			'tunnelOperators' => [],
-			'proxies' => [],
+			'connectionTypes' => null,
+			'tunnelOperators' => null,
+			'proxies' => null,
 			'numUsersOnThisIP' => 2,
 		], $wrapper->presentIPoidInfo( $info ) );
 	}

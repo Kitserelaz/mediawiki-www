@@ -2,36 +2,22 @@
 
 namespace MediaWiki\Extension\OAuth\Backend;
 
-use Exception;
 use LogicException;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\Message\Message;
-use MWException;
 use Psr\Log\LoggerInterface;
 use stdClass;
 use Wikimedia\Rdbms\DBError;
 use Wikimedia\Rdbms\DBReadOnlyError;
 use Wikimedia\Rdbms\IDatabase;
 use Wikimedia\Rdbms\IDBAccessObject;
+use Wikimedia\Rdbms\IReadableDatabase;
 
 /**
  * (c) Aaron Schulz 2013, GPL
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 
 /**
@@ -82,11 +68,11 @@ abstract class MWOAuthDAO {
 	}
 
 	/**
-	 * @param IDatabase $db
+	 * @param IReadableDatabase $db
 	 * @param array|stdClass $row
 	 * @return static
 	 */
-	final public static function newFromRow( IDatabase $db, $row ) {
+	final public static function newFromRow( IReadableDatabase $db, $row ) {
 		$class = static::getConsumerClass( (array)$row );
 		$consumer = new $class();
 		$consumer->loadFromRow( $db, $row );
@@ -94,13 +80,13 @@ abstract class MWOAuthDAO {
 	}
 
 	/**
-	 * @param IDatabase $db
+	 * @param IReadableDatabase $db
 	 * @param int $id
 	 * @param int $flags IDBAccessObject::READ_* bitfield
 	 * @return static|bool Returns false if not found
 	 * @throws DBError
 	 */
-	final public static function newFromId( IDatabase $db, $id, $flags = 0 ) {
+	final public static function newFromId( IReadableDatabase $db, $id, $flags = 0 ) {
 		$queryBuilder = $db->newSelectQueryBuilder()
 			->select( array_values( static::getFieldColumnMap() ) )
 			->from( static::getTable() )
@@ -141,7 +127,6 @@ abstract class MWOAuthDAO {
 	 * @param string $name
 	 * @param mixed $value
 	 * @return mixed The old value
-	 * @throws Exception
 	 */
 	final public function setField( $name, $value ) {
 		$old = $this->setFields( [ $name => $value ] );
@@ -152,7 +137,6 @@ abstract class MWOAuthDAO {
 	 * Set the values for a set of fields
 	 *
 	 * @param array $values (field => value) map
-	 * @throws LogicException
 	 * @return array Map of old values
 	 */
 	final public function setFields( array $values ) {
@@ -267,10 +251,7 @@ abstract class MWOAuthDAO {
 	 *
 	 * @return array
 	 */
-	protected static function getSchema() {
-		// Note: declaring this abstract raises E_STRICT
-		throw new MWException( "getSchema() not defined in " . self::class );
-	}
+	abstract protected static function getSchema(): array;
 
 	/**
 	 * Get the access control check methods for this object type
@@ -283,18 +264,15 @@ abstract class MWOAuthDAO {
 	 * @see MWOAuthDAO::userCanAccess()
 	 * @see MWOAuthDAOAccessControl
 	 *
-	 * @throws LogicException Subclasses must override
 	 * @return array<string,string> Map of (field name => name of method that checks access)
 	 */
-	protected static function getFieldPermissionChecks() {
-		// Note: declaring this abstract raises E_STRICT
-		throw new LogicException( "getFieldPermissionChecks() not defined in " . self::class );
-	}
+	abstract protected static function getFieldPermissionChecks(): array;
 
 	/**
 	 * @return string
 	 */
 	final protected static function getTable() {
+		// @phan-suppress-next-line PhanAbstractStaticMethodCallInStatic
 		$schema = static::getSchema();
 		return $schema['table'];
 	}
@@ -303,6 +281,7 @@ abstract class MWOAuthDAO {
 	 * @return array<string,string>
 	 */
 	final protected static function getFieldColumnMap() {
+		// @phan-suppress-next-line PhanAbstractStaticMethodCallInStatic
 		$schema = static::getSchema();
 		return $schema['fieldColumnMap'];
 	}
@@ -312,6 +291,7 @@ abstract class MWOAuthDAO {
 	 * @return string
 	 */
 	final protected static function getColumn( $field ) {
+		// @phan-suppress-next-line PhanAbstractStaticMethodCallInStatic
 		$schema = static::getSchema();
 		return $schema['fieldColumnMap'][$field];
 	}
@@ -321,6 +301,7 @@ abstract class MWOAuthDAO {
 	 * @return bool
 	 */
 	final protected static function hasField( $field ) {
+		// @phan-suppress-next-line PhanAbstractStaticMethodCallInStatic
 		$schema = static::getSchema();
 		return isset( $schema['fieldColumnMap'][$field] );
 	}
@@ -329,6 +310,7 @@ abstract class MWOAuthDAO {
 	 * @return string|null
 	 */
 	final protected static function getAutoIncrField() {
+		// @phan-suppress-next-line PhanAbstractStaticMethodCallInStatic
 		$schema = static::getSchema();
 		return $schema['autoIncrField'] ?? null;
 	}
@@ -337,6 +319,7 @@ abstract class MWOAuthDAO {
 	 * @return string
 	 */
 	final protected static function getIdColumn() {
+		// @phan-suppress-next-line PhanAbstractStaticMethodCallInStatic
 		$schema = static::getSchema();
 		return $schema['fieldColumnMap'][$schema['idField']];
 	}
@@ -356,7 +339,7 @@ abstract class MWOAuthDAO {
 	final protected function loadFromValues( array $values ) {
 		foreach ( static::getFieldColumnMap() as $field => $column ) {
 			if ( !array_key_exists( $field, $values ) ) {
-				throw new MWException( get_class( $this ) . " requires '$field' field." );
+				throw new LogicException( get_class( $this ) . " requires '$field' field." );
 			}
 			$this->$field = $values[$field];
 		}
@@ -373,11 +356,11 @@ abstract class MWOAuthDAO {
 	abstract protected function normalizeValues();
 
 	/**
-	 * @param IDatabase $db
+	 * @param IReadableDatabase $db
 	 * @param stdClass|array $row
 	 * @return void
 	 */
-	final protected function loadFromRow( IDatabase $db, $row ) {
+	final protected function loadFromRow( IReadableDatabase $db, $row ) {
 		$row = $this->decodeRow( $db, (array)$row );
 		$values = [];
 		foreach ( static::getFieldColumnMap() as $field => $column ) {
@@ -392,28 +375,28 @@ abstract class MWOAuthDAO {
 	 * Subclasses should make this to encode DB fields (e.g. timestamps).
 	 * This must also flatten any PHP data structures into flat values.
 	 *
-	 * @param IDatabase $db
+	 * @param IReadableDatabase $db
 	 * @param array $row
 	 * @return array
 	 */
-	abstract protected function encodeRow( IDatabase $db, $row );
+	abstract protected function encodeRow( IReadableDatabase $db, $row );
 
 	/**
 	 * Subclasses should make this to decode DB fields (e.g. timestamps).
 	 * This can also expand some flat values (e.g. JSON) into PHP data structures.
 	 * Note: this does not need to handle what normalizeValues() already does.
 	 *
-	 * @param IDatabase $db
+	 * @param IReadableDatabase $db
 	 * @param array $row
 	 * @return array
 	 */
-	abstract protected function decodeRow( IDatabase $db, $row );
+	abstract protected function decodeRow( IReadableDatabase $db, $row );
 
 	/**
-	 * @param IDatabase $db
+	 * @param IReadableDatabase $db
 	 * @return array
 	 */
-	final protected function getRowArray( IDatabase $db ) {
+	final protected function getRowArray( IReadableDatabase $db ) {
 		$row = [];
 		foreach ( static::getFieldColumnMap() as $field => $column ) {
 			$row[$column] = $this->$field;

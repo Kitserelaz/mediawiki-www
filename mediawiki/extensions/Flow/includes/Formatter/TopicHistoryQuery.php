@@ -6,6 +6,7 @@ use Flow\Data\Utils\SortRevisionsByRevisionId;
 use Flow\Exception\FlowException;
 use Flow\Model\PostRevision;
 use Flow\Model\UUID;
+use MediaWiki\Exception\MWExceptionHandler;
 
 class TopicHistoryQuery extends HistoryQuery {
 	/**
@@ -48,13 +49,12 @@ class TopicHistoryQuery extends HistoryQuery {
 					}
 				}
 			} catch ( FlowException $e ) {
-				\MWExceptionHandler::logException( $e );
+				MWExceptionHandler::logException( $e );
 			}
 		}
 
 		foreach ( $results as $result ) {
 			if ( $result->revision instanceof PostRevision ) {
-				// @phan-suppress-next-line PhanUndeclaredMethod Type not correctly inferred
 				$alpha = $result->revision->getPostId()->getAlphadecimal();
 				$result->replies = isset( $replies[$alpha] ) ? array_keys( $replies[$alpha] ) : [];
 			}

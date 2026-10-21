@@ -1,0 +1,16 @@
+{
+	"@metadata": {
+		"authors": [
+			"Dr-Taher",
+			"Meno25"
+		]
+	},
+	"action-embed_pdf": "تضمين ملفات PDF",
+	"pdfembed": "تضمين PDF",
+	"pdfembed_description": "ملحق معالج الوسائط لملفات PDF.",
+	"embed_pdf_no_permission": "ليس لديك إذن بتضمين ملفات PDF.",
+	"embed_pdf_blank_file": "عنوان URL أو مسار الملف المحدد لتضمين ملف PDF فارغ.",
+	"embed_pdf_invalid_file": "عنوان URL أو مسار الملف المحدد غير موجود.",
+	"embed_pdf_invalid_user": "تم تحديد مستخدم غير صالح للاختبار لتضمين ملف PDF هذا.",
+	"right-embed_pdf": "تضمين ملفات PDF في الصفحات"
+}

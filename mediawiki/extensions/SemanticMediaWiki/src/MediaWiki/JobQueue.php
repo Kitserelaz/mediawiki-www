@@ -1,0 +1,177 @@
+<?php
+
+namespace SMW\MediaWiki;
+
+use Job;
+use JobQueueGroup;
+
+/**
+ * MediaWiki's JobQueue contains mostly final methods making it difficult to use
+ * an instance during tests hence this class provides a reduced interface with
+ * mockable methods.
+ *
+ * @license GPL-2.0-or-later
+ * @since 3.0
+ *
+ * @author mwjames
+ */
+class JobQueue {
+
+	private bool $disableCache = false;
+
+	/**
+	 * @since 3.0
+	 */
+	public function __construct( private readonly JobQueueGroup $jobQueueGroup ) {
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param bool $disableCache
+	 */
+	public function disableCache( $disableCache = true ): void {
+		$this->disableCache = (bool)$disableCache;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param string $type
+	 *
+	 * @return bool
+	 */
+	public function isDelayedJobsEnabled( $type ) {
+		return $this->jobQueueGroup->get( $type )->delayedJobsEnabled();
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param array $list
+	 *
+	 * @return list[]
+	 */
+	public function runFromQueue( array $list ): array {
+		$log = [];
+
+		foreach ( $list as $type => $amount ) {
+
+			if ( $amount == 0 || $amount === false ) {
+				continue;
+			}
+
+			$jobs = array_fill( 0, $amount, $type );
+			$log[$type] = [];
+
+			foreach ( $jobs as $job ) {
+				$j = $this->pop( $job );
+
+				if ( $j === false ) {
+					break;
+				}
+
+				$log[$type][] = $j->getTitle()->getPrefixedDBKey();
+
+				$j->run();
+				$this->ack( $j );
+			}
+		}
+
+		return $log;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param string $type
+	 *
+	 * @return Job|bool
+	 */
+	public function pop( $type ) {
+		return $this->jobQueueGroup->get( $type )->pop();
+	}
+
+	/**
+	 * Acknowledge that a job was completed
+	 *
+	 * @since 3.0
+	 *
+	 * @param Job $job
+	 */
+	public function ack( Job $job ): void {
+		$this->jobQueueGroup->get( $job->getType() )->ack( $job );
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param string $type
+	 */
+	public function delete( $type ): void {
+		$jobQueue = $this->jobQueueGroup->get( $type );
+		$jobQueue->delete();
+
+		if ( $this->disableCache ) {
+			$jobQueue->flushCaches();
+			$this->disableCache = false;
+		}
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param Job|Job[] $jobs
+	 */
+	public function push( $jobs ): void {
+		$this->jobQueueGroup->push( $jobs );
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param Job|Job[] $jobs
+	 */
+	public function lazyPush( $jobs ): void {
+		$this->jobQueueGroup->lazyPush( $jobs );
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @return array
+	 */
+	public function getQueueSizes() {
+		return $this->jobQueueGroup->getQueueSizes();
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param string $type
+	 *
+	 * @return int
+	 */
+	public function getQueueSize( $type ) {
+		$jobQueue = $this->jobQueueGroup->get( $type );
+
+		if ( $this->disableCache ) {
+			$jobQueue->flushCaches();
+			$this->disableCache = false;
+		}
+
+		return $jobQueue->getSize();
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param string $type
+	 *
+	 * @return bool
+	 */
+	public function hasPendingJob( $type ): bool {
+		return $this->getQueueSize( $type ) > 0;
+	}
+
+}

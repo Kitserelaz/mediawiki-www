@@ -1,0 +1,21 @@
+{
+	"@metadata": {
+		"authors": [
+			"Movses",
+			"Okras",
+			"Putnik",
+			"Vlad5250",
+			"Amire80"
+		]
+	},
+	"apihelp-query+globalusage-summary": "Возвращает информацию о глобальном использовании определённого изображения.",
+	"apihelp-query+globalusage-param-prop": "Какие свойства возвращать:",
+	"apihelp-query+globalusage-paramvalue-prop-url": "Добавляет URL-адрес.",
+	"apihelp-query+globalusage-paramvalue-prop-pageid": "Добавляет идентификатор страницы.",
+	"apihelp-query+globalusage-paramvalue-prop-namespace": "Добавляет идентификатор пространства имён.",
+	"apihelp-query+globalusage-param-limit": "Сколько ссылок возвращать.",
+	"apihelp-query+globalusage-param-filterlocal": "Отфильтровать локальное использование файла.",
+	"apihelp-query+globalusage-param-namespace": "Ограничить результаты этими пространствами имён.",
+	"apihelp-query+globalusage-param-site": "Ограничить результаты этим сайтам.",
+	"apihelp-query+globalusage-example-1": "Получить информацию об использовании [[:File:Example.jpg]]"
+}

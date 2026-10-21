@@ -1,0 +1,38 @@
+{
+	"@metadata": {
+		"authors": [
+			"Danmichaelo",
+			"EivindJ",
+			"Jeblad",
+			"Jon Harald Søby",
+			"Nghtwlkr"
+		]
+	},
+	"pendingchanges": "Sider med ventende endringer",
+	"pendingchanges-legend": "List opp sider for gjennomgang med ventende endringer",
+	"pendingchanges-list": "Denne siden lister opp sider [[{{MediaWiki:Validationpage}}|for gjennomgang]] som har en eller flere ventende endringer.",
+	"pendingchanges-none": "Ingen sider oppfyller disse kriteriene for tiden.",
+	"pendingchanges-hours": "$1 {{PLURAL:$1|time|timer}}",
+	"pendingchanges-days": "$1 {{PLURAL:$1|dag|dager}}",
+	"pendingchanges-recent": "under én time",
+	"pendingchanges-category": "Kategori:",
+	"pendingchanges-limit": "Grense:",
+	"pendingchanges-edit-tag": "Redigeringstagg:",
+	"pendingchanges-edit-tag-any": "Enhver tagg",
+	"pendingchanges-onwatchlist": "Sider på min overvåkningsliste",
+	"pendingchanges-stable": "Stabil versjon er standard",
+	"pendingchanges-diff": "Gå gjennom",
+	"pendingchanges-size": "Maks størrelsesendring (bytes):",
+	"pendingchanges-unwatched": "ikke overvåket",
+	"pendingchanges-table-caption": "Ventende endringer",
+	"pendingchanges-table-page": "Side",
+	"pendingchanges-table-size": "Størrelse",
+	"pendingchanges-table-pending-since": "Siden",
+	"pendingchanges-table-quality": "Kvalitet",
+	"pendingchanges-table-watching": "Aktive overvåkere",
+	"pendingchanges-table-history": "Historikk",
+	"pendingchanges-table-review": "Gå gjennom",
+	"pendingchanges-table-revision-history": "Historikk",
+	"pendingchanges-table-footer": "Det er for tiden $1 {{PLURAL:$2|endring|endringer}} som venter",
+	"pendingchanges-filter-submit-button-text": "Filtrer ventende endringer"
+}

@@ -10,7 +10,6 @@
 
 namespace MediaWiki\Extension\VisualEditor;
 
-use Article;
 use MediaWiki\Api\ApiBase;
 use MediaWiki\Api\ApiBlockInfoTrait;
 use MediaWiki\Api\ApiMain;
@@ -24,13 +23,21 @@ use MediaWiki\Context\RequestContext;
 use MediaWiki\EditPage\EditPage;
 use MediaWiki\EditPage\IntroMessageBuilder;
 use MediaWiki\EditPage\PreloadedContentBuilder;
+use MediaWiki\EditPage\TemplatesOnThisPageFormatter;
 use MediaWiki\EditPage\TextboxBuilder;
+use MediaWiki\Html\Html;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\Language\RawMessage;
+use MediaWiki\Linker\LinkRenderer;
 use MediaWiki\Logger\LoggerFactory;
+use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Page\Article;
+use MediaWiki\Page\LinkBatchFactory;
 use MediaWiki\Page\PageReference;
 use MediaWiki\Page\WikiPageFactory;
 use MediaWiki\Permissions\PermissionManager;
+use MediaWiki\Permissions\RestrictionStore;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\Request\DerivativeRequest;
 use MediaWiki\Revision\RevisionLookup;
@@ -41,58 +48,43 @@ use MediaWiki\User\TempUser\TempUserCreator;
 use MediaWiki\User\User;
 use MediaWiki\User\UserFactory;
 use MediaWiki\User\UserIdentity;
+use MediaWiki\Watchlist\WatchedItem;
+use MediaWiki\Watchlist\WatchedItemStoreInterface;
+use MediaWiki\Watchlist\WatchlistLabelStore;
 use MediaWiki\Watchlist\WatchlistManager;
-use MessageLocalizer;
 use Wikimedia\Assert\Assert;
 use Wikimedia\ParamValidator\ParamValidator;
-use Wikimedia\Stats\IBufferingStatsdDataFactory;
+use Wikimedia\Stats\StatsFactory;
 
 class ApiVisualEditor extends ApiBase {
 	use ApiBlockInfoTrait;
 	use ApiParsoidTrait;
 
-	private RevisionLookup $revisionLookup;
-	private TempUserCreator $tempUserCreator;
-	private UserFactory $userFactory;
-	private UserOptionsLookup $userOptionsLookup;
-	private WatchlistManager $watchlistManager;
-	private ContentTransformer $contentTransformer;
-	private WikiPageFactory $wikiPageFactory;
-	private IntroMessageBuilder $introMessageBuilder;
-	private PreloadedContentBuilder $preloadedContentBuilder;
-	private SpecialPageFactory $specialPageFactory;
-	private VisualEditorParsoidClientFactory $parsoidClientFactory;
-
 	public function __construct(
 		ApiMain $main,
 		string $name,
-		RevisionLookup $revisionLookup,
-		TempUserCreator $tempUserCreator,
-		UserFactory $userFactory,
-		UserOptionsLookup $userOptionsLookup,
-		WatchlistManager $watchlistManager,
-		ContentTransformer $contentTransformer,
-		IBufferingStatsdDataFactory $statsdDataFactory,
-		WikiPageFactory $wikiPageFactory,
-		IntroMessageBuilder $introMessageBuilder,
-		PreloadedContentBuilder $preloadedContentBuilder,
-		SpecialPageFactory $specialPageFactory,
-		VisualEditorParsoidClientFactory $parsoidClientFactory
+		private readonly RevisionLookup $revisionLookup,
+		private readonly TempUserCreator $tempUserCreator,
+		private readonly UserFactory $userFactory,
+		private readonly UserOptionsLookup $userOptionsLookup,
+		private readonly WatchlistManager $watchlistManager,
+		private readonly WatchlistLabelStore $watchlistLabelStore,
+		private readonly WatchedItemStoreInterface $watchedItemStore,
+		private readonly ContentTransformer $contentTransformer,
+		private readonly StatsFactory $statsFactory,
+		private readonly WikiPageFactory $wikiPageFactory,
+		private readonly IntroMessageBuilder $introMessageBuilder,
+		private readonly PreloadedContentBuilder $preloadedContentBuilder,
+		private readonly SpecialPageFactory $specialPageFactory,
+		private readonly LinkRenderer $linkRenderer,
+		private readonly LinkBatchFactory $linkBatchFactory,
+		private readonly RestrictionStore $restrictionStore,
+		private readonly TextboxBuilder $textboxBuilder,
+		private readonly VisualEditorParsoidClientFactory $parsoidClientFactory,
 	) {
 		parent::__construct( $main, $name );
 		$this->setLogger( LoggerFactory::getInstance( 'VisualEditor' ) );
-		$this->setStats( $statsdDataFactory );
-		$this->revisionLookup = $revisionLookup;
-		$this->tempUserCreator = $tempUserCreator;
-		$this->userFactory = $userFactory;
-		$this->userOptionsLookup = $userOptionsLookup;
-		$this->watchlistManager = $watchlistManager;
-		$this->contentTransformer = $contentTransformer;
-		$this->wikiPageFactory = $wikiPageFactory;
-		$this->introMessageBuilder = $introMessageBuilder;
-		$this->preloadedContentBuilder = $preloadedContentBuilder;
-		$this->specialPageFactory = $specialPageFactory;
-		$this->parsoidClientFactory = $parsoidClientFactory;
+		$this->setStatsFactory( $statsFactory );
 	}
 
 	/**
@@ -128,6 +120,63 @@ class ApiVisualEditor extends ApiBase {
 			);
 		}
 		return $user;
+	}
+
+	/**
+	 * Add a watchlist labels MenuTagMultiselectWidget definition for VE's publish dialog.
+	 *
+	 * @param array[] &$checkboxesDef
+	 * @param User $user
+	 * @param Title $title
+	 */
+	private function addWatchlistLabelsDefinition( array &$checkboxesDef, User $user, Title $title ): void {
+		if ( !$this->getConfig()->get( MainConfigNames::EnableWatchlistLabels ) || !$user->isNamed() ) {
+			return;
+		}
+
+		$userLabels = $this->watchlistLabelStore->loadAllForUser( $user );
+		if ( !$userLabels ) {
+			return;
+		}
+
+		$options = [];
+		foreach ( $userLabels as $label ) {
+			$labelId = $label->getId();
+			if ( $labelId !== null ) {
+				$options[] = [ 'data' => (string)$labelId, 'label' => $label->getName() ];
+			}
+		}
+		if ( !$options ) {
+			return;
+		}
+
+		$selectedLabelIds = [];
+		$requestLabels = $this->getRequest()->getIntArray( 'wpWatchlistLabels', [] );
+		if ( $requestLabels ) {
+			$selectedLabelIds = $requestLabels;
+		} else {
+			$watchedItem = $this->watchedItemStore->getWatchedItem( $user, $title );
+			if ( $watchedItem instanceof WatchedItem ) {
+				foreach ( $watchedItem->getLabels() as $label ) {
+					$labelId = $label->getId();
+					if ( $labelId !== null ) {
+						$selectedLabelIds[] = $labelId;
+					}
+				}
+			}
+		}
+
+		$checkboxesDef['wpWatchlistLabels'] = [
+			'id' => 'wpWatchlistLabelsWidget',
+			'label-message' => 'watchlistlabels-editpage-label',
+			'help-message' => 'watchlistlabels-editpage-help',
+			'placeholder-message' => 'watchlistlabels-editpage-placeholder',
+			'class' => 'MediaWiki\\Widget\\MenuTagMultiselectWidget',
+			'options' => [ '' => $options ],
+			'default' => array_map( strval( ... ), $selectedLabelIds ),
+			'allowReordering' => false,
+			'align' => 'top',
+		];
 	}
 
 	/**
@@ -238,10 +287,9 @@ class ApiVisualEditor extends ApiBase {
 							'action' => 'query',
 							'revids' => $oldid,
 							'prop' => 'revisions',
-							'rvprop' => 'content|ids'
+							'rvprop' => 'content|ids',
+							'rvsection' => $section,
 						];
-
-						$apiParams['rvsection'] = $section;
 
 						$context = new DerivativeContext( $this->getContext() );
 						$context->setRequest(
@@ -320,8 +368,7 @@ class ApiVisualEditor extends ApiBase {
 				}
 
 				// Look at protection status to set up notices + surface class(es)
-				$builder = new TextboxBuilder();
-				$protectedClasses = $builder->getTextboxProtectionCSSClasses( $title );
+				$protectedClasses = $this->textboxBuilder->getTextboxProtectionCSSClasses( $title );
 
 				// Simplified EditPage::getEditPermissionStatus()
 				// TODO: Use API
@@ -352,7 +399,7 @@ class ApiVisualEditor extends ApiBase {
 						$revision,
 						$user,
 						$params['editintro'],
-						null,
+						$params['paction'] === 'wikitext' ? 'veaction=editsource' : 'veaction=edit',
 						false,
 						$section
 					);
@@ -387,6 +434,7 @@ class ApiVisualEditor extends ApiBase {
 						$this->watchlistManager->isWatched( $user, $title ),
 				];
 				$checkboxesDef = $editPage->getCheckboxesDefinition( $states );
+				$this->addWatchlistLabelsDefinition( $checkboxesDef, $user, $title );
 				$checkboxesMessagesList = [];
 				foreach ( $checkboxesDef as &$options ) {
 					if ( isset( $options['tooltip'] ) ) {
@@ -406,6 +454,18 @@ class ApiVisualEditor extends ApiBase {
 						// Extract only the key. Any parameters are included in the fake message definition
 						// passed via $checkboxesMessages. (This changes $checkboxesDef by reference.)
 						$options['label-message'] = $this->msg( $options['label-message'] )->getKey();
+					}
+					if ( isset( $options['help-message'] ) ) {
+						$checkboxesMessagesList[] = $options['help-message'];
+						if ( !is_string( $options['help-message'] ) ) {
+							$options['help-message'] = $this->msg( $options['help-message'] )->getKey();
+						}
+					}
+					if ( isset( $options['placeholder-message'] ) ) {
+						$checkboxesMessagesList[] = $options['placeholder-message'];
+						if ( !is_string( $options['placeholder-message'] ) ) {
+							$options['placeholder-message'] = $this->msg( $options['placeholder-message'] )->getKey();
+						}
 					}
 				}
 				$checkboxesMessages = [];
@@ -435,20 +495,29 @@ class ApiVisualEditor extends ApiBase {
 						&& $this->tempUserCreator->isAutoCreateAction( 'edit' )
 						&& $permissionManager->userHasRight( $user, 'createaccount' );
 
+				// phpcs:disable MediaWiki.WhiteSpace.SpaceBeforeSingleLineComment.NewLineComment
+				/** @phpcs-require-sorted-array */
 				$result = [
-					'result' => 'success',
-					'notices' => $notices,
-					'copyrightWarning' => $copyrightWarning,
+					// --------------------------------------------------------------------------------
+					// This should match ArticleTarget#getWikitextDataPromiseForDoc and ArticleTarget#storeDocState
+					// --------------------------------------------------------------------------------
+					'basetimestamp' => $baseTimestamp,
+					'blockinfo' => $blockinfo, // only used by MobileFrontend EditorGateway
+					'canEdit' => $canEdit,
 					'checkboxesDef' => $checkboxesDef,
 					'checkboxesMessages' => $checkboxesMessages,
-					'protectedClasses' => implode( ' ', $protectedClasses ),
-					'basetimestamp' => $baseTimestamp,
-					'starttimestamp' => wfTimestampNow(),
+					// 'content' => ..., // optional, see below
+					'copyrightWarning' => $copyrightWarning,
+					// 'etag' => ..., // optional, see below
+					'notices' => $notices,
 					'oldid' => $oldid,
-					'blockinfo' => $blockinfo,
+					// 'preloaded' => ..., // optional, see below
+					'protectedClasses' => implode( ' ', $protectedClasses ),
+					'result' => 'success', // probably unused?
+					'starttimestamp' => wfTimestampNow(),
 					'wouldautocreate' => $wouldautocreate,
-					'canEdit' => $canEdit,
 				];
+				// phpcs:enable
 				if ( isset( $restbaseHeaders['etag'] ) ) {
 					$result['etag'] = $restbaseHeaders['etag'];
 				}
@@ -472,11 +541,17 @@ class ApiVisualEditor extends ApiBase {
 				break;
 
 			case 'templatesused':
-				// HACK: Build a fake EditPage so we can get checkboxes from it
-				// Deliberately omitting ,0 so oldid comes from request
-				$article = new Article( $title );
-				$editPage = new EditPage( $article );
-				$result = $editPage->makeTemplatesOnThisPageList( $editPage->getTemplates() );
+				$templateListFormatter = new TemplatesOnThisPageFormatter(
+					$this->getContext(),
+					$this->linkRenderer,
+					$this->linkBatchFactory,
+					$this->restrictionStore,
+				);
+				$result = Html::rawElement(
+					'div',
+					[ 'class' => 'templatesUsed' ],
+					$templateListFormatter->format( $title->getTemplateLinksFrom() )
+				);
 				break;
 
 			case 'parsefragment':
@@ -498,27 +573,62 @@ class ApiVisualEditor extends ApiBase {
 				break;
 		}
 
+		if (
+			is_array( $result ) &&
+			isset( $result['content'] ) &&
+			is_string( $result['content'] )
+		) {
+			// Protect content from being corrupted by conversion to Unicode NFC.
+			// Without this, MediaWiki::Api::ApiResult::addValue can break html tags.
+			// See T382756
+			$result['content'] = $this->makeSafeHtmlForNfc( $result['content'] );
+		}
+
 		$this->getResult()->addValue( null, $this->getModuleName(), $result );
+	}
+
+	/**
+	 * Protect html-like content from being corrupted by conversion to Unicode NFC.
+	 *
+	 * Encodes U+0338 COMBINING LONG SOLIDUS OVERLAY as an html numeric character reference.
+	 * Otherwise, conversion to Unicode NFC can break html tags by converting
+	 * '>' + U+0338 to U+226F (NOT GREATER THAN), and
+	 * '<' + U+0338 to U+226E (NOT LESS THAN)
+	 *
+	 * Note we cannot just search for those two combinations, because sequences of combining
+	 * characters can get reordered, e.g. '>' + U+0339 + U+0338 will become U+226F + U+0339.
+	 * See https://unicode.org/reports/tr15/
+	 *
+	 * @param string $html
+	 * @return string
+	 */
+	public static function makeSafeHtmlForNfc( string $html ) {
+		$html = str_replace( "\u{0338}", '&#x338;', $html );
+		return $html;
 	}
 
 	/**
 	 * Check if the configured allowed namespaces include the specified namespace
 	 *
+	 * @deprecated Since 1.45. Use {@link VisualEditorAvailabilityLookup::isAllowedNamespace} instead
 	 * @param Config $config
 	 * @param int $namespaceId Namespace ID
 	 * @return bool
 	 */
 	public static function isAllowedNamespace( Config $config, int $namespaceId ): bool {
+		wfDeprecated( __METHOD__, '1.45' );
 		return in_array( $namespaceId, self::getAvailableNamespaceIds( $config ), true );
 	}
 
 	/**
 	 * Get a list of allowed namespace IDs
 	 *
+	 * @deprecated Since 1.45. Use {@link VisualEditorAvailabilityLookup::getAvailableNamespaceIds} instead
 	 * @param Config $config
 	 * @return int[]
 	 */
 	public static function getAvailableNamespaceIds( Config $config ): array {
+		wfDeprecated( __METHOD__, '1.45' );
 		$namespaceInfo = MediaWikiServices::getInstance()->getNamespaceInfo();
 		$configuredNamespaces = array_replace(
 			ExtensionRegistry::getInstance()->getAttribute( 'VisualEditorAvailableNamespaces' ),
@@ -537,11 +647,13 @@ class ApiVisualEditor extends ApiBase {
 	/**
 	 * Check if the configured allowed content models include the specified content model
 	 *
+	 * @deprecated Since 1.45. Use {@link VisualEditorAvailabilityLookup::isAllowedContentType} instead
 	 * @param Config $config
 	 * @param string $contentModel Content model ID
 	 * @return bool
 	 */
 	public static function isAllowedContentType( Config $config, string $contentModel ): bool {
+		wfDeprecated( __METHOD__, '1.45' );
 		$availableContentModels = array_merge(
 			ExtensionRegistry::getInstance()->getAttribute( 'VisualEditorAvailableContentModels' ),
 			$config->get( 'VisualEditorAvailableContentModels' )

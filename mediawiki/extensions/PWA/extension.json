@@ -1,0 +1,76 @@
+{
+	"name": "PWA",
+	"version": "0.3b",
+	"author": [
+		"[https://www.mediawiki.org/wiki/User:Tinss Antoine Mercier-Linteau]"
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:PWA",
+	"descriptionmsg": "pwa-extension-description",
+	"license-name": "GPL-2.0-or-later",
+	"type": "skin",
+	"requires": {
+		"MediaWiki": ">= 1.31.0"
+	},
+	"AutoloadClasses": {
+		"MediaWiki\\Extension\\PWA\\PWA": "PWA.php"
+	},
+	"ResourceModules": {
+		"ext.PWA": {
+			"localBasePath": "resources/ext.PWA",
+			"remoteExtPath": "PWA/resources/ext.PWA",
+			"scripts": ["PWA.js"],
+			"styles": ["PWA.css"],
+			"targets": ["mobile", "desktop"],
+			"messages": ["pwa-add-to-home-screen", "pwa-cannot-install", "pwa-install-from-fb-not-allowed"]
+		},
+		"ext.PWA.standalone.js": {
+			"localBasePath": "resources/ext.PWA.standalone",
+			"remoteExtPath": "PWA/resources/ext.PWA.standalone",
+			"scripts": ["PWA.standalone.js"],
+			"targets": ["mobile", "desktop"],
+			"messages": ["mainpage"]
+		},
+		"ext.PWA.standalone.css": {
+			"localBasePath": "resources/ext.PWA.standalone",
+			"remoteExtPath": "PWA/resources/ext.PWA.standalone",
+			"styles": {"PWA.standalone.css": {"media": "all and (display-mode: standalone)"}},
+			"targets": ["mobile", "desktop"]
+		}
+	},
+	"ResourceFileModulePaths": {
+	},
+	"config": {
+		"PWAConfigs": {
+			"value": {
+				"default": {
+					"manifest": "MediaWiki:default-manifest.json",
+					"patterns": ["/.*/"]
+				}
+			},
+			"description": "Configurations for the PWAs available in this MediaWiki installation.",
+			"merge_strategy": "provide_default"
+		},
+		"PWAMobileSkin": {
+			"value": { "default": "Minerva" },
+			"description": "Skin used for the mobile version, set to false if there is no such skin."
+		}
+	},
+	"ExtensionMessagesFiles": {
+		"PWAMagic": "PWA.i18n.php"
+	},
+	"Hooks": {
+		"BeforePageDisplay": "MediaWiki\\Extension\\PWA\\PWA::onBeforePageDisplay",
+		"ParserFirstCallInit": "MediaWiki\\Extension\\PWA\\PWA::onParserFirstCallInit",
+        "RecentChange_save": "MediaWiki\\Extension\\PWA\\PWA::onRecentChangeSave",
+		"ListDefinedTags": "MediaWiki\\Extension\\PWA\\PWA::onRegisterTags",
+		"ChangeTagsListActive": "MediaWiki\\Extension\\PWA\\PWA::onRegisterTags",
+		"OutputPageAfterGetHeadLinksArray": "MediaWiki\\Extension\\PWA\\PWA::onOutputPageAfterGetHeadLinksArray",
+		"BeforePageRedirect": "MediaWiki\\Extension\\PWA\\PWA::onBeforePageRedirect"
+	},
+	"MessagesDirs": {
+		"PWA": [
+			"i18n"
+		]
+	},
+	"manifest_version": 2
+}

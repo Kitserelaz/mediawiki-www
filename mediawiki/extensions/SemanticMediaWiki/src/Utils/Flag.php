@@ -1,0 +1,41 @@
+<?php
+
+namespace SMW\Utils;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 3.2
+ *
+ * @author mwjames
+ */
+class Flag {
+
+	/**
+	 * @since 3.2
+	 */
+	public function __construct( private readonly int $flag ) {
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @param int $flag
+	 *
+	 * @return bool
+	 */
+	public function is( int $flag ): bool {
+		return ( ( $this->flag & $flag ) == $flag );
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @param int $flag
+	 *
+	 * @return bool
+	 */
+	public function not( int $flag ): bool {
+		return !$this->is( $flag );
+	}
+
+}

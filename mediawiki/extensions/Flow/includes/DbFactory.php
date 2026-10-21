@@ -42,6 +42,11 @@ class DbFactory {
 	public function __construct( $wiki, $cluster ) {
 		$this->wiki = $wiki;
 		$this->cluster = $cluster;
+
+		// Ensure maintenance scripts do not encounter replication errors
+		if ( MW_ENTRY_POINT === 'cli' ) {
+			$this->forcePrimary();
+		}
 	}
 
 	public function forcePrimary() {
@@ -95,7 +100,7 @@ class DbFactory {
 				'cluster' => $this->cluster,
 				'ifWritesSince' => false
 			] );
-		} catch ( DBReplicationWaitError $e ) {
+		} catch ( DBReplicationWaitError ) {
 		}
 	}
 

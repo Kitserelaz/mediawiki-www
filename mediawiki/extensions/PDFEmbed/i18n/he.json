@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Amire80"
+		]
+	},
+	"action-embed_pdf": "להטביע קובצי PDF",
+	"pdfembed_description": "הרחבת טיפול במדיה עבור קובצי PDF.",
+	"embed_pdf_no_permission": "אין לך הרשאה להטביע קובצי PDF.",
+	"embed_pdf_blank_file": "כתובת ה־URL או נתיב הקובץ שניתנו להטבעת PDF ריקים.",
+	"embed_pdf_invalid_file": "כתובת ה־URL או נתיב הקובץ שצוינו אינם קיימים.",
+	"embed_pdf_invalid_user": "משתמש בלתי־תקין צוין לבדיקת הרשאה להטבעת ה־PDF הזה.",
+	"right-embed_pdf": "הטבעת קובצי PDF"
+}

@@ -1,0 +1,228 @@
+[
+	{
+		"name": "flaggedpages",
+		"comment": "Derived table for tracking flagged revisions. Contains a row for every page which has a stable version (ie. has at least one revision which has been reviewed).",
+		"columns": [
+			{
+				"name": "fp_page_id",
+				"comment": "Foreign key to page.page_id",
+				"type": "integer",
+				"options": { "notnull": true, "unsigned": true }
+			},
+			{
+				"name": "fp_reviewed",
+				"comment": "Is the stable version synced? On wikis where $wgFlaggedRevsHandleIncludes is set to FR_INCLUDES_STABLE, this will be true when all templates used on the page are either fully reviewed or haven't changed since this page was last reviewed. (See flaggedtemplates table.) On other wikis, always true.",
+				"type": "mwtinyint",
+				"options": { "notnull": true, "length": 1, "default": 0 }
+			},
+			{
+				"name": "fp_pending_since",
+				"comment": "When the first edit after the stable version was made, ie. how long this page has been waiting for review. NULL when there are no unreviewed edits.",
+				"type": "mwtimestamp",
+				"options": { "notnull": false }
+			},
+			{
+				"name": "fp_stable",
+				"comment": "The revision ID of the stable revision. Foreign key to flaggedrevs.fr_rev_id",
+				"type": "integer",
+				"options": { "notnull": true, "unsigned": true }
+			},
+			{
+				"name": "fp_quality",
+				"comment": "The quality tier of the page's highest-quality reviewed revision. Not useful anymore as tiers other than checked (0) have been removed, so now this is always 0. (Historical values are 1=quality, 2=pristine.)",
+				"type": "mwtinyint",
+				"options": { "notnull": false, "length": 1 }
+			}
+		],
+		"indexes": [
+			{
+				"name": "fp_reviewed_page",
+				"columns": [ "fp_reviewed", "fp_page_id" ],
+				"unique": false
+			},
+			{
+				"name": "fp_quality_page",
+				"columns": [ "fp_quality", "fp_page_id" ],
+				"unique": false
+			},
+			{
+				"name": "fp_pending_since",
+				"columns": [ "fp_pending_since" ],
+				"unique": false
+			}
+		],
+		"pk": [ "fp_page_id" ]
+	},
+	{
+		"name": "flaggedrevs",
+		"comment": "Data about reviews of revisions. This is the primary data, most other tables are derived from this.",
+		"columns": [
+			{
+				"name": "fr_rev_id",
+				"comment": "Foreign key to revision.rev_id",
+				"type": "integer",
+				"options": { "notnull": true, "unsigned": true }
+			},
+			{
+				"name": "fr_rev_timestamp",
+				"comment": "Timestamp of when the edit happened (copy of revision.rev_timestamp)",
+				"type": "mwtimestamp",
+				"options": { "notnull": true }
+			},
+			{
+				"name": "fr_page_id",
+				"comment": "Foreign key to page.page_id",
+				"type": "integer",
+				"options": { "notnull": true, "unsigned": true }
+			},
+			{
+				"name": "fr_user",
+				"comment": "Reviewer ID. Foreign key to user.user_id.",
+				"type": "integer",
+				"options": { "notnull": true, "unsigned": true }
+			},
+			{
+				"name": "fr_timestamp",
+				"comment": "Timestamp of when the review happened.",
+				"type": "mwtimestamp",
+				"options": { "notnull": true }
+			},
+			{
+				"name": "fr_quality",
+				"comment": "Quality tier of the review. Not useful anymore as levels other than checked (0) have been removed, so now this is always 0. (Historical values are 1=quality, 2=pristine.)",
+				"type": "mwtinyint",
+				"options": { "notnull": true, "length": 1, "default": 0 }
+			},
+			{
+				"name": "fr_tags",
+				"comment": "Store tag metadata as newline separated, colon separated tag:value pairs. Tags used to represent different dimensions of the review, e.g. 'accuracy:1, coverage:1, style:2', with certain levels for certain tags required for each quality tier. Since then, multiple quality tiers and multiple dimensions have been discarded, so this field doesn't really have a point anymore. The name of the one remaining tag is still configurable (but usually it is 'accuracy').",
+				"type": "blob",
+				"options": { "notnull": true, "length": 16777215 }
+			},
+			{
+				"name": "fr_flags",
+				"comment": "Comma-separated list of flags: - dynamic: conversion marker for inclusion handling (legacy schema had fr_text with PST text). - auto: revision reviewed automatically",
+				"type": "blob",
+				"options": { "notnull": true, "length": 255 }
+			}
+		],
+		"indexes": [
+			{
+				"name": "fr_page_rev",
+				"columns": [ "fr_page_id", "fr_rev_id" ],
+				"unique": false
+			},
+			{
+				"name": "fr_page_time",
+				"columns": [ "fr_page_id", "fr_rev_timestamp" ],
+				"unique": false
+			},
+			{
+				"name": "fr_page_qal_rev",
+				"columns": [ "fr_page_id", "fr_quality", "fr_rev_id" ],
+				"unique": false
+			},
+			{
+				"name": "fr_page_qal_time",
+				"columns": [ "fr_page_id", "fr_quality", "fr_rev_timestamp" ],
+				"unique": false
+			},
+			{
+				"name": "fr_user",
+				"columns": [ "fr_user" ],
+				"unique": false
+			}
+		],
+		"pk": [ "fr_rev_id" ]
+	},
+	{
+		"name": "flaggedpage_config",
+		"comment": "Stores per-page settings on how to select the stable/default revision. Can be changed by users with the 'stablesettings' right.",
+		"columns": [
+			{
+				"name": "fpc_page_id",
+				"comment": "Foreign key to page.page_id",
+				"type": "integer",
+				"options": { "notnull": true, "unsigned": true }
+			},
+			{
+				"name": "fpc_override",
+				"comment": "Override the page? (0 = always show latest revision, 1 = show stable revision for anonymous users)",
+				"type": "mwtinyint",
+				"options": { "notnull": true, "length": 1 }
+			},
+			{
+				"name": "fpc_level",
+				"comment": "The restriction level (sysop, etc) for reviewing/autoreviewing the page.",
+				"type": "binary",
+				"options": { "notnull": false, "length": 60 }
+			},
+			{
+				"name": "fpc_expiry",
+				"comment": "Expiry for time-limited settings; configuration reverts to default after this timestamp.",
+				"type": "mwtimestamp",
+				"options": { "notnull": true, "PlatformOptions": { "allowInfinite": true } }
+			}
+		],
+		"indexes": [
+			{
+				"name": "fpc_expiry",
+				"columns": [ "fpc_expiry" ],
+				"unique": false
+			}
+		],
+		"pk": [ "fpc_page_id" ]
+	},
+	{
+		"name": "flaggedrevs_promote",
+		"comment": "Stores user statistics for autopromotion/autodemotion (see $wgFlaggedRevsAutoconfirm and $wgFlaggedRevsAutopromote).",
+		"columns": [
+			{
+				"name": "frp_user_id",
+				"comment": "Foreign key to user.user_id",
+				"type": "integer",
+				"options": { "notnull": true, "unsigned": true }
+			},
+			{
+				"name": "frp_user_params",
+				"comment": "A newline-separated list of user parameters in the param=value format. Parameters: - uniqueContentPages: comma-separated list of IDs of content page the user has edited (truncated to the length required for autopromotion features). - totalContentEdits: total edits made in content namespaces. - editComments: total edits made with a comment (in any namespace). - revertedEdits: total number of reverted edits. ",
+				"type": "blob",
+				"options": { "notnull": true, "length": 16777215 }
+			}
+		],
+		"indexes": [],
+		"pk": [ "frp_user_id" ]
+	},
+	{
+		"name": "flaggedrevs_statistics",
+		"comment": "Derived table storing various site-level statistics. See FlaggedRevsStats.php.",
+		"columns": [
+			{
+				"name": "frs_timestamp",
+				"comment": "Timestamp stat was recorded",
+				"type": "mwtimestamp",
+				"options": { "notnull": true }
+			},
+			{
+				"name": "frs_stat_key",
+				"comment": "Stat key name. Might contain a colon-delimited parameter at the end, for per-namespace stats or stats calculated at multiple percentile levels.",
+				"type": "string",
+				"options": { "notnull": true, "length": 255 }
+			},
+			{
+				"name": "frs_stat_val",
+				"comment": "Stat value as an integer",
+				"type": "bigint",
+				"options": { "notnull": true }
+			}
+		],
+		"indexes": [
+			{
+				"name": "frs_timestamp",
+				"columns": [ "frs_timestamp" ],
+				"unique": false
+			}
+		],
+		"pk": [ "frs_stat_key", "frs_timestamp" ]
+	}
+]

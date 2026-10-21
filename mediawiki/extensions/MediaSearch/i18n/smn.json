@@ -1,0 +1,25 @@
+{
+	"@metadata": {
+		"authors": [
+			"Seipinne",
+			"Yupik"
+		]
+	},
+	"mediasearch-tab-image": "Koveh",
+	"mediasearch-tab-audio": "Audio",
+	"mediasearch-tab-video": "Video",
+	"mediasearch-tab-page": "Luokah já siijđoh",
+	"mediasearch-tab-other": "Eres media",
+	"mediasearch-filter-size": "Kove stuárudâh",
+	"mediasearch-filter-size-unset": "Puoh",
+	"mediasearch-filter-file-type-unset": "Puoh",
+	"mediasearch-filter-license-other": "Eres",
+	"mediasearch-filter-namespace-discussion": "Savâstâllâm",
+	"mediasearch-clear-title": "Siho",
+	"mediasearch-load-more-results": "Luođii lase",
+	"mediasearch-copytextlayout-copy": "Kopijist",
+	"mediasearch-results-count": "{{PLURAL:$1|1=uuccâmpuáđus|$1 uuccâmpuáttus|$1 uuccâmpuáđusid}}",
+	"mediasearch-filter-assessment-unset": "Puoh",
+	"mediasearch-filter-license": "Liiseens",
+	"mediasearch-filter-license-unset": "Puoh"
+}

@@ -1,0 +1,180 @@
+{
+  "component": "mediawiki/extensions/MultimediaViewer",
+  "baseline": "fb4e80a1b1d56e92d8b5a5e27c6d1266c53b3591",
+  "target": "463cf1a46b59b6f3c3ac5c82e26387e1d4181efa",
+  "preserved_changes": [
+    {
+      "path": ".eslintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".gitignore",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".gitreview",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".phan/config.php",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".phpcs.xml",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".stylelintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".svgo.config.js",
+      "change": "local-deletion"
+    },
+    {
+      "path": "DEVELOPERS.md",
+      "change": "local-deletion"
+    },
+    {
+      "path": "Gruntfile.js",
+      "change": "local-deletion"
+    },
+    {
+      "path": "composer.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ar.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/az.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/bn.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ce.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/es.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/fr.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ja.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/knc.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ko.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/kr.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "i18n/lb.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/nl.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/pa.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ps.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/pt-br.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/qqq.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ru.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/smn.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/sr-ec.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/sr-el.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/tcy.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/vi.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "package-lock.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "package.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "resources/.eslintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "resources/mmv.bootstrap/mmv.bootstrap.js",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "resources/mmv.ui.reuse/mmv.ui.download.pane.js",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "resources/mmv.ui.reuse/mmv.ui.utils.js",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "resources/mmv/ui/mmv.ui.canvasButtons.less",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "tests/qunit/.eslintrc.json",
+      "change": "local-deletion"
+    }
+  ],
+  "dependency_status": "Review runtime dependencies before final verification",
+  "manual_resolutions": {
+    "reason": "Update both caller and UI to currentIndex/imageCount while retaining hidden single-image navigation",
+    "patches": [
+      "patches/multimediaviewer-mmv.ui.metadataPanel.js.patch"
+    ],
+    "resolved_files": {
+      "resources/mmv/mmv.js": "1dea70319d7a7cd23ce43f29e4054dc6ce6a75de4a0ff7b73720621e1c321413",
+      "resources/mmv/mmv.lightboxinterface.js": "1172f57ec03146e09f78df9ada670b8dadf46400e7a6d8de393dad4f47b881b9",
+      "resources/mmv/ui/mmv.ui.canvasButtons.js": "53997ad98d12558fcba9ea5d18ef32741f1d1a699a961458b905fe8a13d2863f",
+      "resources/mmv/ui/mmv.ui.metadataPanel.js": "2ac3ba183185780faf392b49ac4fc3e176e0e65b1d63c940ad6aaff60ab3e50c"
+    }
+  }
+}

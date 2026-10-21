@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Khun Kt",
+			"咽頭べさ"
+		]
+	},
+	"uploadslink-portlet-label": "ဒင်ႏထင်ႏ",
+	"tooltip-pt-uploads": "ဒင်ႏထင်ႏခါꩻဒါႏဖုဲင်ဖိုင်ႏ",
+	"uploadslink-toobox-label": "{{GENDER:$1|ကေားသုင်ꩻသား}} ကဒင်ႏခါꩻထာꩻဖိုင်ႏ",
+	"tooltip-tb-uploads": "{{GENDER:$1|ကေားသုင်ꩻသား}}ယို ကဒင်ႏခါꩻဒါႏစာႏရင်ꩻ"
+}

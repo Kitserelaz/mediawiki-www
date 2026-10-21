@@ -4,10 +4,14 @@
 			"DannyS712",
 			"Eulalio",
 			"Fitoschido",
+			"Geom",
 			"Ihojose",
 			"MarcoAurelio",
 			"McDutchie",
-			"No se"
+			"Monicapozo03",
+			"No se",
+			"JorgeElias2302",
+			"A.jalate"
 		]
 	},
 	"rest-prefix-mismatch": "La ruta solicitada ($1) no estaba en la ruta base de la API REST ($2)",
@@ -20,8 +24,10 @@
 	"rest-nonexistent-revision": "No existe la revisión especificada ($1)",
 	"rest-nonexistent-user": "El usuario especificado ($1) no existe",
 	"rest-invalid-user": "El nombre de usuario especificado ($1) no es válido",
+	"rest-invalid-ip": "El IP específico ($1) es inválido",
 	"rest-invalid-title": "El título especificado ($1) no se refiere a una página wiki.",
 	"rest-unsupported-content-type": "Tipo de contenido no compatible: $1",
+	"rest-permission-error": "Permiso denegado: $1",
 	"rest-permission-denied-anon": "No accesible por usuario anónimo",
 	"rest-permission-denied-title": "El usuario no tiene permisos para leer el título ($1)",
 	"rest-permission-denied-revision": "El usuario no tiene acceso a la revisión solicitada ($1).",
@@ -57,7 +63,9 @@
 	"rest-request-body-unaccepted": "El método de solicitud $1 no acepta un cuerpo de solicitud",
 	"rest-unmapped-action-error": "Error del módulo de acción no asignado: $1",
 	"rest-unsupported-transform-input": "Entrada no admitida: $1",
+	"rest-unsupported-profile-version": "Versión de perfil no compatible: $1",
 	"rest-missing-revision-html": "Falta la revisión de html",
+	"rest-unsupported-profile-conversion": "No sabemos cómo hacer esta conversión.",
 	"rest-unknown-parsoid-transformation": "Transformación desconocida.",
 	"rest-target-variant-required": "Se requiere variante de destino.",
 	"rest-page-bundle-validation-error": "PageBundle no coincide con el contenidoVersión: $1",
@@ -67,5 +75,7 @@
 	"rest-module-specs.v0-title": "Especificaciones",
 	"rest-module-content.v1-title": "Contenido de la página",
 	"rest-param-desc-media-links-title": "Título del archivo",
-	"rest-param-desc-media-mediatype": "El tipo de archivo"
+	"rest-param-desc-media-mediatype": "El tipo de archivo",
+	"rest-responseheader-desc-cachecontrol": "Dicta el comportamiento de almacenamiento en caché de un navegador, permitiéndole saber con qué frecuencia debe actualizar los recursos almacenados localmente.",
+	"rest-responseheader-desc-deprecation": "Dicta el comportamiento de almacenamiento en caché de un navegador, permitiéndole saber con qué frecuencia debe actualizar los recursos almacenados localmente."
 }

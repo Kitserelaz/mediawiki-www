@@ -2,6 +2,7 @@
 	"@metadata": {
 		"authors": [
 			"Araceletorres",
+			"EGobi",
 			"Eduardo Addad de Oliveira",
 			"Eduardoaddad",
 			"Felipe L. Ewald",
@@ -10,12 +11,12 @@
 			"Macofe",
 			"Oona",
 			"Ptrke",
-			"TheEduGobi",
-			"EGobi"
+			"TheEduGobi"
 		]
 	},
 	"multimediaviewer-desc": "Expandir miniaturas em tamanho maior numa interface em tela cheia",
 	"multimediaviewer-optin-pref": "Ativar <span class=\"plainlinks\">[https://www.mediawiki.org/wiki/Special:MyLanguage/Extension:Media_Viewer/About visualizador de mídia]</span>",
+	"multimediaviewer-disable-image-carousel-pref": "Desativar carrossel de imagens no site móvel",
 	"multimediaviewer-file-page": "Ir para a página do arquivo correspondente",
 	"multimediaviewer-repository-local": "Mais detalhes",
 	"multimediaviewer-datetime-created": "Criado: $1",
@@ -29,7 +30,6 @@
 	"multimediaviewer-thumbnail-error": "Desculpe, o arquivo não pode ser exibido",
 	"multimediaviewer-thumbnail-error-description": "Parece haver um problema técnico. Pode $1, caso o problema continue. Erro: $2",
 	"multimediaviewer-thumbnail-error-retry": "tentar novamente",
-	"multimediaviewer-thumbnail-error-report": "comunicar o erro",
 	"multimediaviewer-license-cc-by-1.0": "CC BY 1.0",
 	"multimediaviewer-license-cc-sa-1.0": "CC SA 1.0",
 	"multimediaviewer-license-cc-by-sa-1.0": "CC BY-SA 1.0",
@@ -148,6 +148,5 @@
 	"multimediaviewer-enable-alert": "O visualizador multimídia agora está desativado",
 	"multimediaviewer-disable-info-title": "Você desativou o visualizador multimídia",
 	"multimediaviewer-disable-info": "Você pode ainda ver os arquivos individuais com o visualizador multimídia.",
-	"multimediaviewer-errorreport-privacywarning": "Os detalhes do erro são anexados ao relatório, que será visível publicamente. Se você não está confortável com isso, você pode editar o relatório abaixo e remover todos os dados que você não deseja compartilhar.",
 	"multimediaviewer-loading": "Carregando o Visualizador de Mídia."
 }

@@ -26,10 +26,9 @@ namespace MediaWiki\Extension\CategoryTree;
 
 use MediaWiki\Html\Html;
 use MediaWiki\HTMLForm\HTMLForm;
+use MediaWiki\Search\SearchEngineFactory;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Title\Title;
-use SearchEngineFactory;
-use Wikimedia\Rdbms\IConnectionProvider;
 
 /**
  * Special page for the CategoryTree extension, an AJAX based gadget
@@ -37,17 +36,13 @@ use Wikimedia\Rdbms\IConnectionProvider;
  */
 class CategoryTreePage extends SpecialPage {
 	public string $target = '';
-	private IConnectionProvider $dbProvider;
-	private SearchEngineFactory $searchEngineFactory;
 	public ?CategoryTree $tree = null;
 
 	public function __construct(
-		IConnectionProvider $dbProvider,
-		SearchEngineFactory $searchEngineFactory
+		private readonly CategoryTreeFactory $categoryTreeFactory,
+		private readonly SearchEngineFactory $searchEngineFactory,
 	) {
 		parent::__construct( 'CategoryTree' );
-		$this->dbProvider = $dbProvider;
-		$this->searchEngineFactory = $searchEngineFactory;
 	}
 
 	/**
@@ -96,7 +91,7 @@ class CategoryTreePage extends SpecialPage {
 			$options[$option] = $request->getVal( $option, $default );
 		}
 
-		$this->tree = new CategoryTree( $options, $config, $this->dbProvider, $this->getLinkRenderer() );
+		$this->tree = $this->categoryTreeFactory->newCategoryTree( $options );
 
 		$this->getOutput()->addWikiMsg( 'categorytree-header' );
 
@@ -193,7 +188,6 @@ class CategoryTreePage extends SpecialPage {
 		$output->addHTML( Html::rawElement( 'div',
 			[
 				'class' => 'CategoryTreeResult CategoryTreeTag',
-				'data-ct-mode' => $this->tree->optionManager->getOption( 'mode' ),
 				'data-ct-options' => $this->tree->optionManager->getOptionsAsJsStructure(),
 			],
 			$this->tree->renderNode( $title, 1 )
@@ -224,10 +218,8 @@ class CategoryTreePage extends SpecialPage {
 		$searchEngine->setNamespaces( [ NS_CATEGORY ] );
 		$result = $searchEngine->defaultPrefixSearch( $search );
 
-		return array_map( static function ( Title $t ) {
-			// Remove namespace in search suggestion
-			return $t->getText();
-		}, $result );
+		// Remove namespace in search suggestion
+		return array_map( static fn ( Title $t ) => $t->getText(), $result );
 	}
 
 	/**

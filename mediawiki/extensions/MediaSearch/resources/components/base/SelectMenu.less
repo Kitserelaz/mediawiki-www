@@ -1,0 +1,56 @@
+@import './../../sd-base-variables.less';
+
+.sd-select-menu {
+	background-color: @background-color-base;
+	border: @border-base;
+	border-radius: 0 0 @border-radius-base @border-radius-base;
+	box-shadow: @box-shadow-drop-medium;
+	box-sizing: border-box;
+	left: 0;
+	margin-bottom: -1px;
+	margin-top: -1px;
+	max-width: 100%;
+	min-width: 100%;
+	position: absolute;
+	// Match existing OOUI menu z-index.
+	z-index: 4;
+
+	@media screen and ( min-width: @min-width-breakpoint-tablet ) {
+		max-width: @max-width-base;
+	}
+
+	// Unfortunately, we need the element selector to override a MediaWiki style.
+	ul.sd-select-menu__list {
+		margin: 0;
+		padding: 0;
+	}
+
+	&__list-item {
+		transition: background-color @transition-duration-base, color @transition-duration-base;
+		color: @color-base;
+		cursor: pointer;
+		list-style: none;
+		margin: 0;
+		overflow: hidden;
+		padding: 7px 12px;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+
+		@media screen and ( min-width: @min-width-breakpoint-tablet ) {
+			white-space: nowrap;
+		}
+
+		&--active {
+			background-color: @background-color-interactive;
+			color: @color-emphasized;
+		}
+
+		&--selected {
+			background-color: @background-color-progressive-subtle;
+		}
+
+		&--active.sd-select-menu__list-item--selected {
+			color: @color-progressive;
+		}
+	}
+}

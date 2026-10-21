@@ -1,15 +1,17 @@
 <?php
 
-namespace MediaWiki\CheckUser\Maintenance;
+namespace MediaWiki\Extension\CheckUser\Maintenance;
 
-use LogEntryBase;
+use MediaWiki\Logging\LogEntryBase;
 use MediaWiki\Maintenance\LoggedUpdateMaintenance;
 
+// @codeCoverageIgnoreStart
 $IP = getenv( 'MW_INSTALL_PATH' );
 if ( $IP === false ) {
 	$IP = __DIR__ . '/../../..';
 }
 require_once "$IP/maintenance/Maintenance.php";
+// @codeCoverageIgnoreEnd
 
 /**
  * Move log entries from cu_changes to cu_private_event.
@@ -108,19 +110,17 @@ class MoveLogEntriesFromCuChanges extends LoggedUpdateMaintenance {
 					'cuc_comment_id',
 					'cuc_page_id',
 					'cuc_timestamp',
-					'cuc_ip',
 					'cuc_ip_hex',
 					'cuc_xff',
 					'cuc_xff_hex',
 					'cuc_agent',
-					'cuc_private'
 				] )
 				->table( 'cu_changes' )
 				->where( [
 					$dbw->expr( 'cuc_id', '>=', $blockStart ),
 					$dbw->expr( 'cuc_id', '<=', $blockEnd ),
 					'cuc_type' => RC_LOG,
-					'cuc_only_for_read_old' => 0
+					'cuc_only_for_read_old' => 0,
 				] )
 				->caller( __METHOD__ )
 				->fetchResultSet();
@@ -137,12 +137,10 @@ class MoveLogEntriesFromCuChanges extends LoggedUpdateMaintenance {
 					'cupe_log_type' => 'checkuser-private-event',
 					'cupe_params' => LogEntryBase::makeParamBlob( [ '4::actiontext' => $row->cuc_actiontext ] ),
 					'cupe_comment_id' => $row->cuc_comment_id,
-					'cupe_ip' => $row->cuc_ip,
 					'cupe_ip_hex' => $row->cuc_ip_hex,
 					'cupe_xff' => $row->cuc_xff,
 					'cupe_xff_hex' => $row->cuc_xff_hex,
 					'cupe_agent' => $row->cuc_agent,
-					'cupe_private' => $row->cuc_private
 				];
 				$setOnlyForReadOldBatch[] = $row->cuc_id;
 			}
@@ -172,5 +170,7 @@ class MoveLogEntriesFromCuChanges extends LoggedUpdateMaintenance {
 	}
 }
 
+// @codeCoverageIgnoreStart
 $maintClass = MoveLogEntriesFromCuChanges::class;
 require_once RUN_MAINTENANCE_IF_MAIN;
+// @codeCoverageIgnoreEnd

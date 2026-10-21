@@ -1,0 +1,47 @@
+{
+	"name": "NewUserMessage",
+	"version": "3.6.0, 2016-10-31",
+	"author": [
+		"[https://www.organicdesign.co.nz/User:Nad Aran Dunkley]",
+		"Siebrand Mazeland"
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:NewUserMessage",
+	"descriptionmsg": "newusermessage-desc",
+	"license-name": "GPL-2.0-or-later",
+	"type": "other",
+	"requires": {
+		"MediaWiki": ">= 1.43"
+	},
+	"MessagesDirs": {
+		"NewUserMessage": [
+			"i18n"
+		]
+	},
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\NewUserMessage\\": "includes/"
+	},
+	"JobClasses": {
+		"newUserMessageJob": "MediaWiki\\Extension\\NewUserMessage\\NewUserMessageJob"
+	},
+	"Hooks": {
+		"LocalUserCreated": "main",
+		"UserGetReservedNames": "main"
+	},
+	"HookHandlers": {
+		"main": {
+			"class": "MediaWiki\\Extension\\NewUserMessage\\NewUserMessage"
+		}
+	},
+	"config": {
+		"NewUserSuppressRC": {
+			"value": false
+		},
+		"NewUserMinorEdit": {
+			"value": true
+		},
+		"NewUserMessageOnAutoCreate": {
+			"value": false
+		}
+	},
+	"manifest_version": 2
+}

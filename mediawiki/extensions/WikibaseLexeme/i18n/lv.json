@@ -1,0 +1,40 @@
+{
+	"@metadata": {
+		"authors": [
+			"Nixiéoffset",
+			"Papuass"
+		]
+	},
+	"datatypes-type-wikibase-form": "Forma",
+	"datatypes-type-wikibase-lexeme": "Leksēma",
+	"special-mergelexemes": "Apvienot divas leksēmas",
+	"special-newlexeme": "Izveidot jaunu leksēmu",
+	"wikibase-lexeme-language-selector-label": "$1 ($2)",
+	"wikibase-lexeme-lemma-language-option": "$1 ($2)",
+	"wikibase-lexeme-mergelexemes-submit": "Apvienot leksēmas",
+	"wikibase-listdatatypes-wikibase-form-head": "Forma",
+	"wikibase-listdatatypes-wikibase-lexeme-head": "Leksēma",
+	"wikibaselexeme-deletedentity-form": "Dzēsta forma",
+	"wikibaselexeme-description": "$1, $2",
+	"wikibaselexeme-diffview-form": "Forma",
+	"wikibaselexeme-diffview-grammatical-feature": "gramatiskā kategorija",
+	"wikibaselexeme-diffview-language": "valoda",
+	"wikibaselexeme-field-language-label": "Valoda",
+	"wikibaselexeme-form-grammatical-features": "Gramatiskās kategorijas",
+	"wikibaselexeme-formidformatter-link-title": "$1: $2",
+	"wikibaselexeme-formidformatter-separator-grammatical-features": ",&#32;",
+	"wikibaselexeme-formidformatter-separator-multiple-representation": "/",
+	"wikibaselexeme-gloss-field-language-label": "Valoda",
+	"wikibaselexeme-header-forms": "Formas",
+	"wikibaselexeme-lemma-field-lemma-label": "Lemma",
+	"wikibaselexeme-lexeme-link-title": "$1: $2",
+	"wikibaselexeme-newlexeme-fieldset": "Izveidot jaunu leksēmu",
+	"wikibaselexeme-newlexeme-language": "Leksēmas valoda",
+	"wikibaselexeme-newlexeme-language-placeholder": "Ievadi valodu, piemēram, latviešu",
+	"wikibaselexeme-newlexeme-lemma": "Lemma",
+	"wikibaselexeme-no-features": "nav kategoriju",
+	"wikibaselexeme-presentation-lexeme-display-label-separator-multiple-lemma": "/",
+	"wikibaselexeme-statementsection-statements-about-form": "Apgalvojumi par $1",
+	"wikibaselexeme-statementsection-statements-about-sense": "Apgalvojumi par $1",
+	"wikibaselexeme-unknown-language": "Nezināma valoda"
+}

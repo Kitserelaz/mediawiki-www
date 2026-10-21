@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Gomoko",
+			"Macofe",
+			"Orlodrim",
+			"Sherbrooke",
+			"Thibaut120094",
+			"Verdy p",
+			"Wladek92"
+		]
+	},
+	"linksuggest-desc": "Suggère des liens aux rédacteurs dans la vue de modification",
+	"tog-disablelinksuggest": "Ne pas montrer les liens suggérés"
+}

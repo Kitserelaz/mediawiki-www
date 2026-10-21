@@ -1,0 +1,141 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`PersonalizedPraise NoResult when no mentees 1`] = `
+<section
+  class="ext-growthExperiments-PersonalizedPraise"
+>
+  <div
+    class="ext-growthExperiments-PersonalizedPraise__info-wrapper"
+  >
+    <p
+      class="ext-growthExperiments-PersonalizedPraise__intro"
+    >
+      growthexperiments-mentor-dashboard-personalized-praise-intro
+    </p>
+    <div
+      class="ext-growthExperiments-Popover ext-growthExperiments-PersonalizedPraise__info-box"
+      icon="info-icon"
+    >
+      <div>
+        <div>
+          
+          <button
+            aria-label="growthexperiments-mentor-dashboard-personalized-praise-info-icon-label"
+            class="cdx-button cdx-button--action-default cdx-button--weight-quiet cdx-button--size-medium cdx-button--icon-only ext-growthExperiments-PersonalizedPraise__info-button"
+          >
+            
+            <span
+              class="cdx-icon cdx-icon--medium"
+            >
+              <svg
+                aria-hidden="true"
+                height="20"
+                viewBox="0 0 20 20"
+                width="20"
+                xmlns="http://www.w3.org/2000/svg"
+                xmlns:xlink="http://www.w3.org/1999/xlink"
+              >
+                <!--v-if-->
+                <g>
+                  info-icon
+                </g>
+              </svg>
+            </span>
+            
+          </button>
+          
+        </div>
+        <div
+          class="ext-growthExperiments-Popover__surface-container"
+        >
+          <!--v-if-->
+        </div>
+      </div>
+    </div>
+  </div>
+  <p>
+    growthexperiments-mentor-dashboard-personalized-praise-metrics (1,14)
+  </p>
+  <div
+    class="ext-growthExperiments-PersonalizedPraise-Settings"
+  >
+    <button
+      aria-label="growthexperiments-mentor-dashboard-personalized-praise-settings-cog-icon-label"
+      class="cdx-button cdx-button--action-default cdx-button--weight-quiet cdx-button--size-medium cdx-button--icon-only ext-growthExperiments-PersonalizedPraise-Settings__cogicon"
+    >
+      
+      <span
+        class="cdx-icon cdx-icon--medium"
+      >
+        <svg
+          aria-hidden="true"
+          height="20"
+          viewBox="0 0 20 20"
+          width="20"
+          xmlns="http://www.w3.org/2000/svg"
+          xmlns:xlink="http://www.w3.org/1999/xlink"
+        >
+          <!--v-if-->
+          <g>
+            settings-icon
+          </g>
+        </svg>
+      </span>
+      
+    </button>
+    <!--teleport start-->
+    <!--teleport end-->
+  </div>
+  <div
+    class="ext-growthExperiments-NoResults"
+  >
+    <div
+      class="ext-growthExperiments-NoResults__image"
+    />
+    <p>
+      {}
+    </p>
+  </div>
+  <!--v-if-->
+  <!--v-if-->
+</section>
+`;
+
+exports[`PersonalizedPraise full data when has mentees 1`] = `
+<section
+  class="ext-growthExperiments-PersonalizedPraise"
+>
+  <div
+    class="ext-growthExperiments-PersonalizedPraise__info-wrapper"
+  >
+    <p
+      class="ext-growthExperiments-PersonalizedPraise__intro"
+    >
+      growthexperiments-mentor-dashboard-personalized-praise-intro
+    </p>
+    <c-popover-stub
+      class="ext-growthExperiments-PersonalizedPraise__info-box"
+      closeicon="close-icon"
+      closeiconlabel="growthexperiments-info-tooltip-close-label"
+      headericon="info-icon"
+      headericonlabel="growthexperiments-mentor-dashboard-personalized-praise-info-icon-label"
+      icon="info-icon"
+      title="growthexperiments-mentor-dashboard-personalized-praise-info-headline"
+    />
+  </div>
+  <p>
+    growthexperiments-mentor-dashboard-personalized-praise-metrics (1,14)
+  </p>
+  <personalized-praise-settings-stub
+    settingsdata="[object Object]"
+  />
+  <!--v-if-->
+  <user-card-stub
+    mentee="[object Object]"
+  />
+  <personalized-praise-pagination-stub
+    currentpage="1"
+    totalpages="1"
+  />
+</section>
+`;

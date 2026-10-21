@@ -1,0 +1,96 @@
+@import 'mediawiki.mixins';
+@import '../mediainfo-variables.less';
+
+/* .wbmi-item
+ *
+ * The top-level block of repeatable items inside a panel. Certain sub-elements
+ * appear and disappear when edit mode is toggled; flexbox is used to
+ * preserve the layout while contents shift around.
+ */
+.wbmi-item {
+	.flex-display();
+
+	// This block of rules can be removed when other statements is enabled everywhere
+	&.wbmi-item--other-statements-disabled {
+		.wbmi-entity-primary::before {
+			@media screen and ( min-width: @min-width-breakpoint-tablet ) {
+				.wbmi-bullet-separator();
+			}
+		}
+	}
+
+	.wbmi-item-container {
+		.flex(1, 0, auto);
+
+		// don't allow long content (e.g. strings, monolingual text) to increase width
+		max-width: 100%;
+
+		.wbmi-entity-header {
+			.flex-display();
+			padding: @wbmi-spacing-sm;
+			background-color: @background-color-interactive-subtle;
+		}
+
+		.wbmi-entity-primary,
+		.wbmi-entity-prominent {
+			font-weight: bold;
+
+			&.wbmi-entity-is-primary,
+			&.wbmi-entity-is-prominent {
+				color: @color-subtle;
+
+				/* stylelint-disable-next-line selector-class-pattern */
+				.oo-ui-iconElement {
+					min-height: 15px;
+					height: 15px;
+					background-size: 70%;
+					filter: opacity( 0.55 );
+				}
+			}
+		}
+	}
+
+	&.wbmi-item-read {
+		margin-top: @wbmi-spacing-hairline;
+
+		.wbmi-item-container {
+			background-color: @background-color-interactive-subtle;
+		}
+
+		.wbmi-item-references,
+		.wbmi-snaklist-title {
+			margin-left: @wbmi-spacing-sm;
+		}
+	}
+
+	&.wbmi-item-edit {
+		// border is applied on -container, because .wbmi-item would also
+		// include delete icon
+		.wbmi-item-container {
+			border: 1px solid @background-color-interactive;
+		}
+
+		+ .wbmi-item-edit {
+			.wbmi-item-container {
+				border-top: 0;
+			}
+		}
+
+		.wbmi-item-qualifiers .wbmi-snaklist-title,
+		.wbmi-item-qualifiers .wbmi-snaklist,
+		.wbmi-item-references .wbmi-snaklist-title,
+		.wbmi-item-references .wbmi-snaklist,
+		.wbmi-item-references > .wbmi-snaklist-add-snak {
+			padding: 0 @wbmi-spacing-base @wbmi-spacing-sm @wbmi-spacing-base;
+		}
+	}
+
+	.wbmi-item__map {
+		height: 150px;
+	}
+
+	// Trash-can button; lives outside of .wbmi-container
+	.wbmi-item-remove {
+		.flex(0, 1, auto);
+	}
+}

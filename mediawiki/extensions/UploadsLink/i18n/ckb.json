@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Aram"
+		]
+	},
+	"uploadslink-portlet-label": "بارکردنەکان",
+	"tooltip-pt-uploads": "پێڕستی ئەو پەڕگانەی کە بارت کردوون",
+	"uploadslink-toobox-label": "بارکردنەکانی {{GENDER:$1|بەکارھێنەر}}",
+	"tooltip-tb-uploads": "پێڕستێک لە بارکردنەکانی ئەم {{GENDER:$1|بەکارھێنەرە}}"
+}

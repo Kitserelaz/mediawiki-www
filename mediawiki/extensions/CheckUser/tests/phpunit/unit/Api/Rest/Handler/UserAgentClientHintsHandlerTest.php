@@ -1,42 +1,47 @@
 <?php
 
-namespace MediaWiki\CheckUser\Tests\Unit\Api\Rest\Handler;
+namespace MediaWiki\Extension\CheckUser\Tests\Unit\Api\Rest\Handler;
 
-use MediaWiki\CheckUser\Api\Rest\Handler\UserAgentClientHintsHandler;
-use MediaWiki\CheckUser\Services\UserAgentClientHintsManager;
-use MediaWiki\CheckUser\Tests\CheckUserClientHintsCommonTraitTest;
 use MediaWiki\Config\HashConfig;
+use MediaWiki\Extension\CheckUser\Api\Rest\Handler\UserAgentClientHintsHandler;
+use MediaWiki\Extension\CheckUser\Services\UserAgentClientHintsManager;
+use MediaWiki\Extension\CheckUser\Tests\CheckUserClientHintsCommonTestTrait;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Rest\LocalizedHttpException;
 use MediaWiki\Rest\RequestData;
-use MediaWiki\Rest\Validator\Validator;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\RevisionStore;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
+use MediaWiki\Tests\Unit\MockServiceDependenciesTrait;
+use MediaWiki\User\ActorStore;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityValue;
 use MediaWikiUnitTestCase;
 use StatusValue;
 use Wikimedia\Message\MessageValue;
+use Wikimedia\Rdbms\IConnectionProvider;
 use Wikimedia\Timestamp\ConvertibleTimestamp;
 
 /**
  * @group CheckUser
  *
- * @covers \MediaWiki\CheckUser\Api\Rest\Handler\UserAgentClientHintsHandler
+ * @covers \MediaWiki\Extension\CheckUser\Api\Rest\Handler\UserAgentClientHintsHandler
  */
 class UserAgentClientHintsHandlerTest extends MediaWikiUnitTestCase {
 	use HandlerTestTrait;
-	use CheckUserClientHintsCommonTraitTest;
+	use CheckUserClientHintsCommonTestTrait;
+	use MockServiceDependenciesTrait;
+
+	private function getObjectUnderTest( array $overrides ): UserAgentClientHintsHandler {
+		return $this->newServiceInstance( UserAgentClientHintsHandler::class, $overrides );
+	}
 
 	public function testRunWithClientHintsDisabled() {
 		$config = new HashConfig( [
 			'CheckUserClientHintsEnabled' => false,
 			'CheckUserClientHintsRestApiMaxTimeLag' => 1800,
 		] );
-		$revisionStore = $this->createMock( RevisionStore::class );
-		$userAgentClientHintsManager = $this->createMock( UserAgentClientHintsManager::class );
-		$handler = new UserAgentClientHintsHandler( $config, $revisionStore, $userAgentClientHintsManager );
+		$handler = $this->getObjectUnderTest( [ 'config' => $config ] );
 		$this->expectExceptionObject(
 			new LocalizedHttpException( new MessageValue( 'rest-no-match' ), 404 )
 		);
@@ -48,10 +53,14 @@ class UserAgentClientHintsHandlerTest extends MediaWikiUnitTestCase {
 			'CheckUserClientHintsEnabled' => true,
 			'CheckUserClientHintsRestApiMaxTimeLag' => 1800,
 		] );
-		$revisionStore = $this->createMock( RevisionStore::class );
-		$userAgentClientHintsManager = $this->createMock( UserAgentClientHintsManager::class );
 		$handler = $this->getMockBuilder( UserAgentClientHintsHandler::class )
-			->setConstructorArgs( [ $config, $revisionStore, $userAgentClientHintsManager ] )
+			->setConstructorArgs( [
+				$config,
+				$this->createMock( RevisionStore::class ),
+				$this->createMock( UserAgentClientHintsManager::class ),
+				$this->createMock( IConnectionProvider::class ),
+				$this->createMock( ActorStore::class ),
+			] )
 			->onlyMethods( [ 'getValidatedBody' ] )
 			->getMock();
 		$handler->method( 'getValidatedBody' )
@@ -60,7 +69,10 @@ class UserAgentClientHintsHandlerTest extends MediaWikiUnitTestCase {
 			new LocalizedHttpException( new MessageValue( 'rest-bad-json-body' ), 400 )
 		);
 		$this->executeHandler(
-			$handler, new RequestData( [ 'headers' => [ 'Content-Type' => 'application/json' ] ] ), [], [],
+			$handler,
+			new RequestData( [ 'headers' => [ 'Content-Type' => 'application/json' ] ] ),
+			[],
+			[],
 			[ 'type' => 'revision', 'id' => 1 ]
 		);
 	}
@@ -70,10 +82,14 @@ class UserAgentClientHintsHandlerTest extends MediaWikiUnitTestCase {
 			'CheckUserClientHintsEnabled' => true,
 			'CheckUserClientHintsRestApiMaxTimeLag' => 1800,
 		] );
-		$revisionStore = $this->createMock( RevisionStore::class );
-		$userAgentClientHintsManager = $this->createMock( UserAgentClientHintsManager::class );
 		$handler = $this->getMockBuilder( UserAgentClientHintsHandler::class )
-			->setConstructorArgs( [ $config, $revisionStore, $userAgentClientHintsManager ] )
+			->setConstructorArgs( [
+				$config,
+				$this->createMock( RevisionStore::class ),
+				$this->createMock( UserAgentClientHintsManager::class ),
+				$this->createMock( IConnectionProvider::class ),
+				$this->createMock( ActorStore::class ),
+			] )
 			->onlyMethods( [ 'getValidatedBody' ] )
 			->getMock();
 		$handler->method( 'getValidatedBody' )
@@ -82,8 +98,11 @@ class UserAgentClientHintsHandlerTest extends MediaWikiUnitTestCase {
 			new LocalizedHttpException( new MessageValue( 'rest-unsupported-content-type' ), 415 )
 		);
 		$this->executeHandler(
-			$handler, new RequestData( [ 'headers' => [ 'Content-Type' => 'application/x-www-form-urlencoded' ] ] ),
-			[], [], [ 'type' => 'revision', 'id' => 1 ]
+			$handler,
+			new RequestData( [ 'headers' => [ 'Content-Type' => 'application/x-www-form-urlencoded' ] ] ),
+			[],
+			[],
+			[ 'type' => 'revision', 'id' => 1 ]
 		);
 	}
 
@@ -92,10 +111,14 @@ class UserAgentClientHintsHandlerTest extends MediaWikiUnitTestCase {
 			'CheckUserClientHintsEnabled' => true,
 			'CheckUserClientHintsRestApiMaxTimeLag' => 1800,
 		] );
-		$revisionStore = $this->createMock( RevisionStore::class );
-		$userAgentClientHintsManager = $this->createMock( UserAgentClientHintsManager::class );
 		$handler = $this->getMockBuilder( UserAgentClientHintsHandler::class )
-			->setConstructorArgs( [ $config, $revisionStore, $userAgentClientHintsManager ] )
+			->setConstructorArgs( [
+				$config,
+				$this->createMock( RevisionStore::class ),
+				$this->createMock( UserAgentClientHintsManager::class ),
+				$this->createMock( IConnectionProvider::class ),
+				$this->createMock( ActorStore::class ),
+			] )
 			->onlyMethods( [ 'getValidatedBody' ] )
 			->getMock();
 		$handler->method( 'getValidatedBody' )
@@ -104,8 +127,31 @@ class UserAgentClientHintsHandlerTest extends MediaWikiUnitTestCase {
 			new LocalizedHttpException( new MessageValue( 'rest-bad-json-body' ), 400 )
 		);
 		$this->executeHandler(
-			$handler, new RequestData( [ 'headers' => [ 'Content-Type' => 'application/json' ] ] ), [], [],
+			$handler,
+			new RequestData( [ 'headers' => [ 'Content-Type' => 'application/json' ] ] ),
+			[],
+			[],
 			[ 'type' => 'revision', 'id' => 1 ]
+		);
+	}
+
+	public function testUnsupportedType() {
+		$config = new HashConfig( [
+			'CheckUserClientHintsEnabled' => true,
+			'CheckUserClientHintsRestApiMaxTimeLag' => 1800,
+		] );
+		$handler = $this->getObjectUnderTest( [ 'config' => $config ] );
+		$this->expectExceptionObject(
+			new LocalizedHttpException( new MessageValue( 'rest-no-match' ), 404 )
+		);
+		$validatedBody = [ 'brands' => [ 'foo', 'bar' ], 'mobile' => true ];
+		$this->executeHandler(
+			$handler,
+			new RequestData(),
+			[],
+			[],
+			[ 'type' => 'unsupported', 'id' => 1 ],
+			$validatedBody
 		);
 	}
 
@@ -116,14 +162,18 @@ class UserAgentClientHintsHandlerTest extends MediaWikiUnitTestCase {
 		] );
 		$revisionStore = $this->createMock( RevisionStore::class );
 		$revisionStore->method( 'getRevisionById' )->willReturn( null );
-		$userAgentClientHintsManager = $this->createMock( UserAgentClientHintsManager::class );
-		$handler = new UserAgentClientHintsHandler( $config, $revisionStore, $userAgentClientHintsManager );
+		$handler = $this->getObjectUnderTest( [ 'config' => $config, 'revisionStore' => $revisionStore ] );
 		$this->expectExceptionObject(
 			new LocalizedHttpException( new MessageValue( 'rest-nonexistent-revision' ), 404 )
 		);
 		$validatedBody = [ 'brands' => [ 'foo', 'bar' ], 'mobile' => true ];
 		$this->executeHandler(
-			$handler, new RequestData(), [], [], [ 'type' => 'revision', 'id' => 1 ], $validatedBody
+			$handler,
+			new RequestData(),
+			[],
+			[],
+			[ 'type' => 'revision', 'id' => 1 ],
+			$validatedBody
 		);
 	}
 
@@ -142,14 +192,19 @@ class UserAgentClientHintsHandlerTest extends MediaWikiUnitTestCase {
 		$revisionStore->method( 'getRevisionById' )->willReturn( $revision );
 		$this->expectExceptionObject(
 			new LocalizedHttpException(
-				new MessageValue( 'checkuser-api-useragent-clienthints-called-too-late' ), 403
+				new MessageValue( 'checkuser-api-useragent-clienthints-called-too-late' ),
+				403
 			)
 		);
-		$userAgentClientHintsManager = $this->createMock( UserAgentClientHintsManager::class );
-		$handler = new UserAgentClientHintsHandler( $config, $revisionStore, $userAgentClientHintsManager );
+		$handler = $this->getObjectUnderTest( [ 'config' => $config, 'revisionStore' => $revisionStore ] );
 		$validatedBody = [ 'brands' => [ 'foo', 'bar' ], 'mobile' => true ];
 		$this->executeHandler(
-			$handler, new RequestData(), [], [], [ 'type' => 'revision', 'id' => 1 ], $validatedBody
+			$handler,
+			new RequestData(),
+			[],
+			[],
+			[ 'type' => 'revision', 'id' => 1 ],
+			$validatedBody
 		);
 	}
 
@@ -166,14 +221,19 @@ class UserAgentClientHintsHandlerTest extends MediaWikiUnitTestCase {
 		$revisionStore->method( 'getRevisionById' )->willReturn( $revision );
 		$this->expectExceptionObject(
 			new LocalizedHttpException(
-				new MessageValue( 'checkuser-api-useragent-clienthints-called-too-late' ), 403
+				new MessageValue( 'checkuser-api-useragent-clienthints-called-too-late' ),
+				403
 			)
 		);
-		$userAgentClientHintsManager = $this->createMock( UserAgentClientHintsManager::class );
-		$handler = new UserAgentClientHintsHandler( $config, $revisionStore, $userAgentClientHintsManager );
+		$handler = $this->getObjectUnderTest( [ 'config' => $config, 'revisionStore' => $revisionStore ] );
 		$validatedBody = [ 'brands' => [ 'foo', 'bar' ], 'mobile' => true ];
 		$this->executeHandler(
-			$handler, new RequestData(), [], [], [ 'type' => 'revision', 'id' => 1 ], $validatedBody
+			$handler,
+			new RequestData(),
+			[],
+			[],
+			[ 'type' => 'revision', 'id' => 1 ],
+			$validatedBody
 		);
 	}
 
@@ -191,12 +251,17 @@ class UserAgentClientHintsHandlerTest extends MediaWikiUnitTestCase {
 			new LocalizedHttpException(
 				new MessageValue( 'checkuser-api-useragent-clienthints-revision-user-mismatch' ),
 				401
-			) );
-		$userAgentClientHintsManager = $this->createMock( UserAgentClientHintsManager::class );
-		$handler = new UserAgentClientHintsHandler( $config, $revisionStore, $userAgentClientHintsManager );
+			)
+		);
+		$handler = $this->getObjectUnderTest( [ 'config' => $config, 'revisionStore' => $revisionStore ] );
 		$validatedBody = [ 'brands' => [ 'foo', 'bar' ], 'mobile' => true ];
 		$this->executeHandler(
-			$handler, new RequestData(), [], [], [ 'type' => 'revision', 'id' => 1 ], $validatedBody
+			$handler,
+			new RequestData(),
+			[],
+			[],
+			[ 'type' => 'revision', 'id' => 1 ],
+			$validatedBody
 		);
 	}
 
@@ -217,13 +282,20 @@ class UserAgentClientHintsHandlerTest extends MediaWikiUnitTestCase {
 			->willReturn( new UserIdentityValue( 456, 'Foo' ) );
 		$this->expectExceptionObject(
 			new LocalizedHttpException(
-				new MessageValue( 'checkuser-api-useragent-clienthints-revision-user-mismatch' ), 401
-			) );
-		$userAgentClientHintsManager = $this->createMock( UserAgentClientHintsManager::class );
-		$handler = new UserAgentClientHintsHandler( $config, $revisionStore, $userAgentClientHintsManager );
+				new MessageValue( 'checkuser-api-useragent-clienthints-revision-user-mismatch' ),
+				401
+			)
+		);
+		$handler = $this->getObjectUnderTest( [ 'config' => $config, 'revisionStore' => $revisionStore ] );
 		$validatedBody = [ 'brands' => [ 'foo', 'bar' ], 'mobile' => true ];
 		$this->executeHandler(
-			$handler, new RequestData(), [], [], [ 'type' => 'revision', 'id' => 1 ], $validatedBody, $authority
+			$handler,
+			new RequestData(),
+			[],
+			[],
+			[ 'type' => 'revision', 'id' => 1 ],
+			$validatedBody,
+			$authority
 		);
 	}
 
@@ -246,15 +318,24 @@ class UserAgentClientHintsHandlerTest extends MediaWikiUnitTestCase {
 		$userAgentClientHintsManager = $this->createMock( UserAgentClientHintsManager::class );
 		$userAgentClientHintsManager->method( 'insertClientHintValues' )
 			->willReturn( StatusValue::newGood() );
-		$handler = new UserAgentClientHintsHandler( $config, $revisionStore, $userAgentClientHintsManager );
+		$handler = $this->getObjectUnderTest( [
+			'config' => $config, 'revisionStore' => $revisionStore,
+			'userAgentClientHintsManager' => $userAgentClientHintsManager,
+		] );
 		$response = $this->executeHandler(
-			$handler, new RequestData(), [], [], [ 'type' => 'revision', 'id' => 1 ], [ 'test' => 1 ], $authority
+			$handler,
+			new RequestData(),
+			[],
+			[],
+			[ 'type' => 'revision', 'id' => 1 ],
+			[ 'test' => 1 ],
+			$authority
 		);
 		$this->assertSame(
 			json_encode( [
 				"value" => $handler->getResponseFactory()->formatMessage(
 					new MessageValue( 'checkuser-api-useragent-clienthints-explanation' )
-				)
+				),
 			], JSON_UNESCAPED_SLASHES ),
 			$response->getBody()->getContents()
 		);
@@ -278,12 +359,21 @@ class UserAgentClientHintsHandlerTest extends MediaWikiUnitTestCase {
 			->willReturn( $user );
 		$userAgentClientHintsManager = $this->createMock( UserAgentClientHintsManager::class );
 		$userAgentClientHintsManager->method( 'insertClientHintValues' )
-			->willReturn( StatusValue::newFatal( 'error', [ 1 ] ) );
-		$handler = new UserAgentClientHintsHandler( $config, $revisionStore, $userAgentClientHintsManager );
+			->willReturn( StatusValue::newFatal( 'error', 1 ) );
+		$handler = $this->getObjectUnderTest( [
+			'config' => $config, 'revisionStore' => $revisionStore,
+			'userAgentClientHintsManager' => $userAgentClientHintsManager,
+		] );
 		$this->expectException( LocalizedHttpException::class );
 		$this->expectExceptionMessage( 'error' );
 		$this->executeHandler(
-			$handler, new RequestData(), [], [], [ 'type' => 'revision', 'id' => 1 ], [ 'test' => 1 ], $authority
+			$handler,
+			new RequestData(),
+			[],
+			[],
+			[ 'type' => 'revision', 'id' => 1 ],
+			[ 'test' => 1 ],
+			$authority
 		);
 	}
 
@@ -292,9 +382,7 @@ class UserAgentClientHintsHandlerTest extends MediaWikiUnitTestCase {
 			'CheckUserClientHintsEnabled' => true,
 			'CheckUserClientHintsRestApiMaxTimeLag' => 1800,
 		] );
-		$revisionStore = $this->createMock( RevisionStore::class );
-		$userAgentClientHintsManager = $this->createMock( UserAgentClientHintsManager::class );
-		$handler = new UserAgentClientHintsHandler( $config, $revisionStore, $userAgentClientHintsManager );
+		$handler = $this->getObjectUnderTest( [ 'config' => $config ] );
 		$this->assertTrue(
 			$handler->needsWriteAccess(),
 			'Handler writes to the DB, so needsWriteAccess must return true.'
@@ -306,14 +394,11 @@ class UserAgentClientHintsHandlerTest extends MediaWikiUnitTestCase {
 			'CheckUserClientHintsEnabled' => true,
 			'CheckUserClientHintsRestApiMaxTimeLag' => 1800,
 		] );
-		$revisionStore = $this->createMock( RevisionStore::class );
-		$userAgentClientHintsManager = $this->createMock( UserAgentClientHintsManager::class );
-		$handler = new UserAgentClientHintsHandler( $config, $revisionStore, $userAgentClientHintsManager );
-		$validator = $this->createMock( Validator::class );
+		$handler = $this->getObjectUnderTest( [ 'config' => $config ] );
 		$this->expectException( LocalizedHttpException::class );
 		$request = new RequestData();
 		$config = [
-			'path' => '/foo'
+			'path' => '/foo',
 		];
 		$this->initHandler( $handler, $request, $config, [], null, $this->getSession( false ) );
 		// Invoking the method to be tested

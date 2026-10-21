@@ -1,0 +1,90 @@
+TAP version 13
+# (node:13) ExperimentalWarning: The MockTimers API is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: concurrent visits each increment the stored counter
+ok 1 - concurrent visits each increment the stored counter
+  ---
+  duration_ms: 2230.883959
+  type: 'test'
+  ...
+# Subtest: visits arriving during a flush survive it
+ok 2 - visits arriving during a flush survive it
+  ---
+  duration_ms: 317.890417
+  type: 'test'
+  ...
+# Subtest: the timer writes idle counters without another visit
+ok 3 - the timer writes idle counters without another visit
+  ---
+  duration_ms: 1172.091834
+  type: 'test'
+  ...
+# Subtest: closing drains pending counters before the next interval
+ok 4 - closing drains pending counters before the next interval
+  ---
+  duration_ms: 446.577708
+  type: 'test'
+  ...
+# Subtest: a failed write retains the batch for retry
+ok 5 - a failed write retains the batch for retry
+  ---
+  duration_ms: 62.45975
+  type: 'test'
+  ...
+# Subtest: record reads do not increment, including reserved object names
+ok 6 - record reads do not increment, including reserved object names
+  ---
+  duration_ms: 4.66075
+  type: 'test'
+  ...
+# Subtest: formerly crashing queries return SVG and leave the service alive
+ok 7 - formerly crashing queries return SVG and leave the service alive
+  ---
+  duration_ms: 10164.50638
+  type: 'test'
+  ...
+# Subtest: invalid input is rejected before it can add a visit
+ok 8 - invalid input is rejected before it can add a visit
+  ---
+  duration_ms: 1077.839875
+  type: 'test'
+  ...
+# Subtest: HTTP record reads are read-only and concurrent image visits are retained
+ok 9 - HTTP record reads are read-only and concurrent image visits are retained
+  ---
+  duration_ms: 5154.014669
+  type: 'test'
+  ...
+# Subtest: async database failures return a generic error and the process keeps serving
+ok 10 - async database failures return a generic error and the process keeps serving
+  ---
+  duration_ms: 416.064542
+  type: 'test'
+  ...
+# Subtest: SIGTERM drains pending visits before closing the database, once
+ok 11 - SIGTERM drains pending visits before closing the database, once
+  ---
+  duration_ms: 28702.993888
+  type: 'test'
+  ...
+# Subtest: shutdown reports a failed flush and still closes the database
+ok 12 - shutdown reports a failed flush and still closes the database
+  ---
+  duration_ms: 1969.607626
+  type: 'test'
+  ...
+# Subtest: DB_PATH creates nested storage and preserves both write APIs across processes
+ok 13 - DB_PATH creates nested storage and preserves both write APIs across processes
+  ---
+  duration_ms: 10292.620172
+  type: 'test'
+  ...
+1..13
+# tests 13
+# suites 0
+# pass 13
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 52580.444523

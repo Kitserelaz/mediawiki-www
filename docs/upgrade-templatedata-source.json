@@ -1,0 +1,282 @@
+{
+  "component": "mediawiki/extensions/TemplateData",
+  "baseline": "fb52519d7c7853ebd085d4b5e6cfa89458b6afb0",
+  "target": "6f8439d025fe3d1a05e312be1d421460d763fde4",
+  "preserved_changes": [
+    {
+      "path": ".eslintignore",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".eslintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".gitignore",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".gitreview",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".phan/config.php",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".phan/stubs/eventlogging.php",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".phpcs.xml",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".stylelintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "Gruntfile.js",
+      "change": "local-deletion"
+    },
+    {
+      "path": "composer.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/api/et.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/api/ko.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/api/pl.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/api/ru.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ar.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/az.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/bn.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ca.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ce.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/de.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/en-gb.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/es.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/et.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/fi.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/fr.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/gl.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/gu.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/he.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/hu-formal.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ia.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ig.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/it.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ja.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ka.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/kg.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ko.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/krc.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ku-latn.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ky.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/lb.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ln.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/lzh.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/mad.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ms.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/pa.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/pl.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ps.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ro.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ru.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/sh-latn.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/sm.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/smn.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/sms.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/sr-ec.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/sr-el.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ta.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/tcy.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/uk.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/zh-hans.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "modules/.eslintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "modules/ext.templateDataGenerator.editTemplatePage/.eslintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "package-lock.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "package.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "tests/phpunit/TemplateDataBlobTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "tests/qunit/.eslintrc.json",
+      "change": "local-deletion"
+    }
+  ],
+  "dependency_status": {
+    "old_runtime_requirements": {
+      "ext-zlib": "*"
+    },
+    "new_runtime_requirements": {
+      "ext-zlib": "*"
+    },
+    "has_lock": false,
+    "has_vendor": false,
+    "status": "runtime-requirements-unchanged"
+  },
+  "baseline_proof": {
+    "matched_runtime_and_manifest_files": 11,
+    "method": "Exact Git blobs for all installed non-test, non-vendor PHP and extension.json"
+  }
+}

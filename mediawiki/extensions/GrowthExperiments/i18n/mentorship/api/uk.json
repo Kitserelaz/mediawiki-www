@@ -1,0 +1,37 @@
+{
+	"@metadata": {
+		"authors": [
+			"DDPAT",
+			"Ice bulldog",
+			"Ата"
+		]
+	},
+	"apihelp-growthstarmentee-summary": "Позначити підопічного зірочкою або зняти позначку як поточний користувач (зберігається приватно і не вноситься в журнали)",
+	"apihelp-growthstarmentee-param-gesaction": "Необхідна дія (<kbd>star</kbd> або <kbd>unstar</kbd>)",
+	"apihelp-growthstarmentee-param-gesmentee": "Підопічний для відмітки/зняття зірочки",
+	"apihelp-query+growthstarredmentees-summary": "Отримати список підопічних, відмічених наставником, який наразі увійшов у систему",
+	"apihelp-growthsetmentorstatus-summary": "Встановити поточному користувачу статус наставника як активний / не на місці",
+	"apihelp-growthsetmentorstatus-param-gesstatus": "Новий статус",
+	"apihelp-growthsetmentorstatus-param-gesbackindays": "При позначенні наставника як неактивного, треба вказати тривалість статусу «не на місці» (у днях)",
+	"apihelp-query+growthmentorstatus-summary": "Запит на те, який в поточного користувача статус наставника",
+	"apihelp-growthmentordashboardupdatedata-summary": "Запланувати позачергове оновлення модуля огляду підопічних на панелі наставника. З робочих міркувань, ви можете запланувати не більше одного оновлення упродовж двох годин.",
+	"apihelp-growthsetmenteestatus-summary": "Задає статус наставника (дозволяє наставникам вмикати/вимикати модуль наставництва або зовсім відмовитися, що вилучить зв'язок підопічного й наставника)",
+	"apihelp-growthsetmenteestatus-param-state": "Новий статус підопічного (попередження: вказання optout назовсім вилучить зв'язок між підопічним і наставником)",
+	"apihelp-growthsetmenteestatus-param-state-enabled": "Модуль наставництва увімкнено",
+	"apihelp-growthsetmenteestatus-param-state-disabled": "Модуль наставництва повністю вимкнено. Зазвичай це задається програмним забезпеченням і використовується для A/B-тестування.",
+	"apihelp-growthsetmenteestatus-param-state-optout": "Підопічний відмовився від наставництва; зв'язок між підопічним і наставником буде вилучено, модуль наставництва буде замінено на можливість увімкнути його знову",
+	"apihelp-query+growthmenteestatus-summary": "Зробити запит на статус поточного користувача як підопічного; детальну інформацію про окремі статуси див. у документації action=growthsetmenteestatus.",
+	"apihelp-query+growthmentormentee-summary": "Отримати усіх підопічних даного наставники",
+	"apihelp-query+growthmentormentee-param-gemmmentor": "Наставник, для якого вивести підопічних",
+	"apihelp-growthmanagementorlist-summary": "Керуйте інформацією в структурованому списку наставників (зазвичай зберігається в [[MediaWiki:GrowthMentors.json]]). Цим модулем можуть користуватися як поточні, так і майбутні наставники (щоб додати себе чи змінити свої дані), а також адміністратори (для всіх користувачів).",
+	"apihelp-growthmanagementorlist-param-geaction": "Дія",
+	"apihelp-growthmanagementorlist-param-message": "Вітальне повідомлення (використовуйте порожній рядок для повідомлення наставника за замовчуванням)",
+	"apihelp-growthmanagementorlist-param-weight": "Вага",
+	"apihelp-growthmanagementorlist-param-isaway": "Наставник зараз відсутній? Потрібно встановити (за замовчуванням значення false).",
+	"apihelp-growthmanagementorlist-param-awaytimestamp": "До якого часу наставник не на місці? Максимальне значення — 1 рік із сьогоднішнього дня. Ігнорується, якщо isaway не має значення true.",
+	"apihelp-growthmanagementorlist-param-summary": "Причина зміни",
+	"apihelp-growthmanagementorlist-param-username": "Ім’я користувача наставника, якого торкнуться зміни. Якщо не вказано, використовуватиметься поточний користувач. Може використовуватися лише привілейованими користувачами.",
+	"growthexperiments-api-managementors-error-no-away-timestamp": "Якщо isaway має значення значення true, то треба вказати awaytimestamp.",
+	"apihelp-growthinvalidatepersonalizedpraisesuggestion-summary": "Анулює пропозицію гідного похвали підопічного в модулі персоналізованої похвали на панелі наставника",
+	"apihelp-growthinvalidatepersonalizedpraisesuggestion-param-mentee": "Підопічного до анулювання"
+}

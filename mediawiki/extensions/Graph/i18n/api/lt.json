@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Eitvys200",
+			"Nokeoo"
+		]
+	},
+	"apihelp-graph-param-title": "Puslapio su grafiku pavadinimas",
+	"apierror-graph-invalid": "Grafikas negalimas.",
+	"apierror-graph-missing": "Grafikas nerastas."
+}

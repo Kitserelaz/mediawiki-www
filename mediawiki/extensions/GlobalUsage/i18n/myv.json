@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Botuzhaleny-sodamo",
+			"Rueter",
+			"Сантяй"
+		]
+	},
+	"globalusage": "Файлань эрьва кува тевс нолдамо",
+	"globalusage-ok": "Вешнемс",
+	"globalusage-on-wiki": "«$2»-со тевс нолдамо",
+	"globalusage-of-file": "Те файлась тевс нолдави истямо викитнень эйсэ:",
+	"globalusage-more": "Ваномс те файланть [[{{#Special:GlobalUsage}}/$1|эрьва кува тевс нолдамонзо]]."
+}

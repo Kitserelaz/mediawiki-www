@@ -1,10 +1,10 @@
 <?php
 
-namespace MediaWiki\CheckUser\Tests\Unit\ClientHints;
+namespace MediaWiki\Extension\CheckUser\Tests\Unit\ClientHints;
 
 use LogicException;
-use MediaWiki\CheckUser\ClientHints\ClientHintsReferenceIds;
-use MediaWiki\CheckUser\Services\UserAgentClientHintsManager;
+use MediaWiki\Extension\CheckUser\ClientHints\ClientHintsReferenceIds;
+use MediaWiki\Extension\CheckUser\Services\UserAgentClientHintsManager;
 use MediaWikiUnitTestCase;
 use TypeError;
 use Wikimedia\TestingAccessWrapper;
@@ -12,7 +12,7 @@ use Wikimedia\TestingAccessWrapper;
 /**
  * @group CheckUser
  *
- * @covers \MediaWiki\CheckUser\ClientHints\ClientHintsReferenceIds
+ * @covers \MediaWiki\Extension\CheckUser\ClientHints\ClientHintsReferenceIds
  */
 class ClientHintsReferenceIdsTest extends MediaWikiUnitTestCase {
 	public function testConstructorWithNoArgument() {
@@ -54,7 +54,10 @@ class ClientHintsReferenceIdsTest extends MediaWikiUnitTestCase {
 
 	/** @dataProvider provideAddReferenceIds */
 	public function testAddReferenceIds(
-		$initialInternalArrayValue, $referenceIds, $mapId, $expectedInternalArrayValue
+		$initialInternalArrayValue,
+		$referenceIds,
+		$mapId,
+		$expectedInternalArrayValue
 	) {
 		$objectUnderTest = new ClientHintsReferenceIds( $initialInternalArrayValue );
 		$objectUnderTest->addReferenceIds( $referenceIds, $mapId );
@@ -74,25 +77,25 @@ class ClientHintsReferenceIdsTest extends MediaWikiUnitTestCase {
 				[],
 				"2",
 				UserAgentClientHintsManager::IDENTIFIER_CU_CHANGES,
-				[ UserAgentClientHintsManager::IDENTIFIER_CU_CHANGES => [ 2 ] ]
+				[ UserAgentClientHintsManager::IDENTIFIER_CU_CHANGES => [ 2 ] ],
 			],
 			'Mapping ID argument as cu_changes with array of reference IDs' => [
 				[],
 				[ 1, "2" ],
 				UserAgentClientHintsManager::IDENTIFIER_CU_CHANGES,
-				[ UserAgentClientHintsManager::IDENTIFIER_CU_CHANGES => [ 1, 2 ] ]
+				[ UserAgentClientHintsManager::IDENTIFIER_CU_CHANGES => [ 1, 2 ] ],
 			],
 			'Mapping ID argument as cu_changes with array of reference IDs and existing reference IDs' => [
 				[ UserAgentClientHintsManager::IDENTIFIER_CU_CHANGES => [ 3 ] ],
 				[ 1, "2" ],
 				UserAgentClientHintsManager::IDENTIFIER_CU_CHANGES,
-				[ UserAgentClientHintsManager::IDENTIFIER_CU_CHANGES => [ 3, 1, 2 ] ]
+				[ UserAgentClientHintsManager::IDENTIFIER_CU_CHANGES => [ 3, 1, 2 ] ],
 			],
 			'Mapping ID argument as cu_log_event with array of reference IDs that duplicate existing reference IDs' => [
 				[ UserAgentClientHintsManager::IDENTIFIER_CU_LOG_EVENT => [ 3 ] ],
 				[ 1, "3" ],
 				UserAgentClientHintsManager::IDENTIFIER_CU_LOG_EVENT,
-				[ UserAgentClientHintsManager::IDENTIFIER_CU_LOG_EVENT => [ 3, 1 ] ]
+				[ UserAgentClientHintsManager::IDENTIFIER_CU_LOG_EVENT => [ 3, 1 ] ],
 			],
 			'Mapping ID argument as cu_private_event with multiple existing reference IDs' => [
 				[
@@ -140,22 +143,22 @@ class ClientHintsReferenceIdsTest extends MediaWikiUnitTestCase {
 			'Mapping ID argument as cu_changes map identifier' => [
 				$defaultInternalArray,
 				UserAgentClientHintsManager::IDENTIFIER_CU_CHANGES,
-				[ 1, 2 ]
+				[ 1, 2 ],
 			],
 			'Mapping ID argument as cu_log_event map identifier' => [
 				$defaultInternalArray,
 				UserAgentClientHintsManager::IDENTIFIER_CU_LOG_EVENT,
-				[ 55 ]
+				[ 55 ],
 			],
 			'Mapping ID argument as cu_private_event map identifier' => [
 				$defaultInternalArray,
 				UserAgentClientHintsManager::IDENTIFIER_CU_PRIVATE_EVENT,
-				[ 12213, 121, 23232323 ]
+				[ 12213, 121, 23232323 ],
 			],
 			'Mapping ID argument as cu_private_event map identifier with no defined cu_private_event IDs' => [
 				[ UserAgentClientHintsManager::IDENTIFIER_CU_CHANGES => [ 1, 2 ] ],
 				UserAgentClientHintsManager::IDENTIFIER_CU_PRIVATE_EVENT,
-				[]
+				[],
 			],
 		];
 	}

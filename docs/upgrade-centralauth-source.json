@@ -1,0 +1,7 @@
+{
+  "component": "mediawiki/extensions/CentralAuth",
+  "baseline": "eef9cb5a757b889a9ae831319abc79cc1eb06628",
+  "target": "50d8594f7ea0f62654ca1e335c8f0a8cf4d1767b",
+  "preserved_changes": [],
+  "dependency_status": "requires-lock-regeneration"
+}

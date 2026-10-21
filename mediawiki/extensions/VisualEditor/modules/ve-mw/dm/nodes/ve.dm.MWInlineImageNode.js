@@ -40,7 +40,7 @@ ve.dm.MWInlineImageNode.static.name = 'mwInlineImage';
 
 ve.dm.MWInlineImageNode.static.preserveHtmlAttributes = function ( attribute ) {
 	const attributes = [ 'typeof', 'class', 'src', 'resource', 'width', 'height', 'href', 'data-mw' ];
-	return attributes.indexOf( attribute ) === -1;
+	return !attributes.includes( attribute );
 };
 
 ve.dm.MWInlineImageNode.static.matchTagNames = [ 'span' ];
@@ -91,7 +91,7 @@ ve.dm.MWInlineImageNode.static.toDataElement = function ( domElements, converter
 		mediaTag: img.nodeName.toLowerCase(),
 		type: types.frameType,
 		src: img.getAttribute( 'src' ) || img.getAttribute( 'poster' ),
-		href: href,
+		href,
 		imageClassAttr: img.getAttribute( 'class' ),
 		imgWrapperClassAttr: imgWrapper.getAttribute( 'class' ),
 		resource: img.getAttribute( 'resource' ),
@@ -100,39 +100,38 @@ ve.dm.MWInlineImageNode.static.toDataElement = function ( domElements, converter
 		height: height !== null && height !== '' ? +height : null,
 		alt: img.getAttribute( 'alt' ),
 		mw: mwData,
-		isError: isError,
-		errorText: errorText
+		isError,
+		errorText
 	};
 
 	// Extract individual classes
 	classes = typeof classes === 'string' ? classes.trim().split( /\s+/ ) : [];
 
 	// Deal with border flag
-	if ( classes.indexOf( 'mw-image-border' ) !== -1 ) {
+	if ( classes.includes( 'mw-image-border' ) ) {
 		attributes.borderImage = true;
 		recognizedClasses.push( 'mw-image-border' );
 	}
 
 	// Vertical alignment
 	attributes.valign = 'default';
-	[ 'midde', 'baseline', 'sub', 'super', 'top', 'text-top', 'bottom', 'text-bottom' ].some( ( valign ) => {
+	for ( const valign of [ 'middle', 'baseline', 'sub', 'super', 'top', 'text-top', 'bottom', 'text-bottom' ] ) {
 		const className = 'mw-valign-' + valign;
-		if ( classes.indexOf( className ) !== -1 ) {
+		if ( classes.includes( className ) ) {
 			attributes.valign = valign;
 			recognizedClasses.push( className );
-			return true;
+			break;
 		}
-		return false;
-	} );
+	}
 
 	// Border
-	if ( classes.indexOf( 'mw-image-border' ) !== -1 ) {
+	if ( classes.includes( 'mw-image-border' ) ) {
 		attributes.borderImage = true;
 		recognizedClasses.push( 'mw-image-border' );
 	}
 
 	// Default-size
-	if ( classes.indexOf( 'mw-default-size' ) !== -1 ) {
+	if ( classes.includes( 'mw-default-size' ) ) {
 		attributes.defaultSize = true;
 		recognizedClasses.push( 'mw-default-size' );
 	}
@@ -140,7 +139,7 @@ ve.dm.MWInlineImageNode.static.toDataElement = function ( domElements, converter
 	// Store unrecognized classes so we can restore them on the way out
 	attributes.unrecognizedClasses = OO.simpleArrayDifference( classes, recognizedClasses );
 
-	const dataElement = { type: this.name, attributes: attributes };
+	const dataElement = { type: this.name, attributes };
 
 	this.storeGeneratedContents( dataElement, dataElement.attributes.src, converter.getStore() );
 

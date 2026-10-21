@@ -1,10 +1,10 @@
 # Container extension dependencies
 
-The manifest and Composer requirements of every supplied extension/skin are recorded in [dependency-inventory.json](dependency-inventory.json). The image preserves the supplied vendor trees and lockfiles. This inventory does not establish that all supplied extensions work together; test each selected combination before production. A clean Composer resolution has not replaced the supplied dependencies.
+The manifest and Composer requirements of every supplied extension/skin are recorded in [dependency-inventory.json](dependency-inventory.json). The image preserves the supplied vendor trees and lockfiles. This inventory does not establish that all supplied extensions work together; test each selected combination before production. Selected component dependencies were regenerated with pinned tools for this upgrade; exact packages, source targets and preservation reports are recorded in the inventory and source-port reports. Required files hidden by upstream ignore rules are explicitly tracked and hash-checked through `upgrade-vendored-build-inputs.json`.
 
 | Feature / extensions | Container support or prerequisite |
 | --- | --- |
-| Core, CreateWiki, ManageWiki, CentralAuth, CheckUser, OAuth | PHP 8.3, mysqli/PDO, intl, mbstring, GMP, OpenSSL, sodium, XML, ZIP; shared database schemas and mounted OAuth keys are initialized explicitly. |
+| Core, CreateWiki, ManageWiki, CentralAuth, CheckUser, OAuth | PHP 8.4.26, mysqli/PDO, intl, mbstring, GMP, OpenSSL, sodium, XML, ZIP; shared database schemas and mounted OAuth keys are initialized explicitly. |
 | Scribunto | Lua 5.1 at `/usr/bin/lua5.1`; exercised by browser acceptance tests. |
 | Thumbnails, NativeSvgHandler, SVG | ImageMagick, GD, librsvg, Ghostscript and fonts; uploaded PNG thumbnails are exercised by acceptance tests. |
 | PDFHandler / DjVu / TIFF | Poppler, Ghostscript, DjVuLibre and TIFF tools are installed. Rendering each uncommon format still needs a representative upload test. |

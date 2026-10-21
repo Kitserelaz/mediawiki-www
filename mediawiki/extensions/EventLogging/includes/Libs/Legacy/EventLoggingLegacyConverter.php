@@ -53,8 +53,6 @@ use UnexpectedValueException;
  *
  * - EventLogging Capsule id field will be set to a random uuid4,
  *   instead of a uuid5 built from event content.
- *
- *
  */
 class EventLoggingLegacyConverter {
 
@@ -209,8 +207,6 @@ class EventLoggingLegacyConverter {
 	 * Return an RFC4122 compliant v4 UUID
 	 *
 	 * Taken from MediaWiki Wikimedia\UUID\GlobalIdGenerator.
-	 *
-	 * @return string
 	 */
 	public static function newUUIDv4(): string {
 		$hex = bin2hex( random_bytes( 32 / 2 ) );

@@ -1,0 +1,109 @@
+{
+  "component": "mediawiki/extensions/ConfirmEdit",
+  "baseline": "b77a6bdfdf9fa138279fcc8e2be1db440bffceb4",
+  "target": "9beabf1f6bc57dcf5c3f24bcbd1161dbe52b46b5",
+  "preserved_changes": [
+    {
+      "path": ".eslintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".gitignore",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".gitreview",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".mailmap",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".phan/config.php",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".phpcs.xml",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".stylelintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "Gruntfile.js",
+      "change": "local-deletion"
+    },
+    {
+      "path": "ReCaptchaNoCaptcha/resources/ve-confirmedit-reCaptchaNoCaptcha/.eslintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "Turnstile/resources/ve-confirmedit-turnstile/.eslintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "hCaptcha/i18n/fa.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "hCaptcha/i18n/nl.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "hCaptcha/i18n/pt.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "hCaptcha/i18n/ru.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "hCaptcha/resources/ve-confirmedit-hCaptcha/.eslintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "i18n/fa.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/lb.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ps.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "package-lock.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "package.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "resources/libs/.eslintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "resources/ve-confirmedit/.eslintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "tests/phpunit/integration/AbuseFilter/CaptchaConsequenceTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "tests/phpunit/unit/AbuseFilterHooksTest.php",
+      "change": "local-source-edit"
+    }
+  ],
+  "dependency_status": "Review component Composer lock/vendor against target manifest before final verification",
+  "manual_resolutions": [],
+  "baseline_proof": {
+    "matched_runtime_and_manifest_files": 37,
+    "method": "Exact installed PHP implementation and manifest Git blobs before reviewed JS/lock resolutions"
+  }
+}

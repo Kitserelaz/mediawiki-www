@@ -1,0 +1,87 @@
+/* stylelint-disable selector-class-pattern */
+@import 'mediawiki.skin.variables.less';
+
+/* Adjustments for WikiEditor extension */
+.wikiEditor-ui-view,
+.prp-page-image {
+	background-color: @background-color-interactive-subtle;
+}
+
+.wikiEditor-ui-text textarea {
+	border: 0;
+	padding: 0;
+	line-height: 1.5em;
+	margin: 0;
+	/* stylelint-disable-next-line plugin/no-unsupported-browser-features */
+	resize: none;
+}
+
+/* stylelint-disable-next-line selector-max-id */
+.mw-editform #wpTextbox1 {
+	max-height: none;
+}
+
+.prp-page-content {
+	display: flex;
+	flex-direction: column;
+	border-right: 1px solid #c8ccd1;
+}
+
+.prp-page-edit-header,
+.prp-page-edit-footer {
+	flex: 1 1 15%;
+}
+
+.prp-page-edit-body {
+	flex: 6 2 60%;
+}
+
+.prp-page-edit-area-label {
+	color: @color-base;
+	font-size: 80%;
+}
+
+.prp-edit-area,
+.prp-edit-area .ext-codemirror-wrapper {
+	display: flex;
+	flex-direction: column;
+	overflow-y: hidden;
+}
+
+.prp-edit-area textarea {
+	flex: 1;
+}
+
+.group-proofreadpage-secondary .oo-ui-iconElement:first-child {
+	margin-left: 0;
+}
+
+.prp-page-container,
+.prp-page-image-openseadragon-vertical {
+	min-height: 248px;
+}
+
+#editform .prp-page-content { /* stylelint-disable-line selector-max-id */
+	line-height: 1.5em;
+}
+
+.prp-page-content .CodeMirror,
+.prp-page-content .cm-editor {
+	background: @background-color-base;
+	flex-grow: 1;
+}
+
+.prp-page-edit-QualityInputWidget-field.oo-ui-fieldLayout.oo-ui-labelElement.oo-ui-fieldLayout-align-left > .oo-ui-fieldLayout-body > .oo-ui-fieldLayout-field {
+	width: auto;
+}
+
+.prp-page-edit-QualityInputWidget-field.oo-ui-fieldLayout.oo-ui-labelElement > .oo-ui-fieldLayout-body {
+	display: flex;
+	align-items: center;
+	flex-direction: row-reverse;
+}
+
+.wikiEditor-ui-view-resizable .prp-page-image-openseadragon-vertical {
+	// stylelint-disable-next-line declaration-no-important
+	height: 100% !important;
+}

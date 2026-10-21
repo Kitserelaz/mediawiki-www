@@ -1,0 +1,318 @@
+<?php
+
+namespace SMW\Elastic\Indexer;
+
+use MediaWiki\Revision\RevisionLookup;
+use MediaWiki\Revision\RevisionRecord;
+use MediaWiki\Revision\SlotRecord;
+use MediaWiki\Title\Title;
+use MediaWiki\Title\TitleFactory;
+use Onoi\MessageReporter\MessageReporterAwareTrait;
+use Psr\Log\LoggerAwareTrait;
+use RuntimeException;
+use SMW\DataItems\WikiPage;
+use SMW\Elastic\Connection\Client;
+use SMW\Elastic\Jobs\IndexerRecoveryJob;
+use SMW\MediaWiki\Collator;
+use SMW\MediaWiki\RevisionGuardAwareTrait;
+use SMW\Store;
+use SMW\Utils\Timer;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 3.0
+ *
+ * @author mwjames
+ */
+class Indexer {
+
+	use MessageReporterAwareTrait;
+	use LoggerAwareTrait;
+	use RevisionGuardAwareTrait;
+
+	/**
+	 * Whether safe replication is required during the indexing process or not.
+	 */
+	const REQUIRE_SAFE_REPLICATION = 'replication/safe';
+
+	private ?FileIndexer $fileIndexer = null;
+
+	private string $origin = '';
+
+	private bool $isRebuild = false;
+
+	private array $versions = [];
+
+	/**
+	 * @since 3.0
+	 */
+	public function __construct(
+		private Store $store,
+		private Bulk $bulk,
+		private readonly TitleFactory $titleFactory,
+		private readonly RevisionLookup $revisionLookup,
+	) {
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function setVersions( array $versions ): void {
+		$this->versions = $versions;
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function setOrigin( string $origin ): void {
+		$this->origin = $origin;
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function getId( WikiPage $dataItem ): int {
+		return $this->store->getObjectIds()->getId( $dataItem );
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function isAccessible(): bool {
+		return $this->canReplicate();
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function isRebuild( bool $isRebuild = true ): void {
+		$this->isRebuild = $isRebuild;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @return Client
+	 */
+	public function getConnection() {
+		return $this->store->getConnection( 'elastic' );
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function getIndexName( string $type ): string {
+		$index = $this->store->getConnection( 'elastic' )->getIndexName( $type );
+
+		// If the rebuilder has set a specific version, use it to avoid writing to
+		// the alias of the index when running a rebuild.
+		if ( isset( $this->versions[$type] ) ) {
+			$index = "$index-" . $this->versions[$type];
+		}
+
+		return $index;
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function delete( array $idList, bool $isConcept = false ): void {
+		if ( $idList === [] ) {
+			return;
+		}
+
+		$title = $this->titleFactory->newFromText(
+			$this->origin . ':' . md5( json_encode( $idList ) )
+		);
+
+		if ( !$this->canReplicate() ) {
+			IndexerRecoveryJob::pushFromParams( $title, [ 'delete' => $idList ] );
+			return;
+		}
+
+		$params = [
+			'_index' => $this->getIndexName( Client::TYPE_DATA )
+		];
+
+		$this->bulk->clear();
+		$this->bulk->head( $params );
+
+		$time = -microtime( true );
+
+		foreach ( $idList as $id ) {
+
+			$this->bulk->delete( [ '_id' => $id ] );
+
+			if ( $isConcept ) {
+				$this->bulk->delete(
+					[
+						'_index' => $this->getIndexName( Client::TYPE_LOOKUP ),
+						'_id' => md5( $id )
+					]
+				);
+			}
+		}
+
+		$this->bulk->execute();
+
+		$response = $this->bulk->getResponse();
+
+		$this->logger->info(
+			'Indexer Deleted list procTime (in sec): {procTime} Response: {response}',
+			[
+				'method' => __METHOD__,
+				'role' => 'developer',
+				'origin' => $this->origin,
+				'procTime' => $time + microtime( true ),
+				'response' => $response
+			]
+		);
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function create( WikiPage $dataItem, array $data = [] ): void {
+		$title = $dataItem->getTitle();
+
+		if ( !$this->canReplicate() ) {
+			IndexerRecoveryJob::pushFromParams( $title, [ 'create' => $dataItem->getHash() ] );
+			return;
+		}
+
+		if ( $dataItem->getId() == 0 ) {
+			$dataItem->setId( $this->getId( $dataItem ) );
+		}
+
+		if ( $dataItem->getId() == 0 ) {
+			throw new RuntimeException( "Missing ID: " . $dataItem );
+		}
+
+		$connection = $this->store->getConnection( 'elastic' );
+
+		$params = [
+			'index' => $this->getIndexName( Client::TYPE_DATA ),
+			'id'	=> $dataItem->getId()
+		];
+
+		$data['subject'] = $this->makeSubject( $dataItem );
+		$response = $connection->index( $params + [ 'body' => $data ] );
+
+		$this->logger->info(
+			'Indexer Create ({subject}, {id}) Response: {response}',
+			[
+				'method' => __METHOD__,
+				'role' => 'developer',
+				'origin' => $this->origin,
+				'subject' => $dataItem->getHash(),
+				'id' => $dataItem->getId(),
+				'response' => $response
+			]
+		);
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function fetchNativeData( WikiPage|Title|int $id ): string {
+		if ( $id instanceof WikiPage ) {
+			$id = $id->getTitle();
+		}
+
+		if ( $id instanceof Title ) {
+			$id = $this->revisionGuard->getLatestRevID( $id );
+		}
+
+		if ( $id == 0 ) {
+			return '';
+		}
+
+		$revision = $this->revisionLookup->getRevisionById( $id );
+
+		if ( $revision == null ) {
+			return '';
+		}
+
+		$content = $revision->getContent( SlotRecord::MAIN, RevisionRecord::RAW );
+
+		return $content->getNativeData();
+	}
+
+	/**
+	 * @since 3.2
+	 */
+	public function indexDocument(
+		Document $document,
+		string $type = self::REQUIRE_SAFE_REPLICATION
+	): void {
+		Timer::start( __METHOD__ );
+
+		$subject = $document->getSubject();
+
+		if ( $type === self::REQUIRE_SAFE_REPLICATION && !$this->canReplicate() ) {
+			IndexerRecoveryJob::pushFromDocument( $document );
+			return;
+		}
+
+		$params = [
+			'_index' => $this->getIndexName( Client::TYPE_DATA )
+		];
+
+		$this->bulk->clear();
+		$this->bulk->head( $params );
+
+		$this->bulk->infuseDocument( $document );
+		$this->bulk->execute();
+
+		$this->logger->info(
+			'Indexer Data index completed ({subject}, {id}) '
+				. 'procTime (in sec): {procTime} Response: {response}',
+			[
+				'method' => __METHOD__,
+				'role' => 'developer',
+				'origin' => $this->origin,
+				'subject' => $subject->getHash(),
+				'id' => $document->getId(),
+				'procTime' => Timer::getElapsedTime( __METHOD__ ),
+				'response' => $this->bulk->getResponse()
+			]
+		);
+	}
+
+	private function canReplicate(): bool {
+		$connection = $this->store->getConnection( 'elastic' );
+
+		// Make sure a node is available and is not locked by the rebuilder
+		if ( !$connection->hasLock( Client::TYPE_DATA ) && $connection->ping() ) {
+			return true;
+		}
+
+		return false;
+	}
+
+	private function makeSubject( WikiPage $subject ): array {
+		$title = $subject->getDBKey();
+
+		if ( $subject->getNamespace() !== SMW_NS_PROPERTY || !str_starts_with( $title ?? '', '_' ) ) {
+			$title = str_replace( '_', ' ', $title );
+		}
+
+		// #7079 Keep in step with `DocumentCreator::makeSubject`: `create`
+		// replaces the whole document, so a value derived differently here would
+		// undo what `DocumentCreator` wrote.
+		$sort = Collator::singleton()->armoredSortKey( $subject->getSortKey() );
+
+		// Elasticsearch rejects a document that is not strict UTF-8, and a
+		// collation is free to emit anything
+		$sort = mb_convert_encoding( $sort, 'UTF-8', 'UTF-8' );
+
+		return [
+			'title'     => $title,
+			'subobject' => $subject->getSubobjectName(),
+			'namespace' => $subject->getNamespace(),
+			'interwiki' => $subject->getInterwiki(),
+			'sortkey'   => $sort
+		];
+	}
+
+}

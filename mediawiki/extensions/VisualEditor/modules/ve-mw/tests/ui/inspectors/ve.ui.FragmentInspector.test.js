@@ -15,20 +15,18 @@ QUnit.module( 've.ui.FragmentInspector (MW)', ve.test.utils.newMwEnvironment( {
 /* Tests */
 
 QUnit.test( 'Wikitext link inspector', ( assert ) => {
-	const done = assert.async(),
-		surface = ve.init.target.createSurface(
-			ve.dm.converter.getModelFromDom(
-				ve.createDocumentFromHtml(
-					'<p>Foo [[bar]] [[Quux|baz]]  x</p>' +
-					'<p>wh]]ee</p>'
-				)
-			),
-			{ mode: 'source' }
-		),
+	const
+		testsDone = assert.async(),
+		html = '<p>Foo [[bar]] [[Quux|baz]]  x</p>' +
+			'<p>wh]]ee</p>',
+		caseDefaults = {
+			name: 'wikitextLink',
+			html,
+			config: { mode: 'source' }
+		},
 		cases = [
 			{
 				msg: 'Collapsed selection expands to word',
-				name: 'wikitextLink',
 				range: new ve.Range( 2 ),
 				expectedRange: new ve.Range( 1, 8 ),
 				expectedData: ( data ) => {
@@ -40,7 +38,6 @@ QUnit.test( 'Wikitext link inspector', ( assert ) => {
 			},
 			{
 				msg: 'Collapsed selection in word (noExpand)',
-				name: 'wikitextLink',
 				range: new ve.Range( 2 ),
 				setupData: { noExpand: true },
 				expectedRange: new ve.Range( 2 ),
@@ -48,7 +45,6 @@ QUnit.test( 'Wikitext link inspector', ( assert ) => {
 			},
 			{
 				msg: 'Cancel restores original data & selection',
-				name: 'wikitextLink',
 				range: new ve.Range( 2 ),
 				expectedRange: new ve.Range( 2 ),
 				expectedData: () => {},
@@ -56,36 +52,32 @@ QUnit.test( 'Wikitext link inspector', ( assert ) => {
 			},
 			{
 				msg: 'Collapsed selection inside existing link',
-				name: 'wikitextLink',
 				range: new ve.Range( 5 ),
 				expectedRange: new ve.Range( 5, 12 ),
 				expectedData: () => {}
 			},
 			{
 				msg: 'Selection inside existing link',
-				name: 'wikitextLink',
 				range: new ve.Range( 19, 20 ),
 				expectedRange: new ve.Range( 13, 25 ),
 				expectedData: () => {}
 			},
 			{
 				msg: 'Selection spanning existing link',
-				name: 'wikitextLink',
 				range: new ve.Range( 3, 8 ),
 				expectedRange: new ve.Range( 3, 8 ),
 				expectedData: () => {}
 			},
 			{
 				msg: 'Selection with whitespace is trimmed',
-				name: 'wikitextLink',
 				range: new ve.Range( 1, 5 ),
 				expectedRange: new ve.Range( 1, 8 )
 			},
 			{
 				msg: 'Link insertion',
-				name: 'wikitextLink',
 				range: new ve.Range( 26 ),
-				input: function () {
+				input: function ( done ) {
+					this.annotationInput.once( 'change', done );
 					this.annotationInput.getTextInputWidget().setValue( 'quux' );
 				},
 				expectedRange: new ve.Range( 34 ),
@@ -94,10 +86,24 @@ QUnit.test( 'Wikitext link inspector', ( assert ) => {
 				}
 			},
 			{
-				msg: 'Link insertion to file page',
-				name: 'wikitextLink',
+				msg: 'Link insertion with label (mobile)',
 				range: new ve.Range( 26 ),
-				input: function () {
+				isMobile: true,
+				input: function ( done ) {
+					this.annotationInput.once( 'change', done );
+					this.annotationInput.getTextInputWidget().setValue( 'quux' );
+					this.labelInput.setValue( 'whee' );
+				},
+				expectedRange: new ve.Range( 39 ),
+				expectedData: ( data ) => {
+					data.splice( 26, 0, ...[ ...'[[Quux|whee]]' ] );
+				}
+			},
+			{
+				msg: 'Link insertion to file page',
+				range: new ve.Range( 26 ),
+				input: function ( done ) {
+					this.annotationInput.once( 'change', done );
 					this.annotationInput.getTextInputWidget().setValue( 'File:foo.jpg' );
 				},
 				expectedRange: new ve.Range( 43 ),
@@ -107,40 +113,80 @@ QUnit.test( 'Wikitext link inspector', ( assert ) => {
 			},
 			{
 				msg: 'Link insertion with no input is no-op',
-				name: 'wikitextLink',
 				range: new ve.Range( 26 ),
 				expectedRange: new ve.Range( 26 ),
 				expectedData: () => {}
 			},
 			{
-				msg: 'Link modified',
-				name: 'wikitextLink',
+				msg: 'Link target modified',
 				range: new ve.Range( 5, 12 ),
-				input: function () {
+				input: function ( done ) {
+					this.annotationInput.once( 'change', done );
 					this.annotationInput.getTextInputWidget().setValue( 'quux' );
 				},
 				expectedRange: new ve.Range( 5, 17 ),
 				expectedData: ( data ) => {
-					data.splice( 7, 3, ...[ ...'Quux|bar' ] );
+					data.splice( 5, 7, ...[ ...'[[Quux|bar]]' ] );
 				}
 			},
 			{
-				msg: 'Link modified with initial selection including whitespace',
-				name: 'wikitextLink',
-				range: new ve.Range( 4, 13 ),
-				input: function () {
+				msg: 'Link target and label modified (mobile)',
+				range: new ve.Range( 5, 12 ),
+				isMobile: true,
+				input: function ( done ) {
+					this.annotationInput.once( 'change', done );
 					this.annotationInput.getTextInputWidget().setValue( 'quux' );
+					this.labelInput.setValue( 'whee' );
 				},
-				expectedRange: new ve.Range( 5, 17 ),
+				expectedRange: new ve.Range( 5, 18 ),
 				expectedData: ( data ) => {
-					data.splice( 7, 3, ...[ ...'Quux|bar' ] );
+					data.splice( 5, 7, ...[ ...'[[Quux|whee]]' ] );
 				}
 			},
 			{
-				msg: 'Piped link modified',
-				name: 'wikitextLink',
+				msg: 'Link target modified and label cleared (mobile)',
+				range: new ve.Range( 5, 12 ),
+				isMobile: true,
+				input: function ( done ) {
+					this.annotationInput.once( 'change', done );
+					this.annotationInput.getTextInputWidget().setValue( 'quux' );
+					this.labelInput.setValue( '' );
+				},
+				expectedRange: new ve.Range( 5, 13 ),
+				expectedData: ( data ) => {
+					data.splice( 5, 7, ...[ ...'[[quux]]' ] );
+				}
+			},
+			{
+				msg: 'Link label modified (mobile)',
 				range: new ve.Range( 16 ),
-				input: function () {
+				isMobile: true,
+				input: function ( done ) {
+					this.labelInput.setValue( 'whee' );
+					done();
+				},
+				expectedRange: new ve.Range( 13, 26 ),
+				expectedData: ( data ) => {
+					data.splice( 13, 12, ...[ ...'[[Quux|whee]]' ] );
+				}
+			},
+			{
+				msg: 'Link target modified with initial selection including whitespace',
+				range: new ve.Range( 4, 13 ),
+				input: function ( done ) {
+					this.annotationInput.once( 'change', done );
+					this.annotationInput.getTextInputWidget().setValue( 'quux' );
+				},
+				expectedRange: new ve.Range( 5, 17 ),
+				expectedData: ( data ) => {
+					data.splice( 5, 7, ...[ ...'[[Quux|bar]]' ] );
+				}
+			},
+			{
+				msg: 'Target of labeled link modified',
+				range: new ve.Range( 16 ),
+				input: function ( done ) {
+					this.annotationInput.once( 'change', done );
 					this.annotationInput.getTextInputWidget().setValue( 'whee' );
 				},
 				expectedRange: new ve.Range( 13, 25 ),
@@ -149,10 +195,10 @@ QUnit.test( 'Wikitext link inspector', ( assert ) => {
 				}
 			},
 			{
-				msg: 'Link modified',
-				name: 'wikitextLink',
+				msg: 'Wikitext in link label is escaped',
 				range: new ve.Range( 30, 36 ),
-				input: function () {
+				input: function ( done ) {
+					this.annotationInput.once( 'change', done );
 					this.annotationInput.getTextInputWidget().setValue( 'foo' );
 				},
 				expectedRange: new ve.Range( 30, 61 ),
@@ -161,9 +207,7 @@ QUnit.test( 'Wikitext link inspector', ( assert ) => {
 				}
 			}
 			// Skips clear annotation test, not implement yet
-		];
+		].map( ( testCase ) => Object.assign( {}, caseDefaults, testCase ) );
 
-	ve.test.utils.runFragmentInspectorTests( surface, assert, cases ).finally( () => {
-		done();
-	} );
+	ve.test.utils.runFragmentInspectorTests( assert, cases ).finally( () => testsDone() );
 } );

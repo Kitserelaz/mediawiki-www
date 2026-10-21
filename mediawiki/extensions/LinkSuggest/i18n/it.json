@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Beta16",
+			"Civvì",
+			"Macofe"
+		]
+	},
+	"linksuggest-desc": "Suggerisce i collegamenti agli editori nell'interfaccia di modifica",
+	"tog-disablelinksuggest": "Non mostrare link suggeriti"
+}

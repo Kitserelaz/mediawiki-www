@@ -1,0 +1,136 @@
+<?php
+
+namespace SMW;
+
+use SMW\Cache\InMemoryLruCache;
+use SMW\Utils\StatsFormatter;
+
+/**
+ * A multipurpose non-persistent static pool cache to keep selected items for
+ * the duration of a request cacheable.
+ *
+ * @license GPL-2.0-or-later
+ * @since 2.3
+ *
+ * @author mwjames
+ */
+class InMemoryPoolCache {
+
+	/**
+	 * Stats as plain string
+	 */
+	const FORMAT_PLAIN = StatsFormatter::FORMAT_PLAIN;
+
+	/**
+	 * Stats as JSON output
+	 */
+	const FORMAT_JSON = StatsFormatter::FORMAT_JSON;
+
+	/**
+	 * Stats as HTML list output
+	 */
+	const FORMAT_HTML = StatsFormatter::FORMAT_HTML;
+
+	private static ?InMemoryPoolCache $instance = null;
+
+	private array $poolCacheList = [];
+
+	/**
+	 * @since 2.3
+	 *
+	 * @return InMemoryPoolCache
+	 */
+	public static function getInstance(): InMemoryPoolCache {
+		if ( self::$instance === null ) {
+			self::$instance = new self();
+		}
+
+		return self::$instance;
+	}
+
+	/**
+	 * @since 2.3
+	 */
+	public static function clear(): void {
+		self::$instance = null;
+	}
+
+	/**
+	 * @since 2.3
+	 *
+	 * @param string $poolCacheName
+	 */
+	public function resetPoolCacheById( $poolCacheName = '' ): void {
+		foreach ( $this->poolCacheList as $key => $value ) {
+			if ( $key === $poolCacheName || $poolCacheName === '' ) {
+				unset( $this->poolCacheList[$key] );
+			}
+		}
+	}
+
+	/**
+	 * @since 2.4
+	 *
+	 * @param string|null $format
+	 *
+	 * @return string|array
+	 */
+	public function getStats( $format = null ): string|array {
+		return StatsFormatter::format( $this->computeStats(), $format );
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * @param string $poolCacheId
+	 * @param int $cacheSize
+	 *
+	 * @return InMemoryLruCache
+	 */
+	public function getPoolCacheById( $poolCacheId, $cacheSize = 500 ) {
+		if ( !isset( $this->poolCacheList[$poolCacheId] ) ) {
+			$this->poolCacheList[$poolCacheId] = new InMemoryLruCache( $cacheSize );
+		}
+
+		return $this->poolCacheList[$poolCacheId];
+	}
+
+	/**
+	 * @return non-empty-array[]
+	 */
+	private function computeStats(): array {
+		ksort( $this->poolCacheList );
+		$stats = [];
+
+		foreach ( $this->poolCacheList as $key => $value ) {
+			$stats[$key] = [];
+
+			$hits = 0;
+			$misses = 0;
+
+			foreach ( $value->getStats() as $k => $v ) {
+				$stats[$key][$k] = $v;
+
+				if ( $k === 'hits' ) {
+					$hits = $v;
+				}
+
+				if ( $k === 'inserts' ) {
+					$misses = $v;
+				}
+
+				if ( $k === 'misses' && $v > 0 ) {
+					$misses = $v;
+				}
+			}
+
+			$hitRatio = $hits > 0 ? round( $hits / ( $hits + $misses ), 4 ) : 0;
+
+			$stats[$key]['hit ratio'] = $hitRatio;
+			$stats[$key]['miss ratio'] = $hitRatio > 0 ? round( 1 - $hitRatio, 4 ) : 0;
+		}
+
+		return $stats;
+	}
+
+}

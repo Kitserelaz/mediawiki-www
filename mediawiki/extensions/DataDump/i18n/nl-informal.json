@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"McDutchie"
+		]
+	},
+	"apihelp-viewdumps-example-1": "Dit is een voorbeeld van hoe je alle dumps kunt ophalen.",
+	"apihelp-viewdumps-example-2": "Dit is een voorbeeld van hoe je dumps kunt ophalen met het opgegeven type 'xml'.",
+	"datadump-desc": "Je kunt verschillende soorten back-ups maken. Kies hieronder een optie uit om een back-up te maken.",
+	"datadump-generated-error": "Het maken van een back-up is mislukt. Je mag maar {{PLURAL:$1|één back-up|$1 back-ups}} maken."
+}

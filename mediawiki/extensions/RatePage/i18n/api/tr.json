@@ -1,0 +1,22 @@
+{
+	"@metadata": {
+		"authors": [
+			"Joseph"
+		]
+	},
+	"apihelp-ratepage-summary": "Kullanıcıların bir sayfayı oylamasına ve sayfanın derecelendirmesini almasına izin verir. İki değişkenden birinin belirtilmesi gerekir: pageid ya da pagetitle.",
+	"apihelp-ratepage-param-pageid": "Sayfa kimliği",
+	"apihelp-ratepage-param-pagetitle": "Sayfa başlığı",
+	"apihelp-ratepage-param-answer": "Kullanıcı sayfa derecelendirmesi (varsayılan olarak 1'den 5'e (5 dahil), yapılandırma ayarlarından değiştirilebilir)",
+	"apihelp-ratepage-param-contest": "Yarışma kimliği",
+	"apihelp-ratepage-example-1": "Örnek sayfası için mevcut dereceleri alın,",
+	"apihelp-ratepage-example-2": "Örnek sayfasını 2 ile değerlendirin.",
+	"apihelp-query+pagerating-summary": "Bu sayfadaki oyları ve kullanıcının oy haklarını geri döndürür.",
+	"apihelp-query+pagerating-param-contest": "Yarışma kimliği",
+	"apierror-ratepage-contest-id-too-long": "Yarışma kimliği boyutu sınırı aşıyor (255 karakter).",
+	"apierror-ratepage-contest-id-allowed-chars": "Yarışma kimliği sadece rakamlar ve Latin harflerinden oluşmalıdır, başka karakterlere izin verilmez.",
+	"apierror-ratepage-contest-not-exists": "$1 yarışması mevcut değil.",
+	"apierror-ratepage-page-not-exists": "Belirtilen sayfa mevcut değil.",
+	"apierror-ratepage-cannot-vote-in-contest": "Bu yarışmada oy kullanma hakkınız yok.",
+	"apierror-ratepage-invalid-answer": "Geçersiz cevap verildi. Cevap, eşit ya da büyüktür $1 ve eşit ya da küçüktür $2 olmalıdır."
+}

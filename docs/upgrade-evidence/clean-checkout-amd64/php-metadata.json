@@ -1,0 +1,69 @@
+{
+  "buildx.build.provenance": {
+    "builder": {
+      "id": ""
+    },
+    "buildType": "https://mobyproject.org/buildkit@v1",
+    "materials": [
+      {
+        "uri": "pkg:docker/docker/dockerfile@1.4",
+        "digest": {
+          "sha256": "9ba7531bd80fb0a858632727cf7a112fbfd19b17e94c4e84ced81e24ef1a0dbc"
+        }
+      },
+      {
+        "uri": "pkg:docker/php@8.4.26-fpm-bookworm?digest=sha256:6bfef8e416977aa41f48e3e42a40c1e08050d24e4a938c6edb421400bff24601\u0026platform=linux%2Famd64",
+        "digest": {
+          "sha256": "6bfef8e416977aa41f48e3e42a40c1e08050d24e4a938c6edb421400bff24601"
+        }
+      }
+    ],
+    "invocation": {
+      "configSource": {
+        "entryPoint": "Dockerfile"
+      },
+      "parameters": {
+        "frontend": "gateway.v0",
+        "args": {
+          "cmdline": "docker/dockerfile:1.4",
+          "source": "docker/dockerfile:1.4",
+          "target": "php"
+        },
+        "locals": [
+          {
+            "name": "context"
+          },
+          {
+            "name": "dockerfile"
+          }
+        ],
+        "root": {
+          "configSource": {
+            "path": "Dockerfile"
+          },
+          "request": {
+            "args": {
+              "target": "php",
+              "vcs:localdir:context": ".",
+              "vcs:localdir:dockerfile": "docker/mediawiki",
+              "vcs:revision": "028f51e7767078778431d686d8843ee07607a4b6",
+              "vcs:source": "/var/folders/19/1g7tg4ln6yl5rn3jxcrllwdm0000gn/T/farm-clean-export-_m_nfheq/candidate.git"
+            }
+          }
+        },
+        "compatibilityVersion": 30
+      },
+      "environment": {
+        "platform": "linux/arm64"
+      }
+    }
+  },
+  "buildx.build.ref": "desktop-linux/desktop-linux/o38tggz7cev65z88lnbxwxme8",
+  "containerimage.descriptor": {
+    "mediaType": "application/vnd.oci.image.index.v1+json",
+    "digest": "sha256:9a34a313317dff3c59fd24069c16976e6b29dd6e7962e68ce466db6a4e80e994",
+    "size": 856
+  },
+  "containerimage.digest": "sha256:9a34a313317dff3c59fd24069c16976e6b29dd6e7962e68ce466db6a4e80e994",
+  "image.name": "docker.io/library/cloudwiki-php:upgrade-clean-20261018-amd64"
+}

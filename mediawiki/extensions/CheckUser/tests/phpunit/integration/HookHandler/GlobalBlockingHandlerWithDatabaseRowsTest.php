@@ -1,29 +1,30 @@
 <?php
 
-namespace MediaWiki\CheckUser\Tests\Integration\HookHandler;
+namespace MediaWiki\Extension\CheckUser\Tests\Integration\HookHandler;
 
-use ManualLogEntry;
-use MediaWiki\CheckUser\HookHandler\CheckUserPrivateEventsHandler;
-use MediaWiki\CheckUser\HookHandler\GlobalBlockingHandler;
-use MediaWiki\CheckUser\Jobs\UpdateUserCentralIndexJob;
-use MediaWiki\CheckUser\Tests\Integration\CheckUserCommonTraitTest;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Deferred\DeferredUpdates;
+use MediaWiki\Extension\CheckUser\HookHandler\CheckUserPrivateEventsHandler;
+use MediaWiki\Extension\CheckUser\HookHandler\GlobalBlockingHandler;
+use MediaWiki\Extension\CheckUser\Jobs\UpdateUserCentralIndexJob;
+use MediaWiki\Extension\CheckUser\Tests\Integration\CheckUserCommonTestTrait;
 use MediaWiki\Extension\GlobalBlocking\GlobalBlock;
+use MediaWiki\Logging\ManualLogEntry;
 use MediaWiki\MainConfigNames;
 use MediaWiki\User\CentralId\CentralIdLookup;
 use MediaWiki\User\User;
+use MediaWiki\WikiMap\WikiMap;
 use MediaWikiIntegrationTestCase;
 use Wikimedia\Timestamp\ConvertibleTimestamp;
 
 /**
- * @covers \MediaWiki\CheckUser\HookHandler\GlobalBlockingHandler
+ * @covers \MediaWiki\Extension\CheckUser\HookHandler\GlobalBlockingHandler
  * @group Database
  * @group CheckUser
  */
 class GlobalBlockingHandlerWithDatabaseRowsTest extends MediaWikiIntegrationTestCase {
 
-	use CheckUserCommonTraitTest;
+	use CheckUserCommonTestTrait;
 
 	private static User $user;
 
@@ -51,21 +52,26 @@ class GlobalBlockingHandlerWithDatabaseRowsTest extends MediaWikiIntegrationTest
 			$this->getServiceContainer()->getMainConfig(),
 			$this->getServiceContainer()->getUserIdentityLookup(),
 			$this->getServiceContainer()->getUserFactory(),
-			$this->getServiceContainer()->getReadOnlyMode()
+			$this->getServiceContainer()->getReadOnlyMode(),
+			$this->getServiceContainer()->get( 'UserAgentClientHintsManager' ),
+			$this->getServiceContainer()->getJobQueueGroup(),
+			$this->getServiceContainer()->getConnectionProvider()
 		);
 	}
 
 	private function getMockGlobalBlockInstance(): GlobalBlock {
 		$globalBlock = $this->createMock( GlobalBlock::class );
-		$globalBlock->method( 'getTargetUserIdentity' )
-			->willReturn( self::$user );
+		$globalBlock->method( 'getTargetName' )
+			->willReturn( self::$user->getName() );
 		return $globalBlock;
 	}
 
-	private function commonTestRetroactiveAutoblockWhenNoIpsFound( GlobalBlock $globalBlock ) {
+	private function commonTestRetroactiveAutoblockWhenNoIpsFound( GlobalBlock $globalBlock ): void {
 		$ips = [];
 		$returnValue = $this->getObjectUnderTest()->onGlobalBlockingGetRetroactiveAutoblockIPs(
-			$globalBlock, 100, $ips
+			$globalBlock,
+			100,
+			$ips
 		);
 		$this->assertCount( 0, $ips );
 		$this->assertTrue( $returnValue );
@@ -74,11 +80,15 @@ class GlobalBlockingHandlerWithDatabaseRowsTest extends MediaWikiIntegrationTest
 	public function testRetroactiveAutoblockWhenLocalUserNotAttached() {
 		// Mock that the CentralIdLookup service never considers any users attached
 		$mockCentralIdLookup = $this->createMock( CentralIdLookup::class );
-		$mockCentralIdLookup->method( 'centralIdFromLocalUser' )
-			->with( self::$user, CentralIdLookup::AUDIENCE_RAW )
+		$mockCentralIdLookup->method( 'centralIdFromName' )
+			->with( self::$user->getName(), CentralIdLookup::AUDIENCE_RAW )
 			->willReturn( self::$user->getId() );
 		$mockCentralIdLookup->method( 'isAttached' )
-			->willReturn( false );
+			->willReturnCallback( function ( $user, $wikiID ) {
+				$this->assertSame( WikiMap::getCurrentWikiId(), $wikiID );
+				$this->assertTrue( self::$user->equals( $user ) );
+				return false;
+			} );
 		$this->setService( 'CentralIdLookup', $mockCentralIdLookup );
 		// Call the method under test
 		$globalBlock = $this->getMockGlobalBlockInstance();
@@ -90,7 +100,9 @@ class GlobalBlockingHandlerWithDatabaseRowsTest extends MediaWikiIntegrationTest
 		$ips = [];
 		$globalBlock = $this->getMockGlobalBlockInstance();
 		$returnValue = $this->getObjectUnderTest()->onGlobalBlockingGetRetroactiveAutoblockIPs(
-			$globalBlock, $limit, $ips
+			$globalBlock,
+			$limit,
+			$ips
 		);
 		$this->assertArrayEquals( $expectedIps, $ips );
 		$this->assertFalse( $returnValue );
@@ -137,13 +149,16 @@ class GlobalBlockingHandlerWithDatabaseRowsTest extends MediaWikiIntegrationTest
 		RequestContext::getMain()->getRequest()->setIP( '1.2.3.9' );
 		$inject_html = '';
 		$privateEventHandler->onUserLogoutComplete(
-			$this->getServiceContainer()->getUserFactory()->newAnonymous( '1.2.3.9' ), $inject_html, $user->getName()
+			$this->getServiceContainer()->getUserFactory()->newAnonymous( '1.2.3.9' ),
+			$inject_html,
+			$user->getName()
 		);
 		// Create a private event which is not related to the $user
 		ConvertibleTimestamp::setFakeTime( '20230407060708' );
 		RequestContext::getMain()->getRequest()->setIP( '8.7.6.5' );
 		$privateEventHandler->onUserLogoutComplete(
-			$this->getServiceContainer()->getUserFactory()->newAnonymous( '8.7.6.5' ), $inject_html,
+			$this->getServiceContainer()->getUserFactory()->newAnonymous( '8.7.6.5' ),
+			$inject_html,
 			$this->getMutableTestUser()->getUserIdentity()->getName()
 		);
 		ConvertibleTimestamp::setFakeTime( '20230506070809' );

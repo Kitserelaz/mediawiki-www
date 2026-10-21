@@ -1,0 +1,40 @@
+{
+	"@metadata": {
+		"authors": [
+			"Agam Riyandana",
+			"Bennylin",
+			"Farras",
+			"Irwangatot",
+			"IvanLanin",
+			"Iwan Novirion",
+			"Penyuwangi",
+			"Rex"
+		]
+	},
+	"pendingchanges": "Halaman tertinjau usang (halaman dengan penundaan perubahan)",
+	"pendingchanges-legend": "Daftar halaman tertinjau yang memiliki revisi yang belum ditinjau",
+	"pendingchanges-list": "Berikut adalah daftar halaman [[{{MediaWiki:Validationpage}}|tertinjau]] yang memiliki satu atau lebih suntingan yang ditangguhkan.",
+	"pendingchanges-none": "Tidak ada halaman yang sesuai dengan kriteria ini",
+	"pendingchanges-hours": "$1 {{PLURAL:$1|jam}}",
+	"pendingchanges-days": "$1 {{PLURAL:$1|hari|hari}}",
+	"pendingchanges-recent": "(kurang dari 1 jam)",
+	"pendingchanges-category": "Kategori:",
+	"pendingchanges-limit": "Batasan",
+	"pendingchanges-edit-tag": "Sunting Tanda:",
+	"pendingchanges-edit-tag-any": "Sebarang tanda",
+	"pendingchanges-onwatchlist": "Halaman pada daftar pantauan saya",
+	"pendingchanges-stable": "Versi stabil adalah baku",
+	"pendingchanges-diff": "Tinjau",
+	"pendingchanges-size": "Perubahan maks. (byte):",
+	"pendingchanges-unwatched": "(tidak dipantau)",
+	"pendingchanges-table-caption": "Perubahan tertunda",
+	"pendingchanges-table-page": "Halaman",
+	"pendingchanges-table-size": "Ukuran",
+	"pendingchanges-table-pending-since": "Sejak",
+	"pendingchanges-table-quality": "Kualitas",
+	"pendingchanges-table-watching": "Memantau",
+	"pendingchanges-table-history": "Sejarah",
+	"pendingchanges-table-review": "Tinjau",
+	"pendingchanges-table-revision-history": "Sejarah",
+	"pendingchanges-filter-submit-button-text": "Filter perubahan yang sedang menunggu"
+}

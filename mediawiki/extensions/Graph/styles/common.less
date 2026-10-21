@@ -1,0 +1,101 @@
+@import 'mediawiki.skin.variables.less';
+@import 'mediawiki.mixins';
+@import 'mediawiki.mixins.animation';
+
+.mw-graph {
+	display: inline-block;
+	position: relative;
+	background-position: 50% 50%;
+	background-repeat: no-repeat;
+	border: @border-width-base @border-style-base @border-color-transparent;
+	opacity: 0;
+	.animation( spinnerDelay 0.5s ease-out 0.5s forwards );
+	// Minimum width needed to render the placeholder graphic
+	min-width: 200px;
+
+	// This block can me merged with the above when the new graph
+	// code has been fully rolled out.
+	// Responsive sizing
+	max-width: 100%;
+	height: auto;
+
+	&.mw-graph-clickable-loading,
+	&.mw-graph-clickable-error,
+	&.mw-graph-clickable {
+		border-color: @border-color-subtle;
+		display: inline-flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		// This makes the background potentially larger than the graph.
+		// Might be better ways to do this ?
+		min-height: 300px;
+	}
+
+	&.mw-graph-clickable-loading {
+		background-image: url( images/ajax-loader.gif );
+	}
+
+	&.mw-graph-clickable {
+		&::before {
+			content: '';
+			height: 152px;
+			width: 200px;
+			margin-top: -18px;
+			background-image: url( images/fallback.svg );
+		}
+
+		&::after {
+			background: @background-color-progressive-subtle;
+			color: @color-progressive;
+			padding: 8px;
+			content: '@{msg-graph-load}';
+		}
+	}
+
+	&.mw-graph-clickable-error {
+		&::before {
+			content: '';
+			height: 152px;
+			width: 200px;
+			margin-top: -18px;
+			background-image: url( images/error.svg );
+		}
+
+		&::after {
+			background: @background-color-error-subtle;
+			color: @color-error;
+			padding: 8px;
+			content: '@{msg-graph-ve-vega-error-no-render}';
+		}
+	}
+
+	&.mw-graph-nofallback {
+		&::after {
+			.client-nojs & {
+				content: '@{msg-graph-vega-old-browser}';
+			}
+		}
+	}
+
+	canvas {
+		background: @background-color-base;
+		display: inline-block;
+		vertical-align: middle;
+		// Responsive sizing
+		max-width: 100%;
+		/* stylelint-disable-next-line declaration-no-important */
+		height: auto !important;
+	}
+}
+
+@keyframes spinnerDelay {
+	90% {
+		opacity: 0;
+	}
+
+	100% {
+		opacity: 1;
+	}
+}

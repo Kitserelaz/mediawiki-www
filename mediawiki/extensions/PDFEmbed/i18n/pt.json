@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Hamilton Abreu"
+		]
+	},
+	"action-embed_pdf": "embeber ficheiros PDF",
+	"pdfembed": "Integrador de ficheiros PDF",
+	"pdfembed_description": "Extensão do tratamento de multimédia para ficheiros PDF.",
+	"embed_pdf_no_permission": "Não tem permissão para embeber ficheiros PDF.",
+	"embed_pdf_blank_file": "O URL ou caminho de ficheiros fornecido para embeber um ficheiro PDF está em branco.",
+	"embed_pdf_invalid_file": "O URL ou caminho de ficheiros fornecido não existe.",
+	"embed_pdf_invalid_user": "Foi especificado um utilizador inválido para testar as permissões de embeber este PDF.",
+	"right-embed_pdf": "Embeber ficheiros PDF em páginas"
+}

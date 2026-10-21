@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Strainu"
+		]
+	},
+	"kartographer-wv-group": "Grup:",
+	"kartographer-wv-warning-external-source-title": "Sursă de date externă",
+	"kartographer-wv-warning-external-source-message": "Acest conținut este găzduit altundeva, iar activarea sa face ca datele dumneavoastră să fie disponibile pentru alte site-uri.",
+	"kartographer-wv-warning-external-source-agree": "E în regulă",
+	"kartographer-wv-warning-external-source-disagree": "Revocare"
+}

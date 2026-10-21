@@ -1,0 +1,22 @@
+{
+	"@metadata": {
+		"authors": [
+			"Joetaras"
+		]
+	},
+	"apihelp-ratepage-summary": "Permette a 'nu tende de vutà sus a 'na pàgene e pigghià 'u vote pe 'na pàgene. Vole probbie une de le doje parametre: pageid o pagetitle",
+	"apihelp-ratepage-param-pageid": "ID d'a pàgene",
+	"apihelp-ratepage-param-pagetitle": "Titole d'a pàgene",
+	"apihelp-ratepage-param-answer": "'A valutazione d'a pàgene utende (da 1 a 5 combrese pe base, ponne essere alterate da le 'mbostaziune de configurazione)",
+	"apihelp-ratepage-param-contest": "Idendificatore d'u congorse",
+	"apihelp-ratepage-example-1": "Pigghie 'a valutazione de mò pa pàgene Example.",
+	"apihelp-ratepage-example-2": "Valute 'a pàgene Example cu 'nu 2.",
+	"apihelp-query+pagerating-summary": "Torne le vote de sta pàgene e le permesse de le votaziune de stu utende.",
+	"apihelp-query+pagerating-param-contest": "Idendificatore d'u congorse",
+	"apierror-ratepage-contest-id-too-long": "'A lugnezze de l'ID d'u congorse sbonne 'u limite (255 carattere).",
+	"apierror-ratepage-contest-id-allowed-chars": "L'ID d'u adda essere fatte sulamende de numere e lettere latine. Nisciune otre carattere jè valide.",
+	"apierror-ratepage-contest-not-exists": "'U congorse $1 non g'esiste.",
+	"apierror-ratepage-page-not-exists": "'A pàgena specificate non g'esiste.",
+	"apierror-ratepage-cannot-vote-in-contest": "Non ge tìne le permesse pe vutà jndr'à stu congorse.",
+	"apierror-ratepage-invalid-answer": "E' date 'na resposte invalide. 'A resposte avessa essere cchiù granne o uguale a $1 e de mene o uguale a $2."
+}

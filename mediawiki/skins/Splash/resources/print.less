@@ -1,0 +1,109 @@
+@import 'mixins.less';
+@import 'fonts.less';
+
+/* Print styles */
+
+#p-global-links,
+#site-navigation,
+#p-search,
+.firstHeading::before,
+#user-tools,
+#page-tools,
+.fullMedia,
+.mw-jump-link,
+.mw-imagepage-upload-links,
+#mw-imagepage-section-filehistory > p,
+#content-footer,
+#footer {
+	display: none;
+}
+
+body {
+	font-family: @fonts-main;
+	font-size: 10pt;
+}
+
+// Headers: similar to screen styles, but smallerish and junk
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+dt {
+	font-weight: normal;
+	font-variant: small-caps;
+	margin: 1.5em 0 0.5em;
+	color: @red-dark;
+}
+
+h1 {
+	font-size: 2em;
+}
+
+h2 {
+	font-size: 1.75em;
+
+	.toc & {
+		font-size: 1.25em;
+	}
+}
+
+h3 {
+	font-size: 1.5em;
+}
+
+h4 {
+	font-size: 1.3em;
+}
+
+h5 {
+	font-size: 1.15em;
+}
+
+h6 {
+	font-size: 1em;
+}
+
+dt {
+	margin-top: 1em;
+}
+
+dd {
+	margin-bottom: 1em;
+}
+
+.firstHeading h1 {
+	margin: 0 0 0.25em;
+}
+
+.printfooter,
+#siteSub {
+	font-style: italic;
+}
+
+#p-logo img {
+	float: left;
+	width: 50px;
+	height: auto;
+	margin: 0 1.5em 0 0;
+}
+
+.mw-wiki-title {
+	font-family: @fonts-banner;
+	font-size: 250%;
+	display: block;
+	padding: 8px 0 0 0 !important;
+}
+
+#content-container {
+	clear: both;
+}
+
+#content {
+	margin-top: 1em;
+}
+
+#mw-content-text {
+	margin-bottom: 2em;
+}

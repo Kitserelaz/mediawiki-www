@@ -51,6 +51,7 @@ ve.init.mw.LinkCache.static.processPage = function ( page ) {
 		missing: page.missing !== undefined,
 		known: page.known !== undefined,
 		redirect: page.redirect !== undefined,
+		linkclasses: page.linkclasses || [],
 		disambiguation: ve.getProp( page, 'pageprops', 'disambiguation' ) !== undefined,
 		hidden: ve.getProp( page, 'pageprops', 'hiddencat' ) !== undefined,
 		imageUrl: ve.getProp( page, 'thumbnail', 'source' ),
@@ -66,19 +67,25 @@ ve.init.mw.LinkCache.static.processPage = function ( page ) {
  * @param {string} title
  * @param {jQuery} $element Element to style
  * @param {boolean} [hasFragment=false] Whether the link goes to a fragment
+ * @param {boolean} [useMissing=true] Use the "missing link" chache if available. Only applies the "new"
+ *  style but this cache is more likely to be populated. In the case of a cache miss the full cache is used.
  */
-ve.init.mw.LinkCache.prototype.styleElement = function ( title, $element, hasFragment ) {
-	const cachedMissingData = this.getCached( '_missing/' + title );
+ve.init.mw.LinkCache.prototype.styleElement = function ( title, $element, hasFragment, useMissing ) {
+	if ( useMissing !== false ) {
+		const cachedMissingData = this.getCached( '_missing/' + title );
 
-	let promise;
-	// Use the synchronous missing link cache data if it exists
-	if ( cachedMissingData ) {
-		promise = ve.createDeferred().resolve( cachedMissingData ).promise();
-	} else {
-		promise = this.get( title );
+		// Use the synchronous missing link cache data if it exists
+		if ( cachedMissingData ) {
+			if ( cachedMissingData.missing && !cachedMissingData.known ) {
+				$element.addClass( 'new' );
+			}
+			return;
+		}
 	}
 
-	promise.done( ( data ) => {
+	this.get( title ).then( ( data ) => {
+		// eslint-disable-next-line mediawiki/class-doc
+		$element.addClass( data.linkclasses );
 		if ( data.missing && !data.known ) {
 			$element.addClass( 'new' );
 		} else {
@@ -167,6 +174,7 @@ ve.init.mw.LinkCache.prototype.getRequestPromise = function ( subqueue ) {
 	return this.api.get( {
 		action: 'query',
 		prop: 'info|pageprops|pageimages|description',
+		inprop: 'linkclasses',
 		pithumbsize: 80,
 		pilimit: subqueue.length,
 		ppprop: 'disambiguation|hiddencat',

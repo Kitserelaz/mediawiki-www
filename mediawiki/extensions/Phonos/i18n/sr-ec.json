@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"Milicevic01"
+		]
+	},
+	"phonos-purge-needed-error-link": "Освежите страницу и покушајте поново.",
+	"phonos-file-not-found": "Аудио датотека „[$1 $2]” није пронађена.",
+	"phonos-file-not-audio": "Датотека „[[$1|$2]]” није аудио датотека."
+}

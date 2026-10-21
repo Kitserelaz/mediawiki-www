@@ -1,0 +1,26 @@
+{
+	"@metadata": {
+		"authors": [
+			"555",
+			"Capmo",
+			"Hamilton Abreu",
+			"Luckas",
+			"Malafaya",
+			"Mbs262",
+			"Waldir"
+		]
+	},
+	"pendingchanges": "Páginas com edições pendentes",
+	"pendingchanges-legend": "Listar as páginas sujeitas a revisão, que têm edições pendentes",
+	"pendingchanges-list": "Esta página lista as [[{{MediaWiki:Validationpage}}|páginas sujeitas a revisão]] que têm edições pendentes.",
+	"pendingchanges-none": "De momento, não há páginas que satisfaçam estes critérios",
+	"pendingchanges-hours": "($1 {{PLURAL:$1|hora|horas}})",
+	"pendingchanges-days": "($1 {{PLURAL:$1|dia|dias}})",
+	"pendingchanges-recent": "menos de 1 hora",
+	"pendingchanges-category": "Categoria:",
+	"pendingchanges-onwatchlist": "Páginas na minha lista de páginas vigiadas",
+	"pendingchanges-stable": "Por omissão, mostrar a versão publicada",
+	"pendingchanges-diff": "rever",
+	"pendingchanges-size": "Alteração máx. (bytes):",
+	"pendingchanges-unwatched": "(não vigiada)"
+}

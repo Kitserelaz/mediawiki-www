@@ -1,0 +1,84 @@
+<?php
+
+namespace SMW\Elastic\QueryEngine;
+
+use SMW\DataItems\WikiPage;
+use SMW\Query\Excerpts as BaseExcerpts;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 3.0
+ *
+ * @author mwjames
+ */
+class Excerpts extends BaseExcerpts {
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param WikiPage|string $hash
+	 *
+	 * @return string|int|false
+	 */
+	public function getExcerpt( $hash ) {
+		if ( $hash instanceof WikiPage ) {
+			$hash = $hash->getHash();
+		}
+
+		foreach ( $this->excerpts as $map ) {
+			if ( $map[0] === $hash ) {
+				return $this->format( $map[1] );
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @return bool
+	 */
+	public function hasHighlight(): bool {
+		return $this->noHighlight ? false : true;
+	}
+
+	private function format( $v ): string {
+		// https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-highlighting.html
+		// By default, highlighted text is wrapped in <em> and </em> tags
+
+		$text = '';
+
+		if ( is_array( $v ) ) {
+			foreach ( $v as $key => $value ) {
+				$text .= implode( ' ', $value );
+			}
+		} else {
+			$text = $v;
+		}
+
+		if ( $this->stripTags ) {
+			$text = str_replace(
+				[ '<em>', '</em>' ],
+				[ '&lt;em&gt;', '&lt;/em&gt;' ],
+				$text
+			);
+
+			// Remove tags to avoid any output disruption
+			$text = strip_tags( $text );
+
+			$text = str_replace(
+				[ '&lt;em&gt;', '&lt;/em&gt;' ],
+				[ '<em>', '</em>' ],
+				$text
+			);
+		}
+
+		if ( $this->noHighlight ) {
+			$text = str_replace( [ '<em>', '</em>', "\n" ], [ '', '', ' ' ], $text );
+		}
+
+		return $text;
+	}
+
+}

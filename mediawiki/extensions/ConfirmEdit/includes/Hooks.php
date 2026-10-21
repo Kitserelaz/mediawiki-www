@@ -1,43 +1,42 @@
 <?php
 
-// phpcs:disable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
-
 namespace MediaWiki\Extension\ConfirmEdit;
 
-use MailAddress;
-use MediaWiki\Api\ApiBase;
+use BadMethodCallException;
 use MediaWiki\Api\Hook\APIGetAllowedParamsHook;
+use MediaWiki\Auth\AuthenticationRequest;
 use MediaWiki\Content\Content;
+use MediaWiki\Content\TextContent;
 use MediaWiki\Context\IContextSource;
-use MediaWiki\EditPage\EditPage;
+use MediaWiki\Extension\ConfirmEdit\Auth\CaptchaAuthenticationRequest;
+use MediaWiki\Extension\ConfirmEdit\FancyCaptcha\FancyCaptcha;
+use MediaWiki\Extension\ConfirmEdit\hCaptcha\HCaptcha;
+use MediaWiki\Extension\ConfirmEdit\Hooks\HookRunner;
+use MediaWiki\Extension\ConfirmEdit\QuestyCaptcha\QuestyCaptcha;
+use MediaWiki\Extension\ConfirmEdit\ReCaptchaNoCaptcha\ReCaptchaNoCaptcha;
 use MediaWiki\Extension\ConfirmEdit\SimpleCaptcha\SimpleCaptcha;
+use MediaWiki\Extension\ConfirmEdit\Turnstile\Turnstile;
 use MediaWiki\Hook\AlternateEditPreviewHook;
 use MediaWiki\Hook\EditFilterMergedContentHook;
 use MediaWiki\Hook\EditPage__showEditForm_fieldsHook;
 use MediaWiki\Hook\EditPageBeforeEditButtonsHook;
-use MediaWiki\Hook\EmailUserFormHook;
-use MediaWiki\Hook\EmailUserHook;
 use MediaWiki\Html\Html;
-use MediaWiki\HTMLForm\HTMLForm;
-use MediaWiki\Output\OutputPage;
-use MediaWiki\Parser\ParserOutput;
+use MediaWiki\MediaWikiServices;
 use MediaWiki\Permissions\Hook\TitleReadWhitelistHook;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\ResourceLoader\Hook\ResourceLoaderRegisterModulesHook;
 use MediaWiki\ResourceLoader\ResourceLoader;
-use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\SpecialPage\Hook\AuthChangeFormFieldsHook;
 use MediaWiki\SpecialPage\SpecialPage;
+use MediaWiki\Specials\Hook\EmailUserFormHook;
+use MediaWiki\Specials\Hook\EmailUserHook;
 use MediaWiki\Status\Status;
-use MediaWiki\Storage\EditResult;
 use MediaWiki\Storage\Hook\PageSaveCompleteHook;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
-use MediaWiki\User\UserIdentity;
+use ReflectionClass;
 use Wikimedia\IPUtils;
-use Wikimedia\Message\MessageSpecifier;
 use Wikimedia\ObjectCache\WANObjectCache;
-use WikiPage;
 
 class Hooks implements
 	AlternateEditPreviewHook,
@@ -53,66 +52,110 @@ class Hooks implements
 	AuthChangeFormFieldsHook
 {
 
-	/** @var bool */
-	protected static $instanceCreated = false;
-
-	private WANObjectCache $cache;
+	/**
+	 * @var SimpleCaptcha[][] Captcha instances, where the keys are action => captcha type and the
+	 *   values are an instance of that captcha type.
+	 */
+	protected static array $instance = [];
 
 	public function __construct(
-		WANObjectCache $cache
+		private readonly WANObjectCache $cache,
 	) {
-		$this->cache = $cache;
 	}
 
 	/**
-	 * Get the global Captcha instance
+	 * Get the global Captcha instance for a specific action.
 	 *
-	 * @return SimpleCaptcha
+	 * If a specific Captcha is not defined in $wgCaptchaTriggers[$action]['class'],
+	 * $wgCaptchaClass will be returned instead.
+	 *
+	 * @stable to call - May be used by code not visible in codesearch
 	 */
-	public static function getInstance() {
-		global $wgCaptcha, $wgCaptchaClass;
+	public static function getInstance( string $action = '' ): SimpleCaptcha {
+		static $map = [
+			'SimpleCaptcha' => SimpleCaptcha::class,
+			'FancyCaptcha' => FancyCaptcha::class,
+			'QuestyCaptcha' => QuestyCaptcha::class,
+			'ReCaptchaNoCaptcha' => ReCaptchaNoCaptcha::class,
+			'HCaptcha' => HCaptcha::class,
+			'Turnstile' => Turnstile::class,
+		];
 
-		if ( !static::$instanceCreated ) {
-			static::$instanceCreated = true;
-			$class = $wgCaptchaClass ?: SimpleCaptcha::class;
-			$wgCaptcha = new $class;
+		$config = MediaWikiServices::getInstance()->getMainConfig();
+		$captchaTriggers = $config->get( 'CaptchaTriggers' );
+		$defaultCaptchaClass = $config->get( 'CaptchaClass' );
+
+		// Check for the newer style captcha trigger array
+		$class = $captchaTriggers[$action]['class'] ?? $defaultCaptchaClass;
+
+		$hookRunner = new HookRunner(
+			MediaWikiServices::getInstance()->getHookContainer()
+		);
+		// Allow hook implementers to override the class that's about to be cached.
+		$hookRunner->onConfirmEditCaptchaClass( $action, $class );
+
+		if ( !isset( static::$instance[$action][$class] ) ) {
+			// There is not a cached instance, construct a new one based on the mapping
+			/** @var SimpleCaptcha $classInstance */
+			$classInstance = new ( $map[$class] ?? $map[$defaultCaptchaClass] ?? $defaultCaptchaClass );
+			$classInstance->setConfig( $captchaTriggers[$action]['config'] ?? [] );
+			static::$instance[$action][$class] = $classInstance;
 		}
 
-		return $wgCaptcha;
+		return static::$instance[$action][$class];
 	}
 
 	/**
-	 * @param IContextSource $context
-	 * @param Content $content
-	 * @param Status $status
-	 * @param string $summary
-	 * @param User $user
-	 * @param bool $minorEdit
-	 * @return bool
+	 * Gets a list of all currently active Captcha classes, in the Wikis configuration.
+	 *
+	 * This includes the default/fallback Captcha of $wgCaptchaClass and any set under
+	 * $wgCaptchaTriggers[$action]['class'].
 	 */
+	public static function getActiveCaptchas(): array {
+		$instances = [];
+
+		// We can't rely on static::$instance being loaded with all Captcha Types, so make our own list.
+		$defaultCaptcha = self::getInstance();
+		$instances[ ( new ReflectionClass( $defaultCaptcha ) )->getShortName() ] = $defaultCaptcha;
+
+		$captchaTriggers = MediaWikiServices::getInstance()->getMainConfig()->get( 'CaptchaTriggers' );
+		foreach ( $captchaTriggers as $action => $trigger ) {
+			if ( isset( $trigger['class'] ) ) {
+				$class = self::getInstance( $action );
+				$instances[ $trigger['class'] ] = $class;
+			}
+		}
+
+		return $instances;
+	}
+
+	/**
+	 * Clears the global Captcha cache for testing
+	 *
+	 * @codeCoverageIgnore
+	 * @internal Only for use in PHPUnit tests.
+	 */
+	public static function unsetInstanceForTests(): void {
+		if ( !defined( 'MW_PHPUNIT_TEST' ) ) {
+			throw new BadMethodCallException( 'Cannot unset ' . __CLASS__ . ' instance in operation.' );
+		}
+		static::$instance = [];
+	}
+
+	/** @inheritDoc */
 	public function onEditFilterMergedContent( IContextSource $context, Content $content, Status $status,
-		$summary, User $user, $minorEdit
+		$summary, User $user, $minoredit
 	) {
-		$simpleCaptcha = self::getInstance();
+		$simpleCaptcha = self::getInstance( self::getCaptchaTriggerActionFromTitle( $context->getTitle() ) );
 		// Set a flag indicating that ConfirmEdit's implementation of
-		// EditFilterMergedContent ran. This can be checked by other extensions
-		// e.g. AbuseFilter.
+		// EditFilterMergedContent ran.
+		// This can be checked by other MediaWiki extensions, e.g. AbuseFilter.
 		$simpleCaptcha->setEditFilterMergedContentHandlerInvoked();
 		return $simpleCaptcha->confirmEditMerged( $context, $content, $status, $summary,
-			$user, $minorEdit );
+			$user, $minoredit );
 	}
 
-	/**
-	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/PageSaveComplete
-	 *
-	 * @param WikiPage $wikiPage
-	 * @param UserIdentity $user
-	 * @param string $summary
-	 * @param int $flags
-	 * @param RevisionRecord $revisionRecord
-	 * @param EditResult $editResult
-	 * @return bool|void
-	 */
+	/** @inheritDoc */
 	public function onPageSaveComplete(
 		$wikiPage,
 		$user,
@@ -123,81 +166,82 @@ class Hooks implements
 	) {
 		$title = $wikiPage->getTitle();
 		if ( $title->getText() === 'Captcha-ip-whitelist' && $title->getNamespace() === NS_MEDIAWIKI ) {
-			$this->cache->delete( $this->cache->makeKey( 'confirmedit', 'ipwhitelist' ) );
+			$this->cache->delete( $this->cache->makeKey( 'confirmedit', 'ipbypasslist' ) );
 		}
 
 		return true;
 	}
 
 	/**
-	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/EditPageBeforeEditButtons
+	 * Get the relevant CaptchaTriggers action depending on whether the page exists
 	 *
-	 * @param EditPage $editpage Current EditPage object
-	 * @param array &$buttons Array of edit buttons, "Save", "Preview", "Live", and "Diff"
-	 * @param int &$tabindex HTML tabindex of the last edit check/button
+	 * @param Title $title
+	 * @return string one of "edit" or "create"
+	 * @see CaptchaTriggers::EDIT
+	 * @see CaptchaTriggers::CREATE
 	 */
+	public static function getCaptchaTriggerActionFromTitle( Title $title ): string {
+		return $title->exists() ? CaptchaTriggers::EDIT : CaptchaTriggers::CREATE;
+	}
+
+	/** @inheritDoc */
 	public function onEditPageBeforeEditButtons( $editpage, &$buttons, &$tabindex ) {
-		self::getInstance()->editShowCaptcha( $editpage );
+		self::getInstance(
+			self::getCaptchaTriggerActionFromTitle( $editpage->getTitle() )
+		)->editShowCaptcha( $editpage );
 	}
 
-	/**
-	 * @param EditPage $editPage
-	 * @param OutputPage $out
-	 */
-	public function onEditPage__showEditForm_fields( $editPage, $out ) {
-		self::getInstance()->showEditFormFields( $editPage, $out );
+	/** @inheritDoc */
+	public function onEditPage__showEditForm_fields( $editor, $out ) {
+		self::getInstance(
+			self::getCaptchaTriggerActionFromTitle( $out->getTitle() )
+		)->showEditFormFields( $editor, $out );
 	}
 
-	/**
-	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/EmailUserForm
-	 *
-	 * @param HTMLForm &$form HTMLForm object
-	 * @return bool|void True or no return value to continue or false to abort
-	 */
+	/** @inheritDoc */
 	public function onEmailUserForm( &$form ) {
-		return self::getInstance()->injectEmailUser( $form );
+		return self::getInstance( CaptchaTriggers::SENDEMAIL )->injectEmailUser( $form );
 	}
 
-	/**
-	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/EmailUser
-	 *
-	 * @param MailAddress &$to MailAddress object of receiving user
-	 * @param MailAddress &$from MailAddress object of sending user
-	 * @param string &$subject subject of the mail
-	 * @param string &$text text of the mail
-	 * @param bool|Status|MessageSpecifier|array &$error Out-param for an error.
-	 *   Should be set to a Status object or boolean false.
-	 * @return bool|void True or no return value to continue or false to abort
-	 */
+	/** @inheritDoc */
 	public function onEmailUser( &$to, &$from, &$subject, &$text, &$error ) {
-		return self::getInstance()->confirmEmailUser( $from, $to, $subject, $text, $error );
+		return self::getInstance( CaptchaTriggers::SENDEMAIL )->confirmEmailUser( $from, $to, $subject, $text, $error );
 	}
 
-	/**
-	 * APIGetAllowedParams hook handler
-	 * Default $flags to 1 for backwards-compatible behavior
-	 * @param ApiBase $module
-	 * @param array &$params
-	 * @param int $flags
-	 * @return bool
-	 */
+	/** @inheritDoc */
 	public function onAPIGetAllowedParams( $module, &$params, $flags ) {
-		return self::getInstance()->apiGetAllowedParams( $module, $params, $flags );
+		// To quote Happy-melon from 32102375f80e72c8c4359abbeff66a75da463efa...
+		// > Asking for captchas in the API is really silly
+
+		// Create a merged array of API parameters based on active captcha types.
+		// This may result in clashes/overwriting if multiple Captcha use the same parameter names,
+		// but there's not a lot we can do about that...
+		foreach ( self::getActiveCaptchas() as $instance ) {
+			/** @var SimpleCaptcha $instance */
+			$instance->apiGetAllowedParams( $module, $params, $flags );
+		}
 	}
 
-	/**
-	 * @param array $requests
-	 * @param array $fieldInfo
-	 * @param array &$formDescriptor
-	 * @param string $action
-	 */
+	/** @inheritDoc */
 	public function onAuthChangeFormFields(
 		$requests, $fieldInfo, &$formDescriptor, $action
 	) {
-		self::getInstance()->onAuthChangeFormFields( $requests, $fieldInfo, $formDescriptor, $action );
+		/** @var CaptchaAuthenticationRequest $req */
+		$req = AuthenticationRequest::getRequestByClass(
+			$requests,
+			CaptchaAuthenticationRequest::class,
+			true
+		);
+		if ( !$req ) {
+			return;
+		}
+
+		self::getInstance( $req->getAction() )
+			->onAuthChangeFormFields( $requests, $fieldInfo, $formDescriptor, $action );
 	}
 
-	public static function confirmEditSetup() {
+	/** @codeCoverageIgnore */
+	public static function confirmEditSetup(): void {
 		global $wgCaptchaTriggers;
 
 		// There is no need to run (core) tests with enabled ConfirmEdit - bug T44145
@@ -206,14 +250,7 @@ class Hooks implements
 		}
 	}
 
-	/**
-	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/TitleReadWhitelist
-	 *
-	 * @param Title $title
-	 * @param User $user
-	 * @param bool &$whitelisted
-	 * @return bool|void
-	 */
+	/** @inheritDoc */
 	public function onTitleReadWhitelist( $title, $user, &$whitelisted ) {
 		$image = SpecialPage::getTitleFor( 'Captcha', 'image' );
 		$help = SpecialPage::getTitleFor( 'Captcha', 'help' );
@@ -223,26 +260,19 @@ class Hooks implements
 	}
 
 	/**
-	 *
 	 * Callback for extension.json of FancyCaptcha to set a default captcha directory,
 	 * which depends on wgUploadDirectory
+	 *
+	 * @codeCoverageIgnore
 	 */
-	public static function onFancyCaptchaSetup() {
+	public static function onFancyCaptchaSetup(): void {
 		global $wgCaptchaDirectory, $wgUploadDirectory;
 		if ( !$wgCaptchaDirectory ) {
 			$wgCaptchaDirectory = "$wgUploadDirectory/captcha";
 		}
 	}
 
-	/**
-	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/AlternateEditPreview
-	 *
-	 * @param EditPage $editPage
-	 * @param Content &$content
-	 * @param string &$previewHTML
-	 * @param ParserOutput &$parserOutput
-	 * @return bool|void
-	 */
+	/** @inheritDoc */
 	public function onAlternateEditPreview( $editPage, &$content, &$previewHTML,
 		&$parserOutput
 	) {
@@ -256,8 +286,10 @@ class Hooks implements
 		$ctx = $editPage->getArticle()->getContext();
 		$out = $ctx->getOutput();
 		$lang = $ctx->getLanguage();
+		/** @var TextContent $content */
+		'@phan-var TextContent $content';
 
-		$lines = explode( "\n", $content->getNativeData() );
+		$lines = explode( "\n", $content->getText() );
 		$previewHTML .= Html::warningBox(
 				$ctx->msg( 'confirmedit-preview-description' )->parse()
 			) .
@@ -312,19 +344,14 @@ class Hooks implements
 		return false;
 	}
 
-	/**
-	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/ResourceLoaderRegisterModules
-	 *
-	 * @param ResourceLoader $resourceLoader
-	 * @return void
-	 */
-	public function onResourceLoaderRegisterModules( ResourceLoader $resourceLoader ): void {
+	/** @inheritDoc */
+	public function onResourceLoaderRegisterModules( ResourceLoader $rl ): void {
 		$extensionRegistry = ExtensionRegistry::getInstance();
-		$messages = [];
-
-		$messages[] = 'colon-separator';
-		$messages[] = 'captcha-edit';
-		$messages[] = 'captcha-label';
+		$messages = [
+			'colon-separator',
+			'captcha-edit',
+			'captcha-label'
+		];
 
 		if ( $extensionRegistry->isLoaded( 'QuestyCaptcha' ) ) {
 			$messages[] = 'questycaptcha-edit';
@@ -336,7 +363,7 @@ class Hooks implements
 			$messages[] = 'fancycaptcha-imgcaptcha-ph';
 		}
 
-		$resourceLoader->register( [
+		$rl->register( [
 			'ext.confirmEdit.CaptchaInputWidget' => [
 				'localBasePath' => dirname( __DIR__ ),
 				'remoteExtPath' => 'ConfirmEdit',
@@ -349,5 +376,3 @@ class Hooks implements
 	}
 
 }
-
-class_alias( Hooks::class, 'ConfirmEditHooks' );

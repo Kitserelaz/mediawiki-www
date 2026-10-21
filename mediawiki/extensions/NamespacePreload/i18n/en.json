@@ -1,0 +1,9 @@
+{
+    "@metadata": {
+        "authors": [
+            "Ostrzyciel"
+        ]
+    },
+    "namespacePreload": "NamespacePreload",
+    "namespacePreload-desc": "Preloads templates on new pages based on their namespace."
+}

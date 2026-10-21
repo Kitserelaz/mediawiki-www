@@ -1,0 +1,47 @@
+{
+	"name": "CreatedPagesList",
+	"version": "1.2.1",
+	"author": "Edward Chernenko",
+	"url": "https://www.mediawiki.org/wiki/Extension:CreatedPagesList",
+	"descriptionmsg": "createdpageslist-desc",
+	"license-name": "GPL-2.0+",
+	"type": "specialpage",
+	"requires": {
+		"MediaWiki": ">= 1.39.0"
+	},
+	"SpecialPages": {
+		"CreatedPagesList": "SpecialCreatedPagesList"
+	},
+	"ExtensionMessagesFiles": {
+		"CreatedPagesListAlias": "CreatedPagesList.alias.php"
+	},
+	"MessagesDirs": {
+		"CreatedPagesList": [
+			"i18n"
+		]
+	},
+	"AutoloadClasses": {
+		"CreatedPagesList": "includes/CreatedPagesList.php",
+		"CreatedPagesListHooks": "includes/CreatedPagesListHooks.php",
+		"CreatedPagesListUpdater": "includes/CreatedPagesListUpdater.php",
+		"SpecialCreatedPagesList": "includes/SpecialCreatedPagesList.php"
+	},
+	"HookHandlers": {
+		"main": {
+			"class": "CreatedPagesListHooks",
+			"services": [
+				"RevisionLookup"
+			]
+		},
+		"updater": {
+			"class": "CreatedPagesListUpdater"
+		}
+	},
+	"Hooks": {
+		"ArticleDeleteComplete": "main",
+		"ArticleUndelete": "main",
+		"LoadExtensionSchemaUpdates": "updater",
+		"PageSaveComplete": "main"
+	},
+	"manifest_version": 1
+}

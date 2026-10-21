@@ -1,0 +1,216 @@
+<?php
+
+namespace SMW\SQLStore\Lookup;
+
+use RuntimeException;
+use SMW\DataItems\Container;
+use SMW\DataItems\DataItem;
+use SMW\DataItems\Property;
+use SMW\IteratorFactory;
+use SMW\Iterators\MappingIterator;
+use SMW\MediaWiki\Connection\SqlFragmentBuilder;
+use SMW\RequestOptions;
+use SMW\SQLStore\SQLStore;
+use SMW\Store;
+use Wikimedia\Rdbms\SelectQueryBuilder;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 3.0
+ *
+ * @author mwjames
+ */
+class EntityUniquenessLookup {
+
+	/**
+	 * @since 3.0
+	 */
+	public function __construct(
+		private readonly Store $store,
+		private readonly IteratorFactory $iteratorFactory,
+	) {
+	}
+
+	/**
+	 * Find references (all or limited by RequestOptions) for the combination of
+	 * a property and a value. This can be used to identify uniqueness violations
+	 * amongst entities where the same value (+property) is assigned to different
+	 * subjects or it be used to count the cardinality for a specific value
+	 * representation.
+	 *
+	 * @since 3.0
+	 *
+	 * @param Property $property
+	 * @param DataItem $dataItem
+	 * @param RequestOptions $requestOptions
+	 *
+	 * @return MappingIterator|array
+	 */
+	public function checkConstraint( Property $property, DataItem $dataItem, RequestOptions $requestOptions ): array|MappingIterator {
+		$propTableId = $this->store->getPropertyTableInfoFetcher()->findTableIdForProperty(
+			$property
+		);
+
+		$proptables = $this->store->getPropertyTables();
+		$propertyTable = $proptables[$propTableId];
+
+		if ( !isset( $proptables[$propTableId] ) || !$propertyTable->usesIdSubject() ) {
+			return [];
+		}
+
+		$connection = $this->store->getConnection( 'mw.db' );
+
+		$alias = 't';
+		$index = 1;
+
+		$qb = $connection->newSelectQueryBuilder()
+			->select( "{$alias}{$index}.s_id" )
+			->from( $propertyTable->getName(), "{$alias}{$index}" );
+
+		$this->resolve_value_condition( $propertyTable, $property, $dataItem, $qb, $alias, $index );
+
+		// The extra-condition callback signature is part of the public API and
+		// expects an object exposing string-formatting helpers like neq/eq/in.
+		foreach ( $requestOptions->getExtraConditions() as $extraCondition ) {
+			if ( is_callable( $extraCondition ) ) {
+				$formatter = new SqlFragmentBuilder( $connection );
+				$formatter->alias = $alias;
+				$formatter->index = $index;
+				$cond = $extraCondition( $this->store, $formatter, "{$alias}{$index}" );
+				if ( $cond !== '' ) {
+					$qb->andWhere( $cond );
+				}
+			} else {
+				throw new RuntimeException( "Expected a callable at this point!" );
+			}
+		}
+
+		$qb->limit( $requestOptions->getLimit() );
+
+		$res = $qb->caller( __METHOD__ )->fetchResultSet();
+
+		$result = $this->iteratorFactory->newMappingIterator(
+			$this->iteratorFactory->newResultIterator( $res ),
+			function ( $row ) {
+				return $this->store->getObjectIds()->getDataItemById( $row->s_id );
+			}
+		);
+
+		return $result;
+	}
+
+	private function resolve_value_condition(
+		$propertyTable,
+		$property,
+		$dataItem,
+		SelectQueryBuilder $qb,
+		string $alias,
+		int &$index
+	): void {
+		// Collect conditions to appear as
+		// `... (t1.p_id='121913' AND t1.o_sortkey='3520062') ...`
+		$conditions = [];
+
+		// Keep the index in case of a recursive iteration
+		$i = $index;
+
+		if ( !$propertyTable->isFixedPropertyTable() ) {
+
+			$pid = $this->store->getObjectIds()->getSMWPropertyID(
+				$property
+			);
+
+			$conditions["{$alias}{$i}.p_id"] = $pid;
+		}
+
+		$diHandler = $this->store->getDataItemHandlerForDIType(
+			$propertyTable->getDiType()
+		);
+
+		if ( !$dataItem instanceof Container ) {
+			foreach ( $diHandler->getWhereConds( $dataItem ) as $fieldName => $value ) {
+				$conditions["{$alias}{$i}.$fieldName"] = $value;
+			}
+		} else {
+
+			/**
+			 * For a container based property/value pair we expected something similar
+			 * to:
+			 *
+			 * SELECT t1.s_id FROM `smw_di_wikipage` AS t1
+			 *   INNER JOIN `smw_di_wikipage` AS t2 ON t2.s_id=t1.o_id
+			 *   INNER JOIN `smw_di_wikipage` AS t3 ON t3.s_id=t1.o_id
+			 *   INNER JOIN `smw_di_number` AS t4 ON t4.s_id=t1.o_id
+			 * WHERE
+			 *   (t2.p_id='333615' AND t2.o_id='302096') AND
+			 *   (t3.p_id='333611' AND t3.o_id='193213') AND
+			 *   (t4.p_id='121913' AND t4.o_sortkey='3520062') AND
+			 *   (t1.p_id='310161') AND (t1.s_id!='333608')
+			 * LIMIT 2
+			 */
+
+			// Handle containers recursively
+			$this->resolve_container_conditions( $propertyTable, $dataItem, $qb, $alias, $index );
+		}
+
+		if ( $conditions !== [] ) {
+			$qb->andWhere( $conditions );
+		}
+	}
+
+	private function resolve_container_conditions(
+		$propertyTable,
+		Container $dataItem,
+		SelectQueryBuilder $qb,
+		string $alias,
+		int &$index
+	): void {
+		$proptables = $this->store->getPropertyTables();
+		$semanticData = $dataItem->getSemanticData();
+
+		$i = $index;
+
+		// ought to be a type 'p' object
+		$keys = array_keys( $propertyTable->getFields( $this->store ) );
+		$joinfield = "{$alias}{$i}." . reset( $keys );
+
+		foreach ( $semanticData->getProperties() as $property ) {
+
+			$tableid = $this->store->findPropertyTableID( $property );
+			$subproptable = $proptables[$tableid];
+
+			foreach ( $semanticData->getPropertyValues( $property ) as $subvalue ) {
+				// Increase the index for each iteration to ensure that each
+				// condition has its own alias
+				$i++;
+
+				if ( $subproptable->usesIdSubject() ) {
+					// simply add property table to check values
+					// e.g. `... INNER JOIN `smw_di_wikipage` AS t2 ON t2.s_id=t1.o_id ...`
+					$qb->join(
+						$subproptable->getName(),
+						"{$alias}{$i}",
+						"{$alias}{$i}.s_id=$joinfield"
+					);
+				} else {
+					// Rare case with a table that uses subject title+namespace
+					// in a container object (should never happen in SMW core!!)
+					$qb->join(
+						SQLStore::ID_TABLE,
+						"ids{$i}",
+						"ids{$i}.smw_id=$joinfield"
+					);
+					$qb->join(
+						$subproptable->getName(),
+						"{$alias}{$i}",
+						"{$alias}{$i}.s_title=ids{$i}.smw_title AND {$alias}{$i}.s_namespace=ids{$i}.smw_namespace"
+					);
+				}
+
+				$index = $i;
+				$this->resolve_value_condition( $subproptable, $property, $subvalue, $qb, $alias, $index );
+			}
+		}
+	}
+
+}

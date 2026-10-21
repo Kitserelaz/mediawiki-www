@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Ykhwong"
+		]
+	},
+	"skinname-medik": "메딕",
+	"medik-default": "기본값",
+	"medik-desc": "부트스트랩 라이브러리에 기반을 둔 단순하고 깔끔한 스킨입니다.",
+	"medik-font-label": "글꼴 크기",
+	"medik-tools-menu": "편집 및 도구"
+}

@@ -31,8 +31,9 @@
 	},
 	{
 		"@owner": "N/A",
+		"@note": "This module fluctuates based on mw.config and mw.user.options defaults added by extensions via hooks",
 		"resourceModule": "mediawiki.base",
-		"maxSizeUncompressed": "16.8 kB"
+		"maxSizeUncompressed": null
 	},
 	{
 		"@owner": "N/A",
@@ -56,13 +57,18 @@
 	},
 	{
 		"@owner": "N/A",
+		"resourceModule": "mediawiki.router",
+		"maxSizeUncompressed": "2.6 kB"
+	},
+	{
+		"@owner": "N/A",
 		"resourceModule": "mediawiki.String",
 		"maxSizeUncompressed": "2.5 kB"
 	},
 	{
 		"@owner": "N/A",
 		"resourceModule": "mediawiki.util",
-		"maxSizeUncompressed": "15.7 kB"
+		"maxSizeUncompressed": "15.8 kB"
 	},
 	{
 		"@owner": "N/A",
@@ -141,14 +147,14 @@
 		"maxSizeUncompressed": "15.4 kB"
 	},
 	{
-		"@owner": "Web Team (temporarily until more suitable owner identified)",
+		"@owner": "Readers (temporarily until more suitable owner identified)",
 		"resourceModule": "noscript",
 		"maxSize": null
 	},
 	{
-		"@owner": "Web Team",
+		"@owner": "Readers",
 		"resourceModule": "mediawiki.page.ready",
-		"maxSizeUncompressed": "14.5 kB"
+		"maxSizeUncompressed": "16.0 kB"
 	},
 	{
 		"@owner": "Design System Team",

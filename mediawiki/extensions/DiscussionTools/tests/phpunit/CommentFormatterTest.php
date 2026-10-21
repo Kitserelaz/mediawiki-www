@@ -2,18 +2,24 @@
 
 namespace MediaWiki\Extension\DiscussionTools\Tests;
 
+use ExtMobileFrontend;
 use MediaWiki\Cache\GenderCache;
 use MediaWiki\Context\IContextSource;
+use MediaWiki\Extension\DiscussionTools\BatchModifyElements;
 use MediaWiki\Json\FormatJson;
+use MediaWiki\Language\RawMessage;
 use MediaWiki\MainConfigNames;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Parser\ParserOutput;
+use MediaWiki\Skin\Skin;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
-use Skin;
 use Wikimedia\TestingAccessWrapper;
 
 /**
+ * @group DiscussionTools
+ * @group Standalone
+ *
  * @covers \MediaWiki\Extension\DiscussionTools\CommentFormatter
  * @covers \MediaWiki\Extension\DiscussionTools\CommentUtils
  */
@@ -51,10 +57,15 @@ class CommentFormatterTest extends IntegrationTestCase {
 	 * @dataProvider provideAddDiscussionToolsInternal
 	 */
 	public function testAddDiscussionToolsInternal(
-		string $name, string $titleText, string $dom, string $expected, string $config, string $data,
+		string $name, string $title, string $dom, string $expected, string $config, string $data,
 		bool $isMobile, bool $useButtons
 	): void {
+		if ( $isMobile ) {
+			$this->markTestSkippedIfExtensionNotLoaded( 'MobileFrontend' );
+		}
+
 		$this->setService( 'GenderCache', $this->createNoOpMock( GenderCache::class ) );
+
 		$dom = static::getHtml( $dom );
 		$expectedPath = $expected;
 		$expected = static::getText( $expectedPath );
@@ -70,24 +81,29 @@ class CommentFormatterTest extends IntegrationTestCase {
 			MainConfigNames::Script => '/w/index.php',
 		] );
 
-		$title = Title::newFromText( $titleText );
+		$titleObj = Title::newFromText( $title );
+		$wrappedTitle = TestingAccessWrapper::newFromObject( $titleObj );
+		// Mock values which would otherwise trigger a DB lookup
+		$wrappedTitle->mContentModel = CONTENT_MODEL_WIKITEXT;
+		$wrappedTitle->mLatestID = 1;
+
 		$subscriptionStore = new MockSubscriptionStore();
 		$user = $this->createMock( User::class );
 		$qqxLang = $this->getServiceContainer()->getLanguageFactory()->getLanguage( 'qqx' );
 		$skin = $this->createMock( Skin::class );
 		$skin->method( 'getSkinName' )->willReturn( 'minerva' );
 		$outputPage = $this->createMock( IContextSource::class );
-		$outputPage->method( 'getTitle' )->willReturn( $title );
+		$outputPage->method( 'getTitle' )->willReturn( $titleObj );
 		$outputPage->method( 'getUser' )->willReturn( $user );
 		$outputPage->method( 'getLanguage' )->willReturn( $qqxLang );
 		$outputPage->method( 'getSkin' )->willReturn( $skin );
-		$outputPage->method( 'msg' )->willReturn( 'a label' );
+		$outputPage->method( 'msg' )->willReturn( new RawMessage( 'a label' ) );
 
 		MockCommentFormatter::$parser = $this->createParser( $config, $data );
 		$commentFormatter = TestingAccessWrapper::newFromClass( MockCommentFormatter::class );
 
 		$pout = new ParserOutput();
-		$preprocessed = $commentFormatter->addDiscussionToolsInternal( $dom, $pout, $title );
+		$preprocessed = $commentFormatter->addDiscussionToolsInternal( $dom, $pout, $titleObj );
 		$preprocessed .= "\n<pre>\n" .
 			"newestComment: " . FormatJson::encode(
 				$pout->getExtensionData( 'DiscussionTools-newestComment' ), "\t", FormatJson::ALL_OK ) . "\n" .
@@ -100,21 +116,33 @@ class CommentFormatterTest extends IntegrationTestCase {
 			FormatJson::encode( $pout->getJsConfigVars(), "\t", FormatJson::ALL_OK ) .
 			"\n</pre>";
 
+		if ( $isMobile ) {
+			$preprocessed = ExtMobileFrontend::domParseMobile( $outputPage, $preprocessed );
+			// MobileFormatter render time is non-deterministic, so strip from test output
+			$preprocessed = preg_replace( '/<!-- MobileFormatter took [^-]*-->/', '', $preprocessed );
+		}
+
 		OutputPage::setupOOUI();
 
-		$actual = $preprocessed;
+		$batchModifyElements = new BatchModifyElements();
 
-		$actual = MockCommentFormatter::postprocessTopicSubscription(
-			$actual, $outputPage, $subscriptionStore, $isMobile, $useButtons
+		MockCommentFormatter::postprocessTimestampLinks(
+			$preprocessed, $batchModifyElements, $outputPage
 		);
 
-		$actual = MockCommentFormatter::postprocessVisualEnhancements(
-			$actual, $outputPage, $isMobile
+		MockCommentFormatter::postprocessTopicSubscription(
+			$preprocessed, $batchModifyElements, $outputPage, $subscriptionStore, $isMobile, $useButtons
 		);
 
-		$actual = MockCommentFormatter::postprocessReplyTool(
-			$actual, $outputPage, $isMobile, $useButtons
+		MockCommentFormatter::postprocessVisualEnhancements(
+			$preprocessed, $batchModifyElements, $outputPage, $isMobile
 		);
+
+		MockCommentFormatter::postprocessReplyTool(
+			$preprocessed, $batchModifyElements, $outputPage, $isMobile, $useButtons
+		);
+
+		$actual = $batchModifyElements->apply( $preprocessed );
 
 		// OOUI ID's are non-deterministic, so strip them from test output
 		$actual = preg_replace( '/ id=[\'"]ooui-php-[0-9]+[\'"]/', '', $actual );

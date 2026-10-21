@@ -8,7 +8,7 @@
 	"discussiontools-newtopic-missing-title": "𐌱𐌹𐌳𐌾𐌰𐌼 𐌸𐌿𐌺, 𐌲𐌹𐍆 𐌿𐍆𐌰𐍂𐌼𐌴𐌻𐌹 𐌸𐌴𐌹𐌽𐌰𐌼𐌼𐌰 𐍄𐌰𐌿𐍀𐌴𐌹𐌺 𐌲𐌰𐍅𐌰𐌿𐍂𐌳𐌾𐌹𐍃.",
 	"discussiontools-newtopic-placeholder-title": "𐌿𐍆𐍅𐌰𐌿𐍂𐍀𐌰",
 	"discussiontools-replylink": "{{GENDER:|𐌰𐌽𐌳𐌷𐌰𐍆𐍄𐌴𐌹}}",
-	"discussiontools-replywidget-cancel": "𐍃𐍅𐌴𐌹𐌱",
+	"discussiontools-replywidget-cancel": "𐌱𐌹𐍅𐌰𐌽𐌳𐌾𐌰𐌽",
 	"discussiontools-replywidget-mode-source": "𐌱𐍂𐌿𐌽𐌽𐌰",
 	"discussiontools-replywidget-placeholder-newtopic": "𐍃𐌺𐌴𐌹𐍂𐌴𐌹𐌽𐍃",
 	"discussiontools-replywidget-placeholder-reply": "{{GENDER:|𐌰𐌽𐌳𐌷𐌰𐍆𐍄𐌴𐌹}} 𐌳𐌿 {{BIDI:$1}}",
@@ -19,10 +19,10 @@
 	"discussiontools-topicheader-authorcount": "$1 {{PLURAL:$1|𐌼𐌰𐌽𐌽𐌰|𐌼𐌰𐌽𐍃}} 𐌹𐌽 𐌲𐌰𐍅𐌰𐌿𐍂𐌳𐌾𐌰",
 	"discussiontools-topicheader-commentcount": "$1 {{PLURAL:$1|𐍅𐌰𐌿𐍂𐌳|𐍅𐌰𐌿𐍂𐌳𐌰}}",
 	"discussiontools-topicheader-latestcomment": "𐌰𐍆𐍄𐌿𐌼𐌹𐍃𐍄 𐍅𐌰𐌿𐍂𐌳: $1",
-	"discussiontools-topicsubscription-button-subscribe": "𐌰𐌽𐌰𐌼𐌴𐌻𐌴𐌹",
-	"discussiontools-topicsubscription-button-subscribe-label": "𐌰𐌽𐌰𐌼𐌴𐌻𐌴𐌹",
-	"discussiontools-topicsubscription-button-unsubscribe": "𐌿𐍃𐌼𐌴𐌻𐌴𐌹",
-	"discussiontools-topicsubscription-button-unsubscribe-label": "𐌿𐍃𐌼𐌴𐌻𐌴𐌹",
+	"discussiontools-topicsubscription-button-subscribe": "𐌰𐌽𐌰𐌼𐌴𐌻𐌾𐌰𐌽",
+	"discussiontools-topicsubscription-button-subscribe-label": "𐌰𐌽𐌰𐌼𐌴𐌻𐌾𐌰𐌽",
+	"discussiontools-topicsubscription-button-unsubscribe": "𐌿𐍃𐌼𐌴𐌻𐌾𐌰𐌽",
+	"discussiontools-topicsubscription-button-unsubscribe-label": "𐌿𐍃𐌼𐌴𐌻𐌾𐌰𐌽",
 	"discussiontools-topicsubscription-notify-subscribed-title": "𐌰𐌽𐌰𐌼𐌴𐌻𐌹𐌳𐌴𐍃!",
 	"discussiontools-topicsubscription-notify-unsubscribed-title": "𐌿𐍃𐌼𐌴𐌻𐌹𐌳𐌴𐍃."
 }

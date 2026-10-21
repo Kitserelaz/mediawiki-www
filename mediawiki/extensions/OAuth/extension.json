@@ -13,7 +13,7 @@
 	"license-name": "GPL-2.0-or-later",
 	"type": "other",
 	"requires": {
-		"MediaWiki": ">= 1.43"
+		"MediaWiki": ">= 1.46"
 	},
 	"ExtensionFunctions": [
 		"MediaWiki\\Extension\\OAuth\\Backend\\Hooks::onExtensionFunctions"
@@ -44,7 +44,11 @@
 	"SessionProviders": {
 		"MediaWiki\\Extension\\OAuth\\SessionProvider": {
 			"class": "MediaWiki\\Extension\\OAuth\\SessionProvider",
-			"args": []
+			"args": [],
+			"services": [
+				"BlockManager",
+				"GrantsInfo"
+			]
 		}
 	},
 	"SpecialPages": {
@@ -60,13 +64,32 @@
 			"class": "MediaWiki\\Extension\\OAuth\\Frontend\\SpecialPages\\SpecialMWOAuthManageMyGrants",
 			"services": [
 				"GrantsInfo",
-				"GrantsLocalization"
+				"GrantsLocalization",
+				"PermissionManager"
 			]
 		},
 		"OAuthListConsumers": {
 			"class": "MediaWiki\\Extension\\OAuth\\Frontend\\SpecialPages\\SpecialMWOAuthListConsumers",
 			"services": [
-				"GrantsLocalization"
+				"GrantsLocalization",
+				"PermissionManager"
+			]
+		},
+		"OAuthConsumerRegistration": {
+			"class": "MediaWiki\\Extension\\OAuth\\Frontend\\SpecialPages\\SpecialMWOAuthConsumerRegistration",
+			"services": [
+				"PermissionManager",
+				"GrantsInfo",
+				"GrantsLocalization",
+				"UrlUtils"
+			]
+		},
+		"OAuthManageConsumers": {
+			"class": "MediaWiki\\Extension\\OAuth\\Frontend\\SpecialPages\\SpecialMWOAuthManageConsumers",
+			"services": [
+				"GrantsLocalization",
+				"PermissionManager",
+				"UrlUtils"
 			]
 		}
 	},
@@ -81,12 +104,17 @@
 	"AutoloadNamespaces": {
 		"MediaWiki\\Extension\\OAuth\\": "src/"
 	},
+	"AutoloadClasses": {
+		"MWOA": "src/MWOA.php"
+	},
 	"TestAutoloadNamespaces": {
 		"MediaWiki\\Extension\\OAuth\\Tests\\": "tests/phpunit/"
 	},
 	"TestAutoloadClasses": {
-		"MediaWiki\\Extension\\OAuth\\Tests\\Entity\\MockClientEntity": "tests/phpunit/Entity/MockClientEntity.php",
-		"MediaWiki\\Extension\\OAuth\\Tests\\Entity\\Mock_ClientEntity": "tests/phpunit/Entity/MockClientEntity.php"
+		"MediaWiki\\Extension\\OAuth\\Tests\\Unit\\Lib\\MockOAuthBaseStringRequest": "tests/phpunit/unit/Lib/MockOAuthBaseStringRequest.php",
+		"MediaWiki\\Extension\\OAuth\\Tests\\Unit\\Lib\\MockOAuthDataStore": "tests/phpunit/unit/Lib/MockOAuthDataStore.php",
+		"MediaWiki\\Extension\\OAuth\\Tests\\Integration\\Entity\\MockClientEntity": "tests/phpunit/integration/Entity/MockClientEntity.php",
+		"MediaWiki\\Extension\\OAuth\\Tests\\Integration\\Rest\\EndpointTestBase": "tests/phpunit/integration/Rest/EndpointTestBase.php"
 	},
 	"ResourceModules": {
 		"ext.MWOAuth.styles": {
@@ -120,9 +148,11 @@
 		"backend": {
 			"class": "MediaWiki\\Extension\\OAuth\\Backend\\Hooks",
 			"services": [
-				"ChangeTagDefStore",
-				"ConnectionProvider"
+				"ChangeTagDefStore"
 			]
+		},
+		"echo": {
+			"class": "MediaWiki\\Extension\\OAuth\\Frontend\\EchoHooks"
 		},
 		"frontend": {
 			"class": "MediaWiki\\Extension\\OAuth\\Frontend\\UIHooks",
@@ -130,11 +160,17 @@
 				"PermissionManager"
 			]
 		},
+		"mwservices": {
+			"class": "MediaWiki\\Extension\\OAuth\\MWServicesHookHandler"
+		},
 		"setup": {
 			"class": "MediaWiki\\Extension\\OAuth\\Setup"
 		},
 		"schema": {
 			"class": "MediaWiki\\Extension\\OAuth\\Backend\\UpdaterHooks"
+		},
+		"usermerge": {
+			"class": "MediaWiki\\Extension\\OAuth\\Backend\\UserMergeHook"
 		}
 	},
 	"Hooks": {
@@ -142,36 +178,36 @@
 		"AbuseFilter-computeVariable": "abusefilter",
 		"AbuseFilter-generateUserVars": "abusefilter",
 		"ChangeTagCanCreate": "backend",
-		"MergeAccountFromTo": "MediaWiki\\Extension\\OAuth\\Backend\\Hooks::onMergeAccountFromTo",
+		"MergeAccountFromTo": "usermerge",
 		"LoadExtensionSchemaUpdates": "schema",
 		"GetPreferences": "frontend",
 		"MessagesPreLoad": "frontend",
 		"SpecialPageAfterExecute": "frontend",
 		"SpecialPageBeforeFormDisplay": "frontend",
-		"BeforeCreateEchoEvent": "MediaWiki\\Extension\\OAuth\\Frontend\\UIHooks::onBeforeCreateEchoEvent",
+		"BeforeCreateEchoEvent": "echo",
 		"TestCanonicalRedirect": "setup",
 		"SetupAfterCache": "backend",
 		"ApiRsdServiceApis": "backend",
-		"SpecialPage_initList": "frontend",
 		"ListDefinedTags": "backend",
 		"ChangeTagsListActive": "backend",
-		"LoginFormValidErrorMessages": "frontend"
+		"LoginFormValidErrorMessages": "frontend",
+		"MediaWikiServices": "mwservices"
 	},
 	"ConfigRegistry": {
-		"mwoauth": "GlobalVarConfig::newInstance"
+		"mwoauth": "MediaWiki\\Config\\GlobalVarConfig::newInstance"
 	},
 	"config": {
 		"MWOAuthCentralWiki": {
 			"value": false,
-			"description": "Wiki ID of OAuth management wiki. On wiki farms, it makes sense to set this to a wiki that acts as a portal site, is decidated to management, or just handles login/authentication. It can, however, be set to any wiki if the farm. For single-wiki sites or farms where each wiki manages consumers separately, it should be left as false."
+			"description": "Wiki ID of OAuth management wiki. On wiki farms, it makes sense to set this to a wiki that acts as a portal site, is dedicated to management, or just handles login/authentication. It can, however, be set to any wiki if the farm. For single-wiki sites or farms where each wiki manages consumers separately, it should be left as false."
 		},
 		"MWOAuthSharedUserIDs": {
 			"value": false,
-			"description": "Whether shared global user IDs are stored in the oauth tables. On wiki farms with a central authentication system (with integer user IDs) that share a single OAuth management wiki, this must be set to true. If wikis have a central authentication system but have their own OAuth management, then this can be either true or false. Otherwise it should always be set to false Setting this to true requires CentralIdLookup or an MWOAuth aware authentication extension. This value should not be changed after the fact to avoid ambigious IDs. Proper user ID migration should be done before any such changes."
+			"description": "Deprecated, will be dropped in a future release with default behavior becoming the same as $wgMWOAuthSharedUserIDs=true. If you have set this to false and are getting deprecation warnings, you need to set $wgMWOAuthSharedUserIDs=true, $wgMWOAuthSharedUserSource='local'.\n\n(On wikis which are not part of a wiki farm or don't use a central user system, the value of this configuration variable is inconsequential, and $wgMWOAuthSharedUserIDs=true,$wgMWOAuthSharedUserSource=null also works. If you aren't sure, just set 'local'.)\n\nDetermines whether OAuth stores local user IDs or central IDs."
 		},
 		"MWOAuthSharedUserSource": {
 			"value": null,
-			"description": "Source of shared user IDs, if enabled. If CentralIdLookup is available, this is the $providerId for CentralIdLookupFactory::getLookup(). Generally null would be what you want, to use the default provider. If that class is not available or the named provider is not found, this is\n * passed to the 'OAuthGetUserNamesFromCentralIds', 'OAuthGetLocalUserFromCentralId', 'OAuthGetCentralIdFromLocalUser', and 'OAuthGetCentralIdFromUserName' hooks. This has no effect if $wgMWOAuthSharedUserIDs is set to false."
+			"description": "Source of shared user IDs. Used as the $providerId parameter for CentralIdLookupFactory::getLookup(). Generally null would be what you want, to use the default provider.\n\nThis value should not be changed after the fact to avoid ambiguous IDs. Proper user ID migration should be done before any such changes."
 		},
 		"MWOAuthRequestExpirationAge": {
 			"value": 2592000,
@@ -219,7 +255,11 @@
 		},
 		"OAuth2PrivateKey": {
 			"value": "",
-			"description": "Private key or a path to the private key used to sign OAuth2 JWT being transmitted"
+			"description": "Private key or a path to the private key used to sign OAuth2 JWT being transmitted. Key needs to be >= 2048 bits"
+		},
+		"OAuth2Passphrase": {
+			"value": "",
+			"description": "Passphrase used to decrypt OAuth2 private key. Leave empty if the key is not encrypted"
 		},
 		"OAuth2PublicKey": {
 			"value": "",
@@ -236,6 +276,10 @@
 		"OAuth2RefreshTokenTTL": {
 			"description": "Controls validity period for refresh tokens (stored in the cache configured in MWOAuthSessionCacheType). Accepts ISO 8601 durations or can be set to \"infinity\" or false for non-expiring tokens. Defaults to one month.",
 			"value": "P1M"
+		},
+		"OAuthUseJwtCookie": {
+			"description": "Whether to emit a JWT cookie when responding to an OAuth request which has no short-lived JWT (ie. it is either an OAuth 1 request or uses an owner-only consumer).",
+			"value": false
 		}
 	},
 	"GrantPermissions": {
@@ -279,10 +323,13 @@
 			"path": "/oauth2/client",
 			"class": "MediaWiki\\Extension\\OAuth\\Rest\\Handler\\ListClients",
 			"services": [
-				"DBLoadBalancer"
+				"ConnectionProvider"
 			],
 			"method": "GET"
 		}
+	],
+	"DatabaseVirtualDomains": [
+		"virtual-oauth"
 	],
 	"load_composer_autoloader": true,
 	"manifest_version": 2

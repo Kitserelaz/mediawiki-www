@@ -1,0 +1,7 @@
+{
+  "component": "mediawiki/extensions/WebAuthn",
+  "baseline": "7681fabe410e0c22d57e5036b1670b73071d0c01",
+  "target": "30ad1784843cead7b2d25e3f576e99066a9a85b2",
+  "preserved_changes": [],
+  "dependency_status": "requires-lock-regeneration"
+}

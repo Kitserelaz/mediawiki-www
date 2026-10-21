@@ -1,18 +1,19 @@
 <?php
 
-namespace MediaWiki\CheckUser\Tests\Integration\Investigate;
+namespace MediaWiki\Extension\CheckUser\Tests\Integration\Investigate;
 
 use MediaWiki\Context\RequestContext;
+use MediaWiki\Exception\PermissionsError;
 use MediaWiki\MainConfigNames;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Tests\SpecialPage\FormSpecialPageTestCase;
 use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
-use PermissionsError;
+use MediaWiki\User\User;
 use Wikimedia\Timestamp\ConvertibleTimestamp;
 
 /**
- * @covers \MediaWiki\CheckUser\Investigate\SpecialInvestigateBlock
+ * @covers \MediaWiki\Extension\CheckUser\Investigate\SpecialInvestigateBlock
  * @group CheckUser
  * @group Database
  */
@@ -31,7 +32,9 @@ class SpecialInvestigateBlockTest extends FormSpecialPageTestCase {
 		$this->expectException( PermissionsError::class );
 		// Execute the special page.
 		$this->executeSpecialPage(
-			'', new FauxRequest(), null,
+			'',
+			new FauxRequest(),
+			null,
 			$this->mockRegisteredAuthorityWithPermissions( $rights )
 		);
 	}
@@ -55,14 +58,28 @@ class SpecialInvestigateBlockTest extends FormSpecialPageTestCase {
 		);
 	}
 
-	private function getUserForSuccess() {
+	private function getUserForSuccess(): User {
 		return $this->getMutableTestUser( [ 'checkuser', 'sysop' ] )->getUser();
 	}
 
-	public function testViewSpecialPageWithNoDataEntered() {
+	/**
+	 * Provide both values of the temporary feature flag $wgEnableMultiBlocks
+	 */
+	public static function provideMultiBlocksOption() {
+		return [
+			'single blocks' => [ false ],
+			'multiblocks' => [ true ],
+		];
+	}
+
+	/**
+	 * @dataProvider provideMultiBlocksOption
+	 */
+	public function testViewSpecialPageWithNoDataEntered( $multiBlocks ) {
 		// Define wgBlockAllowsUTEdit and wgEnableUserEmail as true to get all the fields that can be in the form.
 		$this->overrideConfigValue( MainConfigNames::BlockAllowsUTEdit, true );
 		$this->overrideConfigValue( MainConfigNames::EnableUserEmail, true );
+		$this->overrideConfigValue( MainConfigNames::EnableMultiBlocks, $multiBlocks );
 		// Execute the special page.
 		[ $html ] = $this->executeSpecialPage( '', new FauxRequest(), null, $this->getUserForSuccess() );
 		// Verify that the title is shown
@@ -71,14 +88,25 @@ class SpecialInvestigateBlockTest extends FormSpecialPageTestCase {
 		$this->assertStringContainsString( '(checkuser-investigateblock-target', $html );
 		// Verify that the 'Actions to block' section is shown
 		$this->assertStringContainsString( '(checkuser-investigateblock-actions', $html );
+		$this->assertStringContainsString( '(checkuser-investigateblock-account-creation-label', $html );
 		$this->assertStringContainsString( '(checkuser-investigateblock-email-label', $html );
 		$this->assertStringContainsString( '(checkuser-investigateblock-usertalk-label', $html );
-		$this->assertStringContainsString( '(checkuser-investigateblock-reblock-label', $html );
+		$reblock = $multiBlocks ? 'newblock' : 'reblock';
+		$this->assertStringContainsString( "(checkuser-investigateblock-$reblock-label", $html );
 		// Verify that the 'Reason' section is shown
 		$this->assertStringContainsString( '(checkuser-investigateblock-reason', $html );
+		// Expiry
+		$this->assertStringContainsString( '(checkuser-investigateblock-expiry', $html );
+		// HardBlock
+		$this->assertStringContainsString( '(checkuser-investigateblock-hardblock-label', $html );
 		// Verify that the 'Options' section is shown
 		$this->assertStringContainsString( '(checkuser-investigateblock-options', $html );
-		$this->assertStringContainsString( '(checkuser-investigateblock-notice-user-page-label', $html );
+		if ( $this->isSocialProfileExtensionInstalled() ) {
+			$this->assertStringNotContainsString( '(checkuser-investigateblock-notice-user-page-label', $html );
+		} else {
+			$this->assertStringContainsString( '(checkuser-investigateblock-notice-user-page-label', $html );
+
+		}
 		$this->assertStringContainsString( '(checkuser-investigateblock-notice-talk-page-label', $html );
 		// Assert that the 'Confirm blocks' checkbox is not shown (this should only be shown after the form is submitted
 		// and a warning is to be shown).
@@ -98,7 +126,30 @@ class SpecialInvestigateBlockTest extends FormSpecialPageTestCase {
 		$this->assertStringContainsString( '(checkuser-investigateblock-warning-users-truncated', $html );
 	}
 
+	/**
+	 * Using the wAvatar class existence check as a proxy because as of
+	 * early April 2025 SocialProfile lacks an extension.json entry point, which
+	 * thus prevents using ExtensionRegistry to check if SP is installed.
+	 *
+	 * @return bool
+	 */
+	private function isSocialProfileExtensionInstalled(): bool {
+		return class_exists( 'wAvatar' );
+	}
+
+	/**
+	 * SocialProfile user pages do not use wikitext and therefore block attempts to edit them using the API,
+	 * so Special:InvestigateBlock does not work when SocialProfile is installed. We need to skip the tests
+	 * to avoid failures in CI.
+	 */
+	private function markTestSkippedIfSocialProfileExtensionInstalled(): void {
+		if ( $this->isSocialProfileExtensionInstalled() ) {
+			$this->markTestSkipped( "Extension SocialProfile cannot be installed when running this test (T390590)" );
+		}
+	}
+
 	public function testOnSubmitOneUserTargetWithNotices() {
+		$this->markTestSkippedIfSocialProfileExtensionInstalled();
 		// Set-up the valid request and get a test user which has the necessary rights.
 		$testPerformer = $this->getUserForSuccess();
 		RequestContext::getMain()->setUser( $testPerformer );
@@ -107,8 +158,10 @@ class SpecialInvestigateBlockTest extends FormSpecialPageTestCase {
 			[
 				// Test with a single target user, with both notices being added.
 				'wpTargets' => $testTargetUser->getName(), 'wpUserPageNotice' => 1, 'wpTalkPageNotice' => 1,
+				'wpDisableAccountCreation' => 1,
 				'wpUserPageNoticeText' => 'Test user page text', 'wpTalkPageNoticeText' => 'Test talk page text',
 				'wpReason' => 'other', 'wpReason-other' => 'Test reason',
+				'wpExpiry' => 'infinite',
 				'wpEditToken' => $testPerformer->getEditToken(),
 			],
 			true,
@@ -123,6 +176,7 @@ class SpecialInvestigateBlockTest extends FormSpecialPageTestCase {
 		[ $html ] = $this->executeSpecialPage( '', $fauxRequest, null, $testPerformer );
 		// Assert that the success message is shown.
 		$this->assertStringContainsString( '(checkuser-investigateblock-success', $html );
+		$this->assertStringNotContainsString( '(checkuser-investigateblock-notices-failed', $html );
 
 		// Assert that the user is blocked
 		$block = $this->getServiceContainer()->getDatabaseBlockStore()->newFromTarget( $testTargetUser );
@@ -157,6 +211,7 @@ class SpecialInvestigateBlockTest extends FormSpecialPageTestCase {
 	}
 
 	public function testOnSubmitForIPTargetsWithFailedNotices() {
+		$this->markTestSkippedIfSocialProfileExtensionInstalled();
 		ConvertibleTimestamp::setFakeTime( '20210405060708' );
 		$testPerformer = $this->getUserForSuccess();
 		RequestContext::getMain()->setUser( $testPerformer );
@@ -170,9 +225,11 @@ class SpecialInvestigateBlockTest extends FormSpecialPageTestCase {
 			[
 				// Test with with a single non-existent target user, with both notices being added.
 				// The notices should not be added if the block fails to be applied.
-				'wpTargets' => "127.0.0.2\n1.2.3.4/24", 'wpUserPageNotice' => 1, 'wpTalkPageNotice' => 1,
+				'wpTargets' => "127.0.0.2\n1.2.3.4/24", 'wpHardBlock' => 0,
+				'wpUserPageNotice' => 1, 'wpTalkPageNotice' => 1,
 				'wpUserPageNoticeText' => 'Test user page text', 'wpTalkPageNoticeText' => 'Test talk page text',
 				'wpReason' => 'other', 'wpReason-other' => 'Test reason',
+				'wpExpiry' => '1 week',
 				'wpEditToken' => $testPerformer->getEditToken(),
 			],
 			true,
@@ -196,13 +253,14 @@ class SpecialInvestigateBlockTest extends FormSpecialPageTestCase {
 		$block = $this->getServiceContainer()->getDatabaseBlockStore()->newFromTarget( '127.0.0.2' );
 		$this->assertNotNull( $block, 'The IP address target was not blocked by Special:InvestigateBlock' );
 		// Assert that the block parameters are as expected
-		$this->assertSame( '20210412060708', $block->getExpiry(), 'The block should be indefinite' );
+		$this->assertFalse( $block->isCreateAccountBlocked(), 'Account creation should not be disabled' );
+		$this->assertSame( '20210412060708', $block->getExpiry(), 'The block should be 1 week' );
 
 		// Secondly check the IP range target
 		$block = $this->getServiceContainer()->getDatabaseBlockStore()->newFromTarget( '1.2.3.0/24' );
 		$this->assertNotNull( $block, 'The IP range target was not blocked by Special:InvestigateBlock' );
 		// Assert that the block parameters are as expected
-		$this->assertSame( '20210412060708', $block->getExpiry(), 'The block should be indefinite' );
+		$this->assertSame( '20210412060708', $block->getExpiry(), 'The block should be 1 week' );
 
 		// Assert that the user page and talk page for the non-existent user are not created, because the user was
 		// prevented from creating the notices
@@ -301,7 +359,9 @@ class SpecialInvestigateBlockTest extends FormSpecialPageTestCase {
 				// Test using two targets, one being a user and the other an IP. Also have the 'Confirm block' checkbox
 				// checked to ignore the warning.
 				'wpTargets' => $testTargetUser->getName() . "\n1.2.3.4", 'wpConfirm' => 1,
+				'wpDisableAccountCreation' => 1,
 				'wpReason' => 'other', 'wpReason-other' => 'Test reason',
+				'wpExpiry' => '1 week',
 				'wpEditToken' => $testPerformer->getEditToken(),
 				// Also test disabling the talk page and email as part of the blocks.
 				'wpDisableUTEdit' => 1, 'wpDisableEmail' => 1,
@@ -338,5 +398,40 @@ class SpecialInvestigateBlockTest extends FormSpecialPageTestCase {
 			$ipBlock->appliesToUsertalk(),
 			'The block should prevent edits to their own user talk page'
 		);
+	}
+
+	/**
+	 * Submit the form when the user is already blocked, without the reblock option
+	 *
+	 * @dataProvider provideMultiBlocksOption
+	 */
+	public function testOnSubmitBlockFailure( $multiBlocks ) {
+		$this->overrideConfigValue( MainConfigNames::EnableMultiBlocks, $multiBlocks );
+		$testPerformer = $this->getUserForSuccess();
+		$targetUser = $this->getTestUser()->getUser();
+		$this->getServiceContainer()->getDatabaseBlockStore()
+			->insertBlockWithParams( [
+				'targetUser' => $targetUser,
+				'by' => $testPerformer,
+			] );
+		$fauxRequest = new FauxRequest(
+			[
+				'wpTargets' => $targetUser->getName(),
+				'wpConfirm' => 1,
+				'wpReason' => 'other',
+				'wpReason-other' => 'Test reason',
+				'wpEditToken' => $testPerformer->getEditToken(),
+			],
+			true,
+			RequestContext::getMain()->getRequest()->getSession()
+		);
+		RequestContext::getMain()->setRequest( $fauxRequest );
+		RequestContext::getMain()->getRequest()->getSession()->setUser( $testPerformer );
+		[ $html ] = $this->executeSpecialPage( '', $fauxRequest, null, $testPerformer );
+		$expect = 'checkuser-investigateblock-failure';
+		if ( $multiBlocks ) {
+			$expect .= '-multi';
+		}
+		$this->assertStringContainsString( $expect, $html );
 	}
 }

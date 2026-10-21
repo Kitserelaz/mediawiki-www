@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "exceptions": [
+    {
+      "path": "mediawiki/extensions/OATHAuth/vendor/symfony/polyfill-uuid/bootstrap85.php",
+      "sha256": "ac3e2f020892721841f0083ef34c6794992e6db06b6379969a245f51066e5a85",
+      "guard": "mediawiki/extensions/OATHAuth/vendor/symfony/polyfill-uuid/bootstrap80.php",
+      "guard_sha256": "f5fb564b3680b4c79c14697e2e92053b620b90207fe30684ce4b809bd309f07e",
+      "minimum_php_version_id": 80500,
+      "reason": "Symfony UUID constants use PHP 8.5-only Deprecated attributes; bootstrap80.php only requires this file when PHP_VERSION_ID >= 80500."
+    }
+  ]
+}

@@ -1,0 +1,86 @@
+{
+	"name": "Apex",
+	"author": [
+		"Trevor Parscal"
+	],
+	"url": "https://www.mediawiki.org/wiki/Skin:Apex",
+	"descriptionmsg": "apex-desc",
+	"namemsg": "skinname-apex",
+	"license-name": "GPL-2.0-or-later",
+	"type": "skin",
+	"requires": {
+		"MediaWiki": ">= 1.39.0"
+	},
+	"ValidSkinNames": {
+		"apex": {
+			"class": "SkinTemplate",
+			"args": [ {
+				"name": "Apex",
+				"bodyOnly": true,
+				"bodyClasses": [ "apex-animateLayout" ],
+				"template": "ApexTemplate",
+				"responsive": false,
+				"scripts": [
+					"skins.apex"
+				],
+				"styles": [
+					"skins.apex.styles"
+				]
+			} ]
+		}
+	},
+	"SkinOOUIThemes": {
+		"apex": "Apex"
+	},
+	"MessagesDirs": {
+		"apex": [
+			"i18n"
+		]
+	},
+	"AutoloadClasses": {
+		"ApexTemplate": "ApexTemplate.php"
+	},
+	"ResourceModules": {
+		"skins.apex": {
+			"scripts": "resources/apex.js"
+		},
+		"skins.apex.styles": {
+			"class": "MediaWiki\\ResourceLoader\\SkinModule",
+			"features": {
+				"elements": true,
+				"content-media": true,
+				"interface": true,
+				"logo": true,
+				"content-links": true,
+				"interface-message-box": true,
+				"interface-category": true,
+				"content-tables": true,
+				"i18n-ordered-lists": true,
+				"i18n-all-lists-margins": true,
+				"i18n-headings": true
+			},
+			"styles": {
+				"resources/screen.css": {
+					"media": "screen"
+				},
+				"resources/screen-narrow.css": {
+					"media": "screen and (max-width: 700px)"
+				},
+				"resources/screen-wide.css": {
+					"media": "screen and (min-width: 982px)"
+				}
+			}
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "",
+		"remoteSkinPath": "apex"
+	},
+	"config": {
+		"ApexLogo": {
+			"1x": false,
+			"2x": false
+		}
+	},
+	"manifest_version": 1
+}

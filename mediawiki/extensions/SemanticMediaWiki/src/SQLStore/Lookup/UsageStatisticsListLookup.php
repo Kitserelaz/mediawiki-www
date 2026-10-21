@@ -1,0 +1,337 @@
+<?php
+
+namespace SMW\SQLStore\Lookup;
+
+use RuntimeException;
+use SMW\DataItems\Property;
+use SMW\Lookup\ListLookup;
+use SMW\SQLStore\PropertyStatisticsStore;
+use SMW\SQLStore\SQLStore;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 2.2
+ *
+ * @author mwjames
+ */
+class UsageStatisticsListLookup implements ListLookup {
+
+	/**
+	 * @since 2.2
+	 */
+	public function __construct(
+		private readonly SQLStore $store,
+		private readonly PropertyStatisticsStore $propertyStatisticsStore,
+	) {
+	}
+
+	/**
+	 * Returns a list with statistical information where keys are matched to:
+	 *
+	 * - 'PROPUSES': Number of property instances (value assignments) in the connection
+	 * - 'USEDPROPS': Number of properties that are used with at least one value
+	 * - 'DECLPROPS': Number of properties that have been declared (i.e. assigned a type)
+	 * - 'OWNPAGE': Number of properties with their own page
+	 * - 'QUERY': Number of inline queries
+	 * - 'QUERYSIZE': Represents collective query size
+	 * - 'CONCEPTS': Number of declared concepts
+	 * - 'SUBOBJECTS': Number of declared subobjects
+	 * - 'QUERYFORMATS': Array of used formats and its usage count
+	 * - 'TOTALPROPS': Total number of registered properties
+	 * - 'ERRORUSES': Number of annotations with an error
+	 * - 'DELETECOUNT': Number of "marked for deletion"
+	 *
+	 * @since 2.2
+	 *
+	 * @return array
+	 */
+	public function fetchList(): array {
+		return [
+			'OWNPAGE' => $this->getPropertyPageCount(),
+			'QUERY' => $this->getQueryCount(),
+			'QUERYSIZE' => $this->getQuerySize(),
+			'QUERYFORMATS' => $this->getQueryFormatsCount(),
+			'CONCEPTS' => $this->getConceptCount(),
+			'SUBOBJECTS' => $this->getSubobjectCount(),
+			'DECLPROPS' => $this->getDeclaredPropertiesCount(),
+			'PROPUSES' => $this->getPropertyUsageCount(),
+			'USEDPROPS' => $this->getUsedPropertiesCount(),
+			'TOTALPROPS' => $this->getTotalPropertiesCount(),
+			'ERRORUSES' => $this->getImproperValueForCount(),
+			'DELETECOUNT' => $this->getDeleteCount(),
+			'TOTALENTITIES' => $this->getTotalEntitiesCount()
+		];
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * @return bool
+	 */
+	public function isFromCache(): bool {
+		return false;
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * @return false|string
+	 */
+	public function getTimestamp() {
+		return wfTimestamp( TS_UNIX );
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * @return string
+	 */
+	public function getHash(): string {
+		return 'statistics-lookup';
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * @return int
+	 */
+	public function getImproperValueForCount(): int {
+		return $this->propertyStatisticsStore->getUsageCount(
+			$this->store->getObjectIds()->getSMWPropertyID( new Property( '_ERRP' ) )
+		);
+	}
+
+	/**
+	 * @since 1.9
+	 *
+	 * @return int
+	 */
+	public function getQueryCount(): int {
+		return $this->count( '_ASK' );
+	}
+
+	/**
+	 * @since 1.9
+	 *
+	 * @return int
+	 */
+	public function getQuerySize(): int {
+		return $this->count( '_ASKSI' );
+	}
+
+	/**
+	 * @since 1.9
+	 *
+	 * @return int
+	 */
+	public function getConceptCount(): int {
+		return $this->count( '_CONC' );
+	}
+
+	/**
+	 * @since 1.9
+	 *
+	 * @return int
+	 */
+	public function getSubobjectCount(): int {
+		return $this->count( Property::TYPE_SUBOBJECT );
+	}
+
+	/**
+	 * @since 1.9
+	 *
+	 * @return int
+	 */
+	public function getDeclaredPropertiesCount(): int {
+		return $this->count( Property::TYPE_HAS_TYPE );
+	}
+
+	/**
+	 * @since 1.9
+	 *
+	 * @return int[]
+	 */
+	public function getQueryFormatsCount(): array {
+		$count = [];
+
+		$res = $this->store->getConnection()->newSelectQueryBuilder()
+			->select( 'o_hash, COUNT(s_id) AS count' )
+			->from( $this->findPropertyTableByType( '_ASKFO' )->getName() )
+			->groupBy( 'o_hash' )
+			->orderBy( 'count DESC' )
+			->caller( __METHOD__ )
+			->fetchResultSet();
+
+		foreach ( $res as $row ) {
+			$count[$row->o_hash] = (int)$row->count;
+		}
+
+		return $count;
+	}
+
+	/**
+	 * @since 1.9
+	 *
+	 * @return int
+	 */
+	public function getPropertyPageCount() {
+		// Only match entities that have a NOT null smw_proptable_hash entry
+		// which indicates that it is not a object but a subject value (has
+		// annotations such as `has type` == page was created with ... etc.)
+		$conditions = [
+			'smw_namespace' => SMW_NS_PROPERTY,
+			'smw_iw' => '',
+			'smw_subobject' => '',
+			'smw_proptable_hash IS NOT NULL'
+		];
+
+		$db = $this->store->getConnection( 'mw.db' );
+
+		// Select object ID's against known property ID's that match the conditions
+		$res = $db->newSelectQueryBuilder()
+			->select( 'smw_id' )
+			->from( SQLStore::PROPERTY_STATISTICS_TABLE )
+			->join( SQLStore::ID_TABLE, null, [ 'smw_id=p_id' ] )
+			->where( $conditions )
+			->caller( __METHOD__ )
+			->fetchResultSet();
+
+		return $res->numRows();
+	}
+
+	/**
+	 * Count property uses by summing up property statistics table
+	 *
+	 * @note subproperties that are part of container values are counted
+	 * individually and it does not seem to be important to filter them by
+	 * adding more conditions.
+	 *
+	 * @since 1.9
+	 *
+	 * @return int
+	 */
+	public function getPropertyUsageCount(): int {
+		$count = 0;
+
+		$row = $this->store->getConnection()->newSelectQueryBuilder()
+			->select( 'SUM( usage_count ) AS count' )
+			->from( SQLStore::PROPERTY_STATISTICS_TABLE )
+			->caller( __METHOD__ )
+			->fetchRow();
+
+		$count = $row ? $row->count : $count;
+
+		return (int)$count;
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * @return int
+	 */
+	public function getTotalPropertiesCount(): int {
+		$count = 0;
+
+		$conditions = [
+			'smw_namespace' => SMW_NS_PROPERTY,
+			'smw_iw' => '',
+			'smw_subobject' => ''
+		];
+
+		$row = $this->store->getConnection()->newSelectQueryBuilder()
+			->select( 'Count( * ) AS count' )
+			->from( SQLStore::ID_TABLE )
+			->where( $conditions )
+			->caller( __METHOD__ )
+			->fetchRow();
+
+		$count = $row ? $row->count : $count;
+
+		return (int)$count;
+	}
+
+	/**
+	 * @since 3.1
+	 *
+	 * @return int
+	 */
+	public function getTotalEntitiesCount(): int {
+		$connection = $this->store->getConnection( 'mw.db' );
+
+		$row = $connection->newSelectQueryBuilder()
+			->select( 'Count( * ) AS count' )
+			->from( SQLStore::ID_TABLE )
+			->caller( __METHOD__ )
+			->fetchRow();
+
+		return isset( $row->count ) ? (int)$row->count : 0;
+	}
+
+	/**
+	 * @since 1.9
+	 *
+	 * @return int
+	 */
+	public function getUsedPropertiesCount() {
+		$conditions = [
+			'smw_namespace' => SMW_NS_PROPERTY,
+			'smw_iw' => '',
+			'smw_subobject' => '',
+			'usage_count > 0'
+		];
+
+		$db = $this->store->getConnection( 'mw.db' );
+
+		// Select object ID's against known property ID's that match the conditions
+		$res = $db->newSelectQueryBuilder()
+			->select( 'smw_id' )
+			->from( SQLStore::PROPERTY_STATISTICS_TABLE )
+			->join( SQLStore::ID_TABLE, null, [ 'smw_id=p_id' ] )
+			->where( $conditions )
+			->caller( __METHOD__ )
+			->fetchResultSet();
+
+		return $res->numRows();
+	}
+
+	/**
+	 * @since 2.4
+	 *
+	 * @return int
+	 */
+	public function getDeleteCount(): int {
+		$count = 0;
+
+		$row = $this->store->getConnection()->newSelectQueryBuilder()
+			->select( 'Count( * ) AS count' )
+			->from( SQLStore::ID_TABLE )
+			->where( [ 'smw_iw' => ':smw-delete' ] )
+			->caller( __METHOD__ )
+			->fetchRow();
+
+		$count = $row ? $row->count : $count;
+
+		return (int)$count;
+	}
+
+	private function count( string $type ): int {
+		return (int)$this->store->getConnection()->newSelectQueryBuilder()
+			->select( 'COUNT(s_id)' )
+			->from( $this->findPropertyTableByType( $type )->getName() )
+			->caller( __METHOD__ )
+			->fetchField();
+	}
+
+	private function findPropertyTableByType( string $type ) {
+		$propertyTables = $this->store->getPropertyTables();
+
+		$tableIdForType = $this->store->findPropertyTableID( new Property( $type ) );
+
+		if ( isset( $propertyTables[$tableIdForType] ) ) {
+			return $propertyTables[$tableIdForType];
+		}
+
+		throw new RuntimeException( "Tried to access a table that doesn't exist for {$tableIdForType}." );
+	}
+
+}

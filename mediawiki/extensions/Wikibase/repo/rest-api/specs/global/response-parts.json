@@ -1,0 +1,86 @@
+{
+	"ItemResponse": {
+		"allOf": [
+			{ "$ref": "./schemas.json#/Item" },
+			{
+				"required": [ "id", "type", "labels", "descriptions", "aliases", "statements", "sitelinks" ],
+				"properties": {
+					"sitelinks": {
+						"additionalProperties": {
+							"required": [ "title", "badges", "url" ]
+						}
+					},
+					"statements": {
+						"additionalProperties": {
+							"items": { "$ref": "#/StatementResponseRequired" }
+						}
+					}
+				}
+			}
+		]
+	},
+	"PropertyResponse": {
+		"allOf": [
+			{ "$ref": "./schemas.json#/Property" },
+			{
+				"required": [ "id", "type", "data_type", "labels", "descriptions", "aliases", "statements" ],
+				"properties": {
+					"statements": {
+						"additionalProperties": {
+							"items": { "$ref": "#/StatementResponseRequired" }
+						}
+					}
+				}
+			}
+		]
+	},
+	"Error": {
+		"type": "object",
+		"properties": {
+			"code": { "type": "string" },
+			"message": { "type": "string" },
+			"context": { "type": "object" }
+		},
+		"required": [ "code", "message" ]
+	},
+	"StatementResponseRequired": {
+		"allOf": [
+			{ "$ref": "#/PropertyValueResponseRequired" },
+			{
+				"required": [ "id", "rank", "qualifiers", "references" ],
+				"properties": {
+					"qualifiers": {
+						"items": { "$ref": "#/QualifierResponseRequired" }
+					},
+					"references": {
+						"items": { "$ref": "#/ReferenceResponseRequired" }
+					}
+				}
+			}
+		]
+	},
+	"QualifierResponseRequired": {
+		"$ref": "#/PropertyValueResponseRequired"
+	},
+	"ReferenceResponseRequired": {
+		"required": [ "hash", "parts" ],
+		"properties": {
+			"parts": {
+				"items": {
+					"$ref": "#/PropertyValueResponseRequired"
+				}
+			}
+		}
+	},
+	"PropertyValueResponseRequired": {
+		"required": [ "property", "value" ],
+		"properties": {
+			"property": {
+				"required": [ "id", "data_type" ]
+			},
+			"value": {
+				"required": [ "type" ]
+			}
+		}
+	}
+}

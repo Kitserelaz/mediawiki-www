@@ -1,6 +1,7 @@
 <?php
 
 use MediaWiki\Extension\AbuseFilter\FilterUser;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\Message\Message;
 use Psr\Log\NullLogger;
 
@@ -51,7 +52,7 @@ class AbuseFilterFilterUserTest extends MediaWikiIntegrationTestCase {
 		$this->assertSame( $name, $actual->getName(), 'name' );
 		$found = false;
 		foreach ( $logger->getBuffer() as $msg ) {
-			if ( strpos( $msg[1], 'MediaWiki:abusefilter-blocker' ) !== false ) {
+			if ( str_contains( $msg[1], 'MediaWiki:abusefilter-blocker' ) ) {
 				$found = true;
 				break;
 			}

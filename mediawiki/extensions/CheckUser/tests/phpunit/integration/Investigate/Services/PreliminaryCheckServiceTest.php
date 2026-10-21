@@ -1,9 +1,9 @@
 <?php
 
-namespace MediaWiki\CheckUser\Tests\Integration\Investigate\Services;
+namespace MediaWiki\Extension\CheckUser\Tests\Integration\Investigate\Services;
 
 use MediaWiki\Block\DatabaseBlockStoreFactory;
-use MediaWiki\CheckUser\Investigate\Services\PreliminaryCheckService;
+use MediaWiki\Extension\CheckUser\Investigate\Services\PreliminaryCheckService;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\User\UserGroupManager;
 use MediaWiki\User\UserGroupManagerFactory;
@@ -17,13 +17,13 @@ use Wikimedia\Rdbms\SelectQueryBuilder;
  * Test class for PreliminaryCheckService class
  *
  * @group CheckUser
- * @covers \MediaWiki\CheckUser\Investigate\Services\PreliminaryCheckService
- * @covers \MediaWiki\CheckUser\Investigate\Services\ChangeService
+ * @covers \MediaWiki\Extension\CheckUser\Investigate\Services\PreliminaryCheckService
+ * @covers \MediaWiki\Extension\CheckUser\Investigate\Services\ChangeService
  */
 class PreliminaryCheckServiceTest extends MediaWikiIntegrationTestCase {
 
 	/**
-	 * @dataProvider preprocessResultsProvider()
+	 * @dataProvider preprocessResultsProvider
 	 */
 	public function testPreprocessResults( $user, $options, $expected ) {
 		$dbRef = $this->createMock( IDatabase::class );
@@ -60,7 +60,7 @@ class PreliminaryCheckServiceTest extends MediaWikiIntegrationTestCase {
 				$registry,
 				$ugmf,
 				$bsf,
-				$options['localWikiId']
+				$options['localWikiId'],
 			] )
 			->onlyMethods( [ 'isUserBlocked' ] )
 			->getMock();
@@ -70,12 +70,10 @@ class PreliminaryCheckServiceTest extends MediaWikiIntegrationTestCase {
 
 		if ( $options['isCentralAuthAvailable'] ) {
 			$rows = new FakeResultWrapper( array_map(
-				static function ( $wiki ) use ( $user ) {
-					return (object)[
-						'lu_name' => $user['name'],
-						'lu_wiki' => $wiki,
-					];
-				},
+				static fn ( $wiki ) => (object)[
+					'lu_name' => $user['name'],
+					'lu_wiki' => $wiki,
+				],
 				$options['attachedWikis']
 			) );
 		} else {
@@ -86,7 +84,7 @@ class PreliminaryCheckServiceTest extends MediaWikiIntegrationTestCase {
 					'user_registration' => $user['registration'],
 					'user_editcount' => $user['editcount'],
 					'wiki' => $options['localWikiId'],
-				]
+				],
 			] );
 		}
 
@@ -143,7 +141,7 @@ class PreliminaryCheckServiceTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @dataProvider getQueryInfoProvider()
+	 * @dataProvider getQueryInfoProvider
 	 */
 	public function testGetQueryInfo( $users, $options, $expected ) {
 		$registry = $this->createMock( ExtensionRegistry::class );
@@ -181,7 +179,7 @@ class PreliminaryCheckServiceTest extends MediaWikiIntegrationTestCase {
 				[ 'isCentralAuthAvailable' => false ],
 				[
 					'tables' => 'user',
-					'conds' => [ 0 ],
+					'conds' => [ '1=0' ],
 				],
 			],
 			'global users as string' => [

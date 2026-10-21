@@ -1,0 +1,126 @@
+{
+  "component": "mediawiki/extensions/Math",
+  "baseline": "97840f5163427a0dc2847474b7add88b80c671ba",
+  "target": "325611d6eb8f59dbc7f914f57184db06504979dd",
+  "preserved_changes": [
+    {
+      "path": ".eslintignore",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".eslintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".gitattributes",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".gitignore",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".gitreview",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".phan/config.php",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".phpcs.xml",
+      "change": "local-deletion"
+    },
+    {
+      "path": ".stylelintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "Gruntfile.js",
+      "change": "local-deletion"
+    },
+    {
+      "path": "i18n/bn.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ce.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ja.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ko.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ps.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/sr-ec.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/uk.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "modules/.eslintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "modules/ve-math/.eslintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "modules/ve-math/tests/.eslintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "modules/ve-math/tools/.eslintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "modules/ve-math/tools/package.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "package-lock.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "package.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "tests/api-testing/.eslintrc.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "tests/phpunit/InputCheck/MathoidCheckerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "tests/selenium/.eslintrc.json",
+      "change": "local-deletion"
+    }
+  ],
+  "dependency_status": {
+    "old_runtime_requirements": {
+      "ext-intl": "*"
+    },
+    "new_runtime_requirements": {
+      "ext-intl": "*"
+    },
+    "has_lock": false,
+    "has_vendor": false,
+    "status": "runtime-requirements-unchanged"
+  },
+  "baseline_proof": {
+    "matched_runtime_and_manifest_files": 126,
+    "method": "Exact Git blobs for all installed non-test, non-vendor PHP and extension.json"
+  }
+}

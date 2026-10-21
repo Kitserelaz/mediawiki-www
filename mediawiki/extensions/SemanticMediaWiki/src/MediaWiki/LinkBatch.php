@@ -1,0 +1,96 @@
+<?php
+
+namespace SMW\MediaWiki;
+
+use MediaWiki\Cache\LinkBatch as MwLinkBatch;
+use MediaWiki\MediaWikiServices;
+use SMW\DataItems\DataItem;
+use SMW\DataItems\WikiPage;
+
+/**
+ * Isolate access to the LinkBatch class which allows to bulk load a list
+ * of titles into the LinkCache.
+ *
+ * @license GPL-2.0-or-later
+ * @since 3.1
+ *
+ * @author mwjames
+ */
+class LinkBatch {
+
+	private array $log = [];
+
+	private array $batch = [];
+
+	/**
+	 * @since 3.1
+	 */
+	public function __construct( private ?MwLinkBatch $linkBatch = null ) {
+	}
+
+	/**
+	 * @since 3.1
+	 */
+	public function setCaller( string $caller ): void {
+		if ( $this->linkBatch === null ) {
+			$this->linkBatch = MediaWikiServices::getInstance()->getLinkBatchFactory()->newLinkBatch();
+		}
+
+		$this->linkBatch->setCaller( $caller );
+	}
+
+	/**
+	 * @since 3.1
+	 */
+	public function addFromList( array $dataItems ): void {
+		foreach ( $dataItems as $dataItem ) {
+			$this->add( $dataItem );
+		}
+	}
+
+	/**
+	 * @since 3.1
+	 */
+	public function add( DataItem|null $dataItem ): void {
+		if ( !$dataItem instanceof WikiPage || isset( $this->log[$dataItem->getSha1()] ) ) {
+			return;
+		}
+
+		// PHP 5.6! -> PHP 7 $dataItem->getDBKey()[0]
+		$dbkey = $dataItem->getDBKey();
+
+		// Avoid "... ParameterAssertionException: Bad value for parameter
+		// $dbkey: invalid DB key '_ASK'"
+		if ( $dbkey !== '' && $dbkey[0] === '_' ) {
+			return;
+		}
+
+		// Track which have already been registered because
+		// MediaWiki\Cache\LinkBatch doesn't check for it
+		$this->log[$dataItem->getSha1()] = true;
+		$this->batch[] = $dataItem;
+	}
+
+	/**
+	 * @since 3.1
+	 */
+	public function execute(): void {
+		if ( $this->linkBatch === null ) {
+			$this->linkBatch = MediaWikiServices::getInstance()->getLinkBatchFactory()->newLinkBatch();
+		}
+
+		// Reset the list to avoid having previous members being executed again
+		$this->linkBatch->setArray( [] );
+
+		foreach ( $this->batch as $dataItem ) {
+			$this->linkBatch->add( $dataItem->getNamespace(), $dataItem->getDBKey() );
+		}
+
+		if ( $this->batch !== [] ) {
+			$this->linkBatch->execute();
+		}
+
+		$this->batch = [];
+	}
+
+}

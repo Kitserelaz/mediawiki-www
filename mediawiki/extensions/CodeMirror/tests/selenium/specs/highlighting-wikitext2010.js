@@ -1,16 +1,14 @@
-'use strict';
-
-const assert = require( 'assert' ),
-	EditPage = require( '../pageobjects/edit.page' ),
-	FixtureContent = require( '../fixturecontent' ),
-	UserPreferences = require( '../userpreferences' ),
-	Util = require( 'wdio-mediawiki/Util' );
+import EditPage from '../pageobjects/edit.page.js';
+import FixtureContent from '../fixturecontent.js';
+import UserPreferences from '../userpreferences.js';
+import { createApiClient } from 'wdio-mediawiki/Api.js';
+import { getTestString } from 'wdio-mediawiki/Util.js';
 
 describe( 'CodeMirror bracket match highlighting for the wikitext 2010 editor', () => {
 	let title;
 
 	before( async () => {
-		title = Util.getTestString( 'CodeMirror-fixture1-' );
+		title = getTestString( 'CodeMirror-fixture1-' );
 		await UserPreferences.loginAsOther();
 		await FixtureContent.createFixturePage( title );
 		await UserPreferences.enableWikitext2010EditorWithCodeMirror();
@@ -23,12 +21,23 @@ describe( 'CodeMirror bracket match highlighting for the wikitext 2010 editor', 
 	} );
 
 	it( 'highlights matching bracket', async () => {
-		await EditPage.cursorToPosition( 0 );
-		assert.strictEqual( await EditPage.getHighlightedMatchingBrackets(), '[]' );
+		await browser.execute( () => {
+			$( '.cm-editor' ).textSelection( 'setSelection', { start: 0, end: 0 } );
+		} );
+		await expect( EditPage.highlightedBracket ).toBeDisplayed();
+		expect( await EditPage.getHighlightedMatchingBrackets() ).toBe( '[]' );
 	} );
 
 	it( 'matches according to cursor movement', async () => {
-		await EditPage.cursorToPosition( 3 );
-		assert.strictEqual( await EditPage.getHighlightedMatchingBrackets(), '{}' );
+		await browser.execute( () => {
+			$( '.cm-editor' ).textSelection( 'setSelection', { start: 3, end: 3 } );
+		} );
+		await expect( EditPage.highlightedBracket ).toBeDisplayed();
+		expect( await EditPage.getHighlightedMatchingBrackets() ).toBe( '{}' );
+	} );
+
+	after( async () => {
+		const apiClient = await createApiClient();
+		await apiClient.delete( title, 'Test cleanup' ).catch( ( e ) => console.error( e ) );
 	} );
 } );

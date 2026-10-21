@@ -2,9 +2,9 @@
 
 namespace PageImages\Tests\Hooks;
 
-use File;
-use MediaWiki\Config\Config;
 use MediaWiki\Config\HashConfig;
+use MediaWiki\FileRepo\File\File;
+use MediaWiki\FileRepo\RepoGroup;
 use MediaWiki\Http\HttpRequestFactory;
 use MediaWiki\Linker\LinksMigration;
 use MediaWiki\Parser\Parser;
@@ -15,7 +15,6 @@ use MediaWikiIntegrationTestCase;
 use PageImages\Hooks\ParserFileProcessingHookHandlers;
 use PageImages\PageImageCandidate;
 use PageImages\PageImages;
-use RepoGroup;
 use Wikimedia\ObjectCache\WANObjectCache;
 use Wikimedia\Rdbms\IConnectionProvider;
 use Wikimedia\TestingAccessWrapper;
@@ -32,10 +31,9 @@ class ParserFileProcessingHookHandlersTest extends MediaWikiIntegrationTestCase 
 
 	/**
 	 * @param array[] $images
-	 *
 	 * @return Parser
 	 */
-	private function getParser( array $images ) {
+	private function getParser( array $images ): Parser {
 		$parser = $this->getServiceContainer()->getParser();
 		$title = Title::newFromText( 'test' );
 		$options = ParserOptions::newFromAnon();
@@ -44,7 +42,12 @@ class ParserFileProcessingHookHandlersTest extends MediaWikiIntegrationTestCase 
 		return $parser;
 	}
 
-	private function getHtml( $indexes, $nonLeadIndex = INF ) {
+	/**
+	 * @param int[] $indexes
+	 * @param int $nonLeadIndex
+	 * @return string
+	 */
+	private function getHtml( array $indexes, $nonLeadIndex = INF ): string {
 		$html = '';
 		$doneSectionBreak = false;
 		foreach ( $indexes as $index ) {
@@ -59,9 +62,8 @@ class ParserFileProcessingHookHandlersTest extends MediaWikiIntegrationTestCase 
 
 	/**
 	 * Required to make RepoGroup::findFile in ParserFileProcessingHookHandlers::getScore return something.
-	 * @return RepoGroup
 	 */
-	private function getRepoGroup() {
+	private function getRepoGroup(): RepoGroup {
 		$file = $this->createMock( File::class );
 		// ugly hack to avoid all the unmockable crap in FormatMetadata
 		$file->method( 'isDeleted' )
@@ -74,26 +76,27 @@ class ParserFileProcessingHookHandlersTest extends MediaWikiIntegrationTestCase 
 		return $repoGroup;
 	}
 
-	private function getHandler( $images, $leadOnly = false ) {
+	private function getHandler( array $images, bool $leadOnly = false ): ParserFileProcessingHookHandlers {
 		return new class ( $images, $leadOnly ) extends ParserFileProcessingHookHandlers {
-			private $images;
-			private $isFreeMap;
+			private array $isFreeMap;
 
-			public function __construct( $images, $leadOnly ) {
+			public function __construct(
+				private readonly array $images,
+				bool $leadOnly,
+			) {
 				$this->config = new HashConfig( [
 					'PageImagesLeadSectionOnly' => $leadOnly,
 				] );
-				$this->images = $images;
 				foreach ( $images as $image ) {
 					$this->isFreeMap[$image['filename']] = $image['isFree'];
 				}
 			}
 
-			protected function isImageFree( $fileName ) {
+			protected function isImageFree( $fileName ): bool {
 				return $this->isFreeMap[$fileName] ?? false;
 			}
 
-			protected function getScore( PageImageCandidate $image, $position ) {
+			protected function getScore( PageImageCandidate $image, int $position ) {
 				return $this->images[$position]['score'];
 			}
 		};
@@ -172,7 +175,7 @@ class ParserFileProcessingHookHandlersTest extends MediaWikiIntegrationTestCase 
 	 * @dataProvider provideDoParserAfterTidy_lead
 	 * @covers \PageImages\Hooks\ParserFileProcessingHookHandlers::onParserAfterTidy
 	 */
-	public function testDoParserAfterTidy_lead( $leadOnly ) {
+	public function testDoParserAfterTidy_lead( bool $leadOnly ) {
 		$candidates = [
 			[ 'filename' => 'A.jpg', 'score' => 100, 'isFree' => false ],
 			[ 'filename' => 'B.jpg', 'score' => 90, 'isFree' => true ],
@@ -272,6 +275,21 @@ class ParserFileProcessingHookHandlersTest extends MediaWikiIntegrationTestCase 
 				[ 'filename' => 'A.jpg', 'frame' => [ 'class' => 'notpageimage' ] ],
 				0,
 				0,
+				// class="notpageimage"
+				-1000
+			],
+			[
+				[ 'filename' => 'A.jpg', 'fullwidth' => 100, 'frame' => [ 'class' => 'pageimage' ] ],
+				50,
+				1,
+				// width score + ratio score + position score + class="pageimage"
+				106 + 1000
+			],
+			[
+				[ 'filename' => 'A.jpg', 'frame' => [ 'class' => 'pageimage notpageimage' ] ],
+				0,
+				0,
+				// class="pageimage notpageimage" - should be the same as class="notpageimage"
 				-1000
 			],
 		];
@@ -285,7 +303,7 @@ class ParserFileProcessingHookHandlersTest extends MediaWikiIntegrationTestCase 
 		/** @var ParserFileProcessingHookHandlers $handlerWrapper */
 		$handlerWrapper = TestingAccessWrapper::newFromObject(
 			new ParserFileProcessingHookHandlers(
-				$this->createMock( Config::class ),
+				new HashConfig(),
 				$this->getRepoGroup(),
 				$this->createMock( WANObjectCache::class ),
 				$this->createMock( HttpRequestFactory::class ),

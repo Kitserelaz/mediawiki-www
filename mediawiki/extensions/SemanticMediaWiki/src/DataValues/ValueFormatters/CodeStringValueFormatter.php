@@ -1,0 +1,86 @@
+<?php
+
+namespace SMW\DataValues\ValueFormatters;
+
+use SMW\DataValues\DataValue;
+use SMW\DataValues\StringValue;
+use SMW\MediaWiki\Outputs;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 2.4
+ *
+ * @author mwjames
+ */
+class CodeStringValueFormatter extends StringValueFormatter {
+
+	/**
+	 * @since 2.4
+	 *
+	 * {@inheritDoc}
+	 */
+	public function isFormatterFor( DataValue $dataValue ): bool {
+		return $dataValue->getTypeID() === '_cod';
+	}
+
+	/**
+	 * @param StringValue $dataValue
+	 * @param int $type
+	 * @param mixed $linker
+	 *
+	 * @see StringValueFormatter::doFormat
+	 */
+	protected function doFormat( $dataValue, $type, $linker ): string {
+		$abbreviate = $type === self::WIKI_LONG || $type === self::HTML_LONG;
+		$text = $dataValue->getDataItem()->getString();
+
+		// Escape and wrap values of type Code. The result is escaped to be
+		// HTML-safe (it will also work in wiki context). The result will
+		// contain mark-up that must not be escaped again.
+
+		Outputs::requireResource( 'ext.smw.styles' );
+
+		if ( $this->isJson( $text ) ) {
+			$result = self::asJson( $text );
+		} else {
+			// This disables all active wiki and HTML markup:
+			$result = str_replace(
+				[ '<code>', '</code>', '<nowiki>', '</nowiki>', '<', '>', ' ', '[', '{', '=', "'", ':', "\n", '&#x005B;' ],
+				[ '', '', '', '', '&lt;', '&gt;', '&#160;', '&#91;', '&#x007B;', '&#x003D;', '&#x0027;', '&#58;', "<br />", '&#91;' ],
+				$text
+			);
+		}
+
+		if ( $abbreviate ) {
+			$result = "<div style=\"min-height:5em; overflow:auto;\">$result</div>";
+		}
+
+		return "<div class=\"smwpre\">$result</div>";
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * @param string $string
+	 */
+	public static function asJson( $string, $flag = 0 ): string|false {
+		if ( $flag > 0 ) {
+			return json_encode( json_decode( $string ), $flag );
+		}
+
+		return json_encode( json_decode( $string ), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+	}
+
+	private function isJson( $string ): bool {
+		// Don't bother
+		if ( substr( $string, 0, 1 ) !== '{' ) {
+			return false;
+		}
+
+		// @phan-suppress-next-line PhanPluginUseReturnValueInternalKnown
+		json_decode( $string );
+
+		return ( json_last_error() == JSON_ERROR_NONE );
+	}
+
+}

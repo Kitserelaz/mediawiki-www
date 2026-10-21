@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Bjankuloski06"
+		]
+	},
+	"action-embed_pdf": "вградување на PDF-ови",
+	"pdfembed": "Бградување на PDF",
+	"pdfembed_description": "Овозможува вградување на PDF-податотеки.",
+	"embed_pdf_no_permission": "Немате дозвола за вградување на PDF-податотеки.",
+	"embed_pdf_blank_file": "URL-то или податотечната патека укажана за вградување на PDF е празна.",
+	"embed_pdf_invalid_file": "URL-то или податотечната патека не постои.",
+	"embed_pdf_invalid_user": "Укажен е неважечки корисник.",
+	"right-embed_pdf": "Вградување на PDF-ови во страници"
+}

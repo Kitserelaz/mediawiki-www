@@ -1,0 +1,48 @@
+{
+	"name": "PDFEmbed",
+	"version": "2.1.0",
+	"author": [
+		"Alexia E. Smith",
+		"Universal Omega"
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:PDFEmbed",
+	"descriptionmsg": "pdfembed_description",
+	"license-name": "LGPL-3.0-only",
+	"requires": {
+		"MediaWiki": ">= 1.43.0"
+	},
+	"type": "parserhook",
+	"GroupPermissions": {
+		"sysop": {
+			"embed_pdf": true
+		}
+	},
+	"AvailableRights": [
+		"embed_pdf"
+	],
+	"MessagesDirs": {
+		"PDFEmbed": [
+			"i18n"
+		]
+	},
+	"AutoloadNamespaces": {
+		"Miraheze\\PDFEmbed\\": "includes/"
+	},
+	"Hooks": {
+		"ParserFirstCallInit": [
+			"Miraheze\\PDFEmbed\\Hooks::onParserFirstCallInit"
+		]
+	},
+	"FileExtensions": [
+		"pdf"
+	],
+	"config": {
+		"PdfEmbed":{
+			"value": {
+				"width": 800,
+				"height": 1090
+			}
+		}
+	},
+	"manifest_version": 2
+}

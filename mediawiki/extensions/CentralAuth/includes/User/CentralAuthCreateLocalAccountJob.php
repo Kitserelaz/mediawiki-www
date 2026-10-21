@@ -1,0 +1,102 @@
+<?php
+/**
+ * @section LICENSE
+ * @license GPL-2.0-or-later
+ *
+ * @file
+ */
+
+namespace MediaWiki\Extension\CentralAuth\User;
+
+use Exception;
+use MediaWiki\Context\RequestContext;
+use MediaWiki\Extension\CentralAuth\CentralAuthServices;
+use MediaWiki\JobQueue\Job;
+use MediaWiki\Logger\LoggerFactory;
+use MediaWiki\User\User;
+use MediaWiki\WikiMap\WikiMap;
+use Wikimedia\ScopedCallback;
+
+/**
+ * Creates a local account and connects it to the global account.
+ * Used to ensure that all users have an attached local account on certain wikis which have some
+ * special "central" role (such as $wgMWOAuthCentralWiki for the OAuth extension).
+ * @see $wgCentralAuthAutoCreateWikis
+ */
+class CentralAuthCreateLocalAccountJob extends Job {
+
+	/**
+	 * @param array $params name => user name, from => wiki where the job is created,
+	 *   [session] => session data from RequestContext::exportSession()
+	 */
+	public function __construct( $params ) {
+		parent::__construct( 'CentralAuthCreateLocalAccountJob', $params );
+	}
+
+	/**
+	 * Try to create and attach the user.
+	 * @throws Exception
+	 * @return bool Success
+	 */
+	public function run() {
+		$username = $this->params['name'];
+		$from = $this->params['from'];
+		$wiki = WikiMap::getCurrentWikiId();
+
+		if ( isset( $this->params['session'] ) ) {
+			// restore IP and other request data
+			$this->params['session']['userId'] = 0;
+			$this->params['session']['sessionId'] = '';
+			$callback = RequestContext::importScopedSession( $this->params['session'] );
+			$this->addTeardownCallback( static function () use ( &$callback ) {
+				ScopedCallback::consume( $callback );
+			} );
+		}
+
+		$user = User::newFromName( $username );
+		$centralUser = CentralAuthUser::getInstance( $user );
+		$logger = LoggerFactory::getInstance( 'CentralAuth' );
+
+		if ( $user->getId() !== 0 ) {
+			$logger->info(
+				__CLASS__ . ': tried to create local account for {username} '
+					. 'on {wiki} from {from} but one already exists',
+				[
+					'username' => $username,
+					'wiki' => $wiki,
+					'from' => $from,
+				]
+			);
+			return true;
+		} elseif ( !$centralUser->exists() ) {
+			$logger->info(
+				__CLASS__ . ': tried to create local account for {username} '
+					. 'on {wiki} from {from} but no global account exists',
+				[
+					'username' => $username,
+					'wiki' => $wiki,
+					'from' => $from,
+				]
+			);
+			return true;
+		} elseif ( $centralUser->attachedOn( $wiki ) ) {
+			$logger->info(
+				__CLASS__ . ': tried to create local account for {username} '
+					. 'on {wiki} from {from} but an attached local account already exists',
+				[
+					'username' => $username,
+					'wiki' => $wiki,
+					'from' => $from,
+				]
+			);
+			return true;
+		}
+
+		$success = CentralAuthServices::getUtilityService()->autoCreateUser( $user )->isGood();
+		if ( $success ) {
+			$centralUser->invalidateCache();
+		}
+
+		return true;
+	}
+}

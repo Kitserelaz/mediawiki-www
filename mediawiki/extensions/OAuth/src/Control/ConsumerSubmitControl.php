@@ -5,7 +5,6 @@ namespace MediaWiki\Extension\OAuth\Control;
 use Composer\Semver\VersionParser;
 use Exception;
 use LogicException;
-use ManualLogEntry;
 use MediaWiki\Api\ApiMessage;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Extension\Notifications\Model\Event;
@@ -17,15 +16,16 @@ use MediaWiki\Extension\OAuth\Entity\ClientEntity;
 use MediaWiki\Extension\OAuth\OAuthServices;
 use MediaWiki\Json\FormatJson;
 use MediaWiki\Logger\LoggerFactory;
+use MediaWiki\Logging\ManualLogEntry;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Parser\Sanitizer;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\SpecialPage\SpecialPage;
+use MediaWiki\Status\Status;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
+use MediaWiki\Utils\MWCryptRand;
 use MediaWiki\WikiMap\WikiMap;
-use MWCryptRand;
-use MWException;
 use StatusValue;
 use UnexpectedValueException;
 use Wikimedia\Rdbms\IDatabase;
@@ -34,20 +34,7 @@ use Wikimedia\Rdbms\SelectQueryBuilder;
 /**
  * (c) Aaron Schulz 2013, GPL
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 
 /**
@@ -56,7 +43,7 @@ use Wikimedia\Rdbms\SelectQueryBuilder;
  *
  * This control can only be used on the management wiki
  *
- * @TODO: improve error messages
+ * @todo improve error messages
  */
 class ConsumerSubmitControl extends SubmitControl {
 	/**
@@ -73,18 +60,19 @@ class ConsumerSubmitControl extends SubmitControl {
 	 * MySQL Blob Size is 2^16 - 1 = 65535 as per "L + 2 bytes, where L < 216" on
 	 * https://dev.mysql.com/doc/refman/8.0/en/storage-requirements.html
 	 */
-	private const BLOB_SIZE = 65535;
+	public const BLOB_SIZE = 65535;
 
 	/**
 	 * @param IContextSource $context
 	 * @param array $params
-	 * @param IDatabase $dbw Result of Utils::getCentralDB( DB_PRIMARY )
+	 * @param IDatabase $dbw Result of Utils::getOAuthDB( DB_PRIMARY )
 	 */
 	public function __construct( IContextSource $context, array $params, IDatabase $dbw ) {
 		parent::__construct( $context, $params );
 		$this->dbw = $dbw;
 	}
 
+	/** @inheritDoc */
 	protected function getRequiredFields() {
 		$validateRsaKey = static function ( $s ) {
 			if ( trim( $s ) === '' ) {
@@ -125,7 +113,7 @@ class ConsumerSubmitControl extends SubmitControl {
 					try {
 						$parser->normalize( $s );
 						return true;
-					} catch ( UnexpectedValueException $e ) {
+					} catch ( UnexpectedValueException ) {
 						return false;
 					}
 				},
@@ -135,6 +123,7 @@ class ConsumerSubmitControl extends SubmitControl {
 				'callbackUrl' => static function ( $s, $vals ) {
 					$isOAuth1 = (int)$vals['oauthVersion'] === Consumer::OAUTH_VERSION_1;
 					$isOAuth2 = !$isOAuth1;
+					$clientIsConfidential = $isOAuth1 || $vals['oauth2IsConfidential'];
 
 					if ( strlen( $s ?? '' ) > 2000 ) {
 						return false;
@@ -142,16 +131,30 @@ class ConsumerSubmitControl extends SubmitControl {
 						return true;
 					}
 
-					$urlParts = wfParseUrl( $s );
+					$urlUtils = MediaWikiServices::getInstance()->getUrlUtils();
+					$urlParts = $urlUtils->parse( $s );
 					if ( !$urlParts ) {
 						return false;
+					}
+					$isCustomProtocol = !in_array( $urlParts['scheme'], [ '', 'http', 'https' ], true );
+
+					if ( $isCustomProtocol ) {
+						if ( $clientIsConfidential ) {
+							// Custom protocols are handled by an application installed on the device;
+							// so it cannot possibly be confidential.
+							return StatusValue::newFatal(
+								new ApiMessage( 'mwoauth-error-callback-url-custom-protocol-nonconfidential',
+									'invalid_callback_url' )
+							);
+						}
 					} elseif ( $isOAuth2 && !self::isSecureContext( $urlParts ) ) {
+						// The OAuth 2 spec requires an encrypted transport.
 						return StatusValue::newFatal(
 							new ApiMessage( 'mwoauth-error-callback-url-must-be-https', 'invalid_callback_url' )
 						);
-					} elseif ( ( $isOAuth1 || $vals['oauth2IsConfidential'] )
-						&& WikiMap::getWikiFromUrl( $s )
-					) {
+					} elseif ( $clientIsConfidential && WikiMap::getWikiFromUrl( $s ) ) {
+						// Reduce noise from clueless people using Wikipedia's URL as callback
+						// (except for public clients; it can be valid e.g. for gadgets).
 						return StatusValue::newGood()->warning(
 							new ApiMessage( 'mwoauth-error-callback-server-url', 'invalid_callback_url' )
 						);
@@ -160,6 +163,8 @@ class ConsumerSubmitControl extends SubmitControl {
 						&& !( $urlParts['query'] ?? false )
 						&& !( $urlParts['fragment'] ?? false )
 					) {
+						// Warn people using a bare domain name with no path or query part as
+						// the exact callback URL. It is valid, but it's rare that they actually mean it.
 						$message = $isOAuth1
 							? 'mwoauth-error-callback-bare-domain-oauth1'
 							: 'mwoauth-error-callback-bare-domain-oauth2';
@@ -217,6 +222,7 @@ class ConsumerSubmitControl extends SubmitControl {
 		];
 	}
 
+	/** @inheritDoc */
 	protected function checkBasePermissions() {
 		global $wgBlockDisablesLogin;
 		$user = $this->getUser();
@@ -234,7 +240,8 @@ class ConsumerSubmitControl extends SubmitControl {
 		return $this->success();
 	}
 
-	protected function processAction( $action ) {
+	/** @inheritDoc */
+	protected function processAction( $action ): Status {
 		$context = $this->getContext();
 		// proposer or admin
 		$user = $this->getUser();
@@ -345,7 +352,7 @@ class ConsumerSubmitControl extends SubmitControl {
 				}
 
 				$cmr->save( $dbw );
-				$this->makeLogEntry( $dbw, $cmr, $logAction, $user, $this->vals['description'] );
+				$this->makeLogEntry( Utils::getCentralWikiDB(), $cmr, $logAction, $user, $this->vals['description'] );
 				if ( !$cmr->getOwnerOnly() && !$autoApproved ) {
 					// Notify admins if the consumer needs to be approved.
 					if ( $cmr->getStage() === Consumer::STAGE_PROPOSED ) {
@@ -416,7 +423,7 @@ class ConsumerSubmitControl extends SubmitControl {
 
 				// Log if something actually changed
 				if ( $cmr->save( $dbw ) ) {
-					$this->makeLogEntry( $dbw, $cmr, $action, $user, $this->vals['reason'] );
+					$this->makeLogEntry( Utils::getCentralWikiDB(), $cmr, $action, $user, $this->vals['reason'] );
 					$this->notify( $cmr, $user, $action, $this->vals['reason'] );
 				}
 
@@ -476,7 +483,7 @@ class ConsumerSubmitControl extends SubmitControl {
 
 				// Log if something actually changed
 				if ( $cmr->save( $dbw ) ) {
-					$this->makeLogEntry( $dbw, $cmr, $action, $user, $this->vals['reason'] );
+					$this->makeLogEntry( Utils::getCentralWikiDB(), $cmr, $action, $user, $this->vals['reason'] );
 					$this->notify( $cmr, $user, $action, $this->vals['reason'] );
 				}
 
@@ -506,7 +513,7 @@ class ConsumerSubmitControl extends SubmitControl {
 
 				// Log if something actually changed
 				if ( $cmr->save( $dbw ) ) {
-					$this->makeLogEntry( $dbw, $cmr, $action, $user, $this->vals['reason'] );
+					$this->makeLogEntry( Utils::getCentralWikiDB(), $cmr, $action, $user, $this->vals['reason'] );
 					$this->notify( $cmr, $user, $action, $this->vals['reason'] );
 				}
 
@@ -538,7 +545,7 @@ class ConsumerSubmitControl extends SubmitControl {
 
 				// Log if something actually changed
 				if ( $cmr->save( $dbw ) ) {
-					$this->makeLogEntry( $dbw, $cmr, $action, $user, $this->vals['reason'] );
+					$this->makeLogEntry( Utils::getCentralWikiDB(), $cmr, $action, $user, $this->vals['reason'] );
 					$this->notify( $cmr, $user, $action, $this->vals['reason'] );
 				}
 
@@ -566,7 +573,7 @@ class ConsumerSubmitControl extends SubmitControl {
 
 				// Log if something actually changed
 				if ( $cmr->save( $dbw ) ) {
-					$this->makeLogEntry( $dbw, $cmr, $action, $user, $this->vals['reason'] );
+					$this->makeLogEntry( Utils::getCentralWikiDB(), $cmr, $action, $user, $this->vals['reason'] );
 					$this->notify( $cmr, $user, $action, $this->vals['reason'] );
 				}
 
@@ -625,7 +632,7 @@ class ConsumerSubmitControl extends SubmitControl {
 	 */
 	protected function notify( $cmr, $user, $actionType, $comment ) {
 		if ( !in_array( $actionType, self::$actions, true ) ) {
-			throw new MWException( "Invalid action type: $actionType" );
+			throw new LogicException( "Invalid action type: $actionType" );
 		} elseif ( !ExtensionRegistry::getInstance()->isLoaded( 'Echo' ) ) {
 			return;
 		} elseif ( !Utils::isCentralWiki() ) {
@@ -652,7 +659,7 @@ class ConsumerSubmitControl extends SubmitControl {
 	 *
 	 * @see https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts
 	 *
-	 * @param array $urlParts As returned by {@link wfParseUrl()}.
+	 * @param array $urlParts As returned by {@link UrlUtils::parse()}.
 	 * @return bool
 	 */
 	protected static function isSecureContext( array $urlParts ): bool {

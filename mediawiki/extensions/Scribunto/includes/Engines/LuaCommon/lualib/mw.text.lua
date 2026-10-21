@@ -56,18 +56,20 @@ function mwtext.encode( s, charset )
 end
 
 function mwtext.decode( s, decodeNamedEntities )
-	local dec
 	if decodeNamedEntities then
 		if decode_named_entities == nil then
 			decode_named_entities = php.getEntityTable()
-			setmetatable( decode_named_entities, { __index = htmldecode_map } )
 		end
-		dec = decode_named_entities
-	else
-		dec = htmldecode_map
 	end
+	local dec = htmldecode_map
 	-- string.gsub is safe here, because only ASCII chars are in the pattern
 	s = string.gsub( s, '(&(#?x?)([a-zA-Z0-9]+);)', function ( m, flg, name )
+		if decodeNamedEntities and flg == '' then
+			local decoded = decode_named_entities[name .. ';']
+			if decoded then
+				return decoded
+			end
+		end
 		if not dec[m] then
 			local n = nil
 			if flg == '#' then
@@ -150,6 +152,7 @@ function mwtext.nowiki( s )
 	s = string.gsub( s, '__', '_&#95;' )
 	s = string.gsub( s, '://', '&#58;//' )
 	s = string.gsub( s, '~~~', '~~&#126;' )
+	s = string.gsub( s, '＿', '&#xFF3F;' )
 	-- protect first and last character
 	s = string.gsub( s, '^[%-+_~]', nowikiRepl3 )
 	s = string.gsub( s, '[_~\r\n\t]$', nowikiRepl4 )

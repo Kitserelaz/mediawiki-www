@@ -1,0 +1,133 @@
+@import 'mediawiki.skin.variables.less';
+
+.ve-ui-surface-machineSuggestions {
+	z-index: 1;
+
+	// By default, a box is shown on top of the selected annotation
+	// and focused elements are highlighted (T282899)
+	.ve-ce-surface-highlights,
+	.ve-ce-surface-deactivatedSelection-showAsDeactivated {
+		display: none;
+	}
+}
+
+.mw-ge-machine-suggestions-mode-title {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	display: flex;
+	align-items: center;
+	left: 11px;
+
+	.oo-ui-icon-robot {
+		margin-right: 9px;
+		opacity: @opacity-icon-subtle;
+	}
+
+	.mw-ge-machine-suggestions-mode-title-text {
+		font-weight: bold;
+		color: @color-base;
+
+		&--is-loading {
+			font-weight: normal;
+			display: flex;
+			align-items: center;
+
+			&::before {
+				content: '';
+				display: inline-block;
+				background: url( ../../images/spinner.gif ) no-repeat center;
+				width: 20px;
+				height: 20px;
+				margin-right: 8px;
+			}
+		}
+	}
+}
+
+.ve-ui-targetToolbar-mobile {
+	.oo-ui-toolbar-tools {
+		.ve-ui-toolbar-group-machineSuggestionsPlaceholder {
+			position: relative;
+			flex: 5;
+			border-right: @border-width-base @border-style-base #eaecf0;
+		}
+	}
+
+	.mw-ge-machine-suggestions-title-toolgroup {
+		.ve-ui-toolbar-group-back {
+			border-right: 0;
+			max-width: 3em;
+		}
+	}
+
+	.mw-ge-machine-suggestions-mode-title {
+		left: 0;
+	}
+}
+
+// T280129 Disable hover state for non-interactive items.
+.mw-ge-structuredTaskArticleTarget .ve-ce-focusableNode-highlight {
+	background: unset;
+	box-shadow: unset;
+	position: unset;
+	overflow: unset;
+}
+
+.mw-ge-user-select-none {
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+// T295831 Disable any interaction with slugs (new paragraphs can't be inserted)
+.ve-init-mw-addImageArticleTarget {
+	.ve-ce-branchNode-slug {
+		pointer-events: none;
+	}
+
+	.ve-ce-branchNode-blockSlug:hover,
+	.ve-ce-branchNode-blockSlug.ve-ce-branchNode-blockSlug-focused {
+		opacity: 0;
+	}
+
+	.ve-ui-toolbar-group-save {
+		&.oo-ui-widget-disabled {
+			// Prevent interaction with the save tool when the group is disabled
+			pointer-events: none;
+		}
+	}
+}
+
+.mw-ge-addImageMobileArticleTarget--overlay-shown {
+	@toolbarHeight: 50px;
+
+	&::before {
+		content: '';
+		position: fixed;
+		// Show the toolbar (the overlay applies to the entire document not just the article content)
+		top: @toolbarHeight;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		background: rgba( 255, 255, 255, 0.5 );
+	}
+}
+
+.mw-ge-addImageDesktopArticleTarget--overlay-shown {
+	opacity: @opacity-medium;
+}
+
+.mw-ge-addImageDesktopArticleTarget-loadingOverlay {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	z-index: 2;
+	padding-top: 35%;
+
+	.mw-ge-addImageDesktopArticleTarget-progressBar {
+		height: 0.875em;
+		margin: 0 25%;
+	}
+}

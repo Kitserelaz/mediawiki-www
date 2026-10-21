@@ -1,0 +1,122 @@
+<?php
+
+namespace SMW\Tests\Utils\Runners;
+
+use MediaWiki\MediaWikiServices;
+use SMW\Tests\TestEnvironment;
+
+/**
+ * Partially copied from the MW 1.19 RunJobs maintenance script
+ *
+ * @group SMW
+ * @group SMWExtension
+ *
+ * @license GPL-2.0-or-later
+ * @since 1.9.2
+ */
+class JobQueueRunner {
+
+	protected $status = [];
+	private $lbFactory;
+
+	/**
+	 * @var TestEnvironment
+	 */
+	private $testEnvironment;
+
+	/**
+	 * @since 1.9.2
+	 */
+	public function __construct( protected $type = null ) {
+		$this->lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
+		$this->testEnvironment = new TestEnvironment();
+	}
+
+	/**
+	 * @since 2.1
+	 *
+	 * @param string $type
+	 *
+	 * @return JobQueueRunner
+	 */
+	public function setType( $type ) {
+		$this->type = $type;
+		return $this;
+	}
+
+	private function getConnection() {
+		return MediaWikiServices::getInstance()->getConnectionProvider()->getPrimaryDatabase();
+	}
+
+	/**
+	 * @since 1.9.2
+	 */
+	public function run() {
+		$conds = '';
+		$connection = $this->getConnection();
+
+		if ( $this->type !== null ) {
+			$conds = "job_cmd = " . $connection->addQuotes( $this->type );
+		}
+
+		while ( $connection->selectField( 'job', 'job_id', $conds, __METHOD__ ) ) {
+
+			$job = $this->type === null ? $this->pop() : $this->pop_type( $this->type );
+
+			if ( !$job ) {
+				break;
+			}
+
+			$this->lbFactory->waitForReplication();
+
+			$this->status[] = [
+				'type'   => $job->command,
+				'status' => $job->run()
+			];
+		}
+
+		$this->testEnvironment->executePendingDeferredUpdates();
+	}
+
+	/**
+	 * @since  2.0
+	 */
+	public function deleteAllJobs() {
+		$conditions = '*';
+		$connection = $this->getConnection();
+
+		if ( $this->type !== null ) {
+			$conditions = "job_cmd = " . $connection->addQuotes( $this->type );
+		}
+
+		$connection->delete(
+			'job',
+			$conditions,
+			__METHOD__
+		);
+	}
+
+	/**
+	 * @since 1.9.2
+	 *
+	 * @return array
+	 */
+	public function getStatus() {
+		return $this->status;
+	}
+
+	/**
+	 * @see https://gerrit.wikimedia.org/r/#/c/162009/
+	 */
+	private function pop() {
+		return MediaWikiServices::getInstance()->getJobQueueGroup()->pop();
+	}
+
+	/**
+	 * @see https://gerrit.wikimedia.org/r/#/c/162009/
+	 */
+	public function pop_type( $type ) {
+		return MediaWikiServices::getInstance()->getJobQueueGroup()->get( $type )->pop();
+	}
+
+}

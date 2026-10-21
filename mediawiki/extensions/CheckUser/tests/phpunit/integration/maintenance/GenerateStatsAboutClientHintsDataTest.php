@@ -1,10 +1,10 @@
 <?php
 
-namespace MediaWiki\CheckUser\Tests\Integration\Maintenance;
+namespace MediaWiki\Extension\CheckUser\Tests\Integration\Maintenance;
 
-use MediaWiki\CheckUser\Maintenance\GenerateStatsAboutClientHintsData;
-use MediaWiki\CheckUser\Services\UserAgentClientHintsManager;
-use MediaWiki\CheckUser\Tests\CheckUserClientHintsCommonTraitTest;
+use MediaWiki\Extension\CheckUser\Maintenance\GenerateStatsAboutClientHintsData;
+use MediaWiki\Extension\CheckUser\Services\UserAgentClientHintsManager;
+use MediaWiki\Extension\CheckUser\Tests\CheckUserClientHintsCommonTestTrait;
 use MediaWiki\Tests\Maintenance\MaintenanceBaseTestCase;
 use MediaWiki\WikiMap\WikiMap;
 
@@ -12,10 +12,10 @@ use MediaWiki\WikiMap\WikiMap;
  * @group CheckUser
  * @group Database
  *
- * @covers \MediaWiki\CheckUser\Maintenance\GenerateStatsAboutClientHintsData
+ * @covers \MediaWiki\Extension\CheckUser\Maintenance\GenerateStatsAboutClientHintsData
  */
 class GenerateStatsAboutClientHintsDataTest extends MaintenanceBaseTestCase {
-	use CheckUserClientHintsCommonTraitTest;
+	use CheckUserClientHintsCommonTestTrait;
 
 	protected function getMaintenanceClass() {
 		return GenerateStatsAboutClientHintsData::class;
@@ -27,7 +27,7 @@ class GenerateStatsAboutClientHintsDataTest extends MaintenanceBaseTestCase {
 			[
 				'totalRowCount' => [
 					'cu_useragent_clienthints_map' => 68,
-					'cu_useragent_clienthints' => 15
+					'cu_useragent_clienthints' => 15,
 				],
 				'invalidMapRowsCount' => 1,
 				// This is ((11 * 5) + (4 * 3) + 1)/8
@@ -61,7 +61,7 @@ class GenerateStatsAboutClientHintsDataTest extends MaintenanceBaseTestCase {
 					'mobile' => 1,
 					'platform' => 1,
 					'platformVersion' => 1,
-				]
+				],
 			],
 			$returnArray,
 			false,
@@ -75,10 +75,7 @@ class GenerateStatsAboutClientHintsDataTest extends MaintenanceBaseTestCase {
 		$exampleClientHintsData = $this->getExampleClientHintsDataObjectFromJsApi();
 		// Insert Client Hints data for reference IDs 1 to 5 (inclusive) using the standard example Client Hints data
 		for ( $i = 1; $i < 6; $i++ ) {
-			$services->insertClientHintValues(
-				$exampleClientHintsData, $i,
-				array_rand( array_flip( UserAgentClientHintsManager::SUPPORTED_TYPES ) )
-			);
+			$services->insertClientHintValues( $exampleClientHintsData, $i, 'revision' );
 		}
 		// Add 4 items using different Client Hints data
 		$differentExampleClientHintsData = $this->getExampleClientHintsDataObjectFromJsApi(
@@ -87,8 +84,8 @@ class GenerateStatsAboutClientHintsDataTest extends MaintenanceBaseTestCase {
 			[
 				[
 					"brand" => "Testing",
-					"version" => 8.7
-				]
+					"version" => 8.7,
+				],
 			],
 			[],
 			true,
@@ -98,10 +95,7 @@ class GenerateStatsAboutClientHintsDataTest extends MaintenanceBaseTestCase {
 		);
 		// Use reference IDs in range 6 to 8 (inclusive).
 		for ( $i = 6; $i < 9; $i++ ) {
-			$services->insertClientHintValues(
-				$differentExampleClientHintsData, $i,
-				array_rand( array_flip( UserAgentClientHintsManager::SUPPORTED_TYPES ) )
-			);
+			$services->insertClientHintValues( $differentExampleClientHintsData, $i, 'revision' );
 		}
 		// One invalid map row
 		$this->getDb()->newInsertQueryBuilder()

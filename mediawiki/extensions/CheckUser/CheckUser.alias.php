@@ -12,10 +12,11 @@ $specialPageAliases = [];
 $specialPageAliases['en'] = [
 	'CheckUser' => [ 'CheckUser' ],
 	'CheckUserLog' => [ 'CheckUserLog' ],
-	'GlobalContributions' => [ 'GlobalContributions' ],
+	'GlobalContributions' => [ 'GlobalContributions', 'GlobalContribs' ],
 	'Investigate' => [ 'Investigate' ],
 	'InvestigateBlock' => [ 'InvestigateBlock' ],
-	'IPContributions' => [ 'IPContributions' ],
+	'IPContributions' => [ 'IPContributions', 'IPContribs' ],
+	'SuggestedInvestigations' => [ 'SuggestedInvestigations' ],
 ];
 
 /** Arabic (العربية) */
@@ -46,6 +47,16 @@ $specialPageAliases['av'] = [
 	'CheckUserLog' => [ 'Журнал_проверок_участников' ],
 ];
 
+/** Azerbaijani (Azərbaycanca) */
+$specialPageAliases['az'] = [
+	'CheckUser' => [ 'Təftiş' ],
+	'CheckUserLog' => [ 'TəftişçiJurnalı' ],
+	'GlobalContributions' => [ 'QlobalTöhfələr' ],
+	'Investigate' => [ 'Araşdır' ],
+	'InvestigateBlock' => [ 'AraşdırmaBloku' ],
+	'IPContributions' => [ 'IPTöhfələri' ],
+];
+
 /** Bashkir (башҡортса) */
 $specialPageAliases['ba'] = [
 	'CheckUser' => [ 'CheckUser' ],
@@ -56,6 +67,11 @@ $specialPageAliases['ba'] = [
 $specialPageAliases['bn'] = [
 	'CheckUser' => [ 'ব্যবহারকারী_পরীক্ষণ' ],
 	'CheckUserLog' => [ 'ব্যবহারকারী_পরীক্ষণের_লগ' ],
+	'GlobalContributions' => [ 'বৈশ্বিক_অবদান' ],
+	'Investigate' => [ 'তদন্ত' ],
+	'InvestigateBlock' => [ 'তদন্ত_বাধাদান' ],
+	'IPContributions' => [ 'আইপির_অবদান', 'আইপি_অবদান' ],
+	'SuggestedInvestigations' => [ 'প্রস্তাবিত_তদন্ত' ],
 ];
 
 /** Bulgarian (български) */
@@ -203,6 +219,11 @@ $specialPageAliases['he'] = [
 $specialPageAliases['hi'] = [
 	'CheckUser' => [ 'सदस्य_जाँच' ],
 	'CheckUserLog' => [ 'सदस्य_जाँच_लॉग' ],
+	'GlobalContributions' => [ 'वैश्विक_योगदान' ],
+	'Investigate' => [ 'जाँच' ],
+	'InvestigateBlock' => [ 'जाँच_अवरोधन' ],
+	'IPContributions' => [ 'IP_योगदान' ],
+	'SuggestedInvestigations' => [ 'सुझावित_जाँचें' ],
 ];
 
 /** Croatian (hrvatski) */
@@ -250,8 +271,12 @@ $specialPageAliases['it'] = [
 
 /** Japanese (日本語) */
 $specialPageAliases['ja'] = [
-	'CheckUser' => [ 'チェックユーザー', 'チェックユーザ', '利用者調査' ],
-	'CheckUserLog' => [ 'チェックユーザー記録', '利用者調査記録' ],
+	'CheckUser' => [ 'チェックユーザー' ],
+	'CheckUserLog' => [ 'チェックユーザー記録' ],
+	'GlobalContributions' => [ 'グローバル投稿記録' ],
+	'Investigate' => [ '調査' ],
+	'InvestigateBlock' => [ '調査ブロック' ],
+	'IPContributions' => [ 'IP投稿記録' ],
 ];
 
 /** Georgian (ქართული) */
@@ -268,8 +293,11 @@ $specialPageAliases['km'] = [
 $specialPageAliases['ko'] = [
 	'CheckUser' => [ '사용자검사', '사용자확인' ],
 	'CheckUserLog' => [ '사용자검사기록', '사용자확인기록' ],
-	'Investigate' => [ '조사' ],
+	'GlobalContributions' => [ '전역기여' ],
+	'Investigate' => [ '조사', '사용자조사' ],
 	'InvestigateBlock' => [ '조사차단' ],
+	'IPContributions' => [ 'IP기여' ],
+	'SuggestedInvestigations' => [ '조사제안', '제안된조사' ],
 ];
 
 /** Colognian (Ripoarisch) */
@@ -344,6 +372,7 @@ $specialPageAliases['myv'] = [
 $specialPageAliases['nb'] = [
 	'CheckUser' => [ 'IP-sjekk' ],
 	'CheckUserLog' => [ 'IP-sjekkingslogg' ],
+	'GlobalContributions' => [ 'Bidrag_globalt', 'Globale_bidrag' ],
 	'Investigate' => [ 'Undersøk' ],
 	'InvestigateBlock' => [ 'Undersøkelsesblokkering' ],
 	'IPContributions' => [ 'IP-bidrag' ],
@@ -365,6 +394,7 @@ $specialPageAliases['nl'] = [
 $specialPageAliases['nn'] = [
 	'CheckUser' => [ 'IP-sjekk' ],
 	'CheckUserLog' => [ 'IP-sjekkingslogg' ],
+	'GlobalContributions' => [ 'Bidrag_globalt', 'Globale_bidrag' ],
 	'Investigate' => [ 'Undersøk' ],
 	'InvestigateBlock' => [ 'Undersøkingsblokkering' ],
 	'IPContributions' => [ 'IP-bidrag' ],
@@ -379,6 +409,17 @@ $specialPageAliases['oc'] = [
 $specialPageAliases['pa'] = [
 	'CheckUser' => [ 'ਚੈੱਕ_ਵਰਤੋਂਕਾਰ' ],
 	'CheckUserLog' => [ 'ਚੈੱਕ_ਵਰਤੋਂਕਾਰ_ਚਿੱਠਾ' ],
+];
+
+/** Polish (polski) */
+$specialPageAliases['pl'] = [
+	'CheckUser' => [ 'Sprawdź_IP_użytkownika', 'CheckUser', 'CU' ],
+	'CheckUserLog' => [ 'Rejestr_sprawdzeń' ],
+	'GlobalContributions' => [ 'Wkład_globalny' ],
+	'Investigate' => [ 'Zbadaj_konta' ],
+	'InvestigateBlock' => [ 'Zablokuj_po_zbadaniu' ],
+	'IPContributions' => [ 'Wkład_IP' ],
+	'SuggestedInvestigations' => [ 'Sugestie_sprawdzeń' ],
 ];
 
 /** Portuguese (português) */
@@ -496,21 +537,40 @@ $specialPageAliases['vep'] = [
 $specialPageAliases['vi'] = [
 	'CheckUser' => [ 'Kiểm_tra_người_dùng' ],
 	'CheckUserLog' => [ 'Nhật_trình_kiểm_tra_người_dùng' ],
+	'IPContributions' => [ 'Đóng_góp_IP' ],
 ];
 
-/** Simplified Chinese (中文（简体）‎) */
+/** Chinese (中文) */
+$specialPageAliases['zh'] = [
+	'CheckUser' => [ 'CheckUser' ],
+	'CheckUserLog' => [ 'CheckUserLog' ],
+	'GlobalContributions' => [ 'GlobalContributions' ],
+	'Investigate' => [ 'Investigate' ],
+	'InvestigateBlock' => [ 'InvestigateBlock' ],
+	'IPContributions' => [ 'IPContributions' ],
+];
+
+/** Simplified Chinese (中文（简体）) */
 $specialPageAliases['zh-hans'] = [
 	'CheckUser' => [ '用户查核' ],
 	'CheckUserLog' => [ '用户查核日志' ],
+	'GlobalContributions' => [ '全域贡献' ],
+	'Investigate' => [ '调查' ],
+	'InvestigateBlock' => [ '调查封禁' ],
+	'IPContributions' => [ 'IP贡献' ],
 ];
 
-/** Traditional Chinese (中文（繁體）‎) */
+/** Traditional Chinese (中文（繁體）) */
 $specialPageAliases['zh-hant'] = [
 	'CheckUser' => [ '使用者查核' ],
 	'CheckUserLog' => [ '使用者查核日誌' ],
+	'GlobalContributions' => [ '全域貢獻' ],
+	'Investigate' => [ '調查' ],
+	'InvestigateBlock' => [ '調查封鎖' ],
+	'IPContributions' => [ 'IP貢獻' ],
 ];
 
-/** Chinese (Hong Kong) (中文（香港）‎) */
+/** Chinese (Hong Kong) (中文（香港）) */
 $specialPageAliases['zh-hk'] = [
 	'CheckUser' => [ '用戶查核' ],
 	'CheckUserLog' => [ '用戶查核日誌' ],

@@ -1,0 +1,19 @@
+<nav id="p-views" aria-labelledby="p-views-label">
+	<h3 id="p-views-label" {{& html-user-language-attributes }}>
+		{{ msg-mirage-page-actions }}
+	</h3>
+	<ul id="mirage-edit-button" class="skin-mirage-horizontally-oriented-list">
+		{{& html-items }}
+		{{^ data-portlets.data-mirage-edit-button-dropdown.is-empty }}
+			<li id="p-cactions" class="skin-mirage-dropdown-container" tabindex="0">
+				{{& html-edit-button-dropdown-indicator }}
+				<div class="skin-mirage-dropdown-list skin-mirage-dropdown-hide">
+					<ul>
+						{{& data-portlets.data-mirage-edit-button-dropdown.html-items }}
+					</ul>
+					<div class="skin-mirage-dropdown-list-anchor"></div>
+				</div>
+			</li>
+		{{/ data-portlets.data-mirage-edit-button-dropdown.is-empty }}
+	</ul>
+</nav>

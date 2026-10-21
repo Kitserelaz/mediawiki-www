@@ -1,0 +1,106 @@
+{
+	"name": "HasSomeColours",
+	"version": "0.2",
+	"author": "Isarra",
+	"url": "https://www.mediawiki.org/wiki/Skin:HasSomeColours",
+	"descriptionmsg": "hassomecolours-desc",
+	"namemsg": "skinname-hassomecolours",
+	"license-name": "GPL-2.0-or-later",
+	"type": "skin",
+	"requires": {
+		"MediaWiki": ">= 1.39"
+	},
+	"ValidSkinNames": {
+		"hassomecolours": {
+			"displayname": "HasSomeColours",
+			"class": "SkinTemplate",
+			"args": [
+				{
+					"name": "hassomecolours",
+					"bodyOnly": true,
+					"template": "HasSomeColoursTemplate",
+					"responsive": true,
+					"styles": [
+						"skins.hassomecolours"
+					],
+					"scripts": [
+						"skins.hassomecolours.js"
+					]
+				}
+			]
+		}
+	},
+	"MessagesDirs": {
+		"HasSomeColours": [
+			"i18n"
+		]
+	},
+	"config": {
+		"HasSomeColoursColourOne": {
+			"value": "#555",
+			"description": "Primary header/footer colour, for the header/footer/various backgrounds"
+		},
+		"HasSomeColoursColourTwo": {
+			"value": "#d77",
+			"description": "Secondary header/footer colour, for trim and stuff"
+		}
+	},
+	"ResourceModules": {
+		"skins.hassomecolours": {
+			"targets": [
+				"desktop",
+				"mobile"
+			],
+			"class": "HasSomeColoursVariablesModule",
+			"features": {
+				"content-links": true,
+				"logo": true,
+				"content-media": true,
+				"interface-message-box": true,
+				"interface-category": true,
+				"content-tables": true,
+				"i18n-ordered-lists": true,
+				"i18n-all-lists-margins": true,
+				"i18n-headings": true,
+				"normalize": true
+			},
+			"styles": {
+				"resources/screen-common.less": {
+					"media": "screen"
+				},
+				"0": "resources/screen-desktop.less",
+				"resources/screen-mobile.less": {
+					"media": "screen and (max-width: 700px)"
+				},
+				"resources/print.less": {
+					"media": "print"
+				}
+			}
+		},
+		"skins.hassomecolours.js": {
+			"targets": [
+				"desktop",
+				"mobile"
+			],
+			"scripts": [
+				"resources/main.js"
+			]
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "",
+		"remoteSkinPath": "HasSomeColours"
+	},
+	"ResourceModuleSkinStyles": {
+		"hassomecolours": {
+			"+ext.echo.styles.badge": "resources/modules/Echo.styles.badge.less",
+			"+mediawiki.action.view.filepage": "resources/modules/Filepage.less",
+			"+ext.dismissableSiteNotice.styles": "resources/modules/DismissableSiteNotice.less"
+		}
+	},
+	"AutoloadClasses": {
+		"HasSomeColoursTemplate": "includes/HasSomeColoursTemplate.php",
+		"HasSomeColoursVariablesModule": "includes/HasSomeColoursVariablesModule.php"
+	},
+	"manifest_version": 2
+}

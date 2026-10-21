@@ -1,0 +1,117 @@
+{
+	"name": "BlueSky",
+	"version": "1.7.0",
+	"author": [
+		"wikiHow",
+		"Jack Phoenix",
+		"Calimonius the Estrange"
+	],
+	"url": "https://www.mediawiki.org/wiki/Skin:BlueSky",
+	"descriptionmsg": "bluesky-desc",
+	"namemsg": "skinname-bluesky",
+	"license-name": "GPL-2.0-or-later",
+	"type": "skin",
+	"requires": {
+		"MediaWiki": ">=1.41.0"
+	},
+	"ValidSkinNames": {
+		"bluesky": {
+			"class": "SkinTemplate",
+			"displayname": "BlueSky",
+			"args": [
+				{
+					"name": "bluesky",
+					"bodyOnly": true,
+					"responsive": "true",
+					"styles": [
+						"skins.bluesky",
+						"themeloader.skins.bluesky.blue"
+					],
+					"scripts": [
+						"skins.bluesky.js"
+					],
+					"template": "BlueSkyTemplate"
+				}
+			]
+		}
+	},
+	"ThemeModules": {
+		"bluesky": [ "blue", "red", "green", "white", "grey" ]
+	},
+	"MessagesDirs": {
+		"SkinBlueSky": [
+			"i18n"
+		]
+	},
+	"config": {
+		"BlueSkyTOC": ""
+	},
+	"Hooks": {
+		"OutputPageParserOutput": [
+			"BlueSkyHooks::wfTOCCrap"
+		]
+	},
+	"ResourceModules": {
+		"skins.bluesky": {
+			"class": "MediaWiki\\ResourceLoader\\SkinModule",
+			"features": {
+				"content-links": true,
+				"logo": true,
+				"content-media": true,
+				"interface-message-box": true,
+				"interface-category": true,
+				"content-tables": true,
+				"i18n-ordered-lists": true,
+				"i18n-all-lists-margins": true,
+				"i18n-headings": true
+			},
+			"styles": {
+				"resources/libraries/normalise.css": {
+					"media": "screen"
+				},
+				"resources/styles/print.css": {
+					"media": "print"
+				}
+			}
+		},
+		"skins.bluesky.js": {
+			"scripts": [
+				"resources/main.js"
+			]
+		},
+		"themeloader.skins.bluesky.blue": {
+			"styles": [
+				"resources/theme-blue.less"
+			]
+		},
+		"themeloader.skins.bluesky.green": {
+			"styles": [
+				"resources/theme-green.less"
+			]
+		},
+		"themeloader.skins.bluesky.red": {
+			"styles": [
+				"resources/theme-red.less"
+			]
+		},
+		"themeloader.skins.bluesky.white": {
+			"styles": [
+				"resources/theme-white.less"
+			]
+		},
+		"themeloader.skins.bluesky.grey": {
+			"styles": [
+				"resources/theme-grey.less"
+			]
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "",
+		"remoteSkinPath": "BlueSky"
+	},
+	"AutoloadClasses": {
+		"BlueSkyTemplate": "includes/BlueSkyTemplate.php",
+		"BlueSkyHooks": "includes/BlueSkyHooks.php"
+	},
+	"manifest_version": 1
+}

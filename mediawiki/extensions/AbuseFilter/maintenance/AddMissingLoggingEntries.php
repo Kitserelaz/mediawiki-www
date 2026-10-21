@@ -10,8 +10,8 @@ if ( $IP === false ) {
 require_once "$IP/maintenance/Maintenance.php";
 // @codeCoverageIgnoreEnd
 
-use ManualLogEntry;
 use MediaWiki\Extension\AbuseFilter\Special\SpecialAbuseFilter;
+use MediaWiki\Logging\ManualLogEntry;
 use MediaWiki\Maintenance\LoggedUpdateMaintenance;
 use MediaWiki\User\UserIdentityValue;
 use Wikimedia\Rdbms\IExpression;
@@ -138,5 +138,7 @@ class AddMissingLoggingEntries extends LoggedUpdateMaintenance {
 	}
 }
 
+// @codeCoverageIgnoreStart
 $maintClass = AddMissingLoggingEntries::class;
 require_once RUN_MAINTENANCE_IF_MAIN;
+// @codeCoverageIgnoreEnd

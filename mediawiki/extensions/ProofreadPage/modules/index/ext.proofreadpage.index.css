@@ -1,0 +1,14 @@
+.prp-index-fieldLayout {
+	/* Arbitrarily chosen so as to leave enough room
+	 to properly display the PagelistInputWidget */
+	max-width: 90em;
+}
+
+.prp-index-fieldLayout textarea {
+	/* stylelint-disable-next-line plugin/no-unsupported-browser-features */
+	resize: both;
+}
+
+.prp-pagelist-dialog-top-panel .prp-index-pagelist-page {
+	display: inline;
+}

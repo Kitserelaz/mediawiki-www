@@ -1,0 +1,69 @@
+<?php
+
+namespace SMW\Importer\ContentCreators;
+
+use Onoi\MessageReporter\MessageReporter;
+use RuntimeException;
+use SMW\Importer\ContentCreator;
+use SMW\Importer\ImportContents;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 3.0
+ *
+ * @author mwjames
+ */
+class DispatchingContentCreator implements ContentCreator {
+
+	private ?MessageReporter $messageReporter = null;
+
+	/**
+	 * @since 3.0
+	 */
+	public function __construct( private readonly array $contentCreators ) {
+	}
+
+	/**
+	 * @see MessageReporterAware::setMessageReporter
+	 *
+	 * @since 3.0
+	 *
+	 * @param MessageReporter $messageReporter
+	 */
+	public function setMessageReporter( MessageReporter $messageReporter ): void {
+		$this->messageReporter = $messageReporter;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param ImportContents $importContents
+	 */
+	public function canCreateContentsFor( ImportContents $importContents ): bool {
+		foreach ( $this->contentCreators as $contentCreator ) {
+			if ( $contentCreator->canCreateContentsFor( $importContents ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param ImportContents $importContents
+	 * @throws RuntimeException
+	 */
+	public function create( ImportContents $importContents ) {
+		foreach ( $this->contentCreators as $contentCreator ) {
+			if ( $contentCreator->canCreateContentsFor( $importContents ) ) {
+				$contentCreator->setMessageReporter( $this->messageReporter );
+				return $contentCreator->create( $importContents );
+			}
+		}
+
+		throw new RuntimeException( "No dispatchable ContentsCreator is assigned to type " . $importContents->getContentType() );
+	}
+
+}

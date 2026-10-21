@@ -1,0 +1,107 @@
+<?php
+
+namespace SMW\MediaWiki\Specials\Ask;
+
+use MediaWiki\Html\Html;
+use SMW\Localizer\Message;
+use SMW\ProcessingErrorMsgHandler;
+use SMW\Query\Query;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since   2.5
+ *
+ * @author mwjames
+ */
+class ErrorWidget {
+
+	/**
+	 * @since 3.0
+	 */
+	public static function disabled(): string {
+		return Html::errorBox(
+			Message::get( 'smw_iq_disabled', Message::TEXT, Message::USER_LANGUAGE ),
+			'',
+			'smw-error-disabled'
+		);
+	}
+
+	/**
+	 * @since 2.5
+	 */
+	public static function noResult(): string {
+		return Html::noticeBox(
+			Message::get( 'smw_result_noresults', Message::TEXT, Message::USER_LANGUAGE ),
+			'smw-notice-result-noresults'
+		);
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public static function noScript(): string {
+		return Html::rawElement(
+			'div',
+			[
+				'id'    => 'ask-status',
+				'class' => 'smw-ask-status plainlinks'
+			],
+			Html::rawElement(
+				'noscript',
+				[],
+				Html::errorBox(
+					Message::get( 'smw-noscript', Message::PARSE, Message::USER_LANGUAGE ),
+					'',
+					'smw-error-noscript'
+				)
+			)
+		);
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public static function sessionFailure(): string {
+		return Html::errorBox(
+			Message::get( 'sessionfailure', Message::TEXT, Message::USER_LANGUAGE ),
+			'',
+			'smw-error-session-failure'
+		);
+	}
+
+	/**
+	 * @since 2.5
+	 */
+	public static function queryError( ?Query $query = null ): string {
+		if ( $query === null || $query->getErrors() === [] ) {
+			return '';
+		}
+
+		$errors = [];
+
+		foreach ( ProcessingErrorMsgHandler::normalizeAndDecodeMessages( $query->getErrors() ) as $value ) {
+
+			if ( $value === '' ) {
+				continue;
+			}
+
+			if ( is_array( $value ) ) {
+				$value = implode( " ", $value );
+			}
+
+			// Query errors carry request-controlled text (e.g. an unparsed
+			// query chunk) and `Message::encode` can re-introduce angle
+			// brackets past its `strip_tags`, so escape before the raw box.
+			$errors[] = htmlspecialchars( (string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8' );
+		}
+
+		if ( count( $errors ) > 1 ) {
+			$error = '<ul><li>' . implode( '</li><li>', $errors ) . '</li></ul>';
+		} else {
+			$error = implode( ' ', $errors );
+		}
+
+		return Html::errorBox( $error, '', 'smw-error-result-error' );
+	}
+
+}

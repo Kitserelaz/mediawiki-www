@@ -1,0 +1,98 @@
+<?php
+
+namespace SMW\Utils;
+
+use RuntimeException;
+use SMW\Exception\FileNotWritableException;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 3.0
+ *
+ * @author mwjames
+ */
+class File {
+
+	/**
+	 * @since 3.1
+	 *
+	 * @param string $file
+	 *
+	 * @return string
+	 */
+	public static function dir( $file ): string {
+		return str_replace( [ '\\', '//', '/' ], DIRECTORY_SEPARATOR, $file );
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param string $file
+	 * @param string $contents
+	 * @param int $flags
+	 */
+	public function write( $file, $contents, $flags = 0 ): void {
+		$file = self::dir( $file );
+
+		if ( !is_writable( dirname( $file ) ) ) {
+			throw new FileNotWritableException( "$file" );
+		}
+
+		file_put_contents( $file, $contents, $flags );
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param string $file
+	 *
+	 * @return bool
+	 */
+	public function exists( $file ): bool {
+		return file_exists( self::dir( $file ) );
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param string $file
+	 * @param int|null $checkSum
+	 *
+	 * @return string
+	 * @throws RuntimeException
+	 */
+	public function read( $file, $checkSum = null ): string|false {
+		$file = self::dir( $file );
+
+		if ( !is_readable( $file ) ) {
+			throw new RuntimeException( "$file is not readable." );
+		}
+
+		if ( $checkSum !== null && $this->getCheckSum( $file ) !== $checkSum ) {
+			throw new RuntimeException( "Processing of $file failed with a checkSum error." );
+		}
+
+		return file_get_contents( $file );
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param string $file
+	 */
+	public function delete( $file ): void {
+		@unlink( self::dir( $file ) );
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param string $file
+	 *
+	 * @return bool|string
+	 */
+	public function getCheckSum( $file ) {
+		return md5_file( $file );
+	}
+
+}

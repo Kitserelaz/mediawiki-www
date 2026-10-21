@@ -1,0 +1,22 @@
+{
+	"@metadata": {
+		"authors": [
+			"Aca",
+			"Winston Sung"
+		]
+	},
+	"revisionreview": "Provjera izmjena",
+	"revreview-failed": "'''Verzija se ne može ocijeniti.'''",
+	"revreview-submission-invalid": "Slanje nije potpuno završeno ili je na drugi način neispravno.",
+	"review_page_invalid": "Naslov odredišne stranice je neispravan.",
+	"review_page_notexists": "Odredišna stranica ne postoji.",
+	"review_page_unreviewable": "Odredišna stranica ne može se pregledati.",
+	"review_no_oldid": "Nije naveden ID verzije.",
+	"review_bad_oldid": "Odredišna verzija ne postoji.",
+	"review_conflict_oldid": "Netko drugi je prihvatio/otprihvatio ovu reviziju dok ste je vi pregledavali.",
+	"review_not_flagged": "Odredišna verzija trenutno nije označena kao pregledana.",
+	"review_too_low": "Izmjena ne može biti provjerena ako su neka polja ostavljena s ocjenom \"ne zadovoljava\".",
+	"revreview-reject-summary": "Sažetak:",
+	"revreview-reject-confirm": "Odbij ove izmjene",
+	"revreview-reject-cancel": "Otkaži"
+}

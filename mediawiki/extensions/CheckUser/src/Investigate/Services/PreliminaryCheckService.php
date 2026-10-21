@@ -1,6 +1,6 @@
 <?php
 
-namespace MediaWiki\CheckUser\Investigate\Services;
+namespace MediaWiki\Extension\CheckUser\Investigate\Services;
 
 use MediaWiki\Block\DatabaseBlockStoreFactory;
 use MediaWiki\Registration\ExtensionRegistry;
@@ -12,33 +12,13 @@ use Wikimedia\Rdbms\IConnectionProvider;
 use Wikimedia\Rdbms\IResultWrapper;
 
 class PreliminaryCheckService {
-	private IConnectionProvider $dbProvider;
-	private UserGroupManagerFactory $userGroupManagerFactory;
-	private ExtensionRegistry $extensionRegistry;
-	private DatabaseBlockStoreFactory $blockStoreFactory;
-
-	/** @var string */
-	private $localWikiId;
-
-	/**
-	 * @param IConnectionProvider $dbProvider
-	 * @param ExtensionRegistry $extensionRegistry
-	 * @param UserGroupManagerFactory $userGroupManagerFactory
-	 * @param DatabaseBlockStoreFactory $blockStoreFactory
-	 * @param string $localWikiId
-	 */
 	public function __construct(
-		IConnectionProvider $dbProvider,
-		ExtensionRegistry $extensionRegistry,
-		UserGroupManagerFactory $userGroupManagerFactory,
-		DatabaseBlockStoreFactory $blockStoreFactory,
-		string $localWikiId
+		private readonly IConnectionProvider $dbProvider,
+		private readonly ExtensionRegistry $extensionRegistry,
+		private readonly UserGroupManagerFactory $userGroupManagerFactory,
+		private readonly DatabaseBlockStoreFactory $blockStoreFactory,
+		private readonly string $localWikiId,
 	) {
-		$this->dbProvider = $dbProvider;
-		$this->extensionRegistry = $extensionRegistry;
-		$this->userGroupManagerFactory = $userGroupManagerFactory;
-		$this->blockStoreFactory = $blockStoreFactory;
-		$this->localWikiId = $localWikiId;
 	}
 
 	/**
@@ -101,7 +81,7 @@ class PreliminaryCheckService {
 	 */
 	protected function buildUserConds( array $users, string $field ): array {
 		if ( !$users ) {
-			return [ 0 ];
+			return [ '1=0' ];
 		}
 		return [ $field => array_map( 'strval', $users ) ];
 	}

@@ -26,6 +26,7 @@ namespace Cite;
 
 use LogicException;
 use MediaWiki\Config\Config;
+use MediaWiki\Extension\CommunityConfiguration\Provider\ConfigurationProviderFactory;
 use MediaWiki\Html\Html;
 use MediaWiki\Parser\Parser;
 use MediaWiki\Parser\Sanitizer;
@@ -38,15 +39,11 @@ class Cite {
 
 	public const DEFAULT_GROUP = '';
 
-	/** Attribute name for the sub-referencing feature in <ref …> */
-	public const SUBREF_ATTRIBUTE = 'extends';
-
 	/**
-	 * Message key for the (localized) tracking category for pages using the `extends` attribute.
+	 * Message key for the (localized) tracking category for pages using the `details` attribute.
 	 */
-	public const EXTENDS_TRACKING_CATEGORY = 'cite-tracking-category-ref-extends';
+	public const DETAILS_TRACKING_CATEGORY = 'cite-tracking-category-ref-details';
 
-	private bool $isSectionPreview;
 	private FootnoteMarkFormatter $footnoteMarkFormatter;
 	private ReferenceListFormatter $referenceListFormatter;
 	private ErrorReporter $errorReporter;
@@ -68,26 +65,39 @@ class Cite {
 	 */
 	private StatusValue $mReferencesErrors;
 	private ReferenceStack $referenceStack;
-	private Config $config;
 
-	public function __construct( Parser $parser, Config $config ) {
-		$this->isSectionPreview = $parser->getOptions()->getIsSectionPreview();
+	public function __construct(
+		Parser $parser,
+		private readonly Config $config,
+		AlphabetsProvider $alphabetsProvider,
+		?ConfigurationProviderFactory $configurationProviderFactory,
+	) {
 		$messageLocalizer = new ReferenceMessageLocalizer( $parser->getContentLanguage() );
-		$this->errorReporter = new ErrorReporter( $messageLocalizer );
+		$this->errorReporter = new ErrorReporter( $parser, $messageLocalizer );
 		$this->mReferencesErrors = StatusValue::newGood();
 		$this->referenceStack = new ReferenceStack();
 		$anchorFormatter = new AnchorFormatter();
+		$markSymbolRenderer = new MarkSymbolRenderer(
+			$messageLocalizer
+		);
+		$backlinkMarkRenderer = new BacklinkMarkRenderer(
+			$parser->getContentLanguage()->getCode(),
+			$messageLocalizer,
+			$alphabetsProvider,
+			$configurationProviderFactory,
+			$config
+		);
 		$this->footnoteMarkFormatter = new FootnoteMarkFormatter(
-			$this->errorReporter,
 			$anchorFormatter,
+			$markSymbolRenderer,
 			$messageLocalizer
 		);
 		$this->referenceListFormatter = new ReferenceListFormatter(
 			$this->errorReporter,
 			$anchorFormatter,
+			$backlinkMarkRenderer,
 			$messageLocalizer
 		);
-		$this->config = $config;
 	}
 
 	/**
@@ -95,7 +105,7 @@ class Cite {
 	 *
 	 * @param Parser $parser
 	 * @param ?string $text Raw, untrimmed wikitext content of the <ref> tag, if any
-	 * @param string[] $argv Arguments as given in <ref name=…>, already trimmed
+	 * @param array<string,?string> $argv Arguments as given in <ref name=…>, already trimmed
 	 *
 	 * @return string|null Null in case a <ref> tag is not allowed in the current context
 	 */
@@ -114,7 +124,7 @@ class Cite {
 	/**
 	 * @param Parser $parser
 	 * @param ?string $text Raw, untrimmed wikitext content of the <ref> tag, if any
-	 * @param string[] $argv Arguments as given in <ref name=…>, already trimmed
+	 * @param array<string,?string> $argv Arguments as given in <ref name=…>, already trimmed
 	 *
 	 * @return string HTML
 	 */
@@ -123,28 +133,23 @@ class Cite {
 		?string $text,
 		array $argv
 	): string {
-		// Tag every page where sub-referencing has been used, whether or not the ref tag is valid.
-		// TODO: Remove this generic usage tracking once the feature is stable.  See T237531.
-		if ( array_key_exists( self::SUBREF_ATTRIBUTE, $argv ) ) {
-			$parser->addTrackingCategory( self::EXTENDS_TRACKING_CATEGORY );
+		$status = Validator::filterRefArguments( $argv, $this->config->get( 'CiteSubReferencing' ) );
+		$arguments = $status->getValue();
+
+		// When it's null it means the attribute is allowed, but not used
+		if ( ( $arguments['details'] ?? '' ) !== '' ) {
+			$parser->addTrackingCategory( self::DETAILS_TRACKING_CATEGORY );
 		}
 
-		$status = $this->parseArguments(
-			$argv,
-			[ 'group', 'name', self::SUBREF_ATTRIBUTE, 'follow', 'dir' ]
-		);
+		$validator = new Validator( $this->inReferencesGroup );
+		$status->merge( $validator->validateRef( $text, $arguments ), true );
 		$arguments = $status->getValue();
-		// Use the default group, or the references group when inside one.
-		$arguments['group'] ??= $this->inReferencesGroup ?? self::DEFAULT_GROUP;
-
-		$validator = new Validator(
-			$this->referenceStack,
-			$this->inReferencesGroup,
-			$this->isSectionPreview,
-			$this->config->get( 'CiteBookReferencing' )
-		);
-		// @phan-suppress-next-line PhanParamTooFewUnpack No good way to document it.
-		$status->merge( $validator->validateRef( $text, ...array_values( $arguments ) ) );
+		if ( !$parser->getOptions()->getIsSectionPreview() ) {
+			$status->merge( $validator->validateListDefinedRefUsage(
+				$arguments['name'],
+				$this->referenceStack->isKnown( $arguments['group'], $arguments['name'] )
+			) );
+		}
 
 		// Validation cares about the difference between null and empty, but from here on we don't
 		if ( $text !== null && trim( $text ) === '' ) {
@@ -152,62 +157,48 @@ class Cite {
 		}
 
 		if ( $this->inReferencesGroup !== null ) {
-			if ( !$status->isGood() ) {
+			// Fatal errors intentionally make the list-defined <ref> not render at all
+			if ( !$status->isOK() ) {
 				// We know we are in the middle of a <references> tag and can't display errors in place
-				$this->mReferencesErrors->merge( $status );
-			} elseif ( $text !== null ) {
+				// FIXME: All fatals should be shown, but this is a product change for later
+				$firstError = $status->getMessages()[0];
+				$this->mReferencesErrors->fatal( $firstError->getKey(), ...$firstError->getParams() );
+			} else {
 				// Validation made sure we always have group and name while in <references>
-				$this->referenceStack->listDefinedRef( $arguments['group'], $arguments['name'], $text );
+				$ref = $this->referenceStack->listDefinedRef( $arguments['group'], $arguments['name'], $text );
+				// Remember all non-fatal warnings to be displayed as part of the reference list
+				foreach ( $status->getMessages() as $msg ) {
+					$ref->warnings[] = [ $msg->getKey(), ...$msg->getParams() ];
+				}
 			}
 			return '';
 		}
 
-		if ( !$status->isGood() ) {
+		if ( !$status->isOK() ) {
 			$this->referenceStack->pushInvalidRef();
 
 			// FIXME: If we ever have multiple errors, these must all be presented to the user,
 			//  so they know what to correct.
 			// TODO: Make this nicer, see T238061
-			return $this->errorReporter->firstError( $parser, $status );
+			return $this->errorReporter->firstError( $status );
 		}
 
 		// @phan-suppress-next-line PhanParamTooFewUnpack No good way to document it.
 		$ref = $this->referenceStack->pushRef(
 			$parser->getStripState(), $text, $argv, ...array_values( $arguments ) );
+
 		if ( !$ref ) {
 			// Rare edge-cases like follow="…" don't render a footnote marker in-place
 			return '';
 		}
 
-		return $this->footnoteMarkFormatter->linkRef( $parser, $ref );
-	}
-
-	/**
-	 * @param string[] $argv The argument vector
-	 * @param string[] $allowedAttributes Allowed attribute names
-	 *
-	 * @return StatusValue Either an error, or has a value with the dictionary of field names and
-	 * parsed or default values.  Missing attributes will be `null`.
-	 */
-	private function parseArguments( array $argv, array $allowedAttributes ): StatusValue {
-		$expected = count( $allowedAttributes );
-		$allValues = array_merge( array_fill_keys( $allowedAttributes, null ), $argv );
-		if ( isset( $allValues['dir'] ) ) {
-			// @phan-suppress-next-line PhanTypeMismatchArgumentNullableInternal False positive
-			$allValues['dir'] = strtolower( $allValues['dir'] );
+		// Remember all non-fatal warnings to be displayed as part of the reference list
+		foreach ( $status->getMessages() as $msg ) {
+			$ref->warnings[] = [ $msg->getKey(), ...$msg->getParams() ];
 		}
 
-		$status = StatusValue::newGood( array_slice( $allValues, 0, $expected ) );
-
-		if ( count( $allValues ) > $expected ) {
-			// A <ref> must have a name (can be null), but <references> can't have one
-			$status->fatal( in_array( 'name', $allowedAttributes, true )
-				? 'cite_error_ref_too_many_keys'
-				: 'cite_error_references_invalid_parameters'
-			);
-		}
-
-		return $status;
+		$wikitext = $this->footnoteMarkFormatter->linkRef( $ref );
+		return $parser->recursiveTagParse( $wikitext );
 	}
 
 	/**
@@ -215,7 +206,7 @@ class Cite {
 	 *
 	 * @param Parser $parser
 	 * @param ?string $text Raw, untrimmed wikitext content of the <references> tag, if any
-	 * @param string[] $argv Arguments as given in <references …>, already trimmed
+	 * @param array<string,?string> $argv Arguments as given in <references …>, already trimmed
 	 *
 	 * @return string|null Null in case a <references> tag is not allowed in the current context
 	 */
@@ -224,20 +215,21 @@ class Cite {
 			return null;
 		}
 
-		$status = $this->parseArguments( $argv, [ 'group', 'responsive' ] );
+		$status = Validator::filterReferenceListArguments( $argv );
 		$arguments = $status->getValue();
 
 		$this->inReferencesGroup = $arguments['group'] ?? self::DEFAULT_GROUP;
 
 		$status->merge( $this->parseReferencesTagContent( $parser, $text ) );
 		if ( !$status->isGood() ) {
-			$ret = $this->errorReporter->firstError( $parser, $status );
+			$ret = $this->errorReporter->firstError( $status );
 		} else {
 			$responsive = $arguments['responsive'];
-			$ret = $this->formatReferences( $parser, $this->inReferencesGroup, $responsive );
+			$isSectionPreview = $parser->getOptions()->getIsSectionPreview();
+			$ret = $this->formatReferences( $parser, $this->inReferencesGroup, $responsive, $isSectionPreview );
 			// Append errors collected while {@see parseReferencesTagContent} processed <ref> tags
 			// in <references>
-			$ret .= $this->formatReferencesErrors( $parser );
+			$ret .= $this->formatReferencesErrors();
 		}
 
 		$this->inReferencesGroup = null;
@@ -257,7 +249,7 @@ class Cite {
 			return StatusValue::newGood();
 		}
 
-		if ( preg_match( '{' . preg_quote( Parser::MARKER_PREFIX ) . '-(?i:references)-}', $text ) ) {
+		if ( preg_match( '{' . preg_quote( Parser::MARKER_PREFIX ) . '-(ext-)?(?i:references)-}', $text ) ) {
 			return StatusValue::newFatal( 'cite_error_included_references' );
 		}
 
@@ -267,7 +259,7 @@ class Cite {
 		// all known use cases, but not strictly enforced by the parser. It is possible that
 		// some unusual combination of #tag, <references> and conditional parser functions could
 		// be created that would lead to malformed references here.
-		preg_match_all( '{' . preg_quote( Parser::MARKER_PREFIX ) . '-(?i:ref)-}', $text, $matches );
+		preg_match_all( '{' . preg_quote( Parser::MARKER_PREFIX ) . '-(ext-)?(?i:ref)-}', $text, $matches );
 		$count = count( $matches[0] );
 
 		// Undo effects of calling <ref> while unaware of being contained in <references>
@@ -283,13 +275,13 @@ class Cite {
 		return StatusValue::newGood();
 	}
 
-	private function formatReferencesErrors( Parser $parser ): string {
+	private function formatReferencesErrors(): string {
 		$html = '';
-		foreach ( $this->mReferencesErrors->getErrors() as $error ) {
+		foreach ( $this->mReferencesErrors->getMessages() as $msg ) {
 			if ( $html ) {
 				$html .= "<br />\n";
 			}
-			$html .= $this->errorReporter->halfParsed( $parser, $error['message'], ...$error['params'] );
+			$html .= $this->errorReporter->halfParsed( $msg->getKey(), ...$msg->getParams() );
 		}
 		$this->mReferencesErrors = StatusValue::newGood();
 		return $html ? "\n$html" : '';
@@ -298,22 +290,32 @@ class Cite {
 	/**
 	 * @param Parser $parser
 	 * @param string $group
-	 * @param string|null $responsive Defaults to $wgCiteResponsiveReferences when not set
+	 * @param bool|null $responsive Defaults to $wgCiteResponsiveReferences when not set
+	 * @param bool $isSectionPreview Value from ParserOptions::getIsSectionPreview
 	 *
 	 * @return string HTML
 	 */
 	private function formatReferences(
 		Parser $parser,
 		string $group,
-		?string $responsive = null
+		?bool $responsive,
+		bool $isSectionPreview,
 	): string {
-		$responsiveReferences = $this->config->get( 'CiteResponsiveReferences' );
+		$refs = $this->referenceStack->popGroup( $group );
+
+		// Check for missing content at the last possible moment before rendering
+		$msg = $isSectionPreview ? 'cite_warning_sectionpreview_no_text' :
+			'cite_error_references_no_text';
+		foreach ( $refs as $ref ) {
+			if ( $ref->text === null ) {
+				$ref->warnings[] = [ $msg, $ref->name ];
+			}
+		}
 
 		return $this->referenceListFormatter->formatReferences(
 			$parser,
-			$this->referenceStack->popGroup( $group ),
-			$responsive !== null ? $responsive !== '0' : $responsiveReferences,
-			$this->isSectionPreview
+			$refs,
+			$responsive ?? $this->config->get( 'CiteResponsiveReferences' )
 		);
 	}
 
@@ -326,18 +328,17 @@ class Cite {
 	 * references tags and does not add the errors.
 	 *
 	 * @param Parser $parser
-	 * @param bool $isSectionPreview
 	 *
 	 * @return string HTML
 	 */
-	public function checkRefsNoReferences( Parser $parser, bool $isSectionPreview ): string {
+	public function checkRefsNoReferences( Parser $parser ): string {
+		$isSectionPreview = $parser->getOptions()->getIsSectionPreview();
 		$s = '';
 		foreach ( $this->referenceStack->getGroups() as $group ) {
 			if ( $group === self::DEFAULT_GROUP || $isSectionPreview ) {
-				$s .= $this->formatReferences( $parser, $group );
+				$s .= $this->formatReferences( $parser, $group, null, $isSectionPreview );
 			} else {
 				$s .= '<br />' . $this->errorReporter->halfParsed(
-					$parser,
 					'cite_error_group_refs_without_references',
 					Sanitizer::safeEncodeAttribute( $group )
 				);

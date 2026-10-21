@@ -1,0 +1,177 @@
+<?php
+
+namespace SMW;
+
+use InvalidArgumentException;
+use MediaWiki\Json\JsonDeserializable;
+use MediaWiki\Json\JsonDeserializer;
+use SMW\Utils\DotArray;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 2.3
+ *
+ * @author mwjames
+ */
+class Options implements JsonDeserializable {
+
+	protected array $options;
+
+	/**
+	 * @since 2.3
+	 */
+	public function __construct( array $options = [] ) {
+		$this->options = $options;
+	}
+
+	/**
+	 * @since 2.3
+	 *
+	 * @param string $key
+	 * @param mixed $value
+	 */
+	public function set( $key, $value ): void {
+		$this->options[$key] = $value;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param string $key
+	 */
+	public function delete( $key ): void {
+		unset( $this->options[$key] );
+	}
+
+	/**
+	 * @since 2.3
+	 *
+	 * @param string $key
+	 *
+	 * @return bool
+	 */
+	public function has( $key ): bool {
+		return isset( $this->options[$key] ) || array_key_exists( $key, $this->options );
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param string $key
+	 * @param mixed $value
+	 *
+	 * @return bool
+	 */
+	public function is( $key, $value ): bool {
+		return $this->get( $key ) === $value;
+	}
+
+	/**
+	 * @since 2.3
+	 *
+	 * @param string $key
+	 *
+	 * @return string
+	 * @throws InvalidArgumentException
+	 */
+	public function get( $key ) {
+		if ( $this->has( $key ) ) {
+			return $this->options[$key];
+		}
+
+		throw new InvalidArgumentException( "{$key} is an unregistered option" );
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param string $key
+	 * @param mixed $default
+	 *
+	 * @return mixed
+	 */
+	public function safeGet( $key, $default = false ) {
+		return $this->has( $key ) ? $this->options[$key] : $default;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param string $key
+	 * @param mixed $default
+	 *
+	 * @return mixed
+	 */
+	public function dotGet( $key, $default = false ) {
+		return DotArray::get( $this->options, $key, $default );
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param string $key
+	 * @param int $flag
+	 *
+	 * @return bool
+	 */
+	public function isFlagSet( $key, $flag ): bool {
+		return ( ( (int)$this->safeGet( $key, 0 ) & $flag ) == $flag );
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @return array
+	 */
+	public function toArray(): array {
+		return $this->options;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param array $keys
+	 *
+	 * @return array
+	 */
+	public function filter( array $keys ): array {
+		$options = [];
+
+		foreach ( $keys as $key ) {
+			if ( isset( $this->options[$key] ) ) {
+				$options[$key] = $this->options[$key];
+			}
+		}
+
+		return $options;
+	}
+
+	/**
+	 * Implements \JsonSerializable.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @return array
+	 */
+	public function jsonSerialize(): array {
+		return [
+			'options' => $this->options,
+			'_type_' => get_class( $this ),
+		];
+	}
+
+	/**
+	 * Implements JsonDeserializable.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param JsonDeserializer $deserializer
+	 * @param array $json JSON to be unserialized
+	 *
+	 * @return self
+	 */
+	public static function newFromJsonArray( JsonDeserializer $deserializer, array $json ): self {
+		return new self( $json['options'] );
+	}
+
+}

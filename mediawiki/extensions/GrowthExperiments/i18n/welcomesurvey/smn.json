@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"Yupik"
+		]
+	},
+	"welcomesurvey": "{{GENDER:$1|Tiervâpuáttim}}, $1!",
+	"welcomesurvey-dropdown-option-select-label": "Valjii...",
+	"welcomesurvey-question-email-label": "Šleđgâpostâčujottâs (valjimiävtulâš)"
+}

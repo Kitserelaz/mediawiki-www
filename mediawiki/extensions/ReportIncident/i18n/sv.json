@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": [
+			"Ludvig Broman"
+		]
+	},
+	"reportincident-dialog-internet-disconnected-error": "Du verkar inte ha någon internetanslutning. Försök att skicka in igen när din anslutning återupprättats."
+}

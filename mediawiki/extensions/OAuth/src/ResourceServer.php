@@ -9,14 +9,12 @@ use MediaWiki\Extension\OAuth\Backend\Consumer;
 use MediaWiki\Extension\OAuth\Backend\MWOAuthException;
 use MediaWiki\Extension\OAuth\Backend\Utils;
 use MediaWiki\Extension\OAuth\Entity\ClientEntity;
-use MediaWiki\Extension\OAuth\Entity\ScopeEntity;
 use MediaWiki\Extension\OAuth\Repository\AccessTokenRepository;
 use MediaWiki\Extension\OAuth\Repository\ScopeRepository;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Request\WebRequest;
 use MediaWiki\Rest\HttpException;
 use MediaWiki\User\User;
-use MWException;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -27,14 +25,14 @@ class ResourceServer {
 	protected $user;
 	/** @var ClientEntity */
 	protected $client;
-	/** @var ScopeEntity[] */
+	/** @var ScopeEntityInterface[] */
 	protected $scopes;
 	/** @var string */
 	protected $accessTokenId;
 	/** @var bool */
 	protected $verified = false;
 
-	public static function factory() {
+	public static function factory(): self {
 		$config = MediaWikiServices::getInstance()->getConfigFactory()->makeConfig( 'mwoauth' );
 		return new static( $config->get( 'OAuth2PublicKey' ), $config->get( 'CanonicalServer' ) );
 	}
@@ -48,7 +46,8 @@ class ResourceServer {
 
 		$server = new LeagueResourceServer(
 			$accessTokenRepository,
-			$publicKey
+			$publicKey,
+			new BearerTokenValidator( $accessTokenRepository ),
 		);
 		$this->middleware = new ResourceServerMiddleware( $server );
 	}
@@ -59,17 +58,15 @@ class ResourceServer {
 	 * @param WebRequest|ServerRequestInterface $request
 	 * @return bool
 	 */
-	public static function isOAuth2Request( $request ) {
+	public static function isOAuth2Request( $request ): bool {
 		$authHeader = $request->getHeader( 'authorization' );
 
 		// Normalize to array
 		if ( is_string( $authHeader ) ) {
 			$authHeader = [ $authHeader ];
 		}
-		if ( $authHeader && strpos( $authHeader[0], 'Bearer' ) === 0 ) {
-			return true;
-		}
-		return false;
+
+		return $authHeader && str_starts_with( $authHeader[0], 'Bearer' );
 	}
 
 	/**
@@ -86,34 +83,32 @@ class ResourceServer {
 			$response,
 			function ( $request, $response ) use ( $callback ) {
 				$this->setVerifiedInfo( $request );
-				return $callback( $request, $response );
+				return $callback( $response );
 			}
 		);
 	}
 
 	/**
-	 * @return User
 	 * @throws MWOAuthException
 	 */
-	public function getUser() {
+	public function getUser(): User {
 		$this->assertVerified();
 		return $this->user;
 	}
 
 	/**
-	 * @return ClientEntity
 	 * @throws MWOAuthException
 	 */
-	public function getClient() {
+	public function getClient(): ClientEntity {
 		$this->assertVerified();
 		return $this->client;
 	}
 
 	/**
-	 * @return ScopeEntity[]
+	 * @return ScopeEntityInterface[]
 	 * @throws MWOAuthException
 	 */
-	public function getScopes() {
+	public function getScopes(): array {
 		$this->assertVerified();
 		return $this->scopes;
 	}
@@ -121,10 +116,9 @@ class ResourceServer {
 	/**
 	 * Get access token this request was made with
 	 *
-	 * @return string
 	 * @throws MWOAuthException
 	 */
-	public function getAccessTokenId() {
+	public function getAccessTokenId(): string {
 		$this->assertVerified();
 		return $this->accessTokenId;
 	}
@@ -136,7 +130,7 @@ class ResourceServer {
 	 * @return bool
 	 * @throws MWOAuthException
 	 */
-	public function isScopeAllowed( $scope ) {
+	public function isScopeAllowed( $scope ): bool {
 		$this->assertVerified();
 
 		if ( $scope instanceof ScopeEntityInterface ) {
@@ -149,7 +143,6 @@ class ResourceServer {
 	/**
 	 * Read out the verified request and get relevant information
 	 *
-	 * @param ServerRequestInterface $request
 	 * @throws HttpException
 	 */
 	public function setVerifiedInfo( ServerRequestInterface $request ) {
@@ -162,9 +155,8 @@ class ResourceServer {
 	}
 
 	/**
-	 * Set authorized user to the global context
+	 * Set the authorized user to the global context
 	 *
-	 * @param ServerRequestInterface $request
 	 * @throws HttpException
 	 */
 	private function setUser( ServerRequestInterface $request ) {
@@ -175,24 +167,17 @@ class ResourceServer {
 			return;
 		}
 
-		try {
-			$user = Utils::getLocalUserFromCentralId( $userId );
-		} catch ( MWException $ex ) {
-			throw new HttpException( $ex->getMessage(), 403 );
-		}
-
-		$this->user = $user;
+		$this->user = Utils::getLocalUserFromCentralId( $userId );
 	}
 
 	/**
-	 * Set the ClientEntity from validated request
+	 * Set the ClientEntity from a validated request
 	 *
-	 * @param ServerRequestInterface $request
 	 * @throws HttpException
 	 */
 	private function setClient( ServerRequestInterface $request ) {
 		$this->client = ClientEntity::newFromKey(
-			Utils::getCentralDB( DB_REPLICA ),
+			Utils::getOAuthDB( DB_REPLICA ),
 			$request->getAttribute( 'oauth_client_id' )
 		);
 		if ( !$this->client || $this->client->getOAuthVersion() !== Consumer::OAUTH_VERSION_2 ) {
@@ -202,12 +187,11 @@ class ResourceServer {
 
 	/**
 	 * Set validated scopes
-	 *
-	 * @param ServerRequestInterface $request
 	 */
 	private function setScopes( ServerRequestInterface $request ) {
 		$scopeNames = $request->getAttribute( 'oauth_scopes', [] );
 		$scopeRepo = new ScopeRepository();
+		$this->scopes = [];
 		foreach ( $scopeNames as $scopeName ) {
 			$scope = $scopeRepo->getScopeEntityByIdentifier( $scopeName );
 			if ( !$scope ) {
@@ -219,13 +203,14 @@ class ResourceServer {
 
 	/**
 	 * Set the access token this request was made with
-	 *
-	 * @param ServerRequestInterface $request
 	 */
 	private function setAccessTokenId( ServerRequestInterface $request ) {
 		$this->accessTokenId = $request->getAttribute( 'oauth_access_token_id' );
 	}
 
+	/**
+	 * @throws MWOAuthException
+	 */
 	private function assertVerified() {
 		if ( !$this->verified ) {
 			throw new MWOAuthException( 'mwoauth-oauth2-error-request-not-verified', [

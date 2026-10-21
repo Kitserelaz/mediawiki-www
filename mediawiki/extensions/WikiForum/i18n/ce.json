@@ -1,0 +1,34 @@
+{
+	"@metadata": {
+		"authors": [
+			"Исмаил Садуев",
+			"Умар"
+		]
+	},
+	"wikiforum-description": "Цуьнах лаьцна",
+	"wikiforum-button-preview": "Хьалххе хьажар",
+	"wikiforum-preview": "Хьалххе хьажар",
+	"wikiforum-preview-with-title": "Хьалххе хьажар: $1",
+	"wikiforum-latest-reply": "ТӀаьххьара жоп",
+	"wikiforum-overview": "Гар",
+	"wikiforum-pages": "АгӀонаш:",
+	"wikiforum-close-thread": "ДӀачӀагӀа га",
+	"wikiforum-delete-reply": "ДӀабаккха хаам",
+	"wikiforum-forum-not-found-text": "Форум йац",
+	"wikiforum-thread-not-found-text": "Га дац, йа дӀадаьккхина",
+	"wikiforum-error-double-post": "Ахьа хӀинцале хӀарпа жоп дахьийтина!",
+	"wikiforum-error-write": "ДӀаяздеш гӀалат",
+	"wikiforum-error-category": "Категорийн гӀалат",
+	"wikiforum-error-forum": "Форуман гӀалат",
+	"wikiforum-error-thread": "Ган гӀалат",
+	"wikiforum-add-category": "ТӀетоха категори",
+	"wikiforum-delete-category": "ДӀайаккха категори",
+	"wikiforum-delete-forum": "ДӀайаккха форум",
+	"group-forumadmin": "Форуман администраторш",
+	"grouppage-forumadmin": "{{ns:project}}:Форуман администраторш",
+	"logentry-forum-add-category": "$1 {{GENDER:$2||кхоьллина}} керла категори: [$4 $5]",
+	"logentry-forum-add-forum": "$1 {{GENDER:$2|||кхоьллина}} керла форум: [$4 $5]",
+	"logentry-forum-add-reply": "$1 жоп делла гайн техь [[Special:WikiForum/$4|$4]]",
+	"wikiforum-forum-preload": "Хьан форуман цӀе",
+	"wikiforum-category-preload": "Категорийн цӀе"
+}

@@ -1,10 +1,11 @@
 <?php
 
-namespace MediaWiki\CheckUser\Investigate\Services;
+namespace MediaWiki\Extension\CheckUser\Investigate\Services;
 
 use LogicException;
-use MediaWiki\CheckUser\Services\CheckUserLookupUtils;
 use MediaWiki\Config\ServiceOptions;
+use MediaWiki\Extension\CheckUser\Services\CheckUserLookupUtils;
+use MediaWiki\User\TempUser\TempUserConfig;
 use MediaWiki\User\UserIdentityLookup;
 use Wikimedia\IPUtils;
 use Wikimedia\Rdbms\IConnectionProvider;
@@ -21,21 +22,21 @@ class CompareService extends ChangeService {
 		'CheckUserInvestigateMaximumRowCount',
 	];
 
-	private int $limit;
+	private readonly int $limit;
 
-	/**
-	 * @param ServiceOptions $options
-	 * @param IConnectionProvider $dbProvider
-	 * @param UserIdentityLookup $userIdentityLookup
-	 * @param CheckUserLookupUtils $checkUserLookupUtils
-	 */
 	public function __construct(
 		ServiceOptions $options,
 		IConnectionProvider $dbProvider,
 		UserIdentityLookup $userIdentityLookup,
-		CheckUserLookupUtils $checkUserLookupUtils
+		CheckUserLookupUtils $checkUserLookupUtils,
+		TempUserConfig $tempUserConfig
 	) {
-		parent::__construct( $dbProvider, $userIdentityLookup, $checkUserLookupUtils );
+		parent::__construct(
+			$dbProvider,
+			$userIdentityLookup,
+			$checkUserLookupUtils,
+			$tempUserConfig
+		);
 
 		$options->assertRequiredOptions( self::CONSTRUCTOR_OPTIONS );
 		$this->limit = $options->get( 'CheckUserInvestigateMaximumRowCount' );
@@ -69,10 +70,16 @@ class CompareService extends ChangeService {
 	 *
 	 * @param string[] $targets
 	 * @param string[] $excludeTargets
+	 * @param bool $excludeTempAccounts Whether to remove log entries associated with temp accounts
 	 * @param string $start
 	 * @return array
 	 */
-	public function getQueryInfo( array $targets, array $excludeTargets, string $start ): array {
+	public function getQueryInfo(
+		array $targets,
+		array $excludeTargets,
+		bool $excludeTempAccounts,
+		string $start
+	): array {
 		$dbr = $this->dbProvider->getReplicaDatabase();
 
 		if ( $targets === [] ) {
@@ -93,13 +100,22 @@ class CompareService extends ChangeService {
 					throw new LogicException( "Invalid table: $table" );
 				}
 				if ( $queryBuilder !== null ) {
+					if ( $excludeTempAccounts ) {
+						$queryBuilder = $this->excludeTempAccountsFromQuery(
+							$dbr,
+							$queryBuilder,
+							$table
+						);
+					}
+
 					if ( $dbr->unionSupportsOrderAndLimit() ) {
 						// Add the limit to the query (if using LIMIT is supported in a UNION for this DB type).
 						$queryBuilder->limit( $limit );
 					}
 					$queryBuilder->useIndex( [
 						$table => $this->checkUserLookupUtils->getIndexName(
-							IPUtils::isIPAddress( $target ) ? false : null, $table
+							IPUtils::isIPAddress( $target ) ? false : null,
+							$table
 						),
 					] );
 					$unionQueryBuilder->add( $queryBuilder );
@@ -115,7 +131,6 @@ class CompareService extends ChangeService {
 				'user' => 'a.user',
 				'user_text' => 'a.user_text',
 				'actor' => 'MIN(a.actor)',
-				'ip' => 'a.ip',
 				'ip_hex' => 'a.ip_hex',
 				'agent' => 'a.agent',
 				'first_action' => 'MIN(a.timestamp)',
@@ -126,7 +141,6 @@ class CompareService extends ChangeService {
 				'GROUP BY' => [
 					'user',
 					'user_text',
-					'ip',
 					'ip_hex',
 					'agent',
 				],
@@ -145,7 +159,9 @@ class CompareService extends ChangeService {
 	 *   be generated.
 	 */
 	private function getPartialQueryBuilderForCuChanges(
-		string $target, array $excludeTargets, string $start
+		string $target,
+		array $excludeTargets,
+		string $start
 	): ?SelectQueryBuilder {
 		$targetExpr = $this->buildExprForSingleTarget( $target, $excludeTargets, $start, self::CHANGES_TABLE );
 		if ( $targetExpr === null ) {
@@ -155,10 +171,11 @@ class CompareService extends ChangeService {
 		$queryBuilder = $dbr->newSelectQueryBuilder()
 			->select( [
 				'id' => 'cuc_id', 'user' => 'actor_user', 'user_text' => 'actor_name', 'actor' => 'cuc_actor',
-				'ip' => 'cuc_ip', 'ip_hex' => 'cuc_ip_hex', 'agent' => 'cuc_agent', 'timestamp' => 'cuc_timestamp',
+				'ip_hex' => 'cuc_ip_hex', 'agent' => 'cuua_text', 'timestamp' => 'cuc_timestamp',
 			] )
 			->from( 'cu_changes' )
 			->join( 'actor', null, 'actor_id=cuc_actor' )
+			->leftJoin( 'cu_useragent', null, 'cuua_id = cuc_agent_id' )
 			->where( $targetExpr )
 			->caller( __METHOD__ );
 		if ( $dbr->unionSupportsOrderAndLimit() ) {
@@ -179,7 +196,9 @@ class CompareService extends ChangeService {
 	 *    be generated.
 	 */
 	private function getPartialQueryBuilderForCuLogEvent(
-		string $target, array $excludeTargets, string $start
+		string $target,
+		array $excludeTargets,
+		string $start
 	): ?SelectQueryBuilder {
 		$targetExpr = $this->buildExprForSingleTarget( $target, $excludeTargets, $start, self::LOG_EVENT_TABLE );
 		if ( $targetExpr === null ) {
@@ -189,10 +208,11 @@ class CompareService extends ChangeService {
 		$queryBuilder = $dbr->newSelectQueryBuilder()
 			->select( [
 				'id' => 'cule_id', 'user' => 'actor_user', 'user_text' => 'actor_name', 'actor' => 'cule_actor',
-				'ip' => 'cule_ip', 'ip_hex' => 'cule_ip_hex', 'agent' => 'cule_agent', 'timestamp' => 'cule_timestamp',
+				'ip_hex' => 'cule_ip_hex', 'agent' => 'cuua_text', 'timestamp' => 'cule_timestamp',
 			] )
 			->from( 'cu_log_event' )
 			->join( 'actor', null, 'actor_id=cule_actor' )
+			->leftJoin( 'cu_useragent', null, 'cuua_id = cule_agent_id' )
 			->where( $targetExpr )
 			->caller( __METHOD__ );
 		if ( $dbr->unionSupportsOrderAndLimit() ) {
@@ -213,10 +233,15 @@ class CompareService extends ChangeService {
 	 *     could be generated.
 	 */
 	private function getPartialQueryBuilderForCuPrivateEvent(
-		string $target, array $excludeTargets, string $start
+		string $target,
+		array $excludeTargets,
+		string $start
 	): ?SelectQueryBuilder {
 		$targetExpr = $this->buildExprForSingleTarget(
-			$target, $excludeTargets, $start, self::PRIVATE_LOG_EVENT_TABLE
+			$target,
+			$excludeTargets,
+			$start,
+			self::PRIVATE_LOG_EVENT_TABLE
 		);
 		if ( $targetExpr === null ) {
 			return null;
@@ -225,9 +250,10 @@ class CompareService extends ChangeService {
 		$queryBuilder = $dbr->newSelectQueryBuilder()
 			->select( [
 				'id' => 'cupe_id', 'user' => 'actor_user', 'user_text' => 'actor_name', 'actor' => 'cupe_actor',
-				'ip' => 'cupe_ip', 'ip_hex' => 'cupe_ip_hex', 'agent' => 'cupe_agent', 'timestamp' => 'cupe_timestamp',
+				'ip_hex' => 'cupe_ip_hex', 'agent' => 'cuua_text', 'timestamp' => 'cupe_timestamp',
 			] )
 			->from( 'cu_private_event' )
+			->leftJoin( 'cu_useragent', null, 'cuua_id = cupe_agent_id' )
 			->where( $targetExpr )
 			->caller( __METHOD__ );
 		if ( IPUtils::isIPAddress( $target ) ) {

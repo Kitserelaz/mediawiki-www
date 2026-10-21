@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"McDutchie"
+		]
+	},
+	"action-embed_pdf": "incastrar PDFs",
+	"pdfembed_description": "Extension gestor multimedial pro files PDF.",
+	"embed_pdf_no_permission": "Tu non ha le permission de incastrar files PDF.",
+	"embed_pdf_blank_file": "Le adresse URL o percurso de file date pro incastrar un PDF es vacue.",
+	"embed_pdf_invalid_file": "Le adresse URL o percurso de file date non existe.",
+	"embed_pdf_invalid_user": "Un usator non valide ha essite specificate pro le test de permissiones a incastrar iste PDF.",
+	"right-embed_pdf": "Incastrar PDFs in paginas"
+}

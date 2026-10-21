@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"ElangoRamanujam",
+			"Fahimrazick"
+		]
+	},
+	"pageassessments-project": "திட்டம்",
+	"pageassessments-page-title": "பக்கத் தலைப்பு",
+	"pageassessments-search": "தேடு",
+	"pageassessments-importance": "முக்கியத்துவம்",
+	"pageassessments-class": "வகுப்பு",
+	"pageassessments-timestamp": "நேரமுத்திரை",
+	"pageassessments-total-results": "மொத்த முடிவுகள்:$1"
+}

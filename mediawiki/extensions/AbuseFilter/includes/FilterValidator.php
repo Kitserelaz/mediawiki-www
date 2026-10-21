@@ -10,27 +10,18 @@ use MediaWiki\Extension\AbuseFilter\Parser\RuleCheckerFactory;
 use MediaWiki\Message\Message;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Status\Status;
+use Wikimedia\Message\ListType;
 
 /**
  * This class validates filters, e.g. before saving.
  */
 class FilterValidator {
-	public const SERVICE_NAME = 'AbuseFilterFilterValidator';
+	public const SERVICE_NAME = ServiceNames::FilterValidator;
 
 	public const CONSTRUCTOR_OPTIONS = [
 		'AbuseFilterValidGroups',
 		'AbuseFilterActionRestrictions',
-		'AbuseFilterProtectedVariables',
 	];
-
-	/** @var ChangeTagValidator */
-	private $changeTagValidator;
-
-	/** @var RuleCheckerFactory */
-	private $ruleCheckerFactory;
-
-	/** @var AbuseFilterPermissionManager */
-	private $permManager;
 
 	/** @var string[] */
 	private $restrictedActions;
@@ -38,29 +29,15 @@ class FilterValidator {
 	/** @var string[] */
 	private $validGroups;
 
-	/**
-	 * @var string[] Protected variables defined in config via AbuseFilterProtectedVariables
-	 */
-	private $protectedVariables;
-
-	/**
-	 * @param ChangeTagValidator $changeTagValidator
-	 * @param RuleCheckerFactory $ruleCheckerFactory
-	 * @param AbuseFilterPermissionManager $permManager
-	 * @param ServiceOptions $options
-	 */
 	public function __construct(
-		ChangeTagValidator $changeTagValidator,
-		RuleCheckerFactory $ruleCheckerFactory,
-		AbuseFilterPermissionManager $permManager,
+		private readonly ChangeTagValidator $changeTagValidator,
+		private readonly RuleCheckerFactory $ruleCheckerFactory,
+		private readonly AbuseFilterPermissionManager $permManager,
 		ServiceOptions $options
 	) {
-		$this->changeTagValidator = $changeTagValidator;
-		$this->ruleCheckerFactory = $ruleCheckerFactory;
-		$this->permManager = $permManager;
+		$options->assertRequiredOptions( self::CONSTRUCTOR_OPTIONS );
 		$this->restrictedActions = array_keys( array_filter( $options->get( 'AbuseFilterActionRestrictions' ) ) );
 		$this->validGroups = $options->get( 'AbuseFilterValidGroups' );
-		$this->protectedVariables = $options->get( 'AbuseFilterProtectedVariables' );
 	}
 
 	/**
@@ -142,10 +119,6 @@ class FilterValidator {
 		return Status::newGood();
 	}
 
-	/**
-	 * @param AbstractFilter $filter
-	 * @return Status
-	 */
 	public function checkValidSyntax( AbstractFilter $filter ): Status {
 		$ret = Status::newGood();
 		$ruleChecker = $this->ruleCheckerFactory->newRuleChecker();
@@ -160,10 +133,6 @@ class FilterValidator {
 		return $ret;
 	}
 
-	/**
-	 * @param AbstractFilter $filter
-	 * @return Status
-	 */
 	public function checkRequiredFields( AbstractFilter $filter ): Status {
 		$ret = Status::newGood();
 		$missing = [];
@@ -176,16 +145,12 @@ class FilterValidator {
 		if ( count( $missing ) !== 0 ) {
 			$ret->error(
 				'abusefilter-edit-missingfields',
-				Message::listParam( $missing, 'comma' )
+				Message::listParam( $missing, ListType::COMMA )
 			);
 		}
 		return $ret;
 	}
 
-	/**
-	 * @param AbstractFilter $filter
-	 * @return Status
-	 */
 	public function checkConflictingFields( AbstractFilter $filter ): Status {
 		$ret = Status::newGood();
 		// Don't allow setting as deleted an active filter
@@ -268,9 +233,8 @@ class FilterValidator {
 			$uniqueSubGroups = true;
 			// Every group should be valid, and subgroups should have valid groups inside
 			foreach ( $throttleGroups as $group ) {
-				if ( strpos( $group, ',' ) !== false ) {
+				if ( str_contains( $group, ',' ) ) {
 					$subGroups = explode( ',', $group );
-					// @phan-suppress-next-line PhanPossiblyUndeclaredVariable
 					if ( $subGroups !== array_unique( $subGroups ) ) {
 						$uniqueSubGroups = false;
 						break;
@@ -322,10 +286,6 @@ class FilterValidator {
 		return Status::newGood();
 	}
 
-	/**
-	 * @param AbstractFilter $filter
-	 * @return Status
-	 */
 	public function checkMessagesOnGlobalFilters( AbstractFilter $filter ): Status {
 		$ret = Status::newGood();
 		$actions = $filter->getActions();
@@ -381,7 +341,7 @@ class FilterValidator {
 
 		$ruleChecker = $this->ruleCheckerFactory->newRuleChecker();
 		$usedVariables = $ruleChecker->getUsedVars( $filter->getRules() );
-		$usedProtectedVariables = array_intersect( $usedVariables, $this->protectedVariables );
+		$usedProtectedVariables = $this->permManager->getUsedProtectedVariables( $usedVariables );
 
 		if (
 			count( $usedProtectedVariables ) > 0 &&
@@ -389,7 +349,8 @@ class FilterValidator {
 		) {
 			$ret->error(
 				'abusefilter-edit-protected-variable-not-protected',
-				Message::listParam( $usedProtectedVariables )
+				Message::listParam( $usedProtectedVariables ),
+				Message::numParam( count( $usedProtectedVariables ) )
 			);
 		}
 
@@ -412,10 +373,6 @@ class FilterValidator {
 		return $ret;
 	}
 
-	/**
-	 * @param AbstractFilter $filter
-	 * @return Status
-	 */
 	public function checkGroup( AbstractFilter $filter ): Status {
 		$ret = Status::newGood();
 		$group = $filter->getGroup();

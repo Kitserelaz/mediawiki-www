@@ -10,21 +10,12 @@ use Wikimedia\ObjectCache\BagOStuff;
  */
 class EmergencyCache {
 
-	public const SERVICE_NAME = 'AbuseFilterEmergencyCache';
+	public const SERVICE_NAME = ServiceNames::EmergencyCache;
 
-	/** @var BagOStuff */
-	private $stash;
-
-	/** @var int[] */
-	private $ttlPerGroup;
-
-	/**
-	 * @param BagOStuff $stash
-	 * @param int[] $ttlPerGroup
-	 */
-	public function __construct( BagOStuff $stash, array $ttlPerGroup ) {
-		$this->stash = $stash;
-		$this->ttlPerGroup = $ttlPerGroup;
+	public function __construct(
+		private readonly BagOStuff $stash,
+		private readonly array $ttlPerGroup
+	) {
 	}
 
 	/**
@@ -42,9 +33,7 @@ class EmergencyCache {
 		$time = (int)round( $this->stash->getCurrentTime() );
 		return array_keys( array_filter(
 			$filterToExpiry,
-			static function ( $exp ) use ( $time ) {
-				return $exp > $time;
-			}
+			static fn ( $exp ) => $exp > $time
 		) );
 	}
 
@@ -121,20 +110,12 @@ class EmergencyCache {
 		return $value;
 	}
 
-	/**
-	 * @param string $group
-	 * @return string
-	 */
 	private function createGroupKey( string $group ): string {
-		return $this->stash->makeKey( 'abusefilter', 'emergency', 'group', $group );
+		return $this->stash->makeKey( 'abusefilter-emergency', 'group', $group );
 	}
 
-	/**
-	 * @param int $filter
-	 * @return string
-	 */
 	private function createFilterKey( int $filter ): string {
-		return $this->stash->makeKey( 'abusefilter', 'emergency', 'filter', $filter );
+		return $this->stash->makeKey( 'abusefilter-emergency', 'filter', $filter );
 	}
 
 }

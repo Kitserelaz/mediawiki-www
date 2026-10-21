@@ -1,0 +1,69 @@
+<?php
+
+namespace SMW\SQLStore\QueryEngine\DescriptionInterpreters;
+
+use SMW\Query\Language\Conjunction;
+use SMW\Query\Language\Description;
+use SMW\Query\Language\Disjunction;
+use SMW\SQLStore\QueryEngine\ConditionBuilder;
+use SMW\SQLStore\QueryEngine\DescriptionInterpreter;
+use SMW\SQLStore\QueryEngine\QuerySegment;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 2.2
+ *
+ * @author Markus Krötzsch
+ * @author Jeroen De Dauw
+ * @author mwjames
+ */
+class DisjunctionConjunctionInterpreter implements DescriptionInterpreter {
+
+	/**
+	 * @since 2.2
+	 */
+	public function __construct( private readonly ConditionBuilder $conditionBuilder ) {
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * @return bool
+	 */
+	public function canInterpretDescription( Description $description ): bool {
+		return $description instanceof Conjunction || $description instanceof Disjunction;
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * @param Description $description
+	 *
+	 * @return QuerySegment
+	 */
+	public function interpretDescription( Description $description ): QuerySegment {
+		$query = new QuerySegment();
+		$query->type = QuerySegment::Q_DISJUNCTION;
+
+		if ( $description instanceof Conjunction ) {
+			$query->type = QuerySegment::Q_CONJUNCTION;
+		}
+
+		foreach ( $description->getDescriptions() as $subDescription ) {
+
+			$subQueryId = $this->conditionBuilder->buildFromDescription( $subDescription );
+
+			if ( $subQueryId >= 0 ) {
+				$query->components[$subQueryId] = true;
+			}
+		}
+
+		// All subconditions failed, drop this as well.
+		if ( count( $query->components ) == 0 ) {
+			$query->type = QuerySegment::Q_NOQUERY;
+		}
+
+		return $query;
+	}
+
+}

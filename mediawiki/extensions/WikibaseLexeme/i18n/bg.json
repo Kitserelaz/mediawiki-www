@@ -1,0 +1,23 @@
+{
+	"@metadata": {
+		"authors": [
+			"Kareyac",
+			"ShockD",
+			"StanProg"
+		]
+	},
+	"nstab-lexeme": "Лексема",
+	"special-newlexeme": "Създаване на нова Лексема",
+	"wikibase-lexeme-summary-wbeditentity-create-lexeme": "Създаване на нова Лексема",
+	"wikibaselexeme-diffview-language": "език",
+	"wikibaselexeme-diffview-lexical-category": "лексикална категория",
+	"wikibaselexeme-field-language-label": "Език",
+	"wikibaselexeme-gloss-field-language-label": "Език",
+	"wikibaselexeme-lemma-edit-placeholder": "Лемата е обикновено най-кратката форма на думата",
+	"wikibaselexeme-lemma-field-lemma-label": "Лема",
+	"wikibaselexeme-newlexeme-fieldset": "Създаване на нова Лексема",
+	"wikibaselexeme-newlexeme-language": "Език на Лексемата",
+	"wikibaselexeme-newlexeme-language-placeholder": "Език на Лексемата, напр. „български“",
+	"wikibaselexeme-newlexeme-lemma": "Лема",
+	"wikibaselexeme-newlexeme-lexicalcategory-placeholder": "Категория на Лексемата, напр. „цифра“"
+}

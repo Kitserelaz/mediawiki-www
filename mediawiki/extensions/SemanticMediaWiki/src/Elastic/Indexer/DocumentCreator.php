@@ -1,0 +1,334 @@
+<?php
+
+namespace SMW\Elastic\Indexer;
+
+use SMW\DataItems\DataItem;
+use SMW\DataItems\Property;
+use SMW\DataItems\WikiPage;
+use SMW\DataModel\SemanticData;
+use SMW\DataTypeRegistry;
+use SMW\MediaWiki\Collator;
+use SMW\Store;
+
+/**
+ * @private
+ *
+ * The structure for a document to represent Semantic MediaWiki facts and statements
+ * in Elasticsearch should be similar to:
+ *
+ * "subject": {
+ *    "title": "Foaf:knows",
+ *    "subobject": "",
+ *    "namespace": 102,
+ *    "interwiki": "",
+ *    "sortkey": "Foaf:knows"
+ * },
+ * "P:8": {
+ *    "txtField": [
+ *       "foaf knows http://xmlns.com/foaf/0.1/ Type:Page"
+ *    ]
+ * },
+ * "P:29": {
+ *    "datField": [
+ *       2458150.6958333
+ *    ]
+ * },
+ * "P:1": {
+ *    "uriField": [
+ *       "http://semantic-mediawiki.org/swivt/1.0#_wpg"
+ *    ]
+ * }
+ *
+ * @license GPL-2.0-or-later
+ * @since 3.2
+ *
+ * @author mwjames
+ */
+class DocumentCreator {
+
+	private bool $compatibilityMode = true;
+
+	private int $documentCreationDuration = 0;
+
+	private array $subEntities = [];
+
+	/**
+	 * @since 3.2
+	 */
+	public function __construct( private readonly Store $store ) {
+	}
+
+	/**
+	 * @since 3.2
+	 */
+	public function setCompatibilityMode( mixed $compatibilityMode ): void {
+		$this->compatibilityMode = (bool)$compatibilityMode;
+	}
+
+	/**
+	 * @since 3.2
+	 */
+	public function getDocumentCreationDuration(): int {
+		return $this->documentCreationDuration;
+	}
+
+	/**
+	 * @since 3.2
+	 */
+	public function newFromSemanticData( SemanticData $semanticData ): Document {
+		$time = microtime( true );
+		$this->subEntities = [];
+
+		$document = $this->newFromData( $semanticData );
+		$id = $document->getId();
+
+		foreach ( $semanticData->getSubSemanticData() as $subSemanticData ) {
+			$document->addSubDocument( $this->newFromData( $subSemanticData, $id ) );
+		}
+
+		// Adding a link between subentities can only be done after all items
+		// have been processed because pending entities don't follow any order
+		// in `SemanticData::SubSemanticData` and have therefore to be resolved
+		// first.
+		// @phan-suppress-next-line PhanEmptyForeach
+		foreach ( $this->subEntities as $oid => $value ) {
+
+			if ( !$document->hasSubDocumentById( $oid ) ) {
+				continue;
+			}
+
+			$pid = $value['pid'];
+
+			// We use an auxiliary field marker to indicate an artificial extension
+			// and avoid any confusion with a "normal" field type
+			$value = [ 'parent_id' => $value['sid'] ];
+
+			$document->getSubDocumentById( $oid )->setField( "P:$pid", $value );
+		}
+
+		$this->documentCreationDuration = (int)( microtime( true ) - $time );
+
+		return $document;
+	}
+
+	private function newFromData( SemanticData $semanticData, $parent_id = null ): Document {
+		$subject = $semanticData->getSubject();
+		$dataTypeRegistry = DataTypeRegistry::getInstance();
+
+		$id = (int)$this->store->getObjectIds()->getSMWPageID(
+			$subject->getDBKey(),
+			$subject->getNamespace(),
+			$subject->getInterwiki(),
+			$subject->getSubobjectName(),
+			false
+		);
+
+		$data = [
+			'subject' => $this->makeSubject( $subject, $subject->getSortKey() )
+		];
+
+		$rev_id = $semanticData->getExtensionData( 'revision_id' );
+		if ( $rev_id !== null ) {
+			$data['subject']['rev_id'] = (int)$rev_id;
+		}
+
+		if ( $parent_id !== null ) {
+			$data['subject']['parent_id'] = $parent_id;
+		}
+
+		$type = Document::TYPE_INSERT;
+
+		// Remove any document that has been identified as redirect to avoid
+		// having Elasticsearch to match those documents and create a subject
+		// match similar to `[[::smw-redi:Issue/1286|Issue/1286]]` (#P0904)
+		if ( $semanticData->hasProperty( new Property( '_REDI' ) ) ) {
+			$type = Document::TYPE_DELETE;
+		}
+
+		$document = new Document(
+			$id,
+			$data,
+			$type
+		);
+
+		$properties = $semanticData->getProperties();
+
+		foreach ( $properties as $property ) {
+			$values = [];
+
+			$pid = (int)$this->store->getObjectIds()->getSMWPropertyID(
+				$property
+			);
+
+			// Could be `_SKEY` ....
+			if ( $pid == 0 ) {
+				continue;
+			}
+
+			$valueType = $property->findPropertyValueType();
+
+			// Optimize terms lookup for subentities
+			$isSubDataType = $dataTypeRegistry->isSubDataType(
+				$valueType
+			);
+
+			$fieldType = $dataTypeRegistry->getFieldType(
+				$valueType
+			);
+
+			$fieldType = str_replace( '_', '', $fieldType ) . 'Field';
+			$values["$fieldType"] = [];
+
+			foreach ( $semanticData->getPropertyValues( $property ) as $dataItem ) {
+
+				$type = $dataItem->getDIType();
+
+				if ( $type === DataItem::TYPE_NUMBER ) {
+					$values["$fieldType"][] = $dataItem->getNumber();
+				} elseif ( $type === DataItem::TYPE_BOOLEAN ) {
+					$values["$fieldType"][] = $dataItem->getBoolean();
+				} elseif ( $type === DataItem::TYPE_TIME ) {
+					// `datField` (time value) is a numeric field (JD number) to
+					// enable us to use ranges on dates with values being representable
+					// from January 1, 4713 BC (proleptic Julian calendar)
+					$values["$fieldType"][] = $dataItem->getJD();
+
+					if ( !isset( $values["dat_raw"] ) ) {
+						$values["dat_raw"] = [];
+					}
+
+					// Replicate dates in the serialized raw_format to give
+					// aggregations a chance to filter dates by term
+					$values["dat_raw"][] = $dataItem->getSerialization();
+				} elseif ( $type === DataItem::TYPE_WIKIPAGE ) {
+
+					[ $oid, $valueSortKey ] = $this->store->getObjectIds()->findIdAndSortKey( $dataItem );
+
+					// T:P0434 (reference, record chain sorting)
+					// Used for `compatibilityMode`
+					//
+					// #7079 The readable title rather than `getSortKey()`. The
+					// parse path leaves the sort key of a value unset so it
+					// falls back to the DB key, while the SQLStore read path
+					// substitutes the collated `smw_sort` value. This field is
+					// copied to `text_copy` and backs `sort=<Page property>`, so
+					// it has to hold text, and it has to hold the same text no
+					// matter which path produced the data.
+					$values["$fieldType"][] = mb_convert_encoding(
+						str_replace( '_', ' ', $dataItem->getDBKey() ),
+						'UTF-8',
+						'UTF-8'
+					);
+
+					if ( !isset( $values["wpgID"] ) ) {
+						$values["wpgID"] = [];
+					}
+
+					$values["wpgID"][] = $oid;
+
+					// Memorize the parent of a subentity (subobject) as an inverse
+					// relation. This allows to restrict a condition to a subentity
+					// while building a subquery construct and avoids adding a filter
+					// during a later operation stage.
+					if ( $isSubDataType ) {
+						$this->subEntities[$oid] = [ 'pid' => $pid, 'sid' => $id ];
+					}
+
+					// Create a minimal body for an inverted relation
+					//
+					// When a query `[[-Has mother::Michael]]` inquiries a relationship
+					// on the fact of `Michael` -> `[[Has mother::Carol]] with
+					// `Carol` being redlinked (not exists as page) the query can
+					// match the object.
+					//
+					// @see also T:Q0105#8
+					if ( !$document->hasSubDocumentById( $oid ) &&
+						$dataItem instanceof WikiPage
+					) {
+						// #7079 This stub is merged into the referenced page's own
+						// document, so its sort key has to be the one the store
+						// recorded for that page. Where the store has none, fall
+						// back to the page name rather than to the referencing
+						// item, whose sort key depends on the path that produced
+						// the data.
+						$document->addSubDocument( $this->newHead(
+							$oid,
+							$dataItem,
+							$valueSortKey !== '' ? $valueSortKey : str_replace( '_', ' ', $dataItem->getDBKey() ),
+							Document::TYPE_UPSERT
+						) );
+					}
+				} elseif ( $type === DataItem::TYPE_BLOB ) {
+
+					// Used for `compatibilityMode`
+					$val = htmlspecialchars_decode( trim( $dataItem->getString() ), ENT_QUOTES );
+
+					// #3020, 3035
+					if ( $valueType === '_keyw' ) {
+						$val = $dataItem->normalize( $val );
+					}
+
+					// Remove control chars and avoid Elasticsearch to throw a
+					// "SmartSerializer.php: Failed to JSON encode: 5" since JSON requires
+					// valid UTF-8
+					$values["$fieldType"][] = TextSanitizer::removeLinks(
+						mb_convert_encoding( $val, 'UTF-8', 'UTF-8' )
+					);
+				} elseif ( $type === DataItem::TYPE_URI ) {
+
+					// Used for `compatibilityMode`
+					$values["$fieldType"][] = $dataItem->getSerialization();
+
+					if ( $property->getKey() === '_TYPE' ) {
+						$values["typeField"] = [ $dataItem->getFragment() ];
+					}
+				} else {
+					$values["$fieldType"][] = $dataItem->getSerialization();
+				}
+			}
+
+			$document->setField( "P:$pid", $values );
+		}
+
+		return $document;
+	}
+
+	private function newHead( int $id, WikiPage $subject, string $sortKey, string $type ): Document {
+		return new Document( $id, [ 'subject' => $this->makeSubject( $subject, $sortKey ) ], $type );
+	}
+
+	private function makeSubject( WikiPage $subject, string $sortKey ): array {
+		$title = $subject->getDBKey();
+
+		if ( $subject->getNamespace() !== SMW_NS_PROPERTY || !str_starts_with( $title ?? '', '_' ) ) {
+			$title = str_replace( '_', ' ', $title );
+		}
+
+		// #7079 Armoring keeps the collated key valid UTF-8 while preserving its
+		// order. It replaces a raw sort key whose non-UTF-8 bytes the conversion
+		// below turned into `?`, collapsing distinct `uca-*` keys onto each other
+		// and dropping their numeric component from the ordering. The `sort`
+		// option is no longer consulted: only the SQLStore read path sets it, and
+		// it already holds a collated value.
+		//
+		// `str_replace` mirrors `WikiPage::setSortKey` and is idempotent, so a
+		// sort key taken straight from `smw_sortkey` is normalised the same way
+		// as one that passed through the data item.
+		$sort = Collator::singleton()->armoredSortKey( str_replace( '_', ' ', $sortKey ) );
+
+		// Elasticsearch rejects a document that is not strict UTF-8, and a
+		// collation is free to emit anything
+		$sort = mb_convert_encoding( $sort, 'UTF-8', 'UTF-8' );
+
+		return [
+			'title'     => $title,
+			'subobject' => $subject->getSubobjectName(),
+			'namespace' => $subject->getNamespace(),
+			'interwiki' => $subject->getInterwiki(),
+			'sortkey'   => $sort,
+			'serialization' => $subject->getSerialization(),
+			'sha1' => bin2hex( $subject->getSha1() )
+		];
+	}
+
+}

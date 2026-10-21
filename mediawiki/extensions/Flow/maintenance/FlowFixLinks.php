@@ -2,12 +2,13 @@
 
 namespace Flow\Maintenance;
 
-use BatchRowIterator;
 use Flow\Container;
 use Flow\Data\ObjectManager;
 use Flow\LinksTableUpdater;
 use Flow\Model\Workflow;
+use MediaWiki\Deferred\LinksUpdate\LinksTable;
 use MediaWiki\Maintenance\LoggedUpdateMaintenance;
+use MediaWiki\Utils\BatchRowIterator;
 use MediaWiki\WikiMap\WikiMap;
 
 $IP = getenv( 'MW_INSTALL_PATH' );
@@ -66,7 +67,8 @@ class FlowFixLinks extends LoggedUpdateMaintenance {
 	}
 
 	protected function rebuildCoreTables() {
-		$dbw = $this->getPrimaryDB();
+		$dbProvider = $this->getServiceContainer()->getConnectionProvider();
+		$dbw = $dbProvider->getPrimaryDatabase( LinksTable::VIRTUAL_DOMAIN );
 		$dbr = Container::get( 'db.factory' )->getDB( DB_REPLICA );
 		/** @var LinksTableUpdater $linksTableUpdater */
 		$linksTableUpdater = Container::get( 'reference.updater.links-tables' );

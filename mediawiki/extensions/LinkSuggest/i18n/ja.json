@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"2nd-player",
+			"Macofe",
+			"Schu",
+			"Shirayuki",
+			"Sujiniku"
+		]
+	},
+	"linksuggest-desc": "編集ビューでリンクを編集者に提案する",
+	"tog-disablelinksuggest": "編集時にリンク補完を表示しない"
+}

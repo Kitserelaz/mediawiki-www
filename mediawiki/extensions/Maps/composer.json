@@ -49,9 +49,9 @@
 		"jmikola/geojson": "^1.0.2"
 	},
 	"require-dev": {
-		"vimeo/psalm": "^5.0.0",
+		"vimeo/psalm": "^6.0",
 		"phpstan/phpstan": "^1.4.8",
-		"mediawiki/mediawiki-codesniffer": "39.0.0"
+		"mediawiki/mediawiki-codesniffer": "51.0.1"
 	},
 	"autoload": {
 		"psr-4": {
@@ -72,9 +72,10 @@
 		"process-timeout": 0,
 		"allow-plugins": {
 			"composer/installers": true
-		}
+		},
+		"prepend-autoloader": false
 	},
-	"scripts":{
+	"scripts": {
 		"ci": "php ../../tests/phpunit/phpunit.php -c phpunit.xml.dist"
 	}
 }

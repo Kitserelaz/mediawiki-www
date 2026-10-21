@@ -9,9 +9,21 @@
 	"license-name": "GPL-2.0-or-later AND BSD-3-Clause",
 	"type": "editor",
 	"requires": {
-		"MediaWiki": ">= 1.43",
+		"MediaWiki": ">= 1.46",
 		"extensions": {
 			"WikiEditor": ">= 0.5.2"
+		}
+	},
+	"config": {
+		"CodeEditorEnabledModes": {
+			"value": {
+				"javascript": true,
+				"json": true,
+				"css": true,
+				"lua": true,
+				"vue": true
+			},
+			"description": "Temporary configuration flag to control conflicts with Extension:CodeMirror. Only modes that exist in CodeMirror need to be specified."
 		}
 	},
 	"Hooks": {
@@ -24,7 +36,8 @@
 			"class": "MediaWiki\\Extension\\CodeEditor\\Hooks",
 			"services": [
 				"UserOptionsLookup",
-				"HookContainer"
+				"HookContainer",
+				"MainConfig"
 			]
 		}
 	},
@@ -52,7 +65,6 @@
 			"dependencies": [
 				"ext.wikiEditor",
 				"ext.codeEditor.ace",
-				"jquery.ui",
 				"mediawiki.api",
 				"mediawiki.user",
 				"user.options",
@@ -113,6 +125,7 @@
 				"lib/ace/mode-javascript.js",
 				"lib/ace/mode-json.js",
 				"lib/ace/mode-css.js",
+				"lib/ace/mode-vue.js",
 				"lib/ace/mode-lua.js",
 				"lib/ace/ext-language_tools.js",
 				"lib/ace/ext-modelist.js"

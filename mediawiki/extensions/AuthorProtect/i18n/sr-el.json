@@ -1,0 +1,23 @@
+{
+	"@metadata": {
+		"authors": [
+			"Liangent",
+			"Michaello",
+			"Rancher"
+		]
+	},
+	"authorprotect": "Zaštita stranica od neautora",
+	"authorprotect-desc": "Omogućava autoru neke stranice da je zaštiti od drugih korisnika",
+	"authorprotect-notauthor": "Niste {{GENDER:$1|autor|autorka}} stranice.",
+	"authorprotect-confirm": "Promeni nivoe zaštite",
+	"authorprotect-edit": "Samo autori mogu da uređuju",
+	"authorprotect-move": "Samo autori mogu da premeštaju",
+	"authorprotect-intro": "Koristite ovaj obrazac da biste zaključali stranicu neautorima.",
+	"authorprotect-success": "Zaštita je postavljena.",
+	"protect-level-author": "Zaštiti od neautora",
+	"restriction-level-author": "Autorska zaštita",
+	"action-authorprotect": "zaštitite od ne-autora",
+	"right-authorprotect": "zaštita autorskih stranica",
+	"action-author": "uređujete stranice koje je zaštitio autor",
+	"right-author": "uređivanje stranica koje je zaštitio autor"
+}

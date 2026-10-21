@@ -3,9 +3,9 @@
 namespace MediaWiki\IPInfo\Test\Unit\Logging;
 
 use Generator;
-use ManualLogEntry;
 use MediaWiki\IPInfo\Logging\Logger;
 use MediaWiki\IPInfo\Rest\Presenter\DefaultPresenter;
+use MediaWiki\Logging\ManualLogEntry;
 use MediaWiki\Title\Title;
 use MediaWiki\User\ActorStore;
 use MediaWiki\User\UserIdentityValue;
@@ -36,7 +36,7 @@ class LoggerTest extends MediaWikiUnitTestCase {
 	 */
 	public function testLogViewDebounced(
 		string $logMethod,
-		string $action,
+		string $logAction,
 		bool $isDebounced
 	): void {
 		$performer = new UserIdentityValue( 1, 'Foo' );
@@ -139,7 +139,7 @@ class LoggerTest extends MediaWikiUnitTestCase {
 
 			$logger->expects( $this->once() )
 				->method( 'createManualLogEntry' )
-				->with( $action )
+				->with( $logAction )
 				->willReturn( $logEntry );
 		}
 
@@ -183,6 +183,14 @@ class LoggerTest extends MediaWikiUnitTestCase {
 		yield [
 			'logMethod' => 'logAccessDisabled',
 			'changeType' => Logger::ACTION_ACCESS_DISABLED
+		];
+		yield [
+			'logMethod' => 'logGlobalAccessEnabled',
+			'changeType' => Logger::ACTION_GLOBAL_ACCESS_ENABLED,
+		];
+		yield [
+			'logMethod' => 'logGlobalAccessDisabled',
+			'changeType' => Logger::ACTION_GLOBAL_ACCESS_DISABLED,
 		];
 	}
 

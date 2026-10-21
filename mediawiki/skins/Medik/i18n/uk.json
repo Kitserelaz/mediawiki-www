@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"DDPAT",
+			"Ice bulldog",
+			"Ата"
+		]
+	},
+	"skinname-medik": "Medik",
+	"medik-default": "за замовчуванням",
+	"medik-desc": "Проста і чиста тема оформлення, заснована на бібліотеці Bootstrap.",
+	"medik-font-label": "Розмір шрифту",
+	"medik-tools-menu": "Редагування та інструменти"
+}

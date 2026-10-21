@@ -14,14 +14,20 @@ module.exports = function ( grunt ) {
 			all: '.'
 		},
 		stylelint: {
+			options: {
+				cache: true,
+				fix: grunt.option( 'fix' )
+			},
 			all: [
-				'**/*.{css,less}',
+				'**/*.{css,less,vue}',
 				'!vendor/**',
-				'!node_modules/**'
+				'!node_modules/**',
+				'!coverage/**'
 			]
 		},
 		banana: conf.MessagesDirs
 	} );
 
 	grunt.registerTask( 'test', [ 'eslint', 'banana', 'stylelint' ] );
+	grunt.registerTask( 'fix', [ 'eslint', 'stylelint' ] );
 };

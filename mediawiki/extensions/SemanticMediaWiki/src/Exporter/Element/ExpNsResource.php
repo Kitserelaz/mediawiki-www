@@ -1,0 +1,142 @@
+<?php
+
+namespace SMW\Exporter\Element;
+
+use InvalidArgumentException;
+use RuntimeException;
+use SMW\DataItems\DataItem;
+
+/**
+ * A single resource (individual) for export, defined by a URI for which there
+ * also is a namespace abbreviation.
+ *
+ * @license GPL-2.0-or-later
+ * @since 2.2
+ *
+ * @author Markus Krötzsch
+ * @author mwjames
+ */
+class ExpNsResource extends ExpResource {
+
+	/**
+	 * Local part of the abbreviated URI
+	 */
+	private string $localName;
+
+	/**
+	 * Namespace URI prefix of the abbreviated URI
+	 */
+	private string $namespace;
+
+	/**
+	 * Namespace abbreviation of the abbreviated URI
+	 */
+	private string $namespaceId;
+
+	public ?bool $isUserDefined;
+
+	/**
+	 * @note The given URI must not contain serialization-specific
+	 * abbreviations or escapings, such as XML entities.
+	 *
+	 * @param string $localName Local part of the abbreviated URI
+	 * @param string $namespace Namespace URI prefix of the abbreviated URI
+	 * @param string $namespaceId Namespace abbreviation of the abbreviated URI
+	 * @param DataItem|null $dataItem
+	 *
+	 * @throws InvalidArgumentException
+	 */
+	public function __construct( $localName, $namespace, $namespaceId, ?DataItem $dataItem = null ) {
+		if ( !is_string( $localName ) ) {
+			throw new InvalidArgumentException( '$localName needs to be a string' );
+		}
+
+		if ( !is_string( $namespace ) ) {
+			throw new InvalidArgumentException( '$namespace needs to be a string' );
+		}
+
+		if ( !is_string( $namespaceId ) ) {
+			throw new InvalidArgumentException( '$namespaceId needs to be a string' );
+		}
+
+		parent::__construct( $namespace . $localName, $dataItem );
+
+		$this->localName = $localName;
+		$this->namespace = $namespace;
+		$this->namespaceId = $namespaceId;
+	}
+
+	/**
+	 * Return a qualified name for the element.
+	 */
+	public function getQName(): string {
+		return $this->namespaceId . ':' . $this->localName;
+	}
+
+	/**
+	 * Get the namespace identifier used (the part before :).
+	 */
+	public function getNamespaceId(): string {
+		return $this->namespaceId;
+	}
+
+	/**
+	 * Get the namespace URI that is used in the abbreviation.
+	 */
+	public function getNamespace(): string {
+		return $this->namespace;
+	}
+
+	/**
+	 * Get the local name (the part after :).
+	 */
+	public function getLocalName(): string {
+		return $this->localName;
+	}
+
+	/**
+	 * Check if the local name is qualifies as a local name in XML and
+	 * Turtle. The function returns true if this is surely the case, and
+	 * false if it may not be the case. However, we do not check the whole
+	 * range of allowed Unicode entities for performance reasons.
+	 */
+	public function hasAllowedLocalName(): int|false {
+		return preg_match( '/^[A-Za-z_][-A-Za-z_0-9]*$/u', $this->localName );
+	}
+
+	/**
+	 * @since  2.2
+	 */
+	public function getSerialization(): array {
+		// Use '|' as divider as it is unlikely that symbol appears within a uri
+		$serialization = [
+			'type' => self::TYPE_NSRESOURCE,
+			'uri'  => $this->localName . '|' . $this->namespace . '|' . $this->namespaceId
+		];
+
+		return $serialization + parent::getSerialization();
+	}
+
+	/**
+	 * @see ExpElement::newFromSerialization
+	 */
+	protected static function deserialize( $serialization ): self {
+		if ( !isset( $serialization['uri'] ) ) {
+			throw new RuntimeException( "Invalid serialization format, missing a uri element" );
+		}
+
+		if ( substr_count( $serialization['uri'], '|' ) < 2 ) {
+			throw new RuntimeException( "Invalid uri format, expected two '|' dividers" );
+		}
+
+		[ $localName, $namespace, $namespaceId ] = explode( '|', $serialization['uri'], 3 );
+
+		return new self(
+			$localName,
+			$namespace,
+			$namespaceId,
+			$serialization['dataitem']
+		);
+	}
+
+}

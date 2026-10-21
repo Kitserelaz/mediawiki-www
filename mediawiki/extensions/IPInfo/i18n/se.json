@@ -5,5 +5,7 @@
 		]
 	},
 	"ipinfo-property-value-usertype-library": "Girjerádju",
-	"ipinfo-property-value-proxytype-isanonymousvpn": "Anonyma VPN"
+	"ipinfo-property-value-proxytype-isanonymousvpn": "Anonyma VPN",
+	"ipinfo-active-blocks-url-text": "Loggat",
+	"ipinfo-deleted-edits-url-text": "Sihkkojuvvon rievdadusat"
 }

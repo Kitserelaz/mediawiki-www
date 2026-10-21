@@ -1,0 +1,16 @@
+{
+	"@metadata": {
+		"authors": [
+			"Afalau",
+			"Ceirios"
+		]
+	},
+	"cirrussearch-desc": "Chwiliadau Elasticsearch ar gyfer MediaWici",
+	"cirrussearch-regex-too-complex-error": "Mae'ch regex yn rhy gymhleth. Dysgwch fwy am symleiddio regex [[mw:Special:MyLanguage/Help:CirrusSearch/RegexTooComplex|yma]].",
+	"cirrussearch-now-using": "Mae'r wici hwn yn defnyddio peiriant chwilio newydd. ([[mw:Special:MyLanguage/Help:CirrusSearch|Dysgu mwy]])",
+	"cirrussearch-pref-label": "Chwiliad newydd",
+	"cirrussearch-give-feedback": "Rhowch eich adborth i ni",
+	"prefs-completion": "Cwblhau chwiliadau",
+	"cirrussearch-completion-profile-fuzzy-pref-name": "Rhagosodedig (argymhellir)",
+	"cirrussearch-completion-profile-strict-pref-name": "Modd llym (uwch)"
+}

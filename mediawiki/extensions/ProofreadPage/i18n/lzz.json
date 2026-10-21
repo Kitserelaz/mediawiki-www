@@ -1,0 +1,22 @@
+{
+	"@metadata": {
+		"authors": [
+			"Ceas08",
+			"Cem Rize",
+			"Reedy"
+		]
+	},
+	"nstab-page": "Butʼkʼa:",
+	"tooltip-ca-nstab-page": "Maxmareşi butʼkʼa ko3ʼiri",
+	"proofreadpage_image": "İmaji",
+	"proofreadpage_nextpage": "Ağani butʼkʼa",
+	"proofreadpage_specialpage_label_key": "Mgori:",
+	"proofreadpage_pages": "$2 {{PLURAL:$1|sayfa|sayfa}}",
+	"right-pagequality-admin": "Unrestricted edits to the page quality flag",
+	"proofreadpage-group-other": "Majurani",
+	"proofreadpage-button-reset-zoom-label": "Tam ozʼiramuşi",
+	"proofreadpage-indexquality-alt": "$1 doğrulanmış sayfa, $2 yalnızca düzeltilmiş sayfa, $3 düzeltilmemiş sayfa",
+	"proofreadpage-visualeditor-node-pages-inspector-tooltip": "Masvarepe",
+	"proofreadpage-visualeditor-node-pages-inspector-indexselector-yes": "Ho",
+	"proofreadpage-visualeditor-node-pages-inspector-indexselector-no": "Var"
+}

@@ -1,0 +1,26 @@
+@import 'mediawiki.skin.variables.less';
+
+.mw-ge-MatchModeSelectWidget {
+	display: flex;
+	justify-content: flex-end;
+
+	&__dropdown {
+		// Override width: 100% from OO.ui.DropdownWidget so
+		// container width adapts to text length
+		&.oo-ui-dropdownWidget {
+			width: auto;
+		}
+	}
+
+	&__popup {
+		// Minerva skin hides all popups if an overlay is open.
+		// Override display to allow to show the info popup inside of TopicFiltersDialog
+		.oo-ui-popupWidget {
+			display: block;
+		}
+	}
+
+	&__info-text {
+		padding: 8px 0;
+	}
+}

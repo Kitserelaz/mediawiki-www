@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": "Vedmaka"
+	},
+	"lockauthor-desc": "Prevents users from editing pages they haven't created",
+	"action-editall": "edit all pages",
+	"right-editall": "Edit all pages"
+}

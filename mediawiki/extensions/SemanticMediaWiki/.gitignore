@@ -1,0 +1,41 @@
+# -*- mode: gitignore; -*-
+!.*
+
+*~
+\#*\#
+*.kate-swp
+.\#*
+
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+
+vendor/
+extensions/
+build/logs/
+build/release/build-*
+node_modules/
+coverage/
+.nyc_output/
+
+composer.phar
+composer.lock
+
+.idea/
+.smw.json
+.smw.json.migrated
+.phpunit.result.cache
+
+composer
+installer
+.env
+.envrc
+conf
+expected
+
+# Operating systems
+## Mac OS X
+.DS_Store
+## Windows
+Thumbs.db

@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"Benel",
+			"Bunukwiki",
+			"Tokoabibi"
+		]
+	},
+	"apihelp-query+globalusage-param-prop": "amaminay a susin:\n;url: micunus url.\n;pageid:micunus kasabelih ID.\n;namespace:micunus pangangananay a salaedan ID.",
+	"apihelp-query+globalusage-param-limit": "atatiku papina masasiketay.",
+	"apihelp-query+globalusage-param-filterlocal": "misebseb tu tangan itiniay a pisaungay zasatu.",
+	"apihelp-query+globalusage-example-1": "maala [[:File:Example.jpg]] saungay zasatu"
+}

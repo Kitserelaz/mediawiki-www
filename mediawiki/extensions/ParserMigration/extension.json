@@ -1,0 +1,129 @@
+{
+	"name": "ParserMigration",
+	"author": [
+		"Tim Starling",
+		"C. Scott Ananian",
+		"..."
+	],
+	"version": "2.0.0",
+	"url": "https://www.mediawiki.org/wiki/Extension:ParserMigration",
+	"descriptionmsg": "parsermigration-desc",
+	"license-name": "CC0-1.0",
+	"manifest_version": 2,
+	"requires": {
+		"MediaWiki": ">= 1.43"
+	},
+	"config": {
+		"ParserMigrationEnableQueryString": {
+			"value": false,
+			"description": "Whether to enable the ?useparsoid=1 query string for article views"
+		},
+		"ParserMigrationEnableParsoidDiscussionTools": {
+			"value": false,
+			"description": "Whether to use Parsoid by default on discussion tools pages"
+		},
+		"ParserMigrationEnableParsoidArticlePages": {
+			"value": false,
+			"description": "Whether to use Parsoid by default on article pages"
+		},
+		"ParserMigrationEnableParsoidMobileFrontend": {
+			"value": true,
+			"description": "Whether to use Parsoid by default on mobile domains, intersecting with the other default configs"
+		},
+		"ParserMigrationEnableParsoidMobileFrontendTalkPages": {
+			"value": false,
+			"description": "Whether to use Parsoid by default on mobile domains for talk pages, intersecting with the other default configs"
+		},
+		"ParserMigrationUserNoticeVersion": {
+			"value": 1,
+			"description": "Updated whenever the user notice is modified sufficient to merit redisplay"
+		},
+		"ParserMigrationUserNoticeDays": {
+			"value": 7,
+			"description": "The number of days before the user notice is reshown after being dismissed"
+		},
+		"ParserMigrationCompactIndicator": {
+			"value": false,
+			"description": "Use a compact icon as a Parsoid Read Views indicator"
+		}
+	},
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\ParserMigration\\": "src/"
+	},
+	"ServiceWiringFiles": [
+		"src/ServiceWiring.php"
+	],
+	"Actions": {
+		"parsermigration-edit": "MediaWiki\\Extension\\ParserMigration\\EditAction"
+	},
+	"APIModules": {
+		"parser-migration": {
+			"class": "MediaWiki\\Extension\\ParserMigration\\ApiParserMigration",
+			"services": [
+				"RedirectLookup",
+				"RevisionLookup"
+			]
+		}
+	},
+	"MessagesDirs": {
+		"ParserMigration": [
+			"i18n",
+			"i18n/api"
+		]
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "resources",
+		"remoteExtPath": "ParserMigration/resources"
+	},
+	"ResourceModules": {
+		"ext.parsermigration.edit": {
+			"styles": "ext.parsermigration.edit.css"
+		},
+		"ext.parsermigration.notice": {
+			"class": "MediaWiki\\ResourceLoader\\CodexModule",
+			"codexStyleOnly": true,
+			"codexComponents": [
+				"CdxMessage"
+			],
+			"styles": "ext.parsermigration.notice.less",
+			"dependencies": [
+				"mediawiki.util"
+			],
+			"packageFiles": [
+				"ext.parsermigration.notice.js"
+			],
+			"messages": [
+				"parsermigration-notice-body",
+				"parsermigration-notice-title"
+			]
+		},
+		"ext.parsermigration.indicator": {
+			"class": "MediaWiki\\ResourceLoader\\CodexModule",
+			"styles": "ext.parsermigration.indicator.css",
+			"codexStyleOnly": true,
+			"codexComponents": [
+				"CdxInfoChip"
+			]
+		}
+	},
+	"DefaultUserOptions": {
+		"parsermigration": "0",
+		"parsermigration-parsoid-readviews": "0"
+	},
+	"HookHandlers": {
+		"ParserMigrationHooks": {
+			"class": "MediaWiki\\Extension\\ParserMigration\\Hooks",
+			"services": [
+				"MainConfig",
+				"UserOptionsManager",
+				"ParserMigration.Oracle"
+			]
+		}
+	},
+	"Hooks": {
+		"ArticleParserOptions": "ParserMigrationHooks",
+		"GetPreferences": "ParserMigrationHooks",
+		"SidebarBeforeOutput": "ParserMigrationHooks",
+		"ParserOutputPostCacheTransform": "ParserMigrationHooks"
+	}
+}

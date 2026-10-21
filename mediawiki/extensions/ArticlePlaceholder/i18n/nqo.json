@@ -1,0 +1,27 @@
+{
+	"@metadata": {
+		"authors": [
+			"Lancine.kounfantoh.fofana"
+		]
+	},
+	"createtopicpage": "ߞߐߜߍ ߛߌ߲ߘߌ߫",
+	"articleplaceholder-abouttopic-no-entity-error": "ߣߌ߲߬ ߕߍ߫ ߝߛߌ߬ ߘߤߊ߬ߣߍ߲߫ ID ߘߌ߫",
+	"articleplaceholder-abouttopic-create-article-title": "ߞߎߡߘߊ߫ ߞߎߘߊ ߘߏ߫ ߛߌ߲ߘߌ߫",
+	"articleplaceholder-abouttopic-create-article-label": "ߞߎߡߘߊ ߞߎ߲߬ߕߐ߮",
+	"articleplaceholder-abouttopic-create-article-mandatory": "ߞߎߡߘߊ ߞߎ߲߬ߕߐ߮ ߦߋ߫ ߛߋ߲ߛߋߘߋ߲ ߠߋ߬ ߘߌ߫.",
+	"articleplaceholder-abouttopic-create-article-button": "ߞߎߡߘߊ ߘߏ߫ ߛߌ߲ߘߌ߫",
+	"articleplaceholder-abouttopic-create-empty-article-button": "ߞߎߡߘߊ߫ ߞߎߘߊ ߘߏ߫ ߘߊߡߌ߬ߣߊ߫",
+	"articleplaceholder-abouttopic-translate-article-label": "ߓߐߖߎ߫ ߞߊ߲:",
+	"articleplaceholder-abouttopic-translate-article-button": "ߞߎߡߘߊ ߘߟߊߡߌ߬ߘߊ߬",
+	"articleplaceholder-abouttopic-create-article-submit-button": "ߊ߬ ߞߙߊߓߊ߫",
+	"articleplaceholder-abouttopic-article-exists-error": "ߞߎߡߘߊ ߘߏ߫ ߦߋ߫ ߦߋ߲߬ ߕߐ߮ ߏ߬ ߘߌ߫ ߞߘߐ߬ߡߊ߲߫.",
+	"articleplaceholder-abouttopic-lua-entity": "ߛߞߊߣߌ߲:",
+	"articleplaceholder-abouttopic-lua-reference": "ߦߟߌߡߊߛߙߋ",
+	"articleplaceholder-abouttopic-lua-identifier": "ߞߐߞߊ߲ߠߊ ߛߐ߬ߘߐ߲߬ߘߊ",
+	"articleplaceholder-createpage-title": "$1 ߛߌ߲ߘߌ߫",
+	"articleplaceholder-createpage-alreadyexists": "ߞߐߜߍ ߘߏ߫ ߦߋ߫ ߦߋ߲߬ ߞߎ߲߬ߕߐ߮ $1 ߘߌ߫ ߞߘߐ߬ߡߊ߲߫. ߘߏ߫ ߜߘߍ߫ ߛߎߥߊ߲ߘߌ߫ ߖߊ߰ߣߌ߲߫.",
+	"articleplaceholder-createpage-notitleprovided": "ߞߎ߲߬ߕߐ߰ ߡߊ߫ ߟߊߘߏ߲߬߸ ߞߎ߲߬ߕߐ߮ ߘߏ߫ ߟߊߘߏ߲߬ ߌ ߟߊ߫ ߞߐߜߍ߫ ߛߌ߲ߘߌߕߐ ߟߊ߫ ߖߊ߰ߣߌ߲߫.",
+	"articleplaceholder-createpage-invalidtitleprovided": "ߌ ߟߊ߫ ߞߎ߲߬ߕߐ߰ ߟߊߘߏ߲߬ߣߍ߲ ߓߍ߲߬ߣߍ߲߫ ߕߍ߫. ߞߎ߲߬ߕߐ߮ ߓߍ߲߬ߣߍ߲ ߠߊߘߏ߲߬ ߖߊ߰ߣߌ߲߫.",
+	"articleplaceholder-abouttopic-topmessage-text": "ߣߌ߲߬ ߦߋ߫ ߞߍߒߖߘߍߦߋ߫ ߦߋߟߌ ߟߋ߬ ߘߌ߫ ߡߍ߲ ߓߌ߲ߓߌ߲ߣߍ߲߫ ߦߋ߫ [$1 ߓߟߏߡߟߊ ߡߊ߬ ߞߊ߬ ߝߘߊ߫ {{WBREPONAME\n}} ߟߊ߫.<br /> ߞߎߡߘߊ߫ ߘߝߊߣߍ߲߫ ߕߴߦߋ߲߬ ߡߎߣߎ߲߬߸ ߞߏ߬ߣߌ߲߬ ߌ ߘߌ߫ ߛߋ߫ ߘߍ߬ߡߍ߲߬ߠߌ߲ ߞߍ߫ ߟߊ߫ ߞߊ߬ ߞߋߟߋ߲߫ ߛߌ߲ߘߌ߫]",
+	"articleplaceholder-abouttopic-icon-title": "ߞߌ߬ߓߊ߬ߙߏ߬ߦߊ"
+}

@@ -2,9 +2,6 @@
 
 namespace Flow\Maintenance;
 
-use BatchRowIterator;
-use BatchRowUpdate;
-use BatchRowWriter;
 use Flow\Collection\PostCollection;
 use Flow\Container;
 use Flow\Data\ManagerGroup;
@@ -12,7 +9,10 @@ use Flow\Exception\InvalidDataException;
 use Flow\Model\PostRevision;
 use Flow\Model\UUID;
 use MediaWiki\Maintenance\LoggedUpdateMaintenance;
-use RowUpdateGenerator;
+use MediaWiki\Utils\BatchRowIterator;
+use MediaWiki\Utils\BatchRowUpdate;
+use MediaWiki\Utils\BatchRowWriter;
+use MediaWiki\Utils\RowUpdateGenerator;
 
 $IP = getenv( 'MW_INSTALL_PATH' );
 if ( $IP === false ) {
@@ -73,7 +73,7 @@ class FlowFixLog extends LoggedUpdateMaintenance {
 	 * a Closure.
 	 *
 	 * @param string $out
-	 * @param mixed|null $channel
+	 * @param string|null $channel
 	 */
 	public function output( $out, $channel = null ) {
 		parent::output( $out, $channel );
@@ -97,9 +97,6 @@ class LogRowUpdateGenerator implements RowUpdateGenerator {
 	 */
 	protected $maintenance;
 
-	/**
-	 * @param FlowFixLog $maintenance
-	 */
 	public function __construct( FlowFixLog $maintenance ) {
 		$this->maintenance = $maintenance;
 	}
@@ -133,7 +130,7 @@ class LogRowUpdateGenerator implements RowUpdateGenerator {
 			// log_namespace & log_title used to be board, should be topic
 			$updates['log_namespace'] = $topic->getTitle()->getNamespace();
 			$updates['log_title'] = $topic->getTitle()->getDBkey();
-		} catch ( \Exception $e ) {
+		} catch ( \Exception ) {
 			$this->maintenance->error( "Couldn't load Title for log_id $logId" );
 			$updates = [];
 		}
@@ -183,7 +180,7 @@ class LogRowUpdateGenerator implements RowUpdateGenerator {
 			// this fails (likely will for old data), catch will be invoked
 			$collection->getLastRevision();
 			return $collection;
-		} catch ( InvalidDataException $e ) {
+		} catch ( InvalidDataException ) {
 			// posts used to mistakenly store revision ID instead of post ID
 
 			/** @var ManagerGroup $storage */

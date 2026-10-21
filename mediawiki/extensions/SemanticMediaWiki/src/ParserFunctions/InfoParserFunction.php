@@ -1,0 +1,116 @@
+<?php
+
+namespace SMW\ParserFunctions;
+
+use MediaWiki\Parser\Parser;
+use ParamProcessor\ProcessingResult;
+use SMW\Formatters\Highlighter;
+use SMW\MediaWiki\Outputs;
+
+/**
+ * Class that provides the {{#info}} parser function
+ *
+ * @ingroup ParserFunction
+ *
+ * @author Markus Krötzsch
+ * @author Jeroen De Dauw
+ */
+class InfoParserFunction {
+
+	public function handle( Parser $parser, ProcessingResult $result ): string|ProcessingResult {
+		if ( $result->hasFatal() ) {
+			return $this->getOutputForErrors();
+		}
+
+		$parameters = $result->getParameters();
+
+		if ( !isset( $parameters['message'] ) ) {
+			return '';
+		}
+
+		/**
+		 * Non-escaping is safe bacause a user's message is passed through parser, which will
+		 * handle unsafe HTM elements.
+		 */
+		$message = $parameters['message']->getValue();
+
+		if ( $parser->getStripState() ) {
+			$message = $parser->getStripState()->unstripBoth( $message );
+		}
+
+		// If the message contains another highlighter (caused by recursive
+		// parsing etc.) remove the tags to allow to show the text without making
+		// the JS go berserk due to having more than one `smw-highlighter`
+		if ( strpos( $message ?? '', 'smw-highlighter' ) !== false ) {
+			$message = preg_replace_callback(
+					"/" . "<span class=\"smw-highlighter\"(.*)?>(.*)?<\/span>" . "/m",
+					static function ( $matches ): string {
+						return strip_tags( $matches[0] );
+					},
+					$message ?? ''
+			);
+		}
+
+		if ( $message === '' || $message === null ) {
+			return '';
+		}
+
+		$highlighter = Highlighter::factory(
+			$parameters['icon']->getValue()
+		);
+
+		$highlighter->setContent( [
+			'caption'    => null,
+			'content'    => Highlighter::decode( $message ),
+			'maxwidth'   => $parameters['max-width']->getValue(),
+			'themeclass' => $parameters['theme']->getValue()
+		] );
+
+		$result = $highlighter->getHtml();
+
+		if ( $parser->getTitle()->isSpecialPage() ) {
+			global $wgOut;
+			Outputs::commitToOutputPage( $wgOut );
+		} else {
+			Outputs::commitToParser( $parser );
+		}
+
+		return $result;
+	}
+
+	private function getOutputForErrors(): string {
+		// TODO: see https://github.com/SemanticMediaWiki/SemanticMediaWiki/issues/1485
+		return 'A fatal error occurred in the #info parser function';
+	}
+
+	public static function getParamDefinitions(): array {
+		return [
+			[
+				'name' => 'message',
+				'message' => 'smw-info-par-message',
+			],
+			[
+				'name' => 'icon',
+				'message' => 'smw-info-par-icon',
+				'default' => 'info',
+				'values' => [ 'info', 'warning', 'error', 'note' ],
+			],
+			[
+				'name' => 'max-width',
+				'default' => '',
+				'message' => 'smw-info-par-max-width',
+			],
+			[
+				'name' => 'theme',
+				'default' => '',
+				'values' => [ 'square-border', 'square-border-light' ],
+				'message' => 'smw-info-par-theme',
+			],
+		];
+	}
+
+	public static function getDefaultParams(): array {
+		return [ 'message', 'icon' ];
+	}
+
+}

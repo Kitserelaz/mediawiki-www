@@ -2,7 +2,7 @@
 
 namespace MediaWiki\IPInfo\Logging;
 
-use ManualLogEntry;
+use MediaWiki\Logging\ManualLogEntry;
 use MediaWiki\Title\Title;
 use MediaWiki\User\ActorStore;
 use MediaWiki\User\UserIdentity;
@@ -61,13 +61,17 @@ class Logger {
 	/**
 	 * @var string
 	 */
+	public const ACTION_GLOBAL_ACCESS_ENABLED = 'enable-globally';
+
+	/**
+	 * @var string
+	 */
+	public const ACTION_GLOBAL_ACCESS_DISABLED = 'disable-globally';
+
+	/**
+	 * @var string
+	 */
 	public const LOG_TYPE = 'ipinfo';
-
-	private ActorStore $actorStore;
-
-	private IDatabase $dbw;
-
-	private int $delay;
 
 	/**
 	 * @param ActorStore $actorStore
@@ -77,15 +81,11 @@ class Logger {
 	 * @throws ParameterAssertionException if `$delay` is less than 1
 	 */
 	public function __construct(
-		ActorStore $actorStore,
-		IDatabase $dbw,
-		int $delay
+		private readonly ActorStore $actorStore,
+		private readonly IDatabase $dbw,
+		private readonly int $delay,
 	) {
 		Assert::parameter( $delay > 0, 'delay', 'delay must be positive' );
-
-		$this->actorStore = $actorStore;
-		$this->dbw = $dbw;
-		$this->delay = $delay;
 	}
 
 	/**
@@ -145,6 +145,30 @@ class Logger {
 	public function logAccessDisabled( UserIdentity $performer ): void {
 		$params = [
 			'4::changeType' => self::ACTION_ACCESS_DISABLED,
+		];
+		$this->log( $performer, $performer->getName(), self::ACTION_CHANGE_ACCESS, $params );
+	}
+
+	/**
+	 * Log when the user enables their own access globally.
+	 *
+	 * @param UserIdentity $performer
+	 */
+	public function logGlobalAccessEnabled( UserIdentity $performer ): void {
+		$params = [
+			'4::changeType' => self::ACTION_GLOBAL_ACCESS_ENABLED,
+		];
+		$this->log( $performer, $performer->getName(), self::ACTION_CHANGE_ACCESS, $params );
+	}
+
+	/**
+	 * Log when the user disables their own access globally.
+	 *
+	 * @param UserIdentity $performer
+	 */
+	public function logGlobalAccessDisabled( UserIdentity $performer ): void {
+		$params = [
+			'4::changeType' => self::ACTION_GLOBAL_ACCESS_DISABLED,
 		];
 		$this->log( $performer, $performer->getName(), self::ACTION_CHANGE_ACCESS, $params );
 	}

@@ -275,7 +275,7 @@ ve.ui.MWGalleryDialog.prototype.initialize = function () {
 		'packed-hover',
 		'slideshow'
 	].map( ( data ) => new OO.ui.MenuOptionWidget( {
-		data: data,
+		data,
 		// Messages used here:
 		// * visualeditor-mwgallerydialog-mode-dropdown-label-traditional
 		// * visualeditor-mwgallerydialog-mode-dropdown-label-nolines
@@ -413,7 +413,7 @@ ve.ui.MWGalleryDialog.prototype.getSetupProcess = function ( data ) {
 					const imageCaptionNode = image.getCaptionNode();
 					imageTitles.push( resource );
 					this.initialImageData.push( {
-						resource: resource,
+						resource,
 						altText: image.getAttribute( 'altText' ),
 						altTextSame: image.getAttribute( 'altTextSame' ),
 						href: image.getAttribute( 'href' ),
@@ -435,7 +435,7 @@ ve.ui.MWGalleryDialog.prototype.getSetupProcess = function ( data ) {
 				// Populate menu and edit panels
 				this.imagesPromise = this.requestImages( {
 					titles: imageTitles
-				} ).done( () => {
+				} ).then( () => {
 					this.onHighlightItem();
 				} );
 
@@ -621,7 +621,7 @@ ve.ui.MWGalleryDialog.prototype.requestImages = function ( options ) {
 	const promises = options.titles.map( ( title ) => ve.init.platform.galleryImageInfoCache.get( title ) );
 
 	return ve.promiseAll( promises )
-		.done( ( ...args ) => {
+		.then( ( ...args ) => {
 			const resp = {};
 			options.titles.forEach( ( title, i ) => {
 				resp[ title ] = args[ i ];
@@ -704,7 +704,7 @@ ve.ui.MWGalleryDialog.prototype.addNewImage = function ( title ) {
 	// Request image
 	this.requestImages( {
 		titles: [ title ]
-	} ).done( () => {
+	} ).then( () => {
 		// populate edit panel with the new image
 		const items = this.galleryGroup.items;
 		this.onHighlightItem( items[ items.length - 1 ] );
@@ -748,19 +748,21 @@ ve.ui.MWGalleryDialog.prototype.onSearchResultsChoose = function ( item ) {
  * Handle click event for the remove button
  */
 ve.ui.MWGalleryDialog.prototype.onRemoveItem = function () {
+	const removedItemIndex = this.galleryGroup.items.indexOf( this.highlightedItem );
 	// Remove the highlighted item
 	this.galleryGroup.removeItems( [ this.highlightedItem ] );
 
 	// Highlight another item, or show the search panel if the gallery is now empty
-	this.onHighlightItem();
+	this.onHighlightItem( undefined, removedItemIndex !== -1 ? removedItemIndex : undefined );
 };
 
 /**
  * Handle clicking on an image in the menu
  *
  * @param {ve.ui.MWGalleryItemWidget} [item] The item that was clicked on
+ * @param {number} [removedItemIndex] Index of just-removed item
  */
-ve.ui.MWGalleryDialog.prototype.onHighlightItem = function ( item ) {
+ve.ui.MWGalleryDialog.prototype.onHighlightItem = function ( item, removedItemIndex ) {
 	// Unhighlight previous item
 	if ( this.highlightedItem ) {
 		this.highlightedItem.toggleHighlighted( false );
@@ -771,8 +773,15 @@ ve.ui.MWGalleryDialog.prototype.onHighlightItem = function ( item ) {
 	this.toggleSearchPanel( false );
 
 	// Highlight new item.
-	// If no item was given, highlight the first item in the gallery.
-	item = item || this.galleryGroup.items[ 0 ];
+	if ( removedItemIndex !== undefined ) {
+		// The removed item might have been the last item in the list, in which
+		// case highlight the new last item.
+		const index = Math.min( removedItemIndex, this.galleryGroup.items.length - 1 );
+		item = this.galleryGroup.items[ index ];
+	} else if ( !item ) {
+		// If no item was given, highlight the first item in the gallery.
+		item = this.galleryGroup.items[ 0 ];
+	}
 
 	if ( !item ) {
 		// Show the search panel if the gallery is empty

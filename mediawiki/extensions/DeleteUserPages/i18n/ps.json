@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"شاه زمان پټان"
+		]
+	},
+	"deleteuserpages-desc": "کارنانو ته د خپل کارن‌مخ ړنگولو پرېښولی ورکول",
+	"action-delete-rootuserpages": "خپل کارن او د کارن خبرو اترو مخ ړنگول",
+	"right-delete-rootuserpages": "خپل کارن او د کارن خبرو اترو مخ ړنگول",
+	"action-delete-usersubpages": "د خپل کارن‌مخ څېرمه مخونه ړنگول",
+	"right-delete-usersubpages": "د خپل کارن‌مخ څېرمه مخونه ړنگول"
+}

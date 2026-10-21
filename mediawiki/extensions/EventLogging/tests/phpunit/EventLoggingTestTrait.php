@@ -2,23 +2,21 @@
 
 namespace MediaWiki\Extension\EventLogging\Test;
 
-use Wikimedia\TestingAccessWrapper;
-use Wikimedia\Timestamp\ConvertibleTimestamp;
+use DateTimeImmutable;
 
 /**
  * A handful of helpful assertions that can be made about events in unit and integration tests.
  */
 trait EventLoggingTestTrait {
 	public function assertIsTimestamp( string $timestamp ): void {
-		// FIXME: Find a better way to assert "this is an ISO 8601 timestamp"
-		$this->assertMatchesRegularExpression(
-			TestingAccessWrapper::newFromClass( ConvertibleTimestamp::class )->regexes['TS_ISO_8601'],
-			$timestamp
-		);
 		$this->assertStringEndsWith( 'Z', $timestamp );
+		$this->assertInstanceOf(
+			DateTimeImmutable::class,
+			DateTimeImmutable::createFromFormat( DateTimeImmutable::ATOM, $timestamp )
+		);
 	}
 
-	public function assertEventCanBeIngested( $event, $schema, $streamName ): void {
+	public function assertEventCanBeIngested( array $event, string $schema, string $streamName ): void {
 		$this->assertSame( $schema, $event['$schema'] );
 
 		$this->assertArrayHasKey( 'meta', $event );

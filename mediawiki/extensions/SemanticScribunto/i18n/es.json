@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": [
+			"Macofe"
+		]
+	},
+	"smw-scribunto-desc": "Una extensión de Semantic MediaWiki para admitir nativamente la extensión Scribunto"
+}

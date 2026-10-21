@@ -1,0 +1,329 @@
+<?php
+
+namespace SMW\SQLStore\EntityStore;
+
+use Psr\Log\LoggerAwareTrait;
+use RuntimeException;
+use SMW\DataItems\DataItem;
+use SMW\DataItems\Property;
+use SMW\DataItems\WikiPage;
+use SMW\DataModel\SemanticData;
+use SMW\RequestOptions;
+use SMW\SQLStore\PropertyTableDefinition;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 3.0
+ *
+ * @author mwjames
+ */
+class CachingSemanticDataLookup {
+
+	use LoggerAwareTrait;
+
+	/**
+	 * Cache for SemanticData dataItems, indexed by SMW ID.
+	 */
+	private static array $data = [];
+
+	/**
+	 * Like SQLStore::data, but containing flags indicating
+	 * completeness of the SemanticData objs.
+	 */
+	private static array $state = [];
+
+	/**
+	 * >0 while getSemanticData runs, used to prevent nested calls from clearing
+	 * the cache while another call runs and is about to fill it with data
+	 */
+	private static int $lookupCount = 0;
+
+	private static array $prefetch = [];
+
+	/**
+	 * @since 3.0
+	 */
+	public function __construct(
+		private SemanticDataLookup $semanticDataLookup,
+	) {
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function lockCache(): void {
+		self::$lookupCount++;
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function unlockCache(): void {
+		self::$lookupCount--;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param int $id
+	 */
+	public function invalidateCache( $id ): void {
+		unset( self::$data[$id] );
+		unset( self::$state[$id] );
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public static function clear(): void {
+		self::$data = [];
+		self::$state = [];
+		self::$prefetch = [];
+		self::$lookupCount = 0;
+	}
+
+	/**
+	 * Helper method to make sure there is a cache entry for the data about
+	 * the given subject with the given ID.
+	 *
+	 * @todo The management of this cache should be revisited.
+	 *
+	 * @since 3.0
+	 *
+	 * @param int $id
+	 * @param WikiPage $subject
+	 *
+	 * @return void
+	 */
+	public function initLookupCache( $id, WikiPage $subject ): void {
+		// *** Prepare the cache ***//
+		if ( !isset( self::$data[$id] ) ) {
+			self::$data[$id] = $this->semanticDataLookup->newStubSemanticData( $subject );
+			self::$state[$id] = [];
+		}
+
+		// Issue #622
+		// If a redirect was cached preceding this request and points to the same
+		// subject id ensure that in all cases the requested subject matches with
+		// the selected DB id
+		if ( self::$data[$id]->getSubject()->getHash() !== $subject->getHash() ) {
+			self::$data[$id] = $this->semanticDataLookup->newStubSemanticData( $subject );
+			self::$state[$id] = [];
+		}
+
+		// It is not so easy to find the sweet spot between cache size and
+		// performance gains (both memory and time), The value of 20 was chosen
+		// by profiling runtimes for large inline queries and heavily annotated
+		// pages. However, things might have changed in the meantime ...
+		if ( ( count( self::$data ) > 20 ) && ( self::$lookupCount == 1 ) ) {
+			self::$data = [ $id => self::$data[$id] ];
+			self::$state = [ $id => self::$state[$id] ];
+		}
+	}
+
+	/**
+	 * Set the semantic data lookup cache to hold exactly the given value for the
+	 * given ID.
+	 *
+	 * @since 3.0
+	 *
+	 * @param int $id
+	 * @param SemanticData $semanticData
+	 */
+	public function setLookupCache( $id, SemanticData $semanticData ): void {
+		self::$data[$id] = $this->semanticDataLookup->newStubSemanticData(
+			$semanticData
+		);
+
+		self::$state[$id] = $this->semanticDataLookup->getTableUsageInfo(
+			$semanticData
+		);
+	}
+
+	/**
+	 * Helper method to make sure there is a cache entry for the data about
+	 * the given subject with the given ID.
+	 *
+	 * @since 3.0
+	 *
+	 * @param int $id
+	 */
+	public function getSemanticDataById( $id ) {
+		if ( !isset( self::$data[$id] ) ) {
+			throw new RuntimeException( 'Data are not initialized.' );
+		}
+
+		return self::$data[$id];
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param PropertyTableDefinition $propertyTableDef
+	 * @param Property $property
+	 * @param RequestOptions|null $requestOptions
+	 *
+	 * @return RequestOptions|null
+	 */
+	public function newRequestOptions(
+		PropertyTableDefinition $propertyTableDef,
+		Property $property,
+		?RequestOptions $requestOptions = null
+	): ?RequestOptions {
+		return $this->semanticDataLookup->newRequestOptions(
+			$propertyTableDef,
+			$property,
+			$requestOptions
+		);
+	}
+
+	/**
+	 * @since 3.1
+	 *
+	 * @param array $subjects
+	 * @param Property $dataItem
+	 * @param PropertyTableDefinition $propertyTableDef
+	 * @param RequestOptions|null $requestOptions
+	 *
+	 * @return array
+	 */
+	public function prefetchDataFromTable(
+		array $subjects,
+		Property $dataItem,
+		PropertyTableDefinition $propertyTableDef,
+		?RequestOptions $requestOptions = null
+	) {
+		$hash = '';
+
+		$hash .= $dataItem->getSerialization();
+
+		if ( $requestOptions !== null ) {
+			$hash .= $requestOptions->getHash();
+		}
+
+		// Use `PREFETCH_FINGERPRINT` if available otherwise make a fingerprint
+		// to allow for caching possible repeated requests
+		if ( $requestOptions === null ||
+			$requestOptions->getOption( RequestOptions::PREFETCH_FINGERPRINT ) === null
+		) {
+			foreach ( $subjects as $subject ) {
+				$hash .= $subject->getHash();
+			}
+		}
+
+		$hash = md5( $hash );
+
+		if ( isset( self::$prefetch[$hash] ) && self::$prefetch[$hash] !== [] ) {
+			return self::$prefetch[$hash];
+		}
+
+		$data = $this->semanticDataLookup->prefetchDataFromTable(
+			$subjects,
+			$dataItem,
+			$propertyTableDef,
+			$requestOptions
+		);
+
+		self::$prefetch[$hash] = $data;
+		return self::$prefetch[$hash];
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param int $id
+	 * @param DataItem|null $dataItem
+	 * @param PropertyTableDefinition $propertyTableDef
+	 * @param RequestOptions|null $requestOptions
+	 *
+	 * @return mixed[]
+	 */
+	public function fetchSemanticDataFromTable(
+		$id,
+		?DataItem $dataItem,
+		PropertyTableDefinition $propertyTableDef,
+		?RequestOptions $requestOptions = null
+	): array {
+		return $this->semanticDataLookup->fetchSemanticDataFromTable(
+			$id,
+			$dataItem,
+			$propertyTableDef,
+			$requestOptions
+		);
+	}
+
+	/**
+	 * Fetch and cache the data about one subject for one particular table
+	 *
+	 * @param int $id
+	 * @param DataItem|null $dataItem
+	 * @param PropertyTableDefinition $propertyTableDef
+	 * @param RequestOptions|null $requestOptions
+	 *
+	 * @return SemanticData
+	 */
+	public function getSemanticData(
+		$id,
+		?DataItem $dataItem,
+		PropertyTableDefinition $propertyTableDef,
+		?RequestOptions $requestOptions = null
+	) {
+		// Avoid the cache when a request is constrainted
+		if ( $requestOptions !== null || !$dataItem instanceof WikiPage ) {
+			return $this->semanticDataLookup->getSemanticData(
+				$id,
+				$dataItem,
+				$propertyTableDef,
+				$requestOptions
+			);
+		}
+
+		return $this->fetchFromCache( $id, $dataItem, $propertyTableDef );
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param WikiPage $subject
+	 *
+	 * @return StubSemanticData
+	 */
+	public function newStubSemanticData( WikiPage $subject ) {
+		return $this->semanticDataLookup->newStubSemanticData( $subject );
+	}
+
+	private function fetchFromCache(
+		$id,
+		WikiPage $subject,
+		PropertyTableDefinition $propertyTableDef
+	) {
+		// Do not clear the cache when called recursively.
+		$this->lockCache();
+		$this->initLookupCache( $id, $subject );
+
+		// @see also setLookupCache
+		$name = $propertyTableDef->getName() ?? '';
+
+		if ( isset( self::$state[$id][$name] ) ) {
+			$this->unlockCache();
+			return self::$data[$id];
+		}
+
+		$data = $this->semanticDataLookup->fetchSemanticDataFromTable(
+			$id,
+			$subject,
+			$propertyTableDef
+		);
+
+		foreach ( $data as $d ) {
+			self::$data[$id]->addPropertyStubValue( reset( $d ), end( $d ) );
+		}
+
+		self::$state[$id][$name] = true;
+
+		$this->unlockCache();
+
+		return self::$data[$id];
+	}
+
+}

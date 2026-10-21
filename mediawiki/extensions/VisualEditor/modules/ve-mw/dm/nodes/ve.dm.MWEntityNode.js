@@ -40,7 +40,7 @@ ve.dm.MWEntityNode.static.toDataElement = function ( domElements ) {
 			character: domElements[ 0 ].textContent
 		}
 	};
-	if ( domElements[ 0 ].getAttribute( 'typeof' ).indexOf( 'mw:DisplaySpace' ) !== -1 ) {
+	if ( domElements[ 0 ].getAttribute( 'typeof' ).includes( 'mw:DisplaySpace' ) ) {
 		dataElement.attributes.displaySpace = true;
 	}
 	return dataElement;
@@ -53,6 +53,10 @@ ve.dm.MWEntityNode.static.toDomElements = function ( dataElement, doc ) {
 		dataElement.attributes.displaySpace ? 'mw:DisplaySpace' : 'mw:Entity' );
 	domElement.appendChild( textNode );
 	return [ domElement ];
+};
+
+ve.dm.MWEntityNode.static.getText = function ( element ) {
+	return element.attributes.character;
 };
 
 /* Registration */

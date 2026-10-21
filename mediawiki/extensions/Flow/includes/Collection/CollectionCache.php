@@ -4,7 +4,7 @@ namespace Flow\Collection;
 
 use Flow\Data\Listener\AbstractListener;
 use Flow\Model\AbstractRevision;
-use MapCacheLRU;
+use Wikimedia\ObjectCache\MapCacheLRU;
 
 /**
  * Cache any useful collection data. Listens to lifecycle events for
@@ -58,22 +58,26 @@ class CollectionCache extends AbstractListener {
 		return $revision->getCollectionId()->getAlphadecimal() . '-' . $revision->getRevisionType() . '-last-rev';
 	}
 
+	/** @inheritDoc */
 	public function onAfterClear() {
 		$this->lastRevCache = new MapCacheLRU( self::LAST_REV_CACHE_MAX );
 	}
 
+	/** @inheritDoc */
 	public function onAfterInsert( $object, array $new, array $metadata ) {
 		if ( $object instanceof AbstractRevision ) {
 			$this->lastRevCache->clear( $this->getLastRevCacheKey( $object ) );
 		}
 	}
 
+	/** @inheritDoc */
 	public function onAfterUpdate( $object, array $old, array $new, array $metadata ) {
 		if ( $object instanceof AbstractRevision ) {
 			$this->lastRevCache->clear( $this->getLastRevCacheKey( $object ) );
 		}
 	}
 
+	/** @inheritDoc */
 	public function onAfterRemove( $object, array $old, array $metadata ) {
 		if ( $object instanceof AbstractRevision ) {
 			$this->lastRevCache->clear( $this->getLastRevCacheKey( $object ) );

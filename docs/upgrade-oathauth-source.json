@@ -1,0 +1,44 @@
+{
+  "component": "mediawiki/extensions/OATHAuth",
+  "baseline": "b65dea3a6dcaaa8437601268d104b895ce93293c",
+  "target": "5443fe89e833330f31e80dbea5f9c25f74cd2ce6",
+  "preserved_changes": [
+    {
+      "path": "i18n/ja.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/lb.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/sh-latn.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/sr-el.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/zh-hans.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "src/Hook/UpdateTables.php",
+      "change": "local-source-edit"
+    }
+  ],
+  "dependency_status": "requires-lock-regeneration",
+  "upstream_development_files_restored": [
+    ".eslintignore",
+    ".eslintrc.json",
+    ".gitignore",
+    ".gitreview",
+    ".phan/config.php",
+    ".phpcs.xml",
+    ".stylelintrc.json",
+    "Gruntfile.js",
+    "package-lock.json",
+    "package.json"
+  ]
+}

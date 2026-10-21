@@ -31,10 +31,26 @@ class ConvertLqtPageOnLocalWiki extends Maintenance {
 		$this->addOption( 'srcpage', 'Page name of the source page to import from.', true, true );
 		$this->addOption( 'logfile', 'File to read and store associations between imported items and their sources', true, true );
 		$this->addOption( 'debug', 'Include debug information to progress report' );
+		$this->addOption( 'dryrun', 'Show what would be converted, but do not make any changes.' );
+		$this->addOption( 'ignoreflowreadonly', 'Ignore $wgFlowReadOnly if set, allowing boards to be created.' );
+		$this->addOption( 'convertempty', 'Convert pages even if they have no threads.' );
+		$this->addOption( 'insert-ignore', 'Ignore duplicate key insert errors.' );
 		$this->requireExtension( 'Flow' );
 	}
 
 	public function execute() {
+		global $wgFlowReadOnly;
+
+		if ( $wgFlowReadOnly ) {
+			if ( $this->getOption( 'ignoreflowreadonly', false ) ) {
+				// Make Flow writable for the duration of the script
+				$wgFlowReadOnly = false;
+			} else {
+				$this->error( 'Flow is in read-only mode. Use --ignoreflowreadonly to continue.' );
+				return;
+			}
+		}
+
 		/** @var OccupationController $occupationController */
 		$occupationController = MediaWikiServices::getInstance()->getService( 'FlowTalkpageManager' );
 		$talkPageManagerUser = $occupationController->getTalkpageManager();
@@ -80,9 +96,10 @@ class ConvertLqtPageOnLocalWiki extends Maintenance {
 		$logger->info( "Starting LQT conversion of page $srcPageName" );
 
 		$srcTitle = Title::newFromText( $srcPageName );
-		$converter->convertAll( [
-			$srcTitle,
-		] );
+		$dryRun = $this->getOption( 'dryrun', false );
+		$convertEmpty = $this->getOption( 'convertempty', false );
+
+		$converter->convertAll( [ $srcTitle ], $dryRun, $convertEmpty );
 
 		$logger->info( "Finished LQT conversion of page $srcPageName" );
 	}

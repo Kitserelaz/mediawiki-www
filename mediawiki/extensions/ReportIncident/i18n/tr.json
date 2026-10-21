@@ -1,0 +1,40 @@
+{
+	"@metadata": {
+		"authors": [
+			"Hedda",
+			"Joseph"
+		]
+	},
+	"reportincident-desc": "Olay Bildirim Sistemi uzantısı.",
+	"reportincident-report-btn-label": "Bildir",
+	"reportincident-dialog-close-btn": "Kapat",
+	"reportincident-dialog-proceed-btn": "Bildiride bulunmaya devam edin",
+	"reportincident-dialog-back-btn": "Geri",
+	"reportincident-dialog-submit-btn": "Gönder",
+	"reportincident-dialog-title": "Bir olayı bildirin",
+	"reportincident-dialog-first-step-cancel-btn": "Bildirimde bulunmak istemiyorum",
+	"reportincident-dialog-harassment-type-label": "Ne tür bir davranış?",
+	"reportincident-dialog-additional-details-input-label": "Ek detaylar",
+	"reportincident-dialog-additional-details-input-placeholder": "Bir incelemeci için yararlı olabilecek bağlamı ekleyin",
+	"reportincident-dialog-optional-label": "(isteğe bağlı)",
+	"reportincident-dialog-violator-label": "Bildirmek {{GENDER:|istediğiniz}} kullanıcı",
+	"reportincident-dialog-violator-placeholder-text": "Kimi bildiriyorsunuz?",
+	"reportincident-dialog-harassment-type-hate-speech-or-discrimination": "Nefret söylemi veya ayrımcılık",
+	"reportincident-dialog-harassment-type-sexual-harassment": "Cinsel taciz",
+	"reportincident-dialog-harassment-type-threats-of-violence": "Şiddet tehditleri",
+	"reportincident-dialog-harassment-type-intimidation": "Gözdağı, saldırganlık, isim takma",
+	"reportincident-dialog-harassment-type-something-else": "Başka bir şey",
+	"reportincident-dialog-something-else-input-placeholder": "Yukarıda listelenmeyen davranışları belirtin.",
+	"reportincident-dialog-harassment-intro-text": "{{SITENAME}} sitesinde uygunsuz davranışlara tolerans gösterilmiyor.",
+	"reportincident-dialog-harassment-lead-in-to-harassment-examples": "[[Foundation:Special:MyLanguage/Policy:Universal_Code_of_Conduct|Evrensel Davranış Kuralları]] uyarınca kabul edilemez davranışlar aşağıdakileri içerir ancak bunlarla sınırlı değildir:",
+	"reportincident-dialog-harassment-example-insults": "Tekrarlanan hakaretler",
+	"reportincident-dialog-harassment-example-sexual-harassment": "Cinsel taciz",
+	"reportincident-dialog-harassment-example-threats": "Tehditler",
+	"reportincident-dialog-harassment-example-encouraging-harm": "Başkalarına zarar vermeyi teşvik etmek",
+	"reportincident-dialog-harassment-example-doxing": "Kişisel verilerin ifşa edilmesi (Doxing)",
+	"reportincident-dialog-harassment-example-hounding": "Takip etme",
+	"reportincident-dialog-harassment-example-trolling": "Trolleme",
+	"reportincident-dialog-engage-header": "Diyaloğa nasıl girilir",
+	"reportincident-dialog-engage-text": "Eğer kendinizi güvende hissediyorsanız sizi rahatsız eden kişiyle konuşmayı deneyebilirsiniz. Bu kişileri, Vikipedi'deki Evrensel Davranış Kuralları hakkında ve davranışlarının kabul edilemez olduğu konusunda bilgilendirin. Bu durum, bazen tacizin durdurulmasına yardımcı olabilir.",
+	"reportincident-dialog-admin-review": "Raporunuz incelenmek üzere [$1 bir hizmetliye] gönderilecek"
+}

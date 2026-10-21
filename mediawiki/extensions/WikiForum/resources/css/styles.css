@@ -1,0 +1,376 @@
+/* CSS styles for WikiForum extension */
+.mw-wikiforum-frame {
+	clear: both; /* @see http://bugzilla.shoutwiki.com/show_bug.cgi?id=190 */
+	width: 100%;
+	background: #f6f6f6;
+	border: 1px dotted #ccc;
+	margin-bottom: 1.2em;
+	padding: 10px;
+	box-sizing: border-box;
+}
+
+.mw-wikiforum-error-msg {
+	padding: 3px;
+}
+
+table.mw-wikiforum-thread-list {
+	border: 1px solid #ddd;
+	width: 100%;
+}
+
+table.mw-wikiforum-headerrow {
+	clear: both; /* @see http://bugzilla.shoutwiki.com/show_bug.cgi?id=190 */
+	width: 100%;
+	font-size: 10px;
+	font-family: 'Verdana', 'Arial', sans-serif;
+	margin-top: 1.2em;
+	background: transparent;
+}
+
+table.mw-wikiforum-footerrow {
+	width: 100%;
+	font-size: 10px;
+	font-family: 'Verdana', 'Arial', sans-serif;
+	margin-bottom: 1.2em;
+	text-transform: uppercase;
+}
+
+td.mw-wikiforum-leftside {
+	text-align: left;
+}
+
+td.mw-wikiforum-rightside {
+	text-align: right;
+}
+
+.mw-wikiforum-category-list,
+.mw-wikiforum-forum-list {
+	width: 100%;
+	border: 1px solid #a3bfb1;
+	border-collapse: collapse;
+	background: transparent;
+}
+
+.mw-wikiforum-category-list tr,
+.mw-wikiforum-forum-list tr {
+	border: 1px solid #a3bfb1;
+}
+
+.mw-wikiforum-mainpage tr {
+	border-top: 1px solid #a3bfb1;
+	border-bottom: 1px solid #a3bfb1;
+}
+
+table.mw-wikiforum-mainpage {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.mw-wikiforum-mainpage .mw-wikiforum-header-row {
+	background: #f2ddce;
+	height: 2.4em;
+}
+
+.mw-wikiforum-mainpage td.mw-wikiforum-title {
+	padding: 5px;
+}
+
+.mw-wikiforum-header-row {
+	background: #cedff2;
+	height: 3em;
+}
+
+.mw-wikiforum-header-row th {
+	font-family: 'Verdana', 'Arial', sans-serif;
+	font-size: 10px;
+}
+
+.mw-wikiforum-header-row .mw-wikiforum-title {
+	font-family: inherit;
+	font-size: 17px;
+	font-weight: bold;
+	text-align: left;
+	padding-left: 10px;
+}
+
+th.mw-wikiforum-value {
+	width: 90px;
+	text-align: center;
+}
+
+th.mw-wikiforum-admin {
+	text-align: right;
+}
+
+th.mw-wikiforum-lastpost {
+	width: 180px;
+	text-align: center;
+}
+
+tr.mw-wikiforum-normal {
+	background: #f5faff;
+}
+
+tr.mw-wikiforum-sticky {
+	background: #e5eaff;
+}
+
+td.mw-wikiforum-title {
+	text-align: left;
+	padding-left: 10px;
+}
+
+td.mw-wikiforum-value {
+	text-align: center;
+	font-family: 'Verdana', 'Arial', sans-serif;
+	font-size: 10px;
+}
+
+td.mw-wikiforum-admin {
+	text-align: right;
+	font-family: 'Verdana', 'Arial', sans-serif;
+	font-size: 10px;
+}
+
+p.mw-wikiforum-issue {
+	font-weight: bold;
+}
+
+/* stylelint-disable block-no-empty */
+p.mw-wikiforum-thread {
+}
+/* stylelint-enable block-no-empty */
+
+p.mw-wikiforum-descr {
+	color: #999;
+	font-family: 'Verdana', 'Arial', sans-serif;
+	font-size: 10px;
+}
+
+span.small {
+	font-size: 10px;
+	font-family: 'Verdana', 'Arial', sans-serif;
+	font-weight: normal;
+}
+
+table.mw-wikiforum-posted {
+	color: #999;
+	font-family: 'Verdana', 'Arial', sans-serif;
+	font-size: 10px;
+	border-top: 1px dashed #999;
+	width: 100%;
+	background: transparent;
+	margin-top: 16px;
+	margin-bottom: 6px;
+}
+
+th.mw-wikiforum-thread-top {
+	font-weight: bold;
+	padding: 5px 10px;
+	border: 1px solid #cef2e0;
+	background: #e5eaff;
+	text-align: left;
+}
+
+td.mw-wikiforum-thread-main {
+	padding: 10px;
+	border: 1px solid #cef2e0;
+	background: #deeff3;
+}
+
+td.mw-wikiforum-thread-sub {
+	/* stylelint-disable-next-line length-zero-no-unit */
+	padding: 0px 10px;
+	border: 1px solid #cef2e0;
+	background: #f0f0ea;
+}
+
+/* Search box */
+.mw-wikiforum-searchbox {
+	float: right;
+	margin-bottom: 8px;
+	border: 1px dotted #ccc;
+	text-align: left;
+	background: #f6f6f6;
+}
+
+.mw-wikiforum-searchbox-icon {
+	background-image: url( ../images/zoom.png );
+	margin: 1px 3px -2px 5px;
+}
+
+#mw-wikiforum-searchbox-text {
+	border: 0;
+	height: 20px;
+	width: 200px;
+	background: transparent;
+}
+
+/* Quote styling */
+.mw-wikiforum-bq {
+	padding: 10px;
+	border: 1px dotted #ccc;
+	background: #f9f9f9;
+	/* Restrict quote elements' width so that SocialProfile avatars don't overlap them
+	 * For some skins, 85% would be acceptable also, but 80% is the one that works
+	 * for all skins I tested (except Dusk, but Dusk is a special case anyway, given
+	 * its insanely narrow content area, which thankfully isn't a standard)
+	 */
+	max-width: 80%;
+}
+
+.mw-wikiforum-bq-posted {
+	color: #bbb;
+	font-family: 'Verdana', 'Arial', sans-serif;
+	font-size: 10px;
+	border-bottom: 1px dotted #999;
+	background: transparent;
+	margin-bottom: 6px;
+}
+
+.mw-wikiforum-bq-marks {
+	color: #bbb;
+	font-family: 'Times New Roman', serif;
+	font-size: 30px;
+	background: transparent;
+	margin: 0 5px;
+}
+
+/* Align SocialProfile avatars to the right side and give it a bit of padding */
+.wikiforum-avatar-image {
+	float: right;
+	padding-bottom: 5px;
+}
+
+/**
+ * Fix for http://bugzilla.shoutwiki.com/show_bug.cgi?id=191 (long words do not wrap)
+ *
+ * @see http://stackoverflow.com/questions/7284990/css-how-to-break-long-words-in-a-table-td/11423675#11423675
+ * @see http://webdesignerwall.com/tutorials/word-wrap-force-text-to-wrap
+ */
+td.mw-wikiforum-thread-main,
+td.mw-wikiforum-thread-sub {
+	word-wrap: break-word;
+	word-break: break-all;
+	table-layout: fixed;
+}
+
+/* Icons */
+.mw-wikiforum-icon {
+	width: 16px;
+	height: 16px;
+	background-repeat: no-repeat;
+	display: inline-flex;
+	line-height: 1;
+	text-rendering: auto;
+	vertical-align: -0.125em;
+}
+
+.mw-wikiforum-error-icon {
+	background-image: url( ../images/exclamation.png );
+}
+
+.mw-wikiforum-add-forum-icon {
+	background-image: url( ../images/folder_add.png );
+}
+
+.mw-wikiforum-edit-category-icon {
+	background-image: url( ../images/database_edit.png );
+}
+
+.mw-wikiforum-delete-category-icon {
+	background-image: url( ../images/database_delete.png );
+}
+
+.mw-wikiforum-sort-up-icon {
+	background-image: url( ../images/arrow_up.png );
+}
+
+.mw-wikiforum-sort-down-icon {
+	background-image: url( ../images/arrow_down.png );
+}
+
+.mw-wikiforum-forum-name-icon {
+	background-image: url( ../images/folder.png );
+}
+
+.mw-wikiforum-edit-forum-icon {
+	background-image: url( ../images/folder_edit.png );
+}
+
+.mw-wikiforum-delete-forum-icon {
+	background-image: url( ../images/folder_delete.png );
+}
+
+.mw-wikiforum-note-add-icon {
+	background-image: url( ../images/note_add.png );
+}
+
+.mw-wikiforum-quote-icon {
+	background-image: url( ../images/comments_add.png );
+}
+
+.mw-wikiforum-edit-reply-icon {
+	background-image: url( ../images/comment_edit.png );
+}
+
+.mw-wikiforum-delete-reply-icon {
+	background-image: url( ../images/comment_delete.png );
+}
+
+.mw-wikiforum-sticky-icon {
+	background-image: url( ../images/tag_blue.png );
+}
+
+.mw-wikiforum-thread-closed-icon,
+.mw-wikiforum-lock-icon {
+	background-image: url( ../images/lock.png );
+}
+
+.mw-wikiforum-new-thread-icon {
+	background-image: url( ../images/new.png );
+}
+
+.mw-wikiforum-thread-icon {
+	background-image: url( ../images/note.png );
+}
+
+.mw-wikiforum-remove-sticky-icon {
+	background-image: url( ../images/tag_blue_delete.png );
+}
+
+.mw-wikiforum-make-sticky-icon {
+	background-image: url( ../images/tag_blue_add.png );
+}
+
+.mw-wikiforum-write-reply-icon {
+	background-image: url( ../images/comment_add.png );
+}
+
+.mw-wikiforum-edit-thread-icon {
+	background-image: url( ../images/note_edit.png );
+}
+
+.mw-wikiforum-delete-thread-icon {
+	background-image: url( ../images/note_delete.png );
+}
+
+.mw-wikiforum-close-thread-icon {
+	background-image: url( ../images/lock_add.png );
+}
+
+.mw-wikiforum-reopen-thread-icon {
+	background-image: url( ../images/lock_open.png );
+}
+
+.mw-wikiforum-add-category-icon {
+	background-image: url( ../images/database_add.png );
+}
+
+.mw-wikiforum-bullet-arrow-up-icon {
+	background-image: url( ../images/bullet_arrow_up.png );
+}
+
+.mw-wikiforum-bullet-arrow-down-icon {
+	background-image: url( ../images/bullet_arrow_down.png );
+}

@@ -1,0 +1,19 @@
+{
+	"@metadata": {
+		"authors": [
+			"NMW03",
+			"Nemoralis"
+		]
+	},
+	"apihelp-homepagequestionstore-summary": "Ana səhifə modulları vasitəsi ilə göndərilmiş formatlaşdırılmış sualları əldə edin",
+	"apihelp-homepagequestionstore-param-questionformat": "Sualların formatı, məsələn HTML.",
+	"apihelp-homepagequestionstore-param-storage": "Sualların saxlanma yeri",
+	"apihelp-homepagequestionstore-param-userid": "Sualları əldə etmək üçün istifadəçi nömrəsi.",
+	"growthexperiments-homepage-questionstore-noquestionsfound": "Sual yoxdur.",
+	"apihelp-growthsetmentor-summary": "İstifadəçinin mentorunu təyin et. Dəyişiklik ictimai olaraq görünəcək.",
+	"apihelp-growthsetmentor-param-mentee": "Tələbənin istifadəçi adı",
+	"apihelp-growthsetmentor-param-mentor": "Mentorun istifadəçi adı",
+	"apihelp-growthsetmentor-param-reason": "Dəyişikliyin səbəbi",
+	"apihelp-query+growthimagesuggestiondata-summary": "Mümkünsə, əlaqəli [https://www.mediawiki.org/wiki/wikitech:Add_Image şəkil təklifi məlumatını] gətirin",
+	"growthexperiments-homepage-imagesuggestiondata-not-in-config": "Tapşırıq növü ID '$1' viki konfiqurasiyasında tapılmadı."
+}

@@ -1,0 +1,31 @@
+{
+	"@metadata": {
+		"authors": [
+			"Amire80",
+			"Cantons-de-l'Est",
+			"Jeroen De Dauw",
+			"Karsten Hoffmeyer",
+			"Kghbln",
+			"Verdy p"
+		]
+	},
+	"network": "This is a noun.",
+	"network-desc": "{{Desc|name=Network|url=https://github.com/ProfessionalWiki/Network}}",
+	"network-aria": "Informatory message.\n\nParameters:\n* $1 - Holds the number of pages listed with parameter $2\n* $2 - Holds the name of a page or the names of pages",
+	"pagenetwork-pages-field-label": "Field label\n\n{{Identical|Pages}}",
+	"pagenetwork-pages-field-help": "Field help",
+	"pagenetwork-exclude-field-label": "Field label\n{{Related|Pagenetwork-exclude}}",
+	"pagenetwork-exclude-field-help": "Field help",
+	"pagenetwork-excludedNamespaces-field-label": "Field label\n{{Related|Pagenetwork-exclude}}",
+	"pagenetwork-excludedNamespaces-field-help": "Field help",
+	"pagenetwork-class-field-label": "Field label\\n{{Identical|CSS Classes}}",
+	"pagenetwork-class-field-help": "Field help",
+	"pagenetwork-options-field-label": "Field label\\n{{Identical|Graph Options}}",
+	"pagenetwork-options-field-help": "Field help",
+	"pagenetwork-enableDisplayTitle-field-label": "Field label\\n{{Identical|Enable Display Title}}",
+	"pagenetwork-enableDisplayTitle-field-help": "Field help",
+	"pagenetwork-labelMaxLength-field-label": "Field label\\n{{Identical|Maximum Label Length}}",
+	"pagenetwork-labelMaxLength-field-help": "Field help",
+	"pagenetwork-basic-tab-label": "Tab label\\n{{Identical|Basic Options}}",
+	"pagenetwork-advanced-tab-label": "Tab label\n{{Identical|Advanced options}}"
+}

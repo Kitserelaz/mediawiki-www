@@ -46,11 +46,6 @@ abstract class ScribuntoEngineBase {
 	protected $title;
 
 	/**
-	 * @var array
-	 */
-	protected $options;
-
-	/**
 	 * @var (ScribuntoModuleBase|null)[]
 	 */
 	protected $modules = [];
@@ -86,7 +81,6 @@ abstract class ScribuntoEngineBase {
 
 	/**
 	 * Get software information for Special:Version
-	 * @param array &$software
 	 */
 	abstract public function getSoftwareInfo( array &$software );
 
@@ -94,8 +88,9 @@ abstract class ScribuntoEngineBase {
 	 * @param array $options Associative array of options:
 	 *    - parser:            A Parser object
 	 */
-	public function __construct( array $options ) {
-		$this->options = $options;
+	public function __construct(
+		protected readonly array $options,
+	) {
 		if ( isset( $options['parser'] ) ) {
 			$this->parser = $options['parser'];
 		}
@@ -110,16 +105,8 @@ abstract class ScribuntoEngineBase {
 
 	public function destroy() {
 		// Break reference cycles
-		$this->parser = null;
 		$this->title = null;
 		$this->modules = [];
-	}
-
-	/**
-	 * @param Title $title
-	 */
-	public function setTitle( $title ) {
-		$this->title = $title;
 	}
 
 	/**
@@ -174,7 +161,7 @@ abstract class ScribuntoEngineBase {
 	public function fetchModuleFromParser( Title $title ) {
 		$key = $title->getPrefixedDBkey();
 		if ( !array_key_exists( $key, $this->modules ) ) {
-			[ $text, $finalTitle ] = $this->parser->fetchTemplateAndTitle( $title );
+			[ $text, $finalTitle ] = $this->getParser()->fetchTemplateAndTitle( $title );
 			if ( $text === false ) {
 				$this->modules[$key] = null;
 				return null;
@@ -186,7 +173,6 @@ abstract class ScribuntoEngineBase {
 			}
 			// $finalKey may be different from $key in the case of redirects;
 			// store the module in both places.
-			// @phan-suppress-next-line PhanTypeMismatchProperty
 			$this->modules[$key] = $this->modules[$finalKey];
 		}
 		return $this->modules[$key];
@@ -238,6 +224,14 @@ abstract class ScribuntoEngineBase {
 	}
 
 	/**
+	 * Get the language for the CodeMirror editor.
+	 * @return string|false
+	 */
+	public function getCodeMirrorLanguage() {
+		return false;
+	}
+
+	/**
 	 * @return Parser
 	 */
 	public function getParser() {
@@ -248,11 +242,16 @@ abstract class ScribuntoEngineBase {
 	 * Load a list of all libraries supported by this engine
 	 *
 	 * The return value is an array with keys being the library name seen by
-	 * the module and values being either a PHP class name or an array with the
-	 * following elements:
-	 *  - class: (string) Class to load (required)
+	 * the module and values being either a PHP class name, or an ObjectFactory
+	 * specification array with the following optional elements:
 	 *  - deferLoad: (bool) Library should not be loaded at startup; modules
 	 *      needing the library must request it (e.g. via 'require' in Lua)
+	 *
+	 * The class name or object factory specification must create an object
+	 * which is a subclass of LibraryBase.
+	 * For more information about ObjectFactory, see:
+	 * * https://www.mediawiki.org/wiki/Special:MyLanguage/ObjectFactory
+	 * * https://doc.wikimedia.org/mediawiki-libs-ObjectFactory/master/classWikimedia_1_1ObjectFactory_1_1ObjectFactory.html#details
 	 *
 	 * @param string $engine script engine we're using (eg: lua)
 	 * @param array $coreLibraries Array of core libraries we support

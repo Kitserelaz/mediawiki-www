@@ -2,9 +2,10 @@
 
 namespace Miraheze\CreateWiki\RequestWiki\Specials;
 
-use ErrorPageError;
+use MediaWiki\Exception\ErrorPageError;
 use MediaWiki\HTMLForm\HTMLForm;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Language\LanguageNameUtils;
+use MediaWiki\Parser\ParserOptions;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\User\UserFactory;
 use Miraheze\CreateWiki\RequestWiki\RequestWikiQueuePager;
@@ -19,13 +20,14 @@ class SpecialRequestWikiQueue extends SpecialPage {
 		private readonly LanguageNameUtils $languageNameUtils,
 		private readonly UserFactory $userFactory,
 		private readonly WikiRequestManager $wikiRequestManager,
-		private readonly WikiRequestViewer $wikiRequestViewer
+		private readonly WikiRequestViewer $wikiRequestViewer,
 	) {
-		parent::__construct( 'RequestWikiQueue', 'requestwiki' );
+		parent::__construct( 'RequestWikiQueue' );
 	}
 
 	/**
 	 * @param ?string $par
+	 * @throws ErrorPageError
 	 */
 	public function execute( $par ): void {
 		if ( !$this->databaseUtils->isCurrentWikiCentral() ) {
@@ -64,7 +66,8 @@ class SpecialRequestWikiQueue extends SpecialPage {
 				'type' => 'user',
 				'name' => 'requester',
 				'label-message' => 'requestwikiqueue-request-label-requester',
-				'exist' => true,
+				'exists' => true,
+				'excludetemp' => true,
 				'default' => $requester,
 			],
 			'language' => [
@@ -104,9 +107,9 @@ class SpecialRequestWikiQueue extends SpecialPage {
 
 		$pager = new RequestWikiQueuePager(
 			$this->getContext(),
+			$this->getLinkRenderer(),
 			$this->databaseUtils,
 			$this->languageNameUtils,
-			$this->getLinkRenderer(),
 			$this->userFactory,
 			$this->wikiRequestManager,
 			$dbname,
@@ -116,7 +119,8 @@ class SpecialRequestWikiQueue extends SpecialPage {
 		);
 
 		$table = $pager->getFullOutput();
-		$this->getOutput()->addParserOutputContent( $table );
+		$parserOptions = ParserOptions::newFromContext( $this->getContext() );
+		$this->getOutput()->addParserOutputContent( $table, $parserOptions );
 	}
 
 	private function lookupRequest( string $par ): void {
@@ -129,5 +133,15 @@ class SpecialRequestWikiQueue extends SpecialPage {
 	/** @inheritDoc */
 	protected function getGroupName(): string {
 		return 'wiki';
+	}
+
+	/** @inheritDoc */
+	public function getRestriction(): string {
+		return 'requestwiki';
+	}
+
+	/** @inheritDoc */
+	public function doesWrites(): bool {
+		return true;
 	}
 }

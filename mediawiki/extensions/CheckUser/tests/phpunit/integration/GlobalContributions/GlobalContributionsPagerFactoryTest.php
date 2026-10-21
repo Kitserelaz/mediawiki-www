@@ -1,19 +1,24 @@
 <?php
 
-namespace MediaWiki\CheckUser\Tests\Integration\GlobalContributions;
+namespace MediaWiki\Extension\CheckUser\Tests\Integration\GlobalContributions;
 
-use InvalidArgumentException;
-use MediaWiki\CheckUser\GlobalContributions\GlobalContributionsPager;
 use MediaWiki\Context\RequestContext;
+use MediaWiki\Extension\CheckUser\GlobalContributions\GlobalContributionsPager;
 use MediaWiki\User\UserIdentityValue;
 use MediaWikiIntegrationTestCase;
 
 /**
- * @covers \MediaWiki\CheckUser\GlobalContributions\GlobalContributionsPagerFactory
+ * @covers \MediaWiki\Extension\CheckUser\GlobalContributions\GlobalContributionsPagerFactory
  * @group CheckUser
  * @group Database
  */
 class GlobalContributionsPagerFactoryTest extends MediaWikiIntegrationTestCase {
+	public function setUp(): void {
+		parent::setUp();
+
+		$this->markTestSkippedIfExtensionNotLoaded( 'GlobalPreferences' );
+	}
+
 	public function testCreatePager() {
 		// Tests that the factory creates a GlobalContributionsPager instance and does not throw an exception.
 		$this->assertInstanceOf(
@@ -26,15 +31,5 @@ class GlobalContributionsPagerFactoryTest extends MediaWikiIntegrationTestCase {
 				),
 			'CheckUserGlobalContributionsPagerFactory::createPager should create a GlobalContributionsPager instance'
 		);
-	}
-
-	public function testCreatePagerInvalidTarget() {
-		$this->expectException( InvalidArgumentException::class );
-		$this->getServiceContainer()->get( 'CheckUserGlobalContributionsPagerFactory' )
-			->createPager(
-				RequestContext::getMain(),
-				[],
-				$this->getTestUser()->getUser()
-			);
 	}
 }

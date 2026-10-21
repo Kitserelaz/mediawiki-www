@@ -1,0 +1,149 @@
+<?php
+
+namespace SMW\Elastic\Indexer;
+
+use JsonSerializable;
+use SMW\Elastic\Connection\Client as ElasticClient;
+
+/**
+ * @note Elasticsearch provides a bulk API to perform several index/delete operations
+ * with a single API call and can greatly improve the indexing speed.
+ *
+ * This class builds a call stack for a single bulk request and can contain different
+ * operational tasks.
+ *
+ * @license GPL-2.0-or-later
+ * @since 3.0
+ *
+ * @author mwjames
+ */
+class Bulk implements JsonSerializable {
+
+	private array $bulk = [];
+
+	private array $head = [];
+
+	/**
+	 * @var array|string
+	 */
+	private $response = [];
+
+	/**
+	 * @since 3.0
+	 */
+	public function __construct( private readonly ElasticClient $connection ) {
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function clear(): void {
+		$this->bulk = [];
+		$this->head = [];
+		$this->response = [];
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param array $params
+	 */
+	public function head( array $params ): void {
+		$this->head = $params;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param array $params
+	 */
+	public function delete( array $params ): void {
+		$this->bulk['body'][] = [ 'delete' => $params + $this->head ];
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param array $params
+	 * @param array $source
+	 */
+	public function index( array $params, array $source ): void {
+		$this->bulk['body'][] = [ 'index' => $params + $this->head ];
+		$this->bulk['body'][] = $source;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param array $params
+	 * @param array $doc
+	 */
+	public function upsert( array $params, array $doc ): void {
+		$this->bulk['body'][] = [ 'update' => $params + $this->head ];
+		$this->bulk['body'][] = [ 'doc' => $doc, "doc_as_upsert" => true ];
+	}
+
+	/**
+	 * @since 3.1
+	 */
+	public function isEmpty(): bool {
+		return $this->bulk === [];
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @param Document $document
+	 */
+	public function infuseDocument( Document $document ): void {
+		if ( $document->isType( Document::TYPE_DELETE ) ) {
+			$this->delete( [ '_id' => $document->getId() ] );
+		}
+
+		foreach ( $document->getPriorityDeleteList() as $id ) {
+			$this->delete( [ '_id' => $id ] );
+		}
+
+		if ( $document->isType( Document::TYPE_UPSERT ) ) {
+			$this->upsert( [ '_id' => $document->getId() ], $document->getData() );
+		}
+
+		if ( $document->isType( Document::TYPE_INSERT ) ) {
+			$this->index( [ '_id' => $document->getId() ], $document->getData() );
+		}
+
+		foreach ( $document->getSubDocuments() as $subDocument ) {
+			$this->infuseDocument( $subDocument );
+		}
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @return array|string
+	 */
+	public function getResponse(): array|string {
+		return $this->response;
+	}
+
+	/**
+	 * @since 3.0
+	 */
+	public function execute(): void {
+		$this->response = $this->connection->bulk(
+			$this->bulk
+		);
+
+		$this->bulk = [];
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @return string
+	 */
+	public function jsonSerialize(): string {
+		return json_encode( $this->bulk );
+	}
+
+}

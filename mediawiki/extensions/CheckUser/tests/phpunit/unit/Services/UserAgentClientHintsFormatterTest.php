@@ -1,35 +1,35 @@
 <?php
 
-namespace MediaWiki\CheckUser\Tests\Unit\Services;
+namespace MediaWiki\Extension\CheckUser\Tests\Unit\Services;
 
-use MediaWiki\CheckUser\ClientHints\ClientHintsLookupResults;
-use MediaWiki\CheckUser\Services\UserAgentClientHintsFormatter;
-use MediaWiki\CheckUser\Services\UserAgentClientHintsManager;
-use MediaWiki\CheckUser\Tests\CheckUserClientHintsCommonTraitTest;
 use MediaWiki\Config\HashConfig;
 use MediaWiki\Config\ServiceOptions;
+use MediaWiki\Extension\CheckUser\ClientHints\ClientHintsLookupResults;
+use MediaWiki\Extension\CheckUser\Services\UserAgentClientHintsFormatter;
+use MediaWiki\Extension\CheckUser\Services\UserAgentClientHintsManager;
+use MediaWiki\Extension\CheckUser\Tests\CheckUserClientHintsCommonTestTrait;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\Message\Message;
 use MediaWiki\Tests\Unit\MockServiceDependenciesTrait;
 use MediaWikiUnitTestCase;
-use MessageLocalizer;
 use ReflectionClass;
 use Wikimedia\TestingAccessWrapper;
 
 /**
  * @group CheckUser
  *
- * @covers \MediaWiki\CheckUser\Services\UserAgentClientHintsFormatter
+ * @covers \MediaWiki\Extension\CheckUser\Services\UserAgentClientHintsFormatter
  */
 class UserAgentClientHintsFormatterTest extends MediaWikiUnitTestCase {
 	use MockServiceDependenciesTrait;
-	use CheckUserClientHintsCommonTraitTest;
+	use CheckUserClientHintsCommonTestTrait;
 
 	private function getObjectUnderTest(): UserAgentClientHintsFormatter {
 		$mockMessageLocalizer = $this->createMock( MessageLocalizer::class );
 		$mockMessageLocalizer->method( 'msg' )
 			->willReturn( $this->createMock( Message::class ) );
 		return $this->newServiceInstance( UserAgentClientHintsFormatter::class, [
-			'messageLocalizer' => $mockMessageLocalizer
+			'messageLocalizer' => $mockMessageLocalizer,
 		] );
 	}
 
@@ -50,7 +50,7 @@ class UserAgentClientHintsFormatterTest extends MediaWikiUnitTestCase {
 			'Array with integer keys' => [ [ 0 => 'test', 1 => 'testing' ], 'test testing' ],
 			'Array with string keys' => [ [ 'test' => 'testing', 'test-test' => 'test1234' ], 'testing test1234' ],
 			'Array with unordered keys' => [ [ 1 => 'abc', 0 => 'test' ], 'test abc' ],
-			'Array with "brand" and "version" keys' => [ [ 'brand' => 'test', 'version' => '15.0' ], 'test 15.0' ]
+			'Array with "brand" and "version" keys' => [ [ 'brand' => 'test', 'version' => '15.0' ], 'test 15.0' ],
 		];
 	}
 
@@ -73,7 +73,7 @@ class UserAgentClientHintsFormatterTest extends MediaWikiUnitTestCase {
 			'Array with unordered keys' => [ [ 1 => 'abc', 0 => '12.0.0' ], '12.0.0 abc' ],
 			'Array with "brand" and "version" keys' => [ [ 'brand' => 'test', 'version' => '15.0.0' ], 'test 15' ],
 			'Array with "brand" and significant "version" value' => [
-				[ 'brand' => 'test', 'version' => '14' ], 'test 14'
+				[ 'brand' => 'test', 'version' => '14' ], 'test 14',
 			],
 		];
 	}
@@ -129,9 +129,9 @@ class UserAgentClientHintsFormatterTest extends MediaWikiUnitTestCase {
 				UserAgentClientHintsFormatter::CONSTRUCTOR_OPTIONS,
 				new HashConfig( [
 					'CheckUserClientHintsValuesToHide' => $toHideArray,
-					'CheckUserClientHintsForDisplay' => []
+					'CheckUserClientHintsForDisplay' => [],
 				] )
-			)
+			),
 		] );
 	}
 
@@ -150,17 +150,20 @@ class UserAgentClientHintsFormatterTest extends MediaWikiUnitTestCase {
 	public static function provideGenerateClientHintsListItemForHiddenValue() {
 		return [
 			'One item in to hide array that matches the name-value pair being passed' => [
-				[ 'bitness' => [ '64' ] ], 'bitness', '64'
+				[ 'bitness' => [ '64' ] ], 'bitness', '64',
 			],
 			'Multiple items in to hide array that matches the name-value pair being passed' => [
-				[ 'bitness' => [ '64' ], 'model' => [ 'test', 'testing' ] ], 'model', 'testing'
+				[ 'bitness' => [ '64' ], 'model' => [ 'test', 'testing' ] ], 'model', 'testing',
 			],
 		];
 	}
 
 	/** @dataProvider provideGenerateClientHintsListItem */
 	public function testGenerateClientHintsListItem(
-		$clientHintName, $clientHintValue, $expectedClientHintValueUsed, $msgCache
+		$clientHintName,
+		$clientHintValue,
+		$expectedClientHintValueUsed,
+		$msgCache
 	) {
 		// Use mock method under test with disabled constructor to avoid
 		// having to mock the MessageLocalizer twice.
@@ -173,7 +176,7 @@ class UserAgentClientHintsFormatterTest extends MediaWikiUnitTestCase {
 			UserAgentClientHintsFormatter::CONSTRUCTOR_OPTIONS,
 			new HashConfig( [
 				'CheckUserClientHintsValuesToHide' => [],
-				'CheckUserClientHintsForDisplay' => []
+				'CheckUserClientHintsForDisplay' => [],
 			] )
 		);
 		// Mock the message class to expect the ::msg call to make the formatted string.
@@ -226,17 +229,19 @@ class UserAgentClientHintsFormatterTest extends MediaWikiUnitTestCase {
 
 	/** @dataProvider provideCombineClientHintsData */
 	public function testCombineClientHintsData(
-		$dataAsArray, $clientHintsForDisplay, $expectedReturnValue, $expectedClientHintsForDisplayAfterCall
+		$dataAsArray,
+		$clientHintsForDisplay,
+		$expectedReturnValue,
+		$expectedClientHintsForDisplayAfterCall
 	) {
 		$objectUnderTest = $this->getObjectUnderTest();
 		// T287318 - TestingAccessWrapper::__call does not support pass-by-reference
 		$classReflection = new ReflectionClass( $objectUnderTest );
 		$methodReflection = $classReflection->getMethod( 'combineClientHintsData' );
-		$methodReflection->setAccessible( true );
 		$this->assertArrayEquals(
 			$expectedReturnValue,
 			$methodReflection->invokeArgs( $objectUnderTest, [
-				$dataAsArray, &$clientHintsForDisplay
+				$dataAsArray, &$clientHintsForDisplay,
 			] ),
 			false,
 			true,
@@ -283,7 +288,7 @@ class UserAgentClientHintsFormatterTest extends MediaWikiUnitTestCase {
 						[ 'brand' => 'Test brand', 'version' => '10.5.4.2' ],
 						[ 'brand' => 'Test another brand', 'version' => '5.4.4.4' ],
 						[ 'brand' => 'Test other brand', 'version' => '7.6.5.5' ],
-					]
+					],
 				],
 				[ 'model', 'fullVersionList', 'brands' ],
 				[
@@ -295,7 +300,7 @@ class UserAgentClientHintsFormatterTest extends MediaWikiUnitTestCase {
 						[ 'brand' => 'Test brand', 'version' => '10.5.4.2' ],
 						[ 'brand' => 'Test another brand', 'version' => '5.4.4.4' ],
 						[ 'brand' => 'Test other brand', 'version' => '7.6.5.5' ],
-					]
+					],
 				],
 				[ 'model', 'fullVersionList', 'brands' ],
 			],
@@ -313,7 +318,7 @@ class UserAgentClientHintsFormatterTest extends MediaWikiUnitTestCase {
 						[ 'brand' => 'Yet another brand', 'version' => '20.4.4.4' ],
 						[ 'brand' => 'Test other brand', 'version' => '7.6.5.5' ],
 						[ 'brand' => 'Testing2 brand', 'version' => '4' ],
-					]
+					],
 				],
 				[ 'model', 'fullVersionList', 'brands' ],
 				[
@@ -327,7 +332,7 @@ class UserAgentClientHintsFormatterTest extends MediaWikiUnitTestCase {
 						[ 'brand' => 'Yet another brand', 'version' => '20.4.4.4' ],
 						[ 'brand' => 'Test other brand', 'version' => '7.6.5.5' ],
 						[ 'brand' => 'Testing2 brand', 'version' => '4' ],
-					]
+					],
 				],
 				[ 'model', 'fullVersionList', 'brands' ],
 			],
@@ -376,7 +381,7 @@ class UserAgentClientHintsFormatterTest extends MediaWikiUnitTestCase {
 				new ClientHintsLookupResults(
 					[ UserAgentClientHintsManager::IDENTIFIER_CU_CHANGES => [ 1 => 0 ] ],
 					[ self::getExampleClientHintsDataObjectFromJsApi() ]
-				)
+				),
 			],
 			'Lookup results with two ClientHintsData object' => [
 				new ClientHintsLookupResults(
@@ -386,9 +391,9 @@ class UserAgentClientHintsFormatterTest extends MediaWikiUnitTestCase {
 					],
 					[
 						self::getExampleClientHintsDataObjectFromJsApi(),
-						self::getExampleClientHintsDataObjectFromJsApi( 'arm' )
-					]
-				)
+						self::getExampleClientHintsDataObjectFromJsApi( 'arm' ),
+					],
+				),
 			],
 		];
 	}
@@ -427,15 +432,17 @@ class UserAgentClientHintsFormatterTest extends MediaWikiUnitTestCase {
 	public static function provideListToTextWithoutAnd() {
 		return [
 			'Array with one item' => [
-				[ 'test' ], 'test'
+				[ 'test' ],
+				'test',
 			],
 			'Array with two items' => [
-				[ 'test', 'testing' ], 'test, testing'
+				[ 'test', 'testing' ],
+				'test, testing',
 			],
 			'Array with multiple items' => [
 				[ 'testing1244', 'testing121212', 'test(,)test', '1234' ],
-				'testing1244, testing121212, test(,)test, 1234'
-			]
+				'testing1244, testing121212, test(,)test, 1234',
+			],
 		];
 	}
 }

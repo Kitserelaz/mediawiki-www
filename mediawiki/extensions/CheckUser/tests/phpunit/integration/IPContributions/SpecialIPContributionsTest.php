@@ -1,28 +1,32 @@
 <?php
 
-namespace MediaWiki\CheckUser\Tests\Integration\IPContributions;
+namespace MediaWiki\Extension\CheckUser\Tests\Integration\IPContributions;
 
-use ErrorPageError;
-use MediaWiki\CheckUser\Logging\TemporaryAccountLogger;
 use MediaWiki\Context\RequestContext;
+use MediaWiki\Exception\ErrorPageError;
+use MediaWiki\Exception\PermissionsError;
+use MediaWiki\Exception\ReadOnlyError;
+use MediaWiki\Exception\UserBlockedError;
+use MediaWiki\Extension\CheckUser\Logging\TemporaryAccountLogger;
+use MediaWiki\Extension\CheckUser\Tests\Integration\CheckUserTempUserTestTrait;
+use MediaWiki\MainConfigNames;
 use MediaWiki\Request\FauxRequest;
-use MediaWiki\Tests\User\TempUser\TempUserTestTrait;
+use MediaWiki\Tests\Specials\SpecialPageTestBase;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
-use PermissionsError;
-use SpecialPageTestBase;
-use UserBlockedError;
 use Wikimedia\IPUtils;
+use Wikimedia\Parsoid\Core\DOMCompat;
+use Wikimedia\Parsoid\Ext\DOMUtils;
 
 /**
- * @covers \MediaWiki\CheckUser\IPContributions\SpecialIPContributions
- * @covers \MediaWiki\CheckUser\IPContributions\IPContributionsPager
+ * @covers \MediaWiki\Extension\CheckUser\IPContributions\SpecialIPContributions
+ * @covers \MediaWiki\Extension\CheckUser\IPContributions\IPContributionsPager
  * @group CheckUser
  * @group Database
  */
 class SpecialIPContributionsTest extends SpecialPageTestBase {
 
-	use TempUserTestTrait;
+	use CheckUserTempUserTestTrait;
 
 	private static User $disallowedUser;
 	private static User $checkuser;
@@ -59,25 +63,41 @@ class SpecialIPContributionsTest extends SpecialPageTestBase {
 
 		$temp1 = $this->getServiceContainer()
 			->getTempUserCreator()
-			->create( '~2024-01', new FauxRequest() )->getUser();
+			->create( '~check-user-test-2024-01', new FauxRequest() )->getUser();
 		$temp2 = $this->getServiceContainer()
 			->getTempUserCreator()
-			->create( '~2024-02', new FauxRequest() )->getUser();
+			->create( '~check-user-test-2024-02', new FauxRequest() )->getUser();
 
 		// Named user and 2 temp users edit from the first IP
 		RequestContext::getMain()->getRequest()->setIP( '127.0.0.1' );
 		$this->editPage(
-			'Test page', 'Test Content 1', 'test', NS_MAIN, self::$sysop
+			'Test page',
+			'Test Content 1',
+			'test',
+			NS_MAIN,
+			self::$sysop
 		);
 		$this->editPage(
-			'Test page', 'Test Content 2', 'test', NS_MAIN, $temp1
+			'Test page',
+			'Test Content 2',
+			'test',
+			NS_MAIN,
+			$temp1
 		);
 		$this->editPage(
-			'Test page', 'Test Content 3', 'test', NS_MAIN, $temp2
+			'Test page',
+			'Test Content 3',
+			'test',
+			NS_MAIN,
+			$temp2
 		);
 
 		$this->editPage(
-			'Test page for deletion', 'Test Content', 'test', NS_MAIN, $temp1
+			'Test page for deletion',
+			'Test Content',
+			'test',
+			NS_MAIN,
+			$temp1
 		);
 		$title = Title::newFromText( 'Test page for deletion' );
 		$page = $this->getServiceContainer()->getWikiPageFactory()->newFromTitle( $title );
@@ -86,7 +106,11 @@ class SpecialIPContributionsTest extends SpecialPageTestBase {
 		// Temp user edits again from a different IP
 		RequestContext::getMain()->getRequest()->setIP( '127.0.0.2' );
 		$this->editPage(
-			'Test page', 'Test Content 4', 'test', NS_MAIN, $temp1
+			'Test page',
+			'Test Content 4',
+			'test',
+			NS_MAIN,
+			$temp1
 		);
 	}
 
@@ -129,15 +153,43 @@ class SpecialIPContributionsTest extends SpecialPageTestBase {
 		}
 	}
 
-	public function provideTargets() {
+	public static function provideTargets() {
 		return [
 			'Empty target' => [ '', 0 ],
 			'Valid IP' => [ '127.0.0.1', 2 ],
 			'Valid range' => [ '127.0.0.1/24', 3 ],
-			'Range too wide' => [ '127.0.0.1/1', 0 ],
-			'Temp user' => [ '~2024-1', 0 ],
+			'Temp user' => [ '~check-user-test-2024-1', 0 ],
 			'Nonexistent user' => [ 'Nonexistent', 0 ],
 		];
+	}
+
+	public function testExecuteWhenInReadOnlyMode(): void {
+		$this->getServiceContainer()->getReadOnlyMode()->setReason( 'test' );
+
+		$this->expectException( ReadOnlyError::class );
+		$this->executeSpecialPage(
+			'127.0.0.1',
+			null,
+			null,
+			self::$checkuser
+		);
+	}
+
+	public function testExecuteWideRange() {
+		// Ensure the range restriction comes from $wgRangeContributionsCIDRLimit,
+		// not $wgCheckUserCIDRLimit
+		$this->overrideConfigValue( 'CheckUserCIDRLimit', [ 'IPv4' => 1, 'IPv6' => 1 ] );
+		$this->overrideConfigValue( 'RangeContributionsCIDRLimit', [ 'IPv4' => 17, 'IPv6' => 20 ] );
+
+		[ $html ] = $this->executeSpecialPage(
+			'127.0.0.1/1',
+			null,
+			null,
+			self::$checkuser
+		);
+
+		$this->assertStringNotContainsString( 'mw-pager-body', $html );
+		$this->assertStringContainsString( 'sp-contributions-outofrange', $html );
 	}
 
 	public function testExecuteNotIP() {
@@ -157,7 +209,9 @@ class SpecialIPContributionsTest extends SpecialPageTestBase {
 		$this->assertSame( 0, substr_count( $html, 'data-mw-revid' ) );
 		$this->assertStringContainsString( 'checkuser-ip-contributions-target-error-no-ip-banner', $html );
 		$this->assertStringNotContainsString(
-			'sp-contributions-blocked', $html, 'No block log extract should be shown on an error page'
+			'sp-contributions-blocked',
+			$html,
+			'No block log extract should be shown on an error page'
 		);
 	}
 
@@ -220,6 +274,48 @@ class SpecialIPContributionsTest extends SpecialPageTestBase {
 			null,
 			null,
 			self::$checkuser
+		);
+	}
+
+	public function testUserCanExecute(): void {
+		$this->assertTrue(
+			$this->newSpecialPage()->userCanExecute( self::$checkuser )
+		);
+		$this->assertFalse(
+			$this->newSpecialPage()->userCanExecute( self::$disallowedUser )
+		);
+	}
+
+	public function testLinksToHelpPage(): void {
+		// Ensure that the ipcontributions-helppage message is disabled,
+		// so we can test the URL we provided without an override affecting it.
+		$this->overrideConfigValue( MainConfigNames::LanguageCode, 'en' );
+		$this->editPage(
+			Title::newFromText( 'ipcontributions-helppage', NS_MEDIAWIKI ),
+			'-'
+		);
+		$this->getServiceContainer()->getMessageCache()->enable();
+
+		// Load the special page using English, as using the qqx language means
+		// that the help message isn't disabled.
+		[ $html ] = $this->executeSpecialPage(
+			'127.0.0.1',
+			null,
+			'en',
+			self::$checkuser,
+			true
+		);
+
+		$doc = DOMUtils::parseHTML( $html );
+		$entries = iterator_to_array( DOMCompat::querySelectorAll(
+			$doc,
+			'div#mw-indicator-mw-helplink > a.mw-helplink'
+		) );
+		$this->assertNotEmpty( $entries );
+		$this->assertEquals(
+			"https://www.mediawiki.org/wiki/Special:MyLanguage/" .
+				"Help:Extension:CheckUser#Special:IPContributions_usage",
+			DOMCompat::getAttribute( $entries[ 0 ], 'href' )
 		);
 	}
 }

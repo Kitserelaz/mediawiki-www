@@ -1,87 +1,108 @@
 <?php
 
-namespace MediaWiki\CheckUser\GlobalContributions;
+namespace MediaWiki\Extension\CheckUser\GlobalContributions;
 
-use ChangesList;
-use HtmlArmor;
-use JobQueueGroup;
+use GlobalPreferences\GlobalPreferencesFactory;
+use InvalidArgumentException;
 use LogicException;
-use MediaWiki\Cache\LinkBatchFactory;
-use MediaWiki\CheckUser\CheckUserQueryInterface;
-use MediaWiki\CheckUser\Jobs\LogTemporaryAccountAccessJob;
-use MediaWiki\CheckUser\Logging\TemporaryAccountLogger;
-use MediaWiki\CheckUser\Services\CheckUserLookupUtils;
+use MediaWiki\ChangeTags\ChangeTagsStoreFactory;
 use MediaWiki\CommentFormatter\CommentFormatter;
 use MediaWiki\Context\IContextSource;
+use MediaWiki\Exception\ReadOnlyError;
+use MediaWiki\Extension\CheckUser\CheckUserQueryInterface;
+use MediaWiki\Extension\CheckUser\Jobs\LogTemporaryAccountAccessJob;
+use MediaWiki\Extension\CheckUser\Logging\TemporaryAccountLogger;
+use MediaWiki\Extension\CheckUser\Services\CheckUserLookupUtils;
 use MediaWiki\HookContainer\HookContainer;
 use MediaWiki\Html\Html;
 use MediaWiki\Html\TemplateParser;
+use MediaWiki\JobQueue\JobQueueGroup;
+use MediaWiki\Linker\Linker;
 use MediaWiki\Linker\LinkRenderer;
+use MediaWiki\Linker\UserLinkRenderer;
+use MediaWiki\Page\LinkBatchFactory;
 use MediaWiki\Pager\ContributionsPager;
+use MediaWiki\Permissions\PermissionManager;
+use MediaWiki\RecentChanges\ChangesList;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\RevisionStore;
+use MediaWiki\Revision\RevisionStoreFactory;
+use MediaWiki\Site\MediaWikiSite;
+use MediaWiki\Site\SiteLookup;
+use MediaWiki\SpecialPage\ContributionsRangeTrait;
 use MediaWiki\Title\NamespaceInfo;
 use MediaWiki\Title\Title;
+use MediaWiki\User\CentralId\CentralIdLookup;
 use MediaWiki\User\TempUser\TempUserConfig;
 use MediaWiki\User\UserFactory;
 use MediaWiki\User\UserIdentity;
+use MediaWiki\User\UserIdentityValue;
 use MediaWiki\WikiMap\WikiMap;
+use OOUI\HtmlSnippet;
+use OOUI\MessageWidget;
+use Wikimedia\HtmlArmor\HtmlArmor;
 use Wikimedia\Rdbms\FakeResultWrapper;
 use Wikimedia\Rdbms\IConnectionProvider;
 use Wikimedia\Rdbms\IExpression;
+use Wikimedia\Rdbms\ReadOnlyMode;
+use Wikimedia\Rdbms\SelectQueryBuilder;
+use Wikimedia\Timestamp\ConvertibleTimestamp;
 
 /**
- * Query for all edits from an IP, revealing what temporary accounts
- * are using that IP. This pager uses data from the CheckUser table,
- * as only CU should have knowledge of IP activity and therefore data
- * is limited to 90 days.
+ * Query for all edits from one of:
+ *  - an IP, revealing what temporary accounts are using that IP
+ *  - a username (temporary or registered), revealing all edits from the account
  *
- * This query is taken from Special:IPContributions and is temporary.
- * It will be replaced in T356292.
+ * This pager uses data from the CheckUser table as it can reveal IP activity
+ * which only CU should have knowledge of. Therefore, data is limited to 90 days.
  */
 class GlobalContributionsPager extends ContributionsPager implements CheckUserQueryInterface {
-	private TempUserConfig $tempUserConfig;
-	private CheckUserLookupUtils $checkUserLookupUtils;
-	private IConnectionProvider $dbProvider;
-	private JobQueueGroup $jobQueueGroup;
+
+	use ContributionsRangeTrait;
+
+	private ExternalPermissions $permissions;
+	private int $wikisWithPermissionsCount;
+	private string $needsToEnableGlobalPreferenceAtWiki;
+	private bool $centralUserExists = true;
+
+	/**
+	 * Map of revision sizes keyed by wiki ID and revision ID.
+	 * @var int[][]
+	 */
+	private array $parentRevisionSizes = [];
 
 	/**
 	 * @var int Number of revisions to return per wiki
 	 */
 	public const REVISION_COUNT_LIMIT = 20;
 
-	/**
-	 * @param LinkRenderer $linkRenderer
-	 * @param LinkBatchFactory $linkBatchFactory
-	 * @param HookContainer $hookContainer
-	 * @param RevisionStore $revisionStore
-	 * @param NamespaceInfo $namespaceInfo
-	 * @param CommentFormatter $commentFormatter
-	 * @param UserFactory $userFactory
-	 * @param TempUserConfig $tempUserConfig
-	 * @param CheckUserLookupUtils $checkUserLookupUtils
-	 * @param IConnectionProvider $dbProvider
-	 * @param JobQueueGroup $jobQueueGroup
-	 * @param IContextSource $context
-	 * @param array $options
-	 * @param ?UserIdentity $target IP address for temporary user contributions lookup
-	 */
 	public function __construct(
 		LinkRenderer $linkRenderer,
 		LinkBatchFactory $linkBatchFactory,
 		HookContainer $hookContainer,
 		RevisionStore $revisionStore,
 		NamespaceInfo $namespaceInfo,
-		CommentFormatter $commentFormatter,
+		private readonly CommentFormatter $commentFormatter,
 		UserFactory $userFactory,
-		TempUserConfig $tempUserConfig,
-		CheckUserLookupUtils $checkUserLookupUtils,
-		IConnectionProvider $dbProvider,
-		JobQueueGroup $jobQueueGroup,
+		private readonly TempUserConfig $tempUserConfig,
+		private readonly CheckUserLookupUtils $checkUserLookupUtils,
+		private readonly CentralIdLookup $centralIdLookup,
+		private readonly CheckUserGlobalContributionsLookup $globalContributionsLookup,
+		private readonly PermissionManager $permissionManager,
+		private readonly GlobalPreferencesFactory $globalPreferencesFactory,
+		private readonly IConnectionProvider $dbProvider,
+		private readonly JobQueueGroup $jobQueueGroup,
+		private readonly UserLinkRenderer $userLinkRenderer,
+		private readonly RevisionStoreFactory $revisionStoreFactory,
+		private readonly ChangeTagsStoreFactory $changeTagsStoreFactory,
+		private readonly SiteLookup $siteLookup,
+		private readonly ReadOnlyMode $readOnlyMode,
 		IContextSource $context,
 		array $options,
-		?UserIdentity $target = null
+		?UserIdentity $target = null,
 	) {
+		$options['runHooks'] = false;
+
 		parent::__construct(
 			$linkRenderer,
 			$linkBatchFactory,
@@ -94,52 +115,149 @@ class GlobalContributionsPager extends ContributionsPager implements CheckUserQu
 			$options,
 			$target
 		);
-		$this->tempUserConfig = $tempUserConfig;
-		$this->checkUserLookupUtils = $checkUserLookupUtils;
-		$this->dbProvider = $dbProvider;
-		$this->jobQueueGroup = $jobQueueGroup;
 		$this->templateParser = new TemplateParser( __DIR__ . '/../../templates' );
+		$this->permissions = new ExternalPermissions();
+	}
+
+	/**
+	 * Fetch the permissions needed by this pager from a list of external wikis. Store them
+	 * in the $permissions property.
+	 *
+	 * @param string[] $wikiIds
+	 */
+	private function getExternalWikiPermissions( $wikiIds ) {
+		$centralId = $this->centralIdLookup->centralIdFromLocalUser( $this->getUser() );
+		if ( !$centralId ) {
+			// No central permissions to check for, return an empty array without caching it
+			$this->permissions = new ExternalPermissions();
+			return;
+		}
+
+		$this->permissions = $this->globalContributionsLookup->getAndUpdateExternalWikiPermissions(
+			$centralId,
+			$wikiIds,
+			$this->getUser(),
+			$this->getRequest()
+		);
 	}
 
 	/**
 	 * Query the central index tables to find wikis that have recently been edited
 	 * from by temporary accounts using the target IP.
 	 *
+	 * Also sets some properties:
+	 * - $permissions, which holds information about external wiki permissions
+	 * - $wikisWithPermissionsCount, the number of wikis where the user can reveal IPs
+	 * - $needsToEnableGlobalPreferenceAtWiki, the wiki to enable a global preference at
+	 *
 	 * @return array
 	 */
 	private function fetchWikisToQuery() {
-		$targetIPConditions = $this->checkUserLookupUtils->getIPTargetExprForColumn(
-			$this->target,
-			'cite_ip_hex'
-		);
-		if ( $targetIPConditions === null ) {
-			throw new LogicException( "Attempted IP contributions lookup with non-IP target: $this->target" );
+		$this->needsToEnableGlobalPreferenceAtWiki = '';
+
+		try {
+			$activeWikis = $this->globalContributionsLookup->getActiveWikis(
+				$this->target,
+				$this->getAuthority()
+			);
+		} catch ( InvalidArgumentException ) {
+			// No central user found or viewable and target is not an IP, flag it and then return
+			// an empty array for active wikis which will eventually return an empty results set
+			$this->centralUserExists = false;
+			$this->wikisWithPermissionsCount = 0;
+			return [];
 		}
 
-		$cuciDb = $this->dbProvider->getReplicaDatabase( self::VIRTUAL_GLOBAL_DB_DOMAIN );
-		$queryBuilder = $cuciDb->newSelectQueryBuilder()
-			->select( 'ciwm_wiki' )
-			->from( 'cuci_temp_edit' )
-			->distinct()
-			->where( $targetIPConditions )
-			->join( 'cuci_wiki_map', null, 'cite_ciwm_id = ciwm_id' )
-			->caller( __METHOD__ );
-		return $queryBuilder->fetchFieldValues();
+		$skippedWikis = $this->getConfig()->get( 'CheckUserGlobalContributionsSkippedWikiIds' );
+		$activeWikis = array_diff( $activeWikis, $skippedWikis );
+
+		if ( $this->isValidIPOrQueryableRange( $this->target, $this->getConfig() ) ) {
+			// Look up external permissions
+			$this->getExternalWikiPermissions(
+				array_filter( $activeWikis, static function ( $wikiId ) {
+					// No need to do an API call to the local wiki
+					return !WikiMap::isCurrentWikiDbDomain( $wikiId );
+				} )
+			);
+
+			// Look up local permissions
+			$isBlocked = $this->getAuthority()->getBlock();
+			$canRevealIp = !$isBlocked && $this->permissionManager->userHasRight(
+				$this->getAuthority()->getUser(),
+				'checkuser-temporary-account'
+			);
+			$canRevealIpNoPreference = !$isBlocked && $this->permissionManager->userHasRight(
+				$this->getAuthority()->getUser(),
+				'checkuser-temporary-account-no-preference'
+			);
+
+			// Look up the global preference status
+			$globalPreferences = $this->globalPreferencesFactory->getGlobalPreferencesValues(
+				$this->getAuthority()->getUser(),
+				// Load from the database, not the cache, since we're using it for access.
+				true
+			);
+			$hasEnabledGlobalPreference = $globalPreferences &&
+				isset( $globalPreferences['checkuser-temporary-account-enable'] ) &&
+				$globalPreferences['checkuser-temporary-account-enable'];
+
+			$wikisToQuery = [];
+			foreach ( $activeWikis as $wikiId ) {
+				// If an IP is being queried, check against the permissions obtained from the external wikis.
+				// Otherwise, a temporary account or registered account is being queried, which can be broadly
+				// accessed without restriction (revision/IP reveal restrictions will still apply).
+				if ( $this->isValidIPOrQueryableRange( $this->target, $this->getConfig() ) ) {
+					if (
+						( WikiMap::isCurrentWikiDbDomain( $wikiId ) && $canRevealIpNoPreference ) ||
+						$this->permissions->hasPermission( 'checkuser-temporary-account-no-preference', $wikiId )
+					) {
+						$wikisToQuery[] = $wikiId;
+					} elseif (
+						( WikiMap::isCurrentWikiDbDomain( $wikiId ) && $canRevealIp ) ||
+						$this->permissions->hasPermission( 'checkuser-temporary-account', $wikiId )
+					) {
+						if ( $hasEnabledGlobalPreference ) {
+							$wikisToQuery[] = $wikiId;
+						} else {
+							$this->needsToEnableGlobalPreferenceAtWiki = $wikiId;
+						}
+					}
+				}
+			}
+		} else {
+			$wikisToQuery = $activeWikis;
+		}
+
+		$this->wikisWithPermissionsCount = count( $wikisToQuery );
+
+		return $wikisToQuery;
 	}
 
 	public function doQuery() {
 		parent::doQuery();
 
-		// If we reach here query has been made for a valid target
+		// If we reach here query has been made for a valid IP or range or a valid username
 		// and if there are rows to display they will be displayed.
-		// Log that the user has globally viewed the temporary accounts editing on the target IP or IP range.
-		$this->jobQueueGroup->push(
-			LogTemporaryAccountAccessJob::newSpec(
-				$this->getAuthority()->getUser(),
-				$this->target,
-				TemporaryAccountLogger::ACTION_VIEW_TEMPORARY_ACCOUNTS_ON_IP_GLOBAL,
-			)
-		);
+		// Check if the target is an IP or range and only if so, log that the user has globally
+		// viewed the temporary accounts editing on the target IP/range.
+		if ( $this->isValidIPOrQueryableRange( $this->target, $this->getConfig() ) ) {
+			if ( $this->readOnlyMode->isReadOnly() ) {
+				throw new ReadOnlyError;
+			}
+
+			$this->jobQueueGroup->push(
+				LogTemporaryAccountAccessJob::newSpec(
+					$this->getAuthority()->getUser(),
+					$this->target,
+					TemporaryAccountLogger::ACTION_VIEW_TEMPORARY_ACCOUNTS_ON_IP_GLOBAL,
+				)
+			);
+		}
+	}
+
+	/** @inheritDoc */
+	public function getTimestampField() {
+		return 'rev_timestamp';
 	}
 
 	/**
@@ -149,114 +267,254 @@ class GlobalContributionsPager extends ContributionsPager implements CheckUserQu
 		$wikisToQuery = $this->fetchWikisToQuery();
 		$results = [];
 
-		// Use a limit for each wiki (specified in T356292), rather than the page limit.
-		[ $tables, $fields, $conds, $fname, $options, $join_conds ] =
-			$this->buildQueryInfo( $offset, self::REVISION_COUNT_LIMIT, $order );
+		if ( $offset ) {
+			$offsets = explode( '|', $offset );
+			$indexColumns = array_slice( (array)$this->mIndexField, 0, count( $offsets ) );
+			$offsetConds = array_combine( $indexColumns, $offsets );
+		} else {
+			$offsetConds = [];
+		}
+
+		// Apply start and end timestamp limits. Code taken from
+		// RangeChronologicalPager::buildQueryInfo and ReverseChronologicalPager::buildQueryInfo
+		$timestampConds = [];
+		if ( $this->endOffset ) {
+			$timestampConds[] = $this->mDb->expr( $this->getTimestampField(), '<', $this->endOffset );
+		}
+
+		// Don't display revisions older than the CUDMaxAge to be consistent with what is displayed when
+		// searching for temporary account contributions on an IP address (T388667).
+		$checkUserDataCutoff = ConvertibleTimestamp::time() - $this->getConfig()->get( 'CUDMaxAge' );
+		if ( $this->startOffset ) {
+			$startOffset = max(
+				ConvertibleTimestamp::convert( TS_MW, $this->startOffset ),
+				ConvertibleTimestamp::convert( TS_MW, $checkUserDataCutoff )
+			);
+		} else {
+			$startOffset = $checkUserDataCutoff;
+		}
+		$timestampConds[] = $this->mDb->expr(
+			$this->getTimestampField(),
+			'>=',
+			$this->mDb->timestamp( $startOffset )
+		);
+
+		// Compute a synthetic sequence number for each wiki 0 ... -N,
+		// where 0 is the most recently edited wiki and -N is the least recently edited wiki.
+		// This is useful for tie-breaking where two revisions between different wikis
+		// share the same timestamp.
+		$wikiSeqNo = 0;
 
 		foreach ( $wikisToQuery as $wikiId ) {
 			$dbr = $this->dbProvider->getReplicaDatabase( $wikiId );
-			$resultSet = $dbr->newSelectQueryBuilder()
-				->rawTables( $tables )
-				->fields( $fields )
-				->conds( $conds )
-				->caller( $fname )
-				->options( $options )
-				->joinConds( $join_conds )
-				->fetchResultSet();
-
-			$resultsAsArray = iterator_to_array( $resultSet );
-			foreach ( $resultsAsArray as $row ) {
-				$row->sourcewiki = $wikiId;
+			$wikiConds = [];
+			if ( !WikiMap::isCurrentWikiDbDomain( $wikiId ) ) {
+				// Filter out results with hidden authors from external wikis, if the user shouldn't see
+				// them. These filters are added for the local query in ContributionsPager::getQueryInfo.
+				// Since external permissions are not looked up if the target is a registered user,
+				// these will not be shown to anyone for a registered user target, until T389187.
+				if ( !$this->permissions->hasPermission( 'deletedhistory', $wikiId ) ) {
+					$wikiConds[] = $dbr->bitAnd(
+						$this->revisionDeletedField,
+						RevisionRecord::DELETED_USER
+					) . ' = 0';
+				}
+				if (
+					!$this->permissions->hasPermission( 'suppressrevision', $wikiId ) &&
+					!$this->permissions->hasPermission( 'viewsuppressed', $wikiId )
+				) {
+					$wikiConds[] = $dbr->bitAnd(
+						$this->revisionDeletedField,
+						RevisionRecord::SUPPRESSED_USER
+					) . ' != ' . RevisionRecord::SUPPRESSED_USER;
+				}
 			}
 
-			$results = array_merge(
-				$results,
-				$resultsAsArray
+			$queryBuilder = $dbr->newSelectQueryBuilder()
+				->caller( __METHOD__ )
+				->queryInfo( $this->getQueryInfo() )
+				->andWhere( $wikiConds )
+				->andWhere( $timestampConds )
+				->orderBy( [ 'rev_timestamp', 'rev_id' ], SelectQueryBuilder::SORT_DESC )
+				// Use a limit for each wiki (specified in T356292), rather than the page limit.
+				->limit( self::REVISION_COUNT_LIMIT );
+
+			$changeTagsStore = $this->changeTagsStoreFactory->getChangeTagsStore( $wikiId );
+			$changeTagsStore->modifyDisplayQueryBuilder(
+				$queryBuilder,
+				'revision',
+				$this->getTagFilter(),
+				$this->getTagInvert(),
 			);
+			$resultSet = $queryBuilder->fetchResultSet();
+
+			foreach ( $resultSet as $row ) {
+				$row->sourcewiki = $wikiId;
+				$row->wiki_seq_no = $wikiSeqNo;
+
+				if ( !$offsetConds ) {
+					$results[] = $row;
+					continue;
+				}
+
+				// Check whether this revision fits into the current pagination window.
+				foreach ( $offsetConds as $field => $pivotValue ) {
+					if ( $this->mIncludeOffset && $row->$field === $pivotValue ) {
+						$results[] = $row;
+						break;
+					}
+
+					if ( $order === self::QUERY_ASCENDING ) {
+						if ( $row->$field < $pivotValue ) {
+							break;
+						}
+
+						if ( $row->$field > $pivotValue ) {
+							$results[] = $row;
+							break;
+						}
+					}
+
+					if ( $order === self::QUERY_DESCENDING ) {
+						if ( $row->$field > $pivotValue ) {
+							break;
+						}
+
+						if ( $row->$field < $pivotValue ) {
+							$results[] = $row;
+							break;
+						}
+					}
+				}
+			}
+
+			$wikiSeqNo--;
 		}
 
-		// Sort the entire results set by timestamp, then apply the limit.
-		usort( $results, static function ( $a, $b ) use ( $order ) {
-			$aTimestamp = $a->rev_timestamp;
-			$bTimestamp = $b->rev_timestamp;
-
-			if ( $aTimestamp == $bTimestamp ) {
-				return 0;
-			}
-			if ( $order === self::QUERY_DESCENDING ) {
-				return ( $aTimestamp > $bTimestamp ) ? -1 : 1;
-			} else {
-				return ( $aTimestamp < $bTimestamp ) ? -1 : 1;
-			}
-		} );
+		// Sort the entire results set by timestamp, wiki sequence number
+		// and finally revision ID as a tie-breaker, then apply the limit.
+		usort(
+			$results,
+			$order === self::QUERY_DESCENDING ?
+			static fn ( $a, $b ) =>
+				( $b->rev_timestamp <=> $a->rev_timestamp ?:
+				$b->wiki_seq_no <=> $a->wiki_seq_no ?:
+				$b->rev_id <=> $a->rev_id ) :
+			static fn ( $a, $b ) =>
+				( $a->rev_timestamp <=> $b->rev_timestamp ?:
+				$a->wiki_seq_no <=> $b->wiki_seq_no ?:
+				$a->rev_id <=> $b->rev_id )
+		);
 
 		return new FakeResultWrapper( array_slice( $results, 0, $limit ) );
+	}
+
+	/**
+	 * Overrides a base class method to do nothing. The ContributionsPager operates on a single wiki,
+	 * and always uses the local database to apply tag filters (i.e. maps names to ids using the local DB).
+	 * However, for GlobalContributionsPager we need to apply tag filter on multiple wikis, so we cannot
+	 * rely on this method for that.
+	 *
+	 * Instead, the tag filter is applied in {@see reallyDoQuery}, which knows what wiki is being processed
+	 * at the moment.
+	 *
+	 * @inheritDoc
+	 */
+	protected function modifyQueryInfoWithTagFilter( array &$queryInfo ): void {
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	protected function doBatchLookups() {
+		parent::doBatchLookups();
+
+		// Fetch parent revision sizes for each revision and wiki (T385377).
+		$parentIdsByWiki = [];
+		foreach ( $this->mResult as $row ) {
+			if ( $row->rev_parent_id &&
+				!isset( $this->parentRevisionSizes[$row->sourcewiki][$row->rev_parent_id] )
+			) {
+				$parentIdsByWiki[$row->sourcewiki][$row->rev_parent_id] = true;
+			}
+
+			$this->parentRevisionSizes[$row->sourcewiki][$row->rev_id] = (int)$row->rev_len;
+			unset( $parentIdsByWiki[$row->sourcewiki][$row->rev_id] );
+		}
+
+		foreach ( $parentIdsByWiki as $wikiId => $parentIds ) {
+			$this->parentRevisionSizes[$wikiId] ??= [];
+			$this->parentRevisionSizes[$wikiId] += $this->globalContributionsLookup->getRevisionSizes(
+				$wikiId,
+				array_keys( $parentIds )
+			);
+		}
 	}
 
 	/**
 	 * @inheritDoc
 	 */
 	protected function getRevisionQuery() {
-		$queryBuilder = $this->getDatabase()->newSelectQueryBuilder();
-
-		$queryBuilder
-			->select( [
-				// The fields prefixed with rev_ must be named that way so that
-				// RevisionStore::isRevisionRow can recognize the row.
-				'rev_id',
-				'rev_page',
-				'rev_actor',
-				'rev_user' => 'cu_changes_actor.actor_user',
-				'rev_user_text' => 'cu_changes_actor.actor_name',
-				'rev_timestamp',
-				'rev_minor_edit',
-				'rev_deleted',
-				'rev_len',
-				'rev_parent_id',
-				'rev_sha1',
-				'rev_comment_text' => 'cu_changes_comment.comment_text',
-				'rev_comment_data' => 'cu_changes_comment.comment_data',
-				'rev_comment_cid' => 'cu_changes_comment.comment_id',
-				'page_latest',
+		$revQueryBuilder = $this->revisionStore->newSelectQueryBuilder( $this->getDatabase() )
+			->joinPage()
+			->joinComment()
+			->fields( [
 				'page_is_new',
-				'page_namespace',
-				'page_title',
-			] )
-			->from( self::CHANGES_TABLE )
-			->join( 'actor', 'cu_changes_actor', 'actor_id=cuc_actor' )
-			->join( 'revision', 'cu_changes_revision', 'rev_id=cuc_this_oldid' )
-			->join( 'page', 'cu_changes_page', 'page_id=cuc_page_id' )
-			->join( 'comment', 'cu_changes_comment', 'comment_id=cuc_comment_id' );
+				// Set our synthetic wiki sequence number field to an initial value.
+				// This will be overridden in reallyDoQuery().
+				'wiki_seq_no' => '1',
+			] );
 
-		$ipConditions = $this->checkUserLookupUtils->getIPTargetExpr(
-			$this->target,
-			false,
-			self::CHANGES_TABLE
-		);
-		if ( $ipConditions === null ) {
-			throw new LogicException( "Attempted IP contributions lookup with non-IP target: $this->target" );
+		if ( $this->isValidIPOrQueryableRange( $this->target, $this->getConfig() ) ) {
+			$ipConditions = $this->checkUserLookupUtils->getIPTargetExpr(
+				$this->target,
+				false,
+				self::CHANGES_TABLE
+			);
+			if ( $ipConditions === null ) {
+				// Invalid IPs are treated as usernames so we should only ever reach
+				// this condition if the IP range is out of limits
+				throw new LogicException(
+					"Attempted IP range lookup with a range outside of the limit: $this->target\n
+					Check if your RangeContributionsCIDRLimit and CheckUserCIDRLimit configs are compatible."
+				);
+			}
+			$tempUserConditions = $this->tempUserConfig->getMatchCondition(
+				$this->getDatabase(),
+				'actor_name',
+				IExpression::LIKE
+			);
+
+			$revQueryBuilder->join( self::CHANGES_TABLE, null, 'cuc_this_oldid=rev_id' )
+				->where( $ipConditions )
+				->andWhere( $tempUserConditions );
+		} else {
+			$revQueryBuilder->where( [ 'actor_name' => $this->target ] );
 		}
 
-		$tempUserConditions = $this->tempUserConfig->getMatchCondition(
-			$this->getDatabase(),
-			'actor_name',
-			IExpression::LIKE
-		);
-
-		$queryBuilder->where( $ipConditions );
-		$queryBuilder->where( $tempUserConditions );
-
-		return $queryBuilder->getQueryInfo();
+		return $revQueryBuilder->getQueryInfo();
 	}
 
 	/**
-	 * @todo This is not a unique field, so results with identical timestamps could go
-	 *  missing between pages.
-	 *
 	 * @inheritDoc
 	 */
 	public function getIndexField() {
-		return 'cuc_timestamp';
+		return [
+			[ 'rev_timestamp', 'wiki_seq_no', 'rev_id' ],
+		];
+	}
+
+	/**
+	 * Wrapper method for testing. See documentation for WikiMap::getForeignURL.
+	 *
+	 * @param string $wikiID
+	 * @param string $page
+	 * @param string|null $fragmentId
+	 *
+	 * @return string|false
+	 */
+	protected function getForeignURL( $wikiID, $page, $fragmentId = null ) {
+		return WikiMap::getForeignURL( $wikiID, $page, $fragmentId );
 	}
 
 	/**
@@ -265,7 +523,126 @@ class GlobalContributionsPager extends ContributionsPager implements CheckUserQu
 	protected function populateAttributes( $row, &$attributes ) {
 		if ( !$this->isFromExternalWiki( $row ) ) {
 			parent::populateAttributes( $row, $attributes );
+		} else {
+			$attributes['data-mw-revid'] = $row->rev_id;
 		}
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	protected function getParentRevisionSize( $row ): int {
+		return $this->parentRevisionSizes[$row->sourcewiki][$row->rev_parent_id] ?? 0;
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	protected function getStartBody() {
+		$startBody = "<section class=\"mw-pager-body plainlinks\">\n";
+
+		if ( $this->needsToEnableGlobalPreferenceAtWiki && $this->getNumRows() > 0 ) {
+			$startBody .= new MessageWidget( [
+				'type' => 'info',
+				'label' => new HtmlSnippet(
+					$this->msg(
+						'checkuser-global-contributions-no-global-preference',
+						$this->getForeignURL(
+							$this->needsToEnableGlobalPreferenceAtWiki,
+							'Special:GlobalPreferences'
+						)
+					)->parse()
+				),
+			] );
+		}
+
+		if ( $this->permissions->hasEncounteredLookupError() ) {
+			$startBody .= new MessageWidget( [
+				'type' => 'error',
+				'label' => new HtmlSnippet(
+					$this->msg( 'checkuser-global-contributions-api-lookup-error' )->parse()
+				),
+			] );
+		}
+
+		return $startBody;
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	protected function getEndBody() {
+		return "</section>\n";
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	protected function getEmptyBody() {
+		if ( $this->needsToEnableGlobalPreferenceAtWiki ) {
+			return new MessageWidget( [
+				'type' => 'info',
+				'label' => new HtmlSnippet(
+					$this->msg(
+						'checkuser-global-contributions-no-results-no-global-preference',
+						$this->getForeignURL(
+							$this->needsToEnableGlobalPreferenceAtWiki,
+							'Special:GlobalPreferences'
+						)
+					)->parse()
+				),
+			] );
+		}
+
+		// Username or temporary account queried for and no central id for the user was found
+		if ( !$this->centralUserExists ) {
+			return new MessageWidget( [
+				'type' => 'warning',
+				'label' => new HtmlSnippet(
+					$this->msg(
+						'checkuser-global-contributions-no-results-no-central-user',
+						$this->target
+					)->parse()
+				),
+			] );
+		}
+
+		// An IP target was searched for and the user doesn't have view permissions
+		if (
+			$this->wikisWithPermissionsCount === 0 &&
+			$this->isValidIPOrQueryableRange( $this->target, $this->getConfig() )
+		) {
+			return new MessageWidget( [
+				'type' => 'info',
+				'label' => new HtmlSnippet(
+					$this->msg( 'checkuser-global-contributions-no-results-no-permissions' )
+						->params( $this->target )
+						->parse()
+				),
+			] );
+		}
+
+		// No results, but filters have been applied which may cause some results to be hidden for the target
+		// so show a message that suggests removing these filters.
+		if ( $this->hasAppliedFilters() ) {
+			return new MessageWidget( [
+				'type' => 'info',
+				'label' => new HtmlSnippet( $this->msg(
+					'checkuser-global-contributions-no-results-when-filters-applied'
+				)->parse() ),
+			] );
+		}
+
+		// No visible contributions for an existing user
+		return new MessageWidget( [
+			'type' => 'info',
+			'label' => new HtmlSnippet(
+				$this->msg(
+					'checkuser-global-contributions-no-results-no-visible-contribs',
+					$this->target
+				)->parse()
+			),
+		] );
 	}
 
 	/**
@@ -280,15 +657,31 @@ class GlobalContributionsPager extends ContributionsPager implements CheckUserQu
 			return '';
 		}
 
+		// If the namespace ID is not one of the common namespaces that are the same
+		// across all wikis then use that. In the other case then we should make the
+		// namespace be "Namespace<id>" where "id" is the number of the namespace
+		// to prevent these pages being seen as in the mainspace (which has no namespace prefix).
+		$namespaceIsKnown = in_array(
+			$row->{$this->pageNamespaceField},
+			$this->namespaceInfo->getCommonNamespaces()
+		);
+
+		if ( $namespaceIsKnown ) {
+			$linkText = $this->currentPage->getPrefixedText();
+		} else {
+			$linkText = $this->msg( 'checkuser-global-contributions-page-when-no-namespace-translation-available' )
+				->numParams( $row->page_namespace )
+				->params( $this->currentPage->getText() )
+				->text();
+		}
+
 		$dir = $this->getLanguage()->getDir();
 		$link = $this->getLinkRenderer()->makeExternalLink(
-			WikiMap::getForeignURL(
+			$this->getForeignURL(
 				$row->sourcewiki,
-				$row->{$this->pageTitleField}
+				'Special:Redirect/page/' . $row->rev_page
 			),
-			// The page is only used for its title and namespace,
-			// so this is safe.
-			$this->currentPage->getPrefixedText(),
+			$linkText,
 			$this->currentPage,
 			'',
 			[ 'class' => 'mw-contributions-title' ],
@@ -308,14 +701,13 @@ class GlobalContributionsPager extends ContributionsPager implements CheckUserQu
 			return '';
 		}
 
-		// Format the diff link. Don't check whether the user can see
-		// the revisions, since this would require a cross-wiki permission
-		// check. The user may see a permission error when clicking the
-		// link instead.
-		if ( $row->{$this->revisionParentIdField} != 0 ) {
+		if (
+			$row->{$this->revisionParentIdField} != 0 &&
+			$this->userCanSeeExternalRevision( $row )
+		) {
 			$difftext = $this->getLinkRenderer()->makeExternalLink(
 				wfAppendQuery(
-					WikiMap::getForeignURL(
+					$this->getForeignURL(
 						$row->sourcewiki,
 						$row->{$this->pageTitleField}
 					),
@@ -337,11 +729,14 @@ class GlobalContributionsPager extends ContributionsPager implements CheckUserQu
 
 		$histlink = $this->getLinkRenderer()->makeExternalLink(
 			wfAppendQuery(
-				WikiMap::getForeignURL(
+				$this->getForeignURL(
 					$row->sourcewiki,
-					$row->{$this->pageTitleField}
+					'',
 				),
-				[ 'action' => 'history' ]
+				[
+					'curid' => $row->rev_page,
+					'action' => 'history',
+				]
 			),
 			new HtmlArmor( $this->messages['hist'] ),
 			// The page is only used for its title and namespace,
@@ -351,7 +746,8 @@ class GlobalContributionsPager extends ContributionsPager implements CheckUserQu
 			[ 'class' => 'mw-changeslist-history' ]
 		);
 
-		return Html::rawElement( 'span',
+		return Html::rawElement(
+			'span',
 			[ 'class' => 'mw-changeslist-links' ],
 			// The spans are needed to ensure the dividing '|' elements are not
 			// themselves styled as links.
@@ -374,26 +770,46 @@ class GlobalContributionsPager extends ContributionsPager implements CheckUserQu
 		}
 
 		// Re-implemented from ChangesList::revDateLink so we can inject
-		// a foreign URL here instead of a local one. Don't check whether the
-		// user can see the revisions, since this would require a cross-wiki
-		// permission check. The user may see a permission error when clicking
-		// the link instead.
+		// a foreign URL here instead of a local one.
 		$ts = $row->{$this->revisionTimestampField};
+		$time = $this->getLanguage()->userTime( $ts, $this->getAuthority()->getUser() );
 		$date = $this->getLanguage()->userTimeAndDate( $ts, $this->getAuthority()->getUser() );
-		$dateLink = $this->getLinkRenderer()->makeExternalLink(
-			wfAppendQuery(
-				WikiMap::getForeignURL(
-					$row->sourcewiki,
-					$row->{$this->pageTitleField}
+		$class = 'mw-changeslist-date';
+		if ( $this->userCanSeeExternalRevision( $row ) ) {
+			$dateLink = $this->getLinkRenderer()->makeExternalLink(
+				wfAppendQuery(
+					$this->getForeignURL(
+						$row->sourcewiki,
+						$row->{$this->pageTitleField}
+					),
+					[ 'oldid' => $row->{$this->revisionIdField} ]
 				),
-				[ 'oldid' => $row->{$this->revisionIdField} ]
-			),
-			$date,
-			$this->currentPage,
-			'',
-			[ 'class' => 'mw-changeslist-date' ]
-		);
-		return Html::rawElement( 'bdi', [ 'dir' => $this->getLanguage()->getDir() ], $dateLink );
+				$date,
+				$this->currentPage,
+				'',
+				[ 'class' => $class ]
+			);
+			$dateLink = Html::rawElement( 'bdi', [ 'dir' => $this->getLanguage()->getDir() ], $dateLink );
+		} else {
+			$dateLink = htmlspecialchars( $date );
+		}
+
+		if ( $this->externalRevisionIsDeleted( $row ) ) {
+			// Logic from Linker::getRevisionDeletedClass
+			$class .= ' history-deleted';
+			if ( (bool)( $row->{$this->revisionDeletedField} & RevisionRecord::DELETED_RESTRICTED ) ) {
+				$class .= ' mw-history-suppressed';
+			}
+			$dateLink = Html::rawElement(
+				'span',
+				[ 'class' => $class ],
+				$dateLink
+			);
+		}
+
+		return Html::element( 'span', [
+			'class' => 'mw-changeslist-time',
+		], $time ) . $dateLink;
 	}
 
 	/**
@@ -418,65 +834,136 @@ class GlobalContributionsPager extends ContributionsPager implements CheckUserQu
 	 * @inheritDoc
 	 */
 	protected function formatComment( $row ) {
-		// Don't show comments for external revisions, since determining
-		// their visibility involves cross-wiki permission checks.
 		if ( !$this->isFromExternalWiki( $row ) ) {
 			return parent::formatComment( $row );
 		}
 
-		return '';
+		$wikiId = $row->sourcewiki;
+		$revisionStore = $this->revisionStoreFactory->getRevisionStore( $wikiId );
+		$record = $this->isArchive ?
+			$revisionStore->newRevisionFromArchiveRow( $row ) :
+			$revisionStore->newRevisionFromRow( $row );
+
+		// $this->currentRevRecord is null for external revisions, so permission
+		// checks should be based on data from $row instead.
+		//
+		// userCanSeeExternalHistory() checks if the comment is not deleted or,
+		// if it is, if the current user can see it in the source wiki.
+		if ( $this->userCanSeeExternalHistory( $row ) ) {
+			$user = $this->getAuthority();
+
+			// Note $comment just serves to check that the comment is not empty.
+			//
+			// Permission checks in getComment() would apply to the local wiki
+			// instead of the source wiki; therefore, the comment is retrieved
+			// skipping (local) permission checks by using RAW as the target
+			// audience.
+			$comment = $record->getComment( RevisionRecord::RAW, $user );
+
+			if ( $comment !== null && $comment->text !== '' ) {
+				return $this->commentFormatter->formatRevision( $record, $user );
+			}
+
+			$defaultComment = $this->messages['changeslist-nocomment'];
+			return "<span class=\"comment mw-comment-none\">$defaultComment</span>";
+		}
+
+		$additionalCssClasses = Linker::getRevisionDeletedClass( $record );
+
+		return Html::element(
+			'span',
+			[ 'class' => "{$additionalCssClasses} comment" ],
+			$this->msg( 'rev-deleted-comment' )->text()
+		);
 	}
 
 	/**
 	 * @inheritDoc
 	 */
 	protected function formatUserLink( $row ) {
-		if ( !$this->isFromExternalWiki( $row ) ) {
-			return parent::formatUserLink( $row );
+		if ( $this->isFromExternalWiki( $row ) ) {
+			$revUser = new UserIdentityValue( $row->rev_user, $row->{$this->userNameField}, $row->sourcewiki );
+		} else {
+			if ( !$this->currentRevRecord ) {
+				$revUser = null;
+			} else {
+				$revUser = $this->currentRevRecord->getUser();
+			}
 		}
 
 		$dir = $this->getLanguage()->getDir();
 
-		if ( $this->revisionUserIsDeleted( $row ) ) {
-			$userPageLink = $this->msg( 'empty-username' )->parse();
-			$userTalkLink = $this->msg( 'empty-username' )->parse();
-		} else {
-			$userTitle = Title::makeTitle( NS_USER, $row->{$this->userNameField} );
-			$userTalkTitle = Title::makeTitle( NS_USER_TALK, $row->{$this->userNameField} );
-
-			$classes = 'mw-userlink mw-extuserlink';
-			// Note that this checks the local temp user config, and assumes that
-			// the external wiki has compatible temp user config.
-			if ( $this->tempUserConfig->isTempName( $userTitle->getText() ) ) {
-				$classes .= ' mw-tempuserlink';
-			}
-
-			$userPageLink = $this->getLinkRenderer()->makeExternalLink(
-				WikiMap::getForeignURL(
-					$row->sourcewiki,
-					$userTitle->getPrefixedText()
-				),
-				$row->{$this->userNameField},
-				$userTitle,
-				'',
-				[ 'class' => $classes ]
-			);
-
-			$userTalkLink = $this->getLinkRenderer()->makeExternalLink(
-				WikiMap::getForeignURL(
-					$row->sourcewiki,
-					$userTalkTitle->getPrefixedText()
-				),
-				$this->msg( 'talkpagelinktext' ),
-				$userTalkTitle,
-				'',
-				[ 'class' => 'mw-usertoollinks-talk' ]
-			);
+		if ( $revUser === null || $this->revisionUserIsDeleted( $row ) ) {
+			// T379894 If the username is hidden, return early a message stating
+			// that the username is unavailable instead of falling through and
+			// end up show "no username available" twice (once for $userPageLink
+			// and once for $userTalkLink).
+			return ' <span class="mw-changeslist-separator"></span> ' .
+				Html::rawElement(
+					'bdi',
+					[ 'dir' => $dir ],
+					$this->msg( 'empty-username' )->parse()
+				);
 		}
 
-		return ' <span class="mw-changeslist-separator"></span> '
-			. Html::rawElement( 'bdi', [ 'dir' => $dir ], $userPageLink ) . ' '
-			. $this->msg( 'parentheses' )->rawParams( $userTalkLink )->escaped() . ' ';
+		$attributes = [];
+		if ( $this->isFromExternalWiki( $row ) ) {
+			// Add the API URLs to the link, so that data may be looked up
+			$site = $this->siteLookup->getSite( $row->sourcewiki );
+			if ( $site instanceof MediaWikiSite ) {
+				$attributes[ 'data-wiki-url' ] = $site->getPath( MediaWikiSite::PATH_FILE );
+			}
+		}
+		$userPageLink = $this->userLinkRenderer->userLink(
+			$revUser,
+			$this->getContext(),
+			null,
+			$attributes
+		);
+
+		if ( !$this->isFromExternalWiki( $row ) ) {
+			return ' <span class="mw-changeslist-separator"></span> ' .
+				Html::rawElement( 'bdi', [ 'dir' => $dir ], $userPageLink ) .
+				Linker::userToolLinks( $revUser->getId(), $revUser->getName(), false, Linker::TOOL_LINKS_NOBLOCK );
+		}
+
+		// The revision is on another wiki and the user can see the performer of the revision.
+		// Generate the user links that point to that other wiki instead of the local wiki.
+		$userTalkTitle = Title::makeTitle( NS_USER_TALK, $row->{$this->userNameField} );
+
+		$userToolLinks = [];
+		$userToolLinks[] = $this->getLinkRenderer()->makeExternalLink(
+			$this->getForeignURL(
+				$row->sourcewiki,
+				$userTalkTitle->getPrefixedText()
+			),
+			$this->msg( 'talkpagelinktext' ),
+			$userTalkTitle,
+			'',
+			[ 'class' => 'mw-usertoollinks-talk' ]
+		);
+
+		$userToolLinks[] = $this->getLinkRenderer()->makeExternalLink(
+			$this->getForeignURL(
+				$row->sourcewiki,
+				Title::makeName( NS_SPECIAL, 'Contributions/' . $row->{$this->userNameField}, '', '', true )
+			),
+			$this->msg( 'contribslink' ),
+			$userTalkTitle,
+			'',
+			[ 'class' => 'mw-usertoollinks-contribs' ]
+		);
+
+		// Wrap each toollink in a span to be consistent with Linker::userToolLinks
+		$userToolLinks = array_map( static function ( $toolLink ) {
+			return Html::rawElement( 'span', [], $toolLink );
+		}, $userToolLinks );
+
+		return ' <span class="mw-changeslist-separator"></span> ' .
+			Html::rawElement( 'bdi', [ 'dir' => $dir ], $userPageLink ) .
+			' <span class="mw-usertoollinks mw-changeslist-links">' .
+			implode( $userToolLinks ) .
+			'</span>';
 	}
 
 	/**
@@ -491,11 +978,11 @@ class GlobalContributionsPager extends ContributionsPager implements CheckUserQu
 		// row since the RevisionRecord is not available for external rows.
 		$flags = [];
 		if ( $row->{$this->revisionParentIdField} == 0 ) {
-			$flags[] = ChangesList::flag( 'newpage' );
+			$flags[] = ChangesList::flag( 'newpage', $this->getContext() );
 		}
 
 		if ( $row->{$this->revisionMinorField} ) {
-			$flags[] = ChangesList::flag( 'minor' );
+			$flags[] = ChangesList::flag( 'minor', $this->getContext() );
 		}
 		return $flags;
 	}
@@ -531,7 +1018,7 @@ class GlobalContributionsPager extends ContributionsPager implements CheckUserQu
 	 */
 	protected function formatSourceWiki( $row ) {
 		$link = $this->getLinkRenderer()->makeExternalLink(
-			WikiMap::getForeignURL(
+			$this->getForeignURL(
 				$row->sourcewiki,
 				''
 			),
@@ -593,5 +1080,51 @@ class GlobalContributionsPager extends ContributionsPager implements CheckUserQu
 	protected function isFromExternalWiki( $row ) {
 		return isset( $row->sourcewiki ) &&
 			!WikiMap::isCurrentWikiDbDomain( $row->sourcewiki );
+	}
+
+	/**
+	 * @param mixed $row
+	 * @return bool
+	 */
+	private function externalRevisionIsDeleted( $row ) {
+		return (bool)( $row->{$this->revisionDeletedField} & RevisionRecord::DELETED_TEXT );
+	}
+
+	/**
+	 * @param mixed $row
+	 * @return bool
+	 */
+	private function externalCommentIsDeleted( $row ) {
+		return (bool)( $row->{$this->revisionDeletedField} & RevisionRecord::DELETED_COMMENT );
+	}
+
+	/**
+	 * @param mixed $row
+	 * @return bool
+	 */
+	private function userCanSeeExternalRevision( $row ) {
+		if ( !$this->externalRevisionIsDeleted( $row ) ) {
+			return true;
+		}
+		return $this->permissions->hasPermission( 'deletedtext', $row->sourcewiki );
+	}
+
+	/**
+	 * @param mixed $row
+	 * @return bool
+	 */
+	private function userCanSeeExternalHistory( $row ) {
+		if ( !$this->externalCommentIsDeleted( $row ) ) {
+			return true;
+		}
+		return $this->permissions->hasPermission( 'deletedhistory', $row->sourcewiki );
+	}
+
+	/**
+	 * Whether any errors occurred while looking up external wiki permissions during the last query.
+	 * @return bool
+	 */
+	public function hasExternalApiLookupError(): bool {
+		return $this->permissions->hasEncounteredLookupError();
 	}
 }

@@ -11,22 +11,15 @@ use MediaWiki\Extension\AbuseFilter\Filter\Filter;
  * @internal
  */
 class FilterCompare {
-	public const SERVICE_NAME = 'AbuseFilterFilterCompare';
+	public const SERVICE_NAME = ServiceNames::FilterCompare;
 
-	/** @var ConsequencesRegistry */
-	private $consequencesRegistry;
-
-	/**
-	 * @param ConsequencesRegistry $consequencesRegistry
-	 */
-	public function __construct( ConsequencesRegistry $consequencesRegistry ) {
-		$this->consequencesRegistry = $consequencesRegistry;
+	public function __construct( private readonly ConsequencesRegistry $consequencesRegistry ) {
 	}
 
 	/**
 	 * @param Filter $firstFilter
 	 * @param Filter $secondFilter
-	 * @return array Fields that are different
+	 * @return string[] Fields that are different
 	 */
 	public function compareVersions( Filter $firstFilter, Filter $secondFilter ): array {
 		// TODO: Avoid DB references here, re-add when saving the filter
@@ -52,16 +45,14 @@ class FilterCompare {
 		$firstActions = $firstFilter->getActions();
 		$secondActions = $secondFilter->getActions();
 		foreach ( $this->consequencesRegistry->getAllEnabledActionNames() as $action ) {
-			if ( !isset( $firstActions[$action] ) && !isset( $secondActions[$action] ) ) {
-				// They're both unset
-			} elseif ( isset( $firstActions[$action] ) && isset( $secondActions[$action] ) ) {
+			if ( isset( $firstActions[$action] ) && isset( $secondActions[$action] ) ) {
 				// They're both set. Double check needed, e.g. per T180194
 				if ( array_diff( $firstActions[$action], $secondActions[$action] ) ||
 					array_diff( $secondActions[$action], $firstActions[$action] ) ) {
 					// Different parameters
 					$differences[] = 'actions';
 				}
-			} else {
+			} elseif ( isset( $firstActions[$action] ) !== isset( $secondActions[$action] ) ) {
 				// One's unset, one's set.
 				$differences[] = 'actions';
 			}

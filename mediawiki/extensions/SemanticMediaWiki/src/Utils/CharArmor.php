@@ -1,0 +1,43 @@
+<?php
+
+namespace SMW\Utils;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 3.0
+ *
+ * @author mwjames
+ */
+class CharArmor {
+
+	/**
+	 * Remove invisible control characters and unused code points (using a
+	 * negated character class to avoid removing spaces)
+	 *
+	 * @see http://www.regular-expressions.info/unicode.html#category
+	 * @since 3.0
+	 *
+	 * @param string $text
+	 *
+	 * @return string|null
+	 */
+	public static function removeControlChars( $text ): ?string {
+		return preg_replace( '/[^\PC\s]/u', '', $text );
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param string $text
+	 *
+	 * @return string
+	 */
+	public static function removeSpecialChars( $text ): string {
+		return str_replace(
+			[ '&shy;', '&lrm;', " ", " ", " " ],
+			[ '', '', ' ', ' ', ' ' ],
+			$text ?? ''
+		);
+	}
+
+}

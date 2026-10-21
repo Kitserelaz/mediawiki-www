@@ -26,17 +26,11 @@ class GeoIp2EnterpriseInfoRetriever extends BaseInfoRetriever {
 
 	public const NAME = 'ipinfo-source-geoip2';
 
-	private ServiceOptions $options;
-
-	private ReaderFactory $readerFactory;
-
 	public function __construct(
-		ServiceOptions $options,
-		ReaderFactory $readerFactory
+		private readonly ServiceOptions $options,
+		private readonly ReaderFactory $readerFactory,
 	) {
 		$options->assertRequiredOptions( self::CONSTRUCTOR_OPTIONS );
-		$this->options = $options;
-		$this->readerFactory = $readerFactory;
 	}
 
 	/** @inheritDoc */
@@ -75,7 +69,6 @@ class GeoIp2EnterpriseInfoRetriever extends BaseInfoRetriever {
 				'organization',
 				'countryNames',
 				'locations',
-				'isp',
 				'connectionType',
 				'userType',
 				'proxyType',
@@ -93,10 +86,9 @@ class GeoIp2EnterpriseInfoRetriever extends BaseInfoRetriever {
 				$info['organization'] = $this->getOrganization( $enterpriseInfo );
 				$info['countryNames'] = $this->getCountryNames( $enterpriseInfo );
 				$info['locations'] = $this->getLocations( $enterpriseInfo );
-				$info['isp'] = $this->getIsp( $enterpriseInfo );
 				$info['connectionType'] = $this->getConnectionType( $enterpriseInfo );
 				$info['userType'] = $this->getUserType( $enterpriseInfo );
-			} catch ( AddressNotFoundException $e ) {
+			} catch ( AddressNotFoundException ) {
 				// No need to do anything if it fails
 				// $info defaults to null values
 			}
@@ -108,10 +100,10 @@ class GeoIp2EnterpriseInfoRetriever extends BaseInfoRetriever {
 				$anonymousIpInfo = $anonymousIpReader->anonymousIp( $ip );
 				$isLegitimateProxy = null;
 				if ( isset( $enterpriseInfo ) ) {
-					$isLegitimateProxy = (bool)$enterpriseInfo->traits->isLegitimateProxy;
+					$isLegitimateProxy = $enterpriseInfo->traits->isLegitimateProxy;
 				}
 				$info['proxyType'] = $this->getProxyType( $anonymousIpInfo, $isLegitimateProxy );
-			} catch ( AddressNotFoundException $e ) {
+			} catch ( AddressNotFoundException ) {
 				// No need to do anything if it fails
 				// $info defaults to null values
 			}
@@ -123,7 +115,6 @@ class GeoIp2EnterpriseInfoRetriever extends BaseInfoRetriever {
 			$info['organization'],
 			$info['countryNames'],
 			$info['locations'],
-			$info['isp'],
 			$info['connectionType'],
 			$info['userType'],
 			$info['proxyType']
@@ -201,14 +192,6 @@ class GeoIp2EnterpriseInfoRetriever extends BaseInfoRetriever {
 
 	/**
 	 * @param Enterprise $info
-	 * @return string|null null if GeoIP2 does not return an ISP
-	 */
-	private function getIsp( Enterprise $info ): ?string {
-		return $info->traits->isp;
-	}
-
-	/**
-	 * @param Enterprise $info
 	 * @return string|null null if GeoIP2 does not return a connection type
 	 */
 	public function getConnectionType( Enterprise $info ): ?string {
@@ -225,12 +208,12 @@ class GeoIp2EnterpriseInfoRetriever extends BaseInfoRetriever {
 
 	private function getProxyType( AnonymousIp $anonymousIpinfo, ?bool $isLegitimateProxy ): ProxyType {
 		return new ProxyType(
-			(bool)$anonymousIpinfo->isAnonymousVpn || null,
-			(bool)$anonymousIpinfo->isPublicProxy || null,
-			(bool)$anonymousIpinfo->isResidentialProxy || null,
+			$anonymousIpinfo->isAnonymousVpn || null,
+			$anonymousIpinfo->isPublicProxy || null,
+			$anonymousIpinfo->isResidentialProxy || null,
 			$isLegitimateProxy,
-			(bool)$anonymousIpinfo->isTorExitNode || null,
-			(bool)$anonymousIpinfo->isHostingProvider || null
+			$anonymousIpinfo->isTorExitNode || null,
+			$anonymousIpinfo->isHostingProvider || null
 		);
 	}
 }

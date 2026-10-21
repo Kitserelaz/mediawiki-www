@@ -1,17 +1,17 @@
 <?php
 
-namespace MediaWiki\CheckUser\Maintenance;
+namespace MediaWiki\Extension\CheckUser\Maintenance;
 
-use MailAddress;
-use ManualLogEntry;
 use MediaWiki\Auth\AuthenticationResponse;
 use MediaWiki\Auth\AuthManager;
-use MediaWiki\CheckUser\ClientHints\ClientHintsData;
-use MediaWiki\CheckUser\HookHandler\CheckUserPrivateEventsHandler;
-use MediaWiki\CheckUser\HookHandler\RecentChangeSaveHandler;
-use MediaWiki\CheckUser\Services\UserAgentClientHintsManager;
 use MediaWiki\Content\ContentHandler;
 use MediaWiki\Context\RequestContext;
+use MediaWiki\Extension\CheckUser\ClientHints\ClientHintsData;
+use MediaWiki\Extension\CheckUser\HookHandler\CheckUserPrivateEventsHandler;
+use MediaWiki\Extension\CheckUser\HookHandler\RecentChangeSaveHandler;
+use MediaWiki\Extension\CheckUser\Services\UserAgentClientHintsManager;
+use MediaWiki\Logging\ManualLogEntry;
+use MediaWiki\Mail\MailAddress;
 use MediaWiki\Maintenance\Maintenance;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\Title\Title;
@@ -22,11 +22,13 @@ use MediaWiki\User\UserRigorOptions;
 use Wikimedia\IPUtils;
 use Wikimedia\Timestamp\ConvertibleTimestamp;
 
+// @codeCoverageIgnoreStart
 $IP = getenv( 'MW_INSTALL_PATH' );
 if ( $IP === false ) {
 	$IP = __DIR__ . '/../../..';
 }
 require_once "$IP/maintenance/Maintenance.php";
+// @codeCoverageIgnoreEnd
 
 /**
  * Populates the CheckUser tables with simulated data that can be useful for
@@ -34,6 +36,8 @@ require_once "$IP/maintenance/Maintenance.php";
  *
  * WARNING: This should never be run on production wikis. This is intended only for
  * local testing wikis where the DB can be cleared without issue.
+ *
+ * @codeCoverageIgnore This is only intended for local development wikis
  */
 class PopulateCheckUserTablesWithSimulatedData extends Maintenance {
 
@@ -41,7 +45,7 @@ class PopulateCheckUserTablesWithSimulatedData extends Maintenance {
 		'move' => [ 'move', 'move_redir' ],
 		'delete' => [ 'delete', 'restore' ],
 		'suppress' => [ 'delete' ],
-		'merge' => [ 'merge' ]
+		'merge' => [ 'merge' ],
 	];
 
 	/** @var array<string,?ClientHintsData> */
@@ -58,6 +62,7 @@ class PopulateCheckUserTablesWithSimulatedData extends Maintenance {
 
 	private array $ipv6Ranges = [];
 
+	/** @var string[]|null */
 	private array $ipsToUse;
 
 	private FauxRequest $mainRequest;
@@ -77,7 +82,8 @@ class PopulateCheckUserTablesWithSimulatedData extends Maintenance {
 		$this->addOption(
 			'num-anon',
 			'How many IPs should be used for the simulated actions. ' .
-			'The number of actions performed will roughly be split equally between the IPs. Default is 5.',
+			'The number of actions performed will roughly be split equally between the IPs. ' .
+			'No actions are performed by IPs if temporary account autocreation is enabled. Default is 5.',
 			false,
 			true
 		);
@@ -101,7 +107,10 @@ class PopulateCheckUserTablesWithSimulatedData extends Maintenance {
 			'ranges-for-ips',
 			'What ranges should the IPs be selected from. Default is one IPv4 and IPv6 range inside ' .
 			'ranges defined as internal.',
-			false, true, false, true
+			false,
+			true,
+			false,
+			true
 		);
 		$this->addArg(
 			'count',
@@ -158,13 +167,17 @@ class PopulateCheckUserTablesWithSimulatedData extends Maintenance {
 			$this->fatalError( 'Number of anon users making edits should not exceed the number of IPs used.' );
 		}
 
+		// Only add temporary users if temporary user creation is enabled and only add anon users if temporary
+		// accounts are disabled.
 		$services = $this->getServiceContainer();
 		if ( !$services->getTempUserConfig()->isEnabled() ) {
-			// Only add temporary users if temporary user creation is enabled.
 			$numTemp = 0;
+		} else {
+			$numAnon = 0;
 		}
 
 		$actionsPerActor = intval( floor( $count / array_sum( [ $numUsers, $numAnon, $numTemp ] ) ) );
+		// @phan-suppress-next-line PhanTypeInvalidModuloOperand
 		$remainderActions = $count % array_sum( [ $numUsers, $numAnon, $numTemp ] );
 
 		if ( $actionsPerActor < 5 ) {
@@ -180,7 +193,10 @@ class PopulateCheckUserTablesWithSimulatedData extends Maintenance {
 			$this->getConfig(),
 			$services->getUserIdentityLookup(),
 			$services->getUserFactory(),
-			$services->getReadOnlyMode()
+			$services->getReadOnlyMode(),
+			$services->get( 'UserAgentClientHintsManager' ),
+			$services->getJobQueueGroup(),
+			$services->getConnectionProvider()
 		);
 		$this->recentChangeSaveHandler = new RecentChangeSaveHandler(
 			$services->get( 'CheckUserInsert' ),
@@ -257,7 +273,8 @@ class PopulateCheckUserTablesWithSimulatedData extends Maintenance {
 			$this->setNewRandomFakeTime();
 			$lowerLimit = time() - ConvertibleTimestamp::time();
 			$user = $services->getTempUserCreator()->create(
-				null, $this->mainRequest
+				null,
+				$this->mainRequest
 			)->getUser();
 			// Creating a temporary user creates a log event.
 			$actionsLeft--;
@@ -346,7 +363,8 @@ class PopulateCheckUserTablesWithSimulatedData extends Maintenance {
 		$attemptsMade = 0;
 		do {
 			$user = $services->getUserFactory()->newFromName(
-				$this->getPrefix() . wfRandomString(), UserRigorOptions::RIGOR_CREATABLE
+				$this->getPrefix() . wfRandomString(),
+				UserRigorOptions::RIGOR_CREATABLE
 			);
 			if ( $attemptsMade > 100 ) {
 				return null;
@@ -425,20 +443,12 @@ class PopulateCheckUserTablesWithSimulatedData extends Maintenance {
 	 * in the property self::ipsToUse excluding those provided
 	 * in the arguments.
 	 *
-	 * @param array $ipsExcluded The IPs to exclude from the random selection
+	 * @param string[] $ipsExcluded The IPs to exclude from the random selection
 	 * @return string|null A random IP or null if no IPs are left after the exclusion step.
 	 */
 	private function returnRandomIpExceptExcluded( array $ipsExcluded ): ?string {
-		$ipsToChoose = array_flip( array_filter(
-			$this->ipsToUse,
-			static function ( $item ) use ( $ipsExcluded ) {
-				return !in_array( $item, $ipsExcluded );
-			}
-		) );
-		if ( count( $ipsToChoose ) ) {
-			return array_rand( $ipsToChoose );
-		}
-		return null;
+		$ipsToChoose = array_diff( $this->ipsToUse, $ipsExcluded );
+		return $ipsToChoose ? array_rand( array_flip( $ipsToChoose ) ) : null;
 	}
 
 	/**
@@ -459,8 +469,6 @@ class PopulateCheckUserTablesWithSimulatedData extends Maintenance {
 	 * Generate a randomly chosen IPv4 or IPv6 address that sits within the allowed ranges.
 	 * If the set of allowed ranges contain both IPv4 and IPv6 ranges, an IPv4 address is returned
 	 * 50% of the time on average.
-	 *
-	 * @return string
 	 */
 	private function generateNewIp(): string {
 		if ( count( $this->ipv4Ranges ) === 0 ) {
@@ -561,8 +569,6 @@ class PopulateCheckUserTablesWithSimulatedData extends Maintenance {
 	 * This method randomly chooses a User-Agent header string, assigns that
 	 * to the request and then applies Client Hints headers if the browser
 	 * that uses the selected User-Agent supports Client Hints.
-	 *
-	 * @return void
 	 */
 	private function getNewUserAgentAndAssociatedClientHints(): void {
 		$userAgent = array_rand( $this->userAgentsToClientHintsMap );
@@ -585,7 +591,8 @@ class PopulateCheckUserTablesWithSimulatedData extends Maintenance {
 			foreach ( $clientHintHeadersToSet as $clientHintHeader ) {
 				$propertyName = ClientHintsData::HEADER_TO_CLIENT_HINTS_DATA_PROPERTY_NAME[$clientHintHeader];
 				$this->mainRequest->setHeader(
-					$clientHintHeader, $clientHintsData->jsonSerialize()[$propertyName]
+					$clientHintHeader,
+					$clientHintsData->jsonSerialize()[$propertyName]
 				);
 			}
 		}
@@ -748,12 +755,12 @@ class PopulateCheckUserTablesWithSimulatedData extends Maintenance {
 		if ( $type === 'move' ) {
 			$logEntry->setParameters( [
 				'4::target' => $this->getPrefix() . wfRandomString(),
-				'5::noredir' => '0'
+				'5::noredir' => '0',
 			] );
 		} elseif ( $type === 'merge' ) {
 			$logEntry->setParameters( [
 				'4::dest' => $this->getPrefix() . wfRandomString(),
-				'5::mergepoint' => $logEntry->getTimestamp()
+				'5::mergepoint' => $logEntry->getTimestamp(),
 			] );
 		} elseif ( $type === 'delete' && $action === 'undelete' ) {
 			$logEntry->setParameters( [
@@ -845,8 +852,6 @@ class PopulateCheckUserTablesWithSimulatedData extends Maintenance {
 
 	/**
 	 * Move the fake time forward by a random number of seconds between 0 and 240 seconds.
-	 *
-	 * @return void
 	 */
 	private function moveFakeTimeForward(): void {
 		ConvertibleTimestamp::setFakeTime(
@@ -857,8 +862,6 @@ class PopulateCheckUserTablesWithSimulatedData extends Maintenance {
 	/**
 	 * Initialise the User-Agent header and Client Hints combinations
 	 * as the ClientHints objects cannot be created in a constant property.
-	 *
-	 * @return void
 	 */
 	private function initUserAgentAndClientHintsCombos(): void {
 		$this->userAgentsToClientHintsMap = [
@@ -889,8 +892,10 @@ class PopulateCheckUserTablesWithSimulatedData extends Maintenance {
 			"SM-G965U",
 			"Android",
 			"10.0.0",
-			'"Not/A)Brand";v="99", "Google Chrome";v="115", "Chromium";v="115"',
-			false
+			false,
+			null,
+			null,
+			null
 		);
 		$this->userAgentsToClientHintsMap[
 			'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) ' .
@@ -913,8 +918,10 @@ class PopulateCheckUserTablesWithSimulatedData extends Maintenance {
 			"",
 			"Windows",
 			"15.0.0",
-			'"Chromium";v="112", "Not_A Brand";v="24", "Opera GX";v="98"',
-			false
+			false,
+			null,
+			null,
+			null
 		);
 		$this->userAgentsToClientHintsMap[
 			'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) ' .
@@ -937,8 +944,10 @@ class PopulateCheckUserTablesWithSimulatedData extends Maintenance {
 			"",
 			"Windows",
 			"15.0.0",
-			'"Not/A)Brand";v="99", "Google Chrome";v="115", "Chromium";v="115"',
-			false
+			false,
+			null,
+			null,
+			null
 		);
 		$this->userAgentsToClientHintsMap[
 			'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) ' .
@@ -957,8 +966,10 @@ class PopulateCheckUserTablesWithSimulatedData extends Maintenance {
 			"",
 			"Windows",
 			null,
-			'"Not/A)Brand";v="99", "Google Chrome";v="115", "Chromium";v="115"',
-			null
+			null,
+			30,
+			'abc',
+			'def'
 		);
 	}
 
@@ -967,5 +978,7 @@ class PopulateCheckUserTablesWithSimulatedData extends Maintenance {
 	}
 }
 
+// @codeCoverageIgnoreStart
 $maintClass = PopulateCheckUserTablesWithSimulatedData::class;
 require_once RUN_MAINTENANCE_IF_MAIN;
+// @codeCoverageIgnoreEnd

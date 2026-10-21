@@ -1,0 +1,238 @@
+<?php
+
+namespace SMW\Localizer;
+
+use Closure;
+use MediaWiki\Language\Language;
+use SMW\Cache\InMemoryLruCache;
+use SMW\InMemoryPoolCache;
+use Wikimedia\Message\MessageSpecifier;
+
+/**
+ * @private
+ *
+ * Object agnostic handler class that encapsulates a foreign Message object
+ * (e.g MW's Message class). It is expected that a registered handler returns a
+ * simple string representation for the parameters, type, and language given.
+ *
+ * @license GPL-2.0-or-later
+ * @since 2.4
+ *
+ * @author mwjames
+ */
+class Message {
+
+	private static ?InMemoryLruCache $messageCache = null;
+
+	/**
+	 * PoolCache ID
+	 */
+	const POOLCACHE_ID = 'message.cache';
+
+	/**
+	 * MW processing mode
+	 */
+	const TEXT = 0x2;
+	const ESCAPED = 0x4;
+	const PARSE = 0x8;
+
+	/**
+	 * Predefined language mode
+	 */
+	const CONTENT_LANGUAGE = 0x32;
+	const USER_LANGUAGE = 0x64;
+
+	private static array $messageHandler = [];
+
+	/**
+	 * @since 2.4
+	 */
+	public static function registerCallbackHandler( string|int $type, Closure $handler ): void {
+		self::$messageHandler[$type] = $handler;
+	}
+
+	/**
+	 * @since 2.4
+	 */
+	public static function deregisterHandlerFor( string|int $type ): void {
+		unset( self::$messageHandler[$type] );
+	}
+
+	/**
+	 * @since 2.4
+	 */
+	public static function clear(): void {
+		self::$messageCache = null;
+	}
+
+	/**
+	 * @since 2.4
+	 */
+	public static function getCache(): InMemoryLruCache {
+		if ( self::$messageCache === null ) {
+			self::$messageCache = InMemoryPoolCache::getInstance()->getPoolCacheById( self::POOLCACHE_ID, 1000 );
+		}
+
+		return self::$messageCache;
+	}
+
+	/**
+	 * Encodes a message into a JSON representation that can transferred,
+	 * transformed, and stored while allowing to add an infinite amount of
+	 * arguments.
+	 *
+	 * '[2,"Foo", "Bar"]' => Preferred output type, Message ID, Argument $1 ... $
+	 *
+	 * @since 2.5
+	 */
+	public static function encode( string|array $message, ?int $type = null ): string {
+		if ( is_string( $message ) &&
+			json_decode( $message ) &&
+			json_last_error() === JSON_ERROR_NONE
+		) {
+			return $message;
+		}
+
+		$type ??= self::TEXT;
+
+		if ( $message === [] ) {
+			return '';
+		}
+
+		$message = (array)$message;
+		$encode = [ $type ];
+
+		foreach ( $message as $value ) {
+			$value ??= '';
+
+			// Check if the value is already encoded, and if decode to keep the
+			// structure intact
+			if ( is_string( $value ) && $value !== '' && $value[0] === '[' ) {
+				$decoded = json_decode( $value, true );
+
+				if ( is_array( $decoded ) && json_last_error() === JSON_ERROR_NONE ) {
+					$encode += $decoded;
+					continue;
+				}
+			}
+
+			// Normalize arguments like "<strong>Expression error:
+			// Unrecognized word "yyyy".</strong>"
+			$value = strip_tags( htmlspecialchars_decode( (string)$value, ENT_QUOTES ) );
+
+			// - Internally encoded to circumvent the strip_tags which would
+			//   remove <, > from values that represent a range
+			// - Encode `::` to prevent the annotation parser to pick the
+			//   message value
+			$value = str_replace(
+				[ '%3C', '%3E', "::" ],
+				[ '>', '<', "&#58;&#58;" ],
+				$value
+			);
+
+			$encode[] = $value;
+		}
+
+		return json_encode( $encode );
+	}
+
+	/**
+	 * @fixme Needs to be MW agnostic !
+	 *
+	 * @since 2.5
+	 */
+	public static function exists( string|array|MessageSpecifier $message ): bool {
+		return wfMessage( $message )->exists();
+	}
+
+	/**
+	 * @since 2.5
+	 */
+	public static function decode( string $message, ?int $type = null, mixed $language = null ): string|bool {
+		$message = json_decode( $message );
+		$asType = null;
+
+		if ( json_last_error() !== JSON_ERROR_NONE || $message === '' || $message === null ) {
+			return false;
+		}
+
+		if ( !is_array( $message ) && is_numeric( $message ) ) {
+			return $message;
+		}
+
+		// If the first element is numeric then its signals the expected message
+		// formatter type
+		if ( isset( $message[0] ) && is_numeric( $message[0] ) ) {
+			$asType = array_shift( $message );
+		}
+
+		// Is it a msgKey or a simple text?
+		if ( isset( $message[0] ) && !self::exists( $message[0] ) ) {
+			return $message[0];
+		}
+
+		return self::get( $message, ( $type === null ? $asType : $type ), $language );
+	}
+
+	/**
+	 * @since 2.4
+	 */
+	public static function get(
+		string|array $parameters,
+		// phpcs:ignore MediaWiki.Usage.NullableType.ExplicitNullableTypes -- false positive
+		int|string|null $type = null,
+		mixed $language = null
+	): string {
+		$handler = null;
+		$parameters = (array)$parameters;
+
+		if ( $type === null ) {
+			$type = self::TEXT;
+		}
+
+		if ( $language === null || !$language ) {
+			$language = self::CONTENT_LANGUAGE;
+		}
+
+		$hash = self::getHash( $parameters, $type, $language );
+
+		$content = self::getCache()->fetch( $hash );
+		if ( $content ) {
+			return $content;
+		}
+
+		if ( isset( self::$messageHandler[$type] ) && is_callable( self::$messageHandler[$type] ) ) {
+			$handler = self::$messageHandler[$type];
+		}
+
+		if ( $handler === null ) {
+			return '';
+		}
+
+		$message = call_user_func_array(
+			$handler,
+			[ $parameters, $language ]
+		);
+
+		self::getCache()->save( $hash, $message );
+
+		return $message;
+	}
+
+	/**
+	 * @since 2.4
+	 */
+	public static function getHash(
+		array|string $parameters,
+		// phpcs:ignore MediaWiki.Usage.NullableType.ExplicitNullableTypes -- false positive
+		int|string|null $type = null,
+		mixed $language = null
+	): string {
+		if ( $language instanceof Language ) {
+			$language = $language->getCode();
+		}
+
+		return md5( json_encode( $parameters ) . '#' . (string)$type . '#' . $language );
+	}
+
+}

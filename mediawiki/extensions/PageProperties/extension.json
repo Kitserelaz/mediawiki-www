@@ -1,0 +1,133 @@
+{
+	"name": "PageProperties",
+	"author": "thomas-topway-it",
+	"version": "1.5.2",
+	"url": "https://www.mediawiki.org/wiki/Extension:PageProperties",
+	"descriptionmsg": "pageproperties-extension-desc",
+	"license-name": "GPL-2.0-or-later",
+	"type": "parserhook",
+	"requires": {
+		"MediaWiki": ">= 1.35.3"
+	},
+	"MessagesDirs": {
+		"PageProperties": [
+			"i18n"
+		]
+	},
+	"callback": "PagePropertiesHooks::initExtension",
+	"AutoloadClasses": {
+		"PageProperties": "includes/PageProperties.php",
+		"PagePropertiesHooks": "includes/PagePropertiesHooks.php",
+		"SpecialPageProperties": "includes/specials/SpecialPageProperties.php",
+		"PagePropertiesApiCheckLatestVersion": "includes/api/PagePropertiesApiCheckLatestVersion.php"
+	},
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\PageProperties\\Aliases\\": "includes/aliases/"
+	},
+	"ExtensionMessagesFiles": {
+		"PagePropertiesAlias": "PageProperties.alias.php"
+	},
+	"Hooks": {
+		"LoadExtensionSchemaUpdates": "PagePropertiesHooks::onLoadExtensionSchemaUpdates",
+		"PageDeleteComplete": "PagePropertiesHooks::onPageDeleteComplete",
+		"ArticleUndelete": "PagePropertiesHooks::onArticleUndelete",
+		"BeforeInitialize": "PagePropertiesHooks::onBeforeInitialize",
+		"ParserAfterTidy": "PagePropertiesHooks::onParserAfterTidy",
+		"MultiContentSave": "PagePropertiesHooks::onMultiContentSave",
+		"OutputPageParserOutput": "PagePropertiesHooks::onOutputPageParserOutput",
+		"BeforePageDisplay": "PagePropertiesHooks::onBeforePageDisplay",
+		"SidebarBeforeOutput": "PagePropertiesHooks::onSidebarBeforeOutput",
+		"SkinTemplateNavigation::Universal": "PagePropertiesHooks::onSkinTemplateNavigation",
+		"LinkerMakeExternalLink": "PagePropertiesHooks::onLinkerMakeExternalLink"
+	},
+	"SpecialPages": {
+		"PageProperties": "SpecialPageProperties"
+	},
+	"APIModules": {
+		"pageproperties-check-latest-version": "PagePropertiesApiCheckLatestVersion"
+	},
+	"GroupPermissions": {
+		"sysop": {
+			"pageproperties-caneditpageproperties": true
+		},
+		"bureaucrat": {
+			"pageproperties-caneditpageproperties": true
+		},
+		"pageproperties-admin": {
+			"pageproperties-caneditpageproperties": true
+		},
+		"pageproperties-editor": {
+			"pageproperties-caneditpageproperties": true
+		}
+	},
+	"AddGroups": {
+		"pageproperties-admin": [
+			"pageproperties-admin",
+			"pageproperties-editor"
+		]
+	},
+	"RemoveGroups": {
+		"pageproperties-admin": [
+			"pageproperties-admin",
+			"pageproperties-editor"
+		]
+	},
+	"AvailableRights": [
+		"pageproperties-caneditpageproperties"
+	],
+	"ResourceFileModulePaths": {
+		"localBasePath": "resources",
+		"remoteExtPath": "PageProperties/resources"
+	},
+	"ResourceModules": {
+		"ext.PageProperties": {
+			"position": "top",
+			"scripts": [
+				"PagePropertiesFunctions.js",
+				"VersionCheck.js",
+				"tabs.js",
+				"dynamictable.js"
+			],
+			"styles": [
+				"style.css"
+			],
+			"dependencies": [
+				"oojs-ui-core",
+				"oojs-ui-widgets",
+				"mediawiki.storage"
+			],
+			"messages": [
+				"pageproperties-jsmodule-pageproperties-outdated-version",
+				"prefs-tabs-navigation-hint",
+				"pageproperties-jsmodule-pageproperties-outdated-version",
+				"pageproperties-return",
+				"pageproperties-form-section-main",
+				"pageproperties-form-section-seo",
+				"pageproperties-form-section-main-label",
+				"pageproperties-form-displaytitle-label",
+				"pageproperties_form-displaytitle-option-override",
+				"pageproperties_form-displaytitle-option-default",
+				"pageproperties-form-section-seo",
+				"pageproperties_form-displaytitle-option-override",
+				"pageproperties-form-model-label",
+				"pageproperties-form-section-seo-label",
+				"pageproperties-form-meta_description-label",
+				"pageproperties_dynamictable_addfield",
+				"pageproperties-form-meta_robots_noindex_nofollow-label",
+				"pageproperties-form-seo_subpages-label",
+				"pageproperties-form-seo_entire_wiki-label"
+			]
+		}
+	},
+	"TrackingCategories": [
+		"pageproperties-tracking-category"
+	],
+	"config": {
+		"PagePropertiesAddTrackingCategory": false,
+		"PagePropertiesDisableSidebarLink": false,
+		"PagePropertiesDisableNavigationLink": false,
+		"PagePropertiesDisplayAlwaysUnprefixedTitles": false,
+		"PagePropertiesDisableVersionCheck": false
+	},
+	"manifest_version": 1
+}

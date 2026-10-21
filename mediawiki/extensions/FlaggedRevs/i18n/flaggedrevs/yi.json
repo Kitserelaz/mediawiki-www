@@ -1,0 +1,24 @@
+{
+	"@metadata": {
+		"authors": [
+			"Imre",
+			"Pacha Tchernof",
+			"Yidel",
+			"פוילישער"
+		]
+	},
+	"editor": "רעדאַקטאָר",
+	"flaggedrevs-prefs-stable": "ווען צו ווייַזן די סטאַבילע ווערסיע פון אינהאַלט בלעטער (אויב ס'איז פֿאַראַן)",
+	"flaggedrevs-hidereviewed-hide": "באַהאַלטן",
+	"group-editor": "רעדאַקטאָרן",
+	"group-editor-member": "{{GENDER:$1|רעדאַקטאָר|רעדאַקטאָרין}}",
+	"group-reviewer": "רעצענזענטן",
+	"group-reviewer-member": "{{GENDER:$1|רעצענזענט}}",
+	"grouppage-editor": "{{ns:project}}:רעדאַקטאָר",
+	"grouppage-reviewer": "{{ns:project}}:רעצענזענט",
+	"review-logentry-id": "רעוויזיע: $2",
+	"revreview-revnotfound": "די אלטע רעוויזיע איר האט געבעטן קען נישט געפינען ווערן.\nביטע טשעקט די URL וואס ברויכט אריינצוגיין אין דעם בלאט.",
+	"revreview-def-draft": "לעצטיגע",
+	"revreview-restriction-none": "קיין",
+	"tooltip-ca-current": "באקוקט דעם בלאט מיט די ענדערונגען וואס זענען נאך נישט באשטעטיקט"
+}

@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "patch": "patches/mediawiki-146-linktarget-queries.patch",
+  "purpose": "Use linktarget, collation name-table joins and current connection provider on MediaWiki 1.46 while preserving query outputs.",
+  "source_patches": [
+    {
+      "path": "mediawiki/extensions/DataTransfer/includes/specials/DT_ViewXML.php",
+      "baseline_sha256": "f38104e0f1b141cae7411a92c016db4daed901250910ec087b2fb771f32efdc9",
+      "patched_sha256": "4832357e919f0ad912de6ea30a962d9aeb5e75f9a84da30dfa4b3f91caf00f25",
+      "status": "live-query-test-passed"
+    },
+    {
+      "path": "mediawiki/extensions/HighlightLinksInCategory/HighlightLinksInCategory.php",
+      "baseline_sha256": "7b6a16729067c3118e858608afb15b837b3963f7a432e378121923d922a0754f",
+      "patched_sha256": "6870260d04c2c3543ba852fcf8f5ecb9c1636e3dfd79bebdb61e776c8e45357b",
+      "status": "live-query-test-passed"
+    },
+    {
+      "path": "mediawiki/extensions/ImageRating/includes/specials/SpecialImageRating.php",
+      "baseline_sha256": "0b123b0fc33a302261d24dac6e2b5078bb96c27503a3fb205dc5ffc1358a17ed",
+      "patched_sha256": "dc97965211889d3221853633721787c71f56beacadd33f9e200f6e77da9b2801",
+      "status": "implemented-pending-live-query-test"
+    },
+    {
+      "path": "mediawiki/extensions/SemanticMediaWiki/maintenance/seedDemoData.php",
+      "baseline_sha256": "341621e603f2f5cca5265b3e4365a5d68e18ba6da13a947ff9f9e64f31635b6e",
+      "patched_sha256": "a0370a8cb2a970d263ba9febaed230df521348126c0e945ecb3b23545a9b8b6a",
+      "status": "live-query-test-passed"
+    },
+    {
+      "path": "mediawiki/extensions/Video/includes/CategoryWithVideoViewer.php",
+      "baseline_sha256": "af5ea94916f6ece2f190be0d586f9ca7c3a743e591ee9fbb7d308f88a7930668",
+      "patched_sha256": "739194a6fb7973d35f3b05d9fa3c65007328f7c2cc2549263e083313b4939836",
+      "status": "implemented-pending-live-query-test"
+    },
+    {
+      "path": "mediawiki/extensions/Video/includes/parser/VideoGalleryPopulate.hooks.php",
+      "baseline_sha256": "7086ccb39b0bdce1cec6428a10a3cb698c1d6cdfc3034c8daf8d24e38d1aa736",
+      "patched_sha256": "e683d1796ea1f6bcf52f8757dc0fa183ed2e58a526bcfc12d9efc62494696a32",
+      "status": "implemented-pending-live-query-test"
+    },
+    {
+      "path": "mediawiki/extensions/VoteNY/includes/specials/SpecialTopRatings.php",
+      "baseline_sha256": "c5a6ef9e4d0ce01d296db95c6cd7f8c5215991ef30409104aa881e1b53eea84e",
+      "patched_sha256": "9c0b32c9689d14a32e1600b0a19ccd1faed70bd76a9e285e3d30baddac1390e0",
+      "status": "implemented-pending-live-query-test"
+    }
+  ]
+}

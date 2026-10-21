@@ -19,15 +19,11 @@ class MathDataUpdater implements StatementDataUpdater {
 	private $hasMath = false;
 
 	/**
-	 * @var PropertyDataTypeMatcher
-	 */
-	private $propertyDataTypeMatcher;
-
-	/**
 	 * @inheritDoc
 	 */
-	public function __construct( PropertyDataTypeMatcher $propertyDataTypeMatcher ) {
-		$this->propertyDataTypeMatcher = $propertyDataTypeMatcher;
+	public function __construct(
+		private readonly PropertyDataTypeMatcher $propertyDataTypeMatcher,
+	) {
 	}
 
 	/**
@@ -35,8 +31,6 @@ class MathDataUpdater implements StatementDataUpdater {
 	 *
 	 * This method is normally invoked when processing a StatementList
 	 * for all Statements on a StatementListProvider (e.g. an Item).
-	 *
-	 * @param Statement $statement
 	 */
 	public function processStatement( Statement $statement ) {
 		$propertyId = $statement->getPropertyId();
@@ -48,12 +42,11 @@ class MathDataUpdater implements StatementDataUpdater {
 	/**
 	 * Update extension data, properties or other data in ParserOutput.
 	 * These updates are invoked when EntityContent::getParserOutput is called.
-	 *
-	 * @param ParserOutput $parserOutput
 	 */
 	public function updateParserOutput( ParserOutput $parserOutput ) {
 		if ( $this->hasMath ) {
 			$parserOutput->addModuleStyles( [ 'ext.math.styles' ] );
+			$parserOutput->addModules( [ 'ext.math.polyfills' ] );
 		}
 	}
 }

@@ -49,7 +49,7 @@ class JsonTreeRef {
 	/** @var mixed|null */
 	public $node;
 
-	/** @var JsonTreeRef|null */
+	/** @var self|null */
 	public $parent;
 
 	/** @var int|null */
@@ -72,7 +72,7 @@ class JsonTreeRef {
 
 	/**
 	 * @param mixed|null $node
-	 * @param JsonTreeRef|null $parent
+	 * @param self|null $parent
 	 * @param int|null $nodeindex
 	 * @param string|null $nodename
 	 * @param TreeRef|null $schemaref
@@ -116,7 +116,7 @@ class JsonTreeRef {
 	 * @return string
 	 */
 	public function getTitle() {
-		if ( isset( $this->nodename ) ) {
+		if ( $this->nodename !== null ) {
 			return $this->nodename;
 		}
 		if ( isset( $this->node['title'] ) ) {
@@ -223,7 +223,7 @@ class JsonTreeRef {
 	/**
 	 * Return the child ref for $this ref associated with a given $key
 	 * @param int|string $key
-	 * @return JsonTreeRef
+	 * @return self
 	 * @throws JsonSchemaException
 	 */
 	public function getMappingChildRef( $key ) {
@@ -237,7 +237,7 @@ class JsonTreeRef {
 		} elseif ( array_key_exists( 'additionalProperties', $snode ) ) {
 			// additionalProperties can *either* be a boolean or can be
 			// defined as a schema (an object)
-			if ( gettype( $snode['additionalProperties'] ) === 'boolean' ) {
+			if ( is_bool( $snode['additionalProperties'] ) ) {
 				if ( !$snode['additionalProperties'] ) {
 					throw new JsonSchemaException( 'jsonschema-invalidkey',
 						(string)$key, $this->getDataPathTitles() );
@@ -251,13 +251,13 @@ class JsonTreeRef {
 		$value = $this->node[$key];
 		$schemai = $this->schemaindex->newRef( $schemadata, $this->schemaref, $key, (string)$key );
 
-		return new JsonTreeRef( $value, $this, $key, $nodename, $schemai );
+		return new self( $value, $this, $key, $nodename, $schemai );
 	}
 
 	/**
 	 * Return the child ref for $this ref associated with a given index $i
 	 * @param int $i
-	 * @return JsonTreeRef
+	 * @return self
 	 */
 	public function getSequenceChildRef( $i ) {
 		// TODO: make this conform to draft-03 by also allowing single object
@@ -271,13 +271,14 @@ class JsonTreeRef {
 		$schemai = $this->schemaindex->newRef( $schemanode, $this->schemaref, 0, (string)$i );
 
 		// @phan-suppress-next-line PhanTypeArraySuspiciousNullable
-		return new JsonTreeRef( $this->node[$i], $this, $i, $nodename, $schemai );
+		return new self( $this->node[$i], $this, $i, $nodename, $schemai );
 	}
 
 	/**
 	 * Validate the JSON node in this ref against the attached schema ref.
 	 * Return true on success, and throw a JsonSchemaException on failure.
 	 * @return bool
+	 * @throws JsonSchemaException
 	 */
 	public function validate() {
 		if ( array_key_exists( 'enum', $this->schemaref->node ) &&
@@ -321,6 +322,9 @@ class JsonTreeRef {
 		return true;
 	}
 
+	/**
+	 * @throws JsonSchemaException If the JSON node has a field that is required but missing
+	 */
 	private function validateObjectChildren() {
 		if ( array_key_exists( 'properties', $this->schemaref->node ) ) {
 			foreach ( $this->schemaref->node['properties'] as $skey => $svalue ) {
@@ -337,7 +341,6 @@ class JsonTreeRef {
 			$jsoni = $this->getMappingChildRef( $key );
 			$jsoni->validate();
 		}
-		return true;
 	}
 
 	private function validateArrayChildren() {

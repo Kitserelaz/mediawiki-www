@@ -1,0 +1,22 @@
+{
+	"@metadata": {
+		"authors": [
+			"Amire80"
+		]
+	},
+	"apihelp-ratepage-summary": "מתן אפשרות למשתמש להצביע בדף ולקבל דירוג עבור דף. דורשת ציון אחד משני פרמטרים: pageid או pagetitle.",
+	"apihelp-ratepage-param-pageid": "מזהה הדף",
+	"apihelp-ratepage-param-pagetitle": "כותרת הדף",
+	"apihelp-ratepage-param-answer": "דירוג הדף של המשתמש (מ־1 עד 5 כולל כברירת מחדל, ניתן לשנות על־ידי הגדרות תצורה)",
+	"apihelp-ratepage-param-contest": "מזהה תחרות",
+	"apihelp-ratepage-example-1": "קבלת הדירוג הנוכחי עבור הדף Example.",
+	"apihelp-ratepage-example-2": "לדרג את הדף Example עם 2.",
+	"apihelp-query+pagerating-summary": "החזרת הצבעות בדף הזה ואת הרשאות ההצבעה של המשתמש הזה.",
+	"apihelp-query+pagerating-param-contest": "מזהה תחרות",
+	"apierror-ratepage-contest-id-too-long": "אורך מזהה התחרות חורג מהמגבלה (255 תווים).",
+	"apierror-ratepage-contest-id-allowed-chars": "מזהה התחרות חייב להיות מורכב רק מספרות ואותיות לטיניות. אסור להשתמש בתווים אחרים.",
+	"apierror-ratepage-contest-not-exists": "תחרות $1 לא קיימת.",
+	"apierror-ratepage-page-not-exists": "הדף שצוין אינו קיים.",
+	"apierror-ratepage-cannot-vote-in-contest": "אין לך הרשאות להצביע התחרות הזאת.",
+	"apierror-ratepage-invalid-answer": "צוינה תשובה בלתי־תקינה. התשובה צריכה להיות גדולה מ־ או שווה ל־$1 וקטנה מ־ או שווה ל־$2."
+}

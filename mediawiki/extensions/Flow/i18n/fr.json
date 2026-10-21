@@ -22,6 +22,7 @@
 			"Ltrlg",
 			"MPlauche",
 			"Macofe",
+			"Mahabarata",
 			"Mattho69",
 			"Matěj Suchánek",
 			"Maxim21",
@@ -53,8 +54,7 @@
 			"Wladek92",
 			"Wyz",
 			"Yodaspirine",
-			"Zebulon84",
-			"Mahabarata"
+			"Zebulon84"
 		]
 	},
 	"content-model-flow-board": "Tableau de bord des Discussions structurées",
@@ -473,9 +473,6 @@
 	"flow-terms-of-use-summarize": "En cliquant sur « {{int:flow-topic-action-update-topic-summary}} », vous acceptez les conditions d’utilisation de ce wiki.",
 	"flow-terms-of-use-lock-topic": "En cliquant sur « {{int:flow-topic-action-lock-topic}} », vous acceptez les conditions d’utilisation de ce wiki.",
 	"flow-terms-of-use-unlock-topic": "En cliquant sur « {{int:flow-topic-action-unlock-topic}} », vous acceptez les conditions d’utilisation de ce wiki.",
-	"flow-whatlinkshere-post": "à partir d’un [$1 message]",
-	"flow-whatlinkshere-header": "à partir de la [$1 description]",
-	"flow-whatlinkshere-post-summary": "à partir du [$1 sommaire]",
 	"structureddiscussions": "Discussions structurées",
 	"flow-special-desc": "Cette page spéciale redirige vers un flux de travail de Discussions structurées ou un message de Discussions structurées d’après un UUID.",
 	"flow-special-type": "Type",

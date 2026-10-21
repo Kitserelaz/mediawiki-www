@@ -1,0 +1,78 @@
+<div class="wikibase-lexeme-sense-glosses">
+	<table class="wikibase-lexeme-sense-glosses-table">
+		<thead v-if="inEditMode">
+			<tr class="wikibase-lexeme-sense-gloss-table-header">
+				<td class="wikibase-lexeme-sense-gloss-language">
+					{{message('wikibaselexeme-gloss-field-language-label')}}
+				</td>
+				<td>{{message('wikibaselexeme-gloss-field-gloss-label')}}</td>
+				<td></td>
+			</tr>
+		</thead>
+		<tbody>
+			<tr v-for="gloss in glosses" class="wikibase-lexeme-sense-gloss">
+				<td class="wikibase-lexeme-sense-gloss-language">
+					<span v-if="!inEditMode">{{languageName(gloss.language)}}</span>
+					<language-selector v-else
+						class="wikibase-lexeme-sense-gloss-language-input"
+						:class="{
+							'wikibase-lexeme-sense-gloss-language-input_redundant-language':
+								isRedundantLanguage(gloss.language),
+							'wikibase-lexeme-sense-gloss-language-input_invalid-language':
+								isInvalidLanguage(gloss.language)
+							}"
+						@input="gloss.language = $event"
+						:value="gloss.language"
+						:initialCode="gloss.language">
+					</language-selector>
+				</td>
+				<td class="wikibase-lexeme-sense-gloss-value-cell"
+					:dir="directionality(gloss.language)"
+					:lang="gloss.language">
+					<span v-if="!inEditMode"
+						class="wikibase-lexeme-sense-gloss-value">
+						{{gloss.value}}
+					</span>
+					<input v-if="inEditMode"
+						class="wikibase-lexeme-sense-gloss-value-input"
+						v-model="gloss.value">
+				</td>
+				<td class="wikibase-lexeme-sense-gloss-actions-cell">
+					<button v-if="inEditMode"
+						class="wikibase-lexeme-sense-glosses-control
+							wikibase-lexeme-sense-glosses-remove"
+						:disabled="glosses.length <= 1"
+						v-on:click="remove(gloss)"
+						type="button">
+						{{message('wikibase-remove')}}
+					</button>
+				</td>
+			</tr>
+		</tbody>
+		<tfoot v-if="inEditMode">
+			<tr>
+				<td colspan="3" >
+					<div v-if="hasRedundantLanguage"
+						class="wikibase-lexeme-sense-gloss_redundant-language-warning">
+						<p>{{message('wikibaselexeme-sense-gloss-redundant-language')}}</p>
+					</div>
+					<div v-if="hasInvalidLanguage"
+						class="wikibase-lexeme-sense-gloss_invalid-language-warning">
+						<p>{{message('wikibaselexeme-sense-gloss-invalid-language')}}</p>
+					</div>
+				</td>
+			</tr>
+			<tr>
+				<td>
+				</td>
+				<td>
+					<button type="button"
+						class="wikibase-lexeme-sense-glosses-control
+							wikibase-lexeme-sense-glosses-add"
+						v-on:click="add" >+ {{message('wikibase-add')}}
+					</button>
+				</td>
+			</tr>
+		</tfoot>
+	</table>
+</div>

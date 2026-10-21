@@ -1,0 +1,22 @@
+{
+	"@metadata": {
+		"authors": [
+			"Исмаил Садуев",
+			"Умар"
+		]
+	},
+	"nimbus-desc": "Кечйаран тема Nimbus",
+	"nimbus-advertise": "ДӀакхайкхо",
+	"nimbus-contribute": "Ккъинхьегам",
+	"nimbus-didyouknow": "Хаий шуна",
+	"nimbus-editthispage": "ХӀара агӀо нисйан",
+	"nimbus-featuredimage": "Магийна сурт",
+	"nimbus-featureduser": "Магийна декъашхо",
+	"nimbus-login": "ЧугӀо",
+	"nimbus-logout": "ДӀадерзадо болх бар?",
+	"nimbus-more-actions": "Кхин тӀе дийриш",
+	"nimbus-more-wikis": "Кхин вики-проекташ",
+	"nimbus-profile": "Профиль",
+	"nimbus-signup": "ДӀайаздалар",
+	"nimbus-welcome": "{{GENDER:$2|Марша догӀийла}}, $1"
+}

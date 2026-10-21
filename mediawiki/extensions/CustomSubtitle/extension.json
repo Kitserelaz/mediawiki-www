@@ -1,0 +1,26 @@
+{
+	"name": "CustomSubtitle",
+	"author": "Antoine Lamielle",
+	"url": "https://github.com/lingua-libre/CustomSubtitle",
+	"license-name": "GPL-2.0+",
+	"version": "0.1.0",
+	"namemsg": "customSubtitle",
+	"descriptionmsg": "customSubtitle-desc",
+	"type": "parserhook",
+	"manifest_version": 1,
+	"requires": {
+		"MediaWiki": ">= 1.34.0"
+	},
+	"MessagesDirs": {
+		"CustomSubtitle": [ "i18n" ]
+	},
+	"AutoloadClasses": {
+		"CustomSubtitleHooks": "src/CustomSubtitleHooks.php"
+	},
+	"ExtensionMessagesFiles": {
+		"CustomSubtitleMagic": "CustomSubtitle.i18n.php"
+	},
+	"Hooks": {
+		"ParserFirstCallInit": "CustomSubtitleHooks::onParserFirstCallInit"
+	}
+}

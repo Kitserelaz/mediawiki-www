@@ -3,7 +3,7 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\ImageMap;
 
-use DOMNode;
+use Wikimedia\Parsoid\Core\DOMCompat;
 use Wikimedia\Parsoid\DOM\DocumentFragment;
 use Wikimedia\Parsoid\DOM\Element;
 use Wikimedia\Parsoid\Ext\DOMDataUtils;
@@ -13,7 +13,6 @@ use Wikimedia\Parsoid\Ext\ExtensionModule;
 use Wikimedia\Parsoid\Ext\ExtensionTagHandler;
 use Wikimedia\Parsoid\Ext\ParsoidExtensionAPI;
 use Wikimedia\Parsoid\Ext\WTUtils;
-use Wikimedia\Parsoid\Utils\DOMCompat;
 
 /**
  * This is an adaptation of the existing ImageMap extension of the legacy
@@ -31,7 +30,6 @@ use Wikimedia\Parsoid\Utils\DOMCompat;
  *
  * Coordinates are relative to the source image, not the thumbnail.
  */
-
 class ParsoidImageMap extends ExtensionTagHandler implements ExtensionModule {
 
 	private const TOP_RIGHT = 0;
@@ -60,7 +58,10 @@ class ParsoidImageMap extends ExtensionTagHandler implements ExtensionModule {
 		];
 	}
 
-	/** @inheritDoc */
+	/**
+	 * @inheritDoc
+	 * @throws ExtensionError
+	 */
 	public function sourceToDom(
 		ParsoidExtensionAPI $extApi, string $src, array $extArgs
 	): DocumentFragment {
@@ -94,7 +95,7 @@ class ParsoidImageMap extends ExtensionTagHandler implements ExtensionModule {
 
 			$line = trim( $line );
 
-			if ( $line == '' || $line[0] == '#' ) {
+			if ( $line === '' || $line[0] === '#' ) {
 				continue;
 			}
 
@@ -104,7 +105,7 @@ class ParsoidImageMap extends ExtensionTagHandler implements ExtensionModule {
 				// The first line should have an image specification on it
 				// Extract it and render the HTML
 				$bits = explode( '|', $line, 2 );
-				if ( count( $bits ) == 1 ) {
+				if ( count( $bits ) === 1 ) {
 					$image = $bits[0];
 					$options = '';
 				} else {
@@ -129,19 +130,21 @@ class ParsoidImageMap extends ExtensionTagHandler implements ExtensionModule {
 				$imageNode = $anchor->firstChild;
 
 				// Could be a span
-				if ( DOMCompat::nodeName( $imageNode ) !== 'img' ) {
+				if ( !(
+					$imageNode instanceof Element &&
+					DOMUtils::nodeName( $imageNode ) === 'img'
+				) ) {
 					throw new ExtensionError( 'imagemap_invalid_image' );
 				}
-				DOMUtils::assertElt( $imageNode );
 
 				// Add the linear dimensions to avoid inaccuracy in the scale
 				// factor when one is much larger than the other
 				// (sx+sy)/(x+y) = s
 
-				$thumbWidth = (int)( $imageNode->getAttribute( 'width' ) );
-				$thumbHeight = (int)( $imageNode->getAttribute( 'height' ) );
-				$imageWidth = (int)( $imageNode->getAttribute( 'data-file-width' ) );
-				$imageHeight = (int)( $imageNode->getAttribute( 'data-file-height' ) );
+				$thumbWidth = (int)( DOMCompat::getAttribute( $imageNode, 'width' ) ?? '0' );
+				$thumbHeight = (int)( DOMCompat::getAttribute( $imageNode, 'height' ) ?? '0' );
+				$imageWidth = (int)( DOMCompat::getAttribute( $imageNode, 'data-file-width' ) ?? '0' );
+				$imageHeight = (int)( DOMCompat::getAttribute( $imageNode, 'data-file-height' ) ?? '0' );
 
 				$denominator = $imageWidth + $imageHeight;
 				$numerator = $thumbWidth + $thumbHeight;
@@ -154,9 +157,9 @@ class ParsoidImageMap extends ExtensionTagHandler implements ExtensionModule {
 
 			// Handle desc spec
 			$cmd = strtok( $line, " \t" );
-			if ( $cmd == 'desc' ) {
+			if ( $cmd === 'desc' ) {
 				$typesText = wfMessage( 'imagemap_desc_types' )->inContentLanguage()->text();
-				if ( $descTypesCanonical != $typesText ) {
+				if ( $descTypesCanonical !== $typesText ) {
 					// i18n desc types exists
 					$typesText = $descTypesCanonical . ', ' . $typesText;
 				}
@@ -198,14 +201,20 @@ class ParsoidImageMap extends ExtensionTagHandler implements ExtensionModule {
 				// sol
 				true
 			);
-			$a = DOMCompat::querySelector( $linkFragment, 'a' );
-			if ( $a == null ) {
+			// Interlanguage and category links parse to link tags,
+			// so expect them here too
+			$a = DOMCompat::querySelector( $linkFragment, 'a, link' );
+			if (
+				!( $a instanceof Element ) ||
+				( DOMUtils::nodeName( $a ) === 'link' &&
+					// We could expose WTUtils::isSolTransparentLink for this
+					!DOMUtils::matchRel( $a, '#^mw:PageProp/(Category|Language)#D' ) )
+			) {
 				// Meh, might be for other reasons
 				throw new ExtensionError( 'imagemap_invalid_title', $lineNum );
 			}
-			DOMUtils::assertElt( $a );
 
-			$href = $a->getAttribute( 'href' );
+			$href = DOMCompat::getAttribute( $a, 'href' ) ?? '';
 			$externLink = DOMUtils::matchRel( $a, '#^mw:ExtLink#D' ) !== null;
 			$alt = '';
 
@@ -217,7 +226,7 @@ class ParsoidImageMap extends ExtensionTagHandler implements ExtensionModule {
 				// Here we produce a known difference by just taking the text
 				// content of the resulting dom.
 				// See the test, "Link with wikitext syntax in content"
-				$alt = trim( $a->textContent );
+				$alt = trim( $a->textContent ?? '' );
 			}
 
 			$shapeSpec = substr( $line, 0, -strlen( $link ) );
@@ -265,24 +274,22 @@ class ParsoidImageMap extends ExtensionTagHandler implements ExtensionModule {
 					$attribs['target'] = $extLinkAttribs['target'];
 				}
 			}
-			if ( $shape != 'default' ) {
+			if ( $shape !== 'default' ) {
 				$attribs['shape'] = $shape;
 			}
 			if ( $coords ) {
 				$attribs['coords'] = implode( ',', $coords );
 			}
-			if ( $alt != '' ) {
-				if ( $shape != 'default' ) {
+			if ( $alt !== '' ) {
+				if ( $shape !== 'default' ) {
 					$attribs['alt'] = $alt;
 				}
 				$attribs['title'] = $alt;
 			}
-			if ( $shape == 'default' ) {
+			if ( $shape === 'default' ) {
 				$defaultLinkAttribs = $attribs;
 			} else {
-				if ( $mapHTML == null ) {
-					$mapHTML = $domFragment->ownerDocument->createElement( 'map' );
-				}
+				$mapHTML ??= $domFragment->ownerDocument->createElement( 'map' );
 				$area = $domFragment->ownerDocument->createElement( 'area' );
 				foreach ( $attribs as $key => $val ) {
 					$area->setAttribute( $key, $val );
@@ -291,23 +298,15 @@ class ParsoidImageMap extends ExtensionTagHandler implements ExtensionModule {
 			}
 		}
 
-		// Ugh! This is messy.
-		// The proxy classes aren't visible to phan here.
-		// Maybe we should get rid of those since we are unlikely
-		// to go the Dodo route since there is a proposal to introduce
-		// a HTML5 parsing and updated DOM library in newer PHP versions.
-		//
-		// Help out phan since it doesn't seem to be able to look
-		// at the definitions in vendor?
-		'@phan-var Element $thumb';
-		'@phan-var DOMNode $anchor';
-		'@phan-var Element $imageNode';
-
 		if ( $first ) {
 			throw new ExtensionError( 'imagemap_no_image' );
 		}
+		// $thumb, $imageNode, and $anchor are non-null at this point.
+		'@phan-var Element $thumb';
+		'@phan-var Element $imageNode';
+		'@phan-var Element $anchor';
 
-		if ( $mapHTML != null ) {
+		if ( $mapHTML !== null ) {
 			// Construct the map
 
 			// Add a hash of the map HTML to avoid breaking cached HTML fragments that are
@@ -327,8 +326,7 @@ class ParsoidImageMap extends ExtensionTagHandler implements ExtensionModule {
 		DOMCompat::getClassList( $thumb )->add( 'noresize' );
 
 		// Determine whether a "magnify" link is present
-		$typeOf = $thumb->getAttribute( 'typeof' );
-		if ( !preg_match( '#\bmw:File/Thumb\b#', $typeOf ) && $descType !== self::NONE ) {
+		if ( !DOMUtils::hasTypeOf( $thumb, 'mw:File/Thumb' ) && $descType !== self::NONE ) {
 			// The following classes are used here:
 			// * mw-ext-imagemap-desc-top-right
 			// * mw-ext-imagemap-desc-bottom-right
@@ -352,7 +350,7 @@ class ParsoidImageMap extends ExtensionTagHandler implements ExtensionModule {
 
 		if ( !WTUtils::hasVisibleCaption( $thumb ) ) {
 			$caption = DOMCompat::querySelector( $thumb, 'figcaption' );
-			$captionText = trim( $caption->textContent );
+			$captionText = trim( $caption?->textContent ?? '' );
 			if ( $captionText ) {
 				$defaultAnchor->setAttribute( 'title', $captionText );
 			}

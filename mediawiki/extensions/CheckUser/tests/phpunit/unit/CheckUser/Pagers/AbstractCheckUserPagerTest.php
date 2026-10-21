@@ -1,9 +1,9 @@
 <?php
 
-namespace MediaWiki\CheckUser\Tests\Unit\CheckUser\Pagers;
+namespace MediaWiki\Extension\CheckUser\Tests\Unit\CheckUser\Pagers;
 
-use MediaWiki\CheckUser\CheckUserQueryInterface;
-use MediaWiki\CheckUser\Tests\Integration\CheckUser\Pagers\DeAbstractedCheckUserPagerTest;
+use MediaWiki\Extension\CheckUser\CheckUserQueryInterface;
+use MediaWiki\Extension\CheckUser\Tests\Integration\CheckUser\Pagers\DeAbstractedCheckUserPager;
 use MediaWiki\Html\FormOptions;
 use MediaWiki\Message\Message;
 use MediaWiki\Pager\IndexPager;
@@ -22,11 +22,11 @@ use Wikimedia\Timestamp\ConvertibleTimestamp;
  *
  * @group CheckUser
  *
- * @covers \MediaWiki\CheckUser\CheckUser\Pagers\AbstractCheckUserPager
+ * @covers \MediaWiki\Extension\CheckUser\CheckUser\Pagers\AbstractCheckUserPager
  */
 class AbstractCheckUserPagerTest extends MediaWikiUnitTestCase {
 	public function testGetTimeRangeStringFirstAndLastEqual() {
-		$object = $this->getMockBuilder( DeAbstractedCheckUserPagerTest::class )
+		$object = $this->getMockBuilder( DeAbstractedCheckUserPager::class )
 			->disableOriginalConstructor()
 			->onlyMethods( [ 'getFormattedTimestamp' ] )
 			->getMock();
@@ -42,7 +42,7 @@ class AbstractCheckUserPagerTest extends MediaWikiUnitTestCase {
 	}
 
 	public function testGetTimeRangeStringFirstAndLastNotEqual() {
-		$object = $this->getMockBuilder( DeAbstractedCheckUserPagerTest::class )
+		$object = $this->getMockBuilder( DeAbstractedCheckUserPager::class )
 			->disableOriginalConstructor()
 			->onlyMethods( [ 'msg' ] )
 			->getMock();
@@ -69,7 +69,7 @@ class AbstractCheckUserPagerTest extends MediaWikiUnitTestCase {
 
 	/** @dataProvider provideGetTimestampField */
 	public function testGetTimestampField( $table, $expectedTimestampField ) {
-		$objectUnderTest = $this->getMockBuilder( DeAbstractedCheckUserPagerTest::class )
+		$objectUnderTest = $this->getMockBuilder( DeAbstractedCheckUserPager::class )
 			->disableOriginalConstructor()
 			->onlyMethods( [] )
 			->getMock();
@@ -84,13 +84,13 @@ class AbstractCheckUserPagerTest extends MediaWikiUnitTestCase {
 		return [
 			'Table as null' => [ null, 'timestamp' ],
 			'Table as cu_changes' => [
-				CheckUserQueryInterface::CHANGES_TABLE, 'cuc_timestamp'
+				CheckUserQueryInterface::CHANGES_TABLE, 'cuc_timestamp',
 			],
 			'Table as cu_log_event' => [
-				CheckUserQueryInterface::LOG_EVENT_TABLE, 'cule_timestamp'
+				CheckUserQueryInterface::LOG_EVENT_TABLE, 'cule_timestamp',
 			],
 			'Table as cu_private_event' => [
-				CheckUserQueryInterface::PRIVATE_LOG_EVENT_TABLE, 'cupe_timestamp'
+				CheckUserQueryInterface::PRIVATE_LOG_EVENT_TABLE, 'cupe_timestamp',
 			],
 		];
 	}
@@ -98,7 +98,7 @@ class AbstractCheckUserPagerTest extends MediaWikiUnitTestCase {
 	/** @dataProvider provideSetPeriodCondition */
 	public function testSetPeriodCondition( $period, $fakeTime, $expected ) {
 		ConvertibleTimestamp::setFakeTime( $fakeTime );
-		$object = $this->getMockBuilder( DeAbstractedCheckUserPagerTest::class )
+		$object = $this->getMockBuilder( DeAbstractedCheckUserPager::class )
 			->disableOriginalConstructor()
 			->onlyMethods( [] )
 			->getMock();
@@ -141,7 +141,7 @@ class AbstractCheckUserPagerTest extends MediaWikiUnitTestCase {
 	}
 
 	public function testGetCheckUserHelperFieldsetWhenNoResults() {
-		$object = $this->getMockBuilder( DeAbstractedCheckUserPagerTest::class )
+		$object = $this->getMockBuilder( DeAbstractedCheckUserPager::class )
 			->disableOriginalConstructor()
 			->getMock();
 		$object = TestingAccessWrapper::newFromObject( $object );
@@ -155,9 +155,16 @@ class AbstractCheckUserPagerTest extends MediaWikiUnitTestCase {
 
 	/** @dataProvider provideBuildQueryInfo */
 	public function testBuildQueryInfo(
-		$offset, $limit, $order, $startOffset, $endOffset, $includeOffset, $mockedQueryInfo, $partialExpectedArray
+		$offset,
+		$limit,
+		$order,
+		$startOffset,
+		$endOffset,
+		$includeOffset,
+		$mockedQueryInfo,
+		$partialExpectedArray
 	) {
-		$object = $this->getMockBuilder( DeAbstractedCheckUserPagerTest::class )
+		$object = $this->getMockBuilder( DeAbstractedCheckUserPager::class )
 			->disableOriginalConstructor()
 			->onlyMethods( [ 'getQueryInfo' ] )
 			->getMock();
@@ -199,21 +206,21 @@ class AbstractCheckUserPagerTest extends MediaWikiUnitTestCase {
 						'fields' => [ 'timestamp', 'alias' => 'test' ],
 						'conds' => [ 'cond' => 'test' ],
 						'options' => [],
-						'join_conds' => []
+						'join_conds' => [],
 					],
 					CheckUserQueryInterface::LOG_EVENT_TABLE => [
 						'tables' => [ 'cu_log_event' ],
 						'fields' => [ 'timestamp', 'alias' => 'test2' ],
 						'conds' => [ 'cond' => 'test2' ],
 						'options' => [],
-						'join_conds' => [ 'logging' => 'test' ]
+						'join_conds' => [ 'logging' => 'test' ],
 					],
 					CheckUserQueryInterface::PRIVATE_LOG_EVENT_TABLE => [
 						'tables' => [ 'cu_private_event' ],
 						'fields' => [ 'timestamp', 'alias' => 'test3' ],
 						'conds' => [ 'cond' => 'test3' ],
 						'options' => [],
-						'join_conds' => []
+						'join_conds' => [],
 					],
 				],
 				[
@@ -253,14 +260,14 @@ class AbstractCheckUserPagerTest extends MediaWikiUnitTestCase {
 						// join_conds
 						5 => [],
 					],
-				]
+				],
 			],
 		];
 	}
 
 	/** @dataProvider provideReallyDoQuery */
 	public function testReallyDoQuery( $limit, $order, $fakeResults, $expectedReturnResults ) {
-		$object = $this->getMockBuilder( DeAbstractedCheckUserPagerTest::class )
+		$object = $this->getMockBuilder( DeAbstractedCheckUserPager::class )
 			->disableOriginalConstructor()
 			->onlyMethods( [ 'buildQueryInfo' ] )
 			->getMock();
@@ -273,11 +280,10 @@ class AbstractCheckUserPagerTest extends MediaWikiUnitTestCase {
 		$object->expects( $this->once() )
 			->method( 'buildQueryInfo' )
 			->willReturn( [
-				$mockedQueryInfoForCuChanges, $mockedQueryInfoForCuLogEvent, $mockedQueryInfoForCuPrivateEvent
+				$mockedQueryInfoForCuChanges, $mockedQueryInfoForCuLogEvent, $mockedQueryInfoForCuPrivateEvent,
 			] );
-		$mockDb->method( 'newSelectQueryBuilder' )->willReturnCallback( static function () use ( $mockDb ) {
-			return new SelectQueryBuilder( $mockDb );
-		} );
+		$mockDb->method( 'newSelectQueryBuilder' )
+			->willReturnCallback( static fn () => new SelectQueryBuilder( $mockDb ) );
 		$expectedSelects = [ 'cu_changes' => true, 'cu_log_event' => true, 'cu_private_event' => true ];
 		$mockDb->expects( $this->exactly( 3 ) )
 			->method( 'select' )
@@ -348,22 +354,22 @@ class AbstractCheckUserPagerTest extends MediaWikiUnitTestCase {
 		# Start test cases
 		return [
 			'Limit 500, order ASC' => [
-				500, IndexPager::QUERY_ASCENDING, $fakeResultsPerTable, $fakeResultsOrderAsc
+				500, IndexPager::QUERY_ASCENDING, $fakeResultsPerTable, $fakeResultsOrderAsc,
 			],
 			'Limit 10, order DESC' => [
 				10, IndexPager::QUERY_DESCENDING,
-				$fakeResultsPerTable, array_slice( $fakeResultsOrderDesc, 0, 10 )
+				$fakeResultsPerTable, array_slice( $fakeResultsOrderDesc, 0, 10 ),
 			],
 			'Limit 10, order ASC' => [
 				10, IndexPager::QUERY_ASCENDING,
-				$fakeResultsPerTable, array_slice( $fakeResultsOrderAsc, 0, 10 )
+				$fakeResultsPerTable, array_slice( $fakeResultsOrderAsc, 0, 10 ),
 			],
 		];
 	}
 
 	/** @dataProvider provideGroupResultsByIndexField */
 	public function testGroupResultsByIndexField( $indexField, $results, $expectedGroupedResults ) {
-		$objectUnderTest = $this->getMockBuilder( DeAbstractedCheckUserPagerTest::class )
+		$objectUnderTest = $this->getMockBuilder( DeAbstractedCheckUserPager::class )
 			->disableOriginalConstructor()
 			->onlyMethods( [ 'getIndexField' ] )
 			->getMock();
@@ -391,12 +397,12 @@ class AbstractCheckUserPagerTest extends MediaWikiUnitTestCase {
 				],
 				[
 					$currentTimestamp => [
-						(object)[ 'timestamp' => $currentTimestamp, 'id' => 111 ]
+						(object)[ 'timestamp' => $currentTimestamp, 'id' => 111 ],
 					],
 					$otherTimestamp => [
-						(object)[ 'timestamp' => $otherTimestamp, 'id' => 23 ]
+						(object)[ 'timestamp' => $otherTimestamp, 'id' => 23 ],
 					],
-				]
+				],
 			],
 			'Timestamp index field for 3 rows with duplicate timestamps' => [
 				'timestamp',
@@ -413,8 +419,8 @@ class AbstractCheckUserPagerTest extends MediaWikiUnitTestCase {
 					$otherTimestamp => [
 						(object)[ 'timestamp' => $otherTimestamp, 'id' => 2 ],
 					],
-				]
-			]
+				],
+			],
 		];
 	}
 }

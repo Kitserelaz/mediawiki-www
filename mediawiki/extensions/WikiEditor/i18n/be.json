@@ -9,13 +9,13 @@
 			"No Sleep till Krupki",
 			"Plaga med",
 			"Tomato Cream",
+			"Ucukor",
 			"Yury Tarasievich",
 			"ZlyiLev"
 		]
 	},
 	"wikieditor": "Палепшаны інтэрфейс праўкі вікітэкста",
 	"wikieditor-desc": "Дадае паглыблены і пашыраны інтэрфейс праўкі вікіразметкі",
-	"wikieditor-wikitext-tab": "Вікіразметка",
 	"wikieditor-toolbar": "Панэль інструментаў",
 	"wikieditor-toolbar-desc": "Панэль інструментаў з палепшанымі магчымасцямі",
 	"wikieditor-toolbar-preference": "Уключыць панэль інструментаў з палепшанымі магчымасцямі",
@@ -57,7 +57,7 @@
 	"wikieditor-toolbar-file-format": "Фармат:",
 	"wikieditor-toolbar-file-format-none": "няма",
 	"wikieditor-toolbar-tool-file-insert": "Уставіць",
-	"wikieditor-toolbar-tool-file-cancel": "Адмена",
+	"wikieditor-toolbar-tool-file-cancel": "Скасаваць",
 	"wikieditor-toolbar-tool-file-upload": "Запампаваць",
 	"wikieditor-toolbar-tool-signature": "Ваш подпіс і адзначаны час",
 	"wikieditor-toolbar-section-advanced": "Дадаткова",

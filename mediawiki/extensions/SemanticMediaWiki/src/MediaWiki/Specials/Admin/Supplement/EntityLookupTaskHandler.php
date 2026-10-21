@@ -1,0 +1,316 @@
+<?php
+
+namespace SMW\MediaWiki\Specials\Admin\Supplement;
+
+use ManualLogEntry;
+use MediaWiki\Html\Html;
+use MediaWiki\MediaWikiServices;
+use MediaWiki\Request\WebRequest;
+use MediaWiki\Title\Title;
+use MediaWiki\User\User;
+use SMW\Localizer\Message;
+use SMW\MediaWiki\Renderer\HtmlFormRenderer;
+use SMW\MediaWiki\Specials\Admin\ActionableTask;
+use SMW\MediaWiki\Specials\Admin\OutputFormatter;
+use SMW\MediaWiki\Specials\Admin\TaskHandler;
+use SMW\Services\ServicesFactory as ApplicationFactory;
+use SMW\SQLStore\SQLStore;
+use SMW\Store;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since   2.5
+ *
+ * @author mwjames
+ */
+class EntityLookupTaskHandler extends TaskHandler implements ActionableTask {
+
+	private ?User $user = null;
+
+	/**
+	 * @since 2.5
+	 */
+	public function __construct(
+		private readonly Store $store,
+		private readonly HtmlFormRenderer $htmlFormRenderer,
+		private readonly OutputFormatter $outputFormatter,
+	) {
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * {@inheritDoc}
+	 */
+	public function getSection(): string {
+		return self::SECTION_SUPPLEMENT;
+	}
+
+	/**
+	 * @since 3.1
+	 *
+	 * {@inheritDoc}
+	 */
+	public function getTask(): string {
+		return 'lookup';
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * {@inheritDoc}
+	 */
+	public function isTaskFor( string $action ): bool {
+		return $action === $this->getTask();
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * {@inheritDoc}
+	 */
+	public function setUser( $user = null ): void {
+		$this->user = $user;
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * {@inheritDoc}
+	 */
+	public function getHtml() {
+		$link = $this->outputFormatter->createSpecialPageLink(
+			$this->msg( 'smw-admin-supplementary-idlookup-short-title' ),
+			[
+				'action' => $this->getTask()
+			]
+		);
+
+		return Html::rawElement(
+			'li',
+			[],
+			$this->msg(
+				[
+					'smw-admin-supplementary-idlookup-intro',
+					$link
+				]
+			)
+		);
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * {@inheritDoc}
+	 */
+	public function handleRequest( WebRequest $webRequest ): void {
+		$this->outputFormatter->setPageTitle(
+			$this->msg( [ 'smw-admin-main-title', $this->msg( 'smw-admin-supplementary-idlookup-title' ) ] )
+		);
+
+		$this->outputFormatter->addParentLink( [ 'tab' => 'supplement' ] );
+
+		// https://phabricator.wikimedia.org/T109652#1562641
+		if ( !$this->user->matchEditToken( $webRequest->getVal( 'wpEditToken' ) ) ) {
+			$this->outputFormatter->addHtml( $this->msg( 'sessionfailure' ) );
+			return;
+		}
+
+		$id = $webRequest->getText( 'id' );
+
+		if ( $this->hasFeature( SMW_ADM_DISPOSAL ) && $id > 0 && $webRequest->getText( 'dispose' ) === 'yes' ) {
+			$this->doDispose( $id );
+		}
+
+		$this->outputFormatter->addHtml( $this->getForm( $webRequest, $id ) );
+	}
+
+	private function doDispose( string $id ): void {
+		$applicationFactory = ApplicationFactory::getInstance();
+
+		$entityIdDisposerJob = $applicationFactory->newJobFactory()->newEntityIdDisposerJob(
+			MediaWikiServices::getInstance()->getTitleFactory()->newFromText( __METHOD__ )
+		);
+
+		$entityIdDisposerJob->dispose( intval( $id ) );
+
+		$logEntry = new ManualLogEntry( 'smw', 'admin' );
+		$logEntry->setTarget( Title::newFromText( 'Special:SMWAdmin' ) );
+		$logEntry->setPerformer( $this->user );
+		$logEntry->setParameters( [] );
+		$logEntry->setComment( 'Forced removal of ID ' . $id );
+		$logEntry->insert();
+	}
+
+	private function getForm( WebRequest $webRequest, $id ): string {
+		[ $result, $error ] = $this->createInfoMessageById( $webRequest, $id );
+
+		if ( $id < 1 ) {
+			$id = '';
+		}
+
+		$html = $this->htmlFormRenderer
+			->setName( 'idlookup' )
+			->setMethod( 'get' )
+			->addHiddenField( 'action', 'lookup' )
+			->addParagraph( $error )
+			->addHeader( 'h2', $this->msg( 'smw-admin-idlookup-title' ), [ 'class' => 'smw-title' ] )
+			->addParagraph( $this->msg( 'smw-admin-idlookup-docu' ) )
+			->addInputField(
+				$this->msg( 'smw-admin-objectid' ),
+				'id',
+				$id
+			)
+			->addNonBreakingSpace()
+			->addSubmitButton( $this->msg( 'smw-ask-search' ) )
+			->addParagraph( $result )
+			->getForm();
+
+		$html .= Html::element( 'p', [], '' );
+
+		if ( $id > 0 && $webRequest->getText( 'dispose' ) == 'yes' ) {
+			$result = $this->msg( [ 'smw-admin-iddispose-done', $id ] );
+			$id = '';
+		}
+
+		if ( !$this->hasFeature( SMW_ADM_DISPOSAL ) ) {
+			return $html;
+		}
+
+		$html .= $this->htmlFormRenderer
+			->setName( 'iddispose' )
+			->setMethod( 'get' )
+			->addHiddenField( 'action', 'lookup' )
+			->addHiddenField( 'id', $id )
+			->addHeader( 'h2', $this->msg( 'smw-admin-iddispose-title' ), [ 'class' => 'smw-title' ] )
+			->addParagraph( $this->msg( 'smw-admin-iddispose-docu', Message::PARSE ), [ 'class' => 'plainlinks' ] )
+			->addInputField(
+				$this->msg( 'smw-admin-objectid' ),
+				'id',
+				$id,
+				null,
+				20,
+				[ 'disabled' => true ]
+			)
+			->addNonBreakingSpace()
+			->addSubmitButton( $this->msg( 'allpagessubmit' ) )
+			->addCheckbox(
+				$this->msg( 'smw_smwadmin_datarefreshstopconfirm', Message::ESCAPED ),
+				'dispose',
+				'yes'
+			)
+			->getForm();
+
+		return $html . Html::element( 'p', [], '' );
+	}
+
+	private function createInfoMessageById( WebRequest $webRequest, &$id ): array {
+		if ( $webRequest->getText( 'action' ) !== 'lookup' || $id === '' ) {
+			return [ '', '' ];
+		}
+
+		$connection = $this->store->getConnection( 'mw.db' );
+
+		if ( ctype_digit( (string)$id ) ) {
+			$condition = 'smw_id=' . intval( $id );
+		} else {
+			$op = strpos( $id, '*' ) !== false ? ' LIKE ' : '=';
+			$condition = "smw_sortkey $op " . $connection->addQuotes( str_replace( [ '_', '*' ], [ ' ', '%' ], $id ) );
+		}
+
+		$rows = $connection->newSelectQueryBuilder()
+			->select( [
+				'smw_id',
+				'smw_title',
+				'smw_namespace',
+				'smw_iw',
+				'smw_subobject',
+				'smw_sortkey',
+				'smw_proptable_hash',
+				'smw_rev',
+				'smw_touched'
+			] )
+			->from( SQLStore::ID_TABLE )
+			->where( [ $condition ] )
+			->caller( __METHOD__ )
+			->fetchResultSet();
+
+		return $this->createMessageFromRows( $id, $rows );
+	}
+
+	private function createMessageFromRows( &$id, $rows ): array {
+		$connection = $this->store->getConnection( 'mw.db' );
+
+		$references = [];
+		$formattedRows = [];
+		$output = '';
+		$error = '';
+
+		if ( $rows !== [] ) {
+			foreach ( $rows as $row ) {
+				$id = $row->smw_id;
+
+				$references[$id] = $this->store->getPropertyTableIdReferenceFinder()->searchAllTablesToFindAtLeastOneReferenceById(
+					$id
+				);
+
+				$row->smw_proptable_hash = $row->smw_proptable_hash === null ? null : '...';
+
+				$formattedRows[$id] = (array)$row;
+				$this->addFulltextInfo( $id, $references );
+			}
+		}
+
+		// ID is not unique
+		if ( count( $formattedRows ) > 1 ) {
+			$id = '';
+		}
+
+		if ( $formattedRows !== [] ) {
+			$output = '<pre>' . $this->outputFormatter->encodeAsJson( $formattedRows ) . '</pre>';
+		}
+		if ( $references !== [] ) {
+
+			$msg = $id === '' ? 'smw-admin-iddispose-references-multiple' : 'smw-admin-iddispose-references';
+			$count = isset( $references[$id] ) ? count( $references[$id] ) + 1 : 0;
+			$output .= Html::rawElement(
+				'p',
+				[],
+				$this->msg( [ $msg, $id, $count ], Message::PARSE )
+			);
+			$output .= '<pre>' . $this->outputFormatter->encodeAsJson( $references ) . '</pre>';
+		} else {
+			$error .= Html::warningBox(
+				$this->msg( [ 'smw-admin-iddispose-no-references', $id ] )
+			);
+
+			$id = '';
+		}
+
+		return [ $output, $error ];
+	}
+
+	private function addFulltextInfo( $id, array &$references ): void {
+		$connection = $this->store->getConnection( 'mw.db' );
+
+		if ( !$connection->tableExists( SQLStore::FT_SEARCH_TABLE, __METHOD__ ) ) {
+			return;
+		}
+
+		$row = $connection->newSelectQueryBuilder()
+			->select( [
+				's_id',
+				'p_id',
+				'o_text'
+			] )
+			->from( SQLStore::FT_SEARCH_TABLE )
+			->where( [ 's_id' => $id ] )
+			->caller( __METHOD__ )
+			->fetchRow();
+
+		if ( $row !== false ) {
+			$references[$id][SQLStore::FT_SEARCH_TABLE] = (array)$row;
+		}
+	}
+
+}

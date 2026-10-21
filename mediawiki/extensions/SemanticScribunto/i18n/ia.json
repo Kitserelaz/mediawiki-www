@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": [
+			"McDutchie"
+		]
+	},
+	"smw-scribunto-desc": "Extension de Semantic MediaWiki pro le supporto native del extension Scribunto",
+	"smw-scribunto-title": "Semantic Scribunto"
+}

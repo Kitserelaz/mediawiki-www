@@ -1,0 +1,141 @@
+<?php
+
+namespace SMW\SPARQLStore;
+
+use RuntimeException;
+use SMW\DataItems\WikiPage;
+use SMW\Export\Exporter;
+use SMW\Exporter\Element\ExpNsResource;
+use SMW\Exporter\Element\ExpResource;
+use SMW\Exporter\Serializer\TurtleSerializer;
+use SMW\InMemoryPoolCache;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 2.0
+ *
+ * @author Markus Krötzsch
+ * @author mwjames
+ */
+class RepositoryRedirectLookup {
+
+	/**
+	 * ID used for the InMemoryPoolCache
+	 */
+	const POOLCACHE_ID = 'sparql.repository.redirectLookup';
+
+	/**
+	 * @since 2.0
+	 */
+	public function __construct( private readonly RepositoryConnection $repositoryConnection ) {
+	}
+
+	/**
+	 * @since 2.1
+	 */
+	public static function reset(): void {
+		InMemoryPoolCache::getInstance()->resetPoolCacheById( self::POOLCACHE_ID );
+	}
+
+	/**
+	 * Find the redirect target of an ExpNsResource
+	 *
+	 * Returns an SMWExpNsResource object the input redirects to, the input
+	 * itself if there is no redirect (or it cannot be used for making a resource
+	 * with a prefix).
+	 *
+	 * @since 1.6
+	 *
+	 * @param ExpNsResource $expNsResource string URI to check
+	 * @param bool &$exists is set to true if $expNsResource is in the
+	 * store; always false for blank nodes; always true for subobjects
+	 *
+	 * @return ExpNsResource
+	 * @throws RuntimeException
+	 */
+	public function findRedirectTargetResource( ExpNsResource $expNsResource, &$exists ): ExpNsResource {
+		$exists = true;
+
+		if ( $expNsResource->isBlankNode() || $this->isNonRedirectableResource( $expNsResource ) ) {
+			$exists = false;
+			return $expNsResource;
+		}
+
+		if ( ( $expNsResource->getDataItem() instanceof WikiPage ) &&
+			   $expNsResource->getDataItem()->getSubobjectName() !== '' ) {
+			return $expNsResource;
+		}
+
+		$firstRow = $this->doLookupResourceUriTargetFor( $expNsResource );
+
+		if ( $firstRow === false ) {
+			$exists = false;
+			return $expNsResource;
+		}
+
+		if ( is_array( $firstRow ) && count( $firstRow ) > 1 && $firstRow[1] !== null ) {
+			return $this->getResourceForTargetElement( $expNsResource, $firstRow[1] );
+		}
+
+		return $expNsResource;
+	}
+
+	private function doLookupResourceUriTargetFor( ExpNsResource $expNsResource ) {
+		$poolCache = InMemoryPoolCache::getInstance()->getPoolCacheById( self::POOLCACHE_ID );
+
+		if ( !$poolCache->contains( $expNsResource->getUri() ) ) {
+			$poolCache->save(
+				$expNsResource->getUri(),
+				$this->lookupResourceUriTargetFromDatabase( $expNsResource )
+			);
+		}
+
+		return $poolCache->fetch( $expNsResource->getUri() );
+	}
+
+	private function isNonRedirectableResource( ExpNsResource $expNsResource ): bool {
+		return $expNsResource->getNamespaceId() === 'swivt' ||
+			$expNsResource->getNamespaceId() === 'rdf' ||
+			$expNsResource->getNamespaceId() === 'rdfs' ||
+			( $expNsResource->getNamespaceId() === 'property' && strrpos( $expNsResource->getLocalName(), 'aux' ) ) ||
+			( isset( $expNsResource->isUserDefined ) && !$expNsResource->isUserDefined );
+	}
+
+	private function lookupResourceUriTargetFromDatabase( ExpNsResource $expNsResource ) {
+		$rediResource = Exporter::getInstance()->getSpecialPropertyResource( '_REDI' );
+		$skeyResource = Exporter::getInstance()->getSpecialPropertyResource( '_SKEY' );
+
+		if ( $rediResource === null || $skeyResource === null ) {
+			throw new RuntimeException( 'Unable to resolve the _REDI or _SKEY special property resource.' );
+		}
+
+		$resourceUri = TurtleSerializer::getTurtleNameForExpElement( $expNsResource );
+		$rediUri = TurtleSerializer::getTurtleNameForExpElement( $rediResource );
+		$skeyUri = TurtleSerializer::getTurtleNameForExpElement( $skeyResource );
+
+		$respositoryResult = $this->repositoryConnection->select(
+			'*',
+			"$resourceUri $skeyUri ?s  OPTIONAL { $resourceUri $rediUri ?r }",
+			[ 'LIMIT' => 1 ],
+			[ $expNsResource->getNamespaceId() => $expNsResource->getNamespace() ]
+		);
+
+		return $respositoryResult->current();
+	}
+
+	private function getResourceForTargetElement( ExpNsResource $expNsResource, $rediTargetElement ): ExpNsResource {
+		if ( !$rediTargetElement instanceof ExpResource ) {
+			throw new RuntimeException( 'Expected a ExpResource instance' );
+		}
+
+		$rediTargetUri = $rediTargetElement->getUri();
+		$wikiNamespace = Exporter::getInstance()->getNamespaceUri( 'wiki' );
+
+		if ( strpos( $rediTargetUri, $wikiNamespace ) === 0 ) {
+			return new ExpNsResource( substr( $rediTargetUri, strlen( $wikiNamespace ) ), $wikiNamespace, 'wiki' );
+		}
+
+		return $expNsResource;
+	}
+
+}

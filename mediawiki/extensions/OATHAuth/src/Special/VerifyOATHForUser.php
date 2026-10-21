@@ -2,107 +2,83 @@
 
 namespace MediaWiki\Extension\OATHAuth\Special;
 
-use ManualLogEntry;
-use MediaWiki\CheckUser\Hooks as CheckUserHooks;
-use MediaWiki\Config\ConfigException;
+use MediaWiki\CheckUser\Services\CheckUserInsert;
 use MediaWiki\Extension\OATHAuth\OATHUserRepository;
 use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\Logger\LoggerFactory;
+use MediaWiki\Logging\ManualLogEntry;
+use MediaWiki\MediaWikiServices;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\SpecialPage\FormSpecialPage;
+use MediaWiki\Status\Status;
+use MediaWiki\User\CentralId\CentralIdLookup;
 use MediaWiki\User\User;
 use MediaWiki\User\UserFactory;
-use MWException;
-use UserBlockedError;
-use UserNotLoggedIn;
 
 class VerifyOATHForUser extends FormSpecialPage {
+	private bool $enabledStatus;
+	private string $targetUser;
 
-	private const OATHAUTH_IS_ENABLED = 'enabled';
-	private const OATHAUTH_NOT_ENABLED = 'disabled';
-	private OATHUserRepository $userRepo;
-	private UserFactory $userFactory;
-
-	/** @var string */
-	private $enabledStatus;
-
-	/** @var string */
-	private $targetUser;
-
-	/**
-	 * @param OATHUserRepository $userRepo
-	 * @param UserFactory $userFactory
-	 */
-	public function __construct( $userRepo, $userFactory ) {
-		// messages used: verifyoathforuser (display "name" on Special:SpecialPages),
-		// right-oathauth-verify-user, action-oathauth-verify-user
-		parent::__construct( 'VerifyOATHForUser', 'oathauth-verify-user' );
-		$this->userRepo = $userRepo;
-		$this->userFactory = $userFactory;
+	public function __construct(
+		private readonly OATHUserRepository $userRepo,
+		private readonly UserFactory $userFactory,
+		private readonly CentralIdLookup $centralIdLookup,
+		private readonly ExtensionRegistry $extensionRegistry,
+	) {
+		// messages used: verifyoathforuser (display "name" on Special:SpecialPages)
+		parent::__construct( 'VerifyOATHForUser' );
 	}
 
-	/**
-	 * @inheritDoc
-	 */
+	/** @inheritDoc */
+	public function getRestriction(): string {
+		// messages used: right-oathauth-verify-user, action-oathauth-verify-user
+		return 'oathauth-verify-user';
+	}
+
+	/** @inheritDoc */
 	protected function getGroupName() {
 		return 'users';
 	}
 
+	/** @inheritDoc */
 	public function doesWrites() {
 		return true;
 	}
 
-	/**
-	 * @return string
-	 */
+	/** @inheritDoc */
 	protected function getLoginSecurityLevel() {
 		return $this->getName();
 	}
 
-	/**
-	 * @param HTMLForm $form
-	 */
+	/** @inheritDoc */
 	public function alterForm( HTMLForm $form ) {
 		$form->setMessagePrefix( 'oathauth' );
 		$form->getOutput()->setPageTitleMsg( $this->msg( 'oathauth-verify-for-user' ) );
 	}
 
-	/**
-	 * @return string
-	 */
+	/** @inheritDoc */
 	protected function getDisplayFormat() {
 		return 'ooui';
 	}
 
-	/**
-	 * @return bool
-	 */
+	/** @inheritDoc */
 	public function requiresUnblock() {
 		return true;
 	}
 
-	/**
-	 * @param User $user
-	 * @throws UserBlockedError
-	 * @throws UserNotLoggedIn
-	 */
 	protected function checkExecutePermissions( User $user ) {
 		$this->requireNamedUser();
 
 		parent::checkExecutePermissions( $user );
 	}
 
-	/**
-	 * @param string $par
-	 */
+	/** @inheritDoc */
 	public function execute( $par ) {
 		$this->getOutput()->disallowUserJs();
 		parent::execute( $par );
 	}
 
-	/**
-	 * @return array[]
-	 */
+	/** @inheritDoc */
 	protected function getFormFields() {
 		return [
 			'user' => [
@@ -111,6 +87,7 @@ class VerifyOATHForUser extends FormSpecialPage {
 				'label-message' => 'oathauth-enteruser',
 				'name' => 'user',
 				'required' => true,
+				'excludetemp' => true,
 			],
 			'reason' => [
 				'type' => 'text',
@@ -122,33 +99,35 @@ class VerifyOATHForUser extends FormSpecialPage {
 		];
 	}
 
-	/**
-	 * @param array $formData
-	 * @return array|true
-	 * @throws ConfigException
-	 * @throws MWException
-	 */
+	/** @inheritDoc */
 	public function onSubmit( array $formData ) {
 		$this->targetUser = $formData['user'];
 		$user = $this->userFactory->newFromName( $this->targetUser );
-		if ( !$user || $user->getId() === 0 ) {
+		// T424117, same as T393253 - Check the username is valid, but don't check if
+		// it exists on the local wiki. Instead, check there is a valid central ID.
+		if ( !$user || $this->centralIdLookup->centralIdFromName( $formData['user'] ) === 0 ) {
 			return [ 'oathauth-user-not-found' ];
 		}
+
+		if ( $this->getUser()->pingLimiter( 'verify-2fa' ) ) {
+			return Status::newFatal( 'oathauth-throttled' );
+		}
+
 		$oathUser = $this->userRepo->findByUser( $user );
 
-		$this->enabledStatus = $oathUser->isTwoFactorAuthEnabled()
-			? self::OATHAUTH_IS_ENABLED
-			: self::OATHAUTH_NOT_ENABLED;
+		$this->enabledStatus = $oathUser->isTwoFactorAuthEnabled();
 
 		// messages used: logentry-oath-verify, log-action-oath-verify
 		$logEntry = new ManualLogEntry( 'oath', 'verify' );
 		$logEntry->setPerformer( $this->getUser() );
 		$logEntry->setTarget( $user->getUserPage() );
 		$logEntry->setComment( $formData['reason'] );
-		$logEntry->insert();
+		$logId = $logEntry->insert();
 
-		if ( ExtensionRegistry::getInstance()->isLoaded( 'CheckUser' ) ) {
-			CheckUserHooks::updateCheckUserData( $logEntry->getRecentChange() );
+		if ( $this->extensionRegistry->isLoaded( 'CheckUser' ) ) {
+			/** @var CheckUserInsert $checkUserInsert */
+			$checkUserInsert = MediaWikiServices::getInstance()->get( 'CheckUserInsert' );
+			$checkUserInsert->updateCheckUserData( $logEntry->getRecentChange( $logId ) );
 		}
 
 		LoggerFactory::getInstance( 'authentication' )->info(
@@ -162,22 +141,8 @@ class VerifyOATHForUser extends FormSpecialPage {
 		return true;
 	}
 
-	/**
-	 * @throws MWException
-	 */
 	public function onSuccess() {
-		switch ( $this->enabledStatus ) {
-			case self::OATHAUTH_IS_ENABLED:
-				$msg = 'oathauth-verify-enabled';
-				break;
-			case self::OATHAUTH_NOT_ENABLED:
-				$msg = 'oathauth-verify-disabled';
-				break;
-			default:
-				throw new MWException(
-					'Verification was successful but status is unknown'
-				);
-		}
+		$msg = $this->enabledStatus ? 'oathauth-verify-enabled' : 'oathauth-verify-disabled';
 
 		$out = $this->getOutput();
 		$out->addBacklinkSubtitle( $this->getPageTitle() );

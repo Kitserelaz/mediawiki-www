@@ -3,6 +3,7 @@ require_once __DIR__ . '/process.php';
 // Schema and import operations are explicit and serialized with a database advisory lock.
 require __DIR__ . '/private.php';
 require __DIR__ . '/runtime.php';
+require __DIR__ . '/upgrade-preflight.php';
 
 $managementStopping = false;
 $managementChild = null;
@@ -46,6 +47,9 @@ function refresh(): void {
     // Rebuild again with the complete runtime configuration, including additional rights.
     command(['php', 'maintenance/run.php', '/opt/farm/refresh.php', '--wiki=metawiki'], ['MW_BOOTSTRAP_DB' => '']);
 }
+function verifyDomains(): void {
+    command(['php', 'maintenance/run.php', '/opt/farm/verify-domains.php', '--wiki=metawiki'], ['MW_BOOTSTRAP_DB' => 'metawiki']);
+}
 function seedFarmDefaults(bool $freshProduction = false): void {
     if (farmEnv('MW_ENV', 'development') === 'production' && !$freshProduction) { throw new RuntimeException('Use explicit fresh-production initialization for a new production farm'); }
     command(['php', 'maintenance/run.php', '/var/www/mediawiki/extensions/ManageWiki/maintenance/PopulateDefaults.php', '--wiki=metawiki'], ['MW_BOOTSTRAP_DB' => 'metawiki']);
@@ -67,7 +71,7 @@ function grantApplication(PDO $root): void {
 $mode = $argv[1] ?? 'help';
 try {
     if ($mode === 'help') {
-        echo "Commands: fresh | fresh-production | seed-development | update | refresh | list | backup DIRECTORY | restore DIRECTORY\n"; exit(0);
+        echo "Commands: fresh | fresh-production | seed-development | preflight | update | refresh | list | backup DIRECTORY | restore DIRECTORY\n"; exit(0);
     }
     if (in_array($mode, ['fresh', 'fresh-production', 'restore'], true)) {
         $root = new PDO('mysql:host=' . farmEnv('MW_DB_HOST', 'database'), 'root', trim(file_get_contents('/run/secrets/db-root-password')), [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
@@ -137,7 +141,12 @@ try {
     } elseif ($mode === 'list') {
         echo implode("\n", wikiList()) . "\n";
     } elseif ($mode === 'refresh') { refresh();
+    } elseif ($mode === 'preflight') {
+        farmUpgradePreflight(connectDb(), wikiList());
+        verifyDomains();
     } elseif ($mode === 'update') {
+        farmUpgradePreflight(connectDb(), wikiList());
+        verifyDomains();
         auxiliary();
         foreach (wikiList() as $wiki) { updateWiki($wiki); }
         refresh();

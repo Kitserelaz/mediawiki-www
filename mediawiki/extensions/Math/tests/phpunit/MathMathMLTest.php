@@ -23,26 +23,17 @@ class MathMathMLTest extends MediaWikiIntegrationTestCase {
 		$this->overrideConfigValue( 'MathoidCli', false );
 	}
 
-	/**
-	 * @covers \MediaWiki\Extension\Math\MathMathML::__construct
-	 */
 	public function testMathMLConstructorWithPmml() {
 		$mml = new MathMathML( '<mo>sin</mo>', [ 'type' => 'pmml' ] );
 		$this->assertSame( 'pmml', $mml->getInputType() );
 		$this->assertSame( '<math><mo>sin</mo></math>', $mml->getMathml() );
 	}
 
-	/**
-	 * @covers \MediaWiki\Extension\Math\MathMathML::__construct
-	 */
 	public function testMathMLConstructorWithInvalidType() {
 		$mml = new MathMathML( '<mo>sin</mo>', [ 'type' => 'invalid' ] );
 		$this->assertSame( 'tex', $mml->getInputType() );
 	}
 
-	/**
-	 * @covers \MediaWiki\Extension\Math\MathMathML::__construct
-	 */
 	public function testChangeRootElemts() {
 		$mml = new MathMathML( '<mo>sin</mo>', [ 'type' => 'invalid' ] );
 		$mml->setAllowedRootElements( [ 'a', 'b' ] );
@@ -52,7 +43,6 @@ class MathMathMLTest extends MediaWikiIntegrationTestCase {
 	/**
 	 * Tests behavior of makeRequest() that communicates with the host.
 	 * Testcase: Invalid request.
-	 * @covers \MediaWiki\Extension\Math\MathMathML::makeRequest
 	 */
 	public function testMakeRequestInvalid() {
 		$url = 'http://example.com/invalid';
@@ -73,7 +63,6 @@ class MathMathMLTest extends MediaWikiIntegrationTestCase {
 	/**
 	 * Tests behavior of makeRequest() that communicates with the host.
 	 * Testcase: Valid request.
-	 * @covers \MediaWiki\Extension\Math\MathMathML::makeRequest
 	 */
 	public function testMakeRequestSuccess() {
 		$this->installMockHttp(
@@ -89,7 +78,6 @@ class MathMathMLTest extends MediaWikiIntegrationTestCase {
 	/**
 	 * Tests behavior of makeRequest() that communicates with the host.
 	 * Testcase: Timeout.
-	 * @covers \MediaWiki\Extension\Math\MathMathML::makeRequest
 	 */
 	public function testMakeRequestTimeout() {
 		$url = 'http://example.com/timeout';
@@ -109,7 +97,6 @@ class MathMathMLTest extends MediaWikiIntegrationTestCase {
 	/**
 	 * Tests behavior of makeRequest() that communicates with the host.
 	 * Test case: Get PostData.
-	 * @covers \MediaWiki\Extension\Math\MathMathML::makeRequest
 	 */
 	public function testMakeRequestGetPostData() {
 		$this->installMockHttp( $this->makeFakeHttpRequest() );
@@ -122,10 +109,6 @@ class MathMathMLTest extends MediaWikiIntegrationTestCase {
 		$renderer->makeRequest();
 	}
 
-	/**
-	 * Checks if a String is a valid MathML element
-	 * @covers \MediaWiki\Extension\Math\MathMathML::isValidMathML
-	 */
 	public function testisValidMathML() {
 		$renderer = new MathMathML();
 		$validSample = '<math>content</math>';
@@ -136,9 +119,6 @@ class MathMathMLTest extends MediaWikiIntegrationTestCase {
 			'test if math expression is invalid mathml sample' );
 	}
 
-	/**
-	 * @covers \MediaWiki\Extension\Math\MathMathML::isValidMathML
-	 */
 	public function testInvalidXml() {
 		$renderer = new MathMathML();
 		$invalidSample = '<mat';
@@ -150,7 +130,6 @@ class MathMathMLTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @covers \MediaWiki\Extension\Math\MathMathML::correctSvgStyle
 	 * @see https://phabricator.wikimedia.org/T132563
 	 */
 	public function testMathMLStyle() {
@@ -190,6 +169,39 @@ class MathMathMLTest extends MediaWikiIntegrationTestCase {
 		$this->assertStringContainsString( "data-qid=\"Q123\"", $out );
 	}
 
+	public function testGetHtmlOutputInlineMath() {
+		$math = new MathMathML( "a+b", [ 'display' => 'inline' ] );
+		$out = $math->getHtmlOutput();
+		$this->assertStringContainsString( 'mwe-math-mathml-inline', $out );
+		$this->assertStringNotContainsString( 'mwe-math-element-block', $out );
+	}
+
+	public function testGetHtmlOutputDisplayMath() {
+		$math = new MathMathML( "a+b", [ 'display' => 'block' ] );
+		$out = $math->getHtmlOutput();
+		$this->assertStringContainsString( 'mwe-math-mathml-display', $out );
+		$this->assertStringContainsString( 'mwe-math-element-block', $out );
+	}
+
+	public function testGetHtmlOutputSvgDisabled() {
+		$math = new MathMathML( "a+b" );
+		$out = $math->getHtmlOutput( false );
+		$this->assertStringNotContainsString( '<svg', $out );
+		$this->assertStringNotContainsString( 'mwe-math-mathml-a11y', $out );
+	}
+
+	public function testGetHtmlOutputId() {
+		$math = new MathMathML( "a+b", [ 'id' => 'unique.id' ] );
+		$out = $math->getHtmlOutput( false );
+		$this->assertStringContainsString( 'unique.id', $out );
+	}
+
+	public function testGetHtmlNoMathJax() {
+		$math = new MathMathML( "a+b", [ 'class' => 'mathjax_ignore' ] );
+		$out = $math->getHtmlOutput( false );
+		$this->assertStringContainsString( 'mathjax_ignore', $out );
+	}
+
 	public function testGetHtmlOutputInvalidQID() {
 		// test with not valid ID. An ID must match /Q\d+/
 		$math = new MathMathML( "a+b", [ "qid" => "123" ] );
@@ -210,5 +222,11 @@ class MathMathMLTest extends MediaWikiIntegrationTestCase {
 		$math = TestingAccessWrapper::newFromObject( new MathMathML( '' ) );
 		$renderStatus = $math->doRender();
 		$this->assertStatusError( 'math_empty_tex', $renderStatus );
+	}
+
+	public function testgetMathTableName() {
+		$math = TestingAccessWrapper::newFromObject( new MathMathML( '' ) );
+		$tableName = $math->getMathTableName();
+		$this->assertEquals( 'mathoid', $tableName );
 	}
 }

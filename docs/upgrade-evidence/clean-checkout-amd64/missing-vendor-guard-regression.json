@@ -1,0 +1,5 @@
+{
+  "historical_bad_index_rejected": true,
+  "diagnostic": "RuntimeError: Required vendored build input is not tracked: mediawiki/extensions/AdminLinks/composer.lock",
+  "corrected_index_passed": true
+}

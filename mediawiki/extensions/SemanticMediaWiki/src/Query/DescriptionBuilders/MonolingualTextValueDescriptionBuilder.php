@@ -1,0 +1,138 @@
+<?php
+
+namespace SMW\Query\DescriptionBuilders;
+
+use InvalidArgumentException;
+use SMW\DataItems\Blob;
+use SMW\DataItems\Property;
+use SMW\DataValueFactory;
+use SMW\DataValues\MonolingualTextValue;
+use SMW\Query\Language\Conjunction;
+use SMW\Query\Language\SomeProperty;
+use SMW\Query\Language\ThingDescription;
+use SMW\Query\Language\ValueDescription;
+
+/**
+ * @private
+ *
+ * @license GPL-2.0-or-later
+ * @since 2.4
+ *
+ * @author mwjames
+ */
+class MonolingualTextValueDescriptionBuilder extends DescriptionBuilder {
+
+	/**
+	 * @var MonolingualTextValue
+	 */
+	private $dataValue;
+
+	/**
+	 * @since 2.4
+	 *
+	 * {@inheritDoc}
+	 */
+	public function isBuilderFor( $serialization ): bool {
+		return $serialization instanceof MonolingualTextValue;
+	}
+
+	/**
+	 * @since 2.4
+	 *
+	 * @param MonolingualTextValue $dataValue
+	 * @param string $value
+	 *
+	 * @return mixed
+	 * @throws InvalidArgumentException
+	 */
+	public function newDescription( MonolingualTextValue $dataValue, $value ) {
+		if ( !is_string( $value ) ) {
+			throw new InvalidArgumentException( 'Value needs to be a string' );
+		}
+
+		if ( $value === '' ) {
+			$this->addError( wfMessage( 'smw_novalues' )->text() );
+			return new ThingDescription();
+		}
+
+		$this->dataValue = $dataValue;
+
+		$subdescriptions = [];
+		[ $text, $languageCode ] = $this->dataValue->getValuesFromString( $value );
+
+		foreach ( $this->dataValue->getPropertyDataItems() as $property ) {
+
+			// If the DVFeature doesn't require a language code to be present then
+			// allow to skip it as conjunctive condition when it is empty
+			if (
+				( $languageCode === '' ) &&
+				( $property->getKey() === '_LCODE' ) &&
+				( !$this->dataValue->hasFeature( SMW_DV_MLTV_LCODE ) ) ) {
+				continue;
+			}
+
+			$value = $property->getKey() === '_LCODE' ? $languageCode : $text;
+			$comparator = SMW_CMP_EQ;
+
+			$this->prepareValue( $this->dataValue->getProperty(), $value, $comparator );
+
+			// Directly use the DI instead of going through the DVFactory to
+			// avoid having ~zh-* being validated when building a DV
+			// If one of the values is empty use, ? so queries can be arbitrary
+			// in respect of the query condition
+			$dataValue = DataValueFactory::getInstance()->newDataValueByItem(
+				new Blob( $value === '' ? '?' : $value ),
+				$property,
+				false,
+				$this->dataValue->getContextPage()
+			);
+
+			if ( !$dataValue->isValid() ) {
+				$this->addError( $dataValue->getErrors() );
+				continue;
+			}
+
+			$subdescriptions[] = $this->newSubdescription( $dataValue, $comparator );
+		}
+
+		return $this->newConjunction( $subdescriptions );
+	}
+
+	private function newConjunction( array $subdescriptions ) {
+		$count = count( $subdescriptions );
+
+		if ( $count == 0 ) {
+			return new ThingDescription();
+		}
+
+		if ( $count == 1 ) {
+			return reset( $subdescriptions );
+		}
+
+		return new Conjunction( $subdescriptions );
+	}
+
+	private function newSubdescription( $dataValue, int|string $comparator ): SomeProperty {
+		$description = new ValueDescription(
+			$dataValue->getDataItem(),
+			$dataValue->getProperty(),
+			$comparator
+		);
+
+		if ( $dataValue->getWikiValue() === '+' || $dataValue->getWikiValue() === '?' ) {
+			$description = new ThingDescription();
+		}
+
+		$property = $dataValue->getProperty();
+
+		if ( !$property instanceof Property ) {
+			throw new InvalidArgumentException( 'Expected Property instance' );
+		}
+
+		return new SomeProperty(
+			$property,
+			$description
+		);
+	}
+
+}

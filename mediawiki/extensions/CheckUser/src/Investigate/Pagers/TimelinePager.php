@@ -1,25 +1,23 @@
 <?php
 
-namespace MediaWiki\CheckUser\Investigate\Pagers;
+namespace MediaWiki\Extension\CheckUser\Investigate\Pagers;
 
-use MediaWiki\CheckUser\Hook\CheckUserFormatRowHook;
-use MediaWiki\CheckUser\Investigate\Services\TimelineService;
-use MediaWiki\CheckUser\Investigate\Utilities\DurationManager;
-use MediaWiki\CheckUser\Services\TokenQueryManager;
 use MediaWiki\Context\IContextSource;
+use MediaWiki\Extension\CheckUser\Hook\CheckUserFormatRowHook;
+use MediaWiki\Extension\CheckUser\Investigate\Services\TimelineService;
+use MediaWiki\Extension\CheckUser\Investigate\Utilities\DurationManager;
+use MediaWiki\Extension\CheckUser\Services\TokenQueryManager;
 use MediaWiki\Html\Html;
 use MediaWiki\Linker\LinkRenderer;
+use MediaWiki\Page\LinkBatchFactory;
 use MediaWiki\Pager\ReverseChronologicalPager;
 use MediaWiki\Parser\ParserOutput;
+use MediaWiki\User\UserIdentityValue;
 use Psr\Log\LoggerInterface;
+use Wikimedia\IPUtils;
 use Wikimedia\Rdbms\FakeResultWrapper;
 
 class TimelinePager extends ReverseChronologicalPager {
-	private CheckUserFormatRowHook $formatRowHookRunner;
-	private TimelineService $timelineService;
-	private TimelineRowFormatter $timelineRowFormatter;
-	private TokenQueryManager $tokenQueryManager;
-
 	/** @var string */
 	private $start;
 
@@ -37,6 +35,11 @@ class TimelinePager extends ReverseChronologicalPager {
 	private $excludeTargets;
 
 	/**
+	 * If set, makes the pager to not show temporary accounts in the results.
+	 */
+	private bool $excludeTempAccounts;
+
+	/**
 	 * Targets that have been added to the investigation but that are not
 	 * present in $excludeTargets. These are the targets that will actually
 	 * be investigated.
@@ -45,37 +48,22 @@ class TimelinePager extends ReverseChronologicalPager {
 	 */
 	private $filteredTargets;
 
-	private LoggerInterface $logger;
-
-	/**
-	 * @param IContextSource $context
-	 * @param LinkRenderer $linkRenderer
-	 * @param CheckUserFormatRowHook $formatRowHookRunner
-	 * @param TokenQueryManager $tokenQueryManager
-	 * @param DurationManager $durationManager
-	 * @param TimelineService $timelineService
-	 * @param TimelineRowFormatter $timelineRowFormatter
-	 * @param LoggerInterface $logger
-	 */
 	public function __construct(
 		IContextSource $context,
 		LinkRenderer $linkRenderer,
-		CheckUserFormatRowHook $formatRowHookRunner,
-		TokenQueryManager $tokenQueryManager,
+		private readonly CheckUserFormatRowHook $formatRowHookRunner,
+		private readonly TokenQueryManager $tokenQueryManager,
 		DurationManager $durationManager,
-		TimelineService $timelineService,
-		TimelineRowFormatter $timelineRowFormatter,
-		LoggerInterface $logger
+		private TimelineService $timelineService,
+		private TimelineRowFormatter $timelineRowFormatter,
+		private readonly LinkBatchFactory $linkBatchFactory,
+		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct( $context, $linkRenderer );
-		$this->formatRowHookRunner = $formatRowHookRunner;
-		$this->timelineService = $timelineService;
-		$this->timelineRowFormatter = $timelineRowFormatter;
-		$this->tokenQueryManager = $tokenQueryManager;
-		$this->logger = $logger;
 
 		$tokenData = $tokenQueryManager->getDataFromRequest( $context->getRequest() );
 		$this->mOffset = $tokenData['offset'] ?? '';
+		$this->excludeTempAccounts = $tokenData['FilterTempAccounts'] ?? false;
 		$this->excludeTargets = $tokenData['exclude-targets'] ?? [];
 		$this->filteredTargets = array_diff(
 			$tokenData['targets'] ?? [],
@@ -104,9 +92,28 @@ class TimelinePager extends ReverseChronologicalPager {
 		return $this->timelineService->getQueryInfo(
 			$this->filteredTargets,
 			$this->excludeTargets,
+			$this->excludeTempAccounts,
 			$this->start,
 			$this->mLimit
 		);
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	protected function doBatchLookups() {
+		$lb = $this->linkBatchFactory->newLinkBatch();
+		$lb->setCaller( __METHOD__ );
+
+		foreach ( $this->mResult as $row ) {
+			$username = $row->user_text;
+			if ( $username === null && $row->ip_hex !== null ) {
+				$username = IPUtils::formatHex( $row->ip_hex );
+			}
+			$lb->addUser( new UserIdentityValue( $row->user ?? 0, $username ?? '' ) );
+		}
+
+		$lb->execute();
 	}
 
 	/**
@@ -147,20 +154,11 @@ class TimelinePager extends ReverseChronologicalPager {
 			return '';
 		}
 
-		$formattedLinks = implode( ' ', array_filter(
-			$rowItems['links'],
-			static function ( $item ) {
-				return $item !== '';
-			} )
-		);
+		$formattedLinks = implode( ' ', array_filter( $rowItems['links'], 'strlen' ) );
 
-		$formatted = implode( ' . . ', array_filter(
-			array_merge(
-				[ $formattedLinks ],
-				$rowItems['info']
-			), static function ( $item ) {
-				return $item !== '';
-			} )
+		$formatted = implode(
+			' . . ',
+			array_filter( [ $formattedLinks, ...$rowItems['info'] ], 'strlen' )
 		);
 
 		$line .= Html::rawElement(
@@ -179,14 +177,13 @@ class TimelinePager extends ReverseChronologicalPager {
 	 */
 	public function getPagingQueries() {
 		return $this->tokenQueryManager->getPagingQueries(
-			$this->getRequest(), parent::getPagingQueries()
+			$this->getRequest(),
+			parent::getPagingQueries()
 		);
 	}
 
 	/**
 	 * Get the formatted result list, with navigation bars.
-	 *
-	 * @return ParserOutput
 	 */
 	public function getFullOutput(): ParserOutput {
 		return new ParserOutput(

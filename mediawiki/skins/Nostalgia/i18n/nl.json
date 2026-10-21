@@ -1,0 +1,24 @@
+{
+	"@metadata": {
+		"authors": [
+			"Mainframe98",
+			"McDutchie",
+			"Siebrand"
+		]
+	},
+	"nostalgia-desc": "Een uiterlijk dat Wikipedia had in 2001",
+	"skinname-nostalgia": "Nostalgie",
+	"nostalgia.css": "/* Alle hier geplaatste CSS-code wordt geladen voor gebruikers van de vormgeving Nostalgie */",
+	"nostalgia.js": "/* Alle hier geplaatste JavaScript-code wordt geladen voor gebruikers van de vormgeving Nostalgie */",
+	"nostalgia-articlepage": "Inhoudspagina bekijken",
+	"nostalgia-create-this-page": "Deze pagina aanmaken",
+	"nostalgia-deletethispage": "Deze pagina verwijderen",
+	"nostalgia-editthispage": "Deze pagina bewerken",
+	"nostalgia-newmessageslink": "nieuwe berichten",
+	"nostalgia-newmessagesdifflink": "laatste wijziging",
+	"nostalgia-projectpage": "Projectpagina bekijken",
+	"nostalgia-protectthispage": "Deze pagina beveiligen",
+	"nostalgia-talkpage": "Over deze pagina overleggen",
+	"nostalgia-unprotectthispage": "Beveiliging van deze pagina wijzigen",
+	"nostalgia-userpage": "Gebruikerspagina bekijken"
+}

@@ -16,8 +16,7 @@ const BackgroundQueue = require( './BackgroundQueue.js' );
 const queue = ( new BackgroundQueue( config.queueLingerSeconds ) );
 
 // Support both 1 or "1" (T54542)
-const debugMode = Number( mw.user.options.get( 'eventlogging-display-web' ) ) === 1 ||
-	Number( mw.user.options.get( 'eventlogging-display-console' ) ) === 1;
+const debugMode = Number( mw.user.options.get( 'eventlogging-display-console' ) ) === 1;
 
 /**
  * Construct the streamName for a legacy EventLogging Schema.
@@ -45,7 +44,8 @@ function makeLegacyStreamName( schemaName ) {
  * @singleton
  * @hideconstructor
  * @borrows MetricsClient#submit as submit
- * @borrows MetricsClient#dispatch as dispatch
+ * @borrows MetricsClient#submitInteraction as submitInteraction
+ * @borrows MetricsClient#newInstrument as newInstrument
  */
 const core = {
 
@@ -219,12 +219,9 @@ const core = {
 
 			if ( !sizeError ) {
 				if ( config.baseUrl || debugMode ) {
-					core.enqueue( function () {
+					core.enqueue( () => {
 						core.sendBeacon( url );
 					} );
-				}
-				if ( debugMode ) {
-					mw.track( 'eventlogging.debug', event );
 				}
 				// TODO: deprecate the signature of this method by returning a meaningless
 				// promise and moving the sizeError checking into debug mode
@@ -249,6 +246,7 @@ const core = {
 		// Record this failure as a simple counter. By default "counter.*" goes nowhere.
 		// The WikimediaEvents extension sends it to statsd.
 		mw.track( 'counter.eventlogging.client_errors.' + schemaName + '.' + errorCode );
+		mw.track( 'stats.mediawiki_eventlogging_client_errors_total', { schemaName, errorCode } );
 	},
 
 	/**
@@ -333,30 +331,24 @@ mw.log.deprecate( core, 'inSample', core.pageviewInSample, 'Use "mw.eventLog.pag
 // code from above to here. https://phabricator.wikimedia.org/T238544
 // ////////////////////////////////////////////////////////////////////
 
-const MediaWikiMetricsClientIntegration = require( './MediaWikiMetricsClientIntegration.js' );
 const EventSubmitter = require( './EventSubmitter.js' );
-const MetricsClient = require( '../lib/metrics-platform/MetricsClient.js' );
+const metricsPlatform = require( 'ext.eventLogging.metricsPlatform' );
 
 function initMetricsClient() {
-	const integration = new MediaWikiMetricsClientIntegration();
 	const eventSubmitter = new EventSubmitter(
 		config.serviceUri,
 		core.enqueue.bind( core ),
 		debugMode
 	);
-	const metricsClient = new MetricsClient(
-		integration,
+	const metricsClient = metricsPlatform.newMetricsClient(
 		config.streamConfigs,
 		eventSubmitter
 	);
 
 	// TODO (phuedx, 2024/09/09): DRY this up
 	core.submit = metricsClient.submit.bind( metricsClient );
-	core.dispatch = metricsClient.dispatch.bind( metricsClient );
 	core.submitInteraction = metricsClient.submitInteraction.bind( metricsClient );
-	core.submitClick = metricsClient.submitClick.bind( metricsClient );
 	core.newInstrument = metricsClient.newInstrument.bind( metricsClient );
-	core.isCurrentUserEnrolled = metricsClient.isCurrentUserEnrolled.bind( metricsClient );
 }
 initMetricsClient();
 
@@ -379,7 +371,7 @@ core.id = ( function () {
 		sessionId = null;
 
 	// Provided by the sessionTick instrument in WikimediaEvents.
-	mw.trackSubscribe( 'sessionReset', function () {
+	mw.trackSubscribe( 'sessionReset', () => {
 		core.id.resetSessionId();
 	} );
 
@@ -482,7 +474,6 @@ if ( window.QUnit ) {
 	core.getQueue = function () {
 		return queue;
 	};
-	core.MediaWikiMetricsClientIntegration = MediaWikiMetricsClientIntegration;
 }
 
 module.exports = core;

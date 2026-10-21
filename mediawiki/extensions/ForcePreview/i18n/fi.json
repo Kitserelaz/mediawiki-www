@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"01miki10",
+			"Crt",
+			"Nike"
+		]
+	},
+	"forcepreview": "$1 (esikatsele ensin)",
+	"forcepreview-desc": "Pakottaa oikeudettomat käyttäjät käyttämään esikatselua.",
+	"action-forcepreviewexempt": "tallentaa ilman pakotettua esikatselua",
+	"right-forcepreviewexempt": "Tallentaa ilman pakotettua esikatselua"
+}

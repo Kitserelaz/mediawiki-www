@@ -1,8 +1,6 @@
 /**
  * @module referencePreview
  */
-const { isTrackingEnabled, LOGGING_SCHEMA } = require( './referencePreviewsInstrumentation.js' );
-
 const TEMPLATE = document.createElement( 'template' );
 TEMPLATE.innerHTML = `
 <div class="mwe-popups mwe-popups mwe-popups-type-reference" aria-hidden>
@@ -49,6 +47,7 @@ function renderReferencePreview(
 	// * cite-reference-previews-journal
 	// * cite-reference-previews-news
 	// * cite-reference-previews-note
+	// * cite-reference-previews-map
 	// * cite-reference-previews-web
 	let titleMsg = mw.message( `cite-reference-previews-${ type }` );
 	if ( !titleMsg.exists() ) {
@@ -67,6 +66,7 @@ function renderReferencePreview(
 	// * popups-icon--reference-journal
 	// * popups-icon--reference-news
 	// * popups-icon--reference-note
+	// * popups-icon--reference-map
 	// * popups-icon--reference-web
 	el.querySelector( '.mwe-popups-title .popups-icon' )
 		.classList.add( `popups-icon--reference-${ type }` );
@@ -79,7 +79,7 @@ function renderReferencePreview(
 		( a ) => {
 			a.target = '_blank';
 			// Don't let the external site access and possibly manipulate window.opener.location
-			a.rel = `${ a.rel ? `${ a.rel } ` : '' }noopener`;
+			a.rel = ( a.rel ? a.rel + ' ' : '' ) + 'noopener';
 		}
 	);
 
@@ -119,41 +119,10 @@ function renderReferencePreview(
 	settingsButton.append( settingsButtonLabel );
 	el.querySelector( '.mwe-popups-settings' ).appendChild( settingsButton );
 
-	if ( isTrackingEnabled() ) {
-		el.querySelector( '.mw-parser-output' ).addEventListener( 'click', ( ev ) => {
-			if ( !ev.target.matches( 'a' ) ) {
-				return;
-			}
-			mw.track( LOGGING_SCHEMA, {
-				action: 'clickedReferencePreviewsContentLink'
-			} );
-		} );
-	}
-
 	el.querySelector( '.mwe-popups-scroll' ).addEventListener( 'scroll', ( e ) => {
 		const element = e.target,
 			// We are dealing with floating point numbers here when the page is zoomed!
 			scrolledToBottom = element.scrollTop >= element.scrollHeight - element.clientHeight - 1;
-
-		if ( isTrackingEnabled() ) {
-			if ( !element.isOpenRecorded ) {
-				mw.track( LOGGING_SCHEMA, {
-					action: 'poppedOpen',
-					scrollbarsPresent: element.scrollHeight > element.clientHeight
-				} );
-				element.isOpenRecorded = true;
-			}
-
-			if (
-				element.scrollTop > 0 &&
-				!element.isScrollRecorded
-			) {
-				mw.track( LOGGING_SCHEMA, {
-					action: 'scrolled'
-				} );
-				element.isScrollRecorded = true;
-			}
-		}
 
 		if ( !scrolledToBottom && element.isScrolling ) {
 			return;

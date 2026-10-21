@@ -1,6 +1,6 @@
 ( function () {
 	// eslint-disable-next-line no-jquery/no-global-selector
-	var archiveLinkExists = $( '.flow-link-to-archive' ).length,
+	const archiveLinkExists = $( '.flow-link-to-archive' ).length,
 		// eslint-disable-next-line no-jquery/no-global-selector
 		isVectorCompactPersonalToolbar = $( '.vector-user-links' ).length,
 		tour = new mw.guidedTour.TourBuilder( {
@@ -13,7 +13,7 @@
 			.append(
 				$( '<div>' )
 					.addClass( 'flow-guidedtour-optin-firststep-description-image' ),
-				mw.msg( 'flow-guidedtour-optin-welcome-description' )
+				mw.message( 'flow-guidedtour-optin-welcome-description' ).escaped()
 			);
 
 	tour

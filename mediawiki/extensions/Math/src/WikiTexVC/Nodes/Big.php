@@ -4,29 +4,21 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Math\WikiTexVC\Nodes;
 
+use MediaWiki\Extension\Math\WikiTexVC\MMLnodes\MMLbase;
+
 class Big extends TexNode {
 
-	/** @var string */
-	private $fname;
-	/** @var string */
-	private $arg;
-
-	public function __construct( string $fname, string $arg ) {
+	public function __construct(
+		private readonly string $fname,
+		private readonly string $arg,
+	) {
 		parent::__construct( $fname, $arg );
-		$this->fname = $fname;
-		$this->arg = $arg;
 	}
 
-	/**
-	 * @return string
-	 */
 	public function getFname(): string {
 		return $this->fname;
 	}
 
-	/**
-	 * @return string
-	 */
 	public function getArg(): string {
 		return $this->arg;
 	}
@@ -42,7 +34,7 @@ class Big extends TexNode {
 	}
 
 	/** @inheritDoc */
-	public function renderMML( $arguments = [], &$state = [] ): string {
+	public function toMMLTree( array $arguments = [], array &$state = [] ): MMLbase {
 		return $this->parseToMML( $this->fname, $arguments, null );
 	}
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace MediaWiki\CheckUser\Tests\Integration\Investigate\Services;
+namespace MediaWiki\Extension\CheckUser\Tests\Integration\Investigate\Services;
 
 use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
 use MediaWiki\WikiMap\WikiMap;
@@ -12,8 +12,8 @@ use Wikimedia\TestingAccessWrapper;
  *
  * @group CheckUser
  * @group Database
- * @covers \MediaWiki\CheckUser\Investigate\Services\PreliminaryCheckService
- * @covers \MediaWiki\CheckUser\Investigate\Services\ChangeService
+ * @covers \MediaWiki\Extension\CheckUser\Investigate\Services\PreliminaryCheckService
+ * @covers \MediaWiki\Extension\CheckUser\Investigate\Services\ChangeService
  */
 class PreliminaryCheckServiceDatabaseTest extends MediaWikiIntegrationTestCase {
 	use MockAuthorityTrait;
@@ -39,7 +39,7 @@ class PreliminaryCheckServiceDatabaseTest extends MediaWikiIntegrationTestCase {
 	public static function provideIsUserBlocked() {
 		return [
 			'User is blocked' => [ true ],
-			'User is not blocked' => [ false ]
+			'User is not blocked' => [ false ],
 		];
 	}
 }

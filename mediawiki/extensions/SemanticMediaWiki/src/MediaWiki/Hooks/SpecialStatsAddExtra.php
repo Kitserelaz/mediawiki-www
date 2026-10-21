@@ -1,0 +1,148 @@
+<?php
+
+namespace SMW\MediaWiki\Hooks;
+
+use MediaWiki\Hook\SpecialStatsAddExtraHook;
+use SMW\DataTypeRegistry;
+use SMW\Localizer\Message;
+use SMW\Store;
+
+/**
+ * Add extra statistic at the end of Special:Statistics
+ *
+ * @see https://www.mediawiki.org/wiki/Manual:Hooks/SpecialStatsAddExtra
+ *
+ * @license GPL-2.0-or-later
+ * @since 1.9
+ *
+ * @author mwjames
+ */
+class SpecialStatsAddExtra implements SpecialStatsAddExtraHook {
+
+	/**
+	 * Specifies the point where outdated entities should be removed
+	 * instead of accumulating in the DB.
+	 */
+	const CRITICAL_DELETECOUNT = 5000;
+
+	private array $messageMapper = [
+		'PROPUSES'      => 'smw-statistics-property-instance',
+		'ERRORUSES'     => 'smw-statistics-error-count',
+		'TOTALPROPS'    => 'smw-statistics-property-total',
+		'USEDPROPS'     => 'smw-statistics-property-used',
+		'OWNPAGE'       => 'smw-statistics-property-page',
+		'DECLPROPS'     => 'smw-statistics-property-type',
+		'TOTALENTITIES' => 'smw-statistics-entities-total',
+		'DELETECOUNT'   => 'smw-statistics-delete-count',
+		'SUBOBJECTS'    => 'smw-statistics-subobject-count',
+		'CONCEPTS'      => 'smw-statistics-concept-count',
+		'QUERY'         => 'smw-statistics-query-inline',
+		'DATATYPECOUNT' => 'smw-statistics-datatype-count'
+	];
+
+	/**
+	 * @since 7.0.0
+	 */
+	public function __construct(
+		private readonly Store $store,
+		private readonly DataTypeRegistry $dataTypeRegistry,
+	) {
+	}
+
+	/**
+	 * @since 7.0.0
+	 */
+	public function onSpecialStatsAddExtra( &$extraStats, $context ) {
+		if ( !defined( 'SMW_EXTENSION_LOADED' ) ) {
+			return true;
+		}
+
+		$context->getOutput()->addModules( 'ext.smw.tooltip' );
+
+		$this->copyStatistics( $extraStats, $context->getLanguage() );
+
+		return true;
+	}
+
+	private function copyStatistics( array &$extraStats, $language ): void {
+		$statistics = $this->store->getStatistics();
+		$statistics['DATATYPECOUNT'] = count( $this->dataTypeRegistry->getKnownTypeLabels() );
+
+		if ( isset( $statistics['_cache'] ) ) {
+			$header = 'smw-statistics-cached';
+		} else {
+			$header = 'smw-statistics';
+		}
+
+		foreach ( $this->messageMapper as $key => $msgKey ) {
+
+			if ( !isset( $statistics[$key] ) ) {
+				continue;
+			}
+
+			$count = $statistics[$key];
+			$message = $this->msg( $msgKey, $language );
+
+			$info = $this->msg( $msgKey . '-info', $language );
+			if ( $info !== '' ) {
+				$message .= "&nbsp;<span class='smw-highlighter' data-content='{$info}'>ⁱ</span>";
+			}
+
+			if ( $key === 'DELETECOUNT' && $count > self::CRITICAL_DELETECOUNT ) {
+				$message = "<span style='color:red;'>⚠</span>&nbsp;{$message}";
+			}
+
+			if ( $key === 'USEDPROPS' || $key === 'OWNPAGE' || $key === 'DECLPROPS' || $key === 'ERRORUSES' ) {
+				$message = '&nbsp;&nbsp;-&nbsp;&nbsp;' . $message;
+			}
+
+			if ( $key === 'DELETECOUNT' || $key === 'SUBOBJECTS' || $key === 'QUERY' || $key === 'CONCEPTS' ) {
+				$message = "<span class='plainlinks'>&nbsp;&nbsp;-&nbsp;&nbsp;$message</span>";
+			}
+
+			$extraStats[$header][] = [
+				'name'   => $message,
+				'number' => $count
+			];
+
+			if ( $key === 'QUERY' ) {
+				$extraStats[$header] += $this->addFormats(
+					count( $extraStats[$header] ),
+					$statistics,
+					$language
+				);
+			}
+		}
+	}
+
+	private function addFormats( int $key, array $statistics, $language ): array {
+		$i = 0;
+		$formats = [];
+
+		foreach ( $statistics['QUERYFORMATS'] as $k => $v ) {
+
+			// Add only the top 3 + count/debug
+			if ( $v > 0 && ( $k === 'count' || $k === 'debug' || $i < 3 ) ) {
+				$message = '&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;' . $this->msg( [ 'smw-statistics-query-format', $k ], $language );
+
+				$formats[$key++] = [
+					'name'   => $message,
+					'number' => $v
+				];
+			}
+
+			$i++;
+		}
+
+		return $formats;
+	}
+
+	private function msg( $args, $language ): string {
+		if ( Message::exists( $args ) ) {
+			return Message::get( $args, Message::PARSE, $language );
+		}
+
+		return '';
+	}
+
+}

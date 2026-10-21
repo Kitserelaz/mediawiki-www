@@ -82,18 +82,11 @@ class EventLogging {
 	 *
 	 * @param string $streamName
 	 * @param array $event
-	 * @param LoggerInterface|null $logger @deprecated since 1.40. All messages will be logged
-	 *  via the `EventLogging.Logger` service
 	 */
 	public static function submit(
 		string $streamName,
-		array $event,
-		?LoggerInterface $logger = null
+		array $event
 	): void {
-		if ( $logger ) {
-			wfDeprecatedMsg( __METHOD__ . ': $logger parameter is deprecated', '1.40' );
-		}
-
 		self::getEventSubmitter()->submit( $streamName, $event );
 	}
 
@@ -181,7 +174,6 @@ class EventLogging {
 	}
 
 	/**
-	 *
 	 * Converts the encapsulated event from an object to a string.
 	 *
 	 * @param array $event Encapsulated event
@@ -221,9 +213,7 @@ class EventLogging {
 		// additional event fields not mentioned in the schema.
 		// See <https://bugzilla.wikimedia.org/show_bug.cgi?id=44454> and
 		// <https://tools.ietf.org/html/draft-zyp-json-schema-03#section-5.4>.
-		if ( !array_key_exists( 'additionalProperties', $schema ) ) {
-			$schema[ 'additionalProperties' ] = false;
-		}
+		$schema['additionalProperties'] ??= false;
 
 		$root = new JsonTreeRef( $object );
 		$root->attachSchema( $schema );

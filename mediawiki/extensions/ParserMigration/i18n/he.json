@@ -1,0 +1,25 @@
+{
+	"@metadata": {
+		"authors": [
+			"Amire80",
+			"Guycn2"
+		]
+	},
+	"parsermigration-desc": "כלי להגירת מפענח",
+	"parsermigration-edit-subtitle": "עם כלי הגירת המפענח",
+	"parsermigration-current": "ישן",
+	"parsermigration-new": "חדש",
+	"parsermigration-pref-label": "הפעלת כלי להגירת מפענח",
+	"parsermigration-pref-help": "הוספת קישור בתפריט הצד  ל[https://www.mediawiki.org/wiki/Special:MyLanguage/Extension:ParserMigration כלי] להמרת טקסט הדף לגרסאות חדשות של מפענח מדיה־ויקי.",
+	"parsermigration-toolbox-label": "עריכה עם כלי ההגירה",
+	"parsermigration-parsoid-readviews-selector-label": "להשתמש במפענח קוד הוויקי החדש \"פרסואיד\":",
+	"parsermigration-parsoid-readviews-selector-help": "כאשר נעשה שימוש בפרסואיד, יסופק קישור בסרגל צד כדי לאפשר שימוש במפענח הישן במקרה של בעיות.",
+	"parsermigration-parsoid-readviews-always": "תמיד (לבחור להצטרף)",
+	"parsermigration-parsoid-readviews-default": "בהתאם להגדרות של הוויקי (ברירת מחדל)",
+	"parsermigration-parsoid-readviews-never": "לעולם לא (לבחור לא להצטרף)",
+	"parsermigration-use-legacy-parser-toolbox-label": "לעבור למפענח הישן",
+	"parsermigration-use-parsoid-toolbox-label": "לעבור למפענח החדש (פרסואיד)",
+	"parsermigration-notice-title": "אפשרות ניסיונית",
+	"parsermigration-notice-body": "מופעל אצלך מפענח קוד הוויקי החדש  פרסואיד (Parsoid) להצגת הדף הזה. [https://www.mediawiki.org/wiki/Special:MyLanguage/Parsoid/Parser_Unification/Migration מידע נוסף על האפשרות הזאת].",
+	"parsermigration-parsoid-chip-label": "מתוצג באמצעות פרסואיד"
+}

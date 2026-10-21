@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Papuass",
+			"Silraks"
+		]
+	},
+	"pagetriage-sort-by": "Kārtot pēc:",
+	"pagetriage-filter-unreferenced": "Nav atsauču",
+	"pagetriage-filter-stat-unreferenced": "Nav atsauču",
+	"pagetriage-info-problem-copyvio": "Autortiesību pārkāpums"
+}

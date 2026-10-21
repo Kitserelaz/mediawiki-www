@@ -1,0 +1,23 @@
+{
+	"@metadata": {
+		"authors": [
+			"Snævar",
+			"Spacebirdy",
+			"Stefán Örvar Sigmundsson",
+			"Sveinn í Felli"
+		]
+	},
+	"pendingchanges": "Síður með fyrirhugaðar breytingar",
+	"pendingchanges-legend": "Lista óyfirfarnar síður með fyrirhugaðar breytingar",
+	"pendingchanges-list": "Þessi síða listar [[{{MediaWiki:Validationpage}}|yfirfarnar]] síður með eina eða fleiri breytingar sem bíða yfirferðar.",
+	"pendingchanges-none": "Eins og er upfyllir engin síða þessi leitarskilyrði.",
+	"pendingchanges-hours": "($1 {{PLURAL:$1|klukkustund|klukkustundir}})",
+	"pendingchanges-days": "($1 {{PLURAL:$1|dagur|dagar}})",
+	"pendingchanges-recent": "minna en 1 klukkustund",
+	"pendingchanges-category": "Flokkur:",
+	"pendingchanges-onwatchlist": "Síður á vaktlistanum mínum",
+	"pendingchanges-stable": "Yfirfarnar síður",
+	"pendingchanges-diff": "Yfirfara",
+	"pendingchanges-size": "Hámarks breyting (bæti):",
+	"pendingchanges-unwatched": "án vöktunar"
+}

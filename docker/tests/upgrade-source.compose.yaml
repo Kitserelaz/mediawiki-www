@@ -1,0 +1,31 @@
+# Local development rehearsal: run current sources with the built PHP runtime.
+# Base compose.yaml supplies writable named volumes for uploads/caches/dumps.
+x-upgrade-source: &upgrade-source
+  - type: bind
+    source: ./mediawiki
+    target: /var/www/mediawiki
+    read_only: true
+  - type: bind
+    source: ./docker/mediawiki
+    target: /var/www/mediawiki/docker/mediawiki
+    read_only: true
+  - type: bind
+    source: ./docker/mediawiki/private.php
+    target: /var/www/mediawiki/PrivateSettings.php
+    read_only: true
+  - type: bind
+    source: ./docker/mediawiki
+    target: /opt/farm
+    read_only: true
+services:
+  init:
+    volumes: *upgrade-source
+  php:
+    volumes: *upgrade-source
+  worker:
+    volumes: *upgrade-source
+  scheduler:
+    volumes: *upgrade-source
+networks:
+  default:
+    internal: true

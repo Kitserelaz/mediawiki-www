@@ -2,19 +2,41 @@
 /* eslint-disable no-jquery/no-class-state */
 
 const IpInfoInfoboxWidget = require( './widget.js' );
-const relevantUserName = mw.util.prettifyIP( mw.config.get( 'wgRelevantUserName' ) ),
-	api = new mw.Api(),
+const api = new mw.Api(),
 	eventLogger = require( '../log.js' ),
 	postToRestApi = require( '../rest.js' );
 let viewedAgreement = false,
 	timerStart;
 
 function initInfoboxWidget() {
-	if ( !relevantUserName ) {
+	const showNoEditsError = function () {
+		$( '.ext-ipinfo-collapsible-layout' ).addClass( 'ext-ipinfo-contains-error' );
+		$( '.ext-ipinfo-collapsible-layout .mw-collapsible-content' ).append(
+			new OO.ui.MessageWidget( {
+				type: 'error',
+				label: mw.msg( 'ipinfo-widget-error-ip-no-contributions' )
+			} ).$element
+		);
+	};
+
+	let target = mw.config.get( 'wgRelevantUserName' );
+	if ( target === null ) {
+		target = '';
+	}
+
+	if ( mw.util.isIPAddress( target ) ) {
+		target = mw.util.prettifyIP( target );
+	}
+
+	if ( !target ) {
+		showNoEditsError();
 		return;
 	}
 
 	eventLogger.logIpCopy();
+
+	// T268177: On mobile, don't persist infobox expanded state to conserve screen space.
+	const isMobile = !!mw.config.get( 'wgMFMode' );
 
 	const saveCollapsibleUserOption = function ( e ) {
 		// Only trigger on enter and space keypresses
@@ -22,14 +44,18 @@ function initInfoboxWidget() {
 			return;
 		}
 
-		// Store user preference in mw.storage; if it's removed from the codebase,
-		// it'll need to be cleaned up via mw.storage.remove
 		if ( !$( this ).closest( '.mw-collapsible' ).hasClass( 'mw-collapsed' ) ) {
-			mw.storage.set( 'mw-ipinfo-infobox-expanded', 1 );
+			if ( !isMobile ) {
+				// Store user preference in mw.storage; if it's removed from the codebase,
+				// it'll need to be cleaned up via mw.storage.remove
+				mw.storage.set( 'mw-ipinfo-infobox-expanded', 1 );
+			}
 			// Log when the infobox is manually expanded
 			eventLogger.log( 'expand', 'infobox' );
 		} else {
-			mw.storage.set( 'mw-ipinfo-infobox-expanded', 0 );
+			if ( !isMobile ) {
+				mw.storage.set( 'mw-ipinfo-infobox-expanded', 0 );
+			}
 			// Log when the infobox is manually collasped
 			eventLogger.log( 'collapse', 'infobox' );
 		}
@@ -44,9 +70,10 @@ function initInfoboxWidget() {
 	// Do this before we attach the click handler so we can use click() to expand
 	// the infobox without setting the user preference
 	const hasOpenInfoboxQueryParam = new URLSearchParams( window.location.search ).get( 'openInfobox' ) === 'true';
+	// T268177: On mobile, always start collapsed — don't restore expanded state from storage.
 	if ( $( '.ext-ipinfo-collapsible-layout' ).hasClass( 'mw-collapsed' ) &&
 		( hasOpenInfoboxQueryParam ||
-		!!Number( mw.storage.get( 'mw-ipinfo-infobox-expanded' ) ) ) ) {
+		( !isMobile && !!Number( mw.storage.get( 'mw-ipinfo-infobox-expanded' ) ) ) ) ) {
 		$( '.ext-ipinfo-panel-layout .mw-collapsible-toggle' ).trigger( 'click' );
 	}
 
@@ -54,28 +81,63 @@ function initInfoboxWidget() {
 	$( '.ext-ipinfo-panel-layout .mw-collapsible-toggle' ).on( 'click keypress', saveCollapsibleUserOption );
 
 	const loadIpInfo = function ( targetName ) {
-		const revId = $( '.mw-contributions-list [data-mw-revid]' ).first().attr( 'data-mw-revid' );
-		if ( !revId ) {
-			$( '.ext-ipinfo-collapsible-layout' ).addClass( 'ext-ipinfo-contains-error' );
-			$( '.ext-ipinfo-collapsible-layout .mw-collapsible-content' ).append(
-				new OO.ui.MessageWidget( {
-					type: 'error',
-					label: mw.msg( 'ipinfo-widget-error-ip-no-edits' )
-				} ).$element
-			);
-			return;
+		let id;
+		const page = mw.config.get( 'wgCanonicalSpecialPageName' );
+		if ( page === 'IPContributions' ) {
+			// Special:IPContributions will never match the target user with the revisions,
+			// as it shows edits made from those accounts from temporary accounts. Pick the
+			// first one arbitrarily; widget instantiation makes a similar accomodation and
+			// also ignores the page target/revision owner match.
+			id = $( '.mw-contributions-list [data-mw-revid]' ).first().attr( 'data-mw-revid' );
+		} else {
+			// Get the ID from the first revision line belonging to the target user
+			id = $( '.mw-contributions-list [data-mw-revid]' ).filter( function () {
+				return $( this ).find( '.mw-tempuserlink' ).text().trim() === targetName;
+			} ).first().attr( 'data-mw-revid' );
 		}
 
-		const endpoint = mw.config.get( 'wgCanonicalSpecialPageName' ) === 'Contributions' ?
-			'revision' : 'archivedrevision';
+		let endpoint = 'revision';
+		if (
+			page === 'DeletedContributions' ||
+			// Special:IPContributions uses the isArchive parameter for deleted contributions
+			(
+				page === 'IPContributions' &&
+				Number( new URLSearchParams( window.location.search ).get( 'isArchive' ) )
+			)
+		) {
+			endpoint = 'archivedrevision';
+		}
+
+		if ( !id ) {
+			// If no revision was found and the target is a temp account or IP address,
+			// fall back to the no-revision endpoint instead to check for the IP in CU/AF tables
+			if ( mw.util.isTemporaryUser( target ) || mw.util.isIPAddress( target, true ) ) {
+				endpoint = 'norevision';
+				id = target;
+			} else {
+				// Otherwise, return early as the target is
+				// a registered account with no contributions and cannot be looked up
+				showNoEditsError();
+				return;
+			}
+		}
 
 		const ipPanelWidget = new IpInfoInfoboxWidget(
-			postToRestApi( endpoint, revId, 'infobox' ).then( ( response ) => {
+			postToRestApi( endpoint, id, 'infobox' ).then( ( response ) => {
 				let i, data;
 				const sanitizedTargetName = mw.util.sanitizeIP( targetName );
 				// Array.find is only available from ES6
 				for ( i = 0; i < response.info.length; i++ ) {
-					if ( mw.util.sanitizeIP( response.info[ i ].subject ) === sanitizedTargetName ) {
+					// T380466: For IPContributions, info.data holds at most one
+					// entry whose subject is a temp username, but here we don't
+					// know that username in advance.
+					//
+					// Therefore, if the expected target is an IP, we just use
+					// the first item. Otherwise, we compare the subject against
+					// sanitizedTargetName, which will hold a (temp) username.
+					//
+					if ( mw.util.isIPAddress( sanitizedTargetName ) ||
+						mw.util.sanitizeIP( response.info[ i ].subject ) === sanitizedTargetName ) {
 						data = response.info[ i ];
 						break;
 					}
@@ -84,10 +146,14 @@ function initInfoboxWidget() {
 				if ( data ) {
 					const context = hasOpenInfoboxQueryParam ? 'popup' : 'infobox';
 
-					const hasGeoData = Object.keys( data.data[ 'ipinfo-source-geoip2' ] )
-						.some( ( k ) => data.data[ 'ipinfo-source-geoip2' ][ k ] !== null );
-					const hasIpoidData = Object.keys( data.data[ 'ipinfo-source-ipoid' ] )
-						.some( ( k ) => data.data[ 'ipinfo-source-ipoid' ][ k ] !== null );
+					const hasData = !!data.data;
+					const hasGeoData = hasData &&
+						Object.keys( data.data[ 'ipinfo-source-geoip2' ] )
+							.some( ( k ) => data.data[ 'ipinfo-source-geoip2' ][ k ] !== null );
+					const ipoidData = hasData && data.data[ 'ipinfo-source-ipoid' ];
+					const hasIpoidData = ipoidData ?
+						Object.keys( ipoidData ).some( ( k ) => ipoidData[ k ] !== null ) :
+						false;
 
 					const dataSources = [];
 					if ( hasGeoData ) {
@@ -106,9 +172,19 @@ function initInfoboxWidget() {
 					};
 
 					eventLogger.log( 'open_infobox', context, params );
+				} else {
+					// Other calls should return valid arrays even if they don't have data
+					// but the CU/AF lookup can return an invalid array indicating that no
+					// results were found for the user.
+					// As this call is asynchronous, the widget will have loaded before we
+					// know if we should show it. Show an error and remove the widget at this
+					// point, as there is no data to show.
+					showNoEditsError();
+					$( ipPanelWidget.$element ).remove();
 				}
 
 				mw.track( 'timing.MediaWiki.ipinfo_infobox_delay', mw.now() - timerStart );
+				mw.track( 'stats.mediawiki_IPInfo_infobox_delay_seconds', mw.now() - timerStart );
 				return data;
 			} )
 		);
@@ -125,8 +201,22 @@ function initInfoboxWidget() {
 		}
 	};
 
+	// Shows the form to agree to the terms of use instead of ip info
 	const loadUseAgreement = function () {
-		// Show the form to agree to the terms of use instead of ip info
+		let submitLayoutConfig = {};
+
+		// Only link to Beta Features Preferences if IPInfo is
+		// considered as such (T395784).
+		if ( mw.config.get( 'wgIPInfoIsABetaFeature' ) ) {
+			submitLayoutConfig = {
+				align: 'top',
+				help: new OO.ui.HtmlSnippet(
+					mw.message( 'ipinfo-infobox-disable-instructions' ).parse()
+				),
+				helpInline: true
+			};
+		}
+
 		const agreementFormWidget = new OO.ui.FormLayout( {
 			classes: [ 'ipinfo-use-agreement-form' ],
 			content: [
@@ -161,13 +251,7 @@ function initInfoboxWidget() {
 							'progressive'
 						]
 					} ),
-					{
-						align: 'top',
-						help: new OO.ui.HtmlSnippet(
-							mw.message( 'ipinfo-infobox-disable-instructions' ).parse()
-						),
-						helpInline: true
-					}
+					submitLayoutConfig
 				)
 			]
 		} );
@@ -179,7 +263,7 @@ function initInfoboxWidget() {
 
 		$( '.ipinfo-use-agreement-form' ).on( 'submit', ( e ) => {
 			e.preventDefault();
-			api.saveOption( 'ipinfo-use-agreement', '1' )
+			api.saveOption( 'ipinfo-use-agreement', '1', { global: 'create' } )
 				.always( () => {
 					$( '.ipinfo-use-agreement-form' ).remove();
 				} ).then( () => {
@@ -191,7 +275,7 @@ function initInfoboxWidget() {
 
 					// Success - show ip info
 					$( '.ipinfo-use-agreement-form' ).remove();
-					loadIpInfo( relevantUserName );
+					loadIpInfo( target );
 				} ).catch( ( error ) => {
 					// Fail state - show an error
 					$( '.ext-ipinfo-collapsible-layout .mw-collapsible-content' ).append(
@@ -213,7 +297,7 @@ function initInfoboxWidget() {
 			loadUseAgreement();
 		} else {
 			timerStart = mw.now();
-			loadIpInfo( relevantUserName );
+			loadIpInfo( target );
 		}
 	} else {
 		// Watch for the first expand command, load content, and unbind listener
@@ -228,7 +312,7 @@ function initInfoboxWidget() {
 					loadUseAgreement();
 				} else {
 					timerStart = mw.now();
-					loadIpInfo( relevantUserName );
+					loadIpInfo( target );
 				}
 			}
 

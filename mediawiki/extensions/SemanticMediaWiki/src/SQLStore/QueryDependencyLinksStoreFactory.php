@@ -1,0 +1,132 @@
+<?php
+
+namespace SMW\SQLStore;
+
+use MediaWiki\Logger\LoggerFactory;
+use SMW\Services\ServicesFactory as ApplicationFactory;
+use SMW\SQLStore\QueryDependency\DependencyLinksTableUpdater;
+use SMW\SQLStore\QueryDependency\DependencyLinksValidator;
+use SMW\SQLStore\QueryDependency\QueryDependencyLinksStore;
+use SMW\SQLStore\QueryDependency\QueryLinksTableDisposer;
+use SMW\SQLStore\QueryDependency\QueryReferenceBacklinks;
+use SMW\SQLStore\QueryDependency\QueryResultDependencyListResolver;
+use SMW\Store;
+
+/**
+ * @private
+ *
+ * @license GPL-2.0-or-later
+ * @since 2.4
+ *
+ * @author mwjames
+ */
+class QueryDependencyLinksStoreFactory {
+
+	/**
+	 * @since 3.1
+	 *
+	 * @return DependencyLinksValidator
+	 */
+	public function newDependencyLinksValidator(): DependencyLinksValidator {
+		$applicationFactory = ApplicationFactory::getInstance();
+
+		$dependencyLinksValidator = new DependencyLinksValidator(
+			$applicationFactory->getStore()
+		);
+
+		$dependencyLinksValidator->setCheckDependencies(
+			$applicationFactory->getSettings()->get( 'smwgEnabledQueryDependencyLinksStore' )
+		);
+
+		$dependencyLinksValidator->setLogger(
+			LoggerFactory::getInstance( 'smw' )
+		);
+
+		return $dependencyLinksValidator;
+	}
+
+	/**
+	 * @since 2.4
+	 *
+	 * @return QueryResultDependencyListResolver
+	 */
+	public function newQueryResultDependencyListResolver(): QueryResultDependencyListResolver {
+		$applicationFactory = ApplicationFactory::getInstance();
+
+		$queryResultDependencyListResolver = new QueryResultDependencyListResolver(
+			$applicationFactory->newHierarchyLookup()
+		);
+
+		$queryResultDependencyListResolver->setPropertyDependencyExemptionlist(
+			$applicationFactory->getSettings()->get( 'smwgQueryDependencyPropertyExemptionList' )
+		);
+
+		return $queryResultDependencyListResolver;
+	}
+
+	/**
+	 * @since 2.4
+	 *
+	 * @param Store $store
+	 *
+	 * @return QueryDependencyLinksStore
+	 */
+	public function newQueryDependencyLinksStore( Store $store ): QueryDependencyLinksStore {
+		$applicationFactory = ApplicationFactory::getInstance();
+		$logger = LoggerFactory::getInstance( 'smw' );
+
+		$dependencyLinksTableUpdater = new DependencyLinksTableUpdater(
+			$store
+		);
+
+		$dependencyLinksTableUpdater->setLogger(
+			$logger
+		);
+
+		$queryDependencyLinksStore = new QueryDependencyLinksStore(
+			$this->newQueryResultDependencyListResolver(),
+			$dependencyLinksTableUpdater,
+			$applicationFactory->getNamespaceExaminer()
+		);
+
+		$queryDependencyLinksStore->setLogger(
+			$logger
+		);
+
+		$queryDependencyLinksStore->setEnabled(
+			$applicationFactory->getSettings()->get( 'smwgEnabledQueryDependencyLinksStore' )
+		);
+
+		return $queryDependencyLinksStore;
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * @param Store $store
+	 *
+	 * @return QueryReferenceBacklinks
+	 */
+	public function newQueryReferenceBacklinks( Store $store ): QueryReferenceBacklinks {
+		return new QueryReferenceBacklinks( $this->newQueryDependencyLinksStore( $store ) );
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param Store $store
+	 *
+	 * @return QueryLinksTableDisposer
+	 */
+	public function newQueryLinksTableDisposer( Store $store ): QueryLinksTableDisposer {
+		$applicationFactory = ApplicationFactory::getInstance();
+
+		$queryLinksTableDisposer = new QueryLinksTableDisposer(
+			$store,
+			$applicationFactory->getIteratorFactory()
+		);
+
+		return $queryLinksTableDisposer;
+	}
+
+}

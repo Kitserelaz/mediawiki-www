@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"Aleator",
+			"Jmarchn",
+			"SMP"
+		]
+	},
+	"forcepreview": "$1 (usar abans la previsualització)",
+	"forcepreview-desc": "Força la previsualització als usuaris sense permisos",
+	"action-forcepreviewexempt": "desar sense haver de previsualitzar",
+	"right-forcepreviewexempt": "Desar sense haver de previsualitzar"
+}

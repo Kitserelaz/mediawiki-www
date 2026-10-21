@@ -17,10 +17,10 @@ class GadgetDefinitionValidator {
 	private const TYPE_INT = [ 'callback' => 'is_int', 'expect' => 'number' ];
 	private const TYPE_STRING = [ 'callback' => 'is_string', 'expect' => 'string' ];
 	private const TYPE_PAGE_SUFFIX = [
-		'callback' => [ __CLASS__, 'isResourcePageSuffix' ], 'expect' => '.js, .css, .json'
+		'callback' => [ self::class, 'isResourcePageSuffix' ], 'expect' => '.js, .css, .json, .vue'
 	];
 	private const TYPE_MODULE_TYPE = [
-		'callback' => [ __CLASS__, 'isModuleType' ], 'expect' => '"", "general", "styles"',
+		'callback' => [ self::class, 'isModuleType' ], 'expect' => '"", "general", "styles"',
 	];
 
 	/**
@@ -34,7 +34,7 @@ class GadgetDefinitionValidator {
 		'settings' => self::TYPE_ARRAY,
 		'settings.actions' => self::TYPE_ARRAY + [ 'child' => self::TYPE_STRING ],
 		'settings.categories' => self::TYPE_ARRAY + [ 'child' => self::TYPE_STRING ],
-		'settings.category' => self::TYPE_STRING,
+		'settings.section' => self::TYPE_STRING,
 		'settings.contentModels' => self::TYPE_ARRAY + [ 'child' => self::TYPE_STRING ],
 		'settings.default' => self::TYPE_BOOL,
 		'settings.hidden' => self::TYPE_BOOL,
@@ -46,6 +46,7 @@ class GadgetDefinitionValidator {
 		'settings.supportsUrlLoad' => self::TYPE_BOOL,
 
 		'module' => self::TYPE_ARRAY,
+		'module.codexIcons' => self::TYPE_ARRAY + [ 'child' => self::TYPE_STRING ],
 		'module.dependencies' => self::TYPE_ARRAY + [ 'child' => self::TYPE_STRING ],
 		'module.messages' => self::TYPE_ARRAY + [ 'child' => self::TYPE_STRING ],
 		'module.pages' => self::TYPE_ARRAY + [ 'child' => self::TYPE_PAGE_SUFFIX ],
@@ -53,9 +54,16 @@ class GadgetDefinitionValidator {
 		'module.type' => self::TYPE_MODULE_TYPE,
 	];
 
+	/**
+	 * @param mixed $title
+	 * @return bool
+	 */
 	public static function isResourcePageSuffix( $title ): bool {
 		return is_string( $title ) && (
-			str_ends_with( $title, '.js' ) || str_ends_with( $title, '.css' ) || str_ends_with( $title, '.json' )
+			str_ends_with( $title, '.js' ) ||
+			str_ends_with( $title, '.css' ) ||
+			str_ends_with( $title, '.json' ) ||
+			str_ends_with( $title, '.vue' )
 		);
 	}
 

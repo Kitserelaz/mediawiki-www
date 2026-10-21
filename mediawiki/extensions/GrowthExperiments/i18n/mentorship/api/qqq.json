@@ -1,0 +1,38 @@
+{
+	"@metadata": {
+		"authors": [
+			"Amire80"
+		]
+	},
+	"apihelp-growthstarmentee-summary": "{{doc-apihelp-summary|growthstarmentee}}",
+	"apihelp-growthstarmentee-param-gesaction": "{{doc-apihelp-param|growthstarmentee|gesaction}}",
+	"apihelp-growthstarmentee-param-gesmentee": "{{doc-apihelp-param|growthstarmentee|gesmentee}}",
+	"apihelp-query+growthstarredmentees-summary": "{{doc-apihelp-summary|query+growthstarredmentees}}",
+	"apihelp-growthsetmentorstatus-summary": "{{doc-apihelp-summary|growthsetmentorstatus}}",
+	"apihelp-growthsetmentorstatus-param-gesstatus": "{{doc-apihelp-param|growthsetmentorstatus|gesstatus}}",
+	"apihelp-growthsetmentorstatus-param-gesbackindays": "{{doc-apihelp-param|growthsetmentorstatus|gesbackindays}}",
+	"apihelp-query+growthmentorstatus-summary": "{{doc-apihelp-summary|query+growthmentorstatus}}",
+	"apihelp-growthmentordashboardupdatedata-summary": "{{doc-apihelp-summary|growthmentordashboardupdatedata}}",
+	"apihelp-growthsetmenteestatus-summary": "{{doc-apihelp-summary|growthsetmenteestatus}}",
+	"apihelp-growthsetmenteestatus-param-state": "{{doc-apihelp-summary|growthsetmenteestatus|state}}",
+	"apihelp-growthsetmenteestatus-param-state-enabled": "{{doc-apihelp-paramvalue|growthsetmenteestatus|state|enabled}}",
+	"apihelp-growthsetmenteestatus-param-state-disabled": "{{doc-apihelp-paramvalue|growthsetmenteestatus|state|disabled}}",
+	"apihelp-growthsetmenteestatus-param-state-optout": "{{doc-apihelp-paramvalue|growthsetmenteestatus|state|optout}}",
+	"apihelp-query+growthmenteestatus-summary": "{{doc-apihelp-summary|query+growthmenteestatus}}",
+	"apihelp-query+growthmentormentee-summary": "{{doc-apihelp-summary|query+growthmentormentee}}",
+	"apihelp-query+growthmentormentee-param-gemmmentor": "{{doc-apihelp-param|query+growthmentormentee|gemmmentor}}",
+	"apihelp-growthmanagementorlist-summary": "{{doc-apihelp-summary|growthmanagementorlist}}",
+	"apihelp-growthmanagementorlist-param-geaction": "{{doc-apihelp-param|growthmanagementorlist|geaction}}",
+	"apihelp-growthmanagementorlist-param-message": "{{doc-apihelp-param|growthmanagementorlist|message}}",
+	"apihelp-growthmanagementorlist-param-weight": "{{doc-apihelp-param|growthmanagementorlist|weight}}",
+	"apihelp-growthmanagementorlist-param-isaway": "{{doc-apihelp-param|growthmanagementorlist|isaway}}",
+	"apihelp-growthmanagementorlist-param-awaytimestamp": "{{doc-apihelp-param|growthmanagementorlist|awaytimestamp}}",
+	"apihelp-growthmanagementorlist-param-summary": "{{doc-apihelp-param|growthmanagementorlist|summary}}",
+	"apihelp-growthmanagementorlist-param-username": "{{doc-apihelp-param|growthmanagementorlist|username}}",
+	"growthexperiments-api-managementors-error-no-away-timestamp": "Message to show in API (action=growthmanagementors) if isaway is true, but awaytimestamp is not provided.",
+	"apihelp-growthinvalidatepersonalizedpraisesuggestion-summary": "{{doc-apihelp-param|growthinvalidatepersonalizedpraisesuggestion|summary}}\n\nRelated messages:\n* {{msg-mw|Apihelp-growthinvalidatepersonalizedpraisesuggestion-param-mentee}}\n* {{msg-mw|Apihelp-growthinvalidatepersonalizedpraisesuggestion-param-reason}}",
+	"apihelp-growthinvalidatepersonalizedpraisesuggestion-param-mentee": "{{doc-apihelp-param|growthinvalidatepersonalizedpraisesuggestion|mentee}}\nRelated messages:\n* {{msg-mw|Apihelp-growthinvalidatepersonalizedpraisesuggestion-summary}}\n* {{msg-mw|Apihelp-growthinvalidatepersonalizedpraisesuggestion-param-reason}}",
+	"apihelp-growthinvalidatepersonalizedpraisesuggestion-param-reason": "{{doc-apihelp-param|growthinvalidatepersonalizedpraisesuggestion|reason}}\n\nRelated messages:\n* {{msg-mw|Apihelp-growthinvalidatepersonalizedpraisesuggestion-summary}}\n* {{msg-mw|Apihelp-growthinvalidatepersonalizedpraisesuggestion-param-mentee}}",
+	"apihelp-growthinvalidatepersonalizedpraisesuggestion-param-skipreason": "\"Skip reason\" means \"The reason for skipping\".\n\n{{doc-apihelp-param|growthinvalidatepersonalizedpraisesuggestion|skipreason}}",
+	"apihelp-query+growthmentorlist-summary": "{{doc-apihelp-summary|query+growthmentorlist}}"
+}

@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": [
+			"McDutchie",
+			"Siebrand"
+		]
+	},
+	"preloader-desc": "Voorziet in aanpasbare standaardtekst per naamruimte voor nieuwe pagina’s"
+}

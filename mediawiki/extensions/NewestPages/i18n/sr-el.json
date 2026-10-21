@@ -1,0 +1,21 @@
+{
+	"@metadata": {
+		"authors": [
+			"Liangent",
+			"Michaello",
+			"Milicevic01",
+			"Sasa Stefanovic"
+		]
+	},
+	"newestpages": "Najnovije stranice",
+	"newestpages-desc": "Prikazuje [[Special:NewestPages|poslednjih X stranica]] dodatih vikiju",
+	"newestpages-header": "'''Ova stranica navodi {{PLURAL:$1|najnoviju stranicu|$1 najnovije stranice|$1 najnovijih stranica}} na vikiju.'''",
+	"newestpages-limitlinks": "Prikaži do $1 stranica",
+	"newestpages-namespace": "Imenski prostor:",
+	"newestpages-none": "Unosi nisu pronađeni.",
+	"newestpages-ns-header": "'''Ova stranica navodi {{PLURAL:$1|najnoviju stranicu|$1 najnovije stranice|$1 najnovijih stranica}} u imenskom prostoru $2.'''",
+	"newestpages-showing": "Spisak navodi {{PLURAL:$1|najnoviju stranicu|$1 najnovije stranice|$1 najnovijih stranica}}:",
+	"newestpages-submit": "Idi",
+	"newestpages-showredir": "Prikaži preusmeravanja",
+	"newestpages-hideredir": "Sakrij preusmeravanja"
+}

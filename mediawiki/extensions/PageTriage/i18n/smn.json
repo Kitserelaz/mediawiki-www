@@ -1,0 +1,28 @@
+{
+	"@metadata": {
+		"authors": [
+			"Seipinne",
+			"Yupik"
+		]
+	},
+	"pagetriage-no-categories": "Ij ohtâgin luokka",
+	"pagetriage-author-bot": "Botti",
+	"pagetriage-filter-predicted-issues-vandalism": "Vandalism",
+	"pagetriage-filter-show-heading": "Tile:",
+	"pagetriage-filter-username": "Kevtteenommâ",
+	"pagetriage-filter-ns-all": "Puoh",
+	"pagetriage-filter-stat-all": "Puoh",
+	"pagetriage-filter-stat-no-categories": "Ij ohtâgin luokka",
+	"pagetriage-filter-stat-predicted-issues-vandalism": "Vandalism",
+	"pagetriage-button-add-parameters": "Lasseet parameetterijd",
+	"pagetriage-has-talkpage-feedback-link": "savâstâllâmsiijđon",
+	"pagetriage-tags-title": "Lasseet kilgolijd",
+	"pagetriage-tags-cat-all-label": "Puoh kilgoleh",
+	"pagetriage-tags-param-date-label": "Peivim:",
+	"pagetriage-info-history-header": "Historjá",
+	"pagetriage-info-help": "iše",
+	"pagetriage-info-problem-blocked": "Estum kevttee",
+	"pagetriage-toolbar-close": "Toopâ",
+	"pagetriage-afc-state-all": "Puoh",
+	"pagetriage-thank-link": "{{GENDER:$1|{{GENDER:$2|Kijte}}}}"
+}

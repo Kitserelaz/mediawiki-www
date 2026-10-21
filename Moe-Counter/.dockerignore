@@ -1,0 +1,10 @@
+node_modules
+.git
+.github
+.env*
+*.db
+*.db-*
+data
+test
+coverage
+.DS_Store

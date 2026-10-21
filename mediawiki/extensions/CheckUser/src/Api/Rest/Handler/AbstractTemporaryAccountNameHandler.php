@@ -1,62 +1,69 @@
 <?php
 
-namespace MediaWiki\CheckUser\Api\Rest\Handler;
+namespace MediaWiki\Extension\CheckUser\Api\Rest\Handler;
 
-use MediaWiki\CheckUser\Logging\TemporaryAccountLogger;
-use MediaWiki\Rest\LocalizedHttpException;
-use Wikimedia\Message\MessageValue;
+use MediaWiki\Block\BlockManager;
+use MediaWiki\Config\Config;
+use MediaWiki\Extension\CheckUser\Logging\TemporaryAccountLogger;
+use MediaWiki\Extension\CheckUser\Logging\TemporaryAccountLoggerFactory;
+use MediaWiki\Extension\CheckUser\Services\CheckUserPermissionManager;
+use MediaWiki\Extension\CheckUser\Services\CheckUserTemporaryAccountAutoRevealLookup;
+use MediaWiki\JobQueue\JobQueueGroup;
+use MediaWiki\Permissions\PermissionManager;
+use MediaWiki\User\ActorStore;
+use MediaWiki\User\UserNameUtils;
 use Wikimedia\ParamValidator\ParamValidator;
+use Wikimedia\Rdbms\IConnectionProvider;
+use Wikimedia\Rdbms\ReadOnlyMode;
 
 /**
  * Handle temporary account name validation for endpoints that take an account name as a parameter
  */
 abstract class AbstractTemporaryAccountNameHandler extends AbstractTemporaryAccountHandler {
+
+	use TemporaryAccountNameTrait;
+
+	public function __construct(
+		Config $config,
+		JobQueueGroup $jobQueueGroup,
+		PermissionManager $permissionManager,
+		UserNameUtils $userNameUtils,
+		IConnectionProvider $dbProvider,
+		ActorStore $actorStore,
+		BlockManager $blockManager,
+		CheckUserPermissionManager $checkUserPermissionsManager,
+		protected readonly CheckUserTemporaryAccountAutoRevealLookup $autoRevealLookup,
+		protected readonly TemporaryAccountLoggerFactory $loggerFactory,
+		ReadOnlyMode $readOnlyMode,
+	) {
+		parent::__construct(
+			$config,
+			$jobQueueGroup,
+			$permissionManager,
+			$userNameUtils,
+			$dbProvider,
+			$actorStore,
+			$blockManager,
+			$checkUserPermissionsManager,
+			$readOnlyMode
+		);
+	}
+
 	/**
 	 * @inheritDoc
 	 */
 	public function getResults( $identifier ): array {
-		if ( !$this->userNameUtils->isTemp( $identifier ) ) {
-			throw new LocalizedHttpException(
-				new MessageValue( 'rest-invalid-user', [ $identifier ] ),
-				404
+		$dbr = $this->getConnectionProvider()->getReplicaDatabase();
+		$actorId = $this->getTemporaryAccountActorId( $identifier );
+
+		$results = $this->getData( $actorId, $dbr );
+		if ( $this->autoRevealLookup->isAutoRevealAvailable() ) {
+			$results['autoReveal'] = $this->autoRevealLookup->isAutoRevealOn(
+				$this->getAuthority()
 			);
 		}
 
-		$dbr = $this->dbProvider->getReplicaDatabase();
-		$actorId = $this->actorStore->findActorIdByName( $identifier, $dbr );
-		$userIdentity = $this->actorStore->getUserIdentityByName( $identifier );
-		if ( $actorId === null || $userIdentity === null ) {
-			throw new LocalizedHttpException(
-				new MessageValue( 'rest-nonexistent-user', [ $identifier ] ),
-				404
-			);
-		}
-
-		$blockOnTempAccount = $this->blockManager->getBlock( $userIdentity, null );
-		if (
-			$blockOnTempAccount &&
-			$blockOnTempAccount->getHideName() &&
-			!$this->permissionManager->userHasRight( $this->getAuthority()->getUser(), 'viewsuppressed' )
-		) {
-			if ( $this->permissionManager->userHasRight( $this->getAuthority()->getUser(), 'hideuser' ) ) {
-				// The user knows that this user exists, because they have the 'hideuser' right. Instead of pretending
-				// the user does not exist, we instead should inform the user that they don't have the
-				// permission to view this information.
-				throw new LocalizedHttpException(
-					new MessageValue( 'checkuser-rest-access-denied' ),
-					403
-				);
-			} else {
-				// Pretend the username does not exist if the temporary account is hidden and the user does not have the
-				// rights to see suppressed information or blocks with 'hideuser' set.
-				throw new LocalizedHttpException(
-					new MessageValue( 'rest-nonexistent-user', [ $identifier ] ),
-					404
-				);
-			}
-		}
-
-		return $this->getData( $actorId, $dbr );
+		return $results;
 	}
 
 	/**
@@ -64,6 +71,24 @@ abstract class AbstractTemporaryAccountNameHandler extends AbstractTemporaryAcco
 	 */
 	protected function getLogType(): string {
 		return TemporaryAccountLogger::ACTION_VIEW_IPS;
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function makeLog( $identifier ) {
+		if ( $this->autoRevealLookup->isAutoRevealOn( $this->getAuthority() ) ) {
+			$logger = $this->loggerFactory->getLogger();
+			$performerName = $this->getAuthority()->getUser()->getName();
+
+			$logger->logViewIPsWithAutoReveal(
+				$performerName,
+				$this->urlEncodeTitle( $identifier )
+			);
+			return;
+		}
+
+		parent::makeLog( $identifier );
 	}
 
 	/**
@@ -77,5 +102,40 @@ abstract class AbstractTemporaryAccountNameHandler extends AbstractTemporaryAcco
 				ParamValidator::PARAM_REQUIRED => true,
 			],
 		];
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	protected function getUserNameUtils(): UserNameUtils {
+		return $this->userNameUtils;
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	protected function getConnectionProvider(): IConnectionProvider {
+		return $this->dbProvider;
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	protected function getActorStore(): ActorStore {
+		return $this->actorStore;
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	protected function getBlockManager(): BlockManager {
+		return $this->blockManager;
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	protected function getPermissionManager(): PermissionManager {
+		return $this->permissionManager;
 	}
 }

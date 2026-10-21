@@ -1,0 +1,7 @@
+{
+	"@metadata": {
+		"authors": []
+	},
+	"apihelp-query+projects-summary": "Spisak svih projekata.",
+	"apihelp-query+projects-param-subprojects": "Takođe, obuhvata podprojekte."
+}

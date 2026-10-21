@@ -3,19 +3,19 @@
 namespace Miraheze\ManageWiki\FormFactory;
 
 use MediaWiki\Context\IContextSource;
+use MediaWiki\Exception\PermissionsError;
 use MediaWiki\Html\Html;
 use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\Language\RawMessage;
 use MediaWiki\Status\Status;
 use Miraheze\ManageWiki\Helpers\Factories\ModuleFactory;
 use Miraheze\ManageWiki\OOUIHTMLFormTabs;
-use PermissionsError;
 use function implode;
 
 class FormFactory {
 
 	public function __construct(
-		private readonly FormFactoryBuilder $formFactoryBuilder
+		private readonly FormFactoryBuilder $formFactoryBuilder,
 	) {
 	}
 
@@ -64,6 +64,7 @@ class FormFactory {
 		return $htmlForm;
 	}
 
+	/** @throws PermissionsError */
 	protected function submitForm(
 		ModuleFactory $moduleFactory,
 		HTMLForm $form,
@@ -101,20 +102,12 @@ class FormFactory {
 			}
 
 			return Status::newFatal(
-				new RawMessage( implode( '<br />', $errorOut ) )
+				new RawMessage( implode( Html::element( 'br' ), $errorOut ) )
 			);
 		}
 
-		$form->getOutput()->addHTML(
-			Html::successBox(
-				Html::element(
-					'p',
-					[],
-					$form->msg( 'managewiki-success' )->text()
-				),
-				'mw-notify-success'
-			)
-		);
+		$context->getRequest()->getSession()->set( 'manageWikiSaveSuccess', 1 );
+		$context->getOutput()->redirect( $form->getTitle()->getFullURL() );
 
 		// Even though it's successful we still return false so
 		// that the form does not dissappear when submitted.

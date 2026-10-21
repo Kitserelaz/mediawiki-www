@@ -27,7 +27,10 @@
 			"ToprakM",
 			"Uğur Başak",
 			"Vito Genovese",
-			"Watermelon juice"
+			"Watermelon juice",
+			"İmmortalance",
+			"Superyetkin",
+			"HakanIST"
 		]
 	},
 	"preferences": "Tercihler",
@@ -48,6 +51,8 @@
 	"username": "{{GENDER:$1|Kullanıcı adı}}:",
 	"prefs-memberingroups": "{{GENDER:$2|Üye}} {{PLURAL:$1|grubu|grupları}}:",
 	"group-membership-link-with-expiry": "$1 ($2 tarihine kadar)",
+	"prefs-memberingroupsdisabled": "{{GENDER:$2|Devre dışı bırakılan}} {{PLURAL:$1|grup|gruplar}}:",
+	"prefs-memberingroupsdisabled-help": "{{GENDER:$2|Artık}} bu {{PLURAL:$1|grubun|grupların}} üyesi olma [[$3|koşullarını]] karşılamıyorsunuz.",
 	"prefs-edits": "Değişiklik sayısı:",
 	"prefs-registration": "Kayıt zamanı:",
 	"yourrealname": "Gerçek isminiz:",
@@ -162,7 +167,7 @@
 	"underline-always": "Her zaman",
 	"tog-showhiddencats": "Gizli kategorileri göster",
 	"tog-showrollbackconfirmation": "Geri döndür bağlantısına tıklanınca bir onay istemi göster",
-	"tog-forcesafemode": "[[mw:Special:MyLanguage/Manual:Safemode|Güvenli modu]] her zaman etkinleştir",
+	"tog-forcesafemode": "Her zaman [[mw:Special:MyLanguage/Manual:Safemode|güvenli modu]] etkinleştir",
 	"prefs-help-forcesafemode": "Vikideki betikleri ve biçem sayfalarını devre dışı bırakın.",
 	"prefs-editing": "Sayfa yazma alanı",
 	"prefs-description-editing": "Değişiklikleri nasıl yapacağınızı, izleyeceğinizi ve inceleyeceğinizi özelleştirin.",
@@ -206,6 +211,8 @@
 	"prefs-description-watchlist": "İzlediğiniz sayfaların listesini yönetin ve kişiselleştirin.",
 	"prefs-editwatchlist": "İzleme listesini değiştir",
 	"prefs-editwatchlist-label": "İzleme listenizdeki girişleri düzenleyin:",
+	"prefs-editwatchlistlabels-label": "İzleme listesi etiketlerini düzenle:",
+	"prefs-managewatchlistlabels": "İzleme listenizdeki etiketleri görüntüleyin ve yönetin.",
 	"prefs-editwatchlist-edit": "İzleme listenizdeki başlıkları görüntüleyin ve düzenleyin",
 	"prefs-editwatchlist-raw": "Ham izleme listesini değiştir",
 	"prefs-editwatchlist-clear": "İzleme listenizi temizleyin",

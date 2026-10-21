@@ -11,13 +11,13 @@
 namespace MediaWiki\Extension\VisualEditor;
 
 use Deflate;
-use DifferenceEngine;
 use FlaggablePageView;
 use MediaWiki\Api\ApiBase;
 use MediaWiki\Api\ApiMain;
 use MediaWiki\Content\ContentHandler;
 use MediaWiki\Context\DerivativeContext;
 use MediaWiki\Context\RequestContext;
+use MediaWiki\Diff\DifferenceEngine;
 use MediaWiki\HookContainer\HookContainer;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
@@ -26,15 +26,15 @@ use MediaWiki\Parser\Sanitizer;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\Request\DerivativeRequest;
 use MediaWiki\Revision\SlotRecord;
+use MediaWiki\Skin\SkinFactory;
 use MediaWiki\SpecialPage\SpecialPageFactory;
 use MediaWiki\Storage\PageEditStash;
 use MediaWiki\Title\Title;
 use MediaWiki\User\UserIdentity;
-use SkinFactory;
 use Wikimedia\ObjectCache\BagOStuff;
 use Wikimedia\ParamValidator\ParamValidator;
 use Wikimedia\Rdbms\IDBAccessObject;
-use Wikimedia\Stats\IBufferingStatsdDataFactory;
+use Wikimedia\Stats\StatsFactory;
 
 class ApiVisualEditorEdit extends ApiBase {
 	use ApiParsoidTrait;
@@ -42,33 +42,23 @@ class ApiVisualEditorEdit extends ApiBase {
 	private const MAX_CACHE_RECENT = 2;
 	private const MAX_CACHE_TTL = 900;
 
-	private VisualEditorHookRunner $hookRunner;
-	private PageEditStash $pageEditStash;
-	private SkinFactory $skinFactory;
-	private WikiPageFactory $wikiPageFactory;
-	private SpecialPageFactory $specialPageFactory;
-	private VisualEditorParsoidClientFactory $parsoidClientFactory;
+	private readonly VisualEditorHookRunner $hookRunner;
 
 	public function __construct(
 		ApiMain $main,
 		string $name,
 		HookContainer $hookContainer,
-		IBufferingStatsdDataFactory $statsdDataFactory,
-		PageEditStash $pageEditStash,
-		SkinFactory $skinFactory,
-		WikiPageFactory $wikiPageFactory,
-		SpecialPageFactory $specialPageFactory,
-		VisualEditorParsoidClientFactory $parsoidClientFactory
+		StatsFactory $statsFactory,
+		private readonly PageEditStash $pageEditStash,
+		private readonly SkinFactory $skinFactory,
+		private readonly WikiPageFactory $wikiPageFactory,
+		private readonly SpecialPageFactory $specialPageFactory,
+		private readonly VisualEditorParsoidClientFactory $parsoidClientFactory
 	) {
 		parent::__construct( $main, $name );
 		$this->setLogger( LoggerFactory::getInstance( 'VisualEditor' ) );
-		$this->setStats( $statsdDataFactory );
+		$this->setStatsFactory( $statsFactory );
 		$this->hookRunner = new VisualEditorHookRunner( $hookContainer );
-		$this->pageEditStash = $pageEditStash;
-		$this->skinFactory = $skinFactory;
-		$this->wikiPageFactory = $wikiPageFactory;
-		$this->specialPageFactory = $specialPageFactory;
-		$this->parsoidClientFactory = $parsoidClientFactory;
 	}
 
 	/**
@@ -118,6 +108,22 @@ class ApiVisualEditorEdit extends ApiBase {
 		// Exclude other known params from here and ApiMain.
 		// TODO: This doesn't exclude params from the formatter
 		$allParams = $this->getRequest()->getValues();
+		if ( isset( $allParams['wpWatchlistLabels'] ) ) {
+			if ( is_array( $allParams['wpWatchlistLabels'] ) ) {
+				$allParams['wpWatchlistLabels'] = array_values( array_filter(
+					array_map( static fn ( $id ) => (int)$id, $allParams['wpWatchlistLabels'] ),
+					static fn ( int $id ) => $id > 0
+				) );
+			} elseif ( is_string( $allParams['wpWatchlistLabels'] ) && $allParams['wpWatchlistLabels'] !== '' ) {
+				$allParams['wpWatchlistLabels'] = array_values( array_filter(
+					array_map(
+						static fn ( string $id ) => (int)trim( $id ),
+						preg_split( '/[|,]/', $allParams['wpWatchlistLabels'] ) ?: []
+					),
+					static fn ( int $id ) => $id > 0
+				) );
+			}
+		}
 		$knownParams = array_keys( $this->getAllowedParams() + $this->getMain()->getAllowedParams() );
 		foreach ( $knownParams as $knownParam ) {
 			unset( $allParams[ $knownParam ] );
@@ -277,7 +283,9 @@ class ApiVisualEditorEdit extends ApiBase {
 		}
 
 		$status = $ok ? 'ok' : 'failed';
-		$this->getStats()->increment( "editstash.ve_serialization_cache.set_" . $status );
+		$this->getStatsFactory()->getCounter( 'VE_editstash_serialization_cache_set_total' )
+			->setLabel( 'status', $status )
+			->increment();
 
 		// Also parse and prepare the edit in case it might be saved later
 		$pageUpdater = $this->wikiPageFactory->newFromTitle( $title )->newPageUpdater( $this->getUser() );
@@ -288,7 +296,9 @@ class ApiVisualEditorEdit extends ApiBase {
 			$logger = LoggerFactory::getInstance( 'StashEdit' );
 			$logger->debug( "Cached parser output for VE content key '$key'." );
 		}
-		$this->getStats()->increment( "editstash.ve_cache_stores.$status" );
+		$this->getStatsFactory()->getCounter( 'VE_editstash_cache_store_total' )
+			->setLabel( 'status', $status )
+			->increment();
 
 		return $hash;
 	}
@@ -318,7 +328,9 @@ class ApiVisualEditorEdit extends ApiBase {
 		$value = $cache->get( $key );
 
 		$status = ( $value !== false ) ? 'hit' : 'miss';
-		$this->getStats()->increment( "editstash.ve_serialization_cache.get_$status" );
+		$this->getStatsFactory()->getCounter( 'VE_editstash_serialization_cache_get_total' )
+			->setLabel( 'status', $status )
+			->increment();
 
 		return $value;
 	}
@@ -509,9 +521,13 @@ class ApiVisualEditorEdit extends ApiBase {
 				if ( isset( $saveresult['edit']['newtimestamp'] ) ) {
 					$ts = $saveresult['edit']['newtimestamp'];
 
+					$date = $lang->userDate( $ts, $user );
+					$time = $lang->userTime( $ts, $user );
+
 					$result['lastModified'] = [
-						'date' => $lang->userDate( $ts, $user ),
-						'time' => $lang->userTime( $ts, $user )
+						'date' => $date,
+						'time' => $time,
+						'message' => $this->msg( 'lastmodifiedat', $date, $time )->parse(),
 					];
 				}
 

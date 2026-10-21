@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Dreamy Jazz",
+			"Jon Harald Søby"
+		]
+	},
+	"reportincident-dialog-harassment-type-label": "What type of behaviour?",
+	"reportincident-dialog-something-else-input-placeholder": "Specify the behaviours not listed above.",
+	"reportincident-dialog-harassment-intro-text": "Inappropriate behaviour is not tolerated on {{SITENAME}}.",
+	"reportincident-dialog-harassment-lead-in-to-harassment-examples": "Per the [[Foundation:Special:MyLanguage/Policy:Universal_Code_of_Conduct|Universal Code of Conduct]], unacceptable behaviour includes but is not limited to:",
+	"reportincident-dialog-harassment-empty": "{{GENDER:|You}} must select at least one behaviour.",
+	"reportincident-dialog-something-else-empty": "Please provide a short description of the behaviour.",
+	"reportincident-email-body": "Reporting user: $1\nReported user: $2\n$3: $4\n\nBehaviours: $5\nDetails: $6\n\nEmail $1: $7"
+}

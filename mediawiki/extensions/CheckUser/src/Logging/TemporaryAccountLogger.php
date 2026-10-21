@@ -1,9 +1,10 @@
 <?php
 
-namespace MediaWiki\CheckUser\Logging;
+namespace MediaWiki\Extension\CheckUser\Logging;
 
-use ManualLogEntry;
-use MediaWiki\Title\Title;
+use MediaWiki\Logging\DatabaseLogEntry;
+use MediaWiki\Logging\ManualLogEntry;
+use MediaWiki\Title\TitleFactory;
 use MediaWiki\User\ActorStore;
 use MediaWiki\User\UserIdentity;
 use Psr\Log\LoggerInterface;
@@ -11,7 +12,7 @@ use Wikimedia\Assert\Assert;
 use Wikimedia\Assert\ParameterAssertionException;
 use Wikimedia\IPUtils;
 use Wikimedia\Rdbms\DBError;
-use Wikimedia\Rdbms\IDatabase;
+use Wikimedia\Rdbms\IConnectionProvider;
 
 /**
  * Defines the API for the component responsible for logging the following interactions:
@@ -38,6 +39,9 @@ class TemporaryAccountLogger {
 	/** @var string Represents a user globally viewing the temporary accounts on a specific IP address */
 	public const ACTION_VIEW_TEMPORARY_ACCOUNTS_ON_IP_GLOBAL = 'view-temp-accounts-on-ip-global';
 
+	/** @var string Represents a user viewing the temporary accounts that have shared IPs, without viewing the IP */
+	public const ACTION_VIEW_RELATED_TEMPORARY_ACCOUNTS = 'view-related-temporary-accounts';
+
 	/**
 	 * Represents a user enabling or disabling their own access to view IPs
 	 *
@@ -45,47 +49,43 @@ class TemporaryAccountLogger {
 	 */
 	public const ACTION_CHANGE_ACCESS = 'change-access';
 
-	/**
-	 * @var string
-	 */
 	public const ACTION_ACCESS_ENABLED = 'enable';
+	public const ACTION_ACCESS_DISABLED = 'disable';
+	public const ACTION_GLOBAL_ACCESS_ENABLED = 'enable-globally';
+	public const ACTION_GLOBAL_ACCESS_DISABLED = 'disable-globally';
 
 	/**
+	 * Represents a user enabling or disabling IP auto-reveal mode
+	 *
 	 * @var string
 	 */
-	public const ACTION_ACCESS_DISABLED = 'disable';
+	public const ACTION_CHANGE_AUTO_REVEAL = 'change-auto-reveal';
+
+	public const ACTION_AUTO_REVEAL_ENABLED = 'enable-auto-reveal';
+	public const ACTION_AUTO_REVEAL_DISABLED = 'disable-auto-reveal';
 
 	/**
 	 * @var string
 	 */
 	public const LOG_TYPE = 'checkuser-temporary-account';
 
-	private ActorStore $actorStore;
-	private LoggerInterface $logger;
-	private IDatabase $dbw;
-
-	private int $delay;
-
 	/**
 	 * @param ActorStore $actorStore
 	 * @param LoggerInterface $logger
-	 * @param IDatabase $dbw
+	 * @param IConnectionProvider $dbProvider
+	 * @param TitleFactory $titleFactory
 	 * @param int $delay The number of seconds after which a duplicate log entry can be
 	 *  created for a debounced log
 	 * @throws ParameterAssertionException
 	 */
 	public function __construct(
-		ActorStore $actorStore,
-		LoggerInterface $logger,
-		IDatabase $dbw,
-		int $delay
+		private readonly ActorStore $actorStore,
+		private readonly LoggerInterface $logger,
+		private readonly IConnectionProvider $dbProvider,
+		private readonly TitleFactory $titleFactory,
+		private readonly int $delay,
 	) {
 		Assert::parameter( $delay > 0, 'delay', 'delay must be positive' );
-
-		$this->actorStore = $actorStore;
-		$this->logger = $logger;
-		$this->dbw = $dbw;
-		$this->delay = $delay;
 	}
 
 	/**
@@ -105,7 +105,10 @@ class TemporaryAccountLogger {
 		$action = $global ?
 			self::ACTION_VIEW_TEMPORARY_ACCOUNTS_ON_IP_GLOBAL : self::ACTION_VIEW_TEMPORARY_ACCOUNTS_ON_IP;
 		$this->debouncedLog(
-			$performer, IPUtils::prettifyIP( $ip ), $action, $timestamp
+			$performer,
+			IPUtils::prettifyIP( $ip ),
+			$action,
+			$timestamp
 		);
 	}
 
@@ -121,27 +124,110 @@ class TemporaryAccountLogger {
 	}
 
 	/**
-	 * Log when the user enables their own access
+	 * Logs the user (the performer) viewing IP addresses for a temporary account, while
+	 * auto-reveal mode is enabled. These actions are logged temporarily rather than permanently,
+	 * to avoid flooding the on-wiki logs.
+	 *
+	 * @param string $username The name of the performer who viewed the IPs
+	 * @param string $tempUser
+	 */
+	public function logViewIPsWithAutoReveal( string $username, string $tempUser ): void {
+		$this->logger->info(
+			'{username} viewed IP addresses for {target}',
+			[
+				'username' => $username,
+				'target' => $tempUser,
+			]
+		);
+	}
+
+	/**
+	 * Logs the user (the performer) viewing temporary accounts that have shared IP addresses with
+	 * a temporary account.
+	 *
+	 * @param UserIdentity $performer
+	 * @param string $tempUser
+	 * @param int $timestamp
+	 */
+	public function logViewRelatedTemporaryAccounts( UserIdentity $performer, string $tempUser, int $timestamp ): void {
+		$this->debouncedLog( $performer, $tempUser, self::ACTION_VIEW_RELATED_TEMPORARY_ACCOUNTS, $timestamp );
+	}
+
+	/**
+	 * Log when the user enables their own access locally.
+	 */
+	public function logAccessEnabled( UserIdentity $performer ): void {
+		$this->logAccessChanged( $performer, self::ACTION_ACCESS_ENABLED );
+	}
+
+	/**
+	 * Log when the user disables their own access locally.
+	 */
+	public function logAccessDisabled( UserIdentity $performer ): void {
+		$this->logAccessChanged( $performer, self::ACTION_ACCESS_DISABLED );
+	}
+
+	/**
+	 * Log when the user enables their own access globally.
 	 *
 	 * @param UserIdentity $performer
 	 */
-	public function logAccessEnabled( UserIdentity $performer ): void {
-		$params = [
-			'4::changeType' => self::ACTION_ACCESS_ENABLED,
-		];
+	public function logGlobalAccessEnabled( UserIdentity $performer ): void {
+		$this->logAccessChanged( $performer, self::ACTION_GLOBAL_ACCESS_ENABLED );
+	}
+
+	/**
+	 * Log when the user disables their own access globally.
+	 *
+	 * @param UserIdentity $performer
+	 */
+	public function logGlobalAccessDisabled( UserIdentity $performer ): void {
+		$this->logAccessChanged( $performer, self::ACTION_GLOBAL_ACCESS_DISABLED );
+	}
+
+	/**
+	 * @param UserIdentity $performer
+	 * @param string $action One of the following action constants from this class:
+	 * - ACTION_ACCESS_ENABLED
+	 * - ACTION_ACCESS_DISABLED
+	 * - ACTION_GLOBAL_ACCESS_ENABLED
+	 * - ACTION_GLOBAL_ACCESS_DISABLED
+	 */
+	private function logAccessChanged( UserIdentity $performer, string $action ) {
+		$params = [ '4::changeType' => $action ];
 		$this->log( $performer, $performer->getName(), self::ACTION_CHANGE_ACCESS, $params );
 	}
 
 	/**
-	 * Log when the user disables their own access
+	 * Log when the user enables IP auto-reveal.
+	 *
+	 * @param UserIdentity $performer
+	 * @param int $expiry
+	 */
+	public function logAutoRevealAccessEnabled( UserIdentity $performer, int $expiry ): void {
+		$params = [
+			'4::changeType' => self::ACTION_AUTO_REVEAL_ENABLED,
+			'5::expiry' => $expiry,
+		];
+		$this->logAutoRevealChanged( $performer, $params );
+	}
+
+	/**
+	 * Log when the user disables IP auto-reveal.
 	 *
 	 * @param UserIdentity $performer
 	 */
-	public function logAccessDisabled( UserIdentity $performer ): void {
-		$params = [
-			'4::changeType' => self::ACTION_ACCESS_DISABLED,
-		];
-		$this->log( $performer, $performer->getName(), self::ACTION_CHANGE_ACCESS, $params );
+	public function logAutoRevealAccessDisabled( UserIdentity $performer ): void {
+		$params = [ '4::changeType' => self::ACTION_AUTO_REVEAL_DISABLED ];
+		$this->logAutoRevealChanged( $performer, $params );
+	}
+
+	/**
+	 * @param UserIdentity $performer
+	 * @param array $params
+	 */
+	private function logAutoRevealChanged( UserIdentity $performer, array $params ) {
+		$this->log( $performer, $performer->getName(), self::ACTION_CHANGE_AUTO_REVEAL, $params );
 	}
 
 	/**
@@ -158,28 +244,40 @@ class TemporaryAccountLogger {
 		int $timestamp,
 		?array $params = []
 	): void {
+		$dbw = $this->dbProvider->getPrimaryDatabase();
 		$timestampMinusDelay = $timestamp - $this->delay;
-		$actorId = $this->actorStore->findActorId( $performer, $this->dbw );
+		$actorId = $this->actorStore->findActorId( $performer, $dbw );
 		if ( !$actorId ) {
 			$this->log( $performer, $target, $action, $params, $timestamp );
 			return;
 		}
 
-		$logline = $this->dbw->newSelectQueryBuilder()
-			->select( '*' )
-			->from( 'logging' )
+		$targetAsTitle = $this->titleFactory->makeTitle( NS_USER, $target );
+		$logRows = DatabaseLogEntry::newSelectQueryBuilder( $dbw )
 			->where( [
 				'log_type' => self::LOG_TYPE,
 				'log_action' => $action,
 				'log_actor' => $actorId,
-				'log_namespace' => NS_USER,
-				'log_title' => $target,
-				$this->dbw->expr( 'log_timestamp', '>', $this->dbw->timestamp( $timestampMinusDelay ) ),
+				'log_namespace' => $targetAsTitle->getNamespace(),
+				'log_title' => $targetAsTitle->getDBkey(),
+				$dbw->expr( 'log_timestamp', '>', $dbw->timestamp( $timestampMinusDelay ) ),
 			] )
 			->caller( __METHOD__ )
-			->fetchRow();
+			->fetchResultSet();
 
-		if ( !$logline ) {
+		$shouldLog = true;
+
+		foreach ( $logRows as $logRow ) {
+			$logEntry = DatabaseLogEntry::newFromRow( $logRow );
+			$logParams = $logEntry->getParameters();
+
+			if ( $logParams == $params ) {
+				$shouldLog = false;
+				break;
+			}
+		}
+
+		if ( $shouldLog ) {
 			$this->log( $performer, $target, $action, $params, $timestamp );
 		}
 	}
@@ -200,7 +298,7 @@ class TemporaryAccountLogger {
 	): void {
 		$logEntry = $this->createManualLogEntry( $action );
 		$logEntry->setPerformer( $performer );
-		$logEntry->setTarget( Title::makeTitle( NS_USER, $target ) );
+		$logEntry->setTarget( $this->titleFactory->makeTitle( NS_USER, $target ) );
 		$logEntry->setParameters( $params );
 
 		if ( $timestamp ) {
@@ -208,8 +306,8 @@ class TemporaryAccountLogger {
 		}
 
 		try {
-			$logEntry->insert( $this->dbw );
-		} catch ( DBError $e ) {
+			$logEntry->insert( $this->dbProvider->getPrimaryDatabase() );
+		} catch ( DBError ) {
 			$this->logger->critical(
 				'CheckUser temporary account log entry was not recorded. ' .
 				'This means checks can occur without being auditable. ' .
@@ -223,8 +321,6 @@ class TemporaryAccountLogger {
 	 *
 	 * Sources:
 	 * - AbuseFilter
-	 *   + af-change-access-enable
-	 *   + af-change-access-disable
 	 *   + af-view-protected-var-value
 	 */
 	public function logFromExternal(
@@ -241,11 +337,19 @@ class TemporaryAccountLogger {
 
 		if ( $debounce ) {
 			$this->debouncedLog(
-				$performer, $target, $action, $timestamp, $params
+				$performer,
+				$target,
+				$action,
+				$timestamp,
+				$params
 			);
 		} else {
 			$this->log(
-				$performer, $target, $action, $params, $timestamp
+				$performer,
+				$target,
+				$action,
+				$params,
+				$timestamp
 			);
 		}
 	}
@@ -264,3 +368,10 @@ class TemporaryAccountLogger {
 		return new ManualLogEntry( self::LOG_TYPE, $subtype );
 	}
 }
+
+// @codeCoverageIgnoreStart
+/**
+ * @deprecated since 1.46
+ */
+class_alias( TemporaryAccountLogger::class, 'MediaWiki\\CheckUser\\Logging\\TemporaryAccountLogger' );
+// @codeCoverageIgnoreEnd

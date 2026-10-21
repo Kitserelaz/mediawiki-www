@@ -16,6 +16,14 @@ $specialPageAliases['en'] = [
 	'DiscussionToolsDebug' => [ 'DiscussionToolsDebug' ],
 ];
 
+/** Azerbaijani (Azərbaycanca) */
+$specialPageAliases['az'] = [
+	'TopicSubscriptions' => [ 'MövzuAbunəlikləri' ],
+	'FindComment' => [ 'ŞərhiTap' ],
+	'GoToComment' => [ 'ŞərhəGet' ],
+	'DiscussionToolsDebug' => [ 'MüzakirəAlətlərininSazlanması' ],
+];
+
 /** Bengali (বাংলা) */
 $specialPageAliases['bn'] = [
 	'TopicSubscriptions' => [ 'আলোচনা_অনুসরণ' ],
@@ -58,6 +66,20 @@ $specialPageAliases['ko'] = [
 	'GoToComment' => [ '댓글로가기' ],
 ];
 
+/** Norwegian Bokmål (norsk bokmål) */
+$specialPageAliases['nb'] = [
+	'TopicSubscriptions' => [ 'Emneabonnementer' ],
+	'FindComment' => [ 'Finn_kommentar' ],
+	'GoToComment' => [ 'Gå_til_kommentar' ],
+];
+
+/** Norwegian Nynorsk (norsk nynorsk) */
+$specialPageAliases['nn'] = [
+	'TopicSubscriptions' => [ 'Emneabonnement' ],
+	'FindComment' => [ 'Finn_kommentar' ],
+	'GoToComment' => [ 'Gå_til_kommentar' ],
+];
+
 /** Polish (polski) */
 $specialPageAliases['pl'] = [
 	'TopicSubscriptions' => [ 'Subskrypcje_wątków', 'Subskrybowane_wątki' ],
@@ -71,6 +93,14 @@ $specialPageAliases['ur'] = [
 	'FindComment' => [ 'تلاش_تبصرہ' ],
 	'GoToComment' => [ 'تبصرہ_پر_جائیں' ],
 	'DiscussionToolsDebug' => [ 'آلات_گفتگو_کی_خرابی_کا_ازالہ' ],
+];
+
+/** Chinese (中文) */
+$specialPageAliases['zh'] = [
+	'TopicSubscriptions' => [ 'TopicSubscriptions' ],
+	'FindComment' => [ 'FindComment' ],
+	'GoToComment' => [ 'GoToComment' ],
+	'DiscussionToolsDebug' => [ 'DiscussionToolsDebug' ],
 ];
 
 /** Simplified Chinese (中文（简体）) */

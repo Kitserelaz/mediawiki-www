@@ -1,0 +1,112 @@
+<?php
+
+namespace SMW\Schema\Filters;
+
+use SMW\Schema\ChainableFilter;
+use SMW\Schema\SchemaFilter;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 3.2
+ *
+ * @author mwjames
+ */
+class CompositeFilter implements SchemaFilter {
+
+	/**
+	 * Describes the type for sorting by the filter score property
+	 */
+	const SORT_FILTER_SCORE = 'sort/filterscore';
+
+	/**
+	 * @var iterable
+	 */
+	private $matches = [];
+
+	/**
+	 * @var array
+	 */
+	private $options = [];
+
+	/**
+	 * @since 3.2
+	 */
+	public function __construct( private readonly array $filters ) {
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * {@inheritDoc}
+	 */
+	public function hasMatches(): bool {
+		return $this->matches !== [];
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * {@inheritDoc}
+	 */
+	public function getMatches(): iterable {
+		return $this->matches;
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * {@inheritDoc}
+	 */
+	public function addOption( string $key, $value ): void {
+		$this->options[$key] = $value;
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * {@inheritDoc}
+	 */
+	public function sortMatches( $type, $order = 'desc' ): void {
+		if ( $this->matches === [] ) {
+			return;
+		}
+
+		$order = strtolower( $order );
+
+		if ( $type === self::SORT_FILTER_SCORE ) {
+			usort( $this->matches, static function ( $a, $b ) use ( $order ): int {
+				if ( $order === 'desc' ) {
+					return $b->filterScore <=> $a->filterScore;
+				}
+
+				return $a->filterScore <=> $b->filterScore;
+			} );
+		}
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * {@inheritDoc}
+	 */
+	public function filter( iterable $compartments ): void {
+		$nodeFilter = null;
+
+		foreach ( $this->filters as $filter ) {
+
+			if ( $nodeFilter instanceof ChainableFilter ) {
+				$filter->setNodeFilter( $nodeFilter );
+			}
+
+			$nodeFilter = $filter;
+		}
+
+		if ( !isset( $filter ) ) {
+			return;
+		}
+
+		$filter->filter( $compartments );
+		$this->matches = $filter->getMatches();
+	}
+
+}

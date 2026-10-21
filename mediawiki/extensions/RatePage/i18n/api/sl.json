@@ -1,0 +1,22 @@
+{
+	"@metadata": {
+		"authors": [
+			"Eleassar"
+		]
+	},
+	"apihelp-ratepage-summary": "Uporabniku omogoča glasovanje o strani in pridobi oceno strani. Zahteva predložitev enega od dveh parametrov: »pageid« ali »pagetitle«.",
+	"apihelp-ratepage-param-pageid": "ID strani",
+	"apihelp-ratepage-param-pagetitle": "Naslov strani",
+	"apihelp-ratepage-param-answer": "Uporabnikova ocena strani (privzeto od 1 do vključno 5; mogoče je spremeniti v konfiguracijskih nastavitvah)",
+	"apihelp-ratepage-param-contest": "Identifikator natečaja",
+	"apihelp-ratepage-example-1": "Pridobi trenutno oceno za stran Zgled.",
+	"apihelp-ratepage-example-2": "Oceni stran Zgled z 2.",
+	"apihelp-query+pagerating-summary": "Vrne glasove na tej strani in glasovalna dovoljenja tega uporabnika.",
+	"apihelp-query+pagerating-param-contest": "Identifikator natečaja",
+	"apierror-ratepage-contest-id-too-long": "Dolžina ID natečaja presega omejitev (255 znakov).",
+	"apierror-ratepage-contest-id-allowed-chars": "ID natečaja lahko vsebuje samo števke in latinske črke. Drugi znaki niso dovoljeni.",
+	"apierror-ratepage-contest-not-exists": "Natečaj $1 ne obstaja.",
+	"apierror-ratepage-page-not-exists": "Predložena stran ne obstaja.",
+	"apierror-ratepage-cannot-vote-in-contest": "Nimate dovoljenja za glasovanje v tem natečaju.",
+	"apierror-ratepage-invalid-answer": "Predložen je bil neveljaven odgovor. Odgovor mora biti večji od ali enak $1 in manjši od ali enak $2."
+}

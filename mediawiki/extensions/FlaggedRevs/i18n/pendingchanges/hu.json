@@ -1,0 +1,36 @@
+{
+	"@metadata": {
+		"authors": [
+			"A smart kitten",
+			"Adam78",
+			"Bean49",
+			"Dani",
+			"Dj",
+			"Glanthor Reviol",
+			"Gondnok",
+			"Tacsipacsi"
+		]
+	},
+	"pendingchanges": "Ellenőrizetlen szerkesztésekkel rendelkező lapok",
+	"pendingchanges-legend": "Ellenőrizetlen változatokkal rendelkező ellenőrzött lapok listája",
+	"pendingchanges-list": "Az alábbi lista az egy vagy több ellenőrizetlen szerkesztéssel rendelkező [[{{MediaWiki:Validationpage}}|ellenőrzött]] {{PLURAL:$1|lapot|lapokat}} tartalmazza.",
+	"pendingchanges-none": "Jelenleg nincs a feltételeknek megfelelő lap.",
+	"pendingchanges-hours": "({{PLURAL:$1|Egy|$1}} órája)",
+	"pendingchanges-days": "({{PLURAL:$1|Egy|$1}} napja)",
+	"pendingchanges-recent": "(kevesebb mint egy órája)",
+	"pendingchanges-category": "Kategória:",
+	"pendingchanges-limit": "Korlát:",
+	"pendingchanges-edit-tag": "Címke:",
+	"pendingchanges-edit-tag-any": "Bármilyen címke",
+	"pendingchanges-onwatchlist": "Lapok a figyelőlistámon",
+	"pendingchanges-stable": "megtekintett",
+	"pendingchanges-diff": "ellenőriz",
+	"pendingchanges-size": "Változás legfeljebb (bájtban):",
+	"pendingchanges-unwatched": "(nem figyelt)",
+	"pendingchanges-table-caption": "Nem ellenőrzött szerkesztések",
+	"pendingchanges-table-page": "Lap",
+	"pendingchanges-table-size": "Méret",
+	"pendingchanges-table-pending-since": "Mióta",
+	"pendingchanges-table-footer": "$1 nem ellenőrzött {{PLURAL:$2|szerkesztés}}",
+	"pendingchanges-filter-submit-button-text": "Lapok szűrése"
+}

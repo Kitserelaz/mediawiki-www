@@ -1,0 +1,319 @@
+<?php
+/**
+ * @license GPL-2.0-or-later
+ *
+ * @file
+ */
+
+namespace MediaWiki\Extension\CentralAuth\Special;
+
+use MediaWiki\Exception\PermissionsError;
+use MediaWiki\Exception\UserBlockedError;
+use MediaWiki\Extension\CentralAuth\Config\CAMainConfigNames;
+use MediaWiki\Extension\CentralAuth\GlobalGroup\GlobalGroupAssignmentService;
+use MediaWiki\Extension\CentralAuth\GlobalGroup\GlobalGroupManager;
+use MediaWiki\Extension\CentralAuth\User\CentralAuthUser;
+use MediaWiki\Extension\CentralAuth\User\CentralAuthUserHelper;
+use MediaWiki\Extension\CentralAuth\Widget\HTMLGlobalUserTextField;
+use MediaWiki\Html\Html;
+use MediaWiki\HTMLForm\HTMLForm;
+use MediaWiki\Language\FormatterFactory;
+use MediaWiki\Linker\Linker;
+use MediaWiki\MainConfigNames;
+use MediaWiki\Message\Message;
+use MediaWiki\SpecialPage\UserGroupsSpecialPage;
+use MediaWiki\Status\StatusFormatter;
+use MediaWiki\User\UserGroupMembership;
+use MediaWiki\User\UserNamePrefixSearch;
+use MediaWiki\User\UserNameUtils;
+use StatusValue;
+use Wikimedia\Message\MessageValue;
+
+/**
+ * Equivalent of Special:Userrights for global groups.
+ *
+ * @ingroup Extensions
+ */
+class SpecialGlobalGroupMembership extends UserGroupsSpecialPage {
+
+	/**
+	 * @var CentralAuthUser The user object of the target username.
+	 */
+	protected CentralAuthUser $targetUser;
+
+	private StatusFormatter $statusFormatter;
+
+	public function __construct(
+		FormatterFactory $formatterFactory,
+		private readonly UserNamePrefixSearch $userNamePrefixSearch,
+		private readonly UserNameUtils $userNameUtils,
+		private readonly CentralAuthUserHelper $userHelper,
+		private readonly GlobalGroupAssignmentService $globalGroupAssignmentService,
+		private readonly GlobalGroupManager $globalGroupManager
+	) {
+		parent::__construct( 'GlobalGroupMembership' );
+		$this->statusFormatter = $formatterFactory->getStatusFormatter( $this->getContext() );
+	}
+
+	/**
+	 * Manage forms to be shown according to posted data.
+	 * Depending on the submit button used, call a form or a save function.
+	 *
+	 * @param string|null $subPage String if any subpage provided, else null
+	 * @throws UserBlockedError|PermissionsError
+	 */
+	public function execute( $subPage ) {
+		$user = $this->getUser();
+		$request = $this->getRequest();
+		$out = $this->getOutput();
+
+		$this->setHeaders();
+		$this->outputHeader();
+
+		$out->addModules( [ 'mediawiki.special.userrights' ] );
+		$out->addModuleStyles( 'mediawiki.special' );
+		$out->addModuleStyles( 'mediawiki.codex.messagebox.styles' );
+		$this->addHelpLink( 'Help:Assigning permissions' );
+
+		$targetName = $subPage ?? $request->getText( 'user' );
+		$this->switchForm( $targetName );
+
+		// If the user just viewed this page, without trying to submit, return early
+		// It prevents from showing "nouserspecified" error message on first view
+		if ( $subPage === null && !$request->getCheck( 'user' ) ) {
+			return;
+		}
+
+		// No need to check if target is empty or non-canonical, fetchUser() does it
+		$fetchedStatus = $this->fetchUser( $targetName );
+		if ( !$fetchedStatus->isOK() ) {
+			$out->addHTML( Html::warningBox(
+				$this->statusFormatter->getMessage( $fetchedStatus )->parse()
+			) );
+			return;
+		}
+
+		$fetchedUser = $fetchedStatus->value;
+		// Phan false positive on Status object - T323205
+		'@phan-var CentralAuthUser $fetchedUser';
+
+		if ( !$this->globalGroupAssignmentService->targetCanHaveUserGroups( $fetchedUser ) ) {
+			$out->addHTML( Html::warningBox(
+				$this->msg( 'userrights-no-group' )->parse()
+			) );
+			return;
+		}
+
+		$this->initialize( $fetchedUser );
+		$this->showMessageOnSuccess();
+
+		if (
+			$request->wasPosted() &&
+			$request->getCheck( 'saveusergroups' ) &&
+			$user->matchEditToken( $request->getVal( 'wpEditToken' ), $targetName )
+		) {
+			$this->checkReadOnly();
+
+			$status = $this->saveUserGroups(
+				$request->getText( 'user-reason' ),
+				$fetchedUser,
+			);
+
+			if ( $status->isOK() ) {
+				$this->setSuccessFlag();
+				$out->redirect( $this->getSuccessURL( $targetName ) );
+				return;
+			} else {
+				// Print an error message and redisplay the form
+				foreach ( $status->getMessages() as $msg ) {
+					$this->getOutput()->addHTML( Html::errorBox( $this->msg( $msg )->parse() ) );
+				}
+			}
+		}
+
+		// Show the form (either edit or view)
+		$this->getOutput()->addHTML( $this->buildGroupsForm() );
+		$this->showLogFragment( 'gblrights', 'gblrights' );
+	}
+
+	/**
+	 * Initializes the class with data related to the current target user. This method should be called
+	 * before delegating any operations related to viewing, editing or saving user groups to the parent class.
+	 */
+	private function initialize( CentralAuthUser $user ): void {
+		$this->targetUser = $user;
+		$this->setTargetName( $user->getName() );
+
+		$this->explicitGroups = $this->globalGroupManager->getDefinedGroups();
+		$this->groupMemberships = $this->getGlobalGroupMemberships();
+		$this->enableWatchUser = false;
+
+		// Don't evaluate private conditions for restricted groups here, so that we don't leak
+		// information about them through the checkboxes being disabled or enabled
+		// An exception is if a user tries to change their own groups - it doesn't leak anything
+		$performer = $this->getAuthority()->getUser();
+		$evaluatePrivateConditions = $user->getName() === $performer->getName();
+
+		$changeableGroups = $this->globalGroupAssignmentService->getChangeableGroups(
+			$this->getAuthority(), $user, $evaluatePrivateConditions );
+		$this->setChangeableGroups( $changeableGroups );
+		$this->addAnnotationsForAutomaticGroups();
+	}
+
+	/**
+	 * Add group annotations for automatically assigned groups
+	 */
+	private function addAnnotationsForAutomaticGroups(): void {
+		$user = $this->targetUser;
+		$uiLanguage = $this->getLanguage();
+		$automaticGroupsConfig = $this->getConfig()->get( CAMainConfigNames::CentralAuthAutomaticGlobalGroups );
+		foreach ( $automaticGroupsConfig as $group => $relatedAutomaticGroups ) {
+			$groupNames = array_map(
+				static function ( $automaticGroup ) use ( $uiLanguage, $user ) {
+					return $uiLanguage->getGroupMemberName( $automaticGroup, $user->getName() );
+				},
+				$relatedAutomaticGroups
+			);
+			$this->addGroupAnnotation(
+				$group,
+				$this->msg( 'centralauth-globalgroupperms-automatic-group-info' )
+					->params( Message::listParam( $groupNames ) )
+			);
+		}
+	}
+
+	/**
+	 * @return string
+	 */
+	private function getSuccessURL( string $target ) {
+		return $this->getPageTitle( $target )->getFullURL();
+	}
+
+	/**
+	 * Save user groups changes in the database.
+	 *
+	 * @param string $reason Reason for group change
+	 * @param CentralAuthUser $user Target user object.
+	 */
+	private function saveUserGroups( string $reason, CentralAuthUser $user ): StatusValue {
+		// This conflict check doesn't prevent from a situation when two concurrent DB transactions
+		// update the same user's groups, but that's highly unlikely.
+		if ( $this->conflictOccured() ) {
+			return StatusValue::newFatal( 'userrights-conflict' );
+		}
+
+		$newGroupsStatus = $this->readGroupsForm();
+
+		if ( !$newGroupsStatus->isOK() ) {
+			return $newGroupsStatus;
+		}
+		$newGroups = $newGroupsStatus->value;
+
+		// addgroup contains also existing groups with changed expiry
+		[ $addgroup, $removegroup, $groupExpiries ] = $this->splitGroupsIntoAddRemove(
+			$newGroups, $this->groupMemberships );
+
+		$invalidGroups = $this->globalGroupAssignmentService->validateUserGroups(
+			$this->getAuthority(), $user, $addgroup, $removegroup, $groupExpiries, $this->groupMemberships );
+		if ( $invalidGroups ) {
+			// We cannot simply use $invalidGroups for logging, as it doesn't contain groups with satisfied conditions
+			// (and lack of error may be an information itself, which should be logged)
+			$this->globalGroupAssignmentService->logAccessToPrivateConditions(
+				$this->getAuthority(), $user, $addgroup, $groupExpiries, $this->groupMemberships );
+			return $this->formatInvalidGroupsStatus( $invalidGroups, $user->getName() );
+		}
+
+		$this->globalGroupAssignmentService->saveChangesToUserGroups( $this->getAuthority(), $user, $addgroup,
+			$removegroup, $groupExpiries,
+			$reason, MessageValue::new( 'centralauth-automatic-global-groups-reason-global' ) );
+
+		return StatusValue::newGood();
+	}
+
+	/**
+	 * @param string $username
+	 * @return StatusValue<CentralAuthUser>
+	 */
+	private function fetchUser( $username ) {
+		if ( str_starts_with( $username, '#' ) ) {
+			$id = intval( substr( $username, 1 ) );
+			return $this->userHelper->getCentralAuthUserByIdFromPrimary( $id, $this->getAuthority() );
+		} else {
+			return $this->userHelper->getCentralAuthUserByNameFromPrimary( $username, $this->getAuthority() );
+		}
+	}
+
+	/**
+	 * Output a form to allow searching for a user
+	 */
+	private function switchForm( string $target ) {
+		$formDescriptor = [
+			'user' => [
+				'class' => HTMLGlobalUserTextField::class,
+				'name' => 'user',
+				'id' => 'username',
+				'label-message' => 'userrights-user-editname',
+				'size' => 30,
+				'excludetemp' => true,
+				'autofocus' => $target === '',
+				'default' => $target,
+			]
+		];
+
+		$htmlForm = HTMLForm::factory( 'ooui', $formDescriptor, $this->getContext() );
+		$htmlForm
+			->setMethod( 'get' )
+			// Strip subpage
+			->setTitle( $this->getPageTitle() )
+			->setAction( $this->getConfig()->get( MainConfigNames::Script ) )
+			->setId( 'mw-userrights-form1' )
+			->setName( 'uluser' )
+			->setSubmitTextMsg( 'editusergroup' )
+			->setWrapperLegendMsg( 'userrights-lookup-user' )
+			->prepareForm()
+			->displayForm( false );
+	}
+
+	/** @inheritDoc */
+	protected function getTargetUserToolLinks(): string {
+		return Linker::userToolLinks(
+			$this->targetUser->getId(),
+			$this->targetUser->getName(),
+			// default for redContribsWhenNoEdits
+			false,
+			Linker::TOOL_LINKS_EMAIL
+		);
+	}
+
+	/**
+	 * @return array<string,UserGroupMembership>
+	 */
+	protected function getGlobalGroupMemberships(): array {
+		$groups = $this->targetUser->getGlobalGroupsWithExpiration();
+
+		$groupMemberships = [];
+		foreach ( $groups as $group => $expiration ) {
+			$groupMemberships[$group] = new UserGroupMembership( $this->targetUser->getId(), $group, $expiration );
+		}
+		return $groupMemberships;
+	}
+
+	/**
+	 * Return an array of subpages beginning with $search that this special page will accept.
+	 *
+	 * @param string $search Prefix to search for
+	 * @param int $limit Maximum number of results to return (usually 10)
+	 * @param int $offset Number of results to skip (usually 0)
+	 * @return string[] Matching subpages
+	 */
+	public function prefixSearchSubpages( $search, $limit, $offset ) {
+		$search = $this->userNameUtils->getCanonical( $search );
+		if ( !$search ) {
+			// No prefix suggestion for invalid user
+			return [];
+		}
+		// Autocomplete subpage as user list - public to allow caching
+		return $this->userNamePrefixSearch
+			->search( UserNamePrefixSearch::AUDIENCE_PUBLIC, $search, $limit, $offset );
+	}
+}

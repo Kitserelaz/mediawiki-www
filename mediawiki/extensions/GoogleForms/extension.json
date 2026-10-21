@@ -1,0 +1,31 @@
+{
+	"name": "GoogleForms",
+	"author": [
+		"BlankEclair"
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:GoogleForms",
+	"descriptionmsg": "googleforms-desc",
+	"license-name": "GPL-2.0-or-later",
+	"type": "parserhook",
+	"requires": {
+		"MediaWiki": ">= 1.42.0"
+	},
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\GoogleForms\\": "src/"
+	},
+	"HookHandlers": {
+		"GoogleFormsHooks": {
+			"class": "MediaWiki\\Extension\\GoogleForms\\Hooks",
+			"services": ["UrlUtils"]
+		}
+	},
+	"Hooks": {
+		"ParserFirstCallInit": "GoogleFormsHooks"
+	},
+	"MessagesDirs": {
+		"GoogleForms": [
+			"i18n"
+		]
+	},
+	"manifest_version": 2
+}

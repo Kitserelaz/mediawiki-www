@@ -1,0 +1,16 @@
+{
+	"@metadata": {
+		"authors": [
+			"Minh Nguyen",
+			"Pisceskaze",
+			"SongNgu.xyz"
+		]
+	},
+	"action-embed_pdf": "nhúng tập tin PDF",
+	"pdfembed_description": "Phần mở rộng xử lý phương tiện cho tập tin PDF.",
+	"embed_pdf_no_permission": "Bạn không có quyền nhúng tập tin PDF.",
+	"embed_pdf_blank_file": "URL hoặc đường dẫn tập tin được cung cấp để nhúng tập tin PDF trống.",
+	"embed_pdf_invalid_file": "URL hoặc đường dẫn tập tin đã cho không tồn tại.",
+	"embed_pdf_invalid_user": "Một người dùng không hợp lệ đã được chỉ định để kiểm tra quyền nhúng tập tin PDF này.",
+	"right-embed_pdf": "Nhúng tập tin PDF vào các trang"
+}

@@ -1,0 +1,17 @@
+{
+	"@metadata": {
+		"authors": [
+			"Seipinne",
+			"Yupik"
+		]
+	},
+	"comments-comment": "Čääli komment",
+	"comments-loading": "Luođiimin...",
+	"comments-cancel-reply": "Jooskâ",
+	"comments-show-comment-link": "Čääiti komment",
+	"comments-reply": "Västid",
+	"comments-permalink": "Avalâš liŋkkâ",
+	"comments-delete-link": "Siho komment",
+	"comments-ignore-cancel": "Jooskâ",
+	"comments-time-days": "{{PLURAL:$1|ohtâ peivi|$1 peeivi|$1 peeivi|$1 peivid}}"
+}

@@ -1,0 +1,20 @@
+{
+	"@metadata": {
+		"authors": [
+			"Eduardoaddad"
+		]
+	},
+	"apihelp-ratepage-summary": "Permite que um usuário vote em uma página e obtenha a classificação de uma página. Requer a especificação de um de dois parâmetros: pageid ou título da página.",
+	"apihelp-ratepage-param-pageid": "ID da página",
+	"apihelp-ratepage-param-pagetitle": "Título da página",
+	"apihelp-ratepage-param-contest": "Identificador do concurso",
+	"apihelp-ratepage-example-1": "Obtenha a classificação atual para a página Exemplo,",
+	"apihelp-query+pagerating-summary": "Retorna votos nesta página e as permissões de votação deste usuário.",
+	"apihelp-query+pagerating-param-contest": "Identificador do concurso",
+	"apierror-ratepage-contest-id-too-long": "O comprimento do ID do concurso excede o limite (255 caracteres).",
+	"apierror-ratepage-contest-id-allowed-chars": "O ID do concurso deve consistir apenas em dígitos e letras latinas, nenhum outro caractere é permitido.",
+	"apierror-ratepage-contest-not-exists": "O concurso $1 não existe.",
+	"apierror-ratepage-page-not-exists": "A página especificada não existe.",
+	"apierror-ratepage-cannot-vote-in-contest": "Você não tem permissão para votar neste concurso.",
+	"apierror-ratepage-invalid-answer": "Resposta inválida foi especificada. A resposta deve ser maior ou igual a $1 e menor ou igual a $2."
+}

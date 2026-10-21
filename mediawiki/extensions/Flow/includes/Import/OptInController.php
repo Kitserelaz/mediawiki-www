@@ -132,10 +132,6 @@ class OptInController {
 		);
 	}
 
-	/**
-	 * @param Title $title
-	 * @param User $user
-	 */
 	public function enable( Title $title, User $user ) {
 		if ( $this->isFlowBoard( $title ) ) {
 			// already a Flow board
@@ -161,9 +157,6 @@ class OptInController {
 		}
 	}
 
-	/**
-	 * @param Title $title
-	 */
 	public function disable( Title $title ) {
 		if ( !$this->isFlowBoard( $title ) ) {
 			return;
@@ -415,7 +408,8 @@ class OptInController {
 				$templateName = wfMessage( 'flow-importer-wt-converted-archive-template' )->inContentLanguage()->plain();
 				$content = TemplateHelper::removeFromHtml( $content, $templateName );
 				if ( $currentTemplate ) {
-					$content = Utils::convert( 'wikitext', 'html', $currentTemplate, $archivedFlowPage ) . "<br/><br/>" . $content;
+					$content = Utils::convert( 'wikitext', 'html', $currentTemplate, $archivedFlowPage ) .
+						'<br/><br/>' . $content;
 				}
 				return $content;
 			},
@@ -464,14 +458,11 @@ class OptInController {
 	 * @return string
 	 */
 	private function formatTemplate( $name, array $args ) {
-		$arguments = implode( '|',
-			array_map(
-				static function ( $key, $value ) {
-					return "$key=$value";
-				},
-				array_keys( $args ),
-				array_values( $args ) )
-		);
+		$arguments = implode( '|', array_map(
+			static fn ( $k, $v ) => "$k=$v",
+			array_keys( $args ),
+			array_values( $args )
+		) );
 		return "{{{$name}|$arguments}}";
 	}
 
@@ -690,9 +681,6 @@ class OptInController {
 		return $flowArchiveTitle;
 	}
 
-	/**
-	 * @param array $blocks
-	 */
 	private function logBlockErrors( array $blocks ) {
 		$errors = [];
 		/** @var AbstractBlock $block */

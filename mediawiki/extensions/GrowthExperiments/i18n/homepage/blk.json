@@ -1,0 +1,35 @@
+{
+	"@metadata": {
+		"authors": [
+			"Khun Kt",
+			"လွိုင်ႏအာထင်ႏထိုထဲင်း",
+			"咽頭べさ"
+		]
+	},
+	"growthexperiments-homepage-tab": "အဓိကလိတ်မဲ့ငါ",
+	"prefs-homepage": "လိုꩻတသာတွိုႏလွောန် ဗဟိုႏလိတ်မဲ့ငါကိုသား",
+	"growthexperiments-homepage-enable": "အွောန်ႏနယ် လိုꩻတသာတွိုႏလွောန် ဗဟိုႏလိတ်မဲ့ငါကိုသား",
+	"growthexperiments-homepage-suggestededits-tasktype-label-image-recommendation": "ထဲမ်သော့ꩻ ဖေႏကျံႏညဏ်ႏပုင်ႏတပုင်ႏ",
+	"growthexperiments-homepage-suggestededits-tasktype-time-image-recommendation": "၃ - ၅ မိနစ်",
+	"growthexperiments-homepage-suggestededits-tasktype-name-image-recommendation": "ထဲမ်သော့ꩻ ဖေႏကျံႏညဏ်ႏပုင်ႏတပုင်ႏ",
+	"growthexperiments-homepage-suggestededits-topic-name-biography": "နမ်းခြောင်ꩻခရာႏ (ကားကအဝ်ႏ)",
+	"growthexperiments-structuredtask-no-suggestions-found-dialog-message": "ရောမ်ဖြုဲင်ꩻယိုနဝ်ꩻ ဖေႏကျံႏညဏ်ႏမုꩻဖိုင်ႏ လꩻနွောင်ꩻတဝ်း။",
+	"growthexperiments-structuredtask-ve-machine-suggestions-mode-title": "ဖေႏကျံႏညဏ်ႏမုꩻဖိုင်ႏ",
+	"growthexperiments-addimage-inspector-yes-button": "မွေး",
+	"growthexperiments-addimage-inspector-no-button": "မွေးတဝ်း",
+	"growthexperiments-addimage-inspector-skip-button": "{{GENDER:|တသေႏချာႏတဝ်း}}",
+	"growthexperiments-addimage-inspector-details-button": "ထွားစဲင်းသေႏချာႏလို့ပူင်ႏ",
+	"growthexperiments-addimage-detailsdialog-header": "ပုင်ႏခရာႏစဲင်း",
+	"growthexperiments-addimage-detailsdialog-image": "ဖုဲင်မိဉ်ꩻ:",
+	"growthexperiments-addimage-detailsdialog-description": "အွောန်ႏနယ်ချက်:",
+	"growthexperiments-addimage-detailsdialog-caption": "လိတ်ရဲဉ်ႏ:",
+	"growthexperiments-addimage-detailsdialog-license": "လုဲင်သိဉ်:",
+	"growthexperiments-addimage-detailsdialog-date": "မွူးနီꩻစွယ်ꩻ:",
+	"growthexperiments-addimage-detailsdialog-author": "တဲမ်းလိတ်သား:",
+	"growthexperiments-addimage-detailsdialog-categories": "ကဏ္ဍဖုံႏ:",
+	"growthexperiments-addimage-detailsdialog-close": "ပေ့ꩻထိုꩻ",
+	"growthexperiments-addimage-onboarding-content-imagedetails-title": "ထွား ဖေႏကျံႏညဏ်ႏခါꩻဒါႏပုင်ႏ",
+	"growthexperiments-addimage-onboarding-content-article-title": "ထွားရောမ်ဖြုဲင်ꩻ",
+	"growthexperiments-addimage-summary-label": "အအဲဉ်ႏချုတ်",
+	"growthexperiments-addlink-daily-task-limit-exceeded-dialog-button": "လꩻလဲဉ်းသြ"
+}

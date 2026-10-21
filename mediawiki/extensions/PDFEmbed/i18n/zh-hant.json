@@ -1,0 +1,16 @@
+{
+	"@metadata": {
+		"authors": [
+			"Kly",
+			"Willy1018"
+		]
+	},
+	"action-embed_pdf": "嵌入 PDF",
+	"pdfembed": "PDF 嵌入",
+	"pdfembed_description": "PDF 檔案的媒體處理擴充。",
+	"embed_pdf_no_permission": "您沒有嵌入 PDF 檔案的權限。",
+	"embed_pdf_blank_file": "用於嵌入 PDF 的 URL 或檔案路徑為空白。",
+	"embed_pdf_invalid_file": " URL 或檔案路徑不存在。",
+	"embed_pdf_invalid_user": "指定了一個無效使用者來允許測試嵌入這份 PDF。",
+	"right-embed_pdf": "將 PDF 嵌入到頁面"
+}

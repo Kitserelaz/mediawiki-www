@@ -4,7 +4,19 @@ QUnit.module( 'ext.eventLogging/stream', {
 	beforeEach: function () {
 		this.clock = this.sandbox.useFakeTimers();
 		this.originalOptions = mw.eventLog.setOptionsForTest( {
-			streamConfigs: false
+			baseUrl: '/dummy/',
+			serviceUri: 'testUri',
+			schemasInfo: {
+				earthquake: 123,
+				// eruption events will be prepared for POSTing to EventGate.
+				eruption: '/analytics/legacy/eruption/1.0.0'
+			},
+			streamConfigs: {
+				'test.stream': {},
+
+				// eslint-disable-next-line camelcase
+				eventlogging_eruption: {}
+			}
 		} );
 	},
 	afterEach: function () {
@@ -16,23 +28,18 @@ QUnit.module( 'ext.eventLogging/stream', {
 QUnit.test( 'submit() - warn for event without schema', function ( assert ) {
 	const seen = [];
 	this.sandbox.stub( mw.eventLog, 'enqueue' );
-	this.sandbox.stub( mw.log, 'warn', function () {
+	this.sandbox.stub( mw.log, 'warn', () => {
 		seen.push( 'warn' );
 	} );
-	this.sandbox.stub( navigator, 'sendBeacon', function () {} );
-
-	mw.eventLog.setOptionsForTest( {
-		streamConfigs: {
-			'test.stream': { some: 'config' }
-		}
-	} );
+	this.sandbox.stub( navigator, 'sendBeacon', () => {} );
 	mw.eventLog.submit( 'test.stream', {} );
-	assert.deepEqual( [ 'warn' ], seen );
+	// T419481: Logging is being disabled temporarily while working on T419759
+	// assert.deepEqual( [ 'warn' ], seen );
 	assert.strictEqual( mw.eventLog.enqueue.callCount, 0, 'enqueue() calls' );
 } );
 
 QUnit.test( 'submit() - produce an event correctly', function ( assert ) {
-	this.sandbox.stub( mw.eventLog, 'enqueue', function ( callback ) {
+	this.sandbox.stub( mw.eventLog, 'enqueue', ( callback ) => {
 		// Stub BackgroundQueue, regardless of intervalSecs config.
 		callback();
 	} );
@@ -41,12 +48,7 @@ QUnit.test( 'submit() - produce an event correctly', function ( assert ) {
 
 	this.clock.tick( 1000 );
 	const t1 = new Date().toISOString();
-	mw.eventLog.setOptionsForTest( {
-		serviceUri: 'testUri',
-		streamConfigs: {
-			'test.stream': { some: 'config' }
-		}
-	} );
+
 	mw.eventLog.submit( 'test.stream', { $schema: 'test/schema' } );
 	this.clock.tick( 1000 );
 

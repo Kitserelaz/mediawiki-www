@@ -6,7 +6,7 @@ use MediaWiki\Config\Config;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Extension\EventLogging\Libs\UserBucketProvider\UserBucketService;
 use MediaWiki\Language\Language;
-use MediaWiki\Languages\LanguageConverterFactory;
+use MediaWiki\Language\LanguageConverterFactory;
 use MediaWiki\MainConfigNames;
 use MediaWiki\Permissions\RestrictionStore;
 use MediaWiki\Registration\ExtensionRegistry;
@@ -98,10 +98,6 @@ class ContextAttributesFactory {
 		$this->userBucketService = $userBucketService;
 	}
 
-	/**
-	 * @param IContextSource $contextSource
-	 * @return array
-	 */
 	public function newContextAttributes( IContextSource $contextSource ): array {
 		$contextAttributes = [];
 		$contextAttributes += $this->getAgentContextAttributes();
@@ -113,35 +109,27 @@ class ContextAttributesFactory {
 	}
 
 	/**
-	 * Gets whether the user is accessing the mobile
-	 *
-	 * @return bool
+	 * Gets whether the user is accessing the mobile website
 	 */
-	protected function isUsingMobileDomain(): bool {
+	protected function shouldDisplayMobileView(): bool {
 		if ( $this->extensionRegistry->isLoaded( 'MobileFrontend' ) ) {
 			// @phan-suppress-next-line PhanUndeclaredClassMethod
-			return MobileContext::singleton()->usingMobileDomain();
+			return MobileContext::singleton()->shouldDisplayMobileView();
 		}
 
 		return false;
 	}
 
-	/**
-	 * @return array
-	 */
 	private function getAgentContextAttributes(): array {
 		return [
 			'agent_app_install_id' => null,
 			'agent_client_platform' => 'mediawiki_php',
 			'agent_client_platform_family' =>
-				$this->isUsingMobileDomain() ? 'mobile_browser' : 'desktop_browser',
+				$this->shouldDisplayMobileView() ? 'mobile_browser' : 'desktop_browser',
+			'agent_ua_string' => $_SERVER['HTTP_USER_AGENT'] ?? '',
 		];
 	}
 
-	/**
-	 * @param IContextSource $contextSource
-	 * @return array
-	 */
 	private function getPageContextAttributes( IContextSource $contextSource ): array {
 		$output = $contextSource->getOutput();
 		$wikidataItemId = $output->getProperty( 'wikibase_item' );
@@ -164,13 +152,13 @@ class ContextAttributesFactory {
 			return $result;
 		}
 
-		$namespace = $title->getNamespace();
+		$namespaceId = $title->getNamespace();
 
 		return $result + [
 				'page_id' => $title->getArticleID(),
 				'page_title' => $title->getDBkey(),
-				'page_namespace' => $namespace,
-				'page_namespace_name' => $this->namespaceInfo->getCanonicalName( $namespace ),
+				'page_namespace_id' => $namespaceId,
+				'page_namespace_name' => $this->namespaceInfo->getCanonicalName( $namespaceId ),
 				'page_revision_id' => $title->getLatestRevID(),
 				'page_content_language' => $title->getPageLanguage()->getCode(),
 				'page_is_redirect' => $title->isRedirect(),
@@ -179,17 +167,11 @@ class ContextAttributesFactory {
 			];
 	}
 
-	/**
-	 * @param IContextSource $contextSource
-	 * @return array
-	 */
 	private function getMediaWikiContextAttributes( IContextSource $contextSource ): array {
 		$skin = $contextSource->getSkin();
 
 		$user = $contextSource->getUser();
-		$isDebugMode =
-			$this->userOptionsLookup->getIntOption( $user, 'eventlogging-display-web' ) === 1 ||
-			$this->userOptionsLookup->getIntOption( $user, 'eventlogging-display-console' ) === 1;
+		$isDebugMode = $this->userOptionsLookup->getIntOption( $user, 'eventlogging-display-console' ) === 1;
 
 		// TODO: Reevaluate whether the `mediawiki.is_production` contextual attribute is useful.
 		//  We should be able to determine this from the database name of the wiki during analysis.
@@ -200,15 +182,11 @@ class ContextAttributesFactory {
 			'mediawiki_version' => MW_VERSION,
 			'mediawiki_is_debug_mode' => $isDebugMode,
 			'mediawiki_is_production' => $isProduction,
-			'mediawiki_db_name' => $this->mainConfig->get( MainConfigNames::DBname ),
+			'mediawiki_database' => $this->mainConfig->get( MainConfigNames::DBname ),
 			'mediawiki_site_content_language' => $this->contentLanguage->getCode(),
 		];
 	}
 
-	/**
-	 * @param IContextSource $contextSource
-	 * @return array
-	 */
 	private function getPerformerContextAttributes( IContextSource $contextSource ): array {
 		$user = $contextSource->getUser();
 		$userName = $user->isAnon() ? null : $user->getName();
@@ -220,12 +198,6 @@ class ContextAttributesFactory {
 		$userEditCount = $user->getEditCount();
 		$userEditCountBucket = $user->isAnon() ? null : $this->userBucketService->bucketEditCount( $userEditCount );
 
-		$registrationTimestamp = $user->getRegistration();
-
-		if ( $registrationTimestamp ) {
-			$registrationTimestamp = wfTimestamp( TS_ISO_8601, $registrationTimestamp );
-		}
-
 		$result = [
 			'performer_is_logged_in' => !$user->isAnon(),
 			'performer_id' => $user->getId(),
@@ -236,9 +208,16 @@ class ContextAttributesFactory {
 			'performer_language' => $userLanguage->getCode(),
 			'performer_language_variant' => $userLanguageVariant,
 			'performer_edit_count' => $userEditCount,
-			'performer_edit_count_bucket' => $userEditCountBucket,
-			'performer_registration_dt' => $registrationTimestamp,
+			'performer_edit_count_bucket' => $userEditCountBucket
 		];
+
+		// T408547 `$user-getRegistration()` returns `false` (which will fail when validating the event ) when
+		// the user is not registered
+		$registrationTimestamp = $user->getRegistration();
+		if ( $registrationTimestamp ) {
+			$registrationTimestamp = wfTimestamp( TS_ISO_8601, $registrationTimestamp );
+			$result['performer_registration_dt'] = $registrationTimestamp;
+		}
 
 		// IContextSource::getTitle() can return null.
 		//

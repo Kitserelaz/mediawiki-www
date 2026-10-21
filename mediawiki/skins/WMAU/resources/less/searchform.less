@@ -1,0 +1,75 @@
+// Visibility of the search button and the form are switched in JS.
+body.client-nojs .skin-wmau-search {
+	display: none;
+}
+
+// Push the search icon down a little bit.
+.skin-wmau-search abbr {
+	position: relative;
+	bottom: -3px;
+}
+
+.skin-wmau-search-active {
+	outline: 1px solid #e3e3e3;
+	background-color: #fefefe;
+	box-shadow: 0 0 7px #888;
+}
+
+#searchform {
+	position: absolute;
+	display: none;
+	overflow: hidden;
+	z-index: 2;
+	max-width: 90%;
+	width: 300px;
+
+	&.skin-wmau-search-active {
+		width: auto;
+		height: auto;
+	}
+
+	.skin-wmau-searchform-inner {
+		display: flex;
+	}
+
+	input {
+		border: 1px solid #ccc;
+		border-radius: 0;
+		padding: 0.5em;
+	}
+
+	input[ type='search' ] {
+		flex: 5;
+		border-width: 0 1px 0 0;
+	}
+
+	input[ type='submit' ] {
+		flex: 1;
+		border-width: 0;
+	}
+}
+
+@media screen and ( max-width: @skin-wmau-smallscreen-width ) {
+
+	// Hide the normal search icon and instead always show the form.
+	.skin-wmau-search {
+		display: none;
+	}
+
+	#searchform {
+		display: block;
+		position: relative;
+		width: 100%;
+		padding: 0;
+		max-width: 100%;
+
+		input[ type='search' ] {
+			padding: 5px;
+			border-width: 1px 1px 1px 0;
+		}
+
+		input[ type='submit' ] {
+			border-width: 1px 0;
+		}
+	}
+}

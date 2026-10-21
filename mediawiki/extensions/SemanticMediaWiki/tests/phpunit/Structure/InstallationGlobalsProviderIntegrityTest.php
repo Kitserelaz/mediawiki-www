@@ -1,0 +1,52 @@
+<?php
+
+namespace SMW\Tests\Structure;
+
+use PHPUnit\Framework\TestCase;
+use SMW\Services\ServicesFactory as ApplicationFactory;
+use SMW\Tests\Utils\GlobalsProvider;
+
+/**
+ * @group SMW
+ * @group SMWExtension
+ *
+ * @group semantic-mediawiki-system
+ * @group mediawiki-databaseless
+ *
+ * @license GPL-2.0-or-later
+ * @since 1.9
+ *
+ * @author mwjames
+ */
+class InstallationGlobalsProviderIntegrityTest extends TestCase {
+
+	private $globalsProvider;
+	private $applicationFactory;
+
+	protected function setUp(): void {
+		parent::setUp();
+
+		$this->globalsProvider = GlobalsProvider::getInstance();
+		$this->applicationFactory = ApplicationFactory::getInstance();
+	}
+
+	protected function tearDown(): void {
+		$this->applicationFactory->clear();
+
+		parent::tearDown();
+	}
+
+	public function testNamespaceSettingOnExampleIfSet() {
+		$expected = 'http://example.org/id/';
+
+		if ( $this->globalsProvider->get( 'smwgNamespace' ) !== $expected ) {
+			$this->markTestSkipped( "Skip test due to missing {$expected} setting" );
+		}
+
+		$this->assertSame(
+			$this->globalsProvider->get( 'smwgNamespace' ),
+			$this->applicationFactory->getSettings()->get( 'smwgNamespace' )
+		);
+	}
+
+}

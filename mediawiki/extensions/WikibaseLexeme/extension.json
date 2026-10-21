@@ -1,0 +1,146 @@
+{
+	"name": "WikibaseLexeme",
+	"author": [
+		"The Wikidata team"
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:WikibaseLexeme",
+	"descriptionmsg": "wikibaselexeme-desc",
+	"license-name": "GPL-2.0-or-later",
+	"type": "wikibase",
+	"requires": {
+		"MediaWiki": ">= 1.43"
+	},
+	"load_composer_autoloader": true,
+	"AutoloadNamespaces": {
+		"Wikibase\\Lexeme\\": "src/",
+		"Wikibase\\Lexeme\\Maintenance\\": "maintenance/"
+	},
+	"TestAutoloadNamespaces": {
+		"Wikibase\\Lexeme\\Tests\\": "tests/phpunit/composer/",
+		"Wikibase\\Lexeme\\Tests\\MediaWiki\\": "tests/phpunit/mediawiki/",
+		"Wikibase\\Lexeme\\Tests\\Unit\\": "tests/phpunit/unit/"
+	},
+	"callback": "Wikibase\\Lexeme\\Registrar::registerExtension",
+	"config": {
+		"LexemeEnableRepo": {
+			"value": true
+		},
+		"LexemeNamespace": {
+			"value": 146
+		},
+		"LexemeLanguageCodePropertyId": {
+			"value": null
+		},
+		"LexemeLexicalCategoryItemIds": {
+			"value": [],
+			"description": "Item IDs of Items to suggest as the Lexical Category of a Lexeme. Any Item can be used for the Lexical Category, but the Items listed here will be suggested to editors preferentially."
+		},
+		"LexemeEnableDataTransclusion": {
+			"value": false
+		}
+	},
+	"ExtensionMessagesFiles": {
+		"WikibaseLexemeAlias": "WikibaseLexeme.i18n.alias.php"
+	},
+	"QUnitTestModule": {
+		"localBasePath": "",
+		"remoteExtPath": "WikibaseLexeme",
+		"packageFiles": [
+			"tests/qunit/index.js",
+			"tests/qunit/datamodel/Form.tests.js",
+			"tests/qunit/datamodel/Sense.tests.js",
+			"tests/qunit/experts/Lexeme.tests.js",
+			"tests/qunit/experts/Form.tests.js",
+			"tests/qunit/jquery.wikibase.lexemeformlistview.tests.js",
+			"tests/qunit/jquery.wikibase.lexemeformview.tests.js",
+			"tests/qunit/jquery.wikibase.grammaticalfeatureview.tests.js",
+			"tests/qunit/jquery.wikibase.senselistview.tests.js",
+			"tests/qunit/jquery.wikibase.senseview.tests.js",
+			"tests/qunit/widgets/GrammaticalFeatureListWidget.tests.js",
+			"resources/widgets/GrammaticalFeatureListWidget.js",
+			"tests/qunit/entityChangers/FormChanger.tests.js",
+			"resources/entityChangers/FormChanger.js",
+			"resources/serialization/FormSerializer.js",
+			"tests/qunit/entityChangers/SenseChanger.tests.js",
+			"resources/entityChangers/SenseChanger.js",
+			"resources/serialization/SenseSerializer.js",
+			"tests/qunit/entityChangers/LexemeRevisionStore.tests.js",
+			"resources/entityChangers/LexemeRevisionStore.js",
+			"tests/qunit/serialization/LexemeDeserializer.tests.js",
+			"resources/serialization/LexemeDeserializer.js",
+			"resources/datamodel/Lexeme.js",
+			"tests/qunit/datamodel/Lexeme.tests.js",
+			"tests/qunit/serialization/FormSerializer.tests.js",
+			"tests/qunit/serialization/SenseSerializer.tests.js",
+			"tests/qunit/view/ViewFactoryFactory.tests.js",
+			"resources/view/ViewFactoryFactory.js",
+			"resources/view/config.json",
+			"resources/view/ReadModeViewFactory.js",
+			"resources/view/ControllerViewFactory.js",
+			"tests/qunit/view/ControllerViewFactory.tests.js",
+			"tests/qunit/view/ViewFactoryFactory.tests.js"
+		],
+		"dependencies": [
+			"mediawiki.widgets",
+			"oojs-ui-core",
+			"oojs-ui-widgets",
+			"oojs-ui",
+			"vue",
+			"vuex",
+			"wikibase.datamodel",
+			"wikibase.experts.Form",
+			"wikibase.experts.Lexeme",
+			"wikibase.lexeme.datamodel",
+			"wikibase.lexeme.getDeserializer",
+			"wikibase.lexeme.lexemeview",
+			"wikibase.lexeme.view.ViewFactoryFactory",
+			"wikibase.lexeme.view.ViewFactoryFactory",
+			"test.WikibaseRepository"
+		]
+	},
+	"Hooks": {
+		"InfoAction": "main",
+		"WikibaseRepoEntityNamespaces": [
+			"Wikibase\\Lexeme\\WikibaseLexemeHooks::onWikibaseRepoEntityNamespaces"
+		],
+		"CanonicalNamespaces": "main",
+		"LoadExtensionSchemaUpdates": "main",
+		"WikibaseRepoEntityTypes": [
+			"Wikibase\\Lexeme\\WikibaseLexemeHooks::onWikibaseRepoEntityTypes"
+		],
+		"WikibaseRepoDataTypes": [
+			"Wikibase\\Lexeme\\WikibaseLexemeHooks::onWikibaseDataTypes"
+		],
+		"WikibaseContentLanguages": [
+			"Wikibase\\Lexeme\\WikibaseLexemeHooks::onWikibaseContentLanguages"
+		],
+		"WikibaseClientEntityTypes": [
+			"Wikibase\\Lexeme\\WikibaseLexemeHooks::onWikibaseClientEntityTypes"
+		],
+		"WikibaseClientDataTypes": [
+			"Wikibase\\Lexeme\\WikibaseLexemeHooks::onWikibaseClientDataTypes"
+		],
+		"WikibaseRepoOnParserOutputUpdaterConstruction": [
+			"Wikibase\\Lexeme\\WikibaseLexemeHooks::onParserOutputUpdaterConstruction"
+		],
+		"ScribuntoExternalLibraries": [
+			"Wikibase\\Lexeme\\WikibaseLexemeHooks::onScribuntoExternalLibraries"
+		]
+	},
+	"HookHandlers": {
+		"main": {
+			"class": "Wikibase\\Lexeme\\WikibaseLexemeHooks"
+		}
+	},
+	"MessagesDirs": {
+		"WikibaseLexeme": [
+			"i18n",
+			"i18n/api",
+			"i18n/language-names"
+		]
+	},
+	"ServiceWiringFiles": [
+		"WikibaseLexeme.mediawiki-services.php"
+	],
+	"manifest_version": 2
+}

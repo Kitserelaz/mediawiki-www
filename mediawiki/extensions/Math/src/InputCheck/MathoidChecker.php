@@ -12,45 +12,24 @@ class MathoidChecker extends BaseChecker {
 
 	private const EXPECTED_RETURN_CODES = [ 200, 400 ];
 	public const VERSION = 1;
-	/** @var string */
-	private $url;
-	/** @var int */
-	private $timeout;
-	/** @var WANObjectCache */
-	private $cache;
-	/** @var HttpRequestFactory */
-	private $httpFactory;
-	/** @var string */
-	private $type;
-	/** @var LoggerInterface */
-	private $logger;
 	/** @var int|null */
 	private $statusCode;
 	/** @var string */
 	private $response;
 
 	public function __construct(
-		WANObjectCache $cache,
-		HttpRequestFactory $httpFactory,
-		LoggerInterface $logger,
-		string $url,
-		int $timeout,
+		private readonly WANObjectCache $cache,
+		private readonly HttpRequestFactory $httpFactory,
+		private readonly LoggerInterface $logger,
+		private readonly string $url,
+		private readonly int $timeout,
 		string $input,
-		string $type,
-		bool $purge
+		private readonly string $type,
+		bool $purge,
 	) {
 		parent::__construct( $input, $purge );
-		$this->url = $url;
-		$this->timeout = $timeout;
-		$this->cache = $cache;
-		$this->httpFactory = $httpFactory;
-		$this->type = $type;
-		$this->logger = $logger;
 	}
 
-	/**
-	 * @return array
-	 */
 	public function getCheckResponse(): array {
 		if ( $this->statusCode === null ) {
 			$cacheInputKey = $this->getCacheKey();
@@ -67,9 +46,6 @@ class MathoidChecker extends BaseChecker {
 		return [ $this->statusCode, $this->response ];
 	}
 
-	/**
-	 * @return string
-	 */
 	public function getCacheKey(): string {
 		return $this->cache->makeGlobalKey(
 			self::class,
@@ -77,9 +53,6 @@ class MathoidChecker extends BaseChecker {
 		);
 	}
 
-	/**
-	 * @return array
-	 */
 	public function runCheck(): array {
 		$url = "{$this->url}/texvcinfo";
 		$q = rawurlencode( $this->inputTeX );
@@ -110,10 +83,7 @@ class MathoidChecker extends BaseChecker {
 
 	public function isValid(): bool {
 		[ $statusCode ] = $this->getCheckResponse();
-		if ( $statusCode === 200 ) {
-			return true;
-		}
-		return false;
+		return $statusCode === 200;
 	}
 
 	public function getError(): ?Message {

@@ -1,0 +1,486 @@
+<?php
+
+namespace SMW\SQLStore\Rebuilder;
+
+use MediaWiki\HookContainer\HookContainer;
+use MediaWiki\Title\Title;
+use MediaWiki\Title\TitleFactory;
+use SMW\DataItems\WikiPage;
+use SMW\DataModel\SemanticData;
+use SMW\MediaWiki\JobFactory;
+use SMW\MediaWiki\Jobs\UpdateJob;
+use SMW\NamespaceExaminer;
+use SMW\PropertyRegistry;
+use SMW\SQLStore\PropertyTableIdReferenceDisposer;
+use SMW\SQLStore\SQLStore;
+use SMW\Utils\Lru;
+use stdClass;
+
+/**
+ * @private
+ *
+ * @license GPL-2.0-or-later
+ * @since 2.3
+ *
+ * @author Markus Krötzsch
+ * @author Jeroen De Dauw
+ * @author Nischay Nahata
+ * @author mwjames
+ */
+class Rebuilder {
+
+	/**
+	 * @var NamespaceExaminer
+	 */
+	private $namespaceExaminer;
+
+	private ?array $options = null;
+
+	/**
+	 * @var array|false
+	 */
+	private $namespaces = false;
+
+	private int $iterationLimit = 1;
+
+	private int|float $progress = 1;
+
+	private array $dispatchedEntities = [];
+
+	private array $updateJobs = [];
+
+	private Lru $lru;
+
+	/**
+	 * @since 2.3
+	 */
+	public function __construct(
+		private readonly SQLStore $store,
+		private readonly TitleFactory $titleFactory,
+		private readonly EntityValidator $entityValidator,
+		private readonly PropertyTableIdReferenceDisposer $propertyTableIdReferenceDisposer,
+		private readonly JobFactory $jobFactory,
+		private readonly HookContainer $hookContainer,
+	) {
+		$this->lru = new Lru( 10000 );
+	}
+
+	/**
+	 * @since 3.1
+	 *
+	 * @param array $options
+	 */
+	public function setOptions( array $options ): void {
+		$this->options = $options;
+	}
+
+	/**
+	 * @since 3.1
+	 *
+	 * @param string $key
+	 * @param mixed $default
+	 *
+	 * @return mixed
+	 */
+	public function getOption( $key, $default = false ) {
+		if ( isset( $this->options[$key] ) ) {
+			return $this->options[$key];
+		}
+
+		return $default;
+	}
+
+	/**
+	 * @since 2.3
+	 *
+	 * @param array|false $namespaces
+	 */
+	public function setRestrictionToNamespaces( $namespaces ): void {
+		$this->namespaces = $namespaces;
+	}
+
+	/**
+	 * @since 2.3
+	 *
+	 * @param int $iterationLimit
+	 */
+	public function setDispatchRangeLimit( $iterationLimit ): void {
+		$this->iterationLimit = (int)$iterationLimit;
+	}
+
+	/**
+	 * @since 2.3
+	 *
+	 * @return int
+	 */
+	public function getMaxId(): int {
+		$db = $this->store->getConnection( 'mw.db' );
+
+		$maxByPageId = (int)$db->newSelectQueryBuilder()
+			->select( [ 'MAX(page_id)' ] )
+			->from( 'page' )
+			->caller( __METHOD__ )
+			->fetchField();
+
+		$maxBySmwId = (int)$db->newSelectQueryBuilder()
+			->select( [ 'MAX(smw_id)' ] )
+			->from( SQLStore::ID_TABLE )
+			->caller( __METHOD__ )
+			->fetchField();
+
+		return max( $maxByPageId, $maxBySmwId );
+	}
+
+	/**
+	 * Decimal between 0 and 1 to indicate the overall progress of the rebuild
+	 * process
+	 *
+	 * @since 2.3
+	 *
+	 * @return int
+	 */
+	public function getEstimatedProgress(): int|float {
+		return $this->progress;
+	}
+
+	/**
+	 * @since 2.4
+	 *
+	 * @return array
+	 */
+	public function getDispatchedEntities(): array {
+		return $this->dispatchedEntities;
+	}
+
+	/**
+	 * Dispatching of a single or a chunk of ids in either online or batch mode
+	 * using the job scheduler.
+	 *
+	 * @since 2.3
+	 *
+	 * @param int &$id
+	 */
+	public function rebuild( &$id ): int|float {
+		$this->updateJobs = [];
+		$this->dispatchedEntities = [];
+
+		$this->entityValidator->setNamespaceRestriction(
+			$this->namespaces
+		);
+
+		// was nothing done in this run?
+		$emptyRange = true;
+
+		$this->matchAsTitle( $id );
+
+		if ( $this->updateJobs !== [] ) {
+			$emptyRange = false;
+		}
+
+		$this->matchAsSubject( $id, $emptyRange );
+
+		$this->hookContainer->run( 'SMW::SQLStore::BeforeDataRebuildJobInsert', [ $this->store, &$this->updateJobs ] );
+
+		if ( $this->getOption( 'use-job' ) ) {
+			$this->jobFactory->batchInsert( $this->updateJobs );
+		} else {
+			foreach ( $this->updateJobs as $job ) {
+				$job->run();
+			}
+		}
+
+		// -1 means that no next position is available
+		$this->next_position( $id, $emptyRange );
+
+		$this->progress = $id > 0 && $this->getMaxId() !== 0 ? $id / $this->getMaxId() : 1;
+		return $this->progress;
+	}
+
+	/**
+	 * Bulk-fetches Title objects for a list of MediaWiki page IDs.
+	 *
+	 * @param int[] $ids
+	 *
+	 * @return Title[]
+	 */
+	private function newTitlesFromIDs( array $ids ): array {
+		if ( $ids === [] ) {
+			return [];
+		}
+
+		$connection = $this->store->getConnection( 'mw.db' );
+
+		$res = $connection->newSelectQueryBuilder()
+			->select( [ 'page_id', 'page_namespace', 'page_title' ] )
+			->from( 'page' )
+			->where( [ 'page_id' => $ids ] )
+			->caller( __METHOD__ )
+			->fetchResultSet();
+
+		$titles = [];
+
+		foreach ( $res as $row ) {
+			$titles[] = $this->titleFactory->newFromRow( $row );
+		}
+
+		return $titles;
+	}
+
+	private function matchAsTitle( $id ): void {
+		// Update by MediaWiki page id --> make sure we get all pages.
+		$tids = [];
+
+		// Array of ids
+		for ( $i = $id; $i < $id + $this->iterationLimit; $i++ ) {
+			$tids[] = $i;
+		}
+
+		$titles = $this->newTitlesFromIDs( $tids );
+
+		foreach ( $titles as $title ) {
+
+			if ( $this->lru->get( $title->getDBKey() . '#' . $title->getNamespace() ) !== null ) {
+				continue;
+			}
+
+			if ( ( $this->namespaces == false ) || ( in_array( $title->getNamespace(), $this->namespaces ) ) ) {
+				$this->addJob( $title );
+			}
+
+			$this->dispatchedEntities[] = [ 't' => $title->getPrefixedDBKey() ];
+		}
+	}
+
+	private function matchAsSubject( $id, bool &$emptyRange ): void {
+		// update by internal SMW id --> make sure we get all objects in SMW
+		$connection = $this->store->getConnection( 'mw.db' );
+
+		// MW 1.29+ "Exception thrown with an uncommitted database transaction ...
+		// MWCallableUpdate::doUpdate: transaction round 'SMW\MediaWiki\Jobs\RefreshJob::run' already started"
+		$this->propertyTableIdReferenceDisposer->waitOnTransactionIdle();
+
+		$res = $connection->newSelectQueryBuilder()
+			->select( [
+				'smw_id',
+				'smw_title',
+				'smw_namespace',
+				'smw_iw',
+				'smw_subobject',
+				'smw_sortkey',
+				'smw_proptable_hash',
+				'smw_rev',
+			] )
+			->from( SQLStore::ID_TABLE )
+			->where( [
+				"smw_id >= $id ",
+				" smw_id < " . $connection->addQuotes( $id + $this->iterationLimit ),
+			] )
+			->caller( __METHOD__ )
+			->fetchResultSet();
+
+		foreach ( $res as $row ) {
+
+			// note this even if no jobs were created
+			$emptyRange = false;
+
+			if ( !$this->entityValidator->inNamespace( $row ) ) {
+				continue;
+			}
+
+			// If the reference is for some reason created as part of a not
+			// supported namespace, check and clean it!
+			//
+			// The check is required to ensure that annotations let's say
+			// [[Foo::SomeNS:Bar]] (where SomeNS is not enabled for SMW) are not
+			// removed and is kept as long as a reference to `SomeNS:Bar` exists
+			if ( !$this->entityValidator->isSemanticEnabled( $row ) ) {
+				$this->propertyTableIdReferenceDisposer->removeOutdatedEntityReferencesById( $row->smw_id );
+			} else {
+				$this->checkRow( $row );
+			}
+		}
+	}
+
+	private function checkRow( $row ): void {
+		// Find page to refresh, even for special properties:
+		if ( $row->smw_title != '' && $row->smw_title[0] != '_' ) {
+			$titleKey = $row->smw_title;
+		} elseif ( $this->entityValidator->isProperty( $row ) ) {
+			$titleKey = str_replace( ' ', '_', PropertyRegistry::getInstance()->findCanonicalPropertyLabelById( $row->smw_title ) );
+		} else {
+			$titleKey = '';
+		}
+
+		$hash = $titleKey . '#' . $row->smw_namespace;
+
+		if ( $row->smw_subobject !== '' && $row->smw_iw !== SMW_SQL3_SMWDELETEIW ) {
+
+			$title = $this->titleFactory->makeTitleSafe(
+				$row->smw_namespace,
+				$titleKey
+			);
+
+			if ( $this->entityValidator->isDetachedSubobject( $title, $row ) ) {
+				$this->propertyTableIdReferenceDisposer->cleanUpTableEntriesById( $row->smw_id );
+			} elseif ( $this->entityValidator->isDetachedQueryRef( $row ) ) {
+				$this->propertyTableIdReferenceDisposer->cleanUpTableEntriesById( $row->smw_id );
+			} else {
+				$this->addDispatchRecord( 's', $row );
+			}
+		} elseif ( $this->entityValidator->isPlainObjectValue( $row ) ) {
+			$this->propertyTableIdReferenceDisposer->removeOutdatedEntityReferencesById( $row->smw_id );
+		} elseif ( $row->smw_iw === '' && $titleKey != '' ) {
+
+			if ( $this->lru->get( $hash ) !== null ) {
+				return;
+			}
+
+			// objects representing pages
+			$title = $this->titleFactory->makeTitleSafe(
+				$row->smw_namespace,
+				$titleKey
+			);
+
+			if ( $title !== null ) {
+				$this->dispatchedEntities[] = [ 's' => $title->getPrefixedDBKey() ];
+				$this->addJob( $title, $row );
+			}
+		} elseif ( $this->entityValidator->isRedirect( $row ) ) {
+
+			if ( $this->lru->get( $hash ) !== null || $titleKey === '' ) {
+				return;
+			}
+
+			// TODO: special treatment of redirects needed, since the store will
+			// not act on redirects that did not change according to its records
+			$title = $this->titleFactory->makeTitleSafe(
+				$row->smw_namespace,
+				$titleKey
+			);
+
+			if ( $title !== null && !$title->exists() ) {
+				$this->dispatchedEntities[] = [ 's' => $title->getPrefixedDBKey() ];
+				$this->addJob( $title, $row );
+			}
+
+			$this->propertyTableIdReferenceDisposer->cleanUpTableEntriesById( $row->smw_id );
+		} elseif ( $this->entityValidator->isOutdated( $row ) ) { // remove outdated internal object references
+			$this->propertyTableIdReferenceDisposer->cleanUpTableEntriesById( $row->smw_id );
+		} elseif ( $titleKey != '' ) { // "normal" interwiki pages or outdated internal objects -- delete
+
+			if ( $this->lru->get( $hash ) !== null ) {
+				return;
+			}
+
+			$subject = new WikiPage( $titleKey, $row->smw_namespace, $row->smw_iw );
+			$this->store->updateData( new SemanticData( $subject ) );
+			$this->dispatchedEntities[] = [ 's' => $subject ];
+		}
+
+		if ( $this->entityValidator->isProperty( $row ) ) {
+			$this->removeDuplicates( $row, $this->entityValidator->findDuplicates( $row ) );
+		}
+
+		if ( $this->entityValidator->hasPropertyInvalidCharacter( $row ) ) {
+			$this->setDeleteFlag( $row->smw_id, $row->smw_title, $row->smw_namespace );
+		}
+
+		if ( $this->entityValidator->isRetiredProperty( $row ) ) {
+			$this->setDeleteFlag( $row->smw_id, $row->smw_title, $row->smw_namespace );
+		}
+	}
+
+	private function setDeleteFlag( $id, $title, $ns ): void {
+		$this->store->getObjectIds()->updateInterwikiField(
+			$id,
+			new WikiPage( $title, $ns, SMW_SQL3_SMWDELETEIW )
+		);
+	}
+
+	private function removeDuplicates( $row, $duplicates ): void {
+		// Instead of copying ID's across DB tables have the re-parse to ensure
+		// that all property value ID's are reassigned together while the duplicate
+		// is marked for removal until the next run
+		foreach ( $duplicates as $duplicate ) {
+
+			// If titles don't match then continue because it could be that
+			// Property:Foo with displaytitle foobar -> sortkey ->foobar
+			// Property:Bar with displaytitle foobar -> sortkey ->foobar
+			if ( $row->smw_title !== $duplicate->smw_title ) {
+				continue;
+			}
+
+			$this->setDeleteFlag( $duplicate->smw_id, $row->smw_title, $row->smw_namespace );
+		}
+	}
+
+	private function next_position( &$id, bool $emptyRange ): void {
+		$nextPosition = $id + $this->iterationLimit;
+		$db = $this->store->getConnection( 'mw.db' );
+
+		// nothing found, check if there will be more pages later on
+		if ( $emptyRange && $nextPosition > SQLStore::FIXED_PROPERTY_ID_UPPERBOUND ) {
+
+			$nextByPageId = (int)$db->newSelectQueryBuilder()
+				->select( [ 'page_id' ] )
+				->from( 'page' )
+				->where( [ "page_id >= $nextPosition" ] )
+				->orderBy( 'page_id', 'ASC' )
+				->caller( __METHOD__ )
+				->fetchField();
+
+			$nextBySmwId = (int)$db->newSelectQueryBuilder()
+				->select( [ 'smw_id' ] )
+				->from( SQLStore::ID_TABLE )
+				->where( [ "smw_id >= $nextPosition" ] )
+				->orderBy( 'smw_id', 'ASC' )
+				->caller( __METHOD__ )
+				->fetchField();
+
+			// Next position is determined by the pool with the maxId
+			$nextPosition = $nextBySmwId != 0 && $nextBySmwId > $nextByPageId ? $nextBySmwId : $nextByPageId;
+		}
+
+		$id = $nextPosition ?: -1;
+	}
+
+	private function hasSkippableRevision( $title, stdClass|false $row = false ): bool {
+		if ( $this->getOption( 'force-update' ) ) {
+			return false;
+		}
+
+		return $this->getOption( 'revision-mode' ) && $this->entityValidator->hasLatestRevID( $title, $row );
+	}
+
+	private function addDispatchRecord( string $key, $row ): void {
+		$this->dispatchedEntities[] = [ $key => $row->smw_title . '#' . $row->smw_namespace . '#' . $row->smw_subobject ];
+	}
+
+	private function addJob( $title, stdClass|false $row = false ): void {
+		$hash = $title->getDBKey() . '#' . $title->getNamespace();
+		$this->lru->set( $hash, true );
+
+		if ( $this->hasSkippableRevision( $title, $row ) ) {
+			$this->dispatchedEntities[] = [ 'skipped' => $title->getPrefixedDBKey() ];
+			return;
+		}
+
+		$params = [
+			'origin' => 'EntityRebuildDispatcher'
+		];
+
+		if ( $this->getOption( 'shallow-update' ) ) {
+			$params += [ UpdateJob::SHALLOW_UPDATE => true ];
+		} elseif ( $this->getOption( 'force-update' ) ) {
+			$params += [ 'forcedUpdate' => true ];
+		}
+
+		$updateJob = $this->jobFactory->newUpdateJob(
+			$title,
+			$params
+		);
+
+		$this->updateJobs[] = $updateJob;
+	}
+
+}

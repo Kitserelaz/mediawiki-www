@@ -3,10 +3,10 @@
 namespace MediaWiki\Extension\TemplateData;
 
 use MediaWiki\Html\Html;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
-use MessageLocalizer;
 use stdClass;
 
 /**
@@ -14,12 +14,10 @@ use stdClass;
  */
 class TemplateDataHtmlFormatter {
 
-	private MessageLocalizer $localizer;
-	private string $languageCode;
-
-	public function __construct( MessageLocalizer $localizer, string $languageCode = 'en' ) {
-		$this->localizer = $localizer;
-		$this->languageCode = $languageCode;
+	public function __construct(
+		private readonly MessageLocalizer $localizer,
+		private readonly string $languageCode = 'en',
+	) {
 	}
 
 	/**
@@ -71,8 +69,7 @@ class TemplateDataHtmlFormatter {
 				Html::rawElement( 'p',
 					[ 'class' => 'mw-templatedata-caption' ],
 					$this->localizer->msg( 'templatedata-doc-params' )->escaped() .
-					// Edit interface is only loaded in the template namespace (see Hooks::onEditPage)
-					( $showEditLink && $frameTitle->inNamespace( NS_TEMPLATE ) ?
+					( $showEditLink ?
 						Html::element( 'mw:edittemplatedata', [
 							'page' => $frameTitle->getPrefixedText()
 						] ) :
@@ -131,8 +128,6 @@ class TemplateDataHtmlFormatter {
 
 	/**
 	 * Replace <mw:edittemplatedata> markers with links
-	 *
-	 * @param string &$text
 	 */
 	public function replaceEditLink( string &$text ): void {
 		$localizer = $this->localizer;
@@ -282,11 +277,12 @@ class TemplateDataHtmlFormatter {
 					// mw-templatedata-doc-param-status-required
 					// mw-templatedata-doc-param-status-suggested
 					'class' => "mw-templatedata-doc-param-status-$status",
-					'data-sort-value' => [
+					'data-sort-value' => match ( $status ) {
 						'deprecated' => -1,
 						'suggested' => 1,
 						'required' => 2,
-					][$status] ?? 0,
+						default => 0,
+					},
 				],
 				// Messages that can be used here:
 				// templatedata-doc-param-status-deprecated

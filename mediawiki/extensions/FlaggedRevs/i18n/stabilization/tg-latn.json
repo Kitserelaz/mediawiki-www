@@ -1,0 +1,21 @@
+{
+	"@metadata": {
+		"authors": [
+			"Liangent"
+		]
+	},
+	"stabilization-tab": "sançiş",
+	"stabilization": "Pojdorsoziji sahifaho",
+	"stabilization-page": "Nomi sahifa:",
+	"stabilization-def": "Nusxae ki dar holati peşfarz namoiş doda meşavad",
+	"stabilization-submit": "Tasdiq",
+	"stabilization-notexists": "Sahifae bo unvoni \"[[:$1|$1]]\" vuçud nadorad. Tanzimot mumkin nest.",
+	"stabilization-notcontent": "Sahifai \"[[:$1|$1]]\" qobili barrasī nest. Tanzimot mumkin nest.",
+	"stabilization-comment": "Sabab:",
+	"stabilization-expiry": "Intiho:",
+	"stabilization-def-short": "Peşfarz",
+	"stabilization-def-short-0": "Fe'lī",
+	"stabilize_expiry_invalid": "Ta'rixi intihoiji ƣajrimiçoz.",
+	"stabilize_expiry_old": "Ta'rixi intiho allakaj siparī şudaast.",
+	"stabilize-expiring": "Dar $1 (UTC) ba intiho merasad"
+}

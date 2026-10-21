@@ -1,0 +1,35 @@
+{
+	"@metadata": {
+		"authors": [
+			"Bjankuloski06"
+		]
+	},
+	"phonos": "Фонос",
+	"phonos-desc": "Дава можност за гласовен читач на текст за разни јазици",
+	"phonos-error-category": "Страници со грешки во изведбата на Фонос",
+	"phonos-error-category-desc": "Се појави грешка при изведбата на Фонос.",
+	"phonos-audio-conversion-error": "Не успеав да ја претворам снимката во MP3:\n$1",
+	"phonos-directory-error": "Не успеав да ја создадам складишната папка $1",
+	"phonos-engine-error": "Не успеав да создадам звучна податотека со погонот $1:\n$2",
+	"phonos-storage-error": "Не успеав да ја зачувам звучната податотека во нејзиното конечно одредиште:\n$1",
+	"phonos-purge-needed-error": "Не можам да ја пуштам снимката.",
+	"phonos-purge-needed-error-link": "Превчитајте ја страницата и пробајте пак.",
+	"phonos-tracking-category": "Страници што го користат додатокот Фонос",
+	"phonos-tracking-category-desc": "Страницата го користи додатокот  [https://www.mediawiki.org/wiki/Extension:Phonos Фонос].",
+	"phonos-invalid-title": "Звучната податотека „$1“ има неважечки наслов.",
+	"phonos-file-not-found": "Не ја најдов звучната податотека „[$1 $2]“.",
+	"phonos-file-not-audio": "Податотеката „[[$1|$2]]“ не е звучна.",
+	"phonos-player-aria-description": "Пушти снимка",
+	"phonos-aria-error": "Не може да се пушти снимката",
+	"phonos-ipa-too-long": "МФА е предолга за да се изведе.",
+	"phonos-wikibase-api-error": "Не можев да ја добијам единицата од Викибазата: $1",
+	"phonos-wikibase-invalid-entity-lexeme": "Неважечка единица или лексема: $1",
+	"phonos-wikibase-not-found": "Не најдов звучен запис за ставката $1 во Викибазата",
+	"phonos-wikibase-no-ipa": "Не пронајдов МФА-транскрипција .",
+	"phonos-empty-file-error": "Создадената звучна снимка е празна. Дадената МФА може да е неважечка, или да не е поддржана од погонот. Може да помогне примената на параметарот „$1“.",
+	"phonos-param-error": "Мора да се укаже МФА, податотека или предмет на Викибазата.",
+	"phonos-rendering-disabled": "Исписот на МФА моментално е оневозможен.",
+	"phonos-unsupported-language": "Јазикот $1 не е поддржан од Phonos.",
+	"phonos-unsupported-language-with-suggestions": "Јазикот $1 не е поддржан од Phonos. Поддржани се следниве можеби сродни јазици: $2.",
+	"phonos-inline-audio-player-mode": "Може да се укаже само звучна податотека или предмет од Викибазата со својство за изговорна снимка ($1), кога се работи за звукоизведувач во текст."
+}

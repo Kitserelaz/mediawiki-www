@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"Saraiki"
+		]
+	},
+	"reportincident-report-btn-label": "رپورٹ",
+	"reportincident-dialog-close-btn": "بند کرو",
+	"reportincident-dialog-submit-btn": "جمع کرواؤ",
+	"reportincident-success-message-close": "بند کرو",
+	"reportincident-emaildialog-close-button": "منسوخ",
+	"reportincident-emaildialog-primary": "ترتیباں تے ون٘ڄو"
+}

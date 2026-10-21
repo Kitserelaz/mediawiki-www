@@ -1,0 +1,26 @@
+{
+	"@metadata": {
+		"authors": [
+			"Msz2001",
+			"Woytecr"
+		]
+	},
+	"apihelp-growthstarmentee-summary": "Zaznacza lub odznacza nowicjusza jako ulubionego (informacja przechowywana prywatnie przez obecnie zalogowanego użytkownika i nie ujawniana w rejestrze)",
+	"apihelp-growthstarmentee-param-gesaction": "Czynność do podjęcia (<kbd>star</kbd> lub <kbd>unstar</kbd>)",
+	"apihelp-growthstarmentee-param-gesmentee": "Nowicjusz do zmiany statusu",
+	"apihelp-query+growthstarredmentees-summary": "Pobierz listę ulubionych nowicjuszy dla obecnie zalogowanego przewodnika",
+	"apihelp-growthsetmentorstatus-summary": "Ustaw status obecnie zalogowanego wikiprzewodnika na \"aktywny\" lub \"zaraz wracam\".",
+	"apihelp-growthsetmentorstatus-param-gesstatus": "Nowy status",
+	"apihelp-growthsetmentorstatus-param-gesbackindays": "Podczas ustawiania statusu wikiprzewodnika na \"zaraz wracam\" należy tu podać czas trwania tej przerwy w dniach.",
+	"apihelp-query+growthmentorstatus-summary": "Pobierz informacje o statusie dostępności wikiprzewodnika",
+	"apihelp-growthmentordashboardupdatedata-summary": "Zakolejkuj dodatkowe zaktualizowanie informacji w module przeglądu podopiecznych w panelu wikiprzewodnika. Możesz zaplanować aktualizację tylko raz na dwie godziny aby nie zwiększać obciążenia.",
+	"apihelp-growthsetmenteestatus-summary": "Ustaw status podopiecznego (pozwala podopiecznym włączać/wyłączać moduł opieki albo zrezygnować całkowicie, co niszczy więź przewodnik-podopieczny)",
+	"apihelp-growthsetmenteestatus-param-state": "Nowy status podopiecznego (uwaga: ustawienie tego na optout nieodwracalnie zniszczy więź przewodnik-podopieczny)",
+	"apihelp-growthsetmenteestatus-param-state-enabled": "Moduł opieki jest aktywny",
+	"apihelp-growthsetmenteestatus-param-state-disabled": "Moduł opieki jest całkowicie wyłączony. Ustala to zazwyczaj oprogramowanie w celu przeprowadzenia testów A/B.",
+	"apihelp-growthsetmenteestatus-param-state-optout": "Podopieczny zrezygnował z opieki, a jego więź z przewodnikiem zostanie zniszczona. Moduł opieki zostanie zastąpiony opcją powrotu.",
+	"apihelp-query+growthmenteestatus-summary": "Sprawdź status opieki dla bieżącego użytkownika; sprawdź dokumentację action=growthsetmenteestatus, aby uzyskać szczegółowe informacje o konkretnych statusach.",
+	"apihelp-query+growthmentormentee-summary": "Uzyskaj wszystkich podopiecznych danego przewodnika",
+	"apihelp-query+growthmentormentee-param-gemmmentor": "Przewodnik, którego podopiecznych zwrócić",
+	"apihelp-growthmanagementorlist-param-summary": "Powód zmiany"
+}

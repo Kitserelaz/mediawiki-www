@@ -1,0 +1,44 @@
+[
+  {
+    "path": "mediawiki/extensions/CreateWiki/tests/phpunit/Helpers/RemoteWikiTest.php",
+    "before_sha256": "9c8b0ac7daf9fd4bddfd8ae5ba00d97b56a798ce64b7790f520b059c9343eb5c",
+    "after_sha256": "4d46825c9ad038542d4ede638005edaf503c85a113747954bb846e13fda0dace",
+    "purpose": "Allow isolated Docker integration tests to use a password-protected administrator; preserve upstream empty-password default when no test secret is configured."
+  },
+  {
+    "path": "mediawiki/extensions/CreateWiki/tests/phpunit/Services/WikiManagerFactoryTest.php",
+    "before_sha256": "ede7ea2b36e71e2e5ede3187aa1f0277eee0525a510ff87e0b9caf8da2ab6cc2",
+    "after_sha256": "51c8fa494c1c94b0338ecccf30f5eedd0b3f2a23c6352191a10afee2e01b0412",
+    "purpose": "Allow isolated Docker integration tests to use a password-protected administrator; preserve upstream empty-password default when no test secret is configured."
+  },
+  {
+    "path": "mediawiki/extensions/CreateWiki/tests/phpunit/Maintenance/ManageInactiveWikisTest.php",
+    "before_sha256": "62067d9c47cfb9d50afedd803c0f1e5d6de82c1466ea01091e30ac968dcf9245",
+    "after_sha256": "10554afb005d393727abbd9d036e35f9ef96da919b2f683551b205779cce6a31",
+    "purpose": "Allow isolated Docker integration tests to use a password-protected administrator; preserve upstream empty-password default when no test secret is configured."
+  },
+  {
+    "path": "mediawiki/extensions/CreateWiki/tests/phpunit/Services/WikiManagerFactoryTest.php",
+    "before_sha256": "51c8fa494c1c94b0338ecccf30f5eedd0b3f2a23c6352191a10afee2e01b0412",
+    "after_sha256": "59782ae78280417c1619578fe3d5f1748e5a3951a02e88893115b4fbd2bb0679",
+    "purpose": "Replace undeclared wfLoadConfiguration/WikiInitialize test harness dependencies with cluster mappings from the test metadata, and initialize the multicluster fixture before every case."
+  },
+  {
+    "path": "mediawiki/extensions/CreateWiki/tests/phpunit/Helpers/RemoteWikiTest.php",
+    "before_sha256": "4d46825c9ad038542d4ede638005edaf503c85a113747954bb846e13fda0dace",
+    "after_sha256": "72489406566e0e54a70bc4c74065c3071f7cf754235a80afeb647caf919f3539",
+    "purpose": "Declare the created remote wiki to the core job-queue fixture before testing privacy changes."
+  },
+  {
+    "path": "mediawiki/extensions/CreateWiki/tests/phpunit/Maintenance/ListDatabasesTest.php",
+    "before_sha256": "4d240092df247f86835945b966090352901bbcda2344ca83606f14ccd014875d",
+    "after_sha256": "c333f1eabce539fb1a3b3eebfe60df3cdf7c6033dce87aa0b0f385fd10e08679",
+    "purpose": "Provide an explicit known-wiki list instead of relying on an external farm configuration in the list command test."
+  },
+  {
+    "path": "mediawiki/extensions/CreateWiki/tests/phpunit/Services/WikiManagerFactoryTest.php",
+    "before_sha256": "59782ae78280417c1619578fe3d5f1748e5a3951a02e88893115b4fbd2bb0679",
+    "after_sha256": "5c130c23334b2d3a86cf96d12a1ce404241e0e4b112933a805cc0182e2fc456d",
+    "purpose": "Finalize the standalone fixture setup while retaining the negative cluster-configuration test and all upstream assertions."
+  }
+]

@@ -1,0 +1,24 @@
+{
+	"@metadata": {
+		"authors": [
+			"Harald Khan",
+			"Jeblad",
+			"Jon Harald Søby",
+			"Nghtwlkr",
+			"Simny"
+		]
+	},
+	"unreviewedpages": "Ureviderte sider",
+	"unreviewedpages-legend": "List ureviderte innholdssider",
+	"unreviewedpages-category": "Kategori:",
+	"unreviewedpages-showhide-redirect": "$1 omdirigeringer",
+	"unreviewedpages-diff": "revider",
+	"unreviewedpages-unwatched": "(uovervåket)",
+	"unreviewedpages-watched": "({{PLURAL:$1|én aktiv bruker|$1 aktive brukere}} overvåker)",
+	"unreviewedpages-list": "Denne siden lister opp innholdssider som ''ikke'' har blitt [[{{MediaWiki:Validationpage}}|revidert]] til det spesifiserte nivået.",
+	"unreviewedpages-none": "Ingen sider oppfyller disse kriteriene for tiden.",
+	"unreviewedpages-viewing": "(under revidering)",
+	"unreviewedpages-hours": "({{PLURAL:$1|én time|$1 timer}})",
+	"unreviewedpages-days": "({{PLURAL:$1|én dag|$1 dager}})",
+	"unreviewedpages-recent": "(under én time)"
+}

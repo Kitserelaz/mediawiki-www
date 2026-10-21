@@ -19,13 +19,13 @@
  * @ingroup Pager
  */
 
-namespace MediaWiki\CheckUser\Investigate\Pagers;
+namespace MediaWiki\Extension\CheckUser\Investigate\Pagers;
 
-use MediaWiki\CheckUser\Investigate\Services\PreliminaryCheckService;
-use MediaWiki\CheckUser\Services\TokenQueryManager;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Extension\CentralAuth\CentralAuthDatabaseManager;
 use MediaWiki\Extension\CentralAuth\CentralAuthServices;
+use MediaWiki\Extension\CheckUser\Investigate\Services\PreliminaryCheckService;
+use MediaWiki\Extension\CheckUser\Services\TokenQueryManager;
 use MediaWiki\Html\Html;
 use MediaWiki\Linker\LinkRenderer;
 use MediaWiki\Pager\TablePager;
@@ -42,48 +42,27 @@ use Wikimedia\Rdbms\IReadableDatabase;
  * @ingroup Pager
  */
 class PreliminaryCheckPager extends TablePager {
-	private NamespaceInfo $namespaceInfo;
-	private ExtensionRegistry $extensionRegistry;
-	private TokenQueryManager $tokenQueryManager;
-	private PreliminaryCheckService $preliminaryCheckService;
-	private UserFactory $userFactory;
-
 	/** @var array Data loaded from the token provided in the request. */
 	protected $tokenData;
 
 	/** @var string[] Array of column name to translated table header message */
 	private $fieldNames;
 
-	/**
-	 * @param IContextSource $context
-	 * @param LinkRenderer $linkRenderer
-	 * @param NamespaceInfo $namespaceInfo
-	 * @param TokenQueryManager $tokenQueryManager
-	 * @param ExtensionRegistry $extensionRegistry
-	 * @param PreliminaryCheckService $preliminaryCheckService
-	 * @param UserFactory $userFactory
-	 */
 	public function __construct(
 		IContextSource $context,
 		LinkRenderer $linkRenderer,
-		NamespaceInfo $namespaceInfo,
-		TokenQueryManager $tokenQueryManager,
-		ExtensionRegistry $extensionRegistry,
-		PreliminaryCheckService $preliminaryCheckService,
-		UserFactory $userFactory
+		private readonly NamespaceInfo $namespaceInfo,
+		private readonly TokenQueryManager $tokenQueryManager,
+		private readonly ExtensionRegistry $extensionRegistry,
+		private readonly PreliminaryCheckService $preliminaryCheckService,
+		private readonly UserFactory $userFactory,
 	) {
-		// This must be done before getIndexField is called by the TablePager constructor
-		$this->extensionRegistry = $extensionRegistry;
 		if ( $this->isGlobalCheck() ) {
 			// @phan-suppress-next-line PhanPossiblyNullTypeMismatchProperty
 			$this->mDb = $this->getCentralReplicaDB();
 		}
 
 		parent::__construct( $context, $linkRenderer );
-		$this->namespaceInfo = $namespaceInfo;
-		$this->preliminaryCheckService = $preliminaryCheckService;
-		$this->tokenQueryManager = $tokenQueryManager;
-		$this->userFactory = $userFactory;
 
 		$this->tokenData = $tokenQueryManager->getDataFromRequest( $context->getRequest() );
 		$this->mOffset = $this->tokenData['offset'] ?? '';
@@ -148,7 +127,7 @@ class PreliminaryCheckPager extends TablePager {
 			case 'name':
 				// Hide the username if it is hidden from the current authority.
 				if ( $userIsHidden ) {
-					$formatted = $this->msg( 'rev-deleted-user' )->text();
+					$formatted = $this->msg( 'rev-deleted-user' )->escaped();
 				} else {
 					$formatted = htmlspecialchars( $value );
 				}
@@ -173,7 +152,7 @@ class PreliminaryCheckPager extends TablePager {
 						$wiki->getDisplayName()
 					);
 				} else {
-					$formatted = $this->msg( 'checkuser-investigate-preliminary-table-cell-wiki-nowiki' )->text();
+					$formatted = $this->msg( 'checkuser-investigate-preliminary-table-cell-wiki-nowiki' )->escaped();
 				}
 				break;
 			case 'editcount':
@@ -206,7 +185,8 @@ class PreliminaryCheckPager extends TablePager {
 				break;
 			case 'blocked':
 				if ( !$userIsHidden ) {
-					$formatted = $this->msg( $value ?
+					$formatted = $this->msg(
+						$value ?
 						'checkuser-investigate-preliminary-table-cell-blocked' :
 						'checkuser-investigate-preliminary-table-cell-unblocked'
 					)->parse();
@@ -259,9 +239,7 @@ class PreliminaryCheckPager extends TablePager {
 	 */
 	public function getQueryInfo() {
 		$targets = $this->tokenData['targets'] ?? [];
-		$users = array_filter( array_map( [ User::class, 'newFromName' ], $targets ), static function ( $user ) {
-			return (bool)$user;
-		} );
+		$users = array_filter( array_map( User::newFromName( ... ), $targets ) );
 
 		return $this->preliminaryCheckService->getQueryInfo( $users );
 	}
@@ -275,17 +253,11 @@ class PreliminaryCheckPager extends TablePager {
 		);
 	}
 
-	/**
-	 * @return bool
-	 */
 	public function isGlobalCheck(): bool {
 		return $this->extensionRegistry->isLoaded( 'CentralAuth' )
 			&& class_exists( CentralAuthDatabaseManager::class );
 	}
 
-	/**
-	 * @return IReadableDatabase|null
-	 */
 	protected function getCentralReplicaDB(): ?IReadableDatabase {
 		if ( class_exists( CentralAuthDatabaseManager::class ) ) {
 			return CentralAuthServices::getDatabaseManager()->getCentralReplicaDB();
@@ -314,7 +286,8 @@ class PreliminaryCheckPager extends TablePager {
 	 */
 	public function getPagingQueries() {
 		return $this->tokenQueryManager->getPagingQueries(
-			$this->getRequest(), parent::getPagingQueries()
+			$this->getRequest(),
+			parent::getPagingQueries()
 		);
 	}
 }

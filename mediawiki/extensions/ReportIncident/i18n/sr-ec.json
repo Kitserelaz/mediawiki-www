@@ -1,0 +1,33 @@
+{
+	"@metadata": {
+		"authors": [
+			"Milicevic01"
+		]
+	},
+	"reportincident-report-btn-label": "Пријави",
+	"reportincident-dialog-close-btn": "Затвори",
+	"reportincident-dialog-back-btn": "Назад",
+	"reportincident-dialog-submit-btn": "Пошаљи",
+	"reportincident-dialog-title": "Пријави инцидент",
+	"reportincident-dialog-additional-details-input-label": "Додатни детаљи",
+	"reportincident-dialog-optional-label": "необавезно",
+	"reportincident-dialog-harassment-type-hate-speech-or-discrimination": "Говор мржње или дискриминација",
+	"reportincident-dialog-harassment-type-sexual-harassment": "Сексуално узнемиравање",
+	"reportincident-dialog-harassment-type-threats-of-violence": "Претње насиљем",
+	"reportincident-dialog-harassment-type-intimidation": "Застрашивање, агресија, прозивање",
+	"reportincident-dialog-harassment-type-something-else": "Нешто друго",
+	"reportincident-dialog-harassment-lead-in-to-harassment-examples": "Сагласно [[Foundation:Special:MyLanguage/Policy:Universal_Code_of_Conduct|кодексу понашања]], неприхватљиво понашање укључује али није ограничено на:",
+	"reportincident-dialog-harassment-example-insults": "Поновљене увреде",
+	"reportincident-dialog-harassment-example-sexual-harassment": "Сексуално узнемиравање",
+	"reportincident-dialog-harassment-example-threats": "Претње",
+	"reportincident-dialog-harassment-example-hounding": "Прогањање",
+	"reportincident-dialog-harassment-example-trolling": "Троловање",
+	"reportincident-success-message-close": "Затвори",
+	"reportincident-email-body": "Подносилац пријаве: $1\nПријављени корисник: $2\n$3: $4\n\nПонашање: $5\nДетаљи: $6\n\nИмејл $1: $7",
+	"reportincident-email-link-to-page-prefix": "Веза ка страници",
+	"reportincident-email-link-to-comment-prefix": "Веза ка пријављеном коментару",
+	"reportincident-email-something-else": "Нешто друго: „$1“",
+	"reportincident-emaildialog-title": "Потребна верификована имејл адреса",
+	"reportincident-emaildialog-close-button": "Откажи",
+	"reportincident-emaildialog-primary": "Иди у подешавања"
+}

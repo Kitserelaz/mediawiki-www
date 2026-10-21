@@ -1,16 +1,16 @@
 <?php
 
-namespace MediaWiki\CheckUser\Tests\Unit\Services;
+namespace MediaWiki\Extension\CheckUser\Tests\Unit\Services;
 
 use LogicException;
-use MediaWiki\CheckUser\Services\CheckUserLogService;
+use MediaWiki\Extension\CheckUser\Services\CheckUserLogService;
 use MediaWiki\Tests\Unit\MockServiceDependenciesTrait;
 use MediaWikiUnitTestCase;
 use Wikimedia\Rdbms\IConnectionProvider;
 use Wikimedia\TestingAccessWrapper;
 
 /**
- * @covers \MediaWiki\CheckUser\Services\CheckUserLogService
+ * @covers \MediaWiki\Extension\CheckUser\Services\CheckUserLogService
  * @group CheckUser
  */
 class CheckUserLogServiceTest extends MediaWikiUnitTestCase {
@@ -35,10 +35,12 @@ class CheckUserLogServiceTest extends MediaWikiUnitTestCase {
 			'/16 IP range' => [ '124.0.0.0/16', [ '7C000000', '7C00FFFF' ] ],
 			'Single IP notated as a /32 range' => [ '1.2.3.4/32', [ '01020304' ] ],
 			'Single IPv6' => [ '::e:f:2001', [ 'v6-00000000000000000000000E000F2001' ] ],
-			'/96 IPv6 range' => [ '::e:f:2001/96', [
-				'v6-00000000000000000000000E00000000',
-				'v6-00000000000000000000000EFFFFFFFF'
-			]
+			'/96 IPv6 range' => [
+				'::e:f:2001/96',
+				[
+					'v6-00000000000000000000000E00000000',
+					'v6-00000000000000000000000EFFFFFFFF',
+				],
 			],
 		];
 	}

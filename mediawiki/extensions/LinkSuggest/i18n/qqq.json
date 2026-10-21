@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Hamilton Abreu",
+			"Purodha",
+			"Shirayuki",
+			"Umherirrender"
+		]
+	},
+	"linksuggest-desc": "{{desc|name=Link Suggest|url=https://www.mediawiki.org/wiki/Extension:LinkSuggest}}",
+	"tog-disablelinksuggest": "Used as checkbox label in [[Special:Preferences]]."
+}

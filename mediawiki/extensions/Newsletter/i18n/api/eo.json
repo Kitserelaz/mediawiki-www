@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Mirin"
+		]
+	},
+	"apihelp-newslettersubscribe-summary": "Aboni aŭ malaboni bultenon.",
+	"apihelp-newslettersubscribe-example-1": "Aboni la bultenon de identigilo 1.",
+	"apihelp-newslettersubscribe-example-2": "Malaboni la bultenon de identigilo 2.",
+	"apihelp-newslettermanage-summary": "Mastrumi bultenon.",
+	"newsletter-api-error-notfound": "Bulteno ne ekzistas"
+}

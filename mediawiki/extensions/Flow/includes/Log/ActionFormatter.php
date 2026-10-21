@@ -11,10 +11,10 @@ use Flow\Repository\TreeRepository;
 use Flow\RevisionActionPermissions;
 use Flow\Templating;
 use Flow\UrlGenerator;
-use LogEntry;
-use LogFormatter;
-use LogPage;
 use MediaWiki\Html\Html;
+use MediaWiki\Logging\LogEntry;
+use MediaWiki\Logging\LogFormatter;
+use MediaWiki\Logging\LogPage;
 use MediaWiki\Message\Message;
 
 class ActionFormatter extends LogFormatter {
@@ -33,9 +33,6 @@ class ActionFormatter extends LogFormatter {
 	 */
 	protected $templating;
 
-	/**
-	 * @param LogEntry $entry
-	 */
 	public function __construct( LogEntry $entry ) {
 		parent::__construct( $entry );
 
@@ -132,14 +129,14 @@ class ActionFormatter extends LogFormatter {
 
 		if ( $isTopicTitleVisible ) {
 			$message->params( [
-				$title, // Title of topic
+				(string)$title, // Title of topic
 				$title->getFullURL(), // Full URL of topic, with highlighted post if applicable
 			] );
 
 			$message->plaintextParams( $this->templating->getContent( $rootLastRevision, 'topic-title-plaintext' ) );
 		}
 
-		$message->params( $root->getWorkflow()->getOwnerTitle() ); // board title object
+		$message->params( (string)$root->getWorkflow()->getOwnerTitle() ); // board title object
 
 		$message->parse();
 
@@ -159,7 +156,8 @@ class ActionFormatter extends LogFormatter {
 	public function getActionText() {
 		if ( $this->canView( LogPage::DELETED_ACTION ) ) {
 			$text = $this->getActionMessage();
-			return $this->plaintext ? Utils::htmlToPlaintext( $text ) : $text;
+			$lang = $this->context->getLanguage();
+			return $this->plaintext ? Utils::htmlToPlaintext( $text, $lang ) : $text;
 		} else {
 			return parent::getActionText();
 		}
@@ -185,7 +183,7 @@ class ActionFormatter extends LogFormatter {
 			// see if this post is valid
 			$collection->getLastRevision();
 			return $collection;
-		} catch ( \Exception $e ) {
+		} catch ( \Exception ) {
 			// failed finding the expected data in storage
 			wfWarn( __METHOD__ . ': Failed to locate root for: ' . serialize( $params ) .
 				' (potentially storage issue)' );

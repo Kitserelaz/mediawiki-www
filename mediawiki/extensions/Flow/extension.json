@@ -23,7 +23,7 @@
 	"license-name": "GPL-2.0-or-later",
 	"type": "other",
 	"requires": {
-		"MediaWiki": ">= 1.43"
+		"MediaWiki": ">= 1.46"
 	},
 	"callback": "Flow\\Hooks::registerExtension",
 	"APIModules": {
@@ -126,6 +126,7 @@
 		"FlowNamespaces": "Flow.namespaces.php",
 		"FlowAlias": "Flow.alias.php"
 	},
+	"ForeignResourcesDir": "modules/libs",
 	"ResourceModules": {
 		"ext.flow.contributions": {
 			"scripts": [
@@ -353,6 +354,8 @@
 				"styles/errors.less",
 				"styles/history/history-line.less",
 				"styles/mediawiki.ui/anchors.less",
+				"styles/mediawiki.ui/button.less",
+				"styles/mediawiki.ui/input.less",
 				"styles/board/header.less",
 				"styles/board/menu.less",
 				"styles/board/navigation.less",
@@ -374,7 +377,7 @@
 			"localBasePath": "",
 			"remoteExtPath": "Flow",
 			"scripts": [
-				"modules/libs/handlebars-v3.0.0.js",
+				"modules/libs/handlebars/handlebars.js",
 				"modules/handlebars.js"
 			],
 			"dependencies": [
@@ -398,7 +401,6 @@
 				"mediawiki.api",
 				"mediawiki.Title",
 				"mediawiki.user",
-				"mediawiki.Uri",
 				"mediawiki.util"
 			]
 		},
@@ -658,6 +660,9 @@
 		"AbuseFilter": {
 			"class": "MediaWiki\\Extension\\StructuredDiscussions\\Hooks\\AbuseFilterHandler"
 		},
+		"Echo": {
+			"class": "Flow\\EchoHooks"
+		},
 		"main": {
 			"class": "Flow\\Hooks"
 		},
@@ -679,7 +684,6 @@
 		"ChangesListSpecialPageQuery": "main",
 		"SkinTemplateNavigation::Universal": "main",
 		"Article::MissingArticleConditions": "main",
-		"SpecialWatchlistGetNonRevisionTypes": "main",
 		"UserGetReservedNames": "main",
 		"ResourceLoaderGetConfigVars": "main",
 		"ContribsPager::reallyDoQuery": "main",
@@ -691,17 +695,15 @@
 		"AbuseFilter-deprecatedVariables": "Flow\\Hooks::onAbuseFilterDeprecatedVariables",
 		"AbuseFilter-computeVariable": "Flow\\Hooks::onAbuseFilterComputeVariable",
 		"AbuseFilterGenerateVarsForRecentChange": "AbuseFilter",
-		"AbortEmailNotification": "main",
-		"BeforeDisplayOrangeAlert": "main",
-		"EchoAbortEmailNotification": "Flow\\Hooks::onEchoAbortEmailNotification",
-		"BeforeEchoEventInsert": "Flow\\Hooks::onBeforeEchoEventInsert",
+		"BeforeDisplayOrangeAlert": "Echo",
+		"EchoAbortEmailNotification": "Echo",
+		"BeforeEchoEventInsert": "Echo",
 		"ArticleEditUpdateNewTalk": "main",
 		"InfoAction": "main",
 		"CheckUserFormatRow": "Flow\\Hooks::onCheckUserFormatRow",
 		"SpecialCheckUserGetLinksFromRow": "Flow\\Hooks::onSpecialCheckUserGetLinksFromRow",
 		"CheckUserInsertChangesRow": "Flow\\Hooks::onCheckUserInsertChangesRow",
 		"IRCLineURL": "main",
-		"WhatLinksHereProps": "main",
 		"ShowMissingArticle": "main",
 		"WatchArticle": "main",
 		"UnwatchArticle": "main",
@@ -732,6 +734,15 @@
 		"NukeDeletePage": "Flow\\Hooks::onNukeDeletePage",
 		"getUserPermissionsErrors": "main"
 	},
+	"NotificationMiddleware": [
+		{
+			"class": "Flow\\Notifications\\FilterFlowNotificationsMiddleware",
+			"services": [
+				"MainConfig",
+				"WatchedItemStore"
+			]
+		}
+	],
 	"namespaces": [
 		{
 			"id": 2600,
@@ -846,5 +857,10 @@
 	},
 	"TestAutoloadNamespaces": {
 		"Flow\\Tests\\": "tests/phpunit/"
+	},
+	"RecentChangeSources": {
+		"flow": {
+			"primary": true
+		}
 	}
 }

@@ -1,0 +1,194 @@
+<?php
+
+namespace SMW\MediaWiki\Specials\FacetedSearch\Filters\ValueFilters;
+
+use MediaWiki\Html\TemplateParser;
+use SMW\DataItems\Property;
+use SMW\DataTypeRegistry;
+use SMW\DataValueFactory;
+use SMW\Localizer\MessageLocalizerTrait;
+use SMW\Utils\UrlArgs;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since   3.2
+ *
+ * @author mwjames
+ */
+class CheckboxValueFilter {
+
+	use MessageLocalizerTrait;
+
+	private ?UrlArgs $urlArgs = null;
+
+	/**
+	 * @since 3.2
+	 */
+	public function __construct(
+		private TemplateParser $templateParser,
+		private array $params,
+	) {
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @param UrlArgs $urlArgs
+	 * @param string $property
+	 * @param array $values
+	 * @param array $raw
+	 *
+	 * @return string
+	 */
+	public function create( UrlArgs $urlArgs, string $property, array $values, array $raw ): string {
+		if ( $values === [] ) {
+			return '';
+		}
+
+		$this->urlArgs = $urlArgs;
+
+		$list = [
+			'unlinked' => [],
+			'linked' => []
+		];
+
+		arsort( $values );
+
+		$valueFilters = $this->getValueFilters( $property );
+		$isClear = $this->urlArgs->find( "clear.$property", false );
+
+		$prop = Property::newFromUserLabel( $property );
+
+		$isRecordType = DataTypeRegistry::getInstance()->isRecordType(
+			$prop->findPropertyValueType()
+		);
+
+		foreach ( $values as $key => $count ) {
+
+			if ( $key === '' ) {
+				continue;
+			}
+
+			$label = $key;
+
+			// For the record type, the query requires to use the "raw" value with
+			// values being separated by `;` but should be displayed with a
+			// formatted label. We need to check here whether it is a record
+			// type or not because checking for `;` wouldn't be correct as other
+			// values may use `;` as part of the value itself.
+			if ( $isRecordType && isset( $raw[$key] ) ) {
+				$key = $raw[$key];
+
+				$dv = DataValueFactory::getInstance()->getInstance()->newDataValueByProperty(
+					$prop,
+					$key
+				);
+
+				if ( $dv->isValid() ) {
+					$label = $dv->getShortWikiText();
+				}
+			} elseif ( isset( $raw[$key] ) ) {
+				$key = $raw[$key];
+			}
+
+			$this->matchFilter( $property, $key, $label, $count, $valueFilters, $list, $isClear );
+		}
+
+		if ( $list['linked'] === [] && $list['unlinked'] === [] ) {
+			$list['linked'] = [ $this->msg( 'smw-facetedsearch-no-filters' ) ];
+			$cssClass = 'no-result';
+			$option = '';
+		} else {
+
+			$option = $this->templateParser->processTemplate(
+				'items.option',
+				[
+					'input' => $this->createInputField( $property, $values ),
+					'condition' => $this->createConditionField( $property )
+				]
+			);
+			$cssClass = '';
+		}
+
+		return $this->templateParser->processTemplate(
+			'items',
+			[
+				'option' => $option,
+				'unlinked' => implode( '', $list['unlinked'] ),
+				'linked' => implode( '', $list['linked'] ),
+				'css-class' => $cssClass
+			]
+		);
+	}
+
+	private function matchFilter( string $property, $key, $label, $count, array $valueFilters, array &$list, $isClear ): void {
+		// Make sure characters like `"` are encoded otherwise those will be removed
+		// from the value representation
+		$key = htmlspecialchars( $key );
+
+		$attr = [
+			'name' => "pv[$property][]",
+			'value' => $key,
+			'count' => $count,
+			'label' => $label,
+			'checked' => ''
+		];
+
+		if ( isset( $valueFilters[$key] ) && $isClear === false ) {
+			$attr['checked'] = 'checked';
+
+			if ( isset( $list['unlinked'][$key] ) ) {
+				return;
+			}
+
+			$list['unlinked'][$key] = $this->templateParser->processTemplate(
+				'item.checkbox',
+				$attr
+			);
+		} else {
+			$list['linked'][$key] = $this->templateParser->processTemplate(
+				'item.checkbox',
+				$attr
+			);
+		}
+	}
+
+	private function getValueFilters( string $property ): array {
+		$valueFilters = $this->urlArgs->getArray( 'pv' );
+		$valueFilters = $valueFilters[$property] ?? [];
+
+		return is_array( $valueFilters ) ? array_flip( $valueFilters ) : [];
+	}
+
+	private function createConditionField( string $property ) {
+		if ( $this->params['condition_field'] === false ) {
+			return '';
+		}
+
+		$condition = $this->urlArgs->find( "vc.$property", 'or' );
+
+		return $this->templateParser->processTemplate(
+			'items.condition',
+			[
+				'property' => $property,
+				'or-selected' => $condition === 'or' ? 'selected' : '',
+				'and-selected' => $condition === 'and' ? 'selected' : '',
+				'not-selected' => $condition === 'not' ? 'selected' : ''
+			]
+		);
+	}
+
+	private function createInputField( string $property, array $values ) {
+		if ( count( $values ) <= $this->params['min_item'] ) {
+			return '';
+		}
+
+		return $this->templateParser->processTemplate(
+			'items.input',
+			[
+				'placeholder' => $this->msg( [ 'smw-facetedsearch-input-filter-placeholder', $property ] ),
+			]
+		);
+	}
+
+}

@@ -1,0 +1,217 @@
+{
+  "schema_version": 1,
+  "core": "1.46.2",
+  "status": "in-progress",
+  "files": [
+    {
+      "path": "mediawiki/extensions/BlogPage/includes/BlogPage.class.php",
+      "sha256": "d5717dd0a199da20dfe8efb0db670ec7a39dd4c34658ec13644229d8b886004e",
+      "removed_columns_mentioned": [
+        "cl_to",
+        "il_to"
+      ],
+      "status": "requires-query-review",
+      "note": "Check version guards, output aliases and live SQL before declaring a problem or a pass."
+    },
+    {
+      "path": "mediawiki/extensions/BlogPage/includes/BlogPage.hooks.php",
+      "sha256": "85366b0381d7581bc8690c94da0f64b61c3be649e341ca02907db4b149aff331",
+      "removed_columns_mentioned": [
+        "cl_to"
+      ],
+      "status": "requires-query-review",
+      "note": "Check version guards, output aliases and live SQL before declaring a problem or a pass."
+    },
+    {
+      "path": "mediawiki/extensions/BlogPage/includes/specials/SpecialArticlesHome.php",
+      "sha256": "e6be1156e8c520b97886f2c8cd095df867a77712e0b5c1e0390abc386525d777",
+      "removed_columns_mentioned": [
+        "cl_to"
+      ],
+      "status": "requires-query-review",
+      "note": "Check version guards, output aliases and live SQL before declaring a problem or a pass."
+    },
+    {
+      "path": "mediawiki/extensions/Cargo/includes/CargoPageData.php",
+      "sha256": "70feb4a4dd1aa6162ad2c78266e6b293931621d005a71c17a9dee3fff43f55c7",
+      "removed_columns_mentioned": [
+        "cl_to"
+      ],
+      "status": "requires-query-review",
+      "note": "Check version guards, output aliases and live SQL before declaring a problem or a pass."
+    },
+    {
+      "path": "mediawiki/extensions/CategoryTests/includes/CategoryTests.php",
+      "sha256": "a1e24f08e1686a96fa162fc89e244e70bc4f1ecc5eeca5446b5bf748d42fed72",
+      "removed_columns_mentioned": [
+        "cl_to"
+      ],
+      "status": "requires-query-review",
+      "note": "Check version guards, output aliases and live SQL before declaring a problem or a pass."
+    },
+    {
+      "path": "mediawiki/extensions/DPLForum/src/DPLForum.php",
+      "sha256": "6eb4b66dba20dc651401bcf7639d0e0e572dd3e10af0043ba1c5a17956439cb1",
+      "removed_columns_mentioned": [
+        "cl_to"
+      ],
+      "status": "requires-query-review",
+      "note": "Check version guards, output aliases and live SQL before declaring a problem or a pass."
+    },
+    {
+      "path": "mediawiki/extensions/DataTransfer/includes/specials/DT_ViewXML.php",
+      "sha256": "f38104e0f1b141cae7411a92c016db4daed901250910ec087b2fb771f32efdc9",
+      "removed_columns_mentioned": [
+        "cl_to"
+      ],
+      "status": "requires-query-review",
+      "note": "Check version guards, output aliases and live SQL before declaring a problem or a pass."
+    },
+    {
+      "path": "mediawiki/extensions/DynamicPageList3/includes/Article.php",
+      "sha256": "ff786bce46f6caca1548022ae799c9887494d2f0ab8cf9ada5bce9bb2c784c75",
+      "removed_columns_mentioned": [
+        "cl_to"
+      ],
+      "status": "requires-query-review",
+      "note": "Check version guards, output aliases and live SQL before declaring a problem or a pass."
+    },
+    {
+      "path": "mediawiki/extensions/DynamicPageList3/includes/Parse.php",
+      "sha256": "e2e5a73f24480b90efba8ade4987d5f1736f5396a42180a4f6477c8c3fa71055",
+      "removed_columns_mentioned": [
+        "cl_to",
+        "il_to"
+      ],
+      "status": "requires-query-review",
+      "note": "Check version guards, output aliases and live SQL before declaring a problem or a pass."
+    },
+    {
+      "path": "mediawiki/extensions/DynamicPageList3/includes/Query.php",
+      "sha256": "8a57db133f05ae3362b19e5e90579ce2a0a5bfd0f6ca59800070f8f9397ec4cb",
+      "removed_columns_mentioned": [
+        "cl_to",
+        "il_to"
+      ],
+      "status": "requires-query-review",
+      "note": "Check version guards, output aliases and live SQL before declaring a problem or a pass."
+    },
+    {
+      "path": "mediawiki/extensions/DynamicPageList3/maintenance/CreateView.php",
+      "sha256": "bb0ae40daf1f33ca51f84818d45b71b07e9f76324ac1b042f6f641aca53ecf17",
+      "removed_columns_mentioned": [
+        "cl_to"
+      ],
+      "status": "requires-query-review",
+      "note": "Check version guards, output aliases and live SQL before declaring a problem or a pass."
+    },
+    {
+      "path": "mediawiki/extensions/HighlightLinksInCategory/HighlightLinksInCategory.php",
+      "sha256": "7b6a16729067c3118e858608afb15b837b3963f7a432e378121923d922a0754f",
+      "removed_columns_mentioned": [
+        "cl_to"
+      ],
+      "status": "requires-query-review",
+      "note": "Check version guards, output aliases and live SQL before declaring a problem or a pass."
+    },
+    {
+      "path": "mediawiki/extensions/ImageRating/includes/specials/SpecialImageRating.php",
+      "sha256": "0b123b0fc33a302261d24dac6e2b5078bb96c27503a3fb205dc5ffc1358a17ed",
+      "removed_columns_mentioned": [
+        "cl_to"
+      ],
+      "status": "requires-query-review",
+      "note": "Check version guards, output aliases and live SQL before declaring a problem or a pass."
+    },
+    {
+      "path": "mediawiki/extensions/JsCalendar/includes/FindEventPagesQuery.php",
+      "sha256": "6c99096dfc35e849a561d3979083ffe13dca3ae938ca132915f707c1bd7766b1",
+      "removed_columns_mentioned": [
+        "cl_to"
+      ],
+      "status": "requires-query-review",
+      "note": "Check version guards, output aliases and live SQL before declaring a problem or a pass."
+    },
+    {
+      "path": "mediawiki/extensions/PageForms/includes/PFValuesUtils.php",
+      "sha256": "de2afe86cf7444ced4829456411ac73171eb480c5e7fbb06c14ad386ed5d7b25",
+      "removed_columns_mentioned": [
+        "cl_to"
+      ],
+      "status": "requires-query-review",
+      "note": "Check version guards, output aliases and live SQL before declaring a problem or a pass."
+    },
+    {
+      "path": "mediawiki/extensions/PageForms/includes/forminputs/PFTree.php",
+      "sha256": "e0bd18ef343d28755f67842c34de5714e6ae63db1948551d7ee99cead392f9c6",
+      "removed_columns_mentioned": [
+        "cl_to"
+      ],
+      "status": "requires-query-review",
+      "note": "Check version guards, output aliases and live SQL before declaring a problem or a pass."
+    },
+    {
+      "path": "mediawiki/extensions/QuickInstantCommons/src/Hooks.php",
+      "sha256": "b83af2e0a18b665c5175dc4ad8f875522bfff5639c1ca728790ae41ef0b7d5ec",
+      "removed_columns_mentioned": [
+        "il_to"
+      ],
+      "status": "requires-query-review",
+      "note": "Check version guards, output aliases and live SQL before declaring a problem or a pass."
+    },
+    {
+      "path": "mediawiki/extensions/SemanticDrilldown/includes/DbService.php",
+      "sha256": "66c5efd964d3146b264e17c085a59191fd2ee4e93d7f66f025128400c84b4d27",
+      "removed_columns_mentioned": [
+        "cl_to"
+      ],
+      "status": "requires-query-review",
+      "note": "Check version guards, output aliases and live SQL before declaring a problem or a pass."
+    },
+    {
+      "path": "mediawiki/extensions/SemanticMediaWiki/maintenance/seedDemoData.php",
+      "sha256": "341621e603f2f5cca5265b3e4365a5d68e18ba6da13a947ff9f9e64f31635b6e",
+      "removed_columns_mentioned": [
+        "cl_to"
+      ],
+      "status": "requires-query-review",
+      "note": "Check version guards, output aliases and live SQL before declaring a problem or a pass."
+    },
+    {
+      "path": "mediawiki/extensions/Video/includes/CategoryWithVideoViewer.php",
+      "sha256": "af5ea94916f6ece2f190be0d586f9ca7c3a743e591ee9fbb7d308f88a7930668",
+      "removed_columns_mentioned": [
+        "cl_to"
+      ],
+      "status": "requires-query-review",
+      "note": "Check version guards, output aliases and live SQL before declaring a problem or a pass."
+    },
+    {
+      "path": "mediawiki/extensions/Video/includes/parser/VideoGalleryPopulate.hooks.php",
+      "sha256": "7086ccb39b0bdce1cec6428a10a3cb698c1d6cdfc3034c8daf8d24e38d1aa736",
+      "removed_columns_mentioned": [
+        "cl_to"
+      ],
+      "status": "requires-query-review",
+      "note": "Check version guards, output aliases and live SQL before declaring a problem or a pass."
+    },
+    {
+      "path": "mediawiki/extensions/VoteNY/includes/specials/SpecialTopRatings.php",
+      "sha256": "c5a6ef9e4d0ce01d296db95c6cd7f8c5215991ef30409104aa881e1b53eea84e",
+      "removed_columns_mentioned": [
+        "cl_to"
+      ],
+      "status": "requires-query-review",
+      "note": "Check version guards, output aliases and live SQL before declaring a problem or a pass."
+    },
+    {
+      "path": "mediawiki/extensions/WikiCategoryTagCloud/includes/WikiCategoryTagCloud.php",
+      "sha256": "1d5622d9870fca0d10112206ffcbe6a495a7237e70975681997f060ce78c2307",
+      "removed_columns_mentioned": [
+        "cl_to"
+      ],
+      "status": "requires-query-review",
+      "note": "Check version guards, output aliases and live SQL before declaring a problem or a pass."
+    }
+  ]
+}

@@ -2,9 +2,9 @@
 
 namespace Flow\Formatter;
 
-use DifferenceEngine;
 use MediaWiki\Content\TextContent;
 use MediaWiki\Context\IContextSource;
+use MediaWiki\Diff\DifferenceEngine;
 
 class RevisionUndoViewFormatter {
 	/** @var RevisionViewFormatter */
@@ -64,11 +64,7 @@ class RevisionUndoViewFormatter {
 		} else {
 			// 3-way merge
 			$ok = wfMerge( $stopContent, $startContent, $currentContent, $result );
-			if ( $ok ) {
-				return $result;
-			} else {
-				return false;
-			}
+			return $ok ? $result : false;
 		}
 	}
 }

@@ -1,0 +1,340 @@
+<?php
+
+namespace SMW\Protection;
+
+use MediaWiki\Permissions\PermissionManager as MwPermissionManager;
+use MediaWiki\Title\Title;
+use MediaWiki\User\User;
+use SMW\DataItems\Property;
+use SMW\DataItems\WikiPage;
+use SMW\EntityCache;
+use SMW\Listener\ChangeListener\ChangeListeners\PropertyChangeListener;
+use SMW\Listener\ChangeListener\ChangeRecord;
+use SMW\MediaWiki\Jobs\ChangePropagationDispatchJob;
+use SMW\MediaWiki\PageCreator;
+use SMW\MediaWiki\PermissionManager;
+use SMW\Store;
+
+/**
+ * Handles protection validation.
+ *
+ * @license GPL-2.0-or-later
+ * @since 2.5
+ *
+ * @author mwjames
+ */
+class ProtectionValidator {
+
+	/**
+	 * @var bool|string
+	 */
+	private $editProtectionRight = false;
+
+	/**
+	 * @var bool|string
+	 */
+	private $createProtectionRight = false;
+
+	private bool $changePropagationProtection = true;
+
+	private array $importPerformers = [];
+
+	private array $importPerformerProtectionLookupCache = [];
+
+	/**
+	 * @since 2.5
+	 */
+	public function __construct(
+		private readonly Store $store,
+		private readonly EntityCache $entityCache,
+		private readonly PermissionManager $permissionManager,
+		private readonly PageCreator $pageCreator,
+	) {
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @param PropertyChangeListener $propertyChangeListener
+	 */
+	public function registerPropertyChangeListener( PropertyChangeListener $propertyChangeListener ): void {
+		$propertyChangeListener->addListenerCallback( new Property( '_CHGPRO' ), [ $this, 'invalidateCache' ] );
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @param Property $property
+	 * @param ChangeRecord $changeRecord
+	 */
+	public function invalidateCache( Property $property, ChangeRecord $changeRecord ): void {
+		if ( $property->getKey() !== '_CHGPRO' ) {
+			return;
+		}
+
+		foreach ( $changeRecord as $record ) {
+
+			if ( !$record->has( 'row.s_id' ) ) {
+				continue;
+			}
+
+			$subject = $this->store->getObjectIds()->getDataItemById(
+				$record->get( 'row.s_id' )
+			);
+
+			// Target the `_CHGPRO`-specific slot written by checkProtection() (this
+			// listener only ever handles the `_CHGPRO` property).
+			$key = $this->entityCache->makeCacheKey( 'protection', $subject->getHash(), '_CHGPRO' );
+
+			// If the change is an insert type then the `Change propagation` property
+			// was added hence use this as a short cut to store the state avoiding
+			// an extra lookup query and allow the state to be available as soon
+			// as possible.
+			if ( $record->has( 'is_insert' ) && $record->get( 'is_insert' ) === true ) {
+				$this->entityCache->save( $key, 'yes' );
+			} else {
+				$this->entityCache->delete( $key );
+			}
+		}
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * @param string|bool $editProtectionRight
+	 */
+	public function setEditProtectionRight( $editProtectionRight ): void {
+		$this->editProtectionRight = $editProtectionRight;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @return string|false
+	 */
+	public function getEditProtectionRight(): string|false {
+		return $this->editProtectionRight;
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * @param string|bool $createProtectionRight
+	 */
+	public function setCreateProtectionRight( $createProtectionRight ): void {
+		$this->createProtectionRight = $createProtectionRight;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @return string|false
+	 */
+	public function getCreateProtectionRight(): string|false {
+		return $this->createProtectionRight;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param bool $changePropagationProtection
+	 */
+	public function setChangePropagationProtection( $changePropagationProtection ): void {
+		$this->changePropagationProtection = (bool)$changePropagationProtection;
+	}
+
+	/**
+	 * @since 3.2
+	 *
+	 * @param array $importPerformers
+	 */
+	public function setImportPerformers( array $importPerformers ): void {
+		$this->importPerformers = $importPerformers;
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * @param Title $title
+	 *
+	 * @return bool
+	 */
+	public function hasEditProtectionOnNamespace( Title $title ): bool {
+		$subject = WikiPage::newFromTitle(
+			$title
+		);
+
+		return $this->editProtectionRight && $this->checkProtection( $subject->asBase() );
+	}
+
+	/**
+	 * If a page was imported by a dedicated `import_performer` and the performer
+	 * is the creator of the page, yet the current user that is trying to edit the
+	 * page isn't matched to the creator/import performer then the page is classified
+	 * as to be protected to make sure only an import performer can alter the
+	 * content without having to fear that other users may have changed the
+	 * content hereby may loose information when replacing the content during
+	 * the next import.
+	 *
+	 * @since 3.2
+	 *
+	 * @param Title $title
+	 * @param User $user
+	 *
+	 * @return bool
+	 */
+	public function isClassifiedAsImportPerformerProtected( Title $title, User $user ): bool {
+		if ( $this->importPerformers === [] ) {
+			return false;
+		}
+
+		$key = md5( $title->getDBKey() . "#" . $user->getName() );
+
+		// `WikiPage::getCreator` -> `RevisionLookup::getFirstRevision` isn't cached therefore
+		// avoid repeated requests for the `key` combination
+		if ( isset( $this->importPerformerProtectionLookupCache[$key] ) ) {
+			return $this->importPerformerProtectionLookupCache[$key];
+		}
+
+		$creator = $this->pageCreator
+			->createPage( $title )
+			->getCreator();
+
+		if ( !$creator instanceof User ) {
+			$this->importPerformerProtectionLookupCache[$key] = false;
+			return $this->importPerformerProtectionLookupCache[$key];
+		}
+
+		$importPerformers = array_flip( $this->importPerformers );
+
+		// Was the creator a dedicated import performer?, if yes, it means
+		// only this user is allowed to alter the content
+		if ( !isset( $importPerformers[$creator->getName()] ) ) {
+			$this->importPerformerProtectionLookupCache[$key] = false;
+			return $this->importPerformerProtectionLookupCache[$key];
+		}
+
+		$this->importPerformerProtectionLookupCache[$key] = !$creator->equals( $user );
+		return $this->importPerformerProtectionLookupCache[$key];
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * @param Title $title
+	 *
+	 * @return bool
+	 */
+	public function hasChangePropagationProtection( Title $title ): bool {
+		$subject = WikiPage::newFromTitle( $title )->asBase();
+		$namespace = $subject->getNamespace();
+
+		if ( $namespace !== SMW_NS_PROPERTY && $namespace !== NS_CATEGORY ) {
+			return false;
+		}
+
+		if ( !$this->changePropagationProtection ) {
+			return false;
+		}
+
+		// The `_CHGPRO` marker only reflects an active lock while a change
+		// propagation is genuinely pending. A dispatch job that failed or was
+		// lost can leave the marker behind with no pending job, which used to
+		// lock the page indefinitely (#4344). Cross-check the job queue and
+		// treat a marker without any pending job as stale.
+		return $this->checkProtection( $subject, new Property( '_CHGPRO' ) )
+			&& ChangePropagationDispatchJob::hasPendingJobs( $subject );
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * @param Title $title
+	 *
+	 * @return bool
+	 */
+	public function hasProtection( Title $title ): bool {
+		$subject = WikiPage::newFromTitle(
+			$title
+		);
+
+		return $this->checkProtection( $subject->asBase() );
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param Title|null $title
+	 *
+	 * @return bool
+	 */
+	public function hasCreateProtection( ?Title $title = null ): bool {
+		if ( $title === null ) {
+			return false;
+		}
+
+		$rigor = MwPermissionManager::RIGOR_QUICK;
+		return $this->createProtectionRight &&
+			!$this->permissionManager->userCan( 'edit', null, $title, $rigor );
+	}
+
+	/**
+	 * @note There is not direct validation of the permission within this method,
+	 * it is done by the Title::userCan when probing against the User and hooks
+	 * that carry out the permission check including the validation provided by
+	 * SMW's `PermissionManager`.
+	 *
+	 * @since 2.5
+	 *
+	 * @param Title|null $title
+	 *
+	 * @return bool
+	 */
+	public function hasEditProtection( ?Title $title = null ): bool {
+		if ( $title === null ) {
+			return false;
+		}
+
+		$subject = WikiPage::newFromTitle(
+			$title
+		);
+
+		$rigor = MwPermissionManager::RIGOR_QUICK;
+		return !$this->permissionManager->userCan( 'edit', null, $title, $rigor )
+			&& $this->checkProtection( $subject->asBase() );
+	}
+
+	private function checkProtection( WikiPage $subject, $property = null ): bool {
+		if ( $property === null ) {
+			$property = new Property( '_EDIP' );
+		}
+
+		// The property must be part of the key: `checkProtection()` is called for
+		// both `_CHGPRO` (change-propagation lock) and `_EDIP` (edit protection),
+		// and a shared slot let one concern's cached result be read for the other.
+		$key = $this->entityCache->makeCacheKey( 'protection', $subject->getHash(), $property->getKey() );
+		$hasProtection = false;
+
+		if ( $this->entityCache->contains( $key ) ) {
+			return $this->entityCache->fetch( $key ) === 'yes';
+		}
+
+		$dataItems = $this->store->getPropertyValues(
+			$subject,
+			$property
+		);
+
+		if ( $dataItems !== null && $dataItems !== [] ) {
+			$hasProtection = $property->getKey() === '_EDIP' ? end( $dataItems )->getBoolean() : true;
+		}
+
+		// Store as literal so that the check avoids a `false` and is not
+		// attempting to read from the store on every check where it hasn't
+		// found a positive confirmation
+		$this->entityCache->save( $key, ( $hasProtection ? 'yes' : 'no' ) );
+		$this->entityCache->associate( $subject, $key );
+
+		return $hasProtection;
+	}
+
+}

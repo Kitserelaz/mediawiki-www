@@ -2,149 +2,71 @@
 
 namespace MediaWiki\IPInfo\HookHandler;
 
-use MediaWiki\Extension\EventLogging\EventLogging;
-use MediaWiki\Extension\EventLogging\Libs\UserBucketProvider\UserBucketProvider;
+use MediaWiki\IPInfo\IPInfoPermissionManager;
 use MediaWiki\IPInfo\Logging\LoggerFactory;
-use MediaWiki\Permissions\PermissionManager;
 use MediaWiki\Preferences\Hook\GetPreferencesHook;
 use MediaWiki\Registration\ExtensionRegistry;
-use MediaWiki\User\Options\UserOptionsLookup;
+use MediaWiki\User\Options\Hook\LocalUserOptionsStoreSaveHook;
+use MediaWiki\User\Options\UserOptionsManager;
 use MediaWiki\User\UserGroupManager;
 use MediaWiki\User\UserIdentity;
 
-class PreferencesHandler implements GetPreferencesHook {
-	private PermissionManager $permissionManager;
-
-	private UserOptionsLookup $userOptionsLookup;
-
-	private UserGroupManager $userGroupManager;
-
-	private LoggerFactory $loggerFactory;
-
+class PreferencesHandler extends AbstractPreferencesHandler implements
+	GetPreferencesHook,
+	LocalUserOptionsStoreSaveHook
+{
 	public function __construct(
-		PermissionManager $permissionManager,
-		UserOptionsLookup $userOptionsLookup,
+		private readonly IPInfoPermissionManager $ipInfoPermissionManager,
 		UserGroupManager $userGroupManager,
-		LoggerFactory $loggerFactory
+		UserOptionsManager $userOptionsManager,
+		ExtensionRegistry $extensionRegistry,
+		private readonly LoggerFactory $loggerFactory,
 	) {
-		$this->permissionManager = $permissionManager;
-		$this->userOptionsLookup = $userOptionsLookup;
-		$this->userGroupManager = $userGroupManager;
-		$this->loggerFactory = $loggerFactory;
+		parent::__construct( $extensionRegistry, $userGroupManager, $userOptionsManager );
 	}
 
 	/** @inheritDoc */
 	public function onGetPreferences( $user, &$preferences ): void {
-		if ( !$this->permissionManager->userHasRight( $user, 'ipinfo' ) ) {
+		if ( !$this->ipInfoPermissionManager->hasEnabledIPInfo( $user ) ) {
 			return;
 		}
 
-		$isBetaFeaturesLoaded = ExtensionRegistry::getInstance()->isLoaded( 'BetaFeatures' );
-		// If the beta feature isn't enabled, do not show the preference checkbox
-		if ( $isBetaFeaturesLoaded &&
-			!$this->userOptionsLookup->getOption( $user, 'ipinfo-beta-feature-enable' )
-		) {
-			return;
-		}
-
-		$preferences['ipinfo-use-agreement'] = [
+		$preferences[self::IPINFO_USE_AGREEMENT] = [
 			'type' => 'toggle',
 			'label-message' => 'ipinfo-preference-use-agreement',
 			'section' => 'personal/ipinfo',
-			'noglobal' => true,
 		];
 	}
 
-	/**
-	 * Utility function to make option checking less verbose.
-	 *
-	 * @param array $options
-	 * @param string $option
-	 * @return bool The option is set and truthy
-	 */
-	private function isTruthy( $options, $option ): bool {
-		return !empty( $options[$option] );
-	}
+	/** @inheritDoc */
+	public function onLocalUserOptionsStoreSave( UserIdentity $user, array $oldOptions, array $newOptions ): void {
+		$this->applyDefaultsToPreferenceArrays( $user, $oldOptions, $newOptions );
 
-	/**
-	 * Utility function to make option checking less verbose.
-	 * We avoid empty() here because we need the option to be set.
-	 *
-	 * @param array $options
-	 * @param string $option
-	 * @return bool The option is set and falsey
-	 */
-	private function isFalsey( $options, $option ): bool {
-		return isset( $options[$option] ) && !$options[$option];
-	}
-
-	/**
-	 * Send events to the external event server
-	 *
-	 * @param string $action
-	 * @param string $context
-	 * @param string $source
-	 * @param UserIdentity $user
-	 */
-	private function logEvent( $action, $context, $source, $user ): void {
-		if ( !ExtensionRegistry::getInstance()->isLoaded( 'EventLogging' ) ) {
-			return;
-		}
-		EventLogging::submit( 'mediawiki.ipinfo_interaction', [
-			'$schema' => '/analytics/mediawiki/ipinfo_interaction/1.1.0',
-			'event_action' => $action,
-			'event_context' => $context,
-			'event_source' => $source,
-			'user_edit_bucket' => UserBucketProvider::getUserEditCountBucket( $user ),
-			'user_groups' => implode( '|', $this->userGroupManager->getUserGroups( $user ) )
-		] );
-	}
-
-	/**
-	 * @param UserIdentity $user
-	 * @param array &$modifiedOptions
-	 * @param array $originalOptions
-	 */
-	public function onSaveUserOptions( UserIdentity $user, array &$modifiedOptions, array $originalOptions ) {
-		$betaFeatureIsEnabled = $this->isTruthy( $originalOptions, 'ipinfo-beta-feature-enable' );
-		$betaFeatureIsDisabled = !$betaFeatureIsEnabled;
-
-		$betaFeatureWillEnable = $this->isTruthy( $modifiedOptions, 'ipinfo-beta-feature-enable' );
-		$betaFeatureWillDisable = $this->isFalsey( $modifiedOptions, 'ipinfo-beta-feature-enable' );
-
-		// If enabling auto-enroll, treat as enabling IPInfo because:
-		// * IPInfo will become enabled
-		// * 'ipinfo-beta-feature-enable' won't be updated before this hook runs
-		// When disabling auto-enroll, do not treat as disabling IPnfo because:
-		// * IPInfo will not necessarily become disabled
-		// * 'ipinfo-beta-feature-enable' will be updated if IPInfo becomes disabled
-		$autoEnrollIsEnabled = $this->isTruthy( $originalOptions, 'betafeatures-auto-enroll' );
-		$autoEnrollIsDisabled = !$autoEnrollIsEnabled;
-		$autoEnrollWillEnable = $this->isTruthy( $modifiedOptions, 'betafeatures-auto-enroll' );
-
-		if (
-			( $betaFeatureIsEnabled && $betaFeatureWillDisable ) ||
-			( $betaFeatureIsDisabled && $betaFeatureWillEnable ) ||
-			( $betaFeatureIsDisabled && $autoEnrollIsDisabled && $autoEnrollWillEnable )
-		) {
-			// Restore default IPInfo preferences
-			$modifiedOptions[ 'ipinfo-use-agreement' ] = false;
+		if ( $this->ipInfoPermissionManager->requiresBetaFeatureToggle() ) {
+			$betaFeatureIsEnabled = $this->isTruthy( $oldOptions, 'ipinfo-beta-feature-enable' );
+			$betaFeatureWillDisable = $this->isFalsey( $newOptions, 'ipinfo-beta-feature-enable' );
+			$betaFeatureWillEnable = $this->isTruthy( $newOptions, 'ipinfo-beta-feature-enable' );
+		} else {
+			// IPInfo is not a BetaFeature if temporary accounts are known on this wiki (T356660).
+			$betaFeatureIsEnabled = true;
+			$betaFeatureWillDisable = false;
+			$betaFeatureWillEnable = true;
 		}
 
 		// Is IPInfo already enabled?
-		$ipInfoAgreementIsEnabled = $this->isTruthy( $originalOptions, 'ipinfo-use-agreement' );
+		$ipInfoAgreementIsEnabled = $this->isTruthy( $oldOptions, self::IPINFO_USE_AGREEMENT );
 		$ipInfoIsEnabled = $betaFeatureIsEnabled && $ipInfoAgreementIsEnabled;
 		$ipInfoIsDisabled = !$ipInfoIsEnabled;
 
-		$ipInfoAgreementWillEnable = $this->isTruthy( $modifiedOptions, 'ipinfo-use-agreement' );
-		$ipInfoAgreementWillDisable = $this->isFalsey( $modifiedOptions, 'ipinfo-use-agreement' );
-		$ipInfoWillEnable = $betaFeatureIsEnabled && !$betaFeatureWillDisable && $ipInfoAgreementWillEnable;
+		$ipInfoAgreementWillEnable = $this->isTruthy( $newOptions, self::IPINFO_USE_AGREEMENT );
+		$ipInfoAgreementWillDisable = $this->isFalsey( $newOptions, self::IPINFO_USE_AGREEMENT );
+		$ipInfoWillEnable = $betaFeatureWillEnable && $ipInfoAgreementWillEnable;
 		$ipInfoWillDisable = $betaFeatureWillDisable || $ipInfoAgreementWillDisable;
 
 		if ( ( !$ipInfoAgreementIsEnabled && $ipInfoAgreementWillEnable ) ||
 			( $ipInfoAgreementIsEnabled && $ipInfoAgreementWillDisable ) ) {
 			$this->logEvent(
-				(bool)$modifiedOptions['ipinfo-use-agreement'] ? 'accept_disclaimer' : 'uncheck_iagree',
+				(bool)$newOptions[self::IPINFO_USE_AGREEMENT] ? 'accept_disclaimer' : 'uncheck_iagree',
 				'page',
 				'special_preferences',
 				$user

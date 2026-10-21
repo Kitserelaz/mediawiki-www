@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Bjankuloski06",
+			"Brest"
+		]
+	},
+	"forcepreview": "$1 (прво прегледај)",
+	"forcepreview-desc": "Наметни преглед за непривилегирани корисници",
+	"action-forcepreviewexempt": "зачувувате измени без приказ на преглед",
+	"right-forcepreviewexempt": "Зачувување на измени без приказ на преглед"
+}

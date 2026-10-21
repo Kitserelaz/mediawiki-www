@@ -1,0 +1,306 @@
+<?php
+
+namespace SMW\Maintenance;
+
+use MediaWiki\Title\Title;
+use MediaWiki\Title\TitleFactory;
+use Onoi\MessageReporter\MessageReporter;
+use Onoi\MessageReporter\MessageReporterFactory;
+use SMW\DataItems\WikiPage;
+use SMW\MediaWiki\JobFactory;
+use SMW\MediaWiki\Jobs\UpdateJob;
+use SMW\MediaWiki\TitleLookup;
+use SMW\Options;
+use SMW\Query\QueryProcessor;
+use SMW\Query\QueryResult;
+use SMW\Store;
+use SMW\Utils\CliMsgFormatter;
+use SMW\Utils\PeriodicStatsFlusher;
+use Throwable;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 2.4
+ *
+ * @author mwjames
+ */
+class DistinctEntityDataRebuilder {
+
+	private ?Options $options = null;
+
+	/**
+	 * @var MessageReporter
+	 */
+	private $reporter;
+
+	private ?ExceptionFileLogger $exceptionFileLogger = null;
+
+	private ?PeriodicStatsFlusher $statsFlusher = null;
+
+	private array $filters = [];
+
+	private int $rebuildCount = 0;
+
+	/**
+	 * @since 2.4
+	 */
+	public function __construct(
+		private readonly Store $store,
+		private readonly TitleFactory $titleFactory,
+		private readonly JobFactory $jobFactory,
+	) {
+		$this->reporter = MessageReporterFactory::getInstance()->newNullMessageReporter();
+	}
+
+	/**
+	 * @since 2.1
+	 *
+	 * @param Options $options
+	 */
+	public function setOptions( Options $options ): void {
+		$this->options = $options;
+	}
+
+	/**
+	 * @since 2.1
+	 *
+	 * @param MessageReporter $reporter
+	 */
+	public function setMessageReporter( MessageReporter $reporter ): void {
+		$this->reporter = $reporter;
+	}
+
+	/**
+	 * @since 3.0
+	 *
+	 * @param ExceptionFileLogger $exceptionFileLogger
+	 */
+	public function setExceptionFileLogger( ExceptionFileLogger $exceptionFileLogger ): void {
+		$this->exceptionFileLogger = $exceptionFileLogger;
+	}
+
+	/**
+	 * @since 7.2.0
+	 */
+	public function setStatsFlusher( PeriodicStatsFlusher $statsFlusher ): void {
+		$this->statsFlusher = $statsFlusher;
+	}
+
+	/**
+	 * @since 2.4
+	 *
+	 * @return int
+	 */
+	public function getRebuildCount(): int {
+		return $this->rebuildCount;
+	}
+
+	/**
+	 * @since 2.4
+	 *
+	 * @return bool
+	 */
+	public function doRebuild(): bool {
+		$type = ( $this->options->has( 'redirects' ) ? 'redirect' : '' ) .
+		( $this->options->has( 'categories' ) ? 'category' : '' ) .
+		( $this->options->has( 'namespace' ) ? $this->options->get( 'namespace' ) : '' ) .
+		( $this->options->has( 'query' ) ? 'query (' . $this->options->get( 'query' ) . ')' : '' ) .
+		( $this->options->has( 'p' ) ? 'property' : '' );
+
+		$pages = [];
+		$this->findFilters();
+
+		if ( $this->options->has( 'page' ) ) {
+			$pages = explode( '|', $this->options->get( 'page' ) );
+		}
+
+		$pages = $this->normalize(
+			[
+				$this->getPagesFromQuery(),
+				$pages,
+				$this->getPagesFromFilters(),
+				$this->getRedirectPages()
+			]
+		);
+
+		$cliMsgFormatter = new CliMsgFormatter();
+
+		$this->reportMessage(
+			$cliMsgFormatter->section( "Rebuild ($type)", 3, '-', true ) . "\n"
+		);
+
+		$total = count( $pages );
+		$this->reportMessage( "Find and rebuild $type pages ...\n" );
+
+		$this->reportMessage(
+			$cliMsgFormatter->twoCols( "... selected pages ...", $total, 3 )
+		);
+
+		foreach ( $pages as $key => $page ) {
+
+			if ( $this->statsFlusher !== null ) {
+				$this->statsFlusher->tick();
+			}
+
+			$this->rebuildCount++;
+			$progress = $cliMsgFormatter->progressCompact( $this->rebuildCount, $total );
+
+			if ( !$this->options->has( 'v' ) ) {
+				$this->reportMessage(
+					$cliMsgFormatter->twoColsOverride( '   ... updating ', $progress )
+				);
+			} else {
+				$this->reportMessage(
+					sprintf( "%-25s%s\n", "   ... $progress", $key ),
+					$this->options->has( 'v' )
+				);
+			}
+
+			$this->doUpdate( $this->jobFactory, $page );
+		}
+
+		if ( $pages !== [] && !$this->options->has( 'v' ) ) {
+			$this->reportMessage( "\n" );
+		}
+
+		$this->reportMessage( "   ... done.\n" );
+
+		return true;
+	}
+
+	private function doUpdate( JobFactory $jobFactory, Title $page ) {
+		$updatejob = $jobFactory->newUpdateJob(
+			$page,
+			[
+				UpdateJob::FORCED_UPDATE => true,
+				UpdateJob::SHALLOW_UPDATE => $this->options->has( 'shallow-update' )
+			]
+		);
+
+		if ( !$this->options->has( 'ignore-exceptions' ) ) {
+			return $updatejob->run();
+		}
+
+		// doRebuild() iterates a fixed list of pages, so a caught error simply
+		// lets that foreach continue with the next page; no position
+		// advancement is needed here (unlike DataRebuilder::doUpdateById()).
+		try {
+			$updatejob->run();
+		} catch ( Throwable $e ) {
+			$this->exceptionFileLogger->recordException( $page->getPrefixedDBkey(), $e );
+		}
+	}
+
+	private function findFilters(): void {
+		$this->filters = [];
+
+		if ( $this->options->has( 'categories' ) ) {
+			$this->filters[] = NS_CATEGORY;
+		}
+
+		if ( $this->options->has( 'namespace' ) ) {
+			$this->filters[] = constant( $this->options->get( 'namespace' ) );
+		}
+
+		if ( $this->options->has( 'p' ) ) {
+			$this->filters[] = SMW_NS_PROPERTY;
+		}
+	}
+
+	private function hasFilters(): bool {
+		return $this->filters !== [];
+	}
+
+	private function getPagesFromQuery(): array {
+		if ( !$this->options->has( 'query' ) ) {
+			return [];
+		}
+
+		$queryString = $this->options->get( 'query' );
+
+		// get number of pages and fix query limit
+		$query = QueryProcessor::createQuery(
+			$queryString,
+			QueryProcessor::getProcessedParams( [ 'format' => 'count' ] )
+		);
+
+		$result = $this->store->getQueryResult( $query );
+
+		// get pages and add them to the pages explicitly listed in the 'page' parameter
+		$query = QueryProcessor::createQuery(
+			$queryString,
+			QueryProcessor::getProcessedParams( [] )
+		);
+
+		$query->setUnboundLimit( $result instanceof QueryResult ? $result->getCountValue() : $result );
+
+		return $this->store->getQueryResult( $query )->getResults();
+	}
+
+	/**
+	 * @return mixed[]
+	 */
+	private function getPagesFromFilters(): array {
+		$pages = [];
+
+		if ( !$this->hasFilters() ) {
+			return $pages;
+		}
+
+		$titleLookup = new TitleLookup( $this->store->getConnection( 'mw.db' ) );
+
+		foreach ( $this->filters as $namespace ) {
+			$pages = array_merge( $pages, $titleLookup->setNamespace( $namespace )->selectAll() );
+		}
+
+		return $pages;
+	}
+
+	private function getRedirectPages(): array {
+		if ( !$this->options->has( 'redirects' ) ) {
+			return [];
+		}
+
+		$titleLookup = new TitleLookup(
+			$this->store->getConnection( 'mw.db' )
+		);
+
+		return $titleLookup->getRedirectPages();
+	}
+
+	/**
+	 * @return mixed[]
+	 */
+	private function normalize( array $list ): array {
+		$titleCache = [];
+		$p = [];
+
+		foreach ( $list as $pages ) {
+			foreach ( $pages as $key => $page ) {
+
+				if ( $page instanceof WikiPage ) {
+					$page = $page->getTitle();
+				}
+
+				if ( !$page instanceof Title ) {
+					$page = $this->titleFactory->newFromText( $page );
+				}
+
+				$id = $page->getPrefixedDBkey();
+
+				if ( !isset( $p[$id] ) ) {
+					$p[$id] = $page;
+				}
+			}
+		}
+
+		return $p;
+	}
+
+	private function reportMessage( string $message, bool $output = true ): void {
+		if ( $output ) {
+			$this->reporter->reportMessage( $message );
+		}
+	}
+
+}

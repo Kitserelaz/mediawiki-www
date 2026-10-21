@@ -28,36 +28,33 @@ use MediaWiki\Category\Category;
 use MediaWiki\Config\Config;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Context\RequestContext;
+use MediaWiki\Deferred\LinksUpdate\CategoryLinksTable;
 use MediaWiki\Extension\Translate\PageTranslation\TranslatablePage;
 use MediaWiki\Html\Html;
+use MediaWiki\Language\Language;
 use MediaWiki\Linker\LinkRenderer;
-use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Page\LinkBatchFactory;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Title\Title;
 use Wikimedia\Rdbms\IConnectionProvider;
 
 /**
- * Core functions for the CategoryTree extension, an AJAX based gadget
- * to display the category structure of a wiki
+ * Core functions for the CategoryTree extension, which displays the category structure of a wiki
  */
 class CategoryTree {
-	public OptionManager $optionManager;
-	private Config $config;
-	private IConnectionProvider $dbProvider;
-	private LinkRenderer $linkRenderer;
+	public readonly OptionManager $optionManager;
 
 	public function __construct(
 		array $options,
-		Config $config,
-		IConnectionProvider $dbProvider,
-		LinkRenderer $linkRenderer
+		private readonly Config $config,
+		private readonly Language $contLang,
+		private readonly IConnectionProvider $dbProvider,
+		private readonly LinkBatchFactory $linkBatchFactory,
+		private readonly LinkRenderer $linkRenderer,
 	) {
 		$this->optionManager = new OptionManager( $options, $config );
-		$this->config = $config;
-		$this->dbProvider = $dbProvider;
-		$this->linkRenderer = $linkRenderer;
 	}
 
 	/**
@@ -71,19 +68,19 @@ class CategoryTree {
 
 	/**
 	 * Custom tag implementation. This is called by Hooks::parserHook, which is used to
-	 * load CategoryTreeFunctions.php on demand.
+	 * load CategoryTree on demand.
 	 * @param string $category
 	 * @param bool $hideroot
 	 * @param array $attr
 	 * @param int $depth
-	 * @return bool|string
+	 * @return string
 	 */
 	public function getTag( string $category, bool $hideroot = false, array $attr = [],
 		int $depth = 1
-	) {
+	): string {
 		$title = self::makeTitle( $category );
 		if ( !$title ) {
-			return false;
+			return '';
 		}
 
 		if ( isset( $attr['class'] ) ) {
@@ -92,7 +89,6 @@ class CategoryTree {
 			$attr['class'] = 'CategoryTreeTag';
 		}
 
-		$attr['data-ct-mode'] = $this->optionManager->getOption( 'mode' );
 		$attr['data-ct-options'] = $this->optionManager->getOptionsAsJsStructure();
 
 		if ( !$title->getArticleID() ) {
@@ -123,33 +119,40 @@ class CategoryTree {
 		}
 
 		$dbr = $this->dbProvider->getReplicaDatabase();
+		$categoryLinksDbr = $this->dbProvider->getReplicaDatabase( CategoryLinksTable::VIRTUAL_DOMAIN );
 
 		$inverse = $this->optionManager->isInverse();
 		$mode = $this->optionManager->getOption( 'mode' );
 		$namespaces = $this->optionManager->getOption( 'namespaces' );
 
-		$queryBuilder = $dbr->newSelectQueryBuilder()
+		$queryBuilder = $categoryLinksDbr->newSelectQueryBuilder()
 			->select( [
-				'page_id', 'page_namespace', 'page_title',
-				'page_is_redirect', 'page_len', 'page_latest', 'cl_to', 'cl_from'
+				'page_id', 'page_namespace', 'page_title', 'page_is_redirect',
+				'page_len', 'page_latest', 'cl_from', 'lt_title'
 			] )
 			->orderBy( [ 'cl_type', 'cl_sortkey' ] )
 			->limit( $this->config->get( 'CategoryTreeMaxChildren' ) )
 			->caller( __METHOD__ );
 
 		if ( $inverse ) {
+			$queryBuilder->from( 'categorylinks' );
+		} else {
+			$queryBuilder->from( 'page' )
+				->join( 'categorylinks', null, 'cl_from = page_id' );
+		}
+
+		$queryBuilder->join( 'linktarget', null, [ 'lt_id=cl_target_id' ] );
+		$queryBuilder->where( [ 'lt_namespace' => NS_CATEGORY ] );
+
+		if ( $inverse ) {
 			$queryBuilder
-				->from( 'categorylinks' )
 				->leftJoin( 'page', null, [
-					'cl_to = page_title', 'page_namespace' => NS_CATEGORY
+					'lt_title = page_title', 'page_namespace' => NS_CATEGORY
 				] )
 				->where( [ 'cl_from' => $title->getArticleID() ] );
 		} else {
-			$queryBuilder
-				->from( 'page' )
-				->join( 'categorylinks', null, 'cl_from = page_id' )
-				->where( [ 'cl_to' => $title->getDBkey() ] )
-				->useIndex( 'cl_sortkey' );
+			$queryBuilder->where( [ 'lt_title' => $title->getDBkey() ] );
+			$queryBuilder->useIndex( [ 'categorylinks' => 'cl_sortkey_id' ] );
 
 			# namespace filter.
 			if ( $namespaces ) {
@@ -165,18 +168,35 @@ class CategoryTree {
 			}
 		}
 
-		# fetch member count if possible
-		$doCount = !$inverse && $this->config->get( 'CategoryTreeUseCategoryTable' );
-
-		if ( $doCount ) {
-			$queryBuilder
-				->leftJoin( 'category', null, [ 'cat_title = page_title', 'page_namespace' => NS_CATEGORY ] )
-				->fields( [ 'cat_id', 'cat_title', 'cat_subcats', 'cat_pages', 'cat_files' ] );
-		}
-
 		$res = $queryBuilder->fetchResultSet();
 
-		# collect categories separately from other pages
+		// fetch member count if possible
+		$doCount = !$inverse && $this->config->get( 'CategoryTreeUseCategoryTable' );
+
+		$categoryData = [];
+		if ( $doCount ) {
+			$categoryTitles = [];
+			foreach ( $res as $row ) {
+				if ( (int)$row->page_namespace === NS_CATEGORY ) {
+					$categoryTitles[] = $row->page_title;
+				}
+			}
+
+			if ( $categoryTitles !== [] ) {
+				$categoryRes = $dbr->newSelectQueryBuilder()
+					->select( [ 'cat_id', 'cat_title', 'cat_subcats', 'cat_pages', 'cat_files' ] )
+					->from( 'category' )
+					->where( [ 'cat_title' => $categoryTitles ] )
+					->caller( __METHOD__ )
+					->fetchResultSet();
+
+				foreach ( $categoryRes as $catRow ) {
+					$categoryData[$catRow->cat_title] = $catRow;
+				}
+			}
+		}
+
+		// collect categories separately from other pages
 		$categories = '';
 		$other = '';
 		$suppressTranslations = OptionManager::decodeBoolean(
@@ -184,11 +204,11 @@ class CategoryTree {
 		) && ExtensionRegistry::getInstance()->isLoaded( 'Translate' );
 
 		if ( $suppressTranslations ) {
-			$lb = MediaWikiServices::getInstance()->getLinkBatchFactory()->newLinkBatch();
+			$lb = $this->linkBatchFactory->newLinkBatch();
 			foreach ( $res as $row ) {
 				$title = Title::newFromText( $row->page_title, $row->page_namespace );
 				// Page name could have slashes, check the subpage for valid language built-in codes
-				if ( $title !== null && $title->getSubpageText() ) {
+				if ( $title && $title->getSubpageText() ) {
 					$lb->addObj( $title->getBaseTitle() );
 				}
 			}
@@ -209,19 +229,22 @@ class CategoryTree {
 				}
 			}
 
-			# NOTE: in inverse mode, the page record may be null, because we use a right join.
-			#      happens for categories with no category page (red cat links)
+			// NOTE: in inverse mode, the page record may be null, because we use a right join.
+			//      happens for categories with no category page (red cat links)
 			if ( $inverse && $row->page_title === null ) {
-				$t = Title::makeTitle( NS_CATEGORY, $row->cl_to );
+				$t = Title::makeTitle( NS_CATEGORY, $row->lt_title );
 			} else {
-				# TODO: translation support; ideally added to Title object
+				// TODO: translation support; ideally added to Title object
 				$t = Title::newFromRow( $row );
 			}
 
 			$cat = null;
 
 			if ( $doCount && (int)$row->page_namespace === NS_CATEGORY ) {
-				$cat = Category::newFromRow( $row, $t );
+				$catRow = $categoryData[$row->page_title] ?? null;
+				if ( $catRow ) {
+					$cat = Category::newFromRow( $catRow, $t );
+				}
 			}
 
 			$s = $this->renderNodeInfo( $t, $cat, $depth - 1 );
@@ -240,14 +263,16 @@ class CategoryTree {
 	 * Returns a string with an HTML representation of the parents of the given category.
 	 */
 	public function renderParents( Title $title ): string {
-		$dbr = $this->dbProvider->getReplicaDatabase();
+		$dbr = $this->dbProvider->getReplicaDatabase( CategoryLinksTable::VIRTUAL_DOMAIN );
 
 		$res = $dbr->newSelectQueryBuilder()
-			->select( 'cl_to' )
+			->select( [ 'lt_title' ] )
 			->from( 'categorylinks' )
+			->join( 'linktarget', null, [ 'lt_id=cl_target_id' ] )
 			->where( [ 'cl_from' => $title->getArticleID() ] )
+			->andWhere( [ 'lt_namespace' => NS_CATEGORY ] )
 			->limit( $this->config->get( 'CategoryTreeMaxChildren' ) )
-			->orderBy( 'cl_to' )
+			->orderBy( 'lt_title' )
 			->caller( __METHOD__ )
 			->fetchResultSet();
 
@@ -256,7 +281,7 @@ class CategoryTree {
 		$s = [];
 
 		foreach ( $res as $row ) {
-			$t = Title::makeTitle( NS_CATEGORY, $row->cl_to );
+			$t = Title::makeTitle( NS_CATEGORY, $row->lt_title );
 
 			$s[] = Html::rawElement( 'span', [ 'class' => 'CategoryTreeItem' ],
 				$this->linkRenderer->makeLink(
@@ -321,8 +346,7 @@ class CategoryTree {
 			$label = $title->getPrefixedText();
 		}
 
-		$contLang = MediaWikiServices::getInstance()->getContentLanguage();
-		$link = Html::rawElement( 'bdi', [ 'dir' => $contLang->getDir() ],
+		$link = Html::rawElement( 'bdi', [ 'dir' => $this->contLang->getDir() ],
 			$this->linkRenderer->makeLink( $title, $label ) );
 
 		$count = false;
@@ -352,10 +376,8 @@ class CategoryTree {
 				$attr['class'] = 'CategoryTreeEmptyBullet';
 			} else {
 				$linkattr = [
-					// href and role will be added client-side
 					'class' => 'CategoryTreeToggle',
 					'data-ct-title' => $key,
-					'href' => $title->getLocalURL(),
 				];
 
 				if ( $children === 0 ) {
@@ -391,20 +413,12 @@ class CategoryTree {
 		if ( $isInCatNS && $children > 0 ) {
 			$children = $this->renderChildren( $title, $children );
 			if ( $children === '' ) {
-				switch ( $mode ) {
-					case CategoryTreeMode::CATEGORIES:
-						$msg = 'categorytree-no-subcategories';
-						break;
-					case CategoryTreeMode::PAGES:
-						$msg = 'categorytree-no-pages';
-						break;
-					case CategoryTreeMode::PARENTS:
-						$msg = 'categorytree-no-parent-categories';
-						break;
-					default:
-						$msg = 'categorytree-nothing-found';
-						break;
-				}
+				$msg = match ( $mode ) {
+					CategoryTreeMode::CATEGORIES => 'categorytree-no-subcategories',
+					CategoryTreeMode::PAGES => 'categorytree-no-pages',
+					CategoryTreeMode::PARENTS => 'categorytree-no-parent-categories',
+					default => 'categorytree-nothing-found',
+				};
 				$children = Html::element( 'i', [ 'class' => 'CategoryTreeNotice' ],
 					wfMessage( $msg )->text()
 				);
@@ -454,7 +468,7 @@ class CategoryTree {
 
 		# Only $5 is actually used in the default message.
 		# Other arguments can be used in a customized message.
-		$s = ' ' . Html::rawElement(
+		return ' ' . Html::rawElement(
 			'span',
 			$attr,
 			$context->msg( 'categorytree-member-num' )
@@ -462,8 +476,6 @@ class CategoryTree {
 				->params( $subcatCount, $pages, $fileCount, $allCount, $memberNumsShort )
 				->escaped()
 		);
-
-		return $s;
 	}
 
 	/**

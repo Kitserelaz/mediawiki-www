@@ -1,0 +1,185 @@
+<?php
+
+namespace SMW\Indicator\EntityExaminerIndicators;
+
+use MediaWiki\Html\TemplateParser;
+use SMW\DataItems\Property;
+use SMW\DataItems\WikiPage;
+use SMW\GroupPermissions;
+use SMW\Indicator\IndicatorProviders\DeferrableIndicatorProvider;
+use SMW\Indicator\IndicatorProviders\TypableSeverityIndicatorProvider;
+use SMW\Localizer\Message;
+use SMW\Localizer\MessageLocalizerTrait;
+use SMW\MediaWiki\Permission\PermissionAware;
+use SMW\MediaWiki\Permission\PermissionExaminer;
+use SMW\MediaWiki\RevisionGuardAwareTrait;
+use SMW\Store;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 3.2
+ *
+ * @author mwjames
+ */
+class AssociatedRevisionMismatchEntityExaminerIndicatorProvider implements TypableSeverityIndicatorProvider, DeferrableIndicatorProvider, PermissionAware {
+
+	use MessageLocalizerTrait;
+	use RevisionGuardAwareTrait;
+
+	private array $indicators = [];
+
+	private string $severityType = '';
+
+	private mixed $languageCode = '';
+
+	private bool $isDeferredMode = false;
+
+	/**
+	 * @since 3.2
+	 */
+	public function __construct( private Store $store, private TemplateParser $templateParser ) {
+	}
+
+	/**
+	 * @see PermissionAware::hasPermission
+	 * @since 3.2
+	 */
+	public function hasPermission( PermissionExaminer $permissionExaminer ): bool {
+		return $permissionExaminer->hasPermissionOf( GroupPermissions::VIEW_ENTITY_ASSOCIATEDREVISIONMISMATCH );
+	}
+
+	/**
+	 * @since 3.2
+	 */
+	public function setDeferredMode( bool $isDeferredMode ): void {
+		$this->isDeferredMode = $isDeferredMode;
+	}
+
+	/**
+	 * @since 3.2
+	 */
+	public function isDeferredMode(): bool {
+		return $this->isDeferredMode;
+	}
+
+	/**
+	 * @since 3.2
+	 */
+	public function isSeverityType( string $severityType ): bool {
+		return $this->severityType === $severityType;
+	}
+
+	/**
+	 * @since 3.2
+	 */
+	public function getName(): string {
+		return 'smw-entity-examiner-associated-revision-mismatch';
+	}
+
+	/**
+	 * @since 3.2
+	 */
+	public function hasIndicator( WikiPage $subject, array $options ): bool {
+		if ( $this->isDeferredMode ) {
+			return $this->runCheck( $subject, $options );
+		}
+
+		$this->indicators = [ 'id' => $this->getName() ];
+
+		return $this->indicators !== [];
+	}
+
+	/**
+	 * @since 3.2
+	 */
+	public function getIndicators(): array {
+		return $this->indicators;
+	}
+
+	/**
+	 * @since 3.2
+	 */
+	public function getModules(): array {
+		return [];
+	}
+
+	/**
+	 * @since 3.2
+	 */
+	public function getInlineStyle(): string {
+		return '';
+	}
+
+	private function runCheck( WikiPage $subject, array $options ): bool {
+		$this->indicators = [];
+
+		$latestRevID = $this->revisionGuard->getLatestRevID(
+			$subject->getTitle()
+		);
+
+		// Make sure to match the correct internal predefined property key
+		// when it is not a user-defined property
+		if ( $subject->getNamespace() === SMW_NS_PROPERTY ) {
+			$property = Property::newFromUserLabel( $subject->getDBKey() );
+
+			if ( !$property->isUserDefined() ) {
+				$subject = new WikiPage( $property->getKey(), SMW_NS_PROPERTY );
+			}
+		}
+
+		$associatedRev = (int)$this->store->getObjectIds()->findAssociatedRev(
+			$subject->getDBKey(),
+			$subject->getNamespace()
+		);
+
+		if ( $latestRevID != $associatedRev ) {
+			$this->buildHTML( $latestRevID, $associatedRev, $options );
+		}
+
+		return $this->indicators !== [];
+	}
+
+	private function buildHTML( $latestRevID, int $associatedRev, array $options ): void {
+		$this->severityType = TypableSeverityIndicatorProvider::SEVERITY_ERROR;
+
+		$this->languageCode = $options['uselang'] ?? Message::USER_LANGUAGE;
+
+		$content = $this->templateParser->processTemplate(
+			'Text',
+			[
+				'html-text' => $this->msg( [ 'smw-indicator-revision-mismatch-error' ], Message::PARSE, $this->languageCode )
+			]
+		);
+
+		$content .= $this->templateParser->processTemplate(
+			'CompareList',
+			[
+				'explain' => '',
+				'first_key' => 'MediaWiki:',
+				'first_value' => $latestRevID,
+				'second_key' => 'Semantic MediaWiki:',
+				'second_value' => $associatedRev
+			]
+		);
+
+		$content .= $this->templateParser->processTemplate(
+			'Line',
+			[
+				'margin' => isset( $options['dir'] ) && $options['dir'] === 'rtl' ? 'right' : 'left'
+			]
+		);
+
+		$content .= $this->templateParser->processTemplate(
+			'BottomComment',
+			[
+				'html-comment' => $this->msg( 'smw-indicator-revision-mismatch-comment', Message::TEXT, $this->languageCode )
+			]
+		);
+
+		$this->indicators = [
+			'id' => $this->getName(),
+			'title' => $this->msg( 'smw-indicator-revision-mismatch', Message::TEXT, $this->languageCode ),
+			'content' => $content
+		];
+	}
+}

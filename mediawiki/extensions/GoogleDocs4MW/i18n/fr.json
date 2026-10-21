@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": [
+			"Gomoko",
+			"Verdy p"
+		]
+	},
+	"googledocs4mw-desc": "Ajoute la balise <code>&lt;googlespreadsheet&gt;</code> pour l’affichage des feuilles de calcul de Google Docs"
+}

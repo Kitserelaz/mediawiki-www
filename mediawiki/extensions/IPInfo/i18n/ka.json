@@ -1,6 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
+			"Mehman97",
 			"Გიო ოქრო"
 		]
 	},
@@ -9,7 +10,6 @@
 	"ipinfo-infobox-title": "IP-ის ინფორმაცია",
 	"ipinfo-property-label-location": "მდებარეობა",
 	"ipinfo-property-label-ipversion": "ვერსია",
-	"ipinfo-property-label-isp": "ინტერნეტპროვაიდერი",
 	"ipinfo-property-label-asn": "ავტონომიური სისტემის ნომერი (ASN)",
 	"ipinfo-property-label-organization": "ორგანიზაცია",
 	"ipinfo-property-label-connectiontype": "დაკავშირების მეთოდი",
@@ -56,7 +56,7 @@
 	"ipinfo-widget-error-default": "IP-ის ინფორმაცია ვერ ჩაიტვირთა.",
 	"ipinfo-widget-error-no-data": "$1-ს ამ IP-მისამართის შესახებ მონაცემები არ აქვს.",
 	"ipinfo-widget-error-wrong-ip": "წარმოდგენლი IP-მისამართი არ შეესაბამება ჟურნალის ჩანაწერს ან ცვლილებას.",
-	"ipinfo-widget-error-ip-no-edits": "ამ IP-მისამართის შესახებ ინფორმაციის მიღება ვერ მოხდება, რადგან აქედან ამ ვიკიში რედაქტირება არ განხორციელებულა.",
+	"ipinfo-widget-error-ip-no-contributions": "ამ IP-მისამართის შესახებ ინფორმაციის მიღება ვერ მოხდება, რადგან აქედან ამ ვიკიში რედაქტირება არ განხორციელებულა.",
 	"ipinfo-preference-enable": "IP-ის ინფორმაციის ხელსაწყოს ჩვენება არარეგისტრირებული მომხმარებლების წვლილის გვერდზე (სპეციალური:წვლილი).",
 	"ipinfo-preference-use-agreement": "ვეთანხმები, რომ ამ ინფორმაციას გამოვიყენებ შემოწმებისა და ანტივანდალურ საქმიანობაში.",
 	"ipinfo-preference-agreement-error": "სანამ პირობებს დაეთანხმებოდეთ, მანამ უნდა ჩართოთ IP-ის ინფორმაციის ხელსაწყო.",
@@ -72,7 +72,6 @@
 	"ipinfo-rest-log-nonexistent": "ჟურნალის ჩანაწერი არ არსებობს",
 	"ipinfo-rest-log-registered": "დარეგისტრირებული მომხმარებლების ჟურნალის ჩანაწერებისათვის IP-ის ინფორმაციის მიღება შეუძლებელია",
 	"ipinfo-rest-log-denied": "თქვენს ანგარიშს არ აქვს წვდომა, რომ იხილოთ ჟურნალის ჩანაწერების ავტორი ან თავად ჟურნალის ჩანაწერები",
-	"ipinfo-source-geoip2": "აქ მოცემული ინფორმაცია აღებულია MaxMind-ის GeoIP2-ის მონაცემთა ბაზებიდან. ის შესალოა სრულად ზუსტი არ იყოს.",
 	"ipinfo-beta-feature-title": "IP-ის ინფორმაცია",
 	"ipinfo-beta-feature-description": "IP-ის ინფორმაციის ხელსაწყო შემმოწმებლებს IP-მისამართების შესახებ აუცილებელი ინფორმაციის მიღების შესაძლებლობას აძლევს, რათა მათ მუშაობაში დაეხმაროს. ეს ინფორმაცია ხელმისაწვდომი იქნება IP-რედაქტორების [[Special:Contributions|წვლილის გვერდზე]]. ამ ინფორმაციის შემოკლებული ვერსია წარმოდგენილი იქნება [[Special:Log|ჟურნალებსა]] და [[Special:RecentChanges|ბოლო ცვლილებებში]] — IP-ანგარიშების გვერდით, კონტექსტურ სარკმელში.",
 	"ipinfo-value-ipversion-ipv4": "IPv4",
@@ -103,5 +102,6 @@
 	"log-action-filter-ipinfo-view_infobox": "მონაცემები ნანახია ინფორმაციის დაფაზე",
 	"log-action-filter-ipinfo-view_popup": "მონაცემები ნანახია კონტექსტურ სარკმელში",
 	"ipinfo-property-tooltip-asn": "რეგიონისა და შემდგომ ორგანიზაციებისთვის (როგორიცაა მთავრობები და ინტერნეტპროვაიდერები) მიკუთვნებული ქსელების უნიკალური იდენტიფიკატორი",
-	"ipinfo-blocklist-url-text": "ბლოკების სია"
+	"ipinfo-blocklist-url-text": "ბლოკების სია",
+	"ipinfo-special-ipinfo": "IP-ის ინფორმაცია"
 }

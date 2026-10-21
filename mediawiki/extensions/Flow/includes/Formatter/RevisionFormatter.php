@@ -28,6 +28,7 @@ use MediaWiki\Title\Title;
 use MediaWiki\User\User;
 use MediaWiki\User\UserGroupManager;
 use MediaWiki\WikiMap\WikiMap;
+use RuntimeException;
 use Wikimedia\Message\MessageParam;
 use Wikimedia\Message\ParamType;
 use Wikimedia\Timestamp\TimestampException;
@@ -215,7 +216,6 @@ class RevisionFormatter {
 	 * @throws \Exception
 	 * @throws \Flow\Exception\InvalidInputException
 	 * @throws TimestampException
-	 * @suppress PhanUndeclaredMethod Phan doesn't infer types from the instanceofs
 	 */
 	public function formatApi( FormatterRow $row, IContextSource $ctx, $action = 'view' ) {
 		$this->permissions->setUser( $ctx->getUser() );
@@ -968,7 +968,7 @@ class RevisionFormatter {
 				 */
 				$content = $this->templating->getContent( $revision, 'fixed-html' );
 				// strip html tags and decode to plaintext
-				$content = Utils::htmlToPlaintext( $content, 140, $ctx->getLanguage() );
+				$content = Utils::htmlToPlaintext( $content, $ctx->getLanguage(), 140 );
 				return Message::plaintextParam( $content );
 
 			case 'wikitext':
@@ -979,7 +979,7 @@ class RevisionFormatter {
 
 				$content = $this->templating->getContent( $revision, $format );
 				if ( !$isWikiText ) {
-					$content = Utils::htmlToPlaintext( $content );
+					$content = Utils::htmlToPlaintext( $content, $ctx->getLanguage() );
 				}
 				// This must be escaped and marked raw to prevent special chars in
 				// content, like $1, from changing the i18n result
@@ -1006,7 +1006,7 @@ class RevisionFormatter {
 
 				$content = $this->templating->getContent( $previousRevision, $format );
 				if ( !$isWikiText ) {
-					$content = Utils::htmlToPlaintext( $content );
+					$content = Utils::htmlToPlaintext( $content, $ctx->getLanguage() );
 				}
 				return Message::plaintextParam( $content );
 
@@ -1087,8 +1087,7 @@ class RevisionFormatter {
 				return Message::numParam( count( $revision ) );
 
 			default:
-				wfWarn( __METHOD__ . ': Unknown formatter parameter: ' . $param );
-				return '';
+				throw new RuntimeException( __METHOD__ . ': Unknown formatter parameter: ' . $param );
 		}
 	}
 

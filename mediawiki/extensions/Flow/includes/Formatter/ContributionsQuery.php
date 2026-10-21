@@ -11,8 +11,9 @@ use Flow\Model\AbstractRevision;
 use Flow\Model\UUID;
 use Flow\Repository\TreeRepository;
 use InvalidArgumentException;
-use MediaWiki\Pager\ContribsPager;
-use MediaWiki\Pager\DeletedContribsPager;
+use MediaWiki\Exception\MWExceptionHandler;
+use MediaWiki\Specials\Pager\ContribsPager;
+use MediaWiki\Specials\Pager\DeletedContribsPager;
 use MediaWiki\User\UserIdentityLookup;
 use MediaWiki\WikiMap\WikiMap;
 use Wikimedia\Rdbms\IResultWrapper;
@@ -111,7 +112,7 @@ class ContributionsQuery extends AbstractQuery {
 
 					$results[] = $result;
 				} catch ( FlowException $e ) {
-					\MWExceptionHandler::logException( $e );
+					MWExceptionHandler::logException( $e );
 				}
 			}
 		}
@@ -243,7 +244,7 @@ class ContributionsQuery extends AbstractQuery {
 	 *
 	 * @param IResultWrapper $rows
 	 * @param string $revisionClass Class of revision object to build: PostRevision|Header
-	 * @return array
+	 * @return AbstractRevision[]
 	 */
 	protected function loadRevisions( IResultWrapper $rows, $revisionClass ) {
 		$revisions = [];

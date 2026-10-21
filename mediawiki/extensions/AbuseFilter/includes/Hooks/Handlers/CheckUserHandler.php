@@ -6,9 +6,9 @@ use MediaWiki\CheckUser\Hook\CheckUserInsertChangesRowHook;
 use MediaWiki\CheckUser\Hook\CheckUserInsertLogEventRowHook;
 use MediaWiki\CheckUser\Hook\CheckUserInsertPrivateEventRowHook;
 use MediaWiki\Extension\AbuseFilter\FilterUser;
+use MediaWiki\RecentChanges\RecentChange;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityUtils;
-use RecentChange;
 
 class CheckUserHandler implements
 	CheckUserInsertChangesRowHook,
@@ -16,22 +16,10 @@ class CheckUserHandler implements
 	CheckUserInsertLogEventRowHook
 {
 
-	/** @var FilterUser */
-	private $filterUser;
-
-	/** @var UserIdentityUtils */
-	private $userIdentityUtils;
-
-	/**
-	 * @param FilterUser $filterUser
-	 * @param UserIdentityUtils $userIdentityUtils
-	 */
 	public function __construct(
-		FilterUser $filterUser,
-		UserIdentityUtils $userIdentityUtils
+		private readonly FilterUser $filterUser,
+		private readonly UserIdentityUtils $userIdentityUtils
 	) {
-		$this->filterUser = $filterUser;
-		$this->userIdentityUtils = $userIdentityUtils;
 	}
 
 	/**

@@ -1,0 +1,127 @@
+{
+	"name": "TranslationNotifications",
+	"version": "2018-08-05",
+	"author": [
+		"Niklas Laxström",
+		"Amir E. Aharoni",
+		"Santhosh Thottingal",
+		"Siebrand Mazeland",
+		"Jon Harald Søby"
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:TranslationNotifications",
+	"descriptionmsg": "translationnotifications-desc",
+	"license-name": "GPL-2.0-or-later",
+	"type": "specialpage",
+	"requires": {
+		"MediaWiki": ">= 1.43",
+		"extensions": {
+			"MassMessage": "*",
+			"Translate": "*"
+		}
+	},
+	"DefaultUserOptions": {
+		"translationnotifications-lang-1": "",
+		"translationnotifications-lang-2": "",
+		"translationnotifications-lang-3": ""
+	},
+	"SpecialPages": {
+		"TranslatorSignup": {
+			"class": "MediaWiki\\Extension\\TranslationNotifications\\SpecialTranslatorSignup",
+			"services": [
+				"UserOptionsManager",
+				"LanguageNameUtils"
+			]
+		},
+		"NotifyTranslators": {
+			"class": "MediaWiki\\Extension\\TranslationNotifications\\SpecialNotifyTranslators",
+			"services": [
+				"LanguageNameUtils",
+				"JobQueueGroup"
+			]
+		}
+	},
+	"JobClasses": {
+		"TranslationNotificationsEmailJob": "MediaWiki\\Extension\\TranslationNotifications\\Jobs\\TranslationNotificationsEmailJob",
+		"TranslationNotificationsSubmitJob": "MediaWiki\\Extension\\TranslationNotifications\\Jobs\\TranslationNotificationsSubmitJob"
+	},
+	"LogTypes": [
+		"notifytranslators"
+	],
+	"LogActionsHandlers": {
+		"notifytranslators/sent": "MediaWiki\\Extension\\TranslationNotifications\\TranslationNotificationsLogFormatter"
+	},
+	"MessagesDirs": {
+		"TranslationNotifications": [
+			"i18n"
+		]
+	},
+	"TranslationAliasesDirs": {
+		"TranslationNotificationsAlias": "i18n/aliases"
+	},
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\TranslationNotifications\\": "includes/",
+		"MediaWiki\\Extension\\TranslationNotifications\\Scripts\\": "scripts/"
+	},
+	"ResourceModules": {
+		"ext.translationnotifications.notifytranslators": {
+			"scripts": [
+				"resources/ext.translationnotifications.notifytranslators.js"
+			],
+			"dependencies": [
+				"web2017-polyfills",
+				"mediawiki.jqueryMsg",
+				"mediawiki.api",
+				"mediawiki.user",
+				"oojs-ui-core",
+				"ext.translate.entity.selector"
+			],
+			"messages": [
+				"translationnotifications-preview-notification-button",
+				"translationnotifications-talkpage-body",
+				"translationnotifications-generic-languages",
+				"translationnotifications-email-priority",
+				"translationnotifications-email-deadline",
+				"translationnotifications-languages-to-notify",
+				"translationnotifications-languages-to-not-notify",
+				"translationnotifications-tes-discouraged-group",
+				"translate-mgs-invalid-group"
+			],
+			"styles": "resources/ext.translationnotifications.notifytranslators.less"
+		},
+		"ext.translationnotifications.translatorsignup": {
+			"scripts": "resources/ext.translationnotifications.translatorsignup.js"
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "",
+		"remoteExtPath": "TranslationNotifications"
+	},
+	"Hooks": {
+		"GetPreferences": "main",
+		"BeforeCreateEchoEvent": [
+			"MediaWiki\\Extension\\TranslationNotifications\\Hooks::onBeforeCreateEchoEvent"
+		]
+	},
+	"HookHandlers": {
+		"main": {
+			"class": "MediaWiki\\Extension\\TranslationNotifications\\Hooks"
+		}
+	},
+	"config": {
+		"TranslationNotificationsContactMethods": {
+			"value": {
+				"email": true,
+				"talkpage": true,
+				"talkpage-elsewhere": false,
+				"feed": false
+			}
+		},
+		"TranslationNotificationsSignupLegalMessage": {
+			"value": "translationnotifications-signup-legal"
+		},
+		"TranslationNotificationsAlwaysHttpsInEmail": {
+			"value": false
+		}
+	},
+	"manifest_version": 2
+}

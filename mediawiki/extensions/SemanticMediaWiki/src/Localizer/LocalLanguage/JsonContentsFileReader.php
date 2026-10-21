@@ -1,0 +1,149 @@
+<?php
+
+namespace SMW\Localizer\LocalLanguage;
+
+use Exception;
+use RuntimeException;
+use SMW\Utils\ErrorCodeFormatter;
+use Wikimedia\ObjectCache\BagOStuff;
+use Wikimedia\ObjectCache\EmptyBagOStuff;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 2.5
+ *
+ * @author mwjames
+ */
+class JsonContentsFileReader {
+
+	private static array $contents = [];
+
+	private bool $skipCache = false;
+
+	private int $ttl = 604800; // 7 * 24 * 3600
+
+	/**
+	 * @since 2.5
+	 */
+	public function __construct(
+		private ?BagOStuff $cache = null,
+		private $languageFileDir = '',
+	) {
+		if ( $this->cache === null ) {
+			$this->cache = new EmptyBagOStuff();
+		}
+
+		if ( $this->languageFileDir === '' ) {
+			$this->languageFileDir = $GLOBALS['smwgExtraneousLanguageFileDir'];
+		}
+	}
+
+	/**
+	 * @since 2.5
+	 */
+	public static function clear(): void {
+		self::$contents = [];
+	}
+
+	/**
+	 * @since 2.5
+	 */
+	public function skipCache(): void {
+		$this->skipCache = true;
+	}
+
+	/**
+	 * @since 1.2.0
+	 */
+	public function getFileModificationTime( string $languageCode ): int|false {
+		return filemtime( $this->getLanguageFile( $languageCode ) );
+	}
+
+	/**
+	 * @since 2.5
+	 */
+	public function canReadByLanguageCode( string $languageCode ): bool {
+		$canReadByLanguageCode = '';
+
+		try {
+			$canReadByLanguageCode = $this->getLanguageFile( $languageCode );
+		} catch ( Exception ) {
+			$canReadByLanguageCode = '';
+		}
+
+		return $canReadByLanguageCode !== '';
+	}
+
+	/**
+	 * @since 2.5
+	 */
+	public function writeByLanguageCode( string $languageCode, array $contents ): void {
+		$languageCode = strtolower( trim( $languageCode ) );
+
+		file_put_contents(
+			$this->getLanguageFile( $languageCode ),
+			json_encode( $contents, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE )
+		);
+	}
+
+	/**
+	 * @since 2.5
+	 *
+	 * @throws RuntimeException
+	 */
+	public function readByLanguageCode( string $languageCode, bool $readFromFile = false ): array {
+		$languageCode = strtolower( trim( $languageCode ) );
+
+		if ( !$readFromFile && isset( self::$contents[$languageCode] ) ) {
+			return self::$contents[$languageCode];
+		}
+
+		$cacheKey = smwfCacheKey(
+			'smw:lang',
+			[
+				$languageCode,
+				$this->getFileModificationTime( $languageCode ),
+				$this->ttl
+			]
+		);
+
+		if ( !$readFromFile && !$this->skipCache && !isset( self::$contents[$languageCode] ) ) {
+			$cached = $this->cache->get( $cacheKey );
+
+			if ( $cached !== false ) {
+				self::$contents[$languageCode] = $cached;
+			}
+		}
+
+		if ( $readFromFile || !isset( self::$contents[$languageCode] ) ) {
+			self::$contents[$languageCode] = $this->readJSONFile( $languageCode, $cacheKey );
+		}
+
+		return self::$contents[$languageCode];
+	}
+
+	protected function readJSONFile( string $languageCode, $cacheKey ): mixed {
+		$contents = json_decode(
+			file_get_contents( $this->getLanguageFile( $languageCode ) ),
+			true
+		);
+
+		if ( $contents !== null && json_last_error() === JSON_ERROR_NONE ) {
+			$this->cache->set( $cacheKey, $contents, $this->ttl );
+			return $contents;
+		}
+
+		throw new RuntimeException( ErrorCodeFormatter::getMessageFromJsonErrorCode( json_last_error() ) );
+	}
+
+	private function getLanguageFile( string $languageCode ): string {
+		$file = str_replace( [ '\\', '/' ], DIRECTORY_SEPARATOR, $this->languageFileDir . '/' . $languageCode . '.json' );
+
+		if ( is_readable( $file ) ) {
+			return $file;
+		}
+
+		throw new RuntimeException( "Expected a {$file} file" );
+	}
+
+}

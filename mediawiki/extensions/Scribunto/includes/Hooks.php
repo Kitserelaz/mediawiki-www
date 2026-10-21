@@ -20,34 +20,32 @@
  * http://www.gnu.org/copyleft/gpl.html
  */
 
-// phpcs:disable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
-
 namespace MediaWiki\Extension\Scribunto;
 
-use Article;
 use MediaWiki\Config\Config;
 use MediaWiki\Content\Content;
+use MediaWiki\Content\IContentHandlerFactory;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\EditPage\EditPage;
 use MediaWiki\Hook\EditFilterMergedContentHook;
 use MediaWiki\Hook\EditPage__showReadOnlyForm_initialHook;
 use MediaWiki\Hook\EditPage__showStandardInputs_optionsHook;
 use MediaWiki\Hook\EditPageBeforeEditButtonsHook;
-use MediaWiki\Hook\ParserClearStateHook;
-use MediaWiki\Hook\ParserClonedHook;
-use MediaWiki\Hook\ParserFirstCallInitHook;
-use MediaWiki\Hook\ParserLimitReportFormatHook;
-use MediaWiki\Hook\ParserLimitReportPrepareHook;
-use MediaWiki\Hook\SoftwareInfoHook;
 use MediaWiki\Html\Html;
-use MediaWiki\MediaWikiServices;
+use MediaWiki\ObjectCache\ObjectCacheFactory;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Page\Article;
 use MediaWiki\Page\Hook\ArticleViewHeaderHook;
+use MediaWiki\Parser\Hook\ParserClearStateHook;
+use MediaWiki\Parser\Hook\ParserFirstCallInitHook;
+use MediaWiki\Parser\Hook\ParserLimitReportFormatHook;
+use MediaWiki\Parser\Hook\ParserLimitReportPrepareHook;
 use MediaWiki\Parser\Parser;
 use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Parser\PPFrame;
 use MediaWiki\Parser\PPNode;
 use MediaWiki\Revision\Hook\ContentHandlerDefaultModelForHook;
+use MediaWiki\Specials\Hook\SoftwareInfoHook;
 use MediaWiki\Status\Status;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
@@ -55,6 +53,7 @@ use MediaWiki\WikiMap\WikiMap;
 use UtfNormal\Validator;
 use Wikimedia\ObjectCache\EmptyBagOStuff;
 use Wikimedia\PSquare;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * Hooks for the Scribunto extension.
@@ -65,7 +64,6 @@ class Hooks implements
 	ParserLimitReportPrepareHook,
 	ParserLimitReportFormatHook,
 	ParserClearStateHook,
-	ParserClonedHook,
 	EditPage__showStandardInputs_optionsHook,
 	EditPage__showReadOnlyForm_initialHook,
 	EditPageBeforeEditButtonsHook,
@@ -73,12 +71,13 @@ class Hooks implements
 	ArticleViewHeaderHook,
 	ContentHandlerDefaultModelForHook
 {
-	private Config $config;
-
 	public function __construct(
-		Config $config
+		private readonly Config $config,
+		private readonly IContentHandlerFactory $contentHandlerFactory,
+		private readonly ObjectCacheFactory $objectCacheFactory,
+		private readonly StatsFactory $statsFactory,
+		private readonly EngineFactory $engineFactory,
 	) {
-		$this->config = $config;
 	}
 
 	/**
@@ -95,8 +94,9 @@ class Hooks implements
 	 * @return bool
 	 */
 	public function onSoftwareInfo( &$software ) {
-		$engine = Scribunto::newDefaultEngine();
-		$engine->setTitle( Title::makeTitle( NS_SPECIAL, 'Version' ) );
+		$engine = $this->engineFactory->getDefaultEngine( [
+			'title' => Title::makeTitle( NS_SPECIAL, 'Version' ),
+		] );
 		$engine->getSoftwareInfo( $software );
 		return true;
 	}
@@ -118,17 +118,7 @@ class Hooks implements
 	 * @return void
 	 */
 	public function onParserClearState( $parser ) {
-		Scribunto::resetParserEngine( $parser );
-	}
-
-	/**
-	 * Called when the parser is cloned
-	 *
-	 * @param Parser $parser
-	 * @return void
-	 */
-	public function onParserCloned( $parser ) {
-		$parser->scribunto_engine = null;
+		$this->engineFactory->destroyEngineForParser( $parser );
 	}
 
 	/**
@@ -145,7 +135,7 @@ class Hooks implements
 				throw new ScribuntoException( 'scribunto-common-nofunction' );
 			}
 			$moduleName = trim( $frame->expand( $args[0] ) );
-			$engine = Scribunto::getParserEngine( $parser );
+			$engine = $this->engineFactory->getEngineForParser( $parser );
 
 			$title = Title::makeTitleSafe( NS_MODULE, $moduleName );
 			if ( !$title || !$title->hasContentModel( CONTENT_MODEL_SCRIBUNTO ) ) {
@@ -245,10 +235,9 @@ class Hooks implements
 			return;
 		}
 
-		$objectcachefactory = MediaWikiServices::getInstance()->getObjectCacheFactory();
 		static $cache;
 		if ( !$cache ) {
-			$cache = $objectcachefactory->getLocalServerInstance( CACHE_NONE );
+			$cache = $this->objectCacheFactory->getLocalServerInstance( CACHE_NONE );
 
 		}
 
@@ -275,12 +264,8 @@ class Hooks implements
 			return;
 		}
 
-		static $stats;
-		if ( !$stats ) {
-			$stats = MediaWikiServices::getInstance()->getStatsFactory();
-		}
 		$statAction = WikiMap::getCurrentWikiId() . '__' . $moduleName . '__' . $functionName;
-		$stats->getTiming( 'scribunto_traces_seconds' )
+		$this->statsFactory->getTiming( 'scribunto_traces_seconds' )
 			->setLabel( 'action', $statAction )
 			->copyToStatsdAt( 'scribunto.traces.' . $statAction )
 			->observe( $timing );
@@ -315,10 +300,8 @@ class Hooks implements
 	 * @return void
 	 */
 	public function onParserLimitReportPrepare( $parser, $parserOutput ) {
-		if ( Scribunto::isParserEnginePresent( $parser ) ) {
-			$engine = Scribunto::getParserEngine( $parser );
-			$engine->reportLimitData( $parserOutput );
-		}
+		$this->engineFactory->peekEngineForParser( $parser )
+			?->reportLimitData( $parserOutput );
 	}
 
 	/**
@@ -332,7 +315,7 @@ class Hooks implements
 	 * @return bool
 	 */
 	public function onParserLimitReportFormat( $key, &$value, &$report, $isHTML, $localize ) {
-		$engine = Scribunto::newDefaultEngine();
+		$engine = $this->engineFactory->getDefaultEngine();
 		return $engine->formatLimitData( $key, $value, $report, $isHTML, $localize );
 	}
 
@@ -396,8 +379,7 @@ class Hooks implements
 		if ( !$content instanceof ScribuntoContent ) {
 			return true;
 		}
-		$contentHandlerFactory = MediaWikiServices::getInstance()->getContentHandlerFactory();
-		$contentHandler = $contentHandlerFactory->getContentHandler( $content->getModel() );
+		$contentHandler = $this->contentHandlerFactory->getContentHandler( $content->getModel() );
 
 		'@phan-var ScribuntoContentHandler $contentHandler';
 		$validateStatus = $contentHandler->validate( $content, $title );
@@ -416,8 +398,6 @@ class Hooks implements
 			}
 		}
 		if ( !$status->isOK() ) {
-			// @todo Remove this line after this extension do not support mediawiki version 1.36 and before
-			$status->value = EditPage::AS_HOOK_ERROR_EXPECTED;
 			return false;
 		}
 
@@ -433,8 +413,12 @@ class Hooks implements
 	public function onArticleViewHeader( $article, &$outputDone, &$pcache ) {
 		$title = $article->getTitle();
 		if ( Scribunto::isDocPage( $title, $forModule ) ) {
-			$article->getContext()->getOutput()->addHTML(
-				wfMessage( 'scribunto-doc-page-header', $forModule->getPrefixedText() )->parseAsBlock()
+			$context = $article->getContext();
+			$context->getOutput()->addHTML(
+				$context->msg(
+					'scribunto-doc-page-header',
+					$forModule->getPrefixedText()
+				)->parseAsBlock()
 			);
 		}
 	}

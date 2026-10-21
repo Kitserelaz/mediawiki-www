@@ -8,11 +8,11 @@ use MediaWiki\Extension\Math\MathMathML;
 use MediaWiki\Extension\Math\MathMathMLCli;
 use MediaWiki\Extension\Math\MathRenderer;
 use MediaWiki\Extension\Math\Render\RendererFactory;
-use MediaWiki\Hook\ParserAfterTidyHook;
-use MediaWiki\Hook\ParserFirstCallInitHook;
-use MediaWiki\Hook\ParserOptionsRegisterHook;
 use MediaWiki\HookContainer\HookContainer;
 use MediaWiki\Logger\LoggerFactory;
+use MediaWiki\Parser\Hook\ParserAfterTidyHook;
+use MediaWiki\Parser\Hook\ParserFirstCallInitHook;
+use MediaWiki\Parser\Hook\ParserOptionsRegisterHook;
 use MediaWiki\Parser\Parser;
 use MediaWiki\Parser\ParserOptions;
 use MediaWiki\User\Options\UserOptionsLookup;
@@ -32,27 +32,24 @@ class ParserHooksHandler implements
 	/** @var array[] renders delayed to be done as a batch [ MathRenderer, Parser ] */
 	private $mathLazyRenderBatch = [];
 
-	/** @var RendererFactory */
-	private $rendererFactory;
-
-	/** @var UserOptionsLookup */
-	private $userOptionsLookup;
-
-	/** @var HookRunner */
-	private $hookRunner;
-
 	/**
-	 * @param RendererFactory $rendererFactory
-	 * @param UserOptionsLookup $userOptionsLookup
-	 * @param HookContainer $hookContainer
+	 * @var string[] result of batch rendering.
+	 *
+	 * We store rendered math to prevent parsing again if we happen to need it later.
+	 * Sometimes, parserAfterTidy is called several times.
+	 * First time it is called, we batch render all math, but maybe we don't need some math at that point,
+	 * so we store the rendered math for later use.
+	 * T371972
 	 */
+	private $mathLazyRenderBatchCompleted = [];
+
+	private readonly HookRunner $hookRunner;
+
 	public function __construct(
-		RendererFactory $rendererFactory,
-		UserOptionsLookup $userOptionsLookup,
-		HookContainer $hookContainer
+		private readonly RendererFactory $rendererFactory,
+		private readonly UserOptionsLookup $userOptionsLookup,
+		HookContainer $hookContainer,
 	) {
-		$this->rendererFactory = $rendererFactory;
-		$this->userOptionsLookup = $userOptionsLookup;
 		$this->hookRunner = new HookRunner( $hookContainer );
 	}
 
@@ -81,15 +78,22 @@ class ParserHooksHandler implements
 		$mode = $parser->getOptions()->getOption( 'math' );
 		if ( $mode === MathConfig::MODE_NATIVE_JAX ) {
 			$parser->getOutput()->addModules( [ 'ext.math.mathjax' ] );
+			if ( ( $attributes['forcemathmode'] ?? MathConfig::MODE_NATIVE_JAX ) !== MathConfig::MODE_NATIVE_JAX ) {
+				$attributes['class'] = 'mathjax_ignore';
+			}
 			$mode = MathConfig::MODE_NATIVE_MML;
 		}
 		$renderer = $this->rendererFactory->getRenderer( $content ?? '', $attributes, $mode );
 
 		$parser->getOutput()->addModuleStyles( [ 'ext.math.styles' ] );
+		$parser->getOutput()->addModules( [ 'ext.math.polyfills' ] );
 		if ( array_key_exists( "qid", $attributes ) ) {
 			$parser->getOutput()->addModules( [ 'ext.math.popup' ] );
 		}
-		if ( $wgMathSvgRenderer === 'restbase' && $mode == MathConfig::MODE_MATHML ) {
+		if ( ( $wgMathSvgRenderer === 'restbase' && $mode == MathConfig::MODE_MATHML ) ||
+			$mode === MathConfig::MODE_NATIVE_JAX ||
+			$mode === MathConfig::MODE_NATIVE_MML
+		) {
 			$marker = Parser::MARKER_PREFIX .
 				'-postMath-' . sprintf( '%08X', $this->mathTagCounter++ ) .
 				Parser::MARKER_SUFFIX;
@@ -140,9 +144,13 @@ class ParserHooksHandler implements
 			$renderer->addTrackingCategories( $parser );
 			return $renderer->getLastError();
 		}
-		$this->hookRunner->onMathFormulaPostRender(
-			$parser, $renderer, $renderedMath
-		); // Enables indexing of math formula
+
+		// Enables indexing of math formula
+		$this->hookRunner->onMathFormulaPostRenderRevision(
+			$parser->getRevisionRecordObject(),
+			$renderer,
+			$renderedMath
+		);
 
 		// Writes cache if rendering was successful
 		$renderer->writeCache();
@@ -155,21 +163,35 @@ class ParserHooksHandler implements
 	 * @param string &$text
 	 */
 	public function onParserAfterTidy( $parser, &$text ) {
-		global $wgMathoidCli;
-		$renderers = array_column( $this->mathLazyRenderBatch, 0 );
-		if ( $wgMathoidCli ) {
-			MathMathMLCli::batchEvaluate( $renderers );
-		} else {
-			MathMathML::batchEvaluate( $renderers );
-		}
-		foreach ( $this->mathLazyRenderBatch as $key => [ $renderer, $renderParser ] ) {
-			$value = $this->mathPostTagHook( $renderer, $renderParser );
+		$this->renderBatch( $parser );
+
+		foreach ( $this->mathLazyRenderBatchCompleted as $key => $value ) {
 			$count = 0;
 			$text = str_replace( $key, $value, $text, $count );
 			if ( $count ) {
-				// This hook might be called multiple times. However once the tag is rendered the job is done.
-				unset( $this->mathLazyRenderBatch[ $key ] );
+				// This hook might be called multiple times. However once the tag is replaced the job is done.
+				unset( $this->mathLazyRenderBatchCompleted[ $key ] );
 			}
+		}
+	}
+
+	private function renderBatch( Parser $parser ) {
+		$mode = $parser->getOptions()->getOption( 'math' );
+
+		if ( $mode === MathConfig::MODE_MATHML ) {
+			$renderers = array_column( $this->mathLazyRenderBatch, 0 );
+			if ( MathMathMLCli::isMathoidCliConfigured() ) {
+				MathMathMLCli::batchEvaluate( $renderers );
+			} else {
+				MathMathML::batchEvaluate( $renderers );
+			}
+		}
+		foreach ( $this->mathLazyRenderBatch as $key => [ $renderer, $renderParser ] ) {
+			$this->mathLazyRenderBatchCompleted[ $key ] = $this->mathPostTagHook( $renderer, $renderParser );
+			// Unset directly after (expensive) parse to prevent accidentaly
+			// parsing again on subsequent parserAfterTidy calls.
+			// Result is stored on mathLazyRenderBatchCompleted array, in case we need it later. (T371972)
+			unset( $this->mathLazyRenderBatch[ $key ] );
 		}
 	}
 
@@ -177,9 +199,10 @@ class ParserHooksHandler implements
 	public function onParserOptionsRegister( &$defaults, &$inCacheKey, &$lazyLoad ) {
 		$defaults['math'] = $this->userOptionsLookup->getDefaultOption( 'math' );
 		$inCacheKey['math'] = true;
-		$lazyLoad['math'] = function ( ParserOptions $options ) {
+		$lazyLoad['math'] = function ( ParserOptions $options )  {
 			return MathConfig::normalizeRenderingMode(
-				$this->userOptionsLookup->getOption( $options->getUserIdentity(), 'math' )
+				$this->userOptionsLookup->getOption( $options->getUserIdentity(), 'math' ) ??
+					MathConfig::MODE_NATIVE_MML
 			);
 		};
 	}

@@ -1,0 +1,11 @@
+tests/selenium/log
+
+# npm dependencies
+/node_modules/
+
+# composer dependencies
+/vendor/
+composer.lock
+
+# Development
+/mediawiki*

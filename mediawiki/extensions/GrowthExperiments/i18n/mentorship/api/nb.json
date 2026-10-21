@@ -1,0 +1,38 @@
+{
+	"@metadata": {
+		"authors": [
+			"Jon Harald Søby"
+		]
+	},
+	"apihelp-growthstarmentee-summary": "Merk eller fjern stjernemerking av et fadderbarn av den gjeldende brukeren (lagres privat og logges ikke)",
+	"apihelp-growthstarmentee-param-gesaction": "Handling som skal utføres (<kbd>star</kbd> eller <kbd>unstar</kbd>)",
+	"apihelp-growthstarmentee-param-gesmentee": "Fadderbarn som skal (av)stjernemerkes",
+	"apihelp-query+growthstarredmentees-summary": "Hent liste over fadderbarn som er stjernemerka av den for tiden innloggede fadderen",
+	"apihelp-growthsetmentorstatus-summary": "Sett den gjeldende brukerens fadderstatus til aktiv/borte",
+	"apihelp-growthsetmentorstatus-param-gesstatus": "Ny status",
+	"apihelp-growthsetmentorstatus-param-gesbackindays": "Når fadderstatus endres til borte må man ha med varigheten på bortestatusen (i dager)",
+	"apihelp-query+growthmentorstatus-summary": "Avslutt den gjeldende brukerens fadderskap",
+	"apihelp-growthmentordashboardupdatedata-summary": "Planlegg en ekstraordinær oppdatering av modulen for fadderbarnoversikt i kontrollpanelet for faddere. Av ytelsesgrunner må det gå minst to timer mellom hver oppdatering.",
+	"apihelp-growthsetmenteestatus-summary": "Sett fadderbarnets status (lar fadderbarn slå av og på faddermodulen eller velge å ikke bruke den i det hele tatt, hvilket sletter forholdet mellom fadder og fadderbarn)",
+	"apihelp-growthsetmenteestatus-param-state": "Ny status for fadderbarnet (advarsel: å sette denne til optout vil slette forholdet mellom fadder og fadderbarn permanent)",
+	"apihelp-growthsetmenteestatus-param-state-enabled": "Faddermodulen er slått på",
+	"apihelp-growthsetmenteestatus-param-state-disabled": "Faddermodulen er slått helt av. Dette settes normalt av programvaren og brukes for A/B-testing.",
+	"apihelp-growthsetmenteestatus-param-state-optout": "Fadderbarnet har valgt å ikke delta å fadderprogrammet; forholdet mellom fadder og faderbarn slettes, og faddermodulen erstattes med muligheten til å velge å delta igjen.",
+	"apihelp-query+growthmenteestatus-summary": "Spør etter den gjeldende brukerens fadderbarnstatus; se dokumentasjonen for action=growthsetmenteestatus for detaljert informasjon om individuelle statuser.",
+	"apihelp-query+growthmentormentee-summary": "Hent alle fadderbarn som er tildelt en gitt fadder",
+	"apihelp-query+growthmentormentee-param-gemmmentor": "Fadder det skal spørres om fadderbarn for",
+	"apihelp-growthmanagementorlist-summary": "Behandle informasjon i den strukturerte fadderlisten (vanligvis lagret i [[MediaWiki:GrowthMentors.json]]). Denne modulen kan brukes både av nåværende og framtidige faddere (for å legge seg til eller endre detaljene sine) og administratorer (for alle brukere).",
+	"apihelp-growthmanagementorlist-param-geaction": "Handling",
+	"apihelp-growthmanagementorlist-param-message": "Introduksjonsmelding (bruk en tom streng for standard-faddermeldingen)",
+	"apihelp-growthmanagementorlist-param-weight": "Vekting",
+	"apihelp-growthmanagementorlist-param-isaway": "Er fadderen for tiden borte? Må settes (standard er false).",
+	"apihelp-growthmanagementorlist-param-awaytimestamp": "Til når er fadderen borte? Maksimal verdi er 1 år fra i dag. Ignoreres med mindre isaway er true.",
+	"apihelp-growthmanagementorlist-param-summary": "Årsak for endringen",
+	"apihelp-growthmanagementorlist-param-username": "Brukernavnet til fadderen som påvirkes av endringen. Hvis det ikke er angitt blir den nåværende innloggede brukeren brukt. Kan kun brukes av brukere som har rettigheten til det.",
+	"growthexperiments-api-managementors-error-no-away-timestamp": "Hvis isaway er true må awaytimestamp også angis.",
+	"apihelp-growthinvalidatepersonalizedpraisesuggestion-summary": "Ugyldiggjør et forslag om fadderbarn som fortjener skryt i modulen for personlig skryt i fadderpanelet",
+	"apihelp-growthinvalidatepersonalizedpraisesuggestion-param-mentee": "Fadderbarn som skal ugyldiggjøres",
+	"apihelp-growthinvalidatepersonalizedpraisesuggestion-param-reason": "Årsak til at forslaget skal ugyldiggjøres",
+	"apihelp-growthinvalidatepersonalizedpraisesuggestion-param-skipreason": "Hopp over årsaken til at forslaget skal ugyldiggjøres",
+	"apihelp-query+growthmentorlist-summary": "List opp alle fadderne"
+}

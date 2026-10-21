@@ -1,0 +1,16 @@
+{
+	"@metadata": {
+		"authors": [
+			"Snævar",
+			"Stefán Örvar Sigmundsson",
+			"Sveinn í Felli"
+		]
+	},
+	"pageassessments-desc": "Þessi viðbót er til að geyma síðumat í gagnagrunnstöflu með hjálp þáttaraaðgerðar",
+	"pageassessments-project": "Verkefni",
+	"pageassessments-page-namespace": "Nafnrými síðunnar",
+	"pageassessments-page-title": "Titill síðu",
+	"pageassessments-search": "Leita",
+	"pageassessments-class": "Klasi",
+	"pageassessments-timestamp": "Tímamerki"
+}

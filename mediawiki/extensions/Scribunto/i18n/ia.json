@@ -30,7 +30,7 @@
 	"scribunto-common-timeout": "Le tempore allocate pro le execution de scripts ha expirate.",
 	"scribunto-common-oom": "Le quantitate de memoria permittite pro le execution de scripts ha essite excedite.",
 	"scribunto-common-backtrace": "Tracia a retro:",
-	"scribunto-common-no-details": "Il non ha altere detalios disponibile.",
+	"scribunto-common-no-details": "Il non ha detalios disponibile sur le position del codice.",
 	"scribunto-lua-in-function": "in function \"$1\"",
 	"scribunto-lua-in-main": "in le parte principal",
 	"scribunto-lua-in-function-at": "in le function a $1:$2",
@@ -62,6 +62,6 @@
 	"scribunto-limitreport-logs": "Registros Lua",
 	"nstab-module": "Modulo",
 	"tooltip-ca-nstab-module": "Visitar le pagina del modulo",
-	"namespaceinfo-description-ns828": "Spatio de nomines pro modulos de codice Lua, le quales pote esser invocate a partir de paginas wiki, e lor paginas de documentation",
+	"namespaceinfo-description-ns828": "Spatio de nomines pro modulos de codice Lua, le quales pote esser invocate a partir de paginas wiki, e pro lor paginas de documentation",
 	"namespaceinfo-description-ns829": "Paginas de discussion pro le modulos e le documentation"
 }

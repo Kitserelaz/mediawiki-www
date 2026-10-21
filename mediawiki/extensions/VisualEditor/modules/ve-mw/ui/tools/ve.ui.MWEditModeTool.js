@@ -1,6 +1,11 @@
 /*!
  * VisualEditor MediaWiki UserInterface edit mode tool classes.
  *
+ * Used for making edit mode switcher tools within VE.
+ *
+ * When building a toolbar for use outside of VE you can use
+ * the mw.libs.ve.MWEditModeTool classes.
+ *
  * @copyright See AUTHORS.txt
  * @license The MIT License (MIT); see LICENSE.txt
  */
@@ -35,13 +40,19 @@ ve.ui.MWEditModeTool.prototype.getMode = function () {
  */
 ve.ui.MWEditModeTool.prototype.isModeAvailable = function ( mode ) {
 	const target = this.toolbar.getTarget();
-	const surface = target.getSurface();
-	const canSwitch = surface && !surface.getModel().isMultiUser();
-
-	// Source mode is always available
-	return canSwitch && (
-		mode === 'source' || target.isModeAvailable( mode )
-	);
+	if ( !target.getSurface() ) {
+		// Disable switching before surface is loaded
+		return false;
+	}
+	if ( target.getSurface().getModel().isMultiUser() ) {
+		// Disable switching in multi-user mode
+		return false;
+	}
+	if ( mode === 'source' ) {
+		// A fallback source mode should always available (e.g. EditPage.php)
+		return true;
+	}
+	return target.isModeAvailable( mode );
 };
 
 /**
@@ -62,6 +73,7 @@ ve.ui.MWEditModeVisualTool = function VeUiMWEditModeVisualTool() {
 };
 OO.inheritClass( ve.ui.MWEditModeVisualTool, mw.libs.ve.MWEditModeVisualTool );
 OO.mixinClass( ve.ui.MWEditModeVisualTool, ve.ui.MWEditModeTool );
+
 /**
  * @inheritdoc
  */
@@ -92,6 +104,10 @@ OO.mixinClass( ve.ui.MWEditModeSourceTool, ve.ui.MWEditModeTool );
  * @inheritdoc
  */
 ve.ui.MWEditModeSourceTool.prototype.switch = function () {
-	this.toolbar.getTarget().editSource();
+	// T296575: Close all inspectors; similar to what ve.ui.WindowAction.open enforces
+	const inspectors = this.toolbar.getSurface().getContext().getInspectors();
+	inspectors.closeWindow( inspectors.getCurrentWindow() ).closed.always( () => {
+		this.toolbar.getTarget().switchToWikitextEditor();
+	} );
 };
 ve.ui.toolFactory.register( ve.ui.MWEditModeSourceTool );

@@ -1,0 +1,32 @@
+{
+	"@metadata": {
+		"authors": [
+			"DreZhsh",
+			"Gomoko",
+			"Verdy p"
+		]
+	},
+	"removepii-desc": "Crée les pages spéciales, Special:GenerateRandomHash et Special:RemovePII pour gérer la suppression des informations personnelles identifiables.",
+	"removepii-extensionname": "SupprimerIPI",
+	"generaterandomhash": "Générer un hachage aléatoire",
+	"removepii": "RemovePII",
+	"action-generate-random-hash": "générer un hachage aléatoire",
+	"action-handle-pii": "gère / supprime les informations d’identification personnelle",
+	"right-generate-random-hash": "Générer des hachages de nom d’utilisateur aléatoires",
+	"right-handle-pii": "Gérer / supprimer les informations d’identification personnelle",
+	"removepii-hash-length-help": "Saisir le nombre de caractères que le hachage généré devrait contenir. Min. 8, max. 32",
+	"removepii-hash-prefix-help": "Sélectionner dans la liste déroulante l’option appropriée à utiliser pour le préfixe pour la génération du hachage.",
+	"removepii-oldname-label": "Ancien nom d’utilisateur :",
+	"removepii-newname-label": "Nouveau nom d’utilisateur :",
+	"removepii-dpa_id-label": "Identifiant DPA :",
+	"removepii-action-label": "Sélectionner l’action que vous voulez effectuer.",
+	"removepii-action-help": "Les renommages devraient '''toujours''' être effectués avant RemovePII. RemovePII bloquera aussi le compte global de l’utilisateur.",
+	"removepii-warning-irreversible": "'''Avertissement :''' vous allez effectuer l’action RemovePII. Ce processus est irréversible. Assurez-vous d’avoir l’information correcte avant de continuer.",
+	"removepii-wiki-disabled": "RemovePII a été désactivé sur ce wiki. Il est actuellement configuré pour n’être activé que sur un wiki central. Vous devez l’initialiser depuis ici.",
+	"removepii-success": "Soumis avec succès.",
+	"removepii-centralauth-notinstalled": "L’extension CentralAuth n’est pas installée.",
+	"removepii-log-name": "Journal de RemovePII",
+	"removepii-log-header": "Ceci est un journal de base de toutes les actions de RemovePII.",
+	"removepii-invalid-dpa": "Impossible de valider en associant la demande DPA. Soit le serveur connait des difficultés et nous ne pouvons pas nous connecter au point de terminaison, soit l’ancien nom d’utilisateur ne correspond pas au nom utilisateur du demandeur donné dans la demande DPA associée.",
+	"logentry-removepii-action": "$1 a supprimé les informations d’identification personnelle d’un utilisateur."
+}

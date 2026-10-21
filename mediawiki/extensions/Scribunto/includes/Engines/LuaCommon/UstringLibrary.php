@@ -3,10 +3,10 @@
 namespace MediaWiki\Extension\Scribunto\Engines\LuaCommon;
 
 use LogicException;
-use MapCacheLRU;
 use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
 use UtfNormal\Validator;
+use Wikimedia\ObjectCache\MapCacheLRU;
 
 class UstringLibrary extends LibraryBase {
 	/**
@@ -17,33 +17,75 @@ class UstringLibrary extends LibraryBase {
 
 	/**
 	 * Limit on string lengths, in bytes not characters
-	 * @var int
 	 */
-	private $stringLengthLimit;
-
-	/**
-	 * PHP until 5.6.9 are buggy when the regex in preg_replace an
-	 * preg_match_all matches the empty string.
-	 * @var bool
-	 */
-	private $phpBug53823;
+	private readonly int $stringLengthLimit;
 
 	/**
 	 * A cache of patterns and the regexes they generate.
-	 * @var MapCacheLRU
 	 */
-	private $patternRegexCache;
+	private readonly MapCacheLRU $patternRegexCache;
+
+	/**
+	 * If you change this, also change lualib/ustring/make-tables.php
+	 * (and run it to regenerate charsets.lua)
+	 */
+	private const CHARSETS = [
+		'a' => '\p{L}',
+		'c' => '\p{Cc}',
+		'd' => '\p{Nd}',
+		'l' => '\p{Ll}',
+		'p' => '\p{P}',
+		's' => '\p{Xps}',
+		'u' => '\p{Lu}',
+		'w' => '[\p{L}\p{Nd}]',
+		'x' => '[0-9A-Fa-f０-９Ａ-Ｆａ-ｆ]',
+		'z' => '\0',
+
+		// These *must* be the inverse of the above
+		'A' => '\P{L}',
+		'C' => '\P{Cc}',
+		'D' => '\P{Nd}',
+		'L' => '\P{Ll}',
+		'P' => '\P{P}',
+		'S' => '\P{Xps}',
+		'U' => '\P{Lu}',
+		'W' => '[^\p{L}\p{Nd}]',
+		'X' => '[^0-9A-Fa-f０-９Ａ-Ｆａ-ｆ]',
+		'Z' => '[^\0]',
+	];
+
+	/**
+	 * If you change this, also change lualib/ustring/make-tables.php
+	 * (and run it to regenerate charsets.lua)
+	 */
+	private const BR_CHARSETS = [
+		'w' => '\p{L}\p{Nd}',
+		'x' => '0-9A-Fa-f０-９Ａ-Ｆａ-ｆ',
+
+		// Negated sets that are not expressible as a simple \P{} are
+		// unfortunately complicated.
+
+		// Xan is L plus N, so ^Xan plus Nl plus No is anything that's not L or Nd
+		'W' => '\P{Xan}\p{Nl}\p{No}',
+
+		// Manually constructed. Fun.
+		'X' => '\x00-\x2f\x3a-\x40\x47-\x60\x67-\x{ff0f}'
+			. '\x{ff1a}-\x{ff20}\x{ff27}-\x{ff40}\x{ff47}-\x{10ffff}',
+
+		// Ha!
+		'Z' => '\x01-\x{10ffff}',
+	] + self::CHARSETS;
 
 	/** @inheritDoc */
 	public function __construct( $engine ) {
 		$maxArticleSize = MediaWikiServices::getInstance()->getMainConfig()->get( MainConfigNames::MaxArticleSize );
 		$this->stringLengthLimit = $maxArticleSize * 1024;
-		$this->phpBug53823 = preg_replace( '//us', 'x', "\xc3\xa1" ) === "x\xc3x\xa1x";
 		$this->patternRegexCache = new MapCacheLRU( 100 );
 
 		parent::__construct( $engine );
 	}
 
+	/** @inheritDoc */
 	public function register() {
 		$perf = $this->getEngine()->getPerformanceCharacteristics();
 
@@ -51,32 +93,32 @@ class UstringLibrary extends LibraryBase {
 			$lib = [
 				// Pattern matching is still much faster in PHP, even with the
 				// overhead of serialization
-				'find' => [ $this, 'ustringFind' ],
-				'match' => [ $this, 'ustringMatch' ],
-				'gmatch_init' => [ $this, 'ustringGmatchInit' ],
-				'gmatch_callback' => [ $this, 'ustringGmatchCallback' ],
-				'gsub' => [ $this, 'ustringGsub' ],
+				'find' => $this->ustringFind( ... ),
+				'match' => $this->ustringMatch( ... ),
+				'gmatch_init' => $this->ustringGmatchInit( ... ),
+				'gmatch_callback' => $this->ustringGmatchCallback( ... ),
+				'gsub' => $this->ustringGsub( ... ),
 			];
 		} else {
 			$lib = [
-				'isutf8' => [ $this, 'ustringIsUtf8' ],
-				'byteoffset' => [ $this, 'ustringByteoffset' ],
-				'codepoint' => [ $this, 'ustringCodepoint' ],
-				'gcodepoint_init' => [ $this, 'ustringGcodepointInit' ],
-				'toNFC' => [ $this, 'ustringToNFC' ],
-				'toNFD' => [ $this, 'ustringToNFD' ],
-				'toNFKC' => [ $this, 'ustringToNFKC' ],
-				'toNFKD' => [ $this, 'ustringToNFKD' ],
-				'char' => [ $this, 'ustringChar' ],
-				'len' => [ $this, 'ustringLen' ],
-				'sub' => [ $this, 'ustringSub' ],
-				'upper' => [ $this, 'ustringUpper' ],
-				'lower' => [ $this, 'ustringLower' ],
-				'find' => [ $this, 'ustringFind' ],
-				'match' => [ $this, 'ustringMatch' ],
-				'gmatch_init' => [ $this, 'ustringGmatchInit' ],
-				'gmatch_callback' => [ $this, 'ustringGmatchCallback' ],
-				'gsub' => [ $this, 'ustringGsub' ],
+				'isutf8' => $this->ustringIsUtf8( ... ),
+				'byteoffset' => $this->ustringByteoffset( ... ),
+				'codepoint' => $this->ustringCodepoint( ... ),
+				'gcodepoint_init' => $this->ustringGcodepointInit( ... ),
+				'toNFC' => $this->ustringToNFC( ... ),
+				'toNFD' => $this->ustringToNFD( ... ),
+				'toNFKC' => $this->ustringToNFKC( ... ),
+				'toNFKD' => $this->ustringToNFKD( ... ),
+				'char' => $this->ustringChar( ... ),
+				'len' => $this->ustringLen( ... ),
+				'sub' => $this->ustringSub( ... ),
+				'upper' => $this->ustringUpper( ... ),
+				'lower' => $this->ustringLower( ... ),
+				'find' => $this->ustringFind( ... ),
+				'match' => $this->ustringMatch( ... ),
+				'gmatch_init' => $this->ustringGmatchInit( ... ),
+				'gmatch_callback' => $this->ustringGmatchCallback( ... ),
+				'gsub' => $this->ustringGsub( ... ),
 			];
 		}
 		return $this->getEngine()->registerInterface( 'mw.ustring.lua', $lib, [
@@ -90,6 +132,7 @@ class UstringLibrary extends LibraryBase {
 	 * @param string $name Function name, for errors
 	 * @param mixed &$s Value to check
 	 * @param bool $checkEncoding Whether to validate UTF-8 encoding.
+	 * @throws LuaError
 	 */
 	private function checkString( $name, &$s, $checkEncoding = true ) {
 		if ( $this->getLuaType( $s ) == 'number' ) {
@@ -109,24 +152,24 @@ class UstringLibrary extends LibraryBase {
 
 	/**
 	 * Handler for isUtf8
-	 * @internal
 	 * @param string $s
 	 * @return bool[]
+	 * @throws LuaError
 	 */
-	public function ustringIsUtf8( $s ) {
+	private function ustringIsUtf8( $s ) {
 		$this->checkString( 'isutf8', $s, false );
 		return [ mb_check_encoding( $s, 'UTF-8' ) ];
 	}
 
 	/**
 	 * Handler for byteoffset
-	 * @internal
 	 * @param string $s
 	 * @param int $l
 	 * @param int $i
 	 * @return int[]|null[]
+	 * @throws LuaError
 	 */
-	public function ustringByteoffset( $s, $l = 1, $i = 1 ) {
+	private function ustringByteoffset( $s, $l = 1, $i = 1 ) {
 		$this->checkString( 'byteoffset', $s );
 		$this->checkTypeOptional( 'byteoffset', 2, $l, 'number', 1 );
 		$this->checkTypeOptional( 'byteoffset', 3, $i, 'number', 1 );
@@ -156,13 +199,13 @@ class UstringLibrary extends LibraryBase {
 
 	/**
 	 * Handler for codepoint
-	 * @internal
 	 * @param string $s
 	 * @param int $i
 	 * @param int|null $j
 	 * @return int[]
+	 * @throws LuaError
 	 */
-	public function ustringCodepoint( $s, $i = 1, $j = null ) {
+	private function ustringCodepoint( $s, $i = 1, $j = null ) {
 		$this->checkString( 'codepoint', $s );
 		$this->checkTypeOptional( 'codepoint', 2, $i, 'number', 1 );
 		$this->checkTypeOptional( 'codepoint', 3, $j, 'number', $i );
@@ -185,23 +228,23 @@ class UstringLibrary extends LibraryBase {
 
 	/**
 	 * Handler for gcodepointInit
-	 * @internal
 	 * @param string $s
 	 * @param int $i
 	 * @param int|null $j
 	 * @return int[][]
+	 * @throws LuaError
 	 */
-	public function ustringGcodepointInit( $s, $i = 1, $j = null ) {
+	private function ustringGcodepointInit( $s, $i = 1, $j = null ) {
 		return [ $this->ustringCodepoint( $s, $i, $j ) ];
 	}
 
 	/**
 	 * Handler for toNFC
-	 * @internal
 	 * @param string $s
 	 * @return string[]|null[]
+	 * @throws LuaError
 	 */
-	public function ustringToNFC( $s ) {
+	private function ustringToNFC( $s ) {
 		$this->checkString( 'toNFC', $s, false );
 		if ( !mb_check_encoding( $s, 'UTF-8' ) ) {
 			return [ null ];
@@ -211,11 +254,11 @@ class UstringLibrary extends LibraryBase {
 
 	/**
 	 * Handler for toNFD
-	 * @internal
 	 * @param string $s
 	 * @return string[]|null[]
+	 * @throws LuaError
 	 */
-	public function ustringToNFD( $s ) {
+	private function ustringToNFD( $s ) {
 		$this->checkString( 'toNFD', $s, false );
 		if ( !mb_check_encoding( $s, 'UTF-8' ) ) {
 			return [ null ];
@@ -225,11 +268,11 @@ class UstringLibrary extends LibraryBase {
 
 	/**
 	 * Handler for toNFKC
-	 * @internal
 	 * @param string $s
 	 * @return string[]|null[]
+	 * @throws LuaError
 	 */
-	public function ustringToNFKC( $s ) {
+	private function ustringToNFKC( $s ) {
 		$this->checkString( 'toNFKC', $s, false );
 		if ( !mb_check_encoding( $s, 'UTF-8' ) ) {
 			return [ null ];
@@ -239,11 +282,11 @@ class UstringLibrary extends LibraryBase {
 
 	/**
 	 * Handler for toNFKD
-	 * @internal
 	 * @param string $s
 	 * @return string[]|null[]
+	 * @throws LuaError
 	 */
-	public function ustringToNFKD( $s ) {
+	private function ustringToNFKD( $s ) {
 		$this->checkString( 'toNFKD', $s, false );
 		if ( !mb_check_encoding( $s, 'UTF-8' ) ) {
 			return [ null ];
@@ -253,11 +296,11 @@ class UstringLibrary extends LibraryBase {
 
 	/**
 	 * Handler for char
-	 * @internal
+	 * @param int ...$args
 	 * @return string[]
+	 * @throws LuaError
 	 */
-	public function ustringChar() {
-		$args = func_get_args();
+	private function ustringChar( ...$args ) {
 		if ( count( $args ) > $this->stringLengthLimit ) {
 			throw new LuaError( "too many arguments to 'char'" );
 		}
@@ -281,11 +324,11 @@ class UstringLibrary extends LibraryBase {
 
 	/**
 	 * Handler for len
-	 * @internal
 	 * @param string $s
 	 * @return int[]|null[]
+	 * @throws LuaError
 	 */
-	public function ustringLen( $s ) {
+	private function ustringLen( $s ) {
 		$this->checkString( 'len', $s, false );
 		if ( !mb_check_encoding( $s, 'UTF-8' ) ) {
 			return [ null ];
@@ -295,13 +338,13 @@ class UstringLibrary extends LibraryBase {
 
 	/**
 	 * Handler for sub
-	 * @internal
 	 * @param string $s
 	 * @param int $i
 	 * @param int $j
 	 * @return string[]
+	 * @throws LuaError
 	 */
-	public function ustringSub( $s, $i = 1, $j = -1 ) {
+	private function ustringSub( $s, $i = 1, $j = -1 ) {
 		$this->checkString( 'sub', $s );
 		$this->checkTypeOptional( 'sub', 2, $i, 'number', 1 );
 		$this->checkTypeOptional( 'sub', 3, $j, 'number', -1 );
@@ -324,22 +367,22 @@ class UstringLibrary extends LibraryBase {
 
 	/**
 	 * Handler for upper
-	 * @internal
 	 * @param string $s
 	 * @return string[]
+	 * @throws LuaError
 	 */
-	public function ustringUpper( $s ) {
+	private function ustringUpper( $s ) {
 		$this->checkString( 'upper', $s );
 		return [ mb_strtoupper( $s, 'UTF-8' ) ];
 	}
 
 	/**
 	 * Handler for lower
-	 * @internal
 	 * @param string $s
 	 * @return string[]
+	 * @throws LuaError
 	 */
-	public function ustringLower( $s ) {
+	private function ustringLower( $s ) {
 		$this->checkString( 'lower', $s );
 		return [ mb_strtolower( $s, 'UTF-8' ) ];
 	}
@@ -348,6 +391,7 @@ class UstringLibrary extends LibraryBase {
 	 * Check a pattern as the second argument
 	 * @param string $name Lua function name, for errors
 	 * @param mixed $pattern Lua pattern
+	 * @throws LuaError
 	 */
 	private function checkPattern( $name, $pattern ) {
 		if ( $this->getLuaType( $pattern ) == 'number' ) {
@@ -375,59 +419,13 @@ class UstringLibrary extends LibraryBase {
 	 *  - $capt: Definition of capturing groups, see addCapturesFromMatch()
 	 *  - $anypos: Whether any positional captures were encountered in the pattern.
 	 * @return-taint none
+	 * @throws LuaError
 	 */
 	private function patternToRegex( $pattern, $anchor, $name ) {
 		$cacheKey = serialize( [ $pattern, $anchor ] );
 		if ( !$this->patternRegexCache->has( $cacheKey ) ) {
 			$this->checkPattern( $name, $pattern );
 			$pat = preg_split( '//us', $pattern, -1, PREG_SPLIT_NO_EMPTY );
-
-			static $charsets = null, $brcharsets = null;
-			if ( $charsets === null ) {
-				$charsets = [
-					// If you change these, also change lualib/ustring/make-tables.php
-					// (and run it to regenerate charsets.lua)
-					'a' => '\p{L}',
-					'c' => '\p{Cc}',
-					'd' => '\p{Nd}',
-					'l' => '\p{Ll}',
-					'p' => '\p{P}',
-					's' => '\p{Xps}',
-					'u' => '\p{Lu}',
-					'w' => '[\p{L}\p{Nd}]',
-					'x' => '[0-9A-Fa-f０-９Ａ-Ｆａ-ｆ]',
-					'z' => '\0',
-
-					// These *must* be the inverse of the above
-					'A' => '\P{L}',
-					'C' => '\P{Cc}',
-					'D' => '\P{Nd}',
-					'L' => '\P{Ll}',
-					'P' => '\P{P}',
-					'S' => '\P{Xps}',
-					'U' => '\P{Lu}',
-					'W' => '[^\p{L}\p{Nd}]',
-					'X' => '[^0-9A-Fa-f０-９Ａ-Ｆａ-ｆ]',
-					'Z' => '[^\0]',
-				];
-				$brcharsets = [
-					'w' => '\p{L}\p{Nd}',
-					'x' => '0-9A-Fa-f０-９Ａ-Ｆａ-ｆ',
-
-					// Negated sets that are not expressable as a simple \P{} are
-					// unfortunately complicated.
-
-					// Xan is L plus N, so ^Xan plus Nl plus No is anything that's not L or Nd
-					'W' => '\P{Xan}\p{Nl}\p{No}',
-
-					// Manually constructed. Fun.
-					'X' => '\x00-\x2f\x3a-\x40\x47-\x60\x67-\x{ff0f}'
-						. '\x{ff1a}-\x{ff20}\x{ff27}-\x{ff40}\x{ff47}-\x{10ffff}',
-
-					// Ha!
-					'Z' => '\x01-\x{10ffff}',
-				] + $charsets;
-			}
 
 			$re = '/';
 			$len = count( $pat );
@@ -478,8 +476,8 @@ class UstringLibrary extends LibraryBase {
 						if ( $i >= $len ) {
 							throw new LuaError( "malformed pattern (ends with '%')" );
 						}
-						if ( isset( $charsets[$pat[$i]] ) ) {
-							$re .= $charsets[$pat[$i]];
+						if ( isset( self::CHARSETS[$pat[$i]] ) ) {
+							$re .= self::CHARSETS[$pat[$i]];
 							$q = true;
 						} elseif ( $pat[$i] === 'b' ) {
 							if ( $i + 2 >= $len ) {
@@ -497,7 +495,7 @@ class UstringLibrary extends LibraryBase {
 							if ( $i + 1 >= $len || $pat[++$i] !== '[' ) {
 								throw new LuaError( "missing '[' after %f in pattern at pattern character $ii" );
 							}
-							[ $i, $re2 ] = $this->bracketedCharSetToRegex( $pat, $i, $len, $brcharsets );
+							[ $i, $re2 ] = $this->bracketedCharSetToRegex( $pat, $i, $len, self::BR_CHARSETS );
 							// Because %f considers the beginning and end of the string
 							// to be \0, determine if $re2 matches that and take it
 							// into account with "^" and "$".
@@ -520,7 +518,7 @@ class UstringLibrary extends LibraryBase {
 						break;
 
 					case '[':
-						[ $i, $re2 ] = $this->bracketedCharSetToRegex( $pat, $i, $len, $brcharsets );
+						[ $i, $re2 ] = $this->bracketedCharSetToRegex( $pat, $i, $len, self::BR_CHARSETS );
 						$re .= $re2;
 						$q = true;
 						break;
@@ -571,6 +569,7 @@ class UstringLibrary extends LibraryBase {
 	 * @param array $brcharsets Mapping from Lua pattern percent escapes to
 	 *  regex-style character ranges.
 	 * @return array [ int $new_i, string $re_fragment ]
+	 * @throws LuaError
 	 */
 	private function bracketedCharSetToRegex( $pat, $i, $len, $brcharsets ) {
 		$ii = $i + 1;
@@ -646,14 +645,14 @@ class UstringLibrary extends LibraryBase {
 
 	/**
 	 * Handler for find
-	 * @internal
 	 * @param string $s
 	 * @param string $pattern
 	 * @param int $init
 	 * @param bool $plain
 	 * @return array Format is [ null ], or [ int, int ], or [ int, int, (string|int)... ]
+	 * @throws LuaError
 	 */
-	public function ustringFind( $s, $pattern, $init = 1, $plain = false ) {
+	private function ustringFind( $s, $pattern, $init = 1, $plain = false ) {
 		$this->checkString( 'find', $s );
 		$this->checkTypeOptional( 'find', 3, $init, 'number', 1 );
 		$this->checkTypeOptional( 'find', 4, $plain, 'boolean', false );
@@ -697,13 +696,13 @@ class UstringLibrary extends LibraryBase {
 
 	/**
 	 * Handler for match
-	 * @internal
 	 * @param string $s
 	 * @param string $pattern
 	 * @param int $init
 	 * @return array Format is [ null ] or [ (string|int)... ]
+	 * @throws LuaError
 	 */
-	public function ustringMatch( $s, $pattern, $init = 1 ) {
+	private function ustringMatch( $s, $pattern, $init = 1 ) {
 		$this->checkString( 'match', $s );
 		$this->checkTypeOptional( 'match', 3, $init, 'number', 1 );
 
@@ -728,12 +727,12 @@ class UstringLibrary extends LibraryBase {
 
 	/**
 	 * Handler for gmatchInit
-	 * @internal
 	 * @param string $s
 	 * @param string $pattern
 	 * @return array Format is [ string, bool[] ]
+	 * @throws LuaError
 	 */
-	public function ustringGmatchInit( $s, $pattern ) {
+	private function ustringGmatchInit( $s, $pattern ) {
 		$this->checkString( 'gmatch', $s );
 
 		[ $re, $capt ] = $this->patternToRegex( $pattern, false, 'gmatch' );
@@ -742,14 +741,13 @@ class UstringLibrary extends LibraryBase {
 
 	/**
 	 * Handler for gmatchCallback
-	 * @internal
 	 * @param string $s
 	 * @param string $re
 	 * @param bool[] $capt
 	 * @param int $pos
 	 * @return array Format is [ int, [ null, (string|int)... ] ]
 	 */
-	public function ustringGmatchCallback( $s, $re, $capt, $pos ) {
+	private function ustringGmatchCallback( $s, $re, $capt, $pos ) {
 		if ( !preg_match( $re, $s, $m, PREG_OFFSET_CAPTURE, $pos ) ) {
 			return [ $pos, [] ];
 		}
@@ -759,14 +757,14 @@ class UstringLibrary extends LibraryBase {
 
 	/**
 	 * Handler for gsub
-	 * @internal
 	 * @param string $s
 	 * @param string $pattern
 	 * @param mixed $repl
 	 * @param string|int|null $n
 	 * @return array Format is [ string, int ]
+	 * @throws LuaError
 	 */
-	public function ustringGsub( $s, $pattern, $repl, $n = null ) {
+	private function ustringGsub( $s, $pattern, $repl, $n = null ) {
 		$this->checkString( 'gsub', $s );
 		$this->checkTypeOptional( 'gsub', 4, $n, 'number', null );
 
@@ -779,15 +777,6 @@ class UstringLibrary extends LibraryBase {
 		[ $re, $capt, $anypos ] = $this->patternToRegex( $pattern, '^', 'gsub' );
 		$captures = [];
 
-		if ( $this->phpBug53823 ) {
-			// PHP bug 53823 means that a zero-length match before a UTF-8
-			// character will match again before every byte of that character.
-			// The workaround is to capture the first "character" of/after the
-			// match and verify that its first byte is legal to start a UTF-8
-			// character.
-			$re = '/(?=(?<phpBug53823>.|$))' . substr( $re, 1 );
-		}
-
 		if ( $anypos ) {
 			// preg_replace_callback doesn't take a "flags" argument, so we
 			// can't pass PREG_OFFSET_CAPTURE to it, which is needed to handle
@@ -796,12 +785,6 @@ class UstringLibrary extends LibraryBase {
 			$ct = preg_match_all( $re, $s, $mm, PREG_OFFSET_CAPTURE | PREG_SET_ORDER );
 			for ( $i = 0; $i < $ct; $i++ ) {
 				$m = $mm[$i];
-				if ( $this->phpBug53823 ) {
-					$c = ord( $m['phpBug53823'][0] );
-					if ( $c >= 0x80 && $c <= 0xbf ) {
-						continue;
-					}
-				}
 				$c = [ $m[0][0] ];
 				foreach ( $this->addCapturesFromMatch( [], $s, $m, $capt, false ) as $k => $v ) {
 					$k++;
@@ -833,6 +816,7 @@ class UstringLibrary extends LibraryBase {
 							// Match undocumented Lua string.gsub behavior
 							return $m[0];
 						} else {
+							// @phan-suppress-next-line PhanThrowTypeAbsent
 							throw new LuaError( "invalid capture index %$x in replacement string" );
 						}
 					}, $repl );
@@ -850,6 +834,7 @@ class UstringLibrary extends LibraryBase {
 					}
 					$type = $this->getLuaType( $repl[$x] );
 					if ( $type !== 'string' && $type !== 'number' ) {
+						// @phan-suppress-next-line PhanThrowTypeAbsent
 						throw new LuaError( "invalid replacement value (a $type)" );
 					}
 					return $repl[$x];
@@ -877,6 +862,7 @@ class UstringLibrary extends LibraryBase {
 					}
 					$type = $this->getLuaType( $ret[0] );
 					if ( $type !== 'string' && $type !== 'number' ) {
+						// @phan-suppress-next-line PhanThrowTypeAbsent
 						throw new LuaError( "invalid replacement value (a $type)" );
 					}
 					return $ret[0];
@@ -889,43 +875,21 @@ class UstringLibrary extends LibraryBase {
 		}
 
 		$skippedMatches = 0;
-		if ( $this->phpBug53823 ) {
-			// Since we're having bogus matches, we need to keep track of the
-			// necessary adjustment and stop manually once we hit the limit.
-			$maxMatches = $n < 0 ? INF : $n;
-			$n = -1;
-			$realCallback = $cb;
-			$cb = static function ( $m ) use ( $realCallback, &$skippedMatches, &$maxMatches ) {
-				$c = ord( $m['phpBug53823'] );
-				if ( ( $c >= 0x80 && $c <= 0xbf ) || $maxMatches <= 0 ) {
-					$skippedMatches++;
-					return $m[0];
-				} else {
-					$maxMatches--;
-					return $realCallback( $m );
-				}
-			};
-		}
 
 		$count = 0;
 		$s2 = preg_replace_callback( $re, $cb, $s, $n, $count );
 		if ( $s2 === null ) {
-			$this->handlePCREError( preg_last_error(), $pattern );
+			$this->handlePCREError( $pattern );
 		}
 		return [ $s2, $count - $skippedMatches ];
 	}
 
 	/**
 	 * Handle a PCRE error
-	 * @param int $error From preg_last_error()
 	 * @param string $pattern Pattern being matched
 	 * @throws LuaError
 	 */
-	private function handlePCREError( $error, $pattern ) {
-		$PREG_JIT_STACKLIMIT_ERROR = defined( 'PREG_JIT_STACKLIMIT_ERROR' )
-			? PREG_JIT_STACKLIMIT_ERROR
-			: 'PREG_JIT_STACKLIMIT_ERROR';
-
+	private function handlePCREError( $pattern ) {
 		$error = preg_last_error();
 		switch ( $error ) {
 			case PREG_NO_ERROR:
@@ -942,12 +906,12 @@ class UstringLibrary extends LibraryBase {
 					"PCRE recursion limit reached while matching pattern '$pattern'"
 				);
 			case PREG_BAD_UTF8_ERROR:
-				// Should have alreay been caught, but just in case
+				// Should have already been caught, but just in case
 				throw new LuaError( "PCRE bad UTF-8 error" );
 			case PREG_BAD_UTF8_OFFSET_ERROR:
 				// Shouldn't happen, but just in case
 				throw new LuaError( "PCRE bad UTF-8 offset error" );
-			case $PREG_JIT_STACKLIMIT_ERROR:
+			case PREG_JIT_STACKLIMIT_ERROR:
 				throw new LuaError(
 					"PCRE JIT stack limit reached while matching pattern '$pattern'"
 				);

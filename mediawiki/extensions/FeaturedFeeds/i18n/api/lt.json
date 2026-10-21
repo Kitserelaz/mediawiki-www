@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"Albertas",
+			"Nokeoo"
+		]
+	},
+	"apihelp-featuredfeed-summary": "Gražina išskirto turinio srautą.",
+	"apihelp-featuredfeed-param-feedformat": "Kanalo formatas.",
+	"apihelp-featuredfeed-param-feed": "Kanalo pavadinimas.",
+	"apihelp-featuredfeed-param-language": "Kanalo kalbos kodas. Ignoruojama kai kurių kanalų.",
+	"apihelp-featuredfeed-example-1": "Gauti kanalą \"$1\""
+}

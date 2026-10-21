@@ -1,0 +1,25 @@
+{
+	"@metadata": {
+		"authors": [
+			"Kghbln",
+			"Metalhead64"
+		]
+	},
+	"parsermigration-desc": "Parser-Migrations-Werkzeug",
+	"parsermigration-edit-subtitle": "mit dem Parser-Migrations-Werkzeug",
+	"parsermigration-current": "Alt",
+	"parsermigration-new": "Neu",
+	"parsermigration-pref-label": "Parser-Migrationswerkzeug aktivieren",
+	"parsermigration-pref-help": "Dies fügt einen Link in der Seitenleiste hinzu, der Zugriff auf [https://www.mediawiki.org/wiki/Special:MyLanguage/Extension:ParserMigration ein Werkzeug] zur Migration von Seitentext auf neue Versionen des MediaWiki-Parsers gibt.",
+	"parsermigration-toolbox-label": "Mit dem Migrationswerkzeug bearbeiten",
+	"parsermigration-parsoid-readviews-selector-label": "Den neuen Parsoid-Wikitext-Parser verwenden:",
+	"parsermigration-parsoid-readviews-selector-help": "Wenn Parsoid verwendet wird, wird ein Link in der Seitenleiste bereitgestellt, um bei Problemen die Verwendung des alten Parsers zu ermöglichen.",
+	"parsermigration-parsoid-readviews-always": "Immer (Opt-in)",
+	"parsermigration-parsoid-readviews-default": "Gemäß Wiki-Konfiguration (Standard)",
+	"parsermigration-parsoid-readviews-never": "Niemals (Opt-out)",
+	"parsermigration-use-legacy-parser-toolbox-label": "Zum Legacy-Parser wechseln",
+	"parsermigration-use-parsoid-toolbox-label": "Zum neuen Parser (Parsoid) wechseln",
+	"parsermigration-notice-title": "Experimentelle Funktion",
+	"parsermigration-notice-body": "Du verwendest den neuen Parsoid-Wikitext-Parser, um diese Seite anzuzeigen. [https://www.mediawiki.org/wiki/Special:MyLanguage/Parsoid/Parser_Unification/Migration Erfahre mehr über diese Funktion].",
+	"parsermigration-parsoid-chip-label": "Mit Parsoid gerendert"
+}

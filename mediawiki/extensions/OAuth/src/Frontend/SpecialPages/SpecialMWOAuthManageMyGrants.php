@@ -2,44 +2,32 @@
 
 namespace MediaWiki\Extension\OAuth\Frontend\SpecialPages;
 
-use ErrorPageError;
 use MediaWiki\Context\IContextSource;
+use MediaWiki\Exception\ErrorPageError;
+use MediaWiki\Exception\PermissionsError;
 use MediaWiki\Extension\OAuth\Backend\Consumer;
 use MediaWiki\Extension\OAuth\Backend\ConsumerAcceptance;
 use MediaWiki\Extension\OAuth\Backend\Utils;
 use MediaWiki\Extension\OAuth\Control\ConsumerAcceptanceAccessControl;
 use MediaWiki\Extension\OAuth\Control\ConsumerAcceptanceSubmitControl;
 use MediaWiki\Extension\OAuth\Control\ConsumerAccessControl;
+use MediaWiki\Extension\OAuth\Control\SubmitControl;
 use MediaWiki\Extension\OAuth\Frontend\Pagers\ManageMyGrantsPager;
 use MediaWiki\Extension\OAuth\Frontend\UIUtils;
 use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\Json\FormatJson;
-use MediaWiki\MediaWikiServices;
 use MediaWiki\Permissions\GrantsInfo;
 use MediaWiki\Permissions\GrantsLocalization;
+use MediaWiki\Permissions\PermissionManager;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Status\Status;
-use PermissionsError;
 use stdClass;
-use Wikimedia\Rdbms\IDatabase;
+use Wikimedia\Rdbms\IReadableDatabase;
 
 /**
  * (c) Aaron Schulz 2013, GPL
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 
 /**
@@ -47,32 +35,25 @@ use Wikimedia\Rdbms\IDatabase;
  * for manage the specific grants given or revoking access for the consumer
  */
 class SpecialMWOAuthManageMyGrants extends SpecialPage {
-	/** @var string[]|null */
-	private static $irrevocableGrants = null;
-
-	/** @var GrantsInfo */
-	private $grantsInfo;
-
-	/** @var GrantsLocalization */
-	private $grantsLocalization;
-
-	/**
-	 * @param GrantsInfo $grantsInfo
-	 * @param GrantsLocalization $grantsLocalization
-	 */
 	public function __construct(
-		GrantsInfo $grantsInfo,
-		GrantsLocalization $grantsLocalization
+		private readonly GrantsInfo $grantsInfo,
+		private readonly GrantsLocalization $grantsLocalization,
+		private readonly PermissionManager $permissionManager,
 	) {
-		parent::__construct( 'OAuthManageMyGrants', 'mwoauthmanagemygrants' );
-		$this->grantsInfo = $grantsInfo;
-		$this->grantsLocalization = $grantsLocalization;
+		parent::__construct( 'OAuthManageMyGrants' );
 	}
 
+	/** @inheritDoc */
+	public function getRestriction(): string {
+		return 'mwoauthmanagemygrants';
+	}
+
+	/** @inheritDoc */
 	public function doesWrites() {
 		return true;
 	}
 
+	/** @inheritDoc */
 	public function execute( $par ) {
 		$this->setHeaders();
 		$this->getOutput()->disallowUserJs();
@@ -80,8 +61,7 @@ class SpecialMWOAuthManageMyGrants extends SpecialPage {
 		$this->requireNamedUser( 'mwoauth-available-only-to-registered' );
 
 		$user = $this->getUser();
-		$permissionManager = MediaWikiServices::getInstance()->getPermissionManager();
-		if ( !$permissionManager->userHasRight( $user, 'mwoauthmanagemygrants' ) ) {
+		if ( !$this->permissionManager->userHasRight( $user, 'mwoauthmanagemygrants' ) ) {
 			throw new PermissionsError( 'mwoauthmanagemygrants' );
 		}
 
@@ -121,7 +101,7 @@ class SpecialMWOAuthManageMyGrants extends SpecialPage {
 		$listLinks = [];
 
 		if ( $acceptanceId ) {
-			$dbr = Utils::getCentralDB( DB_REPLICA );
+			$dbr = Utils::getOAuthDB( DB_REPLICA );
 			$cmraAc = ConsumerAcceptance::newFromId( $dbr, (int)$acceptanceId );
 			$listLinks[] = $this->getLinkRenderer()->makeKnownLink(
 				$this->getPageTitle(),
@@ -156,8 +136,7 @@ class SpecialMWOAuthManageMyGrants extends SpecialPage {
 	 */
 	protected function handleConsumerForm( $acceptanceId, $type ) {
 		$user = $this->getUser();
-		$dbr = Utils::getCentralDB( DB_REPLICA );
-		$permissionManager = MediaWikiServices::getInstance()->getPermissionManager();
+		$dbr = Utils::getOAuthDB( DB_REPLICA );
 
 		$centralUserId = Utils::getCentralIdFromLocalUser( $user );
 		if ( !$centralUserId ) {
@@ -175,7 +154,7 @@ class SpecialMWOAuthManageMyGrants extends SpecialPage {
 		$cmrAc = ConsumerAccessControl::wrap(
 			Consumer::newFromId( $dbr, $cmraAc->getConsumerId() ), $this->getContext() );
 		if ( $cmrAc->getDeleted()
-			&& !$permissionManager->userHasRight( $user, 'mwoauthviewsuppressed' ) ) {
+			&& !$this->permissionManager->userHasRight( $user, 'mwoauthviewsuppressed' ) ) {
 			throw new PermissionsError( 'mwoauthviewsuppressed' );
 		}
 
@@ -231,8 +210,8 @@ class SpecialMWOAuthManageMyGrants extends SpecialPage {
 							return "grant-$g";
 						},
 						( $type === 'revoke' )
-							? array_merge( $this->grantsInfo->getValidGrants(), self::irrevocableGrants() )
-							: self::irrevocableGrants()
+							? array_merge( $this->grantsInfo->getValidGrants(), SubmitControl::getIrrevocableGrants() )
+							: SubmitControl::getIrrevocableGrants()
 					),
 					'validation-callback' => null
 				],
@@ -251,7 +230,7 @@ class SpecialMWOAuthManageMyGrants extends SpecialPage {
 					preg_replace( '/^grant-/', '', $data['grants'] )
 				);
 
-				$dbw = Utils::getCentralDB( DB_PRIMARY );
+				$dbw = Utils::getOAuthDB( DB_PRIMARY );
 				$control = new ConsumerAcceptanceSubmitControl(
 					$context, $data, $dbw, $cmraAc->getDAO()->getOAuthVersion()
 				);
@@ -304,11 +283,11 @@ class SpecialMWOAuthManageMyGrants extends SpecialPage {
 	}
 
 	/**
-	 * @param IDatabase $db
+	 * @param IReadableDatabase $db
 	 * @param stdClass $row
 	 * @return string
 	 */
-	public function formatRow( IDatabase $db, $row ) {
+	public function formatRow( IReadableDatabase $db, $row ) {
 		$cmrAc = ConsumerAccessControl::wrap(
 			Consumer::newFromRow( $db, $row ), $this->getContext() );
 		$cmraAc = ConsumerAcceptanceAccessControl::wrap(
@@ -317,7 +296,7 @@ class SpecialMWOAuthManageMyGrants extends SpecialPage {
 		$linkRenderer = $this->getLinkRenderer();
 
 		$links = [];
-		if ( array_diff( $cmrAc->getGrants(), self::irrevocableGrants() ) ) {
+		if ( array_diff( $cmrAc->getGrants(), SubmitControl::getIrrevocableGrants() ) ) {
 			$links[] = $linkRenderer->makeKnownLink(
 				$this->getPageTitle( 'update/' . $cmraAc->getId() ),
 				$this->msg( 'mwoauthmanagemygrants-review' )->text()
@@ -365,16 +344,7 @@ class SpecialMWOAuthManageMyGrants extends SpecialPage {
 		return $r;
 	}
 
-	private static function irrevocableGrants() {
-		if ( self::$irrevocableGrants === null ) {
-			self::$irrevocableGrants = array_merge(
-				MediaWikiServices::getInstance()->getGrantsInfo()->getHiddenGrants(),
-				[ 'mwoauth-authonly', 'mwoauth-authonlyprivate' ]
-			);
-		}
-		return self::$irrevocableGrants;
-	}
-
+	/** @inheritDoc */
 	protected function getGroupName() {
 		return 'login';
 	}

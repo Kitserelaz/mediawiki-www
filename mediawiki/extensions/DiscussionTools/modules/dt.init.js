@@ -1,5 +1,6 @@
 const controller = require( './controller.js' ),
-	url = new URL( location.href );
+	url = new URL( location.href ),
+	featuresEnabled = mw.config.get( 'wgDiscussionToolsFeaturesEnabled' ) || {};
 
 /**
  * @class mw.dt
@@ -68,40 +69,39 @@ if ( url.searchParams.get( 'dtdebug' ) ) {
 } else {
 	// Don't use an anonymous function, because ReplyWidget needs to be able to remove this handler
 	mw.hook( 'wikipage.content' ).add( mw.dt.init );
-}
-
-if ( mw.config.get( 'wgCanonicalSpecialPageName' ) === 'TopicSubscriptions' ) {
-	const topicSubscriptions = require( './topicsubscriptions.js' );
-	topicSubscriptions.initSpecialTopicSubscriptions();
-}
-
-if ( mw.config.get( 'wgAction' ) === 'history' ) {
-	const topicSubscriptions = require( './topicsubscriptions.js' );
-	topicSubscriptions.initNewTopicsSubscription();
-}
-
-// Clean up old localStorage entries that were erroneously set with no expiration (T339042).
-// We are no longer using these keys since T329299.
-// TODO: Remove this code after a few weeks.
-mw.requestIdleCallback( () => {
-	try {
-		for ( const key in localStorage ) {
-			if ( key.startsWith( 'reply/' ) ) {
-				localStorage.removeItem( key );
-				localStorage.removeItem( '_EXPIRY_' + key );
-			}
+	// wikipage.content can't be counted on for initial setup, because gadgets
+	// can potentially have fired it with not-the-main-content before we added
+	// our hook, and the hook system only remembers the last call for us.
+	$( () => {
+		// eslint-disable-next-line no-jquery/no-global-selector
+		const $content = $( '#mw-content-text' );
+		if ( $content.length && mw.dt.initState.firstLoad ) {
+			// We're on a page with main page content and DT hasn't initialized yet
+			mw.dt.init( $content );
 		}
-	} catch ( err ) {}
-} );
+	} );
+}
+
+if ( featuresEnabled.topicsubscription ) {
+	if ( mw.config.get( 'wgCanonicalSpecialPageName' ) === 'TopicSubscriptions' ) {
+		const topicSubscriptions = require( './topicsubscriptions.js' );
+		topicSubscriptions.initSpecialTopicSubscriptions();
+	}
+
+	if ( mw.config.get( 'wgAction' ) === 'history' ) {
+		const topicSubscriptions = require( './topicsubscriptions.js' );
+		topicSubscriptions.initNewTopicsSubscription();
+	}
+}
 
 module.exports = {
 	controller: controller,
-	Parser: require( './Parser.js' ),
-	parserData: require( './parser/data.json' ),
-	modifier: require( './modifier.js' ),
-	ThreadItem: require( './ThreadItem.js' ),
-	HeadingItem: require( './HeadingItem.js' ),
-	CommentItem: require( './CommentItem.js' ),
-	utils: require( './utils.js' ),
+	Parser: require( './commentparser/Parser.js' ),
+	parserData: require( './commentparser/data.json' ),
+	modifier: require( './commentparser/modifier.js' ),
+	ThreadItem: require( './commentparser/ThreadItem.js' ),
+	HeadingItem: require( './commentparser/HeadingItem.js' ),
+	CommentItem: require( './commentparser/CommentItem.js' ),
+	utils: require( './commentparser/commentUtils.js' ),
 	config: require( './config.json' )
 };

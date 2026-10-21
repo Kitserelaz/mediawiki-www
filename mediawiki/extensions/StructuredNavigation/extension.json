@@ -1,0 +1,231 @@
+{
+	"name": "StructuredNavigation",
+	"version": "2.0.0",
+	"author": [
+		"Sam Nguyen"
+	],
+	"license-name": "MIT",
+	"url": "https://www.mediawiki.org/wiki/Extension:StructuredNavigation",
+	"descriptionmsg": "structurednav-desc",
+	"type": "parserhook",
+	"requires": {
+		"MediaWiki": ">= 1.43.0",
+		"platform": {
+			"php": ">= 7.4"
+		}
+	},
+	"callback": "MediaWiki\\Extension\\StructuredNavigation\\Hooks\\ExtensionCallback::onRegistrationCallback",
+	"MessagesDirs": {
+		"StructuredNavigation": [
+			"i18n",
+			"i18n/api"
+		]
+	},
+	"ExtensionMessagesFiles": {
+		"StructuredNavigationNamespaces": "StructuredNavigation.i18n.namespaces.php",
+		"StructuredNavigationAliases": "StructuredNavigation.i18n.aliases.php"
+	},
+	"ServiceWiringFiles": [
+		"src/Services/ServiceWiring.php"
+	],
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\StructuredNavigation\\": "src/"
+	},
+	"Hooks": {
+		"BeforeDisplayNoArticleText": "BeforeDisplayNoArticleText",
+		"UserGetReservedNames": "Main",
+		"ParserFirstCallInit": "ParserFirstCallInit",
+		"CodeEditorGetPageLanguage": "CodeEditor"
+	},
+	"HookHandlers": {
+		"Main": {
+			"class": "MediaWiki\\Extension\\StructuredNavigation\\Hooks\\HookHandler",
+			"factory": "MediaWiki\\Extension\\StructuredNavigation\\Hooks\\HookHandler::factory",
+			"services": [
+				"StructuredNavigation.Config"
+			]
+		},
+		"BeforeDisplayNoArticleText": {
+			"class": "MediaWiki\\Extension\\StructuredNavigation\\Hooks\\BeforeDisplayNoArticleTextHandler",
+			"factory": "MediaWiki\\Extension\\StructuredNavigation\\Hooks\\BeforeDisplayNoArticleTextHandler::factory",
+			"services": [
+				"StructuredNavigation.NavigationNotFoundView"
+			]
+		},
+		"ParserFirstCallInit": {
+			"class": "MediaWiki\\Extension\\StructuredNavigation\\Hooks\\ParserFirstCallInitHandler",
+			"factory": "MediaWiki\\Extension\\StructuredNavigation\\Hooks\\ParserFirstCallInitHandler::factory",
+			"services": [
+				"StructuredNavigation.NavigationViewPresenter"
+			]
+		},
+		"CodeEditor": {
+			"class": "MediaWiki\\Extension\\StructuredNavigation\\Hooks\\CodeEditorHooks"
+		}
+	},
+	"SpecialPages": {
+		"NavigationSchema": {
+			"class": "MediaWiki\\Extension\\StructuredNavigation\\Specials\\SpecialNavigationSchema",
+			"services": [
+				"StructuredNavigation.DocumentationContent"
+			]
+		},
+		"TitlesUsedInNavigation": {
+			"class": "MediaWiki\\Extension\\StructuredNavigation\\Specials\\SpecialTitlesUsedInNavigation",
+			"services": [
+				"StructuredNavigation.NavigationFactory",
+				"StructuredNavigation.NamespacedTitleSearcher"
+			]
+		}
+	},
+	"ContentHandlers": {
+		"StructuredNavigation": {
+			"class": "MediaWiki\\Extension\\StructuredNavigation\\Content\\NavigationContentHandler",
+			"services": [
+				"StructuredNavigation.NavigationViewPresenter"
+			]
+		}
+	},
+	"RestRoutes": [
+		{
+			"path": "/structurednav/v0/examples",
+			"method": "GET",
+			"class": "MediaWiki\\Extension\\StructuredNavigation\\Api\\Rest\\NavigationExamplesHandler",
+			"services": [
+				"StructuredNavigation.DocumentationContent"
+			]
+		},
+		{
+			"path": "/structurednav/v0/schema",
+			"method": "GET",
+			"class": "MediaWiki\\Extension\\StructuredNavigation\\Api\\Rest\\NavigationSchemaHandler",
+			"services": [
+				"StructuredNavigation.DocumentationContent"
+			]
+		},
+		{
+			"path": "/structurednav/v0/{title}/data",
+			"method": "GET",
+			"class": "MediaWiki\\Extension\\StructuredNavigation\\Api\\Rest\\NavigationDataHandler",
+			"services": [
+				"StructuredNavigation.NavigationFactory"
+			]
+		},
+		{
+			"path": "/structurednav/v0/{title}/html",
+			"method": "GET",
+			"class": "MediaWiki\\Extension\\StructuredNavigation\\Api\\Rest\\NavigationHtmlHandler",
+			"services": [
+				"StructuredNavigation.NavigationViewPresenter"
+			]
+		},
+		{
+			"path": "/structurednav/v0/{title}/titles-used",
+			"method": "GET",
+			"class": "MediaWiki\\Extension\\StructuredNavigation\\Api\\Rest\\NavigationTitlesUsedHandler",
+			"services": [
+				"StructuredNavigation.NavigationFactory"
+			]
+		}
+	],
+	"ConfigRegistry": {
+		"structurednavigation": "MediaWiki\\Extension\\StructuredNavigation\\Hooks\\ExtensionCallback::getGlobalVarConfig"
+	},
+	"config": {
+		"StructuredNavigationEnableExperimentalAPI": {
+			"value": false
+		},
+		"StructuredNavigationReservedUsername": {
+			"value": "msg:structurednav-reserved-username"
+		}
+	},
+	"namespaces": [
+		{
+			"id": 2940,
+			"constant": "NS_NAVIGATION",
+			"name": "Navigation",
+			"subpages": true,
+			"defaultcontentmodel": "StructuredNavigation",
+			"protection": [
+				"structurednav-edit",
+				"structurednav-create"
+			]
+		},
+		{
+			"id": 2941,
+			"constant": "NS_NAVIGATION_TALK",
+			"name": "Navigation_talk",
+			"subpages": true,
+			"content": false,
+			"defaultcontentmodel": "wikitext"
+		}
+	],
+	"GroupPermissions": {
+		"user": {
+			"structurednav-create": true,
+			"structurednav-edit": true
+		}
+	},
+	"AvailableRights": [
+		"structurednav-create",
+		"structurednav-edit"
+	],
+	"ResourceFileModulePaths": {
+		"localBasePath": "",
+		"remoteExtPath": "StructuredNavigation"
+	},
+	"ResourceModules": {
+		"ext.structuredNav.wiki": {
+			"class": "MediaWiki\\ResourceLoader\\WikiModule",
+			"scripts": [
+				"MediaWiki:StructuredNavigation.js"
+			]
+		},
+		"ext.structuredNav.wiki.styles": {
+			"class": "MediaWiki\\ResourceLoader\\WikiModule",
+			"styles": [
+				"MediaWiki:StructuredNavigation.css"
+			]
+		},
+		"ext.structuredNav.NavigationView.styles": {
+			"styles": "resources/styles/ext.structuredNav.NavigationView.less"
+		},
+		"ext.structuredNav.NavigationView.separator.styles": {
+			"class": "MediaWiki\\ResourceLoader\\LessVarFileModule",
+			"styles": "resources/styles/ext.structuredNav.NavigationView.separator.less",
+			"lessMessages": [
+				"structurednav-separator-symbol"
+			]
+		},
+		"ext.structuredNav.NavigationNotFoundView.styles": {
+			"styles": [
+				"resources/styles/ooui.EmptyStateView.less",
+				"resources/styles/ext.structuredNav.NavigationNotFoundView.less"
+			]
+		},
+		"ext.structuredNav.CopyEmbedWidget": {
+			"scripts": "resources/modules/ext.structuredNav.CopyEmbedWidget.js",
+			"styles": "resources/styles/ext.structuredNav.CopyEmbedWidget.less",
+			"messages": [
+				"structurednav-copy-label",
+				"structurednav-copy-state-fail",
+				"structurednav-copy-state-success"
+			],
+			"dependencies": [
+				"mediawiki.widgets",
+				"ext.structuredNav.core"
+			]
+		},
+		"ext.structuredNav.content": {
+			"scripts": "resources/modules/ext.structuredNav.content.js",
+			"dependencies": [
+				"ext.structuredNav.CopyEmbedWidget"
+			]
+		},
+		"ext.structuredNav.core": {
+			"scripts": "resources/modules/ext.structuredNav.core.js"
+		}
+	},
+	"load_composer_autoloader": true,
+	"manifest_version": 2
+}

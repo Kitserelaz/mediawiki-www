@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": [
+			"Aca",
+			"BadDog"
+		]
+	},
+	"apihelp-sanitize-mapdata-summary": "Извршава проверу ваљаности података за додатак „Картограф”"
+}

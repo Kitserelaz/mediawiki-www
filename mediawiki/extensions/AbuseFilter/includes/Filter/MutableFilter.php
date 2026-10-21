@@ -3,6 +3,8 @@
 namespace MediaWiki\Extension\AbuseFilter\Filter;
 
 use LogicException;
+use MediaWiki\User\UserIdentity;
+use MediaWiki\User\UserIdentityValue;
 
 /**
  * Value object representing a filter that can be mutated (i.e. provides setters); this representation can
@@ -32,22 +34,16 @@ class MutableFilter extends Filter {
 			),
 			[],
 			new LastEditInfo(
-				0,
-				'',
+				UserIdentityValue::newAnonymous( '' ),
 				''
 			)
 		);
 	}
 
-	/**
-	 * @param Filter $filter
-	 * @return self
-	 */
 	public static function newFromParentFilter( Filter $filter ): self {
 		return new self(
 			$filter->getSpecs(),
 			$filter->getFlags(),
-			// @phan-suppress-next-line PhanTypeMismatchArgumentNullable One is guaranteed to be set
 			$filter->actions ?? $filter->actionsCallback,
 			$filter->getLastEditInfo(),
 			$filter->getID(),
@@ -56,23 +52,14 @@ class MutableFilter extends Filter {
 		);
 	}
 
-	/**
-	 * @param string $rules
-	 */
 	public function setRules( string $rules ): void {
 		$this->specs->setRules( $rules );
 	}
 
-	/**
-	 * @param string $comments
-	 */
 	public function setComments( string $comments ): void {
 		$this->specs->setComments( $comments );
 	}
 
-	/**
-	 * @param string $name
-	 */
 	public function setName( string $name ): void {
 		$this->specs->setName( $name );
 	}
@@ -88,44 +75,30 @@ class MutableFilter extends Filter {
 		$this->specs->setActionsNames( $actionsNames );
 	}
 
-	/**
-	 * @param string $group
-	 */
 	public function setGroup( string $group ): void {
 		$this->specs->setGroup( $group );
 	}
 
-	/**
-	 * @param bool $enabled
-	 */
 	public function setEnabled( bool $enabled ): void {
 		$this->flags->setEnabled( $enabled );
 	}
 
-	/**
-	 * @param bool $deleted
-	 */
 	public function setDeleted( bool $deleted ): void {
 		$this->flags->setDeleted( $deleted );
 	}
 
-	/**
-	 * @param bool $hidden
-	 */
+	public function setSuppressed( bool $suppressed ): void {
+		$this->flags->setSuppressed( $suppressed );
+	}
+
 	public function setHidden( bool $hidden ): void {
 		$this->flags->setHidden( $hidden );
 	}
 
-	/**
-	 * @param bool $protected
-	 */
 	public function setProtected( bool $protected ): void {
 		$this->flags->setProtected( $protected );
 	}
 
-	/**
-	 * @param bool $global
-	 */
 	public function setGlobal( bool $global ): void {
 		$this->flags->setGlobal( $global );
 	}
@@ -138,44 +111,22 @@ class MutableFilter extends Filter {
 		parent::setActions( $actions );
 	}
 
-	/**
-	 * @param int $id
-	 */
-	public function setUserID( int $id ): void {
-		$this->lastEditInfo->setUserID( $id );
+	public function setUserIdentity( UserIdentity $user ): void {
+		$this->lastEditInfo->setUserIdentity( $user );
 	}
 
-	/**
-	 * @param string $name
-	 */
-	public function setUserName( string $name ): void {
-		$this->lastEditInfo->setUserName( $name );
-	}
-
-	/**
-	 * @param string $timestamp
-	 */
 	public function setTimestamp( string $timestamp ): void {
 		$this->lastEditInfo->setTimestamp( $timestamp );
 	}
 
-	/**
-	 * @param int|null $id
-	 */
 	public function setID( ?int $id ): void {
 		$this->id = $id;
 	}
 
-	/**
-	 * @param int $hitCount
-	 */
 	public function setHitCount( int $hitCount ): void {
 		$this->hitCount = $hitCount;
 	}
 
-	/**
-	 * @param bool $throttled
-	 */
 	public function setThrottled( bool $throttled ): void {
 		$this->throttled = $throttled;
 	}

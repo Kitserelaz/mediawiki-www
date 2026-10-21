@@ -1,0 +1,53 @@
+<?php
+
+namespace SMW\SPARQLStore\QueryEngine\DescriptionInterpreters;
+
+use SMW\Export\Exporter;
+use SMW\Query\Language\Description;
+use SMW\Query\Language\ThingDescription;
+use SMW\SPARQLStore\QueryEngine\Condition\Condition;
+use SMW\SPARQLStore\QueryEngine\ConditionBuilder;
+use SMW\SPARQLStore\QueryEngine\DescriptionInterpreter;
+
+/**
+ * @license GPL-2.0-or-later
+ * @since 2.1
+ *
+ * @author Markus Krötzsch
+ * @author mwjames
+ */
+class ThingDescriptionInterpreter implements DescriptionInterpreter {
+
+	private Exporter $exporter;
+
+	/**
+	 * @since 2.1
+	 */
+	public function __construct( private readonly ?ConditionBuilder $conditionBuilder = null ) {
+		$this->exporter = Exporter::getInstance();
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * {@inheritDoc}
+	 */
+	public function canInterpretDescription( Description $description ): bool {
+		return $description instanceof ThingDescription;
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * {@inheritDoc}
+	 *
+	 * @return Condition
+	 */
+	public function interpretDescription( Description $description ) {
+		return $this->conditionBuilder->newTrueCondition(
+			$this->conditionBuilder->getJoinVariable(),
+			$this->conditionBuilder->getOrderByProperty()
+		);
+	}
+
+}

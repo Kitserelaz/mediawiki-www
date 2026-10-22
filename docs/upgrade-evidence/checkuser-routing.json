@@ -1,0 +1,820 @@
+{
+  "validated_at": "2026-10-22T04:14:41.707010+00:00",
+  "scope": "Local ARM64 main stack; no production or AMD64 deployment.",
+  "status": "passed",
+  "changes": [
+    "Consistent shared CheckUser global-index routing to wikidb",
+    "Nested LocalSettings virtual-domain merge",
+    "Transactional consolidation with newest timestamps and retained sources",
+    "Missing CLI wiki metadata returns failure, enabling provisioning retry"
+  ],
+  "inventory_before": [
+    {
+      "TABLE_SCHEMA": "9creation384630b6privatewiki",
+      "TABLE_NAME": "cuci_temp_edit",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9creation384630b6privatewiki",
+      "TABLE_NAME": "cuci_user",
+      "rows": 1
+    },
+    {
+      "TABLE_SCHEMA": "9creation384630b6privatewiki",
+      "TABLE_NAME": "cuci_wiki_map",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9creation384630b6smokewiki",
+      "TABLE_NAME": "cuci_temp_edit",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9creation384630b6smokewiki",
+      "TABLE_NAME": "cuci_user",
+      "rows": 1
+    },
+    {
+      "TABLE_SCHEMA": "9creation384630b6smokewiki",
+      "TABLE_NAME": "cuci_wiki_map",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9creation384630b6uismokewiki",
+      "TABLE_NAME": "cuci_temp_edit",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9creation384630b6uismokewiki",
+      "TABLE_NAME": "cuci_user",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9creation384630b6uismokewiki",
+      "TABLE_NAME": "cuci_wiki_map",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9creation5d1f6721privatewiki",
+      "TABLE_NAME": "cuci_temp_edit",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9creation5d1f6721privatewiki",
+      "TABLE_NAME": "cuci_user",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9creation5d1f6721privatewiki",
+      "TABLE_NAME": "cuci_wiki_map",
+      "rows": 1
+    },
+    {
+      "TABLE_SCHEMA": "9creation5d1f6721smokewiki",
+      "TABLE_NAME": "cuci_temp_edit",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9creation5d1f6721smokewiki",
+      "TABLE_NAME": "cuci_user",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9creation5d1f6721smokewiki",
+      "TABLE_NAME": "cuci_wiki_map",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9creation5d1f6721uismokewiki",
+      "TABLE_NAME": "cuci_temp_edit",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9creation5d1f6721uismokewiki",
+      "TABLE_NAME": "cuci_user",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9creation5d1f6721uismokewiki",
+      "TABLE_NAME": "cuci_wiki_map",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timing32b422e3privatewiki",
+      "TABLE_NAME": "cuci_temp_edit",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timing32b422e3privatewiki",
+      "TABLE_NAME": "cuci_user",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timing32b422e3privatewiki",
+      "TABLE_NAME": "cuci_wiki_map",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timing32b422e3public1wiki",
+      "TABLE_NAME": "cuci_temp_edit",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timing32b422e3public1wiki",
+      "TABLE_NAME": "cuci_user",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timing32b422e3public1wiki",
+      "TABLE_NAME": "cuci_wiki_map",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timing32b422e3public3wiki",
+      "TABLE_NAME": "cuci_temp_edit",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timing32b422e3public3wiki",
+      "TABLE_NAME": "cuci_user",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timing32b422e3public3wiki",
+      "TABLE_NAME": "cuci_wiki_map",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timing386c7493privatewiki",
+      "TABLE_NAME": "cuci_temp_edit",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timing386c7493privatewiki",
+      "TABLE_NAME": "cuci_user",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timing386c7493privatewiki",
+      "TABLE_NAME": "cuci_wiki_map",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timing386c7493public1wiki",
+      "TABLE_NAME": "cuci_temp_edit",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timing386c7493public1wiki",
+      "TABLE_NAME": "cuci_user",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timing386c7493public1wiki",
+      "TABLE_NAME": "cuci_wiki_map",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timing386c7493public3wiki",
+      "TABLE_NAME": "cuci_temp_edit",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timing386c7493public3wiki",
+      "TABLE_NAME": "cuci_user",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timing386c7493public3wiki",
+      "TABLE_NAME": "cuci_wiki_map",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timingdcda345fprivatewiki",
+      "TABLE_NAME": "cuci_temp_edit",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timingdcda345fprivatewiki",
+      "TABLE_NAME": "cuci_user",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timingdcda345fprivatewiki",
+      "TABLE_NAME": "cuci_wiki_map",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timingdcda345fpublic1wiki",
+      "TABLE_NAME": "cuci_temp_edit",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timingdcda345fpublic1wiki",
+      "TABLE_NAME": "cuci_user",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timingdcda345fpublic1wiki",
+      "TABLE_NAME": "cuci_wiki_map",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timingdcda345fpublic3wiki",
+      "TABLE_NAME": "cuci_temp_edit",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timingdcda345fpublic3wiki",
+      "TABLE_NAME": "cuci_user",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timingdcda345fpublic3wiki",
+      "TABLE_NAME": "cuci_wiki_map",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timingef756733privatewiki",
+      "TABLE_NAME": "cuci_temp_edit",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timingef756733privatewiki",
+      "TABLE_NAME": "cuci_user",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timingef756733privatewiki",
+      "TABLE_NAME": "cuci_wiki_map",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timingef756733public1wiki",
+      "TABLE_NAME": "cuci_temp_edit",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timingef756733public1wiki",
+      "TABLE_NAME": "cuci_user",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timingef756733public1wiki",
+      "TABLE_NAME": "cuci_wiki_map",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timingef756733public3wiki",
+      "TABLE_NAME": "cuci_temp_edit",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timingef756733public3wiki",
+      "TABLE_NAME": "cuci_user",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timingef756733public3wiki",
+      "TABLE_NAME": "cuci_wiki_map",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timingf8143acbprivatewiki",
+      "TABLE_NAME": "cuci_temp_edit",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timingf8143acbprivatewiki",
+      "TABLE_NAME": "cuci_user",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timingf8143acbprivatewiki",
+      "TABLE_NAME": "cuci_wiki_map",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timingf8143acbpublic1wiki",
+      "TABLE_NAME": "cuci_temp_edit",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timingf8143acbpublic1wiki",
+      "TABLE_NAME": "cuci_user",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timingf8143acbpublic1wiki",
+      "TABLE_NAME": "cuci_wiki_map",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timingf8143acbpublic3wiki",
+      "TABLE_NAME": "cuci_temp_edit",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timingf8143acbpublic3wiki",
+      "TABLE_NAME": "cuci_user",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "9timingf8143acbpublic3wiki",
+      "TABLE_NAME": "cuci_wiki_map",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "creationfd085e4eprivatewiki",
+      "TABLE_NAME": "cuci_temp_edit",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "creationfd085e4eprivatewiki",
+      "TABLE_NAME": "cuci_user",
+      "rows": 1
+    },
+    {
+      "TABLE_SCHEMA": "creationfd085e4eprivatewiki",
+      "TABLE_NAME": "cuci_wiki_map",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "creationfd085e4esmokewiki",
+      "TABLE_NAME": "cuci_temp_edit",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "creationfd085e4esmokewiki",
+      "TABLE_NAME": "cuci_user",
+      "rows": 1
+    },
+    {
+      "TABLE_SCHEMA": "creationfd085e4esmokewiki",
+      "TABLE_NAME": "cuci_wiki_map",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "creationfd085e4euismokewiki",
+      "TABLE_NAME": "cuci_temp_edit",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "creationfd085e4euismokewiki",
+      "TABLE_NAME": "cuci_user",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "creationfd085e4euismokewiki",
+      "TABLE_NAME": "cuci_wiki_map",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "dockerfinaluismokewiki",
+      "TABLE_NAME": "cuci_temp_edit",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "dockerfinaluismokewiki",
+      "TABLE_NAME": "cuci_user",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "dockerfinaluismokewiki",
+      "TABLE_NAME": "cuci_wiki_map",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "dockerprivatewiki",
+      "TABLE_NAME": "cuci_temp_edit",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "dockerprivatewiki",
+      "TABLE_NAME": "cuci_user",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "dockerprivatewiki",
+      "TABLE_NAME": "cuci_wiki_map",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "dockersmokewiki",
+      "TABLE_NAME": "cuci_temp_edit",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "dockersmokewiki",
+      "TABLE_NAME": "cuci_user",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "dockersmokewiki",
+      "TABLE_NAME": "cuci_wiki_map",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "dockeruismokewiki",
+      "TABLE_NAME": "cuci_temp_edit",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "dockeruismokewiki",
+      "TABLE_NAME": "cuci_user",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "dockeruismokewiki",
+      "TABLE_NAME": "cuci_wiki_map",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "dockerverifyprivatewiki",
+      "TABLE_NAME": "cuci_temp_edit",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "dockerverifyprivatewiki",
+      "TABLE_NAME": "cuci_user",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "dockerverifyprivatewiki",
+      "TABLE_NAME": "cuci_wiki_map",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "dockerverifysmokewiki",
+      "TABLE_NAME": "cuci_temp_edit",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "dockerverifysmokewiki",
+      "TABLE_NAME": "cuci_user",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "dockerverifysmokewiki",
+      "TABLE_NAME": "cuci_wiki_map",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "loginwiki",
+      "TABLE_NAME": "cuci_temp_edit",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "loginwiki",
+      "TABLE_NAME": "cuci_user",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "loginwiki",
+      "TABLE_NAME": "cuci_wiki_map",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "metawiki",
+      "TABLE_NAME": "cuci_temp_edit",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "metawiki",
+      "TABLE_NAME": "cuci_user",
+      "rows": 1
+    },
+    {
+      "TABLE_SCHEMA": "metawiki",
+      "TABLE_NAME": "cuci_wiki_map",
+      "rows": 1
+    },
+    {
+      "TABLE_SCHEMA": "testwiki",
+      "TABLE_NAME": "cuci_temp_edit",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "testwiki",
+      "TABLE_NAME": "cuci_user",
+      "rows": 2
+    },
+    {
+      "TABLE_SCHEMA": "testwiki",
+      "TABLE_NAME": "cuci_wiki_map",
+      "rows": 1
+    },
+    {
+      "TABLE_SCHEMA": "wikidb",
+      "TABLE_NAME": "cuci_temp_edit",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "wikidb",
+      "TABLE_NAME": "cuci_user",
+      "rows": 0
+    },
+    {
+      "TABLE_SCHEMA": "wikidb",
+      "TABLE_NAME": "cuci_wiki_map",
+      "rows": 7
+    }
+  ],
+  "consolidation": {
+    "mode": "applied",
+    "source_plan": {
+      "9creation384630b6privatewiki": {
+        "7": {
+          "wiki": "9creation384630b6privatewiki",
+          "cuci_user": 1
+        }
+      },
+      "9creation384630b6smokewiki": {
+        "6": {
+          "wiki": "9creation384630b6smokewiki",
+          "cuci_user": 1
+        }
+      },
+      "creationfd085e4eprivatewiki": {
+        "4": {
+          "wiki": "creationfd085e4eprivatewiki",
+          "cuci_user": 1
+        }
+      },
+      "creationfd085e4esmokewiki": {
+        "5": {
+          "wiki": "creationfd085e4esmokewiki",
+          "cuci_user": 1
+        }
+      },
+      "metawiki": {
+        "1": {
+          "wiki": "metawiki",
+          "cuci_user": 1
+        }
+      },
+      "testwiki": {
+        "1": {
+          "wiki": "testwiki",
+          "cuci_user": 1
+        },
+        "3": {
+          "wiki": "testwiki",
+          "cuci_user": 1
+        }
+      }
+    },
+    "verified_source_rows": 7,
+    "source_tables_retained": true
+  },
+  "post_cutover_coverage": {
+    "retained_source_rows": 7,
+    "shared_coverage": "all source identities and latest timestamps present"
+  },
+  "legacy_queue_audit": {
+    "remaining_legacy_jobs": []
+  },
+  "runtime_images": {
+    "jobchron": "sha256:e49af3300521a828095da7375344a160b973602bc8d1cd41910d1d87bb542692",
+    "php": "sha256:e49af3300521a828095da7375344a160b973602bc8d1cd41910d1d87bb542692",
+    "provisioner": "sha256:e49af3300521a828095da7375344a160b973602bc8d1cd41910d1d87bb542692",
+    "scheduler": "sha256:e49af3300521a828095da7375344a160b973602bc8d1cd41910d1d87bb542692",
+    "worker": "sha256:e49af3300521a828095da7375344a160b973602bc8d1cd41910d1d87bb542692"
+  },
+  "candidate_file_hashes": {
+    "/opt/farm/runtime.php": "8ec6acea988491c6560e8d34a5476ee677cbe7b5d0c62c7541a0bbf549e63277",
+    "/opt/farm/checkuser-consolidate.php": "2feac7dda38f81ae93590e71204ef659b217dc5dd04f1315929d3293e357b939",
+    "/opt/farm/bootstrap.php": "7af927e87b0375fcebcf822ee92ae3a222c0c2cb089ab6a48783eefb469f38cd",
+    "/opt/farm/provision.php": "a161acc8a7969f33e38cfa45824dbd3585cfa1d0e3de39ee499f060b85a7f880",
+    "/var/www/mediawiki/LocalSettings.php": "a76f62c64bcad41e0fe08a80f142be30e3eb54035c96b4d5977bfa582444b65d"
+  },
+  "backup": {
+    "path": "backups/pre-checkuser-routing-20261021",
+    "sql_dumps": 36,
+    "archives_and_checksums_verified": true,
+    "restore_rehearsal": false
+  },
+  "checks": [
+    "Synthetic consolidation: dry run, ID collisions, orphan recovery, user/IP indexes, timestamp conflicts, unknown-ID refusal, source retention, idempotence",
+    "Four browser acceptance tests on routing fix",
+    "Fresh public/private/UI creation on final image",
+    "Real CheckUser index job and global lookup on all three final-image fresh fixtures",
+    "Configured URL-shortener table present when enabled",
+    "Bootstrap and normal routing both wikidb",
+    "HTTP smoke and read-only preflight",
+    "Final image missing-metadata failure guard",
+    "Final image source hashes match",
+    "All PHP services run final image",
+    "No root-owned metadata or pending provisioning signals",
+    "Disposable test containers removed"
+  ],
+  "missing_metadata_guard": {
+    "status": "passed",
+    "exit_code": 1,
+    "candidate_source_matches": true
+  },
+  "fresh_creation": {
+    "prefix": "9creation72179847",
+    "wikis": [
+      "9creation72179847smokewiki",
+      "9creation72179847privatewiki",
+      "9creation72179847uismokewiki"
+    ],
+    "status": "passed",
+    "checks": [
+      "public/private CreateWiki creation",
+      "browser-form creation",
+      "public API readiness",
+      "private API/file denial",
+      "cross-wiki login/logout",
+      "all provisioning markers cleared"
+    ]
+  },
+  "fresh_acceptance": [
+    {
+      "wiki": "9creation72179847smokewiki",
+      "language": "en",
+      "anonymous_read": true,
+      "uploads": true,
+      "checkuser_global_database": "wikidb",
+      "checkuser": "real index job and global lookup passed",
+      "table_count": 111,
+      "urlshortener_enabled": true,
+      "urlshortener_schema_present": true
+    },
+    {
+      "wiki": "9creation72179847privatewiki",
+      "language": "en",
+      "anonymous_read": false,
+      "uploads": true,
+      "checkuser_global_database": "wikidb",
+      "checkuser": "real index job and global lookup passed",
+      "table_count": 111,
+      "urlshortener_enabled": true,
+      "urlshortener_schema_present": true
+    },
+    {
+      "wiki": "9creation72179847uismokewiki",
+      "language": "en",
+      "anonymous_read": true,
+      "uploads": true,
+      "checkuser_global_database": "wikidb",
+      "checkuser": "real index job and global lookup passed",
+      "table_count": 111,
+      "urlshortener_enabled": true,
+      "urlshortener_schema_present": true
+    }
+  ],
+  "routing_probe": {
+    "normal": {
+      "wiki": "testwiki",
+      "pass": "normal",
+      "resolved_domains": {
+        "virtual-checkuser": "testwiki",
+        "virtual-checkuser-global": "wikidb",
+        "virtual-urlshortener": "virtual"
+      },
+      "extensions": [
+        "Vector",
+        "Abuse Filter",
+        "AntiSpoof",
+        "BetaFeatures",
+        "CentralAuth",
+        "CentralNotice",
+        "CheckUser",
+        "CreateWiki",
+        "CookieWarning",
+        "ConfirmEdit",
+        "hCaptcha",
+        "DataDump",
+        "DismissableSiteNotice",
+        "Echo",
+        "EventLogging",
+        "GlobalBlocking",
+        "GlobalCssJs",
+        "GlobalPreferences",
+        "ImportDump",
+        "Interwiki",
+        "InterwikiDispatcher",
+        "ManageWiki",
+        "NativeSvgHandler",
+        "Nuke",
+        "OATHAuth",
+        "OAuth",
+        "ParserFunctions",
+        "QuickInstantCommons",
+        "RemovePII",
+        "Scribunto",
+        "SkywikiMagic",
+        "SpamBlacklist",
+        "TitleBlacklist",
+        "TorBlock",
+        "WikiDiscover",
+        "WikiEditor",
+        "CLDR"
+      ]
+    },
+    "bootstrap": {
+      "wiki": "testwiki",
+      "pass": "bootstrap",
+      "resolved_domains": {
+        "virtual-checkuser": "testwiki",
+        "virtual-checkuser-global": "wikidb",
+        "virtual-urlshortener": "virtual"
+      },
+      "extensions": [
+        "Vector",
+        "Abuse Filter",
+        "AntiSpoof",
+        "BetaFeatures",
+        "CentralAuth",
+        "CentralNotice",
+        "CheckUser",
+        "CreateWiki",
+        "CookieWarning",
+        "ConfirmEdit",
+        "hCaptcha",
+        "DataDump",
+        "DismissableSiteNotice",
+        "Echo",
+        "EventLogging",
+        "GlobalBlocking",
+        "GlobalCssJs",
+        "GlobalPreferences",
+        "ImportDump",
+        "Interwiki",
+        "InterwikiDispatcher",
+        "ManageWiki",
+        "NativeSvgHandler",
+        "Nuke",
+        "OATHAuth",
+        "OAuth",
+        "ParserFunctions",
+        "QuickInstantCommons",
+        "RemovePII",
+        "Scribunto",
+        "SkywikiMagic",
+        "SpamBlacklist",
+        "TitleBlacklist",
+        "TorBlock",
+        "WikiDiscover",
+        "WikiEditor",
+        "CLDR"
+      ]
+    }
+  },
+  "services": {
+    "counter": {
+      "state": "running",
+      "health": "healthy"
+    },
+    "database": {
+      "state": "running",
+      "health": "healthy"
+    },
+    "jobchron": {
+      "state": "running",
+      "health": "healthy"
+    },
+    "memcached": {
+      "state": "running",
+      "health": ""
+    },
+    "php": {
+      "state": "running",
+      "health": "healthy"
+    },
+    "provisioner": {
+      "state": "running",
+      "health": "healthy"
+    },
+    "redis": {
+      "state": "running",
+      "health": "healthy"
+    },
+    "scheduler": {
+      "state": "running",
+      "health": ""
+    },
+    "web": {
+      "state": "running",
+      "health": ""
+    },
+    "worker": {
+      "state": "running",
+      "health": "healthy"
+    }
+  },
+  "prototype": {
+    "schema_settings_extensions_and_checkuser_checks": "passed for four variants against four two-pass controls",
+    "full_update_log_equivalence": false,
+    "deployed": false,
+    "evidence": "provisioning-equivalence.json"
+  },
+  "limits": [
+    "Production retains two updater passes.",
+    "Prototype update logs omit two local OAuth timestamp-patch markers; no claim of complete updater equivalence.",
+    "Prototype tests do not replace full browser/privacy/backup acceptance for a future one-pass rollout.",
+    "Timing samples ran under varying local resource load and are not a speed benchmark."
+  ]
+}

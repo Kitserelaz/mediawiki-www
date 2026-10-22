@@ -61,6 +61,9 @@ The app database user has database-level privileges for `*wiki`/`*wikibeta`, `wi
 
 Moe-Counter uses `DB_PATH=/app/data/count.db`; outside Docker its original `count.db` default is retained. Use one counter replica: SQLite and the process-local read/update queue do not provide distributed increments. MongoDB remains available through Compose variables `COUNTER_DB_TYPE=mongodb` and `COUNTER_DB_URL` (mapped to the app's `DB_TYPE` and `DB_URL`), but adding replicas still requires atomic database increments.
 
+CheckUser shared-index routing, existing-data consolidation and the isolated
+one-pass provisioning prototype are documented in [CHECKUSER-ROUTING.md](CHECKUSER-ROUTING.md).
+
 ## Redis queue maintenance
 
 `worker` executes ready jobs and the dedicated `provisioner` initializes new wikis.

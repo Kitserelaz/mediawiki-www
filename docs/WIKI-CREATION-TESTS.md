@@ -151,3 +151,8 @@ run reflects its own cache/load conditions, not another performance change.
 The fresh prefix was `9timingf8143acb`. Full measurements and method are in
 `upgrade-evidence/wiki-creation-stage-timing.json`. The timing runner now records
 actual Redis completion timestamps separately from observation/API overhead.
+
+
+The subsequent [updater investigation](WIKI-CREATION-UPDATER-INVESTIGATION.md)
+separates PHP setup, core/extension updates and SQL time, explains the required
+second-pass schema work, and records a CheckUser virtual-domain routing mismatch.

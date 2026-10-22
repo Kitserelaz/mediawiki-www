@@ -168,13 +168,10 @@ $wgConf->settings += [
                 'default' => 'centralauth',
                 'beta' => 'testglobal',
         ],
-	'+wgVirtualDomainsMapping' => [
-		'default' => [
-			'virtual-checkuser-global' => [
-				'db' => $wi->getGlobalDatabase(),
-			],
-                ]
-        ],
+];
+// Merge the nested domain entry; array union above preserves existing top-level keys.
+$wgConf->settings['+wgVirtualDomainsMapping']['default']['virtual-checkuser-global'] = [
+    'db' => $wi->getGlobalDatabase(),
 ];
 
 $wgManageWikiExtensions += [
@@ -235,7 +232,7 @@ if ( $wi->missing ) {
         print_r( $wi );
                 echo "This may indicate a permission issue involving cw_cache.";
 		echo "You tried to access $wgDBname, but it was not found.";
-		exit();
+		exit(1);
 	} else {
 		http_response_code( 404 );
 		require_once __DIR__ . '/ErrorPages/MissingWiki.php';

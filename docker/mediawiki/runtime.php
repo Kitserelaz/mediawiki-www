@@ -114,6 +114,7 @@ function farmRuntime(): void {
     $wgVirtualDomainsMapping['virtual-globalblocking'] = ['db' => 'centralauth'];
     $wgVirtualDomainsMapping['virtual-oathauth'] = ['db' => 'centralauth'];
     $wgVirtualDomainsMapping['virtual-importdump'] = ['db' => 'metawiki'];
+    $wgVirtualDomainsMapping['virtual-checkuser-global'] = ['db' => 'wikidb'];
     $wgOAuth2PrivateKey = '/run/secrets/oauth-private.key';
     $wgOAuth2PublicKey = '/run/secrets/oauth-public.key';
     $wgLocalisationCacheConf = array_replace($wgLocalisationCacheConf ?? [], [

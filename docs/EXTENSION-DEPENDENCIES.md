@@ -4,7 +4,8 @@ The manifest and Composer requirements of every supplied extension/skin are reco
 
 | Feature / extensions | Container support or prerequisite |
 | --- | --- |
-| Core, CreateWiki, ManageWiki, CentralAuth, CheckUser, OAuth | PHP 8.4.26, mysqli/PDO, intl, mbstring, GMP, OpenSSL, sodium, XML, ZIP; shared database schemas and mounted OAuth keys are initialized explicitly. |
+| Core, CreateWiki, ManageWiki, CentralAuth, CheckUser, OAuth | PHP 8.4.27, mysqli/PDO, intl, mbstring, GMP, OpenSSL, sodium, XML, ZIP; shared database schemas and mounted OAuth keys are initialized explicitly. |
+| ResourceLoader asset processing | APCu 5.1.28, 128 MB; FPM cache persistence is checked by `docker/tests/local-cache.py`. |
 | Scribunto | Lua 5.1 at `/usr/bin/lua5.1`; exercised by browser acceptance tests. |
 | Thumbnails, NativeSvgHandler, SVG | ImageMagick, GD, librsvg, Ghostscript and fonts; uploaded PNG thumbnails are exercised by acceptance tests. |
 | PDFHandler / DjVu / TIFF | Poppler, Ghostscript, DjVuLibre and TIFF tools are installed. Rendering each uncommon format still needs a representative upload test. |

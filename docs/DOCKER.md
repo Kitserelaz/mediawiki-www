@@ -1,6 +1,16 @@
 # Docker development and deployment
 
-This candidate packages MediaWiki 1.46.2 on PHP 8.4.26 with the pinned CreateWiki/ManageWiki upgrade and Moe-Counter. It preserves the supplied catalogue with explicit component source/dependency ports recorded in `upgrade-targets.json` and the source-port reports. Application base images use immutable multi-platform digests, and apt resolves against the signed Debian snapshot dated 2026-10-15; update these deliberately and rebuild both architectures. The container has one core runtime (1.46); historical per-wiki version metadata does not select additional code installations. Component versions, installed Composer package identities, PHP requirements, local patch hashes, and lockfile hashes are recorded in `dependency-inventory.json`; regenerate with `python3 scripts/inventory.py` after intentional dependency changes.
+This candidate packages MediaWiki 1.46.2 on PHP 8.4.27 with the pinned CreateWiki/ManageWiki upgrade and Moe-Counter. It preserves the supplied catalogue with explicit component source/dependency ports recorded in `upgrade-targets.json` and the source-port reports. Application base images use immutable multi-platform digests, and apt resolves against the signed Debian snapshot dated 2026-10-15; update these deliberately and rebuild both architectures. The container has one core runtime (1.46); historical per-wiki version metadata does not select additional code installations. Component versions, installed Composer package identities, PHP requirements, local patch hashes, and lockfile hashes are recorded in `dependency-inventory.json`; regenerate with `python3 scripts/inventory.py` after intentional dependency changes.
+
+The PHP image includes pinned APCu 5.1.28 with 128 MB of server-local cache for
+ResourceLoader and other local-cache consumers. OPcache caches PHP bytecode;
+Memcached remains the farm's main object cache. APCu is enabled for FPM and
+keeps its default disabled state for CLI. Verify the actual FPM cache across
+requests with:
+
+```sh
+docker compose exec -T php python3 - < docker/tests/local-cache.py
+```
 
 ## First local start
 

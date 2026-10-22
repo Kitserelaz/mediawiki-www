@@ -5606,8 +5606,13 @@
       "sha256": "8f7f937f8bbc1acd4cef1c5362a95f248dcd242020f2588798eb2f73ac2e69ba"
     },
     "php": {
-      "version": "8.4.26",
-      "image": "php:8.4.26-fpm-bookworm@sha256:6bfef8e416977aa41f48e3e42a40c1e08050d24e4a938c6edb421400bff24601"
+      "version": "8.4.27",
+      "image": "php:8.4.27-fpm-bookworm@sha256:df5a5113e1179ddf4560cd15727eb3812f6457829756d2a96c6c11bb4c250089",
+      "pecl_extensions": {
+        "redis": "6.2.0",
+        "memcached": "3.3.0",
+        "apcu": "5.1.28"
+      }
     },
     "extensions": {
       "CreateWiki": {

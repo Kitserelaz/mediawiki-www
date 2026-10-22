@@ -1,0 +1,138 @@
+{
+  "date": "2026-10-21",
+  "timezone": "America/Vancouver",
+  "mediawiki": "1.46.2",
+  "php": "8.4.27",
+  "apcu": "5.1.28",
+  "apcu_shm_size": "128M",
+  "fpm_cache_check": {
+    "cross_request_cache": "passed",
+    "cache_class": "Wikimedia\\ObjectCache\\APCUBagOStuff",
+    "apcu_version": "5.1.28",
+    "shm_size": "128M",
+    "php": "8.4.27",
+    "mediawiki": "1.46.2"
+  },
+  "browser_profiles": [
+    {
+      "scenario": "anonymous-cold-browser-cache",
+      "ttfb_ms": 878.4,
+      "first_contentful_paint_ms": 2376,
+      "load_event_ms": 2961.8,
+      "backend_ms": 744,
+      "page_error_count": 0,
+      "navigation_aborted_requests": 0
+    },
+    {
+      "scenario": "anonymous-warm-browser-cache",
+      "ttfb_ms": 113.3,
+      "first_contentful_paint_ms": 140,
+      "load_event_ms": 183.5,
+      "backend_ms": 103,
+      "page_error_count": 0,
+      "navigation_aborted_requests": 0
+    },
+    {
+      "scenario": "logged-in-first",
+      "ttfb_ms": 144.1,
+      "first_contentful_paint_ms": 308,
+      "load_event_ms": 334.6,
+      "backend_ms": 106,
+      "page_error_count": 0,
+      "navigation_aborted_requests": 12
+    },
+    {
+      "scenario": "logged-in-warm",
+      "ttfb_ms": 57.4,
+      "first_contentful_paint_ms": 124,
+      "load_event_ms": 197.5,
+      "backend_ms": 51,
+      "page_error_count": 0,
+      "navigation_aborted_requests": 0
+    },
+    {
+      "scenario": "fresh-browser-populated-server-cache",
+      "ttfb_ms": 89.7,
+      "first_contentful_paint_ms": 180,
+      "load_event_ms": 349.7,
+      "backend_ms": 71,
+      "page_error_count": 0,
+      "navigation_aborted_requests": 0
+    }
+  ],
+  "asset_replays": [
+    {
+      "asset": "scripts",
+      "request": 1,
+      "ttfb_ms": 76.53,
+      "total_ms": 78.96,
+      "tls_ms": 4.85,
+      "size": 119158,
+      "status": 200
+    },
+    {
+      "asset": "scripts",
+      "request": 2,
+      "ttfb_ms": 38.5,
+      "total_ms": 43.06,
+      "tls_ms": 1.75,
+      "size": 119158,
+      "status": 200
+    },
+    {
+      "asset": "scripts",
+      "request": 3,
+      "ttfb_ms": 30.44,
+      "total_ms": 32.66,
+      "tls_ms": 1.79,
+      "size": 119158,
+      "status": 200
+    },
+    {
+      "asset": "styles",
+      "request": 1,
+      "ttfb_ms": 22.94,
+      "total_ms": 23.57,
+      "tls_ms": 1.68,
+      "size": 35876,
+      "status": 200
+    },
+    {
+      "asset": "styles",
+      "request": 2,
+      "ttfb_ms": 21.06,
+      "total_ms": 22.04,
+      "tls_ms": 1.54,
+      "size": 35876,
+      "status": 200
+    },
+    {
+      "asset": "styles",
+      "request": 3,
+      "ttfb_ms": 21.76,
+      "total_ms": 22.76,
+      "tls_ms": 1.53,
+      "size": 35876,
+      "status": 200
+    }
+  ],
+  "checks": {
+    "image_apcu_store_fetch": "passed",
+    "image_data_exclusion": "passed",
+    "fpm_cross_request_cache": "passed",
+    "https_smoke": "passed",
+    "browser_tests": {
+      "passed": 4,
+      "seconds": 21.1
+    }
+  },
+  "php_image": "sha256:64957c8f2e7eac859027ea27a264ac8734ae0d570008971edb9a00d02cc8e5d9",
+  "web_image": "sha256:cc4bd051b49a2e37d9804d6c5419e35dbb02930f9153d8fbbe77ee85e0839550",
+  "platform": "linux/arm64",
+  "limits": [
+    "First requests after FPM restart still compile and populate caches; the first profile load event was 2961.8 ms.",
+    "Browser timing samples vary and are not a controlled benchmark under identical background load.",
+    "The logged-in first navigation includes requests cancelled while leaving the login page; no page JavaScript errors were observed.",
+    "No AMD64 build or production deployment."
+  ]
+}

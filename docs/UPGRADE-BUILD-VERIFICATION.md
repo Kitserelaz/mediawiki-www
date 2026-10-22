@@ -1,5 +1,8 @@
 # Clean-checkout and AMD64 build verification
 
+This records the PHP 8.4.26 baseline. The current PHP 8.4.27 patch update is
+tracked separately in [PHP-8.4.27-UPDATE.md](PHP-8.4.27-UPDATE.md).
+
 This validation builds the current upgrade candidate from an independent clean
 Git clone. It does not deploy the candidate or establish full catalogue/skin
 acceptance. MediaWiki is pinned to 1.46.2 and PHP to 8.4.26; exact extension

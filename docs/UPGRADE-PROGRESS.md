@@ -1,6 +1,6 @@
 # CreateWiki / ManageWiki upgrade progress
 
-Target: MediaWiki 1.46.2, PHP 8.4.26 FPM Bookworm, CreateWiki `85b031594eb9465483f47c3b6521781c3827c2c0`, ManageWiki `76da3dbc969673c27e8529f5c0ea25287e9f836f`.
+Target: MediaWiki 1.46.2, PHP 8.4.27 FPM Bookworm, CreateWiki `85b031594eb9465483f47c3b6521781c3827c2c0`, ManageWiki `76da3dbc969673c27e8529f5c0ea25287e9f836f`.
 
 Scope: preserve all 322 inventoried extensions and 35 skins, existing registered-page email behavior, and unrelated workspace changes. Deliver a verified local stack and production runbook; do not deploy production.
 
@@ -34,13 +34,18 @@ The goal remains incomplete until the outstanding release gates pass.
 
 ## Running local endpoint
 
-The clean-built AMD64 candidate is running in the restored development rehearsal
-`cloudwiki-upgrade-restore1462`, using `.env.upgrade-candidate` and immutable
-PHP/web/counter images. Existing rehearsal data was retained; preflight and the
-explicit updater passed before application startup. No host source directories
-are mounted. The separate reserved-domain production-mode rehearsal's application
-services were stopped to release loopback ports; original database/cache services
-were not changed.
+On 2026-10-21, the six retired rehearsal/test projects (`cloudwiki-upgrade1462`,
+`cloudwiki-upgrade-restore1462`, `cloudwiki-upgrade-recovery1462`, and
+`cloudwiki-upgrade-production1462`, `cloudwiki-upgrade-rollback1462`, and
+`cloudwiki-upgrade-unit1462`) were deleted at the user's request, including
+36 containers, 51 dedicated volumes, and 9 networks. Saved backup files remain.
+The main `cloudwiki` development stack now runs MediaWiki 1.46.2 and PHP 8.4.27.
+Its coordinated snapshot, migration, and checks are tracked in
+[PHP-8.4.27-UPDATE.md](PHP-8.4.27-UPDATE.md).
+APCu 5.1.28 is now enabled for FPM; the fix and measured RecentChanges
+improvements are recorded in [RECENTCHANGES-LATENCY.md](RECENTCHANGES-LATENCY.md).
+
+The endpoint checks below describe the previous rehearsal validation.
 
 Open `https://test.localhost` (also `meta.localhost`, `login.localhost`, and
 `counter.localhost`). All three wiki APIs/main pages, the redirected login form,

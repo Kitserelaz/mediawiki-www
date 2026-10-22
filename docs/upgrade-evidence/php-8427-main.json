@@ -1,0 +1,50 @@
+{
+  "date": "2026-10-21",
+  "timezone": "America/Vancouver",
+  "mediawiki": "1.46.2",
+  "php": "8.4.27",
+  "platform": "linux/arm64",
+  "images": {
+    "cloudwiki-php:local": {
+      "id": "sha256:2b72ba687855f10a75cd2e848d7330a5148d9e7447c41910af5de729094f72da",
+      "architecture": "arm64"
+    },
+    "cloudwiki-web:local": {
+      "id": "sha256:5c66b308c7846293c1a6612605eb8f0bbfe42e36808cc45016adbd77544ae3b9",
+      "architecture": "arm64"
+    }
+  },
+  "snapshot": "backups/pre-main-1462-php8427-20261021",
+  "checks": {
+    "checkout": "passed",
+    "php_syntax": {
+      "passed_files": 33847,
+      "verified_version_guarded_skips": 1
+    },
+    "native_modules": 16,
+    "schema_preflight": "passed",
+    "coordinated_schema_update": "passed after enabling required Redis service",
+    "https_smoke": "passed",
+    "login_edit_upload_browser": {
+      "passed": 2,
+      "seconds": 14.6
+    },
+    "private_wiki_dump_browser": {
+      "passed": 2,
+      "seconds": 12.9
+    },
+    "jobchron_lifecycle": "passed on full rerun after build",
+    "main_stack_queue_durability": "passed"
+  },
+  "limits": [
+    "No AMD64 rebuild for this patch",
+    "No full upstream PHPUnit or complete catalogue/skin suite rerun",
+    "No production deployment"
+  ],
+  "rehearsal_cleanup": {
+    "projects": 6,
+    "containers": 36,
+    "volumes": 51,
+    "networks": 9
+  }
+}

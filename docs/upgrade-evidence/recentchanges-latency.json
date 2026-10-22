@@ -1,0 +1,102 @@
+{
+  "date": "2026-10-21",
+  "timezone": "America/Vancouver",
+  "page": "https://meta.localhost/wiki/Special:RecentChanges",
+  "method": "Headless Chromium, fresh context then repeated navigation; anonymous and local test-account sessions. TLS trust errors ignored as in the repository browser tests. Direct curl used the local CA.",
+  "navigation": [
+    {
+      "scenario": "anonymous-cold-browser-cache",
+      "backend_ms": 111,
+      "ttfb_ms": 179.6,
+      "first_contentful_paint_ms": 1444,
+      "dom_content_loaded_ms": 1430.1,
+      "load_event_ms": 1807,
+      "requests": 8,
+      "long_tasks_ms": [
+        83
+      ]
+    },
+    {
+      "scenario": "anonymous-warm-browser-cache",
+      "backend_ms": 83,
+      "ttfb_ms": 92.8,
+      "first_contentful_paint_ms": 124,
+      "dom_content_loaded_ms": 118,
+      "load_event_ms": 1026.3,
+      "requests": 12,
+      "long_tasks_ms": []
+    },
+    {
+      "scenario": "logged-in-first",
+      "backend_ms": 78,
+      "ttfb_ms": 104.6,
+      "first_contentful_paint_ms": 1464,
+      "dom_content_loaded_ms": 1455.2,
+      "load_event_ms": 1455.2,
+      "requests": 18,
+      "long_tasks_ms": []
+    },
+    {
+      "scenario": "logged-in-warm",
+      "backend_ms": 89,
+      "ttfb_ms": 97.4,
+      "first_contentful_paint_ms": 120,
+      "dom_content_loaded_ms": 112.8,
+      "load_event_ms": 824.5,
+      "requests": 19,
+      "long_tasks_ms": []
+    }
+  ],
+  "direct_html_total_ms": [
+    85.605,
+    44.642,
+    37.244,
+    36.342
+  ],
+  "tls_handshake_ms": [
+    8.078,
+    1.894,
+    2.204,
+    1.53
+  ],
+  "asset_replay_ttfb_ms": {
+    "javascript": [
+      732.95,
+      730.86,
+      706.54
+    ],
+    "styles": [
+      804.08,
+      791.12,
+      805.75
+    ]
+  },
+  "cache_test": {
+    "scope": "Isolated FastCGI requests using a temporary per-request local-cache override to the existing Memcached service. No application configuration was edited.",
+    "javascript_baseline_ms": [
+      682.81,
+      785.34
+    ],
+    "javascript_populated_cache_ms": [
+      30.89,
+      37.86
+    ],
+    "runtime_cache": "Wikimedia\\ObjectCache\\EmptyBagOStuff",
+    "apcu_loaded": false,
+    "opcache_hit_percent": 99.6167,
+    "opcache_free_bytes": 57812344,
+    "opcache_full": false
+  },
+  "limits": [
+    "A controlled local browser profile, not a capture of the user browser.",
+    "Database query time was not separately instrumented; it is included in measured backend response time.",
+    "Cold browser cache does not mean a cold PHP/database cache.",
+    "Large bundles differ between first and subsequent page loads; timings are not additive across parallel requests."
+  ],
+  "cleanup": {
+    "temporary_container_probes_removed": true,
+    "php_fpm_restarted_to_clear_worker_overrides": true,
+    "normal_asset_contents_verified": true,
+    "https_smoke": "passed"
+  }
+}

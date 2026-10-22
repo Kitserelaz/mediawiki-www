@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.4
 # Immutable multi-platform base digests and a dated Debian snapshot fix dependency resolution.
-ARG PHP_IMAGE=php:8.4.26-fpm-bookworm@sha256:6bfef8e416977aa41f48e3e42a40c1e08050d24e4a938c6edb421400bff24601
+ARG PHP_IMAGE=php:8.4.27-fpm-bookworm@sha256:df5a5113e1179ddf4560cd15727eb3812f6457829756d2a96c6c11bb4c250089
 ARG CADDY_IMAGE=caddy:2.10.2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
 FROM ${PHP_IMAGE} AS php
 ARG DEBIAN_SNAPSHOT=20261015T000000Z
@@ -17,6 +17,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && docker-php-ext-enable redis memcached \
     && rm -rf /var/lib/apt/lists/* /tmp/pear
 RUN apt-get update && apt-get install -y --no-install-recommends poppler-utils djvulibre-bin libtiff-tools python3 python3-pygments && rm -rf /var/lib/apt/lists/*
+# ResourceLoader caches minified assets in CACHE_ACCEL, independently of Memcached.
+RUN pecl install apcu-5.1.28 \
+    && docker-php-ext-enable apcu \
+    && printf 'apc.shm_size=128M\n' > /usr/local/etc/php/conf.d/farm-apcu.ini \
+    && rm -rf /tmp/pear
 WORKDIR /var/www/mediawiki
 # Keep large dependency trees separate from frequently edited farm settings.
 # Linked source layers are reusable across architectures and PHP dependency updates.

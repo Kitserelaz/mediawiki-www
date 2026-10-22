@@ -1,0 +1,156 @@
+{
+  "scope": "Local ARM64 deployment; no production or AMD64 validation",
+  "lifecycle": {
+    "project": "cloudwiki-stream-test-d0d1748e",
+    "passed_checks": [
+      "31 jobs coalesced into a durable signal; batch continuation drained all jobs",
+      "unacknowledged event reclaimed after a consumer disappeared",
+      "delayed release atomically woke a blocked worker",
+      "expired job claim recycled and dispatched without scanning wikis",
+      "lease heartbeats prevented another worker reclaiming active work",
+      "jobs arriving during execution were not stranded by signal coalescing",
+      "Redis restart retained the stream event and queued payload",
+      "blocked consumers reconnected and resumed after Redis restart",
+      "idle consumers blocked in Redis without launching empty PHP batches",
+      "invalid stream key rejected enqueue before mutating job payloads",
+      "malformed events quarantined without stopping normal consumers",
+      "durable provisioning event recovered even without a producer filesystem marker",
+      "blocking consumers exited cleanly on SIGTERM"
+    ],
+    "count": 13,
+    "status": "passed"
+  },
+  "image_source_verification": "Final image matches all 24 PHP runtime/core/chron source files.",
+  "jobchron_lifecycle": "Passed delayed release, interrupted claim recovery, retry exhaustion, Redis restart, health failure/recovery, SIGTERM",
+  "snapshot": "backups/pre-stream-dispatch-20261021",
+  "validation_status": "passed",
+  "validated_at": "2026-10-22T02:54:29.566814+00:00",
+  "runtime_images": {
+    "jobchron": "sha256:22a0f3f43a2996c2ef20c92c84c7e1434a865faf10d8e12ce1b81208a2544bbe",
+    "php": "sha256:22a0f3f43a2996c2ef20c92c84c7e1434a865faf10d8e12ce1b81208a2544bbe",
+    "provisioner": "sha256:22a0f3f43a2996c2ef20c92c84c7e1434a865faf10d8e12ce1b81208a2544bbe",
+    "scheduler": "sha256:22a0f3f43a2996c2ef20c92c84c7e1434a865faf10d8e12ce1b81208a2544bbe",
+    "worker": "sha256:22a0f3f43a2996c2ef20c92c84c7e1434a865faf10d8e12ce1b81208a2544bbe"
+  },
+  "services": {
+    "counter": {
+      "state": "running",
+      "health": "healthy"
+    },
+    "database": {
+      "state": "running",
+      "health": "healthy"
+    },
+    "jobchron": {
+      "state": "running",
+      "health": "healthy"
+    },
+    "memcached": {
+      "state": "running",
+      "health": ""
+    },
+    "php": {
+      "state": "running",
+      "health": "healthy"
+    },
+    "provisioner": {
+      "state": "running",
+      "health": "healthy"
+    },
+    "redis": {
+      "state": "running",
+      "health": "healthy"
+    },
+    "scheduler": {
+      "state": "running",
+      "health": ""
+    },
+    "web": {
+      "state": "running",
+      "health": ""
+    },
+    "worker": {
+      "state": "running",
+      "health": "healthy"
+    }
+  },
+  "checks": [
+    "4 browser acceptance tests",
+    "fresh public/private/UI wiki creation",
+    "main Redis restart and queue drain",
+    "FPM APCu cross-request cache",
+    "HTTP routing/API/privacy/counter smoke",
+    "read-only farm preflight",
+    "idle consumers blocked in Redis",
+    "dispatch backlogs zero",
+    "isolated test containers removed"
+  ],
+  "fresh_creation": {
+    "prefix": "9creation5d1f6721",
+    "wikis": [
+      "9creation5d1f6721smokewiki",
+      "9creation5d1f6721privatewiki",
+      "9creation5d1f6721uismokewiki"
+    ],
+    "status": "passed",
+    "checks": [
+      "public/private CreateWiki creation",
+      "browser-form creation",
+      "public API readiness",
+      "private API/file denial",
+      "cross-wiki login/logout",
+      "all provisioning markers cleared"
+    ]
+  },
+  "timing": {
+    "samples": [
+      {
+        "wiki": "9timing386c7493public1wiki",
+        "private": false,
+        "form_success_ms": 850,
+        "worker_start_after_submit_ms": 677,
+        "queue_wait_ms": 2,
+        "provisioning_after_worker_start_ms": 2859,
+        "provisioning_finished_after_submit_ms": 3536,
+        "verified_ready_after_submit_ms": 4079,
+        "api_check": "public siteinfo ready"
+      },
+      {
+        "wiki": "9timing386c7493privatewiki",
+        "private": true,
+        "form_success_ms": 795,
+        "worker_start_after_submit_ms": 613,
+        "queue_wait_ms": 3,
+        "provisioning_after_worker_start_ms": 2014,
+        "provisioning_finished_after_submit_ms": 2627,
+        "verified_ready_after_submit_ms": 3138,
+        "api_check": "anonymous read denied"
+      },
+      {
+        "wiki": "9timing386c7493public3wiki",
+        "private": false,
+        "form_success_ms": 1226,
+        "worker_start_after_submit_ms": 1012,
+        "queue_wait_ms": 2,
+        "provisioning_after_worker_start_ms": 2602,
+        "provisioning_finished_after_submit_ms": 3614,
+        "verified_ready_after_submit_ms": 4085,
+        "api_check": "public siteinfo ready"
+      }
+    ],
+    "status": "passed",
+    "method": "Sequential fresh wiki creations through Special:CreateWiki; login and form preparation excluded. Provisioning completion observed every 500 ms.",
+    "prefix": "9timing386c7493",
+    "started": "2026-10-22T02:52:39.720Z",
+    "timing_clock": "Host monotonic duration; queue/start times use Redis stream/status timestamps, with legacy Docker volume file timestamps as fallback.",
+    "finished": "2026-10-22T02:52:53.040Z"
+  },
+  "baseline_ready_mean_ms": 9599.333333333334,
+  "stream_ready_mean_ms": 3767.3333333333335,
+  "ready_time_reduction_percent": 60.8,
+  "limits": [
+    "Three sequential local timing samples, not a capacity benchmark.",
+    "Delayed/retry maintenance still runs on a timer.",
+    "Backup structurally verified; no restore rehearsal performed for this change."
+  ]
+}

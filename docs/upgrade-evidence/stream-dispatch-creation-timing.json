@@ -1,0 +1,43 @@
+{
+  "samples": [
+    {
+      "wiki": "9timing386c7493public1wiki",
+      "private": false,
+      "form_success_ms": 850,
+      "worker_start_after_submit_ms": 677,
+      "queue_wait_ms": 2,
+      "provisioning_after_worker_start_ms": 2859,
+      "provisioning_finished_after_submit_ms": 3536,
+      "verified_ready_after_submit_ms": 4079,
+      "api_check": "public siteinfo ready"
+    },
+    {
+      "wiki": "9timing386c7493privatewiki",
+      "private": true,
+      "form_success_ms": 795,
+      "worker_start_after_submit_ms": 613,
+      "queue_wait_ms": 3,
+      "provisioning_after_worker_start_ms": 2014,
+      "provisioning_finished_after_submit_ms": 2627,
+      "verified_ready_after_submit_ms": 3138,
+      "api_check": "anonymous read denied"
+    },
+    {
+      "wiki": "9timing386c7493public3wiki",
+      "private": false,
+      "form_success_ms": 1226,
+      "worker_start_after_submit_ms": 1012,
+      "queue_wait_ms": 2,
+      "provisioning_after_worker_start_ms": 2602,
+      "provisioning_finished_after_submit_ms": 3614,
+      "verified_ready_after_submit_ms": 4085,
+      "api_check": "public siteinfo ready"
+    }
+  ],
+  "status": "passed",
+  "method": "Sequential fresh wiki creations through Special:CreateWiki; login and form preparation excluded. Provisioning completion observed every 500 ms.",
+  "prefix": "9timing386c7493",
+  "started": "2026-10-22T02:52:39.720Z",
+  "timing_clock": "Host monotonic duration; queue/start times use Redis stream/status timestamps, with legacy Docker volume file timestamps as fallback.",
+  "finished": "2026-10-22T02:52:53.040Z"
+}

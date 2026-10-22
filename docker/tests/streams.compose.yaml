@@ -1,0 +1,30 @@
+# Disposable development-only integration checks using current source overlays.
+x-stream-source: &stream-source
+  - ./docker/mediawiki:/opt/farm:ro
+  - ./docker/mediawiki:/var/www/mediawiki/docker/mediawiki:ro
+  - ./mediawiki/includes/JobQueue/JobQueueRedis.php:/var/www/mediawiki/includes/JobQueue/JobQueueRedis.php:ro
+  - ./docker/tests/jobchron.php:/opt/jobchron-test.php:ro
+  - ./docker/tests/streams.php:/opt/streams-test.php:ro
+services:
+  init:
+    volumes: *stream-source
+    environment:
+      MW_JOBCHRON_TEST_ISOLATED: '1'
+  worker:
+    volumes: *stream-source
+    environment:
+      MW_STREAM_CLAIM_MS: '2000'
+  provisioner:
+    volumes: *stream-source
+    environment:
+      MW_STREAM_CLAIM_MS: '2000'
+      MW_JOBCHRON_TEST_ISOLATED: '1'
+  jobchron:
+    volumes:
+      - ./docker/mediawiki:/opt/farm:ro
+      - ./docker/tests/jobchron-policy.json:/etc/farm/jobchron-test-policy.json:ro
+    environment:
+      MW_JOBCHRON_POLICY: /etc/farm/jobchron-test-policy.json
+networks:
+  default:
+    internal: true

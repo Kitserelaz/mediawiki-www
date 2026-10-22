@@ -1,0 +1,53 @@
+{
+  "samples": [
+    {
+      "wiki": "9timingdcda345fpublic1wiki",
+      "private": false,
+      "form_success_ms": 1290,
+      "worker_start_after_submit_ms": 8982,
+      "queue_wait_after_marker_ms": 7878,
+      "provisioning_after_worker_start_ms": 1539,
+      "provisioning_finished_after_submit_ms": 10521,
+      "verified_ready_after_submit_ms": 11068,
+      "api_check": "public siteinfo ready"
+    },
+    {
+      "wiki": "9timingdcda345fprivatewiki",
+      "private": true,
+      "form_success_ms": 926,
+      "worker_start_after_submit_ms": 7121,
+      "queue_wait_after_marker_ms": 6335,
+      "provisioning_after_worker_start_ms": 1161,
+      "provisioning_finished_after_submit_ms": 8283,
+      "verified_ready_after_submit_ms": 8746,
+      "api_check": "anonymous read denied"
+    },
+    {
+      "wiki": "9timingdcda345fpublic3wiki",
+      "private": false,
+      "form_success_ms": 1275,
+      "worker_start_after_submit_ms": 7237,
+      "queue_wait_after_marker_ms": 6084,
+      "provisioning_after_worker_start_ms": 1287,
+      "provisioning_finished_after_submit_ms": 8524,
+      "verified_ready_after_submit_ms": 8984,
+      "api_check": "public siteinfo ready"
+    }
+  ],
+  "status": "passed",
+  "method": "Sequential fresh wiki creations through Special:CreateWiki; login and form preparation excluded. Provisioning completion observed every 500 ms.",
+  "prefix": "9timingdcda345f",
+  "started": "2026-10-22T01:52:25.243Z",
+  "timing_clock": "Host monotonic duration; worker queue/start times use Docker volume file timestamps on the same host clock.",
+  "finished": "2026-10-22T01:52:56.710Z",
+  "local_date": "2026-10-21",
+  "timezone": "America/Vancouver",
+  "mean_verified_ready_ms": 9599,
+  "limits": [
+    "Three sequential samples on the current local farm, not a load test.",
+    "Login and form preparation are excluded.",
+    "Worker completion observation includes up to 500 ms polling delay plus a Docker probe round trip.",
+    "Private readiness requires completed provisioning and anonymous API denial; no private content is exposed.",
+    "The three newly created timing fixtures remain inspectable."
+  ]
+}

@@ -1,0 +1,105 @@
+{
+  "date": "2026-10-21",
+  "timezone": "America/Vancouver",
+  "first_run": {
+    "prefix": "creationfd085e4e",
+    "browser_tests": "2 failed before fix; worker stalled on an existing digit-prefixed wiki",
+    "pending_wikis_recovered": true
+  },
+  "fixed_run": {
+    "prefix": "9creation384630b6",
+    "wikis": [
+      "9creation384630b6smokewiki",
+      "9creation384630b6privatewiki",
+      "9creation384630b6uismokewiki"
+    ],
+    "status": "passed",
+    "checks": [
+      "public/private CreateWiki creation",
+      "browser-form creation",
+      "public API readiness",
+      "private API/file denial",
+      "cross-wiki login/logout",
+      "all provisioning markers cleared"
+    ],
+    "browser_tests_passed": 2,
+    "browser_duration_seconds": 37.6
+  },
+  "validation_checks": [
+    {
+      "check": "duplicate database rejected",
+      "status": "passed"
+    },
+    {
+      "check": "missing suffix rejected",
+      "status": "passed"
+    },
+    {
+      "check": "non-alphanumeric name rejected",
+      "status": "passed"
+    },
+    {
+      "check": "uppercase name rejected",
+      "status": "passed"
+    },
+    {
+      "check": "anonymous creation denied",
+      "status": "passed"
+    }
+  ],
+  "queue_durability": "passed for testwiki and the new digit-prefixed public wiki",
+  "management_preflight": "passed",
+  "https_smoke": "passed",
+  "fpm_cache": {
+    "cross_request_cache": "passed",
+    "cache_class": "Wikimedia\\ObjectCache\\APCUBagOStuff",
+    "apcu_version": "5.1.28",
+    "shm_size": "128M",
+    "php": "8.4.27",
+    "mediawiki": "1.46.2"
+  },
+  "retained_test_wikis": [
+    {
+      "wiki_dbname": "9creation384630b6privatewiki",
+      "wiki_private": 1,
+      "wiki_deleted": 0
+    },
+    {
+      "wiki_dbname": "9creation384630b6smokewiki",
+      "wiki_private": 0,
+      "wiki_deleted": 0
+    },
+    {
+      "wiki_dbname": "9creation384630b6uismokewiki",
+      "wiki_private": 0,
+      "wiki_deleted": 0
+    },
+    {
+      "wiki_dbname": "creationfd085e4eprivatewiki",
+      "wiki_private": 1,
+      "wiki_deleted": 0
+    },
+    {
+      "wiki_dbname": "creationfd085e4esmokewiki",
+      "wiki_private": 0,
+      "wiki_deleted": 0
+    },
+    {
+      "wiki_dbname": "creationfd085e4euismokewiki",
+      "wiki_private": 0,
+      "wiki_deleted": 0
+    }
+  ],
+  "all_six_provisioning_markers_cleared": true,
+  "images": {
+    "php": {
+      "id": "sha256:23be4069f9be2addba1bbb2c18ff1812c7a7815240542ff744670a257c68a033",
+      "architecture": "arm64"
+    },
+    "web": {
+      "id": "sha256:f3594848d17d4ec4493df630fc6e49d3a19df631ca4b23b33de66dcf28ebe8b3",
+      "architecture": "arm64"
+    }
+  },
+  "fix": "Allow digit-prefixed database identifiers consistently; skip a malformed metadata row without stopping all workers."
+}

@@ -1,7 +1,7 @@
 {
   "repository": "https://gerrit.wikimedia.org/r/mediawiki/services/jobrunner",
   "commit": "09f30782077b6101871fa95715f7181391d20486",
-  "scope": "Unmodified chron entrypoint and required sources; dependency supplied by the farm Composer lock (wikimedia/ip-utils 6.0.1).",
+  "scope": "Pinned chron entrypoint and required sources; local atomic stream-dispatch patch recorded separately; ip-utils supplied by farm lock.",
   "files": {
     "COPYING": "13ae6e7d44ad1944e380d37c90ca7412fe2ffbd2fc223f0f0957bad21d16c063",
     "README.md": "c559b3c4d0610177d13412e8801d83d26e5db2c1d703f4e3e5a2efdc2582be75",
@@ -11,5 +11,11 @@
     "src/RedisExceptionHA.php": "71568017db5e7010834f831270cf7a4488569039b652f3e3308d0f1caa0e4f16",
     "src/RedisJobChronService.php": "9078c023c0630d72a44c38328c7b7284e63329aa090de4d5152b04b05bd5cd6f",
     "src/PeriodicScriptParamsIterator.php": "eae61d1f6c1462f122bbf03395b8863d1fce9fbd404084beed8ba2bc4c6d434e"
+  },
+  "local_patches": {
+    "src/PeriodicScriptParamsIterator.php": {
+      "sha256": "49e158541a84bdc21072436abbe7581d8a4b649a7256a935e5dad99694e8a275",
+      "reason": "Opt-in atomic stream wake-ups on delayed release and expired-claim recycling."
+    }
   }
 }

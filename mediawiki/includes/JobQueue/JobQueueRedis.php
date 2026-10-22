@@ -77,6 +77,8 @@ class JobQueueRedis extends JobQueue {
 	/** @var string Compression method to use */
 	protected $compression;
 
+	private bool $streamDispatch;
+
 	private const MAX_PUSH_SIZE = 25; // avoid tying up the server
 
 	/**
@@ -95,6 +97,7 @@ class JobQueueRedis extends JobQueue {
 		parent::__construct( $params );
 		$params['redisConfig']['serializer'] = 'none'; // make it easy to use Lua
 		$this->server = $params['redisServer'];
+		$this->streamDispatch = (bool)( $params['streamDispatch'] ?? false );
 		$this->compression = $params['compression'] ?? 'none';
 		$this->redisPool = RedisConnectionPool::singleton( $params['redisConfig'] );
 		if ( empty( $params['daemonized'] ) ) {
@@ -262,7 +265,14 @@ class JobQueueRedis extends JobQueue {
 		static $script =
 		/** @lang Lua */
 <<<LUA
-		local kUnclaimed, kSha1ById, kIdBySha1, kDelayed, kData, kQwJobs = unpack(KEYS)
+		local kUnclaimed, kSha1ById, kIdBySha1, kDelayed, kData, kQwJobs, kDispatch, kPending = unpack(KEYS)
+		-- Validate optional dispatch keys before mutating the job queue (Lua does not roll back errors).
+		if kDispatch ~= "" then
+			local st, ht = redis.call("TYPE",kDispatch).ok, redis.call("TYPE",kPending).ok
+			if (st ~= "none" and st ~= "stream") or (ht ~= "none" and ht ~= "hash") then
+				return redis.error_reply("Invalid stream dispatch key type")
+			end
+		end
 		-- First argument is the queue ID
 		local queueId = ARGV[1]
 		-- Next arguments all come in 4s (one per job)
@@ -294,6 +304,11 @@ class JobQueueRedis extends JobQueue {
 			-- Mark this queue as having jobs
 			redis.call('sAdd',kQwJobs,queueId)
 		end
+		-- Coalesce one durable wake-up per queue. Enqueue and notification are atomic.
+		if kDispatch ~= '' and redis.call('lLen',kUnclaimed) > 0 and redis.call('hExists',kPending,queueId) == 0 then
+			local id = redis.call('xAdd',kDispatch,'*','queue',queueId,'ready',kUnclaimed)
+			redis.call('hSet',kPending,queueId,id)
+		end
 		return pushed
 LUA;
 		return $conn->luaEval( $script,
@@ -304,9 +319,11 @@ LUA;
 				$this->getQueueKey( 'z-delayed' ), # KEYS[4]
 				$this->getQueueKey( 'h-data' ), # KEYS[5]
 				$this->getGlobalKey( 's-queuesWithJobs' ), # KEYS[6]
+				$this->streamDispatch ? 'global:jobqueue:dispatch' : '', # KEYS[7]
+				$this->streamDispatch ? 'global:jobqueue:dispatch-pending' : '', # KEYS[8]
 				...$args
 			],
-			6 # number of first argument(s) that are keys
+			8 # number of first argument(s) that are keys
 		);
 	}
 

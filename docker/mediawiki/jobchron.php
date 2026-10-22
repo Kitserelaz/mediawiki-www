@@ -19,6 +19,8 @@ class FarmJobChronService extends RedisJobChronService {
     }
 }
 
+// Enable atomic ready/retry wake-ups in the locally patched chron Lua script.
+putenv('MW_STREAM_DISPATCH=1');
 RedisJobService::checkEnvironment();
 error_reporting(E_ALL);
 ini_set('display_errors', '1');

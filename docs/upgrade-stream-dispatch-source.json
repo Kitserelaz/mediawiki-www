@@ -1,0 +1,12 @@
+{
+  "component": "MediaWiki Redis queue",
+  "reason": "Opt-in coalesced stream notification in the same Lua operation as enqueueing.",
+  "vendor_patches": [
+    {
+      "path": "mediawiki/includes/JobQueue/JobQueueRedis.php",
+      "upstream_sha256": "29f772dc793742004b38c3897db567d03e681ce55609b01d5ef572c1d39e6b0c",
+      "patched_sha256": "84f1f714f66e23ca1085c78010d00cd073991a560a35bc49c46088bd97eff012",
+      "reason": "Atomic durable dispatch signals; default remains off outside farm configuration."
+    }
+  ]
+}

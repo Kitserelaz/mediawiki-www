@@ -6,7 +6,7 @@ class DockerFixtures extends MediaWiki\Maintenance\Maintenance {
     public function execute() {
         if (getenv('MW_ENV') === 'production') { throw new RuntimeException('Development test fixtures only'); }
         $prefix = getenv('DOCKER_FIXTURE_PREFIX') ?: 'docker';
-        if (!preg_match('/^[a-z][a-z0-9]{0,30}$/D', $prefix)) { throw new RuntimeException('Invalid test prefix'); }
+        if (!preg_match('/^[a-z0-9]{1,31}$/D', $prefix)) { throw new RuntimeException('Invalid test prefix'); }
         foreach ([$prefix . 'smokewiki' => false, $prefix . 'privatewiki' => true] as $wiki => $private) {
             $manager = $this->getServiceContainer()->get('WikiManagerFactory')->newInstance($wiki);
             if ($manager->exists()) { continue; }

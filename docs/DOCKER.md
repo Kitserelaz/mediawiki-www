@@ -12,6 +12,11 @@ requests with:
 docker compose exec -T php python3 - < docker/tests/local-cache.py
 ```
 
+Fresh wiki-creation regression checks (including digit-prefixed wiki names) run
+with `python3 docker/tests/creation.py`. They create three new local test wikis
+per invocation and leave them inspectable. See [WIKI-CREATION-TESTS.md](WIKI-CREATION-TESTS.md)
+for coverage and the worker identifier fix.
+
 ## First local start
 
 Install and start Docker Desktop (Compose 2.24.4+ is required for the production override). Keep at least 20 GiB free on the drive holding Docker’s disk image; placing the checkout on another drive does not move Docker storage. The helper builds images sequentially to limit peak resource use. From the workspace root:
@@ -58,13 +63,16 @@ Moe-Counter uses `DB_PATH=/app/data/count.db`; outside Docker its original `coun
 
 ## Redis queue maintenance
 
-`worker` executes ready jobs and provisions new wikis. The separate `jobchron` service
+`worker` executes ready jobs and the dedicated `provisioner` initializes new wikis.
+Both use durable Redis Streams wake-ups; see [STREAM-DISPATCH.md](STREAM-DISPATCH.md).
+The separate `jobchron` service
 runs Wikimedia's pinned `redisJobChronService` to release delayed jobs, recycle expired
 claims, abandon jobs that exhaust their attempts, and prune old abandoned records.
-Both services must run for a complete Redis queue lifecycle. Chron connects only to
+All three services must run for a complete queue/provisioning lifecycle. Chron connects only to
 this stack's internal Redis; it has no farm secrets, database credentials or upload mounts.
 
-The unmodified upstream subset and license are in `docker/mediawiki/jobrunner`.
+The pinned upstream subset and license are in `docker/mediawiki/jobrunner`;
+`SOURCE.json` separately records the local atomic stream-notification patch.
 `SOURCE.json` records commit `09f30782077b6101871fa95715f7181391d20486` and file hashes,
 checked by `scripts/verify-checkout.py`. The adapter uses `wikimedia/ip-utils` 6.0.1
 from the existing MediaWiki Composer lock. No dependencies are resolved at startup.
@@ -108,7 +116,7 @@ heartbeat failure/recovery and graceful shutdown. It never targets an existing f
 
 Core and CentralAuth sessions use persistent Redis storage in Docker. Migrating the legacy SQL session backend requires users to sign in again; signing keys and accounts are preserved.
 
-The worker polls the database for non-deleted wikis and processes bounded batches. New wikis join automatically. CreateWiki marks new databases for provisioning; the worker installs their complete baseline and enabled-extension schemas before they serve traffic. Only these explicitly pending creations are initialized automatically. Existing wiki upgrades remain explicit. A single scheduler refreshes metadata hourly; no automatic wiki inactivity/deletion jobs are enabled. For an existing farm, carry over the inventoried production maintenance schedule in `docker/maintenance.json`. A new farm starts with the hourly metadata refresh; add other maintenance jobs deliberately. Each entry specifies a unique `name`, `interval_seconds` (at least 60), an argument-array `command`, and `per_wiki` to append the current wiki. Commands run without a shell. Logs go to `docker compose logs`; inspect service health with `docker compose ps`. A failed init, unhealthy PHP service, repeated worker failures, or growing job queue requires attention.
+Workers block on Redis Streams and process bounded batches of signaled work. New wikis join automatically. CreateWiki publishes provisioning events; the dedicated provisioner installs their complete baseline and enabled-extension schemas before they serve traffic. Only these explicitly pending creations are initialized automatically. Existing wiki upgrades remain explicit. A single scheduler refreshes metadata hourly; no automatic wiki inactivity/deletion jobs are enabled. For an existing farm, carry over the inventoried production maintenance schedule in `docker/maintenance.json`. A new farm starts with the hourly metadata refresh; add other maintenance jobs deliberately. Each entry specifies a unique `name`, `interval_seconds` (at least 60), an argument-array `command`, and `per_wiki` to append the current wiki. Commands run without a shell. Logs go to `docker compose logs`; inspect service health with `docker compose ps`. A failed init, unhealthy PHP service, repeated worker failures, or growing job queue requires attention.
 
 Search is optional. The bundled CirrusSearch README specifies Elasticsearch 7.10; the profile pins 7.10.2 and is not a recommendation to expose that old service publicly. Enable it only on the internal network:
 

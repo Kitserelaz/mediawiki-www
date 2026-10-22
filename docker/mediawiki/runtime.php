@@ -78,7 +78,7 @@ function farmRuntime(): void {
     $wgObjectCaches['redis'] = ['class' => 'RedisBagOStuff', 'servers' => [$redis]];
     $GLOBALS['wgSessionCacheType'] = 'redis';
     $GLOBALS['wgCentralAuthSessionCacheType'] = 'redis';
-    $wgJobTypeConf['default'] = ['class' => 'JobQueueRedis', 'redisServer' => $redis, 'redisConfig' => [], 'daemonized' => true];
+    $wgJobTypeConf['default'] = ['class' => 'JobQueueRedis', 'redisServer' => $redis, 'redisConfig' => [], 'daemonized' => true, 'streamDispatch' => true];
     $GLOBALS['wgEnableEmail'] = farmEnv('MW_EMAIL_ENABLED', '1') === '1';
     $wgSMTP = ['host' => farmEnv('MW_SMTP_HOST', 'mailpit'), 'port' => (int)farmEnv('MW_SMTP_PORT', '1025'),
         'IDHost' => farmEnv('MW_DOMAIN', 'localhost'), 'auth' => !empty($farmSecrets['smtp_user']),
@@ -94,8 +94,9 @@ function farmRuntime(): void {
     $wgCreateWikiGlobalWiki = 'metawiki';
     $GLOBALS['wgHooks']['CreateWikiGenerateDatabaseLists'] = ['MirahezeFunctions::onGenerateDatabaseLists'];
     $GLOBALS['wgHooks']['CreateWikiCreation']['docker-provision'] = static function (string $wiki, bool $private): void {
-        if (!preg_match('/^[a-z][a-z0-9_]{0,63}$/D', $wiki)) { throw new RuntimeException('Invalid new wiki identifier'); }
-        file_put_contents('/var/www/mediawiki/cw_cache/.provision-' . $wiki, gmdate('c'));
+        if (!preg_match('/^[a-z0-9][a-z0-9_]{0,63}$/D', $wiki)) { throw new RuntimeException('Invalid new wiki identifier'); }
+        require_once __DIR__ . '/dispatch.php';
+        FarmDispatch::provision(FarmDispatch::connect(), $wiki);
     };
     $wgCreateWikiCacheDirectory = '/var/www/mediawiki/cw_cache';
     $GLOBALS['wgManageWikiCacheDirectory'] = $wgCreateWikiCacheDirectory;

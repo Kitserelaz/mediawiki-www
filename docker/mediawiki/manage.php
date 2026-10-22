@@ -24,7 +24,7 @@ function command(array $args, array $env = []): void {
     if ($managementStopping || $status !== 0) { throw new RuntimeException('Command failed: ' . implode(' ', array_slice($args, 0, 3))); }
 }
 function identifier(string $value): string {
-    if (!preg_match('/^[a-z][a-z0-9_]{0,63}$/D', $value)) { throw new RuntimeException('Invalid database identifier'); }
+    if (!preg_match('/^[a-z0-9][a-z0-9_]{0,63}$/D', $value)) { throw new RuntimeException('Invalid database identifier'); }
     return "`$value`";
 }
 function connectDb(?string $database = null): PDO {

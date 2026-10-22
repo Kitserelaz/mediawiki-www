@@ -1,0 +1,108 @@
+{
+  "samples": [
+    {
+      "wiki": "9timingf8143acbpublic1wiki",
+      "private": false,
+      "form_success_ms": 918,
+      "worker_start_after_submit_ms": 769,
+      "queue_wait_ms": 2,
+      "provisioning_after_worker_start_ms": 1687,
+      "provisioning_finished_after_submit_ms": 2456,
+      "provisioning_actual_ms": 1515,
+      "provisioning_completed_after_submit_ms": 2284,
+      "completion_observation_overhead_ms": 172,
+      "api_verification_ms": 528,
+      "stage_timings": {
+        "runtime_load_ms": 0.366708,
+        "startup_and_lock_ms": 0.458125,
+        "metadata_prepared": false,
+        "metadata_ms": 0.006291,
+        "bootstrap_update_ms": 1109.789751,
+        "enabled_extensions_update_ms": 306.164042,
+        "coordinator_total_ms": 1416.430459
+      },
+      "verified_ready_after_submit_ms": 2984,
+      "api_check": "public siteinfo ready"
+    },
+    {
+      "wiki": "9timingf8143acbprivatewiki",
+      "private": true,
+      "form_success_ms": 849,
+      "worker_start_after_submit_ms": 686,
+      "queue_wait_ms": 2,
+      "provisioning_after_worker_start_ms": 1687,
+      "provisioning_finished_after_submit_ms": 2373,
+      "provisioning_actual_ms": 1314,
+      "provisioning_completed_after_submit_ms": 2000,
+      "completion_observation_overhead_ms": 373,
+      "api_verification_ms": 459,
+      "stage_timings": {
+        "runtime_load_ms": 1.099333,
+        "startup_and_lock_ms": 1.248708,
+        "metadata_prepared": false,
+        "metadata_ms": 0.006458,
+        "bootstrap_update_ms": 803.223209,
+        "enabled_extensions_update_ms": 406.859458,
+        "coordinator_total_ms": 1211.347542
+      },
+      "verified_ready_after_submit_ms": 2832,
+      "api_check": "anonymous read denied"
+    },
+    {
+      "wiki": "9timingf8143acbpublic3wiki",
+      "private": false,
+      "form_success_ms": 913,
+      "worker_start_after_submit_ms": 759,
+      "queue_wait_ms": 4,
+      "provisioning_after_worker_start_ms": 1657,
+      "provisioning_finished_after_submit_ms": 2416,
+      "provisioning_actual_ms": 1520,
+      "provisioning_completed_after_submit_ms": 2279,
+      "completion_observation_overhead_ms": 137,
+      "api_verification_ms": 474,
+      "stage_timings": {
+        "runtime_load_ms": 0.460833,
+        "startup_and_lock_ms": 0.594833,
+        "metadata_prepared": false,
+        "metadata_ms": 0.005833,
+        "bootstrap_update_ms": 1103.691458,
+        "enabled_extensions_update_ms": 300.965626,
+        "coordinator_total_ms": 1405.455709
+      },
+      "verified_ready_after_submit_ms": 2891,
+      "api_check": "public siteinfo ready"
+    }
+  ],
+  "status": "passed",
+  "method": "Sequential fresh wiki creations through Special:CreateWiki; login and form preparation excluded. Provisioning completion observed every 500 ms.",
+  "prefix": "9timingf8143acb",
+  "started": "2026-10-22T02:58:09.215Z",
+  "timing_clock": "Host monotonic duration; queue/start times use Redis stream/status timestamps, with legacy Docker volume file timestamps as fallback.",
+  "finished": "2026-10-22T02:58:20.248Z",
+  "profiling": {
+    "method": "Temporary read-only bind mount of provision.php with hrtime(true) around runtime load, metadata fallback, and each real updater subprocess; normal provisioner restored afterward.",
+    "instrumented_source_sha256": "a4c5cc7954d76d6ea7baeb67905fa3d55c9aca78b1f196d5a44e3af9beec6a9d",
+    "limitations": [
+      "Updater timings include PHP process startup and completion detection through the existing 100 ms process-status wait.",
+      "No separate SQL-versus-PHP-bootstrap timing within each updater.",
+      "Three sequential fresh local creations; results vary with cache warmth and load.",
+      "Extra metadata preparation was not needed in these samples."
+    ]
+  },
+  "means_ms": {
+    "queue_wait_ms": 2.6666666666666665,
+    "provisioning_actual_ms": 1449.6666666666667,
+    "provisioning_completed_after_submit_ms": 2187.6666666666665,
+    "completion_observation_overhead_ms": 227.33333333333334,
+    "api_verification_ms": 487,
+    "verified_ready_after_submit_ms": 2902.3333333333335,
+    "submit_to_queued_ms": 735.3333333333334,
+    "runtime_load_ms": 0.6422913333333333,
+    "startup_and_lock_ms": 0.767222,
+    "metadata_ms": 0.006194,
+    "bootstrap_update_ms": 1005.5681393333333,
+    "enabled_extensions_update_ms": 337.99637533333333,
+    "coordinator_total_ms": 1344.4112366666666,
+    "worker_launch_and_completion_ms": 105.25543
+  }
+}

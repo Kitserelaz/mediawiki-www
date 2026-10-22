@@ -13,7 +13,8 @@ def main():
     jobrunner = ROOT / 'docker/mediawiki/jobrunner'
     provenance = json.loads((jobrunner / 'SOURCE.json').read_text())
     for name, digest in provenance['files'].items():
-        if hashlib.sha256((jobrunner / name).read_bytes()).hexdigest() != digest:
+        expected = provenance.get('local_patches', {}).get(name, {}).get('sha256', digest)
+        if hashlib.sha256((jobrunner / name).read_bytes()).hexdigest() != expected:
             raise RuntimeError('Pinned jobrunner source changed: ' + name)
     locked = json.loads((ROOT / 'mediawiki/composer.lock').read_text())
     iputils = next(p for p in locked['packages'] if p['name'] == 'wikimedia/ip-utils')

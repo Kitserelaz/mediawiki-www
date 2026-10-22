@@ -74,7 +74,22 @@ services:
     restart: unless-stopped
   worker:
     <<: *farm
+    stop_signal: SIGTERM
     command: [php, /opt/farm/worker.php]
+    healthcheck:
+      test: [CMD, php, /opt/farm/dispatch-health.php, jobs]
+      interval: 15s
+      timeout: 5s
+      start_period: 15s
+  provisioner:
+    <<: *farm
+    stop_signal: SIGTERM
+    command: [php, /opt/farm/stream-worker.php, provision]
+    healthcheck:
+      test: [CMD, php, /opt/farm/dispatch-health.php, provision]
+      interval: 15s
+      timeout: 5s
+      start_period: 15s
   jobchron:
     # Queue maintenance needs Redis, not database credentials or farm data mounts.
     image: ${JOBCHRON_IMAGE:-${MW_IMAGE:-cloudwiki-php:local}}

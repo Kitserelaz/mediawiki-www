@@ -52,6 +52,9 @@ class PeriodicScriptParamsIterator implements Iterator {
 				"{$domain}:jobqueue:{$type}:z-delayed",
 				# KEYS[7]
 				"global:jobqueue:s-queuesWithJobs",
+				# KEYS[8-9]: opt-in farm stream dispatch
+				getenv( 'MW_STREAM_DISPATCH' ) === '1' ? 'global:jobqueue:dispatch' : '',
+				getenv( 'MW_STREAM_DISPATCH' ) === '1' ? 'global:jobqueue:dispatch-pending' : '',
 				# ARGV[1]
 				$now - $this->service->getTTLForType( $type ),
 				# ARGV[2]
@@ -66,7 +69,7 @@ class PeriodicScriptParamsIterator implements Iterator {
 				self::LUA_MAX_JOBS
 			],
 			# number of first argument(s) that are keys
-			'keys' => 7
+			'keys' => 9
 		];
 	}
 
@@ -89,7 +92,13 @@ class PeriodicScriptParamsIterator implements Iterator {
 	public static function getChronScript() {
 		static $script =
 			<<<LUA
-		local kClaimed, kAttempts, kUnclaimed, kData, kAbandoned, kDelayed, kQwJobs = unpack(KEYS)
+		local kClaimed, kAttempts, kUnclaimed, kData, kAbandoned, kDelayed, kQwJobs, kDispatch, kPending = unpack(KEYS)
+		if kDispatch ~= '' then
+			local st, ht = redis.call('TYPE',kDispatch).ok, redis.call('TYPE',kPending).ok
+			if (st ~= 'none' and st ~= 'stream') or (ht ~= 'none' and ht ~= 'hash') then
+				return redis.error_reply('Invalid stream dispatch key type')
+			end
+		end
 		local rClaimCutoff, rPruneCutoff, rAttempts, rTime, queueId, rLimit = unpack(ARGV)
 		local released,abandoned,pruned,undelayed,ready = 0,0,0,0,0
 		-- Short-circuit if there is nothing at all in the queue
@@ -139,6 +148,11 @@ class PeriodicScriptParamsIterator implements Iterator {
 			redis.call('sAdd',kQwJobs,queueId)
 		else
 			redis.call('sRem',kQwJobs,queueId)
+		end
+		-- A delayed release/retry and its durable dispatch are one atomic operation.
+		if kDispatch ~= '' and ready > 0 and redis.call('hExists',kPending,queueId) == 0 then
+			local id = redis.call('xAdd',kDispatch,'*','queue',queueId,'ready',kUnclaimed)
+			redis.call('hSet',kPending,queueId,id)
 		end
 		return {released,abandoned,pruned,undelayed,ready}
 LUA;

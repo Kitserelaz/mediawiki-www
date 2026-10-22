@@ -20,7 +20,7 @@ for attempt in range(30):
 for wiki in ['meta','test','login']:
     data = json.loads(curl(wiki+'.localhost','/api.php?action=query&meta=siteinfo&format=json'))
     assert 'query' in data, data
-    for path in ['/LocalSettings.php','/PrivateSettings.php','/cw_cache/databases.php','/vendor/autoload.php','/docker/mediawiki/private.php','/images/testwiki/deleted/secret.png']:
+    for path in ['/LocalSettings.php','/PrivateSettings.php','/cw_cache/databases.php','/vendor/autoload.php','/docker/mediawiki/private.php','/docker/mediawiki/provision-settings.php','/images/testwiki/deleted/secret.png']:
         curl(wiki+'.localhost',path,404)
 curl('missing.localhost','/',404)
 assert curl('counter.localhost','/heart-beat') == 'alive'

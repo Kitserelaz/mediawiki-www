@@ -1,0 +1,424 @@
+{
+  "project": "cloudwiki-provision-test-speed-acee816e",
+  "status": "passed",
+  "cases": [
+    {
+      "mode": "two",
+      "variant": "public",
+      "pair": 0,
+      "warmup": true,
+      "wiki": "9provision236276twopublic0wiki",
+      "duration_ms": 1210,
+      "table_count": 111,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [],
+        "only_case": []
+      }
+    },
+    {
+      "mode": "single",
+      "variant": "public",
+      "pair": 0,
+      "warmup": true,
+      "wiki": "9provision236276singlepublic0wiki",
+      "duration_ms": 1318,
+      "table_count": 111,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [
+          "oauth_accepted_consumer-oaac_accepted-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_accepted_consumer-timestamp.sql",
+          "oauth_registered_consumer-oarc_email_authenticated-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_registered_consumer-timestamp.sql"
+        ],
+        "only_case": []
+      }
+    },
+    {
+      "mode": "single",
+      "variant": "public",
+      "pair": 1,
+      "warmup": false,
+      "wiki": "9provision236276singlepublic1wiki",
+      "duration_ms": 912,
+      "table_count": 111,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [
+          "oauth_accepted_consumer-oaac_accepted-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_accepted_consumer-timestamp.sql",
+          "oauth_registered_consumer-oarc_email_authenticated-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_registered_consumer-timestamp.sql"
+        ],
+        "only_case": []
+      }
+    },
+    {
+      "mode": "two",
+      "variant": "public",
+      "pair": 1,
+      "warmup": false,
+      "wiki": "9provision236276twopublic1wiki",
+      "duration_ms": 1417,
+      "table_count": 111,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [],
+        "only_case": []
+      }
+    },
+    {
+      "mode": "two",
+      "variant": "public",
+      "pair": 2,
+      "warmup": false,
+      "wiki": "9provision236276twopublic2wiki",
+      "duration_ms": 1316,
+      "table_count": 111,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [],
+        "only_case": []
+      }
+    },
+    {
+      "mode": "single",
+      "variant": "public",
+      "pair": 2,
+      "warmup": false,
+      "wiki": "9provision236276singlepublic2wiki",
+      "duration_ms": 1014,
+      "table_count": 111,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [
+          "oauth_accepted_consumer-oaac_accepted-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_accepted_consumer-timestamp.sql",
+          "oauth_registered_consumer-oarc_email_authenticated-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_registered_consumer-timestamp.sql"
+        ],
+        "only_case": []
+      }
+    },
+    {
+      "mode": "single",
+      "variant": "public",
+      "pair": 3,
+      "warmup": false,
+      "wiki": "9provision236276singlepublic3wiki",
+      "duration_ms": 6366,
+      "table_count": 111,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [
+          "oauth_accepted_consumer-oaac_accepted-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_accepted_consumer-timestamp.sql",
+          "oauth_registered_consumer-oarc_email_authenticated-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_registered_consumer-timestamp.sql"
+        ],
+        "only_case": []
+      }
+    },
+    {
+      "mode": "two",
+      "variant": "public",
+      "pair": 3,
+      "warmup": false,
+      "wiki": "9provision236276twopublic3wiki",
+      "duration_ms": 1326,
+      "table_count": 111,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [],
+        "only_case": []
+      }
+    },
+    {
+      "mode": "two",
+      "variant": "public",
+      "pair": 4,
+      "warmup": false,
+      "wiki": "9provision236276twopublic4wiki",
+      "duration_ms": 1717,
+      "table_count": 111,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [],
+        "only_case": []
+      }
+    },
+    {
+      "mode": "single",
+      "variant": "public",
+      "pair": 4,
+      "warmup": false,
+      "wiki": "9provision236276singlepublic4wiki",
+      "duration_ms": 1010,
+      "table_count": 111,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [
+          "oauth_accepted_consumer-oaac_accepted-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_accepted_consumer-timestamp.sql",
+          "oauth_registered_consumer-oarc_email_authenticated-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_registered_consumer-timestamp.sql"
+        ],
+        "only_case": []
+      }
+    },
+    {
+      "mode": "two",
+      "variant": "schema",
+      "pair": 0,
+      "warmup": true,
+      "wiki": "9provision236276twoschema0wiki",
+      "duration_ms": 2475,
+      "table_count": 114,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [],
+        "only_case": []
+      }
+    },
+    {
+      "mode": "single",
+      "variant": "schema",
+      "pair": 0,
+      "warmup": true,
+      "wiki": "9provision236276singleschema0wiki",
+      "duration_ms": 2049,
+      "table_count": 114,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [
+          "oauth_accepted_consumer-oaac_accepted-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_accepted_consumer-timestamp.sql",
+          "oauth_registered_consumer-oarc_email_authenticated-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_registered_consumer-timestamp.sql"
+        ],
+        "only_case": []
+      }
+    },
+    {
+      "mode": "single",
+      "variant": "schema",
+      "pair": 1,
+      "warmup": false,
+      "wiki": "9provision236276singleschema1wiki",
+      "duration_ms": 2247,
+      "table_count": 114,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [
+          "oauth_accepted_consumer-oaac_accepted-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_accepted_consumer-timestamp.sql",
+          "oauth_registered_consumer-oarc_email_authenticated-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_registered_consumer-timestamp.sql"
+        ],
+        "only_case": []
+      }
+    },
+    {
+      "mode": "two",
+      "variant": "schema",
+      "pair": 1,
+      "warmup": false,
+      "wiki": "9provision236276twoschema1wiki",
+      "duration_ms": 2460,
+      "table_count": 114,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [],
+        "only_case": []
+      }
+    },
+    {
+      "mode": "two",
+      "variant": "schema",
+      "pair": 2,
+      "warmup": false,
+      "wiki": "9provision236276twoschema2wiki",
+      "duration_ms": 3887,
+      "table_count": 114,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [],
+        "only_case": []
+      }
+    },
+    {
+      "mode": "single",
+      "variant": "schema",
+      "pair": 2,
+      "warmup": false,
+      "wiki": "9provision236276singleschema2wiki",
+      "duration_ms": 1937,
+      "table_count": 114,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [
+          "oauth_accepted_consumer-oaac_accepted-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_accepted_consumer-timestamp.sql",
+          "oauth_registered_consumer-oarc_email_authenticated-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_registered_consumer-timestamp.sql"
+        ],
+        "only_case": []
+      }
+    },
+    {
+      "mode": "single",
+      "variant": "schema",
+      "pair": 3,
+      "warmup": false,
+      "wiki": "9provision236276singleschema3wiki",
+      "duration_ms": 1917,
+      "table_count": 114,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [
+          "oauth_accepted_consumer-oaac_accepted-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_accepted_consumer-timestamp.sql",
+          "oauth_registered_consumer-oarc_email_authenticated-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_registered_consumer-timestamp.sql"
+        ],
+        "only_case": []
+      }
+    },
+    {
+      "mode": "two",
+      "variant": "schema",
+      "pair": 3,
+      "warmup": false,
+      "wiki": "9provision236276twoschema3wiki",
+      "duration_ms": 3077,
+      "table_count": 114,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [],
+        "only_case": []
+      }
+    },
+    {
+      "mode": "two",
+      "variant": "schema",
+      "pair": 4,
+      "warmup": false,
+      "wiki": "9provision236276twoschema4wiki",
+      "duration_ms": 2443,
+      "table_count": 114,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [],
+        "only_case": []
+      }
+    },
+    {
+      "mode": "single",
+      "variant": "schema",
+      "pair": 4,
+      "warmup": false,
+      "wiki": "9provision236276singleschema4wiki",
+      "duration_ms": 2551,
+      "table_count": 114,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [
+          "oauth_accepted_consumer-oaac_accepted-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_accepted_consumer-timestamp.sql",
+          "oauth_registered_consumer-oarc_email_authenticated-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_registered_consumer-timestamp.sql"
+        ],
+        "only_case": []
+      }
+    }
+  ],
+  "measurement": "Redis finished_ms minus started_ms; provisioning only",
+  "order": "One discarded warm-up pair per variant, then alternating paired order",
+  "prototype_deployed": false,
+  "summary": {
+    "public": {
+      "two": {
+        "samples_ms": [
+          1417,
+          1316,
+          1326,
+          1717
+        ],
+        "median_ms": 1371.5,
+        "mean_ms": 1444,
+        "min_ms": 1316,
+        "max_ms": 1717
+      },
+      "single": {
+        "samples_ms": [
+          912,
+          1014,
+          6366,
+          1010
+        ],
+        "median_ms": 1012.0,
+        "mean_ms": 2325.5,
+        "min_ms": 912,
+        "max_ms": 6366
+      },
+      "median_reduction_percent": 26.212176449143275,
+      "paired_savings_ms": [
+        505,
+        302,
+        -5040,
+        707
+      ]
+    },
+    "schema": {
+      "two": {
+        "samples_ms": [
+          2460,
+          3887,
+          3077,
+          2443
+        ],
+        "median_ms": 2768.5,
+        "mean_ms": 2966.75,
+        "min_ms": 2443,
+        "max_ms": 3887
+      },
+      "single": {
+        "samples_ms": [
+          2247,
+          1937,
+          1917,
+          2551
+        ],
+        "median_ms": 2092.0,
+        "mean_ms": 2163,
+        "min_ms": 1917,
+        "max_ms": 2551
+      },
+      "median_reduction_percent": 24.43561495394618,
+      "paired_savings_ms": [
+        213,
+        1950,
+        1160,
+        -108
+      ]
+    }
+  },
+  "cleanup_succeeded": true,
+  "environment": {
+    "mediawiki": "1.46.2",
+    "php": "8.4.27",
+    "architecture": "arm64",
+    "image_id_observed": "sha256:e49af3300521a828095da7375344a160b973602bc8d1cd41910d1d87bb542692",
+    "date_local": "2026-10-21",
+    "timezone": "America/Vancouver"
+  },
+  "limitations": [
+    "Four measured fresh wikis per mode per variant; one discarded warm-up per mode per variant.",
+    "Provisioning interval only: excludes creation request, fixture setup, metadata preparation, container startup, queue wait and verification.",
+    "No concurrent builds or browser test suites were launched by this benchmark; main stack remained running.",
+    "Two OAuth update-log markers differ despite matching final schemas; prototype remains undeployed.",
+    "A slow public one-pass sample is retained; cause is undetermined."
+  ],
+  "slow_public_sample": {
+    "wiki": "9provision236276singlepublic3wiki",
+    "duration_ms": 6366,
+    "updater_log_tail": [
+      "...Processing users with actor IDs 2 to 2",
+      "Finished importing data from cu_log_event to the central index tables",
+      "Now importing data from cu_private_event to the central index tables",
+      "...Processing users with actor IDs 3 to 3",
+      "Finished importing data from cu_private_event to the central index tables",
+      "Renaming the 'checkuser-temporary-account-viewer' group to 'temporary-account-viewer'",
+      "Nothing to do - no users in the 'checkuser-temporary-account-viewer' group",
+      "Queuing auto-close jobs for open Suggested Investigations cases...",
+      "Nothing to do as CheckUser Suggested Investigations is not enabled.",
+      "Done. Updated 0 of 0 rows in 0 seconds.",
+      "Done. Processed 0 users and inserted 0 rows in 0 seconds.",
+      "Skipped 118 updates that were already applied.",
+      "Set the local repo temp zone container to be private.",
+      "Purging caches...",
+      "Done in 4.4 s."
+    ]
+  }
+}

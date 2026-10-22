@@ -53,10 +53,23 @@ try:
         if time.monotonic() >= deadline:
             raise RuntimeError('Fresh wiki provisioning markers did not clear')
         time.sleep(1)
+    invocations = json.loads(subprocess.check_output(
+        ['docker', 'compose', 'exec', '-T', 'php', 'php', '-r',
+         '$counts=[]; foreach(array_slice($argv,1) as $wiki) { '
+         '$log=file_get_contents("/var/www/mediawiki/cw_cache/.provision-".$wiki.".log"); '
+         '$counts[$wiki]=preg_match_all("/MediaWiki [^\\r\\n]+ Updater/",$log); '
+         'if($counts[$wiki]!==1) { throw new RuntimeException("Expected one updater for ".$wiki); } } '
+         'echo json_encode($counts);', *wikis], cwd=ROOT, text=True))
+    report['updater_invocations'] = invocations
+    dispatch_log = subprocess.check_output(['docker','compose','logs','--no-color','provisioner'],cwd=ROOT,text=True)
+    attempts = {wiki:dispatch_log.count('Dispatch provision: '+wiki+'\n') for wiki in wikis}
+    assert all(count == 1 for count in attempts.values()), attempts
+    report['dispatch_attempts'] = attempts
     report['status'] = 'passed'
     report['checks'] = ['public/private CreateWiki creation', 'browser-form creation',
                         'public API readiness', 'private API/file denial',
-                        'cross-wiki login/logout', 'all provisioning markers cleared']
+                        'cross-wiki login/logout', 'all provisioning markers cleared',
+                        'exactly one updater invocation per fresh wiki']
     print('Fresh digit-prefixed wiki creation and provisioning passed.', flush=True)
 except BaseException:
     report['status'] = 'failed'

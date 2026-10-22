@@ -1,4 +1,11 @@
 <?php
+// Isolated comparison harness: candidate executes the actual production code;
+// the remaining coordinator is a frozen two-pass reference.
+if (getenv('MW_JOBCHRON_TEST_ISOLATED') !== '1') { exit(1); }
+if (getenv('MW_PROVISION_SINGLE_PASS') === '1') {
+    require '/var/www/mediawiki/docker/mediawiki/provision.php';
+    return;
+}
 require_once __DIR__ . '/process.php';
 // Process only explicit pending new-wiki provisioning, never existing wiki migrations.
 require __DIR__ . '/runtime.php';
@@ -29,11 +36,10 @@ if (!is_file("/var/www/mediawiki/cw_cache/$wiki.php")) {
     $process = null;
     if ($stopping || $status !== 0) { exit(1); }
 }
-foreach ((getenv('MW_PROVISION_SINGLE_PASS') === '1' ? [false] : [true, false]) as $bootstrap) {
+foreach ([true, false] as $bootstrap) {
     if ($stopping) { exit(1); }
     $env['MW_BOOTSTRAP_DB'] = $bootstrap ? $wiki : '';
     $command = ['php', 'maintenance/run.php', 'update', '--quick', '--wiki=' . $wiki];
-    if (getenv('MW_PROVISION_SINGLE_PASS') === '1') { $command[] = '--conf=/opt/provision-single-settings.php'; }
     $process = proc_open($command,
         [0 => ['file', '/dev/null', 'r'], 1 => ['file', $pending . '.log', 'a'], 2 => ['file', $pending . '.log', 'a']],
         $pipes, '/var/www/mediawiki', $env);

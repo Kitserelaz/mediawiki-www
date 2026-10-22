@@ -1,0 +1,143 @@
+{
+  "status": "passed",
+  "completed_at": "2026-10-21T22:54:47.488483-07:00",
+  "environment": "local development, ARM64",
+  "image": {
+    "image_id": "sha256:dc700e88eb3e6ae50e6942c58be1540531eee6a89d47a73c8a4ea78f16a9feed",
+    "file_hashes": {
+      "/opt/farm/provision.php": "7bcc4b0a95c76521cbde06e23b4ec120a2a4fc9ec2e1ce1e1ffb2b0de78de80b",
+      "/var/www/mediawiki/docker/mediawiki/provision.php": "7bcc4b0a95c76521cbde06e23b4ec120a2a4fc9ec2e1ce1e1ffb2b0de78de80b",
+      "/opt/farm/provision-settings.php": "bd84d065b40b956ab37ef699dd4435a06987187fc74f596fa0d4939b1f67d0e8",
+      "/var/www/mediawiki/docker/mediawiki/provision-settings.php": "bd84d065b40b956ab37ef699dd4435a06987187fc74f596fa0d4939b1f67d0e8",
+      "/opt/farm/prepare-wiki.php": "24712122038e712ed65891f9d874f6791b237bff2b4dd0e65b71385e02fbf5e1",
+      "/var/www/mediawiki/docker/mediawiki/prepare-wiki.php": "24712122038e712ed65891f9d874f6791b237bff2b4dd0e65b71385e02fbf5e1",
+      "/opt/farm/runtime.php": "63e2c0d20da0c155e61e577dd0ed3da6b4573617cba4689973c07e3a276e36b7",
+      "/var/www/mediawiki/docker/mediawiki/runtime.php": "63e2c0d20da0c155e61e577dd0ed3da6b4573617cba4689973c07e3a276e36b7",
+      "/var/www/mediawiki/LocalSettings.php": "5148898f38a7825815d4cd687da33bf78c231370490406b104a013ddd69c520b",
+      "/var/www/mediawiki/extensions/Comments/maintenance/migrateOldCommentsUserColumnsToActor.php": "1c7a5449dce09a88a4c8974da8f983c75f2fbd1bfd3f5cdaeeb945cf21a0a5bc",
+      "/var/www/mediawiki/extensions/Comments/maintenance/migrateOldCommentsBlockUserColumnsToActor.php": "06b0a50310c0a1aec4a8a49042a060485b71891b7deac63b6b6e0bfd8e91c0f9",
+      "/var/www/mediawiki/extensions/Comments/maintenance/migrateOldCommentsVoteUserColumnsToActor.php": "3aebf59316f4472935e6a1d19161ff9018d7859f9c28b5a28270edc1ea524a62"
+    },
+    "matches_source": true
+  },
+  "rollback_image": "sha256:e49af3300521a828095da7375344a160b973602bc8d1cd41910d1d87bb542692",
+  "services": {
+    "php": {
+      "image_id": "sha256:dc700e88eb3e6ae50e6942c58be1540531eee6a89d47a73c8a4ea78f16a9feed",
+      "running": true,
+      "health": "healthy"
+    },
+    "worker": {
+      "image_id": "sha256:dc700e88eb3e6ae50e6942c58be1540531eee6a89d47a73c8a4ea78f16a9feed",
+      "running": true,
+      "health": "healthy"
+    },
+    "provisioner": {
+      "image_id": "sha256:dc700e88eb3e6ae50e6942c58be1540531eee6a89d47a73c8a4ea78f16a9feed",
+      "running": true,
+      "health": "healthy"
+    },
+    "jobchron": {
+      "image_id": "sha256:dc700e88eb3e6ae50e6942c58be1540531eee6a89d47a73c8a4ea78f16a9feed",
+      "running": true,
+      "health": "healthy"
+    },
+    "scheduler": {
+      "image_id": "sha256:dc700e88eb3e6ae50e6942c58be1540531eee6a89d47a73c8a4ea78f16a9feed",
+      "running": true,
+      "health": "not configured"
+    }
+  },
+  "installed_files_match_source": true,
+  "metadata_audit": {
+    "active_wikis": 49,
+    "incomplete": []
+  },
+  "provision_pending": 0,
+  "main_creation": {
+    "prefix": "9creationcd0bdf09",
+    "wikis": [
+      "9creationcd0bdf09smokewiki",
+      "9creationcd0bdf09privatewiki",
+      "9creationcd0bdf09uismokewiki"
+    ],
+    "status": "passed",
+    "updater_invocations": {
+      "9creationcd0bdf09smokewiki": 1,
+      "9creationcd0bdf09privatewiki": 1,
+      "9creationcd0bdf09uismokewiki": 1
+    },
+    "dispatch_attempts": {
+      "9creationcd0bdf09smokewiki": 1,
+      "9creationcd0bdf09privatewiki": 1,
+      "9creationcd0bdf09uismokewiki": 1
+    },
+    "checks": [
+      "public/private CreateWiki creation",
+      "browser-form creation",
+      "public API readiness",
+      "private API/file denial",
+      "cross-wiki login/logout",
+      "all provisioning markers cleared",
+      "exactly one updater invocation per fresh wiki"
+    ]
+  },
+  "metadata_http_regression": {
+    "wiki": "9creation0a0d24ddprivatewiki",
+    "status": "passed",
+    "incomplete_metadata_http_status": 503,
+    "repaired_private_api": "readapidenied",
+    "private_file_protected": true,
+    "repair_updater_invocations": 1
+  },
+  "initial_creation_before_metadata_fix": {
+    "prefix": "9creation0a0d24dd",
+    "wikis": [
+      "9creation0a0d24ddsmokewiki",
+      "9creation0a0d24ddprivatewiki",
+      "9creation0a0d24dduismokewiki"
+    ],
+    "status": "failed"
+  },
+  "fixed_during_validation": [
+    "Comments migration method visibility on MediaWiki 1.46",
+    "Incomplete metadata exposed anonymous siteinfo on a new private fixture; normal metadata repair and HTTP 503 guard added",
+    "Deferred wiki-list timing caused updater startup before the list contained the new wiki; publication now follows commit and metadata/list refresh precedes updater"
+  ],
+  "checks": [
+    "eight disposable configuration comparisons; one-pass cases required one dispatch and one updater",
+    "missing public and incomplete private metadata repaired",
+    "real CheckUser index writes and global lookup",
+    "OAuth 1/2 consumer and acceptance persistence/routing",
+    "fresh public/private/browser-form creation and private API/file denial",
+    "HTTP smoke including settings-path denial",
+    "read-only farm preflight",
+    "source provenance and diff whitespace"
+  ],
+  "disposable_projects_this_rollout": [
+    "cloudwiki-provision-test-ea26c8e7",
+    "cloudwiki-provision-test-3ee6882c",
+    "cloudwiki-provision-test-oauth-7c801bfe",
+    "cloudwiki-provision-test-27af98fd",
+    "cloudwiki-provision-test-cc9903ba",
+    "cloudwiki-provision-test-4f9e61c3",
+    "cloudwiki-provision-test-7b694dd6"
+  ],
+  "rollout_containers_remaining": [],
+  "rollout_volumes_remaining": [],
+  "preexisting_other_test_volumes_preserved": [
+    "cloudwiki-provision-test-f8b7762b_caddy-data",
+    "cloudwiki-provision-test-f8b7762b_counter",
+    "cloudwiki-provision-test-f8b7762b_database",
+    "cloudwiki-provision-test-f8b7762b_dumps",
+    "cloudwiki-provision-test-f8b7762b_farm-cache",
+    "cloudwiki-provision-test-f8b7762b_localization",
+    "cloudwiki-provision-test-f8b7762b_redis",
+    "cloudwiki-provision-test-f8b7762b_uploads"
+  ],
+  "limitations": [
+    "Local ARM64 only; no production deployment",
+    "Selected configurations, not every optional extension",
+    "No new end-to-end benchmark after mandatory metadata/list preparation"
+  ]
+}

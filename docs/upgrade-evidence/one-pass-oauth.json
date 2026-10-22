@@ -1,0 +1,688 @@
+{
+  "project": "cloudwiki-provision-test-oauth-7c801bfe",
+  "status": "passed",
+  "cases": [
+    {
+      "mode": "two",
+      "before": {
+        "wiki": "9provisioncca5actwooauthwiki",
+        "bootstrap": true,
+        "central_wiki": false,
+        "oauth_database": "9provisioncca5actwooauthwiki",
+        "shared_virtual_domain": false,
+        "databases": {
+          "9provisioncca5actwooauthwiki": {
+            "tables": {
+              "oauth_registered_consumer": {
+                "schema_sha256": "1b190eb07b36976bef38f21377ea73210e314d54d83d3b98717be7a3631e1ebf",
+                "rows": 0
+              },
+              "oauth_accepted_consumer": {
+                "schema_sha256": "8e396a80a1a80c4eb64c3a9a0bf07ea380347061c004a8117c6a6c36372ff89c",
+                "rows": 0
+              },
+              "oauth2_access_tokens": {
+                "schema_sha256": "688f5e3be224582281e9e546f18bfc68a2b485c7ff0b662cb5f40ce138381954",
+                "rows": 0
+              }
+            },
+            "timestamp_columns": [
+              {
+                "TABLE_NAME": "oauth_accepted_consumer",
+                "COLUMN_NAME": "oaac_accepted",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "NO"
+              },
+              {
+                "TABLE_NAME": "oauth_registered_consumer",
+                "COLUMN_NAME": "oarc_email_authenticated",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "YES"
+              },
+              {
+                "TABLE_NAME": "oauth_registered_consumer",
+                "COLUMN_NAME": "oarc_registration",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "NO"
+              },
+              {
+                "TABLE_NAME": "oauth_registered_consumer",
+                "COLUMN_NAME": "oarc_stage_timestamp",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "NO"
+              }
+            ],
+            "timestamp_patch_markers": []
+          },
+          "metawiki": {
+            "tables": {
+              "oauth_registered_consumer": {
+                "schema_sha256": "22479fc5d49513f9c2f8f37f364ebddf9cd4aa54eed517f7f2f9fff862ca924e",
+                "rows": 0
+              },
+              "oauth_accepted_consumer": {
+                "schema_sha256": "19f54e06e7b8ec6fbc4bd927594d065cc217fb5d259685ff289fc5c52b5b0f57",
+                "rows": 0
+              },
+              "oauth2_access_tokens": {
+                "schema_sha256": "5e3e7445fe106e88ed06132fe89591086173a403c8943808c23ca959c10ad201",
+                "rows": 0
+              }
+            },
+            "timestamp_columns": [
+              {
+                "TABLE_NAME": "oauth_accepted_consumer",
+                "COLUMN_NAME": "oaac_accepted",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "NO"
+              },
+              {
+                "TABLE_NAME": "oauth_registered_consumer",
+                "COLUMN_NAME": "oarc_email_authenticated",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "YES"
+              },
+              {
+                "TABLE_NAME": "oauth_registered_consumer",
+                "COLUMN_NAME": "oarc_registration",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "NO"
+              },
+              {
+                "TABLE_NAME": "oauth_registered_consumer",
+                "COLUMN_NAME": "oarc_stage_timestamp",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "NO"
+              }
+            ],
+            "timestamp_patch_markers": [
+              "oauth_accepted_consumer-oaac_accepted-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_accepted_consumer-timestamp.sql",
+              "oauth_registered_consumer-oarc_email_authenticated-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_registered_consumer-timestamp.sql"
+            ]
+          }
+        },
+        "exercises": []
+      },
+      "after": {
+        "wiki": "9provisioncca5actwooauthwiki",
+        "bootstrap": false,
+        "central_wiki": "metawiki",
+        "oauth_database": "metawiki",
+        "shared_virtual_domain": true,
+        "databases": {
+          "9provisioncca5actwooauthwiki": {
+            "tables": {
+              "oauth_registered_consumer": {
+                "schema_sha256": "1b190eb07b36976bef38f21377ea73210e314d54d83d3b98717be7a3631e1ebf",
+                "rows": 0
+              },
+              "oauth_accepted_consumer": {
+                "schema_sha256": "8e396a80a1a80c4eb64c3a9a0bf07ea380347061c004a8117c6a6c36372ff89c",
+                "rows": 0
+              },
+              "oauth2_access_tokens": {
+                "schema_sha256": "688f5e3be224582281e9e546f18bfc68a2b485c7ff0b662cb5f40ce138381954",
+                "rows": 0
+              }
+            },
+            "timestamp_columns": [
+              {
+                "TABLE_NAME": "oauth_accepted_consumer",
+                "COLUMN_NAME": "oaac_accepted",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "NO"
+              },
+              {
+                "TABLE_NAME": "oauth_registered_consumer",
+                "COLUMN_NAME": "oarc_email_authenticated",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "YES"
+              },
+              {
+                "TABLE_NAME": "oauth_registered_consumer",
+                "COLUMN_NAME": "oarc_registration",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "NO"
+              },
+              {
+                "TABLE_NAME": "oauth_registered_consumer",
+                "COLUMN_NAME": "oarc_stage_timestamp",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "NO"
+              }
+            ],
+            "timestamp_patch_markers": [
+              "oauth_accepted_consumer-oaac_accepted-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_accepted_consumer-timestamp.sql",
+              "oauth_registered_consumer-oarc_email_authenticated-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_registered_consumer-timestamp.sql"
+            ]
+          },
+          "metawiki": {
+            "tables": {
+              "oauth_registered_consumer": {
+                "schema_sha256": "22479fc5d49513f9c2f8f37f364ebddf9cd4aa54eed517f7f2f9fff862ca924e",
+                "rows": 0
+              },
+              "oauth_accepted_consumer": {
+                "schema_sha256": "19f54e06e7b8ec6fbc4bd927594d065cc217fb5d259685ff289fc5c52b5b0f57",
+                "rows": 0
+              },
+              "oauth2_access_tokens": {
+                "schema_sha256": "5e3e7445fe106e88ed06132fe89591086173a403c8943808c23ca959c10ad201",
+                "rows": 0
+              }
+            },
+            "timestamp_columns": [
+              {
+                "TABLE_NAME": "oauth_accepted_consumer",
+                "COLUMN_NAME": "oaac_accepted",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "NO"
+              },
+              {
+                "TABLE_NAME": "oauth_registered_consumer",
+                "COLUMN_NAME": "oarc_email_authenticated",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "YES"
+              },
+              {
+                "TABLE_NAME": "oauth_registered_consumer",
+                "COLUMN_NAME": "oarc_registration",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "NO"
+              },
+              {
+                "TABLE_NAME": "oauth_registered_consumer",
+                "COLUMN_NAME": "oarc_stage_timestamp",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "NO"
+              }
+            ],
+            "timestamp_patch_markers": [
+              "oauth_accepted_consumer-oaac_accepted-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_accepted_consumer-timestamp.sql",
+              "oauth_registered_consumer-oarc_email_authenticated-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_registered_consumer-timestamp.sql"
+            ]
+          }
+        },
+        "exercises": [
+          {
+            "oauth_version": 1,
+            "consumer_insert_read_update": true,
+            "nullable_email_timestamp": true,
+            "acceptance_insert_read": true
+          },
+          {
+            "oauth_version": 2,
+            "consumer_insert_read_update": true,
+            "nullable_email_timestamp": true,
+            "acceptance_insert_read": true
+          }
+        ]
+      }
+    },
+    {
+      "mode": "single",
+      "before": {
+        "wiki": "9provisioncca5acsingleoauthwiki",
+        "bootstrap": true,
+        "central_wiki": false,
+        "oauth_database": "9provisioncca5acsingleoauthwiki",
+        "shared_virtual_domain": false,
+        "databases": {
+          "9provisioncca5acsingleoauthwiki": {
+            "tables": {
+              "oauth_registered_consumer": {
+                "schema_sha256": "1b190eb07b36976bef38f21377ea73210e314d54d83d3b98717be7a3631e1ebf",
+                "rows": 0
+              },
+              "oauth_accepted_consumer": {
+                "schema_sha256": "8e396a80a1a80c4eb64c3a9a0bf07ea380347061c004a8117c6a6c36372ff89c",
+                "rows": 0
+              },
+              "oauth2_access_tokens": {
+                "schema_sha256": "688f5e3be224582281e9e546f18bfc68a2b485c7ff0b662cb5f40ce138381954",
+                "rows": 0
+              }
+            },
+            "timestamp_columns": [
+              {
+                "TABLE_NAME": "oauth_accepted_consumer",
+                "COLUMN_NAME": "oaac_accepted",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "NO"
+              },
+              {
+                "TABLE_NAME": "oauth_registered_consumer",
+                "COLUMN_NAME": "oarc_email_authenticated",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "YES"
+              },
+              {
+                "TABLE_NAME": "oauth_registered_consumer",
+                "COLUMN_NAME": "oarc_registration",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "NO"
+              },
+              {
+                "TABLE_NAME": "oauth_registered_consumer",
+                "COLUMN_NAME": "oarc_stage_timestamp",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "NO"
+              }
+            ],
+            "timestamp_patch_markers": []
+          },
+          "metawiki": {
+            "tables": {
+              "oauth_registered_consumer": {
+                "schema_sha256": "22479fc5d49513f9c2f8f37f364ebddf9cd4aa54eed517f7f2f9fff862ca924e",
+                "rows": 0
+              },
+              "oauth_accepted_consumer": {
+                "schema_sha256": "19f54e06e7b8ec6fbc4bd927594d065cc217fb5d259685ff289fc5c52b5b0f57",
+                "rows": 0
+              },
+              "oauth2_access_tokens": {
+                "schema_sha256": "5e3e7445fe106e88ed06132fe89591086173a403c8943808c23ca959c10ad201",
+                "rows": 0
+              }
+            },
+            "timestamp_columns": [
+              {
+                "TABLE_NAME": "oauth_accepted_consumer",
+                "COLUMN_NAME": "oaac_accepted",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "NO"
+              },
+              {
+                "TABLE_NAME": "oauth_registered_consumer",
+                "COLUMN_NAME": "oarc_email_authenticated",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "YES"
+              },
+              {
+                "TABLE_NAME": "oauth_registered_consumer",
+                "COLUMN_NAME": "oarc_registration",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "NO"
+              },
+              {
+                "TABLE_NAME": "oauth_registered_consumer",
+                "COLUMN_NAME": "oarc_stage_timestamp",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "NO"
+              }
+            ],
+            "timestamp_patch_markers": [
+              "oauth_accepted_consumer-oaac_accepted-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_accepted_consumer-timestamp.sql",
+              "oauth_registered_consumer-oarc_email_authenticated-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_registered_consumer-timestamp.sql"
+            ]
+          }
+        },
+        "exercises": []
+      },
+      "after": {
+        "wiki": "9provisioncca5acsingleoauthwiki",
+        "bootstrap": false,
+        "central_wiki": "metawiki",
+        "oauth_database": "metawiki",
+        "shared_virtual_domain": true,
+        "databases": {
+          "9provisioncca5acsingleoauthwiki": {
+            "tables": {
+              "oauth_registered_consumer": {
+                "schema_sha256": "1b190eb07b36976bef38f21377ea73210e314d54d83d3b98717be7a3631e1ebf",
+                "rows": 0
+              },
+              "oauth_accepted_consumer": {
+                "schema_sha256": "8e396a80a1a80c4eb64c3a9a0bf07ea380347061c004a8117c6a6c36372ff89c",
+                "rows": 0
+              },
+              "oauth2_access_tokens": {
+                "schema_sha256": "688f5e3be224582281e9e546f18bfc68a2b485c7ff0b662cb5f40ce138381954",
+                "rows": 0
+              }
+            },
+            "timestamp_columns": [
+              {
+                "TABLE_NAME": "oauth_accepted_consumer",
+                "COLUMN_NAME": "oaac_accepted",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "NO"
+              },
+              {
+                "TABLE_NAME": "oauth_registered_consumer",
+                "COLUMN_NAME": "oarc_email_authenticated",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "YES"
+              },
+              {
+                "TABLE_NAME": "oauth_registered_consumer",
+                "COLUMN_NAME": "oarc_registration",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "NO"
+              },
+              {
+                "TABLE_NAME": "oauth_registered_consumer",
+                "COLUMN_NAME": "oarc_stage_timestamp",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "NO"
+              }
+            ],
+            "timestamp_patch_markers": []
+          },
+          "metawiki": {
+            "tables": {
+              "oauth_registered_consumer": {
+                "schema_sha256": "22479fc5d49513f9c2f8f37f364ebddf9cd4aa54eed517f7f2f9fff862ca924e",
+                "rows": 0
+              },
+              "oauth_accepted_consumer": {
+                "schema_sha256": "19f54e06e7b8ec6fbc4bd927594d065cc217fb5d259685ff289fc5c52b5b0f57",
+                "rows": 0
+              },
+              "oauth2_access_tokens": {
+                "schema_sha256": "5e3e7445fe106e88ed06132fe89591086173a403c8943808c23ca959c10ad201",
+                "rows": 0
+              }
+            },
+            "timestamp_columns": [
+              {
+                "TABLE_NAME": "oauth_accepted_consumer",
+                "COLUMN_NAME": "oaac_accepted",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "NO"
+              },
+              {
+                "TABLE_NAME": "oauth_registered_consumer",
+                "COLUMN_NAME": "oarc_email_authenticated",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "YES"
+              },
+              {
+                "TABLE_NAME": "oauth_registered_consumer",
+                "COLUMN_NAME": "oarc_registration",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "NO"
+              },
+              {
+                "TABLE_NAME": "oauth_registered_consumer",
+                "COLUMN_NAME": "oarc_stage_timestamp",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "NO"
+              }
+            ],
+            "timestamp_patch_markers": [
+              "oauth_accepted_consumer-oaac_accepted-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_accepted_consumer-timestamp.sql",
+              "oauth_registered_consumer-oarc_email_authenticated-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_registered_consumer-timestamp.sql"
+            ]
+          }
+        },
+        "exercises": [
+          {
+            "oauth_version": 1,
+            "consumer_insert_read_update": true,
+            "nullable_email_timestamp": true,
+            "acceptance_insert_read": true
+          },
+          {
+            "oauth_version": 2,
+            "consumer_insert_read_update": true,
+            "nullable_email_timestamp": true,
+            "acceptance_insert_read": true
+          }
+        ]
+      },
+      "normal_updater_rerun": {
+        "wiki": "9provisioncca5acsingleoauthwiki",
+        "bootstrap": false,
+        "central_wiki": "metawiki",
+        "oauth_database": "metawiki",
+        "shared_virtual_domain": true,
+        "databases": {
+          "9provisioncca5acsingleoauthwiki": {
+            "tables": {
+              "oauth_registered_consumer": {
+                "schema_sha256": "1b190eb07b36976bef38f21377ea73210e314d54d83d3b98717be7a3631e1ebf",
+                "rows": 0
+              },
+              "oauth_accepted_consumer": {
+                "schema_sha256": "8e396a80a1a80c4eb64c3a9a0bf07ea380347061c004a8117c6a6c36372ff89c",
+                "rows": 0
+              },
+              "oauth2_access_tokens": {
+                "schema_sha256": "688f5e3be224582281e9e546f18bfc68a2b485c7ff0b662cb5f40ce138381954",
+                "rows": 0
+              }
+            },
+            "timestamp_columns": [
+              {
+                "TABLE_NAME": "oauth_accepted_consumer",
+                "COLUMN_NAME": "oaac_accepted",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "NO"
+              },
+              {
+                "TABLE_NAME": "oauth_registered_consumer",
+                "COLUMN_NAME": "oarc_email_authenticated",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "YES"
+              },
+              {
+                "TABLE_NAME": "oauth_registered_consumer",
+                "COLUMN_NAME": "oarc_registration",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "NO"
+              },
+              {
+                "TABLE_NAME": "oauth_registered_consumer",
+                "COLUMN_NAME": "oarc_stage_timestamp",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "NO"
+              }
+            ],
+            "timestamp_patch_markers": []
+          },
+          "metawiki": {
+            "tables": {
+              "oauth_registered_consumer": {
+                "schema_sha256": "22479fc5d49513f9c2f8f37f364ebddf9cd4aa54eed517f7f2f9fff862ca924e",
+                "rows": 0
+              },
+              "oauth_accepted_consumer": {
+                "schema_sha256": "19f54e06e7b8ec6fbc4bd927594d065cc217fb5d259685ff289fc5c52b5b0f57",
+                "rows": 0
+              },
+              "oauth2_access_tokens": {
+                "schema_sha256": "5e3e7445fe106e88ed06132fe89591086173a403c8943808c23ca959c10ad201",
+                "rows": 0
+              }
+            },
+            "timestamp_columns": [
+              {
+                "TABLE_NAME": "oauth_accepted_consumer",
+                "COLUMN_NAME": "oaac_accepted",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "NO"
+              },
+              {
+                "TABLE_NAME": "oauth_registered_consumer",
+                "COLUMN_NAME": "oarc_email_authenticated",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "YES"
+              },
+              {
+                "TABLE_NAME": "oauth_registered_consumer",
+                "COLUMN_NAME": "oarc_registration",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "NO"
+              },
+              {
+                "TABLE_NAME": "oauth_registered_consumer",
+                "COLUMN_NAME": "oarc_stage_timestamp",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "NO"
+              }
+            ],
+            "timestamp_patch_markers": [
+              "oauth_accepted_consumer-oaac_accepted-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_accepted_consumer-timestamp.sql",
+              "oauth_registered_consumer-oarc_email_authenticated-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_registered_consumer-timestamp.sql"
+            ]
+          }
+        },
+        "exercises": []
+      },
+      "after_adding_bootstrap_only": {
+        "wiki": "9provisioncca5acsingleoauthwiki",
+        "bootstrap": false,
+        "central_wiki": "metawiki",
+        "oauth_database": "metawiki",
+        "shared_virtual_domain": true,
+        "databases": {
+          "9provisioncca5acsingleoauthwiki": {
+            "tables": {
+              "oauth_registered_consumer": {
+                "schema_sha256": "1b190eb07b36976bef38f21377ea73210e314d54d83d3b98717be7a3631e1ebf",
+                "rows": 0
+              },
+              "oauth_accepted_consumer": {
+                "schema_sha256": "8e396a80a1a80c4eb64c3a9a0bf07ea380347061c004a8117c6a6c36372ff89c",
+                "rows": 0
+              },
+              "oauth2_access_tokens": {
+                "schema_sha256": "688f5e3be224582281e9e546f18bfc68a2b485c7ff0b662cb5f40ce138381954",
+                "rows": 0
+              }
+            },
+            "timestamp_columns": [
+              {
+                "TABLE_NAME": "oauth_accepted_consumer",
+                "COLUMN_NAME": "oaac_accepted",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "NO"
+              },
+              {
+                "TABLE_NAME": "oauth_registered_consumer",
+                "COLUMN_NAME": "oarc_email_authenticated",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "YES"
+              },
+              {
+                "TABLE_NAME": "oauth_registered_consumer",
+                "COLUMN_NAME": "oarc_registration",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "NO"
+              },
+              {
+                "TABLE_NAME": "oauth_registered_consumer",
+                "COLUMN_NAME": "oarc_stage_timestamp",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "NO"
+              }
+            ],
+            "timestamp_patch_markers": [
+              "oauth_accepted_consumer-oaac_accepted-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_accepted_consumer-timestamp.sql",
+              "oauth_registered_consumer-oarc_email_authenticated-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_registered_consumer-timestamp.sql"
+            ]
+          },
+          "metawiki": {
+            "tables": {
+              "oauth_registered_consumer": {
+                "schema_sha256": "22479fc5d49513f9c2f8f37f364ebddf9cd4aa54eed517f7f2f9fff862ca924e",
+                "rows": 0
+              },
+              "oauth_accepted_consumer": {
+                "schema_sha256": "19f54e06e7b8ec6fbc4bd927594d065cc217fb5d259685ff289fc5c52b5b0f57",
+                "rows": 0
+              },
+              "oauth2_access_tokens": {
+                "schema_sha256": "5e3e7445fe106e88ed06132fe89591086173a403c8943808c23ca959c10ad201",
+                "rows": 0
+              }
+            },
+            "timestamp_columns": [
+              {
+                "TABLE_NAME": "oauth_accepted_consumer",
+                "COLUMN_NAME": "oaac_accepted",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "NO"
+              },
+              {
+                "TABLE_NAME": "oauth_registered_consumer",
+                "COLUMN_NAME": "oarc_email_authenticated",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "YES"
+              },
+              {
+                "TABLE_NAME": "oauth_registered_consumer",
+                "COLUMN_NAME": "oarc_registration",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "NO"
+              },
+              {
+                "TABLE_NAME": "oauth_registered_consumer",
+                "COLUMN_NAME": "oarc_stage_timestamp",
+                "COLUMN_TYPE": "binary(14)",
+                "IS_NULLABLE": "NO"
+              }
+            ],
+            "timestamp_patch_markers": [
+              "oauth_accepted_consumer-oaac_accepted-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_accepted_consumer-timestamp.sql",
+              "oauth_registered_consumer-oarc_email_authenticated-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_registered_consumer-timestamp.sql"
+            ]
+          }
+        },
+        "exercises": []
+      }
+    }
+  ],
+  "single_pass_pipeline": "production coordinator",
+  "main_stack_modified": false,
+  "image_id": "sha256:e49af3300521a828095da7375344a160b973602bc8d1cd41910d1d87bb542692",
+  "central_baseline": {
+    "tables": {
+      "oauth_registered_consumer": {
+        "schema_sha256": "22479fc5d49513f9c2f8f37f364ebddf9cd4aa54eed517f7f2f9fff862ca924e",
+        "rows": 0
+      },
+      "oauth_accepted_consumer": {
+        "schema_sha256": "19f54e06e7b8ec6fbc4bd927594d065cc217fb5d259685ff289fc5c52b5b0f57",
+        "rows": 0
+      },
+      "oauth2_access_tokens": {
+        "schema_sha256": "5e3e7445fe106e88ed06132fe89591086173a403c8943808c23ca959c10ad201",
+        "rows": 0
+      }
+    },
+    "timestamp_columns": [
+      {
+        "TABLE_NAME": "oauth_accepted_consumer",
+        "COLUMN_NAME": "oaac_accepted",
+        "COLUMN_TYPE": "binary(14)",
+        "IS_NULLABLE": "NO"
+      },
+      {
+        "TABLE_NAME": "oauth_registered_consumer",
+        "COLUMN_NAME": "oarc_email_authenticated",
+        "COLUMN_TYPE": "binary(14)",
+        "IS_NULLABLE": "YES"
+      },
+      {
+        "TABLE_NAME": "oauth_registered_consumer",
+        "COLUMN_NAME": "oarc_registration",
+        "COLUMN_TYPE": "binary(14)",
+        "IS_NULLABLE": "NO"
+      },
+      {
+        "TABLE_NAME": "oauth_registered_consumer",
+        "COLUMN_NAME": "oarc_stage_timestamp",
+        "COLUMN_TYPE": "binary(14)",
+        "IS_NULLABLE": "NO"
+      }
+    ],
+    "timestamp_patch_markers": [
+      "oauth_accepted_consumer-oaac_accepted-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_accepted_consumer-timestamp.sql",
+      "oauth_registered_consumer-oarc_email_authenticated-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_registered_consumer-timestamp.sql"
+    ]
+  },
+  "cleanup_succeeded": true
+}

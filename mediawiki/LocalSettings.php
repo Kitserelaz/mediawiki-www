@@ -104,6 +104,12 @@ if ( getenv( "MW_DOCKER" ) ) { require "$IP/docker/mediawiki/runtime.php"; farmR
 require_once "$IP/GlobalExtensions.php";
 require_once "$IP/SkyWikiFunctions.php";
 $wi = new MirahezeFunctions();
+if (getenv('MW_DOCKER') && PHP_SAPI !== 'cli' && !$wi->missing && !farmWikiMetadataIsComplete($wgDBname)) {
+    http_response_code(503);
+    header('Retry-After: 1');
+    echo 'This wiki is being prepared. Please try again shortly.';
+    exit;
+}
 if (getenv('MW_DOCKER') && MW_ENTRY_POINT !== 'cli' && is_file("$IP/cw_cache/.provision-{$wi->dbname}")) {
     http_response_code(503);
     header('Retry-After: 5');

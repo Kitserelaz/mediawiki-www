@@ -1,0 +1,24 @@
+{
+  "phase": "before Comments visibility fix",
+  "project": "cloudwiki-provision-test-27af98fd",
+  "cases": [
+    {
+      "mode": "two",
+      "variant": "extra",
+      "updater_invocations": 4,
+      "dispatch_attempts": 2,
+      "fatal_errors": [
+        "Fatal error: Access level to MigrateOldCommentsUserColumnsToActor::updateSkippedMessage() must be public (as in class MediaWiki\\Maintenance\\LoggedUpdateMaintenance) in /var/www/mediawiki/extensions/Comments/maintenance/migrateOldCommentsUserColumnsToActor.php on line 41"
+      ]
+    },
+    {
+      "mode": "single",
+      "variant": "extra",
+      "updater_invocations": 2,
+      "dispatch_attempts": 2,
+      "fatal_errors": [
+        "Fatal error: Access level to MigrateOldCommentsUserColumnsToActor::updateSkippedMessage() must be public (as in class MediaWiki\\Maintenance\\LoggedUpdateMaintenance) in /var/www/mediawiki/extensions/Comments/maintenance/migrateOldCommentsUserColumnsToActor.php on line 41"
+      ]
+    }
+  ]
+}

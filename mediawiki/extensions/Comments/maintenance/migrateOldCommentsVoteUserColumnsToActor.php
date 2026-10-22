@@ -38,7 +38,7 @@ class MigrateOldCommentsVoteUserColumnsToActor extends LoggedUpdateMaintenance {
 	 *
 	 * @return string
 	 */
-	protected function updateSkippedMessage() {
+	public function updateSkippedMessage() {
 		return 'Comments_Vote has already been migrated to use the actor columns.';
 	}
 

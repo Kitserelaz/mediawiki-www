@@ -1,0 +1,450 @@
+{
+  "project": "cloudwiki-provision-test-speed-964a6e80",
+  "status": "passed",
+  "cases": [
+    {
+      "mode": "two",
+      "variant": "public",
+      "pair": 0,
+      "warmup": true,
+      "wiki": "9provision7eeaf0twopublic0wiki",
+      "duration_ms": 1425,
+      "table_count": 111,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [],
+        "only_case": []
+      }
+    },
+    {
+      "mode": "single",
+      "variant": "public",
+      "pair": 0,
+      "warmup": true,
+      "wiki": "9provision7eeaf0singlepublic0wiki",
+      "duration_ms": 2919,
+      "table_count": 111,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [
+          "oauth_accepted_consumer-oaac_accepted-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_accepted_consumer-timestamp.sql",
+          "oauth_registered_consumer-oarc_email_authenticated-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_registered_consumer-timestamp.sql"
+        ],
+        "only_case": []
+      }
+    },
+    {
+      "mode": "single",
+      "variant": "public",
+      "pair": 1,
+      "warmup": false,
+      "wiki": "9provision7eeaf0singlepublic1wiki",
+      "duration_ms": 932,
+      "table_count": 111,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [
+          "oauth_accepted_consumer-oaac_accepted-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_accepted_consumer-timestamp.sql",
+          "oauth_registered_consumer-oarc_email_authenticated-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_registered_consumer-timestamp.sql"
+        ],
+        "only_case": []
+      }
+    },
+    {
+      "mode": "two",
+      "variant": "public",
+      "pair": 1,
+      "warmup": false,
+      "wiki": "9provision7eeaf0twopublic1wiki",
+      "duration_ms": 1321,
+      "table_count": 111,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [],
+        "only_case": []
+      }
+    },
+    {
+      "mode": "two",
+      "variant": "public",
+      "pair": 2,
+      "warmup": false,
+      "wiki": "9provision7eeaf0twopublic2wiki",
+      "duration_ms": 1217,
+      "table_count": 111,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [],
+        "only_case": []
+      }
+    },
+    {
+      "mode": "single",
+      "variant": "public",
+      "pair": 2,
+      "warmup": false,
+      "wiki": "9provision7eeaf0singlepublic2wiki",
+      "duration_ms": 914,
+      "table_count": 111,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [
+          "oauth_accepted_consumer-oaac_accepted-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_accepted_consumer-timestamp.sql",
+          "oauth_registered_consumer-oarc_email_authenticated-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_registered_consumer-timestamp.sql"
+        ],
+        "only_case": []
+      }
+    },
+    {
+      "mode": "single",
+      "variant": "public",
+      "pair": 3,
+      "warmup": false,
+      "wiki": "9provision7eeaf0singlepublic3wiki",
+      "duration_ms": 809,
+      "table_count": 111,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [
+          "oauth_accepted_consumer-oaac_accepted-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_accepted_consumer-timestamp.sql",
+          "oauth_registered_consumer-oarc_email_authenticated-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_registered_consumer-timestamp.sql"
+        ],
+        "only_case": []
+      }
+    },
+    {
+      "mode": "two",
+      "variant": "public",
+      "pair": 3,
+      "warmup": false,
+      "wiki": "9provision7eeaf0twopublic3wiki",
+      "duration_ms": 1421,
+      "table_count": 111,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [],
+        "only_case": []
+      }
+    },
+    {
+      "mode": "two",
+      "variant": "public",
+      "pair": 4,
+      "warmup": false,
+      "wiki": "9provision7eeaf0twopublic4wiki",
+      "duration_ms": 5955,
+      "table_count": 111,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [],
+        "only_case": []
+      },
+      "updater_log_tail": [
+        "...skipping update to table mw_namespaces in shared virtual domain.",
+        "...skipping update to table mw_permissions in shared virtual domain.",
+        "...skipping update to table mw_settings in shared virtual domain.",
+        "...skipping update to table mw_namespaces in shared virtual domain.",
+        "...skipping update to table oathauth_types in shared virtual domain.",
+        "...skipping update to table oathauth_user_handles in shared virtual domain.",
+        "...skipping update to table oauth_registered_consumer in shared virtual domain.",
+        "...skipping update to table oauth_registered_consumer in shared virtual domain.",
+        "...skipping update to table oauth_registered_consumer in shared virtual domain.",
+        "...skipping update to table oauth_registered_consumer in shared virtual domain.",
+        "...skipping update to table oauth_accepted_consumer in shared virtual domain.",
+        "...skipping update to table oauth2_access_tokens in shared virtual domain.",
+        "...skipping update to table oauth2_access_tokens in shared virtual domain.",
+        "...skipping update to table oauth_accepted_consumer in shared virtual domain.",
+        "...skipping update to table oauth_registered_consumer in shared virtual domain.",
+        "Creating urlshortcodes table...done.",
+        "Skipped 177 updates that were already applied.",
+        "Set the local repo temp zone container to be private.",
+        "Purging caches...",
+        "Done in 0.3 s."
+      ]
+    },
+    {
+      "mode": "single",
+      "variant": "public",
+      "pair": 4,
+      "warmup": false,
+      "wiki": "9provision7eeaf0singlepublic4wiki",
+      "duration_ms": 808,
+      "table_count": 111,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [
+          "oauth_accepted_consumer-oaac_accepted-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_accepted_consumer-timestamp.sql",
+          "oauth_registered_consumer-oarc_email_authenticated-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_registered_consumer-timestamp.sql"
+        ],
+        "only_case": []
+      }
+    },
+    {
+      "mode": "two",
+      "variant": "schema",
+      "pair": 0,
+      "warmup": true,
+      "wiki": "9provision7eeaf0twoschema0wiki",
+      "duration_ms": 2447,
+      "table_count": 114,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [],
+        "only_case": []
+      }
+    },
+    {
+      "mode": "single",
+      "variant": "schema",
+      "pair": 0,
+      "warmup": true,
+      "wiki": "9provision7eeaf0singleschema0wiki",
+      "duration_ms": 1944,
+      "table_count": 114,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [
+          "oauth_accepted_consumer-oaac_accepted-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_accepted_consumer-timestamp.sql",
+          "oauth_registered_consumer-oarc_email_authenticated-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_registered_consumer-timestamp.sql"
+        ],
+        "only_case": []
+      }
+    },
+    {
+      "mode": "single",
+      "variant": "schema",
+      "pair": 1,
+      "warmup": false,
+      "wiki": "9provision7eeaf0singleschema1wiki",
+      "duration_ms": 2044,
+      "table_count": 114,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [
+          "oauth_accepted_consumer-oaac_accepted-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_accepted_consumer-timestamp.sql",
+          "oauth_registered_consumer-oarc_email_authenticated-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_registered_consumer-timestamp.sql"
+        ],
+        "only_case": []
+      }
+    },
+    {
+      "mode": "two",
+      "variant": "schema",
+      "pair": 1,
+      "warmup": false,
+      "wiki": "9provision7eeaf0twoschema1wiki",
+      "duration_ms": 2333,
+      "table_count": 114,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [],
+        "only_case": []
+      }
+    },
+    {
+      "mode": "two",
+      "variant": "schema",
+      "pair": 2,
+      "warmup": false,
+      "wiki": "9provision7eeaf0twoschema2wiki",
+      "duration_ms": 2328,
+      "table_count": 114,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [],
+        "only_case": []
+      }
+    },
+    {
+      "mode": "single",
+      "variant": "schema",
+      "pair": 2,
+      "warmup": false,
+      "wiki": "9provision7eeaf0singleschema2wiki",
+      "duration_ms": 2038,
+      "table_count": 114,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [
+          "oauth_accepted_consumer-oaac_accepted-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_accepted_consumer-timestamp.sql",
+          "oauth_registered_consumer-oarc_email_authenticated-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_registered_consumer-timestamp.sql"
+        ],
+        "only_case": []
+      }
+    },
+    {
+      "mode": "single",
+      "variant": "schema",
+      "pair": 3,
+      "warmup": false,
+      "wiki": "9provision7eeaf0singleschema3wiki",
+      "duration_ms": 1929,
+      "table_count": 114,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [
+          "oauth_accepted_consumer-oaac_accepted-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_accepted_consumer-timestamp.sql",
+          "oauth_registered_consumer-oarc_email_authenticated-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_registered_consumer-timestamp.sql"
+        ],
+        "only_case": []
+      }
+    },
+    {
+      "mode": "two",
+      "variant": "schema",
+      "pair": 3,
+      "warmup": false,
+      "wiki": "9provision7eeaf0twoschema3wiki",
+      "duration_ms": 8527,
+      "table_count": 114,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [],
+        "only_case": []
+      },
+      "updater_log_tail": [
+        "...skipping update to table oauth_registered_consumer in shared virtual domain.",
+        "...skipping update to table oauth_registered_consumer in shared virtual domain.",
+        "...skipping update to table oauth_registered_consumer in shared virtual domain.",
+        "...skipping update to table oauth_registered_consumer in shared virtual domain.",
+        "...skipping update to table oauth_accepted_consumer in shared virtual domain.",
+        "...skipping update to table oauth2_access_tokens in shared virtual domain.",
+        "...skipping update to table oauth2_access_tokens in shared virtual domain.",
+        "...skipping update to table oauth_accepted_consumer in shared virtual domain.",
+        "...skipping update to table oauth_registered_consumer in shared virtual domain.",
+        "Creating urlshortcodes table...done.",
+        "Running linter migrate namespace function, this may take a while",
+        "Migrating the page table page_namespace field to the linter table...",
+        "Completed migration of page_namespace data to the linter table, 0 rows updated.",
+        "Running linter migrate linter_params to tag and template function, this may take a while",
+        "Migrating the linter_params field to the linter_tag and linter_template fields...",
+        "Completed migration of linter_params data in the linter table, 0 rows updated.",
+        "Skipped 183 updates that were already applied.",
+        "Set the local repo temp zone container to be private.",
+        "Purging caches...",
+        "Done in 1.4 s."
+      ]
+    },
+    {
+      "mode": "two",
+      "variant": "schema",
+      "pair": 4,
+      "warmup": false,
+      "wiki": "9provision7eeaf0twoschema4wiki",
+      "duration_ms": 2239,
+      "table_count": 114,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [],
+        "only_case": []
+      }
+    },
+    {
+      "mode": "single",
+      "variant": "schema",
+      "pair": 4,
+      "warmup": false,
+      "wiki": "9provision7eeaf0singleschema4wiki",
+      "duration_ms": 2333,
+      "table_count": 114,
+      "checkuser": "real index job and global lookup passed",
+      "update_log_difference": {
+        "only_reference": [
+          "oauth_accepted_consumer-oaac_accepted-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_accepted_consumer-timestamp.sql",
+          "oauth_registered_consumer-oarc_email_authenticated-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_registered_consumer-timestamp.sql"
+        ],
+        "only_case": []
+      }
+    }
+  ],
+  "measurement": "Redis finished_ms minus started_ms; provisioning only",
+  "order": "One discarded warm-up pair per variant, then alternating paired order",
+  "prototype_deployed": false,
+  "image_id": "sha256:e49af3300521a828095da7375344a160b973602bc8d1cd41910d1d87bb542692",
+  "architecture": "arm64",
+  "summary": {
+    "public": {
+      "two": {
+        "samples_ms": [
+          1321,
+          1217,
+          1421,
+          5955
+        ],
+        "median_ms": 1371.0,
+        "mean_ms": 2478.5,
+        "min_ms": 1217,
+        "max_ms": 5955
+      },
+      "single": {
+        "samples_ms": [
+          932,
+          914,
+          809,
+          808
+        ],
+        "median_ms": 861.5,
+        "mean_ms": 865.75,
+        "min_ms": 808,
+        "max_ms": 932
+      },
+      "median_reduction_percent": 37.16265499635303,
+      "paired_savings_ms": [
+        389,
+        303,
+        612,
+        5147
+      ]
+    },
+    "schema": {
+      "two": {
+        "samples_ms": [
+          2333,
+          2328,
+          8527,
+          2239
+        ],
+        "median_ms": 2330.5,
+        "mean_ms": 3856.75,
+        "min_ms": 2239,
+        "max_ms": 8527
+      },
+      "single": {
+        "samples_ms": [
+          2044,
+          2038,
+          1929,
+          2333
+        ],
+        "median_ms": 2041.0,
+        "mean_ms": 2086,
+        "min_ms": 1929,
+        "max_ms": 2333
+      },
+      "median_reduction_percent": 12.422226989916329,
+      "paired_savings_ms": [
+        289,
+        290,
+        6598,
+        -94
+      ]
+    }
+  },
+  "cleanup_succeeded": true,
+  "environment": {
+    "mediawiki": "1.46.2",
+    "php": "8.4.27",
+    "date_local": "2026-10-21",
+    "timezone": "America/Vancouver"
+  },
+  "comparison_report": "provisioning-speed.json",
+  "findings": {
+    "measured_single_pass_over_3_seconds": 0,
+    "measured_two_pass_over_3_seconds": 2,
+    "cause_of_spikes": "undetermined",
+    "slow_two_pass_public_updater_reported_seconds": [
+      "4.0",
+      "0.3"
+    ]
+  }
+}

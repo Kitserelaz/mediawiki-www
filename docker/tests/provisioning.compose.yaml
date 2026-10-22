@@ -6,6 +6,7 @@ x-provision-source: &provision-source
   - ./docker/tests/provision-single.php:/opt/farm/provision.php:ro
   - ./docker/tests/provisioning.php:/opt/provisioning-test.php:ro
   - ./docker/tests/checkuser-consolidate.php:/opt/consolidate-test.php:ro
+  - ./docker/tests/oauth-provisioning.php:/opt/oauth-provisioning-test.php:ro
 services:
   init:
     volumes: *provision-source

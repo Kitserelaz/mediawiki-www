@@ -67,6 +67,7 @@ class ProvisioningAcceptance extends MediaWiki\Maintenance\Maintenance {
             $checkuser='real index job and global lookup passed';
         }
         echo json_encode(['wiki'=>$wiki,'tables'=>$schema,'updatelog_keys'=>$keys,
+            'metadata_complete'=>farmWikiMetadataIsComplete($wiki),
             'extensions'=>$loaded,
             'language'=>$config->get('LanguageCode'),'uploads'=>$config->get('EnableUploads'),
             'anonymous_read'=>$config->get('GroupPermissions')['*']['read']??null,

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare full two-pass provisioning against an isolated one-pass prototype."""
+"""Compare production one-pass provisioning against the historical two-pass path."""
 import json,os,subprocess,time,uuid
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
@@ -8,7 +8,7 @@ assert project.startswith('cloudwiki-provision-test-'), 'Disposable test project
 prefix='9provision'+uuid.uuid4().hex[:6]
 base=['docker','compose','-p',project,'-f','compose.yaml','-f','docker/tests/provisioning.compose.yaml']
 env=dict(os.environ,MW_ENV='development',MW_PROVISION_SINGLE_PASS='0')
-report={'project':project,'status':'running','cases':[]}
+report={'project':project,'status':'running','cases':[], 'single_pass_pipeline':'production coordinator', 'main_stack_modified':False}
 reference_file=os.getenv('PROVISION_REFERENCE_REPORT')
 def compose(*args,check=True):
  r=subprocess.run(base+list(args),cwd=ROOT,env=env,text=True,capture_output=True,errors='replace')
@@ -33,10 +33,19 @@ try:
   for variant in os.getenv('PROVISION_TEST_VARIANTS','public,private,extra,schema').split(','):
    compose('stop','provisioner')
    wiki=prefix+mode+variant+'wiki'
+   report['current_case']={'mode':mode,'variant':variant,'wiki':wiki}
    compose('run','--rm','-T','--no-deps','init','php','maintenance/run.php','/opt/provisioning-test.php','--wiki=metawiki','--action=create','--target='+wiki,'--variant='+variant)
    # Custom defaults are seeded directly in SQL for this fixture. Rebuild in a
    # fresh process so creation's cached module objects cannot restore old defaults.
-   compose('run','--rm','-T','--no-deps','--user','www-data','init','php','maintenance/run.php','/opt/farm/prepare-wiki.php','--wiki=metawiki','--target='+wiki)
+   if mode=='two' or variant in ['extra','schema']:
+    compose('run','--rm','-T','--no-deps','--user','www-data','init','php','maintenance/run.php','/opt/farm/prepare-wiki.php','--wiki=metawiki','--target='+wiki)
+   elif variant=='private':
+    # Reproduce the partial cache observed when delivery beat the deferred writer.
+    compose('run','--rm','-T','--no-deps','--user','www-data','init','php','-r',
+     'file_put_contents("/var/www/mediawiki/cw_cache/".$argv[1].".php", "<?php return ".var_export(["mtime"=>time(),"database"=>$argv[1]],true).";");',wiki)
+   else:
+    compose('run','--rm','-T','--no-deps','--user','www-data','init','php','-r',
+     '@unlink("/var/www/mediawiki/cw_cache/".$argv[1].".php");',wiki)
    compose('run','--rm','-T','--no-deps','init','php','-r','@unlink("/var/www/mediawiki/cw_cache/config-".$argv[1].".php");',wiki)
    start=time.monotonic()
    compose('up','-d','--no-deps','--force-recreate','provisioner')
@@ -47,13 +56,22 @@ try:
     if state.get('state')=='complete':break
     time.sleep(.3)
    else:raise RuntimeError('Provisioning stalled: '+wiki)
+   invocations=int(compose('exec','-T','provisioner','php','-r',
+    'echo preg_match_all("/^MediaWiki [^\\n]+ Updater$/m", file_get_contents("/var/www/mediawiki/cw_cache/.provision-".$argv[1].".log"));',wiki).stdout)
+   attempts=compose('logs','--no-color','provisioner').stdout.count('Dispatch provision: '+wiki+'\n')
+   assert attempts>=1
+   assert (invocations==attempts if mode=='single' else 2<=invocations<=2*attempts),{'mode':mode,'updater_invocations':invocations,'dispatch_attempts':attempts}
+   if mode=='single':assert attempts==1,{'wiki':wiki,'unexpected_retry':True}
    result=compose('run','--rm','-T','--no-deps','init','php','maintenance/run.php','/opt/provisioning-test.php','--wiki='+wiki,'--action=inspect','--checkuser')
    snapshot=json.loads(result.stdout.splitlines()[-1])
    report['latest_snapshot']=snapshot
    assert snapshot['language']==('de' if variant=='private' else 'en'),snapshot
    assert snapshot['anonymous_read']==(variant!='private'),snapshot
+   if mode=='single':assert snapshot['metadata_complete'], 'Production coordinator did not repair metadata'
    if variant in ['extra','schema']:assert snapshot['uploads'] is False
-   if variant=='extra':assert 'Comments' in snapshot['extensions']
+   if variant=='extra':
+    assert 'Comments' in snapshot['extensions']
+    assert {'MigrateOldCommentsUserColumnsToActor','MigrateOldCommentsBlockUserColumnsToActor','MigrateOldCommentsVoteUserColumnsToActor'}<=set(snapshot['updatelog_keys']), 'Comments actor maintenance did not complete'
    if variant=='schema':assert 'Cargo' in snapshot['extensions'] and 'Linter' in snapshot['extensions'] and 'cargo_tables' in snapshot['tables']
    if mode=='two':snapshots[variant]=snapshot
    else:
@@ -61,20 +79,25 @@ try:
     assert snapshot['tables']==reference['tables'],{'variant':variant,'schema_differences':[t for t in set(snapshot['tables'])|set(reference['tables']) if snapshot['tables'].get(t)!=reference['tables'].get(t)]}
     update_difference={'only_two_pass':sorted(set(reference['updatelog_keys'])-set(snapshot['updatelog_keys'])),
                        'only_single_pass':sorted(set(snapshot['updatelog_keys'])-set(reference['updatelog_keys']))}
+    expected_oauth={
+     'oauth_accepted_consumer-oaac_accepted-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_accepted_consumer-timestamp.sql',
+     'oauth_registered_consumer-oarc_email_authenticated-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_registered_consumer-timestamp.sql'}
+    assert set(update_difference['only_two_pass'])==expected_oauth and not update_difference['only_single_pass'],update_difference
     assert snapshot['extensions']==reference['extensions'],{'variant':variant,'extension_set_differs':True}
-   row={'mode':mode,'variant':variant,'wiki':wiki,'table_count':len(snapshot['tables']),'duration_ms':int(state['finished_ms'])-int(state['started_ms']),'checks':snapshot}
+   row={'mode':mode,'variant':variant,'wiki':wiki,'table_count':len(snapshot['tables']),'duration_ms':int(state['finished_ms'])-int(state['started_ms']),'updater_invocations':invocations,'dispatch_attempts':attempts,'checks':snapshot}
+   if attempts>1:row['retry_updater_log']=compose('exec','-T','provisioner','cat','/var/www/mediawiki/cw_cache/.provision-'+wiki+'.log').stdout
    if mode=='single':row['update_log_difference']=update_difference
    report['cases'].append(row)
    print('PASS '+mode+'/'+variant+': '+str(row['table_count'])+' schemas, settings, real CheckUser index job and lookup; '+str(row['duration_ms'])+' ms',flush=True)
  report['status']='passed'
- report['prototype_update_log_equivalent']=all(not any(case.get('update_log_difference',{}).values()) for case in report['cases'] if case['mode']=='single')
- report['prototype_deployed']=False
- if not report['prototype_update_log_equivalent']:
-  print('Prototype schemas/settings match, but update logs differ; prototype remains undeployed.',flush=True)
+ print('Production one-pass schemas/settings match; only the two explained local OAuth markers differ.',flush=True)
 except BaseException:
  report['status']='failed'
  print(compose('logs','--no-color','--tail=25','provisioner',check=False).stdout,flush=True)
  raise
 finally:
+ if report.get('current_case'):
+  wiki=report['current_case']['wiki']
+  report['last_updater_log']=compose('exec','-T','provisioner','cat','/var/www/mediawiki/cw_cache/.provision-'+wiki+'.log',check=False).stdout
  Path('/tmp/provisioning-equivalence.json').write_text(json.dumps(report,indent=2)+'\n')
  if os.getenv('KEEP_PROVISION_TEST')!='1':compose('down','-v','--remove-orphans',check=False)

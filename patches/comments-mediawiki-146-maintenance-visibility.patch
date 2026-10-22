@@ -1,0 +1,39 @@
+diff --git a/mediawiki/extensions/Comments/maintenance/migrateOldCommentsBlockUserColumnsToActor.php b/mediawiki/extensions/Comments/maintenance/migrateOldCommentsBlockUserColumnsToActor.php
+index 9c7890980..72c581230 100755
+--- a/mediawiki/extensions/Comments/maintenance/migrateOldCommentsBlockUserColumnsToActor.php
++++ b/mediawiki/extensions/Comments/maintenance/migrateOldCommentsBlockUserColumnsToActor.php
+@@ -38,7 +38,7 @@ class MigrateOldCommentsBlockUserColumnsToActor extends LoggedUpdateMaintenance
+ 	 *
+ 	 * @return string
+ 	 */
+-	protected function updateSkippedMessage() {
++	public function updateSkippedMessage() {
+ 		return 'Comments_block has already been migrated to use the actor columns.';
+ 	}
+ 
+diff --git a/mediawiki/extensions/Comments/maintenance/migrateOldCommentsUserColumnsToActor.php b/mediawiki/extensions/Comments/maintenance/migrateOldCommentsUserColumnsToActor.php
+index 49c7df669..8de0ee5f2 100755
+--- a/mediawiki/extensions/Comments/maintenance/migrateOldCommentsUserColumnsToActor.php
++++ b/mediawiki/extensions/Comments/maintenance/migrateOldCommentsUserColumnsToActor.php
+@@ -38,7 +38,7 @@ class MigrateOldCommentsUserColumnsToActor extends LoggedUpdateMaintenance {
+ 	 *
+ 	 * @return string
+ 	 */
+-	protected function updateSkippedMessage() {
++	public function updateSkippedMessage() {
+ 		return 'Comments has already been migrated to use the actor column.';
+ 	}
+ 
+diff --git a/mediawiki/extensions/Comments/maintenance/migrateOldCommentsVoteUserColumnsToActor.php b/mediawiki/extensions/Comments/maintenance/migrateOldCommentsVoteUserColumnsToActor.php
+index 49b8ec514..23d6dd2bb 100755
+--- a/mediawiki/extensions/Comments/maintenance/migrateOldCommentsVoteUserColumnsToActor.php
++++ b/mediawiki/extensions/Comments/maintenance/migrateOldCommentsVoteUserColumnsToActor.php
+@@ -38,7 +38,7 @@ class MigrateOldCommentsVoteUserColumnsToActor extends LoggedUpdateMaintenance {
+ 	 *
+ 	 * @return string
+ 	 */
+-	protected function updateSkippedMessage() {
++	public function updateSkippedMessage() {
+ 		return 'Comments_Vote has already been migrated to use the actor columns.';
+ 	}
+ 

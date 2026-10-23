@@ -45,6 +45,9 @@ RUN mkdir -p images cw_cache cache /var/www/dumps /var/log/mediawiki \
     && chmod +x /opt/farm/entrypoint.sh \
     && printf 'upload_max_filesize=100M\npost_max_size=110M\nmemory_limit=512M\nexpose_php=Off\n' > /usr/local/etc/php/conf.d/farm.ini
 ENV MW_DOCKER=1 MW_INSTALL_PATH=/var/www/mediawiki
+ARG SOURCE_REVISION=unknown
+LABEL org.opencontainers.image.source="https://github.com/Kitserelaz/mediawiki-www" \
+      org.opencontainers.image.revision="${SOURCE_REVISION}"
 ENTRYPOINT ["tini", "--", "/opt/farm/entrypoint.sh"]
 CMD ["php-fpm"]
 FROM php AS assets
@@ -52,3 +55,6 @@ RUN python3 /opt/farm/export-assets.py
 FROM ${CADDY_IMAGE} AS web
 COPY --link --from=assets /opt/public/ /var/www/mediawiki/
 COPY --link --from=php /var/www/mediawiki/index.php /var/www/mediawiki/api.php /var/www/mediawiki/load.php /var/www/mediawiki/rest.php /var/www/mediawiki/img_auth.php /var/www/mediawiki/thumb.php /var/www/mediawiki/thumb_handler.php /var/www/mediawiki/opensearch_desc.php /var/www/mediawiki/
+ARG SOURCE_REVISION=unknown
+LABEL org.opencontainers.image.source="https://github.com/Kitserelaz/mediawiki-www" \
+      org.opencontainers.image.revision="${SOURCE_REVISION}"

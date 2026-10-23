@@ -6,7 +6,7 @@ x-farm: &farm
     context: .
     dockerfile: docker/mediawiki/Dockerfile
     target: php
-    args: {BUILDKIT_INLINE_CACHE: '1'}
+    args: {BUILDKIT_INLINE_CACHE: '1', SOURCE_REVISION: '${GITHUB_SHA:-unknown}'}
   environment: &farm-env
     MW_DOCKER: '1'
     MIRAHEZE_WIKI_VERSION: '1.46'
@@ -60,6 +60,7 @@ services:
       context: .
       dockerfile: docker/mediawiki/Dockerfile
       target: web
+      args: {SOURCE_REVISION: '${GITHUB_SHA:-unknown}'}
     environment:
       MW_DOMAIN: ${MW_DOMAIN:-localhost}
       MW_BETA_DOMAIN: ${MW_BETA_DOMAIN:-beta.localhost}
@@ -170,7 +171,9 @@ services:
     restart: unless-stopped
   counter:
     image: ${COUNTER_IMAGE:-cloudwiki-counter:local}
-    build: ./Moe-Counter
+    build:
+      context: ./Moe-Counter
+      args: {SOURCE_REVISION: '${GITHUB_SHA:-unknown}'}
     environment:
       APP_PORT: '3000'
       APP_SITE: https://counter.${MW_DOMAIN:-localhost}

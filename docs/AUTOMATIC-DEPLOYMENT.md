@@ -29,7 +29,11 @@ pulling the images. No personal GitHub token is stored on the server.
 ## What happens during an update
 
 1. A server lock serializes deployments. A commit superseded on `main` is skipped.
-   Tracked local changes cause a refusal instead of being overwritten.
+   Tracked local changes cause a refusal instead of being overwritten. A separate
+   fingerprint baseline protects `.env.production`, Compose files and overrides,
+   service environment files, local credential files, mounted configuration files,
+   and PHP settings in an active bind release.
+   Missing baselines or unacknowledged local edits block deployment.
 2. All images are downloaded before stopping traffic. Failed checks or pulls leave
    the current release running.
 3. `scripts/snapshot --keep-stopped` stops writers and creates a coordinated
@@ -45,6 +49,8 @@ pulling the images. No personal GitHub token is stored on the server.
    metadata. Fresh initialization is never part of deployment.
 6. Compose starts the release without building. Container health and HTTPS API
    checks against this origin must pass before the release is recorded as healthy.
+   Only then are the deployer's expected configuration changes recorded in the
+   fingerprint baseline. Operator edits made during deployment are not accepted.
 
 Expect a maintenance interruption while writers are stopped, snapshots are taken,
 and schemas are updated. Docker remains enabled at boot, and normal service
@@ -55,6 +61,29 @@ does not cancel an in-progress deployment when a newer push arrives. A server lo
 also prevents overlap if a workflow is manually retried.
 
 ## Operations and recovery
+
+The accepted configuration fingerprints are stored in
+`/var/lib/cloudwiki/accepted-local-config.json`, readable only by root. They contain
+file paths and hashes, without secret values. Checks run before deployment, after
+image downloads, after the snapshot, and after health verification. Errors list
+changed filenames without showing their contents. Tracked Git files are also
+checked again before switching releases.
+
+After intentionally editing local production settings or rotating credentials,
+review the edits and explicitly acknowledge them on the server:
+
+```sh
+sudo python3 /usr/local/libexec/cloudwiki-deploy-production.py --accept-config
+sudo python3 /usr/local/libexec/cloudwiki-deploy-production.py --check-config
+```
+
+The first installation establishes the initial baseline from the current server
+configuration. Subsequent installs do not reset an existing baseline. The forced
+SSH wrapper permits only `deploy`, so the CI deployment key cannot acknowledge
+configuration edits or bypass this check. Tracked local changes must still be
+committed or restored; acknowledging local configuration does not override Git's
+clean-checkout requirement. If an edit is detected during the maintenance phase,
+writers remain stopped as for any failed migration; the edit is preserved.
 
 Inspect workflow runs in GitHub Actions and use these commands on the server:
 

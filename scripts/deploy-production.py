@@ -2,6 +2,7 @@
 """Restricted SSH entry point for the cloudwiki.us production deployment."""
 import contextlib
 import fcntl
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -17,6 +18,7 @@ REGISTRY = "ghcr.io/kitserelaz/mediawiki-www-"
 SERVICES = ("php", "web", "counter")
 WRITERS = ("web", "php", "worker", "provisioner", "jobchron", "scheduler", "counter")
 IMAGE_KEYS = {"php": "MW_IMAGE", "web": "WEB_IMAGE", "counter": "COUNTER_IMAGE"}
+CONFIG_BASELINE = 'accepted-local-config.json'
 
 
 def validate_request(command, payload):
@@ -65,6 +67,110 @@ def atomic_private_write(path, content):
     finally:
         if os.path.exists(temporary):
             os.unlink(temporary)
+
+
+def file_fingerprint(path):
+    try:
+        data = path.read_bytes()
+        if path.is_symlink():
+            data = os.readlink(path).encode() + b'\0' + data
+        return hashlib.sha256(data).hexdigest()
+    except FileNotFoundError:
+        return None
+
+
+def capture_local_config(root, runner):
+    """Fingerprint configuration without storing or logging credential values."""
+    env_file = root / '.env.production'
+    base = ['docker', 'compose', '--env-file', str(env_file), '--profile', '*', 'config']
+    config = json.loads(runner.run(base + ['--no-env-resolution', '--format', 'json'], capture=True))
+    environment = runner.run(base + ['--environment'], capture=True)
+    settings = dict(line.split('=', 1) for line in environment.splitlines() if '=' in line)
+    paths = {env_file}
+    for name in (settings.get('COMPOSE_FILE') or 'compose.yaml').split(settings.get('COMPOSE_PATH_SEPARATOR') or os.pathsep):
+        paths.add(root / name)
+    for secret in config.get('secrets', {}).values():
+        if secret.get('file'):
+            path = Path(secret['file'])
+            if not path.is_absolute():
+                path = root / path
+            paths.add(path)
+            # Also detect additions/removals in the local credential directory.
+            if path.parent.is_dir():
+                paths.update(item for item in path.parent.iterdir() if item.is_file())
+    for service in config.get('services', {}).values():
+        for entry in service.get('env_file', []):
+            path = Path(entry['path'] if isinstance(entry, dict) else entry)
+            if not path.is_absolute():
+                path = root / path
+            required = not isinstance(entry, dict) or entry.get('required', True)
+            if required or path.exists():
+                paths.add(path)
+        for volume in service.get('volumes', []):
+            if volume.get('type') == 'bind':
+                path = Path(volume['source'])
+                if not path.is_absolute():
+                    path = root / path
+                if path.is_file():
+                    paths.add(path)
+    if settings.get('MW_CODE_MODE') == 'bind' and settings.get('MW_SOURCE_DIRECTORY'):
+        source = Path(settings['MW_SOURCE_DIRECTORY'])
+        if not source.is_absolute():
+            source = root / source
+        paths.add(source / 'release.json')
+        paths.add(source / 'docker/mediawiki/private.php')
+        for pattern in ['*Settings*.php', 'ManageWiki*.php', 'FarmSiteConfiguration.php',
+                        'GlobalExtensions.php', 'SkyWikiFunctions.php', 'LocalWiki.php']:
+            paths.update((source / 'mediawiki').glob(pattern))
+    return {str(path): file_fingerprint(path) for path in sorted(paths)}
+
+
+def config_changed(paths):
+    return RuntimeError('Local configuration changed: ' + ', '.join(sorted(paths)) +
+                        '. Review the files, then acknowledge intentional changes locally with '
+                        'sudo python3 /usr/local/libexec/cloudwiki-deploy-production.py --accept-config')
+
+
+def check_local_config(root, state, runner, expected=None):
+    if expected is None:
+        baseline = state / CONFIG_BASELINE
+        if not baseline.is_file():
+            raise RuntimeError('No accepted local configuration baseline. Establish it locally with '
+                               'sudo python3 /usr/local/libexec/cloudwiki-deploy-production.py --accept-config')
+        expected = json.loads(baseline.read_text())['files']
+    # Check known files first so invalid edits cannot make Compose fail before
+    # the guard can report the changed filenames without revealing contents.
+    edited = [path for path, fingerprint in expected.items() if file_fingerprint(Path(path)) != fingerprint]
+    if edited:
+        raise config_changed(edited)
+    actual = capture_local_config(root, runner)
+    changed = [path for path in expected.keys() | actual.keys()
+               if path not in expected or path not in actual or expected[path] != actual[path]]
+    if changed:
+        raise config_changed(changed)
+    return actual
+
+
+def save_config_baseline(state, files, reason):
+    atomic_private_write(state / CONFIG_BASELINE, json.dumps({
+        'schema_version': 1, 'accepted_at': time.time(), 'reason': reason, 'files': files,
+    }, indent=2) + '\n')
+
+
+def accept_local_config(root, state, runner):
+    files = capture_local_config(root, runner)
+    missing = [path for path, fingerprint in files.items() if fingerprint is None]
+    if missing:
+        raise RuntimeError('Cannot accept missing configuration files: ' + ', '.join(missing))
+    save_config_baseline(state, files, 'local operator acknowledgement')
+    print('Accepted local configuration fingerprints (' + str(len(files)) + ' files); no secret values recorded', flush=True)
+
+
+def check_stable_files(expected, ignored):
+    changed = [path for path, fingerprint in expected.items()
+               if path not in ignored and file_fingerprint(Path(path)) != fingerprint]
+    if changed:
+        raise config_changed(changed)
 
 
 class Runner:
@@ -135,6 +241,7 @@ def prepare_release(commit, root, state, runner):
 def deploy(payload, root, state, runner, health=probe):
     commit = payload["commit"]
     env_file = root / ".env.production"
+    initial_config = check_local_config(root, state, runner)
     old_environment = env_file.read_text()
     if "MW_ENV=production" not in old_environment.splitlines():
         raise RuntimeError("Production configuration is required")
@@ -148,6 +255,9 @@ def deploy(payload, root, state, runner, health=probe):
         print("A newer main commit exists; skipping this superseded deployment", flush=True)
         return
     old_commit = runner.run(["git", "rev-parse", "HEAD"], capture=True)
+    relative_paths = [str(Path(path).relative_to(root)) for path in initial_config if Path(path).is_relative_to(root)]
+    tracked = runner.run(['git', 'ls-files', '-z', '--', *relative_paths], capture=True)
+    tracked_paths = {str(root / path) for path in tracked.split('\0') if path}
     resolved = runner.run(['docker', 'compose', '--env-file', str(env_file), 'config', '--environment'], capture=True)
     settings = dict(line.split('=', 1) for line in resolved.splitlines() if '=' in line)
     mode = settings.get('MW_CODE_MODE', 'image')
@@ -190,30 +300,47 @@ def deploy(payload, root, state, runner, health=probe):
             new_environment += replacement + '\n'
     snapshot = "deploy-" + str(time.time_ns()) + "-" + commit[:12]
     compose = ['docker', 'compose', '--env-file', str(env_file)]
+    # Downloads and source exports can take time. Recheck immediately before
+    # maintenance so an intervening edit never gets silently overwritten.
+    check_local_config(root, state, runner, initial_config)
+    if runner.run(['git', 'status', '--porcelain', '--untracked-files=no'], capture=True):
+        raise RuntimeError('Tracked production files changed during deployment preparation')
     frozen = False
     changed = False
     try:
         frozen = True
         runner.run(["scripts/snapshot", "--env-file", str(env_file), "--keep-stopped", snapshot], input="")
+        check_local_config(root, state, runner, initial_config)
         backup = root / "backups" / snapshot
         atomic_private_write(backup / "production.env", old_environment)
         atomic_private_write(backup / "deployment.json", json.dumps({"previous_commit": old_commit, "target_images": payload["images"]}, indent=2) + "\n")
         runner.run(["git", "checkout", "--detach", commit])
         changed = True
+        if runner.run(['git', 'status', '--porcelain', '--untracked-files=no'], capture=True):
+            raise RuntimeError('Tracked production files changed while switching releases')
         if (root / 'scripts/compose').is_file():
             compose = ['python3', 'scripts/compose', '--env-file', str(env_file)]
+        check_stable_files(initial_config, tracked_paths)
         atomic_private_write(env_file, new_environment)
+        check_stable_files(initial_config, tracked_paths | {str(env_file)})
+        intended_config = capture_local_config(root, runner)
+        if intended_config[str(env_file)] != hashlib.sha256(new_environment.encode()).hexdigest():
+            raise config_changed([str(env_file)])
+        if runner.run(['git', 'status', '--porcelain', '--untracked-files=no'], capture=True):
+            raise RuntimeError('Tracked production configuration changed while preparing the release')
         runner.run(compose + ["config", "--quiet"])
         runner.run(compose + ["up", "-d", "--no-build", "--wait", "database", "redis", "memcached"])
         runner.run(["scripts/farm", "--env-file", str(env_file), "update"], input="")
         runner.run(compose + ["up", "-d", "--no-build", "--wait", "--wait-timeout", "180"])
         health(root, runner)
+        check_local_config(root, state, runner, intended_config)
         record = {"commit": commit, "images": payload["images"], "previous_commit": old_commit, "snapshot": snapshot,
                   'code_mode': mode, 'source_directory': str(source_directory) if source_directory else None}
         history = state / "history"
         history.mkdir(mode=0o700, exist_ok=True)
         atomic_private_write(history / (snapshot + ".json"), json.dumps(record, indent=2) + "\n")
         atomic_private_write(last, json.dumps(record, indent=2) + "\n")
+        save_config_baseline(state, intended_config, 'successful deployment ' + commit)
         frozen = False
         print("Deployment healthy: " + commit + "; recovery snapshot: backups/" + snapshot, flush=True)
         try:
@@ -235,10 +362,6 @@ def deploy(payload, root, state, runner, health=probe):
 def main():
     if len(sys.argv) != 2:
         raise ValueError("A restricted SSH command is required")
-    body = sys.stdin.read(16385)
-    if len(body) > 16384:
-        raise ValueError("Deployment request is too large")
-    payload = validate_request(sys.argv[1], json.loads(body))
     if os.geteuid() != 0:
         raise RuntimeError("The deployment entry point must run through sudo")
     root = Path("/var/www")
@@ -246,6 +369,17 @@ def main():
     state.mkdir(mode=0o700, exist_ok=True)
     with (state / "deploy.lock").open("w") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
+        if sys.argv[1] == '--accept-config':
+            accept_local_config(root, state, Runner(root))
+            return
+        if sys.argv[1] == '--check-config':
+            check_local_config(root, state, Runner(root))
+            print('Local configuration matches the accepted baseline')
+            return
+        body = sys.stdin.read(16385)
+        if len(body) > 16384:
+            raise ValueError("Deployment request is too large")
+        payload = validate_request(sys.argv[1], json.loads(body))
         deploy(payload, root, state, Runner(root))
         # Keep the separately installed SSH entry point in sync after a successful
         # release, without giving the SSH key an arbitrary shell command.
@@ -253,6 +387,11 @@ def main():
         source = root / "scripts/deploy-production.py"
         if last.exists() and json.loads(last.read_text()).get("commit") == payload["commit"] and source.exists():
             atomic_private_write(Path("/usr/local/libexec/cloudwiki-deploy-production.py"), source.read_text())
+            ssh_source = root / 'scripts/deploy-ssh'
+            if ssh_source.is_file():
+                ssh_target = Path('/usr/local/sbin/cloudwiki-deploy-ssh')
+                atomic_private_write(ssh_target, ssh_source.read_text())
+                ssh_target.chmod(0o755)
 
 
 if __name__ == "__main__":

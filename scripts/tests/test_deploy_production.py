@@ -1,5 +1,7 @@
 """Deployment failure tests; no Docker, network, credentials or real farm required."""
 import importlib.util
+import contextlib
+import io
 import json
 from pathlib import Path
 import subprocess
@@ -22,6 +24,7 @@ class FakeRunner:
     def __init__(self, root, fail=None, latest="a" * 40):
         self.root, self.fail, self.latest = root, fail, latest
         self.calls = []
+        self.configuration = {'services': {}, 'secrets': {}}
 
     def run(self, args, **kwargs):
         self.calls.append(list(args))
@@ -36,7 +39,16 @@ class FakeRunner:
         if args[:3] == ["docker", "image", "inspect"]:
             return 'a' * 40
         if args[:2] == ['docker', 'compose'] and args[-2:] == ['config', '--environment']:
-            return (self.root / '.env.production').read_text()
+            lines = []
+            for line in (self.root / '.env.production').read_text().splitlines():
+                key, separator, value = line.partition('=')
+                if separator:
+                    if value.startswith('"'):
+                        value = json.loads(value)
+                    lines.append(key + '=' + value)
+            return '\n'.join(lines)
+        if args[:2] == ['docker', 'compose'] and args[-2:] == ['--format', 'json']:
+            return json.dumps(self.configuration)
         if args[0] == "scripts/snapshot":
             (self.root / "backups" / args[-1]).mkdir(parents=True)
         if args[:2] == ['git', 'checkout']:
@@ -53,8 +65,14 @@ class DeploymentTest(unittest.TestCase):
         self.state = Path(self.tmp.name) / "state"
         self.root.mkdir()
         self.state.mkdir()
+        (self.root / 'compose.yaml').write_text('services: {}\n')
         self.environment = "MW_ENV=production\nMW_IMAGE=old-php\nWEB_IMAGE=old-web\nCOUNTER_IMAGE=old-counter\nMW_DOMAIN=cloudwiki.us\nFARM_SECRETS_DIRECTORY=/private/secrets\n"
         (self.root / ".env.production").write_text(self.environment)
+        self.accept()
+
+    def accept(self, runner=None):
+        with contextlib.redirect_stdout(io.StringIO()):
+            deployment.accept_local_config(self.root, self.state, runner or FakeRunner(self.root))
 
     def deploy(self, runner, health=lambda *_: None):
         deployment.deploy(request(), self.root, self.state, runner, health)
@@ -78,7 +96,7 @@ class DeploymentTest(unittest.TestCase):
     def test_superseded_commit_does_not_pull_or_stop_services(self):
         runner = FakeRunner(self.root, latest="d" * 40)
         self.deploy(runner)
-        self.assertFalse(any(call[0] in ("docker", "scripts/snapshot") for call in runner.calls))
+        self.assertFalse(any(call[:2] == ['docker', 'pull'] or call[0] == 'scripts/snapshot' for call in runner.calls))
 
     def test_pull_failure_preserves_running_release(self):
         runner = FakeRunner(self.root, fail=lambda args: args[:2] == ["docker", "pull"])
@@ -144,6 +162,7 @@ class DeploymentTest(unittest.TestCase):
     def test_bind_release_is_prepared_before_snapshot_and_saved_in_environment(self):
         env = self.root / '.env.production'
         env.write_text(self.environment + 'MW_CODE_MODE=bind\n')
+        self.accept()
         runner = FakeRunner(self.root)
         release = self.state / 'releases' / ('a' * 40)
         def prepare(*_):
@@ -159,6 +178,7 @@ class DeploymentTest(unittest.TestCase):
 
     def test_export_failure_does_not_stop_the_running_farm(self):
         (self.root / '.env.production').write_text(self.environment + 'MW_CODE_MODE=bind\n')
+        self.accept()
         runner = FakeRunner(self.root)
         with patch.object(deployment, 'prepare_release', side_effect=RuntimeError('Export failed')):
             with self.assertRaises(RuntimeError):
@@ -168,6 +188,7 @@ class DeploymentTest(unittest.TestCase):
     def test_changing_mode_on_same_commit_is_not_skipped(self):
         self.deploy(FakeRunner(self.root))
         (self.root / '.env.production').write_text(self.environment + 'MW_CODE_MODE=bind\n')
+        self.accept()
         runner = FakeRunner(self.root)
         with patch.object(deployment, 'prepare_release', return_value=self.state / 'releases' / ('a' * 40)):
             self.deploy(runner)
@@ -181,6 +202,149 @@ class DeploymentTest(unittest.TestCase):
             self.deploy(runner, failed_health)
         self.assertFalse((self.state / "last-success.json").exists())
         self.assertIn("stop", runner.calls[-1])
+
+    def test_missing_baseline_requires_local_acknowledgement(self):
+        (self.state / deployment.CONFIG_BASELINE).unlink()
+        runner = FakeRunner(self.root)
+        with self.assertRaisesRegex(RuntimeError, 'No accepted local configuration baseline'):
+            self.deploy(runner)
+        self.assertEqual(runner.calls, [])
+
+    def test_edited_dotenv_blocks_before_fetch_without_exposing_values(self):
+        env = self.root / '.env.production'
+        changed = self.environment + 'MW_SMTP_PASSWORD=private-test-value\n'
+        env.write_text(changed)
+        runner = FakeRunner(self.root)
+        with self.assertRaises(RuntimeError) as caught:
+            self.deploy(runner)
+        self.assertIn('.env.production', str(caught.exception))
+        self.assertNotIn('private-test-value', str(caught.exception))
+        self.assertEqual(runner.calls, [])
+        self.assertEqual(env.read_text(), changed)
+
+    def test_config_edit_during_pull_leaves_services_running_and_preserves_edit(self):
+        runner = FakeRunner(self.root)
+        original = runner.run
+        env = self.root / '.env.production'
+        def edit_during_pull(args, **kwargs):
+            result = original(args, **kwargs)
+            if args[:2] == ['docker', 'pull']:
+                env.write_text(self.environment + 'MW_EMAIL_ENABLED=1\n')
+            return result
+        runner.run = edit_during_pull
+        with self.assertRaisesRegex(RuntimeError, 'Local configuration changed'):
+            self.deploy(runner)
+        self.assertFalse(any(call[0] == 'scripts/snapshot' or 'stop' in call for call in runner.calls))
+        self.assertIn('MW_EMAIL_ENABLED=1', env.read_text())
+
+    def test_config_edit_during_snapshot_is_not_overwritten(self):
+        runner = FakeRunner(self.root)
+        original = runner.run
+        env = self.root / '.env.production'
+        def edit_during_snapshot(args, **kwargs):
+            result = original(args, **kwargs)
+            if args[0] == 'scripts/snapshot':
+                env.write_text(self.environment + 'MW_EMAIL_ENABLED=1\n')
+            return result
+        runner.run = edit_during_snapshot
+        with self.assertRaisesRegex(RuntimeError, 'Local configuration changed'):
+            self.deploy(runner)
+        self.assertFalse(any(call[:2] == ['git', 'checkout'] for call in runner.calls))
+        self.assertIn('MW_EMAIL_ENABLED=1', env.read_text())
+
+    def test_secret_edits_and_new_secret_files_are_detected(self):
+        secrets = self.root / 'private-secrets'
+        secrets.mkdir()
+        farm = secrets / 'farm.json'
+        farm.write_text('original-secret')
+        runner = FakeRunner(self.root)
+        runner.configuration['secrets']['farm'] = {'file': str(farm)}
+        self.accept(runner)
+        farm.write_text('changed-secret')
+        with self.assertRaises(RuntimeError) as caught:
+            self.deploy(runner)
+        self.assertIn('farm.json', str(caught.exception))
+        self.assertNotIn('changed-secret', str(caught.exception))
+        farm.write_text('original-secret')
+        (secrets / 'new-runtime.json').write_text('new-secret')
+        with self.assertRaisesRegex(RuntimeError, 'new-runtime.json'):
+            self.deploy(runner)
+
+    def test_successful_deployment_records_its_own_env_changes_as_expected(self):
+        self.deploy(FakeRunner(self.root))
+        expected = json.loads((self.state / deployment.CONFIG_BASELINE).read_text())
+        self.assertEqual((self.state / deployment.CONFIG_BASELINE).stat().st_mode & 0o777, 0o600)
+        deployment.check_local_config(self.root, self.state, FakeRunner(self.root))
+        self.assertNotIn('test-only-credential', json.dumps(expected))
+
+    def test_active_bind_release_php_settings_are_protected(self):
+        source = self.state / 'releases' / ('c' * 40)
+        (source / 'mediawiki').mkdir(parents=True)
+        (source / 'docker/mediawiki').mkdir(parents=True)
+        (source / 'release.json').write_text(json.dumps({'commit': 'c' * 40}))
+        (source / 'docker/mediawiki/private.php').write_text('<?php // loader')
+        config = source / 'mediawiki/LocalSettings.php'
+        config.write_text('<?php // original')
+        (self.root / '.env.production').write_text(self.environment + 'MW_CODE_MODE=bind\nMW_SOURCE_DIRECTORY=' + json.dumps(str(source)) + '\n')
+        self.accept()
+        config.write_text('<?php // locally edited')
+        runner = FakeRunner(self.root)
+        with self.assertRaisesRegex(RuntimeError, 'LocalSettings.php'):
+            self.deploy(runner)
+        self.assertFalse(any(call[0] == 'scripts/snapshot' for call in runner.calls))
+
+    def test_mounted_config_file_changes_are_detected(self):
+        config = self.root / 'wiki.caddy'
+        config.write_text('original')
+        runner = FakeRunner(self.root)
+        runner.configuration['services']['web'] = {'volumes': [{'type': 'bind', 'source': str(config)}]}
+        self.accept(runner)
+        config.write_text('locally edited')
+        with self.assertRaisesRegex(RuntimeError, 'wiki.caddy'):
+            self.deploy(runner)
+
+    def test_ignored_compose_override_and_service_env_file_are_protected(self):
+        override = self.root / 'compose.local.yaml'
+        override.write_text('services: {}\n')
+        service_env = self.root / 'service.env'
+        service_env.write_text('VALUE=original\n')
+        (self.root / '.env.production').write_text(self.environment + 'COMPOSE_FILE=compose.yaml:compose.local.yaml\n')
+        runner = FakeRunner(self.root)
+        runner.configuration['services']['php'] = {'env_file': [{'path': str(service_env), 'required': True}]}
+        self.accept(runner)
+        override.write_text('invalid local override')
+        with self.assertRaisesRegex(RuntimeError, 'compose.local.yaml'):
+            self.deploy(runner)
+        override.write_text('services: {}\n')
+        service_env.write_text('VALUE=changed\n')
+        with self.assertRaisesRegex(RuntimeError, 'service.env'):
+            self.deploy(runner)
+
+    def test_changes_during_migration_are_not_automatically_accepted(self):
+        baseline = (self.state / deployment.CONFIG_BASELINE).read_text()
+        def edit_config(*_):
+            env = self.root / '.env.production'
+            env.write_text(env.read_text() + 'MW_EMAIL_ENABLED=1\n')
+        runner = FakeRunner(self.root)
+        with self.assertRaisesRegex(RuntimeError, 'Local configuration changed'):
+            self.deploy(runner, edit_config)
+        self.assertEqual((self.state / deployment.CONFIG_BASELINE).read_text(), baseline)
+        self.assertIn('stop', runner.calls[-1])
+
+    def test_human_can_acknowledge_an_intentional_env_edit(self):
+        (self.root / '.env.production').write_text(self.environment + 'MW_EMAIL_ENABLED=1\n')
+        self.accept()
+        self.deploy(FakeRunner(self.root))
+        self.assertTrue((self.state / 'last-success.json').exists())
+
+    def test_forced_ssh_command_rejects_acceptance_and_shell_commands(self):
+        wrapper = Path(__file__).parents[1] / 'deploy-ssh'
+        import os
+        for command in ['--accept-config', '--check-config', 'deploy --accept-config', 'sh', '']:
+            result = subprocess.run(['sh', str(wrapper)], env=dict(os.environ, SSH_ORIGINAL_COMMAND=command),
+                                    input='{}', text=True, capture_output=True)
+            self.assertEqual(result.returncode, 1)
+            self.assertIn('Only the deploy command is permitted', result.stderr)
 
     def test_retention_preserves_current_images_and_operator_backups(self):
         history = self.state / 'history'

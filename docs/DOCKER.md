@@ -71,6 +71,9 @@ binds the moving production checkout. Changing release paths recreates the sourc
 consumers, clearing cached PHP and worker code. Set `MW_CODE_MODE=bind` in
 `.env.production` to opt in for the next successful deployment, or `image` to
 return to packaged code on the next deployment. Both settings preserve farm data.
+After reviewing an intentional production configuration edit, acknowledge it with
+`sudo python3 /usr/local/libexec/cloudwiki-deploy-production.py --accept-config`
+before retrying deployment. Unacknowledged edits block automatic deployment.
 
 For an explicitly managed production source release using an existing compatible
 runtime image, prepare it with:
@@ -78,6 +81,7 @@ runtime image, prepare it with:
 ```sh
 scripts/farm prepare-source --commit FULL_COMMIT_SHA --directory /var/lib/cloudwiki/releases/FULL_COMMIT_SHA
 # Set MW_SOURCE_DIRECTORY to that directory and MW_CODE_MODE=bind in .env.production.
+sudo python3 /usr/local/libexec/cloudwiki-deploy-production.py --accept-config
 scripts/farm --env-file .env.production compose up -d --no-build
 ```
 

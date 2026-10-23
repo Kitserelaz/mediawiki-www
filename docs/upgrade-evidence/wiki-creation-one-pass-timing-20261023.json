@@ -1,0 +1,127 @@
+{
+  "samples": [
+    {
+      "wiki": "9timingb318ba92public1wiki",
+      "private": false,
+      "form_success_ms": 1654,
+      "worker_start_after_submit_ms": 1240,
+      "queue_wait_ms": 19,
+      "provisioning_after_worker_start_ms": 14415,
+      "provisioning_finished_after_submit_ms": 15655,
+      "provisioning_actual_ms": 13605,
+      "provisioning_completed_after_submit_ms": 14845,
+      "completion_observation_overhead_ms": 810,
+      "api_verification_ms": 1944,
+      "stage_timings": null,
+      "verified_ready_after_submit_ms": 17599,
+      "api_check": "public siteinfo ready",
+      "updater_invocations": 1,
+      "updater_reported_duration": [
+        "8.2 s"
+      ],
+      "dispatch_attempts": 1
+    },
+    {
+      "wiki": "9timingb318ba92privatewiki",
+      "private": true,
+      "form_success_ms": 2623,
+      "worker_start_after_submit_ms": 2276,
+      "queue_wait_ms": 6,
+      "provisioning_after_worker_start_ms": 18499,
+      "provisioning_finished_after_submit_ms": 20775,
+      "provisioning_actual_ms": 17722,
+      "provisioning_completed_after_submit_ms": 19998,
+      "completion_observation_overhead_ms": 777,
+      "api_verification_ms": 678,
+      "stage_timings": null,
+      "verified_ready_after_submit_ms": 21453,
+      "api_check": "anonymous read denied",
+      "updater_invocations": 1,
+      "updater_reported_duration": [
+        "7.4 s"
+      ],
+      "dispatch_attempts": 1
+    },
+    {
+      "wiki": "9timingb318ba92public3wiki",
+      "private": false,
+      "form_success_ms": 1116,
+      "worker_start_after_submit_ms": 881,
+      "queue_wait_ms": 4,
+      "provisioning_after_worker_start_ms": 5385,
+      "provisioning_finished_after_submit_ms": 6266,
+      "provisioning_actual_ms": 4833,
+      "provisioning_completed_after_submit_ms": 5714,
+      "completion_observation_overhead_ms": 552,
+      "api_verification_ms": 271,
+      "stage_timings": null,
+      "verified_ready_after_submit_ms": 6537,
+      "api_check": "public siteinfo ready",
+      "updater_invocations": 1,
+      "updater_reported_duration": [
+        "2.6 s"
+      ],
+      "dispatch_attempts": 1
+    }
+  ],
+  "status": "passed",
+  "method": "Sequential fresh wiki creations through Special:CreateWiki; login and form preparation excluded. Provisioning completion observed every 500 ms.",
+  "prefix": "9timingb318ba92",
+  "started": "2026-10-23T20:02:58.324Z",
+  "timing_clock": "Host monotonic duration; queue/start times use Redis stream/status timestamps, with legacy Docker volume file timestamps as fallback.",
+  "finished": "2026-10-23T20:03:49.260Z",
+  "summary": {
+    "form_success_ms": {
+      "mean_ms": 1797.7,
+      "median_ms": 1654,
+      "min_ms": 1116,
+      "max_ms": 2623
+    },
+    "queue_wait_ms": {
+      "mean_ms": 9.7,
+      "median_ms": 6,
+      "min_ms": 4,
+      "max_ms": 19
+    },
+    "provisioning_actual_ms": {
+      "mean_ms": 12053.3,
+      "median_ms": 13605,
+      "min_ms": 4833,
+      "max_ms": 17722
+    },
+    "provisioning_completed_after_submit_ms": {
+      "mean_ms": 13519,
+      "median_ms": 14845,
+      "min_ms": 5714,
+      "max_ms": 19998
+    },
+    "verified_ready_after_submit_ms": {
+      "mean_ms": 15196.3,
+      "median_ms": 17599,
+      "min_ms": 6537,
+      "max_ms": 21453
+    },
+    "api_verification_ms": {
+      "mean_ms": 964.3,
+      "median_ms": 678,
+      "min_ms": 271,
+      "max_ms": 1944
+    },
+    "completion_observation_overhead_ms": {
+      "mean_ms": 713,
+      "median_ms": 777,
+      "min_ms": 552,
+      "max_ms": 810
+    }
+  },
+  "client_date": "2026-10-23",
+  "client_timezone": "America/Vancouver",
+  "running_image": "sha256:f237c8648f97995ad2409ec679ef3e70f03af1533e84334ed84699b2bdf228ed",
+  "running_provision_sha256": "7bcc4b0a95c76521cbde06e23b4ec120a2a4fc9ec2e1ce1e1ffb2b0de78de80b",
+  "limitations": [
+    "Three sequential fresh creations; login/form preparation excluded.",
+    "Actual provisioning and completion come from worker status timestamps; verified readiness includes observer delay and API verification.",
+    "No production code, images or service configuration changed for this timing run.",
+    "The current stack has other worktree changes; this report records the running image rather than assuming it equals an earlier benchmark image."
+  ]
+}

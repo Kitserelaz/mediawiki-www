@@ -102,6 +102,8 @@ Copy `.env.example` to `.env` or run setup. `MW_DOMAIN`, `MW_BETA_DOMAIN`, and `
 
 `MW_UPLOAD_ROOT` and `MW_DUMP_DIRECTORY` set container storage paths and volume destinations; keep these absolute and consistent for every farm service. Database and Redis persistence, uploads, CreateWiki metadata, localization caches, dumps, counter data, and Caddy certificate state use named volumes. Never use `docker compose down -v` for routine shutdown. `scripts/farm stop` preserves everything. MariaDB is internal; only the reverse proxy and the loopback Mailpit UI publish ports.
 
+Optional S3 upload storage for `cloudwiki01` in Ohio is documented in [S3.md](S3.md). It remains disabled until credentials and existing uploads are ready.
+
 The app database user has database-level privileges for `*wiki`/`*wikibeta`, `wikidb`, `centralauth`, and `incidents` so CreateWiki can provision wiki schemas. Database root credentials are mounted only in the database and explicit initialization service. Before restoring databases outside these conventions, extend grants deliberately.
 
 Moe-Counter uses `DB_PATH=/app/data/count.db`; outside Docker its original `count.db` default is retained. Use one counter replica: SQLite and the process-local read/update queue do not provide distributed increments. MongoDB remains available through Compose variables `COUNTER_DB_TYPE=mongodb` and `COUNTER_DB_URL` (mapped to the app's `DB_TYPE` and `DB_URL`), but adding replicas still requires atomic database increments.

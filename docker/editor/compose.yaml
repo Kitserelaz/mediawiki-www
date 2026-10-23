@@ -31,7 +31,6 @@ services:
     security_opt: [no-new-privileges:true]
     read_only: true
     tmpfs: ['/tmp:rw,nosuid,nodev,size=128m,mode=1777']
-    mem_limit: 1g
     cpus: 0.75
     pids_limit: 256
     restart: unless-stopped

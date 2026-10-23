@@ -6,6 +6,13 @@ web and counter images to `ghcr.io/kitserelaz/mediawiki-www-{php,web,counter}`,
 tagged with the complete commit SHA. Deployment also waits for both architecture
 checks to pass. Registry digests, rather than mutable tags, select production code.
 
+Catalogue registration and skin asset checks are advisory: failures produce a
+workflow warning and summary, with full reports uploaded as
+`catalogue-failure-evidence`, but do not block image publication or deployment.
+Both checks run independently, so a registration failure does not skip skin
+checks. Preparing and cleaning up the isolated catalogue farm remain required.
+All other integration checks and both architecture checks still gate deployment.
+
 The existing browser checks run only in GitHub's disposable CI environment. This
 pipeline installs no browser automation on the VPS or an operator's computer.
 

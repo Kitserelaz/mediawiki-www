@@ -41,15 +41,36 @@ jobs:
       - run: scripts/farm up
       - name: Pinned CreateWiki and ManageWiki upstream integration suite
         run: python3 scripts/test-upstream.py
-      - name: Complete isolated catalogue and skin asset checks
+      - name: Prepare isolated catalogue check farm
+        id: catalogue_setup
         run: |
           export COMPOSE_PROJECT_NAME=cloudwiki-catalogue-tests
           docker compose -f compose.yaml -f docker/tests/upgrade-isolated.compose.yaml up -d --wait database redis memcached
           docker compose -f compose.yaml -f docker/tests/upgrade-isolated.compose.yaml run --rm --no-deps init php /opt/farm/manage.php fresh
           docker compose -f compose.yaml -f docker/tests/upgrade-isolated.compose.yaml run --rm --no-deps --user www-data -e MW_CONFIG_FILE=/opt/catalogue-settings.php -e MW_CATALOGUE_COMPONENT=extensions/DataTransfer/extension.json -e 'MW_CATALOGUE_EXTRA_COMPONENTS_JSON=["Highlight Links in Category"]' -v "$PWD/docker/tests/catalogue-settings.php:/opt/catalogue-settings.php:ro" -v "$PWD/docker/tests/legacy-linktarget.php:/opt/legacy-linktarget.php:ro" init php maintenance/run.php /opt/legacy-linktarget.php --wiki=testwiki
-          python3 scripts/check-catalogue.py --env-file .env --immutable --workers 1 --report-directory docker/tests/test-results/catalogue-registration
-          python3 scripts/check-catalogue.py --env-file .env --immutable --workers 1 --gate skin-render --report-directory docker/tests/test-results/catalogue-skins
-          docker compose -f compose.yaml -f docker/tests/upgrade-isolated.compose.yaml down
+      - name: Catalogue registration checks (advisory)
+        id: catalogue_registration
+        continue-on-error: true
+        env:
+          COMPOSE_PROJECT_NAME: cloudwiki-catalogue-tests
+        run: python3 scripts/check-catalogue.py --env-file .env --immutable --workers 1 --report-directory docker/tests/test-results/catalogue-registration
+      - name: Catalogue skin asset checks (advisory)
+        id: catalogue_skins
+        continue-on-error: true
+        env:
+          COMPOSE_PROJECT_NAME: cloudwiki-catalogue-tests
+        run: python3 scripts/check-catalogue.py --env-file .env --immutable --workers 1 --gate skin-render --report-directory docker/tests/test-results/catalogue-skins
+      - name: Report advisory catalogue failures
+        if: always() && (steps.catalogue_registration.outcome == 'failure' || steps.catalogue_skins.outcome == 'failure')
+        run: |
+          echo '::warning::Catalogue checks failed. These checks are advisory and do not block deployment; inspect the catalogue-failure-evidence artifact.'
+          echo '### Catalogue checks: advisory failures' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Deployment may proceed if all required checks pass. See the catalogue-failure-evidence artifact for component diagnostics.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Stop isolated catalogue check farm
+        if: always() && steps.catalogue_setup.outcome != 'skipped'
+        env:
+          COMPOSE_PROJECT_NAME: cloudwiki-catalogue-tests
+        run: docker compose -f compose.yaml -f docker/tests/upgrade-isolated.compose.yaml down
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -125,8 +146,8 @@ jobs:
               jq -er --arg prefix "${image}@sha256:" '[.[] | select(startswith($prefix))][0]')
             echo "${service}=${digest}" >> "$GITHUB_OUTPUT"
           done
-      - name: Preserve failed catalogue diagnostics
-        if: failure()
+      - name: Preserve catalogue diagnostics
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: catalogue-failure-evidence

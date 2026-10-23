@@ -85,12 +85,14 @@ class DashboardTests(unittest.TestCase):
         run = {'id': 42, 'head_sha': 'new', 'status': 'in_progress', 'run_attempt': 2}
         fetch = Mock(side_effect=[{'object': {'sha': 'new'}}, {'workflow_runs': [run]},
             {'jobs': [{'id': 7, 'name': 'integration', 'status': 'in_progress', 'runner_name': 'private',
-                       'steps': [{'name': 'Build images', 'status': 'in_progress', 'secret': 'private'}]}]},
+                       'steps': [{'name': 'Build images', 'status': 'in_progress', 'secret': 'private'}]},
+                      {'id': 8, 'name': 'CloudWiki build: integration / Runtime images', 'status': 'in_progress'}]},
             {'check_runs': [{'name': 'CloudWiki build: integration / Runtime images', 'output': {'summary': json.dumps({
                 'run_id': '42', 'run_attempt': 2, 'job': 'integration', 'phase': 'Runtime images',
                 'heartbeat_at': 995, 'last_output_at': 990, 'token': 'private'})}}]}])
         result = m.pipeline_report({'history': {'checked_at': 999}}, 1000, fetch)
         self.assertEqual(result['head_sha'], 'new')
+        self.assertEqual(len(result['jobs']), 1)
         self.assertIn('head_sha=new', fetch.call_args_list[1].args[0])
         self.assertEqual(result['activity'][0]['last_output_at'], 990)
         self.assertNotIn('private', json.dumps(result))

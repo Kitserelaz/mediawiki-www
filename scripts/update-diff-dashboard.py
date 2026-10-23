@@ -162,7 +162,8 @@ def pipeline_report(old, now, fetch=request, interval=60):
                   ('id', 'head_sha', 'status', 'conclusion', 'run_attempt', 'created_at', 'run_started_at', 'updated_at')}
         result['checked_at'] = now
         result['poll_interval'] = interval
-        result['jobs'] = [job_report(j) for j in fetch('/actions/runs/' + str(run['id']) + '/jobs?filter=latest&per_page=100').get('jobs', [])]
+        result['jobs'] = [job_report(j) for j in fetch('/actions/runs/' + str(run['id']) + '/jobs?filter=latest&per_page=100').get('jobs', [])
+                          if not j.get('name', '').startswith('CloudWiki build: ')]
         try:
             checks = fetch('/commits/' + sha + '/check-runs?per_page=100').get('check_runs', [])
             result['activity'] = build_activity(checks, run)
@@ -180,7 +181,7 @@ def pipeline_report(old, now, fetch=request, interval=60):
                     reports = list(pool.map(lambda past: fetch('/actions/runs/' + str(past['id']) + '/jobs?filter=latest&per_page=100'), successful))
                 for past_jobs in reports:
                     for job in past_jobs.get('jobs', []):
-                        if job.get('conclusion') != 'success':
+                        if job.get('conclusion') != 'success' or job.get('name', '').startswith('CloudWiki build: '):
                             continue
                         for name, value in [(job['name'], seconds(job.get('started_at'), job.get('completed_at')))] + [
                             (job['name'] + ' / ' + step['name'], seconds(step.get('started_at'), step.get('completed_at')))

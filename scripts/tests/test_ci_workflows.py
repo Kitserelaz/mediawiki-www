@@ -1,5 +1,6 @@
 """Check the CI/deployment trust boundary and required gates without running Docker."""
 import json
+import tempfile
 from pathlib import Path
 import shutil
 import subprocess
@@ -55,3 +56,13 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(download['run-id'],'${{ github.event.workflow_run.id }}')
         self.assertIn("manifest['commit'] == os.environ['EXPECTED_COMMIT']",steps[1]['run'])
         self.assertEqual(self.deploy['jobs']['deploy']['environment']['name'],'production')
+
+
+    def test_ssh_credential_files_get_real_newlines(self):
+        script=self.deploy['jobs']['deploy']['steps'][1]['run']
+        printf='\n'.join(line for line in script.splitlines() if line.startswith('printf '))
+        with tempfile.TemporaryDirectory() as directory:
+            subprocess.run(['bash','-c',printf],env={'task_dir':directory,'DEPLOY_KEY':'dummy-key',
+                           'KNOWN_HOSTS':'dummy-host'},check=True)
+            self.assertEqual((Path(directory)/'key').read_bytes(),b'dummy-key\n')
+            self.assertEqual((Path(directory)/'known_hosts').read_bytes(),b'dummy-host\n')

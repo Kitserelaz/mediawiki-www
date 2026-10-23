@@ -41,13 +41,52 @@ sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keyc
 
 On Linux import this certificate with your distribution's CA tools; Firefox may require importing it in its own Authorities store. Certificate trust is a host-level action, not performed by setup. The smoke test trusts this specific certificate without modifying the host trust store. Use a browser that resolves `*.localhost` to loopback; for tools without this behavior, use explicit loopback mappings. Do not add public DNS records for local development.
 
-The optional development override mounts `includes`, extensions, skins, and static assets read-only for live edits:
+Choose how PHP source is supplied with `MW_CODE_MODE=image` (the default) or
+`MW_CODE_MODE=bind` in your environment file. The `scripts/farm` commands and
+`scripts/snapshot` select `compose.bind.yaml` automatically in bind mode. Use
+`scripts/farm compose ...` for other Compose commands so they select the same mode.
+
+For development, prepare the checkout once and set `MW_CODE_MODE=bind` in `.env`:
 
 ```sh
-docker compose -f compose.yaml -f compose.development.yaml --profile dev up -d
+scripts/farm prepare-source
+scripts/farm up
+# After editing PHP or worker code, clear FPM OPcache and restart loaded workers:
+scripts/farm reload-code
 ```
 
-Changes to farm settings, worker code, or image dependencies require `scripts/farm build` and container recreation. Existing host databases, uploads, cached farm configuration, and `.env` files are never used automatically.
+`MW_SOURCE_DIRECTORY` defaults to this checkout in development. It can point to
+another prepared project directory; quote paths containing spaces. The complete
+MediaWiki tree, runtime secret loader, and farm scripts are read-only mounts in
+PHP, workers, the provisioner, and maintenance commands. The queue maintenance
+service receives the matching runner scripts. Caddy receives resources, extension
+assets and skins from that same directory. Uploads, caches, dumps and databases
+remain in their writable named volumes. The counter continues to use its image.
+
+Production bind mode requires a prepared directory named for its full commit SHA,
+with a matching `release.json` marker. The deployment pipeline exports only tracked
+source from the tested commit into `/var/lib/cloudwiki/releases/COMMIT` before
+stopping traffic, then records that directory in `MW_SOURCE_DIRECTORY`. It never
+binds the moving production checkout. Changing release paths recreates the source
+consumers, clearing cached PHP and worker code. Set `MW_CODE_MODE=bind` in
+`.env.production` to opt in for the next successful deployment, or `image` to
+return to packaged code on the next deployment. Both settings preserve farm data.
+
+For an explicitly managed production source release using an existing compatible
+runtime image, prepare it with:
+
+```sh
+scripts/farm prepare-source --commit FULL_COMMIT_SHA --directory /var/lib/cloudwiki/releases/FULL_COMMIT_SHA
+# Set MW_SOURCE_DIRECTORY to that directory and MW_CODE_MODE=bind in .env.production.
+scripts/farm --env-file .env.production compose up -d --no-build
+```
+
+Code edits do not rebuild the underlying PHP runtime. PHP extensions, operating
+system packages and counter dependencies still require an image build. Automatic
+CI continues to build and test images in either mode; this setting selects the
+runtime source and does not bypass the release checks. Schema/configuration
+changes still require the explicit updater and coordinated maintenance procedure.
+The old `compose.development.yaml` remains available for legacy partial mounts.
 
 ## Configuration and storage
 

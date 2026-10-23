@@ -1,0 +1,70 @@
+#!/usr/bin/env python3
+"""Docker Compose with MW_CODE_MODE selection; dotenv is interpreted by Compose."""
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+
+ROOT = Path(__file__).resolve().parent.parent
+
+
+def command(args, root=ROOT):
+    flags = []
+    if args[:1] == ['--env-file']:
+        if len(args) < 3:
+            raise ValueError('Usage: scripts/compose [--env-file FILE] COMMAND')
+        flags = ['--env-file', str((root / args[1]).resolve())]
+        args = args[2:]
+    if not args:
+        raise ValueError('A Docker Compose command is required')
+    # Read Compose's own resolved environment instead of executing a dotenv file
+    # as shell code or implementing a second dotenv/interpolation parser.
+    result = subprocess.check_output(['docker', 'compose', *flags, 'config', '--environment'], cwd=root, text=True)
+    settings = dict(line.split('=', 1) for line in result.splitlines() if '=' in line)
+    mode = settings.get('MW_CODE_MODE', 'image')
+    if mode not in ('image', 'bind'):
+        raise ValueError('MW_CODE_MODE must be image or bind')
+    if mode == 'image':
+        return ['docker', 'compose', *flags, *args], dict(os.environ)
+    source = Path(settings.get('MW_SOURCE_DIRECTORY') or str(root))
+    if not source.is_absolute():
+        source = root / source
+    source = source.resolve()
+    if settings.get('MW_ENV') == 'production':
+        marker = source / 'release.json'
+        if not marker.is_file():
+            raise ValueError('Production bind mode requires a prepared versioned release directory')
+        commit = json.loads(marker.read_text()).get('commit', '')
+        if not re.fullmatch(r'[0-9a-f]{40}', commit) or source.name != commit:
+            raise ValueError('Production source must be a directory named for its release commit')
+    for name in ['mediawiki/index.php', 'mediawiki/LocalSettings.php', 'mediawiki/PrivateSettings.php',
+                 'mediawiki/docker/mediawiki', 'mediawiki/images', 'mediawiki/cache', 'mediawiki/cw_cache',
+                 'docker/mediawiki/private.php', 'docker/mediawiki/entrypoint.sh',
+                 'mediawiki/resources', 'mediawiki/extensions', 'mediawiki/skins']:
+        if not (source / name).exists():
+            raise ValueError('Source is not prepared; run scripts/farm prepare-source first (missing ' + name + ')')
+    files = settings.get('COMPOSE_FILE') or 'compose.yaml'
+    separator = settings.get('COMPOSE_PATH_SEPARATOR') or os.pathsep
+    file_flags = []
+    for name in files.split(separator):
+        if Path(name).name != 'compose.bind.yaml':
+            file_flags.extend(['-f', str((root / name).resolve())])
+    file_flags.extend(['-f', str(root / 'compose.bind.yaml')])
+    environment = dict(os.environ, MW_SOURCE_DIRECTORY=str(source))
+    return ['docker', 'compose', *flags, *file_flags, *args], environment
+
+
+def main():
+    args, environment = command(sys.argv[1:])
+    os.chdir(ROOT)
+    os.execvpe(args[0], args, environment)
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except (ValueError, subprocess.CalledProcessError) as error:
+        print('Compose source configuration error: ' + str(error), file=sys.stderr)
+        sys.exit(1)

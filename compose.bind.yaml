@@ -1,0 +1,58 @@
+# Selected by scripts/compose when MW_CODE_MODE=bind. Data volumes are merged
+# from compose.yaml and remain writable beneath the read-only source root.
+x-source-volumes: &source-volumes
+  - type: bind
+    source: ${MW_SOURCE_DIRECTORY:-.}/mediawiki
+    target: /var/www/mediawiki
+    read_only: true
+    bind: {create_host_path: false}
+  - type: bind
+    source: ${MW_SOURCE_DIRECTORY:-.}/docker/mediawiki
+    target: /opt/farm
+    read_only: true
+    bind: {create_host_path: false}
+  - type: bind
+    source: ${MW_SOURCE_DIRECTORY:-.}/docker/mediawiki
+    target: /var/www/mediawiki/docker/mediawiki
+    read_only: true
+    bind: {create_host_path: false}
+  - type: bind
+    source: ${MW_SOURCE_DIRECTORY:-.}/docker/mediawiki/private.php
+    target: /var/www/mediawiki/PrivateSettings.php
+    read_only: true
+    bind: {create_host_path: false}
+services:
+  php:
+    volumes: *source-volumes
+  worker:
+    volumes: *source-volumes
+  provisioner:
+    volumes: *source-volumes
+  scheduler:
+    volumes: *source-volumes
+  init:
+    volumes: *source-volumes
+  jobchron:
+    volumes:
+      - type: bind
+        source: ${MW_SOURCE_DIRECTORY:-.}/docker/mediawiki
+        target: /opt/farm
+        read_only: true
+        bind: {create_host_path: false}
+  web:
+    volumes:
+      - type: bind
+        source: ${MW_SOURCE_DIRECTORY:-.}/mediawiki/resources
+        target: /var/www/mediawiki/resources
+        read_only: true
+        bind: {create_host_path: false}
+      - type: bind
+        source: ${MW_SOURCE_DIRECTORY:-.}/mediawiki/extensions
+        target: /var/www/mediawiki/extensions
+        read_only: true
+        bind: {create_host_path: false}
+      - type: bind
+        source: ${MW_SOURCE_DIRECTORY:-.}/mediawiki/skins
+        target: /var/www/mediawiki/skins
+        read_only: true
+        bind: {create_host_path: false}

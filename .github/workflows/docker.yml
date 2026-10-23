@@ -25,10 +25,12 @@ jobs:
       - uses: docker/setup-buildx-action@v3
       - run: python3 scripts/verify-checkout.py
       - name: Deployment safety checks
-        run: python3 -m unittest discover -s scripts/tests -p 'test_deploy_production.py'
+        run: python3 -m unittest discover -s scripts/tests
       - run: python3 scripts/setup-dev.py
       - run: docker compose config --quiet
       - run: scripts/farm build
+      - name: Source mount isolation and live PHP edits
+        run: python3 docker/tests/source-mounts.py
       - name: Syntax check complete immutable PHP runtime
         run: sh scripts/lint-php-image.sh
       - name: Elastica PHP 8 query compatibility

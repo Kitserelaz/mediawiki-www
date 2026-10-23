@@ -1,4 +1,5 @@
-# Optional live edits for core code and extensions; runtime data remains in volumes.
+# Legacy partial override. Prefer MW_CODE_MODE=bind with scripts/farm for all
+# PHP services and matching Caddy assets; see docs/DOCKER.md.
 services:
   php:
     volumes:

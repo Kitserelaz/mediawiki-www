@@ -36,7 +36,11 @@ pulling the images. No personal GitHub token is stored on the server.
    database, uploads, Redis, counter and certificate snapshot. The previous
    production environment and checkout commit are recorded alongside it.
 4. The checkout moves to the tested commit. Only image settings in
-   `/var/www/.env.production` change; production credentials and volumes persist.
+   `/var/www/.env.production` change in image mode; production credentials and
+   volumes persist. With `MW_CODE_MODE=bind`, the deployer first exports the tested
+   source into `/var/lib/cloudwiki/releases/COMMIT` and also updates
+   `MW_SOURCE_DIRECTORY`. All PHP services and Caddy select that read-only source
+   through the shared Compose wrapper. Image mode remains the default.
 5. `scripts/farm update` explicitly migrates existing schemas and refreshes farm
    metadata. Fresh initialization is never part of deployment.
 6. Compose starts the release without building. Container health and HTTPS API
@@ -63,7 +67,7 @@ sudo cat /var/lib/cloudwiki/last-success.json
 
 Release history is stored in `/var/lib/cloudwiki/history/`. Each record identifies
 the commit, image digests, previous commit, and recovery snapshot. The latest two
-image releases and three successful deployment snapshots are retained. Unrelated
+image/source releases and three successful deployment snapshots are retained. Unrelated
 operator backups and failed deployment snapshots are not deleted. Copy backups
 off the server independently; local snapshots do not cover loss of the VPS.
 

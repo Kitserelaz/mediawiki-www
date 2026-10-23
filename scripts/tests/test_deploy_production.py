@@ -5,6 +5,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location("deploy_production", Path(__file__).parents[1] / "deploy-production.py")
 deployment = importlib.util.module_from_spec(spec)
@@ -34,8 +35,13 @@ class FakeRunner:
             return self.latest if args[2] == "FETCH_HEAD" else "c" * 40
         if args[:3] == ["docker", "image", "inspect"]:
             return 'a' * 40
+        if args[:2] == ['docker', 'compose'] and args[-2:] == ['config', '--environment']:
+            return (self.root / '.env.production').read_text()
         if args[0] == "scripts/snapshot":
             (self.root / "backups" / args[-1]).mkdir(parents=True)
+        if args[:2] == ['git', 'checkout']:
+            (self.root / 'scripts').mkdir(exist_ok=True)
+            (self.root / 'scripts/compose').touch()
         return ""
 
 
@@ -133,7 +139,39 @@ class DeploymentTest(unittest.TestCase):
         checks = []
         self.deploy(runner, lambda *_: checks.append(True))
         self.assertEqual(checks, [True])
-        self.assertFalse(any(call[0] in ("docker", "scripts/snapshot") for call in runner.calls))
+        self.assertFalse(any(call[:2] == ['docker', 'pull'] or call[0] == 'scripts/snapshot' for call in runner.calls))
+
+    def test_bind_release_is_prepared_before_snapshot_and_saved_in_environment(self):
+        env = self.root / '.env.production'
+        env.write_text(self.environment + 'MW_CODE_MODE=bind\n')
+        runner = FakeRunner(self.root)
+        release = self.state / 'releases' / ('a' * 40)
+        def prepare(*_):
+            self.assertFalse(any(call[0] == 'scripts/snapshot' for call in runner.calls))
+            return release
+        with patch.object(deployment, 'prepare_release', side_effect=prepare):
+            self.deploy(runner)
+        self.assertIn('MW_SOURCE_DIRECTORY=' + json.dumps(str(release)), env.read_text())
+        record = json.loads((self.state / 'last-success.json').read_text())
+        self.assertEqual(record['code_mode'], 'bind')
+        self.assertEqual(record['source_directory'], str(release))
+        self.assertTrue(any(call[:2] == ['python3', 'scripts/compose'] for call in runner.calls))
+
+    def test_export_failure_does_not_stop_the_running_farm(self):
+        (self.root / '.env.production').write_text(self.environment + 'MW_CODE_MODE=bind\n')
+        runner = FakeRunner(self.root)
+        with patch.object(deployment, 'prepare_release', side_effect=RuntimeError('Export failed')):
+            with self.assertRaises(RuntimeError):
+                self.deploy(runner)
+        self.assertFalse(any(call[0] == 'scripts/snapshot' or 'stop' in call for call in runner.calls))
+
+    def test_changing_mode_on_same_commit_is_not_skipped(self):
+        self.deploy(FakeRunner(self.root))
+        (self.root / '.env.production').write_text(self.environment + 'MW_CODE_MODE=bind\n')
+        runner = FakeRunner(self.root)
+        with patch.object(deployment, 'prepare_release', return_value=self.state / 'releases' / ('a' * 40)):
+            self.deploy(runner)
+        self.assertTrue(any(call[0] == 'scripts/snapshot' for call in runner.calls))
 
     def test_failed_health_check_cannot_be_recorded_as_success(self):
         runner = FakeRunner(self.root)

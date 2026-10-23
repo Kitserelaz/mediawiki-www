@@ -9,8 +9,8 @@ if [ "${1:-}" = --env-file ]; then
     shift 2
 fi
 compose() {
-    if [ -n "$farmEnvFile" ]; then docker compose --env-file "$farmEnvFile" "$@";
-    else docker compose "$@"; fi
+    if [ -n "$farmEnvFile" ]; then python3 scripts/compose --env-file "$farmEnvFile" "$@";
+    else python3 scripts/compose "$@"; fi
 }
 snapshotKeepStopped=false
 if [ "${1:-}" = --keep-stopped ]; then

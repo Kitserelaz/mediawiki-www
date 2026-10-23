@@ -110,6 +110,26 @@ def trim_history(root, state, runner):
             path = root / "backups" / name
             if path.exists() and not path.is_symlink():
                 shutil.rmtree(path)
+    keep_sources = {record.get('source_directory') for record in records[-2:]}
+    for record in records[:-2]:
+        source = record.get('source_directory')
+        if source and source not in keep_sources:
+            path = Path(source)
+            if path.parent == state / 'releases' and re.fullmatch(r'[0-9a-f]{40}', path.name) and path.exists() and not path.is_symlink():
+                shutil.rmtree(path)
+
+
+def prepare_release(commit, root, state, runner):
+    directory = state / 'releases' / commit
+    # Use the exporter from the target commit, even when the previous checkout
+    # predates bind-mode support. Exporting finishes before traffic is stopped.
+    script = runner.run(['git', 'show', commit + ':scripts/source-release.py'], capture=True)
+    with tempfile.TemporaryDirectory(prefix='exporter-', dir=state) as temporary:
+        exporter = Path(temporary) / 'source-release.py'
+        exporter.write_text(script)
+        runner.run(['python3', str(exporter), '--repository', str(root), '--commit', commit,
+                    '--directory', str(directory)])
+    return directory
 
 
 def deploy(payload, root, state, runner, health=probe):
@@ -128,10 +148,17 @@ def deploy(payload, root, state, runner, health=probe):
         print("A newer main commit exists; skipping this superseded deployment", flush=True)
         return
     old_commit = runner.run(["git", "rev-parse", "HEAD"], capture=True)
+    resolved = runner.run(['docker', 'compose', '--env-file', str(env_file), 'config', '--environment'], capture=True)
+    settings = dict(line.split('=', 1) for line in resolved.splitlines() if '=' in line)
+    mode = settings.get('MW_CODE_MODE', 'image')
+    if mode not in ('image', 'bind'):
+        raise RuntimeError('MW_CODE_MODE must be image or bind')
     last = state / "last-success.json"
     if last.exists():
         previous = json.loads(last.read_text())
-        if previous.get("commit") == commit and previous.get("images") == payload["images"]:
+        source_matches = mode == 'image' or (settings.get('MW_SOURCE_DIRECTORY') == str(state / 'releases' / commit)
+                                             and (state / 'releases' / commit / 'release.json').is_file())
+        if previous.get("commit") == commit and previous.get("images") == payload["images"] and previous.get('code_mode', 'image') == mode and source_matches:
             health(root, runner)
             print("This release is already deployed and healthy", flush=True)
             return
@@ -150,8 +177,19 @@ def deploy(payload, root, state, runner, health=probe):
                                    '{{index .Config.Labels "org.opencontainers.image.revision"}}'], capture=True)
             if revision != commit:
                 raise RuntimeError("Pulled image does not match the requested commit")
+    source_directory = prepare_release(commit, root, state, runner) if mode == 'bind' else None
+    if source_directory:
+        # Replace every active assignment, including duplicates, while preserving
+        # the rest of the operator's production configuration.
+        lines = new_environment.splitlines()
+        key = 'MW_SOURCE_DIRECTORY'
+        replacement = key + '=' + json.dumps(str(source_directory))
+        found = any(line.partition('=')[0] == key for line in lines)
+        new_environment = '\n'.join(replacement if line.partition('=')[0] == key else line for line in lines) + '\n'
+        if not found:
+            new_environment += replacement + '\n'
     snapshot = "deploy-" + str(time.time_ns()) + "-" + commit[:12]
-    compose = ["docker", "compose", "--env-file", str(env_file)]
+    compose = ['docker', 'compose', '--env-file', str(env_file)]
     frozen = False
     changed = False
     try:
@@ -162,13 +200,16 @@ def deploy(payload, root, state, runner, health=probe):
         atomic_private_write(backup / "deployment.json", json.dumps({"previous_commit": old_commit, "target_images": payload["images"]}, indent=2) + "\n")
         runner.run(["git", "checkout", "--detach", commit])
         changed = True
+        if (root / 'scripts/compose').is_file():
+            compose = ['python3', 'scripts/compose', '--env-file', str(env_file)]
         atomic_private_write(env_file, new_environment)
         runner.run(compose + ["config", "--quiet"])
         runner.run(compose + ["up", "-d", "--no-build", "--wait", "database", "redis", "memcached"])
         runner.run(["scripts/farm", "--env-file", str(env_file), "update"], input="")
         runner.run(compose + ["up", "-d", "--no-build", "--wait", "--wait-timeout", "180"])
         health(root, runner)
-        record = {"commit": commit, "images": payload["images"], "previous_commit": old_commit, "snapshot": snapshot}
+        record = {"commit": commit, "images": payload["images"], "previous_commit": old_commit, "snapshot": snapshot,
+                  'code_mode': mode, 'source_directory': str(source_directory) if source_directory else None}
         history = state / "history"
         history.mkdir(mode=0o700, exist_ok=True)
         atomic_private_write(history / (snapshot + ".json"), json.dumps(record, indent=2) + "\n")

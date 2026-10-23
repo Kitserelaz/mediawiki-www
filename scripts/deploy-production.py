@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -20,6 +21,125 @@ SERVICES = ("php", "web", "counter")
 WRITERS = ("web", "php", "worker", "provisioner", "jobchron", "scheduler", "counter")
 IMAGE_KEYS = {"php": "MW_IMAGE", "web": "WEB_IMAGE", "counter": "COUNTER_IMAGE"}
 CONFIG_BASELINE = 'accepted-local-config.json'
+ROLLBACK_POLICY = 'rollback-compatibility.json'
+
+
+def rollback_approved(state, previous_commit, candidate_commit):
+    """Only a local operator can attest to a rehearsed database-compatible pair.
+
+    A candidate cannot grant itself permission to run old code against its
+    migrations. Missing, malformed or writable-by-others policies fail closed.
+    Approval must cover partial migrations as well as the completed schema.
+    """
+    path = state / ROLLBACK_POLICY
+    try:
+        info = path.lstat()
+        if not stat.S_ISREG(info.st_mode) or info.st_uid != os.geteuid() or info.st_mode & 0o022:
+            return False
+        policy = json.loads(path.read_text())
+        if policy.get('schema_version') != 1:
+            return False
+        return any(
+            entry.get('previous_commit') == previous_commit
+            and entry.get('candidate_commit') == candidate_commit
+            and entry.get('database_backward_compatible') is True
+            and entry.get('partial_migrations_compatible') is True
+            and isinstance(entry.get('evidence'), str) and entry['evidence'].strip()
+            for entry in policy['approvals'] if isinstance(entry, dict)
+        )
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        return False
+
+
+def compose_command(root, env_file):
+    if (root / 'scripts/compose').is_file():
+        return ['python3', 'scripts/compose', '--env-file', str(env_file)]
+    return ['docker', 'compose', '--env-file', str(env_file)]
+
+
+def stop_application(runner, project, live):
+    # Candidate Compose/Python files can themselves be the cause of failure.
+    # Use Docker labels, not those files, to stop only this farm's writers.
+    rows = runner.run(['docker', 'ps', '-a', '--filter',
+                       'label=com.docker.compose.project=' + project, '--format',
+                       '{{.ID}} {{.Label "com.docker.compose.service"}}'], capture=True)
+    services = set(WRITERS) | ({'code'} if live else set())
+    ids = []
+    for line in rows.splitlines():
+        fields = line.split()
+        if len(fields) == 2 and fields[1] in services:
+            if not re.fullmatch('[0-9a-f]{12,64}', fields[0]):
+                raise RuntimeError('Unexpected container identity during recovery')
+            ids.append(fields[0])
+    if ids:
+        runner.run(['docker', 'stop', '--time', '30', *ids])
+
+
+def persistent_service_config(config, name):
+    service = config.get('services', {}).get(name)
+    if service is None:
+        return None
+    result = {'service': service}
+    for kind in ('volumes', 'networks', 'secrets', 'configs'):
+        entries = service.get(kind, {})
+        if kind == 'networks':
+            names = entries
+        else:
+            names = [entry['source'] for entry in entries if isinstance(entry, dict)
+                     and entry.get('source') and (kind != 'volumes' or entry.get('type') == 'volume')]
+        result[kind] = {key: config.get(kind, {}).get(key) for key in names}
+    return result
+
+
+def rollback_application(root, state, runner, health, progress, *, old_commit,
+                         candidate_commit, old_environment, new_environment,
+                         initial_config, tracked_paths, live, database_started,
+                         previous_success, code_changed, project):
+    """Restore application selection only. Never restore SQL or data volumes."""
+    progress.stage('rolling_back')
+    env_file = root / '.env.production'
+    # Stop possible partial starts before replacing any code. Failure to stop
+    # aborts recovery; never swap source underneath an unknown running writer.
+    stop_application(runner, project, live)
+    check_worktree(runner)
+    check_stable_files(initial_config, tracked_paths | {str(env_file)})
+    if env_file.read_text() not in (old_environment, new_environment):
+        raise config_changed([str(env_file)])
+    if code_changed:
+        runner.run(['git', 'checkout', '--detach', old_commit])
+    atomic_private_write(env_file, old_environment)
+    if live and code_changed:
+        runner.run(['python3', 'scripts/source-release.py', '--directory', str(root)])
+        runner.run(['python3', '/usr/local/libexec/cloudwiki-live-permissions.py'])
+    compose = compose_command(root, env_file)
+    check_local_config(root, state, runner, initial_config)
+    runner.run(compose + ['config', '--quiet'])
+    # Start the existing data services in place. Do not recreate or downgrade
+    # database/Redis containers, remove volumes, import SQL, or run an updater.
+    runner.run(compose + ['start', 'database', 'redis', 'memcached'])
+    if database_started:
+        # The local compatibility attestation is mandatory before reaching this
+        # path; also verify the previous runtime's read-only prerequisites.
+        runner.run(compose + ['run', '--rm', '--no-deps', 'init', 'php',
+                              '/opt/farm/manage.php', 'preflight'], input='')
+    runner.run(compose + ['up', '-d', '--no-deps', '--no-build', '--pull', 'never',
+                          '--wait', '--wait-timeout', '180', *WRITERS])
+    health(root, runner)
+    check_worktree(runner)
+    check_local_config(root, state, runner, initial_config)
+    last = state / 'last-success.json'
+    if last.exists() and last.read_text() != previous_success:
+        if json.loads(last.read_text()).get('commit') != candidate_commit:
+            raise RuntimeError('Release record changed during recovery')
+        if previous_success is None:
+            last.unlink()
+        else:
+            atomic_private_write(last, previous_success)
+    if live:
+        runner.run(compose + ['up', '-d', '--no-deps', '--no-build', '--pull', 'never', 'code'])
+    save_config_baseline(state, initial_config, 'application rollback to ' + old_commit)
+    progress.stage('rolled_back', 'rolled_back', 'application_restored_database_preserved')
+    print('Previous application restored and healthy; database contents and data volumes preserved.', flush=True)
 
 
 def validate_request(command, payload):
@@ -291,7 +411,8 @@ def deploy(payload, root, state, runner, health=probe):
         reason = ('local_configuration_changed' if 'Local configuration changed:' in message else
                   'uncommitted_files' if 'uncommitted' in message or 'Tracked production' in message else
                   'insufficient_disk' if 'GiB free' in message else 'stage_failed')
-        progress.stage(progress.data['stage'], 'blocked' if reason != 'stage_failed' else 'failed', reason)
+        if progress.data['status'] != 'rolled_back' and progress.data.get('reason') != 'rollback_failed':
+            progress.stage(progress.data['stage'], 'blocked' if reason != 'stage_failed' else 'failed', reason)
         raise
     finally:
         progress.finish()
@@ -321,6 +442,9 @@ def _deploy(payload, root, state, runner, health, progress):
     tracked_paths = {str(root / path) for path in tracked.split('\0') if path}
     resolved = runner.run(['docker', 'compose', '--env-file', str(env_file), 'config', '--environment'], capture=True)
     settings = dict(line.split('=', 1) for line in resolved.splitlines() if '=' in line)
+    project_config = json.loads(runner.run(['docker', 'compose', '--env-file', str(env_file),
+                                          'config', '--format', 'json'], capture=True))
+    project = project_config.get('name', settings.get('COMPOSE_PROJECT_NAME', 'cloudwiki'))
     mode = settings.get('MW_CODE_MODE', 'image')
     if mode not in ('image', 'bind'):
         raise RuntimeError('MW_CODE_MODE must be image or bind')
@@ -331,6 +455,7 @@ def _deploy(payload, root, state, runner, health, progress):
     if live and Path(settings.get('MW_SOURCE_DIRECTORY', '')).resolve() != root.resolve():
         raise RuntimeError('Live production source must be the application checkout')
     last = state / "last-success.json"
+    previous_success = last.read_text() if last.exists() else None
     if last.exists():
         previous = json.loads(last.read_text())
         source_matches = mode == 'image' or (live and previous.get('bind_strategy') == 'live') or (not live and settings.get('MW_SOURCE_DIRECTORY') == str(state / 'releases' / commit)
@@ -375,6 +500,8 @@ def _deploy(payload, root, state, runner, health, progress):
     check_worktree(runner)
     frozen = False
     changed = False
+    database_started = False
+    rollback_authorized = rollback_approved(state, old_commit, commit)
     editor_stopped = False
     try:
         if live:
@@ -391,8 +518,8 @@ def _deploy(payload, root, state, runner, health, progress):
         atomic_private_write(backup / "production.env", old_environment)
         atomic_private_write(backup / "deployment.json", json.dumps({"previous_commit": old_commit, "target_images": payload["images"]}, indent=2) + "\n")
         progress.stage("switching_release")
-        runner.run(["git", "checkout", "--detach", commit])
         changed = True
+        runner.run(["git", "checkout", "--detach", commit])
         if live:
             runner.run(['python3', 'scripts/source-release.py', '--directory', str(root)])
             runner.run(['python3', '/usr/local/libexec/cloudwiki-live-permissions.py'])
@@ -409,6 +536,15 @@ def _deploy(payload, root, state, runner, health, progress):
         if runner.run(['git', 'status', '--porcelain', '--untracked-files=no'], capture=True):
             raise RuntimeError('Tracked production configuration changed while preparing the release')
         runner.run(compose + ["config", "--quiet"])
+        candidate_config = json.loads(runner.run(compose + ['config', '--format', 'json'], capture=True))
+        if candidate_config.get('name', project) != project:
+            raise RuntimeError('Application deployments cannot change the Compose project identity')
+        for service in ('database', 'redis', 'memcached'):
+            if persistent_service_config(candidate_config, service) != persistent_service_config(project_config, service):
+                raise RuntimeError('Application deployments cannot change persistent data-service definitions: ' + service)
+        # Starting a new database service can itself change on-disk state, even
+        # before MediaWiki's updater. Treat it as part of the compatibility boundary.
+        database_started = True
         runner.run(compose + ["up", "-d", "--no-build", "--wait", "database", "redis", "memcached"])
         progress.stage("migrations")
         runner.run(["scripts/farm", "--env-file", str(env_file), "update"], input="")
@@ -443,11 +579,37 @@ def _deploy(payload, root, state, runner, health, progress):
             with contextlib.suppress(Exception):
                 runner.run(compose + ['up', '-d', '--no-deps', '--no-build', 'code'])
         if frozen:
-            # Schema changes may already have happened. Never automatically run
-            # the previous code against partially migrated databases.
+            recovered = False
+            if not database_started or rollback_authorized:
+                try:
+                    rollback_application(
+                        root, state, runner, health, progress,
+                        old_commit=old_commit, candidate_commit=commit,
+                        old_environment=old_environment, new_environment=new_environment,
+                        initial_config=initial_config, tracked_paths=tracked_paths,
+                        live=live, database_started=database_started,
+                        previous_success=previous_success, code_changed=changed,
+                        project=project)
+                    recovered = True
+                except Exception:
+                    progress.stage('rolling_back', 'failed', 'rollback_failed')
+                    print('Application rollback failed; writers remain stopped for recovery.', file=sys.stderr)
+            if recovered:
+                # Retain the original deployment exception: CI must still fail
+                # even though the previous release has been restored successfully.
+                with contextlib.suppress(Exception):
+                    atomic_private_write(state / ('rollback-' + snapshot + '.json'), json.dumps({
+                        'failed_commit': commit, 'restored_commit': old_commit,
+                        'snapshot': snapshot, 'database_started': database_started,
+                        'database_restored': False, 'compatibility_approved': rollback_authorized,
+                        'completed_at': time.time(),
+                    }, indent=2) + '\n')
+                raise
             with contextlib.suppress(Exception):
-                runner.run(compose + ["stop", *WRITERS] + (["code"] if live else []))
+                stop_application(runner, project, live)
             print("Deployment failed with writers stopped. Recovery snapshot: backups/" + snapshot, file=sys.stderr)
+            if database_started and not rollback_authorized:
+                print('Database work began and this release pair has no verified rollback approval; application rollback withheld.', file=sys.stderr)
             if not changed:
                 print("The application checkout and image settings were not changed.", file=sys.stderr)
         raise

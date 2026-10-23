@@ -107,12 +107,71 @@ image/source releases and three successful deployment snapshots are retained. Un
 operator backups and failed deployment snapshots are not deleted. Copy backups
 off the server independently; local snapshots do not cover loss of the VPS.
 
-If migration or health checks fail, the workflow fails and leaves application
-writers stopped. It does not run old code against potentially migrated schemas.
-The log identifies the recovery snapshot. Inspect the failure, then fix forward
-or restore the matching previous environment, commit, database and files using
-the coordinated recovery runbook. Automatic deployment refuses to start if less
-than 5 GiB is free.
+If a deployment fails after traffic is stopped but before database services or
+migrations are started, the deployer automatically restores the previous source
+commit, image settings and bind-source path. It starts the existing data-service
+containers in place, then starts the previous application using locally available
+images, without rebuilding or pulling. Origin health checks must pass before
+recovery is marked `rolled_back` and the live editor is reopened. The deployment
+job still fails, so a recovered outage does not hide a broken release.
+
+Rollback never imports SQL, restores a data snapshot, removes volumes, or runs
+the previous release's database updater. Current database contents, uploads,
+queue state and counter data are retained. A private `rollback-deploy-*.json`
+record in `/var/lib/cloudwiki` identifies the failed and restored commits and
+the recovery snapshot; the previous successful release record is retained.
+
+Once database services or migrations have been started, application rollback is
+allowed only for an explicitly verified release pair, as described below.
+Otherwise writers remain stopped for a forward fix. Failed rollback health or
+preflight checks also leave writers stopped. Concurrent operator configuration
+or source edits are preserved and block recovery rather than being overwritten.
+The log identifies the recovery snapshot. Automatic deployment refuses to start
+if less than 5 GiB is free. Application deployments also reject changes to the
+Compose project identity or persistent database, Redis and memcached service
+definitions; infrastructure upgrades require a separate planned procedure.
+
+### Rollback after database work
+
+Database compatibility is not inferred from a successful build, a schema version,
+or a matching table layout: migrations can change data semantics as well as DDL.
+The default is no permission to roll back after database work begins.
+
+An operator may approve an exact previous/candidate commit pair only after
+rehearsing the candidate on an isolated production copy and verifying the old
+application against both completed and interrupted migrations. Check old-release
+startup, HTTP/authentication, writes, extensions and background jobs, including
+data-only changes. Retain the rehearsal/audit report. A successful forward-only
+migration test is insufficient to approve partial-migration recovery.
+
+Record that review in `/var/lib/cloudwiki/rollback-compatibility.json`, owned by
+root with mode `0600`, under the production deployment lock. For example:
+
+```json
+{
+  "schema_version": 1,
+  "approvals": [{
+    "previous_commit": "PREVIOUS_FULL_COMMIT_SHA",
+    "candidate_commit": "CANDIDATE_FULL_COMMIT_SHA",
+    "database_backward_compatible": true,
+    "partial_migrations_compatible": true,
+    "evidence": "Location of the retained rehearsal and compatibility review"
+  }]
+}
+```
+
+This is a trusted local operator attestation, not an automated compatibility
+proof. Approval is read only from this private local policy, never from the
+candidate checkout or a field in the CI SSH request.
+Missing, malformed, symlinked or writable-by-others policy files fail closed;
+approvals for other commit pairs have no effect. No pairs are approved by default.
+The policy is read before the write freeze. Keep it private and edit it only
+while holding `/var/lib/cloudwiki/deploy.lock`.
+
+For an approved pair, rollback additionally runs the previous runtime's
+read-only preflight in a one-off container with `--no-deps` before reopening
+traffic. The previous runtime must then pass the same origin health checks as a
+new deployment. Even approved rollback never restores database contents.
 
 To temporarily disable automatic deployment, disable the **Docker stack** workflow
 in GitHub Actions. To revoke only production access, remove the key marked

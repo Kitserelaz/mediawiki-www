@@ -38,6 +38,8 @@ class FakeRunner:
             return self.latest if args[2] == "FETCH_HEAD" else "c" * 40
         if args[:3] == ["docker", "image", "inspect"]:
             return 'a' * 40
+        if args[:3] == ['docker', 'ps', '-a']:
+            return '0123456789ab php\nfedcba987654 web\n111111111111 database\n222222222222 redis'
         if args[:2] == ['docker', 'compose'] and args[-2:] == ['config', '--environment']:
             lines = []
             for line in (self.root / '.env.production').read_text().splitlines():
@@ -47,7 +49,7 @@ class FakeRunner:
                         value = json.loads(value)
                     lines.append(key + '=' + value)
             return '\n'.join(lines)
-        if args[:2] == ['docker', 'compose'] and args[-2:] == ['--format', 'json']:
+        if 'config' in args and args[-2:] == ['--format', 'json']:
             return json.dumps(self.configuration)
         if args[0] == "scripts/snapshot":
             (self.root / "backups" / args[-1]).mkdir(parents=True)
@@ -128,7 +130,280 @@ class DeploymentTest(unittest.TestCase):
             self.deploy(runner)
         self.assertFalse(any(call[:2] == ["git", "checkout"] for call in runner.calls))
         self.assertEqual((self.root / ".env.production").read_text(), self.environment)
-        self.assertIn("stop", runner.calls[-1])
+        self.assertTrue(any('up' in call and '--pull' in call for call in runner.calls))
+        progress = json.loads((self.state / 'deployment-progress.json').read_text())
+        self.assertEqual(progress['status'], 'rolled_back')
+
+    def approve_rollback(self, **overrides):
+        approval = {'previous_commit': 'c' * 40, 'candidate_commit': 'a' * 40,
+                    'database_backward_compatible': True, 'partial_migrations_compatible': True,
+                    'evidence': 'private rehearsal report: partial and complete migrations, previous release HTTP'}
+        approval.update(overrides)
+        (self.state / deployment.ROLLBACK_POLICY).write_text(json.dumps({
+            'schema_version': 1, 'approvals': [approval]}))
+
+    def assert_no_data_restore(self, runner):
+        for call in runner.calls:
+            self.assertNotIn('restore', call)
+            self.assertNotIn('down', call)
+            self.assertNotIn('--volumes', call)
+            self.assertNotIn('volume', call)
+        for call in runner.calls:
+            if call[:2] == ['docker', 'stop']:
+                self.assertNotIn('111111111111', call)  # database
+                self.assertNotIn('222222222222', call)  # redis
+            if 'up' in call and '--pull' in call:
+                self.assertIn('--no-deps', call)
+                self.assertNotIn('database', call)
+                self.assertNotIn('redis', call)
+
+    def fail_candidate_config(self, runner):
+        original = runner.run
+        failed = False
+        def run(args, **kwargs):
+            nonlocal failed
+            if args[-2:] == ['config', '--quiet'] and not failed:
+                failed = True
+                runner.calls.append(list(args))
+                raise subprocess.CalledProcessError(1, args)
+            return original(args, **kwargs)
+        runner.run = run
+
+    def test_pre_database_failure_restores_code_images_and_existing_data(self):
+        runner = FakeRunner(self.root)
+        self.fail_candidate_config(runner)
+        database = self.root / 'database-contents'
+        database.write_bytes(b'newer edits and accounts must remain')
+        old_record = json.dumps({'commit': 'c' * 40, 'images': {'php': 'old-php'}})
+        (self.state / 'last-success.json').write_text(old_record)
+        healthy = []
+        with self.assertRaises(subprocess.CalledProcessError):
+            self.deploy(runner, lambda *_: healthy.append(True))
+        self.assertEqual(healthy, [True])
+        self.assertEqual((self.root / '.env.production').read_text(), self.environment)
+        self.assertEqual((self.state / 'last-success.json').read_text(), old_record)
+        self.assertEqual(database.read_bytes(), b'newer edits and accounts must remain')
+        self.assertEqual([c[-1] for c in runner.calls if c[:2] == ['git', 'checkout']], ['a' * 40, 'c' * 40])
+        self.assertFalse(any(c[0] == 'scripts/farm' for c in runner.calls))
+        record = json.loads(next(self.state.glob('rollback-deploy-*.json')).read_text())
+        self.assertFalse(record['database_restored'])
+        deployment.check_local_config(self.root, self.state, runner)
+        self.assert_no_data_restore(runner)
+
+    def test_candidate_cannot_change_project_or_data_services_before_recovery(self):
+        for changed in [{'name': 'different-project'}, {'services': {'database': {'image': 'different-database'}}}]:
+            with self.subTest(changed=changed):
+                runner = FakeRunner(self.root)
+                original = runner.run
+                switched = False
+                def run(args, **kwargs):
+                    nonlocal switched
+                    if args[:2] == ['git', 'checkout']:
+                        switched = args[-1] == 'a' * 40
+                    if switched and 'config' in args and args[-2:] == ['--format', 'json']:
+                        runner.calls.append(list(args))
+                        return json.dumps(changed)
+                    return original(args, **kwargs)
+                runner.run = run
+                with self.assertRaisesRegex(RuntimeError, 'Application deployments cannot change'):
+                    self.deploy(runner)
+                self.assertFalse(any(c[0] == 'scripts/farm' for c in runner.calls))
+                self.assertEqual((self.root / '.env.production').read_text(), self.environment)
+                self.assertEqual(json.loads((self.state / 'deployment-progress.json').read_text())['status'], 'rolled_back')
+                self.assert_no_data_restore(runner)
+
+    def test_data_service_backing_volume_and_network_changes_are_infrastructure_changes(self):
+        import copy
+        previous = {'services': {'database': {
+            'image': 'database:fixed', 'volumes': [{'type': 'volume', 'source': 'db', 'target': '/data'}],
+            'networks': {'default': None}, 'secrets': [{'source': 'password'}]}},
+            'volumes': {'db': {'name': 'existing-data'}},
+            'networks': {'default': {'name': 'existing-network'}},
+            'secrets': {'password': {'file': '/original/password'}}}
+        for kind, name in [('volumes', 'db'), ('networks', 'default'), ('secrets', 'password')]:
+            candidate = copy.deepcopy(previous)
+            candidate[kind][name] = {'name': 'different-resource'}
+            self.assertNotEqual(deployment.persistent_service_config(previous, 'database'),
+                                deployment.persistent_service_config(candidate, 'database'))
+
+    def test_approved_partial_migration_failure_preserves_data_and_checks_old_preflight(self):
+        self.approve_rollback()
+        runner = FakeRunner(self.root, fail=lambda a: a[0] == 'scripts/farm' and a[-1] == 'update')
+        database = self.root / 'database-contents'
+        database.write_text('data after partial compatible migration')
+        with self.assertRaises(subprocess.CalledProcessError):
+            self.deploy(runner)
+        self.assertEqual((self.root / '.env.production').read_text(), self.environment)
+        self.assertEqual(database.read_text(), 'data after partial compatible migration')
+        self.assertEqual([c[-1] for c in runner.calls if c[-1] in ('update', 'preflight')], ['update', 'preflight'])
+        self.assertEqual(json.loads((self.state / 'deployment-progress.json').read_text())['status'], 'rolled_back')
+        self.assert_no_data_restore(runner)
+
+    def test_approved_startup_failure_reverts_without_running_old_updater(self):
+        self.approve_rollback()
+        runner = FakeRunner(self.root, fail=lambda a: 'up' in a and '--wait-timeout' in a and '--pull' not in a)
+        with self.assertRaises(subprocess.CalledProcessError):
+            self.deploy(runner)
+        self.assertEqual((self.root / '.env.production').read_text(), self.environment)
+        self.assertEqual([c[-1] for c in runner.calls if c[-1] in ('update', 'preflight')], ['update', 'preflight'])
+        self.assert_no_data_restore(runner)
+
+    def test_approved_health_failure_checks_previous_release_and_still_fails_deployment(self):
+        self.approve_rollback()
+        runner = FakeRunner(self.root)
+        calls = []
+        def health(*_):
+            calls.append((self.root / '.env.production').read_text())
+            if len(calls) == 1:
+                raise RuntimeError('Candidate HTTP failure')
+        with self.assertRaisesRegex(RuntimeError, 'Candidate HTTP failure'):
+            self.deploy(runner, health)
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(calls[-1], self.environment)
+        self.assertFalse((self.state / 'last-success.json').exists())
+        self.assert_no_data_restore(runner)
+
+    def test_rollback_restores_previous_success_record_if_candidate_record_was_written(self):
+        self.approve_rollback()
+        old_record = json.dumps({'commit': 'c' * 40, 'images': {'php': 'old-php'}})
+        (self.state / 'last-success.json').write_text(old_record)
+        save = deployment.save_config_baseline
+        def fail_candidate_record(state, files, reason):
+            if reason.startswith('successful deployment'):
+                raise OSError('Unable to finish release record')
+            return save(state, files, reason)
+        with patch.object(deployment, 'save_config_baseline', side_effect=fail_candidate_record):
+            with self.assertRaisesRegex(OSError, 'Unable to finish release record'):
+                self.deploy(FakeRunner(self.root))
+        self.assertEqual((self.state / 'last-success.json').read_text(), old_record)
+        self.assertEqual((self.root / '.env.production').read_text(), self.environment)
+        self.assertEqual(json.loads((self.state / 'deployment-progress.json').read_text())['status'], 'rolled_back')
+
+    def test_rollback_failure_stops_writers_and_does_not_claim_recovery(self):
+        self.approve_rollback()
+        runner = FakeRunner(self.root)
+        with self.assertRaisesRegex(RuntimeError, 'Both releases unhealthy'):
+            self.deploy(runner, lambda *_: (_ for _ in ()).throw(RuntimeError('Both releases unhealthy')))
+        progress = json.loads((self.state / 'deployment-progress.json').read_text())
+        self.assertEqual((progress['status'], progress['reason']), ('failed', 'rollback_failed'))
+        self.assertEqual(runner.calls[-1][:2], ['docker', 'stop'])
+        self.assertFalse(list(self.state.glob('rollback-deploy-*.json')))
+        self.assert_no_data_restore(runner)
+
+    def test_failed_previous_preflight_never_reopens_traffic(self):
+        self.approve_rollback()
+        runner = FakeRunner(self.root, fail=lambda a: a[0] == 'scripts/farm' or a[-1] == 'preflight')
+        with self.assertRaises(subprocess.CalledProcessError):
+            self.deploy(runner)
+        self.assertFalse(any('--pull' in c and 'up' in c for c in runner.calls))
+        self.assertEqual(json.loads((self.state / 'deployment-progress.json').read_text())['reason'], 'rollback_failed')
+        self.assert_no_data_restore(runner)
+
+    def test_operator_env_edit_is_not_overwritten_by_approved_rollback(self):
+        self.approve_rollback()
+        runner = FakeRunner(self.root)
+        def edit(*_):
+            env = self.root / '.env.production'
+            env.write_text(env.read_text() + 'NEW_PRIVATE_SETTING=operator-change\n')
+        with self.assertRaises(RuntimeError):
+            self.deploy(runner, edit)
+        self.assertIn('NEW_PRIVATE_SETTING=operator-change', (self.root / '.env.production').read_text())
+        self.assertEqual([c[-1] for c in runner.calls if c[:2] == ['git', 'checkout']], ['a' * 40])
+
+    def test_rollback_policy_requires_exact_pair_and_partial_migration_evidence(self):
+        for override in [{'previous_commit': 'd' * 40}, {'candidate_commit': 'd' * 40},
+                         {'database_backward_compatible': False}, {'partial_migrations_compatible': False},
+                         {'evidence': ''}, {'evidence': True}]:
+            with self.subTest(override=override):
+                self.approve_rollback(**override)
+                self.assertFalse(deployment.rollback_approved(self.state, 'c' * 40, 'a' * 40))
+        self.approve_rollback()
+        self.assertTrue(deployment.rollback_approved(self.state, 'c' * 40, 'a' * 40))
+        policy = self.state / deployment.ROLLBACK_POLICY
+        policy.chmod(0o666)
+        self.assertFalse(deployment.rollback_approved(self.state, 'c' * 40, 'a' * 40))
+        policy.chmod(0o600)
+        for content in ['invalid json', '[]', '{"schema_version":1,"approvals":null}']:
+            policy.write_text(content)
+            self.assertFalse(deployment.rollback_approved(self.state, 'c' * 40, 'a' * 40))
+        policy.unlink()
+        other = self.state / 'untrusted-policy'
+        other.write_text('{}')
+        policy.symlink_to(other)
+        self.assertFalse(deployment.rollback_approved(self.state, 'c' * 40, 'a' * 40))
+
+    def test_old_bind_source_path_is_restored(self):
+        old_source = self.state / 'releases' / ('c' * 40)
+        (old_source / 'docker/mediawiki').mkdir(parents=True)
+        (old_source / 'docker/mediawiki/private.php').write_text('<?php // old loader')
+        (old_source / 'release.json').write_text(json.dumps({'commit': 'c' * 40}))
+        env = self.environment + 'MW_CODE_MODE=bind\nMW_SOURCE_DIRECTORY=' + json.dumps(str(old_source)) + '\n'
+        (self.root / '.env.production').write_text(env)
+        self.accept()
+        runner = FakeRunner(self.root)
+        self.fail_candidate_config(runner)
+        with patch.object(deployment, 'prepare_release', return_value=self.state / 'releases' / ('a' * 40)):
+            with self.assertRaises(subprocess.CalledProcessError):
+                self.deploy(runner)
+        self.assertEqual((self.root / '.env.production').read_text(), env)
+        self.assert_no_data_restore(runner)
+
+    def test_live_editor_resumes_only_after_rollback_health(self):
+        self.live_environment()
+        runner = FakeRunner(self.root)
+        self.fail_candidate_config(runner)
+        def health(*_):
+            self.assertFalse(any(c[-1:] == ['code'] and 'up' in c for c in runner.calls))
+        with self.assertRaises(subprocess.CalledProcessError):
+            self.deploy(runner, health)
+        self.assertTrue(any(c[-1:] == ['code'] and 'up' in c for c in runner.calls))
+        self.assertEqual([c[-1] for c in runner.calls if c[:2] == ['git', 'checkout']], ['a' * 40, 'c' * 40])
+        self.assert_no_data_restore(runner)
+
+    def test_real_git_checkout_preserves_database_contents(self):
+        def git(*args):
+            return subprocess.check_output(['git', '-C', str(self.root), *args], text=True).strip()
+        git('init', '-q')
+        git('config', 'user.name', 'Deployment regression')
+        git('config', 'user.email', 'deployment-test@example.invalid')
+        (self.root / '.gitignore').write_text('.env.production\nbackups/\ndatabase-contents\n')
+        (self.root / 'application.txt').write_text('old release')
+        git('add', '.gitignore', 'application.txt', 'compose.yaml')
+        git('commit', '-qm', 'Previous release')
+        old = git('rev-parse', 'HEAD')
+        (self.root / 'application.txt').write_text('candidate release')
+        (self.root / 'compose.yaml').write_text('broken candidate configuration')
+        git('add', 'application.txt', 'compose.yaml')
+        git('commit', '-qm', 'Failing candidate')
+        candidate = git('rev-parse', 'HEAD')
+        git('checkout', '-q', '--detach', old)
+        (self.root / 'database-contents').write_bytes(b'edits written after the last release')
+        runner = FakeRunner(self.root, latest=candidate)
+        original = runner.run
+        def run(args, **kwargs):
+            if args[:2] in (['git', 'checkout'], ['git', 'ls-files'], ['git', 'status']):
+                runner.calls.append(list(args))
+                return git(*args[1:])
+            if args == ['git', 'rev-parse', 'HEAD']:
+                runner.calls.append(list(args))
+                return git('rev-parse', 'HEAD')
+            if args[:3] == ['docker', 'image', 'inspect']:
+                runner.calls.append(list(args))
+                return candidate
+            if args[-2:] == ['config', '--quiet'] and (self.root / 'compose.yaml').read_text().startswith('broken'):
+                runner.calls.append(list(args))
+                raise subprocess.CalledProcessError(1, args)
+            return original(args, **kwargs)
+        runner.run = run
+        payload = request()
+        payload['commit'] = candidate
+        with self.assertRaises(subprocess.CalledProcessError):
+            deployment.deploy(payload, self.root, self.state, runner, lambda *_: None)
+        self.assertEqual(git('rev-parse', 'HEAD'), old)
+        self.assertEqual((self.root / 'application.txt').read_text(), 'old release')
+        self.assertEqual((self.root / '.env.production').read_text(), self.environment)
+        self.assertEqual((self.root / 'database-contents').read_bytes(), b'edits written after the last release')
+        self.assert_no_data_restore(runner)
 
     def test_wrong_image_revision_is_rejected_before_write_freeze(self):
         runner = FakeRunner(self.root)

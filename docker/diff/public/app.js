@@ -21,10 +21,14 @@ const stateIcon = item => item.conclusion === 'success' ? '✓' : ['failure', 't
 const stages = {validating: 'Checking configuration and live edits', fetching: 'Fetching the requested commit',
   pulling_images: 'Pulling tested images', preparing_source: 'Preparing release source', backup: 'Taking a recovery backup',
   switching_release: 'Switching release', migrations: 'Running database migrations', health_checks: 'Checking origin health',
-  starting_services: 'Starting services and waiting for container health', restoring_editor: 'Restoring the live editor', complete: 'Deployment complete', superseded: 'Superseded by a newer commit'};
+  starting_services: 'Starting services and waiting for container health', restoring_editor: 'Restoring the live editor',
+  rolling_back: 'Restoring the previous application', rolled_back: 'Previous application restored',
+  complete: 'Deployment complete', superseded: 'Superseded by a newer commit'};
 const reasons = {local_configuration_changed: 'Blocked: local configuration differs from the accepted baseline.',
   uncommitted_files: 'Blocked: production has uncommitted changes.', insufficient_disk: 'Blocked: less than 5 GiB of storage is free.',
-  stage_failed: 'This stage failed. Open the deployment job on GitHub for the error and recovery instructions.'};
+  stage_failed: 'This stage failed. Open the deployment job on GitHub for the error and recovery instructions.',
+  rollback_failed: 'Automatic rollback failed. Application writers remain stopped; manual recovery is required.',
+  application_restored_database_preserved: 'Deployment failed; the previous application is healthy. Current database contents and data volumes were preserved.'};
 function renderPipeline() {
   if (!report) return;
   const pipeline = report.pipeline || {}, now = Date.now() / 1000, jobs = pipeline.jobs || [];

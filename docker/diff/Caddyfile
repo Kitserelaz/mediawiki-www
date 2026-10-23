@@ -1,0 +1,12 @@
+import /etc/caddy/Caddyfile.production
+https://diff.{$MW_DOMAIN} {
+    root * /srv/diff
+    header {
+        X-Content-Type-Options nosniff
+        Referrer-Policy no-referrer
+        Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'"
+        Cache-Control "no-cache"
+    }
+    encode zstd gzip
+    file_server
+}

@@ -392,6 +392,12 @@ def main():
                 ssh_target = Path('/usr/local/sbin/cloudwiki-deploy-ssh')
                 atomic_private_write(ssh_target, ssh_source.read_text())
                 ssh_target.chmod(0o755)
+            dashboard = root / 'scripts/install-diff-dashboard.py'
+            if (state / 'diff').is_dir() and dashboard.is_file():
+                try:
+                    Runner(root).run(['python3', str(dashboard)])
+                except Exception:
+                    print('Release is healthy, but the diff dashboard asset refresh needs attention', file=sys.stderr)
 
 
 if __name__ == "__main__":

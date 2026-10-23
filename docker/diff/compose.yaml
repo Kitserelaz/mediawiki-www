@@ -1,0 +1,7 @@
+# Operator overlay: absolute paths preserve the application checkout and image release.
+services:
+  web:
+    volumes:
+      - /var/lib/cloudwiki/diff/Caddyfile:/etc/caddy/Caddyfile:ro
+      - /var/www/docker/caddy/Caddyfile.production:/etc/caddy/Caddyfile.production:ro
+      - /var/lib/cloudwiki/diff/public:/srv/diff:ro

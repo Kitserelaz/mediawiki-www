@@ -111,3 +111,47 @@ To temporarily disable automatic deployment, disable the **Docker stack** workfl
 in GitHub Actions. To revoke only production access, remove the key marked
 `cloudwiki-github-actions-production` from the server's authorized keys. Rotating
 the key requires replacing both that public key and `PRODUCTION_SSH_KEY`.
+
+## Public change dashboard
+
+`https://diff.cloudwiki.us` shows the last successful production commit, the
+comparison from that commit to `main`, the previous successful release comparison
+when available, CI status, and local configuration drift. Pending changes are
+explicitly distinguished from deployed changes. Expanded patches come from the
+public GitHub repository; config contents, hashes, image credentials, and secret
+values are never written to the public report.
+
+A root systemd oneshot (`cloudwiki-diff.service`) generates a static JSON report
+every minute via `cloudwiki-diff.timer`. Public GitHub comparisons are cached for
+five minutes. Outages retain the previous matching report with a stale warning.
+The generator shares the deployment lock while inspecting config, so it does not
+read a partially switched release. Its public output is mounted read-only into
+Caddy. There is no privileged HTTP application or public deployment action.
+
+The initial release anchor is recorded at installation, before later checkouts;
+subsequent successful deployments use `last-success.json`. Successful deployments
+also refresh dashboard HTML/CSS/JS and the report generator from the tested
+checkout using `scripts/install-diff-dashboard.py`. Installation does not change
+which wiki application images are running.
+
+The server's reviewed operator overlay is
+`/var/lib/cloudwiki/diff/compose.yaml`, appended to `COMPOSE_FILE` in
+`.env.production`. It wraps the checkout's production Caddyfile and adds the
+`diff` hostname and static public directory. The overlay and both proxy configs
+are covered by the local configuration guard. Infrastructure changes to the
+wrapper or systemd units are installed explicitly with
+`sudo python3 scripts/install-diff-dashboard.py --infrastructure`, validated,
+and acknowledged with `--accept-config` only after operator review; routine
+asset refreshes do not accept configuration changes.
+
+Useful server checks:
+
+```sh
+sudo systemctl status cloudwiki-diff.timer cloudwiki-diff.service
+sudo journalctl -u cloudwiki-diff.service -n 30
+sudo python3 /usr/local/libexec/cloudwiki-deploy-production.py --check-config
+```
+
+The dashboard is public. It reveals changed config filenames and deployment
+commit IDs, but never the private contents. Reports are read-only; intentional
+config changes must still be reviewed and accepted locally on the server.

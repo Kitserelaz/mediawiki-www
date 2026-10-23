@@ -346,6 +346,68 @@ class DeploymentTest(unittest.TestCase):
             self.assertEqual(result.returncode, 1)
             self.assertIn('Only the deploy command is permitted', result.stderr)
 
+    def live_environment(self):
+        (self.root / 'docker/mediawiki').mkdir(parents=True)
+        (self.root / 'docker/mediawiki/private.php').write_text('<?php // loader')
+        (self.root / '.env.production').write_text(self.environment + 'MW_CODE_MODE=bind\nMW_BIND_STRATEGY=live\nMW_SOURCE_DIRECTORY=' + json.dumps(str(self.root)) + '\n')
+        self.accept()
+
+    def test_live_deployment_keeps_checkout_and_pauses_editor_through_health(self):
+        self.live_environment()
+        runner = FakeRunner(self.root)
+        def health(*_):
+            self.assertTrue(any(call[-2:] == ['stop', 'code'] for call in runner.calls))
+            self.assertFalse(any(call[-1:] == ['code'] and 'up' in call for call in runner.calls))
+        with patch.object(deployment, 'prepare_release') as export:
+            self.deploy(runner, health)
+        export.assert_not_called()
+        record = json.loads((self.state / 'last-success.json').read_text())
+        self.assertEqual(record['source_directory'], str(self.root))
+        self.assertEqual(record['bind_strategy'], 'live')
+        self.assertTrue(any('code=0' in call for call in runner.calls))
+        self.assertTrue(any(call[-1:] == ['code'] and 'up' in call for call in runner.calls))
+        self.assertTrue(any('cloudwiki-live-permissions.py' in ' '.join(call) for call in runner.calls))
+
+    def test_new_untracked_editor_file_blocks_before_fetch(self):
+        self.live_environment()
+        runner = FakeRunner(self.root)
+        original = runner.run
+        def dirty(args, **kwargs):
+            result = original(args, **kwargs)
+            return '?? mediawiki/new.php' if '--untracked-files=all' in args else result
+        runner.run = dirty
+        with self.assertRaisesRegex(RuntimeError, 'untracked live edits'):
+            self.deploy(runner)
+        self.assertFalse(any(call[:2] == ['git', 'fetch'] or 'stop' in call for call in runner.calls))
+
+    def test_edit_while_editor_is_stopping_aborts_and_restarts_only_editor(self):
+        self.live_environment()
+        runner = FakeRunner(self.root)
+        original = runner.run
+        stopped = False
+        def edit(args, **kwargs):
+            nonlocal stopped
+            result = original(args, **kwargs)
+            if args[-2:] == ['stop', 'code']:
+                stopped = True
+            return ' M mediawiki/index.php' if stopped and '--untracked-files=all' in args else result
+        runner.run = edit
+        with self.assertRaisesRegex(RuntimeError, 'untracked live edits'):
+            self.deploy(runner)
+        self.assertFalse(any(call[0] == 'scripts/snapshot' or call[:2] == ['git', 'checkout'] for call in runner.calls))
+        self.assertEqual(runner.calls[-1][-4:], ['-d', '--no-deps', '--no-build', 'code'])
+
+    def test_live_mode_rejects_a_different_checkout(self):
+        other = self.root / 'other'
+        (other / 'docker/mediawiki').mkdir(parents=True)
+        (other / 'docker/mediawiki/private.php').write_text('<?php // loader')
+        (self.root / '.env.production').write_text(self.environment + 'MW_CODE_MODE=bind\nMW_BIND_STRATEGY=live\nMW_SOURCE_DIRECTORY=' + json.dumps(str(other)) + '\n')
+        self.accept()
+        runner = FakeRunner(self.root)
+        with self.assertRaisesRegex(RuntimeError, 'application checkout'):
+            self.deploy(runner)
+        self.assertFalse(any(call[:2] == ['docker', 'pull'] for call in runner.calls))
+
     def test_retention_preserves_current_images_and_operator_backups(self):
         history = self.state / 'history'
         history.mkdir()

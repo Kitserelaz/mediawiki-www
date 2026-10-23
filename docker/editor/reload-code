@@ -1,0 +1,4 @@
+#!/bin/sh
+set -eu
+touch /run/cloudwiki-control/reload
+printf 'PHP and worker reload requested. Wait a few seconds, then check /run/cloudwiki-control/status.json.\n'

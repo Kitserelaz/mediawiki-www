@@ -155,3 +155,12 @@ sudo python3 /usr/local/libexec/cloudwiki-deploy-production.py --check-config
 The dashboard is public. It reveals changed config filenames and deployment
 commit IDs, but never the private contents. Reports are read-only; intentional
 config changes must still be reviewed and accepted locally on the server.
+
+Live source editing is an explicit `MW_BIND_STRATEGY=live` opt-in. See the live
+editing section of `docs/DOCKER.md`. Both tracked changes and new untracked
+MediaWiki files block deployment. In this mode the editor is stopped before the
+final cleanliness check and restarted only after a healthy release, preventing
+editor saves from racing with Git checkout. Failures before the write freeze
+resume the editor without stopping the application; migration failures keep both
+stopped. The dashboard's Live edits tab shows filenames only and marks dirty
+source as different from its displayed base commit.

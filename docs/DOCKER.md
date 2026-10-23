@@ -63,11 +63,13 @@ service receives the matching runner scripts. Caddy receives resources, extensio
 assets and skins from that same directory. Uploads, caches, dumps and databases
 remain in their writable named volumes. The counter continues to use its image.
 
-Production bind mode requires a prepared directory named for its full commit SHA,
+The default production bind strategy (`MW_BIND_STRATEGY=versioned`) requires a
+prepared directory named for its full commit SHA,
 with a matching `release.json` marker. The deployment pipeline exports only tracked
 source from the tested commit into `/var/lib/cloudwiki/releases/COMMIT` before
-stopping traffic, then records that directory in `MW_SOURCE_DIRECTORY`. It never
-binds the moving production checkout. Changing release paths recreates the source
+stopping traffic, then records that directory in `MW_SOURCE_DIRECTORY`. This strategy never
+binds the moving production checkout. For explicit live checkout editing, see
+the live production editing section below. Changing release paths recreates the source
 consumers, clearing cached PHP and worker code. Set `MW_CODE_MODE=bind` in
 `.env.production` to opt in for the next successful deployment, or `image` to
 return to packaged code on the next deployment. Both settings preserve farm data.
@@ -244,3 +246,58 @@ Implementation references: [Caddy PHP routing](https://caddyserver.com/docs/cadd
 ## Docker host storage failure
 
 If Docker reports `read-only file system` or an extraction I/O error, check both the system drive and Docker's disk-image capacity. Source files on an external disk do not move Docker's image storage there. Free system-drive space or move the disk image using Docker Desktop settings, then restart Docker before retrying builds. Never reset Docker or delete volumes to repair this without a separate backup.
+
+### Explicit live production editing
+
+The production operator can opt in to `MW_CODE_MODE=bind`,
+`MW_BIND_STRATEGY=live`, `MW_SOURCE_DIRECTORY=/var/www`. This uses the actual
+checkout instead of exporting a versioned release. PHP and worker containers
+mount source read-only; the authenticated editor alone mounts it writable.
+Uploads, localization, and farm caches remain in their original named volumes.
+The PHP HTTP runtime checks file timestamps on every request.
+
+The reviewed server operator overlays live in `/var/lib/cloudwiki/editor` and
+are explicitly included in production `COMPOSE_FILE`, so the original checkout's
+Compose commands and newer deployment tools use the same source. Installation
+uses `scripts/install-live-editor.py` on the production host: it checks the config
+guard and clean source, takes a coordinated recovery snapshot, validates Caddy,
+starts the editor and source mounts, verifies both password login and wiki API
+health, and acknowledges these requested config changes. No application release
+or database migration is performed during this switch.
+
+`https://code.cloudwiki.us` uses code-server password authentication over HTTPS.
+Retrieve the generated password over SSH:
+
+```sh
+sudo cat /var/lib/cloudwiki/editor/password
+```
+
+The official editor image is pinned by digest. It runs as UID 10001 with all
+capabilities dropped, privilege escalation disabled, a read-only container root,
+a separate network, a 1 GiB memory limit, and 0.75 CPU limit. Only the MediaWiki
+source, editor home, its own auth configuration, and a fixed reload request
+channel are mounted. It has no Docker socket, sudo privileges, production secret
+mounts, parent Git metadata, or access to the rest of `/var/www`. The runtime
+`PrivateSettings.php` loader is mounted read-only over the editor's placeholder.
+As with all live PHP editing, saved code runs with the wiki application's
+permissions when requested by visitors.
+
+In the editor terminal, run `reload-code` after changes that require restarting
+PHP or long-running workers. This creates a request; a root systemd path/service
+executes only a fixed restart of PHP and queue/scheduler services, under the
+production deployment lock. It ignores request contents and rejects symlinks.
+Read `/run/cloudwiki-control/status.json` for the result. The editor cannot use
+this channel to execute arbitrary host commands or restart other services.
+
+Saved changes affect visitors immediately. Automatic deployments refuse tracked
+changes and untracked MediaWiki files. They stop the editor and recheck source
+before taking a snapshot or changing Git HEAD, keep it stopped through migrations
+and health checks, then resume it after success. File ACLs are refreshed when Git
+replaces source inodes. An interrupted migration keeps writers and the editor
+stopped for deliberate recovery. Config changes still require explicit local
+acknowledgement; the editor cannot acknowledge its own config changes.
+
+Commit/review/push from the host over SSH or transfer the edits to your normal
+Git checkout; parent `.git` metadata and GitHub credentials are intentionally
+outside the browser editor. `diff.cloudwiki.us` reports live-edit filenames and
+blocked-deployment status without publishing uncommitted contents.

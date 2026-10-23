@@ -33,11 +33,16 @@ def command(args, root=ROOT):
         source = root / source
     source = source.resolve()
     if settings.get('MW_ENV') == 'production':
+        strategy = settings.get('MW_BIND_STRATEGY', 'versioned')
+        if strategy not in ('versioned', 'live'):
+            raise ValueError('MW_BIND_STRATEGY must be versioned or live')
+        if strategy == 'live' and (source != root.resolve() or not (source / '.git').exists()):
+            raise ValueError('Live production source must be the application Git checkout')
         marker = source / 'release.json'
-        if not marker.is_file():
+        if strategy == 'versioned' and not marker.is_file():
             raise ValueError('Production bind mode requires a prepared versioned release directory')
-        commit = json.loads(marker.read_text()).get('commit', '')
-        if not re.fullmatch(r'[0-9a-f]{40}', commit) or source.name != commit:
+        commit = json.loads(marker.read_text()).get('commit', '') if strategy == 'versioned' else ''
+        if strategy == 'versioned' and (not re.fullmatch(r'[0-9a-f]{40}', commit) or source.name != commit):
             raise ValueError('Production source must be a directory named for its release commit')
     for name in ['mediawiki/index.php', 'mediawiki/LocalSettings.php', 'mediawiki/PrivateSettings.php',
                  'mediawiki/docker/mediawiki', 'mediawiki/images', 'mediawiki/cache', 'mediawiki/cw_cache',

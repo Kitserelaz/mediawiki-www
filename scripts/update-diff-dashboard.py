@@ -66,6 +66,24 @@ def config_report(guard, root, state):
     return {'status': 'changed' if files else 'clean', 'files': files}
 
 
+def working_tree_report(root):
+    raw = subprocess.check_output(['git', '-C', str(root), 'status', '--porcelain=v1', '-z',
+                                   '--untracked-files=all', '--', 'mediawiki']).decode('utf-8', 'replace')
+    entries = iter(raw.split('\0'))
+    files = []
+    for entry in entries:
+        if not entry:
+            continue
+        code, filename = entry[:2], entry[3:]
+        status = ('added' if code == '??' or 'A' in code else 'deleted' if 'D' in code else
+                  'renamed' if 'R' in code else 'modified')
+        item = {'filename': filename, 'status': status}
+        if 'R' in code or 'C' in code:
+            next(entries, None)  # Consume the original name; never read file contents.
+        files.append(item)
+    return {'status': 'changed' if files else 'clean', 'files': files}
+
+
 def request(endpoint):
     req = urllib.request.Request(API + endpoint, headers={
         'Accept': 'application/vnd.github+json', 'User-Agent': 'cloudwiki-release-dashboard',
@@ -109,6 +127,18 @@ def main():
         last = STATE / 'last-success.json'
         release = json.loads((last if last.exists() else initial).read_text())
         local = config_report(guard, ROOT, STATE)
+        worktree = working_tree_report(ROOT)
+        try:
+            resolved = guard.Runner(ROOT).run(['docker', 'compose', '--env-file', str(ROOT / '.env.production'),
+                                               'config', '--environment'], capture=True)
+            settings = dict(line.split('=', 1) for line in resolved.splitlines() if '=' in line)
+        except Exception:
+            settings = {}  # Still publish known drift if the edited Compose file is invalid.
+        live = settings.get('MW_CODE_MODE') == 'bind' and settings.get('MW_BIND_STRATEGY') == 'live'
+        if live:
+            head = subprocess.check_output(['git', '-C', str(ROOT), 'rev-parse', 'HEAD'], text=True).strip()
+            if head != release['commit']:
+                release = {'commit': head, 'previous_commit': None}
     cache_path = directory / 'repository-cache.json'
     cache = json.loads(cache_path.read_text()) if cache_path.exists() else {}
     now = time.time()
@@ -116,6 +146,7 @@ def main():
     write_json(cache_path, cache)
     public = {'generated_at': now, 'repository': WEB, 'deployed_commit': release['commit'],
               'previous_commit': release.get('previous_commit'), 'config': local,
+              'live_editing': live, 'working_tree': worktree,
               'source_updated_at': cache.get('fetched_at'), 'source_stale': cache.get('stale', False),
               'pending': cache.get('pending'), 'released': cache.get('released'),
               'pipeline': cache.get('pipeline')}

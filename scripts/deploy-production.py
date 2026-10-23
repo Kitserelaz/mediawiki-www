@@ -117,7 +117,8 @@ def capture_local_config(root, runner):
         source = Path(settings['MW_SOURCE_DIRECTORY'])
         if not source.is_absolute():
             source = root / source
-        paths.add(source / 'release.json')
+        if settings.get('MW_BIND_STRATEGY', 'versioned') != 'live':
+            paths.add(source / 'release.json')
         paths.add(source / 'docker/mediawiki/private.php')
         for pattern in ['*Settings*.php', 'ManageWiki*.php', 'FarmSiteConfiguration.php',
                         'GlobalExtensions.php', 'SkyWikiFunctions.php', 'LocalWiki.php']:
@@ -238,6 +239,13 @@ def prepare_release(commit, root, state, runner):
     return directory
 
 
+def check_worktree(runner):
+    if runner.run(['git', 'status', '--porcelain', '--untracked-files=no'], capture=True):
+        raise RuntimeError('Tracked production files have local changes; refusing to overwrite them')
+    if runner.run(['git', 'status', '--porcelain', '--untracked-files=all', '--', 'mediawiki'], capture=True):
+        raise RuntimeError('MediaWiki has uncommitted or untracked live edits; refusing to overwrite them')
+
+
 def deploy(payload, root, state, runner, health=probe):
     commit = payload["commit"]
     env_file = root / ".env.production"
@@ -245,8 +253,7 @@ def deploy(payload, root, state, runner, health=probe):
     old_environment = env_file.read_text()
     if "MW_ENV=production" not in old_environment.splitlines():
         raise RuntimeError("Production configuration is required")
-    if runner.run(["git", "status", "--porcelain", "--untracked-files=no"], capture=True):
-        raise RuntimeError("Tracked production files have local changes; refusing to overwrite them")
+    check_worktree(runner)
     origin = runner.run(["git", "config", "--get", "remote.origin.url"], capture=True)
     if origin != REPOSITORY:
         raise RuntimeError("Unexpected production Git origin")
@@ -263,10 +270,16 @@ def deploy(payload, root, state, runner, health=probe):
     mode = settings.get('MW_CODE_MODE', 'image')
     if mode not in ('image', 'bind'):
         raise RuntimeError('MW_CODE_MODE must be image or bind')
+    strategy = settings.get('MW_BIND_STRATEGY', 'versioned')
+    if strategy not in ('versioned', 'live'):
+        raise RuntimeError('MW_BIND_STRATEGY must be versioned or live')
+    live = mode == 'bind' and strategy == 'live'
+    if live and Path(settings.get('MW_SOURCE_DIRECTORY', '')).resolve() != root.resolve():
+        raise RuntimeError('Live production source must be the application checkout')
     last = state / "last-success.json"
     if last.exists():
         previous = json.loads(last.read_text())
-        source_matches = mode == 'image' or (settings.get('MW_SOURCE_DIRECTORY') == str(state / 'releases' / commit)
+        source_matches = mode == 'image' or (live and previous.get('bind_strategy') == 'live') or (not live and settings.get('MW_SOURCE_DIRECTORY') == str(state / 'releases' / commit)
                                              and (state / 'releases' / commit / 'release.json').is_file())
         if previous.get("commit") == commit and previous.get("images") == payload["images"] and previous.get('code_mode', 'image') == mode and source_matches:
             health(root, runner)
@@ -287,7 +300,7 @@ def deploy(payload, root, state, runner, health=probe):
                                    '{{index .Config.Labels "org.opencontainers.image.revision"}}'], capture=True)
             if revision != commit:
                 raise RuntimeError("Pulled image does not match the requested commit")
-    source_directory = prepare_release(commit, root, state, runner) if mode == 'bind' else None
+    source_directory = root if live else prepare_release(commit, root, state, runner) if mode == 'bind' else None
     if source_directory:
         # Replace every active assignment, including duplicates, while preserving
         # the rest of the operator's production configuration.
@@ -303,19 +316,28 @@ def deploy(payload, root, state, runner, health=probe):
     # Downloads and source exports can take time. Recheck immediately before
     # maintenance so an intervening edit never gets silently overwritten.
     check_local_config(root, state, runner, initial_config)
-    if runner.run(['git', 'status', '--porcelain', '--untracked-files=no'], capture=True):
-        raise RuntimeError('Tracked production files changed during deployment preparation')
+    check_worktree(runner)
     frozen = False
     changed = False
+    editor_stopped = False
     try:
+        if live:
+            runner.run(compose + ['stop', 'code'])
+            editor_stopped = True
+            check_worktree(runner)
+            check_local_config(root, state, runner, initial_config)
         frozen = True
         runner.run(["scripts/snapshot", "--env-file", str(env_file), "--keep-stopped", snapshot], input="")
         check_local_config(root, state, runner, initial_config)
+        check_worktree(runner)
         backup = root / "backups" / snapshot
         atomic_private_write(backup / "production.env", old_environment)
         atomic_private_write(backup / "deployment.json", json.dumps({"previous_commit": old_commit, "target_images": payload["images"]}, indent=2) + "\n")
         runner.run(["git", "checkout", "--detach", commit])
         changed = True
+        if live:
+            runner.run(['python3', 'scripts/source-release.py', '--directory', str(root)])
+            runner.run(['python3', '/usr/local/libexec/cloudwiki-live-permissions.py'])
         if runner.run(['git', 'status', '--porcelain', '--untracked-files=no'], capture=True):
             raise RuntimeError('Tracked production files changed while switching releases')
         if (root / 'scripts/compose').is_file():
@@ -331,28 +353,38 @@ def deploy(payload, root, state, runner, health=probe):
         runner.run(compose + ["config", "--quiet"])
         runner.run(compose + ["up", "-d", "--no-build", "--wait", "database", "redis", "memcached"])
         runner.run(["scripts/farm", "--env-file", str(env_file), "update"], input="")
-        runner.run(compose + ["up", "-d", "--no-build", "--wait", "--wait-timeout", "180"])
+        runner.run(compose + ["up", "-d", "--no-build", "--wait", "--wait-timeout", "180"] + (["--scale", "code=0"] if live else []))
         health(root, runner)
+        check_worktree(runner)
         check_local_config(root, state, runner, intended_config)
         record = {"commit": commit, "images": payload["images"], "previous_commit": old_commit, "snapshot": snapshot,
-                  'code_mode': mode, 'source_directory': str(source_directory) if source_directory else None}
+                  'code_mode': mode, 'bind_strategy': strategy if mode == 'bind' else None, 'source_directory': str(source_directory) if source_directory else None}
         history = state / "history"
         history.mkdir(mode=0o700, exist_ok=True)
         atomic_private_write(history / (snapshot + ".json"), json.dumps(record, indent=2) + "\n")
         atomic_private_write(last, json.dumps(record, indent=2) + "\n")
         save_config_baseline(state, intended_config, 'successful deployment ' + commit)
         frozen = False
+        if live:
+            try:
+                runner.run(compose + ['up', '-d', '--no-deps', '--no-build', 'code'])
+                editor_stopped = False
+            except Exception:
+                print('Release is healthy, but the live editor needs to be restarted', file=sys.stderr)
         print("Deployment healthy: " + commit + "; recovery snapshot: backups/" + snapshot, flush=True)
         try:
             trim_history(root, state, runner)
         except Exception:
             print("Release is healthy, but deployment retention cleanup needs attention", file=sys.stderr)
     except Exception:
+        if editor_stopped and not frozen:
+            with contextlib.suppress(Exception):
+                runner.run(compose + ['up', '-d', '--no-deps', '--no-build', 'code'])
         if frozen:
             # Schema changes may already have happened. Never automatically run
             # the previous code against partially migrated databases.
             with contextlib.suppress(Exception):
-                runner.run(compose + ["stop", *WRITERS])
+                runner.run(compose + ["stop", *WRITERS] + (["code"] if live else []))
             print("Deployment failed with writers stopped. Recovery snapshot: backups/" + snapshot, file=sys.stderr)
             if not changed:
                 print("The application checkout and image settings were not changed.", file=sys.stderr)
@@ -392,6 +424,12 @@ def main():
                 ssh_target = Path('/usr/local/sbin/cloudwiki-deploy-ssh')
                 atomic_private_write(ssh_target, ssh_source.read_text())
                 ssh_target.chmod(0o755)
+            if (state / 'editor').is_dir():
+                for name, target in [('live-source-permissions.py', 'cloudwiki-live-permissions.py'),
+                                     ('reload-live-code.py', 'cloudwiki-reload-code.py')]:
+                    utility = root / 'scripts' / name
+                    if utility.is_file():
+                        atomic_private_write(Path('/usr/local/libexec') / target, utility.read_text())
             dashboard = root / 'scripts/install-diff-dashboard.py'
             if (state / 'diff').is_dir() and dashboard.is_file():
                 try:

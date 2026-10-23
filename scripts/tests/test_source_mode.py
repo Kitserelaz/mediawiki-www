@@ -79,6 +79,20 @@ class SourceModeTest(unittest.TestCase):
             self.assertTrue(mount['read_only'])
             self.assertEqual(Path(mount['source']), self.source / 'mediawiki' / tree)
 
+    def test_editor_has_one_tmpfs_and_no_host_privilege_or_public_port(self):
+        self.environment.write_text('CODE_SERVER_IMAGE=codercom/code-server@sha256:' + 'a' * 64 + '\n')
+        with patch.dict(os.environ, {'PATH': os.defpath + ':/opt/homebrew/bin:/usr/local/bin'}, clear=True):
+            data = json.loads(subprocess.check_output(['docker', 'compose', '--env-file', str(self.environment),
+                '-f', str(ROOT / 'compose.yaml'), '-f', str(ROOT / 'docker/editor/compose.yaml'), 'config', '--format', 'json'], text=True))
+        code = data['services']['code']
+        self.assertEqual(code['tmpfs'], ['/tmp:rw,nosuid,nodev,size=128m,mode=1777'])
+        self.assertEqual(code.get('ports', []), [])
+        self.assertTrue(code['read_only'])
+        self.assertEqual(code['user'], '10001:10001')
+        self.assertEqual(code['cap_drop'], ['ALL'])
+        self.assertEqual(set(code['networks']), {'editor'})
+        self.assertFalse(any(v['source'] in ['/var/run/docker.sock', '/var/www/.git', '/var/www/.env.production'] for v in code['volumes']))
+
     def test_unknown_mode_is_rejected(self):
         with self.assertRaises(ValueError):
             self.configuration('oops')
@@ -94,6 +108,18 @@ class SourceModeTest(unittest.TestCase):
         config = self.configuration('bind', source, production=True)
         self.assertIn('0.0.0.0', [p.get('host_ip', '0.0.0.0') for p in config['services']['web']['ports']])
         self.assertEqual(config['services']['php']['environment']['MW_ENV'], 'production')
+
+    def test_live_production_accepts_only_the_explicit_checkout(self):
+        # A real repository root with all mountpoints, not a versioned export.
+        subprocess.run(['git', 'init', '-q', str(self.source)], check=True)
+        self.environment.write_text('MW_CODE_MODE=bind\nMW_BIND_STRATEGY=live\nMW_ENV=production\nMW_SOURCE_DIRECTORY=' + json.dumps(str(self.source)) + '\n')
+        (self.source / 'compose.yaml').write_text('services: {}\n')
+        (self.source / 'compose.bind.yaml').write_text('services: {}\n')
+        with patch.dict(os.environ, {'PATH': os.defpath + ':/opt/homebrew/bin:/usr/local/bin'}, clear=True):
+            args, env = selector.command(['--env-file', str(self.environment), 'config'], root=self.source)
+            self.assertEqual(env['MW_SOURCE_DIRECTORY'], str(self.source))
+            with self.assertRaisesRegex(ValueError, 'application Git checkout'):
+                selector.command(['--env-file', str(self.environment), 'config'], root=ROOT)
 
     def test_export_uses_tracked_commit_and_does_not_ship_untracked_secrets(self):
         repository = self.path / 'repo'

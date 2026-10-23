@@ -56,6 +56,24 @@ class DashboardTests(unittest.TestCase):
         self.assertEqual(m.repository_report('abc', None, cached, 1100, fetch), cached)
         fetch.assert_not_called()
 
+    def test_live_edits_report_only_names_including_untracked_and_rename(self):
+        import subprocess
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            subprocess.run(['git', 'init', '-q', d], check=True)
+            (root / 'mediawiki').mkdir()
+            file = root / 'mediawiki/file.php'
+            file.write_text('initial')
+            subprocess.run(['git', '-C', d, 'add', '.'], check=True)
+            subprocess.run(['git', '-C', d, '-c', 'user.name=Test', '-c', 'user.email=test@example.test', 'commit', '-qm', 'Initial'], check=True)
+            subprocess.run(['git', '-C', d, 'mv', 'mediawiki/file.php', 'mediawiki/renamed.php'], check=True)
+            (root / 'mediawiki/new.php').write_text('private-uncommitted-value')
+            result = m.working_tree_report(root)
+            self.assertEqual(result['status'], 'changed')
+            self.assertEqual(len(result['files']), 2)
+            self.assertNotIn('private-uncommitted-value', json.dumps(result))
+            self.assertIn({'filename': 'mediawiki/renamed.php', 'status': 'renamed'}, result['files'])
+
     def test_initial_release_does_not_invent_previous_comparison(self):
         fetch = Mock(side_effect=[{'total_commits': 2, 'commits': [], 'files': []}, {'workflow_runs': []}])
         result = m.repository_report('abc', None, {}, 1000, fetch)

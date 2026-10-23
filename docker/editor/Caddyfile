@@ -1,0 +1,9 @@
+# Imported alongside the existing diff wrapper and production wiki hosts.
+https://code.{$MW_DOMAIN} {
+    header {
+        X-Content-Type-Options nosniff
+        Referrer-Policy same-origin
+        Cache-Control "no-store"
+    }
+    reverse_proxy code:8080
+}

@@ -1,0 +1,45 @@
+# Reviewed production operator overlay; no public editor port or Docker socket.
+services:
+  php:
+    volumes:
+      - /var/lib/cloudwiki/editor/php-live.ini:/usr/local/etc/php/conf.d/zz-live.ini:ro
+  web:
+    networks: [default, editor]
+    volumes:
+      - /var/lib/cloudwiki/editor/Caddyfile:/etc/caddy/editor.caddy:ro
+  code:
+    image: ${CODE_SERVER_IMAGE:?Set an immutable code-server image digest}
+    user: '10001:10001'
+    entrypoint: [/usr/bin/dumb-init, '--', /usr/bin/code-server]
+    command: [--config, /etc/code-server/config.yaml, --disable-proxy, /var/www/mediawiki]
+    environment:
+      HOME: /home/coder
+      USER: cloudwiki-editor
+      PATH: /usr/local/bin:/usr/bin:/bin:/usr/lib/code-server/lib
+    working_dir: /var/www/mediawiki
+    volumes:
+      - /var/www/mediawiki:/var/www/mediawiki:rw
+      - /var/www/docker/mediawiki/private.php:/var/www/mediawiki/PrivateSettings.php:ro
+      - /var/lib/cloudwiki/editor/passwd:/etc/passwd:ro
+      - /var/lib/cloudwiki/editor/group:/etc/group:ro
+      - /var/lib/cloudwiki/editor/home:/home/coder:rw
+      - /var/lib/cloudwiki/editor/config.yaml:/etc/code-server/config.yaml:ro
+      - /var/lib/cloudwiki/editor/reload-code:/usr/local/bin/reload-code:ro
+      - /var/lib/cloudwiki/editor/control:/run/cloudwiki-control:rw
+    networks: [editor]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    read_only: true
+    tmpfs: ['/tmp:rw,nosuid,nodev,size=128m,mode=1777']
+    mem_limit: 1g
+    cpus: 0.75
+    pids_limit: 256
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD, /usr/lib/code-server/lib/node, -e, "require('http').get('http://127.0.0.1:8080/healthz', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 20s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+networks:
+  editor: {}

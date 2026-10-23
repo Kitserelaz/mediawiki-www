@@ -1104,7 +1104,7 @@ $wgConf->settings += [
 	],
 
 	'wgDefaultSkin' => [
-		'default' => 'vector-2022',
+		'default' => 'citizen',
 	],
 	'wgFallbackSkin' => [
 		'default' => 'vector-2022',

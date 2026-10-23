@@ -1,0 +1,25 @@
+name: Load the images built by this run
+description: Pull immutable CI digests, or load image artifacts for pull requests.
+inputs:
+  group:
+    description: farm, counter, or all
+    default: all
+  token:
+    description: Read-only registry credential
+    required: true
+runs:
+  using: composite
+  steps:
+    - uses: actions/download-artifact@v4
+      with:
+        pattern: ci-images-${{ inputs.group == 'all' && '*' || inputs.group }}
+        merge-multiple: true
+        path: ${{ runner.temp }}/ci-images
+    - uses: docker/login-action@v3
+      if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ inputs.token }}
+    - shell: bash
+      run: python3 scripts/ci-images.py load --directory "$RUNNER_TEMP/ci-images" --group '${{ inputs.group }}'

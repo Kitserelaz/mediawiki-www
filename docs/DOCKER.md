@@ -398,7 +398,7 @@ The Docker stack workflow requires integration tests and native AMD64 architectu
 checks before deployment. ARM64 compatibility is an independent, manual workflow:
 open **Actions → ARM64 compatibility → Run workflow**. It uses QEMU emulation and
 has a 90-minute timeout; its result does not block production deployment. AMD64
-checks have a 30-minute timeout and no QEMU setup step. Dependency/base-image
+runtime checks reuse the images built by CI and have no QEMU setup step. Dependency/base-image
 updates should still be checked on both architectures using the manual workflow.
 
 ### Browser fixture permissions
@@ -409,3 +409,44 @@ The development browser fixture explicitly grants its seed administrator the
 only by `test-fixtures.php`. The fixture refuses production and non-central wiki
 execution. CI verifies the grant in a fresh PHP process before browser tests;
 production initialization and administrator groups are unchanged.
+
+### CI selection, caches, and parallel checks
+
+`Docker stack` cancels superseded CI runs per branch/PR. Production deployment is
+handled by the separate `Production deployment` workflow, whose production
+concurrency group never cancels an active deployment.
+
+The selector compares main with the public live release SHA, including pending
+runtime changes from cancelled runs. Missing production data or ancestry selects
+the full suite. Manual dispatch also selects the full suite. Docs-only edits skip
+Docker and tests; dashboard-only edits run fast checks and publish an independent
+asset release. Counter-only edits build the images but omit the unrelated wiki
+suites. Unknown paths and runtime inputs such as dependency manifests select the
+full suite.
+
+PHP and web are built in order on one builder so web reuses PHP's stages; Counter
+builds on another runner in parallel. BuildKit's persistent GitHub cache v2 stores
+all intermediate layers, with separate farm/counter and AMD64/ARM64 scopes.
+Trusted main builds push temporary `ci-COMMIT` image tags and share immutable
+digests with test jobs. Pull requests share Docker image artifacts instead and do
+not push packages. No test job rebuilds the images.
+
+Native runtime/lint/source isolation, Counter, browser/restore, queues, upstream,
+catalogue, and fresh-production checks run on separate runners with isolated farm
+data. Browser tests and restore remain sequential because restore verifies their
+uploads and page content. Queue tests remain sequential within their runner.
+Catalogue setup/cleanup stays required; catalogue findings remain advisory.
+NPM and Chromium downloads are cached on browser runners.
+
+Only after every selected required job passes does CI emit a release manifest.
+The deployment workflow accepts artifacts only from successful main push runs of
+`Docker stack`, validates the source SHA, and uses the existing root-side image,
+configuration, worktree, snapshot, and health guards. An untested CI image is never
+selected for production. The optional manual search job also uses shared images.
+
+Dashboard-only releases use the restricted `deploy-dashboard` SSH command. It
+exports only the three fixed public assets and report generator, checks the
+accepted config baseline, backs up the old assets, and leaves the application
+checkout, databases, runtime images and secrets unchanged. The forced SSH wrapper
+and its sudo rule must allow only this exact additional helper command:
+`/usr/bin/python3 /usr/local/libexec/cloudwiki-deploy-dashboard.py`.

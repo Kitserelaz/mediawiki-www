@@ -1,0 +1,89 @@
+---
+name: Production deployment
+'on':
+  workflow_run:
+    workflows:
+    - Docker stack
+    types:
+    - completed
+permissions:
+  contents: read
+  actions: read
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+    steps:
+    - name: Select trusted release manifest
+      id: manifest
+      uses: actions/github-script@v7
+      with:
+        script: |-
+          const run = context.payload.workflow_run;
+          const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts, {...context.repo, run_id: run.id});
+          const artifact = artifacts.find(a => a.name === 'release-manifest' && !a.expired) || artifacts.find(a => a.name === 'dashboard-manifest' && !a.expired);
+          core.setOutput('kind', artifact ? artifact.name === 'release-manifest' ? 'runtime' : 'dashboard' : 'none');
+          core.setOutput('artifact', artifact ? artifact.name : '');
+    if: "${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event
+      == 'push' && github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.head_repository.full_name
+      == github.repository }}"
+    outputs:
+      kind: "${{ steps.manifest.outputs.kind }}"
+      artifact: "${{ steps.manifest.outputs.artifact }}"
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs:
+    - prepare
+    permissions:
+      contents: read
+      actions: read
+      packages: read
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        name: "${{ needs.prepare.outputs.artifact }}"
+        path: "${{ runner.temp }}/release"
+        run-id: "${{ github.event.workflow_run.id }}"
+        github-token: "${{ github.token }}"
+    - name: Deploy the exact tested release
+      env:
+        DEPLOY_KEY: "${{ secrets.PRODUCTION_SSH_KEY }}"
+        KNOWN_HOSTS: "${{ secrets.PRODUCTION_KNOWN_HOSTS }}"
+        REGISTRY_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        EXPECTED_COMMIT: "${{ github.event.workflow_run.head_sha }}"
+        RELEASE_KIND: "${{ needs.prepare.outputs.kind }}"
+      shell: bash
+      run: |
+        set -euo pipefail
+        umask 077
+        task_dir=$(mktemp -d)
+        trap 'rm -rf "$task_dir"' EXIT
+        printf '%s\n' "$DEPLOY_KEY" > "$task_dir/key"
+        printf '%s\n' "$KNOWN_HOSTS" > "$task_dir/known_hosts"
+        python3 - <<'REQUEST' > "$task_dir/request.json"
+        import json, os
+        from pathlib import Path
+        runtime = os.environ['RELEASE_KIND'] == 'runtime'
+        manifest = json.loads((Path(os.environ['RUNNER_TEMP']) / 'release' / ('release.json' if runtime else 'dashboard.json')).read_text())
+        assert manifest['commit'] == os.environ['EXPECTED_COMMIT']
+        payload = {'commit': manifest['commit']}
+        if runtime:
+            payload.update(images=manifest['images'], registry_user=os.environ['GITHUB_ACTOR'], registry_token=os.environ['REGISTRY_TOKEN'])
+        print(json.dumps(payload))
+        REQUEST
+        command=deploy
+        if [ "$RELEASE_KIND" = dashboard ]; then command=deploy-dashboard; fi
+        ssh -i "$task_dir/key" -o IdentitiesOnly=yes -o BatchMode=yes \
+          -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$task_dir/known_hosts" \
+          -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=12 \
+          ubuntu@15.204.121.114 "$command" < "$task_dir/request.json"
+    if: "${{ needs.prepare.outputs.kind != 'none' }}"
+    environment:
+      name: production
+      url: https://meta.cloudwiki.us
+    concurrency:
+      group: cloudwiki-production
+      cancel-in-progress: false

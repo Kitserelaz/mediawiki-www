@@ -1,7 +1,8 @@
+---
 name: Docker stack
 permissions:
   contents: read
-on:
+'on':
   push:
   pull_request:
   workflow_dispatch:
@@ -10,246 +11,493 @@ on:
         description: Run optional Elasticsearch integration
         type: boolean
         default: false
+concurrency:
+  group: cloudwiki-ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
-  integration:
+  changes:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      packages: read
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - id: select
+      run: python3 scripts/ci-changes.py
+    outputs:
+      runtime: "${{ steps.select.outputs.runtime }}"
+      wiki: "${{ steps.select.outputs.wiki }}"
+      dashboard: "${{ steps.select.outputs.dashboard }}"
+      checks: "${{ steps.select.outputs.checks }}"
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs:
+    - changes
+    permissions:
+      contents: read
+      packages: read
+    steps:
+    - uses: actions/checkout@v4
+    - run: python3 scripts/verify-checkout.py
+    - name: Deployment safety checks
+      run: |
+        python3 -m unittest discover -s scripts/tests
+        node scripts/tests/dashboard-render.cjs
+    if: "${{ needs.changes.outputs.checks == 'true' }}"
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    needs:
+    - changes
     permissions:
       contents: read
       packages: write
       checks: write
-    outputs:
-      php: ${{ steps.publish.outputs.php }}
-      web: ${{ steps.publish.outputs.web }}
-      counter: ${{ steps.publish.outputs.counter }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - run: python3 scripts/verify-checkout.py
-      - name: Deployment safety checks
-        run: |
-          python3 -m unittest discover -s scripts/tests
-          node scripts/tests/dashboard-render.cjs
-      - run: python3 scripts/setup-dev.py
-      - run: docker compose config --quiet
-      - run: scripts/farm build
-      - name: Source mount isolation and live PHP edits
-        run: python3 docker/tests/source-mounts.py
-      - name: Syntax check complete immutable PHP runtime
-        run: sh scripts/lint-php-image.sh
-      - name: Elastica PHP 8 query compatibility
-        run: docker compose run --rm --no-deps -v "$PWD/docker/tests/elastica.php:/opt/elastica-test.php:ro" init php /opt/elastica-test.php
-      - run: docker compose --profile dev up -d database redis memcached mailpit
-      - run: scripts/farm init
-      - run: scripts/farm init
-      - run: scripts/farm up
-      - name: Pinned CreateWiki and ManageWiki upstream integration suite
-        run: python3 scripts/test-upstream.py
-      - name: Prepare isolated catalogue check farm
-        id: catalogue_setup
-        run: |
-          export COMPOSE_PROJECT_NAME=cloudwiki-catalogue-tests
-          docker compose -f compose.yaml -f docker/tests/upgrade-isolated.compose.yaml up -d --wait database redis memcached
-          docker compose -f compose.yaml -f docker/tests/upgrade-isolated.compose.yaml run --rm --no-deps init php /opt/farm/manage.php fresh
-          docker compose -f compose.yaml -f docker/tests/upgrade-isolated.compose.yaml run --rm --no-deps --user www-data -e MW_CONFIG_FILE=/opt/catalogue-settings.php -e MW_CATALOGUE_COMPONENT=extensions/DataTransfer/extension.json -e 'MW_CATALOGUE_EXTRA_COMPONENTS_JSON=["Highlight Links in Category"]' -v "$PWD/docker/tests/catalogue-settings.php:/opt/catalogue-settings.php:ro" -v "$PWD/docker/tests/legacy-linktarget.php:/opt/legacy-linktarget.php:ro" init php maintenance/run.php /opt/legacy-linktarget.php --wiki=testwiki
-      - name: Catalogue registration checks (advisory)
-        id: catalogue_registration
-        continue-on-error: true
-        env:
-          COMPOSE_PROJECT_NAME: cloudwiki-catalogue-tests
-        run: python3 scripts/check-catalogue.py --env-file .env --immutable --workers 1 --report-directory docker/tests/test-results/catalogue-registration
-      - name: Catalogue skin asset checks (advisory)
-        id: catalogue_skins
-        continue-on-error: true
-        env:
-          COMPOSE_PROJECT_NAME: cloudwiki-catalogue-tests
-        run: python3 scripts/check-catalogue.py --env-file .env --immutable --workers 1 --gate skin-render --report-directory docker/tests/test-results/catalogue-skins
-      - name: Report advisory catalogue failures
-        if: always() && (steps.catalogue_registration.outcome == 'failure' || steps.catalogue_skins.outcome == 'failure')
-        run: |
-          echo '::warning::Catalogue checks failed. These checks are advisory and do not block deployment; inspect the catalogue-failure-evidence artifact.'
-          echo '### Catalogue checks: advisory failures' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Deployment may proceed if all required checks pass. See the catalogue-failure-evidence artifact for component diagnostics.' >> "$GITHUB_STEP_SUMMARY"
-      - name: Stop isolated catalogue check farm
-        if: always() && steps.catalogue_setup.outcome != 'skipped'
-        env:
-          COMPOSE_PROJECT_NAME: cloudwiki-catalogue-tests
-        run: docker compose -f compose.yaml -f docker/tests/upgrade-isolated.compose.yaml down
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - run: npm ci --prefix docker/tests
-      - run: cd docker/tests && npx playwright install --with-deps chromium
-      - run: |
-          for n in $(seq 1 60); do
-            scripts/farm certificate && break
-            sleep 2
-          done
-          python3 docker/tests/wait-https.py
-          scripts/farm smoke
-          docker/tests/check-images.sh
-      - run: docker compose exec php php maintenance/run.php /opt/farm/test-fixtures.php --wiki=metawiki
-      - name: Verify isolated browser fixture permissions
-        run: docker compose exec php php maintenance/run.php /opt/farm/test-fixtures.php --wiki=metawiki --verify-permissions
-      - run: docker compose run --rm --no-deps --user www-data -v "$PWD/docker/tests/configuration.php:/opt/configuration-test.php:ro" init php maintenance/run.php /opt/configuration-test.php --wiki=testwiki
-      - run: docker compose run --rm --no-deps --user www-data -v "$PWD/docker/tests/email.php:/opt/email-test.php:ro" init php maintenance/run.php /opt/email-test.php --wiki=testwiki
-      - run: docker run --rm --user www-data --entrypoint php --tmpfs /var/www/mediawiki/cw_cache:uid=33,gid=33,mode=0750 -v "$PWD/docker/tests/provision-shutdown.php:/opt/provision-shutdown.php:ro" cloudwiki-php:local /opt/provision-shutdown.php
-      - run: npm test --prefix docker/tests
-      - run: python3 docker/tests/jobs.py
-      - name: Redis delayed jobs and interrupted-claim recovery
-        run: python3 docker/tests/jobchron.py
-      - run: docker compose run --rm -v "$PWD/Moe-Counter/test:/app/test:ro" counter node --test
-      - run: python3 docker/tests/counter-shutdown.py
-      - run: |
-          scripts/snapshot ci-restore
-          COMPOSE_PROJECT_NAME=cloudwiki-restore docker compose up -d database memcached
-          COMPOSE_PROJECT_NAME=cloudwiki-restore scripts/farm restore /backups/ci-restore
-          COMPOSE_PROJECT_NAME=cloudwiki-restore docker compose up -d redis
-          COMPOSE_PROJECT_NAME=cloudwiki-restore scripts/farm update
-          COMPOSE_PROJECT_NAME=cloudwiki-restore scripts/farm list
-          COMPOSE_PROJECT_NAME=cloudwiki-restore docker compose run --rm --no-deps --user www-data -v "$PWD/docker/tests/verify-restored.php:/opt/verify-restored.php:ro" init php maintenance/run.php /opt/verify-restored.php --wiki=testwiki
-          COMPOSE_PROJECT_NAME=cloudwiki-restore docker compose run --rm --no-deps counter node -e "const db=require('./db/sqlite');db.getNum('docker-smoke').then(r=>{if(r.num<1)process.exitCode=1;db.close()})"
-      - name: Fresh production initialization with separate credentials
-        run: |
-          scripts/farm setup-production --domain farm.example.test --env-file .env.production-ci --secrets-directory docker/secrets-production-ci
-          COMPOSE_PROJECT_NAME=cloudwiki-newprod docker compose --env-file .env.production-ci up -d --wait database redis memcached
-          COMPOSE_PROJECT_NAME=cloudwiki-newprod docker compose --env-file .env.production-ci run --rm --no-deps -v "$PWD/docker/tests/production-guard.php:/opt/production-guard.php:ro" init php /opt/production-guard.php create
-          if COMPOSE_PROJECT_NAME=cloudwiki-newprod scripts/farm --env-file .env.production-ci init-production > /tmp/production-refusal.log 2>&1; then
-            echo 'Fresh production initialization unexpectedly accepted an existing database'; exit 1
-          fi
-          grep -q 'requires empty databases' /tmp/production-refusal.log
-          COMPOSE_PROJECT_NAME=cloudwiki-newprod docker compose --env-file .env.production-ci run --rm --no-deps -v "$PWD/docker/tests/production-guard.php:/opt/production-guard.php:ro" init php /opt/production-guard.php remove
-          COMPOSE_PROJECT_NAME=cloudwiki-newprod scripts/farm --env-file .env.production-ci init-production
-          COMPOSE_PROJECT_NAME=cloudwiki-newprod scripts/farm --env-file .env.production-ci init-production
-          for wiki in metawiki loginwiki testwiki; do
-            COMPOSE_PROJECT_NAME=cloudwiki-newprod docker compose --env-file .env.production-ci run --rm --no-deps --user www-data -v "$PWD/docker/tests/production.php:/opt/production-test.php:ro" init php maintenance/run.php /opt/production-test.php --wiki="$wiki"
-          done
-      - name: Isolated production browser rehearsal
-        run: |
-          docker compose stop web
-          COMPOSE_PROJECT_NAME=cloudwiki-newprod docker compose --env-file .env.production-ci -f compose.yaml -f compose.production.yaml -f docker/tests/production.compose.yaml up -d
-          python3 docker/tests/wait-https.py --domain farm.example.test
-          PRODUCTION_TEST_DOMAIN=farm.example.test PRODUCTION_TEST_SECRETS="$PWD/docker/secrets-production-ci" npm test --prefix docker/tests -- production.spec.js
-      - name: Sign in to the image registry
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Publish the tested images
-        id: publish
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        shell: bash
-        run: |
-          set -euo pipefail
-          repository="${GITHUB_REPOSITORY,,}"
-          for service in php web counter; do
-            image="ghcr.io/${repository}-${service}"
-            docker tag "cloudwiki-${service}:local" "${image}:${GITHUB_SHA}"
-            docker push "${image}:${GITHUB_SHA}"
-            digest=$(docker image inspect "${image}:${GITHUB_SHA}" --format '{{json .RepoDigests}}' |
-              jq -er --arg prefix "${image}@sha256:" '[.[] | select(startswith($prefix))][0]')
-            echo "${service}=${digest}" >> "$GITHUB_OUTPUT"
-          done
-      - name: Preserve catalogue diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: catalogue-failure-evidence
-          path: docker/tests/test-results/catalogue-*/
-          if-no-files-found: ignore
-          retention-days: 7
-      - if: always()
-        run: |
-          docker compose logs --no-color --tail=100
-          COMPOSE_PROJECT_NAME=cloudwiki-restore docker compose logs --no-color --tail=80
-          if [ -f .env.production-ci ]; then
-            COMPOSE_PROJECT_NAME=cloudwiki-newprod docker compose --env-file .env.production-ci logs --no-color --tail=100
-          fi
-  deploy:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [integration, architectures]
+    - uses: actions/checkout@v4
+    - uses: docker/setup-buildx-action@v3
+    - name: Expose BuildKit cache credentials
+      uses: actions/github-script@v7
+      with:
+        script: |-
+          for (const key of ['ACTIONS_RUNTIME_TOKEN', 'ACTIONS_RESULTS_URL', 'ACTIONS_CACHE_URL']) {
+            const value = process.env[key];
+            if (value) { if (key.endsWith('TOKEN')) core.setSecret(value); core.exportVariable(key, value); }
+          }
+    - uses: docker/login-action@v3
+      if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+      with:
+        registry: ghcr.io
+        username: "${{ github.actor }}"
+        password: "${{ github.token }}"
+    - name: Build cached AMD64 images once
+      env:
+        CLOUDWIKI_PROGRESS_TOKEN: "${{ github.token }}"
+      run: python3 scripts/ci-images.py build --group "${{ matrix.group }}" --directory
+        "$RUNNER_TEMP/images"
+    - uses: actions/upload-artifact@v4
+      with:
+        name: ci-images-${{ matrix.group }}
+        path: "${{ runner.temp }}/images/"
+        compression-level: 0
+        retention-days: 1
+    if: "${{ needs.changes.outputs.runtime == 'true' }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        group:
+        - farm
+        - counter
+  runtime:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 15
+    needs:
+    - changes
+    - build
     permissions:
       contents: read
       packages: read
-    environment:
-      name: production
-      url: https://meta.cloudwiki.us
-    concurrency:
-      group: cloudwiki-production
-      cancel-in-progress: false
     steps:
-      - name: Deploy the tested release
-        env:
-          DEPLOY_KEY: ${{ secrets.PRODUCTION_SSH_KEY }}
-          KNOWN_HOSTS: ${{ secrets.PRODUCTION_KNOWN_HOSTS }}
-          PHP_IMAGE: ${{ needs.integration.outputs.php }}
-          WEB_IMAGE: ${{ needs.integration.outputs.web }}
-          COUNTER_IMAGE: ${{ needs.integration.outputs.counter }}
-          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          umask 077
-          task_dir=$(mktemp -d)
-          trap 'rm -rf "$task_dir"' EXIT
-          printf '%s\n' "$DEPLOY_KEY" > "$task_dir/key"
-          printf '%s\n' "$KNOWN_HOSTS" > "$task_dir/known_hosts"
-          python3 - <<'PY' > "$task_dir/request.json"
-          import json, os
-          print(json.dumps({
-              'commit': os.environ['GITHUB_SHA'],
-              'images': {name: os.environ[name.upper() + '_IMAGE'] for name in ('php', 'web', 'counter')},
-              'registry_user': os.environ['GITHUB_ACTOR'],
-              'registry_token': os.environ['REGISTRY_TOKEN'],
-          }))
-          PY
-          ssh -i "$task_dir/key" -o IdentitiesOnly=yes -o BatchMode=yes \
-            -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$task_dir/known_hosts" \
-            -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=12 \
-            ubuntu@15.204.121.114 deploy < "$task_dir/request.json"
-  architectures:
+    - uses: actions/checkout@v4
+    - uses: "./.github/actions/ci-images"
+      with:
+        group: farm
+        token: "${{ github.token }}"
+    - run: python3 scripts/setup-dev.py
+    - name: Native AMD64 runtime checks
+      run: docker run --rm --entrypoint sh -v "$PWD/docker/tests/architecture.sh:/opt/architecture.sh:ro"
+        cloudwiki-php:local /opt/architecture.sh
+    - name: Source mount isolation and live PHP edits
+      run: python3 docker/tests/source-mounts.py
+    - name: Syntax check complete immutable PHP runtime
+      run: sh scripts/lint-php-image.sh
+    - name: Elastica PHP 8 query compatibility
+      run: docker compose run --rm --no-deps -v "$PWD/docker/tests/elastica.php:/opt/elastica-test.php:ro"
+        init php /opt/elastica-test.php
+    if: "${{ needs.changes.outputs.wiki == 'true' }}"
+  counter:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 10
+    needs:
+    - changes
+    - build
     permissions:
       contents: read
-      checks: write
-    env:
-      CLOUDWIKI_PROGRESS_TOKEN: ${{ github.token }}
-    strategy:
-      matrix:
-        platform: [linux/amd64]
+      packages: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - name: Build PHP image
-        run: python3 scripts/ci-build-progress.py --job "architectures (${{ matrix.platform }})" --phase "PHP image" -- docker buildx build --platform '${{ matrix.platform }}' --target php --load -t cloudwiki-php:verify -f docker/mediawiki/Dockerfile .
-      - name: Build Web image
-        run: python3 scripts/ci-build-progress.py --job "architectures (${{ matrix.platform }})" --phase "Web image" -- docker buildx build --platform '${{ matrix.platform }}' --target web --load -t cloudwiki-web:verify -f docker/mediawiki/Dockerfile .
-      - name: Build Counter image
-        run: python3 scripts/ci-build-progress.py --job "architectures (${{ matrix.platform }})" --phase "Counter image" -- docker buildx build --platform '${{ matrix.platform }}' --load -t cloudwiki-counter:verify Moe-Counter
-      - run: docker run --rm --platform '${{ matrix.platform }}' --entrypoint sh -v "$PWD/docker/tests/architecture.sh:/opt/architecture.sh:ro" cloudwiki-php:verify /opt/architecture.sh
-      - run: docker run --rm --platform '${{ matrix.platform }}' -v "$PWD/Moe-Counter/test:/app/test:ro" cloudwiki-counter:verify node --test
+    - uses: actions/checkout@v4
+    - uses: "./.github/actions/ci-images"
+      with:
+        group: counter
+        token: "${{ github.token }}"
+    - name: Counter tests against the built image
+      run: docker run --rm -v "$PWD/Moe-Counter/test:/app/test:ro" cloudwiki-counter:local
+        node --test
+    - run: python3 docker/tests/counter-shutdown.py
+    if: "${{ needs.changes.outputs.runtime == 'true' }}"
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    needs:
+    - changes
+    - build
+    permissions:
+      contents: read
+      packages: read
+    steps:
+    - uses: actions/checkout@v4
+    - uses: "./.github/actions/ci-images"
+      with:
+        group: all
+        token: "${{ github.token }}"
+    - run: python3 scripts/setup-dev.py
+    - run: docker compose --profile dev up -d database redis memcached mailpit
+    - run: scripts/farm init
+    - run: scripts/farm init
+    - run: scripts/farm up
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: npm
+        cache-dependency-path: docker/tests/package-lock.json
+    - run: npm ci --prefix docker/tests
+    - uses: actions/cache@v4
+      with:
+        path: "~/.cache/ms-playwright"
+        key: "${{ runner.os }}-chromium-${{ hashFiles('docker/tests/package-lock.json')
+          }}"
+    - run: cd docker/tests && npx playwright install --with-deps chromium
+    - run: |
+        for n in $(seq 1 60); do
+          scripts/farm certificate && break
+          sleep 2
+        done
+        python3 docker/tests/wait-https.py
+        scripts/farm smoke
+        docker/tests/check-images.sh
+    - run: docker compose exec php php maintenance/run.php /opt/farm/test-fixtures.php
+        --wiki=metawiki
+    - name: Verify isolated browser fixture permissions
+      run: docker compose exec php php maintenance/run.php /opt/farm/test-fixtures.php
+        --wiki=metawiki --verify-permissions
+    - run: docker compose run --rm --no-deps --user www-data -v "$PWD/docker/tests/configuration.php:/opt/configuration-test.php:ro"
+        init php maintenance/run.php /opt/configuration-test.php --wiki=testwiki
+    - run: docker compose run --rm --no-deps --user www-data -v "$PWD/docker/tests/email.php:/opt/email-test.php:ro"
+        init php maintenance/run.php /opt/email-test.php --wiki=testwiki
+    - run: npm test --prefix docker/tests
+    - run: |
+        scripts/snapshot ci-restore
+        COMPOSE_PROJECT_NAME=cloudwiki-restore docker compose up -d database memcached
+        COMPOSE_PROJECT_NAME=cloudwiki-restore scripts/farm restore /backups/ci-restore
+        COMPOSE_PROJECT_NAME=cloudwiki-restore docker compose up -d redis
+        COMPOSE_PROJECT_NAME=cloudwiki-restore scripts/farm update
+        COMPOSE_PROJECT_NAME=cloudwiki-restore scripts/farm list
+        COMPOSE_PROJECT_NAME=cloudwiki-restore docker compose run --rm --no-deps --user www-data -v "$PWD/docker/tests/verify-restored.php:/opt/verify-restored.php:ro" init php maintenance/run.php /opt/verify-restored.php --wiki=testwiki
+        COMPOSE_PROJECT_NAME=cloudwiki-restore docker compose run --rm --no-deps counter node -e "const db=require('./db/sqlite');db.getNum('docker-smoke').then(r=>{if(r.num<1)process.exitCode=1;db.close()})"
+    - if: failure()
+      run: |
+        docker compose logs --no-color --tail=100
+        COMPOSE_PROJECT_NAME=cloudwiki-restore docker compose logs --no-color --tail=80
+        if [ -f .env.production-ci ]; then
+          COMPOSE_PROJECT_NAME=cloudwiki-newprod docker compose --env-file .env.production-ci logs --no-color --tail=100
+        fi
+      name: Farm diagnostics
+    if: "${{ needs.changes.outputs.wiki == 'true' }}"
+  queues:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs:
+    - changes
+    - build
+    permissions:
+      contents: read
+      packages: read
+    steps:
+    - uses: actions/checkout@v4
+    - uses: "./.github/actions/ci-images"
+      with:
+        group: all
+        token: "${{ github.token }}"
+    - run: python3 scripts/setup-dev.py
+    - run: docker compose --profile dev up -d database redis memcached mailpit
+    - run: scripts/farm init
+    - run: scripts/farm init
+    - run: scripts/farm up
+    - run: |
+        for n in $(seq 1 60); do
+          scripts/farm certificate && break
+          sleep 2
+        done
+        python3 docker/tests/wait-https.py
+        scripts/farm smoke
+        docker/tests/check-images.sh
+    - run: docker compose exec php php maintenance/run.php /opt/farm/test-fixtures.php
+        --wiki=metawiki
+    - name: Verify isolated browser fixture permissions
+      run: docker compose exec php php maintenance/run.php /opt/farm/test-fixtures.php
+        --wiki=metawiki --verify-permissions
+    - run: docker run --rm --user www-data --entrypoint php --tmpfs /var/www/mediawiki/cw_cache:uid=33,gid=33,mode=0750
+        -v "$PWD/docker/tests/provision-shutdown.php:/opt/provision-shutdown.php:ro"
+        cloudwiki-php:local /opt/provision-shutdown.php
+    - run: python3 docker/tests/jobs.py
+    - name: Redis delayed jobs and interrupted-claim recovery
+      run: python3 docker/tests/jobchron.py
+    - if: failure()
+      run: |
+        docker compose logs --no-color --tail=100
+        COMPOSE_PROJECT_NAME=cloudwiki-restore docker compose logs --no-color --tail=80
+        if [ -f .env.production-ci ]; then
+          COMPOSE_PROJECT_NAME=cloudwiki-newprod docker compose --env-file .env.production-ci logs --no-color --tail=100
+        fi
+      name: Farm diagnostics
+    if: "${{ needs.changes.outputs.wiki == 'true' }}"
+  upstream:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs:
+    - changes
+    - build
+    permissions:
+      contents: read
+      packages: read
+    steps:
+    - uses: actions/checkout@v4
+    - uses: "./.github/actions/ci-images"
+      with:
+        group: farm
+        token: "${{ github.token }}"
+    - run: python3 scripts/setup-dev.py
+    - name: Pinned CreateWiki and ManageWiki upstream integration suite
+      run: python3 scripts/test-upstream.py
+    if: "${{ needs.changes.outputs.wiki == 'true' }}"
+  catalogue:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs:
+    - changes
+    - build
+    permissions:
+      contents: read
+      packages: read
+    steps:
+    - uses: actions/checkout@v4
+    - uses: "./.github/actions/ci-images"
+      with:
+        group: farm
+        token: "${{ github.token }}"
+    - run: python3 scripts/setup-dev.py
+    - name: Prepare isolated catalogue check farm
+      id: catalogue_setup
+      run: |
+        export COMPOSE_PROJECT_NAME=cloudwiki-catalogue-tests
+        docker compose -f compose.yaml -f docker/tests/upgrade-isolated.compose.yaml up -d --wait database redis memcached
+        docker compose -f compose.yaml -f docker/tests/upgrade-isolated.compose.yaml run --rm --no-deps init php /opt/farm/manage.php fresh
+        docker compose -f compose.yaml -f docker/tests/upgrade-isolated.compose.yaml run --rm --no-deps --user www-data -e MW_CONFIG_FILE=/opt/catalogue-settings.php -e MW_CATALOGUE_COMPONENT=extensions/DataTransfer/extension.json -e 'MW_CATALOGUE_EXTRA_COMPONENTS_JSON=["Highlight Links in Category"]' -v "$PWD/docker/tests/catalogue-settings.php:/opt/catalogue-settings.php:ro" -v "$PWD/docker/tests/legacy-linktarget.php:/opt/legacy-linktarget.php:ro" init php maintenance/run.php /opt/legacy-linktarget.php --wiki=testwiki
+    - name: Catalogue registration checks (advisory)
+      id: catalogue_registration
+      continue-on-error: true
+      env:
+        COMPOSE_PROJECT_NAME: cloudwiki-catalogue-tests
+      run: python3 scripts/check-catalogue.py --env-file .env --immutable --workers
+        1 --report-directory docker/tests/test-results/catalogue-registration
+    - name: Catalogue skin asset checks (advisory)
+      id: catalogue_skins
+      continue-on-error: true
+      env:
+        COMPOSE_PROJECT_NAME: cloudwiki-catalogue-tests
+      run: python3 scripts/check-catalogue.py --env-file .env --immutable --workers
+        1 --gate skin-render --report-directory docker/tests/test-results/catalogue-skins
+    - name: Report advisory catalogue failures
+      if: always() && (steps.catalogue_registration.outcome == 'failure' || steps.catalogue_skins.outcome
+        == 'failure')
+      run: |
+        echo '::warning::Catalogue checks failed. These checks are advisory and do not block deployment; inspect the catalogue-failure-evidence artifact.'
+        echo '### Catalogue checks: advisory failures' >> "$GITHUB_STEP_SUMMARY"
+        echo 'Deployment may proceed if all required checks pass. See the catalogue-failure-evidence artifact for component diagnostics.' >> "$GITHUB_STEP_SUMMARY"
+    - name: Stop isolated catalogue check farm
+      if: always()
+      env:
+        COMPOSE_PROJECT_NAME: cloudwiki-catalogue-tests
+      run: docker compose -f compose.yaml -f docker/tests/upgrade-isolated.compose.yaml
+        down
+    - name: Preserve catalogue diagnostics
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: catalogue-failure-evidence
+        path: docker/tests/test-results/catalogue-*/
+        if-no-files-found: ignore
+        retention-days: 7
+    if: "${{ needs.changes.outputs.wiki == 'true' }}"
+  production:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs:
+    - changes
+    - build
+    permissions:
+      contents: read
+      packages: read
+    steps:
+    - uses: actions/checkout@v4
+    - uses: "./.github/actions/ci-images"
+      with:
+        group: all
+        token: "${{ github.token }}"
+    - run: python3 scripts/setup-dev.py
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: npm
+        cache-dependency-path: docker/tests/package-lock.json
+    - run: npm ci --prefix docker/tests
+    - uses: actions/cache@v4
+      with:
+        path: "~/.cache/ms-playwright"
+        key: "${{ runner.os }}-chromium-${{ hashFiles('docker/tests/package-lock.json')
+          }}"
+    - run: cd docker/tests && npx playwright install --with-deps chromium
+    - name: Fresh production initialization with separate credentials
+      run: |
+        scripts/farm setup-production --domain farm.example.test --env-file .env.production-ci --secrets-directory docker/secrets-production-ci
+        COMPOSE_PROJECT_NAME=cloudwiki-newprod docker compose --env-file .env.production-ci up -d --wait database redis memcached
+        COMPOSE_PROJECT_NAME=cloudwiki-newprod docker compose --env-file .env.production-ci run --rm --no-deps -v "$PWD/docker/tests/production-guard.php:/opt/production-guard.php:ro" init php /opt/production-guard.php create
+        if COMPOSE_PROJECT_NAME=cloudwiki-newprod scripts/farm --env-file .env.production-ci init-production > /tmp/production-refusal.log 2>&1; then
+          echo 'Fresh production initialization unexpectedly accepted an existing database'; exit 1
+        fi
+        grep -q 'requires empty databases' /tmp/production-refusal.log
+        COMPOSE_PROJECT_NAME=cloudwiki-newprod docker compose --env-file .env.production-ci run --rm --no-deps -v "$PWD/docker/tests/production-guard.php:/opt/production-guard.php:ro" init php /opt/production-guard.php remove
+        COMPOSE_PROJECT_NAME=cloudwiki-newprod scripts/farm --env-file .env.production-ci init-production
+        COMPOSE_PROJECT_NAME=cloudwiki-newprod scripts/farm --env-file .env.production-ci init-production
+        for wiki in metawiki loginwiki testwiki; do
+          COMPOSE_PROJECT_NAME=cloudwiki-newprod docker compose --env-file .env.production-ci run --rm --no-deps --user www-data -v "$PWD/docker/tests/production.php:/opt/production-test.php:ro" init php maintenance/run.php /opt/production-test.php --wiki="$wiki"
+        done
+    - name: Isolated production browser rehearsal
+      run: |
+        COMPOSE_PROJECT_NAME=cloudwiki-newprod docker compose --env-file .env.production-ci -f compose.yaml -f compose.production.yaml -f docker/tests/production.compose.yaml up -d
+        python3 docker/tests/wait-https.py --domain farm.example.test
+        PRODUCTION_TEST_DOMAIN=farm.example.test PRODUCTION_TEST_SECRETS="$PWD/docker/secrets-production-ci" npm test --prefix docker/tests -- production.spec.js
+    - if: failure()
+      run: |
+        docker compose logs --no-color --tail=100
+        COMPOSE_PROJECT_NAME=cloudwiki-restore docker compose logs --no-color --tail=80
+        if [ -f .env.production-ci ]; then
+          COMPOSE_PROJECT_NAME=cloudwiki-newprod docker compose --env-file .env.production-ci logs --no-color --tail=100
+        fi
+      name: Farm diagnostics
+    if: "${{ needs.changes.outputs.wiki == 'true' }}"
   search:
-    if: github.event_name == 'workflow_dispatch' && inputs.search
+    if: "${{ github.event_name == 'workflow_dispatch' && inputs.search }}"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - run: python3 scripts/setup-dev.py
-      - run: scripts/farm build
-      - run: docker compose up -d database redis memcached
-      - run: scripts/farm init
-      - run: |
-          MW_SEARCH=1 docker compose --profile dev --profile search up -d
-          for n in $(seq 1 60); do
-            docker compose exec search curl -fsS localhost:9200 && break
-            sleep 3
-          done
-          docker compose exec -e MW_SEARCH=1 php php maintenance/run.php /var/www/mediawiki/extensions/CirrusSearch/maintenance/UpdateSearchIndexConfig.php --wiki=testwiki
-          docker compose exec -e MW_SEARCH=1 php php maintenance/run.php /var/www/mediawiki/extensions/CirrusSearch/maintenance/ForceSearchIndex.php --wiki=testwiki --skipLinks --indexOnSkip
-          docker compose exec -e MW_SEARCH=1 php php maintenance/run.php /var/www/mediawiki/extensions/CirrusSearch/maintenance/ForceSearchIndex.php --wiki=testwiki --skipParse
-          docker compose exec -e MW_SEARCH=1 php php maintenance/run.php runJobs --wiki=testwiki --maxjobs=1000 --maxtime=120
-          docker compose exec search curl -fsS -X POST localhost:9200/testwiki/_refresh
-          docker compose run --rm --no-deps --user www-data -e MW_SEARCH=1 -v "$PWD/docker/tests/search.php:/opt/search-test.php:ro" init php maintenance/run.php /opt/search-test.php --wiki=testwiki
+    - uses: actions/checkout@v4
+    - uses: "./.github/actions/ci-images"
+      with:
+        group: all
+        token: "${{ github.token }}"
+    - run: python3 scripts/setup-dev.py
+    - run: docker compose up -d database redis memcached
+    - run: scripts/farm init
+    - run: |
+        MW_SEARCH=1 docker compose --profile dev --profile search up -d
+        for n in $(seq 1 60); do
+          docker compose exec search curl -fsS localhost:9200 && break
+          sleep 3
+        done
+        docker compose exec -e MW_SEARCH=1 php php maintenance/run.php /var/www/mediawiki/extensions/CirrusSearch/maintenance/UpdateSearchIndexConfig.php --wiki=testwiki
+        docker compose exec -e MW_SEARCH=1 php php maintenance/run.php /var/www/mediawiki/extensions/CirrusSearch/maintenance/ForceSearchIndex.php --wiki=testwiki --skipLinks --indexOnSkip
+        docker compose exec -e MW_SEARCH=1 php php maintenance/run.php /var/www/mediawiki/extensions/CirrusSearch/maintenance/ForceSearchIndex.php --wiki=testwiki --skipParse
+        docker compose exec -e MW_SEARCH=1 php php maintenance/run.php runJobs --wiki=testwiki --maxjobs=1000 --maxtime=120
+        docker compose exec search curl -fsS -X POST localhost:9200/testwiki/_refresh
+        docker compose run --rm --no-deps --user www-data -e MW_SEARCH=1 -v "$PWD/docker/tests/search.php:/opt/search-test.php:ro" init php maintenance/run.php /opt/search-test.php --wiki=testwiki
+    needs:
+    - build
+    permissions:
+      contents: read
+      packages: read
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs:
+    - changes
+    - checks
+    - build
+    - runtime
+    - counter
+    - integration
+    - queues
+    - upstream
+    - catalogue
+    - production
+    - search
+    permissions:
+      contents: read
+      packages: read
+    steps:
+    - name: Require all selected checks
+      env:
+        RESULTS: "${{ toJSON(needs) }}"
+        SEARCH: "${{ inputs.search }}"
+      run: |-
+        python3 - <<'CHECK'
+        import json, os
+        results = json.loads(os.environ['RESULTS'])
+        selection = results['changes']['outputs']
+        required = ['changes']
+        if selection.get('checks') == 'true': required += ['checks']
+        if selection.get('runtime') == 'true': required += ['build', 'counter']
+        if selection.get('wiki') == 'true': required += ['runtime', 'integration', 'queues', 'upstream', 'catalogue', 'production']
+        if os.environ['SEARCH'] == 'true': required += ['search']
+        failed = [name for name in required if results[name]['result'] != 'success']
+        if failed: raise SystemExit('Required checks did not pass: ' + ', '.join(failed))
+        print('All selected checks passed')
+        CHECK
+    if: "${{ always() }}"
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs:
+    - changes
+    - gate
+    permissions:
+      contents: read
+      packages: read
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/download-artifact@v4
+      with:
+        pattern: ci-images-*
+        merge-multiple: true
+        path: "${{ runner.temp }}/ci-images"
+    - run: python3 scripts/ci-images.py release --directory "$RUNNER_TEMP/ci-images"
+    - uses: actions/upload-artifact@v4
+      with:
+        name: release-manifest
+        path: release.json
+        retention-days: 3
+    if: "${{ !cancelled() && needs.gate.result == 'success' && needs.changes.outputs.runtime
+      == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+      }}"
+  dashboard-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs:
+    - changes
+    - gate
+    permissions:
+      contents: read
+      packages: read
+    steps:
+    - run: python3 -c 'import json,os; open("dashboard.json","w").write(json.dumps({"commit":os.environ["GITHUB_SHA"]}))'
+    - uses: actions/upload-artifact@v4
+      with:
+        name: dashboard-manifest
+        path: dashboard.json
+        retention-days: 3
+    if: "${{ always() && !cancelled() && needs.gate.result == 'success' && needs.changes.outputs.runtime
+      == 'false' && needs.changes.outputs.dashboard == 'true' && github.event_name
+      == 'push' && github.ref == 'refs/heads/main' }}"

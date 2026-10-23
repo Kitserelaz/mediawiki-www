@@ -495,6 +495,9 @@ def main():
             wildcard = root / 'scripts/wildcard-tls.py'
             if (state / 'wildcard').is_dir() and wildcard.is_file():
                 atomic_private_write(Path('/usr/local/libexec/cloudwiki-wildcard-tls.py'), wildcard.read_text())
+            dashboard_deployer = root / 'scripts/deploy-dashboard.py'
+            if dashboard_deployer.is_file():
+                atomic_private_write(Path('/usr/local/libexec/cloudwiki-deploy-dashboard.py'), dashboard_deployer.read_text())
             dashboard = root / 'scripts/install-diff-dashboard.py'
             if (state / 'diff').is_dir() and dashboard.is_file():
                 try:

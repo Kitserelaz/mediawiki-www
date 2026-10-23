@@ -371,7 +371,7 @@ runner heartbeat freshness, and the last build output time are shown separately.
 log and reports timing metadata through a separate GitHub check every 30 seconds.
 It publishes no log content or credentials, preserves the build's exit status,
 and cannot turn a failed build into success if reporting fails. Only trusted
-pushes to `main` publish heartbeats. Existing runs without the wrapper show an
+pushes and manual runs on `main` publish heartbeats. Existing runs without the wrapper show an
 explicit message that heartbeat information is unavailable.
 
 For minute polling, configure a root-only GitHub token in
@@ -389,3 +389,12 @@ The restricted production deployer writes fixed stage names, timestamps, a
 file. The report generator keeps publishing CI and deployment progress while the
 deployment lock is held, retaining the last consistent release/config snapshot.
 No deployment commands, registry tokens, or exception contents are published.
+
+### Production architecture checks
+
+The Docker stack workflow requires integration tests and native AMD64 architecture
+checks before deployment. ARM64 compatibility is an independent, manual workflow:
+open **Actions → ARM64 compatibility → Run workflow**. It uses QEMU emulation and
+has a 90-minute timeout; its result does not block production deployment. AMD64
+checks have a 30-minute timeout and no QEMU setup step. Dependency/base-image
+updates should still be checked on both architectures using the manual workflow.

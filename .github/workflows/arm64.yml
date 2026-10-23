@@ -1,0 +1,30 @@
+name: ARM64 compatibility
+# Optional portability checks; this workflow never deploys production.
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  architectures:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      checks: write
+    env:
+      CLOUDWIKI_PROGRESS_TOKEN: ${{ github.token }}
+    strategy:
+      matrix:
+        platform: [linux/arm64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: Build PHP image
+        run: python3 scripts/ci-build-progress.py --job "architectures (${{ matrix.platform }})" --phase "PHP image" -- docker buildx build --platform '${{ matrix.platform }}' --target php --load -t cloudwiki-php:verify -f docker/mediawiki/Dockerfile .
+      - name: Build Web image
+        run: python3 scripts/ci-build-progress.py --job "architectures (${{ matrix.platform }})" --phase "Web image" -- docker buildx build --platform '${{ matrix.platform }}' --target web --load -t cloudwiki-web:verify -f docker/mediawiki/Dockerfile .
+      - name: Build Counter image
+        run: python3 scripts/ci-build-progress.py --job "architectures (${{ matrix.platform }})" --phase "Counter image" -- docker buildx build --platform '${{ matrix.platform }}' --load -t cloudwiki-counter:verify Moe-Counter
+      - run: docker run --rm --platform '${{ matrix.platform }}' --entrypoint sh -v "$PWD/docker/tests/architecture.sh:/opt/architecture.sh:ro" cloudwiki-php:verify /opt/architecture.sh
+      - run: docker run --rm --platform '${{ matrix.platform }}' -v "$PWD/Moe-Counter/test:/app/test:ro" cloudwiki-counter:verify node --test

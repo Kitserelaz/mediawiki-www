@@ -23,6 +23,13 @@ class ActivityTests(unittest.TestCase):
         self.assertEqual(result.returncode, 7)
         self.assertIn('build output', result.stdout)
 
+    def test_manual_main_builds_can_report_but_other_branches_cannot(self):
+        with patch.dict(os.environ, {'CLOUDWIKI_PROGRESS_TOKEN': 'test-only',
+                                    'GITHUB_EVENT_NAME': 'workflow_dispatch', 'GITHUB_REF': 'refs/heads/main'}):
+            self.assertTrue(m.Activity('architectures', 'PHP image').enabled)
+            with patch.dict(os.environ, {'GITHUB_REF': 'refs/heads/other'}):
+                self.assertFalse(m.Activity('architectures', 'PHP image').enabled)
+
     def test_heartbeat_payload_contains_timing_but_no_logs_or_token(self):
         env = {'CLOUDWIKI_PROGRESS_TOKEN': 'private-token', 'GITHUB_EVENT_NAME': 'push',
                'GITHUB_REF': 'refs/heads/main', 'GITHUB_SHA': 'a' * 40, 'GITHUB_REPOSITORY': 'owner/repo',

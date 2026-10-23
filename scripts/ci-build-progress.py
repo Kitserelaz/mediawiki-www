@@ -17,7 +17,7 @@ class Activity:
                      'run_attempt': int(os.environ.get('GITHUB_RUN_ATTEMPT', '1')),
                      'started_at': time.time(), 'last_output_at': None, 'status': 'running'}
         self.token = os.environ.get('CLOUDWIKI_PROGRESS_TOKEN')
-        self.enabled = bool(self.token and os.environ.get('GITHUB_EVENT_NAME') == 'push'
+        self.enabled = bool(self.token and os.environ.get('GITHUB_EVENT_NAME') in ('push', 'workflow_dispatch')
                             and os.environ.get('GITHUB_REF') == 'refs/heads/main')
         self.check_id = None
 

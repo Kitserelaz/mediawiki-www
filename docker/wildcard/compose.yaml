@@ -1,0 +1,17 @@
+services:
+  web:
+    volumes:
+      - /var/lib/cloudwiki/wildcard/Caddyfile:/etc/caddy/wildcard.caddy:ro
+      - /var/lib/cloudwiki/wildcard/tls:/run/cloudwiki-tls:ro
+  # Explicit tools profile: excluded from normal startup, included in config inventory.
+  tls-renewal:
+    profiles: [tls-tools]
+    image: certbot/dns-cloudflare@sha256:c45edb002b883da1a1235abb205dff474a7a1a459d878e8d5fdc7f9d83073aea
+    command: [renew, --non-interactive, --cert-name, cloudwiki.us]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    volumes:
+      - /var/lib/cloudwiki/wildcard/credentials/cloudflare.ini:/run/cloudflare/cloudflare.ini:ro
+      - /var/lib/cloudwiki/wildcard/acme:/etc/letsencrypt
+      - /var/lib/cloudwiki/wildcard/work:/var/lib/letsencrypt
+      - /var/lib/cloudwiki/wildcard/logs:/var/log/letsencrypt

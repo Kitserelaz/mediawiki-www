@@ -301,3 +301,39 @@ Commit/review/push from the host over SSH or transfer the edits to your normal
 Git checkout; parent `.git` metadata and GitHub credentials are intentionally
 outside the browser editor. `diff.cloudwiki.us` reports live-edit filenames and
 blocked-deployment status without publishing uncommitted contents.
+
+### Wildcard production HTTPS and missing wikis
+
+The wildcard operator overlay in `docker/wildcard` serves `*.cloudwiki.us` through
+the wiki handler with a publicly trusted wildcard certificate. Unknown wiki names
+reach MediaWiki's missing-wiki page and return HTTP 404. Exact `code`, `diff`, and
+`counter` hosts keep their dedicated handlers. Cloudflare SSL verification remains
+enabled; this does not enable per-request certificate issuance.
+
+The server uses the pinned official `certbot/dns-cloudflare` image for DNS-01
+validation. Its scoped DNS API token lives in the root-only file
+`/var/lib/cloudwiki/wildcard/credentials/cloudflare.ini`, formatted as
+`dns_cloudflare_api_token = TOKEN`. It is mounted only into the temporary
+certificate client. An explicitly enabled certificate-tools profile makes the credential visible to
+the config guard without attaching it to PHP, the editor, or Caddy.
+
+`sudo python3 scripts/wildcard-tls.py issue` obtains the wildcard certificate.
+`sudo python3 scripts/wildcard-tls.py install` validates its CA chain, hostname,
+expiry, and private key, installs the proxy-only overlay, verifies missing-wiki
+404s and the existing services, then enables automatic renewal. Live wiki source
+is untouched. Only the requested proxy files are accepted into the config
+baseline; unrelated, unaccepted live settings remain protected and reported.
+
+`cloudwiki-wildcard-renew.timer` runs twice daily with a randomized delay. Renewal
+runs without stopping the wiki. When the certificate changes, the helper exports
+only its full chain and private key to Caddy's read-only TLS directory, validates
+Caddy, and restarts only the web proxy under the deployment lock. Unaccepted
+proxy or credential changes prevent activation. Certificate contents are validated
+by the renewal helper rather than hashed into the config baseline, so routine
+renewals do not create config drift.
+
+```sh
+sudo systemctl status cloudwiki-wildcard-renew.timer
+sudo journalctl -u cloudwiki-wildcard-renew.service -n 30
+sudo python3 /usr/local/libexec/cloudwiki-wildcard-tls.py renew --dry-run
+```

@@ -1,0 +1,5 @@
+# Explicit service hostnames retain their own handlers; this catches wiki names.
+https://*.{$MW_DOMAIN} {
+    tls /run/cloudwiki-tls/fullchain.pem /run/cloudwiki-tls/privkey.pem
+    import wiki
+}

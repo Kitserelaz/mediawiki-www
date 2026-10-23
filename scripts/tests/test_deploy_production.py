@@ -77,6 +77,22 @@ class DeploymentTest(unittest.TestCase):
     def deploy(self, runner, health=lambda *_: None):
         deployment.deploy(request(), self.root, self.state, runner, health)
 
+    def test_failed_guard_is_published_as_blocked_without_secret_values(self):
+        (self.root / '.env.production').write_text(self.environment + 'PRIVATE=new-secret-value\n')
+        with self.assertRaises(RuntimeError):
+            self.deploy(FakeRunner(self.root))
+        progress = json.loads((self.state / 'deployment-progress.json').read_text())
+        self.assertEqual(progress['status'], 'blocked')
+        self.assertEqual(progress['reason'], 'local_configuration_changed')
+        self.assertNotIn('new-secret-value', json.dumps(progress))
+
+    def test_success_publishes_final_stage_and_stops_heartbeat(self):
+        self.deploy(FakeRunner(self.root))
+        progress = json.loads((self.state / 'deployment-progress.json').read_text())
+        self.assertEqual(progress['status'], 'success')
+        self.assertEqual(progress['stage'], 'complete')
+        self.assertEqual(progress['commit'], request()['commit'])
+
     def test_only_expected_images_and_command_are_accepted(self):
         self.assertEqual(deployment.validate_request("deploy", request())["commit"], "a" * 40)
         for command in ["sh", "deploy; reboot", "deploy extra"]:

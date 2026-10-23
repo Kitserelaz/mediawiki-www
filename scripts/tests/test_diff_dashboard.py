@@ -78,7 +78,66 @@ class DashboardTests(unittest.TestCase):
         fetch = Mock(side_effect=[{'total_commits': 2, 'commits': [], 'files': []}, {'workflow_runs': []}])
         result = m.repository_report('abc', None, {}, 1000, fetch)
         self.assertNotIn('released', result)
-        self.assertEqual(fetch.call_count, 2)
+        self.assertEqual(fetch.call_count, 1)
+
+
+    def test_pipeline_tracks_exact_main_commit_and_keeps_only_public_fields(self):
+        run = {'id': 42, 'head_sha': 'new', 'status': 'in_progress', 'run_attempt': 2}
+        fetch = Mock(side_effect=[{'object': {'sha': 'new'}}, {'workflow_runs': [run]},
+            {'jobs': [{'id': 7, 'name': 'integration', 'status': 'in_progress', 'runner_name': 'private',
+                       'steps': [{'name': 'Build images', 'status': 'in_progress', 'secret': 'private'}]}]},
+            {'check_runs': [{'name': 'CloudWiki build: integration / Runtime images', 'output': {'summary': json.dumps({
+                'run_id': '42', 'run_attempt': 2, 'job': 'integration', 'phase': 'Runtime images',
+                'heartbeat_at': 995, 'last_output_at': 990, 'token': 'private'})}}]}])
+        result = m.pipeline_report({'history': {'checked_at': 999}}, 1000, fetch)
+        self.assertEqual(result['head_sha'], 'new')
+        self.assertIn('head_sha=new', fetch.call_args_list[1].args[0])
+        self.assertEqual(result['activity'][0]['last_output_at'], 990)
+        self.assertNotIn('private', json.dumps(result))
+        self.assertEqual(result['checked_at'], 1000)
+
+    def test_wrong_commit_run_is_not_presented_as_current(self):
+        fetch = Mock(side_effect=[{'object': {'sha': 'new'}}, {'workflow_runs': [{'id': 1, 'head_sha': 'old'}]}])
+        result = m.pipeline_report({}, 1000, fetch)
+        self.assertEqual(result['status'], 'waiting_for_run')
+        self.assertNotIn('id', result)
+
+    def test_heartbeat_from_other_run_or_retry_is_ignored(self):
+        checks = [{'name': 'CloudWiki build: test', 'output': {'summary': json.dumps(data)}} for data in [
+            {'run_id': '42', 'run_attempt': 1}, {'run_id': '43', 'run_attempt': 2}, {'run_id': '42', 'run_attempt': 2}]]
+        self.assertEqual(len(m.build_activity(checks, {'id': 42, 'run_attempt': 2})), 1)
+
+    def test_pipeline_refresh_is_independent_and_failed_poll_never_advances_freshness(self):
+        old = {'id': 42, 'checked_at': 900, 'status': 'in_progress'}
+        fail = Mock(side_effect=OSError('private network detail'))
+        result = m.pipeline_report(old, 1000, fail)
+        self.assertTrue(result['stale'])
+        self.assertEqual(result['checked_at'], 900)
+        self.assertNotIn('private', json.dumps(result))
+        fetch = Mock()
+        self.assertEqual(m.pipeline_report(old, 950, fetch), old)
+        fetch.assert_not_called()
+
+    def test_successful_history_uses_matching_job_and_step_durations(self):
+        past = {'id': 10}
+        job = {'name': 'architectures (linux/arm64)', 'conclusion': 'success',
+               'started_at': '2026-10-23T00:00:00Z', 'completed_at': '2026-10-23T00:10:00Z',
+               'steps': [{'name': 'Build PHP image', 'conclusion': 'success',
+                          'started_at': '2026-10-23T00:00:00Z', 'completed_at': '2026-10-23T00:05:00Z'}]}
+        fetch = Mock(side_effect=[{'object': {'sha': 'new'}}, {'workflow_runs': [{'id': 42, 'head_sha': 'new'}]},
+                                 {'jobs': []}, {'check_runs': []}, {'workflow_runs': [past]}, {'jobs': [job]}])
+        result = m.pipeline_report({}, 10000, fetch)
+        self.assertEqual(result['history']['durations'][job['name']]['median'], 600)
+        self.assertEqual(result['history']['durations'][job['name'] + ' / Build PHP image']['median'], 300)
+
+    def test_deployment_report_never_publishes_unapproved_metadata(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            (root / 'deployment-progress.json').write_text(json.dumps({'commit': 'abc', 'stage': 'backup',
+                'heartbeat_at': 900, 'registry_token': 'private', 'command_output': 'private'}))
+            result = m.deployment_report(root)
+            self.assertEqual(result['stage'], 'backup')
+            self.assertNotIn('private', json.dumps(result))
 
 
 if __name__ == '__main__':

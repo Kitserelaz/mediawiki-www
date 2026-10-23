@@ -358,3 +358,34 @@ The migration removes only the named role and uses MediaWiki/ManageWiki/CentralA
 services so affected user and group caches are invalidated. It does not promote
 anyone into another group. Core seed-administrator groups and existing staff
 memberships retain their current permissions.
+
+### Build and deployment progress on the changes dashboard
+
+The changes dashboard ties CI to the latest `main` SHA and the Docker workflow,
+including rerun attempts. It refreshes job/step status every minute independently
+of the five-minute source comparison cache. The browser fetches reports every
+30 seconds and updates elapsed timers every five seconds. GitHub check freshness,
+runner heartbeat freshness, and the last build output time are shown separately.
+
+`scripts/ci-build-progress.py` streams Docker build output to the existing Actions
+log and reports timing metadata through a separate GitHub check every 30 seconds.
+It publishes no log content or credentials, preserves the build's exit status,
+and cannot turn a failed build into success if reporting fails. Only trusted
+pushes to `main` publish heartbeats. Existing runs without the wrapper show an
+explicit message that heartbeat information is unavailable.
+
+For minute polling, configure a root-only GitHub token in
+`/var/lib/cloudwiki/diff/github-token` with repository Actions and Checks read
+access. The dashboard uses it only for GitHub API reads. Unauthenticated CI polling
+backs off to ten minutes to respect GitHub's lower public API limit; failed requests retain old data
+with a stale warning rather than claiming current progress.
+
+Timing warnings use a median from up to five successful workflow runs and require
+at least three matching samples. A long step or quiet log alone is not classified
+as stuck. Advisory catalogue failures are distinct from required failures.
+
+The restricted production deployer writes fixed stage names, timestamps, a
+15-second process heartbeat, and allowlisted blocking reasons to a private state
+file. The report generator keeps publishing CI and deployment progress while the
+deployment lock is held, retaining the last consistent release/config snapshot.
+No deployment commands, registry tokens, or exception contents are published.

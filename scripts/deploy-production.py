@@ -12,6 +12,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import threading
 
 REPOSITORY = "https://github.com/Kitserelaz/mediawiki-www.git"
 REGISTRY = "ghcr.io/kitserelaz/mediawiki-www-"
@@ -246,7 +247,58 @@ def check_worktree(runner):
         raise RuntimeError('MediaWiki has uncommitted or untracked live edits; refusing to overwrite them')
 
 
+
+class DeploymentProgress:
+    """Fixed public stage names and timestamps only; no command output or credentials."""
+    def __init__(self, state, commit):
+        self.path = state / 'deployment-progress.json'
+        now = time.time()
+        self.data = {'commit': commit, 'status': 'running', 'stage': 'validating',
+                     'started_at': now, 'stage_started_at': now, 'updated_at': now}
+        self.lock = threading.Lock()
+        self.stop = threading.Event()
+        self.worker = threading.Thread(target=self.heartbeat, daemon=True)
+        self.stage('validating')
+        self.worker.start()
+
+    def stage(self, stage, status='running', reason=None):
+        with self.lock:
+            now = time.time()
+            if stage != self.data['stage']:
+                self.data['stage_started_at'] = now
+            self.data.update(stage=stage, status=status, reason=reason, updated_at=now, heartbeat_at=now)
+            atomic_private_write(self.path, json.dumps(self.data) + '\n')
+
+    def heartbeat(self):
+        while not self.stop.wait(15):
+            with self.lock:
+                self.data['heartbeat_at'] = time.time()
+                atomic_private_write(self.path, json.dumps(self.data) + '\n')
+
+    def finish(self):
+        self.stop.set()
+        self.worker.join(timeout=5)
+
+
 def deploy(payload, root, state, runner, health=probe):
+    progress = DeploymentProgress(state, payload['commit'])
+    try:
+        _deploy(payload, root, state, runner, health, progress)
+        if progress.data['status'] == 'running':
+            progress.stage('complete', 'success')
+    except Exception as error:
+        message = str(error)
+        reason = ('local_configuration_changed' if 'Local configuration changed:' in message else
+                  'uncommitted_files' if 'uncommitted' in message or 'Tracked production' in message else
+                  'insufficient_disk' if 'GiB free' in message else 'stage_failed')
+        progress.stage(progress.data['stage'], 'blocked' if reason != 'stage_failed' else 'failed', reason)
+        raise
+    finally:
+        progress.finish()
+
+
+
+def _deploy(payload, root, state, runner, health, progress):
     commit = payload["commit"]
     env_file = root / ".env.production"
     initial_config = check_local_config(root, state, runner)
@@ -257,8 +309,10 @@ def deploy(payload, root, state, runner, health=probe):
     origin = runner.run(["git", "config", "--get", "remote.origin.url"], capture=True)
     if origin != REPOSITORY:
         raise RuntimeError("Unexpected production Git origin")
+    progress.stage("fetching")
     runner.run(["git", "fetch", "--no-tags", "origin", "main"])
     if runner.run(["git", "rev-parse", "FETCH_HEAD"], capture=True) != commit:
+        progress.stage("superseded", "superseded")
         print("A newer main commit exists; skipping this superseded deployment", flush=True)
         return
     old_commit = runner.run(["git", "rev-parse", "HEAD"], capture=True)
@@ -290,6 +344,7 @@ def deploy(payload, root, state, runner, health=probe):
         raise RuntimeError("Less than 5 GiB free; free storage before deploying")
     # Pull all images before the write freeze. Registry credentials exist only in
     # a private temporary Docker config and are discarded after the pulls.
+    progress.stage("pulling_images")
     with tempfile.TemporaryDirectory(prefix="registry-", dir=state) as config:
         docker_env = dict(os.environ, DOCKER_CONFIG=config)
         runner.run(["docker", "login", "ghcr.io", "--username", payload["registry_user"], "--password-stdin"],
@@ -300,6 +355,7 @@ def deploy(payload, root, state, runner, health=probe):
                                    '{{index .Config.Labels "org.opencontainers.image.revision"}}'], capture=True)
             if revision != commit:
                 raise RuntimeError("Pulled image does not match the requested commit")
+    progress.stage("preparing_source")
     source_directory = root if live else prepare_release(commit, root, state, runner) if mode == 'bind' else None
     if source_directory:
         # Replace every active assignment, including duplicates, while preserving
@@ -326,6 +382,7 @@ def deploy(payload, root, state, runner, health=probe):
             editor_stopped = True
             check_worktree(runner)
             check_local_config(root, state, runner, initial_config)
+        progress.stage("backup")
         frozen = True
         runner.run(["scripts/snapshot", "--env-file", str(env_file), "--keep-stopped", snapshot], input="")
         check_local_config(root, state, runner, initial_config)
@@ -333,6 +390,7 @@ def deploy(payload, root, state, runner, health=probe):
         backup = root / "backups" / snapshot
         atomic_private_write(backup / "production.env", old_environment)
         atomic_private_write(backup / "deployment.json", json.dumps({"previous_commit": old_commit, "target_images": payload["images"]}, indent=2) + "\n")
+        progress.stage("switching_release")
         runner.run(["git", "checkout", "--detach", commit])
         changed = True
         if live:
@@ -352,8 +410,11 @@ def deploy(payload, root, state, runner, health=probe):
             raise RuntimeError('Tracked production configuration changed while preparing the release')
         runner.run(compose + ["config", "--quiet"])
         runner.run(compose + ["up", "-d", "--no-build", "--wait", "database", "redis", "memcached"])
+        progress.stage("migrations")
         runner.run(["scripts/farm", "--env-file", str(env_file), "update"], input="")
+        progress.stage("starting_services")
         runner.run(compose + ["up", "-d", "--no-build", "--wait", "--wait-timeout", "180"] + (["--scale", "code=0"] if live else []))
+        progress.stage("health_checks")
         health(root, runner)
         check_worktree(runner)
         check_local_config(root, state, runner, intended_config)
@@ -365,6 +426,7 @@ def deploy(payload, root, state, runner, health=probe):
         atomic_private_write(last, json.dumps(record, indent=2) + "\n")
         save_config_baseline(state, intended_config, 'successful deployment ' + commit)
         frozen = False
+        progress.stage("restoring_editor")
         if live:
             try:
                 runner.run(compose + ['up', '-d', '--no-deps', '--no-build', 'code'])

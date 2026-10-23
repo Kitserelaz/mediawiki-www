@@ -16,6 +16,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      checks: write
     outputs:
       php: ${{ steps.publish.outputs.php }}
       web: ${{ steps.publish.outputs.web }}
@@ -25,7 +26,9 @@ jobs:
       - uses: docker/setup-buildx-action@v3
       - run: python3 scripts/verify-checkout.py
       - name: Deployment safety checks
-        run: python3 -m unittest discover -s scripts/tests
+        run: |
+          python3 -m unittest discover -s scripts/tests
+          node scripts/tests/dashboard-render.cjs
       - run: python3 scripts/setup-dev.py
       - run: docker compose config --quiet
       - run: scripts/farm build
@@ -207,6 +210,11 @@ jobs:
             ubuntu@15.204.121.114 deploy < "$task_dir/request.json"
   architectures:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+    env:
+      CLOUDWIKI_PROGRESS_TOKEN: ${{ github.token }}
     strategy:
       matrix:
         platform: [linux/amd64, linux/arm64]
@@ -214,9 +222,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
-      - run: docker buildx build --platform '${{ matrix.platform }}' --target php --load -t cloudwiki-php:verify -f docker/mediawiki/Dockerfile .
-      - run: docker buildx build --platform '${{ matrix.platform }}' --target web --load -t cloudwiki-web:verify -f docker/mediawiki/Dockerfile .
-      - run: docker buildx build --platform '${{ matrix.platform }}' --load -t cloudwiki-counter:verify Moe-Counter
+      - name: Build PHP image
+        run: python3 scripts/ci-build-progress.py --job "architectures (${{ matrix.platform }})" --phase "PHP image" -- docker buildx build --platform '${{ matrix.platform }}' --target php --load -t cloudwiki-php:verify -f docker/mediawiki/Dockerfile .
+      - name: Build Web image
+        run: python3 scripts/ci-build-progress.py --job "architectures (${{ matrix.platform }})" --phase "Web image" -- docker buildx build --platform '${{ matrix.platform }}' --target web --load -t cloudwiki-web:verify -f docker/mediawiki/Dockerfile .
+      - name: Build Counter image
+        run: python3 scripts/ci-build-progress.py --job "architectures (${{ matrix.platform }})" --phase "Counter image" -- docker buildx build --platform '${{ matrix.platform }}' --load -t cloudwiki-counter:verify Moe-Counter
       - run: docker run --rm --platform '${{ matrix.platform }}' --entrypoint sh -v "$PWD/docker/tests/architecture.sh:/opt/architecture.sh:ro" cloudwiki-php:verify /opt/architecture.sh
       - run: docker run --rm --platform '${{ matrix.platform }}' -v "$PWD/Moe-Counter/test:/app/test:ro" cloudwiki-counter:verify node --test
   search:

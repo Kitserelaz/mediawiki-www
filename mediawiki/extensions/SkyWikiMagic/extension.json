@@ -40,6 +40,15 @@
 				"WikiRequestManager"
 			]
 		},
+		"CreateNewWikiLegacy": {
+			"class": "WikiOasis\\WikiOasisMagic\\SpecialCreateNewWikiLegacy",
+			"services": [
+				"CreateWikiDatabaseUtils",
+				"WikiManagerFactory",
+				"CreateWikiValidator",
+				"WikiRequestManager"
+			]
+		},
 		"ChangeDomain": {
 			"class": "WikiOasis\\WikiOasisMagic\\SpecialChangeDomain",
 			"services": [

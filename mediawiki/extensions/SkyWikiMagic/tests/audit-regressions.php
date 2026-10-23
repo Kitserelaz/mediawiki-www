@@ -75,7 +75,7 @@ namespace {
 		echo "PASS: counter parsing makes no HTTP request and escapes alt text\n";
 
 		$manifest = json_decode( file_get_contents( dirname( __DIR__ ) . '/extension.json' ), true );
-		$handler = file_get_contents( dirname( __DIR__ ) . '/includes/SpecialCreateNewWiki.php' );
+		$handler = file_get_contents( dirname( __DIR__ ) . '/includes/CreateNewWikiForm.php' );
 		preg_match( "/pingLimiter\\( '([^']+)' \\)/", $handler, $match );
 		check( isset( $match[1] ), 'Missing wiki creation limiter' );
 		check( ( $manifest['RateLimits'][$match[1]]['user'] ?? null ) === [ 1, 86400 ], 'Daily limit does not match the submission action' );

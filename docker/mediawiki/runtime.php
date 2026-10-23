@@ -24,6 +24,7 @@ function farmSiteConfiguration(): void {
     $domain = farmEnv('MW_DOMAIN', 'localhost');
     $settings = [
         'wgCreateWikiDatabase' => 'wikidb', 'wgCreateWikiGlobalWiki' => 'metawiki',
+        'wgCreateWikiSubdomain' => $domain,
         'wgCreateWikiCacheDirectory' => '/var/www/mediawiki/cw_cache',
         'wgManageWikiCacheDirectory' => '/var/www/mediawiki/cw_cache',
         'wgManageWikiServers' => [],

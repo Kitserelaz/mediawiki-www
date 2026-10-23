@@ -23,12 +23,12 @@ namespace MediaWiki\Extension\DisplayTitle;
 
 use HtmlArmor;
 use MediaWiki\Config\ServiceOptions;
+use MediaWiki\Output\OutputPage;
+use MediaWiki\Page\PageProps;
 use MediaWiki\Page\RedirectLookup;
 use MediaWiki\Page\WikiPageFactory;
-use NamespaceInfo;
-use OutputPage;
-use PageProps;
-use Title;
+use MediaWiki\Title\NamespaceInfo;
+use MediaWiki\Title\Title;
 
 class DisplayTitleService {
 	public const CONSTRUCTOR_OPTIONS = [
@@ -37,63 +37,21 @@ class DisplayTitleService {
 		'DisplayTitleFollowRedirects'
 	];
 
-	/**
-	 * @var bool
-	 */
-	private $hideSubtitle;
+	private readonly bool $hideSubtitle;
+	private readonly array $excludes;
+	private readonly bool $followRedirects;
 
-	/**
-	 * @var array
-	 */
-	private $excludes;
-
-	/**
-	 * @var bool
-	 */
-	private $followRedirects;
-
-	/**
-	 * @var NamespaceInfo
-	 */
-	private $namespaceInfo;
-
-	/**
-	 * @var RedirectLookup
-	 */
-	private $redirectLookup;
-
-	/**
-	 * @var PageProps
-	 */
-	private $pageProps;
-
-	/**
-	 * @var WikiPageFactory
-	 */
-	private $wikiPageFactory;
-
-	/**
-	 * @param ServiceOptions $options
-	 * @param NamespaceInfo $namespaceInfo
-	 * @param RedirectLookup $redirectLookup
-	 * @param PageProps $pageProps
-	 * @param WikiPageFactory $wikiPageFactory
-	 */
 	public function __construct(
 		ServiceOptions $options,
-		NamespaceInfo $namespaceInfo,
-		RedirectLookup $redirectLookup,
-		PageProps $pageProps,
-		WikiPageFactory $wikiPageFactory
+		private readonly NamespaceInfo $namespaceInfo,
+		private readonly RedirectLookup $redirectLookup,
+		private readonly PageProps $pageProps,
+		private readonly WikiPageFactory $wikiPageFactory,
 	) {
 		$options->assertRequiredOptions( self::CONSTRUCTOR_OPTIONS );
 		$this->hideSubtitle = $options->get( 'DisplayTitleHideSubtitle' );
 		$this->excludes = $options->get( 'DisplayTitleExcludes' );
 		$this->followRedirects = $options->get( 'DisplayTitleFollowRedirects' );
-		$this->namespaceInfo = $namespaceInfo;
-		$this->redirectLookup = $redirectLookup;
-		$this->pageProps = $pageProps;
-		$this->wikiPageFactory = $wikiPageFactory;
 	}
 
 	/**
@@ -126,7 +84,7 @@ class DisplayTitleService {
 		}
 
 		$customized = false;
-		if ( isset( $html ) ) {
+		if ( $html !== null ) {
 			$text = null;
 			if ( is_string( $html ) ) {
 				$text = str_replace( '_', ' ', $html );
@@ -167,7 +125,7 @@ class DisplayTitleService {
 					&& $text !== $target->getSubpageText();
 			}
 		}
-		if ( !$customized && $html !== null ) {
+		if ( !$customized ) {
 			$this->getDisplayTitle( $target, $html, $wrap );
 		}
 	}
@@ -177,7 +135,7 @@ class DisplayTitleService {
 	 *
 	 * @since 1.0
 	 * @param Title $title the Title object for the page
-	 * @param string|HtmlArmor &$displaytitle to return the display title, if set
+	 * @param string|HtmlArmor|null &$displaytitle to return the display title, if set
 	 * @param bool $wrap whether to wrap result in HtmlArmor
 	 * @return bool true if the page has a displaytitle page property that is
 	 * different from the prefixed page name, false otherwise

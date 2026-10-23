@@ -11,14 +11,14 @@ use MediaWiki\Hook\SkinTemplateNavigation__UniversalHook;
 use MediaWiki\Linker\Hook\HtmlPageLinkRendererBeginHook;
 use MediaWiki\Linker\LinkRenderer;
 use MediaWiki\Linker\LinkTarget;
-use NamespaceInfo;
-use OutputPage;
+use MediaWiki\Output\OutputPage;
+use MediaWiki\Title\NamespaceInfo;
+use MediaWiki\Title\Title;
 use Parser;
 use ParserOutput;
 use RequestContext;
 use Skin;
 use SkinTemplate;
-use Title;
 
 class DisplayTitleHooks implements
 	ParserFirstCallInitHook,
@@ -28,26 +28,10 @@ class DisplayTitleHooks implements
 	SelfLinkBeginHook,
 	SkinTemplateNavigation__UniversalHook
 {
-	/**
-	 * @var DisplayTitleService
-	 */
-	private $displayTitleService;
-
-	/**
-	 * @var NamespaceInfo
-	 */
-	private $namespaceInfo;
-
-	/**
-	 * @param DisplayTitleService $displayTitleService
-	 * @param NamespaceInfo $namespaceInfo
-	 */
 	public function __construct(
-		DisplayTitleService $displayTitleService,
-		NamespaceInfo $namespaceInfo
+		private readonly DisplayTitleService $displayTitleService,
+		private readonly NamespaceInfo $namespaceInfo,
 	) {
-		$this->displayTitleService = $displayTitleService;
-		$this->namespaceInfo = $namespaceInfo;
 	}
 
 	/**
@@ -74,8 +58,12 @@ class DisplayTitleHooks implements
 	 */
 	public function getdisplaytitleParserFunction( Parser $parser, string $pagename ): string {
 		$title = Title::newFromText( $pagename );
+		$originalPagename = $pagename;
 		if ( $title !== null ) {
 			$this->displayTitleService->getDisplayTitle( $title, $pagename );
+		}
+		if ( $pagename === null ) {
+			return $originalPagename;
 		}
 		return $pagename;
 	}
@@ -129,8 +117,8 @@ class DisplayTitleHooks implements
 	 * @param string &$ret the value to return if the hook returns false
 	 */
 	public function onHtmlPageLinkRendererBegin( $linkRenderer, $target, &$text, &$customAttribs, &$query, &$ret ) {
-		$title = RequestContext::getMain()->getTitle();
-		if ( $title ) {
+		if ( RequestContext::getMain()->hasTitle() ) {
+			$title = RequestContext::getMain()->getTitle();
 			$this->displayTitleService->handleLink(
 				$title->getPrefixedText(),
 				Title::newFromLinkTarget( $target ),

@@ -1,0 +1,23 @@
+{
+  "component": "mediawiki/extensions/DisplayTitle",
+  "baseline": "e8a5ccec980a88ef7c4d371f9da22e33b8550c50",
+  "target": "4e41492536204e6b33fbc152b751426658d14c9c",
+  "preserved_changes": [],
+  "dependency_status": "No runtime Composer dependencies or component Composer lock; upstream npm lock included.",
+  "upstream_branch": "REL1_46",
+  "version": "4.1.0",
+  "reason": "DisplayTitle 4.0.3 imported global PageProps, causing a TypeError with MediaWiki 1.46.2 when RecentChanges initialized the parser.",
+  "validation": {
+    "php": "8.4.27",
+    "mediawiki": "1.46.2",
+    "php_lint": "passed for all extension PHP files",
+    "upstream_phpunit": {
+      "tests": 92,
+      "assertions": 92,
+      "status": "passed",
+      "configuration": "Minimal dev-only configuration, metawiki temporary PHPUnit tables",
+      "note": "Initial testwiki attempt was blocked by a pre-existing crashed searchindex table; no repair was attempted."
+    },
+    "recentchanges": "Rendered changes list with DisplayTitle explicitly loaded in a private dev CLI configuration"
+  }
+}

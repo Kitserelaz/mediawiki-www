@@ -63,9 +63,17 @@ Expect a maintenance interruption while writers are stopped, snapshots are taken
 and schemas are updated. Docker remains enabled at boot, and normal service
 startup uses the existing restart policies without running migrations.
 
-The installed entry point updates itself from the successful release. The workflow
-does not cancel an in-progress deployment when a newer push arrives. A server lock
-also prevents overlap if a workflow is manually retried.
+The installed entry point updates itself from the successful release. New pushes
+or manual runs cancel older CI runs of the same workflow and branch (or pull
+request). Push and manual builds share a concurrency group; ARM64 compatibility
+has its own group, so successive ARM64 runs cancel each other without cancelling
+the primary CI workflow. Job cancellation guards prevent superseded runs from
+starting their remaining checks or publication gates.
+
+Production deployments use a separate non-cancelling concurrency group. A newer
+push never interrupts an active deployment, migration or rollback. The server
+skips superseded commits before stopping traffic. A server lock also prevents
+overlap if a workflow is manually retried.
 
 ## Operations and recovery
 

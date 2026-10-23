@@ -12,7 +12,7 @@ permissions:
         type: boolean
         default: false
 concurrency:
-  group: cloudwiki-ci-${{ github.event_name }}-${{ github.event.pull_request.number
+  group: cloudwiki-ci-${{ github.workflow }}-${{ github.event.pull_request.number
     || github.ref }}
   cancel-in-progress: true
 jobs:

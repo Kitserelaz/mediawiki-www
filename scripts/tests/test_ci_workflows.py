@@ -15,7 +15,7 @@ class WorkflowTests(unittest.TestCase):
         def read(name):
             return json.loads(subprocess.check_output(['ruby','-ryaml','-rjson','-e',
                 'puts JSON.generate(YAML.load_file(ARGV[0]))',str(ROOT/'.github/workflows'/name)],text=True))
-        cls.ci=read('docker.yml'); cls.deploy=read('deploy.yml')
+        cls.ci=read('docker.yml'); cls.deploy=read('deploy.yml'); cls.arm=read('arm64.yml')
 
     def test_cancel_ci_but_never_an_active_deployment(self):
         self.assertTrue(self.ci['concurrency']['cancel-in-progress'])
@@ -24,6 +24,24 @@ class WorkflowTests(unittest.TestCase):
         self.assertNotIn('deploy',self.ci['jobs'])
         for name, job in self.ci['jobs'].items():
             self.assertIn('!cancelled()', job['if'], name)
+
+    def test_push_and_manual_builds_share_branch_concurrency(self):
+        group = self.ci['concurrency']['group']
+        self.assertIn('github.workflow', group)
+        self.assertIn('github.event.pull_request.number', group)
+        self.assertIn('github.ref', group)
+        self.assertNotIn('github.event_name', group)
+        self.assertNotIn('github.sha', group)
+        self.assertNotIn('github.run_id', group)
+
+    def test_arm64_cancels_older_manual_runs_without_cancelling_other_workflows(self):
+        self.assertTrue(self.arm['concurrency']['cancel-in-progress'])
+        group = self.arm['concurrency']['group']
+        self.assertIn('github.workflow', group)
+        self.assertIn('github.ref', group)
+        self.assertNotIn('github.run_id', group)
+        self.assertNotEqual(self.arm['name'], self.ci['name'])
+        self.assertEqual(self.deploy['jobs']['deploy']['concurrency']['group'], 'cloudwiki-production')
 
     def test_every_selected_required_job_is_a_dependency_of_gate(self):
         jobs=self.ci['jobs']; gate=jobs['gate']

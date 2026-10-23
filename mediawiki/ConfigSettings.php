@@ -573,43 +573,13 @@ $wgConf->settings += [
 				'suppressrevision' => true,
 				'viewsuppressed' => true,
 			],
-			'steward' => [
-				'userrights' => true,
-			],
 			'user' => [
 				'mwoauthmanagemygrants' => true,
 				'user' => true,
 			],
 		],
 		'+metawiki' => [
-			'steward' => [
-				'abusefilter-modify-global' => true,
-				'centralauth-lock' => true,
-				'centralauth-suppress' => true,
-				'centralauth-rename' => true,
-				'centralauth-unmerge' => true,
-				'createwiki' => true,
-				'createwiki-deleterequest' => true,
-				'globalblock' => true,
-				'handle-import-request-interwiki' => true,
-				'handle-import-requests' => true,
-				'handle-ssl-requests' => true,
-				'managewiki-core' => true,
-				'managewiki-extensions' => true,
-				'managewiki-namespaces' => true,
-				'managewiki-permissions' => true,
-				'managewiki-settings' => true,
-				'managewiki-restricted' => true,
-				'managewiki-privacy' => true,
-				'noratelimit' => true,
-				'oathauth-verify-user' => true,
-				'userrights' => true,
-				'userrights-interwiki' => true,
-				'globalgroupmembership' => true,
-				'globalgrouppermissions' => true,
-				'view-private-import-requests' => true,
-				'view-private-ssl-requests' => true,
-			],
+
 			'user' => [
 				'createnewwiki' => true,
 				'request-ssl' => true,
@@ -869,7 +839,6 @@ $wgConf->settings += [
 		'default' => [
 			'checkuser',
 			'suppress',
-			'steward',
 		],
 		'+metawiki' => [
 			'electionadmin',

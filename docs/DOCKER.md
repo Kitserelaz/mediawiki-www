@@ -31,7 +31,7 @@ scripts/farm certificate
 scripts/farm smoke
 ```
 
-Open https://test.localhost, https://meta.localhost, https://login.localhost, and https://counter.localhost. `auth.localhost` serves shared authentication routes, not a wiki homepage. Local email is captured at http://localhost:8025. The admin username defaults to `Admin`; read the generated password from `docker/secrets/admin-password`. Fresh initialization assigns the farm-management `steward` role on meta. Local development disables the inherited group two-factor requirement. Production retains it: sign into meta and enroll at `Special:OATHManage` before using steward permissions such as CreateWiki and ManageWiki. Save recovery codes privately.
+Open https://test.localhost, https://meta.localhost, https://login.localhost, and https://counter.localhost. `auth.localhost` serves shared authentication routes, not a wiki homepage. Local email is captured at http://localhost:8025. The admin username defaults to `Admin`; read the generated password from `docker/secrets/admin-password`. Fresh initialization retains the core administrator groups and does not assign the retired `steward` role. Existing staff roles are managed separately. Production retains the other configured group and permission two-factor requirements; enroll at `Special:OATHManage` when required and save recovery codes privately.
 
 Caddy issues individual local-hostname certificates through its persistent internal CA. This avoids relying on browser acceptance of a second-level `*.localhost` wildcard certificate. The on-demand permission endpoint allows only `localhost` names and is not published. `scripts/farm certificate` exports the public CA certificate only. On macOS, trust it once with:
 
@@ -337,3 +337,24 @@ sudo systemctl status cloudwiki-wildcard-renew.timer
 sudo journalctl -u cloudwiki-wildcard-renew.service -n 30
 sudo python3 /usr/local/libexec/cloudwiki-wildcard-tls.py renew --dry-run
 ```
+
+### Retired steward role
+
+The farm no longer defines or seeds `steward`. CentralAuth and GlobalBlocking's
+bundled default grants for that group are removed as a farm policy patch; their
+available rights and all other groups remain unchanged. The retired name stays
+reserved in ManageWiki's disallowed groups to prevent recreation through its UI.
+Historical rights logs and former-group records remain intact.
+
+For an existing farm, audit with the explicit maintenance script before removal:
+
+```sh
+scripts/farm --env-file .env.production compose run --rm --no-deps --user www-data init php maintenance/run.php /opt/farm/retire-steward.php --wiki=metawiki
+# After taking a recovery snapshot, repeat with --apply to remove memberships
+# and any saved local/default/global steward definitions and refresh role caches.
+```
+
+The migration removes only the named role and uses MediaWiki/ManageWiki/CentralAuth
+services so affected user and group caches are invalidated. It does not promote
+anyone into another group. Core seed-administrator groups and existing staff
+memberships retain their current permissions.

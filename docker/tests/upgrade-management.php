@@ -78,9 +78,8 @@ class UpgradeManagementAcceptance extends MediaWiki\Maintenance\Maintenance {
                     $this->check($descriptor['private']['disabled'] === $disabled,
                         'Remote privacy control did not enforce both required rights');
                 }
-                $admin = $services->getUserFactory()->newFromName(getenv('ADMIN_USER') ?: 'Admin');
-                $this->check($services->getPermissionManager()->userHasRight($admin, 'managewiki-privacy'),
-                    'Steward privacy grant is missing');
+                $this->check(!array_key_exists('steward', $services->getMainConfig()->get('GroupPermissions')),
+                    'Retired steward role was recreated');
                 break;
             case 'configure':
                 if (!file_exists($stateFile)) {

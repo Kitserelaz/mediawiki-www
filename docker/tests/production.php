@@ -20,17 +20,13 @@ class CheckFreshProduction extends MediaWiki\Maintenance\Maintenance {
         if (!$user || !$this->getServiceContainer()->getPermissionManager()->userHasRight($user, 'edit')) {
             throw new RuntimeException('Production administrator lacks persisted editing rights');
         }
-        if ($wiki === 'metawiki') {
-            if (!in_array('steward', $this->getServiceContainer()->getUserGroupManager()->getUserGroups($user), true)) {
-                throw new RuntimeException('Fresh administrator lacks the farm management role');
-            }
-            foreach (['createwiki', 'managewiki-core', 'managewiki-permissions'] as $right) {
-                if (empty($config->get('GroupPermissions')['steward'][$right])) {
-                    throw new RuntimeException('Farm management role lacks configured permission: ' . $right);
-                }
-            }
-            if (!in_array('steward', $config->get('OATHRequiredForGroups'), true)) {
-                throw new RuntimeException('Production farm management must retain its existing two-factor requirement');
+        if (in_array('steward', $this->getServiceContainer()->getUserGroupManager()->getUserGroups($user), true)
+            || array_key_exists('steward', $config->get('GroupPermissions'))) {
+            throw new RuntimeException('Fresh production recreated the retired steward role');
+        }
+        foreach (['checkuser', 'suppress'] as $group) {
+            if (!in_array($group, $config->get('OATHRequiredForGroups'), true)) {
+                throw new RuntimeException('An existing protected group lost its two-factor requirement');
             }
         }
         if (!is_file('/var/www/mediawiki/cw_cache/.fresh-production-complete')) { throw new RuntimeException('Production initialization has no completion marker'); }

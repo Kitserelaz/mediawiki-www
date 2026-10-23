@@ -33,12 +33,7 @@
 		}
 	},
 	"GroupPermissions": {
-		"steward": {
-			"centralauth-createlocal": true,
-			"centralauth-unmerge": true,
-			"centralauth-lock": true,
-			"centralauth-suppress": true
-		},
+
 		"sysop": {
 			"centralauth-createlocal": true
 		},
@@ -46,9 +41,7 @@
 			"centralauth-merge": true
 		}
 	},
-	"PrivilegedGroups": [
-		"steward"
-	],
+	"PrivilegedGroups": [],
 	"GrantPermissions": {
 		"setglobalaccountstatus": {
 			"centralauth-lock": true,

@@ -9,9 +9,7 @@
 		"MediaWiki": ">= 1.46"
 	},
 	"GroupPermissions": {
-		"steward": {
-			"globalblock": true
-		},
+
 		"sysop": {
 			"globalblock-whitelist": true
 		}

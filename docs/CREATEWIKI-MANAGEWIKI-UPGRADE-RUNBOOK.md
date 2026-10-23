@@ -73,7 +73,7 @@ consistent across every command.
 5. Verify the migrated data and regenerated metadata before admitting traffic:
    wiki counts/states, namespaces and groups, extension selections, domains and
    article paths, permissions/privacy, registered-user creation policy, uploads
-   and dump paths. Check both public and private wikis and actual steward access.
+   and dump paths. Check both public and private wikis and actual authorized administrator access.
    Confirm remote privacy controls require `managewiki-privacy` as well as
    `managewiki-restricted`.
 

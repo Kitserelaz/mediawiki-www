@@ -16,9 +16,7 @@ class AttachSeedAdmin extends MediaWiki\Maintenance\Maintenance {
             if (!$hash || !$services->getPasswordFactory()->newFromCiphertext($hash)->verify($password)) { throw new RuntimeException("Seed account mismatch on $wiki"); }
             $central->attach($wiki, 'admin', false);
         }
-        // This command runs only during explicit fresh initialization, never restore/update.
-        $local = $services->getUserFactory()->newFromName($name);
-        $services->getUserGroupManager()->addUserToGroup($local, 'steward');
+        // Core initialization already grants sysop/bureaucrat; do not recreate retired roles.
         // Invalidate the live shared cache after bootstrap operations used CACHE_NONE.
         $central->invalidateCache();
         $this->output("Seed administrator attached across the seeded wikis.\n");

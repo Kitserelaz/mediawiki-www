@@ -376,6 +376,9 @@ $wgGroupPermissions['STAFF']['investigate'] = true;
 $wgGroupPermissions['STAFF']['checkuser-temporary-account-log'] = true;
 $wgGroupPermissions['STAFF']['checkuser-temporary-account-no-preference'] = true;
 
+$wgGroupPermissions['STAFF']['globalgroupmembership'] = true;
+$wgGroupPermissions['STAFF']['globalgrouppermissions'] = true;
+
 
 
 

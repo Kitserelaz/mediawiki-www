@@ -88,6 +88,8 @@ jobs:
           scripts/farm smoke
           docker/tests/check-images.sh
       - run: docker compose exec php php maintenance/run.php /opt/farm/test-fixtures.php --wiki=metawiki
+      - name: Verify isolated browser fixture permissions
+        run: docker compose exec php php maintenance/run.php /opt/farm/test-fixtures.php --wiki=metawiki --verify-permissions
       - run: docker compose run --rm --no-deps --user www-data -v "$PWD/docker/tests/configuration.php:/opt/configuration-test.php:ro" init php maintenance/run.php /opt/configuration-test.php --wiki=testwiki
       - run: docker compose run --rm --no-deps --user www-data -v "$PWD/docker/tests/email.php:/opt/email-test.php:ro" init php maintenance/run.php /opt/email-test.php --wiki=testwiki
       - run: docker run --rm --user www-data --entrypoint php --tmpfs /var/www/mediawiki/cw_cache:uid=33,gid=33,mode=0750 -v "$PWD/docker/tests/provision-shutdown.php:/opt/provision-shutdown.php:ro" cloudwiki-php:local /opt/provision-shutdown.php

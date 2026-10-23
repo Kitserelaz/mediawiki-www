@@ -398,3 +398,12 @@ open **Actions → ARM64 compatibility → Run workflow**. It uses QEMU emulatio
 has a 90-minute timeout; its result does not block production deployment. AMD64
 checks have a 30-minute timeout and no QEMU setup step. Dependency/base-image
 updates should still be checked on both architectures using the manual workflow.
+
+### Browser fixture permissions
+
+The development browser fixture explicitly grants its seed administrator the
+`docker-browser-fixture` group on the central wiki. This group contains only
+`createwiki`, is stored in that development farm's ManageWiki data, and is created
+only by `test-fixtures.php`. The fixture refuses production and non-central wiki
+execution. CI verifies the grant in a fresh PHP process before browser tests;
+production initialization and administrator groups are unchanged.

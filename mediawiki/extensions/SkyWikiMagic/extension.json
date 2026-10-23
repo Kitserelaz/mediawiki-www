@@ -36,8 +36,7 @@
 			"services": [
 				"CreateWikiDatabaseUtils",
 				"WikiManagerFactory",
-				"CreateWikiValidator",
-				"WikiRequestManager"
+				"CreateWikiValidator"
 			]
 		},
 		"CreateNewWikiLegacy": {
@@ -57,10 +56,48 @@
 			]
 		}
 	},
+	"APIModules": {
+		"skywikisubdomain": {
+			"class": "WikiOasis\\WikiOasisMagic\\ApiSubdomain",
+			"services": [
+				"CreateWikiValidator",
+				"CreateWikiDatabaseUtils"
+			]
+		}
+	},
+	"ResourceModules": {
+		"ext.skywiki.createNewWiki": {
+			"scripts": [
+				"resources/createNewWiki.js"
+			],
+			"dependencies": [
+				"mediawiki.api",
+				"mediawiki.htmlform.ooui"
+			],
+			"messages": [
+				"createnewwiki-subdomain-checking",
+				"createnewwiki-subdomain-available",
+				"createnewwiki-subdomain-unavailable",
+				"createnewwiki-subdomain-check-failed",
+				"createnewwiki-subdomain-enter",
+				"createnewwiki-subdomain-use"
+			]
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "",
+		"remoteExtPath": "SkyWikiMagic"
+	},
 	"AvailableRights": [
 		"createnewwiki"
 	],
 	"Hooks": {
+		"AuthChangeFormFields": {
+			"handler": "RegistrationHeader"
+		},
+		"BeforePageDisplay": {
+			"handler": "RegistrationHeader"
+		},
 		"AbuseFilterShouldFilterAction": {
 			"handler": "Main"
 		},
@@ -99,6 +136,9 @@
 		}
 	},
 	"HookHandlers": {
+		"RegistrationHeader": {
+			"class": "WikiOasis\\WikiOasisMagic\\HookHandlers\\RegistrationHeader"
+		},
 		"Main": {
 			"class": "WikiOasis\\WikiOasisMagic\\HookHandlers\\Main",
 			"factory": "WikiOasis\\WikiOasisMagic\\HookHandlers\\Main::factory",

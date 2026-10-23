@@ -75,11 +75,13 @@ namespace {
 		echo "PASS: counter parsing makes no HTTP request and escapes alt text\n";
 
 		$manifest = json_decode( file_get_contents( dirname( __DIR__ ) . '/extension.json' ), true );
-		$handler = file_get_contents( dirname( __DIR__ ) . '/includes/CreateNewWikiForm.php' );
-		preg_match( "/pingLimiter\\( '([^']+)' \\)/", $handler, $match );
-		check( isset( $match[1] ), 'Missing wiki creation limiter' );
-		check( ( $manifest['RateLimits'][$match[1]]['user'] ?? null ) === [ 1, 86400 ], 'Daily limit does not match the submission action' );
-		echo "PASS: wiki creation handler and daily rate limit use the same action\n";
+		foreach ( [ 'CreateNewWiki', 'CreateNewWikiLegacy' ] as $page ) {
+			$handler = file_get_contents( dirname( __DIR__ ) . "/includes/Special$page.php" );
+			preg_match( "/pingLimiter\\( '([^']+)' \\)/", $handler, $match );
+			check( ( $match[1] ?? null ) === 'createnewwiki', "$page must use the shared creation limit" );
+			check( ( $manifest['RateLimits'][$match[1]]['user'] ?? null ) === [ 1, 86400 ], 'Daily limit does not match the submission action' );
+		}
+		echo "PASS: both independent wiki creation handlers use the same daily rate limit\n";
 
 		$_SERVER['HTTP_HOST'] = '<script>private-marker</script>';
 		ob_start();

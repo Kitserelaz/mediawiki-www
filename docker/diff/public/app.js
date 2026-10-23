@@ -38,11 +38,11 @@ function renderPipeline() {
   if (jobs.some(j => j.name === 'deploy' && j.status !== 'in_progress' && j.status !== 'completed')) warnings.push('Deployment is waiting for the required integration and architecture jobs, or production approval.');
   $('build-alert').hidden = !warnings.length;
   $('build-alert').textContent = warnings.join(' ');
-  const expanded = new Set([...$('build-jobs').querySelectorAll('details[open]')].map(d => d.dataset.job));
+  const expansion = new Map([...$('build-jobs').querySelectorAll('details')].map(d => [d.dataset.job, d.open]));
   $('build-jobs').replaceChildren();
   for (const job of jobs) {
     const details = element('details', undefined, 'build-job'); details.dataset.job = String(job.id);
-    details.open = expanded.has(String(job.id)) || job.status === 'in_progress';
+    details.open = expansion.has(String(job.id)) ? expansion.get(String(job.id)) : job.status === 'in_progress';
     const summary = element('summary');
     summary.append(element('span', stateIcon(job), job.conclusion === 'success' ? 'good' : ['failure', 'timed_out'].includes(job.conclusion) ? 'warn' : 'muted'),
       element('span', job.name, 'job-name'), element('span', statusLabel(job), 'job-state'), element('span', elapsed(job.started_at, job.completed_at), 'job-duration'));

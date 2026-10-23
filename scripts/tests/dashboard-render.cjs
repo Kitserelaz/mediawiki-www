@@ -8,7 +8,7 @@ class Element {
   setAttribute() {}
   addEventListener() {}
   get childElementCount() { return this.children.length; }
-  querySelectorAll(selector) { return this.children.flatMap(n => [...(selector === 'details[open]' && n.tag === 'details' && n.open ? [n] : []), ...n.querySelectorAll(selector)]); }
+  querySelectorAll(selector) { return this.children.flatMap(n => [...(n.tag === 'details' && (selector === 'details' || selector === 'details[open]' && n.open) ? [n] : []), ...n.querySelectorAll(selector)]); }
 }
 const html = fs.readFileSync('docker/diff/public/index.html', 'utf8');
 const nodes = Object.fromEntries([...html.matchAll(/id="([^"]+)"/g)].map(m => [m[1], new Element('div')]));
@@ -34,6 +34,23 @@ assert.match(output, /Advisory warning/);
 assert.match(output, /Blocked: production has uncommitted changes/);
 assert.equal(nodes['build-alert'].hidden, true);
 assert.match(text(nodes['build-title']), /bbbbbbbb/);
+// A running job may start expanded, but an explicit collapse survives timer and
+// status refreshes. An explicit expansion must survive completion as well.
+assert.equal(nodes['build-jobs'].children[0].open, true);
+nodes['build-jobs'].children[0].open = false;
+vm.runInContext('renderPipeline()', context);
+assert.equal(nodes['build-jobs'].children[0].open, false);
+context.fixture = JSON.parse(JSON.stringify(context.fixture));
+vm.runInContext('report = fixture; renderPipeline()', context);
+assert.equal(nodes['build-jobs'].children[0].open, false);
+nodes['build-jobs'].children[0].open = true;
+context.fixture.pipeline.jobs[0].status = 'completed';
+context.fixture.pipeline.jobs[0].conclusion = 'success';
+vm.runInContext('renderPipeline()', context);
+assert.equal(nodes['build-jobs'].children[0].open, true);
+context.fixture.pipeline.jobs[0].status = 'in_progress';
+context.fixture.pipeline.jobs[0].conclusion = null;
+
 context.fixture.pipeline.checked_at = now - 400;
 context.fixture.pipeline.activity[0].heartbeat_at = now - 400;
 vm.runInContext('renderPipeline()', context);

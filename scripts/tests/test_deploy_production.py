@@ -70,6 +70,12 @@ class DeploymentTest(unittest.TestCase):
         (self.root / 'compose.yaml').write_text('services: {}\n')
         self.environment = "MW_ENV=production\nMW_IMAGE=old-php\nWEB_IMAGE=old-web\nCOUNTER_IMAGE=old-counter\nMW_DOMAIN=cloudwiki.us\nFARM_SECRETS_DIRECTORY=/private/secrets\n"
         (self.root / ".env.production").write_text(self.environment)
+        # Fault-injection tests must reach their intended stage regardless of
+        # the host's available disk. Exercise the real low-disk gate separately.
+        usage = deployment.shutil.disk_usage(self.root)
+        space = patch.object(deployment.shutil, 'disk_usage', return_value=usage._replace(free=20 * 1024 ** 3))
+        space.start()
+        self.addCleanup(space.stop)
         self.accept()
 
     def accept(self, runner=None):
@@ -77,7 +83,7 @@ class DeploymentTest(unittest.TestCase):
             deployment.accept_local_config(self.root, self.state, runner or FakeRunner(self.root))
 
     def deploy(self, runner, health=lambda *_: None):
-        deployment.deploy(request(), self.root, self.state, runner, health)
+        return deployment.deploy(request(), self.root, self.state, runner, health)
 
     def test_failed_guard_is_published_as_blocked_without_secret_values(self):
         (self.root / '.env.production').write_text(self.environment + 'PRIVATE=new-secret-value\n')
@@ -89,7 +95,7 @@ class DeploymentTest(unittest.TestCase):
         self.assertNotIn('new-secret-value', json.dumps(progress))
 
     def test_success_publishes_final_stage_and_stops_heartbeat(self):
-        self.deploy(FakeRunner(self.root))
+        self.assertTrue(self.deploy(FakeRunner(self.root)))
         progress = json.loads((self.state / 'deployment-progress.json').read_text())
         self.assertEqual(progress['status'], 'success')
         self.assertEqual(progress['stage'], 'complete')
@@ -113,7 +119,7 @@ class DeploymentTest(unittest.TestCase):
 
     def test_superseded_commit_does_not_pull_or_stop_services(self):
         runner = FakeRunner(self.root, latest="d" * 40)
-        self.deploy(runner)
+        self.assertFalse(self.deploy(runner))
         self.assertFalse(any(call[:2] == ['docker', 'pull'] or call[0] == 'scripts/snapshot' for call in runner.calls))
 
     def test_pull_failure_preserves_running_release(self):
@@ -123,6 +129,15 @@ class DeploymentTest(unittest.TestCase):
         self.assertFalse(any(call[0] == "scripts/snapshot" for call in runner.calls))
         self.assertEqual((self.root / ".env.production").read_text(), self.environment)
         self.assertFalse(list(self.state.glob("registry-*")))
+
+    def test_low_disk_fails_before_images_or_write_freeze(self):
+        runner = FakeRunner(self.root)
+        usage = deployment.shutil.disk_usage(self.root)
+        with patch.object(deployment.shutil, 'disk_usage', return_value=usage._replace(free=1024)):
+            with self.assertRaisesRegex(RuntimeError, 'Less than 5 GiB free'):
+                self.deploy(runner)
+        self.assertFalse(any(c[:2] == ['docker', 'pull'] or c[0] == 'scripts/snapshot' or 'stop' in c for c in runner.calls))
+        self.assertEqual((self.root / '.env.production').read_text(), self.environment)
 
     def test_snapshot_failure_never_switches_code_or_images(self):
         runner = FakeRunner(self.root, fail=lambda args: args[0] == "scripts/snapshot")

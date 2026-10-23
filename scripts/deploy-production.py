@@ -406,6 +406,7 @@ def deploy(payload, root, state, runner, health=probe):
         _deploy(payload, root, state, runner, health, progress)
         if progress.data['status'] == 'running':
             progress.stage('complete', 'success')
+        return progress.data['status'] == 'success'
     except Exception as error:
         message = str(error)
         reason = ('local_configuration_changed' if 'Local configuration changed:' in message else
@@ -636,12 +637,12 @@ def main():
         if len(body) > 16384:
             raise ValueError("Deployment request is too large")
         payload = validate_request(sys.argv[1], json.loads(body))
-        deploy(payload, root, state, Runner(root))
+        deployed = deploy(payload, root, state, Runner(root))
         # Keep the separately installed SSH entry point in sync after a successful
         # release, without giving the SSH key an arbitrary shell command.
         last = state / "last-success.json"
         source = root / "scripts/deploy-production.py"
-        if last.exists() and json.loads(last.read_text()).get("commit") == payload["commit"] and source.exists():
+        if deployed and last.exists() and json.loads(last.read_text()).get("commit") == payload["commit"] and source.exists():
             atomic_private_write(Path("/usr/local/libexec/cloudwiki-deploy-production.py"), source.read_text())
             ssh_source = root / 'scripts/deploy-ssh'
             if ssh_source.is_file():

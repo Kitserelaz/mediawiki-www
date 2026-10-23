@@ -367,7 +367,8 @@ class Main implements
 			}
 
 			$tools['centralauth'] = Linker::makeExternalLink(
-				'https://meta.skywiki.org/wiki/Special:CentralAuth/' . $username,
+				rtrim( $specialPage->getConfig()->get( 'CentralHost' ), '/' ) .
+					'/wiki/Special:CentralAuth/' . rawurlencode( $username ),
 				strtolower( $specialPage->msg( 'centralauth' )->text() )
 			);
 		}

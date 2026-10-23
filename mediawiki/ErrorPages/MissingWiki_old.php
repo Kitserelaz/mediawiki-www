@@ -1,3 +1,4 @@
+<?php $metaUrl = require __DIR__ . '/MetaUrl.php'; ?>
 <!DOCTYPE html>
 <html>
 	<head>
@@ -37,11 +38,11 @@
 	</head>
 	<body>
 		<div class="content">
-			<img src="https://meta.skywiki.org/images/metawiki/0/05/SkyWiki_logo.png">
+			<img src="<?= $metaUrl ?>/images/metawiki/0/05/SkyWiki_logo.png">
 			<div class="main">
 				<h1>Wiki Not Found</h1>
 				<i><?php echo substr($wgDBname, 0, -4) ?></i>
-				<p>Check your spelling and try again. You can see a list of our wikis at <a href="https://meta.skywiki.org/wiki/Special:WikiDiscover">Special:WikiDiscover</a> or you can <a href="https://meta.skywiki.org/wiki/Special:RequestWiki">request a wiki</a>.</p>
+				<p>Check your spelling and try again. You can see a list of our wikis at <a href="<?= $metaUrl ?>/wiki/Special:WikiDiscover">Special:WikiDiscover</a> or you can <a href="<?= $metaUrl ?>/wiki/Special:RequestWiki">request a wiki</a>.</p>
 			</div>
 		</div>
 	</body>

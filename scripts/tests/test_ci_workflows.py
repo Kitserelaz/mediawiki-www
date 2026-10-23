@@ -22,6 +22,8 @@ class WorkflowTests(unittest.TestCase):
         self.assertNotIn('concurrency',self.deploy)
         self.assertFalse(self.deploy['jobs']['deploy']['concurrency']['cancel-in-progress'])
         self.assertNotIn('deploy',self.ci['jobs'])
+        for name, job in self.ci['jobs'].items():
+            self.assertIn('!cancelled()', job['if'], name)
 
     def test_every_selected_required_job_is_a_dependency_of_gate(self):
         jobs=self.ci['jobs']; gate=jobs['gate']

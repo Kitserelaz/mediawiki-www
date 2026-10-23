@@ -12,7 +12,8 @@ permissions:
         type: boolean
         default: false
 concurrency:
-  group: cloudwiki-ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  group: cloudwiki-ci-${{ github.event_name }}-${{ github.event.pull_request.number
+    || github.ref }}
   cancel-in-progress: true
 jobs:
   changes:
@@ -32,6 +33,7 @@ jobs:
       wiki: "${{ steps.select.outputs.wiki }}"
       dashboard: "${{ steps.select.outputs.dashboard }}"
       checks: "${{ steps.select.outputs.checks }}"
+    if: "${{ !cancelled() && (true) }}"
   checks:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -47,7 +49,7 @@ jobs:
       run: |
         python3 -m unittest discover -s scripts/tests
         node scripts/tests/dashboard-render.cjs
-    if: "${{ needs.changes.outputs.checks == 'true' }}"
+    if: "${{ !cancelled() && (needs.changes.outputs.checks == 'true') }}"
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 35
@@ -85,7 +87,7 @@ jobs:
         path: "${{ runner.temp }}/images/"
         compression-level: 0
         retention-days: 1
-    if: "${{ needs.changes.outputs.runtime == 'true' }}"
+    if: "${{ !cancelled() && (needs.changes.outputs.runtime == 'true') }}"
     strategy:
       fail-fast: false
       matrix:
@@ -118,7 +120,7 @@ jobs:
     - name: Elastica PHP 8 query compatibility
       run: docker compose run --rm --no-deps -v "$PWD/docker/tests/elastica.php:/opt/elastica-test.php:ro"
         init php /opt/elastica-test.php
-    if: "${{ needs.changes.outputs.wiki == 'true' }}"
+    if: "${{ !cancelled() && (needs.changes.outputs.wiki == 'true') }}"
   counter:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -138,7 +140,7 @@ jobs:
       run: docker run --rm -v "$PWD/Moe-Counter/test:/app/test:ro" cloudwiki-counter:local
         node --test
     - run: python3 docker/tests/counter-shutdown.py
-    if: "${{ needs.changes.outputs.runtime == 'true' }}"
+    if: "${{ !cancelled() && (needs.changes.outputs.runtime == 'true') }}"
   integration:
     runs-on: ubuntu-latest
     timeout-minutes: 35
@@ -206,7 +208,7 @@ jobs:
           COMPOSE_PROJECT_NAME=cloudwiki-newprod docker compose --env-file .env.production-ci logs --no-color --tail=100
         fi
       name: Farm diagnostics
-    if: "${{ needs.changes.outputs.wiki == 'true' }}"
+    if: "${{ !cancelled() && (needs.changes.outputs.wiki == 'true') }}"
   queues:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -254,7 +256,7 @@ jobs:
           COMPOSE_PROJECT_NAME=cloudwiki-newprod docker compose --env-file .env.production-ci logs --no-color --tail=100
         fi
       name: Farm diagnostics
-    if: "${{ needs.changes.outputs.wiki == 'true' }}"
+    if: "${{ !cancelled() && (needs.changes.outputs.wiki == 'true') }}"
   upstream:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -273,7 +275,7 @@ jobs:
     - run: python3 scripts/setup-dev.py
     - name: Pinned CreateWiki and ManageWiki upstream integration suite
       run: python3 scripts/test-upstream.py
-    if: "${{ needs.changes.outputs.wiki == 'true' }}"
+    if: "${{ !cancelled() && (needs.changes.outputs.wiki == 'true') }}"
   catalogue:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -332,7 +334,7 @@ jobs:
         path: docker/tests/test-results/catalogue-*/
         if-no-files-found: ignore
         retention-days: 7
-    if: "${{ needs.changes.outputs.wiki == 'true' }}"
+    if: "${{ !cancelled() && (needs.changes.outputs.wiki == 'true') }}"
   production:
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -389,9 +391,10 @@ jobs:
           COMPOSE_PROJECT_NAME=cloudwiki-newprod docker compose --env-file .env.production-ci logs --no-color --tail=100
         fi
       name: Farm diagnostics
-    if: "${{ needs.changes.outputs.wiki == 'true' }}"
+    if: "${{ !cancelled() && (needs.changes.outputs.wiki == 'true') }}"
   search:
-    if: "${{ github.event_name == 'workflow_dispatch' && inputs.search }}"
+    if: "${{ !cancelled() && (github.event_name == 'workflow_dispatch' && inputs.search)
+      }}"
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -456,7 +459,7 @@ jobs:
         if failed: raise SystemExit('Required checks did not pass: ' + ', '.join(failed))
         print('All selected checks passed')
         CHECK
-    if: "${{ always() }}"
+    if: "${{ !cancelled() && (always()) }}"
   publish:
     runs-on: ubuntu-latest
     timeout-minutes: 5

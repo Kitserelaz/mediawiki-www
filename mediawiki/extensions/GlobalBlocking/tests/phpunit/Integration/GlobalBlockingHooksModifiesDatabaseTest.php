@@ -32,7 +32,6 @@ class GlobalBlockingHooksModifiesDatabaseTest extends MediaWikiIntegrationTestCa
 			$this->getServiceContainer()->getUserNameUtils(),
 			$globalBlockingServices->getGlobalBlockingUserVisibilityLookup(),
 			$globalBlockingServices->getGlobalBlockManager(),
-			$globalBlockingServices->getGlobalBlockDetailsRenderer(),
 			$globalBlockingServices->getGlobalBlockingLinkBuilder()
 		);
 	}

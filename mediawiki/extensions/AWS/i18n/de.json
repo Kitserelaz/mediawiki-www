@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": [
+			"Kghbln",
+			"Metalhead64"
+		]
+	},
+	"aws-desc": "Ermöglicht das Nutzen von Amazon S3 als Dateispeicher"
+}

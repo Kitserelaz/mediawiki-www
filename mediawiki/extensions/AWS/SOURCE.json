@@ -1,0 +1,18 @@
+{
+  "repository": "https://github.com/edwardspec/mediawiki-aws-s3",
+  "revision": "2a9f80f84e750b3c915e6dba165be4271c7386b4",
+  "version": "0.14.0",
+  "dependencies": "Standalone composer.lock and vendor; loaded by farm S3 settings.",
+  "local_patches": {
+    "includes/AmazonS3Hooks.php": "Route public wikis through img_auth.php when privateWiki is forced.",
+    "s3/AmazonS3FileBackend.php": "Omit private object ACLs for Bucket owner enforced S3 buckets.",
+    "composer.json": "Pin shared dependencies to core lockfile versions.",
+    ".gitignore": "Track locked, bundled dependencies for offline image builds."
+  },
+  "patched_sha256": {
+    "includes/AmazonS3Hooks.php": "6044d60dbaf18638ca37ff943418deaaa0e70d03d00054c8090b71fbad2dc05a",
+    "s3/AmazonS3FileBackend.php": "88ceaae906229b9a523be4c1d6865c40b26377b74e8b044a29c73e97b57145cb",
+    "composer.json": "47418f5dd7c19214aa7eda1c86be5e6c1aeecd42b6185ed7d095533be108e724",
+    ".gitignore": "2e35f814c345153fd816482b0fb01a478544230f1e85bdd2e7dc1f477d9350c5"
+  }
+}

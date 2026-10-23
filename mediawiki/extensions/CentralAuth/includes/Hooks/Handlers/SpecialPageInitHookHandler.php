@@ -12,6 +12,7 @@ use MediaWiki\Extension\CentralAuth\Config\CAMainConfigNames;
 use MediaWiki\Extension\CentralAuth\Special\SpecialGlobalRenameQueue;
 use MediaWiki\Extension\CentralAuth\Special\SpecialGlobalRenameRequest;
 use MediaWiki\Extension\CentralAuth\Special\SpecialGlobalVanishRequest;
+use MediaWiki\Extension\CentralAuth\Special\SpecialUserRightsWithGlobalGroups;
 use MediaWiki\SpecialPage\Hook\SpecialPage_initListHook;
 
 class SpecialPageInitHookHandler implements SpecialPage_initListHook {
@@ -26,6 +27,23 @@ class SpecialPageInitHookHandler implements SpecialPage_initListHook {
 	 * @param array &$list
 	 */
 	public function onSpecialPage_initList( &$list ) {
+		$list['Userrights'] = [
+			'class' => SpecialUserRightsWithGlobalGroups::class,
+			'services' => [
+				'UserGroupManagerFactory',
+				'UserNameUtils',
+				'UserNamePrefixSearch',
+				'UserFactory',
+				'WatchlistManager',
+				'UserGroupAssignmentService',
+				'MultiFormatUserIdentityLookup',
+				'FormatterFactory',
+				'CentralAuth.CentralAuthUserHelper',
+				'CentralAuth.GlobalGroupAssignmentService',
+				'CentralAuth.GlobalGroupManager',
+			],
+		];
+
 		if ( $this->config->get( CAMainConfigNames::CentralAuthEnableGlobalRenameRequest ) ) {
 			$list['GlobalRenameRequest'] = [
 				'class' => SpecialGlobalRenameRequest::class,

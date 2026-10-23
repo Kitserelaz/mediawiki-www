@@ -30,6 +30,10 @@ x-farm: &farm
     MW_SEARCH: ${MW_SEARCH:-0}
     MW_REMOTE_REPOSITORIES: ${MW_REMOTE_REPOSITORIES:-0}
     MW_UPLOAD_ROOT: ${MW_UPLOAD_ROOT:-/var/www/mediawiki/images}
+    MW_S3_ENABLED: ${MW_S3_ENABLED:-0}
+    MW_S3_BUCKET: ${MW_S3_BUCKET:-cloudwiki01}
+    MW_S3_REGION: ${MW_S3_REGION:-us-east-2}
+    MW_S3_PREFIX: ${MW_S3_PREFIX:-}
     MW_DUMP_DIRECTORY: ${MW_DUMP_DIRECTORY:-/var/www/dumps}
   secrets:
     - {source: farm, target: farm.json}

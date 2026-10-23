@@ -52,7 +52,6 @@ class GlobalBlockingHooksTest extends MediaWikiIntegrationTestCase {
 			'userNameUtils' => $this->getServiceContainer()->getUserNameUtils(),
 			'globalBlockingUserVisibilityLookup' => $globalBlockingServices->getGlobalBlockingUserVisibilityLookup(),
 			'globalBlockManager' => $globalBlockingServices->getGlobalBlockManager(),
-			'globalBlockDetailsRenderer' => $globalBlockingServices->getGlobalBlockDetailsRenderer(),
 			'globalBlockingLinkBuilder' => $globalBlockingServices->getGlobalBlockingLinkBuilder(),
 		];
 	}
@@ -112,25 +111,15 @@ class GlobalBlockingHooksTest extends MediaWikiIntegrationTestCase {
 				'(globalblocking-contribs-notice', $html,
 				'Expected block banner to be displayed for IP on Special:Contributions'
 			);
-			$this->assertStringContainsString(
+		}
+		if ( $shouldDisplayBlockBanner ) {
+			$this->assertStringNotContainsString(
 				'(globalblocking-contribs-mock-log-line', $html,
-				'Expected the log line to be present in the block banner.'
+				'Log details should not be shown in the block banner.'
 			);
-			$this->assertStringContainsString(
-				$expectedBlockTarget, $html,
-				'The block displayed on Special:Contributions was not the expected block.'
-			);
-			$this->assertStringContainsString(
+			$this->assertStringNotContainsString(
 				'(log-fulllog', $html,
-				'The block banner should contain a link to the global block log.'
-			);
-			$this->assertStringContainsString(
-				'type=gblblock', $html,
-				'The logs link should be filtered to just global blocks.'
-			);
-			$this->assertStringContainsString(
-				'page=' . urlencode( $expectedBlockTarget ), $html,
-				'The logs link should be filtered to just the target user.'
+				'The block banner should not link to the global block log.'
 			);
 		} else {
 			$this->assertStringNotContainsString(
@@ -148,8 +137,58 @@ class GlobalBlockingHooksTest extends MediaWikiIntegrationTestCase {
 			'Special:Contributions for 7.8.9.0 (target of a global autoblock)' => [ '7.8.9.0', true, false, null ],
 			'Special:Contributions for non-existent user' => [ 'Non-existent-test-user-1234', true, false, null ],
 			'Special:Contributions for invalid username' => [ ':', true, false, null ],
-			'Special:Contributions for 1.2.3.4 when block log extract hidden' => [ '1.2.3.4', false, false, null ],
+			'Special:Contributions for 1.2.3.4 when block log extract hidden' => [ '1.2.3.4', false, true, '1.2.3.4' ],
 		];
+	}
+
+	public function testOnSpecialContributionsBeforeMainOutputForUserWithoutViewGlobalBlocksRight() {
+		$this->setUserLang( 'qqx' );
+		RequestContext::getMain()->setAuthority(
+			$this->mockRegisteredAuthorityWithoutPermissions( [ 'viewglobalblocks' ] )
+		);
+		RequestContext::getMain()->setTitle( Title::makeTitle( NS_SPECIAL, 'Contributions/1.2.3.4' ) );
+		$specialPage = $this->getContributionsSpecialPage( true );
+		$specialPage->setContext( RequestContext::getMain() );
+		$user = $this->getServiceContainer()->getUserFactory()->newFromName( '1.2.3.4', UserFactory::RIGOR_NONE );
+
+		$this->getGlobalBlockingHooks()->onSpecialContributionsBeforeMainOutput( $user->getId(), $user, $specialPage );
+
+		$html = $specialPage->getOutput()->getHTML();
+		$this->assertStringContainsString( '(globalblocking-contribs-notice', $html );
+		$this->assertStringNotContainsString( '(globalblocking-contribs-mock-log-line', $html );
+		$this->assertStringNotContainsString( '(log-fulllog', $html );
+	}
+
+	public function testOnSpecialContributionsBeforeMainOutputShowsLogToUserWithViewGlobalBlocksRight() {
+		$this->setUserLang( 'qqx' );
+		RequestContext::getMain()->setAuthority(
+			$this->mockRegisteredAuthorityWithPermissions( [ 'viewglobalblocks' ] )
+		);
+		RequestContext::getMain()->setTitle( Title::makeTitle( NS_SPECIAL, 'Contributions/1.2.3.4' ) );
+		$specialPage = $this->getContributionsSpecialPage( true );
+		$specialPage->setContext( RequestContext::getMain() );
+		$user = $this->getServiceContainer()->getUserFactory()->newFromName( '1.2.3.4', UserFactory::RIGOR_NONE );
+
+		$this->getGlobalBlockingHooks()->onSpecialContributionsBeforeMainOutput( $user->getId(), $user, $specialPage );
+
+		$html = $specialPage->getOutput()->getHTML();
+		$this->assertStringContainsString( '(globalblocking-contribs-notice', $html );
+		$this->assertStringContainsString( '(log-fulllog', $html );
+	}
+
+	public function testOnSpecialContributionsBeforeMainOutputOmitsReferenceSentence() {
+		$this->setUserLang( 'en' );
+		RequestContext::getMain()->setTitle( Title::makeTitle( NS_SPECIAL, 'Contributions/1.2.3.4' ) );
+		$specialPage = $this->getContributionsSpecialPage( true );
+		$specialPage->setContext( RequestContext::getMain() );
+		$user = $this->getServiceContainer()->getUserFactory()->newFromName( '1.2.3.4', UserFactory::RIGOR_NONE );
+
+		$this->getGlobalBlockingHooks()->onSpecialContributionsBeforeMainOutput( $user->getId(), $user, $specialPage );
+
+		$html = $specialPage->getOutput()->getHTML();
+		$this->assertStringContainsString( 'This user is currently globally blocked.', $html );
+		$this->assertStringNotContainsString( '(globalblocking-contribs-mock-log-line', $html );
+		$this->assertStringNotContainsString( '(log-fulllog', $html );
 	}
 
 	public function testOnSpecialContributionsBeforeMainOutputForGloballyBlockedUser() {

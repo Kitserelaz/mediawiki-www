@@ -1,7 +1,10 @@
 <?php
 if ( getenv('MW_DOCKER') && getenv('MW_BOOTSTRAP_DB') ) {
-    require __DIR__ . '/docker/mediawiki/bootstrap.php';
-    return;
+    $bootstrapPath = __DIR__ . '/docker/mediawiki/bootstrap.php';
+    if ( is_file( $bootstrapPath ) ) {
+        require $bootstrapPath;
+        return;
+    }
 }
 
 error_reporting( E_ERROR | E_COMPILE_ERROR | E_PARSE );
@@ -100,7 +103,13 @@ $wgLocalisationCacheConf['storeDirectory'] = "$IP/cache/$wgDBname";
 
 // Load PrivateSettings (e.g. $wgDBpassword)
 require_once "$IP/PrivateSettings.php";
-if ( getenv( "MW_DOCKER" ) ) { require "$IP/docker/mediawiki/runtime.php"; farmRuntime(); }
+if ( getenv( "MW_DOCKER" ) ) {
+    $runtimePath = "$IP/docker/mediawiki/runtime.php";
+    if ( is_file( $runtimePath ) ) {
+        require $runtimePath;
+        farmRuntime();
+    }
+}
 require_once "$IP/GlobalExtensions.php";
 require_once "$IP/SkyWikiFunctions.php";
 $wi = new MirahezeFunctions();
@@ -383,4 +392,6 @@ $wgGroupPermissions['STAFF']['globalgrouppermissions'] = true;
 
 
 
+
 if ( getenv( "MW_DOCKER" ) ) { farmRuntime(); }
+require __DIR__ . '/S3Settings.php';

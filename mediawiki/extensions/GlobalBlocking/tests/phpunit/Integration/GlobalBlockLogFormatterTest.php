@@ -8,6 +8,7 @@ use MediaWiki\Logging\LogFormatter;
 use MediaWiki\Logging\LogPage;
 use MediaWiki\Tests\Logging\LogFormatterTestCase;
 use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
+use MediaWiki\Title\Title;
 use MediaWiki\WikiMap\WikiMap;
 use TestUserRegistry;
 use UnexpectedValueException;
@@ -263,6 +264,23 @@ class GlobalBlockLogFormatterTest extends LogFormatterTestCase {
 	 */
 	public function testLogDatabaseRows( $row, $extra ) {
 		$this->doTestLogFormatter( $row, $extra );
+	}
+
+	public function testContributionsLogDoesNotIdentifyPerformer() {
+		$row = $this->expandDatabaseRow(
+			[
+				'type' => 'gblblock', 'action' => 'gblock', 'user_text' => 'Sysop',
+				'title' => '1.2.3.4', 'namespace' => NS_USER,
+				'params' => [ '5::expiry' => 'infinite', '6::flags' => [] ],
+			],
+			false
+		);
+		$formatter = $this->getServiceContainer()->getLogFormatterFactory()->newFromRow( $row );
+		$formatter->context->setTitle( Title::makeTitle( NS_SPECIAL, 'Contributions/1.2.3.4' ) );
+
+		$actionText = trim( strip_tags( $formatter->getActionText() ) );
+		$this->assertStringStartsWith( 'Staff globally blocked 1.2.3.4', $actionText );
+		$this->assertStringNotContainsString( 'Sysop', $actionText );
 	}
 
 	/**

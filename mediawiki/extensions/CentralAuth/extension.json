@@ -64,6 +64,7 @@
 		"centralauth-merge",
 		"centralauth-unmerge",
 		"centralauth-lock",
+		"disable-account",
 		"centralauth-suppress",
 		"globalgrouppermissions",
 		"globalgroupmembership",
@@ -115,6 +116,12 @@
 		}
 	},
 	"SpecialPages": {
+		"DisableAccount": {
+			"class": "MediaWiki\\Extension\\CentralAuth\\Special\\SpecialDisableAccount",
+			"services": [
+				"UserNameUtils"
+			]
+		},
 		"CentralAuth": {
 			"class": "MediaWiki\\Extension\\CentralAuth\\Special\\SpecialCentralAuth",
 			"services": [

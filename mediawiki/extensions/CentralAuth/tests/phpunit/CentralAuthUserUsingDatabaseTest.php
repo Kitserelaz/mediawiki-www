@@ -302,6 +302,32 @@ class CentralAuthUserUsingDatabaseTest extends MediaWikiIntegrationTestCase {
 		$this->assertStatusError( 'centralauth-admin-not-authorized', $adminLockHideStatus );
 	}
 
+	public function testDisableAccountRightCanLockButCannotUnlockOrSuppress(): void {
+		$caUser = CentralAuthUser::getInstanceByName( $this->getTestCentralAuthUserWithExistingLocalWikis() );
+		$context = new DerivativeContext( RequestContext::getMain() );
+		$context->setAuthority( $this->mockRegisteredAuthorityWithPermissions( [ 'disable-account' ] ) );
+		$wasLocked = $caUser->isLocked();
+
+		try {
+			$lockStatus = $caUser->adminLockHide( true, null, 'test', $context );
+			$this->assertStatusGood( $lockStatus );
+			$this->assertTrue( $caUser->isLocked() );
+
+			$unlockStatus = $caUser->adminLockHide( false, null, 'test', $context );
+			$this->assertStatusError( 'centralauth-admin-not-authorized', $unlockStatus );
+
+			$suppressStatus = $caUser->adminLockHide(
+				null, CentralAuthUser::HIDDEN_LEVEL_SUPPRESSED, 'test', $context
+			);
+			$this->assertStatusError( 'centralauth-admin-not-authorized', $suppressStatus );
+		} finally {
+			if ( !$wasLocked ) {
+				$context->setAuthority( $this->mockRegisteredUltimateAuthority() );
+				$caUser->adminLockHide( false, null, 'test cleanup', $context );
+			}
+		}
+	}
+
 	public function testAdminLockHideForSuppressWhenAuthorityMissingRight() {
 		$caUser = CentralAuthUser::getInstanceByName( $this->getTestCentralAuthUserWithExistingLocalWikis() );
 		$adminLockHideStatus = $caUser->adminLockHide(

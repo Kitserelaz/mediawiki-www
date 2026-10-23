@@ -11,25 +11,29 @@ use MediaWiki\Block\Hook\SpreadAnyEditBlockHook;
 use MediaWiki\CommentFormatter\CommentFormatter;
 use MediaWiki\Config\Config;
 use MediaWiki\Context\RequestContext;
-use MediaWiki\Extension\GlobalBlocking\Services\GlobalBlockingGlobalBlockDetailsRenderer;
 use MediaWiki\Extension\GlobalBlocking\Services\GlobalBlockingLinkBuilder;
 use MediaWiki\Extension\GlobalBlocking\Services\GlobalBlockingUserVisibilityLookup;
 use MediaWiki\Extension\GlobalBlocking\Services\GlobalBlockLookup;
 use MediaWiki\Extension\GlobalBlocking\Services\GlobalBlockManager;
+use MediaWiki\Exception\PermissionsError;
 use MediaWiki\Hook\GetBlockErrorMessageKeyHook;
 use MediaWiki\Html\Html;
+use MediaWiki\Logging\LogEventsList;
 use MediaWiki\Message\Message;
+use MediaWiki\Permissions\Authority;
+use MediaWiki\SpecialPage\Hook\SpecialPageBeforeExecuteHook;
 use MediaWiki\SpecialPage\ContributionsSpecialPage;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Specials\Hook\ContributionsToolLinksHook;
 use MediaWiki\Specials\Hook\GetLogTypesOnUserHook;
 use MediaWiki\Specials\Hook\OtherBlockLogLinkHook;
+use MediaWiki\Specials\Hook\SpecialLogAddLogSearchRelationsHook;
 use MediaWiki\Specials\Hook\SpecialContributionsBeforeMainOutputHook;
 use MediaWiki\Title\Title;
 use MediaWiki\User\CentralId\CentralIdLookup;
 use MediaWiki\User\User;
 use MediaWiki\User\UserNameUtils;
-use stdClass;
+use Wikimedia\Rdbms\IConnectionProvider;
 use Wikimedia\IPUtils;
 
 /**
@@ -44,7 +48,9 @@ class GlobalBlockingHooks implements
 	SpecialContributionsBeforeMainOutputHook,
 	GetLogTypesOnUserHook,
 	ContributionsToolLinksHook,
-	SpreadAnyEditBlockHook
+	SpreadAnyEditBlockHook,
+	SpecialPageBeforeExecuteHook,
+	SpecialLogAddLogSearchRelationsHook
 {
 	public function __construct(
 		private readonly BlockTargetFactory $blockTargetFactory,
@@ -56,9 +62,49 @@ class GlobalBlockingHooks implements
 		private readonly UserNameUtils $userNameUtils,
 		private readonly GlobalBlockingUserVisibilityLookup $globalBlockingUserVisibilityLookup,
 		private readonly GlobalBlockManager $globalBlockManager,
-		private readonly GlobalBlockingGlobalBlockDetailsRenderer $globalBlockDetailsRenderer,
 		private readonly GlobalBlockingLinkBuilder $globalBlockingLinkBuilder,
+		private readonly IConnectionProvider $dbProvider,
 	) {
+	}
+
+	/** @inheritDoc */
+	public function onSpecialPageBeforeExecute( $special, $subPage ) {
+		$protectedPages = [
+			'GlobalBlock',
+			'GlobalBlockList',
+			'GlobalBlockStatus',
+			'MassGlobalBlock',
+			'RemoveGlobalBlock',
+		];
+		$isGlobalBlockLog = $special->getName() === 'Log' && (
+			$subPage === 'gblblock' || $special->getRequest()->getVal( 'type' ) === 'gblblock'
+		);
+
+		if (
+			( in_array( $special->getName(), $protectedPages, true ) || $isGlobalBlockLog ) &&
+			!$this->canViewGlobalBlocks( $special->getAuthority() )
+		) {
+			throw new PermissionsError( 'viewglobalblocks' );
+		}
+	}
+
+	/** @inheritDoc */
+	public function onSpecialLogAddLogSearchRelations( $type, $request, &$qc ) {
+		if ( $this->canViewGlobalBlocks( RequestContext::getMain()->getAuthority() ) ) {
+			return;
+		}
+
+		if ( $type === 'gblblock' ) {
+			throw new PermissionsError( 'viewglobalblocks' );
+		}
+
+		if ( $type === '' ) {
+			$qc[] = $this->dbProvider->getReplicaDatabase()->expr( 'log_type', '!=', 'gblblock' );
+		}
+	}
+
+	private function canViewGlobalBlocks( Authority $authority ): bool {
+		return $authority->isAllowed( 'viewglobalblocks' );
 	}
 
 	/**
@@ -136,6 +182,9 @@ class GlobalBlockingHooks implements
 	 */
 	public function onOtherBlockLogLink( &$msg, $target ) {
 		$authority = RequestContext::getMain()->getAuthority();
+		if ( !$this->canViewGlobalBlocks( $authority ) ) {
+			return true;
+		}
 		// If the target is a username, then we need the central ID for this user to do the lookup.
 		$centralId = 0;
 		$ip = null;
@@ -178,10 +227,6 @@ class GlobalBlockingHooks implements
 	public function onSpecialContributionsBeforeMainOutput( $userId, $user, $sp ) {
 		$name = $user->getName();
 
-		if ( !$sp->shouldShowBlockLogExtract( $user ) ) {
-			return true;
-		}
-
 		if ( IPUtils::isIPAddress( $name ) ) {
 			$ip = $name;
 			$centralId = 0;
@@ -201,67 +246,30 @@ class GlobalBlockingHooks implements
 		);
 
 		if ( $block ) {
-			// Add the active global block to a warning box that is displayed at the top of Special:Contributions.
 			$blockNoticeHtml = $sp->msg( 'globalblocking-contribs-notice', $name )->parseAsBlock();
-			$blockNoticeHtml .= Html::rawElement(
-				'ul',
-				[ 'class' => 'mw-logevent-loglines' ],
-				$this->getMockLogLineFromActiveGlobalBlock( $block, $sp )
-			);
-
-			// Add a 'View full logs' link that goes to the global block log on the central wiki, or the local wiki
-			// if no central wiki is defined.
-			$blockNoticeHtml .= $this->globalBlockLinkBuilder->getLinkToCentralWikiSpecialPage(
-				'Log', $sp->msg( 'log-fulllog' )->text(), $sp->getFullTitle(),
-				[ 'type' => 'gblblock', 'page' => $block->gb_address ]
-			);
-
 			$out = $sp->getOutput();
-			$out->addHTML( Html::warningBox( $blockNoticeHtml, 'mw-warning-with-logexcerpt' ) );
+			$out->addHTML( Html::warningBox( $blockNoticeHtml ) );
+
+			if (
+				$this->canViewGlobalBlocks( $sp->getAuthority() ) &&
+				$sp->shouldShowBlockLogExtract( $user )
+			) {
+				$title = Title::makeTitleSafe( NS_USER, $name );
+				if ( $title ) {
+					$logHtml = '';
+					LogEventsList::showLogExtract(
+						$logHtml,
+						'gblblock',
+						$title->getPrefixedText(),
+						'',
+						[ 'lim' => 1, 'showIfEmpty' => false ]
+					);
+					$out->addHTML( $logHtml );
+				}
+			}
 		}
 
 		return true;
-	}
-
-	private function getMockLogLineFromActiveGlobalBlock( stdClass $block, SpecialPage $sp ): string {
-		$context = $sp->getContext();
-
-		// Get the performer of the block.
-		$performerUsername = $this->lookup->nameFromCentralId( $block->gb_by_central_id ) ?? '';
-		$performerUserLink = $this->globalBlockDetailsRenderer->getPerformerForDisplay( $block, $context );
-
-		// Combine the options specified for the block and wrap them in parentheses. If no options are specified,
-		// then just use empty text to avoid stray parentheses.
-		$options = $this->globalBlockDetailsRenderer->getBlockOptionsForDisplay( $block, $context );
-		$optionsAsText = '';
-		if ( count( $options ) ) {
-			$optionsAsText = $context->msg( 'parentheses', $context->getLanguage()->commaList( $options ) )->text();
-		}
-
-		$blockTimestamp = $sp->getLinkRenderer()->makeKnownLink(
-			SpecialPage::getTitleFor( 'GlobalBlockList' ),
-			$context->getLanguage()->userTimeAndDate( $block->gb_timestamp, $context->getUser() ),
-			[],
-			[ 'target' => "#$block->gb_id" ],
-		);
-
-		[ $targetName ] = $this->globalBlockDetailsRenderer->getTargetUsername( $block, $context );
-
-		$msg = $context->msg( 'globalblocking-contribs-mock-log-line' )
-			->rawParams( $blockTimestamp )
-			->params( $performerUsername )
-			->rawParams( $performerUserLink )
-			->params( $targetName )
-			->rawParams( $this->globalBlockDetailsRenderer->formatTargetForDisplay( $block, $context ) )
-			->expiryParams( $block->gb_expiry )
-			->params( $optionsAsText )
-			->rawParams(
-				$this->commentFormatter->formatBlock( $block->gb_reason ),
-				$this->globalBlockingLinkBuilder->getActionLinks( $context->getAuthority(), $targetName, $context )
-			)
-			->parse();
-
-		return Html::rawElement( 'li', [], $msg );
 	}
 
 	/**
@@ -274,6 +282,10 @@ class GlobalBlockingHooks implements
 	 * @return bool|void
 	 */
 	public function onContributionsToolLinks( $id, Title $title, array &$tools, SpecialPage $specialPage ) {
+		if ( !$this->canViewGlobalBlocks( $specialPage->getAuthority() ) ) {
+			return;
+		}
+
 		// Normalise the target to ensure that the call to GlobalBlockLookup::getGlobalBlockId
 		// works as intended (as it expects a normalised target).
 		$target = $title->getText();
@@ -332,6 +344,10 @@ class GlobalBlockingHooks implements
 	 * @return bool
 	 */
 	public function onGetLogTypesOnUser( &$types ) {
+		if ( !$this->canViewGlobalBlocks( RequestContext::getMain()->getAuthority() ) ) {
+			return true;
+		}
+
 		$types[] = 'gblblock';
 
 		return true;

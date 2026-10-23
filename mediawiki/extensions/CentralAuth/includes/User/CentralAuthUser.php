@@ -2191,7 +2191,10 @@ class CentralAuthUser implements IDBAccessObject {
 
 		if ( $setLocked === null ) {
 			$setLocked = $isLocked;
-		} elseif ( !$context->getAuthority()->isAllowed( 'centralauth-lock' ) ) {
+		} elseif (
+			!$context->getAuthority()->isAllowed( 'centralauth-lock' ) &&
+			!( $setLocked && $context->getAuthority()->isAllowed( 'disable-account' ) )
+		) {
 			return StatusValue::newFatal( 'centralauth-admin-not-authorized' );
 		}
 

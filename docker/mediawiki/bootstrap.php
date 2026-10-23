@@ -60,3 +60,5 @@ require "$IP/ManageWikiExtensions.php";
 require "$IP/ManageWikiNamespaces.php";
 require "$IP/ManageWikiSettings.php";
 farmRuntime();
+
+require "$IP/S3Settings.php";

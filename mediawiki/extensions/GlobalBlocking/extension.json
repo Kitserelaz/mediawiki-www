@@ -31,7 +31,8 @@
 	"AvailableRights": [
 		"globalblock",
 		"globalblock-whitelist",
-		"globalblock-exempt"
+		"globalblock-exempt",
+		"viewglobalblocks"
 	],
 	"SpecialPages": {
 		"GlobalBlock": {
@@ -225,6 +226,8 @@
 		"GetUserBlock": "main",
 		"OtherBlockLogLink": "main",
 		"SpecialContributionsBeforeMainOutput": "main",
+		"SpecialPageBeforeExecute": "main",
+		"SpecialLogAddLogSearchRelations": "main",
 		"UserMergeAccountFields": "usermerge",
 		"LoadExtensionSchemaUpdates": "schema",
 		"GetBlockErrorMessageKey": "main",
@@ -246,8 +249,8 @@
 				"UserNameUtils",
 				"GlobalBlocking.GlobalBlockingUserVisibilityLookup",
 				"GlobalBlocking.GlobalBlockManager",
-				"GlobalBlocking.GlobalBlockingGlobalBlockDetailsRenderer",
-				"GlobalBlocking.GlobalBlockingLinkBuilder"
+				"GlobalBlocking.GlobalBlockingLinkBuilder",
+				"ConnectionProvider"
 			]
 		},
 		"usermerge": {

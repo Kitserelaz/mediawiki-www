@@ -192,6 +192,12 @@ class GlobalBlockLogFormatter extends LogFormatter {
 			$params[3] = $targetUserIdentity->getName();
 		}
 
+		$title = $this->context->getTitle();
+		if ( $title && $title->isSpecial( 'Contributions' ) ) {
+			$params[0] = Message::rawParam( $this->msg( 'globalblocking-contribs-log-performer' )->escaped() );
+			$params[1] = '';
+		}
+
 		return $params;
 	}
 

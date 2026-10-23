@@ -9,7 +9,6 @@ use MediaWiki\CommentFormatter\CommentFormatter;
 use MediaWiki\Config\HashConfig;
 use MediaWiki\Extension\GlobalBlocking\GlobalBlock;
 use MediaWiki\Extension\GlobalBlocking\GlobalBlockingHooks;
-use MediaWiki\Extension\GlobalBlocking\Services\GlobalBlockingGlobalBlockDetailsRenderer;
 use MediaWiki\Extension\GlobalBlocking\Services\GlobalBlockingLinkBuilder;
 use MediaWiki\Extension\GlobalBlocking\Services\GlobalBlockingUserVisibilityLookup;
 use MediaWiki\Extension\GlobalBlocking\Services\GlobalBlockLookup;
@@ -34,7 +33,6 @@ class GlobalBlockingHooksTest extends MediaWikiUnitTestCase {
 			$this->createMock( UserNameUtils::class ),
 			$this->createMock( GlobalBlockingUserVisibilityLookup::class ),
 			$this->createMock( GlobalBlockManager::class ),
-			$this->createMock( GlobalBlockingGlobalBlockDetailsRenderer::class ),
 			$this->createMock( GlobalBlockingLinkBuilder::class )
 		);
 	}

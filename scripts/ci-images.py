@@ -64,6 +64,10 @@ def build(group, directory):
         args = ['docker', 'buildx', 'build', '--platform', 'linux/amd64', '--build-arg', 'SOURCE_REVISION=' + os.environ['GITHUB_SHA'],
                 '--cache-from', 'type=gha,version=2,scope=' + scope, '--cache-to', 'type=gha,version=2,scope=' + scope + ',mode=max',
                 '--metadata-file', str(metadata), '--label', INPUT_LABEL + '=' + key]
+        if group == 'farm':
+            # Seed the new isolated caches from the previous shared cache, so
+            # migration does not rebuild PHP's OS packages and extensions cold.
+            args += ['--cache-from', 'type=gha,version=2,scope=cloudwiki-farm-amd64']
         if service == 'counter':
             args += ['-f', 'Moe-Counter/Dockerfile']
         else:

@@ -81,6 +81,7 @@ class RoutingTests(unittest.TestCase):
                 self.assertIn('--push', command)
                 service = command[command.index('--target')+1]
                 self.assertIn('type=gha,version=2,scope=cloudwiki-'+service+'-amd64,mode=max', command)
+                self.assertIn('type=gha,version=2,scope=cloudwiki-farm-amd64', command)
             manifest = json.loads((Path(directory) / 'farm.json').read_text())
             self.assertEqual(set(manifest), {'php', 'web'})
             self.assertIn('@sha256:', manifest['php']['image'])

@@ -30,13 +30,13 @@ jobs:
           core.exportVariable(key,value); } }
     - name: Build PHP image
       run: python3 scripts/ci-build-progress.py --job "architectures (${{ matrix.platform
-        }})" --phase "PHP image" -- docker buildx build --cache-from type=gha,version=2,scope=arm64-php
+        }})" --phase "PHP image" -- docker buildx build --cache-from type=gha,version=2,scope=arm64-farm --cache-from type=gha,version=2,scope=arm64-php
         --cache-to type=gha,version=2,scope=arm64-php,mode=max --platform '${{ matrix.platform
         }}' --target php --load -t cloudwiki-php:verify -f docker/mediawiki/Dockerfile
         .
     - name: Build Web image
       run: python3 scripts/ci-build-progress.py --job "architectures (${{ matrix.platform
-        }})" --phase "Web image" -- docker buildx build --cache-from type=gha,version=2,scope=arm64-web
+        }})" --phase "Web image" -- docker buildx build --cache-from type=gha,version=2,scope=arm64-farm --cache-from type=gha,version=2,scope=arm64-web
         --cache-to type=gha,version=2,scope=arm64-web,mode=max --platform '${{ matrix.platform
         }}' --target web --load -t cloudwiki-web:verify -f docker/mediawiki/Dockerfile
         .

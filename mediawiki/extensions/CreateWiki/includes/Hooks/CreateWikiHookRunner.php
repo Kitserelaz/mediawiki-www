@@ -11,6 +11,7 @@ class CreateWikiHookRunner implements
 	CreateWikiAfterCreationWithExtraDataHook,
 	CreateWikiCreationExtraFieldsHook,
 	CreateWikiCreationHook,
+	CreateWikiCreationTasksHook,
 	CreateWikiDeletionHook,
 	CreateWikiGenerateDatabaseListsHook,
 	CreateWikiReadPersistentModelHook,
@@ -29,6 +30,11 @@ class CreateWikiHookRunner implements
 	public function __construct(
 		private readonly HookContainer $hookContainer,
 	) {
+	}
+
+	/** @inheritDoc */
+	public function onCreateWikiCreationTasks( string $dbname, string $requester, array $extra ): bool {
+		return $this->hookContainer->run( 'CreateWikiCreationTasks', [ $dbname, $requester, $extra ] );
 	}
 
 	/** @inheritDoc */

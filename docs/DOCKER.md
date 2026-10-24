@@ -223,6 +223,9 @@ ManageWiki metadata using its existing services. The provisioner validates a
 receipt and launches the target updater directly. Missing or changed metadata
 retains the separate metawiki repair process. The provisioning log identifies
 the selected path as `Provisioning metadata: creator` or `repair`.
+Completion also includes the localized main page, requester attachment and local
+roles. These tasks use durable creation context and a retry checkpoint, so they
+can finish if the creator exits during metadata preparation.
 See [the dispatch lifecycle](STREAM-DISPATCH.md) for handoff and recovery details.
 `npm run test:creation-timing` records this path alongside real creation timings;
 `python3 docker/tests/metadata.py FRESH_PRIVATE_FIXTURE` exercises the repair and

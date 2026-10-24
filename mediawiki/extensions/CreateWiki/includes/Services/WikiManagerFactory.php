@@ -263,52 +263,55 @@ class WikiManagerFactory {
 
 		$this->hookRunner->onCreateWikiCreation( $this->dbname, $private );
 
-		DeferredUpdates::addCallableUpdate(
-			function () use ( $requester, $extra ) {
-				$this->dataStore->resetDatabaseLists( isNewChanges: true );
-				$limits = [ 'memory' => 0, 'filesize' => 0, 'time' => 0, 'walltime' => 0 ];
+		// A durable farm provisioner may own these tasks after schema installation.
+		if ( $this->hookRunner->onCreateWikiCreationTasks( $this->dbname, $requester, $extra ) ) {
+			DeferredUpdates::addCallableUpdate(
+				function () use ( $requester, $extra ) {
+					$this->dataStore->resetDatabaseLists( isNewChanges: true );
+					$limits = [ 'memory' => 0, 'filesize' => 0, 'time' => 0, 'walltime' => 0 ];
 
-				Shell::makeScriptCommand(
-					SetContainersAccess::class,
-					[ '--wiki', $this->dbname ]
-				)->limits( $limits )->execute();
-
-				if ( !defined( 'MW_PHPUNIT_TEST' ) ) {
 					Shell::makeScriptCommand(
-						PopulateMainPage::class,
+						SetContainersAccess::class,
 						[ '--wiki', $this->dbname ]
 					)->limits( $limits )->execute();
-				}
 
-				if ( $this->extensionRegistry->isLoaded( 'CentralAuth' ) ) {
-					Shell::makeScriptCommand(
-						'CentralAuth:createLocalAccount',
-						[
-							$requester,
-							'--wiki', $this->dbname,
-						]
-					)->limits( $limits )->execute();
+					if ( !defined( 'MW_PHPUNIT_TEST' ) ) {
+						Shell::makeScriptCommand(
+							PopulateMainPage::class,
+							[ '--wiki', $this->dbname ]
+						)->limits( $limits )->execute();
+					}
 
-					Shell::makeScriptCommand(
-						CreateAndPromote::class,
-						[
-							$requester,
-							'--bureaucrat',
-							'--interface-admin',
-							'--sysop',
-							'--force',
-							'--wiki', $this->dbname,
-						]
-					)->limits( $limits )->execute();
-				}
+					if ( $this->extensionRegistry->isLoaded( 'CentralAuth' ) ) {
+						Shell::makeScriptCommand(
+							'CentralAuth:createLocalAccount',
+							[
+								$requester,
+								'--wiki', $this->dbname,
+							]
+						)->limits( $limits )->execute();
 
-				if ( $extra ) {
-					$this->hookRunner->onCreateWikiAfterCreationWithExtraData( $extra, $this->dbname );
-				}
-			},
-			DeferredUpdates::POSTSEND,
-			$this->cwdb
-		);
+						Shell::makeScriptCommand(
+							CreateAndPromote::class,
+							[
+								$requester,
+								'--bureaucrat',
+								'--interface-admin',
+								'--sysop',
+								'--force',
+								'--wiki', $this->dbname,
+							]
+						)->limits( $limits )->execute();
+					}
+
+					if ( $extra ) {
+						$this->hookRunner->onCreateWikiAfterCreationWithExtraData( $extra, $this->dbname );
+					}
+				},
+				DeferredUpdates::POSTSEND,
+				$this->cwdb
+			);
+		}
 
 		if ( $actor !== '' ) {
 			$notificationData = [

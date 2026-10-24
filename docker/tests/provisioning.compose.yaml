@@ -3,6 +3,7 @@ x-provision-source: &provision-source
   - ./docker/mediawiki:/var/www/mediawiki/docker/mediawiki:ro
   - ./mediawiki/LocalSettings.php:/var/www/mediawiki/LocalSettings.php:ro
   - ./mediawiki/S3Settings.php:/var/www/mediawiki/S3Settings.php:ro
+  - ./mediawiki/extensions/CreateWiki:/var/www/mediawiki/extensions/CreateWiki:ro
   - ./docker/tests/provision-single-settings.php:/opt/provision-single-settings.php:ro
   - ./docker/tests/provision-single.php:/opt/farm/provision.php:ro
   - ./docker/tests/provisioning.php:/opt/provisioning-test.php:ro

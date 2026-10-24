@@ -118,14 +118,14 @@ function farmPrepareWikiMetadata(MediaWiki\MediaWikiServices $services, string $
     farmRecordPreparedWikiMetadata($wiki);
 }
 
-function farmPublishPreparedWikiMetadata(MediaWiki\MediaWikiServices $services, string $wiki): void {
+function farmPublishPreparedWikiMetadata(MediaWiki\MediaWikiServices $services, string $wiki, ?array $creation = null): void {
     require_once __DIR__ . '/dispatch.php';
     $lock = @fopen('/var/www/mediawiki/cw_cache/.provision-' . $wiki . '.metadata.lock', 'ce');
     $locked = is_resource($lock) && flock($lock, LOCK_EX);
     try {
         // Publish first. If this process dies during preparation, its lock is
         // released by the OS and the durable delivery takes the repair path.
-        FarmDispatch::provision(FarmDispatch::connect(), $wiki);
+        FarmDispatch::provision(FarmDispatch::connect(), $wiki, $creation);
         if ($locked) {
             try {
                 farmPrepareWikiMetadata($services, $wiki);

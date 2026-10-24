@@ -96,20 +96,20 @@ function farmRuntime(): void {
     $wgCreateWikiGlobalWiki = 'metawiki';
     $GLOBALS['wgHooks']['CreateWikiGenerateDatabaseLists'] = ['MirahezeFunctions::onGenerateDatabaseLists'];
     $GLOBALS['wgExtensionFunctions'][] = static function (): void {
-        // Runtime handlers follow the configured and extension-manifest handlers.
-        // ManageWiki must finish seeding defaults before an idle DB can publish.
+        // This hook follows all creation handlers, including ManageWiki defaults.
         MediaWiki\MediaWikiServices::getInstance()->getHookContainer()->register(
-            'CreateWikiCreation',
-            static function (string $wiki, bool $private): void {
+            'CreateWikiCreationTasks',
+            static function (string $wiki, string $requester, array $extra): bool {
                 if (!preg_match('/^[a-z0-9][a-z0-9_]{0,63}$/D', $wiki)) {
                     throw new RuntimeException('Invalid new wiki identifier');
                 }
                 $services = MediaWiki\MediaWikiServices::getInstance();
                 $db = $services->getConnectionProvider()->getPrimaryDatabase('virtual-createwiki');
                 // Never publish before SQL registration and defaults are committed.
-                $db->onTransactionCommitOrIdle(static function () use ($services, $wiki): void {
-                    farmPublishPreparedWikiMetadata($services, $wiki);
+                $db->onTransactionCommitOrIdle(static function () use ($services, $wiki, $requester, $extra): void {
+                    farmPublishPreparedWikiMetadata($services, $wiki, ['requester'=>$requester, 'extra'=>$extra]);
                 }, 'farmCreateWikiDispatch');
+                return false;
             }
         );
     };

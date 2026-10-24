@@ -24,6 +24,8 @@ from farm_secrets import create_secrets
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--image', required=True)
 parser.add_argument('--report', type=Path, default=Path('/tmp/provision-production-acceptance.json'))
+parser.add_argument('--creation-recovery-only', action='store_true')
+parser.add_argument('--checkpoint-replay-only', action='store_true')
 args = parser.parse_args()
 project = 'cloudwiki-acceptance-' + uuid.uuid4().hex[:8]
 prefix = '9provision' + uuid.uuid4().hex[:8]
@@ -82,14 +84,24 @@ def wait_creator(name):
         raise AssertionError(name + ' exited ' + code + '\n' + command(['docker', 'logs', name]).stdout)
 
 
-def check_ready(wiki, private):
+def inspect_creation(wiki, edit=False):
+    argv = ['run', '--rm', '-T', '--no-deps', 'init', 'php', 'maintenance/run.php',
+            '/acceptance/provision-acceptance.php', '--wiki=' + wiki,
+            '--target=' + wiki, '--inspect-creation']
+    if edit:
+        argv.append('--edit-main-page')
+    return json.loads(compose(*argv).splitlines()[-1])
+
+
+def check_ready(wiki, private, expected_updates=1):
+    report['current_fixture'] = {'wiki': wiki}
     wait_for('provisioning ' + wiki, lambda: probe('state', wiki)['status'].get('state') == 'complete')
     state = probe('state', wiki)
     report['current_fixture'] = {'wiki': wiki, 'state': state}
-    assert not state['pending'] and not state['marker'] and not state['receipt'], state
+    assert not state['pending'] and not state['marker'] and not state['receipt'] and not state['creation_context'], state
     assert not state['lock_held'] and state['metadata_complete'], state
     assert state['private'] is private, state
-    assert state['updater_invocations'] == 1, state
+    assert state['updater_invocations'] == expected_updates, state
     lists = state['lists']
     assert isinstance(lists['databases'], dict) and isinstance(lists['active'], dict), state
     assert lists['deleted'] is None, state
@@ -128,6 +140,13 @@ def check_ready(wiki, private):
     snapshot = json.loads(output.splitlines()[-1])
     assert snapshot['metadata_complete'] and snapshot['anonymous_read'] is not private, snapshot
     assert snapshot['language'] == ('de' if private else 'en'), snapshot
+    creation = inspect_creation(wiki)
+    report['current_fixture']['creation'] = creation
+    assert creation['main_page_exists'], creation
+    assert creation['creation_checkpoint'], creation
+    assert creation['requester_id'] > 0 and creation['requester_attached'], creation
+    assert {'bureaucrat','sysop','interface-admin'} <= set(creation['requester_groups']), creation
+    assert all(creation['requester_rights'][right] for right in ['read','edit','editsitecss']), creation
     return {'wiki': wiki, 'private': private, 'state': state,
             'http_statuses_after_provisioning': observed_statuses,
             'http_readiness_ms': http_readiness_ms,
@@ -135,7 +154,7 @@ def check_ready(wiki, private):
             'private_file_protected': private,
             'table_count': len(snapshot['tables']), 'schema_sha256': hashlib.sha256(
                 json.dumps(snapshot['tables'], sort_keys=True).encode()).hexdigest(),
-            'checkuser': snapshot['checkuser']}
+            'checkuser': snapshot['checkuser'], 'creation': creation}
 
 
 try:
@@ -155,6 +174,9 @@ try:
     print('Initializing isolated production farm: ' + project, flush=True)
     compose('up', '-d', '--wait', 'database', 'redis', 'memcached')
     compose('run', '--rm', '-T', '--no-deps', 'init', 'php', '/opt/farm/manage.php', 'fresh-production')
+    contract = compose('run', '--rm', '-T', '--no-deps', 'init', 'php',
+                       '/acceptance/provision-acceptance-probe.php', 'context-contract', prefix + 'contractwiki')
+    report['context_contract'] = json.loads(contract.splitlines()[-1])
     compose('up', '-d', '--wait', 'php', 'provisioner')
     containers = compose('ps', '-q', 'php', 'provisioner').splitlines()
     inspections = json.loads(command(['docker', 'inspect', *containers]).stdout)
@@ -166,7 +188,8 @@ try:
                        (m['Destination'].startswith('/opt/farm') or
                         m['Destination'].startswith('/var/www/mediawiki')) for m in item['Mounts'])
     report['immutable_code'] = 'Image pinned by ID; no application source mounts or sync controller'
-    for name in ['provision-metadata.php', 'provision.php', 'runtime.php', 'process.php']:
+    for name in ['provision-metadata.php', 'provision.php', 'runtime.php', 'process.php',
+                 'dispatch.php', 'provision-settings.php', 'finalize-creation.php']:
         actual = compose('exec', '-T', 'provisioner', 'sha256sum', '/opt/farm/' + name).split()[0]
         expected = hashlib.sha256((ROOT / 'docker/mediawiki' / name).read_bytes()).hexdigest()
         assert actual == expected, (name, actual, expected)
@@ -177,8 +200,10 @@ try:
     print('PASS immutable image, production initialization, domains and administrator checks', flush=True)
 
     all_wikis = []
-    for wave, pause in [('simultaneous', False), ('metadata_barrier', True)]:
-        fixtures = [(prefix + wave.replace('_', '') + str(i) + 'wiki', i % 2 == 1) for i in range(4)]
+    waves = [('baseline', False)] if args.creation_recovery_only or args.checkpoint_replay_only else [('simultaneous', False), ('metadata_barrier', True)]
+    for wave, pause in waves:
+        fixtures = [(prefix + wave.replace('_', '') + str(i) + 'wiki', i % 2 == 1)
+                    for i in range(1 if args.checkpoint_replay_only else 4)]
         with ThreadPoolExecutor(max_workers=4) as pool:
             names = list(pool.map(lambda pair: start_creator(*pair, pause=pause), fixtures))
         if pause:
@@ -197,27 +222,47 @@ try:
         assert all(c['state']['metadata_sources'] in (['creator'], ['repair']) for c in cases), cases
         report['cases'].append({'case': wave, 'status': 'passed', 'wikis': cases})
         all_wikis.extend(fixtures)
-        print('PASS ' + wave + ': four concurrent creators, public/private metadata, schemas and access', flush=True)
+        print('PASS ' + wave + ': ' + str(len(fixtures)) + ' creators; metadata, schemas and access', flush=True)
 
-    wiki = prefix + 'killedprivatewiki'
-    name = start_creator(wiki, private=True, pause=True)
-    wait_for('creator stopped during preparation', lambda: probe('state', wiki)['paused'])
-    wait_for('consumer received the durable event', lambda: probe('state', wiki)['marker'])
-    before = probe('state', wiki)
-    assert before['pending'] and before['lock_held'] and not before['receipt'], before
-    assert before['updater_invocations'] == 0, before
-    assert 'urlshortener' in before['stored_extensions'], before
-    response = probe('http', wiki)
-    assert response['status'] == 503, response
-    command(['docker', 'kill', '--signal', 'KILL', name])
-    assert command(['docker', 'wait', name]).stdout.strip() == '137'
-    recovered = check_ready(wiki, True)
-    assert recovered['state']['metadata_sources'] == ['repair'], recovered
-    report['cases'].append({'case': 'creator_sigkill_during_metadata', 'status': 'passed',
-                            'before_kill': before, 'http_before_kill': 503, 'creator_exit': 137,
-                            'recovered': recovered})
-    all_wikis.append((wiki, True))
-    print('PASS creator SIGKILL: lock released, durable event repaired, one updater, private API/files denied', flush=True)
+    for private in ([] if args.checkpoint_replay_only else [False, True]):
+        wiki = prefix + ('killedprivatewiki' if private else 'killedpublicwiki')
+        name = start_creator(wiki, private=private, pause=True)
+        wait_for('creator stopped during preparation', lambda: probe('state', wiki)['paused'])
+        wait_for('consumer received the durable event', lambda: probe('state', wiki)['marker'])
+        before = probe('state', wiki)
+        assert before['pending'] and before['lock_held'] and not before['receipt'], before
+        assert before['updater_invocations'] == 0, before
+        assert 'urlshortener' in before['stored_extensions'], before
+        response = probe('http', wiki)
+        assert response['status'] == 503, response
+        command(['docker', 'kill', '--signal', 'KILL', name])
+        assert command(['docker', 'wait', name]).stdout.strip() == '137'
+        recovered = check_ready(wiki, private)
+        assert recovered['state']['metadata_sources'] == ['repair'], recovered
+        report['cases'].append({'case': 'creator_sigkill_during_metadata_' + ('private' if private else 'public'), 'status': 'passed',
+                                'before_kill': before, 'http_before_kill': 503, 'creator_exit': 137,
+                                'recovered': recovered})
+        all_wikis.append((wiki, private))
+        print('PASS creator SIGKILL: lock released, durable event repaired, one updater, private API/files denied', flush=True)
+
+
+    wiki, private = all_wikis[0]
+    inspect_creation(wiki, edit=True)
+    edited = inspect_creation(wiki)
+    if args.checkpoint_replay_only:
+        assert probe('clear-checkpoint', wiki)['cleared'] == 1
+        assert not inspect_creation(wiki)['creation_checkpoint']
+    compose('exec', '-T', 'provisioner', 'php', '-r',
+            'require "/opt/farm/dispatch.php"; FarmDispatch::provision(FarmDispatch::connect(),$argv[1],'
+            '["requester"=>"Admin","extra"=>[]]);', wiki)
+    wait_for('replay queued or complete', lambda: probe('state', wiki)['updater_invocations'] == 2)
+    replay = check_ready(wiki, private, expected_updates=2)
+    for field in ['main_page_revision', 'main_page_sha1', 'requester_id', 'requester_attached',
+                  'requester_groups', 'requester_rights', 'rights_log_entries']:
+        assert replay['creation'][field] == edited[field], (field, edited, replay['creation'])
+    report['cases'].append({'case':'missing_checkpoint_replay' if args.checkpoint_replay_only else 'completed_creation_replay', 'status':'passed',
+                            'edited':edited, 'replayed':replay})
+    print('PASS replay: edited main page, account identity, groups and rights log remain unchanged', flush=True)
 
     # Recheck every shared list after all writers and deferred updates have exited.
     for wiki, private in all_wikis:
@@ -228,16 +273,20 @@ try:
     log = compose('logs', '--no-color', 'provisioner')
     attempts = {wiki: sum(line.endswith('Dispatch provision: ' + wiki) for line in log.splitlines())
                 for wiki, _ in all_wikis}
-    assert all(count == 1 for count in attempts.values()), attempts
+    assert all(count == (2 if target == all_wikis[0][0] else 1) for target, count in attempts.items()), attempts
     report['dispatch_attempts'] = attempts
     report['queue'] = probe('queue')
-    assert report['queue'] == {'pending_wikis': 0, 'pending_deliveries': 0}, report['queue']
+    assert report['queue'] == {'pending_wikis': 0, 'pending_deliveries': 0, 'creation_contexts': 0}, report['queue']
     report.pop('current_fixture', None)
     report['status'] = 'passed'
 except BaseException as error:
     report['status'] = 'failed'
     report['error'] = str(error)
     diagnostics = compose('logs', '--no-color', '--tail=40', 'php', 'provisioner', check=False)
+    if report.get('current_fixture'):
+        wiki = report['current_fixture']['wiki']
+        diagnostics += '\n' + compose('exec', '-T', 'provisioner', 'php', '-r',
+            'echo @file_get_contents("/var/www/mediawiki/cw_cache/.provision-".$argv[1].".log");', wiki, check=False)
     (args.report.parent / (args.report.stem + '.diagnostics.log')).write_text(diagnostics)
     raise
 finally:

@@ -25,10 +25,11 @@ signals. Processing is at least once: interrupted work can repeat, so job side
 effects must remain safe to retry. Redis persistence determines durability, just
 as it does for the existing job queue; Streams do not turn Redis into SQL storage.
 
-The publisher is registered at extension initialization using the runtime hook
-API, after configured and extension-manifest creation handlers. This ensures
-ManageWiki has seeded its defaults even when an idle CLI database invokes a
-commit callback immediately.
+The publisher uses `CreateWikiCreationTasks`, after all creation handlers have
+seeded the wiki's defaults. Returning false from that hook transfers the standard
+post-creation tasks to the durable provisioner; without a handler, CreateWiki
+retains its original deferred work. This also handles idle CLI databases whose
+commit callback runs immediately.
 
 After SQL commit, CreateWiki publishes a durable provisioning event while holding
 a per-wiki metadata handoff lock, then refreshes the shared lists and target
@@ -40,6 +41,24 @@ avoids a separate metawiki PHP bootstrap. A missing, changed or incomplete
 receipt takes the existing fresh-process metadata repair path before updating.
 Timestamp-only rewrites and unrelated wiki creations do not invalidate receipts.
 The receipt is removed after successful provisioning.
+
+The event and its requester/extra-data context are written atomically to Redis.
+That context remains until successful event acknowledgment, without a separate
+expiry. Duplicate publication coalesces; a pending creation's owner cannot be
+replaced. The target updater executes `FarmFinalizeCreation` after schema
+updates, reusing its initialized services. It prepares upload containers, creates
+the localized main page if absent, attaches the requester through CentralAuth,
+grants the original local sysop/bureaucrat/interface-admin roles and invokes the
+extra-data creation hook. No additional PHP bootstrap is needed.
+
+The `farm-finalize-creation-v1` update-log checkpoint is recorded after the work
+succeeds. Partial retries preserve an existing main page and add only missing
+roles. Replaying a completed creation leaves page edits, account identity and
+permission logs unchanged. Thrown setup errors retain the pending marker and context for
+retry; ordinary jobs and HTTP requests remain gated until setup finishes.
+Extra-data hook handlers must tolerate at-least-once execution if interrupted
+before the checkpoint. Legacy events without requester context retain their
+schema-repair behavior; historical missing-owner setup requires operator review.
 
 If the creator exits during preparation, the OS releases the lock and the
 durable event remains recoverable through the repair path. Shutdown interrupts
@@ -56,10 +75,17 @@ cross-database transaction.
 application in an isolated production-mode farm with fresh credentials and data.
 Build `IMAGE` from the current Dockerfile first. The harness pins its image ID
 and rejects application source mounts. It runs four simultaneous creators, a
-second group of four synchronized at metadata publication, and a private creator
-killed with SIGKILL while holding its metadata lock. It checks shared lists,
+second group of four synchronized at metadata publication, and public/private
+creators killed with SIGKILL while holding their metadata locks. It checks shared lists,
 schemas, CheckUser, private API/file denial, HTTP 503 during preparation, one
-updater per wiki and empty queues after recovery. PHP-FPM serves the access
+updater per initial creation and empty queues after recovery. It verifies the
+localized main page, requester attachment, configured roles and effective rights,
+then replays one completed creation after a page edit to check idempotence.
+Use `--checkpoint-replay-only` for a focused retry after setup writes have
+committed but the completion checkpoint is missing. It edits the main page,
+removes only that checkpoint, and checks that retry preserves content, account
+identity, roles and permission logs while restoring the checkpoint.
+PHP-FPM serves the access
 checks over FastCGI inside the isolated network; no host ports are published.
 Concurrent cache writes can invalidate receipts and take the repair path.
 All temporary containers, credentials and volumes are removed after the run.
@@ -102,6 +128,7 @@ scripts/farm compose exec -T worker php /dev/stdin /opt/farm/process.php < docke
 | `global:jobqueue:dispatch-pending` | Queue to outstanding signal mapping |
 | `global:farm:provision` | Provisioning stream |
 | `global:farm:provision-pending` | Wiki to outstanding provisioning signal |
+| `global:farm:creation-context` | Requester and extra data retained until creation succeeds |
 | `global:farm:provision-status:<wiki>` | Queue/start/finish times, expires after seven days |
 | `global:farm:dispatch-dead` | Invalid-event diagnostics, approximately capped at 1,000 entries |
 
@@ -138,6 +165,19 @@ a coordinated restore of SQL, Redis and files; account for writes since capture.
 
 
 ## Local validation
+
+The 2026-10-23 creation-recovery checks found that killing the creator during
+metadata preparation previously left the main page and requester setup missing
+despite successful schema repair. Durable creation context and the updater's
+finalization checkpoint close that gap. Immutable ARM64 and AMD64 images passed
+public/private creator-kill recovery, concurrent creation and completed replay.
+A separate missing-checkpoint retry preserved an edited page, requester identity,
+roles and rights log while restoring the checkpoint. All 13 stream lifecycle
+checks and all eight public/private/additional-extension schema comparison cases
+passed. Temporary farms were removed and the main provisioning queue was empty. See
+[creation-recovery evidence](upgrade-evidence/creation-recovery-20261023.json)
+for image identities, checks and limits. Completion now includes standard
+post-creation setup, so its timings are not comparable with schema-only timings.
 
 The 2026-10-21 ARM64 local rollout passed all 13 stream lifecycle checks, the
 separate jobchron lifecycle suite, four browser acceptance tests, fresh

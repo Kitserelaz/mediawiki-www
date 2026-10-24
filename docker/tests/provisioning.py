@@ -82,7 +82,7 @@ try:
     expected_oauth={
      'oauth_accepted_consumer-oaac_accepted-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_accepted_consumer-timestamp.sql',
      'oauth_registered_consumer-oarc_email_authenticated-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_registered_consumer-timestamp.sql'}
-    assert set(update_difference['only_two_pass'])==expected_oauth and not update_difference['only_single_pass'],update_difference
+    assert set(update_difference['only_two_pass'])==expected_oauth and update_difference['only_single_pass']==['farm-finalize-creation-v1'],update_difference
     assert snapshot['extensions']==reference['extensions'],{'variant':variant,'extension_set_differs':True}
    row={'mode':mode,'variant':variant,'wiki':wiki,'table_count':len(snapshot['tables']),'duration_ms':int(state['finished_ms'])-int(state['started_ms']),'updater_invocations':invocations,'dispatch_attempts':attempts,'checks':snapshot}
    if attempts>1:row['retry_updater_log']=compose('exec','-T','provisioner','cat','/var/www/mediawiki/cw_cache/.provision-'+wiki+'.log').stdout
@@ -90,7 +90,7 @@ try:
    report['cases'].append(row)
    print('PASS '+mode+'/'+variant+': '+str(row['table_count'])+' schemas, settings, real CheckUser index job and lookup; '+str(row['duration_ms'])+' ms',flush=True)
  report['status']='passed'
- print('Production one-pass schemas/settings match; only the two explained local OAuth markers differ.',flush=True)
+ print('Production one-pass schemas/settings match; only the explained OAuth markers and creation checkpoint differ.',flush=True)
 except BaseException:
  report['status']='failed'
  print(compose('logs','--no-color','--tail=25','provisioner',check=False).stdout,flush=True)

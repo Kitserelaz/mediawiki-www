@@ -11,6 +11,8 @@ class ProvisioningProductionAcceptance extends MediaWiki\Maintenance\Maintenance
         $this->addOption('target', 'Disposable wiki', true, true);
         $this->addOption('private', 'Create a private wiki');
         $this->addOption('pause', 'Stop during post-commit metadata preparation');
+        $this->addOption('inspect-creation', 'Inspect page, requester account and permissions');
+        $this->addOption('edit-main-page', 'Replace fixture content before a provisioning replay');
     }
 
     public function execute() {
@@ -23,6 +25,40 @@ class ProvisioningProductionAcceptance extends MediaWiki\Maintenance\Maintenance
             throw new RuntimeException('Invalid acceptance fixture');
         }
         $services = $this->getServiceContainer();
+        if ($this->hasOption('inspect-creation')) {
+            $user = $services->getUserFactory()->newFromName('Admin');
+            $title = MediaWiki\Title\Title::newMainPage();
+            $page = $services->getWikiPageFactory()->newFromTitle($title);
+            if ($this->hasOption('edit-main-page')) {
+                $editor = $page->newPageUpdater($user);
+                $editor->setContent(MediaWiki\Revision\SlotRecord::MAIN,
+                    new MediaWiki\Content\WikitextContent('Recovery must preserve edits for ' . $wiki));
+                $editor->saveRevision(MediaWiki\CommentStore\CommentStoreComment::newUnsavedComment('Recovery replay fixture'));
+                if (!$editor->wasSuccessful()) { throw new RuntimeException('Could not edit replay fixture'); }
+            }
+            $revision = $page->getRevisionRecord();
+            $central = MediaWiki\Extension\CentralAuth\User\CentralAuthUser::getPrimaryInstanceByName('Admin');
+            $permissions = $services->getPermissionManager();
+            echo json_encode([
+                'main_page' => $title->getPrefixedDBkey(),
+                'main_page_exists' => $page->exists(),
+                'main_page_revision' => $revision ? $revision->getId() : null,
+                'main_page_sha1' => $revision ? $revision->getSha1() : null,
+                'requester_id' => $user->getId(),
+                'requester_attached' => array_key_exists($wiki, $central->queryAttachedBasic()),
+                'requester_groups' => $services->getUserGroupManager()->getUserGroups($user),
+                'rights_log_entries' => (int)$services->getConnectionProvider()->getPrimaryDatabase()
+                    ->newSelectQueryBuilder()->select('COUNT(*)')->from('logging')->where(['log_type'=>'rights'])
+                    ->caller(__METHOD__)->fetchField(),
+                'creation_checkpoint' => (bool)$services->getConnectionProvider()->getPrimaryDatabase()
+                    ->newSelectQueryBuilder()->select('1')->from('updatelog')
+                    ->where(['ul_key'=>'farm-finalize-creation-v1'])->caller(__METHOD__)->fetchField(),
+                'requester_rights' => array_combine(['read','edit','userrights','editsitecss'],
+                    array_map(static fn($right) => $permissions->userHasRight($user, $right),
+                        ['read','edit','userrights','editsitecss'])),
+            ]), "\n";
+            return;
+        }
         if ($this->hasOption('pause')) {
             $paused = false;
             $services->getHookContainer()->register('CreateWikiGenerateDatabaseLists',

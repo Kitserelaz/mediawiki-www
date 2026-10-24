@@ -1,0 +1,3308 @@
+{
+  "date_local": "2026-10-23",
+  "base_commit": "4c58096c45baa23be17f2197b76137aec5e1775a",
+  "status": "passed",
+  "original_failure": {
+    "status": "failed",
+    "error": "{'main_page': 'Hauptseite', 'main_page_exists': False, 'main_page_revision': None, 'main_page_sha1': None, 'requester_id': 0, 'requester_attached': False, 'requester_groups': [], 'requester_rights': {'read': False, 'edit': True, 'userrights': False, 'editsitecss': False}}",
+    "creation": {
+      "main_page": "Hauptseite",
+      "main_page_exists": false,
+      "main_page_revision": null,
+      "main_page_sha1": null,
+      "requester_id": 0,
+      "requester_attached": false,
+      "requester_groups": [],
+      "requester_rights": {
+        "read": false,
+        "edit": true,
+        "userrights": false,
+        "editsitecss": false
+      }
+    },
+    "schema_metadata_recovered": true
+  },
+  "change": "Persist requester and extra-data intent atomically with provisioning event; finalize standard creation tasks in target updater with an update-log checkpoint.",
+  "scope": [
+    "Localized main page creation after public/private creator SIGKILL during metadata preparation",
+    "Requester local account, CentralAuth attachment, original sysop/bureaucrat/interface-admin roles and effective rights",
+    "Completed replay preserves page edits, identity, groups and rights log",
+    "Replay with missing completion checkpoint restores checkpoint without overwriting committed setup",
+    "Atomic context/event publication, duplicate coalescing, owner replacement refused and context removed on acknowledgment"
+  ],
+  "limits": [
+    "Extra-data hooks remain at-least-once before the checkpoint; handlers must be retry-safe.",
+    "SQL registration and Redis publication are separate operations, not a cross-database transaction.",
+    "Legacy events without creation context cannot infer a missing requester.",
+    "No S3 ACL failure injection or audit/notification crash recovery claim.",
+    "Timings from these correctness tests are not comparable with older schema-only completion timings."
+  ],
+  "policy": {
+    "userrights": false,
+    "note": "Existing configured policy preserved; read, edit and editsitecss verified true."
+  },
+  "source_sha256": {
+    "docker/mediawiki/dispatch.php": "fd36f90419d59e95d33bc6646e95322d5f55048617ca6fe84b307aa054081cba",
+    "docker/mediawiki/provision-metadata.php": "f729f9b1ddab18f14f71a3369532aa2dc459bdc702bc7df3ff2508e94250f25a",
+    "docker/mediawiki/provision-settings.php": "c6cd996e3be583e02e11aecef6c460d7be158965645b902cbdd858c1fed3a792",
+    "docker/mediawiki/runtime.php": "53424be10808d9eadbf679df5b5d15e19fd6a52e142e2cfac5d83031f6e4b6cf",
+    "docker/mediawiki/finalize-creation.php": "a4ea850b9cf4ca81211c890b0c84215a4c7cd185e1df626d47d587c1a15b0ec2",
+    "mediawiki/extensions/CreateWiki/includes/Hooks/CreateWikiHookRunner.php": "4018b4f09b78d5dea225aa16641e7d1c33ca7e1f228b498d5931c6da7b0fb534",
+    "mediawiki/extensions/CreateWiki/includes/Hooks/CreateWikiCreationTasksHook.php": "6211a7487eb3b295ebbf92317d40975d063e8971477b9cae68f3bde1cf10cc3e",
+    "mediawiki/extensions/CreateWiki/includes/Services/WikiManagerFactory.php": "24c98b9def4ec8781538d5dd6ac84b1be97133b3f87dcad087f19a644540f4af"
+  },
+  "acceptance": {
+    "final-arm64": {
+      "project": "cloudwiki-acceptance-9f145b3b",
+      "status": "passed",
+      "cases": [
+        {
+          "case": "simultaneous",
+          "status": "passed",
+          "wikis": [
+            {
+              "wiki": "9provisionf255644csimultaneous0wiki",
+              "private": false,
+              "state": {
+                "status": {
+                  "state": "complete",
+                  "queued_ms": "1792809874097",
+                  "event": "1792809874097-0",
+                  "started_ms": "1792809874264",
+                  "finished_ms": "1792809885567"
+                },
+                "pending": false,
+                "marker": false,
+                "receipt": false,
+                "paused": false,
+                "lock_held": false,
+                "metadata_complete": true,
+                "private": false,
+                "lists": {
+                  "databases": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "deleted": null,
+                  "active": {
+                    "s": "Production acceptance fixture",
+                    "c": null
+                  },
+                  "private": null,
+                  "public": {
+                    "s": "Production acceptance fixture",
+                    "c": null
+                  },
+                  "alpha-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "beta-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "stable-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  }
+                },
+                "updater_invocations": 1,
+                "metadata_sources": [
+                  "creator"
+                ],
+                "stored_extensions": [
+                  "categorytree",
+                  "cite",
+                  "citethispage",
+                  "codeeditor",
+                  "codemirror",
+                  "darkmode",
+                  "globaluserpage",
+                  "minervaneue",
+                  "mobilefrontend",
+                  "syntaxhighlight_geshi",
+                  "textextracts",
+                  "urlshortener",
+                  "wikiseo"
+                ],
+                "creation_context": false
+              },
+              "http_statuses_after_provisioning": [
+                200
+              ],
+              "http_readiness_ms": 1740,
+              "api_check": "public siteinfo ready",
+              "private_file_protected": false,
+              "table_count": 111,
+              "schema_sha256": "23e5fd3fe2da6d6a00b25cda338053bbcc10eab455d631896648b0e66ea07678",
+              "checkuser": "real index job and global lookup passed",
+              "creation": {
+                "main_page": "Main_Page",
+                "main_page_exists": true,
+                "main_page_revision": 1,
+                "main_page_sha1": "cwmls503tuxr24c76w4bc6p5kr319il",
+                "requester_id": 4,
+                "requester_attached": true,
+                "requester_groups": [
+                  "bureaucrat",
+                  "interface-admin",
+                  "sysop"
+                ],
+                "rights_log_entries": 1,
+                "requester_rights": {
+                  "read": true,
+                  "edit": true,
+                  "userrights": false,
+                  "editsitecss": true
+                }
+              }
+            },
+            {
+              "wiki": "9provisionf255644csimultaneous1wiki",
+              "private": true,
+              "state": {
+                "status": {
+                  "state": "complete",
+                  "queued_ms": "1792809878725",
+                  "event": "1792809878725-0",
+                  "started_ms": "1792809901045",
+                  "finished_ms": "1792809903584"
+                },
+                "pending": false,
+                "marker": false,
+                "receipt": false,
+                "paused": false,
+                "lock_held": false,
+                "metadata_complete": true,
+                "private": true,
+                "lists": {
+                  "databases": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "deleted": null,
+                  "active": {
+                    "s": "Production acceptance fixture",
+                    "c": null
+                  },
+                  "private": {
+                    "s": "Production acceptance fixture",
+                    "c": null
+                  },
+                  "public": null,
+                  "alpha-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "beta-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "stable-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  }
+                },
+                "updater_invocations": 1,
+                "metadata_sources": [
+                  "creator"
+                ],
+                "stored_extensions": [
+                  "categorytree",
+                  "cite",
+                  "citethispage",
+                  "codeeditor",
+                  "codemirror",
+                  "darkmode",
+                  "globaluserpage",
+                  "minervaneue",
+                  "mobilefrontend",
+                  "syntaxhighlight_geshi",
+                  "textextracts",
+                  "urlshortener",
+                  "wikiseo"
+                ],
+                "creation_context": false
+              },
+              "http_statuses_after_provisioning": [
+                200
+              ],
+              "http_readiness_ms": 372,
+              "api_check": "anonymous read denied",
+              "private_file_protected": true,
+              "table_count": 111,
+              "schema_sha256": "23e5fd3fe2da6d6a00b25cda338053bbcc10eab455d631896648b0e66ea07678",
+              "checkuser": "real index job and global lookup passed",
+              "creation": {
+                "main_page": "Hauptseite",
+                "main_page_exists": true,
+                "main_page_revision": 1,
+                "main_page_sha1": "m4m2fbkzozhafzbynhea41safns2rmj",
+                "requester_id": 4,
+                "requester_attached": true,
+                "requester_groups": [
+                  "bureaucrat",
+                  "interface-admin",
+                  "sysop"
+                ],
+                "rights_log_entries": 1,
+                "requester_rights": {
+                  "read": true,
+                  "edit": true,
+                  "userrights": false,
+                  "editsitecss": true
+                }
+              }
+            },
+            {
+              "wiki": "9provisionf255644csimultaneous2wiki",
+              "private": false,
+              "state": {
+                "status": {
+                  "state": "complete",
+                  "queued_ms": "1792809874215",
+                  "event": "1792809874215-0",
+                  "started_ms": "1792809885573",
+                  "finished_ms": "1792809889348"
+                },
+                "pending": false,
+                "marker": false,
+                "receipt": false,
+                "paused": false,
+                "lock_held": false,
+                "metadata_complete": true,
+                "private": false,
+                "lists": {
+                  "databases": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "deleted": null,
+                  "active": {
+                    "s": "Production acceptance fixture",
+                    "c": null
+                  },
+                  "private": null,
+                  "public": {
+                    "s": "Production acceptance fixture",
+                    "c": null
+                  },
+                  "alpha-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "beta-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "stable-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  }
+                },
+                "updater_invocations": 1,
+                "metadata_sources": [
+                  "creator"
+                ],
+                "stored_extensions": [
+                  "categorytree",
+                  "cite",
+                  "citethispage",
+                  "codeeditor",
+                  "codemirror",
+                  "darkmode",
+                  "globaluserpage",
+                  "minervaneue",
+                  "mobilefrontend",
+                  "syntaxhighlight_geshi",
+                  "textextracts",
+                  "urlshortener",
+                  "wikiseo"
+                ],
+                "creation_context": false
+              },
+              "http_statuses_after_provisioning": [
+                200
+              ],
+              "http_readiness_ms": 284,
+              "api_check": "public siteinfo ready",
+              "private_file_protected": false,
+              "table_count": 111,
+              "schema_sha256": "23e5fd3fe2da6d6a00b25cda338053bbcc10eab455d631896648b0e66ea07678",
+              "checkuser": "real index job and global lookup passed",
+              "creation": {
+                "main_page": "Main_Page",
+                "main_page_exists": true,
+                "main_page_revision": 1,
+                "main_page_sha1": "cwmls503tuxr24c76w4bc6p5kr319il",
+                "requester_id": 4,
+                "requester_attached": true,
+                "requester_groups": [
+                  "bureaucrat",
+                  "interface-admin",
+                  "sysop"
+                ],
+                "rights_log_entries": 1,
+                "requester_rights": {
+                  "read": true,
+                  "edit": true,
+                  "userrights": false,
+                  "editsitecss": true
+                }
+              }
+            },
+            {
+              "wiki": "9provisionf255644csimultaneous3wiki",
+              "private": true,
+              "state": {
+                "status": {
+                  "state": "complete",
+                  "queued_ms": "1792809878669",
+                  "event": "1792809878669-0",
+                  "started_ms": "1792809889356",
+                  "finished_ms": "1792809901040"
+                },
+                "pending": false,
+                "marker": false,
+                "receipt": false,
+                "paused": false,
+                "lock_held": false,
+                "metadata_complete": true,
+                "private": true,
+                "lists": {
+                  "databases": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "deleted": null,
+                  "active": {
+                    "s": "Production acceptance fixture",
+                    "c": null
+                  },
+                  "private": {
+                    "s": "Production acceptance fixture",
+                    "c": null
+                  },
+                  "public": null,
+                  "alpha-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "beta-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "stable-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  }
+                },
+                "updater_invocations": 1,
+                "metadata_sources": [
+                  "creator"
+                ],
+                "stored_extensions": [
+                  "categorytree",
+                  "cite",
+                  "citethispage",
+                  "codeeditor",
+                  "codemirror",
+                  "darkmode",
+                  "globaluserpage",
+                  "minervaneue",
+                  "mobilefrontend",
+                  "syntaxhighlight_geshi",
+                  "textextracts",
+                  "urlshortener",
+                  "wikiseo"
+                ],
+                "creation_context": false
+              },
+              "http_statuses_after_provisioning": [
+                200
+              ],
+              "http_readiness_ms": 373,
+              "api_check": "anonymous read denied",
+              "private_file_protected": true,
+              "table_count": 111,
+              "schema_sha256": "23e5fd3fe2da6d6a00b25cda338053bbcc10eab455d631896648b0e66ea07678",
+              "checkuser": "real index job and global lookup passed",
+              "creation": {
+                "main_page": "Hauptseite",
+                "main_page_exists": true,
+                "main_page_revision": 1,
+                "main_page_sha1": "m4m2fbkzozhafzbynhea41safns2rmj",
+                "requester_id": 4,
+                "requester_attached": true,
+                "requester_groups": [
+                  "bureaucrat",
+                  "interface-admin",
+                  "sysop"
+                ],
+                "rights_log_entries": 1,
+                "requester_rights": {
+                  "read": true,
+                  "edit": true,
+                  "userrights": false,
+                  "editsitecss": true
+                }
+              }
+            }
+          ]
+        },
+        {
+          "case": "metadata_barrier",
+          "status": "passed",
+          "wikis": [
+            {
+              "wiki": "9provisionf255644cmetadatabarrier0wiki",
+              "private": false,
+              "state": {
+                "status": {
+                  "state": "complete",
+                  "queued_ms": "1792809935417",
+                  "event": "1792809935417-0",
+                  "started_ms": "1792809942683",
+                  "finished_ms": "1792809943752"
+                },
+                "pending": false,
+                "marker": false,
+                "receipt": false,
+                "paused": true,
+                "lock_held": false,
+                "metadata_complete": true,
+                "private": false,
+                "lists": {
+                  "databases": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "deleted": null,
+                  "active": {
+                    "s": "Production acceptance fixture",
+                    "c": null
+                  },
+                  "private": null,
+                  "public": {
+                    "s": "Production acceptance fixture",
+                    "c": null
+                  },
+                  "alpha-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "beta-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "stable-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  }
+                },
+                "updater_invocations": 1,
+                "metadata_sources": [
+                  "creator"
+                ],
+                "stored_extensions": [
+                  "categorytree",
+                  "cite",
+                  "citethispage",
+                  "codeeditor",
+                  "codemirror",
+                  "darkmode",
+                  "globaluserpage",
+                  "minervaneue",
+                  "mobilefrontend",
+                  "syntaxhighlight_geshi",
+                  "textextracts",
+                  "urlshortener",
+                  "wikiseo"
+                ],
+                "creation_context": false
+              },
+              "http_statuses_after_provisioning": [
+                200
+              ],
+              "http_readiness_ms": 564,
+              "api_check": "public siteinfo ready",
+              "private_file_protected": false,
+              "table_count": 111,
+              "schema_sha256": "23e5fd3fe2da6d6a00b25cda338053bbcc10eab455d631896648b0e66ea07678",
+              "checkuser": "real index job and global lookup passed",
+              "creation": {
+                "main_page": "Main_Page",
+                "main_page_exists": true,
+                "main_page_revision": 1,
+                "main_page_sha1": "cwmls503tuxr24c76w4bc6p5kr319il",
+                "requester_id": 4,
+                "requester_attached": true,
+                "requester_groups": [
+                  "bureaucrat",
+                  "interface-admin",
+                  "sysop"
+                ],
+                "rights_log_entries": 1,
+                "requester_rights": {
+                  "read": true,
+                  "edit": true,
+                  "userrights": false,
+                  "editsitecss": true
+                }
+              }
+            },
+            {
+              "wiki": "9provisionf255644cmetadatabarrier1wiki",
+              "private": true,
+              "state": {
+                "status": {
+                  "state": "complete",
+                  "queued_ms": "1792809935320",
+                  "event": "1792809935320-0",
+                  "started_ms": "1792809941002",
+                  "finished_ms": "1792809942680"
+                },
+                "pending": false,
+                "marker": false,
+                "receipt": false,
+                "paused": true,
+                "lock_held": false,
+                "metadata_complete": true,
+                "private": true,
+                "lists": {
+                  "databases": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "deleted": null,
+                  "active": {
+                    "s": "Production acceptance fixture",
+                    "c": null
+                  },
+                  "private": {
+                    "s": "Production acceptance fixture",
+                    "c": null
+                  },
+                  "public": null,
+                  "alpha-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "beta-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "stable-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  }
+                },
+                "updater_invocations": 1,
+                "metadata_sources": [
+                  "creator"
+                ],
+                "stored_extensions": [
+                  "categorytree",
+                  "cite",
+                  "citethispage",
+                  "codeeditor",
+                  "codemirror",
+                  "darkmode",
+                  "globaluserpage",
+                  "minervaneue",
+                  "mobilefrontend",
+                  "syntaxhighlight_geshi",
+                  "textextracts",
+                  "urlshortener",
+                  "wikiseo"
+                ],
+                "creation_context": false
+              },
+              "http_statuses_after_provisioning": [
+                200
+              ],
+              "http_readiness_ms": 841,
+              "api_check": "anonymous read denied",
+              "private_file_protected": true,
+              "table_count": 111,
+              "schema_sha256": "23e5fd3fe2da6d6a00b25cda338053bbcc10eab455d631896648b0e66ea07678",
+              "checkuser": "real index job and global lookup passed",
+              "creation": {
+                "main_page": "Hauptseite",
+                "main_page_exists": true,
+                "main_page_revision": 1,
+                "main_page_sha1": "m4m2fbkzozhafzbynhea41safns2rmj",
+                "requester_id": 4,
+                "requester_attached": true,
+                "requester_groups": [
+                  "bureaucrat",
+                  "interface-admin",
+                  "sysop"
+                ],
+                "rights_log_entries": 1,
+                "requester_rights": {
+                  "read": true,
+                  "edit": true,
+                  "userrights": false,
+                  "editsitecss": true
+                }
+              }
+            },
+            {
+              "wiki": "9provisionf255644cmetadatabarrier2wiki",
+              "private": false,
+              "state": {
+                "status": {
+                  "state": "complete",
+                  "queued_ms": "1792809935308",
+                  "event": "1792809935308-0",
+                  "started_ms": "1792809935320",
+                  "finished_ms": "1792809940979"
+                },
+                "pending": false,
+                "marker": false,
+                "receipt": false,
+                "paused": true,
+                "lock_held": false,
+                "metadata_complete": true,
+                "private": false,
+                "lists": {
+                  "databases": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "deleted": null,
+                  "active": {
+                    "s": "Production acceptance fixture",
+                    "c": null
+                  },
+                  "private": null,
+                  "public": {
+                    "s": "Production acceptance fixture",
+                    "c": null
+                  },
+                  "alpha-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "beta-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "stable-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  }
+                },
+                "updater_invocations": 1,
+                "metadata_sources": [
+                  "creator"
+                ],
+                "stored_extensions": [
+                  "categorytree",
+                  "cite",
+                  "citethispage",
+                  "codeeditor",
+                  "codemirror",
+                  "darkmode",
+                  "globaluserpage",
+                  "minervaneue",
+                  "mobilefrontend",
+                  "syntaxhighlight_geshi",
+                  "textextracts",
+                  "urlshortener",
+                  "wikiseo"
+                ],
+                "creation_context": false
+              },
+              "http_statuses_after_provisioning": [
+                200
+              ],
+              "http_readiness_ms": 428,
+              "api_check": "public siteinfo ready",
+              "private_file_protected": false,
+              "table_count": 111,
+              "schema_sha256": "23e5fd3fe2da6d6a00b25cda338053bbcc10eab455d631896648b0e66ea07678",
+              "checkuser": "real index job and global lookup passed",
+              "creation": {
+                "main_page": "Main_Page",
+                "main_page_exists": true,
+                "main_page_revision": 1,
+                "main_page_sha1": "cwmls503tuxr24c76w4bc6p5kr319il",
+                "requester_id": 4,
+                "requester_attached": true,
+                "requester_groups": [
+                  "bureaucrat",
+                  "interface-admin",
+                  "sysop"
+                ],
+                "rights_log_entries": 1,
+                "requester_rights": {
+                  "read": true,
+                  "edit": true,
+                  "userrights": false,
+                  "editsitecss": true
+                }
+              }
+            },
+            {
+              "wiki": "9provisionf255644cmetadatabarrier3wiki",
+              "private": true,
+              "state": {
+                "status": {
+                  "state": "complete",
+                  "queued_ms": "1792809935430",
+                  "event": "1792809935430-0",
+                  "started_ms": "1792809943755",
+                  "finished_ms": "1792809945771"
+                },
+                "pending": false,
+                "marker": false,
+                "receipt": false,
+                "paused": true,
+                "lock_held": false,
+                "metadata_complete": true,
+                "private": true,
+                "lists": {
+                  "databases": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "deleted": null,
+                  "active": {
+                    "s": "Production acceptance fixture",
+                    "c": null
+                  },
+                  "private": {
+                    "s": "Production acceptance fixture",
+                    "c": null
+                  },
+                  "public": null,
+                  "alpha-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "beta-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "stable-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  }
+                },
+                "updater_invocations": 1,
+                "metadata_sources": [
+                  "creator"
+                ],
+                "stored_extensions": [
+                  "categorytree",
+                  "cite",
+                  "citethispage",
+                  "codeeditor",
+                  "codemirror",
+                  "darkmode",
+                  "globaluserpage",
+                  "minervaneue",
+                  "mobilefrontend",
+                  "syntaxhighlight_geshi",
+                  "textextracts",
+                  "urlshortener",
+                  "wikiseo"
+                ],
+                "creation_context": false
+              },
+              "http_statuses_after_provisioning": [
+                200
+              ],
+              "http_readiness_ms": 660,
+              "api_check": "anonymous read denied",
+              "private_file_protected": true,
+              "table_count": 111,
+              "schema_sha256": "23e5fd3fe2da6d6a00b25cda338053bbcc10eab455d631896648b0e66ea07678",
+              "checkuser": "real index job and global lookup passed",
+              "creation": {
+                "main_page": "Hauptseite",
+                "main_page_exists": true,
+                "main_page_revision": 1,
+                "main_page_sha1": "m4m2fbkzozhafzbynhea41safns2rmj",
+                "requester_id": 4,
+                "requester_attached": true,
+                "requester_groups": [
+                  "bureaucrat",
+                  "interface-admin",
+                  "sysop"
+                ],
+                "rights_log_entries": 1,
+                "requester_rights": {
+                  "read": true,
+                  "edit": true,
+                  "userrights": false,
+                  "editsitecss": true
+                }
+              }
+            }
+          ]
+        },
+        {
+          "case": "creator_sigkill_during_metadata_public",
+          "status": "passed",
+          "before_kill": {
+            "status": {
+              "state": "running",
+              "queued_ms": "1792809984447",
+              "event": "1792809984447-0",
+              "started_ms": "1792809984458"
+            },
+            "pending": true,
+            "marker": true,
+            "receipt": false,
+            "paused": true,
+            "lock_held": true,
+            "metadata_complete": true,
+            "private": false,
+            "lists": {
+              "databases": null,
+              "deleted": null,
+              "active": null,
+              "private": null,
+              "public": null,
+              "alpha-wikis": null,
+              "beta-wikis": null,
+              "stable-wikis": null
+            },
+            "updater_invocations": 0,
+            "metadata_sources": [],
+            "stored_extensions": [
+              "categorytree",
+              "cite",
+              "citethispage",
+              "codeeditor",
+              "codemirror",
+              "darkmode",
+              "globaluserpage",
+              "minervaneue",
+              "mobilefrontend",
+              "syntaxhighlight_geshi",
+              "textextracts",
+              "urlshortener",
+              "wikiseo"
+            ],
+            "creation_context": true
+          },
+          "http_before_kill": 503,
+          "creator_exit": 137,
+          "recovered": {
+            "wiki": "9provisionf255644ckilledpublicwiki",
+            "private": false,
+            "state": {
+              "status": {
+                "state": "complete",
+                "queued_ms": "1792809984447",
+                "event": "1792809984447-0",
+                "started_ms": "1792809984458",
+                "finished_ms": "1792809986576"
+              },
+              "pending": false,
+              "marker": false,
+              "receipt": false,
+              "paused": true,
+              "lock_held": false,
+              "metadata_complete": true,
+              "private": false,
+              "lists": {
+                "databases": {
+                  "s": "Production acceptance fixture",
+                  "c": null,
+                  "d": "acceptance.example.test",
+                  "v": "1.46"
+                },
+                "deleted": null,
+                "active": {
+                  "s": "Production acceptance fixture",
+                  "c": null
+                },
+                "private": null,
+                "public": {
+                  "s": "Production acceptance fixture",
+                  "c": null
+                },
+                "alpha-wikis": {
+                  "s": "Production acceptance fixture",
+                  "c": null,
+                  "d": "acceptance.example.test",
+                  "v": "1.46"
+                },
+                "beta-wikis": {
+                  "s": "Production acceptance fixture",
+                  "c": null,
+                  "d": "acceptance.example.test",
+                  "v": "1.46"
+                },
+                "stable-wikis": {
+                  "s": "Production acceptance fixture",
+                  "c": null,
+                  "d": "acceptance.example.test",
+                  "v": "1.46"
+                }
+              },
+              "updater_invocations": 1,
+              "metadata_sources": [
+                "repair"
+              ],
+              "stored_extensions": [
+                "categorytree",
+                "cite",
+                "citethispage",
+                "codeeditor",
+                "codemirror",
+                "darkmode",
+                "globaluserpage",
+                "minervaneue",
+                "mobilefrontend",
+                "syntaxhighlight_geshi",
+                "textextracts",
+                "urlshortener",
+                "wikiseo"
+              ],
+              "creation_context": false
+            },
+            "http_statuses_after_provisioning": [
+              404,
+              404,
+              404,
+              200
+            ],
+            "http_readiness_ms": 1546,
+            "api_check": "public siteinfo ready",
+            "private_file_protected": false,
+            "table_count": 111,
+            "schema_sha256": "23e5fd3fe2da6d6a00b25cda338053bbcc10eab455d631896648b0e66ea07678",
+            "checkuser": "real index job and global lookup passed",
+            "creation": {
+              "main_page": "Main_Page",
+              "main_page_exists": true,
+              "main_page_revision": 1,
+              "main_page_sha1": "cwmls503tuxr24c76w4bc6p5kr319il",
+              "requester_id": 4,
+              "requester_attached": true,
+              "requester_groups": [
+                "bureaucrat",
+                "interface-admin",
+                "sysop"
+              ],
+              "rights_log_entries": 1,
+              "requester_rights": {
+                "read": true,
+                "edit": true,
+                "userrights": false,
+                "editsitecss": true
+              }
+            }
+          }
+        },
+        {
+          "case": "creator_sigkill_during_metadata_private",
+          "status": "passed",
+          "before_kill": {
+            "status": {
+              "state": "running",
+              "queued_ms": "1792809997219",
+              "event": "1792809997219-0",
+              "started_ms": "1792809997225"
+            },
+            "pending": true,
+            "marker": true,
+            "receipt": false,
+            "paused": true,
+            "lock_held": true,
+            "metadata_complete": true,
+            "private": true,
+            "lists": {
+              "databases": null,
+              "deleted": null,
+              "active": null,
+              "private": null,
+              "public": null,
+              "alpha-wikis": null,
+              "beta-wikis": null,
+              "stable-wikis": null
+            },
+            "updater_invocations": 0,
+            "metadata_sources": [],
+            "stored_extensions": [
+              "categorytree",
+              "cite",
+              "citethispage",
+              "codeeditor",
+              "codemirror",
+              "darkmode",
+              "globaluserpage",
+              "minervaneue",
+              "mobilefrontend",
+              "syntaxhighlight_geshi",
+              "textextracts",
+              "urlshortener",
+              "wikiseo"
+            ],
+            "creation_context": true
+          },
+          "http_before_kill": 503,
+          "creator_exit": 137,
+          "recovered": {
+            "wiki": "9provisionf255644ckilledprivatewiki",
+            "private": true,
+            "state": {
+              "status": {
+                "state": "complete",
+                "queued_ms": "1792809997219",
+                "event": "1792809997219-0",
+                "started_ms": "1792809997225",
+                "finished_ms": "1792809999322"
+              },
+              "pending": false,
+              "marker": false,
+              "receipt": false,
+              "paused": true,
+              "lock_held": false,
+              "metadata_complete": true,
+              "private": true,
+              "lists": {
+                "databases": {
+                  "s": "Production acceptance fixture",
+                  "c": null,
+                  "d": "acceptance.example.test",
+                  "v": "1.46"
+                },
+                "deleted": null,
+                "active": {
+                  "s": "Production acceptance fixture",
+                  "c": null
+                },
+                "private": {
+                  "s": "Production acceptance fixture",
+                  "c": null
+                },
+                "public": null,
+                "alpha-wikis": {
+                  "s": "Production acceptance fixture",
+                  "c": null,
+                  "d": "acceptance.example.test",
+                  "v": "1.46"
+                },
+                "beta-wikis": {
+                  "s": "Production acceptance fixture",
+                  "c": null,
+                  "d": "acceptance.example.test",
+                  "v": "1.46"
+                },
+                "stable-wikis": {
+                  "s": "Production acceptance fixture",
+                  "c": null,
+                  "d": "acceptance.example.test",
+                  "v": "1.46"
+                }
+              },
+              "updater_invocations": 1,
+              "metadata_sources": [
+                "repair"
+              ],
+              "stored_extensions": [
+                "categorytree",
+                "cite",
+                "citethispage",
+                "codeeditor",
+                "codemirror",
+                "darkmode",
+                "globaluserpage",
+                "minervaneue",
+                "mobilefrontend",
+                "syntaxhighlight_geshi",
+                "textextracts",
+                "urlshortener",
+                "wikiseo"
+              ],
+              "creation_context": false
+            },
+            "http_statuses_after_provisioning": [
+              200
+            ],
+            "http_readiness_ms": 540,
+            "api_check": "anonymous read denied",
+            "private_file_protected": true,
+            "table_count": 111,
+            "schema_sha256": "23e5fd3fe2da6d6a00b25cda338053bbcc10eab455d631896648b0e66ea07678",
+            "checkuser": "real index job and global lookup passed",
+            "creation": {
+              "main_page": "Hauptseite",
+              "main_page_exists": true,
+              "main_page_revision": 1,
+              "main_page_sha1": "m4m2fbkzozhafzbynhea41safns2rmj",
+              "requester_id": 4,
+              "requester_attached": true,
+              "requester_groups": [
+                "bureaucrat",
+                "interface-admin",
+                "sysop"
+              ],
+              "rights_log_entries": 1,
+              "requester_rights": {
+                "read": true,
+                "edit": true,
+                "userrights": false,
+                "editsitecss": true
+              }
+            }
+          }
+        },
+        {
+          "case": "completed_creation_replay",
+          "status": "passed",
+          "edited": {
+            "main_page": "Main_Page",
+            "main_page_exists": true,
+            "main_page_revision": 2,
+            "main_page_sha1": "q88mrv990pbvo8ntuj03pp4yun6vc1j",
+            "requester_id": 4,
+            "requester_attached": true,
+            "requester_groups": [
+              "bureaucrat",
+              "interface-admin",
+              "sysop"
+            ],
+            "rights_log_entries": 1,
+            "requester_rights": {
+              "read": true,
+              "edit": true,
+              "userrights": false,
+              "editsitecss": true
+            }
+          },
+          "replayed": {
+            "wiki": "9provisionf255644csimultaneous0wiki",
+            "private": false,
+            "state": {
+              "status": {
+                "state": "complete",
+                "queued_ms": "1792810010542",
+                "event": "1792810010542-0",
+                "started_ms": "1792810010550",
+                "finished_ms": "1792810011205"
+              },
+              "pending": false,
+              "marker": false,
+              "receipt": false,
+              "paused": false,
+              "lock_held": false,
+              "metadata_complete": true,
+              "private": false,
+              "lists": {
+                "databases": {
+                  "s": "Production acceptance fixture",
+                  "c": null,
+                  "d": "acceptance.example.test",
+                  "v": "1.46"
+                },
+                "deleted": null,
+                "active": {
+                  "s": "Production acceptance fixture",
+                  "c": null
+                },
+                "private": null,
+                "public": {
+                  "s": "Production acceptance fixture",
+                  "c": null
+                },
+                "alpha-wikis": {
+                  "s": "Production acceptance fixture",
+                  "c": null,
+                  "d": "acceptance.example.test",
+                  "v": "1.46"
+                },
+                "beta-wikis": {
+                  "s": "Production acceptance fixture",
+                  "c": null,
+                  "d": "acceptance.example.test",
+                  "v": "1.46"
+                },
+                "stable-wikis": {
+                  "s": "Production acceptance fixture",
+                  "c": null,
+                  "d": "acceptance.example.test",
+                  "v": "1.46"
+                }
+              },
+              "updater_invocations": 2,
+              "metadata_sources": [
+                "creator",
+                "repair"
+              ],
+              "stored_extensions": [
+                "categorytree",
+                "cite",
+                "citethispage",
+                "codeeditor",
+                "codemirror",
+                "darkmode",
+                "globaluserpage",
+                "minervaneue",
+                "mobilefrontend",
+                "syntaxhighlight_geshi",
+                "textextracts",
+                "urlshortener",
+                "wikiseo"
+              ],
+              "creation_context": false
+            },
+            "http_statuses_after_provisioning": [
+              200
+            ],
+            "http_readiness_ms": 357,
+            "api_check": "public siteinfo ready",
+            "private_file_protected": false,
+            "table_count": 111,
+            "schema_sha256": "23e5fd3fe2da6d6a00b25cda338053bbcc10eab455d631896648b0e66ea07678",
+            "checkuser": "real index job and global lookup passed",
+            "creation": {
+              "main_page": "Main_Page",
+              "main_page_exists": true,
+              "main_page_revision": 2,
+              "main_page_sha1": "q88mrv990pbvo8ntuj03pp4yun6vc1j",
+              "requester_id": 4,
+              "requester_attached": true,
+              "requester_groups": [
+                "bureaucrat",
+                "interface-admin",
+                "sysop"
+              ],
+              "rights_log_entries": 1,
+              "requester_rights": {
+                "read": true,
+                "edit": true,
+                "userrights": false,
+                "editsitecss": true
+              }
+            }
+          }
+        }
+      ],
+      "main_stack_modified": false,
+      "image": {
+        "id": "sha256:f047e037fe98884c599535eeb0b5f8ccb07a078ec708077d0145d326f3e7bf43",
+        "architecture": "arm64",
+        "os": "linux",
+        "source_revision": "creation-recovery-working-tree"
+      },
+      "context_contract": {
+        "status": "passed",
+        "checks": [
+          "atomic intent and event",
+          "duplicate coalescing",
+          "owner replacement refused",
+          "intent removed on acknowledgment"
+        ]
+      },
+      "immutable_code": "Image pinned by ID; no application source mounts or sync controller",
+      "source_sha256": {
+        "provision-metadata.php": "f729f9b1ddab18f14f71a3369532aa2dc459bdc702bc7df3ff2508e94250f25a",
+        "provision.php": "5523bc0eb926bf22ebc8c8531e73cb650abe5e804317f02e26c3e62f0ebe899e",
+        "runtime.php": "53424be10808d9eadbf679df5b5d15e19fd6a52e142e2cfac5d83031f6e4b6cf",
+        "process.php": "05ff5231aa3c8c1aeb7dc1a2b85afede983aaeb95a5cc148f5f9ed5822064539",
+        "dispatch.php": "fd36f90419d59e95d33bc6646e95322d5f55048617ca6fe84b307aa054081cba",
+        "provision-settings.php": "c6cd996e3be583e02e11aecef6c460d7be158965645b902cbdd858c1fed3a792",
+        "finalize-creation.php": "a4ea850b9cf4ca81211c890b0c84215a4c7cd185e1df626d47d587c1a15b0ec2"
+      },
+      "dispatch_attempts": {
+        "9provisionf255644csimultaneous0wiki": 2,
+        "9provisionf255644csimultaneous1wiki": 1,
+        "9provisionf255644csimultaneous2wiki": 1,
+        "9provisionf255644csimultaneous3wiki": 1,
+        "9provisionf255644cmetadatabarrier0wiki": 1,
+        "9provisionf255644cmetadatabarrier1wiki": 1,
+        "9provisionf255644cmetadatabarrier2wiki": 1,
+        "9provisionf255644cmetadatabarrier3wiki": 1,
+        "9provisionf255644ckilledpublicwiki": 1,
+        "9provisionf255644ckilledprivatewiki": 1
+      },
+      "queue": {
+        "pending_wikis": 0,
+        "pending_deliveries": 0,
+        "creation_contexts": 0
+      },
+      "cleanup_succeeded": true
+    },
+    "final-amd64": {
+      "project": "cloudwiki-acceptance-bdbb6229",
+      "status": "passed",
+      "cases": [
+        {
+          "case": "simultaneous",
+          "status": "passed",
+          "wikis": [
+            {
+              "wiki": "9provision95a83c6dsimultaneous0wiki",
+              "private": false,
+              "state": {
+                "status": {
+                  "state": "complete",
+                  "queued_ms": "1792810364557",
+                  "event": "1792810364557-0",
+                  "started_ms": "1792810371561",
+                  "finished_ms": "1792810373730"
+                },
+                "pending": false,
+                "marker": false,
+                "receipt": false,
+                "paused": false,
+                "lock_held": false,
+                "metadata_complete": true,
+                "private": false,
+                "lists": {
+                  "databases": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "deleted": null,
+                  "active": {
+                    "s": "Production acceptance fixture",
+                    "c": null
+                  },
+                  "private": null,
+                  "public": {
+                    "s": "Production acceptance fixture",
+                    "c": null
+                  },
+                  "alpha-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "beta-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "stable-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  }
+                },
+                "updater_invocations": 1,
+                "metadata_sources": [
+                  "creator"
+                ],
+                "stored_extensions": [
+                  "categorytree",
+                  "cite",
+                  "citethispage",
+                  "codeeditor",
+                  "codemirror",
+                  "darkmode",
+                  "globaluserpage",
+                  "minervaneue",
+                  "mobilefrontend",
+                  "syntaxhighlight_geshi",
+                  "textextracts",
+                  "urlshortener",
+                  "wikiseo"
+                ],
+                "creation_context": false
+              },
+              "http_statuses_after_provisioning": [
+                200
+              ],
+              "http_readiness_ms": 2357,
+              "api_check": "public siteinfo ready",
+              "private_file_protected": false,
+              "table_count": 111,
+              "schema_sha256": "23e5fd3fe2da6d6a00b25cda338053bbcc10eab455d631896648b0e66ea07678",
+              "checkuser": "real index job and global lookup passed",
+              "creation": {
+                "main_page": "Main_Page",
+                "main_page_exists": true,
+                "main_page_revision": 1,
+                "main_page_sha1": "cwmls503tuxr24c76w4bc6p5kr319il",
+                "requester_id": 4,
+                "requester_attached": true,
+                "requester_groups": [
+                  "bureaucrat",
+                  "interface-admin",
+                  "sysop"
+                ],
+                "rights_log_entries": 1,
+                "creation_checkpoint": true,
+                "requester_rights": {
+                  "read": true,
+                  "edit": true,
+                  "userrights": false,
+                  "editsitecss": true
+                }
+              }
+            },
+            {
+              "wiki": "9provision95a83c6dsimultaneous1wiki",
+              "private": true,
+              "state": {
+                "status": {
+                  "state": "complete",
+                  "queued_ms": "1792810365566",
+                  "event": "1792810365566-0",
+                  "started_ms": "1792810376331",
+                  "finished_ms": "1792810381945"
+                },
+                "pending": false,
+                "marker": false,
+                "receipt": false,
+                "paused": false,
+                "lock_held": false,
+                "metadata_complete": true,
+                "private": true,
+                "lists": {
+                  "databases": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "deleted": null,
+                  "active": {
+                    "s": "Production acceptance fixture",
+                    "c": null
+                  },
+                  "private": {
+                    "s": "Production acceptance fixture",
+                    "c": null
+                  },
+                  "public": null,
+                  "alpha-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "beta-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "stable-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  }
+                },
+                "updater_invocations": 1,
+                "metadata_sources": [
+                  "creator"
+                ],
+                "stored_extensions": [
+                  "categorytree",
+                  "cite",
+                  "citethispage",
+                  "codeeditor",
+                  "codemirror",
+                  "darkmode",
+                  "globaluserpage",
+                  "minervaneue",
+                  "mobilefrontend",
+                  "syntaxhighlight_geshi",
+                  "textextracts",
+                  "urlshortener",
+                  "wikiseo"
+                ],
+                "creation_context": false
+              },
+              "http_statuses_after_provisioning": [
+                200
+              ],
+              "http_readiness_ms": 702,
+              "api_check": "anonymous read denied",
+              "private_file_protected": true,
+              "table_count": 111,
+              "schema_sha256": "23e5fd3fe2da6d6a00b25cda338053bbcc10eab455d631896648b0e66ea07678",
+              "checkuser": "real index job and global lookup passed",
+              "creation": {
+                "main_page": "Hauptseite",
+                "main_page_exists": true,
+                "main_page_revision": 1,
+                "main_page_sha1": "m4m2fbkzozhafzbynhea41safns2rmj",
+                "requester_id": 4,
+                "requester_attached": true,
+                "requester_groups": [
+                  "bureaucrat",
+                  "interface-admin",
+                  "sysop"
+                ],
+                "rights_log_entries": 1,
+                "creation_checkpoint": true,
+                "requester_rights": {
+                  "read": true,
+                  "edit": true,
+                  "userrights": false,
+                  "editsitecss": true
+                }
+              }
+            },
+            {
+              "wiki": "9provision95a83c6dsimultaneous2wiki",
+              "private": false,
+              "state": {
+                "status": {
+                  "state": "complete",
+                  "queued_ms": "1792810364460",
+                  "event": "1792810364460-0",
+                  "started_ms": "1792810364509",
+                  "finished_ms": "1792810371554"
+                },
+                "pending": false,
+                "marker": false,
+                "receipt": false,
+                "paused": false,
+                "lock_held": false,
+                "metadata_complete": true,
+                "private": false,
+                "lists": {
+                  "databases": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "deleted": null,
+                  "active": {
+                    "s": "Production acceptance fixture",
+                    "c": null
+                  },
+                  "private": null,
+                  "public": {
+                    "s": "Production acceptance fixture",
+                    "c": null
+                  },
+                  "alpha-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "beta-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "stable-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  }
+                },
+                "updater_invocations": 1,
+                "metadata_sources": [
+                  "creator"
+                ],
+                "stored_extensions": [
+                  "categorytree",
+                  "cite",
+                  "citethispage",
+                  "codeeditor",
+                  "codemirror",
+                  "darkmode",
+                  "globaluserpage",
+                  "minervaneue",
+                  "mobilefrontend",
+                  "syntaxhighlight_geshi",
+                  "textextracts",
+                  "urlshortener",
+                  "wikiseo"
+                ],
+                "creation_context": false
+              },
+              "http_statuses_after_provisioning": [
+                200
+              ],
+              "http_readiness_ms": 1939,
+              "api_check": "public siteinfo ready",
+              "private_file_protected": false,
+              "table_count": 111,
+              "schema_sha256": "23e5fd3fe2da6d6a00b25cda338053bbcc10eab455d631896648b0e66ea07678",
+              "checkuser": "real index job and global lookup passed",
+              "creation": {
+                "main_page": "Main_Page",
+                "main_page_exists": true,
+                "main_page_revision": 1,
+                "main_page_sha1": "cwmls503tuxr24c76w4bc6p5kr319il",
+                "requester_id": 4,
+                "requester_attached": true,
+                "requester_groups": [
+                  "bureaucrat",
+                  "interface-admin",
+                  "sysop"
+                ],
+                "rights_log_entries": 1,
+                "creation_checkpoint": true,
+                "requester_rights": {
+                  "read": true,
+                  "edit": true,
+                  "userrights": false,
+                  "editsitecss": true
+                }
+              }
+            },
+            {
+              "wiki": "9provision95a83c6dsimultaneous3wiki",
+              "private": true,
+              "state": {
+                "status": {
+                  "state": "complete",
+                  "queued_ms": "1792810365542",
+                  "event": "1792810365542-0",
+                  "started_ms": "1792810373732",
+                  "finished_ms": "1792810376318"
+                },
+                "pending": false,
+                "marker": false,
+                "receipt": false,
+                "paused": false,
+                "lock_held": false,
+                "metadata_complete": true,
+                "private": true,
+                "lists": {
+                  "databases": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "deleted": null,
+                  "active": {
+                    "s": "Production acceptance fixture",
+                    "c": null
+                  },
+                  "private": {
+                    "s": "Production acceptance fixture",
+                    "c": null
+                  },
+                  "public": null,
+                  "alpha-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "beta-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "stable-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  }
+                },
+                "updater_invocations": 1,
+                "metadata_sources": [
+                  "creator"
+                ],
+                "stored_extensions": [
+                  "categorytree",
+                  "cite",
+                  "citethispage",
+                  "codeeditor",
+                  "codemirror",
+                  "darkmode",
+                  "globaluserpage",
+                  "minervaneue",
+                  "mobilefrontend",
+                  "syntaxhighlight_geshi",
+                  "textextracts",
+                  "urlshortener",
+                  "wikiseo"
+                ],
+                "creation_context": false
+              },
+              "http_statuses_after_provisioning": [
+                200
+              ],
+              "http_readiness_ms": 1370,
+              "api_check": "anonymous read denied",
+              "private_file_protected": true,
+              "table_count": 111,
+              "schema_sha256": "23e5fd3fe2da6d6a00b25cda338053bbcc10eab455d631896648b0e66ea07678",
+              "checkuser": "real index job and global lookup passed",
+              "creation": {
+                "main_page": "Hauptseite",
+                "main_page_exists": true,
+                "main_page_revision": 1,
+                "main_page_sha1": "m4m2fbkzozhafzbynhea41safns2rmj",
+                "requester_id": 4,
+                "requester_attached": true,
+                "requester_groups": [
+                  "bureaucrat",
+                  "interface-admin",
+                  "sysop"
+                ],
+                "rights_log_entries": 1,
+                "creation_checkpoint": true,
+                "requester_rights": {
+                  "read": true,
+                  "edit": true,
+                  "userrights": false,
+                  "editsitecss": true
+                }
+              }
+            }
+          ]
+        },
+        {
+          "case": "metadata_barrier",
+          "status": "passed",
+          "wikis": [
+            {
+              "wiki": "9provision95a83c6dmetadatabarrier0wiki",
+              "private": false,
+              "state": {
+                "status": {
+                  "state": "complete",
+                  "queued_ms": "1792810430804",
+                  "event": "1792810430804-0",
+                  "started_ms": "1792810430855",
+                  "finished_ms": "1792810441263"
+                },
+                "pending": false,
+                "marker": false,
+                "receipt": false,
+                "paused": true,
+                "lock_held": false,
+                "metadata_complete": true,
+                "private": false,
+                "lists": {
+                  "databases": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "deleted": null,
+                  "active": {
+                    "s": "Production acceptance fixture",
+                    "c": null
+                  },
+                  "private": null,
+                  "public": {
+                    "s": "Production acceptance fixture",
+                    "c": null
+                  },
+                  "alpha-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "beta-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "stable-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  }
+                },
+                "updater_invocations": 1,
+                "metadata_sources": [
+                  "creator"
+                ],
+                "stored_extensions": [
+                  "categorytree",
+                  "cite",
+                  "citethispage",
+                  "codeeditor",
+                  "codemirror",
+                  "darkmode",
+                  "globaluserpage",
+                  "minervaneue",
+                  "mobilefrontend",
+                  "syntaxhighlight_geshi",
+                  "textextracts",
+                  "urlshortener",
+                  "wikiseo"
+                ],
+                "creation_context": false
+              },
+              "http_statuses_after_provisioning": [
+                200
+              ],
+              "http_readiness_ms": 1114,
+              "api_check": "public siteinfo ready",
+              "private_file_protected": false,
+              "table_count": 111,
+              "schema_sha256": "23e5fd3fe2da6d6a00b25cda338053bbcc10eab455d631896648b0e66ea07678",
+              "checkuser": "real index job and global lookup passed",
+              "creation": {
+                "main_page": "Main_Page",
+                "main_page_exists": true,
+                "main_page_revision": 1,
+                "main_page_sha1": "cwmls503tuxr24c76w4bc6p5kr319il",
+                "requester_id": 4,
+                "requester_attached": true,
+                "requester_groups": [
+                  "bureaucrat",
+                  "interface-admin",
+                  "sysop"
+                ],
+                "rights_log_entries": 1,
+                "creation_checkpoint": true,
+                "requester_rights": {
+                  "read": true,
+                  "edit": true,
+                  "userrights": false,
+                  "editsitecss": true
+                }
+              }
+            },
+            {
+              "wiki": "9provision95a83c6dmetadatabarrier1wiki",
+              "private": true,
+              "state": {
+                "status": {
+                  "state": "complete",
+                  "queued_ms": "1792810430992",
+                  "event": "1792810430992-0",
+                  "started_ms": "1792810444930",
+                  "finished_ms": "1792810448394"
+                },
+                "pending": false,
+                "marker": false,
+                "receipt": false,
+                "paused": true,
+                "lock_held": false,
+                "metadata_complete": true,
+                "private": true,
+                "lists": {
+                  "databases": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "deleted": null,
+                  "active": {
+                    "s": "Production acceptance fixture",
+                    "c": null
+                  },
+                  "private": {
+                    "s": "Production acceptance fixture",
+                    "c": null
+                  },
+                  "public": null,
+                  "alpha-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "beta-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "stable-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  }
+                },
+                "updater_invocations": 1,
+                "metadata_sources": [
+                  "creator"
+                ],
+                "stored_extensions": [
+                  "categorytree",
+                  "cite",
+                  "citethispage",
+                  "codeeditor",
+                  "codemirror",
+                  "darkmode",
+                  "globaluserpage",
+                  "minervaneue",
+                  "mobilefrontend",
+                  "syntaxhighlight_geshi",
+                  "textextracts",
+                  "urlshortener",
+                  "wikiseo"
+                ],
+                "creation_context": false
+              },
+              "http_statuses_after_provisioning": [
+                200
+              ],
+              "http_readiness_ms": 759,
+              "api_check": "anonymous read denied",
+              "private_file_protected": true,
+              "table_count": 111,
+              "schema_sha256": "23e5fd3fe2da6d6a00b25cda338053bbcc10eab455d631896648b0e66ea07678",
+              "checkuser": "real index job and global lookup passed",
+              "creation": {
+                "main_page": "Hauptseite",
+                "main_page_exists": true,
+                "main_page_revision": 1,
+                "main_page_sha1": "m4m2fbkzozhafzbynhea41safns2rmj",
+                "requester_id": 4,
+                "requester_attached": true,
+                "requester_groups": [
+                  "bureaucrat",
+                  "interface-admin",
+                  "sysop"
+                ],
+                "rights_log_entries": 1,
+                "creation_checkpoint": true,
+                "requester_rights": {
+                  "read": true,
+                  "edit": true,
+                  "userrights": false,
+                  "editsitecss": true
+                }
+              }
+            },
+            {
+              "wiki": "9provision95a83c6dmetadatabarrier2wiki",
+              "private": false,
+              "state": {
+                "status": {
+                  "state": "complete",
+                  "queued_ms": "1792810430832",
+                  "event": "1792810430832-0",
+                  "started_ms": "1792810441275",
+                  "finished_ms": "1792810444913"
+                },
+                "pending": false,
+                "marker": false,
+                "receipt": false,
+                "paused": true,
+                "lock_held": false,
+                "metadata_complete": true,
+                "private": false,
+                "lists": {
+                  "databases": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "deleted": null,
+                  "active": {
+                    "s": "Production acceptance fixture",
+                    "c": null
+                  },
+                  "private": null,
+                  "public": {
+                    "s": "Production acceptance fixture",
+                    "c": null
+                  },
+                  "alpha-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "beta-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "stable-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  }
+                },
+                "updater_invocations": 1,
+                "metadata_sources": [
+                  "creator"
+                ],
+                "stored_extensions": [
+                  "categorytree",
+                  "cite",
+                  "citethispage",
+                  "codeeditor",
+                  "codemirror",
+                  "darkmode",
+                  "globaluserpage",
+                  "minervaneue",
+                  "mobilefrontend",
+                  "syntaxhighlight_geshi",
+                  "textextracts",
+                  "urlshortener",
+                  "wikiseo"
+                ],
+                "creation_context": false
+              },
+              "http_statuses_after_provisioning": [
+                200
+              ],
+              "http_readiness_ms": 855,
+              "api_check": "public siteinfo ready",
+              "private_file_protected": false,
+              "table_count": 111,
+              "schema_sha256": "23e5fd3fe2da6d6a00b25cda338053bbcc10eab455d631896648b0e66ea07678",
+              "checkuser": "real index job and global lookup passed",
+              "creation": {
+                "main_page": "Main_Page",
+                "main_page_exists": true,
+                "main_page_revision": 1,
+                "main_page_sha1": "cwmls503tuxr24c76w4bc6p5kr319il",
+                "requester_id": 4,
+                "requester_attached": true,
+                "requester_groups": [
+                  "bureaucrat",
+                  "interface-admin",
+                  "sysop"
+                ],
+                "rights_log_entries": 1,
+                "creation_checkpoint": true,
+                "requester_rights": {
+                  "read": true,
+                  "edit": true,
+                  "userrights": false,
+                  "editsitecss": true
+                }
+              }
+            },
+            {
+              "wiki": "9provision95a83c6dmetadatabarrier3wiki",
+              "private": true,
+              "state": {
+                "status": {
+                  "state": "complete",
+                  "queued_ms": "1792810431022",
+                  "event": "1792810431022-0",
+                  "started_ms": "1792810448400",
+                  "finished_ms": "1792810451529"
+                },
+                "pending": false,
+                "marker": false,
+                "receipt": false,
+                "paused": true,
+                "lock_held": false,
+                "metadata_complete": true,
+                "private": true,
+                "lists": {
+                  "databases": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "deleted": null,
+                  "active": {
+                    "s": "Production acceptance fixture",
+                    "c": null
+                  },
+                  "private": {
+                    "s": "Production acceptance fixture",
+                    "c": null
+                  },
+                  "public": null,
+                  "alpha-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "beta-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "stable-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  }
+                },
+                "updater_invocations": 1,
+                "metadata_sources": [
+                  "creator"
+                ],
+                "stored_extensions": [
+                  "categorytree",
+                  "cite",
+                  "citethispage",
+                  "codeeditor",
+                  "codemirror",
+                  "darkmode",
+                  "globaluserpage",
+                  "minervaneue",
+                  "mobilefrontend",
+                  "syntaxhighlight_geshi",
+                  "textextracts",
+                  "urlshortener",
+                  "wikiseo"
+                ],
+                "creation_context": false
+              },
+              "http_statuses_after_provisioning": [
+                200
+              ],
+              "http_readiness_ms": 594,
+              "api_check": "anonymous read denied",
+              "private_file_protected": true,
+              "table_count": 111,
+              "schema_sha256": "23e5fd3fe2da6d6a00b25cda338053bbcc10eab455d631896648b0e66ea07678",
+              "checkuser": "real index job and global lookup passed",
+              "creation": {
+                "main_page": "Hauptseite",
+                "main_page_exists": true,
+                "main_page_revision": 1,
+                "main_page_sha1": "m4m2fbkzozhafzbynhea41safns2rmj",
+                "requester_id": 4,
+                "requester_attached": true,
+                "requester_groups": [
+                  "bureaucrat",
+                  "interface-admin",
+                  "sysop"
+                ],
+                "rights_log_entries": 1,
+                "creation_checkpoint": true,
+                "requester_rights": {
+                  "read": true,
+                  "edit": true,
+                  "userrights": false,
+                  "editsitecss": true
+                }
+              }
+            }
+          ]
+        },
+        {
+          "case": "creator_sigkill_during_metadata_public",
+          "status": "passed",
+          "before_kill": {
+            "status": {
+              "state": "running",
+              "queued_ms": "1792810481315",
+              "event": "1792810481315-0",
+              "started_ms": "1792810481330"
+            },
+            "pending": true,
+            "marker": true,
+            "receipt": false,
+            "paused": true,
+            "lock_held": true,
+            "metadata_complete": true,
+            "private": false,
+            "lists": {
+              "databases": null,
+              "deleted": null,
+              "active": null,
+              "private": null,
+              "public": null,
+              "alpha-wikis": null,
+              "beta-wikis": null,
+              "stable-wikis": null
+            },
+            "updater_invocations": 0,
+            "metadata_sources": [],
+            "stored_extensions": [
+              "categorytree",
+              "cite",
+              "citethispage",
+              "codeeditor",
+              "codemirror",
+              "darkmode",
+              "globaluserpage",
+              "minervaneue",
+              "mobilefrontend",
+              "syntaxhighlight_geshi",
+              "textextracts",
+              "urlshortener",
+              "wikiseo"
+            ],
+            "creation_context": true
+          },
+          "http_before_kill": 503,
+          "creator_exit": 137,
+          "recovered": {
+            "wiki": "9provision95a83c6dkilledpublicwiki",
+            "private": false,
+            "state": {
+              "status": {
+                "state": "complete",
+                "queued_ms": "1792810481315",
+                "event": "1792810481315-0",
+                "started_ms": "1792810481330",
+                "finished_ms": "1792810487849"
+              },
+              "pending": false,
+              "marker": false,
+              "receipt": false,
+              "paused": true,
+              "lock_held": false,
+              "metadata_complete": true,
+              "private": false,
+              "lists": {
+                "databases": {
+                  "s": "Production acceptance fixture",
+                  "c": null,
+                  "d": "acceptance.example.test",
+                  "v": "1.46"
+                },
+                "deleted": null,
+                "active": {
+                  "s": "Production acceptance fixture",
+                  "c": null
+                },
+                "private": null,
+                "public": {
+                  "s": "Production acceptance fixture",
+                  "c": null
+                },
+                "alpha-wikis": {
+                  "s": "Production acceptance fixture",
+                  "c": null,
+                  "d": "acceptance.example.test",
+                  "v": "1.46"
+                },
+                "beta-wikis": {
+                  "s": "Production acceptance fixture",
+                  "c": null,
+                  "d": "acceptance.example.test",
+                  "v": "1.46"
+                },
+                "stable-wikis": {
+                  "s": "Production acceptance fixture",
+                  "c": null,
+                  "d": "acceptance.example.test",
+                  "v": "1.46"
+                }
+              },
+              "updater_invocations": 1,
+              "metadata_sources": [
+                "repair"
+              ],
+              "stored_extensions": [
+                "categorytree",
+                "cite",
+                "citethispage",
+                "codeeditor",
+                "codemirror",
+                "darkmode",
+                "globaluserpage",
+                "minervaneue",
+                "mobilefrontend",
+                "syntaxhighlight_geshi",
+                "textextracts",
+                "urlshortener",
+                "wikiseo"
+              ],
+              "creation_context": false
+            },
+            "http_statuses_after_provisioning": [
+              200
+            ],
+            "http_readiness_ms": 766,
+            "api_check": "public siteinfo ready",
+            "private_file_protected": false,
+            "table_count": 111,
+            "schema_sha256": "23e5fd3fe2da6d6a00b25cda338053bbcc10eab455d631896648b0e66ea07678",
+            "checkuser": "real index job and global lookup passed",
+            "creation": {
+              "main_page": "Main_Page",
+              "main_page_exists": true,
+              "main_page_revision": 1,
+              "main_page_sha1": "cwmls503tuxr24c76w4bc6p5kr319il",
+              "requester_id": 4,
+              "requester_attached": true,
+              "requester_groups": [
+                "bureaucrat",
+                "interface-admin",
+                "sysop"
+              ],
+              "rights_log_entries": 1,
+              "creation_checkpoint": true,
+              "requester_rights": {
+                "read": true,
+                "edit": true,
+                "userrights": false,
+                "editsitecss": true
+              }
+            }
+          }
+        },
+        {
+          "case": "creator_sigkill_during_metadata_private",
+          "status": "passed",
+          "before_kill": {
+            "status": {
+              "state": "running",
+              "queued_ms": "1792810499122",
+              "event": "1792810499122-0",
+              "started_ms": "1792810499129"
+            },
+            "pending": true,
+            "marker": true,
+            "receipt": false,
+            "paused": true,
+            "lock_held": true,
+            "metadata_complete": true,
+            "private": true,
+            "lists": {
+              "databases": null,
+              "deleted": null,
+              "active": null,
+              "private": null,
+              "public": null,
+              "alpha-wikis": null,
+              "beta-wikis": null,
+              "stable-wikis": null
+            },
+            "updater_invocations": 0,
+            "metadata_sources": [],
+            "stored_extensions": [
+              "categorytree",
+              "cite",
+              "citethispage",
+              "codeeditor",
+              "codemirror",
+              "darkmode",
+              "globaluserpage",
+              "minervaneue",
+              "mobilefrontend",
+              "syntaxhighlight_geshi",
+              "textextracts",
+              "urlshortener",
+              "wikiseo"
+            ],
+            "creation_context": true
+          },
+          "http_before_kill": 503,
+          "creator_exit": 137,
+          "recovered": {
+            "wiki": "9provision95a83c6dkilledprivatewiki",
+            "private": true,
+            "state": {
+              "status": {
+                "state": "complete",
+                "queued_ms": "1792810499122",
+                "event": "1792810499122-0",
+                "started_ms": "1792810499129",
+                "finished_ms": "1792810503660"
+              },
+              "pending": false,
+              "marker": false,
+              "receipt": false,
+              "paused": true,
+              "lock_held": false,
+              "metadata_complete": true,
+              "private": true,
+              "lists": {
+                "databases": {
+                  "s": "Production acceptance fixture",
+                  "c": null,
+                  "d": "acceptance.example.test",
+                  "v": "1.46"
+                },
+                "deleted": null,
+                "active": {
+                  "s": "Production acceptance fixture",
+                  "c": null
+                },
+                "private": {
+                  "s": "Production acceptance fixture",
+                  "c": null
+                },
+                "public": null,
+                "alpha-wikis": {
+                  "s": "Production acceptance fixture",
+                  "c": null,
+                  "d": "acceptance.example.test",
+                  "v": "1.46"
+                },
+                "beta-wikis": {
+                  "s": "Production acceptance fixture",
+                  "c": null,
+                  "d": "acceptance.example.test",
+                  "v": "1.46"
+                },
+                "stable-wikis": {
+                  "s": "Production acceptance fixture",
+                  "c": null,
+                  "d": "acceptance.example.test",
+                  "v": "1.46"
+                }
+              },
+              "updater_invocations": 1,
+              "metadata_sources": [
+                "repair"
+              ],
+              "stored_extensions": [
+                "categorytree",
+                "cite",
+                "citethispage",
+                "codeeditor",
+                "codemirror",
+                "darkmode",
+                "globaluserpage",
+                "minervaneue",
+                "mobilefrontend",
+                "syntaxhighlight_geshi",
+                "textextracts",
+                "urlshortener",
+                "wikiseo"
+              ],
+              "creation_context": false
+            },
+            "http_statuses_after_provisioning": [
+              200
+            ],
+            "http_readiness_ms": 534,
+            "api_check": "anonymous read denied",
+            "private_file_protected": true,
+            "table_count": 111,
+            "schema_sha256": "23e5fd3fe2da6d6a00b25cda338053bbcc10eab455d631896648b0e66ea07678",
+            "checkuser": "real index job and global lookup passed",
+            "creation": {
+              "main_page": "Hauptseite",
+              "main_page_exists": true,
+              "main_page_revision": 1,
+              "main_page_sha1": "m4m2fbkzozhafzbynhea41safns2rmj",
+              "requester_id": 4,
+              "requester_attached": true,
+              "requester_groups": [
+                "bureaucrat",
+                "interface-admin",
+                "sysop"
+              ],
+              "rights_log_entries": 1,
+              "creation_checkpoint": true,
+              "requester_rights": {
+                "read": true,
+                "edit": true,
+                "userrights": false,
+                "editsitecss": true
+              }
+            }
+          }
+        },
+        {
+          "case": "completed_creation_replay",
+          "status": "passed",
+          "edited": {
+            "main_page": "Main_Page",
+            "main_page_exists": true,
+            "main_page_revision": 2,
+            "main_page_sha1": "1284aexilur1z0hx7vk9cofaeb1doqh",
+            "requester_id": 4,
+            "requester_attached": true,
+            "requester_groups": [
+              "bureaucrat",
+              "interface-admin",
+              "sysop"
+            ],
+            "rights_log_entries": 1,
+            "creation_checkpoint": true,
+            "requester_rights": {
+              "read": true,
+              "edit": true,
+              "userrights": false,
+              "editsitecss": true
+            }
+          },
+          "replayed": {
+            "wiki": "9provision95a83c6dsimultaneous0wiki",
+            "private": false,
+            "state": {
+              "status": {
+                "state": "complete",
+                "queued_ms": "1792810516875",
+                "event": "1792810516875-0",
+                "started_ms": "1792810516885",
+                "finished_ms": "1792810518977"
+              },
+              "pending": false,
+              "marker": false,
+              "receipt": false,
+              "paused": false,
+              "lock_held": false,
+              "metadata_complete": true,
+              "private": false,
+              "lists": {
+                "databases": {
+                  "s": "Production acceptance fixture",
+                  "c": null,
+                  "d": "acceptance.example.test",
+                  "v": "1.46"
+                },
+                "deleted": null,
+                "active": {
+                  "s": "Production acceptance fixture",
+                  "c": null
+                },
+                "private": null,
+                "public": {
+                  "s": "Production acceptance fixture",
+                  "c": null
+                },
+                "alpha-wikis": {
+                  "s": "Production acceptance fixture",
+                  "c": null,
+                  "d": "acceptance.example.test",
+                  "v": "1.46"
+                },
+                "beta-wikis": {
+                  "s": "Production acceptance fixture",
+                  "c": null,
+                  "d": "acceptance.example.test",
+                  "v": "1.46"
+                },
+                "stable-wikis": {
+                  "s": "Production acceptance fixture",
+                  "c": null,
+                  "d": "acceptance.example.test",
+                  "v": "1.46"
+                }
+              },
+              "updater_invocations": 2,
+              "metadata_sources": [
+                "creator",
+                "repair"
+              ],
+              "stored_extensions": [
+                "categorytree",
+                "cite",
+                "citethispage",
+                "codeeditor",
+                "codemirror",
+                "darkmode",
+                "globaluserpage",
+                "minervaneue",
+                "mobilefrontend",
+                "syntaxhighlight_geshi",
+                "textextracts",
+                "urlshortener",
+                "wikiseo"
+              ],
+              "creation_context": false
+            },
+            "http_statuses_after_provisioning": [
+              200
+            ],
+            "http_readiness_ms": 510,
+            "api_check": "public siteinfo ready",
+            "private_file_protected": false,
+            "table_count": 111,
+            "schema_sha256": "23e5fd3fe2da6d6a00b25cda338053bbcc10eab455d631896648b0e66ea07678",
+            "checkuser": "real index job and global lookup passed",
+            "creation": {
+              "main_page": "Main_Page",
+              "main_page_exists": true,
+              "main_page_revision": 2,
+              "main_page_sha1": "1284aexilur1z0hx7vk9cofaeb1doqh",
+              "requester_id": 4,
+              "requester_attached": true,
+              "requester_groups": [
+                "bureaucrat",
+                "interface-admin",
+                "sysop"
+              ],
+              "rights_log_entries": 1,
+              "creation_checkpoint": true,
+              "requester_rights": {
+                "read": true,
+                "edit": true,
+                "userrights": false,
+                "editsitecss": true
+              }
+            }
+          }
+        }
+      ],
+      "main_stack_modified": false,
+      "image": {
+        "id": "sha256:bad9fa641f7e1cc4be08204839dbf1237eae4ffa083bfa830f0c939c06d0023d",
+        "architecture": "amd64",
+        "os": "linux",
+        "source_revision": "creation-recovery-working-tree"
+      },
+      "context_contract": {
+        "status": "passed",
+        "checks": [
+          "atomic intent and event",
+          "duplicate coalescing",
+          "owner replacement refused",
+          "intent removed on acknowledgment"
+        ]
+      },
+      "immutable_code": "Image pinned by ID; no application source mounts or sync controller",
+      "source_sha256": {
+        "provision-metadata.php": "f729f9b1ddab18f14f71a3369532aa2dc459bdc702bc7df3ff2508e94250f25a",
+        "provision.php": "5523bc0eb926bf22ebc8c8531e73cb650abe5e804317f02e26c3e62f0ebe899e",
+        "runtime.php": "53424be10808d9eadbf679df5b5d15e19fd6a52e142e2cfac5d83031f6e4b6cf",
+        "process.php": "05ff5231aa3c8c1aeb7dc1a2b85afede983aaeb95a5cc148f5f9ed5822064539",
+        "dispatch.php": "fd36f90419d59e95d33bc6646e95322d5f55048617ca6fe84b307aa054081cba",
+        "provision-settings.php": "c6cd996e3be583e02e11aecef6c460d7be158965645b902cbdd858c1fed3a792",
+        "finalize-creation.php": "a4ea850b9cf4ca81211c890b0c84215a4c7cd185e1df626d47d587c1a15b0ec2"
+      },
+      "dispatch_attempts": {
+        "9provision95a83c6dsimultaneous0wiki": 2,
+        "9provision95a83c6dsimultaneous1wiki": 1,
+        "9provision95a83c6dsimultaneous2wiki": 1,
+        "9provision95a83c6dsimultaneous3wiki": 1,
+        "9provision95a83c6dmetadatabarrier0wiki": 1,
+        "9provision95a83c6dmetadatabarrier1wiki": 1,
+        "9provision95a83c6dmetadatabarrier2wiki": 1,
+        "9provision95a83c6dmetadatabarrier3wiki": 1,
+        "9provision95a83c6dkilledpublicwiki": 1,
+        "9provision95a83c6dkilledprivatewiki": 1
+      },
+      "queue": {
+        "pending_wikis": 0,
+        "pending_deliveries": 0,
+        "creation_contexts": 0
+      },
+      "cleanup_succeeded": true
+    },
+    "checkpoint": {
+      "project": "cloudwiki-acceptance-0617a06b",
+      "status": "passed",
+      "cases": [
+        {
+          "case": "baseline",
+          "status": "passed",
+          "wikis": [
+            {
+              "wiki": "9provisionc28391fabaseline0wiki",
+              "private": false,
+              "state": {
+                "status": {
+                  "state": "complete",
+                  "queued_ms": "1792810602790",
+                  "event": "1792810602790-0",
+                  "started_ms": "1792810602806",
+                  "finished_ms": "1792810608588"
+                },
+                "pending": false,
+                "marker": false,
+                "receipt": false,
+                "paused": false,
+                "lock_held": false,
+                "metadata_complete": true,
+                "private": false,
+                "lists": {
+                  "databases": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "deleted": null,
+                  "active": {
+                    "s": "Production acceptance fixture",
+                    "c": null
+                  },
+                  "private": null,
+                  "public": {
+                    "s": "Production acceptance fixture",
+                    "c": null
+                  },
+                  "alpha-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "beta-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  },
+                  "stable-wikis": {
+                    "s": "Production acceptance fixture",
+                    "c": null,
+                    "d": "acceptance.example.test",
+                    "v": "1.46"
+                  }
+                },
+                "updater_invocations": 1,
+                "metadata_sources": [
+                  "creator"
+                ],
+                "stored_extensions": [
+                  "categorytree",
+                  "cite",
+                  "citethispage",
+                  "codeeditor",
+                  "codemirror",
+                  "darkmode",
+                  "globaluserpage",
+                  "minervaneue",
+                  "mobilefrontend",
+                  "syntaxhighlight_geshi",
+                  "textextracts",
+                  "urlshortener",
+                  "wikiseo"
+                ],
+                "creation_context": false
+              },
+              "http_statuses_after_provisioning": [
+                200
+              ],
+              "http_readiness_ms": 2050,
+              "api_check": "public siteinfo ready",
+              "private_file_protected": false,
+              "table_count": 111,
+              "schema_sha256": "23e5fd3fe2da6d6a00b25cda338053bbcc10eab455d631896648b0e66ea07678",
+              "checkuser": "real index job and global lookup passed",
+              "creation": {
+                "main_page": "Main_Page",
+                "main_page_exists": true,
+                "main_page_revision": 1,
+                "main_page_sha1": "cwmls503tuxr24c76w4bc6p5kr319il",
+                "requester_id": 4,
+                "requester_attached": true,
+                "requester_groups": [
+                  "bureaucrat",
+                  "interface-admin",
+                  "sysop"
+                ],
+                "rights_log_entries": 1,
+                "creation_checkpoint": true,
+                "requester_rights": {
+                  "read": true,
+                  "edit": true,
+                  "userrights": false,
+                  "editsitecss": true
+                }
+              }
+            }
+          ]
+        },
+        {
+          "case": "missing_checkpoint_replay",
+          "status": "passed",
+          "edited": {
+            "main_page": "Main_Page",
+            "main_page_exists": true,
+            "main_page_revision": 2,
+            "main_page_sha1": "8s2lo0945v10wq94rqw0v6ahf0pkft9",
+            "requester_id": 4,
+            "requester_attached": true,
+            "requester_groups": [
+              "bureaucrat",
+              "interface-admin",
+              "sysop"
+            ],
+            "rights_log_entries": 1,
+            "creation_checkpoint": true,
+            "requester_rights": {
+              "read": true,
+              "edit": true,
+              "userrights": false,
+              "editsitecss": true
+            }
+          },
+          "replayed": {
+            "wiki": "9provisionc28391fabaseline0wiki",
+            "private": false,
+            "state": {
+              "status": {
+                "state": "complete",
+                "queued_ms": "1792810625916",
+                "event": "1792810625916-0",
+                "started_ms": "1792810625923",
+                "finished_ms": "1792810626423"
+              },
+              "pending": false,
+              "marker": false,
+              "receipt": false,
+              "paused": false,
+              "lock_held": false,
+              "metadata_complete": true,
+              "private": false,
+              "lists": {
+                "databases": {
+                  "s": "Production acceptance fixture",
+                  "c": null,
+                  "d": "acceptance.example.test",
+                  "v": "1.46"
+                },
+                "deleted": null,
+                "active": {
+                  "s": "Production acceptance fixture",
+                  "c": null
+                },
+                "private": null,
+                "public": {
+                  "s": "Production acceptance fixture",
+                  "c": null
+                },
+                "alpha-wikis": {
+                  "s": "Production acceptance fixture",
+                  "c": null,
+                  "d": "acceptance.example.test",
+                  "v": "1.46"
+                },
+                "beta-wikis": {
+                  "s": "Production acceptance fixture",
+                  "c": null,
+                  "d": "acceptance.example.test",
+                  "v": "1.46"
+                },
+                "stable-wikis": {
+                  "s": "Production acceptance fixture",
+                  "c": null,
+                  "d": "acceptance.example.test",
+                  "v": "1.46"
+                }
+              },
+              "updater_invocations": 2,
+              "metadata_sources": [
+                "creator",
+                "repair"
+              ],
+              "stored_extensions": [
+                "categorytree",
+                "cite",
+                "citethispage",
+                "codeeditor",
+                "codemirror",
+                "darkmode",
+                "globaluserpage",
+                "minervaneue",
+                "mobilefrontend",
+                "syntaxhighlight_geshi",
+                "textextracts",
+                "urlshortener",
+                "wikiseo"
+              ],
+              "creation_context": false
+            },
+            "http_statuses_after_provisioning": [
+              200
+            ],
+            "http_readiness_ms": 222,
+            "api_check": "public siteinfo ready",
+            "private_file_protected": false,
+            "table_count": 111,
+            "schema_sha256": "23e5fd3fe2da6d6a00b25cda338053bbcc10eab455d631896648b0e66ea07678",
+            "checkuser": "real index job and global lookup passed",
+            "creation": {
+              "main_page": "Main_Page",
+              "main_page_exists": true,
+              "main_page_revision": 2,
+              "main_page_sha1": "8s2lo0945v10wq94rqw0v6ahf0pkft9",
+              "requester_id": 4,
+              "requester_attached": true,
+              "requester_groups": [
+                "bureaucrat",
+                "interface-admin",
+                "sysop"
+              ],
+              "rights_log_entries": 1,
+              "creation_checkpoint": true,
+              "requester_rights": {
+                "read": true,
+                "edit": true,
+                "userrights": false,
+                "editsitecss": true
+              }
+            }
+          }
+        }
+      ],
+      "main_stack_modified": false,
+      "image": {
+        "id": "sha256:f047e037fe98884c599535eeb0b5f8ccb07a078ec708077d0145d326f3e7bf43",
+        "architecture": "arm64",
+        "os": "linux",
+        "source_revision": "creation-recovery-working-tree"
+      },
+      "context_contract": {
+        "status": "passed",
+        "checks": [
+          "atomic intent and event",
+          "duplicate coalescing",
+          "owner replacement refused",
+          "intent removed on acknowledgment"
+        ]
+      },
+      "immutable_code": "Image pinned by ID; no application source mounts or sync controller",
+      "source_sha256": {
+        "provision-metadata.php": "f729f9b1ddab18f14f71a3369532aa2dc459bdc702bc7df3ff2508e94250f25a",
+        "provision.php": "5523bc0eb926bf22ebc8c8531e73cb650abe5e804317f02e26c3e62f0ebe899e",
+        "runtime.php": "53424be10808d9eadbf679df5b5d15e19fd6a52e142e2cfac5d83031f6e4b6cf",
+        "process.php": "05ff5231aa3c8c1aeb7dc1a2b85afede983aaeb95a5cc148f5f9ed5822064539",
+        "dispatch.php": "fd36f90419d59e95d33bc6646e95322d5f55048617ca6fe84b307aa054081cba",
+        "provision-settings.php": "c6cd996e3be583e02e11aecef6c460d7be158965645b902cbdd858c1fed3a792",
+        "finalize-creation.php": "a4ea850b9cf4ca81211c890b0c84215a4c7cd185e1df626d47d587c1a15b0ec2"
+      },
+      "dispatch_attempts": {
+        "9provisionc28391fabaseline0wiki": 2
+      },
+      "queue": {
+        "pending_wikis": 0,
+        "pending_deliveries": 0,
+        "creation_contexts": 0
+      },
+      "cleanup_succeeded": true
+    }
+  },
+  "immutable_createwiki_sha256": {
+    "arm64": {
+      "mediawiki/extensions/CreateWiki/includes/Hooks/CreateWikiHookRunner.php": "4018b4f09b78d5dea225aa16641e7d1c33ca7e1f228b498d5931c6da7b0fb534",
+      "mediawiki/extensions/CreateWiki/includes/Hooks/CreateWikiCreationTasksHook.php": "6211a7487eb3b295ebbf92317d40975d063e8971477b9cae68f3bde1cf10cc3e",
+      "mediawiki/extensions/CreateWiki/includes/Services/WikiManagerFactory.php": "24c98b9def4ec8781538d5dd6ac84b1be97133b3f87dcad087f19a644540f4af"
+    },
+    "amd64": {
+      "mediawiki/extensions/CreateWiki/includes/Hooks/CreateWikiHookRunner.php": "4018b4f09b78d5dea225aa16641e7d1c33ca7e1f228b498d5931c6da7b0fb534",
+      "mediawiki/extensions/CreateWiki/includes/Hooks/CreateWikiCreationTasksHook.php": "6211a7487eb3b295ebbf92317d40975d063e8971477b9cae68f3bde1cf10cc3e",
+      "mediawiki/extensions/CreateWiki/includes/Services/WikiManagerFactory.php": "24c98b9def4ec8781538d5dd6ac84b1be97133b3f87dcad087f19a644540f4af"
+    }
+  },
+  "log_sha256": {
+    "baseline": "aedb02b6b1d4a8753a41cb00e48daf518babdfd63d5ba918b87b5cea44998b6b",
+    "final-arm64": "9756125ef7a68a7894bfd214fd41758315f5c5873b194fad3c6cf9c1761420c5",
+    "final-amd64": "1f932aa66705e40226d7cbcefb3c9a4679bd95d443c707040297c0a3e2449ed8",
+    "checkpoint": "a64ce2644dec7910c0fc087065205fa6e885cfca5a8847e2b7ddc5bd9efe487e",
+    "streams": "edcfd52ae5b26078306c3f7cfb4960f1e9f5fb18d7d6d6b21436f7a4d3b9848b",
+    "schema": "f0b1152177e46a13c68c2d1bc5d0fd9dd896099723114a9a446fbcf7191d5977"
+  },
+  "regressions": {
+    "streams": {
+      "project": "cloudwiki-stream-test-f2a67147",
+      "passed_checks": [
+        "31 jobs coalesced into a durable signal; batch continuation drained all jobs",
+        "unacknowledged event reclaimed after a consumer disappeared",
+        "delayed release atomically woke a blocked worker",
+        "expired job claim recycled and dispatched without scanning wikis",
+        "lease heartbeats prevented another worker reclaiming active work",
+        "jobs arriving during execution were not stranded by signal coalescing",
+        "Redis restart retained the stream event and queued payload",
+        "blocked consumers reconnected and resumed after Redis restart",
+        "idle consumers blocked in Redis without launching empty PHP batches",
+        "invalid stream key rejected enqueue before mutating job payloads",
+        "malformed events quarantined without stopping normal consumers",
+        "durable provisioning event recovered even without a producer filesystem marker",
+        "blocking consumers exited cleanly on SIGTERM"
+      ],
+      "count": 13,
+      "status": "passed"
+    },
+    "schema_equivalence": {
+      "status": "passed",
+      "project": "cloudwiki-provision-test-91028573",
+      "report_sha256": "55d5119f02b26720f513f6c948771675ae30f095494ba8b30a207ce9826e24ae",
+      "cases": [
+        {
+          "mode": "two",
+          "variant": "public",
+          "wiki": "9provision46b57btwopublicwiki",
+          "table_count": 111,
+          "duration_ms": 1727,
+          "updater_invocations": 2,
+          "dispatch_attempts": 1,
+          "schema_sha256": "23e5fd3fe2da6d6a00b25cda338053bbcc10eab455d631896648b0e66ea07678",
+          "language": "en",
+          "anonymous_read": true
+        },
+        {
+          "mode": "two",
+          "variant": "private",
+          "wiki": "9provision46b57btwoprivatewiki",
+          "table_count": 111,
+          "duration_ms": 1720,
+          "updater_invocations": 2,
+          "dispatch_attempts": 1,
+          "schema_sha256": "23e5fd3fe2da6d6a00b25cda338053bbcc10eab455d631896648b0e66ea07678",
+          "language": "de",
+          "anonymous_read": false
+        },
+        {
+          "mode": "two",
+          "variant": "extra",
+          "wiki": "9provision46b57btwoextrawiki",
+          "table_count": 114,
+          "duration_ms": 2178,
+          "updater_invocations": 2,
+          "dispatch_attempts": 1,
+          "schema_sha256": "4cb051efc6d9e32979cb2f1a4cfaacab33536c232b534bcc37e543945b4f09a0",
+          "language": "en",
+          "anonymous_read": true
+        },
+        {
+          "mode": "two",
+          "variant": "schema",
+          "wiki": "9provision46b57btwoschemawiki",
+          "table_count": 114,
+          "duration_ms": 3239,
+          "updater_invocations": 2,
+          "dispatch_attempts": 1,
+          "schema_sha256": "16ed3bc3ff2056693a1fbb053a9aed96946e9005b0aaa1d1cee660250ba2ee69",
+          "language": "en",
+          "anonymous_read": true
+        },
+        {
+          "mode": "single",
+          "variant": "public",
+          "wiki": "9provision46b57bsinglepublicwiki",
+          "table_count": 111,
+          "duration_ms": 2097,
+          "updater_invocations": 1,
+          "dispatch_attempts": 1,
+          "update_log_difference": {
+            "only_two_pass": [
+              "oauth_accepted_consumer-oaac_accepted-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_accepted_consumer-timestamp.sql",
+              "oauth_registered_consumer-oarc_email_authenticated-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_registered_consumer-timestamp.sql"
+            ],
+            "only_single_pass": [
+              "farm-finalize-creation-v1"
+            ]
+          },
+          "schema_sha256": "23e5fd3fe2da6d6a00b25cda338053bbcc10eab455d631896648b0e66ea07678",
+          "language": "en",
+          "anonymous_read": true
+        },
+        {
+          "mode": "single",
+          "variant": "private",
+          "wiki": "9provision46b57bsingleprivatewiki",
+          "table_count": 111,
+          "duration_ms": 1814,
+          "updater_invocations": 1,
+          "dispatch_attempts": 1,
+          "update_log_difference": {
+            "only_two_pass": [
+              "oauth_accepted_consumer-oaac_accepted-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_accepted_consumer-timestamp.sql",
+              "oauth_registered_consumer-oarc_email_authenticated-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_registered_consumer-timestamp.sql"
+            ],
+            "only_single_pass": [
+              "farm-finalize-creation-v1"
+            ]
+          },
+          "schema_sha256": "23e5fd3fe2da6d6a00b25cda338053bbcc10eab455d631896648b0e66ea07678",
+          "language": "de",
+          "anonymous_read": false
+        },
+        {
+          "mode": "single",
+          "variant": "extra",
+          "wiki": "9provision46b57bsingleextrawiki",
+          "table_count": 114,
+          "duration_ms": 1933,
+          "updater_invocations": 1,
+          "dispatch_attempts": 1,
+          "update_log_difference": {
+            "only_two_pass": [
+              "oauth_accepted_consumer-oaac_accepted-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_accepted_consumer-timestamp.sql",
+              "oauth_registered_consumer-oarc_email_authenticated-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_registered_consumer-timestamp.sql"
+            ],
+            "only_single_pass": [
+              "farm-finalize-creation-v1"
+            ]
+          },
+          "schema_sha256": "4cb051efc6d9e32979cb2f1a4cfaacab33536c232b534bcc37e543945b4f09a0",
+          "language": "en",
+          "anonymous_read": true
+        },
+        {
+          "mode": "single",
+          "variant": "schema",
+          "wiki": "9provision46b57bsingleschemawiki",
+          "table_count": 114,
+          "duration_ms": 4042,
+          "updater_invocations": 1,
+          "dispatch_attempts": 1,
+          "update_log_difference": {
+            "only_two_pass": [
+              "oauth_accepted_consumer-oaac_accepted-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_accepted_consumer-timestamp.sql",
+              "oauth_registered_consumer-oarc_email_authenticated-/var/www/mediawiki/extensions/OAuth/schema/mysql/patch-oauth_registered_consumer-timestamp.sql"
+            ],
+            "only_single_pass": [
+              "farm-finalize-creation-v1"
+            ]
+          },
+          "schema_sha256": "16ed3bc3ff2056693a1fbb053a9aed96946e9005b0aaa1d1cee660250ba2ee69",
+          "language": "en",
+          "anonymous_read": true
+        }
+      ]
+    }
+  },
+  "main_health": {
+    "recorded_at_utc": "2026-10-24T03:05:07.577548+00:00",
+    "services": [
+      {
+        "Service": "counter",
+        "State": "running",
+        "Health": "healthy"
+      },
+      {
+        "Service": "database",
+        "State": "running",
+        "Health": "healthy"
+      },
+      {
+        "Service": "jobchron",
+        "State": "running",
+        "Health": "healthy"
+      },
+      {
+        "Service": "memcached",
+        "State": "running",
+        "Health": ""
+      },
+      {
+        "Service": "php",
+        "State": "running",
+        "Health": "healthy"
+      },
+      {
+        "Service": "provisioner",
+        "State": "running",
+        "Health": "healthy"
+      },
+      {
+        "Service": "redis",
+        "State": "running",
+        "Health": "healthy"
+      },
+      {
+        "Service": "scheduler",
+        "State": "running",
+        "Health": ""
+      },
+      {
+        "Service": "web",
+        "State": "running",
+        "Health": ""
+      },
+      {
+        "Service": "worker",
+        "State": "running",
+        "Health": "healthy"
+      }
+    ],
+    "provisioning": {
+      "pending_wikis": 0,
+      "pending_deliveries": 0,
+      "creation_contexts": 0,
+      "files": {
+        "dispatch.php": "fd36f90419d59e95d33bc6646e95322d5f55048617ca6fe84b307aa054081cba",
+        "provision-metadata.php": "f729f9b1ddab18f14f71a3369532aa2dc459bdc702bc7df3ff2508e94250f25a",
+        "provision-settings.php": "c6cd996e3be583e02e11aecef6c460d7be158965645b902cbdd858c1fed3a792",
+        "runtime.php": "53424be10808d9eadbf679df5b5d15e19fd6a52e142e2cfac5d83031f6e4b6cf",
+        "finalize-creation.php": "a4ea850b9cf4ca81211c890b0c84215a4c7cd185e1df626d47d587c1a15b0ec2"
+      }
+    }
+  },
+  "validation_conditions": {
+    "docker_vm_memory_gb": 4,
+    "final_suites_run_sequentially": true,
+    "discarded_contention_run": {
+      "status": "failed",
+      "error": "docker compose --env-file /var/folders/19/1g7tg4ln6yl5rn3jxcrllwdm0000gn/T/provision-acceptance-7lqwsybp/test.env -p cloudwiki-acceptance-8b02d5f8 -f compose.yaml\n\nFatal error: Uncaught RuntimeException: FastCGI response ended early in /acceptance/provision-acceptance-probe.php:94\nStack trace:\n#0 /acceptance/provision-acceptance-probe.php(101): {closure:/acceptance/provision-acceptance-probe.php:90}(8)\n#1 {main}\n  thrown in /acceptance/provision-acceptance-probe.php on line 94\n",
+      "cleanup_succeeded": true,
+      "observation": "A run overlapping an image build hit FastCGI transport timeouts and Redis protocol errors; main Redis logged delayed AOF fsync. Clean sequential reruns passed."
+    }
+  },
+  "cleanup": {
+    "projects": [
+      "cloudwiki-acceptance-0617a06b",
+      "cloudwiki-acceptance-9f145b3b",
+      "cloudwiki-acceptance-bdbb6229",
+      "cloudwiki-provision-test-91028573",
+      "cloudwiki-stream-test-f2a67147"
+    ],
+    "remaining_resources": {
+      "container": [],
+      "volume": [],
+      "network": []
+    }
+  }
+}

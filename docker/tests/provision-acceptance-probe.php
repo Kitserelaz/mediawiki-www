@@ -40,6 +40,7 @@ if ($argv[1] === 'state') {
         'updater_invocations' => preg_match_all('/^MediaWiki [^\n]+ Updater$/m', $log),
         'metadata_sources' => $matches[1],
         'stored_extensions' => $storedExtensions,
+        'creation_context' => $redis->hExists(FarmDispatch::CREATION_CONTEXT, $wiki),
     ]), "\n";
 } elseif ($argv[1] === 'continue') {
     $pid = (int)file_get_contents("$cache/.accept-$wiki");
@@ -106,10 +107,48 @@ if ($argv[1] === 'state') {
     [$headers, $body] = explode("\r\n\r\n", $output, 2);
     preg_match('/^Status: (\d+)/mi', $headers, $status);
     echo json_encode(['status'=>(int)($status[1] ?? 200), 'body'=>$body]), "\n";
+} elseif ($argv[1] === 'clear-checkpoint') {
+    // Simulate death after the setup writes committed but before its checkpoint.
+    $db = new PDO('mysql:host=database;dbname=' . $wiki, 'mediawiki', $wgDBpassword,
+        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+    $count = $db->exec("DELETE FROM updatelog WHERE ul_key='farm-finalize-creation-v1'");
+    echo json_encode(['cleared'=>$count]), "\n";
+} elseif ($argv[1] === 'context-contract') {
+    $redis = FarmDispatch::connect();
+    FarmDispatch::group($redis, FarmDispatch::PROVISION);
+    $creation = ['requester'=>'Admin', 'extra'=>[]];
+    $id = FarmDispatch::provision($redis, $wiki, $creation);
+    if (FarmDispatch::provision($redis, $wiki, $creation) !== $id ||
+        FarmDispatch::provision($redis, $wiki) !== $id) {
+        throw new RuntimeException('Creation dispatch was not coalesced');
+    }
+    try {
+        FarmDispatch::provision($redis, $wiki, ['requester'=>'DifferentOwner', 'extra'=>[]]);
+        throw new RuntimeException('Creation owner could be replaced');
+    } catch (RedisException $error) {
+        if (!str_contains($error->getMessage(), 'cannot be replaced')) { throw $error; }
+    }
+    if (json_decode($redis->hGet(FarmDispatch::CREATION_CONTEXT, $wiki), true) !== $creation) {
+        throw new RuntimeException('Creation context changed');
+    }
+    $delivery = $redis->xReadGroup(FarmDispatch::GROUP, 'context-contract', [FarmDispatch::PROVISION=>'>'], 1, 1);
+    if (!isset($delivery[FarmDispatch::PROVISION][$id])) {
+        throw new RuntimeException('Creation delivery missing');
+    }
+    FarmDispatch::finish($redis, FarmDispatch::PROVISION, FarmDispatch::PROVISION_PENDING,
+        'context-contract', $id, $wiki, '', true, FarmDispatch::statusKey($wiki));
+    if ($redis->hExists(FarmDispatch::CREATION_CONTEXT, $wiki) ||
+        $redis->hExists(FarmDispatch::PROVISION_PENDING, $wiki)) {
+        throw new RuntimeException('Completion retained its creation context');
+    }
+    $redis->del(FarmDispatch::statusKey($wiki));
+    echo json_encode(['status'=>'passed', 'checks'=>['atomic intent and event', 'duplicate coalescing',
+        'owner replacement refused', 'intent removed on acknowledgment']]), "\n";
 } elseif ($argv[1] === 'queue') {
     $redis = FarmDispatch::connect();
     echo json_encode(['pending_wikis'=>$redis->hLen(FarmDispatch::PROVISION_PENDING),
-        'pending_deliveries'=>$redis->rawCommand('XPENDING', FarmDispatch::PROVISION, FarmDispatch::GROUP)[0]]), "\n";
+        'pending_deliveries'=>$redis->rawCommand('XPENDING', FarmDispatch::PROVISION, FarmDispatch::GROUP)[0],
+        'creation_contexts'=>$redis->hLen(FarmDispatch::CREATION_CONTEXT)]), "\n";
 } else {
     throw new RuntimeException('Unknown probe action');
 }

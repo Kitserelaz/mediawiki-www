@@ -8,6 +8,13 @@
         respond @private 404
         @protectedUpload path_regexp protectedUpload ^/images/[^/]+/(deleted|temp)/
         respond @protectedUpload 404
+        # Public assets also use root-relative URLs on the shared-auth domain.
+        @assets path /resources/* /skins/* /extensions/*
+        handle @assets {
+            @assetPhp path_regexp assetPhp (?i)\.php(/|$)
+            respond @assetPhp 404
+            file_server
+        }
         # Shared-auth URLs carry the target database in their first path component.
         @auth host auth.{$MW_DOMAIN:localhost}
         handle @auth {
@@ -53,10 +60,6 @@
                 env HTTP_X_FORWARDED_PROTO https
                     env REQUEST_URI {http.request.orig_uri}
             }
-        }
-        @assets path /resources/* /skins/* /extensions/*
-        handle @assets {
-            file_server
         }
         respond 404
     }

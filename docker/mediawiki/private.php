@@ -14,3 +14,5 @@ $wgMatomoAnalyticsTokenAuth = $farmSecrets['matomo_token'] ?? '';
 $wgCFCachePurgeZoneId = $farmSecrets['cloudflare_zone'] ?? '';
 $wgCFCachePurgeApiToken = $farmSecrets['cloudflare_token'] ?? '';
 $wmgGlobalDiscordWebhookUrl = $farmSecrets['discord_webhook'] ?? '';
+$wgDiscordAuthClientId = $farmSecrets['discord_client_id'] ?? '';
+$wgDiscordAuthClientSecret = $farmSecrets['discord_client_secret'] ?? '';

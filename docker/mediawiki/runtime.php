@@ -153,6 +153,18 @@ function farmRuntime(): void {
     else { $wgSearchType = 'SearchMySQL'; }
     $domain = farmEnv('MW_DOMAIN', 'localhost');
     $GLOBALS['wmgUploadHostname'] = "meta.$domain";
+    $GLOBALS['wgDiscordAuthCallbackUrl'] = "https://auth.$domain/metawiki/wiki/Special:DiscordCallback";
+    $discordRestrictions = &$GLOBALS['wgCentralAuthSul3SharedDomainRestrictions'];
+    $discordRestrictions['allowedSpecialPages'] = array_values(array_unique(array_merge(
+        $discordRestrictions['allowedSpecialPages'] ?? [], ['DiscordCallback', 'DiscordLogin', 'DiscordSignup']
+    )));
+    $discordRestrictions['centralSpecialPagesAuthenticated'] = array_values(array_unique(array_merge(
+        $discordRestrictions['centralSpecialPagesAuthenticated'] ?? [], ['LinkAccounts']
+    )));
+    $discordRestrictions['centralSpecialPagesUnauthenticated'] = array_values(array_unique(array_merge(
+        $discordRestrictions['centralSpecialPagesUnauthenticated'] ?? [], ['DiscordLogin', 'DiscordSignup']
+    )));
+    unset($discordRestrictions);
     $GLOBALS['wgGlobalUserPageAPIUrl'] = "https://meta.$domain/api.php";
     $GLOBALS['wgCentralHost'] = "https://meta.$domain";
     $GLOBALS['wgCentralSelectedBannerDispatcher'] = "https://meta.$domain/wiki/Special:BannerLoader";
@@ -176,6 +188,8 @@ function farmRuntime(): void {
     }
     if (farmEnv('MW_ENV', 'development') !== 'production') {
         $GLOBALS['wgOATHRequiredForGroups'] = [];
+        // Local login/OAuth iteration must not lock out the developer after failed fixtures.
+        $GLOBALS['wgPasswordAttemptThrottle'] = [];
         $domain = farmEnv('MW_DOMAIN', 'localhost');
         // Retain deliberately configured local custom domains while translating
         // restored production hosts into the isolated development farm.

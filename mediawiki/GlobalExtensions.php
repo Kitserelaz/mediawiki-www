@@ -17,6 +17,7 @@ $farmExtensions = [
     'ConfirmEdit/hCaptcha',
     'DataDump',
     'DiscordNotifications',
+    'DiscordAuth',
     'DismissableSiteNotice',
     'Echo',
     //'EventBus',

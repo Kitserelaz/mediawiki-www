@@ -1,0 +1,63 @@
+.mw-ui-container.discordauth-columns {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+	gap: 0;
+}
+
+.mw-ui-container.discordauth-columns > #userloginForm {
+	display: block;
+	width: auto;
+	min-width: 0;
+	padding: clamp(1.5rem, 4vw, 4rem);
+}
+
+.discordauth-columns #userloginForm .mw-htmlform {
+	width: 100%;
+	max-width: 28rem;
+	margin-inline: auto;
+}
+
+#discordauth-social {
+	box-sizing: border-box;
+	min-width: 0;
+	padding: clamp(1.5rem, 4vw, 4rem);
+	border-inline-start: 1px solid var(--border-color-base, #a2a9b1);
+	background: var(--color-surface-2, var(--background-color-neutral-subtle, #f8f9fa));
+}
+
+.discordauth-social-content {
+	width: 100%;
+	max-width: 28rem;
+	margin-inline: auto;
+}
+
+#discordauth-social-heading {
+	margin: 0 0 1.5rem;
+	padding: 0;
+	border: 0;
+	font-family: inherit;
+	font-size: 1.5rem;
+	font-weight: 600;
+	line-height: 1.3;
+}
+
+#discordauth-social .discordauth-login {
+	display: flex;
+	width: 100%;
+	min-height: 2.75rem;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+	white-space: normal;
+}
+
+@media (max-width: 47.99rem) {
+	.mw-ui-container.discordauth-columns {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	#discordauth-social {
+		border-inline-start: 0;
+		border-block-start: 1px solid var(--border-color-base, #a2a9b1);
+	}
+}

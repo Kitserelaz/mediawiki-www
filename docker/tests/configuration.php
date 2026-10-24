@@ -21,6 +21,9 @@ class CheckDockerConfiguration extends MediaWiki\Maintenance\Maintenance {
             }
         }
         if (getenv('MW_ENV') !== 'production') {
+            if ($config->get('PasswordAttemptThrottle') !== []) {
+                throw new RuntimeException('Development login attempts must not be throttled');
+            }
             $remote = getenv('MW_REMOTE_REPOSITORIES') === '1';
             if ((bool)$config->get('UseQuickInstantCommons') !== $remote) {
                 throw new RuntimeException('Remote repository opt-in is not respected');

@@ -1,0 +1,102 @@
+{
+	"name": "DiscordAuth",
+	"version": "1.0.0",
+	"author": [
+		"CloudWiki contributors"
+	],
+	"descriptionmsg": "discordauth-desc",
+	"type": "other",
+	"license-name": "GPL-2.0-or-later",
+	"requires": {
+		"MediaWiki": ">= 1.46.0",
+		"extensions": {
+			"CentralAuth": "*"
+		}
+	},
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\DiscordAuth\\": "includes/"
+	},
+	"MessagesDirs": {
+		"DiscordAuth": [
+			"i18n"
+		]
+	},
+	"ServiceWiringFiles": [
+		"ServiceWiring.php"
+	],
+	"HookHandlers": {
+		"discordauth": {
+			"class": "MediaWiki\\Extension\\DiscordAuth\\Hooks"
+		}
+	},
+	"Hooks": {
+		"LoadExtensionSchemaUpdates": "discordauth",
+		"GetPreferences": "discordauth",
+		"AuthChangeFormFields": "discordauth",
+		"GetFullURL": "discordauth",
+		"BeforePageDisplay": "discordauth"
+	},
+	"SpecialPages": {
+		"DiscordCallback": {
+			"class": "MediaWiki\\Extension\\DiscordAuth\\SpecialDiscordCallback",
+			"services": [
+				"DiscordAuth.Client",
+				"DiscordAuth.AuthorizationStore"
+			]
+		},
+		"DiscordLogin": {
+			"class": "MediaWiki\\Extension\\DiscordAuth\\SpecialDiscordLogin",
+			"services": [
+				"AuthManager",
+				"UserIdentityUtils",
+				"DiscordAuth.Client",
+				"DiscordAuth.AuthorizationStore"
+			]
+		},
+		"DiscordSignup": {
+			"class": "MediaWiki\\Extension\\DiscordAuth\\SpecialDiscordSignup",
+			"services": [
+				"AuthManager",
+				"FormatterFactory",
+				"UserIdentityUtils"
+			]
+		}
+	},
+	"AuthManagerAutoConfig": {
+		"primaryauth": {
+			"DiscordAuth": {
+				"class": "MediaWiki\\Extension\\DiscordAuth\\DiscordPrimaryAuthenticationProvider",
+				"sort": 5,
+				"services": [
+					"DiscordAuth.Client",
+					"DiscordAuth.LinkStore",
+					"UserFactory",
+					"DiscordAuth.AuthorizationStore"
+				]
+			}
+		}
+	},
+	"config": {
+		"DiscordAuthClientId": {
+			"value": ""
+		},
+		"DiscordAuthClientSecret": {
+			"value": ""
+		},
+		"DiscordAuthCallbackUrl": {
+			"value": ""
+		}
+	},
+	"manifest_version": 2,
+	"ResourceModules": {
+		"ext.discordAuth.social.styles": {
+			"styles": [
+				"resources/social.css"
+			]
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "",
+		"remoteExtPath": "DiscordAuth"
+	}
+}

@@ -1,0 +1,22 @@
+{
+	"@metadata": {
+		"authors": [
+			"CloudWiki contributors"
+		]
+	},
+	"discordauth-desc": "Continue with Discord using shared CentralAuth accounts.",
+	"discordauth-login": "Continue with Discord",
+	"discordauth-login-help": "Use your Discord account to sign in or create a wiki account.",
+	"discordauth-provider": "Discord",
+	"discordauth-link": "Link Discord account",
+	"discordauth-unlink": "Manage sign-in methods",
+	"discordcallback": "Continue with Discord",
+	"discordauth-callback-field": "Discord authorization response",
+	"discordauth-expired": "Your Discord sign-in session expired or could not be verified. Please start again.",
+	"discordauth-cancelled": "Discord sign-in was cancelled. You can try again or use your wiki password.",
+	"discordauth-failed": "Discord sign-in could not be completed. Please try again later or use your wiki password.",
+	"discordauth-already-linked": "This Discord account or wiki account is already linked. Sign in to the existing account to manage its sign-in methods.",
+	"discordauth-set-password": "Set a wiki password before removing Discord so you can still sign in to your account.",
+	"discordauth-choose-username": "Choose your wiki username",
+	"discordauth-social-heading": "Social sign-in"
+}

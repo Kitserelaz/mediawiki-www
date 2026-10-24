@@ -1,6 +1,11 @@
 <?php
+/**
+ * @license GPL-2.0-or-later
+ *
+ * @file
+ */
 
-namespace MediaWiki\Extension\CentralAuth\Special;
+namespace MediaWiki\Extension\GlobalAccountClosure\Special;
 
 use MediaWiki\Extension\CentralAuth\User\CentralAuthUser;
 use MediaWiki\Html\Html;
@@ -83,7 +88,6 @@ class SpecialCloseAccount extends SpecialPage {
 		$this->getOutput()->addHTML(
 			Html::successBox( $this->msg( 'closeaccount-success', $target )->parse() )
 		);
-
 		return $status;
 	}
 }

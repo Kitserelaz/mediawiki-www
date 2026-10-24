@@ -1,0 +1,35 @@
+{
+	"@metadata": {
+		"authors": [
+			"CloudWiki contributors"
+		]
+	},
+	"globalaccountclosure-desc": "Provides global account closure and restoration tools.",
+	"closeaccount": "Close account globally",
+	"closeaccount-intro": "Close a global account without locking it. Closed accounts cannot log in or edit.",
+	"closeaccount-legend": "Close or restore a global account",
+	"closeaccount-username": "Global username",
+	"closeaccount-reason": "Reason",
+	"closeaccount-submit": "Close account",
+	"closeaccount-restore-submit": "Restore account",
+	"closeaccount-invalid-username": "Enter a valid username.",
+	"closeaccount-success": "The global account for \"<nowiki>$1</nowiki>\" has been closed globally.",
+	"closeaccount-restored": "The global account for \"<nowiki>$1</nowiki>\" has been restored.",
+	"closeaccount-already-closed": "The global account for \"<nowiki>$1</nowiki>\" is already closed.",
+	"closemyaccount-intro": "Close your global account. You will no longer be able to log in or edit on any wiki. You can restore the account later with your global password.",
+	"closemyaccount-password": "Confirm your global password",
+	"closemyaccount-submit": "Close my account",
+	"closemyaccount-invalid": "Your account could not be closed. Check your global password and make sure the account is not already closed or globally locked.",
+	"closemyaccount-already-closed": "Your global account is already closed. [[Special:RestoreClosedAccount|Restore your account]] with your global password.",
+	"closemyaccount-success": "Your global account has been closed. [[Special:RestoreClosedAccount|Restore it]] with your global password if you change your mind.",
+	"restoreaccount-intro": "Your global account is closed. Enter your global password to restore access.",
+	"restoreaccount-username": "Global username",
+	"restoreaccount-password": "Global password",
+	"restoreaccount-submit": "Restore account",
+	"restoreaccount-invalid": "The account could not be restored. Check the username and password, and make sure the account is closed and not globally locked.",
+	"restoreaccount-success": "Your global account for \"<nowiki>$1</nowiki>\" has been restored. You can now log in.",
+	"centralauth-contribs-closed": "This account is closed.\nSee [[Special:CentralAuth/$1|global account details]] for more information.",
+	"centralauth-contribs-closed-log": "This account is closed.\nThe latest closure log entry is provided below for reference:",
+	"closemyaccount": "Close my account",
+	"restoreclosedaccount": "Restore closed account"
+}

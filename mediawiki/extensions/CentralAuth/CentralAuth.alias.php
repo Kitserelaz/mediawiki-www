@@ -14,7 +14,6 @@ $specialPageAliases['en'] = [
 	'CentralAuth' => [ 'CentralAuth', 'GlobalAccount', 'GlobalAccountManager', 'CA' ],
 	'CreateLocalAccount' => [ 'CreateLocalAccount' ],
 	'MergeAccount' => [ 'MergeAccount' ],
-	'CloseAccount' => [ 'CloseAccount' ],
 	'GlobalGroupMembership' => [ 'GlobalUserRights', 'GlobalGroupMembership' ],
 	'GlobalGroupPermissions' => [ 'GlobalGroupPermissions' ],
 	'WikiSets' => [ 'WikiSets', 'EditWikiSets' ],

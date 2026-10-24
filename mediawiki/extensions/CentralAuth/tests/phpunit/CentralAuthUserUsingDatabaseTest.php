@@ -139,6 +139,17 @@ class CentralAuthUserUsingDatabaseTest extends MediaWikiIntegrationTestCase {
 		$this->assertStatusGood( $caUser->restoreAccount( 'already restored', $context ) );
 	}
 
+	public function testOwnerCanCloseOwnAccountWithPassword(): void {
+		$caUser = CentralAuthUser::getPrimaryInstanceByName( $this->getTestCentralAuthUserWithExistingLocalWikis() );
+
+		$this->assertStatusError( 'closemyaccount-invalid', $caUser->closeAccountWithPassword( 'wrong password' ) );
+		$this->assertFalse( $caUser->isClosed() );
+
+		$this->assertStatusGood( $caUser->closeAccountWithPassword( 'GUP@ssword' ) );
+		$this->assertTrue( $caUser->isClosed() );
+		$this->assertFalse( $caUser->isLocked() );
+	}
+
 	public function testCloseAndRestoreRequirePermission(): void {
 		$caUser = CentralAuthUser::getPrimaryInstanceByName( $this->getTestCentralAuthUserWithExistingLocalWikis() );
 		$context = new DerivativeContext( RequestContext::getMain() );
@@ -151,6 +162,24 @@ class CentralAuthUserUsingDatabaseTest extends MediaWikiIntegrationTestCase {
 		$this->assertStatusError( 'centralauth-admin-not-authorized', $caUser->restoreAccount( 'test', $context ) );
 		$this->assertTrue( $caUser->isClosed() );
 		$this->assertStatusGood( $caUser->restoreAccount( 'cleanup', $allowed ) );
+	}
+
+	public function testOwnerCanRestoreClosedAccountWithPassword(): void {
+		$caUser = CentralAuthUser::getPrimaryInstanceByName( $this->getTestCentralAuthUserWithExistingLocalWikis() );
+		$context = new DerivativeContext( RequestContext::getMain() );
+		$context->setAuthority( $this->mockRegisteredAuthorityWithPermissions( [ 'close-account' ] ) );
+		$this->assertStatusGood( $caUser->closeAccount( 'self-restore test', $context ) );
+
+		$this->assertStatusError( 'restoreaccount-invalid', $caUser->restoreAccountWithPassword( 'wrong password' ) );
+		$this->assertTrue( $caUser->isClosed() );
+
+		$caUser->adminLock();
+		$this->assertStatusError( 'restoreaccount-invalid', $caUser->restoreAccountWithPassword( 'GUP@ssword' ) );
+		$this->assertTrue( $caUser->isClosed() );
+		$caUser->adminUnlock();
+
+		$this->assertStatusGood( $caUser->restoreAccountWithPassword( 'GUP@ssword' ) );
+		$this->assertFalse( $caUser->isClosed() );
 	}
 
 	public function testClosureCheckWithoutMigrationIsReadOnly(): void {

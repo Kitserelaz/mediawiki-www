@@ -124,12 +124,6 @@
 				"UserNameUtils"
 			]
 		},
-		"CloseAccount": {
-			"class": "MediaWiki\\Extension\\CentralAuth\\Special\\SpecialCloseAccount",
-			"services": [
-				"UserNameUtils"
-			]
-		},
 		"CentralAuth": {
 			"class": "MediaWiki\\Extension\\CentralAuth\\Special\\SpecialCentralAuth",
 			"services": [
@@ -650,14 +644,6 @@
 				"NamespaceInfo"
 			]
 		},
-		"specialcontributions": {
-			"class": "MediaWiki\\Extension\\CentralAuth\\Hooks\\Handlers\\SpecialContributionsHookHandler",
-			"services": [
-				"NamespaceInfo",
-				"UserFactory",
-				"UserNameUtils"
-			]
-		},
 		"specialpageinit": {
 			"class": "MediaWiki\\Extension\\CentralAuth\\Hooks\\Handlers\\SpecialPageInitHookHandler",
 			"services": [
@@ -784,8 +770,6 @@
 		"SecuritySensitiveOperationStatus": "loginredirect",
 		"SetupAfterCache": "shareddomain",
 		"SessionCheckInfo": "default",
-		"SpecialContributionsBeforeMainOutput": "specialcontributions",
-		"ContributionsToolLinks": "specialcontributions",
 		"SpecialLogAddLogSearchRelations": "log",
 		"SpecialPage_initList": "specialpageinit",
 		"SpecialPageBeforeExecute": [

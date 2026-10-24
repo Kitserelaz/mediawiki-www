@@ -196,8 +196,12 @@ class CentralAuthPrimaryAuthenticationProvider
 				// which removes the two possible meanings of no "bad password".
 				$authenticateResult[] = CentralAuthUser::AUTHENTICATE_GOOD_PASSWORD;
 			}
+			$messageKey = $centralUser->isClosed() && !$centralUser->isLocked()
+				&& !in_array( CentralAuthUser::AUTHENTICATE_BAD_PASSWORD, $authenticateResult )
+				? 'centralauth-login-error-closed'
+				: 'centralauth-login-error-locked';
 			return AuthenticationResponse::newFail(
-				wfMessage( 'centralauth-login-error-locked' )
+				wfMessage( $messageKey )
 					->params( wfEscapeWikiText( $centralUser->getName() ) ),
 				$authenticateResult
 			);

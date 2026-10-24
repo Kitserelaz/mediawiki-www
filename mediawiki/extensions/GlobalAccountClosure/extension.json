@@ -1,0 +1,52 @@
+{
+	"name": "GlobalAccountClosure",
+	"descriptionmsg": "globalaccountclosure-desc",
+	"type": "specialpage",
+	"requires": {
+		"MediaWiki": ">= 1.46.0",
+		"extensions": {
+			"CentralAuth": "*"
+		}
+	},
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\GlobalAccountClosure\\": "includes/"
+	},
+	"ExtensionMessagesFiles": {
+		"GlobalAccountClosureAliases": "GlobalAccountClosure.alias.php"
+	},
+	"SpecialPages": {
+		"CloseAccount": {
+			"class": "MediaWiki\\Extension\\GlobalAccountClosure\\Special\\SpecialCloseAccount",
+			"services": [
+				"UserNameUtils"
+			]
+		},
+		"CloseMyAccount": "MediaWiki\\Extension\\GlobalAccountClosure\\Special\\SpecialCloseMyAccount",
+		"RestoreClosedAccount": {
+			"class": "MediaWiki\\Extension\\GlobalAccountClosure\\Special\\SpecialRestoreClosedAccount",
+			"services": [
+				"UserNameUtils"
+			]
+		}
+	},
+	"HookHandlers": {
+		"specialcontributions": {
+			"class": "MediaWiki\\Extension\\GlobalAccountClosure\\Hooks\\SpecialContributionsHookHandler",
+			"services": [
+				"NamespaceInfo",
+				"UserFactory",
+				"UserNameUtils"
+			]
+		}
+	},
+	"Hooks": {
+		"ContributionsToolLinks": "specialcontributions",
+		"SpecialContributionsBeforeMainOutput": "specialcontributions"
+	},
+	"manifest_version": 2,
+	"MessagesDirs": {
+		"GlobalAccountClosure": [
+			"i18n"
+		]
+	}
+}

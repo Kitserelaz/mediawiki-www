@@ -560,5 +560,49 @@
 		],
 		"indexes": [],
 		"pk": [ "uas_shard", "uas_year" ]
+	},
+	{
+		"name": "global_account_closures",
+		"comment": "Recoverable global account closures",
+		"columns": [
+			{
+				"name": "gac_user_id",
+				"type": "integer",
+				"options": { "notnull": true }
+			},
+			{
+				"name": "gac_original_name",
+				"type": "binary",
+				"options": { "notnull": true, "length": 255 }
+			},
+			{
+				"name": "gac_closed_name",
+				"type": "binary",
+				"options": { "notnull": true, "length": 255 }
+			},
+			{
+				"name": "gac_closed_by",
+				"type": "binary",
+				"options": { "notnull": true, "length": 255 }
+			},
+			{
+				"name": "gac_timestamp",
+				"type": "mwtimestamp",
+				"options": { "notnull": true }
+			}
+		],
+		"indexes": [
+			{
+				"name": "gac_original_name",
+				"columns": [ "gac_original_name" ],
+				"unique": true
+			},
+			{
+				"name": "gac_closed_name",
+				"columns": [ "gac_closed_name" ],
+				"unique": true
+			}
+		],
+		"pk": [ "gac_user_id" ]
 	}
 ]

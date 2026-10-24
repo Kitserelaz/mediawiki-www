@@ -11,7 +11,7 @@ $specialPageAliases = [];
 
 /** English (English) */
 $specialPageAliases['en'] = [
-	'CentralAuth' => [ 'CentralAuth', 'GlobalAccount', 'CA' ],
+	'CentralAuth' => [ 'CentralAuth', 'GlobalAccount', 'GlobalAccountManager', 'CA' ],
 	'CreateLocalAccount' => [ 'CreateLocalAccount' ],
 	'MergeAccount' => [ 'MergeAccount' ],
 	'GlobalGroupMembership' => [ 'GlobalUserRights', 'GlobalGroupMembership' ],

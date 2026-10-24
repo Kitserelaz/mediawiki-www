@@ -14,7 +14,7 @@ parser.add_argument('--image', default='cloudwiki-php:local')
 parser.add_argument('--report', type=Path, default=Path('/tmp/streams-tests.json'))
 args = parser.parse_args()
 project = 'cloudwiki-stream-test-' + uuid.uuid4().hex[:8]
-env = dict(os.environ, MW_IMAGE=args.image, JOBCHRON_IMAGE=args.image, MW_ENV='development')
+env = dict(os.environ, MW_IMAGE=args.image, JOBCHRON_IMAGE=args.image, MW_ENV='development', MW_S3_ENABLED='0')
 base = ['docker', 'compose', '-p', project, '-f', 'compose.yaml', '-f', 'docker/tests/streams.compose.yaml']
 STREAM = 'global:jobqueue:dispatch'
 PENDING = 'global:jobqueue:dispatch-pending'

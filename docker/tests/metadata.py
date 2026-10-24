@@ -9,13 +9,14 @@ parser.add_argument('--report',type=Path,default=Path('/tmp/one-pass-metadata-gu
 args=parser.parse_args()
 wiki=args.wiki
 if not re.fullmatch(r'9creation[a-z0-9]+privatewiki',wiki):parser.error('Fresh private creation fixture required')
-configuration=json.loads(subprocess.check_output(['docker','compose','--profile','tools','config','--format','json'],cwd=ROOT,text=True))
+COMPOSE=[str(ROOT/'scripts/farm'),'compose']
+configuration=json.loads(subprocess.check_output([*COMPOSE,'--profile','tools','config','--format','json'],cwd=ROOT,text=True))
 environment=configuration['services']['init']['environment']
 if environment.get('MW_ENV')!='development' or environment.get('MW_DOMAIN')!='localhost':parser.error('Localhost development stack required')
 host=wiki[:-4]+'.localhost'
 report={'wiki':wiki,'status':'running'}
 def compose(*args,check=True):
- r=subprocess.run(['docker','compose',*args],cwd=ROOT,text=True,capture_output=True)
+ r=subprocess.run([*COMPOSE,*args],cwd=ROOT,text=True,capture_output=True)
  if check and r.returncode:raise RuntimeError(r.stdout+r.stderr)
  return r.stdout
 def http(path='/api.php?action=query&meta=siteinfo&format=json'):
@@ -36,7 +37,7 @@ try:
  else:raise AssertionError('Incomplete metadata did not fail closed')
  report['incomplete_metadata_http_status']=status
  print('PASS incomplete private metadata returns HTTP 503',flush=True)
- compose('up','-d','--no-deps','--wait','provisioner')
+ compose('start','provisioner')
  until=time.monotonic()+60
  while time.monotonic()<until:
   state=compose('exec','-T','redis','redis-cli','HGET','global:farm:provision-status:'+wiki,'state').strip()
@@ -55,10 +56,13 @@ try:
  report['private_file_protected']=True
  report['repair_updater_invocations']=launches()-before
  assert report['repair_updater_invocations']==1
+ log=compose('exec','-T','php','php','-r','echo file_get_contents("/var/www/mediawiki/cw_cache/.provision-".$argv[1].".log");',wiki)
+ assert 'Provisioning metadata: repair' in log
+ report['metadata_source']='repair'
  report['status']='passed'
  print('PASS worker repaired metadata, ran one updater, and retained private API/file denial',flush=True)
 finally:
  if report['status']!='passed':
   compose('run','--rm','-T','--no-deps','--user','www-data','-e','MW_BOOTSTRAP_DB=','init','php','maintenance/run.php','/opt/farm/prepare-wiki.php','--wiki=metawiki','--target='+wiki,check=False)
- compose('up','-d','--no-deps','provisioner',check=False)
+ compose('start','provisioner',check=False)
  args.report.write_text(json.dumps(report,indent=2)+'\n')

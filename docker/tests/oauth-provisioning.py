@@ -10,7 +10,7 @@ import uuid
 ROOT = Path(__file__).resolve().parents[2]
 project = 'cloudwiki-provision-test-oauth-' + uuid.uuid4().hex[:8]
 prefix = '9provision' + uuid.uuid4().hex[:6]
-env = dict(os.environ, MW_ENV='development', MW_PROVISION_SINGLE_PASS='0')
+env = dict(os.environ, MW_ENV='development', MW_PROVISION_SINGLE_PASS='0', MW_S3_ENABLED='0')
 base = ['docker', 'compose', '-p', project, '-f', 'compose.yaml',
         '-f', 'docker/tests/provisioning.compose.yaml']
 report = {'project': project, 'status': 'running', 'cases': [],

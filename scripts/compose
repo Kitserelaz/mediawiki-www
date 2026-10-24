@@ -26,6 +26,11 @@ def command(args, root=ROOT):
     mode = settings.get('MW_CODE_MODE', 'image')
     if mode not in ('image', 'bind'):
         raise ValueError('MW_CODE_MODE must be image or bind')
+    provisioner_source = settings.get('MW_PROVISIONER_SOURCE', 'bind')
+    if provisioner_source not in ('bind', 'sync'):
+        raise ValueError('MW_PROVISIONER_SOURCE must be bind or sync')
+    if provisioner_source == 'sync' and (mode != 'bind' or settings.get('MW_ENV') != 'development'):
+        raise ValueError('Provisioner source synchronization requires development bind mode')
     if mode == 'image':
         return ['docker', 'compose', *flags, *args], dict(os.environ)
     source = Path(settings.get('MW_SOURCE_DIRECTORY') or str(root))
@@ -54,10 +59,12 @@ def command(args, root=ROOT):
     separator = settings.get('COMPOSE_PATH_SEPARATOR') or os.pathsep
     file_flags = []
     for name in files.split(separator):
-        if Path(name).name != 'compose.bind.yaml':
+        if Path(name).name not in ('compose.bind.yaml', 'compose.provisioner-sync.yaml'):
             file_flags.extend(['-f', str((root / name).resolve())])
     file_flags.extend(['-f', str(root / 'compose.bind.yaml')])
     environment = dict(os.environ, MW_SOURCE_DIRECTORY=str(source))
+    if provisioner_source == 'sync':
+        file_flags.extend(['-f', str(root / 'compose.provisioner-sync.yaml')])
     return ['docker', 'compose', *flags, *file_flags, *args], environment
 
 

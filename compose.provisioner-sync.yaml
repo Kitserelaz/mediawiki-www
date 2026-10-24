@@ -1,0 +1,51 @@
+# Development only. Selected after compose.bind.yaml by scripts/compose.
+# Host files seed a local staging copy at startup; PHP never loads the host tree.
+services:
+  provisioner:
+    user: root
+    entrypoint: [python3, /sync-control/provisioner-source.py, run]
+    command: []
+    environment:
+      MW_CODE_SYNC: '1'
+    healthcheck:
+      # The first copy of the full extension catalogue can take several minutes.
+      start_period: 10m
+    volumes: !override
+      - uploads:${MW_UPLOAD_ROOT:-/var/www/mediawiki/images}
+      - farm-cache:/var/www/mediawiki/cw_cache
+      - localization:/var/www/mediawiki/cache
+      - dumps:${MW_DUMP_DIRECTORY:-/var/www/dumps}
+      - ${MW_SOURCE_DIRECTORY:-.}/mediawiki:/sync-input/mediawiki:ro
+      - ${MW_SOURCE_DIRECTORY:-.}/docker/mediawiki:/sync-input/farm:ro
+      - ./docker/mediawiki/provisioner-source.py:/sync-control/provisioner-source.py:ro
+    develop:
+      watch:
+        - action: sync+exec
+          path: ${MW_SOURCE_DIRECTORY:-.}/mediawiki
+          target: /tmp/farm-source/mediawiki
+          initial_sync: true
+          ignore:
+            - images/
+            - cache/
+            - cw_cache/
+            - docker/
+            - image-imports/
+            - tmp/
+            - sitemaps/
+            - extensions_old/
+            - extensions_staging/
+            - CreateWiki-old/
+            - cirrus_scripts/
+            - tests/
+            - mw-config/
+            - PrivateSettings.php
+          exec:
+            user: root
+            command: [python3, /sync-control/provisioner-source.py, publish]
+        - action: sync+exec
+          path: ${MW_SOURCE_DIRECTORY:-.}/docker/mediawiki
+          target: /tmp/farm-source/farm
+          initial_sync: true
+          exec:
+            user: root
+            command: [python3, /sync-control/provisioner-source.py, publish]

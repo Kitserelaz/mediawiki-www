@@ -7,6 +7,7 @@
 **/.git
 **/.env*
 **/node_modules
+**/__pycache__
 **/*secret*
 **/*.key
 **/*.key.pub

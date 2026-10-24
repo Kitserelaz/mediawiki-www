@@ -7,7 +7,7 @@ project=os.getenv('PROVISION_TEST_PROJECT') or 'cloudwiki-provision-test-'+uuid.
 assert project.startswith('cloudwiki-provision-test-'), 'Disposable test project required'
 prefix='9provision'+uuid.uuid4().hex[:6]
 base=['docker','compose','-p',project,'-f','compose.yaml','-f','docker/tests/provisioning.compose.yaml']
-env=dict(os.environ,MW_ENV='development',MW_PROVISION_SINGLE_PASS='0')
+env=dict(os.environ,MW_ENV='development',MW_PROVISION_SINGLE_PASS='0',MW_S3_ENABLED='0')
 report={'project':project,'status':'running','cases':[], 'single_pass_pipeline':'production coordinator', 'main_stack_modified':False}
 reference_file=os.getenv('PROVISION_REFERENCE_REPORT')
 def compose(*args,check=True):

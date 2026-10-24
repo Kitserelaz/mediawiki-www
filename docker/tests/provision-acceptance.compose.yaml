@@ -1,0 +1,20 @@
+# Harnesses live outside the application; all application code comes from MW_IMAGE.
+services:
+  init:
+    volumes:
+      - ./docker/tests:/acceptance:ro
+    environment:
+      PROVISION_ACCEPTANCE_ISOLATED: '1'
+  provisioner:
+    volumes:
+      - ./docker/tests:/acceptance:ro
+    environment:
+      PROVISION_ACCEPTANCE_ISOLATED: '1'
+  php:
+    volumes:
+      - ./docker/tests:/acceptance:ro
+    environment:
+      PROVISION_ACCEPTANCE_ISOLATED: '1'
+networks:
+  default:
+    internal: true

@@ -1,0 +1,701 @@
+{
+  "date_local": "2026-10-23",
+  "timezone": "America/Vancouver",
+  "status": "passed",
+  "change": "Reuse the post-commit creator services to prepare wiki lists and ManageWiki metadata. A fingerprint receipt and blocking per-wiki handoff lock let the coordinator skip its separate metawiki bootstrap. Invalid receipts retain the existing repair process. The target updater still launches once.",
+  "focused_checks": [
+    "complete public/private receipts accepted",
+    "unsealed, malformed, changed and partial metadata rejected",
+    "shared registration and privacy list consistency required",
+    "timestamp-only and unrelated wiki changes accepted",
+    "SIGTERM interrupts coordinator lock wait and preserves pending work"
+  ],
+  "benchmark": {
+    "method": "12 sequential fresh form creations alternating separate-metadata-process and prepared paths in four batches; six per mode, four public and two private per mode. Both modes use the new post-commit producer; control forces the former unconditional metadata child and candidate validates the receipt. This isolates the redundant bootstrap cost rather than reproducing the entire historical application. Both use the current signal-based process waiter and container-local source. No schema/OAuth tests ran during timings.",
+    "limitations": [
+      "Small local sample; all outliers retained.",
+      "Submit-to-completion uses Redis timestamps; browser verification includes 500 ms observation intervals and API request time. Worker measurements use Redis start/finish timestamps.",
+      "Idle sample leaves creation traffic idle for two minutes; ordinary background services remain enabled."
+    ],
+    "control_coordinator_sha256": "7bcc4b0a95c76521cbde06e23b4ec120a2a4fc9ec2e1ce1e1ffb2b0de78de80b",
+    "metrics": {
+      "separate_metadata_process": {
+        "count": 6,
+        "worker_ms": [
+          1774,
+          1905,
+          1899,
+          1470,
+          1930,
+          1706
+        ],
+        "worker_mean_ms": 1780.6666666666667,
+        "worker_median_ms": 1836.5,
+        "submit_to_completion_mean_ms": 2579.1666666666665
+      },
+      "prepared": {
+        "count": 6,
+        "worker_ms": [
+          1400,
+          1987,
+          1312,
+          1320,
+          1367,
+          1469
+        ],
+        "worker_mean_ms": 1475.8333333333333,
+        "worker_median_ms": 1383.5,
+        "submit_to_completion_mean_ms": 2320.6666666666665
+      },
+      "worker_mean_reduction_percent": 17.11905653313367,
+      "submit_to_completion_mean_reduction_percent": 10.022617124394184
+    },
+    "samples": [
+      {
+        "wiki": "9timing45c8a66epublic1wiki",
+        "private": false,
+        "form_success_ms": 1215,
+        "idle_before_ms": 0,
+        "form_http_timing": {
+          "startTime": 1792805170429.64,
+          "domainLookupStart": -1,
+          "domainLookupEnd": -1,
+          "connectStart": -1,
+          "secureConnectionStart": -1,
+          "connectEnd": -1,
+          "requestStart": 0.323,
+          "responseStart": 723.697,
+          "responseEnd": 724.666
+        },
+        "worker_start_after_submit_ms": 817,
+        "queue_wait_ms": 19,
+        "provisioning_after_worker_start_ms": 2104,
+        "provisioning_finished_after_submit_ms": 2921,
+        "provisioning_actual_ms": 1774,
+        "provisioning_completed_after_submit_ms": 2591,
+        "completion_observation_overhead_ms": 330,
+        "api_verification_ms": 257,
+        "stage_timings": null,
+        "metadata_source": null,
+        "verified_ready_after_submit_ms": 3178,
+        "api_check": "public siteinfo ready",
+        "batch": 1,
+        "mode": "separate_metadata_process"
+      },
+      {
+        "wiki": "9timing45c8a66eprivatewiki",
+        "private": true,
+        "form_success_ms": 1230,
+        "idle_before_ms": 0,
+        "form_http_timing": {
+          "startTime": 1792805173831.348,
+          "domainLookupStart": -1,
+          "domainLookupEnd": -1,
+          "connectStart": -1,
+          "secureConnectionStart": -1,
+          "connectEnd": -1,
+          "requestStart": 0.352,
+          "responseStart": 1060.073,
+          "responseEnd": 1061.106
+        },
+        "worker_start_after_submit_ms": 1106,
+        "queue_wait_ms": 3,
+        "provisioning_after_worker_start_ms": 1662,
+        "provisioning_finished_after_submit_ms": 2768,
+        "provisioning_actual_ms": 1400,
+        "provisioning_completed_after_submit_ms": 2506,
+        "completion_observation_overhead_ms": 262,
+        "api_verification_ms": 170,
+        "stage_timings": null,
+        "metadata_source": "creator",
+        "verified_ready_after_submit_ms": 2938,
+        "api_check": "anonymous read denied",
+        "batch": 1,
+        "mode": "prepared"
+      },
+      {
+        "wiki": "9timing45c8a66epublic3wiki",
+        "private": false,
+        "form_success_ms": 798,
+        "idle_before_ms": 0,
+        "form_http_timing": {
+          "startTime": 1792805176963.1409,
+          "domainLookupStart": -1,
+          "domainLookupEnd": -1,
+          "connectStart": -1,
+          "secureConnectionStart": -1,
+          "connectEnd": -1,
+          "requestStart": 0.237,
+          "responseStart": 678.535,
+          "responseEnd": 679.888
+        },
+        "worker_start_after_submit_ms": 657,
+        "queue_wait_ms": 4,
+        "provisioning_after_worker_start_ms": 2433,
+        "provisioning_finished_after_submit_ms": 3090,
+        "provisioning_actual_ms": 1905,
+        "provisioning_completed_after_submit_ms": 2562,
+        "completion_observation_overhead_ms": 528,
+        "api_verification_ms": 170,
+        "stage_timings": null,
+        "metadata_source": null,
+        "verified_ready_after_submit_ms": 3260,
+        "api_check": "public siteinfo ready",
+        "batch": 1,
+        "mode": "separate_metadata_process"
+      },
+      {
+        "wiki": "9timing2073840epublic1wiki",
+        "private": false,
+        "form_success_ms": 1942,
+        "idle_before_ms": 0,
+        "form_http_timing": {
+          "startTime": 1792805199145.6292,
+          "domainLookupStart": -1,
+          "domainLookupEnd": -1,
+          "connectStart": -1,
+          "secureConnectionStart": -1,
+          "connectEnd": -1,
+          "requestStart": 0.222,
+          "responseStart": 948.852,
+          "responseEnd": 950.591
+        },
+        "worker_start_after_submit_ms": 943,
+        "queue_wait_ms": 7,
+        "provisioning_after_worker_start_ms": 2631,
+        "provisioning_finished_after_submit_ms": 3574,
+        "provisioning_actual_ms": 1987,
+        "provisioning_completed_after_submit_ms": 2930,
+        "completion_observation_overhead_ms": 644,
+        "api_verification_ms": 280,
+        "stage_timings": null,
+        "metadata_source": "creator",
+        "verified_ready_after_submit_ms": 3854,
+        "api_check": "public siteinfo ready",
+        "batch": 2,
+        "mode": "prepared"
+      },
+      {
+        "wiki": "9timing2073840eprivatewiki",
+        "private": true,
+        "form_success_ms": 1209,
+        "idle_before_ms": 0,
+        "form_http_timing": {
+          "startTime": 1792805203253.1099,
+          "domainLookupStart": -1,
+          "domainLookupEnd": -1,
+          "connectStart": -1,
+          "secureConnectionStart": -1,
+          "connectEnd": -1,
+          "requestStart": 0.315,
+          "responseStart": 1008.003,
+          "responseEnd": 1009.094
+        },
+        "worker_start_after_submit_ms": 1048,
+        "queue_wait_ms": 4,
+        "provisioning_after_worker_start_ms": 2540,
+        "provisioning_finished_after_submit_ms": 3588,
+        "provisioning_actual_ms": 1899,
+        "provisioning_completed_after_submit_ms": 2947,
+        "completion_observation_overhead_ms": 641,
+        "api_verification_ms": 186,
+        "stage_timings": null,
+        "metadata_source": null,
+        "verified_ready_after_submit_ms": 3773,
+        "api_check": "anonymous read denied",
+        "batch": 2,
+        "mode": "separate_metadata_process"
+      },
+      {
+        "wiki": "9timing2073840epublic3wiki",
+        "private": false,
+        "form_success_ms": 916,
+        "idle_before_ms": 120000,
+        "form_http_timing": {
+          "startTime": 1792805327860.2349,
+          "domainLookupStart": -1,
+          "domainLookupEnd": -1,
+          "connectStart": -1,
+          "secureConnectionStart": -1,
+          "connectEnd": -1,
+          "requestStart": 0.288,
+          "responseStart": 780.581,
+          "responseEnd": 781.513
+        },
+        "worker_start_after_submit_ms": 766,
+        "queue_wait_ms": 3,
+        "provisioning_after_worker_start_ms": 1798,
+        "provisioning_finished_after_submit_ms": 2564,
+        "provisioning_actual_ms": 1312,
+        "provisioning_completed_after_submit_ms": 2078,
+        "completion_observation_overhead_ms": 486,
+        "api_verification_ms": 251,
+        "stage_timings": null,
+        "metadata_source": "creator",
+        "verified_ready_after_submit_ms": 2815,
+        "api_check": "public siteinfo ready",
+        "batch": 2,
+        "mode": "prepared"
+      },
+      {
+        "wiki": "9timingf0809c3bpublic1wiki",
+        "private": false,
+        "form_success_ms": 1761,
+        "idle_before_ms": 0,
+        "form_http_timing": {
+          "startTime": 1792805341340.2742,
+          "domainLookupStart": -1,
+          "domainLookupEnd": -1,
+          "connectStart": -1,
+          "secureConnectionStart": -1,
+          "connectEnd": -1,
+          "requestStart": 0.323,
+          "responseStart": 860.063,
+          "responseEnd": 861.729
+        },
+        "worker_start_after_submit_ms": 844,
+        "queue_wait_ms": 3,
+        "provisioning_after_worker_start_ms": 1715,
+        "provisioning_finished_after_submit_ms": 2559,
+        "provisioning_actual_ms": 1470,
+        "provisioning_completed_after_submit_ms": 2314,
+        "completion_observation_overhead_ms": 245,
+        "api_verification_ms": 210,
+        "stage_timings": null,
+        "metadata_source": null,
+        "verified_ready_after_submit_ms": 2769,
+        "api_check": "public siteinfo ready",
+        "batch": 3,
+        "mode": "separate_metadata_process"
+      },
+      {
+        "wiki": "9timingf0809c3bprivatewiki",
+        "private": true,
+        "form_success_ms": 827,
+        "idle_before_ms": 0,
+        "form_http_timing": {
+          "startTime": 1792805344339.5369,
+          "domainLookupStart": -1,
+          "domainLookupEnd": -1,
+          "connectStart": -1,
+          "secureConnectionStart": -1,
+          "connectEnd": -1,
+          "requestStart": 0.396,
+          "responseStart": 701.566,
+          "responseEnd": 710.837
+        },
+        "worker_start_after_submit_ms": 683,
+        "queue_wait_ms": 3,
+        "provisioning_after_worker_start_ms": 1623,
+        "provisioning_finished_after_submit_ms": 2306,
+        "provisioning_actual_ms": 1320,
+        "provisioning_completed_after_submit_ms": 2003,
+        "completion_observation_overhead_ms": 303,
+        "api_verification_ms": 130,
+        "stage_timings": null,
+        "metadata_source": "creator",
+        "verified_ready_after_submit_ms": 2436,
+        "api_check": "anonymous read denied",
+        "batch": 3,
+        "mode": "prepared"
+      },
+      {
+        "wiki": "9timingf0809c3bpublic3wiki",
+        "private": false,
+        "form_success_ms": 955,
+        "idle_before_ms": 0,
+        "form_http_timing": {
+          "startTime": 1792805346972.3132,
+          "domainLookupStart": -1,
+          "domainLookupEnd": -1,
+          "connectStart": -1,
+          "secureConnectionStart": -1,
+          "connectEnd": -1,
+          "requestStart": 0.379,
+          "responseStart": 819.284,
+          "responseEnd": 821.352
+        },
+        "worker_start_after_submit_ms": 762,
+        "queue_wait_ms": 3,
+        "provisioning_after_worker_start_ms": 2483,
+        "provisioning_finished_after_submit_ms": 3245,
+        "provisioning_actual_ms": 1930,
+        "provisioning_completed_after_submit_ms": 2692,
+        "completion_observation_overhead_ms": 553,
+        "api_verification_ms": 186,
+        "stage_timings": null,
+        "metadata_source": null,
+        "verified_ready_after_submit_ms": 3431,
+        "api_check": "public siteinfo ready",
+        "batch": 3,
+        "mode": "separate_metadata_process"
+      },
+      {
+        "wiki": "9timingdd9d1b86public1wiki",
+        "private": false,
+        "form_success_ms": 966,
+        "idle_before_ms": 0,
+        "form_http_timing": {
+          "startTime": 1792805354572.816,
+          "domainLookupStart": -1,
+          "domainLookupEnd": -1,
+          "connectStart": -1,
+          "secureConnectionStart": -1,
+          "connectEnd": -1,
+          "requestStart": 0.336,
+          "responseStart": 657.777,
+          "responseEnd": 658.418
+        },
+        "worker_start_after_submit_ms": 639,
+        "queue_wait_ms": 3,
+        "provisioning_after_worker_start_ms": 1832,
+        "provisioning_finished_after_submit_ms": 2471,
+        "provisioning_actual_ms": 1367,
+        "provisioning_completed_after_submit_ms": 2006,
+        "completion_observation_overhead_ms": 465,
+        "api_verification_ms": 260,
+        "stage_timings": null,
+        "metadata_source": "creator",
+        "verified_ready_after_submit_ms": 2732,
+        "api_check": "public siteinfo ready",
+        "batch": 4,
+        "mode": "prepared"
+      },
+      {
+        "wiki": "9timingdd9d1b86privatewiki",
+        "private": true,
+        "form_success_ms": 819,
+        "idle_before_ms": 0,
+        "form_http_timing": {
+          "startTime": 1792805357589.9958,
+          "domainLookupStart": -1,
+          "domainLookupEnd": -1,
+          "connectStart": -1,
+          "secureConnectionStart": -1,
+          "connectEnd": -1,
+          "requestStart": 0.313,
+          "responseStart": 700.763,
+          "responseEnd": 702.666
+        },
+        "worker_start_after_submit_ms": 663,
+        "queue_wait_ms": 3,
+        "provisioning_after_worker_start_ms": 1732,
+        "provisioning_finished_after_submit_ms": 2395,
+        "provisioning_actual_ms": 1706,
+        "provisioning_completed_after_submit_ms": 2369,
+        "completion_observation_overhead_ms": 26,
+        "api_verification_ms": 238,
+        "stage_timings": null,
+        "metadata_source": null,
+        "verified_ready_after_submit_ms": 2633,
+        "api_check": "anonymous read denied",
+        "batch": 4,
+        "mode": "separate_metadata_process"
+      },
+      {
+        "wiki": "9timingdd9d1b86public3wiki",
+        "private": false,
+        "form_success_ms": 1104,
+        "idle_before_ms": 0,
+        "form_http_timing": {
+          "startTime": 1792805360573.061,
+          "domainLookupStart": -1,
+          "domainLookupEnd": -1,
+          "connectStart": -1,
+          "secureConnectionStart": -1,
+          "connectEnd": -1,
+          "requestStart": 0.352,
+          "responseStart": 986.747,
+          "responseEnd": 987.776
+        },
+        "worker_start_after_submit_ms": 932,
+        "queue_wait_ms": 3,
+        "provisioning_after_worker_start_ms": 1757,
+        "provisioning_finished_after_submit_ms": 2689,
+        "provisioning_actual_ms": 1469,
+        "provisioning_completed_after_submit_ms": 2401,
+        "completion_observation_overhead_ms": 288,
+        "api_verification_ms": 214,
+        "stage_timings": null,
+        "metadata_source": "creator",
+        "verified_ready_after_submit_ms": 2903,
+        "api_check": "public siteinfo ready",
+        "batch": 4,
+        "mode": "prepared"
+      }
+    ],
+    "invocations": {
+      "9timing45c8a66epublic1wiki": {
+        "updater_invocations": 1,
+        "state": "complete",
+        "pending": false,
+        "dispatch_attempts": 1
+      },
+      "9timing45c8a66eprivatewiki": {
+        "updater_invocations": 1,
+        "state": "complete",
+        "pending": false,
+        "dispatch_attempts": 1
+      },
+      "9timing45c8a66epublic3wiki": {
+        "updater_invocations": 1,
+        "state": "complete",
+        "pending": false,
+        "dispatch_attempts": 1
+      },
+      "9timing2073840epublic1wiki": {
+        "updater_invocations": 1,
+        "state": "complete",
+        "pending": false,
+        "dispatch_attempts": 1
+      },
+      "9timing2073840eprivatewiki": {
+        "updater_invocations": 1,
+        "state": "complete",
+        "pending": false,
+        "dispatch_attempts": 1
+      },
+      "9timing2073840epublic3wiki": {
+        "updater_invocations": 1,
+        "state": "complete",
+        "pending": false,
+        "dispatch_attempts": 1
+      },
+      "9timingf0809c3bpublic1wiki": {
+        "updater_invocations": 1,
+        "state": "complete",
+        "pending": false,
+        "dispatch_attempts": 1
+      },
+      "9timingf0809c3bprivatewiki": {
+        "updater_invocations": 1,
+        "state": "complete",
+        "pending": false,
+        "dispatch_attempts": 1
+      },
+      "9timingf0809c3bpublic3wiki": {
+        "updater_invocations": 1,
+        "state": "complete",
+        "pending": false,
+        "dispatch_attempts": 1
+      },
+      "9timingdd9d1b86public1wiki": {
+        "updater_invocations": 1,
+        "state": "complete",
+        "pending": false,
+        "dispatch_attempts": 1
+      },
+      "9timingdd9d1b86privatewiki": {
+        "updater_invocations": 1,
+        "state": "complete",
+        "pending": false,
+        "dispatch_attempts": 1
+      },
+      "9timingdd9d1b86public3wiki": {
+        "updater_invocations": 1,
+        "state": "complete",
+        "pending": false,
+        "dispatch_attempts": 1
+      }
+    }
+  },
+  "schema_equivalence": {
+    "status": "passed",
+    "report_sha256": "d149568fd03ac83a56718933a38791cf70a8ca974433e6888939a052b1f7fb2c",
+    "cases": [
+      {
+        "mode": "two",
+        "variant": "public",
+        "wiki": "9provision8fc04ftwopublicwiki",
+        "table_count": 111,
+        "duration_ms": 2056,
+        "updater_invocations": 2,
+        "dispatch_attempts": 1
+      },
+      {
+        "mode": "two",
+        "variant": "private",
+        "wiki": "9provision8fc04ftwoprivatewiki",
+        "table_count": 111,
+        "duration_ms": 2408,
+        "updater_invocations": 2,
+        "dispatch_attempts": 1
+      },
+      {
+        "mode": "two",
+        "variant": "extra",
+        "wiki": "9provision8fc04ftwoextrawiki",
+        "table_count": 114,
+        "duration_ms": 2835,
+        "updater_invocations": 2,
+        "dispatch_attempts": 1
+      },
+      {
+        "mode": "two",
+        "variant": "schema",
+        "wiki": "9provision8fc04ftwoschemawiki",
+        "table_count": 114,
+        "duration_ms": 2146,
+        "updater_invocations": 2,
+        "dispatch_attempts": 1
+      },
+      {
+        "mode": "single",
+        "variant": "public",
+        "wiki": "9provision8fc04fsinglepublicwiki",
+        "table_count": 111,
+        "duration_ms": 785,
+        "updater_invocations": 1,
+        "dispatch_attempts": 1
+      },
+      {
+        "mode": "single",
+        "variant": "private",
+        "wiki": "9provision8fc04fsingleprivatewiki",
+        "table_count": 111,
+        "duration_ms": 1172,
+        "updater_invocations": 1,
+        "dispatch_attempts": 1
+      },
+      {
+        "mode": "single",
+        "variant": "extra",
+        "wiki": "9provision8fc04fsingleextrawiki",
+        "table_count": 114,
+        "duration_ms": 830,
+        "updater_invocations": 1,
+        "dispatch_attempts": 1
+      },
+      {
+        "mode": "single",
+        "variant": "schema",
+        "wiki": "9provision8fc04fsingleschemawiki",
+        "table_count": 114,
+        "duration_ms": 3314,
+        "updater_invocations": 1,
+        "dispatch_attempts": 1
+      }
+    ],
+    "checks": [
+      "complete normalized table schemas match",
+      "public/private settings and language",
+      "Comments extension and actor migrations",
+      "Cargo/Linter schemas",
+      "CheckUser index job and lookup",
+      "missing/partial metadata repair",
+      "only the two previously explained OAuth local timestamp markers differ"
+    ]
+  },
+  "oauth": {
+    "status": "passed",
+    "report_sha256": "ec5f653a7f90b4e9773da0ef031a666150d44a4be2611166da2196dbb202071d",
+    "checks": [
+      "shared database routing",
+      "OAuth 1 and 2 consumers and acceptance timestamp round-trips",
+      "schema equality and expected local marker differences"
+    ],
+    "cleanup_succeeded": true
+  },
+  "creation": {
+    "prefix": "9creationfc93a024",
+    "wikis": [
+      "9creationfc93a024smokewiki",
+      "9creationfc93a024privatewiki",
+      "9creationfc93a024uismokewiki"
+    ],
+    "status": "passed",
+    "updater_invocations": {
+      "9creationfc93a024smokewiki": 1,
+      "9creationfc93a024privatewiki": 1,
+      "9creationfc93a024uismokewiki": 1
+    },
+    "dispatch_attempts": {
+      "9creationfc93a024smokewiki": 1,
+      "9creationfc93a024privatewiki": 1,
+      "9creationfc93a024uismokewiki": 1
+    },
+    "checks": [
+      "public/private CreateWiki creation",
+      "browser-form creation",
+      "public API readiness",
+      "private API/file denial",
+      "cross-wiki login/logout",
+      "all provisioning markers cleared",
+      "exactly one updater invocation per fresh wiki"
+    ]
+  },
+  "private_metadata_repair": {
+    "wiki": "9creationfc93a024privatewiki",
+    "status": "passed",
+    "incomplete_metadata_http_status": 503,
+    "repaired_private_api": "readapidenied",
+    "private_file_protected": true,
+    "repair_updater_invocations": 1,
+    "metadata_source": "repair"
+  },
+  "final_state": {
+    "services": [
+      {
+        "Service": "counter",
+        "State": "running",
+        "Health": "healthy"
+      },
+      {
+        "Service": "database",
+        "State": "running",
+        "Health": "healthy"
+      },
+      {
+        "Service": "jobchron",
+        "State": "running",
+        "Health": "healthy"
+      },
+      {
+        "Service": "memcached",
+        "State": "running",
+        "Health": ""
+      },
+      {
+        "Service": "php",
+        "State": "running",
+        "Health": "healthy"
+      },
+      {
+        "Service": "provisioner",
+        "State": "running",
+        "Health": "healthy"
+      },
+      {
+        "Service": "redis",
+        "State": "running",
+        "Health": "healthy"
+      },
+      {
+        "Service": "scheduler",
+        "State": "running",
+        "Health": ""
+      },
+      {
+        "Service": "web",
+        "State": "running",
+        "Health": ""
+      },
+      {
+        "Service": "worker",
+        "State": "running",
+        "Health": "healthy"
+      }
+    ],
+    "queue": {
+      "pending_wikis": 0,
+      "pending_deliveries": 0
+    },
+    "provisioner_source_sha256": {
+      "provision.php": "5523bc0eb926bf22ebc8c8531e73cb650abe5e804317f02e26c3e62f0ebe899e",
+      "provision-metadata.php": "98e2bd9858f29151815fc20482bf5b94398e0ca403a23d40b09f33ca30d3b6b8",
+      "runtime.php": "7b9a88036282e6ce1583beb489e2c3b2140b365d8fa0365e3fcb8e1f56295ca0",
+      "prepare-wiki.php": "1166be1081f5cde5e3940382ffb6fd63c4902218f71222d6766034d5400db60e"
+    },
+    "benchmark_overrides_removed": true
+  }
+}

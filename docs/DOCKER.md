@@ -19,6 +19,23 @@ for coverage and the worker identifier fix.
 
 ## First local start
 
+Playwright is a pinned development dependency of the repository root. Install
+and run the browser tools from `www/`:
+
+```sh
+npm ci
+npm run playwright:install
+npm run test:browser
+npm run test:creation-timing
+```
+
+Local browser binaries persist in the ignored `docker/.browsers/` directory;
+there is no need to set a temporary browser path. Explicit
+`PLAYWRIGHT_BROWSERS_PATH` overrides are still supported, and CI keeps its
+standard browser cache. The browser tests are an npm workspace under
+`docker/tests`, sharing the root dependency installation and `package-lock.json`.
+`npx playwright test --list` also works directly from the root.
+
 Install and start Docker Desktop (Compose 2.24.4+ is required for the production override). Keep at least 20 GiB free on the drive holding Docker’s disk image; placing the checkout on another drive does not move Docker storage. The helper builds images sequentially to limit peak resource use. From the workspace root:
 
 ```sh
@@ -62,6 +79,43 @@ PHP, workers, the provisioner, and maintenance commands. The queue maintenance
 service receives the matching runner scripts. Caddy receives resources, extension
 assets and skins from that same directory. Uploads, caches, dumps and databases
 remain in their writable named volumes. The counter continues to use its image.
+
+### Container-local development provisioner
+
+On macOS, the provisioner can avoid repeated bind-mount reads while retaining
+live source updates. With `MW_ENV=development` and `MW_CODE_MODE=bind`, set
+`MW_PROVISIONER_SOURCE=sync` in `.env`, then run:
+
+```sh
+scripts/farm up
+# Keep this running in a second terminal while editing:
+scripts/farm watch-code
+```
+
+This requires Compose 2.32.2 or later. The provisioner initially copies the
+current checkout into container-local storage before receiving jobs. Compose
+Watch then sends file changes and deletions to a local staging directory.
+Publication takes an exclusive lock; the consumer holds the matching shared
+lock during each dispatch. An active creation finishes with its existing code,
+and the persistent consumer reloads before receiving work with the new code.
+Source edits do not restart the container or interrupt an active creation.
+The web container and other services retain their normal bind mounts.
+
+Uploads, caches, dumps, Git directories and credential files are excluded.
+`PrivateSettings.php` always points to the farm's runtime secret loader.
+The sync controller runs as root to update image-owned source; PHP jobs still
+run as `www-data`. Host input mounts are read-only and are used only to seed
+the local copy. Watch must remain running for subsequent edits to propagate;
+starting it again performs an initial reconciliation. Container recreation
+also seeds from the current checkout, so it does not depend on a stale image.
+
+PHP extensions and OS dependencies still require an image rebuild. Changes to
+the synchronization controller or Compose configuration require recreating the
+provisioner. Set `MW_PROVISIONER_SOURCE=bind` and recreate it to return to direct
+mounts. This mode is rejected outside development and never changes farm data.
+Run `python3 docker/tests/provisioner-source.py` for source publication checks.
+With Watch running, `python3 docker/tests/provisioner-sync.py` verifies real
+file creation, editing, deletion and publication waiting for a dispatch lock.
 
 The default production bind strategy (`MW_BIND_STRATEGY=versioned`) requires a
 prepared directory named for its full commit SHA,
@@ -164,6 +218,16 @@ heartbeat failure/recovery and graceful shutdown. It never targets an existing f
 
 `init` is explicit and rerunnable. A successful fresh seed is recorded; repeating it does not reset accounts or data. On a partial failure fix the cause and rerun. Ordinary startup never updates schemas. Fresh initialization also persists ManageWiki default permissions and namespaces, so metadata rebuilds preserve edit/upload access. The separate bootstrap config loads extension schemas without requiring a working farm cache. `scripts/farm update` explicitly updates every registered wiki and rebuilds metadata. Take a backup first.
 
+After a new wiki's registration commits, the creator prepares its shared-list and
+ManageWiki metadata using its existing services. The provisioner validates a
+receipt and launches the target updater directly. Missing or changed metadata
+retains the separate metawiki repair process. The provisioning log identifies
+the selected path as `Provisioning metadata: creator` or `repair`.
+See [the dispatch lifecycle](STREAM-DISPATCH.md) for handoff and recovery details.
+`npm run test:creation-timing` records this path alongside real creation timings;
+`python3 docker/tests/metadata.py FRESH_PRIVATE_FIXTURE` exercises the repair and
+HTTP privacy guard using a private fixture from `docker/tests/creation.py`.
+
 Core and CentralAuth sessions use persistent Redis storage in Docker. Migrating the legacy SQL session backend requires users to sign in again; signing keys and accounts are preserved.
 
 Workers block on Redis Streams and process bounded batches of signaled work. New wikis join automatically. CreateWiki publishes provisioning events; the dedicated provisioner installs their complete baseline and enabled-extension schemas before they serve traffic. Only these explicitly pending creations are initialized automatically. Existing wiki upgrades remain explicit. A single scheduler refreshes metadata hourly; no automatic wiki inactivity/deletion jobs are enabled. For an existing farm, carry over the inventoried production maintenance schedule in `docker/maintenance.json`. A new farm starts with the hourly metadata refresh; add other maintenance jobs deliberately. Each entry specifies a unique `name`, `interval_seconds` (at least 60), an argument-array `command`, and `per_wiki` to append the current wiki. Commands run without a shell. Logs go to `docker compose logs`; inspect service health with `docker compose ps`. A failed init, unhealthy PHP service, repeated worker failures, or growing job queue requires attention.
@@ -237,7 +301,7 @@ Rollback before accepting new writes: route traffic back to the original host or
 
 `docker/tests/smoke.py` covers wiki API routing, missing wikis, sensitive paths, and counter increments. `docker/tests/check-images.sh` checks image exclusions and the counter user. Run the full counter test suite inside the Linux image by mounting `Moe-Counter/test` at `/app/test`. The new real-SQLite test requires a native module matching its runtime; the copied host `node_modules` may be incompatible and is never included in an image.
 
-CI defines checkout completeness, immutable PHP syntax, Elastica, upstream CreateWiki/ManageWiki integration, full isolated catalogue/class-loading and skin asset checks, initialization twice, HTTP/browser and image checks, counter tests, and separate architecture builds. These configured gates still need to pass for the final candidate; workflow configuration is not executed evidence. Optional search testing is a manually selected job. The container shutdown check (`python3 docker/tests/counter-shutdown.py`) verifies that SIGTERM flushes a pending increment and that a replacement container can read it. The Playwright acceptance test (`npm ci --prefix docker/tests`, then `cd docker/tests && npx playwright install chromium && npm test`) checks browser login across all three local wikis, global logout, edits, Lua, uploads, thumbnails, newly created wikis, and anonymous private-file protection. Create fixtures first with `docker compose exec php php maintenance/run.php /opt/farm/test-fixtures.php --wiki=metawiki`. It scopes certificate bypass to the test browser; HTTP smoke tests independently validate the local CA. The job recovery check (`python3 docker/tests/jobs.py`) queues jobs on an existing and newly created wiki, restarts Redis, and verifies that the worker drains them. See [local verification results](VERIFICATION.md). For this new farm, rehearse fresh production initialization and backup/restore before public deployment. Migrating an existing farm additionally requires its actual backups and deployment inventory.
+CI defines checkout completeness, immutable PHP syntax, Elastica, upstream CreateWiki/ManageWiki integration, full isolated catalogue/class-loading and skin asset checks, initialization twice, HTTP/browser and image checks, counter tests, and separate architecture builds. These configured gates still need to pass for the final candidate; workflow configuration is not executed evidence. Optional search testing is a manually selected job. The container shutdown check (`python3 docker/tests/counter-shutdown.py`) verifies that SIGTERM flushes a pending increment and that a replacement container can read it. The Playwright acceptance test (`npm ci`, then `npm run playwright:install && npm run test:browser`) checks browser login across all three local wikis, global logout, edits, Lua, uploads, thumbnails, newly created wikis, and anonymous private-file protection. Create fixtures first with `docker compose exec php php maintenance/run.php /opt/farm/test-fixtures.php --wiki=metawiki`. It scopes certificate bypass to the test browser; HTTP smoke tests independently validate the local CA. The job recovery check (`python3 docker/tests/jobs.py`) queues jobs on an existing and newly created wiki, restarts Redis, and verifies that the worker drains them. See [local verification results](VERIFICATION.md). For this new farm, rehearse fresh production initialization and backup/restore before public deployment. Migrating an existing farm additionally requires its actual backups and deployment inventory.
 
 The candidate changes must be committed and pushed for the root GitHub workflow to run. MediaWiki, extensions, skins and bundled dependencies use ordinary tracked sources rather than unpublished embedded Git repositories. See [source preservation](VENDORED-SOURCES.md) and [clean-checkout/AMD64 evidence](UPGRADE-BUILD-VERIFICATION.md).
 

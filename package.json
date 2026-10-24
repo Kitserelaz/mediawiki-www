@@ -1,0 +1,13 @@
+{
+  "name": "cloudwiki-www",
+  "private": true,
+  "workspaces": ["docker/tests"],
+  "scripts": {
+    "playwright:install": "node scripts/playwright.cjs install chromium",
+    "test:browser": "node scripts/playwright.cjs test",
+    "test:creation-timing": "node scripts/playwright.cjs timing"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1"
+  }
+}

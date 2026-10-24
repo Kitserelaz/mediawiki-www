@@ -1,0 +1,288 @@
+{
+  "change": "farmWaitProcess uses blocked SIGCHLD plus sigwaitinfo/sigtimedwait instead of 100 ms process-status polling. The 500 ms lease heartbeat uses a monotonic deadline. SIGTERM/SIGINT remain unblocked.",
+  "focused_checks": [
+    "zero and nonzero exit codes",
+    "already-exited child",
+    "60 fast-exit race repetitions",
+    "unrelated child exits and independent exit status",
+    "heartbeat cadence for a running child",
+    "SIGTERM and SIGINT forwarding while blocked",
+    "heartbeat exception cleanup",
+    "originally blocked signals preserved"
+  ],
+  "microbenchmark": {
+    "method": "12 alternating pairs, identical PHP children sleeping 20 ms and writing hrtime immediately before exit. Observation delay is parent return minus child timestamp, including PHP shutdown. No lease callback in this controlled benchmark.",
+    "samples": [
+      {
+        "mode": "polling",
+        "round": 1,
+        "total_ms": 104.341959,
+        "exit_observation_ms": 65.04975
+      },
+      {
+        "mode": "signals",
+        "round": 1,
+        "total_ms": 35.920333,
+        "exit_observation_ms": 2.181708
+      },
+      {
+        "mode": "polling",
+        "round": 2,
+        "total_ms": 105.371625,
+        "exit_observation_ms": 73.320625
+      },
+      {
+        "mode": "signals",
+        "round": 2,
+        "total_ms": 35.216458,
+        "exit_observation_ms": 1.801917
+      },
+      {
+        "mode": "polling",
+        "round": 3,
+        "total_ms": 100.555459,
+        "exit_observation_ms": 69.080209
+      },
+      {
+        "mode": "signals",
+        "round": 3,
+        "total_ms": 34.882917,
+        "exit_observation_ms": 3.27075
+      },
+      {
+        "mode": "polling",
+        "round": 4,
+        "total_ms": 101.427625,
+        "exit_observation_ms": 67.559208
+      },
+      {
+        "mode": "signals",
+        "round": 4,
+        "total_ms": 41.392416,
+        "exit_observation_ms": 2.242625
+      },
+      {
+        "mode": "polling",
+        "round": 5,
+        "total_ms": 104.432208,
+        "exit_observation_ms": 73.999708
+      },
+      {
+        "mode": "signals",
+        "round": 5,
+        "total_ms": 38.584625,
+        "exit_observation_ms": 1.874458
+      },
+      {
+        "mode": "polling",
+        "round": 6,
+        "total_ms": 101.099958,
+        "exit_observation_ms": 71.043166
+      },
+      {
+        "mode": "signals",
+        "round": 6,
+        "total_ms": 34.905084,
+        "exit_observation_ms": 1.677084
+      },
+      {
+        "mode": "polling",
+        "round": 7,
+        "total_ms": 100.576459,
+        "exit_observation_ms": 68.923209
+      },
+      {
+        "mode": "signals",
+        "round": 7,
+        "total_ms": 36.176542,
+        "exit_observation_ms": 2.508708
+      },
+      {
+        "mode": "polling",
+        "round": 8,
+        "total_ms": 105.408833,
+        "exit_observation_ms": 76.168375
+      },
+      {
+        "mode": "signals",
+        "round": 8,
+        "total_ms": 34.32225,
+        "exit_observation_ms": 1.913792
+      },
+      {
+        "mode": "polling",
+        "round": 9,
+        "total_ms": 100.971208,
+        "exit_observation_ms": 70.62575
+      },
+      {
+        "mode": "signals",
+        "round": 9,
+        "total_ms": 54.426417,
+        "exit_observation_ms": 4.498459
+      },
+      {
+        "mode": "polling",
+        "round": 10,
+        "total_ms": 103.263041,
+        "exit_observation_ms": 68.606083
+      },
+      {
+        "mode": "signals",
+        "round": 10,
+        "total_ms": 37.329125,
+        "exit_observation_ms": 2.394
+      },
+      {
+        "mode": "polling",
+        "round": 11,
+        "total_ms": 104.581542,
+        "exit_observation_ms": 74.171917
+      },
+      {
+        "mode": "signals",
+        "round": 11,
+        "total_ms": 35.186625,
+        "exit_observation_ms": 1.9595
+      },
+      {
+        "mode": "polling",
+        "round": 12,
+        "total_ms": 101.170458,
+        "exit_observation_ms": 72.000083
+      },
+      {
+        "mode": "signals",
+        "round": 12,
+        "total_ms": 46.804958,
+        "exit_observation_ms": 3.255833
+      }
+    ],
+    "mean_exit_observation_ms": {
+      "polling": 70.87900691666667,
+      "signals": 2.4649028333333334
+    }
+  },
+  "stream_lifecycle": {
+    "project": "cloudwiki-stream-test-e7ea3654",
+    "passed_checks": [
+      "31 jobs coalesced into a durable signal; batch continuation drained all jobs",
+      "unacknowledged event reclaimed after a consumer disappeared",
+      "delayed release atomically woke a blocked worker",
+      "expired job claim recycled and dispatched without scanning wikis",
+      "lease heartbeats prevented another worker reclaiming active work",
+      "jobs arriving during execution were not stranded by signal coalescing",
+      "Redis restart retained the stream event and queued payload",
+      "blocked consumers reconnected and resumed after Redis restart",
+      "idle consumers blocked in Redis without launching empty PHP batches",
+      "invalid stream key rejected enqueue before mutating job payloads",
+      "malformed events quarantined without stopping normal consumers",
+      "durable provisioning event recovered even without a producer filesystem marker",
+      "blocking consumers exited cleanly on SIGTERM"
+    ],
+    "count": 13,
+    "status": "passed"
+  },
+  "fresh_creation": {
+    "samples": [
+      {
+        "wiki": "9timingd93e326bpublic1wiki",
+        "private": false,
+        "form_success_ms": 1528,
+        "idle_before_ms": 0,
+        "form_http_timing": {
+          "startTime": 1792803923675.811,
+          "domainLookupStart": -1,
+          "domainLookupEnd": -1,
+          "connectStart": -1,
+          "secureConnectionStart": -1,
+          "connectEnd": -1,
+          "requestStart": 0.346,
+          "responseStart": 645.849,
+          "responseEnd": 647.285
+        },
+        "worker_start_after_submit_ms": 637,
+        "queue_wait_ms": 4,
+        "provisioning_after_worker_start_ms": 1754,
+        "provisioning_finished_after_submit_ms": 2391,
+        "provisioning_actual_ms": 1582,
+        "provisioning_completed_after_submit_ms": 2219,
+        "completion_observation_overhead_ms": 172,
+        "api_verification_ms": 389,
+        "stage_timings": null,
+        "verified_ready_after_submit_ms": 2780,
+        "api_check": "public siteinfo ready"
+      },
+      {
+        "wiki": "9timingd93e326bprivatewiki",
+        "private": true,
+        "form_success_ms": 931,
+        "idle_before_ms": 0,
+        "form_http_timing": {
+          "startTime": 1792803926774.659,
+          "domainLookupStart": -1,
+          "domainLookupEnd": -1,
+          "connectStart": -1,
+          "secureConnectionStart": -1,
+          "connectEnd": -1,
+          "requestStart": 0.325,
+          "responseStart": 821.552,
+          "responseEnd": 822.756
+        },
+        "worker_start_after_submit_ms": 806,
+        "queue_wait_ms": 7,
+        "provisioning_after_worker_start_ms": 2299,
+        "provisioning_finished_after_submit_ms": 3105,
+        "provisioning_actual_ms": 1622,
+        "provisioning_completed_after_submit_ms": 2428,
+        "completion_observation_overhead_ms": 677,
+        "api_verification_ms": 186,
+        "stage_timings": null,
+        "verified_ready_after_submit_ms": 3291,
+        "api_check": "anonymous read denied"
+      },
+      {
+        "wiki": "9timingd93e326bpublic3wiki",
+        "private": false,
+        "form_success_ms": 813,
+        "idle_before_ms": 0,
+        "form_http_timing": {
+          "startTime": 1792803930258.991,
+          "domainLookupStart": -1,
+          "domainLookupEnd": -1,
+          "connectStart": -1,
+          "secureConnectionStart": -1,
+          "connectEnd": -1,
+          "requestStart": 0.301,
+          "responseStart": 712.956,
+          "responseEnd": 713.631
+        },
+        "worker_start_after_submit_ms": 719,
+        "queue_wait_ms": 3,
+        "provisioning_after_worker_start_ms": 1592,
+        "provisioning_finished_after_submit_ms": 2311,
+        "provisioning_actual_ms": 1493,
+        "provisioning_completed_after_submit_ms": 2212,
+        "completion_observation_overhead_ms": 99,
+        "api_verification_ms": 144,
+        "stage_timings": null,
+        "verified_ready_after_submit_ms": 2455,
+        "api_check": "public siteinfo ready"
+      }
+    ],
+    "status": "passed",
+    "method": "Sequential fresh wiki creations through Special:CreateWiki; login and form preparation excluded. Provisioning completion observed every 500 ms.",
+    "prefix": "9timingd93e326b",
+    "started": "2026-10-24T01:05:20.701Z",
+    "timing_clock": "Host monotonic duration; queue/start times use Redis stream/status timestamps, with legacy Docker volume file timestamps as fallback.",
+    "finished": "2026-10-24T01:05:32.662Z"
+  },
+  "mean_provisioning_ms": 1565.6666666666667,
+  "mean_verified_ready_ms": 2842,
+  "notes": [
+    "The disposable streams fixture now mounts the current S3 loader and explicitly disables S3, avoiding inherited local S3 settings and stale-image setup failures. No production storage settings changed.",
+    "The initial browser timing attempt lacked CreateWiki permission. The existing development-only test-fixtures maintenance script supplied its isolated docker-browser-fixture grant; its fresh-process permission check passed before rerunning.",
+    "End-to-end timing is sequential observational data, not a controlled performance comparison. The microbenchmark isolates exit observation more directly.",
+    "Playwright and its test workspace now share the pinned root dependency and lockfile. Local browsers persist in docker/.browsers, with explicit environment overrides and the existing CI cache retained."
+  ]
+}

@@ -120,6 +120,11 @@ jobs:
       run: python3 docker/tests/source-mounts.py
     - name: Syntax check complete immutable PHP runtime
       run: sh scripts/lint-php-image.sh
+    - name: Prepared provisioning metadata and interrupted handoff
+      run: docker run --rm --network none --user www-data
+        -e METADATA_LOCK_TEST_ISOLATED=1
+        -v "$PWD/docker/tests/prepared-metadata.php:/tmp/prepared-metadata-test.php:ro"
+        cloudwiki-php:local php /tmp/prepared-metadata-test.php
     - name: Elastica PHP 8 query compatibility
       run: docker compose run --rm --no-deps -v "$PWD/docker/tests/elastica.php:/opt/elastica-test.php:ro"
         init php /opt/elastica-test.php
@@ -168,12 +173,12 @@ jobs:
       with:
         node-version: '22'
         cache: npm
-        cache-dependency-path: docker/tests/package-lock.json
-    - run: npm ci --prefix docker/tests
+        cache-dependency-path: package-lock.json
+    - run: npm ci
     - uses: actions/cache@v4
       with:
         path: "~/.cache/ms-playwright"
-        key: "${{ runner.os }}-chromium-${{ hashFiles('docker/tests/package-lock.json')
+        key: "${{ runner.os }}-chromium-${{ hashFiles('package-lock.json')
           }}"
     - run: cd docker/tests && npx playwright install --with-deps chromium
     - run: |
@@ -251,6 +256,8 @@ jobs:
     - run: python3 docker/tests/jobs.py
     - name: Redis delayed jobs and interrupted-claim recovery
       run: python3 docker/tests/jobchron.py
+    - name: Immutable production provisioning concurrency and creator recovery
+      run: python3 docker/tests/provision-acceptance.py --image cloudwiki-php:local
     - if: failure()
       run: |
         docker compose logs --no-color --tail=100
@@ -299,12 +306,12 @@ jobs:
       with:
         node-version: '22'
         cache: npm
-        cache-dependency-path: docker/tests/package-lock.json
-    - run: npm ci --prefix docker/tests
+        cache-dependency-path: package-lock.json
+    - run: npm ci
     - uses: actions/cache@v4
       with:
         path: "~/.cache/ms-playwright"
-        key: "${{ runner.os }}-chromium-${{ hashFiles('docker/tests/package-lock.json')
+        key: "${{ runner.os }}-chromium-${{ hashFiles('package-lock.json')
           }}"
     - run: cd docker/tests && npx playwright install --with-deps chromium
     - name: Fresh production initialization with separate credentials

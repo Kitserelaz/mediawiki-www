@@ -35,7 +35,7 @@ try:
                     'DOCKER_FIXTURE_PREFIX=' + prefix, 'init', 'php',
                     'maintenance/run.php', '/opt/farm/test-fixtures.php', '--wiki=metawiki'],
                    cwd=ROOT, env=env, check=True)
-    subprocess.run(['node', 'node_modules/@playwright/test/cli.js', 'test',
+    subprocess.run(['node', str(ROOT / 'scripts/playwright.cjs'), 'test',
                     '--config', 'playwright.config.js', 'auth.spec.js', '--grep',
                     'browser login propagates|new public and private'],
                    cwd=ROOT / 'docker/tests', env=env, check=True)

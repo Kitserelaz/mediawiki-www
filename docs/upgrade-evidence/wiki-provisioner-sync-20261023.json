@@ -1,0 +1,76 @@
+{
+  "samples": [
+    {
+      "wiki": "9timingfea2fc3apublic1wiki",
+      "private": false,
+      "form_success_ms": 1462,
+      "worker_start_after_submit_ms": 1068,
+      "queue_wait_ms": 3,
+      "provisioning_after_worker_start_ms": 3646,
+      "provisioning_finished_after_submit_ms": 4714,
+      "provisioning_actual_ms": 3486,
+      "provisioning_completed_after_submit_ms": 4554,
+      "completion_observation_overhead_ms": 160,
+      "api_verification_ms": 257,
+      "stage_timings": null,
+      "verified_ready_after_submit_ms": 4971,
+      "api_check": "public siteinfo ready"
+    },
+    {
+      "wiki": "9timingfea2fc3aprivatewiki",
+      "private": true,
+      "form_success_ms": 1261,
+      "worker_start_after_submit_ms": 1175,
+      "queue_wait_ms": 2,
+      "provisioning_after_worker_start_ms": 2171,
+      "provisioning_finished_after_submit_ms": 3346,
+      "provisioning_actual_ms": 1507,
+      "provisioning_completed_after_submit_ms": 2682,
+      "completion_observation_overhead_ms": 664,
+      "api_verification_ms": 157,
+      "stage_timings": null,
+      "verified_ready_after_submit_ms": 3503,
+      "api_check": "anonymous read denied"
+    },
+    {
+      "wiki": "9timingfea2fc3apublic3wiki",
+      "private": false,
+      "form_success_ms": 1905,
+      "worker_start_after_submit_ms": 1783,
+      "queue_wait_ms": 2,
+      "provisioning_after_worker_start_ms": 2173,
+      "provisioning_finished_after_submit_ms": 3956,
+      "provisioning_actual_ms": 1622,
+      "provisioning_completed_after_submit_ms": 3405,
+      "completion_observation_overhead_ms": 551,
+      "api_verification_ms": 138,
+      "stage_timings": null,
+      "verified_ready_after_submit_ms": 4094,
+      "api_check": "public siteinfo ready"
+    }
+  ],
+  "status": "passed",
+  "method": "Sequential fresh wiki creations through Special:CreateWiki; login and form preparation excluded. Provisioning completion observed every 500 ms.",
+  "prefix": "9timingfea2fc3a",
+  "started": "2026-10-23T23:26:44.213Z",
+  "timing_clock": "Host monotonic duration; queue/start times use Redis stream/status timestamps, with legacy Docker volume file timestamps as fallback.",
+  "finished": "2026-10-23T23:27:00.563Z",
+  "source_sync": {
+    "checks": {
+      "create_sync_ms": 6729,
+      "active_job_source_unchanged": true,
+      "publish_after_job_ms": 5276,
+      "delete_sync_ms": 4828,
+      "status": "passed"
+    },
+    "method": "Compose Watch sync+exec to local staging; fair gate and dispatch lock protect publication; persistent PHP consumer reloads at dispatch boundaries. Host source is mounted read-only at /sync-input solely for startup/reconciliation. CLI OPcache remains disabled.",
+    "provisioner_source_paths": "Container writable layer, not host bind mounts",
+    "initialization": "First full copy took several minutes for 87,722 files. Subsequent changes publish incrementally; publication still scans the source trees.",
+    "previous_measurements": "Previous bind-mounted runs varied substantially (4.83\u201317.72s uninstrumented; 3.43\u201311.93s instrumented). These are sequential observations, not a controlled randomized comparison.",
+    "watch_command": "scripts/farm watch-code"
+  },
+  "summary": {
+    "mean_provisioning_ms": 2205,
+    "mean_verified_ready_ms": 4189.333333333333
+  }
+}

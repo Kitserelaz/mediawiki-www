@@ -1,16 +1,8 @@
 <?php
+require_once __DIR__ . '/provision-metadata.php';
 function farmEnv(string $key, string $default): string {
     $value = getenv($key);
     return $value === false || $value === '' ? $default : $value;
-}
-// Registered wikis must not fall back to public defaults while metadata is pending.
-function farmWikiMetadataIsComplete(string $wiki): bool {
-    $data = @include '/var/www/mediawiki/cw_cache/' . $wiki . '.php';
-    return is_array($data) && ($data['database'] ?? null) === $wiki
-        && isset($data['core']['wgLanguageCode'], $data['core']['wgSitename'], $data['states']['private'])
-        && is_array($data['extensions'] ?? null)
-        && is_array($data['settings'] ?? null)
-        && is_array($data['permissions'] ?? null);
 }
 if (farmEnv('MW_ENV', 'development') === 'production' && str_ends_with(farmEnv('MW_DOMAIN', 'localhost'), 'localhost')) { throw new RuntimeException('Production requires a public MW_DOMAIN'); }
 $domain = farmEnv('MW_DOMAIN', 'localhost');
@@ -103,15 +95,23 @@ function farmRuntime(): void {
     $wgCreateWikiDatabase = 'wikidb';
     $wgCreateWikiGlobalWiki = 'metawiki';
     $GLOBALS['wgHooks']['CreateWikiGenerateDatabaseLists'] = ['MirahezeFunctions::onGenerateDatabaseLists'];
-    $GLOBALS['wgHooks']['CreateWikiCreation']['docker-provision'] = static function (string $wiki, bool $private): void {
-        if (!preg_match('/^[a-z0-9][a-z0-9_]{0,63}$/D', $wiki)) { throw new RuntimeException('Invalid new wiki identifier'); }
-        require_once __DIR__ . '/dispatch.php';
-        $db = MediaWiki\MediaWikiServices::getInstance()->getConnectionProvider()
-            ->getPrimaryDatabase('virtual-createwiki');
-        // A stream consumer must never observe an uncommitted wiki registration.
-        $db->onTransactionCommitOrIdle(static function () use ($wiki): void {
-            FarmDispatch::provision(FarmDispatch::connect(), $wiki);
-        }, 'farmCreateWikiDispatch');
+    $GLOBALS['wgExtensionFunctions'][] = static function (): void {
+        // Runtime handlers follow the configured and extension-manifest handlers.
+        // ManageWiki must finish seeding defaults before an idle DB can publish.
+        MediaWiki\MediaWikiServices::getInstance()->getHookContainer()->register(
+            'CreateWikiCreation',
+            static function (string $wiki, bool $private): void {
+                if (!preg_match('/^[a-z0-9][a-z0-9_]{0,63}$/D', $wiki)) {
+                    throw new RuntimeException('Invalid new wiki identifier');
+                }
+                $services = MediaWiki\MediaWikiServices::getInstance();
+                $db = $services->getConnectionProvider()->getPrimaryDatabase('virtual-createwiki');
+                // Never publish before SQL registration and defaults are committed.
+                $db->onTransactionCommitOrIdle(static function () use ($services, $wiki): void {
+                    farmPublishPreparedWikiMetadata($services, $wiki);
+                }, 'farmCreateWikiDispatch');
+            }
+        );
     };
     $wgCreateWikiCacheDirectory = '/var/www/mediawiki/cw_cache';
     $GLOBALS['wgManageWikiCacheDirectory'] = $wgCreateWikiCacheDirectory;

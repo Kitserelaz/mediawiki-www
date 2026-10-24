@@ -1,3 +1,4 @@
+require('../../scripts/playwright-env.cjs');
 const { defineConfig } = require('@playwright/test');
 module.exports = defineConfig({
   testDir: '.',

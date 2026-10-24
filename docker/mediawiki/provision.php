@@ -16,12 +16,20 @@ $stop = static function () use (&$stopping, &$process): void {
     $stopping = true;
     if (is_resource($process)) { proc_terminate($process, SIGTERM); }
 };
-pcntl_signal(SIGTERM, $stop);
-pcntl_signal(SIGINT, $stop);
+pcntl_signal(SIGTERM, $stop, false);
+pcntl_signal(SIGINT, $stop, false);
 $env = getenv();
-// Refresh both the shared wiki list and complete metadata in a fresh process.
-// A complete per-wiki file alone does not mean the deferred wiki-list writer ran.
-{
+// The post-commit creator normally prepared this data using its existing services.
+// Missing, changed or partial metadata still takes the full fresh-process repair.
+$metadataSource = 'creator';
+$metadataLock = fopen($pending . '.metadata.lock', 'c');
+if (!is_resource($metadataLock) || !flock($metadataLock, LOCK_SH)) { exit(1); }
+$metadataReady = farmPreparedWikiMetadataIsCurrent($wiki);
+flock($metadataLock, LOCK_UN);
+fclose($metadataLock);
+if ($stopping) { exit(1); }
+if (!$metadataReady) {
+    $metadataSource = 'repair';
     $process = proc_open(['php', 'maintenance/run.php', '/opt/farm/prepare-wiki.php',
         '--wiki=metawiki', '--target=' . $wiki],
         [0 => ['file', '/dev/null', 'r'], 1 => STDOUT, 2 => STDERR], $pipes,
@@ -31,6 +39,7 @@ $env = getenv();
     if ($stopping || $status !== 0 || !farmWikiMetadataIsComplete($wiki)) { exit(1); }
 }
 if ($stopping) { exit(1); }
+file_put_contents($pending . '.log', "Provisioning metadata: $metadataSource\n", FILE_APPEND);
 // Install enabled-extension schemas once with the target wiki's full settings.
 $env['MW_BOOTSTRAP_DB'] = '';
 $process = proc_open(['php', 'maintenance/run.php', 'update', '--quick', '--wiki=' . $wiki,
@@ -41,4 +50,5 @@ if (!is_resource($process)) { exit(1); }
 $status = farmWaitProcess($process);
 $process = null;
 if ($stopping || $status !== 0) { exit(1); }
+@unlink($pending . '.metadata.json');
 unlink($pending);

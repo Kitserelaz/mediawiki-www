@@ -21,6 +21,9 @@ case "${1:-help}" in
     compose build web
     compose build counter ;;
   up) compose --profile dev up -d ;;
+  watch-code)
+    compose exec -T provisioner python3 /sync-control/provisioner-source.py reconcile
+    compose watch --no-up provisioner ;;
   reload-code) compose restart php worker provisioner jobchron scheduler web ;;
   init) shift; compose run --rm init php /opt/farm/manage.php fresh "$@" ;;
   init-production) shift; compose run --rm init php /opt/farm/manage.php fresh-production "$@" ;;
@@ -42,5 +45,5 @@ case "${1:-help}" in
     mkdir -p docker/secrets
     compose cp web:/data/caddy/pki/authorities/local/root.crt docker/secrets/local-ca.crt ;;
   smoke) exec python3 docker/tests/smoke.py ;;
-  *) printf '%s\n' 'Usage: scripts/farm [--env-file FILE] setup|setup-production --domain DOMAIN|prepare-source [--commit SHA --directory PATH]|compose ARGS|build|init|init-production|up|reload-code|preflight|update|refresh|list|snapshot [--keep-stopped] NAME|backup /backups/NAME|restore /backups/NAME|logs|stop|certificate|smoke' ;;
+  *) printf '%s\n' 'Usage: scripts/farm [--env-file FILE] setup|setup-production --domain DOMAIN|prepare-source [--commit SHA --directory PATH]|compose ARGS|build|init|init-production|up|watch-code|reload-code|preflight|update|refresh|list|snapshot [--keep-stopped] NAME|backup /backups/NAME|restore /backups/NAME|logs|stop|certificate|smoke' ;;
 esac

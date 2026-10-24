@@ -1,5 +1,5 @@
 {
+  "name": "cloudwiki-browser-tests",
   "private": true,
-  "scripts": {"test": "playwright test"},
-  "devDependencies": {"@playwright/test": "1.56.1"}
+  "scripts": {"test": "node ../../scripts/playwright.cjs test"}
 }

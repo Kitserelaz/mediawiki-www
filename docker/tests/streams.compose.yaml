@@ -2,6 +2,7 @@
 x-stream-source: &stream-source
   - ./docker/mediawiki:/opt/farm:ro
   - ./docker/mediawiki:/var/www/mediawiki/docker/mediawiki:ro
+  - ./mediawiki/S3Settings.php:/var/www/mediawiki/S3Settings.php:ro
   - ./mediawiki/includes/JobQueue/JobQueueRedis.php:/var/www/mediawiki/includes/JobQueue/JobQueueRedis.php:ro
   - ./docker/tests/jobchron.php:/opt/jobchron-test.php:ro
   - ./docker/tests/streams.php:/opt/streams-test.php:ro

@@ -166,7 +166,7 @@ abstract class UserGroupsSpecialPage extends SpecialPage {
 		$canChangeAny = array_any(
 			$groups,
 			static fn ( $group ) => $group['canAdd'] || $group['canRemove']
-		);
+		) || $this->canChangeAdditionalGroups();
 
 		$panel = $canChangeAny ?
 			$this->buildEditGroupsFormContent( $groups ) :
@@ -198,6 +198,27 @@ abstract class UserGroupsSpecialPage extends SpecialPage {
 	 */
 	protected function buildFormExtraInfo(): ?string {
 		return null;
+	}
+
+	/**
+	 * Returns additional fields to include alongside the user group checkboxes.
+	 * @return array<string,array<string,mixed>>
+	 */
+	protected function getAdditionalGroupFields(): array {
+		return [];
+	}
+
+	/**
+	 * Whether additional group fields can be changed by the current performer.
+	 */
+	protected function canChangeAdditionalGroups(): bool {
+		return false;
+	}
+
+	/**
+	 * Allows subclasses to add controls to the user groups form.
+	 */
+	protected function modifyGroupsForm( HTMLForm $form ): void {
 	}
 
 	/**
@@ -296,6 +317,7 @@ abstract class UserGroupsSpecialPage extends SpecialPage {
 		// so that it displays on the correct side, if present.
 		$formDescriptor += $unchangeableGroupFields;
 		$formDescriptor += $changeableGroupFields;
+		$formDescriptor += $this->getAdditionalGroupFields();
 
 		$formDescriptor['user-reason'] = [
 			'type' => 'text',
@@ -327,8 +349,9 @@ abstract class UserGroupsSpecialPage extends SpecialPage {
 			->setTitle( $this->getPageTitle() )
 			->setId( 'mw-userrights-form2' )
 			->setSubmitTextMsg( $this->msg( 'saveusergroups', $this->targetBareName ) )
-			->setSubmitName( 'saveusergroups' )
-			->prepareForm();
+			->setSubmitName( 'saveusergroups' );
+		$this->modifyGroupsForm( $htmlForm );
+		$htmlForm->prepareForm();
 		$form = $htmlForm->getHtml( true );
 
 		return new PanelLayout( [

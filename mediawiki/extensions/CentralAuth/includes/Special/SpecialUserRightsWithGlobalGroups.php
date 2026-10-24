@@ -11,6 +11,7 @@ use MediaWiki\Extension\CentralAuth\GlobalGroup\GlobalGroupManager;
 use MediaWiki\Extension\CentralAuth\User\CentralAuthUser;
 use MediaWiki\Extension\CentralAuth\User\CentralAuthUserHelper;
 use MediaWiki\Html\Html;
+use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\Language\FormatterFactory;
 use MediaWiki\Specials\SpecialUserRights;
 use MediaWiki\Status\Status;
@@ -30,6 +31,7 @@ use function wfAppendQuery;
  * Core user-rights page with CentralAuth global-group membership management.
  */
 class SpecialUserRightsWithGlobalGroups extends SpecialUserRights {
+	private ?CentralAuthUser $targetGlobalUser = null;
 
 	public function __construct(
 		UserGroupManagerFactory $userGroupManagerFactory,
@@ -71,6 +73,11 @@ class SpecialUserRightsWithGlobalGroups extends SpecialUserRights {
 			);
 		}
 		$saveStatus = null;
+		if ( $globalUserStatus && $globalUserStatus->isOK() ) {
+			'@phan-var CentralAuthUser $globalUser';
+			$globalUser = $globalUserStatus->getValue();
+			$this->targetGlobalUser = $globalUser;
+		}
 
 		if (
 			$globalUserStatus && $globalUserStatus->isOK() &&
@@ -113,7 +120,6 @@ class SpecialUserRightsWithGlobalGroups extends SpecialUserRights {
 			}
 		}
 
-		$this->getOutput()->addHTML( $this->buildGlobalGroupsPanel( $globalUser, $targetName ) );
 	}
 
 	private function saveGlobalGroups( CentralAuthUser $target ): Status {
@@ -126,7 +132,9 @@ class SpecialUserRightsWithGlobalGroups extends SpecialUserRights {
 		foreach ( $currentGroups as $group => $expiry ) {
 			$currentMemberships[$group] = new UserGroupMembership( $target->getId(), $group, $expiry );
 		}
-		if ( $this->conflictOccured( $currentMemberships ) ) {
+		if ( $this->getRequest()->getVal( 'conflictcheck-originalglobalgroups' ) !==
+			$this->makeConflictCheckKey( $currentMemberships )
+		) {
 			return Status::newFatal( 'userrights-conflict' );
 		}
 
@@ -170,80 +178,81 @@ class SpecialUserRightsWithGlobalGroups extends SpecialUserRights {
 		return Status::newGood();
 	}
 
-	private function buildGlobalGroupsPanel( CentralAuthUser $target, string $targetName ): string {
+	protected function getAdditionalGroupFields(): array {
+		if ( !$this->targetGlobalUser ) {
+			return [];
+		}
+
+		$target = $this->targetGlobalUser;
 		$currentGroups = $target->getGlobalGroupsWithExpiration();
 		$changeable = $this->globalGroupAssignmentService->getChangeableGroups(
 			$this->getAuthority(), $target
 		);
-		$canEdit = $changeable['add'] !== [] || $changeable['remove'] !== [];
-		$groups = $this->globalGroupManager->getDefinedGroups();
-		$output = Html::openElement( 'fieldset', [ 'class' => 'mw-userrights-global-groups' ] ) .
-			Html::element( 'legend', [], $this->msg( 'centralauth-userrights-globalgroups' )->text() );
+		$fields = [
+			'conflictcheck-originalglobalgroups' => [
+				'type' => 'hidden',
+				'name' => 'conflictcheck-originalglobalgroups',
+				'default' => $this->makeConflictCheckKey( $this->getCurrentGlobalMemberships( $target ) ),
+			],
+		];
 
-		if ( $canEdit ) {
-			$output .= Html::openElement( 'form', [
-				'action' => $this->getPageTitle()->getLocalURL(),
-				'method' => 'post',
-			] );
-			$output .= Html::hidden( 'user', $targetName );
-			$output .= Html::hidden( 'wpEditToken', $this->getUser()->getEditToken( $targetName ) );
-			$output .= Html::hidden(
-				'conflictcheck-originalgroups',
-				$this->makeConflictCheckKey( $this->getCurrentGlobalMemberships( $target ) )
-			);
-		}
-
-		if ( !$groups || ( !$canEdit && !$currentGroups ) ) {
-			$output .= Html::element( 'p', [], $this->msg( 'centralauth-userrights-globalgroups-none' )->text() );
-		}
-
-		foreach ( $groups as $group ) {
-			$member = array_key_exists( $group, $currentGroups );
-			$label = $this->getLanguage()->getGroupMemberName( $group, $target->getName() );
-			if ( !$canEdit ) {
-				if ( $member ) {
-					$output .= Html::element( 'p', [], $label );
-				}
-				continue;
-			}
-
-			$canChange = $member
-				? in_array( $group, $changeable['remove'], true )
-				: in_array( $group, $changeable['add'], true );
-			$id = 'globalgroup-' . $group;
-			$attributes = [
-				'type' => 'checkbox',
-				'name' => $id,
-				'id' => $id,
-				'value' => '1',
+		foreach ( $this->globalGroupManager->getDefinedGroups() as $group ) {
+			$isMember = array_key_exists( $group, $currentGroups );
+			$fields['globalgroup-' . $group] = [
+				'type' => 'check',
+				'name' => 'globalgroup-' . $group,
+				'id' => 'globalgroup-' . $group,
+				'default' => $isMember,
+				'label' => $this->getLanguage()->getGroupMemberName( $group, $target->getName() ),
+				'cssclass' => 'mw-userrights-groupcheckbox',
+				'disabled' => $isMember
+					? !in_array( $group, $changeable['remove'], true )
+					: !in_array( $group, $changeable['add'], true ),
 			];
-			if ( $member ) {
-				$attributes['checked'] = 'checked';
-			}
-			if ( !$canChange ) {
-				$attributes['disabled'] = 'disabled';
-			}
-			$output .= Html::rawElement( 'div', [ 'class' => 'mw-userrights-global-group' ],
-				Html::element( 'input', $attributes ) . Html::element( 'label', [ 'for' => $id ], $label )
-			);
 		}
 
-		if ( $canEdit ) {
-			$output .= Html::input(
-				'globalgroup-reason',
-				$this->getRequest()->getText( 'globalgroup-reason' ),
-				'text',
-				[ 'placeholder' => $this->msg( 'centralauth-userrights-globalgroups-reason' )->text() ]
-			);
-			$output .= Html::element( 'button', [
-				'type' => 'submit',
+		if ( $this->canChangeAdditionalGroups() ) {
+			$fields['globalgroup-reason'] = [
+				'type' => 'text',
+				'name' => 'globalgroup-reason',
+				'label' => $this->msg( 'centralauth-userrights-globalgroups-reason' )->text(),
+			];
+		}
+
+		return $fields;
+	}
+
+	protected function canChangeAdditionalGroups(): bool {
+		if ( !$this->targetGlobalUser ) {
+			return false;
+		}
+
+		$changeable = $this->globalGroupAssignmentService->getChangeableGroups(
+			$this->getAuthority(), $this->targetGlobalUser
+		);
+		return $changeable['add'] !== [] || $changeable['remove'] !== [];
+	}
+
+	protected function modifyGroupsForm( HTMLForm $form ): void {
+		if ( $this->canChangeAdditionalGroups() ) {
+			$form->addButton( [
 				'name' => 'saveglobalgroups',
 				'value' => '1',
-			], $this->msg( 'centralauth-userrights-globalgroups-save' )->text() );
-			$output .= Html::closeElement( 'form' );
+				'label-message' => 'centralauth-userrights-globalgroups-save',
+			] );
 		}
+	}
 
-		return $output . Html::closeElement( 'fieldset' );
+	protected function categorizeUserGroupsForDisplay( array $userGroups ): array {
+		$categories = parent::categorizeUserGroupsForDisplay( $userGroups );
+		if ( $this->targetGlobalUser ) {
+			$globalMemberships = $this->getCurrentGlobalMemberships( $this->targetGlobalUser );
+			$categories['userrights-groupsmember'] = array_merge(
+				$categories['userrights-groupsmember'],
+				array_values( $globalMemberships )
+			);
+		}
+		return $categories;
 	}
 
 	private function getCurrentGlobalMemberships( CentralAuthUser $target ): array {

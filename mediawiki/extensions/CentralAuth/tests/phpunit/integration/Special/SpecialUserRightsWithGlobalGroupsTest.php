@@ -51,17 +51,25 @@ class SpecialUserRightsWithGlobalGroupsTest extends SpecialPageTestBase {
 		$authority = new UltimateAuthority( $performer );
 		[ $html ] = $this->executeSpecialPage( $target->getName(), null, 'qqx', $authority );
 		$this->assertStringContainsString( 'globalgroup-userrights-global-test', $html );
+		$this->assertStringNotContainsString( 'mw-userrights-global-groups', $html );
+		$globalInputPosition = strpos( $html, "name='globalgroup-userrights-global-test'" );
+		$this->assertNotFalse( $globalInputPosition );
+		$formEndPosition = strpos( $html, '</form>', $globalInputPosition );
+		$this->assertNotFalse( $formEndPosition );
+		$this->assertLessThan( $formEndPosition, $globalInputPosition );
 
 		$request = new FauxRequest( [
 			'user' => $target->getName(),
 			'saveglobalgroups' => '1',
 			'globalgroup-userrights-global-test' => '1',
-			'conflictcheck-originalgroups' => '',
+			'conflictcheck-originalglobalgroups' => '',
 			'wpEditToken' => $performer->getEditToken( $target->getName() ),
 		], true );
 		$this->executeSpecialPage( $target->getName(), $request, 'qqx', $authority );
 
 		$centralUser->invalidateCache();
 		$this->assertSame( [ 'userrights-global-test' ], $centralUser->getGlobalGroups() );
+		[ $html ] = $this->executeSpecialPage( $target->getName(), null, 'qqx', $authority );
+		$this->assertStringContainsString( '(userrights-groupsmember: 1,', $html );
 	}
 }

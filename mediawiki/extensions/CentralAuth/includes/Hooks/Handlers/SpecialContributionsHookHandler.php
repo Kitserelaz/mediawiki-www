@@ -81,7 +81,7 @@ class SpecialContributionsHookHandler implements
 
 		$centralUser = CentralAuthUser::getInstance( $user );
 		if ( !$centralUser->exists() || !$centralUser->isAttached()
-			|| !$centralUser->isLocked() || $centralUser->isHidden()
+			|| ( !$centralUser->isLocked() && !$centralUser->isClosed() ) || $centralUser->isHidden()
 		) {
 			return true;
 		}
@@ -97,7 +97,7 @@ class SpecialContributionsHookHandler implements
 				'lim' => 1,
 				'showIfEmpty' => false,
 				'msgKey' => [
-					'centralauth-contribs-locked-log',
+					$centralUser->isClosed() ? 'centralauth-contribs-closed-log' : 'centralauth-contribs-locked-log',
 					$user->getName()
 				],
 				'offset' => '',
@@ -108,7 +108,7 @@ class SpecialContributionsHookHandler implements
 			// we couldn't load the log entry
 			$out->addHTML(
 				Html::warningBox(
-					$out->msg( 'centralauth-contribs-locked', $user->getName() )->parse(),
+					$out->msg( $centralUser->isClosed() ? 'centralauth-contribs-closed' : 'centralauth-contribs-locked', $user->getName() )->parse(),
 					'mw-warning-with-logexcerpt'
 				)
 			);

@@ -842,6 +842,30 @@ class CentralAuthUser implements IDBAccessObject {
 	}
 
 	/**
+	 * Returns whether the account is closed globally.
+	 * Schema changes are performed by the database updater, never by a read.
+	 */
+	public function isClosed(): bool {
+		if ( !$this->getId() ) {
+			return false;
+		}
+
+		$db = $this->getSafeReadDB();
+		if ( !$db->tableExists( 'global_account_closures', __METHOD__ ) ) {
+			return false;
+		}
+
+		$row = $db->newSelectQueryBuilder()
+			->select( 'gac_user_id' )
+			->from( 'global_account_closures' )
+			->where( [ 'gac_user_id' => $this->getId() ] )
+			->caller( __METHOD__ )
+			->fetchRow();
+
+		return $row !== false;
+	}
+
+	/**
 	 * Returns whether user name should not
 	 * be shown in public lists.
 	 * @return bool
@@ -2165,6 +2189,79 @@ class CentralAuthUser implements IDBAccessObject {
 	}
 
 	/**
+	 * Mark a global account as closed without locking it.
+	 *
+	 * @param string $reason Reason for the closure
+	 * @param IContextSource $context
+	 * @return StatusValue
+	 */
+	public function closeAccount( string $reason, IContextSource $context ): StatusValue {
+		if ( !$this->exists() ) {
+			return StatusValue::newFatal( 'closeaccount-no-global-account', $this->getName() );
+		}
+
+		if ( !$context->getAuthority()->isAllowed( 'close-account' ) ) {
+			return StatusValue::newFatal( 'centralauth-admin-not-authorized' );
+		}
+
+		$dbw = CentralAuthServices::getDatabaseManager()->getCentralPrimaryDB();
+		if ( !$dbw->tableExists( 'global_account_closures', __METHOD__ ) ) {
+			return StatusValue::newFatal( 'closeaccount-table-missing' );
+		}
+
+		if ( $this->isClosed() ) {
+			return StatusValue::newGood();
+		}
+
+		$dbw->newInsertQueryBuilder()
+			->insertInto( 'global_account_closures' )
+			->row( [
+				'gac_user_id' => $this->getId(),
+				'gac_original_name' => $this->getName(),
+				'gac_closed_name' => $this->getName(),
+				'gac_closed_by' => $context->getUser()->getName(),
+				'gac_timestamp' => $dbw->timestamp(),
+			] )
+			->caller( __METHOD__ )
+			->execute();
+
+		if ( $dbw->affectedRows() !== 1 ) {
+			return StatusValue::newFatal( 'closeaccount-already-closed', $this->getName() );
+		}
+
+		$this->invalidateCache();
+		return StatusValue::newGood();
+	}
+
+	public function restoreAccount( string $reason, IContextSource $context ): StatusValue {
+		if ( !$this->exists() ) {
+			return StatusValue::newFatal( 'closeaccount-no-global-account', $this->getName() );
+		}
+
+		if ( !$context->getAuthority()->isAllowed( 'close-account' ) ) {
+			return StatusValue::newFatal( 'centralauth-admin-not-authorized' );
+		}
+
+		$dbw = CentralAuthServices::getDatabaseManager()->getCentralPrimaryDB();
+		if ( !$dbw->tableExists( 'global_account_closures', __METHOD__ ) ) {
+			return StatusValue::newFatal( 'closeaccount-table-missing' );
+		}
+
+		if ( !$this->isClosed() ) {
+			return StatusValue::newGood();
+		}
+
+		$dbw->newDeleteQueryBuilder()
+			->deleteFrom( 'global_account_closures' )
+			->where( [ 'gac_user_id' => $this->getId() ] )
+			->caller( __METHOD__ )
+			->execute();
+
+		$this->invalidateCache();
+		return StatusValue::newGood();
+	}
+
+	/**
 	 * Set locking and hiding settings for a Global User and log the changes made.
 	 *
 	 * @param bool|null $setLocked
@@ -2563,9 +2660,9 @@ class CentralAuthUser implements IDBAccessObject {
 			return self::AUTHENTICATE_NO_USER;
 		}
 
-		// If the global account has been locked, we don't want to spam
+		// If the global account has been closed or locked, we don't want to spam
 		// other wikis with local account creations.
-		if ( $this->isLocked() ) {
+		if ( $this->isLocked() || $this->isClosed() ) {
 			return self::AUTHENTICATE_LOCKED;
 		}
 

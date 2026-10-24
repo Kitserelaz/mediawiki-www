@@ -5,7 +5,7 @@
  * @file
  */
 
-namespace MediaWiki\Extension\CentralAuth\Hooks\Handlers;
+namespace MediaWiki\Extension\GlobalAccountClosure\Hooks;
 
 use MediaWiki\Extension\CentralAuth\User\CentralAuthUser;
 use MediaWiki\Html\Html;
@@ -23,7 +23,6 @@ class SpecialContributionsHookHandler implements
 	ContributionsToolLinksHook,
 	SpecialContributionsBeforeMainOutputHook
 {
-
 	private NamespaceInfo $namespaceInfo;
 	private UserFactory $userFactory;
 	private UserNameUtils $userNameUtils;
@@ -38,44 +37,28 @@ class SpecialContributionsHookHandler implements
 		$this->userNameUtils = $userNameUtils;
 	}
 
-	/**
-	 * @param int $id User ID
-	 * @param Title $title User page title
-	 * @param array &$tools Array of tool links
-	 * @param SpecialPage $sp for context
-	 * @return bool|void
-	 */
+	/** @param int $id @param Title $title @param array &$tools @param SpecialPage $sp */
 	public function onContributionsToolLinks( $id, Title $title, array &$tools, SpecialPage $sp ) {
 		$user = $this->userFactory->newFromId( $id );
-		if ( !$user->isRegistered() ) {
+		if ( !$user->isRegistered() || $this->userNameUtils->getCanonical( $user->getName() ) === false ) {
 			return true;
 		}
-		if ( $this->userNameUtils->getCanonical( $user->getName() ) === false ) {
-			return true;
-		}
+
 		$centralUser = CentralAuthUser::getInstance( $user );
 		if ( !$centralUser->exists() || !$centralUser->isAttached() ) {
 			return true;
 		}
-		$linkRenderer = $sp->getLinkRenderer();
-		$tools['centralauth'] = $linkRenderer->makeKnownLink(
+
+		$tools['centralauth'] = $sp->getLinkRenderer()->makeKnownLink(
 			SpecialPage::getTitleFor( 'CentralAuth', $title->getText() ),
 			$sp->msg( 'centralauth-contribs-link' )->text(),
 			[ 'class' => 'mw-contributions-link-centralauth' ]
 		);
 	}
 
-	/**
-	 * @param int $id User ID
-	 * @param User $user
-	 * @param SpecialPage $sp
-	 * @return bool|void
-	 */
+	/** @param int $id @param User $user @param SpecialPage $sp */
 	public function onSpecialContributionsBeforeMainOutput( $id, $user, $sp ) {
-		if ( !$user->isRegistered() ) {
-			return true;
-		}
-		if ( $this->userNameUtils->getCanonical( $user->getName() ) === false ) {
+		if ( !$user->isRegistered() || $this->userNameUtils->getCanonical( $user->getName() ) === false ) {
 			return true;
 		}
 
@@ -105,10 +88,12 @@ class SpecialContributionsHookHandler implements
 		);
 
 		if ( $count === 0 ) {
-			// we couldn't load the log entry
 			$out->addHTML(
 				Html::warningBox(
-					$out->msg( $centralUser->isClosed() ? 'centralauth-contribs-closed' : 'centralauth-contribs-locked', $user->getName() )->parse(),
+					$out->msg(
+						$centralUser->isClosed() ? 'centralauth-contribs-closed' : 'centralauth-contribs-locked',
+						$user->getName()
+					)->parse(),
 					'mw-warning-with-logexcerpt'
 				)
 			);

@@ -2204,6 +2204,23 @@ class CentralAuthUser implements IDBAccessObject {
 			return StatusValue::newFatal( 'centralauth-admin-not-authorized' );
 		}
 
+		return $this->addClosure( $context->getUser()->getName() );
+	}
+
+	/**
+	 * Close this account after the owner confirms their global password.
+	 */
+	public function closeAccountWithPassword( string $password ): StatusValue {
+		if ( !$this->exists() || $this->isClosed() || $this->isLocked()
+			|| $this->authenticate( $password ) !== [ self::AUTHENTICATE_OK ]
+		) {
+			return StatusValue::newFatal( 'closemyaccount-invalid' );
+		}
+
+		return $this->addClosure( $this->getName() );
+	}
+
+	private function addClosure( string $closedBy ): StatusValue {
 		$dbw = CentralAuthServices::getDatabaseManager()->getCentralPrimaryDB();
 		if ( !$dbw->tableExists( 'global_account_closures', __METHOD__ ) ) {
 			return StatusValue::newFatal( 'closeaccount-table-missing' );
@@ -2219,7 +2236,7 @@ class CentralAuthUser implements IDBAccessObject {
 				'gac_user_id' => $this->getId(),
 				'gac_original_name' => $this->getName(),
 				'gac_closed_name' => $this->getName(),
-				'gac_closed_by' => $context->getUser()->getName(),
+				'gac_closed_by' => $closedBy,
 				'gac_timestamp' => $dbw->timestamp(),
 			] )
 			->caller( __METHOD__ )
@@ -2233,15 +2250,20 @@ class CentralAuthUser implements IDBAccessObject {
 		return StatusValue::newGood();
 	}
 
-	public function restoreAccount( string $reason, IContextSource $context ): StatusValue {
-		if ( !$this->exists() ) {
-			return StatusValue::newFatal( 'closeaccount-no-global-account', $this->getName() );
+	/**
+	 * Restore a closed account after the owner proves they know its global password.
+	 */
+	public function restoreAccountWithPassword( string $password ): StatusValue {
+		if ( !$this->exists() || !$this->isClosed() || $this->isLocked()
+			|| $this->authenticate( $password ) !== [ self::AUTHENTICATE_LOCKED ]
+		) {
+			return StatusValue::newFatal( 'restoreaccount-invalid' );
 		}
 
-		if ( !$context->getAuthority()->isAllowed( 'close-account' ) ) {
-			return StatusValue::newFatal( 'centralauth-admin-not-authorized' );
-		}
+		return $this->removeClosure();
+	}
 
+	private function removeClosure(): StatusValue {
 		$dbw = CentralAuthServices::getDatabaseManager()->getCentralPrimaryDB();
 		if ( !$dbw->tableExists( 'global_account_closures', __METHOD__ ) ) {
 			return StatusValue::newFatal( 'closeaccount-table-missing' );
@@ -2259,6 +2281,18 @@ class CentralAuthUser implements IDBAccessObject {
 
 		$this->invalidateCache();
 		return StatusValue::newGood();
+	}
+
+	public function restoreAccount( string $reason, IContextSource $context ): StatusValue {
+		if ( !$this->exists() ) {
+			return StatusValue::newFatal( 'closeaccount-no-global-account', $this->getName() );
+		}
+
+		if ( !$context->getAuthority()->isAllowed( 'close-account' ) ) {
+			return StatusValue::newFatal( 'centralauth-admin-not-authorized' );
+		}
+
+		return $this->removeClosure();
 	}
 
 	/**

@@ -64,8 +64,11 @@ class CentralAuthSecondaryAuthenticationProvider extends AbstractSecondaryAuthen
 		}
 
 		if ( $centralUser->canAuthenticate() === CentralAuthUser::AUTHENTICATE_LOCKED ) {
+			$messageKey = $centralUser->isClosed() && !$centralUser->isLocked()
+				? 'centralauth-login-error-closed'
+				: 'centralauth-login-error-locked';
 			return AuthenticationResponse::newFail(
-				wfMessage( 'centralauth-login-error-locked' )
+				wfMessage( $messageKey )
 					->params( wfEscapeWikiText( $centralUser->getName() ) ),
 				[ CentralAuthUser::AUTHENTICATE_LOCKED ]
 			);

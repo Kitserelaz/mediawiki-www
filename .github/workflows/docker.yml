@@ -164,7 +164,8 @@ jobs:
       with:
         group: all
         token: "${{ github.token }}"
-    - run: python3 scripts/setup-dev.py
+    - name: Prepare isolated development browser credentials
+      run: python3 scripts/setup-dev.py --discord-browser-fixtures
     - run: docker compose --profile dev up -d database redis memcached mailpit
     - run: scripts/farm init
     - run: scripts/farm init
@@ -199,6 +200,8 @@ jobs:
     - run: docker compose run --rm --no-deps --user www-data -v "$PWD/docker/tests/email.php:/opt/email-test.php:ro"
         init php maintenance/run.php /opt/email-test.php --wiki=testwiki
     - run: npm test --prefix docker/tests
+      env:
+        DISCORD_BROWSER_FIXTURES: '1'
     - run: |
         scripts/snapshot ci-restore
         COMPOSE_PROJECT_NAME=cloudwiki-restore docker compose up -d database memcached

@@ -112,8 +112,10 @@ test('OAuth transactions survive wiki session loss, reject another browser and c
   }
 });
 
-for (const {wiki, direct} of [{wiki:'meta'}, {wiki:'test'}, {wiki:'test', direct:true}]) {
-  test(`verified Discord signup returns directly to ${wiki} wiki${direct ? ' without a return token' : ''}`, async ({ page }) => {
+for (const {wiki, direct, retainCookies} of [
+  {wiki:'meta'}, {wiki:'test'}, {wiki:'test', direct:true}, {wiki:'test', retainCookies:true}
+]) {
+  test(`verified Discord signup returns directly to ${wiki} wiki${direct ? ' without a return token' : ''}${retainCookies ? ' with wiki cookies retained' : ''}`, async ({ page }) => {
     test.skip(process.env.DISCORD_BROWSER_FIXTURES !== '1', 'Explicit development fixture mode required');
     let authorization;
     await interceptDiscord(page, async (route, url, response) => {
@@ -135,9 +137,11 @@ for (const {wiki, direct} of [{wiki:'meta'}, {wiki:'test'}, {wiki:'test', direct
     const binding = (await page.context().cookies('https://auth.localhost'))
       .find(cookie => cookie.name === `__Host-discordAuth-${state}`);
     expect(Boolean(binding)).toBe(true);
-    // Delete all wiki session cookies before the callback. Only the OAuth binding survives.
-    await page.context().clearCookies();
-    await page.context().addCookies([binding]);
+    // Check both a normal OAuth round trip and loss of the originating wiki session.
+    if (!retainCookies) {
+      await page.context().clearCookies();
+      await page.context().addCookies([binding]);
+    }
     const { spawnSync } = require('node:child_process');
     const result = spawnSync('docker', ['compose', 'exec', '-T', 'php', 'php', 'maintenance/run.php',
       '/var/www/mediawiki/extensions/DiscordAuth/tests/maintenance/ExerciseAuthentication.php',

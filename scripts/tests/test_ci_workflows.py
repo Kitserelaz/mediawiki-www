@@ -92,6 +92,18 @@ class WorkflowTests(unittest.TestCase):
         restore=next(i for i,s in enumerate(steps) if s.get('run','').startswith('scripts/snapshot ci-restore'))
         self.assertLess(browser,restore)
 
+    def test_discord_fixtures_are_prepared_before_starting_only_the_development_farm(self):
+        steps = self.ci['jobs']['integration']['steps']
+        setup = next(i for i, s in enumerate(steps)
+                     if s.get('run') == 'python3 scripts/setup-dev.py --discord-browser-fixtures')
+        start = next(i for i, s in enumerate(steps) if s.get('run', '').startswith('docker compose --profile dev up'))
+        self.assertLess(setup, start)
+        browser = next(s for s in steps if s.get('run') == 'npm test --prefix docker/tests')
+        self.assertEqual(browser['env']['DISCORD_BROWSER_FIXTURES'], '1')
+        for name, job in self.ci['jobs'].items():
+            if name != 'integration':
+                self.assertFalse(any('--discord-browser-fixtures' in s.get('run', '') for s in job['steps']))
+
     def test_privileged_handoff_accepts_only_trusted_successful_pushes(self):
         prepare=self.deploy['jobs']['prepare']
         for condition in ["conclusion == 'success'", "event == 'push'", "head_branch == 'main'",'head_repository.full_name']:

@@ -43,6 +43,14 @@ reuse benefits subsequent matching builds.
 The existing browser checks run only in GitHub's disposable CI environment. This
 pipeline installs no browser automation on the VPS or an operator's computer.
 
+The development integration job explicitly runs `scripts/setup-dev.py
+--discord-browser-fixtures` before starting containers. This creates dummy Discord
+OAuth credentials only for a fresh CI farm, allowing the sign-in UI and signup
+fixtures to run while browser routes intercept authorization requests. Existing
+credentials are preserved and incompatible existing secret files cause a refusal.
+Production setup does not enable this fixture mode; empty OAuth credentials still
+disable the provider.
+
 ## Credentials and server setup
 
 The repository's `production` environment contains:

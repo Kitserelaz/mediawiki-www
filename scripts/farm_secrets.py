@@ -2,14 +2,27 @@
 import json, os, secrets, subprocess
 from pathlib import Path
 
-def create_secrets(p: Path):
+DISCORD_BROWSER_FIXTURES = {
+    'discord_client_id': '999999999999999999',
+    'discord_client_secret': 'cloudwiki-browser-fixture-not-a-real-discord-secret',
+}
+
+
+def create_secrets(p: Path, *, discord_browser_fixtures=False):
     p.mkdir(mode=0o700, parents=True, exist_ok=True)
     def write(name, value):
         file = p / name
         if not file.exists():
             fd = os.open(file, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
             with os.fdopen(fd, 'w') as out: out.write(value + '\n')
-    write('farm.json', json.dumps({'db_password': secrets.token_hex(24), 'secret_key': secrets.token_hex(32), 'upgrade_key': secrets.token_hex(16)}, indent=2))
+    runtime = {'db_password': secrets.token_hex(24), 'secret_key': secrets.token_hex(32), 'upgrade_key': secrets.token_hex(16)}
+    if discord_browser_fixtures:
+        runtime.update(DISCORD_BROWSER_FIXTURES)
+    write('farm.json', json.dumps(runtime, indent=2))
+    if discord_browser_fixtures:
+        configured = json.loads((p / 'farm.json').read_text())
+        if any(configured.get(key) != value for key, value in DISCORD_BROWSER_FIXTURES.items()):
+            raise ValueError('Discord browser fixtures require fresh development secrets; existing credentials were preserved')
     write('admin-password', secrets.token_urlsafe(24))
     write('db-root-password', secrets.token_hex(32))
     if not (p / 'oauth-private.key').exists():

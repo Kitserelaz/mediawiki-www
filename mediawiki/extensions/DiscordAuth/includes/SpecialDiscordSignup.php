@@ -76,18 +76,20 @@ class SpecialDiscordSignup extends SpecialCreateAccount {
 			parent::showSuccessPage( $type, $title, $msgname, $injected_html, $extraMessages );
 			return;
 		}
-		// Keep the normal completion hooks and CentralAuth's signed cross-wiki handoff,
-		// but never render the default welcome/return-to page after successful signup.
+		// Keep the normal completion hooks, but never render the default
+		// welcome/return-to page after successful signup.
 		$helper = new LoginHelper( $this->getContext() );
 		$helper->showReturnToPage( 'signup', $this->mReturnTo, $this->mReturnToQuery,
 			$this->mStickHTTPS, $this->mReturnToAnchor );
 		$out = $this->getOutput();
 		$out->clearHTML();
-		if ( $out->getRedirect() ) {
+		if ( $out->getRedirect() && !$this->getRequest()->getText( 'centralauthLoginToken' ) ) {
 			return;
 		}
-		// Direct shared-domain entry has no SUL3 return token. Its URL still identifies
-		// the originating wiki; resolve the destination from trusted farm metadata.
+		// OAuth can outlive the originating wiki session. Do not send a new account
+		// through a SUL3 return token bound to cookies which might no longer exist:
+		// a failed local handoff can invalidate the newly established central session.
+		// Start a fresh top-level autologin using only trusted farm metadata instead.
 		$target = Title::newFromText( $this->mReturnTo );
 		if ( !$target || $target->isExternal() || $target->isSpecial( 'DiscordLogin' )
 			|| $target->isSpecial( 'DiscordSignup' ) || $target->isSpecial( 'Userlogin' )

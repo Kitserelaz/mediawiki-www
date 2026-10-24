@@ -140,6 +140,7 @@ function farmRuntime(): void {
     $wgDebugLogFile = '';
     $wgDebugLogGroups = [];
     $wgDataDumpDirectory = farmEnv('MW_DUMP_DIRECTORY', '/var/www/dumps');
+    $GLOBALS['wgArchiveWikiImportDirectory'] = rtrim($wgDataDumpDirectory, '/') . '/archive-wiki-import';
     if (isset($wgDBname)) {
         $wgUploadDirectory = rtrim(farmEnv('MW_UPLOAD_ROOT', '/var/www/mediawiki/images'), '/') . '/' . $wgDBname;
         if (isset($GLOBALS['wgDataDump']['zip']['generate']['options'])) {

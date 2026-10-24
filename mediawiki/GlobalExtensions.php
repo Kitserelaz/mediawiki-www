@@ -4,6 +4,7 @@ wfLoadSkins( [
 ] );
 
 $farmExtensions = [
+    'ArchiveWikiImport',
     'AbuseFilter',
     'AntiSpoof',
     'BetaFeatures',

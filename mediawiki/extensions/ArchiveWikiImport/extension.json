@@ -1,0 +1,75 @@
+{
+	"name": "ArchiveWikiImport",
+	"version": "0.1.0",
+	"author": [
+		"CloudWiki contributors"
+	],
+	"descriptionmsg": "archivewikiimport-desc",
+	"license-name": "GPL-2.0-or-later",
+	"type": "specialpage",
+	"requires": {
+		"MediaWiki": ">= 1.46",
+		"platform": {
+			"php": ">= 8.1"
+		}
+	},
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\ArchiveWikiImport\\": "includes/"
+	},
+	"MessagesDirs": {
+		"ArchiveWikiImport": [
+			"i18n"
+		]
+	},
+	"SpecialPages": {
+		"ArchiveWikiImport": "MediaWiki\\Extension\\ArchiveWikiImport\\SpecialArchiveWikiImport",
+		"ArchiveWikiImportQueue": "MediaWiki\\Extension\\ArchiveWikiImport\\SpecialArchiveWikiImportQueue"
+	},
+	"JobClasses": {
+		"archiveWikiImport": {
+			"class": "MediaWiki\\Extension\\ArchiveWikiImport\\ImportJob",
+			"needsPage": false
+		}
+	},
+	"AvailableRights": [
+		"archivewikiimport"
+	],
+	"GroupPermissions": {
+		"sysop": {
+			"archivewikiimport": true
+		}
+	},
+	"ResourceModules": {
+		"ext.archiveWikiImport": {
+			"styles": [
+				"resources/import.css"
+			]
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "",
+		"remoteExtPath": "ArchiveWikiImport"
+	},
+	"config": {
+		"ArchiveWikiImportDirectory": {
+			"value": false,
+			"description": "Required private shared directory outside the web root, writable by web and job workers."
+		},
+		"ArchiveWikiImportMaxDownloadBytes": {
+			"value": 10737418240
+		},
+		"ArchiveWikiImportMaxExpandedBytes": {
+			"value": 53687091200
+		},
+		"ArchiveWikiImportMaxEntries": {
+			"value": 100000
+		},
+		"ArchiveWikiImportSevenZip": {
+			"value": "/usr/bin/7z"
+		},
+		"ArchiveWikiImportZstd": {
+			"value": "/usr/bin/zstd"
+		}
+	},
+	"manifest_version": 2
+}

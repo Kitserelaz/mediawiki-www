@@ -22,6 +22,8 @@ RUN pecl install apcu-5.1.28 \
     && docker-php-ext-enable apcu \
     && printf 'apc.shm_size=128M\n' > /usr/local/etc/php/conf.d/farm-apcu.ini \
     && rm -rf /tmp/pear
+RUN apt-get update && apt-get install -y --no-install-recommends p7zip-full zstd \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /var/www/mediawiki
 # Keep large dependency trees separate from frequently edited farm settings.
 # Linked source layers are reusable across architectures and PHP dependency updates.

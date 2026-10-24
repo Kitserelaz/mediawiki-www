@@ -1,3 +1,22 @@
 [
-  {"name": "refresh-farm-metadata", "interval_seconds": 3600, "command": ["php", "/opt/farm/manage.php", "refresh"], "per_wiki": false}
+  {
+    "name": "refresh-farm-metadata",
+    "interval_seconds": 3600,
+    "command": [
+      "php",
+      "/opt/farm/manage.php",
+      "refresh"
+    ],
+    "per_wiki": false
+  },
+  {
+    "name": "recover-archive-imports",
+    "interval_seconds": 60,
+    "command": [
+      "php",
+      "maintenance/run.php",
+      "/var/www/mediawiki/extensions/ArchiveWikiImport/maintenance/recoverImports.php"
+    ],
+    "per_wiki": true
+  }
 ]

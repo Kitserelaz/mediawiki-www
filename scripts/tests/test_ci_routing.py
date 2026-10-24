@@ -64,7 +64,7 @@ class RoutingTests(unittest.TestCase):
             self.assertEqual(diff.call_args.args[0][-2:], ['b'*40,'a'*40])
             self.assertIn('wiki=true',output.read_text())
 
-    def test_images_are_built_once_per_service_with_shared_farm_cache(self):
+    def test_images_are_built_once_per_service_with_isolated_caches(self):
         with tempfile.TemporaryDirectory() as directory:
             commands = []
             def build(command):
@@ -72,12 +72,15 @@ class RoutingTests(unittest.TestCase):
                 metadata = Path(command[command.index('--metadata-file') + 1])
                 metadata.write_text(json.dumps({'containerimage.digest': 'sha256:' + 'b' * 64}))
             with patch.dict(os.environ, {'GITHUB_EVENT_NAME':'push', 'GITHUB_REF':'refs/heads/main',
-                    'GITHUB_REPOSITORY':'Kitserelaz/mediawiki-www', 'GITHUB_SHA':'a' * 40}), patch.object(images, 'run', side_effect=build):
+                    'GITHUB_REPOSITORY':'Kitserelaz/mediawiki-www', 'GITHUB_SHA':'a' * 40}), \
+                    patch.object(images, 'input_key', return_value='c'*64), \
+                    patch.object(images, 'reusable_image', return_value=None), patch.object(images, 'run', side_effect=build):
                 images.build('farm', Path(directory))
             self.assertEqual(len(commands), 2)
             for command in commands:
                 self.assertIn('--push', command)
-                self.assertIn('type=gha,version=2,scope=cloudwiki-farm-amd64,mode=max', command)
+                service = command[command.index('--target')+1]
+                self.assertIn('type=gha,version=2,scope=cloudwiki-'+service+'-amd64,mode=max', command)
             manifest = json.loads((Path(directory) / 'farm.json').read_text())
             self.assertEqual(set(manifest), {'php', 'web'})
             self.assertIn('@sha256:', manifest['php']['image'])
@@ -89,8 +92,11 @@ class RoutingTests(unittest.TestCase):
                 commands.append(command)
                 Path(command[command.index('--metadata-file')+1]).write_text('{}')
             with patch.dict(os.environ, {'GITHUB_EVENT_NAME':'pull_request','GITHUB_REF':'refs/pull/1/merge',
-                    'GITHUB_REPOSITORY':'Kitserelaz/mediawiki-www','GITHUB_SHA':'a'*40}), patch.object(images,'run',side_effect=build):
+                    'GITHUB_REPOSITORY':'Kitserelaz/mediawiki-www','GITHUB_SHA':'a'*40}), \
+                    patch.object(images,'input_key',return_value='c'*64), \
+                    patch.object(images,'reusable_image') as reuse, patch.object(images,'run',side_effect=build):
                 images.build('counter',Path(directory))
+                reuse.assert_not_called()
             self.assertNotIn('--push',commands[0])
             self.assertEqual(json.loads((Path(directory)/'counter.json').read_text())['counter'],{'archive':'counter.tar'})
 

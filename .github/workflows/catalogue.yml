@@ -1,0 +1,100 @@
+---
+name: Advisory catalogue
+'on':
+  workflow_run:
+    workflows:
+    - Docker stack
+    types:
+    - completed
+permissions:
+  contents: read
+concurrency:
+  group: cloudwiki-catalogue-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: true
+jobs:
+  select:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+    if: "${{ !cancelled() && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.head_repository.full_name == github.repository }}"
+    outputs:
+      available: "${{ steps.images.outputs.available }}"
+    steps:
+    - name: Find tested farm images from the successful run
+      id: images
+      uses: actions/github-script@v7
+      with:
+        script: |-
+          const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts, {...context.repo, run_id: context.payload.workflow_run.id});
+          core.setOutput('available', artifacts.some(a => a.name === 'ci-images-farm' && !a.expired));
+  catalogue:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs:
+    - select
+    permissions:
+      contents: read
+      packages: read
+      actions: read
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: "${{ github.event.workflow_run.head_sha }}"
+        persist-credentials: false
+    - uses: actions/download-artifact@v4
+      with:
+        name: ci-images-farm
+        path: "${{ runner.temp }}/ci-images"
+        run-id: "${{ github.event.workflow_run.id }}"
+        github-token: "${{ github.token }}"
+    - uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: "${{ github.actor }}"
+        password: "${{ github.token }}"
+    - run: python3 scripts/ci-images.py load --directory "$RUNNER_TEMP/ci-images" --group farm
+    - run: python3 scripts/setup-dev.py
+    - name: Prepare isolated catalogue check farm
+      id: catalogue_setup
+      run: |
+        export COMPOSE_PROJECT_NAME=cloudwiki-catalogue-tests
+        docker compose -f compose.yaml -f docker/tests/upgrade-isolated.compose.yaml up -d --wait database redis memcached
+        docker compose -f compose.yaml -f docker/tests/upgrade-isolated.compose.yaml run --rm --no-deps init php /opt/farm/manage.php fresh
+        docker compose -f compose.yaml -f docker/tests/upgrade-isolated.compose.yaml run --rm --no-deps --user www-data -e MW_CONFIG_FILE=/opt/catalogue-settings.php -e MW_CATALOGUE_COMPONENT=extensions/DataTransfer/extension.json -e 'MW_CATALOGUE_EXTRA_COMPONENTS_JSON=["Highlight Links in Category"]' -v "$PWD/docker/tests/catalogue-settings.php:/opt/catalogue-settings.php:ro" -v "$PWD/docker/tests/legacy-linktarget.php:/opt/legacy-linktarget.php:ro" init php maintenance/run.php /opt/legacy-linktarget.php --wiki=testwiki
+    - name: Catalogue registration checks (advisory)
+      id: catalogue_registration
+      continue-on-error: true
+      env:
+        COMPOSE_PROJECT_NAME: cloudwiki-catalogue-tests
+      run: python3 scripts/check-catalogue.py --env-file .env --immutable --workers
+        1 --report-directory docker/tests/test-results/catalogue-registration
+    - name: Catalogue skin asset checks (advisory)
+      id: catalogue_skins
+      continue-on-error: true
+      env:
+        COMPOSE_PROJECT_NAME: cloudwiki-catalogue-tests
+      run: python3 scripts/check-catalogue.py --env-file .env --immutable --workers
+        1 --gate skin-render --report-directory docker/tests/test-results/catalogue-skins
+    - name: Report advisory catalogue failures
+      if: always() && (steps.catalogue_registration.outcome == 'failure' || steps.catalogue_skins.outcome
+        == 'failure')
+      run: |
+        echo '::warning::Catalogue checks failed. These checks are advisory and do not block deployment; inspect the catalogue-failure-evidence artifact.'
+        echo '### Catalogue checks: advisory failures' >> "$GITHUB_STEP_SUMMARY"
+        echo 'Deployment may proceed if all required checks pass. See the catalogue-failure-evidence artifact for component diagnostics.' >> "$GITHUB_STEP_SUMMARY"
+    - name: Stop isolated catalogue check farm
+      if: always()
+      env:
+        COMPOSE_PROJECT_NAME: cloudwiki-catalogue-tests
+      run: docker compose -f compose.yaml -f docker/tests/upgrade-isolated.compose.yaml
+        down
+    - name: Preserve catalogue diagnostics
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: catalogue-failure-evidence
+        path: docker/tests/test-results/catalogue-*/
+        if-no-files-found: ignore
+        retention-days: 7
+    if: "${{ !cancelled() && needs.select.outputs.available == 'true' }}"

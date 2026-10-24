@@ -15,7 +15,7 @@ class WorkflowTests(unittest.TestCase):
         def read(name):
             return json.loads(subprocess.check_output(['ruby','-ryaml','-rjson','-e',
                 'puts JSON.generate(YAML.load_file(ARGV[0]))',str(ROOT/'.github/workflows'/name)],text=True))
-        cls.ci=read('docker.yml'); cls.deploy=read('deploy.yml'); cls.arm=read('arm64.yml')
+        cls.ci=read('docker.yml'); cls.deploy=read('deploy.yml'); cls.arm=read('arm64.yml'); cls.catalogue=read('catalogue.yml')
 
     def test_cancel_ci_but_never_an_active_deployment(self):
         self.assertTrue(self.ci['concurrency']['cancel-in-progress'])
@@ -45,7 +45,7 @@ class WorkflowTests(unittest.TestCase):
 
     def test_every_selected_required_job_is_a_dependency_of_gate(self):
         jobs=self.ci['jobs']; gate=jobs['gate']
-        for required in ['checks','build','runtime','counter','integration','queues','upstream','catalogue','production']:
+        for required in ['checks','build','runtime','counter','integration','queues','upstream','production']:
             self.assertIn(required,gate['needs'])
         script=gate['steps'][0]['run']
         self.assertIn("results[name]['result'] != 'success'",script)
@@ -53,13 +53,38 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn('needs.gate.result',jobs['publish']['if'])
 
     def test_test_groups_are_independent_consumers_not_rebuilds(self):
-        for name in ['runtime','counter','integration','queues','upstream','catalogue','production']:
+        for name in ['runtime','counter','integration','queues','upstream','production']:
             job=self.ci['jobs'][name]
             self.assertEqual(job['needs'],['changes','build'])
             self.assertTrue(any(s.get('uses')=='./.github/actions/ci-images' for s in job['steps']))
             for step in job['steps']:
                 self.assertNotIn('scripts/farm build',step.get('run',''))
                 self.assertNotIn('docker buildx build',step.get('run',''))
+
+    def test_advisory_catalogue_cannot_delay_or_fail_release(self):
+        self.assertNotIn('catalogue', self.ci['jobs'])
+        self.assertNotIn('catalogue', self.ci['jobs']['gate']['needs'])
+        self.assertNotIn('catalogue', self.ci['jobs']['gate']['steps'][0]['run'])
+        trigger = self.catalogue['on']['workflow_run']
+        self.assertEqual(trigger['workflows'], ['Docker stack'])
+        self.assertEqual(trigger['types'], ['completed'])
+        select = self.catalogue['jobs']['select']
+        for condition in ["conclusion == 'success'", "event == 'push'", "head_branch == 'main'", 'head_repository.full_name']:
+            self.assertIn(condition, select['if'])
+        steps = self.catalogue['jobs']['catalogue']['steps']
+        self.assertEqual(steps[0]['with']['ref'], '${{ github.event.workflow_run.head_sha }}')
+        download = next(s['with'] for s in steps if s.get('uses') == 'actions/download-artifact@v4')
+        self.assertEqual(download['run-id'], '${{ github.event.workflow_run.id }}')
+        self.assertEqual(download['name'], 'ci-images-farm')
+        self.assertFalse(steps[0]['with']['persist-credentials'])
+        self.assertEqual(self.catalogue['jobs']['catalogue']['permissions']['packages'], 'read')
+
+    def test_only_gated_main_publish_can_promote_tested_image_cache(self):
+        publish = self.ci['jobs']['publish']
+        self.assertIn('gate', publish['needs'])
+        for condition in ["needs.gate.result == 'success'", "github.event_name == 'push'", "github.ref == 'refs/heads/main'"]:
+            self.assertIn(condition, publish['if'])
+        self.assertEqual(publish['permissions']['packages'], 'write')
 
     def test_restore_stays_after_browser_data_creation(self):
         steps=self.ci['jobs']['integration']['steps']

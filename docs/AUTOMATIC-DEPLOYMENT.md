@@ -1,17 +1,44 @@
 # Automatic production deployment
 
 Every push to `main` starts `.github/workflows/docker.yml`. Pull requests run CI
-without deployment. The integration job publishes its tested Linux/AMD64 PHP,
-web and counter images to `ghcr.io/kitserelaz/mediawiki-www-{php,web,counter}`,
-tagged with the complete commit SHA. Deployment also waits for both architecture
-checks to pass. Registry digests, rather than mutable tags, select production code.
+without deployment. The build jobs publish Linux/AMD64 PHP, web and counter images
+to `ghcr.io/kitserelaz/mediawiki-www-{php,web,counter}`, tagged with the complete
+commit SHA. Required runtime, integration, queue, upstream and production-rehearsal
+checks test those exact images before publication of the release manifest.
+Production selects immutable registry digests. ARM64 compatibility remains a
+separate, manually triggered workflow.
 
-Catalogue registration and skin asset checks are advisory: failures produce a
-workflow warning and summary, with full reports uploaded as
-`catalogue-failure-evidence`, but do not block image publication or deployment.
-Both checks run independently, so a registration failure does not skip skin
-checks. Preparing and cleaning up the isolated catalogue farm remain required.
-All other integration checks and both architecture checks still gate deployment.
+Catalogue registration and skin asset checks run in the separate **Advisory
+catalogue** workflow after a successful main CI run. It checks out that run's
+exact commit and downloads its `ci-images-farm` artifact, with read-only repository
+and registry credentials. Registration and skin checks run independently and
+upload `catalogue-failure-evidence`. Catalogue setup, checks, cleanup and failures
+cannot delay or change the result of the required CI or production deployment.
+Runs without farm image artifacts skip this advisory workflow's checks.
+
+## Build latency and tested image reuse
+
+PHP and web builds run concurrently on one BuildKit builder so shared PHP stages
+can be deduplicated. Each image has its own GitHub Actions cache scope, including
+separate scopes for the manually built ARM64 images. Builder removal is left to
+GitHub-hosted runner disposal, so builder cleanup does not delay image consumers.
+
+After all required checks pass, the trusted main publication job promotes each
+image to a `tested-inputs-HASH` registry cache tag. Counter inputs cover its entire
+Docker context and the image-building script. Farm inputs conservatively cover
+the entire tracked repository, including Dockerfiles, settings, source, dependency
+trees and the build script. A dirty tracked build context is rejected. Farm reuse
+therefore favors safety over skipping builds for documentation-only changes.
+
+When inputs match, CI resolves the tested tag to an immutable digest, verifies its
+input label and Linux/AMD64 platform, then reuses its filesystem layers in a
+metadata-only image build carrying the new candidate revision. Required checks
+still test the resulting images, and the production deployer's exact revision
+label check remains unchanged. Counter code does not rebuild for wiki-only edits.
+Missing, unavailable or invalid cache entries fall back to normal builds. A failed
+cache promotion leaves the tested release usable. Pull requests cannot reuse or
+promote the trusted registry cache. The first successful release warms this cache;
+reuse benefits subsequent matching builds.
 
 The existing browser checks run only in GitHub's disposable CI environment. This
 pipeline installs no browser automation on the VPS or an operator's computer.

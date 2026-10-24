@@ -62,6 +62,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - uses: docker/setup-buildx-action@v3
+      with:
+        # GitHub disposes this hosted VM; do not delay consumers removing its builder.
+        cleanup: false
     - name: Expose BuildKit cache credentials
       uses: actions/github-script@v7
       with:
@@ -276,65 +279,6 @@ jobs:
     - name: Pinned CreateWiki and ManageWiki upstream integration suite
       run: python3 scripts/test-upstream.py
     if: "${{ !cancelled() && (needs.changes.outputs.wiki == 'true') }}"
-  catalogue:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs:
-    - changes
-    - build
-    permissions:
-      contents: read
-      packages: read
-    steps:
-    - uses: actions/checkout@v4
-    - uses: "./.github/actions/ci-images"
-      with:
-        group: farm
-        token: "${{ github.token }}"
-    - run: python3 scripts/setup-dev.py
-    - name: Prepare isolated catalogue check farm
-      id: catalogue_setup
-      run: |
-        export COMPOSE_PROJECT_NAME=cloudwiki-catalogue-tests
-        docker compose -f compose.yaml -f docker/tests/upgrade-isolated.compose.yaml up -d --wait database redis memcached
-        docker compose -f compose.yaml -f docker/tests/upgrade-isolated.compose.yaml run --rm --no-deps init php /opt/farm/manage.php fresh
-        docker compose -f compose.yaml -f docker/tests/upgrade-isolated.compose.yaml run --rm --no-deps --user www-data -e MW_CONFIG_FILE=/opt/catalogue-settings.php -e MW_CATALOGUE_COMPONENT=extensions/DataTransfer/extension.json -e 'MW_CATALOGUE_EXTRA_COMPONENTS_JSON=["Highlight Links in Category"]' -v "$PWD/docker/tests/catalogue-settings.php:/opt/catalogue-settings.php:ro" -v "$PWD/docker/tests/legacy-linktarget.php:/opt/legacy-linktarget.php:ro" init php maintenance/run.php /opt/legacy-linktarget.php --wiki=testwiki
-    - name: Catalogue registration checks (advisory)
-      id: catalogue_registration
-      continue-on-error: true
-      env:
-        COMPOSE_PROJECT_NAME: cloudwiki-catalogue-tests
-      run: python3 scripts/check-catalogue.py --env-file .env --immutable --workers
-        1 --report-directory docker/tests/test-results/catalogue-registration
-    - name: Catalogue skin asset checks (advisory)
-      id: catalogue_skins
-      continue-on-error: true
-      env:
-        COMPOSE_PROJECT_NAME: cloudwiki-catalogue-tests
-      run: python3 scripts/check-catalogue.py --env-file .env --immutable --workers
-        1 --gate skin-render --report-directory docker/tests/test-results/catalogue-skins
-    - name: Report advisory catalogue failures
-      if: always() && (steps.catalogue_registration.outcome == 'failure' || steps.catalogue_skins.outcome
-        == 'failure')
-      run: |
-        echo '::warning::Catalogue checks failed. These checks are advisory and do not block deployment; inspect the catalogue-failure-evidence artifact.'
-        echo '### Catalogue checks: advisory failures' >> "$GITHUB_STEP_SUMMARY"
-        echo 'Deployment may proceed if all required checks pass. See the catalogue-failure-evidence artifact for component diagnostics.' >> "$GITHUB_STEP_SUMMARY"
-    - name: Stop isolated catalogue check farm
-      if: always()
-      env:
-        COMPOSE_PROJECT_NAME: cloudwiki-catalogue-tests
-      run: docker compose -f compose.yaml -f docker/tests/upgrade-isolated.compose.yaml
-        down
-    - name: Preserve catalogue diagnostics
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: catalogue-failure-evidence
-        path: docker/tests/test-results/catalogue-*/
-        if-no-files-found: ignore
-        retention-days: 7
-    if: "${{ !cancelled() && (needs.changes.outputs.wiki == 'true') }}"
   production:
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -434,7 +378,6 @@ jobs:
     - integration
     - queues
     - upstream
-    - catalogue
     - production
     - search
     permissions:
@@ -453,7 +396,7 @@ jobs:
         required = ['changes']
         if selection.get('checks') == 'true': required += ['checks']
         if selection.get('runtime') == 'true': required += ['build', 'counter']
-        if selection.get('wiki') == 'true': required += ['runtime', 'integration', 'queues', 'upstream', 'catalogue', 'production']
+        if selection.get('wiki') == 'true': required += ['runtime', 'integration', 'queues', 'upstream', 'production']
         if os.environ['SEARCH'] == 'true': required += ['search']
         failed = [name for name in required if results[name]['result'] != 'success']
         if failed: raise SystemExit('Required checks did not pass: ' + ', '.join(failed))
@@ -468,7 +411,7 @@ jobs:
     - gate
     permissions:
       contents: read
-      packages: read
+      packages: write
     steps:
     - uses: actions/checkout@v4
     - uses: actions/download-artifact@v4
@@ -476,6 +419,11 @@ jobs:
         pattern: ci-images-*
         merge-multiple: true
         path: "${{ runner.temp }}/ci-images"
+    - uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: "${{ github.actor }}"
+        password: "${{ github.token }}"
     - run: python3 scripts/ci-images.py release --directory "$RUNNER_TEMP/ci-images"
     - uses: actions/upload-artifact@v4
       with:

@@ -3,7 +3,6 @@
 namespace WikiOasis\WikiOasisMagic;
 
 use MediaWiki\Exception\ErrorPageError;
-use MediaWiki\Html\Html;
 use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\Message\Message;
 use MediaWiki\SpecialPage\FormSpecialPage;
@@ -182,10 +181,8 @@ class SpecialCreateNewWiki extends FormSpecialPage {
 			reason: $this->msg( 'createnewwiki-creation-reason' )->inContentLanguage()->text(),
 			extra: []
 		);
-		$this->getOutput()->addHTML(
-			Html::successBox(
-				$this->msg( 'createwiki-success' )->escaped()
-			)
+		$this->getOutput()->redirect(
+			$this->validator->getValidUrl( $formData['dbname'] . 'wiki' )
 		);
 		return true;
 	}

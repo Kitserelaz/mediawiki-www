@@ -121,6 +121,53 @@ class CentralAuthUserUsingDatabaseTest extends MediaWikiIntegrationTestCase {
 		$this->assertSame( CentralAuthUser::HIDDEN_LEVEL_SUPPRESSED, $caUser->getHiddenLevelInt() );
 	}
 
+	public function testCloseAndRestoreAccount(): void {
+		$caUser = CentralAuthUser::getPrimaryInstanceByName( $this->getTestCentralAuthUserWithExistingLocalWikis() );
+		$context = new DerivativeContext( RequestContext::getMain() );
+		$context->setAuthority( $this->mockRegisteredAuthorityWithPermissions( [ 'close-account' ] ) );
+		$this->assertFalse( $caUser->isClosed() );
+
+		$this->assertStatusGood( $caUser->closeAccount( 'test close', $context ) );
+		$this->assertTrue( $caUser->isClosed() );
+		$this->assertFalse( $caUser->isLocked() );
+		$this->assertSame( CentralAuthUser::AUTHENTICATE_LOCKED, $caUser->canAuthenticate() );
+		$this->assertStatusGood( $caUser->closeAccount( 'already closed', $context ) );
+
+		$this->assertStatusGood( $caUser->restoreAccount( 'test restore', $context ) );
+		$this->assertFalse( $caUser->isClosed() );
+		$this->assertTrue( $caUser->canAuthenticate() );
+		$this->assertStatusGood( $caUser->restoreAccount( 'already restored', $context ) );
+	}
+
+	public function testCloseAndRestoreRequirePermission(): void {
+		$caUser = CentralAuthUser::getPrimaryInstanceByName( $this->getTestCentralAuthUserWithExistingLocalWikis() );
+		$context = new DerivativeContext( RequestContext::getMain() );
+		$context->setAuthority( $this->mockRegisteredAuthorityWithPermissions( [] ) );
+		$this->assertStatusError( 'centralauth-admin-not-authorized', $caUser->closeAccount( 'test', $context ) );
+		$this->assertFalse( $caUser->isClosed() );
+		$allowed = new DerivativeContext( $context );
+		$allowed->setAuthority( $this->mockRegisteredAuthorityWithPermissions( [ 'close-account' ] ) );
+		$this->assertStatusGood( $caUser->closeAccount( 'test', $allowed ) );
+		$this->assertStatusError( 'centralauth-admin-not-authorized', $caUser->restoreAccount( 'test', $context ) );
+		$this->assertTrue( $caUser->isClosed() );
+		$this->assertStatusGood( $caUser->restoreAccount( 'cleanup', $allowed ) );
+	}
+
+	public function testClosureCheckWithoutMigrationIsReadOnly(): void {
+		$caUser = CentralAuthUser::getPrimaryInstanceByName( $this->getTestCentralAuthUserWithExistingLocalWikis() );
+		$this->assertTrue( $caUser->exists() );
+		$db = $this->createMock( \Wikimedia\Rdbms\Database::class );
+		$db->expects( $this->once() )->method( 'tableExists' )
+			->with( 'global_account_closures', $this->anything() )->willReturn( false );
+		$db->expects( $this->never() )->method( 'newSelectQueryBuilder' );
+		$manager = $this->createMock( \MediaWiki\Extension\CentralAuth\CentralAuthDatabaseManager::class );
+		$manager->method( 'isReadOnly' )->willReturn( true );
+		$manager->expects( $this->never() )->method( 'getCentralPrimaryDB' );
+		$manager->method( 'getCentralReplicaDB' )->willReturn( $db );
+		$this->setService( 'CentralAuth.CentralAuthDatabaseManager', $manager );
+		$this->assertFalse( $caUser->isClosed() );
+	}
+
 	public function testStoreMigrationData() {
 		$caUsers = [
 			'2001' => 'StoreMigrationDataUser 1',

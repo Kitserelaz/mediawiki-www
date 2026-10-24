@@ -45,7 +45,8 @@
 	"GrantPermissions": {
 		"setglobalaccountstatus": {
 			"centralauth-lock": true,
-			"centralauth-suppress": true
+			"centralauth-suppress": true,
+			"close-account": true
 		},
 		"createlocalaccount": {
 			"centralauth-createlocal": true
@@ -65,6 +66,7 @@
 		"centralauth-unmerge",
 		"centralauth-lock",
 		"disable-account",
+		"close-account",
 		"centralauth-suppress",
 		"globalgrouppermissions",
 		"globalgroupmembership",
@@ -118,6 +120,12 @@
 	"SpecialPages": {
 		"DisableAccount": {
 			"class": "MediaWiki\\Extension\\CentralAuth\\Special\\SpecialDisableAccount",
+			"services": [
+				"UserNameUtils"
+			]
+		},
+		"CloseAccount": {
+			"class": "MediaWiki\\Extension\\CentralAuth\\Special\\SpecialCloseAccount",
 			"services": [
 				"UserNameUtils"
 			]

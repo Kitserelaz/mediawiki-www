@@ -31,7 +31,7 @@ class PermissionsHookHandler implements GetUserPermissionsErrorsExpensiveHook {
 		if (
 			$centralUser->exists()
 			&& $centralUser->isAttached()
-			&& ( $centralUser->isLocked() || $centralUser->isHidden() )
+			&& ( $centralUser->isLocked() || $centralUser->isClosed() || $centralUser->isHidden() )
 		) {
 			$result = 'centralauth-error-locked';
 			return false;

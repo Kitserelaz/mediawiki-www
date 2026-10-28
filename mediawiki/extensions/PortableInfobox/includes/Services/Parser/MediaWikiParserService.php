@@ -37,8 +37,8 @@ class MediaWikiParserService implements ExternalParser {
 							'pwrap' => false,
 						],
 					],
-					// @phan-suppress-next-line PhanDeprecatedClassConstant
-					[ MainConfigNames::ParserEnableLegacyMediaDOM => false ]
+					// Older MediaWiki versions require this option; newer versions ignore it.
+					[ "ParserEnableLegacyMediaDOM" => false ]
 				)
 			);
 		}

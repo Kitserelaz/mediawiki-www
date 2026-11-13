@@ -15,6 +15,8 @@ use OOUI;
 
 class SpecialCreateNewWiki extends FormSpecialPage {
 
+	public const MAX_SITENAME_LENGTH = 128;
+
 	private CreateWikiDatabaseUtils $databaseUtils;
 	private WikiManagerFactory $wikiManagerFactory;
 	private CreateWikiValidator $validator;
@@ -37,6 +39,23 @@ class SpecialCreateNewWiki extends FormSpecialPage {
 	public function execute( $par ): void {
 		if ( !$this->databaseUtils->isCurrentWikiCentral() ) {
 			throw new ErrorPageError( 'errorpagetitle', 'createwiki-wikinotcentralwiki' );
+		}
+
+		$request = $this->getRequest();
+		if ( !$par && !$request->wasPosted() && $request->getVal( 'sitename' ) !== null ) {
+			$this->checkExecutePermissions( $this->getUser() );
+			$sitename = trim( $request->getText( 'sitename' ) );
+			if ( $sitename === '' || mb_strlen( $sitename ) > self::MAX_SITENAME_LENGTH ) {
+				$this->setHeaders();
+				$this->getOutput()->addWikiMsg( 'createnewwiki-inline-invalid-name', self::MAX_SITENAME_LENGTH );
+				return;
+			}
+			$error = $this->continueWithName( $sitename );
+			if ( $error ) {
+				$this->setHeaders();
+				$this->getOutput()->addHTML( $error->parseAsBlock() );
+			}
+			return;
 		}
 
 		parent::execute( $par );
@@ -135,17 +154,7 @@ class SpecialCreateNewWiki extends FormSpecialPage {
 	 */
 	public function onSubmit( array $formData ): bool|Message {
 		if ( $this->par !== 'wiki' ) {
-			$subdomain = $this->suggestSubdomain( $formData['sitename'] );
-			if ( $subdomain === null ) {
-				return $this->msg( 'createnewwiki-subdomain-unavailable' );
-			}
-
-			$this->getOutput()->redirect( $this->getPageTitle( 'wiki' )->getFullURL( [
-				'wpsitename' => trim( $formData['sitename'] ),
-				'wpdbname' => $subdomain,
-				'wpsubdomainauto' => '1',
-			] ) );
-			return true;
+			return $this->continueWithName( $formData['sitename'] ) ?? true;
 		}
 
 
@@ -187,11 +196,18 @@ class SpecialCreateNewWiki extends FormSpecialPage {
 		return true;
 	}
 
-	/**
-	 * Suggest a valid, currently available subdomain; final submission validates it again.
-	 */
-	private function suggestSubdomain( string $sitename ): ?string {
-		return ( new SubdomainSuggester( $this->validator ) )->suggest( $sitename );
+	private function continueWithName( string $sitename ): ?Message {
+		$subdomain = ( new SubdomainSuggester( $this->validator ) )->suggest( $sitename );
+		if ( $subdomain === null ) {
+			return $this->msg( 'createnewwiki-subdomain-unavailable' );
+		}
+
+		$this->getOutput()->redirect( $this->getPageTitle( 'wiki' )->getFullURL( [
+			'wpsitename' => $sitename,
+			'wpdbname' => $subdomain,
+			'wpsubdomainauto' => '1',
+		] ) );
+		return null;
 	}
 
 	public function isValidDatabase( ?string $dbname ): bool|string|Message {

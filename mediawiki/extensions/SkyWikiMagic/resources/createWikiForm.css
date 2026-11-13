@@ -1,0 +1,56 @@
+.mw-createwikiform {
+	display: flex;
+	align-items: flex-end;
+	gap: 0.5rem;
+	max-inline-size: 32rem;
+}
+
+.mw-createwikiform label {
+	display: grid;
+	flex: 1;
+	gap: 0.25rem;
+	min-inline-size: 0;
+	font-weight: bold;
+}
+
+.mw-createwikiform input[ type='text' ],
+.mw-createwikiform button {
+	box-sizing: border-box;
+	min-block-size: 44px;
+	padding: 0.5rem 0.75rem;
+	border: 1px solid var( --border-color-base, #72777d );
+	border-radius: var( --border-radius-base, 4px );
+	font: inherit;
+}
+
+.mw-createwikiform input[ type='text' ] {
+	inline-size: 100%;
+	background-color: var( --background-color-base, Canvas );
+	color: var( --color-base, CanvasText );
+	font-weight: normal;
+}
+
+.mw-createwikiform button {
+	border-color: transparent;
+	background-color: var( --background-color-progressive, #36c );
+	color: var( --color-inverted-fixed, #fff );
+	font-weight: bold;
+	cursor: pointer;
+}
+
+.mw-createwikiform button:hover {
+	background-color: var( --background-color-progressive--hover, #3056a9 );
+}
+
+.mw-createwikiform input:focus-visible,
+.mw-createwikiform button:focus-visible {
+	outline: 2px solid var( --color-progressive--focus, #36c );
+	outline-offset: 2px;
+}
+
+@media ( max-width: 480px ) {
+	.mw-createwikiform {
+		flex-direction: column;
+		align-items: stretch;
+	}
+}

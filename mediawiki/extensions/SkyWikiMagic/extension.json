@@ -66,6 +66,9 @@
 		}
 	},
 	"ResourceModules": {
+		"ext.skywiki.createWikiForm.styles": {
+			"styles": [ "resources/createWikiForm.css" ]
+		},
 		"ext.skywiki.createNewWiki": {
 			"scripts": [
 				"resources/createNewWiki.js"
@@ -92,6 +95,7 @@
 		"createnewwiki"
 	],
 	"Hooks": {
+		"ParserFirstCallInit": "CreateWikiForm",
 		"AuthChangeFormFields": {
 			"handler": "RegistrationHeader"
 		},
@@ -136,6 +140,10 @@
 		}
 	},
 	"HookHandlers": {
+		"CreateWikiForm": {
+			"class": "WikiOasis\\WikiOasisMagic\\HookHandlers\\CreateWikiForm",
+			"services": [ "CreateWikiDatabaseUtils" ]
+		},
 		"RegistrationHeader": {
 			"class": "WikiOasis\\WikiOasisMagic\\HookHandlers\\RegistrationHeader"
 		},

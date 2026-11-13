@@ -1,146 +1,80 @@
-const { ref, nextTick } = require( 'vue' );
-const { useSearchStore } = require( '../stores/searchStore.js' );
+const { ref, computed } = require( 'vue' );
 
 /**
- * Composable for handling keyboard navigation and focus within action buttons of a list item.
+ * Composable for managing focus across the action buttons of the
+ * currently highlighted result row. Exposes the same surface the
+ * keyboard composable expects (`isActive`, `focusedIndex`, plus the
+ * five focus/click helpers) and delegates to the row component's
+ * `focusFirstButton`, `focusButtonAtIndex`, and `clickButtonAtIndex`
+ * methods.
  *
- * @param {import('vue').Ref<Array<{id: string}>>} actionsRef Reactive reference to the list of actions for the item.
- * @param {import('vue').Ref<Record<string, HTMLElement|null>>} buttonRefs Reactive reference to the object mapping action IDs to DOM elements.
- * @param {Function} emit The component's emit function.
- * @return {Object} { handleActionButtonKeydown, onButtonFocus, focusFirstButton }
+ * @param {Object} options
+ * @param {import('vue').Ref<Array<{actions?: Array}>>} options.items Reactive list of result items.
+ * @param {import('vue').Ref<number>} options.highlightedIndex Index of the highlighted row.
+ * @param {import('vue').Ref<Map<number, Object>>} options.itemRefs Map of row index → row component instance.
+ * @return {Object} Action-navigation API.
  */
-function useActionNavigation( actionsRef, buttonRefs, emit ) {
-	const searchStore = useSearchStore();
-	const activeButtonId = ref( null );
+function useActionNavigation( { items, highlightedIndex, itemRefs } ) {
+	const focusedIndex = ref( -1 );
+	const isActive = computed( () => focusedIndex.value >= 0 );
 
-	/**
-	 * Focuses a button element, handling both Vue components and standard elements.
-	 *
-	 * @param {HTMLElement|{ $el: HTMLElement }} button The button element to focus.
-	 */
-	function focusButton( button ) {
-		if ( button?.$el ) { // For Codex CdxButton
-			button.$el.focus();
-		} else if ( typeof button?.focus === 'function' ) { // Fallback for standard elements
-			button.focus();
+	function getHighlightedComponent() {
+		return itemRefs.value.get( highlightedIndex.value );
+	}
+
+	function focusFirst() {
+		const item = getHighlightedComponent();
+		if ( item && item.focusFirstButton ) {
+			item.focusFirstButton();
+			focusedIndex.value = 0;
 		}
 	}
 
-	/**
-	 * Clicks a button element, handling both Vue components and standard elements.
-	 *
-	 * @param {HTMLElement|{ $el: HTMLElement }} button The button element to click.
-	 */
-	function clickButton( button ) {
-		if ( button?.$el ) { // For Codex CdxButton
-			button.$el.click();
-		} else if ( typeof button?.click === 'function' ) { // Fallback for standard elements
-			button.click();
-		}
-	}
-
-	/**
-	 * Focuses the first available action button based on the current order in actionsRef.
-	 */
-	function focusFirstButton() {
-		if ( actionsRef.value && actionsRef.value.length > 0 ) {
-			const firstActionId = actionsRef.value[ 0 ].id;
-			if ( firstActionId ) {
-				nextTick( () => {
-					const firstButton = buttonRefs.value[ firstActionId ];
-					if ( firstButton?.$el ) { // For Codex CdxButton
-						firstButton.$el.focus();
-					} else if ( typeof firstButton?.focus === 'function' ) { // Fallback for standard elements
-						firstButton.focus();
-					}
-				} );
+	function focusNext() {
+		const idx = highlightedIndex.value;
+		const list = items.value;
+		const actions = ( idx >= 0 && list[ idx ] ) ?
+			list[ idx ].actions || [] : [];
+		if ( focusedIndex.value < actions.length - 1 ) {
+			focusedIndex.value++;
+			const item = getHighlightedComponent();
+			if ( item && item.focusButtonAtIndex ) {
+				item.focusButtonAtIndex( focusedIndex.value );
 			}
 		}
 	}
 
-	/**
-	 * Handles keydown events specifically when focus is within the action buttons.
-	 *
-	 * @param {KeyboardEvent} event The keydown event.
-	 * @return {boolean} True if the event was handled, false otherwise.
-	 */
-	function handleActionButtonKeydown( event ) {
-		const currentActionId = activeButtonId.value;
-		if ( !currentActionId ) {
-			return false;
-		}
-
-		const actions = actionsRef.value;
-		const buttons = buttonRefs.value;
-		const currentButtonIndex = actions.findIndex( ( action ) => action.id === currentActionId );
-
-		if ( currentButtonIndex === -1 ) {
-			return false;
-		}
-
-		const keyAction = {
-			ArrowLeft: () => {
-				if ( currentButtonIndex === 0 ) {
-					emit( 'blur-actions' );
-					searchStore.triggerFocusSearchInput();
-				} else {
-					const prevActionId = actions[ currentButtonIndex - 1 ].id;
-					focusButton( buttons[ prevActionId ] );
-				}
-				return true;
-			},
-			ArrowRight: () => {
-				if ( currentButtonIndex < actions.length - 1 ) {
-					const nextActionId = actions[ currentButtonIndex + 1 ].id;
-					focusButton( buttons[ nextActionId ] );
-					return true;
-				}
-				return false;
-			},
-			ArrowUp: () => {
-				emit( 'blur-actions' );
-				emit( 'navigate-list', event );
-				searchStore.triggerFocusSearchInput();
-				return true;
-			},
-			ArrowDown: () => keyAction.ArrowUp(),
-			Enter: () => {
-				clickButton( buttons[ currentActionId ] );
-				return true;
-			},
-			' ': () => keyAction.Enter(),
-			Escape: () => {
-				emit( 'blur-actions' );
-				return true;
+	function focusPrevious() {
+		if ( focusedIndex.value <= 0 ) {
+			focusedIndex.value = -1;
+		} else {
+			focusedIndex.value--;
+			const item = getHighlightedComponent();
+			if ( item && item.focusButtonAtIndex ) {
+				item.focusButtonAtIndex( focusedIndex.value );
 			}
-		};
-
-		if ( keyAction[ event.key ] && keyAction[ event.key ]() ) {
-			event.preventDefault();
-			event.stopPropagation();
-			return true;
 		}
-		return false;
 	}
 
-	/**
-	 * Updates the ID of the currently focused action button and emits focus event.
-	 * Should be called from the button's focus handler.
-	 *
-	 * @param {string} actionId The ID of the action button that received focus.
-	 */
-	function onButtonFocus( actionId ) {
-		activeButtonId.value = actionId;
-		const actions = actionsRef.value;
-		const index = actions.findIndex( ( action ) => action.id === actionId );
-		const isFirst = index === 0;
-		emit( 'focus-action', { isFirst: isFirst, index: index } );
+	function deactivate() {
+		focusedIndex.value = -1;
+	}
+
+	function clickFocused() {
+		const item = getHighlightedComponent();
+		if ( item && item.clickButtonAtIndex ) {
+			item.clickButtonAtIndex( focusedIndex.value );
+		}
 	}
 
 	return {
-		handleActionButtonKeydown,
-		onButtonFocus,
-		focusFirstButton
+		isActive,
+		focusedIndex,
+		focusFirst,
+		focusNext,
+		focusPrevious,
+		deactivate,
+		clickFocused
 	};
 }
 

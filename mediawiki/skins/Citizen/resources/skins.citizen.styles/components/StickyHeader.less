@@ -16,7 +16,15 @@
 .citizen-sticky-header {
 	padding-inline: var( --padding-page );
 	border-bottom: var( --border-base );
-	.mixin-citizen-frosted-glass( citizen-sticky-header-backdrop, 0 );
+
+	// Need a separate background because backdrop-filter
+	// will apply to all elements inside the sticky header
+	&-background {
+		position: absolute;
+		inset: 0;
+		z-index: @z-index-bottom;
+		.mixin-citizen-frosted-glass( 0 );
+	}
 
 	&-container {
 		position: fixed;
@@ -25,13 +33,24 @@
 		left: 0;
 		z-index: @z-index-sticky;
 		visibility: hidden;
+		// Clear the site header when it occupies the top edge —
+		// --header-size-block-start is 0px in every other placement
+		margin-top: var( --header-size-block-start );
 		transform: translateY( -100% );
 		transition-timing-function: var( --transition-timing-function-ease-out );
 		transition-duration: var( --transition-duration-medium );
 		transition-property: transform, visibility;
 
+		// Below tablet this bar has nothing left to say. It carried the page
+		// title and a way back to the top; the contents control now carries the
+		// section you are in, and the page actions carry the actions.
+		@media ( max-width: @max-width-breakpoint-tablet ) {
+			display: none;
+		}
+
 		@media ( min-width: @min-width-breakpoint-desktop ) {
-			margin-left: var( --header-size );
+			margin-right: var( --header-size-inline-end );
+			margin-left: var( --header-size-inline-start );
 		}
 	}
 
@@ -74,8 +93,9 @@
 		}
 
 		&:hover {
-			.citizen-ui-icon {
+			.citizen-ui-icon.mw-ui-icon-wikimedia-arrowUp {
 				opacity: 1;
+				transform: none;
 			}
 
 			.citizen-sticky-header-page-info {
@@ -86,10 +106,10 @@
 		.citizen-ui-icon {
 			position: absolute;
 			opacity: 0;
-			transform: rotate( 90deg ) !important;
+			transform: translateX( -25% );
 			transition-timing-function: var( --transition-timing-function-ease );
 			transition-duration: var( --transition-duration-medium );
-			transition-property: opacity;
+			transition-property: opacity, transform;
 		}
 	}
 
@@ -137,19 +157,11 @@
 			right: calc( var( --space-xs ) * -1 );
 			max-width: 80vw;
 			max-height: 60vh;
-			transform-origin: var( --transform-origin-offset-end ) var( --transform-origin-offset-start );
+			.mixin-citizen-card-expand( down );
 
 			&-content {
 				padding-block: var( --space-xs );
 			}
-		}
-	}
-
-	// The buttons are not supposed to be focusable
-	.cdx-button {
-		&:focus {
-			border-color: transparent !important;
-			box-shadow: none !important;
 		}
 	}
 }
@@ -163,10 +175,8 @@
 	}
 }
 
-/*
- * T289817 `.mw-sticky-header-element` provides an API for template developers
- * to make their templates compatible with the Citizen sticky header.
- */
+// T289817 `.mw-sticky-header-element` provides an API for template developers
+// to make their templates compatible with the Citizen sticky header.
 .mw-sticky-header-element {
 	.mixin-citizen-sticky-header-element;
 }

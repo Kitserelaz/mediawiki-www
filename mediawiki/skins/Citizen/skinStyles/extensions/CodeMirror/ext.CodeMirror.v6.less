@@ -14,12 +14,17 @@
 	}
 
 	.cm-gutters {
-		font-size: var( --font-size-x-small );
+		// Same size as .mw-editfont-*, which CodeMirror puts on .cm-content rather than an ancestor of the gutters
+		font-size: var( --font-size-small );
 		background-color: transparent;
 		border-right-color: transparent;
 	}
 
 	.cm-scroller {
+		font-family: var( --font-family-monospace );
+	}
+
+	.cm-mw-keymap-key > kbd {
 		font-family: var( --font-family-monospace );
 	}
 }

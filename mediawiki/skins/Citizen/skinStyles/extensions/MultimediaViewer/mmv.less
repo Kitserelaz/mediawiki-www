@@ -7,6 +7,7 @@
 */
 
 @import '../../../resources/variables.less';
+@import '../../../resources/mixins.less';
 
 .mw-mmv {
 	&-post-image {
@@ -15,21 +16,34 @@
 		width: auto;
 		padding-block: var( --space-xs ) var( --space-md );
 		padding-inline: var( --space-md );
+		border-top: var( --border-base );
 		border-top-left-radius: var( --border-radius-medium );
 		border-top-right-radius: var( --border-radius-medium );
 		transform: ~'translateY( calc( var( --space-xs ) * -1 ) )'; // counteract top positioning
+		transition-timing-function: var( --transition-timing-function-ease );
+		transition-duration: var( --transition-duration-medium );
+		transition-property: background-color, border-color, color;
+		.mixin-citizen-frosted-glass;
 
 		&.mw-mmv-untruncated {
 			box-shadow: none;
 		}
 	}
 
+	// MMV sizes the image to the viewport minus this element's outer height,
+	// but clips it 86px above the viewport bottom, so the collapsed bar must
+	// measure 86px. The metadata row overlaps MMV's 30px padding-bottom
+	// through the negative margin.
 	&-above-fold {
 		display: flex;
 		gap: var( --space-md );
 		align-items: center;
 		height: auto;
-		padding-bottom: 0;
+		min-height: 86px;
+		margin-bottom: -30px;
+		transition-timing-function: var( --transition-timing-function-ease );
+		transition-duration: var( --transition-duration-medium );
+		transition-property: min-height, margin, padding, border;
 	}
 
 	&-progress {
@@ -189,11 +203,71 @@
 			}
 		}
 	}
+
+	&-dialog {
+		// Prevent the dialog from being too wide on mobile
+		// 66px is the right offset of mw-mmv-dialog
+		max-width: calc( 100vw - 66px - var( --padding-page ) );
+		background-color: var( --color-surface-1 );
+		border: var( --border-base );
+		border-radius: var( --border-radius-base );
+
+		// MMV assumes a fixed 450px dialog, so its flex rows squeeze the
+		// buttons once the dialog is narrowed.
+		// TODO: Remove once the minimum supported MMV guards these rows itself.
+		.cdx-button {
+			flex-shrink: 0;
+		}
+
+		.cdx-text-input,
+		.cdx-select {
+			min-width: 0;
+		}
+	}
+}
+
+// These sit on MMV's black overlay in every theme
+.mw-mmv-button,
+.mw-mmv-post-image:not( .mw-mmv-untruncated ) {
+	color-scheme: dark;
+}
+
+// citizen-v4-remove — legacy tokens resolve to plain values at :root, so
+// color-scheme cannot flip them. Pin dark values on these subtrees instead.
+:root:not( .citizen-v4 ) {
+	.mw-mmv-button,
+	.mw-mmv-post-image:not( .mw-mmv-untruncated ) {
+		--color-base: ~'hsl( var( --color-progressive-hsl__h ), 45%, 80% )';
+		--color-emphasized: ~'hsl( var( --color-progressive-hsl__h ), 80%, 95% )';
+		--color-subtle: ~'hsl( var( --color-progressive-hsl__h ), 35%, 65% )';
+		--color-progressive: ~'hsl( var( --color-progressive-hsl__h ), 70%, 71% )';
+		--color-link: var( --color-progressive );
+		--color-link--hover: ~'hsl( var( --color-progressive-hsl__h ), 82%, 80% )';
+		--color-link--active: ~'hsl( var( --color-progressive-hsl__h ), 84%, 86% )';
+		--color-visited: var( --color-link );
+		--color-visited--hover: var( --color-link--hover );
+		--color-visited--active: var( --color-link--active );
+		--color-destructive: hsl( 349, 88%, 72% );
+		--color-destructive--hover: hsl( 351, 82%, 81% );
+		--color-destructive--active: hsl( 353, 74%, 88% );
+		--color-destructive--visited: var( --color-destructive );
+		--color-destructive--visited--hover: var( --color-destructive--hover );
+		--color-destructive--visited--active: var( --color-destructive--active );
+		--outline-color-progressive--focus: var( --color-progressive );
+		--border-color-progressive--focus: var( --color-progressive );
+		--box-shadow-color-progressive--focus: var( --color-progressive );
+		--border-color-interactive: rgba( 255, 255, 255, 0.11 );
+		--background-color-button-quiet--hover: rgba( 255, 255, 255, 0.04 );
+		--background-color-button-quiet--active: rgba( 255, 255, 255, 0.08 );
+	}
 }
 
 .mw-mmv-post-image:not( .mw-mmv-untruncated ) {
-	color: ~'hsl( var( --color-progressive-hsl__h ), 45%, 80% )'; // color-base in dark mode
+	color: var( --color-base );
 	background-color: transparent;
+	border-color: transparent;
+	-webkit-backdrop-filter: none;
+	backdrop-filter: none;
 
 	.mw-mmv {
 		&-title-para {
@@ -203,7 +277,6 @@
 
 		&-title {
 			overflow: hidden;
-			color: ~'hsl( var( --color-progressive-hsl__h ), 80%, 95% )';
 		}
 
 		&-stripe-button.mw-mmv-description-page-button {
@@ -211,7 +284,7 @@
 
 			&.cdx-button.cdx-button--fake-button--enabled.cdx-button--weight-primary.cdx-button--action-progressive {
 				background-color: transparent;
-				border-color: rgba( 255, 255, 255, 0.11 ); // border-color-interactive in dark mode
+				border-color: var( --border-color-interactive );
 
 				&:hover {
 					background-color: var( --background-color-button-quiet--hover );
@@ -225,7 +298,7 @@
 
 		&-credit,
 		&-image-links {
-			color: ~'hsl( var( --color-progressive-hsl__h ), 35%, 65% )'; // color-subtle in dark mode
+			color: var( --color-subtle );
 		}
 
 		&-image-links li.mw-mmv-license-li {
@@ -237,6 +310,7 @@
 .mw-mmv-untruncated {
 	.mw-mmv {
 		&-above-fold {
+			min-height: 56px; // MMV's own value, which its panel scroll position reads
 			padding-bottom: var( --space-xs );
 			margin-bottom: var( --space-md );
 			border-bottom: 1px solid var( --border-color-base );

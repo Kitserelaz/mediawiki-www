@@ -12,8 +12,6 @@
 			class="citizen-command-palette-list-item__action"
 			v-bind="getButtonAttributes( action )"
 			@click="handleActionClick( action, $event )"
-			@focus="onButtonFocus( action.id )"
-			@keydown="handleActionButtonKeydown"
 		>
 			<cdx-icon
 				:icon="action.icon"
@@ -25,10 +23,8 @@
 </template>
 
 <script>
-const { defineComponent, ref, computed, onBeforeUpdate } = require( 'vue' );
-const { CdxIcon, CdxButton } = mw.loader.require( 'skins.citizen.commandPalette.codex' );
-const { CommandPaletteActionEvent } = require( '../types.js' );
-const useActionNavigation = require( '../composables/useActionNavigation.js' );
+const { defineComponent, ref, onBeforeUpdate, nextTick } = require( 'vue' );
+const { CdxIcon, CdxButton } = require( '../../../codex.js' );
 
 // @vue/component
 module.exports = exports = defineComponent( {
@@ -51,12 +47,9 @@ module.exports = exports = defineComponent( {
 			required: true
 		}
 	},
-	emits: [ 'action', 'navigate-list', 'focus-action', 'blur-actions' ],
+	emits: [ 'action' ],
 	setup( props, { emit, expose } ) {
 		const buttonRefs = ref( {} );
-
-		const { handleActionButtonKeydown, onButtonFocus, focusFirstButton, focusLastButton } =
-			useActionNavigation( computed( () => props.actions ), buttonRefs, emit );
 
 		const getButtonAttributes = ( action ) => {
 			const isLink = !!action.url;
@@ -90,6 +83,34 @@ module.exports = exports = defineComponent( {
 			}
 		};
 
+		const focusButtonAtIndex = ( index ) => {
+			if ( index < 0 || index >= props.actions.length ) {
+				return;
+			}
+			const actionId = props.actions[ index ].id;
+			const button = buttonRefs.value[ actionId ];
+			nextTick( () => {
+				if ( button && button.$el ) {
+					button.$el.focus();
+				} else if ( button && typeof button.focus === 'function' ) {
+					button.focus();
+				}
+			} );
+		};
+
+		const clickButtonAtIndex = ( index ) => {
+			if ( index < 0 || index >= props.actions.length ) {
+				return;
+			}
+			const actionId = props.actions[ index ].id;
+			const button = buttonRefs.value[ actionId ];
+			if ( button && button.$el ) {
+				button.$el.click();
+			} else if ( button && typeof button.click === 'function' ) {
+				button.click();
+			}
+		};
+
 		const onActionClick = ( action ) => {
 			let actionType = 'event';
 			if ( action.id === 'dismiss' ) {
@@ -98,7 +119,7 @@ module.exports = exports = defineComponent( {
 				actionType = 'navigate';
 			}
 
-			/** @type {CommandPaletteActionEvent} */
+			/** @type {import('../types.js').CommandPaletteActionEvent} */
 			const payload = {
 				type: actionType,
 				itemId: props.itemId, // Include parent item ID
@@ -117,16 +138,15 @@ module.exports = exports = defineComponent( {
 		};
 
 		expose( {
-			focusFirstButton,
-			focusLastButton
+			focusFirstButton: () => focusButtonAtIndex( 0 ),
+			focusButtonAtIndex,
+			clickButtonAtIndex
 		} );
 
 		return {
 			getButtonAttributes,
 			setButtonRef,
-			handleActionClick,
-			handleActionButtonKeydown,
-			onButtonFocus
+			handleActionClick
 		};
 	}
 } );

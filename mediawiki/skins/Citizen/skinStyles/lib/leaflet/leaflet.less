@@ -75,13 +75,13 @@
 
 		&:hover {
 			color: var( --color-emphasized );
-			background-color: var( --background-color-quiet--hover );
+			background-color: var( --background-color-button-quiet--hover );
 			border-bottom-color: var( --border-color-interactive );
 		}
 
 		&:active {
 			color: var( --color-emphasized );
-			background-color: var( --background-color-quiet--active );
+			background-color: var( --background-color-button-quiet--active );
 		}
 
 		&.leaflet-disabled {
@@ -101,22 +101,16 @@
 		min-height: 32px;
 		padding: 0 var( --space-xs );
 		cursor: pointer;
+		-webkit-user-select: none;
+		user-select: none;
 		border-radius: var( --border-radius-base );
 
-		@supports ( user-select: none ) {
-			user-select: none;
-		}
-
-		@supports ( -webkit-user-select: none ) {
-			-webkit-user-select: none;
-		}
-
 		&:hover {
-			background: var( --background-color-quiet--hover );
+			background: var( --background-color-button-quiet--hover );
 		}
 
 		&:has( input:checked ) {
-			background: var( --background-color-quiet--active );
+			background: var( --background-color-button-quiet--active );
 		}
 
 		/* Align leaflet controls */
@@ -214,7 +208,7 @@
 
 	&:hover {
 		color: var( --color-emphasized );
-		background-color: var( --background-color-quiet--hover );
+		background-color: var( --background-color-button-quiet--hover );
 	}
 }
 

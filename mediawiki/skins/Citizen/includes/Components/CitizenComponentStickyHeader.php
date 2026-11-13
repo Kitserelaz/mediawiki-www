@@ -21,9 +21,19 @@ class CitizenComponentStickyHeader implements CitizenComponent {
 		'icon' => 'speechBubbles'
 	];
 
+	private const VIEW_ICON = [
+		'id' => 'ca-view-sticky-header',
+		'clickTarget' => '#ca-view > a',
+		'icon' => 'eye'
+	];
+
+	// The subject/associated page tab id is namespace-specific (ca-nstab-main,
+	// ca-nstab-user, ...) and is marked `selected` on the subject page itself, so
+	// target any unselected nstab tab — i.e. the "back to the article" link shown
+	// on talk pages.
 	private const SUBJECT_ICON = [
 		'id' => 'ca-subject-sticky-header',
-		'clickTarget' => '#ca-subject > a',
+		'clickTarget' => "[id^='ca-nstab-']:not(.selected) > a",
 		'icon' => 'article'
 	];
 
@@ -58,7 +68,8 @@ class CitizenComponentStickyHeader implements CitizenComponent {
 	];
 
 	public function __construct(
-		private bool $visualEditorTabPositionFirst = false
+		private readonly bool $visualEditorTabPositionFirst = false,
+		private readonly bool $enableShare = true
 	) {
 	}
 
@@ -66,41 +77,43 @@ class CitizenComponentStickyHeader implements CitizenComponent {
 	 * Creates array of Button components in the sticky header
 	 */
 	private function getIconButtons(): array {
-		$icons = [
-			self::SHARE_ICON,
+		$icons = [];
+
+		if ( $this->enableShare ) {
+			$icons[] = self::SHARE_ICON;
+		}
+
+		array_push( $icons,
+			self::VIEW_ICON,
+			self::SUBJECT_ICON,
 			self::HISTORY_ICON,
 			$this->visualEditorTabPositionFirst ? self::EDIT_VE_ICON : self::EDIT_WIKITEXT_ICON,
 			$this->visualEditorTabPositionFirst ? self::EDIT_WIKITEXT_ICON : self::EDIT_VE_ICON,
 			self::EDIT_PROTECTED_ICON,
 			self::ADD_SECTION_ICON,
-			self::TALK_ICON,
-			self::SUBJECT_ICON
-		];
+			self::TALK_ICON
+		);
 		$iconButtons = [];
 		foreach ( $icons as $icon ) {
 			$button = new CitizenComponentButton(
-				"",
-				$icon[ 'icon' ],
-				$icon[ 'id' ],
-				$icon[ 'class' ] ?? '',
-				[
+				icon: $icon['icon'],
+				id: $icon['id'],
+				// @phan-suppress-next-line PhanCoalescingAlwaysNullInLoop
+				class: $icon['class'] ?? '',
+				attributes: [
 					'tabindex' => '-1',
-					'data-mw-citizen-click-target' => $icon[ 'clickTarget' ] ?? null,
+					// @phan-suppress-next-line PhanCoalescingNeverNullInLoop
+					'data-mw-citizen-click-target' => $icon['clickTarget'] ?? null,
 				],
-				'quiet',
-				'default',
-				'large',
-				true,
-				null
+				weight: 'quiet',
+				size: 'large',
+				iconOnly: true,
 			);
 			$iconButtons[] = $button->getTemplateData();
 		}
 		return $iconButtons;
 	}
 
-	/**
-	 * @inheritDoc
-	 */
 	public function getTemplateData(): array {
 		return [
 			'array-icon-buttons' => $this->getIconButtons()

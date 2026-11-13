@@ -22,23 +22,17 @@
 	}
 }
 
-/**
- * Main page-specific styles
- */
+// Main page-specific styles
 .page-Main_Page.action-view {
 	// Disable sticky header
 	#citizen-page-header-sticky-sentinel {
 		display: none;
 	}
 
-	// Move header to the bottom of the page
-	#content {
-		display: flex;
-		flex-direction: column;
-	}
-
+	// The header renders after the content in skin.mustache, which puts it
+	// at the bottom of the page without a layout-shift-prone CSS reorder
 	.citizen-page-header {
-		order: 9999;
+		margin-top: calc( var( --space-xl ) * 2 );
 
 		&-inner {
 			justify-content: center;
@@ -57,28 +51,19 @@
 	.citizen-body-container {
 		margin-top: var( --space-xl );
 	}
+
+	.citizen-page-actions {
+		margin-inline-start: 0;
+	}
 }
 
-/**
- * Heading HTML changes
- * @see https://phabricator.wikimedia.org/T13555
- * TODO: Clean up heading spacing someday
- * TODO: This should go into one of the skinning files, revisit when we move to 1.43
- */
+// Heading HTML changes
+// See https://phabricator.wikimedia.org/T13555
+// Spacing lives beside the bare-heading ladder in skinning/elements.less; only
+// layout is left here.
 .mw-heading {
 	display: flex;
 	align-items: center;
-	margin-top: var( --space-md );
-
-	&1,
-	&2 {
-		margin-top: 3rem;
-	}
-
-	&3,
-	&4 {
-		margin-top: 2rem;
-	}
 
 	h1,
 	h2,
@@ -87,6 +72,5 @@
 	h5,
 	h6 {
 		flex-grow: 1;
-		margin: 0;
 	}
 }

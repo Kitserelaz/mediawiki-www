@@ -1,34 +1,38 @@
-<!-- eslint-disable max-len -->
 <template>
-	<section class="citizen-command-palette-list">
-		<div
-			v-if="heading"
-			class="citizen-command-palette-list__heading"
+	<div
+		id="citizen-command-palette-listbox"
+		ref="listRef"
+		class="citizen-command-palette-list"
+		role="listbox"
+		:aria-label="$i18n( 'citizen-command-palette-results' ).text()"
+		tabindex="-1"
+	>
+		<template
+			v-for="( section, sectionIndex ) in sections"
+			:key="sectionIndex"
 		>
-			{{ heading }}
-		</div>
-		<ul
-			ref="listRef"
-			class="citizen-command-palette-list__listbox"
-			role="listbox"
-			tabindex="-1"
-		>
+			<!-- eslint-disable mediawiki/msg-doc, mediawiki/no-vue-dynamic-i18n -- heading keys are provider-defined -->
+			<div
+				v-if="section.heading"
+				class="citizen-command-palette-list__heading"
+				role="presentation"
+			>
+				{{ $i18n( section.heading ).text() }}
+			</div>
+			<!-- eslint-enable mediawiki/msg-doc, mediawiki/no-vue-dynamic-i18n -->
 			<command-palette-list-item
-				v-for="( item, index ) in items"
+				v-for="( item, localIndex ) in section.items"
 				:key="item.id"
-				v-bind="getListItemBindings( item, index )"
-				:ref="( el ) => setItemRef && setItemRef( el, index )"
-				@change="( property, value ) => onItemChange( item.id, property, value, index )"
+				v-bind="getListItemBindings( item, getGlobalIndex( sectionIndex, localIndex ) )"
+				:ref="( el ) => setItemRef && setItemRef( el, getGlobalIndex( sectionIndex, localIndex ) )"
+				:compact="compact"
+				@change="( property, value ) => onItemChange( item.id, property, value )"
 				@select="( result ) => $emit( 'select', result )"
 				@action="( action ) => $emit( 'action', action )"
-				@navigate-list="( direction ) => $emit( 'navigate-list', direction )"
-				@focus-action="( payload ) => $emit( 'focus-action', payload )"
-				@blur-actions="() => $emit( 'blur-actions' )"
-				@mouseenter="() => $emit( 'hover', index )"
-				@mouseleave="() => $emit( 'hover', -1 )"
+				@mouseenter="() => $emit( 'hover', getGlobalIndex( sectionIndex, localIndex ) )"
 			></command-palette-list-item>
-		</ul>
-	</section>
+		</template>
+	</div>
 </template>
 
 <script>
@@ -42,7 +46,7 @@ module.exports = exports = defineComponent( {
 		CommandPaletteListItem
 	},
 	props: {
-		items: {
+		sections: {
 			type: Array,
 			required: true
 		},
@@ -54,20 +58,39 @@ module.exports = exports = defineComponent( {
 			type: String,
 			default: ''
 		},
-		heading: {
-			type: String,
-			default: ''
-		},
 		setItemRef: {
 			type: Function,
 			required: false,
 			default: null
+		},
+		compact: {
+			type: Boolean,
+			default: false
 		}
 	},
-	emits: [ /* 'update:highlightedItemIndex', */ 'select', 'action', 'navigate-list', 'focus-action', 'blur-actions', 'hover' ],
+	emits: [ 'select', 'action', 'hover' ],
 	setup( props /* , { emit } */ ) {
 		const listRef = ref( null );
 		const activeItemId = ref( null );
+
+		/**
+		 * Computes the global index for an item given its section and local index.
+		 *
+		 * @param {number} sectionIndex Index of the section.
+		 * @param {number} localIndex Index within the section.
+		 * @return {number} Global index across all sections.
+		 */
+		function getGlobalIndex( sectionIndex, localIndex ) {
+			let offset = 0;
+			for ( let i = 0; i < sectionIndex; i++ ) {
+				// Vue runs a row's `ref` callback during teardown against an
+				// already-shortened section list, so a preceding section can
+				// be gone while this index still refers to it.
+				const preceding = props.sections[ i ];
+				offset += preceding ? preceding.items.length : 0;
+			}
+			return offset + localIndex;
+		}
 
 		function getListItemBindings( listItem, index ) {
 			// Determine the query to use for highlighting
@@ -84,7 +107,7 @@ module.exports = exports = defineComponent( {
 			};
 		}
 
-		function onItemChange( itemId, property, value /* , index */ ) {
+		function onItemChange( itemId, property, value ) {
 			if ( property === 'highlighted' ) {
 				if ( value ) {
 					// No longer emitting index update, parent manages it
@@ -96,6 +119,7 @@ module.exports = exports = defineComponent( {
 
 		return {
 			listRef,
+			getGlobalIndex,
 			getListItemBindings,
 			onItemChange
 		};
@@ -114,12 +138,6 @@ module.exports = exports = defineComponent( {
 		padding-inline: var( --citizen-command-palette-side-padding );
 		color: var( --color-subtle );
 		.mixin-citizen-font-styles( 'overline' );
-	}
-
-	&__listbox {
-		padding: 0;
-		margin: 0;
-		list-style: none;
 	}
 }
 </style>

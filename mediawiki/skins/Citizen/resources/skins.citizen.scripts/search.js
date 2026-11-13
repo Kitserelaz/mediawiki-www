@@ -1,104 +1,14 @@
-/* Some of the functions are based on Vector */
-/* ESLint does not like having class names as const */
-
-const config = require( './config.json' );
-const SEARCH_LOADING_CLASS = 'citizen-loading';
-
-/**
- * Loads the search module via `mw.loader.using` on the element's
- * focus event. Or, if the element is already focused, loads the
- * search module immediately.
- * After the search module is loaded, executes a function to remove
- * the loading indicator.
- *
- * @param {HTMLElement} element search input.
- * @param {string} moduleName resourceLoader module to load.
- * @param {function(): void} afterLoadFn function to execute after search module loads.
- */
-function loadSearchModule( element, moduleName, afterLoadFn ) {
-	const requestSearchModule = () => {
-		mw.loader.using( moduleName, afterLoadFn );
-		element.removeEventListener( 'focus', requestSearchModule );
-	};
-
-	if ( document.activeElement === element ) {
-		requestSearchModule();
-	} else {
-		element.addEventListener( 'focus', requestSearchModule );
-	}
-}
+const {
+	isMacPlatform,
+	isLetterPressed,
+	isAltGraphChar,
+	isAccessKeyChord
+} = require( './keyboardLayout.js' );
 
 /**
- * Event callback that shows or hides the loading indicator based on the event type.
- * The loading indicator states are:
- * 1. Show on input event (while user is typing)
- * 2. Hide on focusout event (when user removes focus from the input )
- * 3. Show when input is focused, if it contains a query. (in case user re-focuses on input)
- *
- * @param {Event} event
- */
-function renderSearchLoadingIndicator( event ) {
-	const form = /** @type {HTMLElement} */ ( event.currentTarget ),
-		input = /** @type {HTMLInputElement} */ ( event.target );
-
-	if (
-		!( event.currentTarget instanceof HTMLElement ) ||
-		!( event.target instanceof HTMLInputElement )
-	) {
-		return;
-	}
-
-	if ( event.type === 'input' ) {
-		form.classList.add( SEARCH_LOADING_CLASS );
-
-	} else if ( event.type === 'focusout' ) {
-		form.classList.remove( SEARCH_LOADING_CLASS );
-
-	} else if ( event.type === 'focusin' && input.value.trim() ) {
-		form.classList.add( SEARCH_LOADING_CLASS );
-	}
-}
-
-/**
- * Attaches or detaches the event listeners responsible for activating
- * the loading indicator.
- *
- * @param {HTMLElement} element
- * @param {boolean} attach
- * @param {function(Event): void} eventCallback
- */
-function setLoadingIndicatorListeners( element, attach, eventCallback ) {
-
-	/** @type { "addEventListener" | "removeEventListener" } */
-	const addOrRemoveListener = ( attach ? 'addEventListener' : 'removeEventListener' );
-
-	[ 'input', 'focusin', 'focusout' ].forEach( ( eventType ) => {
-		element[ addOrRemoveListener ]( eventType, eventCallback );
-	} );
-
-	if ( !attach ) {
-		element.classList.remove( SEARCH_LOADING_CLASS );
-	}
-}
-
-/**
- * Manually focus on the input field if search toggle is clicked
- *
- * @param {HTMLDetailsElement} details
- * @param {HTMLInputElement} input
- * @return {void}
- */
-function focusOnOpened( details, input ) {
-	if ( details.open ) {
-		input.focus();
-	} else {
-		input.blur();
-	}
-}
-
-/**
- * Check if the element is a HTML form element or content editable
- * This is to prevent trigger search box when user is typing on a textfield, input, etc.
+ * Check if the element is a HTML form element or content editable.
+ * Used to gate keyboard shortcuts so typing in an input does not
+ * accidentally open the command palette.
  *
  * @param {HTMLElement} element
  * @return {boolean}
@@ -116,33 +26,48 @@ function isFormField( element ) {
 }
 
 /**
- * Manually toggle the details state when the keyboard button is SLASH is pressed.
+ * The chords that open the command palette.
+ *
+ * A flat list rather than a branching chain, so each entry sees the untouched
+ * event and adding one cannot change what another matches.
+ *
+ * @type {Array<function( KeyboardEvent, boolean ): boolean>}
+ */
+const OPEN_SHORTCUTS = [
+	// "/". A bare Ctrl or Command means a chord, but AltGr types "/" on some
+	// layouts and Windows delivers that as Ctrl+Alt.
+	( event, isMac ) => event.key === '/' &&
+		!event.metaKey &&
+		( !event.ctrlKey || isAltGraphChar( event, isMac ) ),
+
+	// Ctrl+K, or Command+K on a Mac. Any further modifier makes it someone
+	// else's chord — Ctrl+Shift+K opens the browser console.
+	( event ) => ( event.ctrlKey || event.metaKey ) &&
+		!event.altKey &&
+		!event.shiftKey &&
+		isLetterPressed( event, 'k' ),
+
+	// "F" is the access key MediaWiki assigns to search; its modifiers are
+	// platform-dependent.
+	( event, isMac ) => isAccessKeyChord( event, isMac ) && isLetterPressed( event, 'f' )
+];
+
+/**
+ * Bind keyboard shortcuts that open the command palette.
  *
  * @param {Window} window
- * @param {HTMLDetailsElement} details
+ * @param {Function} triggerOpen
  * @return {void}
  */
-function bindOpenOnSlash( window, details ) {
+function bindOpenOnSlash( window, triggerOpen ) {
+	const isMac = isMacPlatform( window.navigator );
+
 	const onExpandOnSlash = ( /** @type {KeyboardEvent} */ event ) => {
-		const isKeyPressed = () => {
-			// "/" key is standard on many sites
-			if ( event.key === '/' ) {
-				return true;
-			// "Ctrl" + "K" (or "Command" + "K" on Mac)
-			} else if ( ( event.ctrlKey || event.metaKey ) && event.key.toLowerCase() === 'k' ) {
-				return true;
-			// "Alt" + "Shift" + "F" is the MW standard key
-			// Shift key might makes F key goes capital, so we need to make it lowercase
-			} else if ( event.altKey && event.shiftKey && event.key.toLowerCase() === 'f' ) {
-				return true;
-			} else {
-				return false;
-			}
-		};
-		if ( isKeyPressed() && !isFormField( event.target ) ) {
-			// Since Firefox quickfind interfere with this
+		const isKeyPressed = OPEN_SHORTCUTS.some( ( matches ) => matches( event, isMac ) );
+		if ( isKeyPressed && !isFormField( event.target ) ) {
+			// Firefox quickfind would otherwise intercept "/"
 			event.preventDefault();
-			openSearch( details );
+			triggerOpen();
 		}
 	};
 
@@ -150,136 +75,51 @@ function bindOpenOnSlash( window, details ) {
 }
 
 /**
- * Add clear button to search field when there are input value
+ * Bind external `.citizen-search-trigger` links (with optional
+ * `data-citizen-search-prefill`) to open the palette with optional
+ * prefill text.
  *
- * @param {HTMLInputElement} input
+ * @param {Document} document
+ * @param {Function} triggerOpen
  * @return {void}
  */
-function renderSearchClearButton( input ) {
-	const
-		clearButton = document.createElement( 'span' ),
-		clearIcon = document.createElement( 'span' );
-
-	let hasClearButton = false;
-
-	clearButton.classList.add( 'citizen-search__clear', 'citizen-search__formButton' );
-	// TODO: Add i18n for the message below
-	// clearButton.setAttribute( 'aria-label', 'Clear search input' );
-	clearIcon.classList.add( 'citizen-ui-icon', 'mw-ui-icon-wikimedia-trash' );
-	clearButton.append( clearIcon );
-
-	clearButton.addEventListener( 'click', ( event ) => {
-		event.preventDefault();
-		clearButton.classList.add( 'hidden' );
-		input.value = '';
-		input.dispatchEvent( new Event( 'input' ) );
-		requestAnimationFrame( () => {
-			input.focus();
-		} );
-	} );
-
-	input.addEventListener( 'input', () => {
-		const value = input.value;
-		const shouldDisplay = value !== '';
-		clearButton.classList.toggle( 'hidden', !shouldDisplay );
-		if ( shouldDisplay && !hasClearButton ) {
-			input.after( clearButton );
-		}
-		hasClearButton = shouldDisplay;
-	} );
-}
-
-/**
- * Bind the search trigger to open the search UI
- *
- * @param {HTMLDetailsElement} details
- * @return {void}
- */
-function bindSearchTrigger( details ) {
+function bindSearchTrigger( document, triggerOpen ) {
 	document.querySelectorAll( '.citizen-search-trigger' ).forEach( ( trigger ) => {
-		trigger.addEventListener( 'click', ( event ) => {
-			openSearch( details );
-			if ( event.target.dataset.citizenSearchPrefill ) {
-				// Add a delay to ensure the search UI is open
-				setTimeout( () => {
-					const input = config.wgCitizenEnableCommandPalette ?
-						document.querySelector( '.citizen-command-palette__input > .cdx-text-input__input' ) :
-						document.getElementById( 'searchInput' );
+		const handleOpen = () => {
+			triggerOpen( trigger.dataset.citizenSearchPrefill || null );
+		};
 
-					if ( input === null ) {
-						return;
-					}
+		trigger.addEventListener( 'click', handleOpen );
 
-					// Escape just to be safe
-					input.value = mw.html.escape( event.target.dataset.citizenSearchPrefill );
-				}, 0 );
+		trigger.addEventListener( 'keydown', ( /** @type {KeyboardEvent} */ event ) => {
+			// Keydown bubbles up from a focused descendant, such as a link or a
+			// form field, which needs Enter and Space for itself.
+			if ( event.target !== trigger ) {
+				return;
+			}
+			// `key`, not `code`: the numpad Enter key reports code 'NumpadEnter'.
+			if ( event.key === 'Enter' || event.key === ' ' ) {
+				event.preventDefault();
+				handleOpen();
 			}
 		} );
 	} );
 }
 
 /**
- * Open the search UI
+ * Initializes the search functionality (keyboard shortcuts and
+ * auxiliary triggers). The command palette itself is owned by
+ * `commandPalette.js`; this module just routes user intent to it.
  *
- * @param {HTMLDetailsElement} details
+ * @param {Object} deps
+ * @param {Window} deps.window
+ * @param {Document} deps.document
+ * @param {Function} deps.triggerOpen
  * @return {void}
  */
-function openSearch( details ) {
-	if ( config.wgCitizenEnableCommandPalette ) {
-		details.click();
-	} else {
-		details.open = true;
-	}
-}
-
-/**
- * Initializes the search functionality for the Citizen search boxes.
- *
- * @param {Window} window
- * @return {void}
- */
-function initSearch( window ) {
-	const details = document.getElementById( 'citizen-search-details' );
-
-	bindOpenOnSlash( window, details );
-	bindSearchTrigger( details );
-
-	if ( config.wgCitizenEnableCommandPalette ) {
-		// Short-circuit the search module initialization,
-		// as it will be replaced by the command palette
-		mw.loader.load( 'skins.citizen.commandPalette' );
-		return;
-	}
-
-	const searchBoxes = document.querySelectorAll( '.citizen-search-box' );
-
-	if ( !searchBoxes.length ) {
-		return;
-	}
-
-	searchBoxes.forEach( ( searchBox ) => {
-		const
-			input = searchBox.querySelector( 'input[name="search"]' ),
-			isPrimarySearch = input && input.getAttribute( 'id' ) === 'searchInput';
-
-		if ( !input ) {
-			return;
-		}
-
-		// Set up primary search box interactions
-		if ( isPrimarySearch ) {
-			// Focus when toggled
-			details.addEventListener( 'toggle', () => {
-				focusOnOpened( details, input );
-			} );
-		}
-
-		renderSearchClearButton( input );
-		setLoadingIndicatorListeners( searchBox, true, renderSearchLoadingIndicator );
-		loadSearchModule( input, config.wgCitizenSearchModule, () => {
-			setLoadingIndicatorListeners( searchBox, false, renderSearchLoadingIndicator );
-		} );
-	} );
+function initSearch( { window, document, triggerOpen } ) {
+	bindOpenOnSlash( window, triggerOpen );
+	bindSearchTrigger( document, triggerOpen );
 }
 
 module.exports = {

@@ -12,15 +12,9 @@
 	display: flex;
 	align-items: center;
 	margin-left: var( --space-sm );
+	-webkit-user-select: none;
+	user-select: none;
 	.mixin-citizen-font-styles( 'small' );
-
-	@supports ( user-select: none ) {
-		user-select: none;
-	}
-
-	@supports ( -webkit-user-select: none ) {
-		-webkit-user-select: none;
-	}
 
 	.cdx-button--icon-only {
 		span:not( .citizen-ui-icon ) {
@@ -29,7 +23,7 @@
 	}
 }
 
-/* Correct directionality when page dir is different from site/user dir */
+// Correct directionality when page dir is different from site/user dir
 .mw-content-ltr .mw-editsection,
 .mw-content-rtl .mw-content-ltr .mw-editsection {
 	/* @noflip */

@@ -1,8 +1,9 @@
 {
 	"@metadata": {
-		"authors": []
+		"authors": [
+			"Daisy40"
+		]
 	},
-	"citizen-search-poweredby-mediawiki": "Medijaviki",
 	"citizen-languages-toggle": "Više jezika",
 	"citizen-actions-more-toggle": "Više radnji",
 	"citizen-sitestats-articles-label": "članci",
@@ -14,19 +15,17 @@
 	"citizen-page-info-lastmod": "Poslednja izmena",
 	"citizen-action-addsection": "Dodaj temu",
 	"citizen-jumptotop": "Nazad na vrh",
-	"citizen-search-fulltext": "Pretraži tekst",
-	"citizen-search-mediasearch": "Pretraga medija",
-	"citizen-search-editpage": "Uredite ili napravite stranicu",
 	"citizen-search-empty-desc": "Kucajte da započnete pretraživanje",
 	"citizen-search-noresults-title": "Nema rezultata za $1",
-	"citizen-search-noresults-desc": "Probajte opcija iznad?",
 	"citizen-share": "Podeli ovu stranicu",
+	"citizen-share-qr-title": "QR kod",
 	"citizen-tagline-ns-project": "Informacije o {{SITENAME}}",
 	"citizen-tagline-ns-file": "Datoteke na {{SITENAME}}",
 	"citizen-tagline-ns-template": "Stranica šablona",
 	"citizen-tagline-ns-help": "Stranice pomoći",
 	"citizen-tagline-ns-category": "Stranice kategorija",
 	"citizen-tagline-user-regdate": "Pridružio/la se: $1",
+	"citizen-preferences-section-appearance": "Izgled",
 	"citizen-theme-name": "Boja",
 	"citizen-theme-day-label": "Svetlo",
 	"citizen-theme-night-label": "Tamno",
@@ -45,8 +44,5 @@
 	"citizen-command-palette-heading-recent": "Nedavno",
 	"citizen-command-palette-keyhint-exit": "Izlaz",
 	"citizen-command-palette-keyhint-actions": "Radnje",
-	"citizen-command-palette-keyhint-return": "Nazad",
-	"citizen-command-palette-type-page": "Stranica",
-	"citizen-command-palette-type-namespace": "Imenski prostor",
-	"citizen-command-palette-type-command": "Komanda"
+	"citizen-command-palette-keyhint-return": "Nazad"
 }

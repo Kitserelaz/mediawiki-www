@@ -3497,8 +3497,8 @@
       "type": "skins",
       "name": "Citizen",
       "manifest": "mediawiki/skins/Citizen/skin.json",
-      "version": "3.5.0",
-      "sha256": "0919b66e3065d0b6391bb0d20f1a1aff1cb822ddcd5aa444e57ff60b2e70e165",
+      "version": "3.25.1",
+      "sha256": "3576a111b6e8bffa32d6a7fcb3ce98305b56d8384de40dfdce06670493a7ef0f",
       "requires": {
         "MediaWiki": ">= 1.43.0"
       }

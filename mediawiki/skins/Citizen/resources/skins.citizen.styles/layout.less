@@ -1,8 +1,8 @@
 .citizen-page-container {
-	/* Include margin of child elements as part of the height */
+	// Include margin of child elements as part of the height
 	display: flex;
 	flex-direction: column;
-	/* Make page container take the whole page height on short page */
+	// Make page container take the whole page height on short page
 	min-height: inherit;
 }
 
@@ -13,10 +13,11 @@
 
 .citizen-body-container {
 	display: grid;
-	// stylelint-disable-next-line @stylistic/declaration-colon-space-after
+	// stylelint-disable
 	grid-template-areas:
 		'content'
 		'footer';
+	// stylelint-enable
 	// Using auto as min value will cause overflow
 	grid-template-columns: minmax( 0, var( --width-layout ) );
 	gap: 0 var( --space-lg );
@@ -36,21 +37,34 @@
 	margin-top: var( --space-xl );
 }
 
+// The desktop padding-block rule below stops at the desktop breakpoint, so
+// reserve the top edge here for a mobile top header (reads the token, which
+// is 0px in every other placement). The bottom edge needs no equivalent:
+// with autohide on the bottom header overlays content only transiently, and
+// with autohide off the footer margin ( Footer.less ) reserves it.
+@media ( max-width: @max-width-breakpoint-tablet ) {
+	.citizen-page-container {
+		padding-block-start: var( --header-size-block-start );
+	}
+}
+
 @media ( min-width: @min-width-breakpoint-desktop ) {
 	.citizen-page-container {
 		// Reserve space for header
-		margin-left: var( --header-size );
+		padding-block: var( --header-size-block-start ) var( --header-size-block-end );
+		padding-inline: var( --header-size-inline-start ) var( --header-size-inline-end );
 	}
 
-	.citizen-toc-enabled {
-		--width-page: calc( var( --width-layout ) + var( --width-toc ) + var( --space-lg ) );
+	.citizen-page-aside-enabled {
+		--width-page: calc( var( --width-layout ) + var( --width-page-aside ) + var( --space-lg ) );
 
 		.citizen-body-container {
-			// stylelint-disable-next-line @stylistic/declaration-colon-space-after
+			// stylelint-disable
 			grid-template-areas:
-				'content sidebar'
+				'content aside'
 				'footer footer';
-			grid-template-columns: minmax( 0, var( --width-layout ) ) var( --width-toc );
+			// stylelint-enable
+			grid-template-columns: minmax( 0, var( --width-layout ) ) var( --width-page-aside );
 		}
 	}
 
@@ -69,7 +83,7 @@
 		flex-wrap: nowrap;
 	}
 
-	.page-actions {
+	.citizen-page-actions {
 		.mw-list-item {
 			text-wrap: nowrap;
 		}
@@ -80,7 +94,7 @@
 	}
 }
 
-/* Wider page width for certain namespaces */
+// Wider page width for certain namespaces
 @media ( min-width: @min-width-breakpoint-desktop-wide ) {
 	// 1 - Special, 6 - File, 14 - Category
 	.ns {
@@ -88,7 +102,7 @@
 		&-6,
 		&-14 {
 			--width-layout: var( --width-layout--extended );
-			--width-page: calc( var( --width-layout--extended ) + var( --width-toc ) + var( --space-lg ) );
+			--width-page: calc( var( --width-layout--extended ) + var( --width-page-aside ) + var( --space-lg ) );
 		}
 	}
 }

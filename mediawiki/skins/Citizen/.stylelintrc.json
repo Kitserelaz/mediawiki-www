@@ -21,10 +21,20 @@
 		"plugin/use-baseline": [
 			true,
 			{
-				"available": "2024",
+				"available": "newly",
 				"ignoreSelectors": [
-					"nesting"
-				]
+					"nesting",
+					"selection"
+				],
+				"ignoreProperties": {
+					"accent-color": [],
+					"interpolate-size": [ "allow-keywords" ],
+					"overscroll-behavior": [ "contain" ],
+					"text-spacing-trim": [ "normal" ],
+					"text-wrap": [ "pretty" ],
+					"transition-behavior": [],
+					"user-select": [ "none" ]
+				}
 			}
 		]
 	}

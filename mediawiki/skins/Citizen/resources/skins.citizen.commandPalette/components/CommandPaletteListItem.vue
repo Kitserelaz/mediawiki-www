@@ -20,12 +20,13 @@ Partially based on the MenuItem component from Codex.
 			:thumbnail="thumbnail"
 			:thumbnail-icon="thumbnailIcon"
 			:metadata="metadata"
-			:type="type"
-			:type-label="typeLabel"
 			:search-query="searchQuery"
 			:url="url"
 			:highlight-query="highlightQuery"
+			:compact="compact"
+			:previewable="previewable"
 			@click="onClick"
+			@auxclick="onAuxClick"
 		></command-palette-list-item-content>
 		<command-palette-list-item-actions
 			ref="actionsRef"
@@ -33,9 +34,6 @@ Partially based on the MenuItem component from Codex.
 			:actions="actions"
 			:highlighted="highlighted"
 			@action="onAction"
-			@navigate-list="$emit( 'navigate-list', $event )"
-			@focus-action="$emit( 'focus-action', $event )"
-			@blur-actions="$emit( 'blur-actions' )"
 		></command-palette-list-item-actions>
 	</li>
 </template>
@@ -45,7 +43,6 @@ const { defineComponent, computed, ref } = require( 'vue' );
 // Import the new sub-components
 const CommandPaletteListItemContent = require( './CommandPaletteListItemContent.vue' );
 const CommandPaletteListItemActions = require( './CommandPaletteListItemActions.vue' );
-const { CommandPaletteItem } = require( '../types.js' );
 
 // @vue/component
 module.exports = exports = defineComponent( {
@@ -112,17 +109,22 @@ module.exports = exports = defineComponent( {
 			type: Boolean,
 			default: false
 		},
+		compact: {
+			type: Boolean,
+			default: false
+		},
 		source: {
 			type: String,
 			default: undefined
+		},
+		previewable: {
+			type: Boolean,
+			default: false
 		}
 	},
 	emits: [
 		'select',
 		'action',
-		'navigate-list',
-		'focus-action',
-		'blur-actions',
 		'change'
 	],
 	setup( props, { emit, expose } ) {
@@ -139,9 +141,21 @@ module.exports = exports = defineComponent( {
 			}
 		};
 
-		const onClick = () => {
+		const onClick = ( event ) => {
+			// Modifier or non-primary clicks (Ctrl, Cmd, Alt, Shift,
+			// middle-click) signal "I want a different action than the
+			// row's default" — open in new tab, navigate fully past a
+			// preview gadget, etc. App-level select handler reads this
+			// to skip preview-keep-open behavior in that case.
+			const modifierClick = !!( event && (
+				event.button > 0 ||
+				event.ctrlKey ||
+				event.metaKey ||
+				event.altKey ||
+				event.shiftKey
+			) );
 			emit( 'select',
-				/** @type {CommandPaletteItem} */ ( {
+				/** @type {import('../types.js').CommandPaletteItem} */ ( {
 					id: props.id,
 					label: props.label,
 					url: props.url,
@@ -153,9 +167,20 @@ module.exports = exports = defineComponent( {
 					metadata: props.metadata,
 					actions: props.actions,
 					source: props.source,
-					isMouseClick: true
+					previewable: props.previewable,
+					isMouseClick: true,
+					modifierClick
 				} )
 			);
+		};
+
+		// A middle click arrives as `auxclick`, never as `click`, and the
+		// browser opens the link in a new tab itself. It is the same
+		// activation as a Ctrl+click, so the row is selected the same way.
+		const onAuxClick = ( event ) => {
+			if ( event.button === 1 && props.url ) {
+				onClick( event );
+			}
 		};
 
 		// --- Action Handling ---
@@ -170,15 +195,11 @@ module.exports = exports = defineComponent( {
 			'citizen-command-palette-list-item--highlighted': props.highlighted
 		} ) );
 
-		// Messages that can be used here:
-		// * citizen-command-palette-type-page
-		// eslint-disable-next-line mediawiki/msg-doc
-		const typeLabel = computed( () => mw.message( `citizen-command-palette-type-${ props.type }` ).text() );
-
 		// --- Expose Methods ---
 		expose( {
 			focusFirstButton: () => actionsRef.value?.focusFirstButton(),
-			focusLastButton: () => actionsRef.value?.focusLastButton()
+			focusButtonAtIndex: ( index ) => actionsRef.value?.focusButtonAtIndex?.( index ),
+			clickButtonAtIndex: ( index ) => actionsRef.value?.clickButtonAtIndex?.( index )
 		} );
 
 		return {
@@ -188,10 +209,10 @@ module.exports = exports = defineComponent( {
 			// Event Handlers
 			onMouseDown,
 			onClick,
+			onAuxClick,
 			onAction,
 			// Computed
-			rootClasses,
-			typeLabel
+			rootClasses
 		};
 	}
 } );

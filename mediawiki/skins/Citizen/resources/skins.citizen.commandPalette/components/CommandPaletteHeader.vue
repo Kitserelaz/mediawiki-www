@@ -1,54 +1,157 @@
 <template>
-	<div class="citizen-command-palette__search">
-		<cdx-text-input
-			ref="searchInputRef"
-			:model-value="value"
-			class="citizen-command-palette__input"
-			input-type="search"
-			:start-icon="cdxIconSearch"
-			:clearable="true"
-			:placeholder="$i18n( 'searchsuggest-search' ).text()"
-			@update:model-value="$emit( 'update:modelValue', $event )"
-			@keydown="onKeydown"
-			@keydown.esc="$emit( 'close' )"
-			@keydown.tab="$emit( 'close' )"
-		></cdx-text-input>
+	<div
+		class="citizen-command-palette-header"
+		:class="{ 'citizen-command-palette-header--mode-active': activeMode || helpVisible }"
+	>
+		<transition name="citizen-command-palette-header-back">
+			<cdx-button
+				v-if="activeMode || helpVisible"
+				class="citizen-command-palette-header__back"
+				weight="quiet"
+				icon-only
+				:aria-label="$i18n( 'citizen-command-palette-back' ).text()"
+				@click="onBackClick"
+			>
+				<cdx-icon
+					:icon="cdxIconArrowPrevious"
+					size="small"
+				></cdx-icon>
+			</cdx-button>
+		</transition>
+		<div class="citizen-command-palette-header__input-area">
+			<cdx-icon
+				class="citizen-command-palette-header__icon"
+				:icon="currentIcon"
+			></cdx-icon>
+			<cdx-info-chip
+				v-for="( token, index ) in tokens"
+				v-show="!activeMode || token.modeId === activeMode.id"
+				:key="token.id"
+				class="citizen-command-palette-header__chip"
+				:class="{
+					'citizen-command-palette-header__chip--selected': index === selectedTokenIndex,
+					[ 'citizen-command-palette-header__chip--' + token.variant ]: token.variant
+				}"
+				@click="$emit( 'select-token', index )"
+			>
+				{{ token.label }}
+			</cdx-info-chip>
+			<!--
+				CdxTextInput sets `inheritAttrs: false` so these land on the
+				real <input>, not the wrapper. That input is the combobox: focus
+				stays on it while the arrow keys move `aria-activedescendant`
+				through the listbox, which is what lets a screen reader announce
+				the highlighted result.
+			-->
+			<cdx-text-input
+				ref="searchInputRef"
+				:model-value="freeText"
+				class="citizen-command-palette-header__input"
+				input-type="search"
+				role="combobox"
+				aria-autocomplete="list"
+				:aria-label="currentPlaceholder"
+				aria-controls="citizen-command-palette-listbox"
+				:aria-expanded="expanded"
+				:aria-activedescendant="activeDescendantId || undefined"
+				:clearable="true"
+				:placeholder="currentPlaceholder"
+				@update:model-value="$emit( 'update:freeText', $event )"
+			></cdx-text-input>
+		</div>
 		<div
-			v-if="isPending && showPending"
-			class="citizen-command-palette__progress-indicator citizen-loading"
+			v-if="showPending || activationQueued"
+			class="citizen-command-palette-header__progress-indicator citizen-loading"
 		></div>
 	</div>
 </template>
 
 <script>
 const { defineComponent, ref, computed } = require( 'vue' );
-const { CdxTextInput } = mw.loader.require( 'skins.citizen.commandPalette.codex' );
-const { cdxIconSearch } = require( '../icons.json' );
+const { CdxButton, CdxInfoChip, CdxTextInput, CdxIcon } = require( '../../../codex.js' );
+const { cdxIconArrowPrevious, cdxIconHelp, cdxIconSearch } = require( '../icons.json' );
 
 // @vue/component
 module.exports = exports = defineComponent( {
 	name: 'CommandPaletteHeader',
 	components: {
-		CdxTextInput
+		CdxButton,
+		CdxInfoChip,
+		CdxTextInput,
+		CdxIcon
 	},
 	props: {
-		modelValue: {
+		tokens: {
+			type: Array,
+			default: () => []
+		},
+		freeText: {
 			type: String,
 			default: ''
 		},
-		isPending: {
-			type: Boolean,
-			default: false
+		selectedTokenIndex: {
+			type: Number,
+			default: -1
 		},
 		showPending: {
 			type: Boolean,
 			default: false
+		},
+		// A held Enter waiting on results. Separate from showPending, which is
+		// delayed by design and never rises at all on the undebounced path.
+		activationQueued: {
+			type: Boolean,
+			default: false
+		},
+		activeMode: {
+			type: Object,
+			default: null
+		},
+		activeModeContext: {
+			type: Array,
+			default: () => []
+		},
+		helpVisible: {
+			type: Boolean,
+			default: false
+		},
+		/** Whether the listbox is showing results, for `aria-expanded`. */
+		expanded: {
+			type: Boolean,
+			default: false
+		},
+		/** Id of the highlighted option, or null when nothing is highlighted. */
+		activeDescendantId: {
+			type: String,
+			default: null
 		}
 	},
-	emits: [ 'update:modelValue', 'keydown', 'close', 'focus-active-item' ],
-	setup( props, { emit, expose } ) {
+	emits: [ 'update:freeText', 'select-token', 'exit-mode', 'close-help' ],
+	setup( props, { expose, emit } ) {
 		const searchInputRef = ref( null );
-		const value = computed( () => props.modelValue );
+
+		const currentIcon = computed( () => {
+			if ( props.helpVisible ) {
+				return cdxIconHelp;
+			}
+			if ( props.activeMode && props.activeMode.icon ) {
+				return props.activeMode.icon;
+			}
+			return cdxIconSearch;
+		} );
+
+		const currentPlaceholder = computed( () => {
+			if ( props.activeMode && typeof props.activeMode.headerLabel === 'function' ) {
+				const label = props.activeMode.headerLabel( props.activeModeContext );
+				if ( label ) {
+					return label;
+				}
+			}
+			if ( props.activeMode && props.activeMode.placeholder ) {
+				return props.activeMode.placeholder;
+			}
+			return mw.message( 'searchsuggest-search' ).text();
+		} );
 
 		const getInputElement = () => searchInputRef.value?.$el?.querySelector( 'input' ) || null;
 
@@ -56,36 +159,17 @@ module.exports = exports = defineComponent( {
 			getInputElement()?.focus();
 		};
 
-		const onKeydown = ( event ) => {
-			switch ( event.key ) {
-				case 'ArrowUp':
-				case 'ArrowDown':
-					// Prevent default input cursor movement
-					event.preventDefault();
-					// Emit the event for parent (App.vue) to handle list navigation
-					emit( 'keydown', event );
-					break;
-				case 'ArrowRight': {
-					const inputEl = event.target;
-					// Check if cursor is at the end of the input
-					if ( inputEl.selectionStart === inputEl.value.length ) {
-						// Prevent default cursor movement
-						event.preventDefault();
-						// Signal parent to focus the active list item
-						emit( 'focus-active-item' );
-					}
-					// If not at the end, allow default right arrow behavior within the input
-					// and don't emit 'keydown' to avoid potential double handling.
-					break;
-				}
-				// For other keys like Enter, alphanumeric, etc., let the parent handle or allow default.
-				// We specifically don't emit 'keydown' for ArrowRight when not at the end.
-				default:
-					// Only emit general keydown for keys not specifically handled here
-					// (e.g., Enter for selection, other keys for typing)
-					emit( 'keydown', event );
-					break;
+		// Help is layered on top of the active mode, so the back button
+		// closes help first; the underlying mode's back affordance reappears
+		// once help dismisses. Focus returns to the input either way: leaving
+		// a mode unmounts the button, which would drop focus to the page body.
+		const onBackClick = () => {
+			if ( props.helpVisible ) {
+				emit( 'close-help' );
+			} else {
+				emit( 'exit-mode' );
 			}
+			focus();
 		};
 
 		expose( {
@@ -95,9 +179,10 @@ module.exports = exports = defineComponent( {
 
 		return {
 			searchInputRef,
-			value,
-			cdxIconSearch,
-			onKeydown
+			currentIcon,
+			currentPlaceholder,
+			onBackClick,
+			cdxIconArrowPrevious
 		};
 	}
 } );
@@ -107,18 +192,86 @@ module.exports = exports = defineComponent( {
 @import 'mediawiki.skin.variables.less';
 @import '../../mixins.less';
 
-.citizen-command-palette {
-	&__search {
-		position: relative;
-		/* 8px from CdxTextInput */
-		padding: var( --space-sm ) calc( var( --citizen-command-palette-side-padding ) - @spacing-50 );
-		.mixin-citizen-font-styles( 'body' );
+.citizen-command-palette-header {
+	--citizen-command-palette-back-button-size: 24px;
+	position: relative;
+	/* 8px from CdxTextInput */
+	padding: var( --space-sm ) calc( var( --citizen-command-palette-side-padding ) - @spacing-50 );
+	transition-timing-function: var( --transition-timing-function-ease );
+	transition-duration: var( --transition-duration-base );
+	transition-property: padding-inline-start;
+	.mixin-citizen-font-styles( 'body' );
+
+	&--mode-active {
+		padding-inline-start: calc( var( --citizen-command-palette-side-padding ) - @spacing-50 + var( --citizen-command-palette-back-button-size ) );
+	}
+
+	&__back {
+		position: absolute;
+		inset-block: 0;
+		inset-inline-start: calc( var( --citizen-command-palette-side-padding ) - @spacing-50 );
+		min-width: var( --citizen-command-palette-back-button-size );
+		margin-block: auto;
+	}
+
+	&-back-enter-active,
+	&-back-leave-active {
+		transition-timing-function: var( --transition-timing-function-ease );
+		transition-duration: var( --transition-duration-base );
+		transition-property: opacity, transform;
+	}
+
+	&-back-enter-from,
+	&-back-leave-to {
+		opacity: 0;
+		transform: translateX( -25% );
+	}
+
+	&__chip {
+		flex-shrink: 0;
+		font-weight: var( --font-weight-medium );
+		background-color: var( --background-color-interactive );
+		border: var( --border-base );
+		border-radius: var( --border-radius-base );
+
+		&--outlined {
+			background-color: transparent;
+			border-style: dashed;
+		}
+
+		&--selected {
+			background-color: transparent;
+			border-color: var( --border-color-subtle );
+		}
+	}
+
+	&__input-area {
+		display: flex;
+		flex-grow: 1;
+		flex-wrap: nowrap;
+		gap: @spacing-25;
+		align-items: center;
+	}
+
+	&__icon {
+		flex-shrink: 0;
+		color: @color-placeholder;
+		transition-timing-function: var( --transition-timing-function-ease );
+		transition-duration: var( --transition-duration-base );
+		transition-property: opacity, transform;
+
+		&.cdx-icon {
+			width: 40px;
+		}
 	}
 
 	&__input {
+		flex-grow: 1;
+		min-width: 0;
+
 		.cdx-text-input__input {
 			padding-block: 0;
-			padding-left: calc( @spacing-50 + @size-icon-medium + var( --space-sm ) );
+			padding-inline-start: 0;
 			outline: 0 !important;
 			background-color: transparent !important;
 			border: 0 !important;

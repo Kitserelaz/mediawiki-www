@@ -11,18 +11,21 @@
 .eslintrc.json export-ignore
 package.json export-ignore
 package-lock.json export-ignore
-node_modules export-ignore
 
 # Github
 README.md export-ignore
+AGENTS.md export-ignore
+CLAUDE.md export-ignore
 .github export-ignore
 
 # Composer
-bin export-ignore
+.phan/ export-ignore
 .phpcs.xml export-ignore
 composer.json export-ignore
 composer.lock export-ignore
-vendor export-ignore
+
+# Docs
+docs export-ignore
 
 # Release-please
 .release-please-manifest.json export-ignore
@@ -31,10 +34,16 @@ release-please-config.json export-ignore
 
 # Tests
 tests export-ignore
+vitest.config.js export-ignore
+
+# Dev scripts
+scripts export-ignore
 
 # Misc
-.husky export-ignore
+lefthook.yml export-ignore
 .commitlintrc.json export-ignore
 .djlintrc export-ignore
 .editorconfig export-ignore
+.markdownlint.json export-ignore
+.markdownlintignore export-ignore
 sonar-project.properties export-ignore

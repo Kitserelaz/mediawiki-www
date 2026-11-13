@@ -1,15 +1,13 @@
 // Hide RSS icon
 a.feedlink {
-	background: none !important;
+	background-image: none !important;
 }
 
 .screen-reader-text {
 	.mixin-citizen-screen-reader-only;
 }
 
-/**
- * Utility legacy classes that are commonly used
- */
+// Utility legacy classes that are commonly used
 .center {
 	width: 100%;
 	text-align: center;
@@ -26,23 +24,17 @@ a.feedlink {
 
 div.tleft,
 div.tright {
-	margin: var( --space-xs ) 0 var( --space-md ) 0;
+	margin: var( --space-content-half ) 0 var( --space-content-unit ) 0;
 }
 
 @media ( min-width: @min-width-breakpoint-tablet ) {
-	/* @noflip */
 	div.tright,
 	.floatright {
-		float: right;
-		clear: right;
-		margin-left: var( --space-lg );
+		.mixin-citizen-float-declarations( right );
 	}
 
-	/* @noflip */
 	div.tleft,
 	.floatleft {
-		float: left;
-		clear: left;
-		margin-right: var( --space-lg );
+		.mixin-citizen-float-declarations( left );
 	}
 }

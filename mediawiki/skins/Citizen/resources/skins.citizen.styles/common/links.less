@@ -2,6 +2,7 @@
 
 a {
 	text-decoration: none;
+	text-underline-offset: 0.25em;
 }
 
 // T373989
@@ -15,8 +16,9 @@ a:where( .new:not( [ role='button' ] ) ) {
 	.cdx-mixin-link-red();
 }
 
-/* External links */
-.mw-parser-output {
+// External links
+.mw-parser-output,
+.page-info__text {
 	a {
 		&.external {
 			&::after {
@@ -28,7 +30,7 @@ a:where( .new:not( [ role='button' ] ) ) {
 		}
 	}
 
-	/* Plainlinks */
+	// Plainlinks
 	.plainlinks a {
 		&.external {
 			&::after {
@@ -38,7 +40,7 @@ a:where( .new:not( [ role='button' ] ) ) {
 	}
 }
 
-/* Self links */
+// Self links
 a.mw-selflink {
 	font-weight: var( --font-weight-semi-bold );
 	color: inherit;
@@ -49,7 +51,7 @@ a.mw-selflink {
 	}
 }
 
-/* Underline preference */
+// Underline preference
 .mw-underline-always a {
 	text-decoration: underline;
 }

@@ -8,12 +8,13 @@
 
 @import '../../../resources/variables.less';
 
-.ve-ui-toolbar > .oo-ui-toolbar-bar {
-	/* Fix z-index */
-	z-index: @z-index-sticky;
-	/* Fix weird gap between save button and toolbar bottom */
-	border-bottom: 0;
-	box-shadow: 0 1px 0 0 var( --border-color-base );
+// T373875: Use fixed font size for VE UI elements
+.ve-init-mw-desktopArticleTarget-toolbar,
+.ve-init-mw-desktopArticleTarget-toolbarPlaceholder,
+.ve-ui-overlay-local,
+.ve-ui-overlay-global,
+.ve-ui-sidebarDialogWindowManager {
+	font-size: 0.875rem;
 }
 
 /* ve.ce.BranchNode.css */
@@ -98,10 +99,6 @@
 	font-family: var( --font-family-base );
 }
 
-.ve-ui-overlay-global {
-	z-index: @z-index-overlay;
-}
-
 /* ve.ui.Surface.css */
 .ve-ui-surface-source-font {
 	font-family: var( --font-family-monospace );
@@ -153,7 +150,20 @@
 
 /* Responsive handling */
 .ve-init-mw-desktopArticleTarget-toolbar {
+	/* Fix z-index */
+	z-index: @z-index-sticky;
+
 	> .oo-ui-toolbar-bar {
+		/* Fix weird gap between save button and toolbar bottom */
+		border-bottom: 0;
+		box-shadow: 0 1px 0 0 var( --border-color-base );
+
+		@media ( min-width: @min-width-breakpoint-desktop ) {
+			.ve-ui-toolbar-floating& {
+				top: var( --header-size-block-start );
+			}
+		}
+
 		> .oo-ui-toolbar-tools {
 			position: relative;
 			// Needed to hide overflow tools

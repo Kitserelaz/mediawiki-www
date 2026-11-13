@@ -1,11 +1,23 @@
 /**
+ * @param {Object} deps
+ * @param {Document} deps.document
+ * @param {Window} deps.window
+ * @param {Object} deps.mw
+ * @param {Object} deps.navigator
+ * @param {Object} deps.HTMLScriptElement
  * @return {void}
  */
-function deferredTasks() {
-	const speculationRules = require( './speculationRules.js' );
+function deferredTasks( { document, window, mw, navigator, HTMLScriptElement } ) {
+	const { createSpeculationRules } = require( './speculationRules.js' );
+	const { createServiceWorker } = require( './serviceWorker.js' );
+	const { createPerformanceMode } = require( './performance.js' );
 
-	speculationRules.init();
-	registerServiceWorker();
+	createSpeculationRules( { document, mw, HTMLScriptElement } ).init();
+	createServiceWorker( { mw, navigator } ).register();
+	// The WebGL probe is main-thread heavy on first visit; the server-rendered
+	// default (performance mode on) is the conservative state, so flipping it
+	// off for capable devices can safely wait for idle.
+	createPerformanceMode( { document, mw } ).init();
 
 	window.addEventListener( 'beforeunload', () => {
 		// Set up loading indicator
@@ -21,48 +33,35 @@ function deferredTasks() {
 }
 
 /**
- * Register service worker
- *
- * @return {void}
- */
-function registerServiceWorker() {
-	const scriptPath = mw.config.get( 'wgScriptPath' );
-	// Only allow serviceWorker when the scriptPath is at root because of its scope
-	// I can't figure out how to add the Service-Worker-Allowed HTTP header
-	// to change the default scope
-	if ( scriptPath !== '' ) {
-		return;
-	}
-
-	if ( 'serviceWorker' in navigator ) {
-		const SW_MODULE_NAME = 'skins.citizen.serviceWorker',
-			version = mw.loader.moduleRegistry[ SW_MODULE_NAME ].version,
-			// HACK: Faking a RL link
-			swUrl = scriptPath +
-				'/load.php?modules=' + SW_MODULE_NAME +
-				'&only=scripts&raw=true&skin=citizen&version=' + version;
-		navigator.serviceWorker.register( swUrl, { scope: '/' } );
-	}
-}
-
-/**
  * Initialize scripts related to wiki page content
  *
  * @param {HTMLElement} bodyContent
+ * @param {Object} deps
+ * @param {Document} deps.document
+ * @param {Window} deps.window
+ * @param {Object} deps.mw
+ * @param {typeof IntersectionObserver} deps.IntersectionObserver
+ * @param {typeof ResizeObserver} deps.ResizeObserver
  * @return {void}
  */
-function initBodyContent( bodyContent ) {
+function initBodyContent(
+	bodyContent, { document, window, mw, IntersectionObserver, ResizeObserver }
+) {
 	const
-		sections = require( './sections.js' ),
-		overflowElements = require( './overflowElements.js' ),
-		contentEnhancements = require( './contentEnhancements.js' );
+		{ createSections } = require( './sections.js' ),
+		overflowElements = require( './overflowElements/index.js' ),
+		{ createContentEnhancements } = require( './contentEnhancements.js' ),
+		config = require( './config.json' );
 
 	// Collapsable sections
-	sections.init( bodyContent );
+	createSections( { document, bodyContent } ).init();
 	// Overflow element enhancements
-	overflowElements.init( bodyContent );
+	overflowElements.init( {
+		document, window, mw, IntersectionObserver, ResizeObserver,
+		bodyContent, config
+	} );
 	// Content enhancements
-	contentEnhancements.init();
+	createContentEnhancements( { document, bodyContent } ).init();
 }
 
 /**
@@ -72,33 +71,70 @@ function initBodyContent( bodyContent ) {
 function main( window ) {
 	const
 		config = require( './config.json' ),
-		echo = require( './echo.js' ),
+		{ createNotifications } = require( './notifications.js' ),
 		search = require( './search.js' ),
 		dropdown = require( './dropdown.js' ),
-		lastModified = require( './lastModified.js' ),
-		share = require( './share.js' ),
-		setupObservers = require( './setupObservers.js' );
+		{ createLastModified } = require( './lastModified.js' ),
+		{ createPageAside } = require( './pageAside.js' ),
+		{ createShare } = require( './share.js' ),
+		setupObservers = require( './setupObservers.js' ),
+		deferUntilFrame = require( './deferUntilFrame.js' ),
+		{ createPageTools } = require( './pageTools.js' ),
+		{ createPreferences } = require( './preferences.js' ),
+		{ createCommandPalette } = require( './commandPalette.js' );
 
-	search.init( window );
-	echo();
-	setupObservers.main();
-	dropdown.init();
-	lastModified.init();
-	share.init();
+	// Taken before the palette can save a go note, so the landing check below
+	// can tell a note this page saved from one the page before it saved.
+	const pageStart = Date.now();
+	const commandPalette = createCommandPalette( { document, mw } );
+	commandPalette.init();
+	// Only the palette reads where a go landed, and only once it is opened,
+	// so the check need not run during startup. The timeout keeps it well
+	// inside the go note's lifetime on a page that is never idle.
+	mw.requestIdleCallback( () => {
+		const { recordGoLanding } = require( './goLanding.js' );
+		recordGoLanding( { mw, performance: window.performance, pageStart } );
+	}, { timeout: 3000 } );
+
+	search.init( { window, document, triggerOpen: commandPalette.triggerOpen } );
+	createNotifications( { document, mw } ).init();
+	// Observer setup reads geometry (getComputedStyle, full heading sweep).
+	// Wait two frames so the reads hit the clean layout left by the first
+	// paint instead of forcing one before it; the observers drive scroll-time
+	// UI, so nothing is lost during those frames.
+	deferUntilFrame( () => {
+		setupObservers.init( { document, window, mw, IntersectionObserver } );
+	}, 2 );
+	dropdown.init( { document, window } );
+	createPageTools( { document, window } ).init();
+	createLastModified( { document, Intl } ).init();
+	createPageAside( { document, mw } ).init();
+	createShare( {
+		document,
+		window,
+		mw,
+		navigator,
+		mode: config.wgCitizenShareMode
+	} ).init();
 
 	mw.hook( 'wikipage.content' ).add( ( content ) => {
 		// content is a jQuery object
 		// note that this refers to .mw-body-content, not #bodyContent
-		initBodyContent( content[ 0 ] );
+		initBodyContent(
+			content[ 0 ], { document, window, mw, IntersectionObserver, ResizeObserver }
+		);
 	} );
 
-	// Preference module
+	// Preferences module
 	if ( config.wgCitizenEnablePreferences === true ) {
-		mw.loader.load( 'skins.citizen.preferences' );
+		createPreferences( { document, mw } ).init();
 	}
 
 	// Defer non-essential tasks
-	mw.requestIdleCallback( deferredTasks, { timeout: 3000 } );
+	mw.requestIdleCallback(
+		() => deferredTasks( { document, window, mw, navigator, HTMLScriptElement } ),
+		{ timeout: 3000 }
+	);
 }
 
 if ( document.readyState === 'interactive' || document.readyState === 'complete' ) {

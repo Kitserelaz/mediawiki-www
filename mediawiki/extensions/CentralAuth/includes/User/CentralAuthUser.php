@@ -1946,6 +1946,11 @@ class CentralAuthUser implements IDBAccessObject {
 	 * @param string $wikiId
 	 */
 	private function queueAdminUnattachJob( $wikiId ) {
+		// The cleanup job checks the local account on the target wiki.
+		if ( !$this->isLocalWiki( $wikiId ) ) {
+			return;
+		}
+
 		$services = MediaWikiServices::getInstance();
 
 		$job = $services->getJobFactory()->newJob(
@@ -1957,6 +1962,14 @@ class CentralAuthUser implements IDBAccessObject {
 		);
 
 		$services->getJobQueueGroupFactory()->makeJobQueueGroup( $wikiId )->lazyPush( $job );
+	}
+
+	private function isLocalWiki( string $wikiId ): bool {
+		return WikiMap::isCurrentWikiDbDomain( $wikiId ) || in_array(
+			$wikiId,
+			MediaWikiServices::getInstance()->getMainConfig()->get( 'LocalDatabases' ),
+			true
+		);
 	}
 
 	/**
@@ -3079,6 +3092,16 @@ class CentralAuthUser implements IDBAccessObject {
 				unset( $wikis[$wikiId] );
 				// Queue a job to delete the bogus attachment record.
 				$this->queueAdminUnattachJob( $wikiId );
+			} catch ( LogicException $exception ) {
+				$this->logger->warning(
+					'Could not load attached local user data for {username}@{wikiId}',
+					[
+						'username' => $this->mName,
+						'wikiId' => $wikiId,
+						'exception' => $exception,
+					]
+				);
+				unset( $wikis[$wikiId] );
 			}
 		}
 
@@ -3180,9 +3203,8 @@ class CentralAuthUser implements IDBAccessObject {
 		$mwServices = MediaWikiServices::getInstance();
 		$databaseManager = CentralAuthServices::getDatabaseManager();
 
-		$knownDBs = $mwServices->getMainConfig()->get( 'LocalDatabases' );
 		// (T391511) Don't explode if the wiki isn't found, but treat it as "user not found" and warn for clean-up
-		if ( !WikiMap::isCurrentWikiDbDomain( $wikiID ) && !in_array( $wikiID, $knownDBs ) ) {
+		if ( !$this->isLocalWiki( $wikiID ) ) {
 			$this->logger->warning(
 				"Requested to load user data for unknown wiki {wikiId}. Was it deleted without data migration?",
 				[

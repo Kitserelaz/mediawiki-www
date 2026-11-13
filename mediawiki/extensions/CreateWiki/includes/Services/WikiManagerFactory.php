@@ -388,6 +388,26 @@ class WikiManagerFactory {
 		return null;
 	}
 
+	public function permanentlyDelete( string $actor, string $reason ): ?string {
+		$error = $this->delete( force: true );
+		if ( $error ) {
+			return $error;
+		}
+
+		$dbQuotes = $this->dbw->addIdentifierQuotes( $this->dbname );
+		$this->dbw->query( "DROP DATABASE $dbQuotes", __METHOD__ );
+
+		$this->logEntry(
+			'farmer',
+			'permanentlydeletewiki',
+			$actor,
+			$reason,
+			[ '4::wiki' => $this->dbname ]
+		);
+
+		return null;
+	}
+
 	public function rename( string $newDatabaseName ): ?string {
 		// NOTE: $this->dbname is the old database name
 

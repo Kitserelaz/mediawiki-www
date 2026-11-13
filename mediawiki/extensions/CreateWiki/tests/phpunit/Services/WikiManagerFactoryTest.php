@@ -228,6 +228,29 @@ class WikiManagerFactoryTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
+	 * @covers ::permanentlyDelete
+	 */
+	public function testPermanentlyDelete(): void {
+		$dbname = 'permanentlydeletetest';
+		$this->createWiki( dbname: $dbname, private: false );
+		$wikiManager = $this->getFactoryService()->newInstance( $dbname );
+
+		$this->assertNull( $wikiManager->permanentlyDelete(
+			$this->getTestUser()->getUser()->getName(),
+			'Test permanent deletion'
+		) );
+		$this->assertFalse( $this->wikiExists( $dbname ) );
+
+		$schema = $this->getDb()->newSelectQueryBuilder()
+			->select( 'SCHEMA_NAME' )
+			->from( 'information_schema.SCHEMATA' )
+			->where( [ 'SCHEMA_NAME' => $dbname ] )
+			->caller( __METHOD__ )
+			->fetchField();
+		$this->assertFalse( $schema );
+	}
+
+	/**
 	 * @covers ::delete
 	 */
 	public function testDeleteIneligible(): void {

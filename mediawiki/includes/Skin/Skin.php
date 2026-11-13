@@ -1590,9 +1590,11 @@ abstract class Skin extends ContextSource {
 			$config = $this->getConfig();
 			$languageCode = $this->getLanguage()->getCode();
 
+			// Shared authentication and wiki hosts can generate different links for the same sidebar.
+			$canonicalServer = $config->get( MainConfigNames::CanonicalServer );
 			$sidebar = $config->get( MainConfigNames::EnableSidebarCache )
 				? $wanCache->getWithSetCallback(
-					$wanCache->makeKey( 'sidebar', $languageCode, $this->getSkinName() ?? '' ),
+					$wanCache->makeKey( 'sidebar', $languageCode, $this->getSkinName() ?? '', $canonicalServer ),
 					$config->get( MainConfigNames::SidebarCacheExpiry ),
 					$callback,
 					[

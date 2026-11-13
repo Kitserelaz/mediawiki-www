@@ -80,12 +80,15 @@
 	"AvailableRights": [
 		"createwiki",
 		"createwiki-deleterequest",
+		"createwiki-permanentlydelete",
 		"createwiki-suppressionlog",
 		"createwiki-suppressrequest",
+		"upgrade-mediawiki",
 		"requestwiki"
 	],
 	"LogActionsHandlers": {
 		"farmer/createwiki": "MediaWiki\\Logging\\LogFormatter",
+		"farmer/permanentlydeletewiki": "MediaWiki\\Logging\\LogFormatter",
 		"farmer/comment": "MediaWiki\\Logging\\LogFormatter",
 		"farmer/create-failure": "MediaWiki\\Logging\\LogFormatter",
 		"farmer/requestapprove": "MediaWiki\\Logging\\LogFormatter",
@@ -116,6 +119,9 @@
 		"farmer": {
 			"createwiki": [
 				"createwiki"
+			],
+			"permanentlydeletewiki": [
+				"permanentlydeletewiki"
 			],
 			"comment": [
 				"comment"
@@ -164,6 +170,19 @@
 				"CreateWikiDatabaseUtils",
 				"CreateWikiValidator",
 				"WikiManagerFactory"
+			]
+		},
+		"PermanentlyDeleteWiki": {
+			"class": "Miraheze\\CreateWiki\\Specials\\SpecialPermanentlyDeleteWiki",
+			"services": [
+				"CreateWikiDatabaseUtils",
+				"WikiManagerFactory"
+			]
+		},
+		"Upgrade": {
+			"class": "Miraheze\\CreateWiki\\Specials\\SpecialUpgrade",
+			"services": [
+				"RemoteWikiFactory"
 			]
 		},
 		"RequestWiki": {

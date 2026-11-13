@@ -611,6 +611,7 @@ $wgConf->settings += [
 				'checkuser-log',
 				'createwiki',
 				'createwiki-deleterequest',
+				'createwiki-permanentlydelete',
 				'createwiki-suppressionlog',
 				'createwiki-suppressrequest',
 				'editincidents',

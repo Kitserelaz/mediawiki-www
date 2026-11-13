@@ -32,7 +32,7 @@ namespace Lingo;
 use DOMDocument;
 use DOMElement;
 use DOMText;
-use Title;
+use MediaWiki\Title\Title;
 
 /**
  * This class represents a term-definition pair.
@@ -203,7 +203,7 @@ class Element {
 	 * @return string
 	 */
 	private function getTitleForLink( $descriptor ) {
-		/** @var \Title $target */
+		/** @var Title $target */
 		$target = $descriptor[ 'title' ];
 
 		if ( is_string( $target ) ) {

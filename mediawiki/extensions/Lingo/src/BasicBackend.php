@@ -31,10 +31,10 @@ use ApprovedRevs;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
-use ParserOptions;
-use TextContent;
-use Title;
-use WikiPage;
+use MediaWiki\Parser\ParserOptions;
+use MediaWiki\Content\TextContent;
+use MediaWiki\Title\Title;
+use MediaWiki\Page\WikiPage;
 
 /**
  * @ingroup Lingo

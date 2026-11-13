@@ -27,10 +27,8 @@
 namespace Lingo;
 
 use MediaWiki\MediaWikiServices;
-use Parser;
-use ParserOptions;
-use PPFrame;
-use Title;
+use MediaWiki\Parser\Parser;
+use MediaWiki\Parser\PPFrame;
 
 /**
  * @package Lingo
@@ -71,10 +69,6 @@ class Lingo {
 				if ( $po->hasText() ) {
 					$parser->parse( MediaWikiServices::getInstance()->getParser() );
 				}
-			} );
-
-			$hookContainer->register( 'ApiMakeParserOptions', static function ( ParserOptions $popts, Title $title, array $params ) use ( $parser ){
-				$parser->setApiParams( $params );
 			} );
 
 			$hookContainer->register( 'GetDoubleUnderscoreIDs', static function ( array &$doubleUnderscoreIDs ) {

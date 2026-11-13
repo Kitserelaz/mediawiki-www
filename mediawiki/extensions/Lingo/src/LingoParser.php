@@ -28,12 +28,12 @@
  */
 namespace Lingo;
 
-use BagOStuff;
 use DOMDocument;
 use DOMXPath;
-use ObjectCache;
-use Parser;
+use MediaWiki\ObjectCache\ObjectCache;
+use MediaWiki\Parser\Parser;
 use Wikimedia\AtEase\AtEase;
+use Wikimedia\ObjectCache\BagOStuff;
 
 /**
  * This class parses the given text and enriches it with definitions for defined
@@ -58,9 +58,6 @@ class LingoParser {
 	private $mLingoBackend = null;
 	/** @var LingoParser|null */
 	private static $parserSingleton = null;
-
-	/** @var array|null Api params passed in from ApiMakeParserOptions Hook */
-	private $mApiParams = null;
 
 	/** @var string|null The RegEx to split a chunk of text into words */
 	public $regex = null;
@@ -174,14 +171,8 @@ class LingoParser {
 	 * This method currently only recognizes terms consisting of max one word
 	 */
 	private function realParse( Parser $parser ): void {
-		// Parse text identical to options used in includes/api/ApiParse.php
-		$params = $this->mApiParams;
-		$text = $params === null ? $parser->getOutput()->getText() : $parser->getOutput()->getText( [
-			'allowTOC' => !$params['disabletoc'],
-			'enableSectionEditLinks' => !$params['disableeditsection'],
-			'wrapperDivClass' => $params['wrapoutputclass'],
-			'deduplicateStyles' => !$params['disablestylededuplication'],
-		] );
+		// The output renderer applies API display options after glossary annotation.
+		$text = $parser->getOutput()->getContentHolderText();
 
 		if ( $text === null || $text === '' ) {
 			return;
@@ -316,7 +307,7 @@ class LingoParser {
 			$text = preg_replace( '%(^.*<body>)|(</body>.*$)%UDs', '', $doc->saveHTML() );
 			$text .= $parser->recursiveTagParseFully( implode( $definitions ) );
 
-			$parser->getOutput()->setText( $text );
+			$parser->getOutput()->setContentHolderText( $text );
 		}
 	}
 
@@ -374,15 +365,6 @@ class LingoParser {
 	public function setBackend( Backend $backend ) {
 		$this->mLingoBackend = $backend;
 		$backend->setLingoParser( $this );
-	}
-
-	/**
-	 * Set parser options from API
-	 *
-	 * @param array $params
-	 */
-	public function setApiParams( array $params ) {
-		$this->mApiParams = $params;
 	}
 
 	private function shouldParse( Parser $parser ): bool {

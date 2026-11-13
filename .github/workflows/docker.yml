@@ -150,7 +150,7 @@ jobs:
     - run: python3 docker/tests/counter-shutdown.py
     if: "${{ !cancelled() && (needs.changes.outputs.runtime == 'true') }}"
   integration:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
     needs:
     - changes
@@ -290,7 +290,7 @@ jobs:
       run: python3 scripts/test-upstream.py
     if: "${{ !cancelled() && (needs.changes.outputs.wiki == 'true') }}"
   production:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     needs:
     - changes

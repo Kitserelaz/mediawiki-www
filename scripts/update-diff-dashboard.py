@@ -207,6 +207,17 @@ def deployment_report(state):
         return None
 
 
+def live_release(root, release):
+    head = subprocess.check_output(['git', '-C', str(root), 'rev-parse', 'HEAD'], text=True).strip()
+    if head == release['commit']:
+        return release
+    ancestor = subprocess.run(
+        ['git', '-C', str(root), 'merge-base', '--is-ancestor', release['commit'], head],
+        check=False, stderr=subprocess.DEVNULL,
+    )
+    return {'commit': head, 'previous_commit': release['commit'] if ancestor.returncode == 0 else None}
+
+
 def main():
     directory = STATE / 'diff'
     spec = importlib.util.spec_from_file_location('deploy_guard', '/usr/local/libexec/cloudwiki-deploy-production.py')
@@ -237,9 +248,7 @@ def main():
                 settings = {}
             live = settings.get('MW_CODE_MODE') == 'bind' and settings.get('MW_BIND_STRATEGY') == 'live'
             if live:
-                head = subprocess.check_output(['git', '-C', str(ROOT), 'rev-parse', 'HEAD'], text=True).strip()
-                if head != release['commit']:
-                    release = {'commit': head, 'previous_commit': None}
+                release = live_release(ROOT, release)
             snapshot_at = time.time()
     cache_path = directory / 'repository-cache.json'
     cache = json.loads(cache_path.read_text()) if cache_path.exists() else {}

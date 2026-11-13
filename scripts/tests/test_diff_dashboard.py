@@ -80,6 +80,18 @@ class DashboardTests(unittest.TestCase):
         self.assertNotIn('released', result)
         self.assertEqual(fetch.call_count, 1)
 
+    def test_live_fast_forward_keeps_last_successful_release_as_comparison_base(self):
+        from unittest.mock import patch
+
+        recorded = {'commit': 'last-success', 'previous_commit': 'older'}
+        with patch.object(m.subprocess, 'check_output', return_value='live-head\n'), \
+                patch.object(m.subprocess, 'run') as git:
+            git.return_value.returncode = 0
+            self.assertEqual(m.live_release(Path('/var/www'), recorded),
+                             {'commit': 'live-head', 'previous_commit': 'last-success'})
+            git.return_value.returncode = 1
+            self.assertEqual(m.live_release(Path('/var/www'), recorded),
+                             {'commit': 'live-head', 'previous_commit': None})
 
     def test_pipeline_tracks_exact_main_commit_and_keeps_only_public_fields(self):
         run = {'id': 42, 'head_sha': 'new', 'status': 'in_progress', 'run_attempt': 2}

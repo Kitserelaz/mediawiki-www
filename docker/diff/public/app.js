@@ -82,10 +82,14 @@ function renderPipeline() {
   if (!jobs.length) $('build-jobs').append(element('p', pipeline.status === 'waiting_for_run' ? 'No workflow run exists for this exact main commit yet.' : 'Job details are not available yet.', 'empty'));
   const deployment = report.deployment;
   const deploymentJob = jobs.find(j => j.name === 'deploy');
-  $('deployment-progress').replaceChildren(element('h3', 'Production deployment'));
+  $('deployment-progress').replaceChildren(element('h3', 'Automated deployment'));
   if (deployment) {
     $('deployment-progress').append(element('p', `${short(deployment.commit)} · ${deployment.status} · ${stages[deployment.stage] || 'Status unavailable'}`));
-    $('deployment-progress').append(element('p', `Total: ${elapsed(deployment.started_at, deployment.status === 'running' ? null : deployment.updated_at)} · Stage: ${elapsed(deployment.stage_started_at, deployment.status === 'running' ? null : deployment.updated_at)} · Heartbeat: ${age(deployment.heartbeat_at)}`, 'muted'));
+    const timing = `Total: ${elapsed(deployment.started_at, deployment.status === 'running' ? null : deployment.updated_at)}`;
+    const detail = deployment.status === 'running'
+      ? `Stage: ${elapsed(deployment.stage_started_at, null)} · Heartbeat: ${age(deployment.heartbeat_at)}`
+      : deployment.updated_at ? `Updated ${stamp(deployment.updated_at)}` : '';
+    $('deployment-progress').append(element('p', [timing, detail].filter(Boolean).join(' · '), 'muted'));
     if (deployment.reason) $('deployment-progress').append(element('p', reasons[deployment.reason] || 'See the deployment job for details.', 'warn'));
     if (deployment.status === 'running' && now - deployment.heartbeat_at > 150) $('deployment-progress').append(element('p', 'Deployment heartbeat overdue. The process may have stopped; check the deployment log.', 'warn'));
     if (sha && deployment.commit !== sha) $('deployment-progress').append(element('p', deploymentJob?.status === 'in_progress' ? 'The current deployment job is running; waiting for server acceptance or the deployment lock. This record belongs to a different commit.' : 'This deployment record belongs to a different commit than the build above.', 'muted'));
@@ -98,7 +102,7 @@ function render() {
   document.querySelectorAll('[role=tab]').forEach(t => { const active = t.dataset.view === view; t.setAttribute('aria-selected', active); t.tabIndex = active ? 0 : -1; });
   $('changes').setAttribute('aria-labelledby', `tab-${view}`);
   $('view-title').textContent = { pending: 'From production to main', released: 'What the last release shipped', config: 'Changes to local configuration', working_tree: 'Uncommitted production edits' }[view];
-  $('view-caption').textContent = view === 'working_tree' ? 'Saved live edits are already affecting production. Commit or revert these files before deploying. Contents remain private.' : view === 'config' ? 'Compared with the baseline accepted by the deployment guard. File names only.' : view === 'pending' ? 'These changes are in the repository. They have not shipped to production yet.' : report.previous_commit ? 'Compared with the previous successful production release.' : 'This is the initial production release; there is no earlier deployment to compare.';
+  $('view-caption').textContent = view === 'working_tree' ? 'Saved live edits are already affecting production. Commit or revert these files before deploying. Contents remain private.' : view === 'config' ? 'Compared with the baseline accepted by the deployment guard. File names only.' : view === 'pending' ? 'These changes are in the repository. They have not shipped to production yet.' : report.previous_commit ? 'Compared with the previous successful production release.' : 'No earlier production release is available for comparison.';
   $('compare').hidden = privateView || (view === 'released' && !report.previous_commit);
   $('compare').href = `${repo}/compare/${view === 'pending' ? report.deployed_commit + '...main' : report.previous_commit + '...' + report.deployed_commit}`;
   $('commits').replaceChildren();

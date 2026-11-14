@@ -349,7 +349,6 @@
       "evidence": "https://www.mediawiki.org/wiki/Extension:RemovePII"
     },
     "mediawiki/extensions/Report": {
-      "notes": "Preserve the local HTML import and exception detail fixes.",
       "evidence": "https://www.mediawiki.org/wiki/Extension:Report"
     },
     "mediawiki/extensions/RequestSSL": {

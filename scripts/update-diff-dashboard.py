@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Publish allowlisted, public release information; never publish config values."""
+"""Publish release information and diffs for tracked production source."""
 import fcntl
 import importlib.util
 import json
@@ -18,6 +18,9 @@ WEB = 'https://github.com/' + REPO
 API = 'https://api.github.com/repos/' + REPO
 STATE = Path('/var/lib/cloudwiki')
 ROOT = Path('/var/www')
+MAX_PATCH_BYTES = 32 * 1024
+MAX_PATCH_FILES = 100
+PRIVATE_PATHS = {'mediawiki/PrivateSettings.php', 'docker/mediawiki/private.php'}
 
 
 def write_json(path, data, mode=0o600):
@@ -44,7 +47,36 @@ def comparison(data):
     }
 
 
-def config_report(guard, root, state):
+def local_patch(root, filename, previous_filename=None, timeout=5):
+    paths = [filename] if previous_filename is None else [previous_filename, filename]
+    if any(path in PRIVATE_PATHS for path in paths):
+        return {}
+    try:
+        diff = subprocess.check_output([
+            'git', '-C', str(root), '-c', 'core.bigFileThreshold=128k', '--literal-pathspecs',
+            'diff', '--no-ext-diff', '--no-textconv', '--no-color', '--find-renames', '--unified=0',
+            '--diff-filter=MDR', 'HEAD', '--', *paths,
+        ], stderr=subprocess.DEVNULL, timeout=timeout)
+    except (OSError, subprocess.SubprocessError):
+        return {}
+    if len(diff) > MAX_PATCH_BYTES:
+        return {'patch_note': 'This diff is too large to display.'}
+    header, marker, body = diff.partition(b'\n@@ ')
+    if (not marker or b'\ndiff --git ' in body
+            or any(line.endswith((b' 120000', b' 160000')) for line in header.splitlines()
+                   if line.startswith((b'index ', b'deleted file mode ')))):
+        return {}
+    try:
+        lines = ('@@ ' + body.decode('utf-8')).rstrip('\n').split('\n')
+    except UnicodeDecodeError:
+        return {}
+    # Git may append source text from a nearby function to the hunk header.
+    lines = [line.split(' @@', 1)[0] + ' @@' if line.startswith('@@ ') else line for line in lines]
+    return {'patch': '\n'.join(lines), 'additions': sum(line.startswith('+') for line in lines),
+            'deletions': sum(line.startswith('-') for line in lines)}
+
+
+def config_report(guard, root, state, patch=None):
     baseline = state / guard.CONFIG_BASELINE
     if not baseline.exists():
         return {'status': 'unknown', 'files': [], 'message': 'No accepted baseline'}
@@ -60,16 +92,19 @@ def config_report(guard, root, state):
     for path in sorted(expected.keys() | actual.keys()):
         if expected.get(path) == actual.get(path):
             continue
+        item = {'status': 'added' if path not in expected else 'deleted' if actual.get(path) is None else 'modified'}
         try:
             label = str(Path(path).relative_to(root))
         except ValueError:
             label = Path(path).name
-        files.append({'filename': label, 'status': 'added' if path not in expected else
-                      'deleted' if actual.get(path) is None else 'modified'})
+        else:
+            if patch is not None and '..' not in Path(label).parts and len(files) < MAX_PATCH_FILES:
+                item.update(patch(label))
+        files.append({'filename': label, **item})
     return {'status': 'changed' if files else 'clean', 'files': files}
 
 
-def working_tree_report(root):
+def working_tree_report(root, patch=None):
     raw = subprocess.check_output(['git', '-C', str(root), 'status', '--porcelain=v1', '-z',
                                    '--untracked-files=all', '--', 'mediawiki']).decode('utf-8', 'replace')
     entries = iter(raw.split('\0'))
@@ -81,8 +116,11 @@ def working_tree_report(root):
         status = ('added' if code == '??' or 'A' in code else 'deleted' if 'D' in code else
                   'renamed' if 'R' in code else 'modified')
         item = {'filename': filename, 'status': status}
-        if 'R' in code or 'C' in code:
-            next(entries, None)  # Consume the original name; never read file contents.
+        previous = next(entries, None) if 'R' in code or 'C' in code else None
+        if previous:
+            item['previous_filename'] = previous
+        if patch is not None and status != 'added' and len(files) < MAX_PATCH_FILES:
+            item.update(patch(filename, previous))
         files.append(item)
     return {'status': 'changed' if files else 'clean', 'files': files}
 
@@ -240,7 +278,20 @@ def main():
                 write_json(initial, {'commit': commit, 'previous_commit': None})
             last = STATE / 'last-success.json'
             release = json.loads((last if last.exists() else initial).read_text())
-            local, worktree = config_report(guard, ROOT, STATE), working_tree_report(ROOT)
+            patches = {}
+            patch_deadline = time.monotonic() + 8
+
+            def patch(filename, previous=None):
+                key = (filename, previous)
+                if key not in patches:
+                    remaining = patch_deadline - time.monotonic()
+                    if remaining <= 0:
+                        return {'patch_note': 'This diff could not be generated in time.'}
+                    patches[key] = local_patch(ROOT, filename, previous, timeout=min(remaining, 2))
+                return patches[key]
+
+            local = config_report(guard, ROOT, STATE, patch)
+            worktree = working_tree_report(ROOT, patch)
             try:
                 resolved = guard.Runner(ROOT).run(['docker', 'compose', '--env-file', str(ROOT / '.env.production'), 'config', '--environment'], capture=True)
                 settings = dict(line.split('=', 1) for line in resolved.splitlines() if '=' in line)

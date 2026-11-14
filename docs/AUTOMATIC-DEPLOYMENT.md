@@ -226,9 +226,10 @@ the key requires replacing both that public key and `PRODUCTION_SSH_KEY`.
 `https://diff.cloudwiki.us` shows the last successful production commit, the
 comparison from that commit to `main`, the previous successful release comparison
 when available, CI status, and local configuration drift. Pending changes are
-explicitly distinguished from deployed changes. Expanded patches come from the
-public GitHub repository; config contents, hashes, image credentials, and secret
-values are never written to the public report.
+explicitly distinguished from deployed changes. The Live edits and Local config
+tabs can show text diffs for modified and deleted files tracked in the production
+checkout. The patches compare against the checkout’s `HEAD` and appear in the
+public JSON report. Keep credentials in the production secret mounts.
 
 A root systemd oneshot (`cloudwiki-diff.service`) generates a static JSON report
 every minute via `cloudwiki-diff.timer`. Public GitHub comparisons are cached for
@@ -261,9 +262,10 @@ sudo journalctl -u cloudwiki-diff.service -n 30
 sudo python3 /usr/local/libexec/cloudwiki-deploy-production.py --check-config
 ```
 
-The dashboard is public. It reveals changed config filenames and deployment
-commit IDs, but never the private contents. Reports are read-only; intentional
-config changes must still be reviewed and accepted locally on the server.
+The Local config tab detects drift against the accepted configuration fingerprints.
+Production-only files, including `.env.production` and credential mounts, appear
+by filename when drift is detected. Reports are read-only. Review and accept
+intentional config changes locally on the server.
 
 Live source editing is an explicit `MW_BIND_STRATEGY=live` opt-in. See the live
 editing section of `docs/DOCKER.md`. Both tracked changes and new untracked
@@ -271,5 +273,5 @@ MediaWiki files block deployment. In this mode the editor is stopped before the
 final cleanliness check and restarted only after a healthy release, preventing
 editor saves from racing with Git checkout. Failures before the write freeze
 resume the editor without stopping the application; migration failures keep both
-stopped. The dashboard's Live edits tab shows filenames only and marks dirty
-source as different from its displayed base commit.
+stopped. The dashboard’s Live edits tab lists changed files, shows available text
+diffs, and identifies the live checkout’s base commit.

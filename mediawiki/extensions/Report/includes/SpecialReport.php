@@ -3,7 +3,10 @@ namespace MediaWiki\Extension\Report;
 
 use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
+use OutputPage;
 use SpecialPage;
+use User;
+use WebRequest;
 
 class SpecialReport extends SpecialPage {
 

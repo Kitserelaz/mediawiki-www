@@ -71,4 +71,20 @@ context.fixture.deployment.stage = 'rolling_back';
 context.fixture.deployment.reason = 'rollback_failed';
 vm.runInContext('renderPipeline()', context);
 assert.match(text(nodes['deployment-progress']), /manual recovery is required/);
+
+const liveFile = {filename: 'mediawiki/LocalSettings.php', status: 'modified', additions: 1, deletions: 1,
+  patch: '@@ -1 +1 @@\n-old value\n+<script>new value</script>'};
+context.fixture.working_tree = {status: 'changed', files: [liveFile]};
+context.fixture.config = {status: 'changed', files: [liveFile, {filename: '.env.production', status: 'modified'}]};
+vm.runInContext('view = "working_tree"; render()', context);
+assert.equal(nodes.compare.hidden, true);
+assert.match(text(nodes.changes), /-old value/);
+assert.match(text(nodes.changes), /\+<script>new value<\/script>/);
+nodes.changes.children[0].open = true;
+vm.runInContext('render()', context);
+assert.equal(nodes.changes.children[0].open, true);
+vm.runInContext('view = "config"; render()', context);
+assert.match(text(nodes.changes.children[0]), /-old value/);
+assert.match(text(nodes.changes.children[1]), /No inline text diff available/);
+assert.doesNotMatch(text(nodes.changes.children[1]), /undefined/);
 console.log('Dashboard rendering scenarios passed');

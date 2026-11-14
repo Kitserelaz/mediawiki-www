@@ -368,8 +368,8 @@ acknowledgement; the editor cannot acknowledge its own config changes.
 
 Commit/review/push from the host over SSH or transfer the edits to your normal
 Git checkout; parent `.git` metadata and GitHub credentials are intentionally
-outside the browser editor. `diff.cloudwiki.us` reports live-edit filenames and
-blocked-deployment status without publishing uncommitted contents.
+outside the browser editor. `diff.cloudwiki.us` reports live edits and
+blocked-deployment status, with public inline text diffs for tracked source files.
 
 ### Wildcard production HTTPS and missing wikis
 

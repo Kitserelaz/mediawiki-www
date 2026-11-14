@@ -1,6 +1,7 @@
 import importlib.util
 import json
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import Mock
@@ -56,23 +57,59 @@ class DashboardTests(unittest.TestCase):
         self.assertEqual(m.repository_report('abc', None, cached, 1100, fetch), cached)
         fetch.assert_not_called()
 
-    def test_live_edits_report_only_names_including_untracked_and_rename(self):
-        import subprocess
+    def test_local_diffs_publish_tracked_edits_and_skip_production_only_contents(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
-            subprocess.run(['git', 'init', '-q', d], check=True)
+            def git(*args):
+                subprocess.run(['git', '-C', d, *args], check=True)
+
+            git('init', '-q')
             (root / 'mediawiki').mkdir()
-            file = root / 'mediawiki/file.php'
-            file.write_text('initial')
-            subprocess.run(['git', '-C', d, 'add', '.'], check=True)
-            subprocess.run(['git', '-C', d, '-c', 'user.name=Test', '-c', 'user.email=test@example.test', 'commit', '-qm', 'Initial'], check=True)
-            subprocess.run(['git', '-C', d, 'mv', 'mediawiki/file.php', 'mediawiki/renamed.php'], check=True)
-            (root / 'mediawiki/new.php').write_text('private-uncommitted-value')
-            result = m.working_tree_report(root)
-            self.assertEqual(result['status'], 'changed')
-            self.assertEqual(len(result['files']), 2)
-            self.assertNotIn('private-uncommitted-value', json.dumps(result))
-            self.assertIn({'filename': 'mediawiki/renamed.php', 'status': 'renamed'}, result['files'])
+            settings = root / 'mediawiki/LocalSettings.php'
+            settings.write_text('<?php\n$option = false;\n')
+            (root / 'mediawiki/deleted.php').write_text('removed source\n')
+            (root / 'mediawiki/renamed.php').write_text('rename source\n')
+            (root / 'mediawiki/PrivateSettings.php').write_text('placeholder\n')
+            (root / 'mediawiki/link').symlink_to('old-private-target')
+            git('add', '.')
+            git('-c', 'user.name=Test', '-c', 'user.email=test@example.test', 'commit', '-qm', 'Initial')
+
+            settings.write_text('<?php\n$option = true;\n')
+            git('add', 'mediawiki/LocalSettings.php')
+            with settings.open('a') as file:
+                file.write('$other = true;\n')
+            (root / 'mediawiki/deleted.php').unlink()
+            git('mv', 'mediawiki/renamed.php', 'mediawiki/moved.php')
+            (root / 'mediawiki/PrivateSettings.php').write_text('private-settings-value\n')
+            (root / 'mediawiki/link').unlink()
+            (root / 'mediawiki/link').symlink_to('new-private-target')
+            (root / 'mediawiki/untracked.php').write_text('private-uncommitted-value\n')
+            production_env = root / '.env.production'
+            production_env.write_text('private-env-value\n')
+            guard = Mock(CONFIG_BASELINE='accepted-local-config.json')
+            (root / guard.CONFIG_BASELINE).write_text(json.dumps({'files': {
+                str(settings): 'accepted-settings', str(production_env): 'accepted-env',
+            }}))
+            guard.file_fingerprint.return_value = 'changed'
+
+            def patch(filename, previous=None):
+                return m.local_patch(root, filename, previous)
+
+            working_tree = m.working_tree_report(root, patch)
+            config = m.config_report(guard, root, root, patch)
+            self.assertEqual(working_tree['status'], 'changed')
+            files = {item['filename']: item for item in working_tree['files']}
+            live_patch = files['mediawiki/LocalSettings.php']
+            self.assertEqual(live_patch['additions'], 2)
+            self.assertEqual(live_patch['deletions'], 1)
+            self.assertIn('-$option = false;\n+$option = true;\n+$other = true;', live_patch['patch'])
+            self.assertIn('-removed source', files['mediawiki/deleted.php']['patch'])
+            self.assertEqual(files['mediawiki/moved.php']['previous_filename'], 'mediawiki/renamed.php')
+            self.assertEqual(files['mediawiki/moved.php']['status'], 'renamed')
+            self.assertIn(live_patch, config['files'])
+            self.assertIn({'filename': '.env.production', 'status': 'modified'}, config['files'])
+            for report in (working_tree, config):
+                self.assertNotRegex(json.dumps(report), 'private-(uncommitted-value|settings-value|env-value|target)')
 
     def test_initial_release_does_not_invent_previous_comparison(self):
         fetch = Mock(side_effect=[{'total_commits': 2, 'commits': [], 'files': []}, {'workflow_runs': []}])

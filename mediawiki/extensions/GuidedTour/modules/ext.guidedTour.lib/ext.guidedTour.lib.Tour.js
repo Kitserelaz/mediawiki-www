@@ -1,16 +1,16 @@
 ( function () {
-	var gt = mw.guidedTour,
+	const gt = mw.guidedTour,
 		internal = gt.internal,
 		guiders = mw.libs.guiders;
 
 	// Any public member used to define the tour belongs in TourBuilder or
 	// StepBuilder.
 	/**
+	 * A guided tour
+	 *
 	 * @class mw.guidedTour.Tour
 	 *
-	 * @private
-	 *
-	 * A guided tour
+	 * @package
 	 */
 
 	/**
@@ -21,8 +21,6 @@
 	 * @private
 	 */
 	function Tour( tourSpec ) {
-		var moduleName;
-
 		/**
 		 * Name of tour
 		 *
@@ -113,7 +111,7 @@
 		 */
 		this.flipRTL = null;
 
-		moduleName = internal.getTourModuleName( this.name );
+		const moduleName = internal.getTourModuleName( this.name );
 
 		/**
 		 * Whether this is defined through a ResourceLoader module in an extension
@@ -171,10 +169,8 @@
 	 * @return {boolean} true if steps should be flipped, false otherwise
 	 */
 	Tour.prototype.getShouldFlipHorizontally = function ( interfaceDirection, siteDirection ) {
-		var tourDirection;
-
 		// Direction the tour is assumed to be written for
-		tourDirection = this.isExtensionDefined ? 'ltr' : siteDirection;
+		const tourDirection = this.isExtensionDefined ? 'ltr' : siteDirection;
 
 		// We flip if needed to match the interface direction
 		return tourDirection !== interfaceDirection;
@@ -189,14 +185,14 @@
 	 * @return {jQuery.Promise} Promise that waits on all steps to initialize (or one to fail)
 	 */
 	Tour.prototype.initialize = function () {
-		var stepName, promises = [],
+		const promises = [],
 			$body = $( document.body ),
 			interfaceDirection = $( 'html' ).attr( 'dir' ),
 			siteDirection = $body.hasClass( 'sitedir-ltr' ) ? 'ltr' : 'rtl';
 
 		if ( !this.initialized ) {
 			this.flipRTL = this.getShouldFlipHorizontally( interfaceDirection, siteDirection );
-			for ( stepName in this.steps ) {
+			for ( const stepName in this.steps ) {
 				promises.push( this.steps[ stepName ].initialize() );
 			}
 			this.initialized = $.when.apply( $, promises );
@@ -213,7 +209,7 @@
 	 * @return {boolean} Whether part of this tour is visible
 	 */
 	Tour.prototype.isVisible = function () {
-		var tourVisibleSelector = '.' + this.cssClass + ':visible';
+		const tourVisibleSelector = '.' + this.cssClass + ':visible';
 
 		return $( tourVisibleSelector ).length > 0;
 	};
@@ -233,7 +229,7 @@
 	 *   part of this tour
 	 */
 	Tour.prototype.getStep = function ( step ) {
-		var stepName;
+		let stepName;
 
 		if ( typeof step === 'string' ) {
 			stepName = step;
@@ -262,36 +258,32 @@
 	 * @param {mw.guidedTour.Step|string} step Step name or object
 	 *
 	 * @throws {Error} If initialize fails
-	 *
-	 * @return {void}
 	 */
 	Tour.prototype.showStep = function ( step ) {
-		var guider, transitionEvent, tour = this;
+		step = this.getStep( step );
 
-		step = tour.getStep( step );
-
-		this.initialize().done( function () {
-			transitionEvent = new gt.TransitionEvent();
+		this.initialize().then( () => {
+			const transitionEvent = new gt.TransitionEvent();
 			transitionEvent.type = gt.TransitionEvent.BUILTIN;
 			transitionEvent.subtype = gt.TransitionEvent.TRANSITION_BEFORE_SHOW;
 			step = step.checkTransition( transitionEvent );
 
 			// null means a TransitionAction (hide/end)
 			if ( step !== null ) {
-				guider = guiders._guiderById( step.specification.id );
+				const guider = guiders._guiderById( step.specification.id );
 				if ( guider !== undefined && guider.elem.is( ':visible' ) ) {
 					// Already showing the same one
 					return;
 				}
 
 				// A guider from the same tour is visible
-				if ( tour.isVisible() ) {
+				if ( this.isVisible() ) {
 					guiders.hideAll();
 				}
 
 				guiders.show( step.specification.id );
 			}
-		} ).fail( function ( e ) {
+		} ).catch( ( e ) => {
 			throw new Error( 'Could not show step \'' + step.name + '\' because this.initialize() failed.  Underlying error: ' + e );
 		} );
 	};
@@ -301,14 +293,13 @@
 	 *
 	 * @private
 	 *
-	 * @return {void}
 	 * @throws {mw.guidedTour.TourDefinitionError} If firstStep was never called on the
 	 *  TourBuilder
 	 */
 	Tour.prototype.start = function () {
 		if ( this.firstStep === null ) {
 			throw new gt.TourDefinitionError(
-				'The .firstStep() method must be called for all tours.'
+				'The .firstStep() method must be called for all tours.',
 			);
 		}
 

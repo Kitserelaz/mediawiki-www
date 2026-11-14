@@ -8,14 +8,13 @@ use MediaWiki\Api\ApiQueryBase;
 use Wikimedia\ParamValidator\ParamValidator;
 use Wikimedia\ParamValidator\TypeDef\IntegerDef;
 
-/*
+/**
  * API query module that returns associated projects and assessment data for a given set
  * of pages. (T119997)
  */
 class ApiQueryPageAssessments extends ApiQueryBase {
 
-	/** @inheritDoc */
-	public function __construct( ApiQuery $query, $moduleName ) {
+	public function __construct( ApiQuery $query, string $moduleName ) {
 		parent::__construct( $query, $moduleName, 'pa' );
 	}
 
@@ -27,7 +26,8 @@ class ApiQueryPageAssessments extends ApiQueryBase {
 		$pages = $this->getPageSet()->getGoodPages();
 		// are there pages to get project/assessment info for?
 		if ( !count( $pages ) ) {
-			return;  // If not, return so other prop modules can run
+			// If not, return so other prop modules can run
+			return;
 		}
 
 		$this->buildDbQuery( $pages, $params );

@@ -1,8 +1,8 @@
 {
 	"@metadata": {
 		"authors": [
-			"列维劳德",
-			"McDutchie"
+			"McDutchie",
+			"列维劳德"
 		]
 	},
 	"game-unit-desc": "随机显示一个已选的照片游戏、投票或小测验",

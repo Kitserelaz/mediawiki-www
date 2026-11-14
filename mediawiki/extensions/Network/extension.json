@@ -1,11 +1,11 @@
 {
 	"name": "Network",
 
-	"version": "3.0.0",
+	"version": "4.1.0",
 
 	"author": [
-		"[https://www.entropywins.wtf/mediawiki Jeroen De Dauw]",
-		"[https://professional.wiki/ Professional Wiki]"
+		"[https://professional.wiki/ Professional Wiki]",
+		"[https://www.entropywins.wtf/mediawiki Jeroen De Dauw]"
 	],
 
 	"url": "https://professional.wiki/en/extension/network",
@@ -17,7 +17,7 @@
 	"type": "parserhook",
 
 	"requires": {
-		"MediaWiki": ">= 1.39.0"
+		"MediaWiki": ">= 1.43.0"
 	},
 
 	"config": {
@@ -48,10 +48,10 @@
 				},
 				"groups": {
 					"bluelink": {
-						"image": "resources/lib/ooui/themes/wikimediaui/images/icons/article-rtl-progressive.svg"
+						"image": "cdxIconArticle"
 					},
 					"redlink": {
-						"image": "resources/lib/ooui/themes/wikimediaui/images/icons/articleNotFound-ltr.svg",
+						"image": "cdxIconArticleNotFound",
 						"color": {
 							"border": "#ba0000",
 							"highlight": {
@@ -63,7 +63,7 @@
 						}
 					},
 					"externallink": {
-						"image": "resources/lib/ooui/themes/wikimediaui/images/icons/linkExternal-ltr-progressive.svg",
+						"image": "cdxIconLinkExternal",
 						"color": {
 							"border": "grey",
 							"highlight": {
@@ -121,6 +121,8 @@
 		"remoteExtPath": "Network"
 	},
 
+	"ForeignResourcesDir": "resources/lib",
+
 	"ResourceModules": {
 		"ext.network": {
 			"dependencies": [
@@ -129,7 +131,7 @@
 				"mediawiki.jqueryMsg"
 			],
 			"scripts": [
-				"resources/lib/vis-network.js",
+				"resources/lib/vis-network/vis-network.js",
 
 				"resources/js/PageExclusionManager.js",
 				"resources/js/NetworkData.js",
@@ -143,8 +145,7 @@
 			],
 			"messages": [
 				"network-aria"
-			],
-			"targets": [ "desktop", "mobile" ]
+			]
 		},
 		"ext.network.special": {
 			"dependencies": [
@@ -173,8 +174,7 @@
 				"pagenetwork-labelMaxLength-field-help",
 				"pagenetwork-basic-tab-label",
 				"pagenetwork-advanced-tab-label"
-			],
-			"targets": [ "desktop", "mobile" ]
+			]
 		}
 	},
 

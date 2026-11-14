@@ -22,8 +22,10 @@
 
 require_once __DIR__ . '/CreatedPagesListTestBase.php';
 
+use MediaWiki\CommentStore\CommentStoreComment;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\SlotRecord;
+use MediaWiki\Title\Title;
 
 /**
  * @group Database
@@ -42,12 +44,7 @@ class CreatedPagesListHooksTest extends CreatedPagesListTestBase {
 		$content = new WikitextContent( 'TestNewPage Content' );
 		$summary = CommentStoreComment::newUnsavedComment( 'TestNewPage PageSummary' );
 
-		if ( method_exists( MediaWikiServices::class, 'getWikiPageFactory' ) ) {
-			// MW 1.36+
-			$page = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $title );
-		} else {
-			$page = WikiPage::factory( $title );
-		}
+		$page = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $title );
 		$updater = $page->newPageUpdater( $user );
 
 		$updater->setContent( SlotRecord::MAIN, $content );
@@ -71,11 +68,7 @@ class CreatedPagesListHooksTest extends CreatedPagesListTestBase {
 		$this->assertCreatedBy( $user, $title ); // Assert starting conditions
 
 		$reason = 'for some reason';
-		if ( version_compare( MW_VERSION, '1.35', '<' ) ) {
-			$page->doDeleteArticle( $reason );
-		} else {
-			$page->doDeleteArticleReal( $reason, $this->getTestSysop()->getUser() );
-		}
+		$page->doDeleteArticleReal( $reason, $this->getTestSysop()->getUser() );
 
 		$this->assertCreatedBy( null, $title );
 	}
@@ -90,21 +83,13 @@ class CreatedPagesListHooksTest extends CreatedPagesListTestBase {
 		$user = $page->getCreator();
 
 		$reason = 'for some reason';
-		if ( version_compare( MW_VERSION, '1.35', '<' ) ) {
-			$page->doDeleteArticle( $reason );
-		} else {
-			$page->doDeleteArticleReal( $reason, $this->getTestSysop()->getUser() );
-		}
+		$page->doDeleteArticleReal( $reason, $this->getTestSysop()->getUser() );
 
 		$this->assertCreatedBy( null, $title ); // Assert starting conditions
 
-		$archive = new PageArchive( $title );
-
-		if ( method_exists( $archive, 'undeleteAsUser' ) ) {
-			$archive->undeleteAsUser( [], $this->getTestSysop()->getUser() );
-		} else {
-			$archive->undelete( [] );
-		}
+		$this->getServiceContainer()->getUndeletePageFactory()
+			->newUndeletePage( $page, $this->getTestSysop()->getAuthority() )
+			->undeleteUnsafe( 'for some reason' );
 
 		$this->assertCreatedBy( $user, $title );
 	}

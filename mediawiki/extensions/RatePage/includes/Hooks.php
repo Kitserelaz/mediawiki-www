@@ -5,14 +5,14 @@ namespace RatePage;
 use AddMissingContests;
 use DatabaseUpdater;
 use ExtensionRegistry;
-use Html;
+use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
 use MWException;
 use OutputPage;
 use Parser;
 use RatePageMmvHooks;
 use Skin;
-use Title;
 
 /**
  * RatePage extension hooks

@@ -2,6 +2,8 @@
 	"@metadata": {
 		"authors": [
 			"CrownedWharf566",
+			"Peterxy",
+			"Peterxy12",
 			"列维劳德",
 			"沈澄心"
 		]
@@ -19,5 +21,6 @@
 	"apierror-ratepage-contest-id-allowed-chars": "竞赛ID只能由数字和拉丁字母组成，不允许使用其他字符。",
 	"apierror-ratepage-contest-not-exists": "竞赛$1不存在。",
 	"apierror-ratepage-page-not-exists": "指定的页面不存在。",
-	"apierror-ratepage-cannot-vote-in-contest": "您没有权限在此竞赛中投票。"
+	"apierror-ratepage-cannot-vote-in-contest": "您没有权限在此竞赛中投票。",
+	"apierror-ratepage-invalid-answer": "指定了无效的回答。回答应大于或等于$1，并且要小于或等于$2。"
 }

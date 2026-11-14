@@ -2,6 +2,7 @@
 
 namespace MediaWiki\Extension\Newsletter\Specials;
 
+use MediaWiki\Exception\ThrottledError;
 use MediaWiki\Extension\Newsletter\Content\NewsletterContentHandler;
 use MediaWiki\Extension\Newsletter\NewsletterValidator;
 use MediaWiki\HTMLForm\HTMLForm;
@@ -10,7 +11,6 @@ use MediaWiki\SpecialPage\FormSpecialPage;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Status\Status;
 use MediaWiki\Title\Title;
-use ThrottledError;
 
 /**
  * Special page for creating newsletters
@@ -26,9 +26,15 @@ class SpecialNewsletterCreate extends FormSpecialPage {
 	protected $newsletterName;
 
 	public function __construct() {
-		parent::__construct( 'NewsletterCreate', 'newsletter-create' );
+		parent::__construct( 'NewsletterCreate' );
 	}
 
+	/** @inheritDoc */
+	public function getRestriction(): string {
+		return 'newsletter-create';
+	}
+
+	/** @inheritDoc */
 	public function execute( $par ) {
 		$this->requireLogin();
 		parent::execute( $par );
@@ -140,14 +146,17 @@ class SpecialNewsletterCreate extends FormSpecialPage {
 		return $result;
 	}
 
+	/** @inheritDoc */
 	public function onSuccess() {
 		$this->getOutput()->addWikiMsg( 'newsletter-create-confirmation', $this->newsletterName );
 	}
 
+	/** @inheritDoc */
 	public function doesWrites() {
 		return true;
 	}
 
+	/** @inheritDoc */
 	protected function getDisplayFormat() {
 		return 'ooui';
 	}

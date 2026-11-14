@@ -4,8 +4,8 @@ namespace GeoData\Search;
 
 use CirrusSearch\Search\NestedIndexField;
 use CirrusSearch\SearchConfig;
-use SearchEngine;
-use SearchIndexField;
+use MediaWiki\Search\SearchEngine;
+use MediaWiki\Search\SearchIndexField;
 
 /**
  * Nested type for CirrusSearch mapping
@@ -24,7 +24,7 @@ class CoordinatesIndexField extends NestedIndexField {
 	 * @param string $name field name
 	 * @param SearchConfig $config
 	 * @param SearchEngine $engine
-	 * @return CoordinatesIndexField
+	 * @return self
 	 */
 	public static function build( $name, SearchConfig $config, SearchEngine $engine ): self {
 		$nested = new self( $name, $config );

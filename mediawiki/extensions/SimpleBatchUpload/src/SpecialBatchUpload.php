@@ -3,7 +3,7 @@
  * File containing the SpecialBatchUpload class
  *
  * @copyright (C) 2016 - 2017, Stephan Gambke
- * @license   GNU General Public License, version 2 (or any later version)
+ * @license GPL-2.0-or-later
  *
  * This software is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -24,7 +24,7 @@
 
 namespace MediaWiki\Extension\SimpleBatchUpload;
 
-use SpecialPage;
+use MediaWiki\SpecialPage\SpecialPage;
 
 /**
  * Class SpecialBatchUpload
@@ -33,13 +33,17 @@ use SpecialPage;
  */
 class SpecialBatchUpload extends SpecialPage {
 
-	/**
-	 * @param string $name Name of the special page, as seen in links and URLs
-	 * @param string $restriction User right required, e.g. "block" or "delete"
-	 * @param bool $listed Whether the page is listed in Special:Specialpages
-	 */
-	public function __construct( $name = '', $restriction = '', $listed = true ) {
-		parent::__construct( 'BatchUpload', 'upload', $listed );
+	public function __construct() {
+		if ( version_compare( MW_VERSION, '1.46', '>=' ) ) {
+			parent::__construct( 'BatchUpload' );
+		} else {
+			// Before 1.46, MediaWiki checks the restriction given here, not getRestriction()
+			parent::__construct( 'BatchUpload', 'upload' );
+		}
+	}
+
+	public function getRestriction(): string {
+		return 'upload';
 	}
 
 	/**
@@ -58,9 +62,9 @@ class SpecialBatchUpload extends SpecialPage {
 	 * @throws \MWException
 	 */
 	public function execute( $subpage ) {
-
 		$this->setHeaders();
 		$this->checkPermissions();
+		$this->outputHeader();
 
 		$this->addPageContentToOutput( $subpage );
 	}

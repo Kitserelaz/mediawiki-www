@@ -58,19 +58,19 @@ class Coord implements JsonSerializable {
 	/** @var int */
 	public $pageId;
 
-	/** @var float Distance in metres */
+	/** @var float Distance in meters */
 	public $distance;
 
 	/**
 	 * @param float $lat
 	 * @param float $lon
-	 * @param string $globe
+	 * @param Globe|string $globe
 	 * @param array<string,mixed> $extraFields
 	 */
-	public function __construct( $lat, $lon, string $globe = Globe::EARTH, $extraFields = [] ) {
+	public function __construct( $lat, $lon, $globe = Globe::EARTH, $extraFields = [] ) {
 		$this->lat = (float)$lat;
 		$this->lon = (float)$lon;
-		$this->globe = $globe;
+		$this->globe = $globe instanceof Globe ? $globe->getName() : $globe;
 
 		foreach ( $extraFields as $key => $value ) {
 			if ( isset( self::FIELD_MAPPING[$key] ) ) {
@@ -108,17 +108,28 @@ class Coord implements JsonSerializable {
 	}
 
 	/**
+	 * @param self|Globe|string $other
+	 * @return bool
+	 */
+	public function sameGlobe( $other ): bool {
+		if ( $other instanceof self ) {
+			$other = $other->globe;
+		}
+		return $this->getGlobeObj()->equalsTo( $other );
+	}
+
+	/**
 	 * Compares this coordinates with the given coordinates
 	 *
-	 * @param self|null $coord Coordinate to compare with
+	 * @param self|null $other Coordinate to compare with
 	 * @param int $precision Comparison precision
 	 * @return bool
 	 */
-	public function equalsTo( $coord, $precision = 6 ): bool {
-		return $coord !== null
-			&& round( $this->lat, $precision ) == round( $coord->lat, $precision )
-			&& round( $this->lon, $precision ) == round( $coord->lon, $precision )
-			&& $this->globe === $coord->globe;
+	public function equalsTo( $other, $precision = 6 ): bool {
+		return $other !== null
+			&& round( $this->lat, $precision ) == round( $other->lat, $precision )
+			&& round( $this->lon, $precision ) == round( $other->lon, $precision )
+			&& $this->sameGlobe( $other );
 	}
 
 	/**
@@ -146,39 +157,11 @@ class Coord implements JsonSerializable {
 	}
 
 	/**
-	 * Returns a bounding rectangle around this coordinate
-	 *
-	 * @param float $radius
-	 * @return BoundingBox
-	 */
-	public function bboxAround( $radius ): BoundingBox {
-		if ( $radius <= 0 ) {
-			return BoundingBox::newFromPoints( $this, $this );
-		}
-		$globe = $this->getGlobeObj();
-		$r2lat = rad2deg( $radius / $globe->getRadius() );
-		// @todo: doesn't work around poles, should we care?
-		if ( abs( $this->lat ) < 89.9 ) {
-			$r2lon = rad2deg( $radius / cos( deg2rad( $this->lat ) ) / $globe->getRadius() );
-		} else {
-			$r2lon = 0.1;
-		}
-		$res = BoundingBox::newFromNumbers(
-			$this->lat - $r2lat,
-			$this->lon - $r2lon,
-			$this->lat + $r2lat,
-			$this->lon + $r2lon,
-			$this->globe
-		);
-		$res->wrapAround();
-		return $res;
-	}
-
-	/**
-	 * Returns a distance from these coordinates to another ones
+	 * Calculates the distance between this and another pair of coordinates. Assumes the two are on
+	 * the same globe. No exception is thrown if this is not the case!
 	 *
 	 * @param Coord $coord
-	 * @return float Distance in metres
+	 * @return float Distance in meters
 	 */
 	public function distanceTo( Coord $coord ): float {
 		return Math::distance( $this->lat, $this->lon, $coord->lat, $coord->lon,

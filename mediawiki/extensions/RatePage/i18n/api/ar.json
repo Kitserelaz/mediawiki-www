@@ -1,0 +1,22 @@
+{
+	"@metadata": {
+		"authors": [
+			"Meno25"
+		]
+	},
+	"apihelp-ratepage-summary": "يسمح للمستخدم بالتصويت على صفحة ويحصل على تقييم لها. يتطلب تحديد أحد المعلمتين: معرف الصفحة أو عنوان الصفحة.",
+	"apihelp-ratepage-param-pageid": "معرف الصفحة",
+	"apihelp-ratepage-param-pagetitle": "عنوان الصفحة",
+	"apihelp-ratepage-param-answer": "تقييم صفحة المستخدم (من 1 إلى 5 شاملًا بشكل افتراضي، ويمكن تعديله من خلال إعدادات التكوين)",
+	"apihelp-ratepage-param-contest": "معرف المسابقة",
+	"apihelp-ratepage-example-1": "احصل على التقييم الحالي لصفحة المثال.",
+	"apihelp-ratepage-example-2": "تقييم الصفحة مثال مع 2.",
+	"apihelp-query+pagerating-summary": "إرجاع الأصوات على هذه الصفحة وأذونات التصويت لهذا المستخدم.",
+	"apihelp-query+pagerating-param-contest": "معرف المسابقة",
+	"apierror-ratepage-contest-id-too-long": "طول معرف المسابقة يتجاوز الحد الأقصى (255 حرفًا).",
+	"apierror-ratepage-contest-id-allowed-chars": "يجب أن يتكون مُعرّف المسابقة من أرقام وحروف لاتينية فقط. لا يُسمح بأي أحرف أخرى.",
+	"apierror-ratepage-contest-not-exists": "المسابقة $1 غير موجودة.",
+	"apierror-ratepage-page-not-exists": "الصفحة المحددة غير موجودة.",
+	"apierror-ratepage-cannot-vote-in-contest": "ليس لديك الصلاحية للتصويت في هذه المسابقة.",
+	"apierror-ratepage-invalid-answer": "تم تحديد إجابة غير صالحة. يجب أن تكون الإجابة أكبر من أو تساوي $1 وأقل من أو تساوي $2 ."
+}

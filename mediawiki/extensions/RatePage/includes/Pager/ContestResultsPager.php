@@ -4,11 +4,11 @@ namespace RatePage\Pager;
 
 use IContextSource;
 use MediaWiki\Linker\LinkRenderer;
+use MediaWiki\Title\Title;
 use Message;
 use MWException;
 use RatePage\ContestDB;
 use TablePager;
-use Title;
 
 class ContestResultsPager extends TablePager {
 

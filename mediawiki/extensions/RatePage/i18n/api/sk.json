@@ -1,0 +1,22 @@
+{
+	"@metadata": {
+		"authors": [
+			"Wizzard"
+		]
+	},
+	"apihelp-ratepage-summary": "Umožňuje používateľovi hlasovať za stránku a získa hodnotenie stránky. Vyžaduje zadanie jedného z dvoch parametrov: pageid alebo pagetitle.",
+	"apihelp-ratepage-param-pageid": "ID stránky",
+	"apihelp-ratepage-param-pagetitle": "Názov stránky",
+	"apihelp-ratepage-param-answer": "Hodnotenie stránky používateľom (predvolene od 1 do 5 vrátane, dá sa zmeniť v nastaveniach)",
+	"apihelp-ratepage-param-contest": "Identifikátor súťaže",
+	"apihelp-ratepage-example-1": "Získať aktuálne hodnotenie stránky Example.",
+	"apihelp-ratepage-example-2": "Ohodnotiť stránku Example známkou 2.",
+	"apihelp-query+pagerating-summary": "Vráti hlasy za túto stránku a oprávnenia tohto používateľa na hlasovanie.",
+	"apihelp-query+pagerating-param-contest": "Identifikátor súťaže",
+	"apierror-ratepage-contest-id-too-long": "Dĺžka ID súťaže presahuje limit (255 znakov).",
+	"apierror-ratepage-contest-id-allowed-chars": "ID súťaže smie obsahovať iba číslice a latinské písmená. Iné znaky nie sú povolené.",
+	"apierror-ratepage-contest-not-exists": "Súťaž $1 neexistuje.",
+	"apierror-ratepage-page-not-exists": "Zadaná stránka neexistuje.",
+	"apierror-ratepage-cannot-vote-in-contest": "Nemáte oprávnenie hlasovať v tejto súťaži.",
+	"apierror-ratepage-invalid-answer": "Bola zadaná neplatná odpoveď. Odpoveď musí byť väčšia alebo rovná $1 a menšia alebo rovná $2."
+}

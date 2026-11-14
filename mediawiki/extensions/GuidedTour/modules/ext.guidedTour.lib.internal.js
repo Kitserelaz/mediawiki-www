@@ -13,7 +13,7 @@
  * @private
  */
 ( function () {
-	var internal;
+	let internal;
 
 	mw.guidedTour = mw.guidedTour || {};
 	mw.guidedTour.internal = internal = {
@@ -38,7 +38,9 @@
 		 * @return {jQuery.Promise} promise behaving as above
 		 */
 		alwaysWaitForAll: function ( promises ) {
-			var dfd, unresolved, allSucceeded, i;
+			let unresolved = promises.length;
+			let allSucceeded = true;
+			const dfd = $.Deferred();
 
 			function always() {
 				unresolved--;
@@ -55,12 +57,9 @@
 				allSucceeded = false;
 			}
 
-			dfd = $.Deferred();
-			unresolved = promises.length;
-			allSucceeded = true;
-			for ( i = 0; i < promises.length; i++ ) {
+			for ( let i = 0; i < promises.length; i++ ) {
 				// First, if it fails we mark allSucceeded false.
-				promises[ i ].fail( fail );
+				promises[ i ].catch( fail );
 				// Then, we run the always handler regardless.
 				promises[ i ].always( always );
 			}
@@ -78,14 +77,14 @@
 		 * @return {Object} initial user state object
 		 */
 		getInitialUserStateObject: function ( tourInfo ) {
-			var userStateObject = {
+			const userStateObject = {
 				version: 1,
-				tours: {}
+				tours: {},
 			};
 
 			if ( tourInfo !== undefined ) {
 				userStateObject.tours[ tourInfo.name ] = {
-					step: tourInfo.step
+					step: tourInfo.step,
 				};
 			}
 			return userStateObject;
@@ -113,14 +112,12 @@
 		 *   rejects on failure.
 		 */
 		loadExtensionTour: function ( tourName ) {
-			var dfd, tourModuleName;
-
-			dfd = $.Deferred();
-			tourModuleName = internal.getTourModuleName( tourName );
+			const dfd = $.Deferred();
+			const tourModuleName = internal.getTourModuleName( tourName );
 			mw.loader.using( tourModuleName,
-				function () {
+				() => {
 					dfd.resolve();
-				}, function ( err, dependencies ) {
+				}, ( err, dependencies ) => {
 					mw.log( 'Failed to load tour ', tourModuleName,
 						'as module. err: ', err, ', dependencies: ',
 						dependencies );
@@ -139,20 +136,19 @@
 		 *   rejects on failure.
 		 */
 		loadOnWikiTour: function ( tourName ) {
-			var MW_NS_TOUR_PREFIX = 'MediaWiki:Guidedtour-tour-',
-				onWikiTourUrl, dfd, title;
+			const MW_NS_TOUR_PREFIX = 'MediaWiki:Guidedtour-tour-';
 
-			dfd = $.Deferred();
-			title = MW_NS_TOUR_PREFIX + tourName + '.js';
+			const dfd = $.Deferred();
+			const title = MW_NS_TOUR_PREFIX + tourName + '.js';
 
-			onWikiTourUrl = mw.util.getUrl( title, {
+			const onWikiTourUrl = mw.util.getUrl( title, {
 				action: 'raw',
-				ctype: 'text/javascript'
+				ctype: 'text/javascript',
 			} );
 			mw.log( 'Attempting to load on-wiki tour from ', onWikiTourUrl );
 
 			$.getScript( onWikiTourUrl )
-				.done( function ( script ) {
+				.then( ( script ) => {
 					// missing raw requests give 0 length document and 200 status not 404
 					if ( script.length === 0 ) {
 						mw.log( 'Tour page \'' + title + '\' is empty. Does the page exist?' );
@@ -160,9 +156,8 @@
 					} else {
 						dfd.resolve();
 					}
-				} )
-				.fail( function ( jqXHR, settings, exception ) {
-					var message = 'Failed to load tour ' + tourName + ' from \'' + title + '\'';
+				}, ( jqXHR, settings, exception ) => {
+					const message = 'Failed to load tour ' + tourName + ' from \'' + title + '\'';
 					if ( exception ) {
 						mw.log( message, exception );
 					} else {
@@ -185,9 +180,7 @@
 		 *   rejects on failure.
 		 */
 		loadTour: function ( tourName ) {
-			var tourModuleName;
-
-			tourModuleName = internal.getTourModuleName( tourName );
+			const tourModuleName = internal.getTourModuleName( tourName );
 			if ( mw.loader.getState( tourModuleName ) !== null ) {
 				return internal.loadExtensionTour( tourName );
 			} else {
@@ -207,9 +200,7 @@
 		 *   until all load attempts are complete.
 		 */
 		loadMultipleTours: function ( tourNames ) {
-			var loadDeferreds = tourNames.map( function ( name ) {
-				return internal.loadTour( name );
-			} );
+			const loadDeferreds = tourNames.map( ( name ) => internal.loadTour( name ) );
 
 			return internal.alwaysWaitForAll( loadDeferreds );
 		},
@@ -224,7 +215,7 @@
 		 *  invalid, returns null.
 		 */
 		parseUserState: function ( userStateJson ) {
-			var parsed;
+			let parsed;
 
 			if ( userStateJson !== null ) {
 				try {
@@ -236,6 +227,6 @@
 			}
 
 			return null;
-		}
+		},
 	};
 }() );

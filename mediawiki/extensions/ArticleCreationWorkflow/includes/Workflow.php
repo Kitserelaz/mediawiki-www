@@ -2,8 +2,8 @@
 
 namespace ArticleCreationWorkflow;
 
-use IContextSource;
 use MediaWiki\Config\Config;
+use MediaWiki\Context\IContextSource;
 use MediaWiki\Language\RawMessage;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
@@ -13,14 +13,7 @@ use MediaWiki\User\User;
  */
 class Workflow {
 
-	/** @var Config */
-	private $config;
-
-	/**
-	 * @param Config $config Configuration to use
-	 */
-	public function __construct( Config $config ) {
-		$this->config = $config;
+	public function __construct( private readonly Config $config ) {
 	}
 
 	/**
@@ -98,6 +91,7 @@ class Workflow {
 			// Transclude the landing page instead of redirecting. This allows for the deletion log snippet
 			// to be shown as usual, and for magic words like {{PAGENAME}} to be used in the message. (T204234)
 			$msg = new RawMessage( '{{:' . $landingPage->getPrefixedText() . '}}' );
+			$msg->page( $title );
 			$output->addHTML( $msg->parseAsBlock() );
 
 			return true;

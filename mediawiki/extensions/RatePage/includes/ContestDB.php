@@ -4,8 +4,9 @@ namespace RatePage;
 use Exception;
 use IContextSource;
 use ManualLogEntry;
+use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
 use stdClass;
-use Title;
 
 class ContestDB {
 
@@ -15,7 +16,7 @@ class ContestDB {
 	 * @return bool|stdClass
 	 */
 	public static function loadContest( string $contest ) {
-		$dbr = wfGetDB( DB_REPLICA );
+		$dbr = MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase();
 		$contest = $dbr->selectRow( [ 'ratepage_contest', ],
 			'*',
 			[ 'rpc_id' => $contest, ],
@@ -31,7 +32,7 @@ class ContestDB {
 	 */
 	public static function loadVotes( string $contest ) : array {
 		$votes = [];
-		$dbr = wfGetDB( DB_REPLICA );
+		$dbr = MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase();
 
 		$votesRes = $dbr->select( [ 'ratepage_vote' ],
 			[ 'rv_page_id',
@@ -51,7 +52,7 @@ class ContestDB {
 	}
 
 	public static function saveContest( $newRow, IContextSource $context ) {
-		$dbw = wfGetDB( DB_PRIMARY );
+		$dbw = MediaWikiServices::getInstance()->getConnectionProvider()->getPrimaryDatabase();
 
 		$data = [
 			'rpc_description' => $newRow->rpc_description ?? '',
@@ -123,7 +124,7 @@ class ContestDB {
 			return true;
 		}
 
-		$dbr = wfGetDB( DB_REPLICA );
+		$dbr = MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase();
 		$res = $dbr->selectField( 'ratepage_contest',
 			'rpc_id',
 			[ 'rpc_id' => $id ] );

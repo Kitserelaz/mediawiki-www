@@ -8,7 +8,7 @@
 	"descriptionmsg": "disambig-desc",
 	"license-name": "MIT",
 	"requires": {
-		"MediaWiki": ">= 1.42"
+		"MediaWiki": ">= 1.46"
 	},
 	"type": "other",
 	"ExtensionMessagesFiles": {
@@ -34,7 +34,8 @@
 			"class": "MediaWiki\\Extension\\Disambiguator\\Hooks",
 			"services": [
 				"DisambiguatorLookup",
-				"MainConfig"
+				"MainConfig",
+				"PageStore"
 			]
 		}
 	},
@@ -93,7 +94,7 @@
 			"class": "MediaWiki\\Extension\\Disambiguator\\Specials\\SpecialDisambiguationPages",
 			"services": [
 				"LinkBatchFactory",
-				"DBLoadBalancer"
+				"ConnectionProvider"
 			]
 		},
 		"DisambiguationPageLinks": {
@@ -102,8 +103,7 @@
 				"NamespaceInfo",
 				"LinkBatchFactory",
 				"ContentHandlerFactory",
-				"DBLoadBalancerFactory",
-				"LinksMigration"
+				"DBLoadBalancerFactory"
 			]
 		}
 	},
@@ -118,6 +118,16 @@
 			"PluginModules": [
 				"ext.disambiguator.visualEditor"
 			]
+		},
+		"Scribunto": {
+			"LuaExtraTitleAttributes": {
+				"isDisambiguationPage": {
+					"class": "MediaWiki\\Extension\\Disambiguator\\LuaDisambiguationAttributeResolver",
+					"services": [
+						"DisambiguatorLookup"
+					]
+				}
+			}
 		}
 	},
 	"manifest_version": 2

@@ -136,7 +136,7 @@ class MintyDocsParserFunctions {
 
 		foreach ( $processedParams as $paramName => $value ) {
 			if ( $paramName == 'inherit' && $value == null ) {
-				$parserOutput->setPageProperty( 'MintyDocsInherit', true );
+				$parserOutput->setPageProperty( 'MintyDocsInherit', '1' );
 			} elseif ( $paramName == 'status' ) {
 				// @TODO - put in check here for values.
 				$parserOutput->setPageProperty( 'MintyDocsStatus', $value );
@@ -182,7 +182,7 @@ class MintyDocsParserFunctions {
 				$displayTitle = htmlspecialchars( $value, ENT_QUOTES );
 				$parserOutput->setPageProperty( 'MintyDocsDisplayName', $displayTitle );
 			} elseif ( $paramName == 'inherit' && $value == null ) {
-				$parserOutput->setPageProperty( 'MintyDocsInherit', true );
+				$parserOutput->setPageProperty( 'MintyDocsInherit', '1' );
 				$inherits = true;
 			} elseif ( $paramName == 'topics list' ) {
 				$parserOutput->setPageProperty( 'MintyDocsTopicsList', $value );
@@ -197,7 +197,7 @@ class MintyDocsParserFunctions {
 				// @TODO - add validation before storage.
 				$parserOutput->setPageProperty( 'MintyDocsTopicsList', $value );
 			} elseif ( $paramName == 'pagination' && $value == null ) {
-				$parserOutput->setPageProperty( 'MintyDocsPagination', true );
+				$parserOutput->setPageProperty( 'MintyDocsPagination', '1' );
 			} elseif ( $paramName == 'topic default form' ) {
 				$parserOutput->setPageProperty( 'MintyDocsTopicDefaultForm', $value );
 			} elseif ( $paramName == 'topic alternate forms' ) {
@@ -252,7 +252,9 @@ class MintyDocsParserFunctions {
 		$parserOutput->addModules( [ 'ext.mintydocs.main' ] );
 
 		$parserOutput->setPageProperty( 'MintyDocsPageType', 'Topic' );
-		$parserOutput->setPageProperty( 'MintyDocsParentPage', $parentPageName );
+		if ( $parentPageName !== null ) {
+			$parserOutput->setPageProperty( 'MintyDocsParentPage', $parentPageName );
+		}
 
 		foreach ( $processedParams as $paramName => $value ) {
 			if ( $paramName == 'display name' ) {
@@ -261,7 +263,7 @@ class MintyDocsParserFunctions {
 			} elseif ( $paramName == 'toc name' ) {
 				$tocDisplayTitle = $value;
 			} elseif ( $paramName == 'inherit' && $value == null ) {
-				$parserOutput->setPageProperty( 'MintyDocsInherit', true );
+				$parserOutput->setPageProperty( 'MintyDocsInherit', '1' );
 				$inherits = true;
 			}
 		}
@@ -315,7 +317,11 @@ class MintyDocsParserFunctions {
 		}
 		$mdPage = MintyDocsUtils::pageFactory( $curTitle );
 		if ( $mdPage == null ) {
-			return "<div class=\"error\">#mintydocs_link must be called from a MintyDocs-enabled page.</div>";
+			return Html::element(
+				'div',
+				[ 'class' => 'error' ],
+				'#mintydocs_link must be called from a MintyDocs-enabled page.'
+			);
 		}
 
 		$params = func_get_args();
@@ -383,18 +389,30 @@ class MintyDocsParserFunctions {
 		} elseif ( $product != null ) {
 			$linkedPageType = 'product';
 		} else {
-			return "<div class=\"error\">At least one of product, version, manual and topic must be specified.</div>";
+			return Html::element(
+				'div',
+				[ 'class' => 'error' ],
+				'At least one of product, version, manual and topic must be specified.'
+			);
 		}
 
 		if ( $linkedPageType == 'product' || $linkedPageType == 'version' ) {
 			if ( $topic != null && $manual == null ) {
-				return "<div class=\"error\">A 'manual' value must be specified in this case.</div>";
+				return Html::element(
+					'div',
+					[ 'class' => 'error' ],
+					"A 'manual' value must be specified in this case."
+				);
 			}
 		}
 
 		if ( $linkedPageType == 'product' ) {
 			if ( $manual != null && $version == null ) {
-				return "<div class=\"error\">A 'version' value must be specified in this case.</div>";
+				return Html::element(
+					'div',
+					[ 'class' => 'error' ],
+					"A 'version' value must be specified in this case."
+				);
 			}
 		}
 
@@ -515,7 +533,7 @@ class MintyDocsParserFunctions {
 	}
 
 	/**
-	 * @param string $outputWikitext
+	 * @param bool $outputWikitext
 	 * @param string $pageName
 	 * @param string $linkText
 	 * @param string $fragment
@@ -536,7 +554,7 @@ class MintyDocsParserFunctions {
 			}
 		}
 		if ( $outputWikitext ) {
-			if ( empty( $query ) ) {
+			if ( count( $query ) == 0 ) {
 				if ( $fragment !== null ) {
 					$pageName .= '#' . $fragment;
 				}

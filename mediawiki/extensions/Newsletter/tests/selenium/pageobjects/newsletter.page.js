@@ -1,14 +1,13 @@
-'use strict';
-
-const Page = require( 'wdio-mediawiki/Page' );
+import Page from 'wdio-mediawiki/Page';
 
 class NewsletterPage extends Page {
 	get title() {
 		return $( '#firstHeading' );
 	}
 
-	open() {
-		super.openTitle( 'Special:Newsletters' );
+	async open() {
+		return super.openTitle( 'Special:Newsletters' );
 	}
 }
-module.exports = new NewsletterPage();
+
+export default new NewsletterPage();

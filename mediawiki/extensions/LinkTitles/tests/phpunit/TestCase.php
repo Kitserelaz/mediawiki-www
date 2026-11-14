@@ -21,10 +21,16 @@
  * @author Daniel Kraus <bovender@bovender.de>
  */
 namespace LinkTitles;
+use MediaWikiIntegrationTestCase;
 
-abstract class TestCase extends \MediaWikiTestCase {
+abstract class TestCase extends MediaWikiIntegrationTestCase  {
 	protected function setUp(): void
 	{
+		// Guard against a stale singleton left behind by a previous test
+		// (e.g. one that queried a fabricated namespace for testing
+		// purposes) before parent::setUp() runs any fixture inserts that
+		// would otherwise trigger the LinkTitles hooks against it.
+		Targets::invalidate();
 		parent::setUp();
 	}
 

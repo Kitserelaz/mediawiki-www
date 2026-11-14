@@ -1,9 +1,11 @@
 {
 	"@metadata": {
 		"authors": [
-			"Ahmed-Najib-Biabani-Ibrahimkhel"
+			"Ahmed-Najib-Biabani-Ibrahimkhel",
+			"شاه زمان پټان"
 		]
 	},
+	"uploadslink-desc": "د اوسني کارن د راپورته‌کېدنو لړليک ته د ځانواله کارتوکو غوره‌نۍ ته تړوني ورگډوي او د اړوند کارن راپورته‌کېدنو لړليک څنگپټې کارتوکو غوره‌نۍ ته تړوني ورگډوي",
 	"uploadslink-portlet-label": "پورته کېدنې",
 	"tooltip-pt-uploads": "د هغو دوتنو لړليک چې تاسې پورته کړي",
 	"uploadslink-toobox-label": "د {{GENDER:$1|کارن}} پورته کېدنې",

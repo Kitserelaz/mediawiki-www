@@ -24,8 +24,8 @@
 /**
  * @group bovender
  */
-class TargetTest extends \MediaWikiTestCase
-{
+
+class TargetTest extends LinkTitles\TestCase {
 
 	/**
 	 * @dataProvider provideStartOnly

@@ -140,7 +140,7 @@ class EventCalendarTest extends MediaWikiIntegrationTestCase {
 		$pout = $this->parseCalendarTag( $wikitext );
 		$pout->clearWrapperDivClass();
 
-		$parsedHTML = $pout->getRawText();
+		$parsedHTML = $pout->getContentHolderText();
 
 		$matches = null;
 		$matchResult = preg_match( '@window.eventCalendarData.push\( (.*) \);\s*</script>@',
@@ -719,11 +719,12 @@ class EventCalendarTest extends MediaWikiIntegrationTestCase {
 
 			$cache = ObjectCache::getInstance( CACHE_DB );
 			$cacheKey = $cache->makeKey( 'jscalendar-snippet-' ) . $title->getLatestRevId();
-			$this->assertSelect( 'objectcache',
-				[ 'value' ],
-				[ 'keyname' => $cacheKey ],
-				[ [ $expectedSnippet ] ]
-			);
+
+			$this->newSelectQueryBuilder()
+				->tables( [ 'objectcache' ] )
+				->fields( [ 'value' ] )
+				->conds( [ 'keyname' => $cacheKey ] )
+				->assertResultSet( [ [ $expectedSnippet ] ] );
 		}
 	}
 
@@ -782,7 +783,7 @@ class EventCalendarTest extends MediaWikiIntegrationTestCase {
 
 	/**
 	 * Verify that unwanted parts of HTML (such as images) are removed from the snippet.
-	 * @dataProvider dataProviderSnippetSanitizer
+	 * @dataProvider provideSnippetSanitizer
 	 * @param bool $isThumb False to add an image to the page, true to add a thumbnail.
 	 */
 	public function testSnippetSanitizer( $isThumb ) {
@@ -814,7 +815,7 @@ class EventCalendarTest extends MediaWikiIntegrationTestCase {
 	 * Provides datasets for testSnippetSanitizer().
 	 * @return array
 	 */
-	public function dataProviderSnippetSanitizer() {
+	public function provideSnippetSanitizer() {
 		return [
 			'image (not a thumbnail)' => [ false ],
 			'thumbnail' => [ true ]
@@ -823,7 +824,7 @@ class EventCalendarTest extends MediaWikiIntegrationTestCase {
 
 	/**
 	 * Verify that parameters like height=300 and aspectratio=1.5 are provided to JavaScript library.
-	 * @dataProvider dataProviderOptionalAttributes
+	 * @dataProvider provideOptionalAttributes
 	 * @param string $wikitext Contents of <eventcalendar> tag (without the tag itself).
 	 * @param array $expectedAttributes Attributes of HTML element with class="eventcalendar".
 	 */
@@ -831,7 +832,7 @@ class EventCalendarTest extends MediaWikiIntegrationTestCase {
 		$pout = $this->parseCalendarTag( $wikitext );
 
 		$html = new DOMDocument();
-		$html->loadHTML( $pout->getRawText() );
+		$html->loadHTML( $pout->getContentHolderText() );
 
 		$xpath = new DOMXpath( $html );
 		$elem = $xpath->query( '//*[@class="eventcalendar"]' )[0];
@@ -851,7 +852,7 @@ class EventCalendarTest extends MediaWikiIntegrationTestCase {
 	 * Provides datasets for testOptionalAttributes().
 	 * @return array
 	 */
-	public function dataProviderOptionalAttributes() {
+	public function provideOptionalAttributes() {
 		return [
 			'no parameters' => [ '', [] ],
 			'height=300' => [ 'height=300', [ 'data-height' => '300' ] ],

@@ -1,6 +1,7 @@
 <?php
 
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
 
 class ExtRightFunctions {
 	public static function onParserFirstCallInit( $parser ) {
@@ -101,12 +102,7 @@ class ExtRightFunctions {
 			$user = User::newFromName( $name );
 			$user->load();
 		} else {
-			if ( method_exists( $parser, 'getUserIdentity' ) ) {
-				// MW 1.36+
-				$user = $parser->getUserIdentity();
-			} else {
-				$user = $parser->getUser();
-			}
+			$user = $parser->getUserIdentity();
 		}
 		$userrights = "";
 		$rights = MediaWikiServices::getInstance()->getPermissionManager()->getUserPermissions( $user );
@@ -128,12 +124,7 @@ class ExtRightFunctions {
 			$user = User::newFromName( $name );
 			$user->load();
 		} else {
-			if ( method_exists( $parser, 'getUserIdentity' ) ) {
-				// MW 1.36+
-				$user = $parser->getUserIdentity();
-			} else {
-				$user = $parser->getUser();
-			}
+			$user = $parser->getUserIdentity();
 		}
 		$usergroups = MediaWikiServices::getInstance()->getUserGroupManager()
 			->getUserEffectiveGroups( $user, IDBAccessObject::READ_NORMAL, !$wgRightFunctionsAllowCaching );
@@ -158,12 +149,7 @@ class ExtRightFunctions {
 			$user = User::newFromName( $name );
 			$user->load();
 		} else {
-			if ( method_exists( $parser, 'getUserIdentity' ) ) {
-				// MW 1.36+
-				$user = $parser->getUserIdentity();
-			} else {
-				$user = $parser->getUser();
-			}
+			$user = $parser->getUserIdentity();
 		}
 		$usergroups = MediaWikiServices::getInstance()->getUserGroupManager()
 			->getUserEffectiveGroups( $user, IDBAccessObject::READ_NORMAL, !$wgRightFunctionsAllowCaching );
@@ -185,7 +171,7 @@ class ExtRightFunctions {
 				if ( $found || self::ifgroup( $parser, $parts[0], true, false ) ) {
 					return $parts[1];
 				} else {
-					$mwDefault =& \MediaWiki\MediaWikiServices::getInstance()->getMagicWordFactory()->get( 'default' );
+					$mwDefault = \MediaWiki\MediaWikiServices::getInstance()->getMagicWordFactory()->get( 'default' );
 					if ( $mwDefault->matchStartAndRemove( $parts[0] ) ) {
 						$default = $parts[1];
 					}
@@ -226,13 +212,8 @@ class ExtRightFunctions {
 		$rigor = $wgRightFunctionsAllowExpensiveQueries ?
 			\MediaWiki\Permissions\PermissionManager::RIGOR_SECURE :
 			\MediaWiki\Permissions\PermissionManager::RIGOR_QUICK;
-		if ( method_exists( $parser, 'getUserIdentity' ) ) {
-			// MW 1.36+
-			$user = MediaWikiServices::getInstance()
-				->getUserFactory()->newFromUserIdentity( $parser->getUserIdentity() );
-		} else {
-			$user = $parser->getUser();
-		}
+		$user = MediaWikiServices::getInstance()
+			->getUserFactory()->newFromUserIdentity( $parser->getUserIdentity() );
 		if ( \MediaWiki\MediaWikiServices::getInstance()
 			->getPermissionManager()
 			->userCan( $right, $user, $title, $rigor )
@@ -291,28 +272,15 @@ class ExtRightFunctions {
 		}
 		// dummy first character so that strpos doesn't return 0.
 		$type = "0{$type}";
-		if ( method_exists( MediaWikiServices::class, 'getRestrictionStore' ) ) {
-			// MW 1.37+
-			$restrictionStore = MediaWikiServices::getInstance()->getRestrictionStore();
-			if ( $restrictionStore->isProtected( $title ) && strpos( $type, 'f' ) ) {
-				return $then;
-			}
-			if ( $restrictionStore->isSemiProtected( $title ) && strpos( $type, 's' ) ) {
-				return $then;
-			}
-			if ( $restrictionStore->isCascadeProtected( $title ) && strpos( $type, 'c' ) ) {
-				return $then;
-			}
-		} else {
-			if ( $title->isProtected() && strpos( $type, 'f' ) ) {
-				return $then;
-			}
-			if ( $title->isSemiProtected() && strpos( $type, 's' ) ) {
-				return $then;
-			}
-			if ( $title->isCascadeProtected() && strpos( $type, 'c' ) ) {
-				return $then;
-			}
+		$restrictionStore = MediaWikiServices::getInstance()->getRestrictionStore();
+		if ( $restrictionStore->isProtected( $title ) && strpos( $type, 'f' ) ) {
+			return $then;
+		}
+		if ( $restrictionStore->isSemiProtected( $title ) && strpos( $type, 's' ) ) {
+			return $then;
+		}
+		if ( $restrictionStore->isCascadeProtected( $title ) && strpos( $type, 'c' ) ) {
+			return $then;
 		}
 		if ( strpos( $type, 'n' ) ) {
 			global $wgNamespaceProtection;
@@ -350,20 +318,13 @@ class ExtRightFunctions {
 			$title = $parser->getTitle();
 		}
 		if ( !$right ) {
-			$right = [ 'edit' ];
+			$right = 'edit';
 		}
 		$iscascade = false;
 		$cascrest = '';
-		if ( method_exists( MediaWikiServices::class, 'getRestrictionStore' ) ) {
-			// MW 1.37+
-			$restrictionStore = MediaWikiServices::getInstance()->getRestrictionStore();
-		} else {
-			$restrictionStore = null;
-		}
-		if ( $restrictionStore ? $restrictionStore->isCascadeProtected( $title ) : $title->isCascadeProtected() ) {
-			$cascaderestrictions = $restrictionStore ?
-				$restrictionStore->getCascadeProtectionSources( $title )
-				: $title->getCascadeProtectionSources();
+		$restrictionStore = MediaWikiServices::getInstance()->getRestrictionStore();
+		if ( $restrictionStore->isCascadeProtected( $title ) ) {
+			$cascaderestrictions = $restrictionStore->getCascadeProtectionSources( $title );
 
 			foreach ( array_slice( $cascaderestrictions, 1 ) as $groups ) {
 				foreach ( $groups as $action => $restrictions ) {
@@ -377,12 +338,8 @@ class ExtRightFunctions {
 			}
 		}
 		$cascrest = trim( trim( $cascrest, $sep ) );
-		$localrest = $restrictionStore ?
-			$restrictionStore->getRestrictions( $title, $right )
-			: $title->getRestrictions( $right );
-		if ( is_array( $localrest ) ) {
-			$localrest = array_pop( $localrest );
-		}
+		$localrest = $restrictionStore->getRestrictions( $title, $right );
+		$localrest = array_pop( $localrest );
 		$isns = false;
 		$nsrest = '';
 		if ( isset( $wgNamespaceProtection[$title->getNamespace()] ) ) {

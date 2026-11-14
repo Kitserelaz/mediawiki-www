@@ -11,9 +11,10 @@
 namespace RatePage\Special;
 
 use BadRequestError;
-use Html;
 use MediaWiki\Config\ServiceOptions;
+use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
 use MediaWiki\Widget\CheckMatrixWidget;
 use OOUI;
 use OOUI\FieldLayout;
@@ -25,7 +26,6 @@ use RatePage\Rights;
 use SpecialPage;
 use Status;
 use stdClass;
-use Title;
 use WebRequest;
 use Wikimedia\Rdbms\DBError;
 use Xml;
@@ -153,7 +153,7 @@ class RatePageContests extends SpecialPage {
 					ContestResultsExporter::CONSTRUCTOR_OPTIONS,
 					$this->getConfig()
 				),
-				wfGetDB( DB_REPLICA ),
+				MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase(),
 				$this,
 				$this->contestId
 			);

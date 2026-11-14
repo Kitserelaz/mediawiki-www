@@ -1,15 +1,13 @@
-'use strict';
-
-const Page = require( 'wdio-mediawiki/Page' );
+import Page from 'wdio-mediawiki/Page';
 
 class VersionPage extends Page {
 	get contactPageExtension() {
 		return $( '#mw-version-ext-specialpage-ContactPage' );
 	}
 
-	open() {
-		super.openTitle( 'Special:Version' );
+	async open() {
+		return super.openTitle( 'Special:Version' );
 	}
 }
 
-module.exports = new VersionPage();
+export default new VersionPage();

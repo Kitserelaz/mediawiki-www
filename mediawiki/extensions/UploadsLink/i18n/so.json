@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"AhmedG612"
+		]
+	},
+	"uploadslink-desc": "Waxay ku darsataa xiriir liiska faylasha uu soo geliyay isticmaalaha hadda ee menu-ga qalabka shaqsiga ah, iyo sidoo kale xiriir liiska faylasha uu soo geliyay isticmaalaha la xiriira ee liiska Qalabka ee dhinaca",
+	"uploadslink-portlet-label": "Soo gelinno",
+	"tooltip-pt-uploads": "Liiska faylasha aad soo gelisay",
+	"uploadslink-toobox-label": "{{GENDER:$1|Isticmaale}} soo gelinno",
+	"tooltip-tb-uploads": "Liiska soo gelinnada uu sameeyay {{GENDER:$1|isticmaalahani}}"
+}

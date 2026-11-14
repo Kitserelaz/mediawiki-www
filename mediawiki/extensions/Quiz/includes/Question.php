@@ -2,10 +2,10 @@
 
 namespace MediaWiki\Extension\Quiz;
 
+use MediaWiki\Html\Html;
 use MediaWiki\Html\TemplateParser;
 use MediaWiki\Parser\Parser;
 use MediaWiki\Request\WebRequest;
-use MediaWiki\Xml\Xml;
 use UnexpectedValueException;
 
 class Question {
@@ -15,6 +15,8 @@ class Question {
 
 	/** @var int */
 	private $mQuestionId;
+
+	private int $inputId;
 
 	/** @var bool */
 	private $mBeingCorrected;
@@ -55,10 +57,10 @@ class Question {
 	 * @param int $questionId the Identifier of the question used to generate input names.
 	 * @param bool $shufAns Identifier if answers are supposed to be shuffled.
 	 * @param Parser $parser Parser the wikitext parser.
+	 * @param WebRequest $request
 	 */
-	public function __construct( $beingCorrected, $caseSensitive, $questionId, $shufAns, $parser ) {
-		global $wgRequest;
-		$this->mRequest = $wgRequest;
+	public function __construct( $beingCorrected, $caseSensitive, $questionId, $shufAns, $parser, $request ) {
+		$this->mRequest = $request;
 		$this->mQuestionId = $questionId;
 		$this->mBeingCorrected = $beingCorrected;
 		$this->mCaseSensitive = $caseSensitive;
@@ -202,25 +204,23 @@ class Question {
 	}
 
 	/**
-	 * Transmit a single choice object to the basic type parser.
+	 * Convert a question object to HTML.
 	 *
 	 * @param string $input A question object in quiz syntax.
 	 *
 	 * @return string A question object in HTML.
 	 */
-	public function singleChoiceParseObject( $input ) {
-		return $this->basicTypeParseObject( $input, 'radio' );
-	}
-
-	/**
-	 * Transmit a multiple choice object to the basic type parser.
-	 *
-	 * @param string $input A question object in quiz syntax.
-	 *
-	 * @return string A question object in HTML.
-	 */
-	public function multipleChoiceParseObject( $input ) {
-		return $this->basicTypeParseObject( $input, 'checkbox' );
+	public function parseObject( string $input ): string {
+		switch ( $this->mType ) {
+			case 'singleChoice':
+				return $this->basicTypeParseObject( $input, 'radio' );
+			case 'multipleChoice':
+				return $this->basicTypeParseObject( $input, 'checkbox' );
+			case 'textField':
+				return $this->textFieldParseObject( $input );
+			default:
+				throw new UnexpectedValueException( "Invalid type '{$this->mType}'" );
+		}
 	}
 
 	/**
@@ -257,7 +257,6 @@ class Question {
 				$typeId .= array_key_exists( 1, $matches ) ? 'c' : 'n';
 				foreach ( $matches as $signId => $sign ) {
 					$attribs = [];
-					$attribs['type'] = $inputType;
 					$attribs['class'] = 'check';
 					// Determine the input's name and value.
 					switch ( $typeId ) {
@@ -296,18 +295,18 @@ class Question {
 							if ( $this->mType == 'singleChoice' && $expectOn > 1 ) {
 								$this->setState( 'error' );
 								$attribs['class'] .= ' error';
-								$attribs['title'] = wfMessage( 'quiz_legend_error' )->text();
+								$attribs['title'] = wfMessage( 'quiz-legend-error' )->text();
 								$attribs['disabled'] = 'disabled';
 							}
 							if ( $this->mBeingCorrected ) {
 								if ( array_key_exists( 'checked', $attribs ) ) {
 									$this->setState( 'correct' );
 									$attribs['class'] .= ' correct';
-									$attribs['title'] = wfMessage( 'quiz_legend_correct' )->text();
+									$attribs['title'] = wfMessage( 'quiz-legend-correct' )->text();
 								} else {
 									$this->setState( 'na_incorrect' );
 									$attribs['class'] .= ' incorrect';
-									$attribs['title'] = wfMessage( 'quiz_legend_incorrect' )->text();
+									$attribs['title'] = wfMessage( 'quiz-legend-incorrect' )->text();
 								}
 							}
 							break;
@@ -316,7 +315,7 @@ class Question {
 								if ( array_key_exists( 'checked', $attribs ) ) {
 									$this->setState( 'incorrect' );
 									$attribs['class'] .= ' incorrect';
-									$attribs['title'] = wfMessage( 'quiz_legend_incorrect' )->text();
+									$attribs['title'] = wfMessage( 'quiz-legend-incorrect' )->text();
 								} else {
 									$this->setState( 'na_correct' );
 								}
@@ -325,12 +324,12 @@ class Question {
 						default:
 							$this->setState( 'error' );
 							$attribs['class'] .= ' error';
-							$attribs['title'] = wfMessage( 'quiz_legend_error' )->text();
+							$attribs['title'] = wfMessage( 'quiz-legend-error' )->text();
 							$attribs['disabled'] = 'disabled';
 							break;
 					}
 					$signesOutput .= '<td class="sign">';
-					$signesOutput .= Xml::input( $name, false, $value, $attribs );
+					$signesOutput .= Html::input( $name, $value, $inputType, $attribs );
 					$signesOutput .= '</td>';
 				}
 				if ( $typeId == 'sc' ) {
@@ -413,11 +412,9 @@ class Question {
 		}
 		$orderName = $this->mQuestionId . '|order';
 		$orderValue = $order;
-		$attribs['hidden'] = 'hidden';
-		$attribs['checked'] = 'checked';
 
 		return $this->shuffleAnswers
-			? Xml::input( $orderName, false, $orderValue, $attribs ) . $output
+			? Html::input( $orderName, $orderValue, 'hidden' ) . $output
 			: $output;
 	}
 
@@ -463,10 +460,9 @@ class Question {
 	 *
 	 * @return string A question object in HTML.
 	 */
-	public function textFieldParseObject( $input ) {
+	private function textFieldParseObject( $input ) {
 		$raws = preg_split( '`\n`s', $input, -1, PREG_SPLIT_NO_EMPTY );
-		global $wqInputId;
-		$wqInputId = $this->mQuestionId * 100;
+		$this->inputId = $this->mQuestionId * 100;
 		$output = '';
 		foreach ( $raws as $raw ) {
 			if ( preg_match( $this->mCorrectionPattern, $raw, $matches ) ) {
@@ -501,8 +497,7 @@ class Question {
 	 * @return string
 	 */
 	private function parseTextField( $input ) {
-		global $wqInputId;
-		$wqInputId++;
+		++$this->inputId;
 		$title = '';
 		$state = '';
 		$spanClass = '';
@@ -536,9 +531,9 @@ class Question {
 			$bigDisplay = 'display: none';
 			if ( $this->mBeingCorrected ) {
 				// @phan-suppress-next-line PhanTypeMismatchArgument
-				$value = trim( $this->mRequest->getVal( $wqInputId, '' ) );
+				$value = trim( $this->mRequest->getVal( $this->inputId, '' ) );
 				$state = 'NA';
-				$title = wfMessage( 'quiz_legend_unanswered' )->escaped();
+				$title = wfMessage( 'quiz-legend-unanswered' )->escaped();
 			}
 			$class = 'numbers';
 			$poss = ' ';
@@ -575,10 +570,10 @@ class Question {
 								) || $value == $possibility )
 							) {
 								$state = 'correct';
-								$title = wfMessage( 'quiz_legend_correct' )->escaped();
+								$title = wfMessage( 'quiz-legend-correct' )->escaped();
 							} else {
 								$state = 'incorrect';
-								$title = wfMessage( 'quiz_legend_incorrect' )->escaped();
+								$title = wfMessage( 'quiz-legend-incorrect' )->escaped();
 							}
 						}
 					} else {
@@ -596,10 +591,10 @@ class Question {
 								) )
 							) {
 								$state = 'correct';
-								$title = wfMessage( 'quiz_legend_correct' )->escaped();
+								$title = wfMessage( 'quiz-legend-correct' )->escaped();
 							} else {
 								$state = 'incorrect';
-								$title = wfMessage( 'quiz_legend_incorrect' )->escaped();
+								$title = wfMessage( 'quiz-legend-incorrect' )->escaped();
 							}
 						}
 					}
@@ -629,10 +624,9 @@ class Question {
 				$size = '';
 				$maxlength = '';
 				$disabled = 'disabled';
-				$title = wfMessage( 'quiz_legend_error' )->escaped();
+				$title = wfMessage( 'quiz-legend-error' )->escaped();
 			}
 		}
-		$name = $wqInputId;
 		return $templateParser->processTemplate(
 			'Answer',
 			[
@@ -646,7 +640,7 @@ class Question {
 				'size' => $size,
 				'big' => $big,
 				'maxlength' => $maxlength,
-				'name' => $name,
+				'name' => $this->inputId,
 				'bigDisplay' => $bigDisplay,
 			]
 		);

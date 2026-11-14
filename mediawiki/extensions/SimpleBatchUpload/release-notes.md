@@ -1,5 +1,107 @@
 ## Release Notes
 
+### SimpleBatchUpload 4.0.1
+
+Released on November 6, 2026.
+
+* Fixed `Special:BatchUpload` showing the upload form to users without the `upload` right on MediaWiki 1.43 to 1.45
+
+### SimpleBatchUpload 4.0.0
+
+Released on October 8, 2026.
+
+When upgrading:
+
+* Purge pages using `{{#batchupload:}}`, or bump `$wgCacheEpoch`. Until then, their upload areas can stay broken for
+  up to `$wgParserCacheExpireTime`, while the parser cache serves the old markup. `Special:BatchUpload` does not need
+  purging
+* Update anything in `MediaWiki:Common.css`, `MediaWiki:Common.js` or a gadget that targets the upload interface. The
+  `fileupload-*`, `fileinput-button` and `ful-*` classes are gone; everything this extension renders now carries an
+  `ext-sbu-` prefix
+* Delete any customised `MediaWiki:Simplebatchupload-result-error`, `-result-not-uploaded`, `-result-queued`,
+  `-result-rate-limited`, `-result-rate-limit-stopped`, `-result-success` and `-result-token-error`: those messages
+  no longer exist
+* Check any customised `MediaWiki:Simplebatchupload-buttonlabel`, which now labels the file picker alone, with
+  dropping described beside it
+* Check any customised `MediaWiki:Simplebatchupload-max-files-reached` and `-error-rename-pattern`, which now say
+  something different
+
+Changes:
+
+* Added a new upload interface, built with Vue and Codex, replacing the jQuery File Upload widget
+  * The whole list is the drop target, and dropping a folder adds what is inside it, subfolders included
+  * Each file shows a preview, its size, and its upload progress
+  * An uploaded file links to its page on the wiki
+  * A file can be taken out of the batch before it is uploaded, and added back; a failed file can be tried again
+  * A block above the file list shows the file page text, the upload summary and the rename rule, one line each,
+    with **Edit details** to change them. The summary can now be changed before uploading
+  * Where WikiEditor is installed, the file page text gets its toolbar, following each user's toolbar preference,
+    except on a page with more than one upload area
+  * An upload area added with `{{#batchupload:}}` starts small and opens out once files are added to it, so a page
+    holding many stays short. On `Special:BatchUpload` it is full size from the start
+* Files no longer upload as soon as they are added: they wait in the list until **Upload** is pressed, and a running
+  batch can be paused and carried on
+* Added a `+autoupload` parameter to `{{#batchupload:}}`: files added to that upload area start uploading straight
+  away, without **Upload** being pressed
+* Added **Rename files**, with **Find** and **Replace with** fields and an option for regular expressions. Each file
+  shows its new name before it is uploaded. A `+rename` parameter fills the fields in
+* A `+rename` typed into the file page text is no longer read: the field warns that it would be published as written,
+  and points to **Rename files**
+* A `+rename` rule that is not written correctly is warned about rather than published on every file page, and a
+  rule wrapped in `<nowiki>` can contain `|`
+* Added a prompt before a file is uploaded over one the wiki already holds, instead of overwriting it
+* Added a prompt when files in one batch would be uploaded under the same name, instead of letting the last one win
+* Added `MediaWiki:Batchupload-summary`, shown at the top of `Special:BatchUpload`, as
+  `MediaWiki:Upload-summary` is on `Special:Upload`
+* Fixed the default upload summary being in a user's interface language rather than the wiki's content language,
+  which usually also ignored a summary customised in `MediaWiki:Simplebatchupload-comment`
+
+### SimpleBatchUpload 3.1.0
+
+Released on August 21, 2026.
+
+* Added an estimate of how much longer a batch has left while the wiki is rate limiting it
+* Added the wiki's upload warnings, such as a duplicate or an overwrite, to the result list
+* Made the upload status messages translatable
+* Changed the maximum files per batch to count uploads that are still in progress
+* Changed uploading to pace itself to the rate limit the wiki advertises, once the wiki has refused an upload
+  * Batches that fit inside the limit are unaffected and still upload at full speed
+  * Batches on wikis with a long limit window now retry for much longer before giving up
+* Fixed uploads refused by the wiki's rate limit being reported as permanent errors
+  * Refused files are now retried, so a rate-limited batch takes longer rather than partly failing
+  * A batch that keeps hitting the limit stops and asks for the remaining files to be selected again
+* Fixed files reported as uploaded when the wiki did not store them
+* Fixed an invalid `+rename` pattern cancelling the rest of the batch with no error shown
+* Fixed the result list losing uploads that were still running when more files were selected
+
+Wikis that customised `MediaWiki:Simplebatchupload-max-files-alert` should move that customisation to
+`MediaWiki:Simplebatchupload-max-files-reached`, which replaces it and takes different parameters.
+
+### SimpleBatchUpload 3.0.3
+
+Released on August 5, 2026.
+
+* Fixed deprecation warning shown on MediaWiki 1.46
+
+### SimpleBatchUpload 3.0.2
+
+Released on July 1, 2026.
+
+* Re-release of 3.0.1 to correct a bad release tag; no code changes
+
+### SimpleBatchUpload 3.0.1
+
+Released on July 1, 2026.
+
+* Fixed ResourceLoader errors logged on pages that display the upload button
+
+### SimpleBatchUpload 3.0.0
+
+Released on August 15, 2025.
+
+* Raised minimum MediaWiki version to 1.43
+* Added support for MediaWiki 1.44
+
 ### SimpleBatchUpload 2.0.1
 
 Released on December 7, 2023.

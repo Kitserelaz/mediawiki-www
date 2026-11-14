@@ -1,14 +1,19 @@
 {
 	"root": true,
 	"extends": [
-		"wikimedia/client-es6",
+		"wikimedia/client",
 		"wikimedia/jquery",
 		"wikimedia/mediawiki"
 	],
 	"globals": {
 		"THREE": "readonly"
 	},
-	"rules": {
-		"no-var": "off"
-	}
+	"overrides": [
+		{
+			"files": [ "lib/foreign-resources.*" ],
+			"rules": {
+				"max-len": "off"
+			}
+		}
+	]
 }

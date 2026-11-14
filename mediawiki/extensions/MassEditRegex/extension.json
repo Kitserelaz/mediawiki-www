@@ -11,13 +11,19 @@
 	"license-name": "GPL-2.0-or-later",
 	"type": "specialpage",
 	"requires": {
-		"MediaWiki": ">= 1.40.0"
+		"MediaWiki": ">= 1.46.0"
 	},
 	"AvailableRights": [
 		"masseditregex"
 	],
 	"SpecialPages": {
-		"MassEditRegex": "MassEditRegexSpecialPage"
+		"MassEditRegex": {
+			"class": "MassEditRegexSpecialPage",
+			"services": [
+				"BacklinkCacheFactory",
+				"CommentFormatter"
+			]
+		}
 	},
 	"MessagesDirs": {
 		"MassEditRegex": [
@@ -31,6 +37,9 @@
 		"MassEditRegex": "includes/MassEditRegex.php",
 		"MassEditRegexSpecialPage": "includes/MassEditRegexSpecialPage.php",
 		"MassEditRegexAPI": "includes/MassEditRegexAPI.php"
+	},
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\MassEditRegex\\": "includes/"
 	},
 	"ResourceModules": {
 		"MassEditRegex": {
@@ -58,8 +67,16 @@
 		"localBasePath": "",
 		"remoteExtPath": "MassEditRegex"
 	},
+	"HookHandlers": {
+		"main": {
+			"class": "MediaWiki\\Extension\\MassEditRegex\\Hooks",
+			"services": [
+				"SpecialPageFactory"
+			]
+		}
+	},
 	"Hooks": {
-		"SkinTemplateNavigation::Universal": "MassEditRegexSpecialPage::efSkinTemplateNavigationUniversal"
+		"SkinTemplateNavigation::Universal": "main"
 	},
 	"config": {
 		"AjaxExportList": {

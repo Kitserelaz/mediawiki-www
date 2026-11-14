@@ -1,6 +1,6 @@
 /* global ve */
 /**
- * GuidedTour public API
+ * @classdesc GuidedTour public API
  *
  * Set as mw.guidedTour and often aliased to gt locally
  *
@@ -24,13 +24,13 @@
 ( function ( guiders ) {
 	'use strict';
 
-	var gt = mw.guidedTour,
-		internal = gt.internal,
-		cookieName, cookieParams,
-		// Initialized to false at page load
-		// Will be set true any time postEdit fires, including right after
-		// legacy wgPostEdit variable is set to true.
-		isPostEdit = false;
+	const gt = mw.guidedTour,
+		internal = gt.internal;
+	let cookieName, cookieParams;
+	// Initialized to false at page load
+	// Will be set true any time postEdit fires, including right after
+	// legacy wgPostEdit variable is set to true.
+	let isPostEdit = false;
 
 	/**
 	 * Returns the current user state, initalizing it if needed
@@ -42,9 +42,8 @@
 	 *  mw.guidedTour.internal#getInitialUserStateObject
 	 */
 	function getCookieState() {
-		var cookieValue, parsed;
-		cookieValue = mw.cookie.get( cookieName );
-		parsed = internal.parseUserState( cookieValue );
+		const cookieValue = mw.cookie.get( cookieName );
+		const parsed = internal.parseUserState( cookieValue );
 		if ( parsed !== null ) {
 			return parsed;
 		} else {
@@ -64,10 +63,9 @@
 	 * mw.guidedTour.internal#getInitialUserStateObject
 	 */
 	function getUserState() {
-		var
-			cookieState = getCookieState(),
-			serverState = mw.config.get( 'wgGuidedTourLaunchState' ),
-			state = cookieState;
+		const cookieState = getCookieState(),
+			serverState = mw.config.get( 'wgGuidedTourLaunchState' );
+		let state = cookieState;
 
 		if ( serverState !== null ) {
 			state = $.extend( true, state, serverState );
@@ -83,11 +81,9 @@
 	 * @private
 	 *
 	 * @param {string} tourName name of tour to remove
-	 *
-	 * @return {void}
 	 */
 	function removeTourFromUserStateByName( tourName ) {
-		var parsedCookie = getCookieState();
+		const parsedCookie = getCookieState();
 		delete parsedCookie.tours[ tourName ];
 		mw.cookie.set( cookieName, JSON.stringify( parsedCookie ), cookieParams );
 	}
@@ -102,28 +98,25 @@
 	 * // @return {boolean} Whether a tour was launched
 	 */
 	function launchTourFromState( state ) {
-		var tourName, tourNames,
-			candidateTours = [];
+		const candidateTours = [];
 
-		for ( tourName in state.tours ) {
+		for ( const tourName in state.tours ) {
 			candidateTours.push( {
 				name: tourName,
-				step: state.tours[ tourName ].step
+				step: state.tours[ tourName ].step,
 			} );
 		}
 
-		tourNames = candidateTours.map( function ( el ) {
-			return el.name;
-		} );
+		const tourNames = candidateTours.map( ( el ) => el.name );
 
 		internal.loadMultipleTours( tourNames )
-			.always( function () {
-				var tourName, max, currentStart;
+			.always( () => {
+				let tourName, max, currentStart;
 
 				// This value is before 1970, but is a simple way
 				// to ensure the comparison below always works.
 				max = {
-					startTime: -1
+					startTime: -1,
 				};
 
 				// Not all the tours in the cookie necessarily
@@ -138,7 +131,7 @@
 							userState: state,
 							pageName: mw.config.get( 'wgPageName' ),
 							articleId: mw.config.get( 'wgArticleId' ),
-							condition: internal.definedTours[ tourName ].showConditionally
+							condition: internal.definedTours[ tourName ].showConditionally,
 						} )
 					) {
 						currentStart = state.tours[ tourName ].startTime || 0;
@@ -146,7 +139,7 @@
 							max = {
 								name: tourName,
 								step: state.tours[ tourName ].step,
-								startTime: currentStart
+								startTime: currentStart,
 							};
 						}
 					}
@@ -171,16 +164,13 @@
 	 *
 	 * @param {string} tourName name of tour
 	 * @param {string} tourId id to start at
-	 *
-	 * @return {void}
 	 * @throws {mw.guidedTour.IllegalArgumentError} If the tour ID is not consistent
 	 *   with the tour name, or does not refer to a valid step
 	 */
 	function showTour( tourName, tourId ) {
-		var tour, tourInfo;
-		tour = internal.definedTours[ tourName ];
+		const tour = internal.definedTours[ tourName ];
 
-		tourInfo = gt.parseTourId( tourId );
+		const tourInfo = gt.parseTourId( tourId );
 		if ( tourInfo.name !== tourName ) {
 			throw new gt.IllegalArgumentError( 'The tour ID "' + tourId + '" is not part of the tour "' + tourName + '".' );
 		}
@@ -196,8 +186,6 @@
 	 * async loop finishes. If WikiEditor is not running this event just won't fire.
 	 *
 	 * @private
-	 *
-	 * @return {void}
 	 */
 	function setupRepositionListeners() {
 		$( '#wpTextbox1' ).on( 'wikiEditor-toolbar-doneInitialSections', guiders.reposition );
@@ -209,6 +197,7 @@
 	 * Currently this listens for some custom events from VisualEditor.
 	 *
 	 * @private
+	 * @memberof mw.guidedTour
 	 */
 	function setupStepTransitionListeners() {
 		// TODO (mattflaschen, 2014-03-17): Temporary hack, until
@@ -219,27 +208,26 @@
 		 *
 		 * @param {mw.guidedTour.TransitionEvent} transitionEvent event that triggered
 		 *  the check
+		 * @memberof mw.guidedTour
 		 */
 		function transition( transitionEvent ) {
 			// I found this timeout necessary when testing, probably to give the
 			// browser queue a chance to do pending DOM rendering.
-			setTimeout( function () {
-				var currentStepInfo, currentStep, nextStep, tour;
-
+			setTimeout( () => {
 				if ( guiders._currentGuiderID === null ) {
 					// Ignore transitions if there is no active tour.
 					return;
 				}
 
-				currentStepInfo = gt.parseTourId( guiders._currentGuiderID );
+				const currentStepInfo = gt.parseTourId( guiders._currentGuiderID );
 				if ( currentStepInfo === null ) {
 					mw.log.warn( 'Invalid _currentGuiderID.  Returning early' );
 					return;
 				}
 
-				tour = internal.definedTours[ currentStepInfo.name ];
-				currentStep = tour.getStep( currentStepInfo.step );
-				nextStep = currentStep.checkTransition( transitionEvent );
+				const tour = internal.definedTours[ currentStepInfo.name ];
+				const currentStep = tour.getStep( currentStepInfo.step );
+				const nextStep = currentStep.checkTransition( transitionEvent );
 				if ( nextStep !== currentStep && nextStep !== null ) {
 					tour.showStep( nextStep );
 				}
@@ -250,8 +238,8 @@
 		// The next two are handled differently since they also require
 		// settings an internal boolean.
 		// TODO (mattflaschen, 2014-04-01): Hack pending tour-level listeners.
-		mw.hook( 'postEdit' ).add( function () {
-			var transitionEvent = new gt.TransitionEvent();
+		mw.hook( 'postEdit' ).add( () => {
+			const transitionEvent = new gt.TransitionEvent();
 			transitionEvent.type = gt.TransitionEvent.MW_HOOK;
 			transitionEvent.hookName = 'postEdit';
 			transitionEvent.hookArguments = [];
@@ -266,14 +254,15 @@
 	 * is built.
 	 *
 	 * @private
-	 *
-	 * @return {void}
 	 */
 	function initialize() {
 		// GuidedTour uses cookies to keep the user's progress when they are in the
 		// tour, unless it's single-page.
 		cookieName = '-mw-tour';
-		cookieParams = { expires: null }; // null means to use a session cookie.
+		cookieParams = {
+			expires: null, // null means to use a session cookie.
+			sameSite: 'Lax',
+		};
 
 		// Show X button
 		guiders._defaultSettings.xButton = true;
@@ -283,7 +272,7 @@
 		guiders._defaultSettings.closeOnClickOutside = true;
 		guiders._defaultSettings.flipToKeepOnScreen = true;
 
-		$( function () {
+		$( () => {
 			setupRepositionListeners();
 			setupStepTransitionListeners();
 		} );
@@ -292,9 +281,11 @@
 	// Add external API (internal API is at gt.internal)
 	// Most, but not all, of this is public (non-public ones use standard
 	// @private marking).
-	$.extend( gt, {
+	Object.assign( gt, {
 		/**
 		 * Parses tour ID into an object with name and step keys.
+		 *
+		 * @memberof mw.guidedTour#
 		 *
 		 * @param {string} tourId ID of tour/step combination
 		 *
@@ -305,20 +296,19 @@
 		 */
 		parseTourId: function ( tourId ) {
 			// Keep in sync with regex in GuidedTourHooks.php
-			var TOUR_ID_REGEX = /^gt-([^.-]+)-([^.-]+)$/,
-				tourMatch, tourName, tourStep;
+			const TOUR_ID_REGEX = /^gt-([^.-]+)-([^.-]+)$/;
 
 			if ( typeof tourId !== 'string' ) {
 				return null;
 			}
 
-			tourMatch = tourId.match( TOUR_ID_REGEX );
+			const tourMatch = tourId.match( TOUR_ID_REGEX );
 			if ( !tourMatch ) {
 				return null;
 			}
 
-			tourName = tourMatch[ 1 ];
-			tourStep = tourMatch[ 2 ];
+			const tourName = tourMatch[ 1 ];
+			const tourStep = tourMatch[ 2 ];
 
 			if ( tourName.length === 0 ) {
 				return null;
@@ -326,12 +316,14 @@
 
 			return {
 				name: tourName,
-				step: tourStep
+				step: tourStep,
 			};
 		},
 
 		/**
 		 * Serializes tour information into a string
+		 *
+		 * @memberof mw.guidedTour#
 		 *
 		 * @param {Object} tourInfo
 		 * @param {string} tourInfo.name Tour name
@@ -373,19 +365,17 @@
 		 * @param {string} tourName Name of tour
 		 * @param {string|null} [tourId='gt-' + tourName + '-' + step] ID of tour
 		 *   and step.  Omitted or null means to start the tour from the beginning.
-		 *
-		 * @return {void}
 		 */
 		launchTour: function ( tourName, tourId ) {
-			internal.loadTour( tourName ).done( function () {
-				var tour = internal.definedTours[ tourName ];
+			internal.loadTour( tourName ).then( () => {
+				const tour = internal.definedTours[ tourName ];
 
 				if ( tour && gt.shouldShowTour( {
 					tourName: tourName,
 					userState: getUserState(),
 					pageName: mw.config.get( 'wgPageName' ),
 					articleId: mw.config.get( 'wgArticleId' ),
-					condition: tour.showConditionally
+					condition: tour.showConditionally,
 				} ) ) {
 					if ( tourId ) {
 						showTour( tourName, tourId );
@@ -399,17 +389,20 @@
 		/**
 		 * Attempts to launch a tour from the query string (tour parameter)
 		 *
+		 * @memberof mw.guidedTour#
+		 *
 		 * @return {boolean} Whether a tour was launched
 		 */
 		launchTourFromQueryString: function () {
-			var step, tourId, tourName = mw.util.getParamValue( 'tour' );
+			const tourName = mw.util.getParamValue( 'tour' );
 
 			if ( tourName !== null && tourName.length !== 0 ) {
-				step = gt.getStepFromQuery();
+				const step = gt.getStepFromQuery();
+				let tourId;
 				if ( step !== null && step !== '' ) {
 					tourId = gt.makeTourId( {
 						name: tourName,
-						step: step
+						step: step,
 					} );
 				} else {
 					tourId = null;
@@ -427,10 +420,12 @@
 		 * Attempts to launch a tour from combined user state (cookie + tours launched
 		 * directly by server)
 		 *
+		 * @memberof mw.guidedTour#
+		 *
 		 * @return {boolean} Whether a tour was launched
 		 */
 		launchTourFromUserState: function () {
-			var state = getUserState();
+			const state = getUserState();
 			return launchTourFromState( state );
 		},
 
@@ -445,7 +440,7 @@
 		 *
 		 * If both fail, it does nothing.
 		 *
-		 * @return {void}
+		 * @memberof mw.guidedTour#
 		 */
 		launchTourFromEnvironment: function () {
 			// Tour is either in the query string or cookie (prefer query string)
@@ -466,10 +461,10 @@
 		 *
 		 * This does not take into account isSinglePage.
 		 *
+		 * @memberof mw.guidedTour#
+		 *
 		 * @param {string} name Tour name
 		 * @param {number|string} [step=1] Tour step
-		 *
-		 * @return {void}
 		 */
 		setTourCookie: function ( name, step ) {
 			step = step || 1;
@@ -477,9 +472,9 @@
 			gt.updateUserStateForTour( {
 				tourInfo: {
 					name: name,
-					step: step
+					step: step,
 				},
-				wasShown: false
+				wasShown: false,
 			} );
 		},
 
@@ -487,24 +482,23 @@
 		/**
 		 * Ends the tour, removing user's state
 		 *
+		 * @memberof mw.guidedTour#
+		 *
 		 * @param {string} [tourName] tour to end, defaulting to most recent one
 		 *  that showed a guider
-		 *
-		 * @return {void}
 		 */
 		endTour: function ( tourName ) {
-			var guider, tourId, tourInfo, tour;
 			if ( tourName !== undefined ) {
 				removeTourFromUserStateByName( tourName );
 			} else {
-				tourId = guiders._currentGuiderID;
-				tourInfo = gt.parseTourId( tourId );
+				const tourId = guiders._currentGuiderID;
+				const tourInfo = gt.parseTourId( tourId );
 				tourName = tourInfo.name;
-				guider = guiders._guiderById( tourId );
+				const guider = guiders._guiderById( tourId );
 				gt.removeTourFromUserStateByGuider( guider );
 			}
 
-			tour = internal.definedTours[ tourName ];
+			const tour = internal.definedTours[ tourName ];
 			if ( tour.currentStep !== null ) {
 				tour.currentStep.unregisterMwHooks();
 			}
@@ -515,7 +509,7 @@
 		/**
 		 * Hides the guider(s)
 		 *
-		 * @return {void}
+		 * @memberof mw.guidedTour#
 		 */
 		hideAll: function () {
 			guiders.hideAll();
@@ -532,11 +526,11 @@
 		 *
 		 * Add this to onShow.
 		 *
+		 * @memberof mw.guidedTour#
+		 * @method
 		 * @deprecated
 		 *
 		 * @param {Object} guider Guider object to set description on
-		 *
-		 * @return {void}
 		 */
 		parseDescription: 'parseDescription is not a real function',
 
@@ -548,11 +542,11 @@
 		 * To use this, put the page name as the description, and use this as the
 		 * value of onShow.
 		 *
+		 * @memberof mw.guidedTour#
+		 * @method
 		 * @deprecated
 		 *
 		 * @param {Object} guider Guider object to set description on
-		 *
-		 * @return {void}
 		 */
 		getPageAsDescription: 'getPageAsDescription is not a real function',
 
@@ -566,6 +560,8 @@
 		// to do.
 		/**
 		 * Checks whether user is on a particular wiki page.
+		 *
+		 * @memberof mw.guidedTour#
 		 *
 		 * @param {string} pageName Expected page name
 		 *
@@ -584,6 +580,8 @@
 		 *
 		 * If pageName is falsy, the page name will not be considered in any way.
 		 *
+		 * @memberof mw.guidedTour#
+		 *
 		 * @param {Object} queryParts Object mapping expected query
 		 *  parameter names (string) to expected values (string)
 		 * @param {string} [pageName] Page name
@@ -591,7 +589,7 @@
 		 * @return {boolean} true if and only if there is a match per above
 		 */
 		hasQuery: function ( queryParts, pageName ) {
-			var qname;
+			let qname;
 
 			if ( pageName && mw.config.get( 'wgPageName' ) !== pageName ) {
 				return false;
@@ -609,6 +607,8 @@
 		 * Checks if the user is editing, with either wikitext or the
 		 * VisualEditor.  Does not include previewing.
 		 *
+		 * @memberof mw.guidedTour#
+		 *
 		 * @return {boolean} true if and only if they are actively editing
 		 */
 		isEditing: function () {
@@ -617,6 +617,8 @@
 
 		/**
 		 * Checks if the user is editing with wikitext.  Does not include previewing.
+		 *
+		 * @memberof mw.guidedTour#
 		 *
 		 * @return {boolean} true if and only if they are on the edit action
 		 */
@@ -631,6 +633,7 @@
 		 * Use isVisualEditorOpen instead if you want to check if there is a
 		 * VisualEditor instance on the page.
 		 *
+		 * @memberof mw.guidedTour#
 		 * @see mw.guidedTour#isVisualEditorOpen
 		 *
 		 * @return {boolean} true if and only if they are actively editing with VisualEditor
@@ -641,6 +644,8 @@
 
 		/**
 		 * Checks whether VisualEditor is open
+		 *
+		 * @memberof mw.guidedTour#
 		 *
 		 * @return {boolean} true if and only if there is a VisualEditor instance
 		 * on the page
@@ -654,6 +659,8 @@
 		 * Checks whether the user is previewing or reviewing changes
 		 * (after clicking "Show changes")
 		 *
+		 * @memberof mw.guidedTour#
+		 *
 		 * @return {boolean} true if and only if they are reviewing
 		 */
 		isReviewing: function () {
@@ -663,6 +670,8 @@
 		/**
 		 * Checks whether the user is previewing or reviewing wikitext changes
 		 * (the latter meaning the screen after clicking "Show changes")
+		 *
+		 * @memberof mw.guidedTour#
 		 *
 		 * @return {boolean} true if and only if they are reviewing wikitext
 		 */
@@ -678,6 +687,8 @@
 		 *
 		 * This method is not necessary if post-edit is the only
 		 * criterion for the transition.
+		 *
+		 * @memberof mw.guidedTour#
 		 *
 		 * @return {boolean} true if they just saved an edit, false otherwise
 		 */
@@ -707,24 +718,22 @@
 		 *
 		 * Finally, it will default to step 1.
 		 *
+		 * @memberof mw.guidedTour#
+		 *
 		 * @param {string} tourName Tour name
 		 * @param {number|string} [step] Step, defaulting to the cookie or first step of tour.
-		 *
-		 * @return {void}
 		 */
 		resumeTour: function ( tourName, step ) {
-			var userState;
-
 			if ( step === undefined ) {
 				step = gt.getStepFromQuery() || 0;
 			}
 
-			userState = getUserState();
+			const userState = getUserState();
 			if ( ( step === 0 ) && userState.tours[ tourName ] !== undefined ) {
 				// start from user state position
 				showTour( tourName, gt.makeTourId( {
 					name: tourName,
-					step: userState.tours[ tourName ].step
+					step: userState.tours[ tourName ].step,
 				} ) );
 			}
 
@@ -734,7 +743,7 @@
 			// start from step specified
 			showTour( tourName, gt.makeTourId( {
 				name: tourName,
-				step: step
+				step: step,
 			} ) );
 		},
 
@@ -744,11 +753,9 @@
 		 * @private
 		 *
 		 * @param {Object} guider any guider from the tour
-		 *
-		 * @return {void}
 		 */
 		removeTourFromUserStateByGuider: function ( guider ) {
-			var tourInfo = gt.parseTourId( guider.id );
+			const tourInfo = gt.parseTourId( guider.id );
 			if ( tourInfo !== null ) {
 				removeTourFromUserStateByName( tourInfo.name );
 			}
@@ -764,16 +771,13 @@
 		 * @param {boolean} args.wasShown true if the guider was actually just shown on the
 		 *   current page, false otherwise.  Certain fields can only be initialized on a
 		 *   page where it was shown.
-		 *
-		 * @return {void}
 		 */
 		updateUserStateForTour: function ( args ) {
-			var cookieState = getCookieState(), tourName, tourSpec, articleId, pageName,
-				cookieValue;
+			const cookieState = getCookieState();
 
-			tourName = args.tourInfo.name;
+			const tourName = args.tourInfo.name;
 			// It should be defined, except when wasShown is false.
-			tourSpec = internal.definedTours[ tourName ] || {};
+			const tourSpec = internal.definedTours[ tourName ] || {};
 
 			// Ensure there's a sub-object for this tour
 			if ( cookieState.tours[ tourName ] === undefined ) {
@@ -787,17 +791,17 @@
 				cookieState.tours[ tourName ].firstArticleId === undefined &&
 				cookieState.tours[ tourName ].firstSpecialPageName === undefined
 			) {
-				articleId = mw.config.get( 'wgArticleId' );
+				const articleId = mw.config.get( 'wgArticleId' );
 				if ( articleId !== 0 ) {
 					cookieState.tours[ tourName ].firstArticleId = articleId;
 				} else {
-					pageName = mw.config.get( 'wgPageName' );
+					const pageName = mw.config.get( 'wgPageName' );
 					cookieState.tours[ tourName ].firstSpecialPageName = pageName;
 				}
 			}
 
 			cookieState.tours[ tourName ].step = String( args.tourInfo.step );
-			cookieValue = JSON.stringify( cookieState );
+			const cookieValue = JSON.stringify( cookieState );
 			mw.cookie.set( cookieName, cookieValue, cookieParams );
 		},
 
@@ -813,7 +817,7 @@
 		getCookieConfiguration: function () {
 			return {
 				name: cookieName,
-				parameters: cookieParams
+				parameters: cookieParams,
 			};
 		},
 
@@ -837,7 +841,7 @@
 		 * @throws {mw.guidedTour.TourDefinitionError} On invalid conditions
 		 */
 		shouldShowTour: function ( args ) {
-			var subState = args.userState.tours[ args.tourName ];
+			const subState = args.userState.tours[ args.tourName ];
 			if ( args.condition !== undefined ) {
 				// TODO (mattflaschen, 2013-07-09): Allow having multiple
 				// conditions ANDed together in an array.
@@ -868,7 +872,7 @@
 
 			// No conditions or inconsistent cookie data
 			return true;
-		}
+		},
 	} );
 
 	/**
@@ -879,6 +883,7 @@
 	 * tourSpec.isSinglePage, and tourSpec.showConditionally.
 	 *
 	 * @method defineTour
+	 * @memberof mw.guidedTour#
 	 *
 	 * @param {Object} tourSpec object specifying tour
 	 * @param {Array} tourSpec.steps Array of steps; see
@@ -894,7 +899,8 @@
 	 * @throws {mw.guidedTour.TourDefinitionError} On invalid input
 	 */
 	gt.defineTour = function ( tourSpec ) {
-		var tourBuilder, stepBuilders = [], steps, i, j, stepCount;
+		const stepBuilders = [];
+		let stepCount = null, steps = null;
 
 		/**
 		 * Prepares a stepSpec for being passed to firstStep or step
@@ -909,7 +915,7 @@
 		function convertStepSpec( index, stepSpec ) {
 			return $.extend( true, {
 				name: ( index + 1 ).toString(),
-				allowAutomaticNext: false
+				allowAutomaticNext: false,
 			}, stepSpec );
 		}
 
@@ -928,7 +934,7 @@
 		 *  for no change
 		 */
 		function followShouldSkip( skipStartIndex, delta ) {
-			var skipIndex = skipStartIndex;
+			let skipIndex = skipStartIndex;
 
 			while ( skipIndex >= 0 &&
 				skipIndex < stepCount &&
@@ -960,7 +966,7 @@
 		 */
 		function getTransitionHandler( startIndex ) {
 			return function ( event ) {
-				var delta = 1;
+				let delta = 1;
 				if ( event.type === gt.TransitionEvent.BUILTIN && event.subtype === gt.TransitionEvent.TRANSITION_BACK ) {
 					delta = -1;
 				}
@@ -973,7 +979,7 @@
 			throw new gt.TourDefinitionError( 'Check your syntax. There must be exactly one argument, \'tourSpec\', which must be an object.' );
 		}
 
-		tourBuilder = new gt.TourBuilder( tourSpec );
+		const tourBuilder = new gt.TourBuilder( tourSpec );
 
 		steps = tourSpec.steps;
 		if ( !Array.isArray( steps ) || steps.length < 1 ) {
@@ -983,16 +989,16 @@
 		stepCount = steps.length;
 
 		stepBuilders[ 0 ] = tourBuilder.firstStep(
-			convertStepSpec( 0, tourSpec.steps[ 0 ] )
+			convertStepSpec( 0, tourSpec.steps[ 0 ] ),
 		);
 
-		for ( i = 1; i < stepCount; i++ ) {
+		for ( let i = 1; i < stepCount; i++ ) {
 			stepBuilders[ i ] = tourBuilder.step(
-				convertStepSpec( i, steps[ i ] )
+				convertStepSpec( i, steps[ i ] ),
 			);
 		}
 
-		for ( j = 0; j < stepCount; j++ ) {
+		for ( let j = 0; j < stepCount; j++ ) {
 			if ( j < stepCount - 1 ) {
 				stepBuilders[ j ].next( stepBuilders[ j + 1 ] );
 			}
@@ -1009,19 +1015,12 @@
 		return tourBuilder;
 	};
 
-	// Keep after main mw.guidedTour methods.
-	// jsduck assumes methods belong to the classes they follow in source
-	// code order.
 	/**
-	 * Error subclass for errors that occur during tour definition
-	 *
 	 * @class mw.guidedTour.TourDefinitionError
+	 * @classdesc Error subclass for errors that occur during tour definition
 	 * @extends Error
-	 */
-
-	/**
-	 * @constructor
 	 *
+	 * @constructor
 	 * @param {string} message Error message text
 	 */
 	gt.TourDefinitionError = function ( message ) {
@@ -1034,15 +1033,11 @@
 	gt.TourDefinitionError.prototype.constructor = gt.TourDefinitionError;
 
 	/**
-	 * Error subclass for invalid arguments (that are not part of tour definition)
-	 *
 	 * @class mw.guidedTour.IllegalArgumentError
+	 * @classdesc Error subclass for invalid arguments (that are not part of tour definition)
 	 * @extends Error
-	 */
-
-	/**
-	 * @constructor
 	 *
+	 * @constructor
 	 * @param {string} message Error message text
 	 */
 	gt.IllegalArgumentError = function ( message ) {

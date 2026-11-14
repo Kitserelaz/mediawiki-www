@@ -1,7 +1,5 @@
 <?php
 
-use MediaWiki\MediaWikiServices;
-
 $path = '../../..';
 
 if ( getenv( 'MW_INSTALL_PATH' ) !== false ) {
@@ -11,7 +9,7 @@ if ( getenv( 'MW_INSTALL_PATH' ) !== false ) {
 require_once $path . '/maintenance/Maintenance.php';
 
 class SwitchExperimentPrefs extends Maintenance {
-	function __construct() {
+	public function __construct() {
 		parent::__construct();
 		$this->addOption( 'pref', 'Preference to set', true, true );
 		$this->addOption( 'value', 'Value to set the preference to', true, true );
@@ -20,10 +18,11 @@ class SwitchExperimentPrefs extends Maintenance {
 		$this->requireExtension( 'CollapsibleVector' );
 	}
 
-	function execute() {
-		$dbw = wfGetDB( DB_PRIMARY );
-		$services = MediaWikiServices::getInstance();
+	public function execute() {
+		$services = $this->getServiceContainer();
+		$dbw = $services->getConnectionProvider()->getPrimaryDatabase();
 		$lbFactory = $services->getDBLoadBalancerFactory();
+		$userFactory = $services->getUserFactory();
 		$userOptionsManager = $services->getUserOptionsManager();
 
 		$batchSize = 100;
@@ -46,7 +45,7 @@ class SwitchExperimentPrefs extends Maintenance {
 			$lastUserID = max( $ids );
 
 			foreach ( $ids as $id ) {
-				$user = User::newFromId( $id );
+				$user = $userFactory->newFromId( $id );
 				if ( !$user->isRegistered() ) {
 					continue;
 				}

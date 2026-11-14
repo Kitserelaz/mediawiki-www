@@ -25,10 +25,9 @@ module.ApiPageConnectionRepo = ( function ( mw, ApiConnectionsBuilder ) {
 				if (pagesToAdd.length === 0) {
 					resolve({pages: [], links: []});
 				} else {
-					this._addedPages.concat(pagesToAdd);
-
 					this._queryLinks(pagesToAdd).done(
 						function(apiResponse) {
+							this._addedPages = this._addedPages.concat(pagesToAdd);
 							this._apiResponseToPagesAndLinks(apiResponse).then(connections => resolve(connections))
 						}.bind(this)
 					);
@@ -48,10 +47,7 @@ module.ApiPageConnectionRepo = ( function ( mw, ApiConnectionsBuilder ) {
 
 						let missingPages = this._getMissingPages(pages)
 
-						// @Attention!! this won't include the redirects
-						// (the redirects are at pageInfoResponse.query.redirects !)
-						// so connections.pages and pageInfoResponse.query.pages
-						// may differ
+						let redirectMap = this._buildRedirectMap(pageInfoResponse)
 						let displayTitles = this._getDisplayTitles(pages)
 
 						this._getTitleIcons(pages)
@@ -64,16 +60,20 @@ module.ApiPageConnectionRepo = ( function ( mw, ApiConnectionsBuilder ) {
 
 									if (page.isExternal) {
 										page.displayTitle = page.title;
-									} else if ( !page.isRedirect ) {
-										page.displayTitle = displayTitles[page.title];
 									} else {
-										page.displayTitle = page.title;
+										let resolvedTitle = redirectMap[page.title] || page.title;
+										page.displayTitle = displayTitles[resolvedTitle] || resolvedTitle;
 									}
 
-									if (titleIcons.images[page.title]) {
-										page.image = titleIcons.images[page.title];
-									} else if (titleIcons.text[page.title]) {
-										page.text = titleIcons.text[page.title];
+									if (redirectMap[page.title]) {
+										page.isRedirect = true;
+									}
+
+									let iconKey = redirectMap[page.title] || page.title;
+									if (titleIcons.images[iconKey]) {
+										page.image = titleIcons.images[iconKey];
+									} else if (titleIcons.text[iconKey]) {
+										page.text = titleIcons.text[iconKey];
 									}
 								});
 
@@ -152,6 +152,16 @@ module.ApiPageConnectionRepo = ( function ( mw, ApiConnectionsBuilder ) {
 		return displayTitles
 	}
 
+	ApiPageConnectionRepo.prototype._buildRedirectMap = function(pageInfoResponse) {
+		let redirectMap = {};
+		if (pageInfoResponse.query.redirects) {
+			pageInfoResponse.query.redirects.forEach(function(redirect) {
+				redirectMap[redirect.from] = redirect.to;
+			});
+		}
+		return redirectMap;
+	}
+
 	ApiPageConnectionRepo.prototype._getTitleIcons = function(pages) {
 		return new Promise(
 			function(resolve) {
@@ -166,7 +176,8 @@ module.ApiPageConnectionRepo = ( function ( mw, ApiConnectionsBuilder ) {
 							for (let index in icons) {
 								let icon = icons[index]
 								if (icon.type === 'ooui') {
-									images[page.title] = 'resources/lib/ooui/themes/wikimediaui/images/icons/' + icon.icon;
+									images[page.title] = (mw.config.get('wgScriptPath') || '')
+										+ '/resources/lib/ooui/themes/wikimediaui/images/icons/' + icon.icon;
 									break
 								} else if (icon.type === 'file') {
 									fileIcons[page.title] = icon.icon;

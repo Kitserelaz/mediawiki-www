@@ -7,7 +7,7 @@
 
 The **Network** extension allows visualizing connections between wiki pages via an interactive network graph.
 
-It was created by [Professional Wiki](https://professional.wiki/) and funded by
+It was created by [Professional Wiki] and funded by
 [KDZ - Centre for Public Administration Research](https://www.kdz.eu/).
 
 <a href="https://raw.githubusercontent.com/ProfessionalWiki/Network/master/.github/network.png"><img src=".github/network.png" width="350px" title="View image" /></a>
@@ -30,8 +30,8 @@ It was created by [Professional Wiki](https://professional.wiki/) and funded by
 
 ## Platform requirements
 
-* PHP 7.4 or later (tested up to PHP 8.4)
-* MediaWiki 1.39.x or later (tested up to 1.43.x)
+- PHP 8.1 or later (tested up to PHP 8.5)
+- MediaWiki 1.43.x or later (tested up to 1.45.x)
 
 See the [release notes](#release-notes) for more information on the different versions of Network.
 
@@ -43,17 +43,17 @@ The recommended way to install Network is using [Composer](https://getcomposer.o
 On the commandline, go to your wikis root directory. Then run these two commands:
 
 ```shell script
-COMPOSER=composer.local.json composer require --no-update professional-wiki/network:~2.0
+COMPOSER=composer.local.json composer require --no-update professional-wiki/network:~4.0
 composer update professional-wiki/network --no-dev -o
 ```
 
-Then enable the extension by adding the following to the bottom of your wikis `LocalSettings.php` file:
+Then enable the extension by adding the following to the bottom of your wiki's `LocalSettings.php` file:
 
 ```php
 wfLoadExtension( 'Network' );
 ```
 
-You can verify the extension was enabled successfully by opening your wikis Special:Version page in your browser.
+You can verify the extension was enabled successfully by opening your wiki's Special:Version page in your browser.
 
 Finally, please consider [sponsoring the project].
 
@@ -234,16 +234,16 @@ Where `NetworkPages` contains `Page1 | Page2 | Page3` and `NetworkOptions` conta
 
 ## PHP Configuration
 
-The default value of all parameters can be changed by placing configuration in "LocalSettings.php".
+The default value of all parameters can be changed by placing the configuration in "LocalSettings.php".
 These configuration settings are available:
 
-* `$wgPageNetworkOptions` – options passed directly to the graph visualization library
-* `$wgPageNetworkExcludeTalkPages` - indicates if talk pages should be excluded
-* `$wgPageNetworkExcludedNamespaces` - IDs of namespaces to exclude
-* `$wgPageNetworkEnableDisplayTitle` - indicates if display title should be used for node labels by default
-* `$wgPageNetworkLabelMaxLength` - default maximum length for node labels
+- `$wgPageNetworkOptions` – options passed directly to the graph visualization library
+- `$wgPageNetworkExcludeTalkPages` - indicates if talk pages should be excluded
+- `$wgPageNetworkExcludedNamespaces` - IDs of namespaces to exclude
+- `$wgPageNetworkEnableDisplayTitle` - indicates if display title should be used for node labels by default
+- `$wgPageNetworkLabelMaxLength` - default maximum length for node labels
 
-Default values of these configuration settings can be found in "extension.json". Do not change "extension.json".
+The default values of these configuration settings can be found in "extension.json". Do not change "extension.json".
 
 **$wgPageNetworkOptions**
 
@@ -280,7 +280,7 @@ List of IDs of namespaces of which all pages should be excluded.
 
 Default value: `[ 2, 4, 8, 12 ]` (excluding `User`, `Project`, `MediaWiki` and `Help`)
 
-Examples: 
+Examples:
 
 Exclude the User and Project namespaces:
 `$wgPageNetworkExcludedNamespaces = [ NS_USER, NS_PROJECT ];`
@@ -316,7 +316,7 @@ internal links. To make them show up as internal links on the network graph, you
 setting is changed, you will need to run the `refreshLinks.php` MediaWiki maintenance script for the change to
 be recognized.
 
-## Performance / caching
+## Performance/caching
 
 This extension bypasses the MediaWiki page cache. This means that your network graphs will always be up to date,
 without needing to purge the page cache.
@@ -327,12 +327,12 @@ without needing to purge the page cache.
 
 Pull requests to remove those limitations are welcome.
 
-You can also contact [Professional.Wiki](https://professional.wiki/)
+You can also contact [Professional Wiki]
 for [Professional MediaWiki development](https://professional.wiki/en/mediawiki-development) services.
 
 ## Contribution and support
 
-If you want to contribute work to the project please subscribe to the developers mailing list and
+If you want to contribute work to the project, please subscribe to the developers' mailing list and
 have a look at the contribution guideline.
 
 * [File an issue](https://github.com/ProfessionalWiki/Network/issues)
@@ -340,20 +340,57 @@ have a look at the contribution guideline.
 * Ask a question on [the mailing list](https://www.semantic-mediawiki.org/wiki/Mailing_list)
 
 [Professional MediaWiki support](https://professional.wiki/en/support) is available via
-[Professional.Wiki](https://professional.wiki/).
+[Professional Wiki]
 
 ## Development
 
 Tests, style checks and static analysis can be run via Make. You can execute these commands on the command line
 in the `extensions/Network` directory:
 
-* `make ci` - run everything
-* `make cs` - run style checks
-* `make test` - run the tests
+- `make ci` - run everything
+- `make cs` - run style checks
+- `make test` - run the tests
 
 For more details see the `Makefile`.
 
 The JavaScript tests can only be run by going to the [`Special:JavaScriptTest` page][JS tests].
+
+### Upgrading vis-network
+
+The `vis-network` library is managed via MediaWiki's foreign-resources mechanism. Its version, source URL,
+and integrity hash are declared in `resources/lib/foreign-resources.yaml`.
+
+To upgrade to a new `vis-network` version:
+
+1. Edit `resources/lib/foreign-resources.yaml`: bump `version`, update `src` to the new URL, and clear the
+   `integrity` value.
+2. From the MediaWiki root, compute the new integrity hash:
+
+   ```shell script
+   php maintenance/run.php manageForeignResources make-sri --extension Network
+   ```
+
+   Copy the printed `integrity` line into `foreign-resources.yaml`.
+3. Download the new file:
+
+   ```shell script
+   php maintenance/run.php manageForeignResources update --extension Network
+   ```
+
+4. Test the network rendering with the new version. Some upstream releases change default options or APIs.
+5. Commit the updated YAML and the new `vis-network.js` file.
+
+To verify the on-disk file matches the declared integrity hash:
+
+```shell script
+php maintenance/run.php manageForeignResources verify --extension Network
+```
+
+To regenerate the CycloneDX SBOM (Software Bill of Materials) for the bundled foreign resources:
+
+```shell script
+php maintenance/run.php manageForeignResources make-cdx --extension Network
+```
 
 ## License
 
@@ -361,72 +398,99 @@ The JavaScript tests can only be run by going to the [`Special:JavaScriptTest` p
 
 ## Professional Support and Development
 
-[Professional.Wiki] provides commercial [MediaWiki development], [managed wiki hosting] and [MediaWiki support].
+[Professional Wiki] provides commercial [MediaWiki development], [managed wiki hosting], and [MediaWiki support].
 
 ## Release notes
 
+### Version 4.1.0
+
+Released on May 13th, 2026.
+
+- Upgraded the bundled vis-network library from 8.5.5 to 10.0.3, picking up five years of upstream fixes and tightening tooltip rendering against XSS (#77)
+- Fixed default group images and Title Icon URLs failing to load on pretty article URLs (/wiki/Foo)
+- Tested with MediaWiki 1.45 and PHP 8.5
+- Translation updates (thanks translatewiki.net and its translator community)
+
+### Version 4.0.1
+
+Released on March 2nd, 2026.
+
+- Fixed redirects causing a TypeError that broke the entire network visualization (#58, #90)
+- Fixed redirect pages showing the redirect source title instead of the resolved target title
+- Fixed title icon lookup not resolving through redirects
+- Fixed page deduplication cache not persisting across calls, causing redundant API requests
+- Translation updates (thanks translatewiki.net and its translator community)
+
+### Version 4.0.0
+
+Released on July 24th, 2025.
+
+- Raised the minimum PHP version from 7.4 to 8.1
+- Raised the minimum MediaWiki version from 1.39 to 1.43
+
 ### Version 3.0.0
 
-Release date TDB
+Released on July 7th, 2025.
 
-* Raised minimum MediaWiki version from 1.31 to 1.39
+- Raised the minimum MediaWiki version from 1.31 to 1.39
+- Translation updates for system messages (thanks @translatewiki and its translator community)
 
 ### Version 2.0.1
 
 Released on December 9th, 2023.
 
-* Fixed handling of redirects (thanks @thomas-topway-it)
+- Fixed handling of redirects (thanks @thomas-topway-it)
 
 ### Version 2.0.0
 
 Released on July 11th, 2021.
 
-* Added optional support for using display title for nodes' labels. (thanks @cicalese)
-* Added configurable maximum length for node labels. (thanks @cicalese)
-* Added tooltips to nodes. (thanks @cicalese)
-* Made styling of nodes representing links to existing pages and links to
+- Added optional support for using display title for nodes' labels. (thanks @cicalese)
+- Added configurable maximum length for node labels. (thanks @cicalese)
+- Added tooltips to nodes. (thanks @cicalese)
+- Made styling of nodes representing links to existing pages and links to
   missing pages configurable by adding vis.js groups named "bluelink" and
   "redlink". (thanks @cicalese)
-* Added support for OOUI icons. (thanks @cicalese)
-* Added support for external links. (thanks @cicalese)
+- Added support for OOUI icons. (thanks @cicalese)
+- Added support for external links. (thanks @cicalese)
 
 ### Version 1.4.0
 
 Released on January 9, 2021.
 
-* Upgraded viz-network from 8.3.2 to 8.5.5
+- Upgraded viz-network from 8.3.2 to 8.5.5
 
 ### Version 1.3.0
 
 Released on September 8, 2020.
 
-* Added WAI compliance by adding an aria-label attribute to the network canvas
+- Added WAI compliance by adding an aria-label attribute to the network canvas
 
 ### Version 1.2.1
 
 Released on September 7, 2020.
 
-* Added compatibility with MediaWiki 1.31
+- Added compatibility with MediaWiki 1.31
 
 ### Version 1.2.0
 
 Released on September 7, 2020.
 
-* Upgraded viz-network from 7.6 to 8.3
+- Upgraded viz-network from 7.6 to 8.3
 
 ### Version 1.1.1
 
 Released on September 7, 2020.
 
-* Made code more robust against invalid titles
+- Made code more robust against invalid titles
 
 ### Version 1.1.0
 
 Released on August 30, 2020.
 
-* Added `$wgPageNetworkExcludeTalkPages` option
-* Added `$wgPageNetworkExcludedNamespaces` option
-* Improved node repulsion physics
+- Added `$wgPageNetworkExcludeTalkPages` option
+- Added `$wgPageNetworkExcludedNamespaces` option
+- Improved node repulsion physics
 
 ### Version 1.0.0
 
@@ -437,7 +501,7 @@ Initial release
 [MediaWiki:Common.css]: https://www.mediawiki.org/wiki/Manual:Interface/Stylesheets
 [JS tests]: https://www.mediawiki.org/wiki/Manual:JavaScript_unit_testing
 [sponsoring the project]: https://github.com/sponsors/JeroenDeDauw
-[Professional.Wiki]: https://professional.wiki
+[Professional Wiki]: https://professional.wiki
 [MediaWiki development]: https://professional.wiki/en/mediawiki-development
 [managed wiki hosting]: https://professional.wiki/en/hosting
 [MediaWiki support]: https://professional.wiki/en/support

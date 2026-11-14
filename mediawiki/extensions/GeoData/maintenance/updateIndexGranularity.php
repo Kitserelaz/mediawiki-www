@@ -2,11 +2,13 @@
 
 use MediaWiki\Maintenance\Maintenance;
 
+// @codeCoverageIgnoreStart
 $IP = getenv( 'MW_INSTALL_PATH' );
 if ( $IP === false ) {
 	$IP = __DIR__ . '/../../..';
 }
 require_once "$IP/maintenance/Maintenance.php";
+// @codeCoverageIgnoreEnd
 
 class UpdateIndexGranularity extends Maintenance {
 
@@ -24,20 +26,16 @@ class UpdateIndexGranularity extends Maintenance {
 		$dbw = $this->getPrimaryDB();
 
 		do {
-			$ids = [];
-
 			$this->beginTransaction( $dbw, __METHOD__ );
-			$res = $dbw->newSelectQueryBuilder()
+			$ids = $dbw->newSelectQueryBuilder()
 				->select( 'gt_id' )
 				->from( 'geo_tags' )
 				->where( $dbw->expr( 'gt_id', '>', $id ) )
+				->orderBy( 'gt_id' )
 				->limit( $batchSize )
 				->caller( __METHOD__ )
-				->fetchResultSet();
-			foreach ( $res as $row ) {
-				$id = $row->gt_id;
-				$ids[] = $id;
-			}
+				->fetchFieldValues();
+			$id = array_last( $ids );
 			$indexGranularity = $this->getConfig()->get( 'GeoDataIndexGranularity' );
 			$dbw->newUpdateQueryBuilder()
 				->update( 'geo_tags' )
@@ -55,5 +53,7 @@ class UpdateIndexGranularity extends Maintenance {
 	}
 }
 
+// @codeCoverageIgnoreStart
 $maintClass = UpdateIndexGranularity::class;
 require_once RUN_MAINTENANCE_IF_MAIN;
+// @codeCoverageIgnoreEnd

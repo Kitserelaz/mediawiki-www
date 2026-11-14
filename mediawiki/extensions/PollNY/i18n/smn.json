@@ -5,11 +5,14 @@
 			"Yupik"
 		]
 	},
+	"poll-admin-viewall": "Čääiti puoh",
 	"poll-cancel-button": "Jooskâ",
 	"poll-edit-button": "Vuorkkii siijđo",
 	"poll-image-picker-select": "Valjii",
+	"poll-js-action-complete": "Toimâ lii vaalmâš.",
 	"poll-js-loading": "Luođiimin...",
 	"poll-next": "čuávuvâš",
+	"poll-skip": "Njuškii paijeel →",
 	"poll-submit-btn": "Vuolgât",
 	"poll-view-order": "Oornig",
 	"poll-time-days": "{{PLURAL:$1|ohtâ peivi|$1 peeivi|$1 peeivi|$1 peivid}}"

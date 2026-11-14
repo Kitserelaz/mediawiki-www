@@ -1,7 +1,8 @@
 {
 	"@metadata": {
 		"authors": [
-			"MITO"
+			"MITO",
+			"Samoasambia"
 		]
 	},
 	"standarddialogs-copy-btn": "Kopioi",
@@ -32,6 +33,7 @@
 	"standarddialogs-page-info-page-images": "Kuvat",
 	"standarddialogs-new-page-title": "Luo uusi sivu",
 	"standarddialogs-new-page-label": "Sivun nimi",
+	"standarddialogs-new-page-not-exist-label": "Sivua ei ole olemassa",
 	"standarddialogs-new-subpage-title": "Luo uusi alasivu sivulle \"$1\"",
 	"standarddialogs-new-subpage-label": "Alasivun nimi",
 	"standarddialogs-create-button-new-page-text": "Uusi sivu",
@@ -48,5 +50,13 @@
 	"standarddialogs-purge-title": "Tyhjennä sivun \"$1\" välimuisti",
 	"standarddialogs-btn-done": "Valmis",
 	"standarddialogs-btn-cancel": "Peruuta",
-	"standarddialogs-protect-level-editor": "Salli vain seulojat ja ylläpitäjät"
+	"standarddialogs-protect-level-editor": "Salli vain seulojat ja ylläpitäjät",
+	"standarddialogs-delete-subpages": "Poista alasivut",
+	"standarddialogs-delete-btn-label": "Poista",
+	"standarddialogs-move-btn-label": "Siirrä",
+	"standarddialogs-copy-btn-label": "Kopioi",
+	"standarddialogs-new-page-btn-label": "Luo",
+	"standarddialogs-new-subpage-btn-label": "Luo",
+	"standarddialogs-protect-btn-label": "Suojaa",
+	"standarddialogs-purge-btn-label": "Päivitä"
 }

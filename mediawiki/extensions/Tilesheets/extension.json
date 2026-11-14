@@ -1,6 +1,6 @@
 {
 	"name": "Tilesheets",
-	"version": "5.0.2",
+	"version": "5.0.4",
 	"author": [
 		"[http://ftb.gamepedia.com/User:Jinbobo Jinbobo]",
 		"[http://ftb.gamepedia.com/User:Retep998 Peter Atashian]",
@@ -13,6 +13,9 @@
 	"url": "http://help.gamepedia.com/Extension:Tilesheets",
 	"descriptionmsg": "tilesheets-desc",
 	"type": "parserhook",
+	"requires": {
+		"MediaWiki": ">= 1.40.0"
+	},
 	"license-name": "MIT",
 	"AvailableRights": [
 		"edittilesheets",
@@ -151,7 +154,7 @@
 			]
 		},
 		"edittile": {
-			"class": "TilesheetsEditTileApi", 
+			"class": "TilesheetsEditTileApi",
 			"services": [
 				"DBLoadBalancer",
 				"PermissionManager"
@@ -172,7 +175,7 @@
 			]
 		},
 		"translatetile": {
-			"class": "TilesheetsTranslateTileApi", 
+			"class": "TilesheetsTranslateTileApi",
 			"services": [
 				"DBLoadBalancer",
 				"PermissionManager"

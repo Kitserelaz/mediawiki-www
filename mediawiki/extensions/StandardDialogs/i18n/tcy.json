@@ -1,9 +1,11 @@
 {
 	"@metadata": {
 		"authors": [
+			"ChiK",
 			"Pragathi. BH"
 		]
 	},
+	"standarddialogs-protect-btn": "ಸಂರಕ್ಷಿಸಾಲೆ",
 	"standarddialogs-page-info-page-no-images-label": "ಈ ಪುಟೊಡು ಚಿತ್ರೊಲು ಅತ್ತಂದೆ ಫೈಲ್ ಲು ಇಜ್ಜಿ (ಆಡಿಯೋ ಬೊಕ್ಕ ವಿಡಿಯೋ ಫೈಲ್ ಲೆನ್ ಸೇರಾದ್)",
 	"standarddialogs-page-info-page-no-templates-label": "ಈ ಪುಟೊಡು ಒವ್ವೆ ಟೆಂಪ್ಲೇಟ್ ಲಾ ಇಜ್ಜಿ",
 	"standarddialogs-page-info-page-no-categories-label": "ಈ ಪುಟೊಡು ಯಾವುಲಾ ವಿಭಾಗೊಲು ಇಜ್ಜಿ",

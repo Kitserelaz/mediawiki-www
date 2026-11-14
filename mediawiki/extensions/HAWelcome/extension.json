@@ -22,22 +22,40 @@
 		"HAWelcomeHooks": "HAWelcome.hooks.php"
 	},
 	"JobClasses": {
-		"HAWelcome": "HAWelcomeJob"
+		"HAWelcome": {
+			"class": "HAWelcomeJob",
+			"services": [
+				"CentralIdLookup",
+				"ConnectionProvider",
+				"ContentLanguage",
+				"ExtensionRegistry",
+				"RevisionStore",
+				"UserFactory",
+				"UserGroupManager",
+				"UserOptionsManager",
+				"MainWANObjectCache",
+				"WikiPageFactory"
+			]
+		}
 	},
 	"HookHandlers": {
 		"default": {
 			"class": "HAWelcomeHooks",
 			"services": [
+				"JobFactory",
+				"JobQueueGroup",
 				"ReadOnlyMode",
+				"UserFactory",
 				"UserGroupManager",
-				"UserFactory"
+				"MainWANObjectCache",
+				"WikiPageFactory"
 			]
 		}
 	},
 	"Hooks": {
 		"PageSaveComplete": "default",
-		"UserGroupsChanged": "HAWelcomeHooks::onUserGroupsChanged",
-		"UserGetReservedNames": "HAWelcomeHooks::onUserGetReservedNames"
+		"UserGroupsChanged": "default",
+		"UserGetReservedNames": "default"
 	},
 	"GroupPermissions": {
 		"bot": {
@@ -62,7 +80,7 @@
 		"HAWelcomeSignatureFromPreferences": false
 	},
 	"requires": {
-		"MediaWiki": ">= 1.38.0"
+		"MediaWiki": ">= 1.43"
 	},
 	"manifest_version": 1
 }

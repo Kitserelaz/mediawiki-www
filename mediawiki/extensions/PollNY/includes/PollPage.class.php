@@ -24,6 +24,8 @@ class PollPage extends Article {
 		// Perform no custom handling if the poll in question has been deleted
 		if ( !$this->getPage()->getId() ) {
 			parent::view();
+			// Need to return to not show the noarticletext etc. *twice*
+			return;
 		}
 
 		// WHAT DOES MARSELLUS WALLACE LOOK LIKE?
@@ -38,7 +40,24 @@ class PollPage extends Article {
 		$out->setHTMLTitle( $title->getText() );
 		$out->setPageTitle( $title->getText() );
 
+		$services = MediaWikiServices::getInstance();
+
+		// For diff views, show the diff *above* (not _below_) the page content
+		// @see https://phabricator.wikimedia.org/T367305
+		// @note Using getText() instead of getInt() because it can also have the non-int values "cur", "next" or "prev"
+		$diff = $request->getText( 'diff' );
+		if ( $diff ) {
+			parent::view();
+			// Respect the user preference option for those users who have enabled it
+			$diffOnly = $services->getUserOptionsLookup()->getBoolOption( $user, 'diffonly' );
+			if ( $diffOnly ) {
+				return;
+			}
+		}
+
 		$p = new Poll();
+
+		// @todo FIXME: Support viewing older, non-current versions of the poll in question
 
 		// NoJS POST handler for no-JS votes
 		// JS equivalent is calling ApiPollNY.php with what=vote and other appropriate params
@@ -66,7 +85,6 @@ class PollPage extends Article {
 
 		// Get total polls count so we can tell the user how many they have
 		// voted for out of total
-		$services = MediaWikiServices::getInstance();
 		$userFactory = $services->getUserFactory();
 
 		$dbr = $services->getDBLoadBalancer()->getConnection( DB_PRIMARY );
@@ -292,7 +310,6 @@ class PollPage extends Article {
 						'class' => 'image-choice-' . $x,
 						'style' => 'width:' . $bar_width . 'px;height:11px;'
 					] );
-					// @phan-suppress-next-line PhanTypeMismatchArgumentInternal
 					$safeChoice = htmlspecialchars( $choice['choice'], ENT_QUOTES );
 					$output .= "<div class=\"previous-poll-choice\">
 								<div class=\"previous-poll-choice-left\">{$safeChoice} ({$percent}%)</div>";
@@ -344,7 +361,6 @@ class PollPage extends Article {
 					}
 					$bar_img = "<img src=\"{$imgPath}/vote-bar-{$x}.gif\" class=\"image-choice-{$x}\" style=\"width:{$bar_width}px;height:12px;\"/>";
 
-					// @phan-suppress-next-line PhanTypeMismatchArgumentInternal
 					$safeChoice = htmlspecialchars( $choice['choice'], ENT_QUOTES );
 					$output .= "<div class=\"poll-choice\">
 					<div class=\"poll-choice-left\">{$safeChoice} ({$percent}%)</div>";
@@ -406,6 +422,10 @@ class PollPage extends Article {
 		global $wgPollDisplay;
 		if ( $wgPollDisplay['comments'] ) {
 			$out->addWikiTextAsInterface( '<comments/>' );
+		}
+
+		if ( !$diff ) {
+			parent::view();
 		}
 	}
 }

@@ -29,6 +29,7 @@ use CommentStoreComment;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\RenderedRevision;
 use MediaWiki\Revision\SlotRecord;
+use MediaWiki\Title\Title as MWTitle;
 use Status;
 use WikiPage;
 use User;
@@ -64,7 +65,7 @@ class Extension {
 		// MW 1.36+
 		if ( method_exists( MediaWikiServices::class, 'getWikiPageFactory' ) ) {
 			$wikiPageFactory = MediaWikiServices::getInstance()->getWikiPageFactory();
-			$wikiPage = $wikiPageFactory->newFromTitle( $title );
+			$wikiPage = $wikiPageFactory->newFromLinkTarget( $title );
 		} else {
 			$wikiPage = WikiPage::factory( $title );
 		}
@@ -102,11 +103,11 @@ class Extension {
 	 *
 	 * Entry point for the SpecialLinkTitles class and the LinkTitlesJob class.
 	 *
-	 * @param  \Title $title Title object.
+	 * @param  MWTitle $title MWTitle object.
 	 * @param  \RequestContext $context Current request context. If in doubt, call MediaWiki's `RequestContext::getMain()` to obtain such an object.
 	 * @return bool True if the page exists, false if the page does not exist
 	 */
-	public static function processPage( \Title $title, \RequestContext $context ) {
+	public static function processPage( MWTitle $title, \RequestContext $context ) {
 		$config = new Config();
 		$source = Source::createFromTitle( $title, $config );
 		if ( $source->hasContent() ) {

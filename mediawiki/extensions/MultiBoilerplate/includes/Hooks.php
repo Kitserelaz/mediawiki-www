@@ -26,14 +26,12 @@
 
 namespace MediaWiki\Extension\MultiBoilerplate;
 
-use EditPage;
-use Html;
+use MediaWiki\EditPage\EditPage;
+use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
 use OutputPage;
 use ParserOptions;
-use Title;
-use WikiPage;
-use Xml;
 
 class Hooks {
 
@@ -49,7 +47,7 @@ class Hooks {
 	public static function onEditPageShowEditFormInitial( EditPage $editPage, OutputPage $out ) {
 		$title = $out->getTitle();
 		$request = $out->getRequest();
-		$optionsConfig = $config = $out->getConfig()->get( 'MultiBoilerplateOptions' );
+		$optionsConfig = $out->getConfig()->get( 'MultiBoilerplateOptions' );
 		$allowContentOverwrite = $out->getConfig()->get( 'MultiBoilerplateOverwrite' );
 
 		// If $wgMultiBoilerplateOverwrite is true then detect whether
@@ -69,7 +67,11 @@ class Hooks {
 				if ( $request->getVal( 'boilerplate' ) === $template ) {
 					$selected = true;
 				}
-				$options .= Xml::option( $name, $template, $selected );
+				$attribs = [ 'value' => $template ];
+				if ( $selected === true ) {
+					$attribs['selected'] = 'selected';
+				}
+				$options .= Html::element( 'option', $attribs, $name );
 			}
 		} else {
 			$rows = wfMessage( 'Multiboilerplate' )->inContentLanguage()->text();
@@ -80,11 +82,11 @@ class Hooks {
 			foreach ( $rows as $row ) {
 				if ( preg_match( '/==\s*(.*)\s*==/', $row, $optGroupText ) ) {
 					if ( $headingFound ) {
-						$options .= '</optgroup>';
+						$options .= Html::closeElement( 'optgroup' );
 					}
 					$headingFound = true;
-					$options .= '<optgroup label="' . htmlspecialchars( $optGroupText[1] ) . '">';
-				} elseif ( substr( ltrim( $row ), 0, 1 ) === '*' ) {
+					$options .= Html::openElement( 'optgroup', [ 'label' => $optGroupText[1] ] );
+				} elseif ( str_starts_with( ltrim( $row ), '*' ) ) {
 					$row = ltrim( $row, '* ' ); // Remove asterisk & spacing from start of line.
 					$rowParts = explode( '|', $row );
 					if ( !isset( $rowParts[ 1 ] ) ) {
@@ -97,17 +99,17 @@ class Hooks {
 					$rowParts[1] = preg_replace( '/^\[\[/', '', $rowParts[1] );
 					$rowParts[1] = preg_replace( '/\]\]$/', '', $rowParts[1] );
 
-					$selected = false;
+					$attribs = [ 'value' => $rowParts[1] ];
 					if ( $request->getVal( 'boilerplate' ) === $rowParts[ 1 ] ) {
-						$selected = true;
+						$attribs['selected'] = 'selected';
 					}
-					$options .= Xml::option( $rowParts[ 0 ], $rowParts[ 1 ], $selected );
+					$options .= Html::element( 'option', $attribs, $rowParts[ 0 ] );
 				}
 
 			}
 
 			if ( $headingFound ) {
-				$options .= '</optgroup>';
+				$options .= Html::closeElement( 'optgroup' );
 			}
 		}
 
@@ -117,52 +119,56 @@ class Hooks {
 		}
 
 		// Append the selection form to the top of the edit page.
-		$editPage->editFormPageTop .=
-			Xml::openElement( 'form', [
+		$label = Html::rawElement(
+			'label',
+			[],
+			wfMessage( 'multiboilerplate-label' )->escaped()
+				. Html::rawElement(
+					'select',
+					[ 'name' => 'boilerplate' ],
+					$options
+				)
+		);
+		$editPage->editFormPageTop .= Html::rawElement(
+			'form',
+			[
 				'id' => 'multiboilerplateform',
 				'name' => 'multiboilerplateform',
 				'method' => 'get',
-				'action' => $title->getEditURL() ]
+				'action' => $title->getEditURL()
+			],
+			Html::rawElement(
+				'fieldset',
+				[],
+				Html::element( 'legend', [], wfMessage( 'multiboilerplate-legend' )->plain() )
+					. $label
+					. ' '
+					. Html::hidden( 'action', 'edit' )
+					. Html::hidden( 'title', $request->getText( 'title' ) )
+					. Html::submitButton( wfMessage( 'multiboilerplate-submit' )->plain() )
 			)
-			. Xml::openElement( 'fieldset' )
-			. Xml::element( 'legend', null, wfMessage( 'multiboilerplate-legend' )->plain() )
-			. Xml::openElement( 'label' )
-			. wfMessage( 'multiboilerplate-label' )->plain()
-			. Xml::openElement( 'select', [ 'name' => 'boilerplate' ] )
-			. $options
-			. Xml::closeElement( 'select' )
-			. Xml::closeElement( 'label' )
-			. ' '
-			. Html::Hidden( 'action', 'edit' )
-			. Html::Hidden( 'title', $request->getText( 'title' ) )
-			. Xml::submitButton( wfMessage( 'multiboilerplate-submit' )->plain() )
-			. Xml::closeElement( 'fieldset' )
-			. Xml::closeElement( 'form' );
+		);
 
 		// If the Load button has been pushed replace the article text with the boilerplate.
 		if ( $request->getText( 'boilerplate', false ) ) {
 			$boilerplateTitle = Title::newFromText( $request->getVal( 'boilerplate' ) );
-			if ( !$boilerplateTitle->exists() ) {
-				$out->addHTML(
-					'<strong class="error">'
-					. $out->msg( 'multiboilerplate-nonexistant-page' )->params(
+			if ( !$boilerplateTitle?->exists() ) {
+				$out->addHTML( Html::element(
+					'strong',
+					[ 'class' => 'error' ],
+					$out->msg( 'multiboilerplate-nonexistant-page' )->params(
 						$request->getText( 'boilerplate' )
-					)->escaped()
-					. '</strong>'
-				);
+					)->text()
+				) );
 			} else {
-				if ( method_exists( MediaWikiServices::class, 'getWikiPageFactory' ) ) {
-					// MW 1.36+
-					$boilerplate = MediaWikiServices::getInstance()->getWikiPageFactory()
-						->newFromTitle( $boilerplateTitle );
-				} else {
-					$boilerplate = new WikiPage( $boilerplateTitle );
-				}
-				$parser = MediaWikiServices::getInstance()->getParserFactory()->getInstance(); // Since MW 1.39
-				$parserOptions = $parser->getOptions() === null ?
-							new ParserOptions( $out->getUser() ) :
-							$parser->getOptions();
-				$content       = $parser->getPreloadText(
+				$boilerplate = MediaWikiServices::getInstance()->getWikiPageFactory()
+					->newFromTitle( $boilerplateTitle );
+
+				$parser = MediaWikiServices::getInstance()->getParserFactory()->getInstance();
+				$parserOptions = $parser->getOptions() === null
+					? new ParserOptions( $out->getUser() )
+					: $parser->getOptions();
+				$content = $parser->getPreloadText(
 					$boilerplate->getContent()->getWikitextForTransclusion(),
 					$boilerplateTitle,
 					$parserOptions

@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Saurmandal"
+		]
+	},
+	"uploadslink-desc": "व्यक्तिगत उपकरण मेन्यू पर वर्तमान सदस्य की अपलोड सूची की एक कड़ी, और साइडबार उपकरण मेन्यू पर प्रासंगिक सदस्य की अपलोड सूची जोड़ देता है।",
+	"uploadslink-portlet-label": "अपलोड्स",
+	"tooltip-pt-uploads": "आपके द्वारा अपलोड की गई फ़ाइलों की सूची",
+	"uploadslink-toobox-label": "{{GENDER:$1|सदस्य}} के अपलोड्स",
+	"tooltip-tb-uploads": "{{GENDER:$1|इस सदस्य}} के अपलोड्स की सूची"
+}

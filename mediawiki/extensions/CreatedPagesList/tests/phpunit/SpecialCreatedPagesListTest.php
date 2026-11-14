@@ -21,6 +21,8 @@
  */
 
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Request\FauxRequest;
+use MediaWiki\Title\Title;
 
 /**
  * @covers SpecialCreatedPagesList
@@ -33,7 +35,6 @@ class SpecialCreatedPagesListTest extends SpecialPageTestBase {
 
 	protected function setUp(): void {
 		parent::setUp();
-		$this->tablesUsed[] = 'createdpageslist';
 
 		// LibXML (used by DomDocument) has trouble parsing certain parts of pages in MediaWiki 1.39+.
 		// This is unrelated to Extension:CreatedPagesList, so we ignore the warnings caused by it.
@@ -81,7 +82,7 @@ class SpecialCreatedPagesListTest extends SpecialPageTestBase {
 	/**
 	 * Checks how Special:CreatedPagesList prints the list of pages.
 	 * @param bool $subpageHasUsername
-	 * @dataProvider dataProviderShowPages
+	 * @dataProvider provideShowPages
 	 */
 	public function testShowPages( $subpageHasUsername ) {
 		/* Populate 'createdpagelist' table */
@@ -154,7 +155,7 @@ class SpecialCreatedPagesListTest extends SpecialPageTestBase {
 	 * Provide datasets for testShowPages() runs.
 	 * @return array
 	 */
-	public function dataProviderShowPages() {
+	public static function provideShowPages() {
 		return [
 			'subpage' => [ true ],
 			'querystring' => [ false ]

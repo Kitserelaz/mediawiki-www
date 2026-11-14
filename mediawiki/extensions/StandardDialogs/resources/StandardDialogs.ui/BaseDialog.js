@@ -51,17 +51,21 @@ StandardDialogs.ui.BaseDialog.prototype.makeSetupProcessData = function () {
 		actions: [
 			{
 				action: 'done',
-				label: mw.message( 'standarddialogs-btn-done' ).plain(),
+				label: this.getPrimaryActionLabel(),
 				flags: [ 'primary', 'progressive' ],
 				id: this.elementId + '-btn-done'
 			},
 			{
-				label: mw.message( 'standarddialogs-btn-cancel' ).plain(),
-				flags: 'safe',
+				title: mw.message( 'standarddialogs-btn-cancel' ).plain(),
+				flags: [ 'safe', 'close' ],
 				id: this.elementId + '-btn-cancel'
 			}
 		]
 	};
+};
+
+StandardDialogs.ui.BaseDialog.prototype.getPrimaryActionLabel = function () {
+	return mw.message( 'standarddialogs-btn-done' ).plain();
 };
 
 // Stub to be overwritten by subclass
@@ -117,6 +121,7 @@ StandardDialogs.ui.BaseDialog.prototype.getActionCompletedEventArgs = function (
 };
 
 StandardDialogs.ui.BaseDialog.prototype.validateTitleNotExist = function ( value ) {
+	this.clearError();
 	if ( !value ) {
 		this.actions.setAbilities( { done: false } );
 		return;
@@ -133,6 +138,7 @@ StandardDialogs.ui.BaseDialog.prototype.validateTitleNotExist = function ( value
 				this.actions.setAbilities( { done: false } );
 				this.setError( data.query.pages[ -1 ].invalidreason );
 			} else {
+				this.clearError();
 				this.actions.setAbilities( { done: true } );
 			}
 		} else {
@@ -158,6 +164,7 @@ StandardDialogs.ui.BaseDialog.prototype.setError = function ( error ) {
 StandardDialogs.ui.BaseDialog.prototype.clearError = function () {
 	this.mainFieldset.setWarnings( [] );
 	this.mainFieldset.setErrors( [] );
+	this.updateSize();
 };
 
 StandardDialogs.ui.BaseDialog.prototype.setExistWarning = function () {

@@ -5,6 +5,7 @@
 			"Jack Phoenix",
 			"Jkb8",
 			"Luckas",
+			"Mansil alfalb",
 			"Vitorvicentevalente"
 		]
 	},
@@ -55,7 +56,7 @@
 	"poll-edit-title": "A editar sondagem - $1",
 	"poll-embed": "Incorporar numa página da wiki",
 	"poll-enterquestion": "Tem de introduzir uma pergunta.",
-	"poll-finished": "<b>Não existem mais sondagens. Acrescenta <a href=\"$1\">uma sua!</a></b> Ou <a href=\"$2\">conheça os resultados desta sondagem</a>.",
+	"poll-finished": "<b>Não existem mais sondagens. Acrescenta [$1 uma sua!]</b> Ou [$2 conheça os resultados desta sondagem].",
 	"poll-flagged": "Esta sondagem foi marcada",
 	"poll-flagged-message": "Tem a certeza de que pretende marcar esta sondagem?",
 	"poll-flag-poll": "Marcar sondagem",
@@ -80,7 +81,7 @@
 	"poll-skip": "Saltar >",
 	"poll-submit-btn": "Enviar",
 	"poll-submitted-by": "Enviada por",
-	"poll-take-button": "< Voltar às sondagens",
+	"poll-take-button": "← Voltar às sondagens",
 	"poll-unavailable": "Esta sondagem não está disponível",
 	"poll-unflag-message": "Tem a certeza de que deseja desmarcar esta sondagem? A desmarcação devolve a sondagem à circulação, permitindo que os utilizadores a vejam e votem nela.",
 	"poll-unflag-poll": "Desmarcar sondagem",

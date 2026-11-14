@@ -1,11 +1,11 @@
 {
 	"@metadata": {
 		"authors": [
+			"Aca",
 			"BadDog",
 			"Kizule",
 			"Milicevic01",
-			"Zoranzoki21",
-			"Aca"
+			"Zoranzoki21"
 		]
 	},
 	"msc-desc": "Додаје ознаку <code>&lt;mscalendar&gt;</code> за уметање календара у вики странице.",

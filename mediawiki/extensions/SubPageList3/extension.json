@@ -10,7 +10,7 @@
 	],
 	"license-name": "GPL-2.0-or-later",
 	"requires": {
-		"MediaWiki": ">= 1.43"
+		"MediaWiki": ">= 1.46"
 	},
 	"MessagesDirs": {
 		"SubPageList3": [
@@ -29,7 +29,7 @@
 		"MediaWiki\\Extension\\SubPageList3\\": "includes/"
 	},
 	"ConfigRegistry": {
-		"SubPageList3": "GlobalVarConfig::newInstance"
+		"SubPageList3": "MediaWiki\\Config\\GlobalVarConfig::newInstance"
 	},
 	"config": {
 		"SubPageListDescendantsLimit": {

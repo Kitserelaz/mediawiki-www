@@ -1,6 +1,5 @@
 <?php
 /**
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -19,23 +18,26 @@
 
 namespace MediaWiki\Extension\ThreeD;
 
-use ExtensionRegistry;
 use MediaWiki\Config\Config;
-use MediaWiki\Hook\BeforePageDisplayHook;
-use MediaWiki\Hook\UploadForm_getInitialPageTextHook;
-use MediaWiki\Hook\UploadFormInitDescriptorHook;
-use MediaWiki\MediaWikiServices;
+use MediaWiki\Context\RequestContext;
+use MediaWiki\FileRepo\RepoGroup;
+use MediaWiki\Output\Hook\BeforePageDisplayHook;
 use MediaWiki\Output\OutputPage;
-use RequestContext;
-use Skin;
-
-// phpcs:disable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
+use MediaWiki\Registration\ExtensionRegistry;
+use MediaWiki\Skin\Skin;
+use MediaWiki\Specials\Hook\UploadForm_getInitialPageTextHook;
+use MediaWiki\Specials\Hook\UploadFormInitDescriptorHook;
 
 class Hooks implements
 	BeforePageDisplayHook,
 	UploadFormInitDescriptorHook,
 	UploadForm_getInitialPageTextHook
 {
+	public function __construct(
+		private readonly RepoGroup $repoGroup
+	) {
+	}
+
 	/**
 	 * @param OutputPage $out
 	 * @param Skin $skin
@@ -43,7 +45,7 @@ class Hooks implements
 	public function onBeforePageDisplay( $out, $skin ): void {
 		$title = $out->getTitle();
 		if ( $title->getNamespace() === NS_FILE ) {
-			$file = MediaWikiServices::getInstance()->getRepoGroup()->findFile( $title );
+			$file = $this->repoGroup->findFile( $title );
 			if ( $file && $file->getMediaType() === MEDIATYPE_3D ) {
 				// Load JS on file pages for placeholder functionality
 				$out->addModules( [ 'ext.3d' ] );
@@ -109,8 +111,7 @@ class Hooks implements
 	 * @param Config $config
 	 */
 	public function onUploadForm_getInitialPageText( &$pageText, $msg, $config ) {
-		global $wgRequest;
-		$patent = $wgRequest->getText( 'wpPatent' );
+		$patent = RequestContext::getMain()->getRequest()->getText( 'wpPatent' );
 		if ( $patent === '' ) {
 			// no patent text to be added
 			return;

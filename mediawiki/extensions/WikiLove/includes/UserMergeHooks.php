@@ -1,7 +1,5 @@
 <?php
 
-// phpcs:disable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
-
 namespace MediaWiki\Extension\WikiLove;
 
 use MediaWiki\Config\Config;
@@ -11,20 +9,13 @@ use Wikimedia\Rdbms\ILoadBalancer;
 /**
  * All hooks from the UserMerge extension which is optional to use with this extension.
  *
- * @file
  * @ingroup Extensions
  */
-
 class UserMergeHooks implements AccountFieldsHook {
-	private Config $config;
-	private ILoadBalancer $loadBalancer;
-
 	public function __construct(
-		Config $config,
-		ILoadBalancer $loadBalancer
+		private readonly Config $config,
+		private readonly ILoadBalancer $loadBalancer,
 	) {
-		$this->config = $config;
-		$this->loadBalancer = $loadBalancer;
 	}
 
 	/**

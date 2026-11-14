@@ -5,8 +5,8 @@ use Exception;
 use ExtensionRegistry;
 use MediaWiki\Extension\Disambiguator;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
 use RatePage\SMW\DataRebuilder;
-use Title;
 
 /**
  * RatePage page rating code
@@ -85,7 +85,7 @@ class Rating {
 			$conds[] = 'rv_contest = rpc_id';
 		}
 
-		$dbr = wfGetDB( DB_REPLICA );
+		$dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_REPLICA );
 		$res = $dbr->select(
 			$tables,
 			$fields,
@@ -150,7 +150,7 @@ class Rating {
 			'rv_contest' => $contest
 		];
 
-		$dbr = wfGetDB( DB_REPLICA );
+		$dbr = MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase();
 		$res = $dbr->select(
 			'ratepage_vote',
 			[
@@ -209,7 +209,7 @@ class Rating {
 			'rv_contest' => $contest
 		];
 
-		$dbr = wfGetDB( DB_REPLICA );
+		$dbr = MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase();
 		$res = $dbr->selectField(
 			'ratepage_vote',
 			'rv_answer',
@@ -249,7 +249,7 @@ class Rating {
 		];
 
 		//check whether the user has voted during a transaction to avoid a duplicate vote
-		$dbw = wfGetDB( DB_PRIMARY );
+		$dbw = MediaWikiServices::getInstance()->getConnectionProvider()->getPrimaryDatabase();
 		$dbw->startAtomic( __METHOD__ );
 		$res = $dbw->selectField(
 			'ratepage_vote',

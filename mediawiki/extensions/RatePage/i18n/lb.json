@@ -50,5 +50,6 @@
 	"ratePage-edit-see-before-vote": "Bewäertunge virum Stëmmen weisen",
 	"ratePage-prompt-can-see": "Dir hutt nach net ofgestëmmt",
 	"ratePage-edit-export": "Resultater exportéieren",
+	"ratepage-contests-invalid-path": "Déi ugefroten Aktioun ass ongülteg.",
 	"ratePage-page-cannot-be-rated": "Bewäertunge fir d'Säit $1 dinn desaktivéiert."
 }

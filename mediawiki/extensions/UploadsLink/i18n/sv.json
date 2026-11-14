@@ -1,10 +1,13 @@
 {
 	"@metadata": {
 		"authors": [
+			"Stefan2255",
 			"WikiPhoenix"
 		]
 	},
+	"uploadslink-desc": "Lägger till en länk till den aktuella användarens uppladdningslista i den personliga verktygsmenyn och en länk till relevant användares uppladdningslista i sidofältets Verktygsmeny.",
 	"uploadslink-portlet-label": "Uppladdningar",
 	"tooltip-pt-uploads": "Lista över filer du har laddat upp",
-	"uploadslink-toobox-label": "{{GENDER:$1|Användaruppladdningar}}"
+	"uploadslink-toobox-label": "{{GENDER:$1|Användaruppladdningar}}",
+	"tooltip-tb-uploads": "En lista över uppladdningar av denna {{GENDER:$1| användare}}"
 }

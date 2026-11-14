@@ -25,7 +25,7 @@ class QueryPageRatingProp extends ApiQueryBase {
 	 */
 	public function execute() {
 		$params = $this->extractRequestParams();
-		$titles = $this->getPageSet()->getGoodTitles();
+		$titles = $this->getPageSet()->getGoodPages();
 		$this->processParams(
 			$params,
 			$this->getContext(),

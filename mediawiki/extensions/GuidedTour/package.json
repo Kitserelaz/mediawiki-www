@@ -2,18 +2,33 @@
 	"name": "GuidedTour",
 	"private": true,
 	"scripts": {
-		"doc": "jsduck",
-		"test": "grunt test",
+		"doc": "jsdoc -c jsdoc.json",
+		"test": "npm-run-all test:* && npm run doc",
+		"test:types": "tsc --noEmit -p cypress/tsconfig.json",
+		"test:eslint": "eslint --cache .",
+		"test:stylelint": "stylelint --cache \"**/*.{vue,less}\"",
+		"test:i18n": "grunt test",
+		"cy:open": "CYPRESS_CACHE_FOLDER=./cypress/.cache cypress open",
+		"cy:run": "CYPRESS_CACHE_FOLDER=./cypress/.cache cypress run",
+		"selenium-test": "npm run cy:run",
 		"minify:svg": "svgo --config=.svgo.config.js --quiet --recursive --folder modules/images/"
 	},
 	"devDependencies": {
-		"eslint-config-wikimedia": "0.28.2",
-		"grunt": "1.6.1",
+		"cypress": "^15.11.0",
+		"cypress-terminal-report": "^7.0.4",
+		"eslint": "^8.57.1",
+		"eslint-config-wikimedia": "0.32.3",
+		"eslint-plugin-chai-friendly": "^1.0.1",
+		"eslint-plugin-cypress": "^3.6.0",
+		"grunt": "1.6.2",
 		"grunt-banana-checker": "0.13.0",
-		"grunt-eslint": "24.3.0",
-		"grunt-stylelint": "0.20.1",
-		"stylelint-config-wikimedia": "0.17.2",
-		"svgo": "3.2.0"
+		"jsdoc": "4.0.5",
+		"jsdoc-wmf-theme": "1.2.0",
+		"npm-run-all": "^4.1.5",
+		"stylelint": "^16.19.1",
+		"stylelint-config-wikimedia": "0.18.0",
+		"svgo": "3.3.3",
+		"typescript": "^5.6.3"
 	},
 	"eslintIgnore": [
 		"vendor/**"

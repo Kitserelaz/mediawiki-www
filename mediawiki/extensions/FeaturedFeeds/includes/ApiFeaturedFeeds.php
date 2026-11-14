@@ -4,13 +4,20 @@ namespace MediaWiki\Extension\FeaturedFeeds;
 
 use MediaWiki\Api\ApiBase;
 use MediaWiki\Api\ApiFormatFeedWrapper;
+use MediaWiki\Api\ApiMain;
+use MediaWiki\Language\LanguageNameUtils;
 use MediaWiki\MainConfigNames;
-use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
+use MediaWiki\Utils\UrlUtils;
 use Wikimedia\ParamValidator\ParamValidator;
 
 class ApiFeaturedFeeds extends ApiBase {
-	public function __construct( $main, $action ) {
+	public function __construct(
+		ApiMain $main,
+		string $action,
+		private readonly LanguageNameUtils $languageNameUtils,
+		private readonly UrlUtils $urlUtils,
+	) {
 		parent::__construct( $main, $action );
 	}
 
@@ -34,7 +41,7 @@ class ApiFeaturedFeeds extends ApiBase {
 
 		$language = $params['language'] ?? false;
 		if ( $language !== false &&
-			!MediaWikiServices::getInstance()->getLanguageNameUtils()->isValidCode( $language )
+			!$this->languageNameUtils->isValidCode( $language )
 		) {
 			$language = false;
 		}
@@ -44,7 +51,7 @@ class ApiFeaturedFeeds extends ApiBase {
 		$feedClass = new $feedClasses[$params['feedformat']] (
 			$ourFeed->title,
 			$ourFeed->description,
-			wfExpandUrl( Title::newMainPage()->getFullURL() )
+			$this->urlUtils->expand( Title::newMainPage()->getFullURL() )
 		);
 
 		ApiFormatFeedWrapper::setResult( $this->getResult(), $feedClass, $ourFeed->getFeedItems() );
@@ -54,6 +61,7 @@ class ApiFeaturedFeeds extends ApiBase {
 		$this->getMain()->setCacheMaxAge( FeaturedFeeds::getMaxAge() );
 	}
 
+	/** @inheritDoc */
 	public function getAllowedParams() {
 		$feedFormatNames = array_keys( $this->getConfig()->get( MainConfigNames::FeedClasses ) );
 		$availableFeeds = array_keys( FeaturedFeeds::getFeeds( false ) );

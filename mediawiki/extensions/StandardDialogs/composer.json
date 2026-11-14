@@ -1,6 +1,14 @@
 {
 	"name": "mediawiki/standard-dialogs",
 	"type": "mediawiki-extension",
+	"license": "GPL-3.0-only",
+	"authors": [
+		{
+			"name": "Hallo Welt! GmbH",
+			"email": "info@hallowelt.com",
+			"homepage": "https://www.hallowelt.com"
+		}
+	],
 	"extra": {
 		"installer-name": "StandardDialogs"
 	},
@@ -8,8 +16,8 @@
 		"composer/installers": "~1.0|~2"
 	},
 	"require-dev": {
-		"mediawiki/mediawiki-codesniffer": "45.0.0",
-		"mediawiki/minus-x": "1.1.3",
+		"mediawiki/mediawiki-codesniffer": "50.0.0",
+		"mediawiki/minus-x": "2.0.1",
 		"php-parallel-lint/php-console-highlighter": "1.0.0",
 		"php-parallel-lint/php-parallel-lint": "1.4.0"
 	},

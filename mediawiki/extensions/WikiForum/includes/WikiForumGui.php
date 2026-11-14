@@ -1,5 +1,7 @@
 <?php
 
+use MediaWiki\EditPage\EditPage;
+use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\User\UserIdentity;
 
@@ -79,36 +81,46 @@ class WikiForumGui {
 	 * @param array $params URL params to be passed, should have a thread or forum number
 	 * @return string HTML
 	 */
-	static function showFooterRow( $page, $maxissues, $limit, $params ) {
+	static function showFooterRow( int $page, int $maxissues, int $limit, array $params ) {
 		$output = '';
 		$specialPage = SpecialPage::getTitleFor( 'WikiForum' );
 
-		if ( $maxissues / $limit > 1 ) {
-			for ( $i = 1; $i < ( $maxissues / $limit ) + 1; $i++ ) {
-				$urlParams = array_merge( [ 'page' => $i ], $params );
-
-				if ( $i <= 9 ) {
-					$pageNumber = '0' . $i;
-				} else {
-					$pageNumber = $i;
-				}
-
-				$output = '<table class="mw-wikiforum-footerrow"><tr><td class="mw-wikiforum-leftside">' .
-					wfMessage( 'wikiforum-pages' )->numParams( $pageNumber )->parse() .
-					wfMessage( 'word-separator' )->parse();
-
-				if ( $i != $page + 1 ) {
-					$output .= '<a href="' . htmlspecialchars( $specialPage->getFullURL( $urlParams ) ) . '">' . $pageNumber . '</a>';
-				} else {
-					$output .= '[' . $pageNumber . ']';
-				}
-
-				$output .= wfMessage( 'word-separator' )->parse();
-			}
-			$output .= '</td><td class="mw-wikiforum-rightside">';
-			$output .= '</td></tr></table>';
+		if ( $maxissues <= $limit ) {
+			// not enough to paginate
+			return '';
 		}
-		return $output;
+
+		$maxPages = ceil( $maxissues / $limit );
+		$links = [];
+
+		for ( $i = 1; $i <= $maxPages; $i++ ) {
+			$urlParams = array_merge( [ 'page' => $i ], $params );
+
+			if ( $i === $page ) {
+				$links[] = Html::element( 'span',
+					[ 'class' => 'mw-wikiforum-page mw-wikiforum-current-page' ],
+					$i
+				);
+			} else {
+				$links[] = Html::element( 'a',
+					[
+						'class' => 'mw-wikiforum-page',
+						'href' => $specialPage->getFullURL( $urlParams )
+					 ],
+					$i
+				);
+			}
+		}
+
+		return Html::rawElement( 'div',
+			[ 'class' => 'mw-wikiforum-pagination' ],
+			Html::element( 'span',
+				[ 'class' => 'wikiforum-pagination-name' ],
+				wfMessage( 'wikiforum-pages' )->numParams( $pageNumber )->parse()
+			) .
+			wfMessage( 'word-separator' )->escaped() .
+			implode( wfMessage( 'word-separator' )->escaped(), $links )
+		);
 	}
 
 	/**
@@ -165,16 +177,18 @@ class WikiForumGui {
 	 * @param bool $showCancel show the cancel button?
 	 * @param array $params URL parameter(s) to be passed to the form (i.e. array( 'thread' => $threadId ))
 	 * @param string $input used to add extra input fields
-	 * @param string $height height of the textarea, i.e. '10em'
+	 * @param string $boxClass CSS class to assign to the outer div
 	 * @param string $text_prev
 	 * @param string $saveButton "Save" button message key name
 	 * @param User $user
 	 * @return string HTML
 	 */
-	static function showWriteForm( $showCancel, $params, $input, $height, $text_prev, $saveButton, User $user ) {
+	static function showWriteForm( $showCancel, $params, $input, $boxClass, $text_prev, $saveButton, User $user ) {
 		global $wgWikiForumAllowAnonymous;
 
-		$output = '';
+		if ( !( $wgWikiForumAllowAnonymous || $user->isRegistered() ) ) {
+			return '';
+		}
 
 		$requestContext = RequestContext::getMain();
 		$out = $requestContext->getOutput();
@@ -189,68 +203,67 @@ class WikiForumGui {
 			$toolbar = EditPage::getEditToolbar();
 		}
 
-		if ( $wgWikiForumAllowAnonymous || $user->isRegistered() ) {
-			$out->addModules( 'mediawiki.action.edit' ); // Required for the edit buttons to display
-
-			$output = '<form name="frmMain" method="post" action="' . htmlspecialchars( SpecialPage::getTitleFor( 'WikiForum' )->getFullURL( $params ) ) . '" id="writereply">
-			<table class="mw-wikiforum-frame" cellspacing="10">' . $input . '
-				<tr>
-					<td>' . $toolbar . '</td>
-				</tr>
-				<tr>
-					<td><textarea name="text" id="wpTextbox1" style="height: ' . $height . ';">' . $text_prev . '</textarea></td>
-				</tr>';
-			if ( WikiForum::useCaptcha( $user ) ) {
-				$output .= '<tr><td>' . WikiForum::getCaptcha( $out ) . '</td></tr>';
-			}
-			$output .= '<tr>
-					<td>
-						<input type="hidden" name="wpToken" value="' . $user->getEditToken() . '" />
-						<input type="submit" value="' . wfMessage( $saveButton )->escaped() . '" accesskey="s" title="' . wfMessage( $saveButton )->escaped() . ' [s]" />';
-			if ( $showCancel ) {
-				$output .= ' <input type="button" value="' . wfMessage( 'cancel' )->escaped() . '" accesskey="c" onclick="javascript:history.back();" title="' . wfMessage( 'cancel' )->escaped() . ' [c]" />';
-			}
-			$output .= '</td>
-					</tr>
-				</table>
-			</form>' . "\n";
+		$captcha = '';
+		if ( WikiForum::useCaptcha( $user ) ) {
+			$captcha = Html::rawElement( 'div',
+				[ 'class' => 'mw-wikiforum-captcha' ],
+				WikiForum::getCaptcha( $out )
+			);
 		}
-		return $output;
-	}
 
-	/**
-	 * Get the main form for forums and categories
-	 *
-	 * @param string $url url to send form to, with GET params
-	 * @param string $extraRow row to add in after title input, for forums but not categories
-	 * @param string $formTitle title for the form
-	 * @param string $titlePlaceholder placeholder value for the title input
-	 * @param string $titleValue value for the title input
-	 * @return string HTML the form
-	 */
-	static function showTopLevelForm( $url, $extraRow, $formTitle, $titlePlaceholder, $titleValue ) {
-		return '
-		<form name="frmMain" method="post" action="' . $url . '" id="form">
-			<table class="mw-wikiforum-frame" cellspacing="10">
-				<tr>
-					<th class="mw-wikiforum-title">' . $formTitle . '</th>
-				</tr>
-				<tr>
-					<td>
-						<p>' . wfMessage( 'wikiforum-name' )->escaped() . '</p>
-						<input type="text" name="name" style="width: 100%" value="' . $titleValue . '" placeholder="' . $titlePlaceholder . '" />
-					</td>
-				</tr>
-					' . $extraRow . '
-				<tr>
-					<td>
-						<input type="hidden" name="wpToken" value="' . RequestContext::getMain()->getUser()->getEditToken() . '" />
-						<input type="submit" value="' . wfMessage( 'wikiforum-save' )->escaped() . '" accesskey="s" title="' . wfMessage( 'wikiforum-save' )->escaped() . '" [s]" />
-						<input type="button" value="' . wfMessage( 'cancel' )->escaped() . '" accesskey="c" onclick="javascript:history.back();" title="' . wfMessage( 'cancel' )->escaped() . ' [c]" />
-					</td>
-				</tr>
-			</table>
-		</form>';
+		$out->addModules( 'mediawiki.action.edit' ); // Required for the edit buttons to display
+
+		$output = Html::openElement( 'form',
+				[
+					'name' => 'frmMain',
+					'method' => 'post',
+					'action' => SpecialPage::getTitleFor( 'WikiForum' )->getFullURL( $params ),
+					'id' => "writereply",
+				]
+			) .
+			Html::openElement( 'div', [ 'class' => 'mw-wikiforum-edit-reply mw-wikiforum-frame ' . $boxClass ] ) .
+			$input .
+			$toolbar .
+			Html::rawElement( 'div', [],
+				Html::element( 'textarea',
+					[
+						'name' => 'text',
+						'id' => 'wpTextbox1',
+					],
+					$text_prev
+				)
+			) .
+			$captcha .
+			Html::rawElement( 'div',
+				[ 'class' => 'mw-wikiforum-replybuttons' ],
+				Html::element( 'input',
+					[
+						'type' => 'hidden',
+						'name' => 'wpToken',
+						'value' => $user->getEditToken(),
+					]
+				) .
+				Html::element( 'button',
+					[
+						'type' => 'submit',
+						'accesskey' => 's',
+						'title' => wfMessage( $saveButton )->text() . ' [s]',
+					],
+					 wfMessage( $saveButton )->text()
+				) .
+				( $showCancel ? Html::element( 'button',
+					[
+						'accesskey' => 'c',
+						'onclick' => 'javascript:history.back();',
+						'title' => wfMessage( 'cancel' )->text() . ' [c]',
+					],
+					wfMessage( 'cancel' )->text()
+				) : '' )
+			) .
+			Html::closeElement( 'div' ) .
+			Html::closeElement( 'form' );
+
+		return $output;
 	}
 
 	/**

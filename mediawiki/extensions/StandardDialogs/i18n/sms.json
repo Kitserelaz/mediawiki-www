@@ -11,6 +11,7 @@
 	"standarddialogs-copy-discussion": "Kopiââʹst saǥstõõllâmseeid",
 	"standarddialogs-copy-subpages": "Kopiââʹst vueʹllseeidaid",
 	"standarddialogs-page-info-title": "Teâđ seeidast \"$1\"",
+	"standarddialogs-page-info-close": "Piij ǩidd",
 	"standarddialogs-page-info-page-title": "Seiddnõmm",
 	"standarddialogs-page-info-page-id": "Seeid tobdstõk",
 	"standarddialogs-page-info-page-language": "Ǩiõll",
@@ -35,5 +36,6 @@
 	"standarddialogs-purge-btn": "Peiʹvved",
 	"standarddialogs-purge-title": "Peiʹvved seeid \"$1\"",
 	"standarddialogs-btn-done": "Vaalmâš",
-	"standarddialogs-btn-cancel": "Jõõsk"
+	"standarddialogs-btn-cancel": "Jõõsk",
+	"standarddialogs-copy-btn-label": "Kopiââʹst"
 }

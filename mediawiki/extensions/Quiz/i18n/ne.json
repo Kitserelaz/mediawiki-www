@@ -1,9 +1,10 @@
 {
 	"@metadata": {
 		"authors": [
-			"NehalDaveND"
+			"NehalDaveND",
+			"बडा काजी"
 		]
 	},
-	"quiz_correction": "बुझाउने",
-	"quiz_reset": "रीसेट गर्ने"
+	"quiz-correction": "पेस गर्नुहोस्",
+	"quiz-reset": "रीसेट गर्ने"
 }

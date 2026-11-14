@@ -4,12 +4,13 @@
 			"Mainframe98",
 			"McDutchie",
 			"Romaine",
-			"Sjoerddebruin"
+			"Sjoerddebruin",
+			"Siebrand"
 		]
 	},
 	"uploadslink-desc": "Voegt een koppeling toe naar de uploadlijst van de huidige gebruiker in het menu ‘Persoonlijke hulpmiddelen’ en een koppeling naar de uploadlijst van de betrokken gebruiker in het zijbalkmenu ‘Hulpmiddelen’",
 	"uploadslink-portlet-label": "Uploads",
-	"tooltip-pt-uploads": "Lijst van bestanden die je hebt geüpload",
+	"tooltip-pt-uploads": "Lijst van bestanden die u hebt geüpload",
 	"uploadslink-toobox-label": "Uploads door {{GENDER:$1|gebruiker}}",
 	"tooltip-tb-uploads": "Een lijst van uploads door deze {{GENDER:$1|gebruiker}}"
 }

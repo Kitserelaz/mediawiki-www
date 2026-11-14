@@ -7,9 +7,14 @@
 		"MediaWiki",
 		"extension"
 	],
-	"homepage": "https://www.mediawiki.org/wiki/Extension:SimpleBatchUpload",
+	"homepage": "https://professional.wiki/en/extension/simplebatchupload",
 	"license": "GPL-2.0-or-later",
 	"authors": [
+		{
+			"name": "Professional Wiki",
+			"email": "info@Professional.Wiki",
+			"homepage": "https://Professional.Wiki"
+		},
 		{
 			"name": "Stephan Gambke",
 			"email": "s7eph4n@gmail.com",
@@ -17,24 +22,41 @@
 		}
 	],
 	"support": {
-		"wiki": "https://www.mediawiki.org/wiki/Extension:SimpleBatchUpload",
-		"forum": "https://www.mediawiki.org/wiki/Extension_talk:SimpleBatchUpload",
+		"docs": "https://professional.wiki/en/extension/simplebatchupload",
 		"source": "https://github.com/ProfessionalWiki/SimpleBatchUpload",
-		"issues": "https://github.com/ProfessionalWiki/SimpleBatchUpload/issues",
-		"irc": "irc://libera.chat:6667/mediawiki"
+		"issues": "https://github.com/ProfessionalWiki/SimpleBatchUpload/issues"
 	},
 	"require": {
-		"php": ">=8.0",
 		"composer/installers": "^2|^1.0.1"
+	},
+	"require-dev": {
+		"mediawiki/mediawiki-codesniffer": "^52.0.0",
+		"phpstan/phpstan": "^2.0.1"
+	},
+	"scripts": {
+		"fix": "phpcbf",
+		"phpcs": "phpcs -p -s",
+		"phpstan": "phpstan analyse --memory-limit=512M",
+		"phpunit": "cd ../../ && composer phpunit -- extensions/SimpleBatchUpload/tests/phpunit/",
+		"test": [
+			"@phpcs",
+			"@phpstan"
+		],
+		"preflight": [
+			"@phpcs",
+			"@phpstan",
+			"@phpunit"
+		]
 	},
 	"extra": {
 		"branch-alias": {
-			"dev-master": "2.x-dev"
+			"dev-master": "3.x-dev"
 		}
 	},
 	"config": {
 		"allow-plugins": {
-			"composer/installers": true
+			"composer/installers": true,
+			"dealerdirect/phpcodesniffer-composer-installer": true
 		}
 	}
 }

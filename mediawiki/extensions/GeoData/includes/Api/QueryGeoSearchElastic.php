@@ -23,15 +23,13 @@ use MediaWiki\Title\Title;
 class QueryGeoSearchElastic extends QueryGeoSearch {
 	/** @var array|null */
 	private $params;
-	private NamespaceInfo $namespaceInfo;
 
 	public function __construct(
 		ApiQuery $query,
 		string $moduleName,
-		NamespaceInfo $namespaceInfo
+		private readonly NamespaceInfo $namespaceInfo,
 	) {
 		parent::__construct( $query, $moduleName );
-		$this->namespaceInfo = $namespaceInfo;
 	}
 
 	/**
@@ -51,8 +49,7 @@ class QueryGeoSearchElastic extends QueryGeoSearch {
 		if ( $this->idToExclude ) {
 			$filter->addMustNot( new Term( [ '_id' => $this->idToExclude ] ) );
 		}
-		// Only Earth is supported
-		$nestedPropsFilter->addFilter( new Term( [ 'coordinates.globe' => Globe::EARTH ] ) );
+		$nestedPropsFilter->addFilter( new Term( [ 'coordinates.globe' => $params['globe'] ] ) );
 		if ( isset( $params['maxdim'] ) ) {
 			$nestedPropsFilter->addFilter( new Range( 'coordinates.dim',
 					[ 'to' => $params['maxdim'] ] ) );
@@ -84,13 +81,8 @@ class QueryGeoSearchElastic extends QueryGeoSearch {
 
 		$query = new Query();
 		$fields = array_map(
-			static function ( $prop ) {
-				return "coordinates.$prop";
-			},
-			array_merge(
-				[ 'coord', 'primary' ],
-				$params['prop']
-			)
+			static fn ( $prop ) => "coordinates.$prop",
+			[ 'coord', 'primary', ...$params['prop'] ]
 		);
 		$query->setParam( '_source', $fields );
 
@@ -158,10 +150,11 @@ class QueryGeoSearchElastic extends QueryGeoSearch {
 			$this->dieDebug( __METHOD__, 'Unexpected result set returned by Elasticsearch' );
 		}
 
+		/** @var array<int,true> $ids */
 		$ids = [];
 		$coordinates = [];
 		foreach ( $data['hits']['hits'] as $page ) {
-			$id = $page['_id'];
+			$id = (int)$page['_id'];
 			foreach ( $page['_source']['coordinates'] as $coordArray ) {
 				$coord = $this->makeCoord( $coordArray );
 				if ( !$this->filterCoord( $coord ) ) {
@@ -173,7 +166,7 @@ class QueryGeoSearchElastic extends QueryGeoSearch {
 			}
 		}
 
-		if ( $coordinates === [] ) {
+		if ( !$coordinates ) {
 			// No results, no point in doing anything else
 			return;
 		}
@@ -195,7 +188,7 @@ class QueryGeoSearchElastic extends QueryGeoSearch {
 		$res = $this->select( __METHOD__ );
 
 		if ( $resultPageSet === null ) {
-			/** @var Title[] $titles */
+			/** @var array<int,Title> $titles */
 			$titles = [];
 			foreach ( $res as $row ) {
 				$titles[$row->page_id] = Title::newFromRow( $row );
@@ -214,7 +207,7 @@ class QueryGeoSearchElastic extends QueryGeoSearch {
 				}
 				$title = $titles[$id];
 				$vals = [
-					'pageid' => intval( $coord->pageId ),
+					'pageid' => $id,
 					'ns' => $title->getNamespace(),
 					'title' => $title->getPrefixedText(),
 					'lat' => floatval( $coord->lat ),
@@ -277,7 +270,7 @@ class QueryGeoSearchElastic extends QueryGeoSearch {
 			return false;
 		}
 		// Only one globe is supported for search, this is future-proof
-		if ( $coord->globe != $this->coord->globe ) {
+		if ( !$this->coord->sameGlobe( $coord ) ) {
 			return false;
 		}
 		if ( isset( $this->params['maxdim'] ) && $coord->dim > $this->params['maxdim'] ) {

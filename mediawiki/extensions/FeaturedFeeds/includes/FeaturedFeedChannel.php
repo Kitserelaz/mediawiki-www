@@ -69,8 +69,8 @@ class FeaturedFeedChannel {
 		}
 	}
 
-	public static function fromArray( array $array ) {
-		$channel = new FeaturedFeedChannel(
+	public static function fromArray( array $array ): self {
+		$channel = new self(
 			$array['name'],
 			$array['options'],
 			$array['lang']
@@ -147,9 +147,9 @@ class FeaturedFeedChannel {
 		if ( $this->title !== false ) {
 			return;
 		}
-		$this->title = $this->msg( $this->options['title'] )->text();
-		$this->shortTitle = $this->msg( $this->options['short-title'] )->text();
-		$this->description = $this->msg( $this->options['description'] )->text();
+		$this->title = $this->msg( $this->options['title'] )->escaped();
+		$this->shortTitle = $this->msg( $this->options['short-title'] )->escaped();
+		$this->description = $this->msg( $this->options['description'] )->escaped();
 		$pageMsg = $this->msg( $this->options['page'] )->params( $this->languageCode );
 		if ( $pageMsg->isDisabled() ) {
 			// fall back manually, messages can be existent but empty
@@ -198,7 +198,6 @@ class FeaturedFeedChannel {
 	}
 
 	/**
-	 *
 	 * @param int $date
 	 * @return FeaturedFeedItem|false
 	 */
@@ -233,16 +232,16 @@ class FeaturedFeedChannel {
 		if ( !$text ) {
 			return false;
 		}
-		$text = self::$parser->parse( $text, $title, $parserOptions )->getText( [
+		$text = self::$parser->parse( $text, $title, $parserOptions )->runOutputPipeline( $parserOptions, [
 			'enableSectionEditLinks' => false,
-		] );
+		] )->getContentHolderText();
 		$url = SpecialPage::getTitleFor( 'FeedItem',
 			$this->name . '/' . $timestamp . '/' . $this->languageCode
 		)->getFullURL();
 
 		return new FeaturedFeedItem(
 			self::$parser->transformMsg( $this->entryName, $parserOptions, $this->titleForParse ),
-			wfExpandUrl( $url ),
+			MediaWikiServices::getInstance()->getUrlUtils()->expand( $url ) ?? '',
 			$text,
 			$timestamp
 		);

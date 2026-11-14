@@ -2,10 +2,11 @@
 	"@metadata": {
 		"authors": [
 			"Gomoko",
+			"JLTRY",
+			"Marphy 123",
 			"Terio legale",
 			"Verdy p",
-			"Wladek92",
-			"JLTRY"
+			"Wladek92"
 		]
 	},
 	"standarddialogs-desc": "Fournit des interfaces de dialogue utilisateur pour les actions de page commune",

@@ -10,10 +10,7 @@
 	"license-name": "GPL-2.0-or-later",
 	"type": "parserhook",
 	"requires": {
-		"MediaWiki": ">= 1.40.0",
-		"platform": {
-			"php": ">=7.4.0"
-		}
+		"MediaWiki": ">= 1.42.0"
 	},
 	"config": {
 		"GoogleSiteVerificationKey": {
@@ -122,7 +119,7 @@
 		}
 	},
 	"ConfigRegistry": {
-		"WikiSEO": "GlobalVarConfig::newInstance"
+		"WikiSEO": "MediaWiki\\Config\\GlobalVarConfig::newInstance"
 	},
 	"MessagesDirs": {
 		"WikiSEO": [
@@ -164,6 +161,9 @@
 				"PageProps",
 				"TitleFactory"
 			]
+		},
+		"ScribuntoHooks": {
+			"class": "MediaWiki\\Extension\\WikiSEO\\Hooks\\ScribuntoHooks"
 		}
 	},
 	"Hooks": {
@@ -172,7 +172,7 @@
 		"RevisionDataUpdates": "PageHooks",
 		"OutputPageAfterGetHeadLinksArray": "PageHooks",
 		"InfoAction": "InfoActionHook",
-		"ScribuntoExternalLibraries": "MediaWiki\\Extension\\WikiSEO\\Hooks\\ScribuntoHooks::onScribuntoExternalLibraries"
+		"ScribuntoExternalLibraries": "ScribuntoHooks"
 	},
 
 	"RestRoutes": [

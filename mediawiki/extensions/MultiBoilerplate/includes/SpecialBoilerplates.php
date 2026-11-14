@@ -59,7 +59,6 @@ class SpecialBoilerplates extends \IncludableSpecialPage {
 
 	function __construct() {
 		parent::__construct( 'Boilerplates' );
-		$this->mIncludable = true;
 	}
 
 	public function execute( $par ) {
@@ -68,7 +67,7 @@ class SpecialBoilerplates extends \IncludableSpecialPage {
 		$output = $this->getOutput();
 		$boilerplates = '';
 
-		if ( !$this->mIncluding ) {
+		if ( !$this->including() ) {
 			$this->setHeaders();
 			$output->addWikiMsg( 'multiboilerplate-special-pagetext' );
 		}
@@ -77,7 +76,7 @@ class SpecialBoilerplates extends \IncludableSpecialPage {
 				$boilerplates .= "* [[$template]]\n";
 			}
 
-			if ( !$this->mIncluding ) {
+			if ( !$this->including() ) {
 				$output->addWikiMsg( 'multiboilerplate-special-define-in-localsettings' );
 			}
 			$output->addWikiTextAsInterface( $boilerplates );
@@ -86,7 +85,7 @@ class SpecialBoilerplates extends \IncludableSpecialPage {
 			$boilerplates = self::getBoilerplatesFromMessage();
 
 			if ( !empty( $boilerplates ) ) {
-				if ( !$this->mIncluding ) {
+				if ( !$this->including() ) {
 					$output->addWikiMsg( 'multiboilerplate-special-define-in-interface' );
 				}
 				$output->addWikiTextAsInterface( $boilerplates );

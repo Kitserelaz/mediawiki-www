@@ -1,0 +1,16 @@
+{
+  "component": "mediawiki/extensions/Network",
+  "baseline": "f68d4c99d4e7fb8e0c35d0962dd93de8cae98acf",
+  "target": "9e79548d64e4edb84d2b457d1e1d2f9bba1505f8",
+  "preserved_changes": [
+    {
+      "path": ".github/network.png",
+      "change": "local-source-edit"
+    },
+    {
+      "path": ".github/youtube.png",
+      "change": "local-source-edit"
+    }
+  ],
+  "dependency_status": "runtime-requirements-changed: platform php >=8.1 (PHP 8.4.27 image satisfies it)"
+}

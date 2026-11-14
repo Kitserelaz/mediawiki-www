@@ -2,6 +2,7 @@
 	"@metadata": {
 		"authors": [
 			"GraceL",
+			"GuoPC",
 			"Si109",
 			"沈澄心"
 		]
@@ -12,7 +13,6 @@
 	"flexdiagrams-creatediagram": "创建图表",
 	"flexdiagrams-viewdiagram": "查看图表",
 	"flexdiagrams-linkingpages": "以下页面链接到此图表：$1",
-	"flexdiagrams-drawio-saveinfo": "请在点击$1按钮前保存编辑图像",
 	"flexdiagrams-edit-code": "代码：",
 	"flexdiagrams-edit-preview": "预览：",
 	"flexdiagrams-embedding-unsupported": "图表页面无法嵌入。",
@@ -21,5 +21,7 @@
 	"flexdiagrams-gantt-days": "天",
 	"flexdiagrams-gantt-weeks": "周",
 	"flexdiagrams-gantt-months": "月",
-	"flexdiagrams-gantt-years": "年"
+	"flexdiagrams-gantt-years": "年",
+	"flexdiagrams-editor-fullscreen": "进入全屏模式",
+	"flexdiagrams-editor-exit-fullscreen": "退出全屏模式"
 }

@@ -1,0 +1,40 @@
+{
+  "component": "mediawiki/extensions/Mermaid",
+  "baseline": "5f8ff5366e72abe642c02837fd3bd1d8e0224a1e",
+  "target": "bc7363f003057888b2f0087f350fd63c172afb05",
+  "preserved_changes": [
+    {
+      "path": "build/.gitignore",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "build/Dockerfile",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "build/Makefile",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "build/README.adoc",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "build/docker-compose-ci.yml",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "build/docker-compose-dev.yml",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "build/docker-compose.override.yml.SAMPLE",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "build/docker-compose.yml",
+      "change": "local-source-edit"
+    }
+  ],
+  "dependency_status": "runtime-requirements-unchanged"
+}

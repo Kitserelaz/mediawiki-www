@@ -35,6 +35,9 @@
  * @group bovender
  * @group Database
  */
+
+use MediaWiki\MediaWikiServices;
+
 class LinkTitlesLinkerTest extends LinkTitles\TestCase {
 	protected $title;
 
@@ -317,10 +320,11 @@ class LinkTitlesLinkerTest extends LinkTitles\TestCase {
 
 		// Reset namespace caches.
 		// See https://stackoverflow.com/q/45974979/270712
-		\MWNamespace::getCanonicalNamespaces(true);
+		$namespaceInfo = MediaWikiServices::getInstance()->getNamespaceInfo();
+		$namespaceInfo->getCanonicalNamespaces( true );
 		$wgContLang = \MediaWiki\MediaWikiServices::getInstance()->getContentLanguage();
 		$wgContLang->resetNamespaces();
-		$this->assertTrue( MWNamespace::exists( $ns ), "The namespace with id $ns should exist!" );
+		$this->assertTrue( $namespaceInfo->exists( $ns ), "The namespace with id $ns should exist!" );
 
 		$this->insertPage( "in custom namespace", 'This is a page in a custom namespace', $ns );
 		LinkTitles\Targets::invalidate();

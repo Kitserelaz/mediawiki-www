@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Умар"
+		]
+	},
+	"batchupload": "Дукху чуйахар",
+	"simplebatchupload-buttonlabel": "Файлаш харжа (йа кхуза йихка уьш)...",
+	"simplebatchupload-comment": "Чуйаьккхина [[mw:Special:MyLanguage/Extension:SimpleBatchUpload|SimpleBatchUpload]] чухула",
+	"simplebatchupload-desc": "Кхочушдо цхьалха пакетан файлаш чуйахар"
+}

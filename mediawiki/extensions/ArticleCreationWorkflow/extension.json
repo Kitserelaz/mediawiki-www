@@ -1,6 +1,7 @@
 {
 	"manifest_version": 2,
 	"name": "ArticleCreationWorkflow",
+	"namemsg": "acw-extensionname",
 	"type": "other",
 	"author": [
 		"Max Semenik",
@@ -10,7 +11,7 @@
 	"descriptionmsg": "acw-desc",
 	"license-name": "MIT",
 	"requires": {
-		"MediaWiki": ">= 1.42"
+		"MediaWiki": ">= 1.46"
 	},
 	"Hooks": {
 		"GetActionName": "main",
@@ -56,6 +57,6 @@
 		}
 	},
 	"ConfigRegistry": {
-		"ArticleCreationWorkflow": "GlobalVarConfig::newInstance"
+		"ArticleCreationWorkflow": "MediaWiki\\Config\\GlobalVarConfig::newInstance"
 	}
 }

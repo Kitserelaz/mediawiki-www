@@ -26,15 +26,10 @@ class Hooks implements
 	EditPageBeforeEditButtonsHook,
 	ResourceLoaderGetConfigVarsHook
 {
-	private PermissionManager $permissionManager;
-	private UserOptionsLookup $userOptionsLookup;
-
 	public function __construct(
-		PermissionManager $permissionManager,
-		UserOptionsLookup $userOptionsLookup
+		private readonly PermissionManager $permissionManager,
+		private readonly UserOptionsLookup $userOptionsLookup,
 	) {
-		$this->permissionManager = $permissionManager;
-		$this->userOptionsLookup = $userOptionsLookup;
 	}
 
 	/**
@@ -45,12 +40,11 @@ class Hooks implements
 	 */
 	public function onEditPageBeforeEditButtons( $editpage, &$buttons, &$tabindex ) {
 		$context = $editpage->getContext();
-		$isInitialLoad = !$editpage->preview && empty( $editpage->save );
 
 		if (
-			!$context->getUser()->isAllowed( 'forcepreviewexempt' ) &&
-			$isInitialLoad &&
-			isset( $buttons['preview'] )
+			!$context->getUser()->isAllowed( 'forcepreviewexempt' )
+			&& !$editpage->preview && !$editpage->save
+			&& isset( $buttons['preview'] )
 		) {
 			$buttons['save']->setDisabled( true );
 			$buttons['save']->setLabel( $context->msg( 'forcepreview', $buttons['save']->getLabel() )->text() );
@@ -67,21 +61,16 @@ class Hooks implements
 	public function onBeforePageDisplay( $out, $skin ): void {
 		$user = $out->getUser();
 		$request = $out->getRequest();
+		$title = $out->getTitle();
 
 		if (
-			$user->isAllowed( 'forcepreviewexempt' )
-			|| !$this->userOptionsLookup->getBoolOption( $user, 'uselivepreview' )
-			|| !in_array( $request->getRawVal( 'action' ), [ 'edit', 'submit' ] )
+			!$user->isAllowed( 'forcepreviewexempt' )
+			&& $this->userOptionsLookup->getBoolOption( $user, 'uselivepreview' )
+			&& in_array( $request->getRawVal( 'action' ), [ 'edit', 'submit' ] )
+			&& $this->permissionManager->userCan( 'edit', $user, $title )
 		) {
-			return;
+			$out->addModules( 'ext.ForcePreview.livePreview' );
 		}
-
-		$title = $out->getTitle();
-		if ( !$this->permissionManager->userCan( 'edit', $user, $title ) ) {
-			return;
-		}
-
-		$out->addModules( 'ext.ForcePreview.livePreview' );
 	}
 
 	/**

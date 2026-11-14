@@ -2,6 +2,7 @@
 	"@metadata": {
 		"authors": [
 			"Byfserag",
+			"Cookai1205",
 			"Cwlin0416",
 			"Justincheng12345",
 			"Kly",
@@ -10,8 +11,7 @@
 			"Simon Shek",
 			"Spring Roll Conan",
 			"Winston Sung",
-			"捍粵者",
-			"Cookai1205"
+			"捍粵者"
 		]
 	},
 	"guidedtour-desc": "允許頁面提供彈出式導覽來引導新使用者",

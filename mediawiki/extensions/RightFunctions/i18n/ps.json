@@ -1,8 +1,16 @@
 {
 	"@metadata": {
 		"authors": [
-			"Ahmed-Najib-Biabani-Ibrahimkhel"
+			"Ahmed-Najib-Biabani-Ibrahimkhel",
+			"شاه زمان پټان"
 		]
 	},
-	"rightfunctions-local": "(له سيمه ايز مخ نه)"
+	"rightfunctions-desc": "د اجازې پربنسټ تجزيه‌کوونکې کړنچارې",
+	"rightfunctions-rest1": "$1 $2",
+	"rightfunctions-rest2": "$1 $2$5 $3 $4",
+	"rightfunctions-rest3": "$1 $2$7 $3 $4$7 $5 $6",
+	"rightfunctions-sep": "،",
+	"rightfunctions-casc": "(له ځړوبيزو سرچينو څخه)",
+	"rightfunctions-local": "(له سيمه‌ييز مخ نه)",
+	"rightfunctions-ns": "(له نوم‌تشيال ژغورنې څخه)"
 }

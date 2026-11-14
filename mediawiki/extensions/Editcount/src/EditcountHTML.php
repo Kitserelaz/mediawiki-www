@@ -1,11 +1,13 @@
 <?php
 
+use MediaWiki\Html\Html;
+
 class EditcountHTML extends Editcount {
 	/** @var int[] */
-	private $nscount;
+	private array $nscount;
 
 	/** @var int */
-	private $total;
+	private int $total;
 
 	/**
 	 * Output the HTML form on Special:Editcount
@@ -15,7 +17,7 @@ class EditcountHTML extends Editcount {
 	 * @param int[] $nscount
 	 * @param int|null $total
 	 */
-	public function outputHTML( $username, $uid, array $nscount, $total = null ) {
+	public function outputHTML( string $username, int $uid, array $nscount, ?int $total = null ): void {
 		$this->nscount = $nscount;
 		$this->total = $total ?: array_sum( $nscount );
 
@@ -51,7 +53,6 @@ class EditcountHTML extends Editcount {
 		$out .= '
 			</table>
 		</form>';
-		// @phan-suppress-next-line SecurityCheck-XSS
 		$this->getOutput()->addHTML( $out );
 	}
 
@@ -60,49 +61,44 @@ class EditcountHTML extends Editcount {
 	 *
 	 * @return string
 	 */
-	private function makeTable() {
+	private function makeTable(): string {
 		$lang = $this->getLanguage();
 
-		$total = $this->msg( 'editcount_total' )->escaped();
-		$namespace = $this->msg( 'editcount_namespace' )->escaped();
-		$edits = $this->msg( 'editcount_edits' )->escaped();
-		$percentage = $this->msg( 'editcount_percentage' )->escaped();
-		$ftotal = $lang->formatNum( $this->total );
+		$ret = Html::openElement( 'table', [
+			'class' => 'wikitable',
+			'style' => 'text-align: center;',
+		] );
 
-		$ret = "<table class='wikitable' style='text-align:center;'>
-				<tr>
-					<th>$namespace</th>
-					<th>$edits</th>
-					<th>$percentage</th>
-				</tr>
-		";
+		$ret .= Html::rawElement( 'tr', [],
+			Html::element( 'th', [], $this->msg( 'editcount_namespace' )->text() ) .
+			Html::element( 'th', [], $this->msg( 'editcount_edits' )->text() ) .
+			Html::element( 'th', [], $this->msg( 'editcount_percentage' )->text() )
+		);
 
 		foreach ( $this->nscount as $ns => $edits ) {
-			$fedits = $lang->formatNum( $edits );
-			$fns = ( $ns == NS_MAIN ) ? $this->msg( 'blanknamespace' ) : $lang->getFormattedNsText( $ns );
-			$percent = wfPercent( $edits / $this->total * 100 );
-			$fpercent = $lang->formatNum( $percent );
-			$ret .= "
-				<tr>
-					<td>$fns</td>
-					<td>$fedits</td>
-					<td>$fpercent</td>
-				</tr>
-			";
+			if ( $ns === NS_MAIN ) {
+				$fns = $this->msg( 'blanknamespace' )->text();
+			} else {
+				$fns = $lang->getFormattedNsText( $ns ) ?: $ns;
+			}
+			$ret .= Html::rawElement( 'tr', [],
+				Html::element( 'td', [], $fns ) .
+				Html::element( 'td', [], $lang->formatNum( $edits ) ) .
+				Html::element( 'td', [], $this->msg( 'percent' )
+					->numParams( round( $edits / $this->total * 100, 2 ) )
+					->text() )
+			);
 		}
 
-		$percent = wfPercent( $this->total ? 100 : 0 );
+		$ret .= Html::rawElement( 'tr', [],
+			Html::element( 'th', [], $this->msg( 'editcount_total' )->text() ) .
+			Html::element( 'td', [], $lang->formatNum( $this->total ) ) .
+			Html::element( 'td', [], $this->msg( 'percent' )
+				->numParams( $this->total ? 100 : 0 )
+				->text() )
+		);
 
-		$ret .= "
-				<tr>
-					<th>$total</th>
-					<td>$ftotal</th>
-					<td>$percent</th>
-				</tr>
-		";
-
-		$ret .= '</table>
-		';
+		$ret .= Html::closeElement( 'table' );
 
 		return $ret;
 	}

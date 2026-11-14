@@ -1,10 +1,8 @@
-( function () {
+QUnit.module( 'ext.RevisionSlider.RevisionListView', () => {
 	const SliderModule = require( 'ext.RevisionSlider.Slider' ),
 		Revision = SliderModule.Revision,
 		RevisionList = SliderModule.RevisionList,
 		RevisionListView = SliderModule.RevisionListView;
-
-	QUnit.module( 'ext.RevisionSlider.RevisionListView' );
 
 	QUnit.test( 'render adds revisions', ( assert ) => {
 		const revisionListView = new RevisionListView( new RevisionList( [
@@ -39,8 +37,6 @@
 
 		revision.setRelativeSize( 210 );
 
-		SliderModule.setUserOffset( 0 );
-
 		const tooltip = revisionListView.makeTooltip( revision, {} );
 		const tooltipHtml = tooltip.$element.html();
 
@@ -62,8 +58,6 @@
 			} );
 
 		revision.setRelativeSize( 2100 );
-
-		SliderModule.setUserOffset( 0 );
 
 		const tooltip = revisionListView.makeTooltip( revision, {} );
 		const tooltipHtml = tooltip.$element.html();
@@ -164,4 +158,4 @@
 
 		assert.true( /1,337/.test( $pageSizeLineHtml.text() ) );
 	} );
-}() );
+} );

@@ -3,10 +3,11 @@
 namespace RatePage\Special;
 
 use MediaWiki\Config\ServiceOptions;
+use MediaWiki\Title\Title;
 use MessageLocalizer;
 use RatePage\ContestDB;
-use Title;
 use Wikimedia\Rdbms\DBConnRef;
+use Wikimedia\Rdbms\IReadableDatabase;
 
 class ContestResultsExporter {
 
@@ -20,7 +21,7 @@ class ContestResultsExporter {
 	/** @var ServiceOptions */
 	private $options;
 
-	/** @var DBConnRef */
+	/** @var IReadableDatabase */
 	private $db;
 
 	/** @var MessageLocalizer */
@@ -31,7 +32,7 @@ class ContestResultsExporter {
 
 	public function __construct(
 		ServiceOptions $options,
-		DBConnRef $db,
+		IReadableDatabase $db,
 		MessageLocalizer $msg,
 		string $contestId
 	) {

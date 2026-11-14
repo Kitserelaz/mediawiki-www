@@ -1,0 +1,183 @@
+@import 'mediawiki.skin.variables.less';
+
+.quiz .settings input.numerical {
+	width: 3em;
+}
+
+* > .quiz .header .questionId {
+	text-indent: -1.5em;
+}
+
+.quiz table.object {
+	background-color: transparent;
+}
+
+.quiz .settings td {
+	padding: 0.1em 0.4em 0.1em 0.4em;
+}
+
+.quiz table.settings {
+	background-color: transparent;
+}
+
+.quiz .sign {
+	text-align: center;
+}
+
+.quiz .question {
+	margin-left: 2em;
+}
+
+.quiz .margin {
+	padding-left: 20px;
+}
+
+.quiz .margin.correct {
+	background-color: @color-success;
+}
+
+.quiz .margin.incorrect {
+	background-color: @background-color-error;
+}
+
+.quiz .margin.correction {
+	background-color: @background-color-neutral-subtle;
+}
+
+.quiz .margin.NA {
+	background-color: @background-color-progressive;
+}
+
+.quiz .margin.error {
+	background-color: @color-warning;
+}
+
+.quiz .error {
+	color: @color-emphasized;
+	font-size: inherit;
+}
+
+/* This should be based on content direction, not interface direction */
+/* @noflip */
+.mw-content-ltr .quiz .question .border {
+	border-width: 0 0 0 3px;
+}
+
+/* @noflip */
+.mw-content-rtl .quiz .question .border {
+	border-width: 0 3px 0 0;
+}
+
+.quiz .question .border.correct,
+.quiz .question .border.incorrect,
+.quiz .question .border.correction,
+.quiz .question .border.NA,
+.quiz .question .border.error {
+	border-style: solid;
+}
+
+.quiz .question .border.correct {
+	border-color: @border-color-success;
+}
+
+.quiz .question .border.incorrect {
+	border-color: @border-color-error;
+}
+
+.quiz .question .border.correction {
+	border-color: @border-color-subtle;
+}
+
+.quiz .question .border.NA {
+	border-color: @border-color-progressive;
+}
+
+.quiz .question .border.error {
+	border-color: @border-color-warning;
+}
+
+.quiz .question .check.correct {
+	outline: 3px solid @border-color-success;
+}
+
+.quiz .question .check.incorrect {
+	outline: 3px solid @border-color-error;
+}
+
+.quiz .question .check.correction {
+	outline: 3px solid @border-color-subtle;
+}
+
+.quiz .question .check.NA {
+	outline: 3px solid @border-color-progressive;
+}
+
+.quiz .question .check.error {
+	outline: 3px solid @border-color-warning;
+}
+
+.quiz .header .questionId {
+	font-size: 1.1em;
+	font-weight: bold;
+	float: left;
+}
+
+.quiz a.input em {
+	color: @color-emphasized;
+	background-color: @background-color-neutral;
+	margin-right: 1px;
+}
+
+.quiz a.input input {
+	padding-left: 2px;
+	border: 0;
+}
+
+.quiz .quizForm {
+	position: relative;
+}
+
+.quiz .correction {
+	background-color: @background-color-neutral-subtle;
+}
+
+.quiz .correction.unselected {
+	display: none;
+}
+
+.quiz .object .correction {
+	background-color: transparent;
+}
+
+.quiz a.input span.correction {
+	padding: 3px;
+	margin: 0;
+	list-style-type: none;
+	display: none;
+	background-color: @background-color-neutral-subtle;
+}
+
+.quiz a.input,
+.quiz a.input:hover,
+.quiz a.input:active,
+.quiz a.input:visited {
+	text-decoration: none;
+	color: @color-emphasized;
+	outline: 0;
+}
+
+.quiz a.input span {
+	outline: 1px solid @border-color-notice;
+}
+
+.quiz a.input:active span.correction,
+.quiz a.input:focus span.correction {
+	display: inline;
+	position: absolute;
+	margin: 1.8em 0 0 0.1em;
+}
+
+.client-nojs .quiz .shuffle,
+.client-nojs .quiz .reset {
+	display: none;
+}

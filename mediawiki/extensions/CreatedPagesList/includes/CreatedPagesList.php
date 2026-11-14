@@ -2,7 +2,7 @@
 
 /*
 	Extension:CreatedPagesList - MediaWiki extension.
-	Copyright (C) 2018-2021 Edward Chernenko.
+	Copyright (C) 2018-2025 Edward Chernenko.
 
 	This program is free software; you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
  */
 
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
 
 class CreatedPagesList {
 
@@ -33,6 +34,7 @@ class CreatedPagesList {
 			// MW 1.42+
 			$dbw = MediaWikiServices::getInstance()->getConnectionProvider()->getPrimaryDatabase();
 		} else {
+			/* @phan-suppress-next-line PhanUndeclaredFunction Ignore in MW 1.44 */
 			$dbw = wfGetDB( DB_PRIMARY );
 		}
 
@@ -66,7 +68,8 @@ class CreatedPagesList {
 				'INDEX' => [
 					'page' => 'page_redirect_namespace_len',
 					'revision' => 'rev_page_id'
-				]
+				],
+				'ORDER BY' => 'rev_timestamp'
 			]
 		);
 
@@ -78,7 +81,8 @@ class CreatedPagesList {
 					'cpl_timestamp' => $row->timestamp,
 					'cpl_actor' => $row->actor ?? 0
 				],
-				__METHOD__
+				__METHOD__,
+				[ 'IGNORE' ]
 			);
 		}
 
@@ -105,6 +109,7 @@ class CreatedPagesList {
 			// MW 1.42+
 			$dbw = MediaWikiServices::getInstance()->getConnectionProvider()->getPrimaryDatabase();
 		} else {
+			/* @phan-suppress-next-line PhanUndeclaredFunction Ignore in MW 1.44 */
 			$dbw = wfGetDB( DB_PRIMARY );
 		}
 		$dbw->replace(
@@ -128,6 +133,7 @@ class CreatedPagesList {
 			// MW 1.42+
 			$dbw = MediaWikiServices::getInstance()->getConnectionProvider()->getPrimaryDatabase();
 		} else {
+			/* @phan-suppress-next-line PhanUndeclaredFunction Ignore in MW 1.44 */
 			$dbw = wfGetDB( DB_PRIMARY );
 		}
 		$dbw->delete(

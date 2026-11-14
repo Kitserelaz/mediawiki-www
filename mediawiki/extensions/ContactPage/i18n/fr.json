@@ -1,17 +1,18 @@
 {
 	"@metadata": {
 		"authors": [
+			"Alien333",
 			"Gomoko",
 			"Grondin",
 			"IAlex",
+			"Mahabarata",
 			"Peter17",
 			"Sherbrooke",
 			"Urhixidur",
 			"Verdy p",
 			"Windes",
 			"Wladek92",
-			"לערי ריינהארט",
-			"Alien333"
+			"לערי ריינהארט"
 		]
 	},
 	"contactpage": "Page de contact",
@@ -31,6 +32,8 @@
 	"contactpage-config-error-title": "Erreur du formulaire de contact",
 	"contactpage-config-error": "Un formulaire de contact n’est pas configuré pour cette page ou est configuré incorrectement.",
 	"contactpage-mustbeloggedin": "Veuillez vous connecter pour soumettre un formulaire de contact.",
+	"contactpage-mustbeloggedin-for-temp-user": "Veuillez créer un compte pour pouvoir utiliser un formulaire de contact.",
 	"contactpage-musthaveemail-error-title": "Adresse e-mail confirmée manquante",
-	"contactpage-musthaveemail-error": "Veuillez définir une adresse e-mail confirmée dans vos [[Special:Preferences|préférences]] pour soumettre un formulaire de contact."
+	"contactpage-musthaveemail-error": "Veuillez définir une adresse e-mail confirmée dans vos [[Special:Preferences|préférences]] pour soumettre un formulaire de contact.",
+	"contactpage-sender-address": "Adresse courriel de l'expéditeur : $1"
 }

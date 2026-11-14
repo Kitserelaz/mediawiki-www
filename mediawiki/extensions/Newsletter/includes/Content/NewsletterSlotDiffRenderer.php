@@ -4,31 +4,25 @@ namespace MediaWiki\Extension\Newsletter\Content;
 
 use MediaWiki\Content\Content;
 use MediaWiki\Context\IContextSource;
+use MediaWiki\Diff\SlotDiffRenderer;
+use MediaWiki\Diff\TextSlotDiffRenderer;
 use MediaWiki\Html\Html;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Title\Title;
-use SlotDiffRenderer;
-use TextSlotDiffRenderer;
 
 class NewsletterSlotDiffRenderer extends SlotDiffRenderer {
-	/** @var TextSlotDiffRenderer */
-	private $textSlotDiffRenderer;
-
-	/** @var \MessageLocalizer */
-	private $localizer;
-
 	public function __construct(
-		TextSlotDiffRenderer $textSlotDiffRenderer,
-		\MessageLocalizer $localizer
+		private readonly TextSlotDiffRenderer $textSlotDiffRenderer,
+		private readonly MessageLocalizer $localizer,
 	) {
-		$this->textSlotDiffRenderer = $textSlotDiffRenderer;
-		$this->localizer = $localizer;
 	}
 
 	public function getTablePrefix( IContextSource $context, Title $newTitle ): array {
 		return $this->textSlotDiffRenderer->getTablePrefix( $context, $newTitle );
 	}
 
+	/** @inheritDoc */
 	public function getExtraCacheKeys() {
 		return $this->textSlotDiffRenderer->getExtraCacheKeys();
 	}
@@ -37,6 +31,7 @@ class NewsletterSlotDiffRenderer extends SlotDiffRenderer {
 		$this->textSlotDiffRenderer->addModules( $output );
 	}
 
+	/** @inheritDoc */
 	public function getDiff( ?Content $oldContent = null, ?Content $newContent = null ) {
 		$this->normalizeContents( $oldContent, $newContent, [ NewsletterContent::class ] );
 		/** @var NewsletterContent $oldContent */

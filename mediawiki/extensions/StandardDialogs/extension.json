@@ -1,6 +1,6 @@
 {
 	"name": "StandardDialogs",
-	"version": "3.1.0-alpha",
+	"version": "4.0.0-alpha",
 	"license-name": "GPL-3.0-only",
 	"author": [
 		"[https://www.hallowelt.com Hallo Welt! GmbH]"
@@ -48,7 +48,7 @@
 				}
 			],
 			"dependencies": [
-				"oojs"
+				"oojs-ui"
 			]
 		},
 		"ext.standardDialogs.ui.DeleteDialog": {
@@ -72,7 +72,8 @@
 				"standarddialogs-btn-done",
 				"standarddialogs-btn-cancel",
 				"standarddialogs-delete-subpages",
-				"standarddialogs-confirm-mass-deletion"
+				"standarddialogs-confirm-mass-deletion",
+				"standarddialogs-delete-btn-label"
 			],
 			"dependencies": [
 				"oojs-ui-windows"
@@ -96,7 +97,8 @@
 				"move-subpages",
 				"standarddialogs-btn-done",
 				"standarddialogs-btn-cancel",
-				"standarddialogs-validation-page-exist-info-label"
+				"standarddialogs-validation-page-exist-info-label",
+				"standarddialogs-move-btn-label"
 			],
 			"dependencies": [
 				"oojs-ui-windows",
@@ -130,7 +132,8 @@
 				"protect-otherreason-op",
 				"watchthis",
 				"standarddialogs-btn-done",
-				"standarddialogs-btn-cancel"
+				"standarddialogs-btn-cancel",
+				"standarddialogs-protect-btn-label"
 			],
 			"dependencies": [
 				"oojs-ui-windows"
@@ -149,7 +152,8 @@
 				"confirm-purge-top",
 				"confirm-purge-bottom",
 				"standarddialogs-btn-done",
-				"standarddialogs-btn-cancel"
+				"standarddialogs-btn-cancel",
+				"standarddialogs-purge-btn-label"
 			],
 			"dependencies": [
 				"oojs-ui-windows"
@@ -169,7 +173,8 @@
 				"standarddialogs-copy-discussion",
 				"standarddialogs-btn-done",
 				"standarddialogs-btn-cancel",
-				"standarddialogs-validation-page-exist-info-label"
+				"standarddialogs-validation-page-exist-info-label",
+				"standarddialogs-copy-btn-label"
 			],
 			"dependencies": [
 				"oojs-ui-windows",
@@ -236,7 +241,8 @@
 				"standarddialogs-btn-done",
 				"standarddialogs-btn-cancel",
 				"standarddialogs-new-page-not-exist-label",
-				"standarddialogs-validation-page-exist-info-label"
+				"standarddialogs-validation-page-exist-info-label",
+				"standarddialogs-new-page-btn-label"
 			],
 			"dependencies": [
 				"oojs-ui-windows",
@@ -256,7 +262,8 @@
 				"create",
 				"standarddialogs-btn-done",
 				"standarddialogs-btn-cancel",
-				"standarddialogs-validation-page-exist-info-label"
+				"standarddialogs-validation-page-exist-info-label",
+				"standarddialogs-new-subpage-btn-label"
 			],
 			"dependencies": [
 				"oojs-ui-windows",
@@ -299,6 +306,21 @@
 					"callback": "MediaWiki\\Extension\\StandardDialogs\\ClientConfig::makePageInfoPanelModuleRegistryJson"
 				}
 			]
+		},
+		"ext.standardDialogs.page-actions": {
+			"packageFiles": [
+				"ext.standardDialogs.page-actions.js"
+			],
+			"styles": [
+				"stylesheets/page-actions.css"
+			],
+			"messages": [
+				"standarddialogs-create-subpage-btn-label",
+				"standarddialogs-create-subpage-btn-title"
+			],
+			"dependencies": [
+				"oojs-ui"
+			]
 		}
 	},
 	"ResourceFileModulePaths": {
@@ -315,12 +337,17 @@
 		},
 		"bs-books-overview-page-actions": {
 			"class": "\\MediaWiki\\Extension\\StandardDialogs\\HookHandler\\BookshelfDeleteAction"
+		},
+		"page-actions": {
+			"class": "\\MediaWiki\\Extension\\StandardDialogs\\HookHandler\\BeforePageDisplay",
+			"services": [ "PermissionManager" ]
 		}
 	},
 	"Hooks": {
 		"SkinTemplateNavigation::Universal": "skin",
 		"BlueSpiceDiscoveryTemplateDataProviderAfterInit": "discovery-skin",
-		"BSBookshelfBooksOverviewBeforeSetBookActions": "bs-books-overview-page-actions"
+		"BSBookshelfBooksOverviewBeforeSetBookActions": "bs-books-overview-page-actions",
+		"BeforePageDisplay": "page-actions"
 	},
 	"manifest_version": 2
 }

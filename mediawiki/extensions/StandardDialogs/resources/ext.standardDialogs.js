@@ -112,12 +112,16 @@ $( document ).on( 'input', '#standarddialogs-dlg-new-page-tf-target input', ( e 
 	} );
 } );
 
-$( document ).on( 'click', '#ca-new-page, #new-content', ( e ) => {
+$( document ).on( 'click', '#ca-new-page, #new-content, .ca-new-page', ( e ) => {
 	mw.loader.using( [ 'ext.standardDialogs.ui.NewPageDialog' ] ).done( () => {
-		const diag = new StandardDialogs.ui.NewPageDialog( {
+		const cfg = {
 			id: 'standarddialogs-dlg-new-page',
 			pageName: mw.config.get( 'wgRelevantPageName' )
-		} );
+		};
+		if ( mw.util.getParamValue( 'namespace' ) ) {
+			cfg.namespaceId = parseInt( mw.util.getParamValue( 'namespace' ) );
+		}
+		const diag = new StandardDialogs.ui.NewPageDialog( cfg );
 		diag.on( 'actioncompleted', ( newTitle ) => {
 			window.location.href = newTitle.getUrl( { action: 'edit' } );
 		} );

@@ -10,20 +10,18 @@ use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\ResourceLoader as RL;
 use MediaWiki\ResourceLoader\Hook\ResourceLoaderRegisterModulesHook;
 use MediaWiki\ResourceLoader\ResourceLoader;
+use MediaWiki\Skin\Skin;
 use MediaWiki\SpecialPage\Hook\RedirectSpecialArticleRedirectParamsHook;
 use MediaWiki\Title\Title;
-use Skin;
 
 /**
  * Use a hook to include this extension's functionality in pages
  * (if the page is called with a tour)
  *
- * @file
  * @author Terry Chay tchay@wikimedia.org
  * @author Matthew Flaschen mflaschen@wikimedia.org
  * @author Luke Welling lwelling@wikimedia.org
  */
-
 class Hooks implements
 	BeforePageDisplayHook,
 	ResourceLoaderRegisterModulesHook,
@@ -192,8 +190,8 @@ class Hooks implements
 						'guidedtour-tour-firstedit-edit-section-title',
 						'guidedtour-tour-firsteditve-edit-section-description',
 						'guidedtour-tour-firstedit-save-title',
-						'guidedtour-tour-firsteditve-save-description'
-					]
+						'guidedtour-tour-firsteditve-save-description',
+					],
 				]
 			);
 		}

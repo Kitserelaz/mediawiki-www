@@ -1,7 +1,5 @@
 <?php
 
-// phpcs:disable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
-
 namespace MediaWiki\Extension\WikiLove;
 
 use MediaWiki\Api\ApiMessage;
@@ -9,24 +7,23 @@ use MediaWiki\Api\IApiMessage;
 use MediaWiki\ChangeTags\Hook\ChangeTagsListActiveHook;
 use MediaWiki\ChangeTags\Hook\ListDefinedTagsHook;
 use MediaWiki\Config\Config;
-use MediaWiki\Hook\SkinTemplateNavigation__UniversalHook;
 use MediaWiki\Output\Hook\BeforePageDisplayHook;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Permissions\PermissionManager;
 use MediaWiki\Preferences\Hook\GetPreferencesHook;
+use MediaWiki\ResourceLoader\Context;
+use MediaWiki\Skin\Hook\SkinTemplateNavigation__UniversalHook;
+use MediaWiki\Skin\Skin;
+use MediaWiki\Skin\SkinTemplate;
 use MediaWiki\Title\Title;
 use MediaWiki\User\Options\UserOptionsLookup;
 use MediaWiki\User\User;
-use Skin;
-use SkinTemplate;
 
 /**
  * Hooks for WikiLove extension
  *
- * @file
  * @ingroup Extensions
  */
-
 class Hooks implements
 	GetPreferencesHook,
 	SkinTemplateNavigation__UniversalHook,
@@ -34,18 +31,11 @@ class Hooks implements
 	ListDefinedTagsHook,
 	ChangeTagsListActiveHook
 {
-	private Config $config;
-	private PermissionManager $permissionManager;
-	private UserOptionsLookup $userOptionsLookup;
-
 	public function __construct(
-		Config $config,
-		PermissionManager $permissionManager,
-		UserOptionsLookup $userOptionsLookup
+		private readonly Config $config,
+		private readonly PermissionManager $permissionManager,
+		private readonly UserOptionsLookup $userOptionsLookup,
 	) {
-		$this->config = $config;
-		$this->permissionManager = $permissionManager;
-		$this->userOptionsLookup = $userOptionsLookup;
 	}
 
 	/**
@@ -71,6 +61,10 @@ class Hooks implements
 	 * @param Skin $skin
 	 */
 	public function onBeforePageDisplay( $out, $skin ): void {
+		// WikiLove currently doesn't support Minerva.
+		if ( $skin->getSkinName() === 'minerva' ) {
+			return;
+		}
 		if (
 			!$this->config->get( 'WikiLoveGlobal' ) &&
 			!$this->userOptionsLookup->getOption( $out->getUser(), 'wikilove-enabled' )
@@ -101,6 +95,10 @@ class Hooks implements
 	 * @param array &$links Navigation links
 	 */
 	public function onSkinTemplateNavigation__Universal( $skin, &$links ): void {
+		// WikiLove currently doesn't support Minerva.
+		if ( $skin->getSkinName() === 'minerva' ) {
+			return;
+		}
 		if ( $this->showIcon( $skin ) ) {
 			$this->skinConfigViewsLinks( $skin, $links['views'] );
 		} else {
@@ -161,7 +159,7 @@ class Hooks implements
 	 * @param Title $title The title of a user page or user talk page
 	 * @param User $user the current user
 	 * @return Title|IApiMessage Returns either the Title object for the talk page or an error message
-	 * @suppress PhanPossiblyUndeclaredVariable,PhanTypeMismatchReturnNullable,PhanTypeMismatchArgumentNullable
+	 * @suppress PhanPossiblyUndeclaredVariable
 	 */
 	public static function getUserTalkPage( PermissionManager $permissionManager, Title $title, User $user ) {
 		// Exit early if the sending user isn't logged in
@@ -226,6 +224,26 @@ class Hooks implements
 	 */
 	public function onChangeTagsListActive( &$tags ) {
 		$tags[] = 'wikilove';
+	}
+
+	/**
+	 * Generate the content of the virtual `data.json` file in the `ext.wikiLove.startup`
+	 * ResourceLoader module.
+	 * @param Context $context
+	 * @return array JSON data
+	 */
+	public static function getStartupData( Context $context ) {
+		return [
+			'whatIsThisLink' => Skin::makeInternalOrExternalUrl(
+				$context->msg( 'wikilove-what-is-this-link' )->text()
+			),
+			'commonsUrl' => Skin::makeInternalOrExternalUrl(
+				$context->msg( 'wikilove-commons-url' )->text()
+			),
+			'termsUrl' => Skin::makeInternalOrExternalUrl(
+				$context->msg( 'wikilove-terms-url' )->text()
+			),
+		];
 	}
 
 }

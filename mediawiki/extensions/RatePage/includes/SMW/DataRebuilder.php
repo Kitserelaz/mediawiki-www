@@ -4,11 +4,11 @@ namespace RatePage\SMW;
 
 use ExtensionRegistry;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
 use SMW\ApplicationFactory;
 use SMW\Options;
 use SMW\Store;
 use SMW\StoreFactory;
-use Title;
 
 class DataRebuilder {
 	/**

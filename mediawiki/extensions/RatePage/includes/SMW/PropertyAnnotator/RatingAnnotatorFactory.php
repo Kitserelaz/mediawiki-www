@@ -2,8 +2,8 @@
 
 namespace RatePage\SMW\PropertyAnnotator;
 
+use MediaWiki\Title\Title;
 use RatePage\Rating;
-use Title;
 
 class RatingAnnotatorFactory {
 

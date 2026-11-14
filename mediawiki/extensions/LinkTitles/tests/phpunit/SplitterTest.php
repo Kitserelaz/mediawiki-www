@@ -26,8 +26,8 @@
  *
  * @group bovender
  */
-class SplitterTest extends \MediaWikiTestCase
-{
+
+class SplitterTest extends LinkTitles\TestCase {
 	/**
 	 * @dataProvider provideSplitData
 	 */

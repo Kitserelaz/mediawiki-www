@@ -4,10 +4,9 @@
  */
 ( function ( gt ) {
 	// XXX (mattflaschen, 2012-01-02): See GuidedTourHooks.php
-	var pageName = require( './helpGuiderUrl.json' ).pageName,
-		tour, firstStepButtons, firstStep;
+	const pageName = require( './helpGuiderUrl.json' ).pageName;
 
-	tour = new gt.TourBuilder( {
+	const tour = new gt.TourBuilder( {
 		/*
 		 * This is the name of the tour.  It must be lowercase, without any hyphen (-) or
 		 * period (.) characters.
@@ -15,15 +14,15 @@
 		 * If this is an on-wiki tour, it should match the MediaWiki page.  For instance,
 		 * if this were on-wiki, it would be MediaWiki:Guidedtour-tour-test.js
 		 */
-		name: 'onshow'
+		name: 'onshow',
 	} );
 
 	// If there is no page, this is also the last step.
-	firstStepButtons = ( !pageName ) ?
+	const firstStepButtons = ( !pageName ) ?
 		[ { action: 'end' } ] :
 		[];
 
-	firstStep = tour.firstStep( {
+	const firstStep = tour.firstStep( {
 		name: 'descriptionwikitext',
 		titlemsg: 'guidedtour-tour-test-mediawiki-parse',
 		// This deliberately does not use descriptionmsg in order to demonstrate
@@ -35,9 +34,9 @@
 		// try descriptive position (5'oclock) and use skin-specific value
 		position: {
 			fallback: 'bottomRight',
-			monobook: 'right'
+			monobook: 'right',
 		},
-		buttons: firstStepButtons
+		buttons: firstStepButtons,
 	} );
 
 	if ( pageName ) {
@@ -58,10 +57,10 @@
 				action: 'wikiLink',
 				page: pageName,
 				namemsg: 'guidedtour-tour-test-go-description-page',
-				type: 'progressive'
+				type: 'progressive',
 			}, {
-				action: 'end'
-			} ]
+				action: 'end',
+			} ],
 		} )
 			.back( 'descriptionwikitext' );
 	}

@@ -1,0 +1,35 @@
+{
+	"@metadata": {
+		"authors": [
+			"Ant176",
+			"Salvare"
+		]
+	},
+	"ratePage-desc": "利用者がページを評価したりコンテストを開催したりできるようになります。",
+	"ratePage-vote-error": "問題が発生したため、投票を保存できませんでした。",
+	"ratePage-vote-title": "記事の評価",
+	"ratePage-vote-info": "あなたの評価: $1",
+	"ratePage-vote-average-info": "平均: $1 ($2人が投票)",
+	"ratePage-caption-1": "とても悪い",
+	"ratePage-caption-2": "悪い",
+	"ratePage-caption-3": "ふつう",
+	"ratePage-caption-4": "良い",
+	"ratePage-caption-5": "とても良い",
+	"ratePage-prompt": "投票して平均評価を見る",
+	"ratePage-error-category": "RatePageのエラーがあるページ",
+	"right-ratepage-contests-view-list": "コンテストの一覧を閲覧",
+	"right-ratepage-contests-view-details": "コンテストの詳細を閲覧",
+	"right-ratepage-contests-edit": "コンテストを編集",
+	"ratePage-contest-disabled": "無効",
+	"ratePage-contest-enabled": "'''有効'''",
+	"ratePage-contests-list-enabled": "状態",
+	"ratePage-contests-list-id": "コンテストID",
+	"ratePage-contests-list-description": "説明",
+	"ratePage-contest-list-title": "RatePageコンテスト",
+	"ratePage-contest-edit-title": "コンテストを編集中",
+	"ratePage-edit-contest-sub": "コンテストID: $1",
+	"ratePage-new-contest-sub": "新しいコンテストを作成中",
+	"ratePage-contest-home": "ホーム",
+	"ratePage-contests-new": "コンテストの新規作成",
+	"ratePage-prompt-can-see": "あなたは未投票です"
+}

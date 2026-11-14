@@ -1,10 +1,9 @@
 {
 	"root": true,
 	"extends": [
-		"wikimedia/client-es6",
+		"wikimedia/client",
 		"wikimedia/jquery",
-		"wikimedia/mediawiki",
-		"wikimedia/jsduck"
+		"wikimedia/mediawiki"
 	],
 	"rules": {
 		"no-jquery/no-global-selector": "off",
@@ -12,9 +11,19 @@
 		"max-len": "off",
 		"no-jquery/no-class-state": "warn",
 		"no-jquery/no-sizzle": "warn",
-		"no-shadow": "warn",
-		"no-var": "off",
-		"prefer-arrow-callback": "off",
-		"no-jquery/no-extend": "off"
-	}
+		"no-shadow": "warn"
+	},
+	"overrides": [
+		{
+			"files": [
+				"**/*.js"
+			],
+			"rules": {
+				"comma-dangle": [
+					"error",
+					"always-multiline"
+				]
+			}
+		}
+	]
 }

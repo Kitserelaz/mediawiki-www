@@ -1,6 +1,6 @@
 {
 	"name": "Flex Diagrams",
-	"version": "0.8",
+	"version": "1.0",
 	"author": [
 		"Yaron Koren",
 		"Sahaj Khandelwal"
@@ -77,7 +77,7 @@
 		}
 	],
 	"requires": {
-		"MediaWiki": ">= 1.40.0"
+		"MediaWiki": ">= 1.42"
 	},
 	"callback": "FDHooks::registerExtension",
 	"Actions": {
@@ -176,17 +176,17 @@
 		},
 		"ext.flexdiagrams.drawio": {
 			"scripts": [
+				"resources/FD_editor.js",
 				"resources/ext.flexdiagrams.drawio.js"
-			],
-			"styles": [
-				"resources/FD_Drawio.css"
 			],
 			"dependencies": [
 				"ext.flexdiagrams",
-				"oojs-ui-widgets"
+				"oojs-ui-widgets",
+				"oojs-ui.styles.icons-media"
 			],
 			"messages": [
-				"flexdiagrams-drawio-saveinfo"
+				"flexdiagrams-editor-fullscreen",
+				"flexdiagrams-editor-exit-fullscreen"
 			]
 		},
 		"ext.flexdiagrams.dot": {
@@ -219,7 +219,7 @@
 				"resources/ext.flexdiagrams.base.js"
 			],
 			"styles": [
-				"resources/FlexDiagrams.css"
+				"resources/FlexDiagrams.less"
 			]
 		},
 		"ext.flexdiagrams.editwarning": {
@@ -228,6 +228,9 @@
 				"mediawiki.confirmCloseWindow",
 				"jquery.textSelection"
 			]
+		},
+		"ext.flexdiagrams.editor.styles": {
+			"styles": "resources/FD_editor.less"
 		}
 	},
 	"ResourceFileModulePaths": {
@@ -246,7 +249,18 @@
 	"config": {
 		"FlexDiagramsEnabledFormats": {
 			"value": [ 740, 742, 744, 746, 748 ]
+		},
+		"FlexDiagramsDrawioUseSVG": {
+			"value": false,
+			"description": "Whether to save diagrams as SVG instead of PNG for Drawio diagrams."
+		},
+		"FlexDiagramsDrawioRenderSVG": {
+			"value": false,
+			"description": "Whether to render Drawio diagrams directly as <svg> elements instead of <img> elements."
 		}
+	},
+	"ConfigRegistry": {
+		"flexdiagrams": "MediaWiki\\Config\\GlobalVarConfig::newInstance"
 	},
 	"manifest_version": 2
 }

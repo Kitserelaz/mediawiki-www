@@ -1,23 +1,26 @@
 {
 	"name": "ArticleRating",
-	"version": "2.5.1",
+	"version": "2.7",
 	"author": "UltrasonicNXT/Adam Carter",
 	"url": "https://www.mediawiki.org/wiki/Extension:ArticleRatings",
 	"descriptionmsg": "ratings-desc",
 	"license-name": "GPL-2.0-or-later",
 	"type": "other",
 	"requires": {
-		"MediaWiki": ">= 1.39.0"
+		"MediaWiki": ">= 1.46.0"
 	},
 	"GroupPermissions": {
 		"reviewer": {
+			"batch-rate": true,
 			"change-rating": true
 		}
 	},
 	"AvailableRights": [
+		"batch-rate",
 		"change-rating"
 	],
 	"SpecialPages": {
+		"BatchRating": "SpecialBatchRating",
 		"ChangeRating": "SpecialChangeRating",
 		"MassRatings": "SpecialMassRatings"
 	},
@@ -29,31 +32,43 @@
 	},
 	"MessagesDirs": {
 		"ArticleRatings": [
-			"i18n"
+			"i18n",
+			"i18n/api"
 		]
 	},
 	"ExtensionMessagesFiles": {
 		"ArticleRatingsAlias": "ArticleRatings.alias.php"
 	},
 	"AutoloadClasses": {
-		"RatingData": "RatingData.php",
-		"Rating": "Rating.php",
-		"AreHooks": "ArticleRatingsHooks.php",
-		"SpecialChangeRating": "SpecialChangeRating.php",
-		"SpecialMassRatings": "SpecialMassRatings.php"
+		"RatingData": "src/RatingData.php",
+		"Rating": "src/Rating.php",
+		"ApiChangeRating": "src/api/ApiChangeRating.php",
+		"ApiQueryARERatings": "src/api/ApiQueryARERatings.php",
+		"ArticleRatingsHooks": "src/ArticleRatingsHooks.php",
+		"SpecialBatchRating": "src/specials/SpecialBatchRating.php",
+		"SpecialChangeRating": "src/specials/SpecialChangeRating.php",
+		"SpecialMassRatings": "src/specials/SpecialMassRatings.php"
+	},
+	"APIModules": {
+		"change-rating": "ApiChangeRating"
+	},
+	"APIListModules": {
+		"are-ratings": "ApiQueryARERatings"
 	},
 	"Hooks": {
-		"BaseTemplateToolbox": "AreHooks::onBaseTemplateToolbox",
-		"TitleMove": "AreHooks::onTitleMove",
-		"ParserFirstCallInit": "AreHooks::onParserFirstCallInit",
-		"LoadExtensionSchemaUpdates": "AreHooks::onLoadExtensionSchemaUpdates",
-		"ArticleDeleteComplete": "AreHooks::onArticleDeleteComplete"
+		"SidebarBeforeOutput": "ArticleRatingsHooks::onSidebarBeforeOutput",
+		"TitleMove": "ArticleRatingsHooks::onTitleMove",
+		"ParserFirstCallInit": "ArticleRatingsHooks::onParserFirstCallInit",
+		"LoadExtensionSchemaUpdates": "ArticleRatingsHooks::onLoadExtensionSchemaUpdates",
+		"ArticleDeleteComplete": "ArticleRatingsHooks::onArticleDeleteComplete"
 	},
 	"config": {
 		"AREUseInitialRatings": {
+			"description": "If true, the ratings tag has an init-rating parameter that wil set the initial rating to the codename supplied, not the default. Not recommended for production use, but can be used as a workaround to allow bots to use the extension.",
 			"value": false
 		},
 		"ARENamespaces": {
+			"description": "Array of namespace numbers/constants that are allowed to have ratings on them.",
 			"value": []
 		}
 	},

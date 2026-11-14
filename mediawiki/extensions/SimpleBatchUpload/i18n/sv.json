@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Stefan2255",
+			"WikiPhoenix"
+		]
+	},
+	"batchupload": "Ladda upp flera filer",
+	"simplebatchupload-buttonlabel": "Välj filer (eller släpp dem här)...",
+	"simplebatchupload-comment": "Laddades upp med  [[mw:Special:MyLanguage/Extension:SimpleBatchUpload|SimpleBatchUpload]]",
+	"simplebatchupload-desc": "Möjliggör enkel batchuppladdning av filer"
+}

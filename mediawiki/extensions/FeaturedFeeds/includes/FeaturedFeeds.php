@@ -5,20 +5,19 @@ namespace MediaWiki\Extension\FeaturedFeeds;
 use DateTime;
 use DateTimeZone;
 use MediaWiki\Extension\FeaturedFeeds\Hooks\HookRunner;
-use MediaWiki\Hook\SidebarBeforeOutputHook;
 use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\Hook\BeforePageDisplayHook;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Revision\RevisionRecord;
+use MediaWiki\Skin\Hook\SidebarBeforeOutputHook;
+use MediaWiki\Skin\Skin;
 use MediaWiki\Storage\EditResult;
 use MediaWiki\Storage\Hook\PageSaveCompleteHook;
 use MediaWiki\Title\Title;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\Utils\MWTimestamp;
-use Skin;
-use Wikimedia\AtEase\AtEase;
 use Wikimedia\ObjectCache\WANObjectCache;
-use WikiPage;
 
 class FeaturedFeeds implements
 	BeforePageDisplayHook,
@@ -157,7 +156,7 @@ class FeaturedFeeds implements
 
 		$feeds = self::getFeedsQuick( $skin->getLanguage()->getCode() );
 		$links = [];
-		$format = $wgAdvertisedFeedTypes[0]; // @fixme:
+		$format = $wgAdvertisedFeedTypes[0];
 		/** @var FeaturedFeedChannel $feed */
 		foreach ( $feeds as $feed ) {
 			$links[] = [
@@ -302,14 +301,7 @@ class FeaturedFeeds implements
 		static $timeZone;
 
 		if ( $timeZone === null ) {
-			if ( isset( $wgLocaltimezone ) ) {
-				$tz = $wgLocaltimezone;
-			} else {
-				AtEase::suppressWarnings();
-				$tz = date_default_timezone_get();
-				AtEase::restoreWarnings();
-			}
-			$timeZone = new DateTimeZone( $tz );
+			$timeZone = new DateTimeZone( $wgLocaltimezone );
 		}
 		return $timeZone;
 	}

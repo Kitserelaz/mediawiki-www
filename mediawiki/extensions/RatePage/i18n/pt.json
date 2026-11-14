@@ -1,12 +1,13 @@
 {
 	"@metadata": {
 		"authors": [
-			"Hamilton Abreu"
+			"Hamilton Abreu",
+			"Mansil alfalb"
 		]
 	},
 	"ratePage": "Avaliar página",
 	"ratePage-desc": "Permite que os utilizadores avaliem páginas e criem concursos.",
-	"ratePage-vote-error": "Ocorreu um problema não identificado e não foi possível gravar o voto.",
+	"ratePage-vote-error": "Ocorreu um problema e não foi possível guardar o voto.",
 	"ratePage-vote-title": "Avaliar artigo",
 	"ratePage-vote-info": "O seu voto: $1.",
 	"ratePage-vote-average-info": "Média: $1 ($2).",
@@ -49,7 +50,7 @@
 	"ratePage-edit-enabled": "Ativado",
 	"ratePage-edit-allowed-to-vote": "Pode votar",
 	"ratePage-edit-allowed-to-see": "Pode ver resultados",
-	"ratePage-edit-save": "Gravar",
+	"ratePage-edit-save": "Guardar",
 	"ratePage-duplicate-id": "Este identificador de concurso já está em uso.",
 	"ratePage-results-list-page": "Página",
 	"ratePage-results-list-avg": "Avaliação média",

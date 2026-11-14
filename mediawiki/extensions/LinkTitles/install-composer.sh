@@ -16,7 +16,7 @@ then
 fi
 
 # May need to remove the explicit pinning of version 1 in the future
-php composer-setup.php --quiet --1
+php composer-setup.php --quiet
 RESULT=$?
 rm composer-setup.php
 exit $RESULT

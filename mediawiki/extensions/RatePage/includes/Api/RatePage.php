@@ -4,8 +4,8 @@ namespace RatePage\Api;
 
 use ApiBase;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
 use RatePage\Rating;
-use Title;
 use Wikimedia\ParamValidator\ParamValidator;
 
 /**

@@ -2,6 +2,7 @@
 
 namespace GeoData\Test;
 
+use GeoData\BoundingBox;
 use GeoData\Coord;
 use GeoData\Globe;
 use GeoData\Math;
@@ -10,7 +11,7 @@ use MediaWikiUnitTestCase;
 /**
  * @covers \GeoData\Coord
  *
- * @todo: More tests
+ * @todo More tests
  * @group GeoData
  */
 class CoordTest extends MediaWikiUnitTestCase {
@@ -24,7 +25,7 @@ class CoordTest extends MediaWikiUnitTestCase {
 		] );
 		$this->assertSame( 1.0, $coord->lat );
 		$this->assertSame( 2.0, $coord->lon );
-		$this->assertSame( 'fantasy', $coord->globe );
+		$this->assertTrue( $coord->sameGlobe( 'fantasy' ) );
 		$this->assertFalse( $coord->primary );
 		$this->assertSame( 5, $coord->dim );
 	}
@@ -78,7 +79,7 @@ class CoordTest extends MediaWikiUnitTestCase {
 		];
 		yield 'Inequality due to globe' => [
 			new Coord( 10, 20 ),
-			new Coord( 10, 20, 'moon' ),
+			new Coord( 10, 20, Globe::MOON ),
 			false,
 		];
 		yield 'Inequality with globes equal' => [
@@ -242,7 +243,7 @@ class CoordTest extends MediaWikiUnitTestCase {
 	public function testBboxAround() {
 		for ( $i = 0; $i < 90; $i += 5 ) {
 			$coord = new Coord( $i, $i );
-			$bbox = $coord->bboxAround( 5000 );
+			$bbox = BoundingBox::newFromRadius( $coord, 5000 );
 			$coord1 = $bbox->topLeft();
 			$coord2 = $bbox->bottomRight();
 			$radius = $coord->getGlobeObj()->getRadius();
@@ -260,17 +261,17 @@ class CoordTest extends MediaWikiUnitTestCase {
 	 */
 	public function testBoundingBoxesWithGlobes( string $globe, float $expected ) {
 		$coord = new Coord( 0, 0, $globe );
-		$bbox = $coord->bboxAround( 5000 );
+		$bbox = BoundingBox::newFromRadius( $coord, 5000 );
 		$coord2 = $bbox->bottomRight();
 		$this->assertEqualsWithDelta( $expected, $coord2->lat, 0.001 );
 		$this->assertEqualsWithDelta( $expected, $coord2->lon, 0.001 );
 	}
 
-	public function provideBoundingBoxes() {
+	public static function provideBoundingBoxes() {
 		return [
 			[ Globe::EARTH, 0.045 ],
-			[ 'mars', 0.085 ],
-			[ 'moon', 0.165 ],
+			[ Globe::MARS, 0.085 ],
+			[ Globe::MOON, 0.165 ],
 		];
 	}
 
@@ -280,22 +281,23 @@ class CoordTest extends MediaWikiUnitTestCase {
 	public function testGlobeObj( string $name ) {
 		$c = new Coord( 10, 20, $name );
 		$this->assertTrue( $c->getGlobeObj()->equalsTo( new Globe( $name ) ) );
+		$this->assertTrue( $c->sameGlobe( $name ) );
 		$this->assertTrue( $c->isValid() );
 	}
 
 	public static function provideGlobeNames() {
 		return [
 			[ Globe::EARTH ],
-			[ 'moon' ],
+			[ Globe::MOON ],
 			[ 'something nonexistent' ],
 		];
 	}
 
 	public function testGetRow() {
-		$coord = new Coord( 1.234, 9.876, 'mars' );
+		$coord = new Coord( 1.234, 9.876, Globe::MARS );
 		$row = $coord->getRow( 9, 100 );
 		$this->assertSame( 9, $row['gt_page_id'] );
-		$this->assertSame( 'mars', $row['gt_globe'] );
+		$this->assertSame( Globe::MARS, $row['gt_globe'] );
 		$this->assertSame( 123, $row['gt_lat_int'] );
 		$this->assertSame( 988, $row['gt_lon_int'] );
 

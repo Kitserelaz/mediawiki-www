@@ -38,17 +38,17 @@ Object.assign( Api.prototype, {
 	 * @param {number} [options.startId]
 	 * @param {number} [options.endId]
 	 * @param {Object.<string,string>} [options.knownUserGenders]
+	 * @param {Object[]} [options.changeTags]
 	 * @return {jQuery.promise}
 	 */
 	fetchRevisionData: function ( pageName, options ) {
-		const deferred = $.Deferred(),
-			self = this;
+		const deferred = $.Deferred();
 		let userXhr;
 
 		options = options || {};
 
 		const xhr = this.fetchRevisions( pageName, options )
-			.done( ( data ) => {
+			.then( ( data ) => {
 				let revs = data.query.pages[ 0 ].revisions;
 				const revContinue = data.continue,
 					genderData = options.knownUserGenders || {},
@@ -59,7 +59,7 @@ Object.assign( Api.prototype, {
 				}
 
 				if ( changeTags && changeTags.length > 0 ) {
-					revs = self.getRevisionsWithNewTags( revs, changeTags );
+					revs = this.getRevisionsWithNewTags( revs, changeTags );
 				}
 
 				// No need to query any gender data if masculine, feminine, and neutral are all
@@ -71,16 +71,16 @@ Object.assign( Api.prototype, {
 					return deferred.resolve( { revisions: revs, continue: revContinue } );
 				}
 
-				const userNames = self.getUniqueUserNamesWithUnknownGender( revs, genderData );
+				const userNames = this.getUniqueUserNamesWithUnknownGender( revs, genderData );
 
-				userXhr = self.fetchUserGenderData( userNames )
-					.done( ( data2 ) => {
+				userXhr = this.fetchUserGenderData( userNames )
+					.then( ( data2 ) => {
 						if ( typeof data2 === 'object' &&
 							data2.query &&
 							data2.query.users &&
 							data2.query.users.length > 0
 						) {
-							Object.assign( genderData, self.getUserGenderData( data2.query.users, genderData ) );
+							Object.assign( genderData, this.getUserGenderData( data2.query.users, genderData ) );
 						}
 
 						revs.forEach( ( rev ) => {
@@ -90,10 +90,8 @@ Object.assign( Api.prototype, {
 						} );
 
 						deferred.resolve( { revisions: revs, continue: revContinue } );
-					} )
-					.fail( deferred.reject );
-			} )
-			.fail( deferred.reject );
+					}, deferred.reject );
+			}, deferred.reject );
 
 		return deferred.promise( {
 			abort: function () {
@@ -153,7 +151,7 @@ Object.assign( Api.prototype, {
 	 * @return {jQuery.jqXHR}
 	 */
 	fetchUserGenderData: function ( users ) {
-		if ( users.length === 0 ) {
+		if ( !users.length ) {
 			return $.Deferred().resolve();
 		}
 		return $.ajax( {
@@ -178,10 +176,10 @@ Object.assign( Api.prototype, {
 		const allUsers = revs.map( ( rev ) => !( 'anon' in rev ) && rev.user );
 		return allUsers.filter( ( name, index ) =>
 			// Anonymous users don't have a name
-			 name && !( name in knownUserGenders ) &&
+			name && !( name in knownUserGenders ) &&
 				// This filters duplicates by rejecting all but the first one
 				allUsers.indexOf( name ) === index
-		 );
+		);
 	},
 
 	/**
@@ -214,10 +212,8 @@ Object.assign( Api.prototype, {
 					return false;
 				} );
 				return tag;
-			} ).filter( ( tag ) =>
-				// Remove hidden tags (tags with no displayname)
-				 tag
-			 );
+			} ).filter( ( tag ) => tag // Remove hidden tags (tags with no displayname)
+			);
 		} );
 		return revs;
 	}

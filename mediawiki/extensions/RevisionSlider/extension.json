@@ -15,10 +15,10 @@
 	"type": "other",
 	"manifest_version": 2,
 	"requires": {
-		"MediaWiki": ">= 1.43"
+		"MediaWiki": ">= 1.46"
 	},
 	"ConfigRegistry": {
-		"revisionslider": "GlobalVarConfig::newInstance"
+		"revisionslider": "MediaWiki\\Config\\GlobalVarConfig::newInstance"
 	},
 	"MessagesDirs": {
 		"RevisionSlider": [
@@ -124,9 +124,8 @@
 				"jquery.ui",
 				"mediawiki.language",
 				"mediawiki.jqueryMsg",
-				"mediawiki.Uri",
 				"mediawiki.util",
-				"moment",
+				"mediawiki.DateFormatter",
 				"oojs-ui",
 				"oojs-ui.styles.icons-interactions",
 				"oojs-ui.styles.icons-movement"
@@ -183,7 +182,7 @@
 			"services": [
 				"ConfigFactory",
 				"UserOptionsLookup",
-				"StatsdDataFactory"
+				"StatsFactory"
 			]
 		}
 	},

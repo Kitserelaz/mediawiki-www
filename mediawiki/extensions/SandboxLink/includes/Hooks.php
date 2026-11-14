@@ -1,13 +1,4 @@
 <?php
-
-namespace MediaWiki\Extension\SandboxLink;
-
-use MediaWiki\Config\Config;
-use MediaWiki\Hook\SkinPreloadExistenceHook;
-use MediaWiki\Hook\SkinTemplateNavigation__UniversalHook;
-use MediaWiki\Title\Title;
-use Skin;
-
 /**
  * Add a link to user's personal sandbox to personal tools menu.
  *
@@ -16,6 +7,15 @@ use Skin;
  * @file
  * @license MIT
  */
+
+namespace MediaWiki\Extension\SandboxLink;
+
+use MediaWiki\Config\Config;
+use MediaWiki\Skin\Hook\SkinPreloadExistenceHook;
+use MediaWiki\Skin\Hook\SkinTemplateNavigation__UniversalHook;
+use MediaWiki\Skin\Skin;
+use MediaWiki\Title\Title;
+
 class Hooks implements
 	SkinPreloadExistenceHook,
 	SkinTemplateNavigation__UniversalHook
@@ -88,7 +88,7 @@ class Hooks implements
 			'id' => 'pt-sandbox',
 			'text' => $skin->msg( 'sandboxlink-portlet-label' )->text(),
 			'href' => $href,
-			'class' => $title->exists() ? false : 'new',
+			'link-class' => $title->exists() ? false : 'new',
 			'icon' => 'sandbox',
 			'exists' => $title->exists(),
 			'active' => $title->equals( $currentTitle ),
@@ -119,31 +119,25 @@ class Hooks implements
 	 *
 	 * @param Skin $skin
 	 * @param array &$links
-	 * @phpcs:disable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
 	 */
 	public function onSkinTemplateNavigation__Universal( $skin, &$links ): void {
-		// phpcs:enable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
-		// using // phpcs:ignore after docblock doesn't work, it shows
-		// MediaWiki.Commenting.FunctionComment.MissingDocumentationPublic
 		$link = $this->makeSandboxLink( $skin );
 		if ( !$link ) {
 			return;
 		}
 
-		$newPersonalUrls = [];
 		$personalUrls = $links['user-menu'] ?? [];
-		// Insert our link before the link to user preferences.
-		// If the link to preferences is missing, insert at the end.
-		foreach ( $personalUrls as $key => $value ) {
-			if ( $key === 'preferences' ) {
-				$newPersonalUrls['sandbox'] = $link;
-			}
-			$newPersonalUrls[$key] = $value;
-		}
-		if ( !array_key_exists( 'sandbox', $newPersonalUrls ) ) {
-			$newPersonalUrls['sandbox'] = $link;
+
+		// Insert sandbox right after 'mytalk' if it exists, otherwise append to the end.
+		// Reference: T413413.
+		if ( isset( $personalUrls['mytalk'] ) ) {
+			$personalUrls = wfArrayInsertAfter( $personalUrls, [
+				'sandbox' => $link,
+			], 'mytalk' );
+		} else {
+			$personalUrls['sandbox'] = $link;
 		}
 
-		$links['user-menu'] = $newPersonalUrls;
+		$links['user-menu'] = $personalUrls;
 	}
 }

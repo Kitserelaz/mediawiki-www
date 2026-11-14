@@ -1,0 +1,22 @@
+{
+	"@metadata": {
+		"authors": [
+			"Tensama0415"
+		]
+	},
+	"apihelp-ratepage-summary": "사용자가 문서에 점수를 매기거나 받을 수 있도록 합니다. 매개변수 pageid 또는 pagetitle 중 하나를 지정해야 합니다.",
+	"apihelp-ratepage-param-pageid": "문서 ID",
+	"apihelp-ratepage-param-pagetitle": "문서 제목",
+	"apihelp-ratepage-param-answer": "사용자의 문서 점수 (기본값은 1부터 5까지이며, 설정에서 변경 가능)",
+	"apihelp-ratepage-param-contest": "대회 식별자",
+	"apihelp-ratepage-example-1": "Example 문서의 현재 점수 확인하기.",
+	"apihelp-ratepage-example-2": "Example 문서에 점수 2 주기.",
+	"apihelp-query+pagerating-summary": "이 문서에 대한 점수 결과와 이 사용자의 문서 권한을 반환합니다.",
+	"apihelp-query+pagerating-param-contest": "대회 식별자",
+	"apierror-ratepage-contest-id-too-long": "대회 ID 길이가 제한(255자)을 초과했습니다.",
+	"apierror-ratepage-contest-id-allowed-chars": "대회 ID는 숫자와 라틴 문자로만 구성되어야 합니다. 다른 문자는 사용할 수 없습니다.",
+	"apierror-ratepage-contest-not-exists": "$1 대회가 존재하지 않습니다.",
+	"apierror-ratepage-page-not-exists": "지정된 문서가 존재하지 않습니다.",
+	"apierror-ratepage-cannot-vote-in-contest": "이 대회에서 점수를 줄 권한이 없습니다.",
+	"apierror-ratepage-invalid-answer": "유효하지 않은 답변이 입력되었습니다. 답변은 $1 이상 $2 이하이어야 합니다."
+}

@@ -2,9 +2,9 @@
 
 namespace MediaWiki\Extension\Theme;
 
-use ApiBase;
-use ApiMain;
-use ApiResult;
+use MediaWiki\Api\ApiBase;
+use MediaWiki\Api\ApiMain;
+use MediaWiki\Api\ApiResult;
 use SkinFactory;
 
 /**
@@ -50,7 +50,12 @@ class ApiThemeList extends ApiBase {
 		$config = $this->getConfig();
 		$defaultTheme = $config->get( 'DefaultTheme' );
 		$defaultSkin = $config->get( 'DefaultSkin' );
-		$skinNames = $this->skinFactory->getSkinNames();
+		if ( method_exists( $this->skinFactory, 'getInstalledSkins' ) ) {
+			$skinNames = $this->skinFactory->getInstalledSkins();
+		} else {
+			// @phan-suppress-next-line PhanUndeclaredMethod
+			$skinNames = $this->skinFactory->getSkinNames();
+		}
 		foreach ( $skinNames as $skin => $displayName ) {
 			$themes = Theme::getAvailableThemes( $skin );
 			// When this stuff is in core, use:

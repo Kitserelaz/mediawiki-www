@@ -24,6 +24,9 @@
  */
 namespace LinkTitles;
 
+use MediaWiki\Title\Title as MWTitle;
+use MediaWiki\MediaWikiServices;
+
 /**
  * Fetches potential target page titles from the database.
  */
@@ -41,7 +44,7 @@ class Targets {
 	 * @param  String $sourceNamespace The namespace of the current page.
 	 * @param  Config $config    LinkTitles configuration.
 	 */
-	public static function singleton( \Title $title, Config $config ) {
+	public static function singleton( MWTitle $title, Config $config ) {
 		if ( ( self::$instance === null ) || ( self::$instance->sourceNamespace != $title->getNamespace() ) ) {
 			self::$instance = new Targets( $title, $config );
 		}
@@ -83,9 +86,9 @@ class Targets {
 
 	/**
 	 * The constructor is private to enforce using the singleton pattern.
-	 * @param  \Title $title
+	 * @param MWTitle $title
 	 */
-	private function __construct( \Title $title, Config $config) {
+	private function __construct( MWTitle $title, Config $config) {
 		$this->config = $config;
 		$this->sourceNamespace = $title->getNamespace();
 		$this->fetch();
@@ -135,7 +138,7 @@ class Targets {
 		// shortest to longest. Only titles from 'normal' pages (namespace uid
 		// = 0) are returned. Since the db may be sqlite, we need a try..catch
 		// structure because sqlite does not support the CHAR_LENGTH function.
-		$dbr = wfGetDB( DB_REPLICA );
+		$dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_REPLICA );
 		$this->queryResult = $dbr->select(
 			'page',
 			array( 'page_title', 'page_namespace' , "weight" => $weightSelect),

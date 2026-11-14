@@ -20,6 +20,9 @@
  * Checks [[Special:CreatePage]] special page.
  */
 
+use MediaWiki\Request\FauxRequest;
+use MediaWiki\Title\Title;
+
 /**
  * @covers MediaWiki\CreatePageUw\SpecialCreatePage
  * @group Database
@@ -80,7 +83,7 @@ class SpecialCreatePageTest extends SpecialPageTestBase {
 		$enteredText = $opts['enteredText'] ?? 'some non-existent page';
 		$expectedTitle = Title::newFromText( $opts['expectedPageName'] ?? $enteredText );
 
-		$this->setMwGlobals( 'wgCreatePageUwUseVE', $useVisualEditor );
+		$this->overrideConfigValue( 'CreatePageUwUseVE', $useVisualEditor );
 
 		[ $html, $fauxResponse ] = $this->runSpecial(
 			[ 'wpTitle' => $enteredText ],
@@ -96,10 +99,10 @@ class SpecialCreatePageTest extends SpecialPageTestBase {
 		$this->assertNotNull( $location,
 			'Special:CreatePage: there is no Location header.' );
 
-		$expectedLocation = wfExpandUrl( $this->getExpectedURL(
+		$expectedLocation = $this->getExpectedURL(
 			$expectedTitle,
 			$useVisualEditor
-		) );
+		);
 		$this->assertEquals( $expectedLocation, $location,
 			'Special:CreatePage: unexpected value of Location header.' );
 	}
@@ -144,7 +147,7 @@ class SpecialCreatePageTest extends SpecialPageTestBase {
 	public function testSubmitExisting( $useVisualEditor ) {
 		$title = $this->getExistingTestPage()->getTitle();
 		$pageName = $title->getText();
-		$this->setMwGlobals( 'wgCreatePageUwUseVE', $useVisualEditor );
+		$this->overrideConfigValue( 'CreatePageUwUseVE', $useVisualEditor );
 
 		[ $html, $fauxResponse ] = $this->runSpecial(
 			[ 'wpTitle' => $pageName ],

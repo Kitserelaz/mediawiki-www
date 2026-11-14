@@ -1,4 +1,5 @@
 <?php
+declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\PageAssessments\Api;
 
@@ -6,12 +7,13 @@ use MediaWiki\Api\ApiBase;
 use MediaWiki\Api\ApiPageSet;
 use MediaWiki\Api\ApiQuery;
 use MediaWiki\Api\ApiQueryGeneratorBase;
-use MediaWiki\Extension\PageAssessments\PageAssessmentsDAO;
+use MediaWiki\Extension\PageAssessments\PageAssessmentsStore;
 use MediaWiki\Title\Title;
+use stdClass;
 use Wikimedia\ParamValidator\ParamValidator;
 use Wikimedia\ParamValidator\TypeDef\IntegerDef;
 
-/*
+/**
  * API module for retrieving all the pages associated with a project, for example,
  * WikiProject Medicine. (T119997)
  */
@@ -21,10 +23,13 @@ class ApiQueryProjectPages extends ApiQueryGeneratorBase {
 	 * Array of project IDs for the projects listed in the API query
 	 * @var array
 	 */
-	private $projectIds = [];
+	private array $projectIds = [];
 
-	/** @inheritDoc */
-	public function __construct( ApiQuery $query, $moduleName ) {
+	public function __construct(
+		ApiQuery $query,
+		string $moduleName,
+		private readonly PageAssessmentsStore $store
+	) {
 		// The prefix pp is already used by the pageprops module, so using wpp instead.
 		parent::__construct( $query, $moduleName, 'wpp' );
 	}
@@ -32,7 +37,7 @@ class ApiQueryProjectPages extends ApiQueryGeneratorBase {
 	/**
 	 * Evaluate the parameters, perform the requested query, and set up the result
 	 */
-	public function execute() {
+	public function execute(): void {
 		$this->run();
 	}
 
@@ -40,14 +45,14 @@ class ApiQueryProjectPages extends ApiQueryGeneratorBase {
 	 * Evaluate the parameters, perform the requested query, and set up the result for generator mode
 	 * @param ApiPageSet $resultPageSet
 	 */
-	public function executeGenerator( $resultPageSet ) {
+	public function executeGenerator( $resultPageSet ): void {
 		$this->run( $resultPageSet );
 	}
 
 	/**
 	 * @param ApiPageSet|null $resultPageSet
 	 */
-	private function run( $resultPageSet = null ) {
+	private function run( ?ApiPageSet $resultPageSet = null ): void {
 		$params = $this->extractRequestParams();
 
 		if ( $params['assessments'] && $resultPageSet !== null ) {
@@ -69,12 +74,12 @@ class ApiQueryProjectPages extends ApiQueryGeneratorBase {
 			$count = 0;
 			foreach ( $db_res as $row ) {
 				if ( ++$count > $params['limit'] ) {
-					$this->setContinueEnumParameter( 'continue', "$row->project_id|$row->page_id" );
+					$this->setContinueEnumParameter( 'continue', "$row->pa_project_id|$row->pa_page_id" );
 					break;
 				}
 
 				// Change project id back into its corresponding project title
-				$projectTitle = $row->project_name;
+				$projectTitle = $row->pap_project_title;
 				if ( !$projectTitle ) {
 					continue;
 				}
@@ -82,11 +87,11 @@ class ApiQueryProjectPages extends ApiQueryGeneratorBase {
 				// Add information to result
 				$vals = $this->generateResultVals( $row );
 				$fit = $result->addValue(
-					[ 'query', 'projects', $projectTitle ], $row->page_id, $vals
+					[ 'query', 'projects', $projectTitle ], $row->pa_page_id, $vals
 				);
 
 				if ( !$fit ) {
-					$this->setContinueEnumParameter( 'continue', "$row->project_id|$row->page_id" );
+					$this->setContinueEnumParameter( 'continue', "$row->pa_project_id|$row->pa_page_id" );
 					break;
 				}
 
@@ -101,7 +106,7 @@ class ApiQueryProjectPages extends ApiQueryGeneratorBase {
 			$count = 0;
 			foreach ( $db_res as $row ) {
 				if ( ++$count > $params['limit'] ) {
-					$this->setContinueEnumParameter( 'continue', "$row->project_id|$row->page_id" );
+					$this->setContinueEnumParameter( 'continue', "$row->pa_project_id|$row->pa_page_id" );
 					break;
 				}
 
@@ -114,12 +119,9 @@ class ApiQueryProjectPages extends ApiQueryGeneratorBase {
 	 * @param array $params
 	 * @param ApiPageSet|null $resultPageSet
 	 */
-	private function buildDbQuery( array $params, $resultPageSet ) {
+	private function buildDbQuery( array $params, ?ApiPageSet $resultPageSet ): void {
 		$this->addTables( [ 'page', 'page_assessments' ] );
-		$this->addFields( [
-			'page_id' => 'pa_page_id',
-			'project_id' => 'pa_project_id',
-		] );
+		$this->addFields( [ 'pa_page_id', 'pa_project_id' ] );
 		$this->addJoinConds( [
 			'page' => [
 				'JOIN',
@@ -129,11 +131,7 @@ class ApiQueryProjectPages extends ApiQueryGeneratorBase {
 
 		if ( $resultPageSet === null ) {
 			$this->addTables( 'page_assessments_projects' );
-			$this->addFields( [
-				'title' => 'page_title',
-				'namespace' => 'page_namespace',
-				'project_name' => 'pap_project_title'
-			] );
+			$this->addFields( [ 'page_title', 'page_namespace', 'pap_project_title' ] );
 			$this->addJoinConds( [
 				'page_assessments_projects' => [
 					'JOIN',
@@ -141,10 +139,7 @@ class ApiQueryProjectPages extends ApiQueryGeneratorBase {
 				]
 			] );
 			if ( $params['assessments'] ) {
-				$this->addFields( [
-					'class' => 'pa_class',
-					'importance' => 'pa_importance'
-				] );
+				$this->addFields( [ 'pa_class', 'pa_importance' ] );
 			}
 		} else {
 			$this->addFields( $resultPageSet->getPageTableFields() );
@@ -153,7 +148,7 @@ class ApiQueryProjectPages extends ApiQueryGeneratorBase {
 		if ( isset( $params['projects'] ) ) {
 			// Convert the project names into corresponding IDs
 			foreach ( $params['projects'] as $project ) {
-				$id = PageAssessmentsDAO::getProjectId( $project );
+				$id = $this->store->getProjectId( $project );
 				if ( $id ) {
 					$this->projectIds[] = $id;
 				} else {
@@ -182,7 +177,7 @@ class ApiQueryProjectPages extends ApiQueryGeneratorBase {
 	/**
 	 * @param string $continueParam
 	 */
-	private function handleQueryContinuation( $continueParam ) {
+	private function handleQueryContinuation( string $continueParam ): void {
 		$continues = $this->parseContinueParamOrDie( $continueParam, [ 'int', 'int' ] );
 		$this->addWhere( $this->getDB()->buildComparison( '>=', [
 			'pa_project_id' => $continues[0],
@@ -191,22 +186,22 @@ class ApiQueryProjectPages extends ApiQueryGeneratorBase {
 	}
 
 	/**
-	 * @param \stdClass $row
+	 * @param stdClass $row
 	 * @return array
 	 */
-	private function generateResultVals( $row ) {
-		$title = Title::makeTitle( $row->namespace, $row->title );
+	private function generateResultVals( stdClass $row ): array {
+		$title = Title::makeTitle( $row->page_namespace, $row->page_title );
 
 		$vals = [
-			'pageid' => (int)$row->page_id,
-			'ns' => (int)$row->namespace,
+			'pageid' => (int)$row->pa_page_id,
+			'ns' => (int)$row->page_namespace,
 			'title' => $title->getPrefixedText(),
 		];
 
-		if ( isset( $row->class ) && isset( $row->importance ) ) {
+		if ( isset( $row->pa_class ) && isset( $row->pa_importance ) ) {
 			$vals['assessment'] = [
-				'class' => $row->class,
-				'importance' => $row->importance,
+				'class' => $row->pa_class,
+				'importance' => $row->pa_importance,
 			];
 		}
 
@@ -214,7 +209,7 @@ class ApiQueryProjectPages extends ApiQueryGeneratorBase {
 	}
 
 	/** @inheritDoc */
-	public function getAllowedParams() {
+	public function getAllowedParams(): array {
 		return [
 			'assessments' => [
 				ParamValidator::PARAM_DEFAULT => false,
@@ -238,7 +233,7 @@ class ApiQueryProjectPages extends ApiQueryGeneratorBase {
 	}
 
 	/** @inheritDoc */
-	public function getExamplesMessages() {
+	public function getExamplesMessages(): array {
 		return [
 			'action=query&list=projectpages&wppprojects=Medicine|Anatomy'
 				=> 'apihelp-query+projectpages-example-simple-1',
@@ -250,7 +245,7 @@ class ApiQueryProjectPages extends ApiQueryGeneratorBase {
 	}
 
 	/** @inheritDoc */
-	public function getHelpUrls() {
+	public function getHelpUrls(): string {
 		return 'https://www.mediawiki.org/wiki/Special:MyLanguage/Extension:PageAssessments';
 	}
 }

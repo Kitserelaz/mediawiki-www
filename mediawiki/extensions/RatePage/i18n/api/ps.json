@@ -1,0 +1,22 @@
+{
+	"@metadata": {
+		"authors": [
+			"شاه زمان پټان"
+		]
+	},
+	"apihelp-ratepage-summary": "کارنانو ته په يو مخ کې د رايې ورکولو او د مخ درجه‌بندۍ ترلاسه‌کولو ته اجازه ورکوي.\nله دوه ارزښتونو څخه د يو مشخصولو ته اړتيا ده: مخ‌پېژند يا مخ‌سرليک",
+	"apihelp-ratepage-param-pageid": "د مخ پېژند",
+	"apihelp-ratepage-param-pagetitle": "مخ سرليک",
+	"apihelp-ratepage-param-answer": "کارن مخ ارزونه (په تلواليزه بڼه له ۱ تر ۵ پورې ده، د اوڼنو ترتيباتو کې بدلېدلی شي)",
+	"apihelp-ratepage-param-contest": "سيالۍ پېژندونکی",
+	"apihelp-ratepage-example-1": "د بېلگ‌مخ لپاره وروستۍ ارزونه ترلاسه کړئ.",
+	"apihelp-ratepage-example-2": "بېلگ‌مخ له ۲ سره و ارزوئ.",
+	"apihelp-query+pagerating-summary": "په دې مخ کې رايې او د دې کارن د رايې ورکولو اجازه بېرته راگرځوي.",
+	"apihelp-query+pagerating-param-contest": "سيالۍ پېژندونکی",
+	"apierror-ratepage-contest-id-too-long": "د سيالۍ پېژند اوږدوالی له ټاکلي حده واوښت (۲۵۵ لوښې).",
+	"apierror-ratepage-contest-id-allowed-chars": "د سيالۍ پېژند بايد يوازې شمېرې او لاتين توري ولري.\nنورو لوښو ته اجازه نشته.",
+	"apierror-ratepage-contest-not-exists": "$1 سيالي شتون نه لري.",
+	"apierror-ratepage-page-not-exists": "ځانگړی‌شوی مخ شتون نه لري.",
+	"apierror-ratepage-cannot-vote-in-contest": "تاسو دې سيالۍ کې د رايې ورکولو اجازه نه لرئ.",
+	"apierror-ratepage-invalid-answer": "ناسم ځواب مشخص شوی.\nځواب بايد اوږد يا مساوي د $1 وي او لږ يا مساوي د $2 وي."
+}

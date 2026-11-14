@@ -2,9 +2,12 @@
 
 namespace MediaWiki\Extension\CharInsert;
 
+use MediaWiki\Output\Hook\BeforePageDisplayHook;
+use MediaWiki\Parser\Hook\ParserFirstCallInitHook;
+
 class Hooks implements
-	\MediaWiki\Hook\BeforePageDisplayHook,
-	\MediaWiki\Hook\ParserFirstCallInitHook
+	BeforePageDisplayHook,
+	ParserFirstCallInitHook
 {
 	/** @inheritDoc */
 	public function onBeforePageDisplay( $out, $skin ): void {

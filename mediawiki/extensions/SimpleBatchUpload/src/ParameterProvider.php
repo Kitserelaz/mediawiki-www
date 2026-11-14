@@ -3,7 +3,7 @@
  * File containing the ParameterProvider class
  *
  * @copyright (C) 2016 - 2017, Stephan Gambke
- * @license   GNU General Public License, version 2 (or any later version)
+ * @license GPL-2.0-or-later
  *
  * This software is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -24,7 +24,7 @@
 
 namespace MediaWiki\Extension\SimpleBatchUpload;
 
-use Message;
+use MediaWiki\Message\Message;
 
 /**
  * Class ParameterProvider
@@ -33,10 +33,10 @@ use Message;
  */
 class ParameterProvider {
 
-	const IDX_TEMPLATENAME = 0;
-	const IDX_TEMPLATEPARAMETERS = 1;
-	const IDX_COMMENT = 2;
-	const IDX_SPECIALPAGETITLE = 3;
+	private const IDX_TEMPLATENAME = 0;
+	private const IDX_TEMPLATEPARAMETERS = 1;
+	private const IDX_COMMENT = 2;
+	private const IDX_SPECIALPAGETITLE = 3;
 
 	private $templateName;
 	private $parameters = null;
@@ -49,20 +49,11 @@ class ParameterProvider {
 	}
 
 	public function getUploadPageText(): string {
-
 		if ( $this->templateName === '' ) {
 			return '';
 		}
 
 		return '{{' . $this->getParameter( self::IDX_TEMPLATENAME ) . $this->getParameter( self::IDX_TEMPLATEPARAMETERS ) . '}}';
-	}
-
-	private function getEscapedParameter( int $key ): string {
-		return $this->escape( $this->getParameter( $key ) );
-	}
-
-	private function escape( string $text ): string {
-		return htmlspecialchars( $text, ENT_QUOTES, 'UTF-8', false );
 	}
 
 	private function getParameter( int $key ): string {
@@ -78,8 +69,9 @@ class ParameterProvider {
 		}
 	}
 
-	private function populateParametersFromKey() {
-		$paramMsg = Message::newFromKey( 'simplebatchupload-parameters' );
+	private function populateParametersFromKey(): bool {
+		// The wiki's configuration, not interface text, so not in the reader's language.
+		$paramMsg = Message::newFromKey( 'simplebatchupload-parameters' )->inContentLanguage();
 
 		if ( $paramMsg->exists() ) {
 
@@ -95,8 +87,14 @@ class ParameterProvider {
 		return false;
 	}
 
-	private function populateParametersFromDefaults() {
-		$this->setParameters( $this->templateName, '', Message::newFromKey( 'simplebatchupload-comment' )->text(), Message::newFromKey( 'batchupload' )->text() );
+	private function populateParametersFromDefaults(): void {
+		// The summary is saved with the upload; the page title is interface text.
+		$this->setParameters(
+			$this->templateName,
+			'',
+			Message::newFromKey( 'simplebatchupload-comment' )->inContentLanguage()->text(),
+			Message::newFromKey( 'batchupload' )->text()
+		);
 	}
 
 	/**
@@ -114,8 +112,8 @@ class ParameterProvider {
 		];
 	}
 
-	public function getEscapedUploadComment(): string {
-		return $this->getEscapedParameter( self::IDX_COMMENT );
+	public function getUploadComment(): string {
+		return $this->getParameter( self::IDX_COMMENT );
 	}
 
 	public function getSpecialPageTitle(): string {
@@ -123,7 +121,6 @@ class ParameterProvider {
 	}
 
 	public function addTemplateParameter( string $parameter ) {
-
 		if ( $this->parameters === null ) {
 			$this->populateParameters();
 		}

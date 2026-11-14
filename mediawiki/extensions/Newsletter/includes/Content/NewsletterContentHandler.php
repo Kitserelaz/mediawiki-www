@@ -2,11 +2,10 @@
 
 namespace MediaWiki\Extension\Newsletter\Content;
 
-use Iterator;
-use LogEventsList;
 use MediaWiki\Api\ApiMain;
 use MediaWiki\Api\ApiUsageException;
 use MediaWiki\Content\Content;
+use MediaWiki\Content\ContentSerializationException;
 use MediaWiki\Content\JsonContentHandler;
 use MediaWiki\Content\Renderer\ContentParseParams;
 use MediaWiki\Context\DerivativeContext;
@@ -18,6 +17,7 @@ use MediaWiki\Html\Html;
 use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\Json\FormatJson;
 use MediaWiki\Linker\Linker;
+use MediaWiki\Logging\LogEventsList;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Parser\ParserOptions;
@@ -28,8 +28,6 @@ use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Status\Status;
 use MediaWiki\Title\Title;
 use MediaWiki\User\UserArray;
-use MediaWiki\User\UserArrayFromResult;
-use MWContentSerializationException;
 use OOUI\ButtonGroupWidget;
 use OOUI\ButtonWidget;
 
@@ -63,19 +61,19 @@ class NewsletterContentHandler extends JsonContentHandler {
 	 * @param string $text
 	 * @param string|null $format
 	 * @return NewsletterContent
-	 * @throws MWContentSerializationException
+	 * @throws ContentSerializationException
 	 */
 	public function unserializeContent( $text, $format = null ) {
 		$this->checkFormat( $format );
 		$content = new NewsletterContent( $text );
 		if ( !$content->isValid() ) {
-			throw new MWContentSerializationException( 'The Newsletter content is invalid.' );
+			throw new ContentSerializationException( 'The Newsletter content is invalid.' );
 		}
 		return $content;
 	}
 
 	/**
-	 * @return string
+	 * @return class-string<NewsletterContent>
 	 */
 	protected function getContentClass() {
 		return NewsletterContent::class;
@@ -187,7 +185,7 @@ class NewsletterContentHandler extends JsonContentHandler {
 				// Show the 10 most recent issues if there have been announcements
 				$logs = '';
 				$logCount = LogEventsList::showLogExtract(
-					$logs, // by reference
+					$logs,
 					'newsletter',
 					SpecialPage::getTitleFor( 'Newsletter', (string)$newsletter->getId() ), '',
 					[
@@ -213,22 +211,23 @@ class NewsletterContentHandler extends JsonContentHandler {
 			$form = $this->getHTMLForm(
 				$fields,
 				static function () {
+					// nothing to submit - the buttons on this page are just links
 					return false;
-				} // nothing to submit - the buttons on this page are just links
+				}
 			);
 
 			$form->suppressDefaultSubmit();
 			$form->prepareForm();
 
 			if ( !$newsletter ) {
-				$parserOutput->setText( $form->getBody() );
+				$parserOutput->setContentHolderText( $form->getBody() );
 			} else {
 				$this->setupNavigationLinks( $newsletter, $parserOptions );
-				$parserOutput->setText( $newsletterActionButtons . "<br><br>" . $form->getBody() );
+				$parserOutput->setContentHolderText( $newsletterActionButtons . "<br><br>" . $form->getBody() );
 			}
 
 		} else {
-			$parserOutput->setText( '' );
+			$parserOutput->setContentHolderText( '' );
 		}
 	}
 
@@ -265,7 +264,7 @@ class NewsletterContentHandler extends JsonContentHandler {
 				'summary' => $summary,
 				'token' => $context->getUser()->getEditToken(),
 			],
-			true // Treat data as POSTed
+			true
 		);
 		$der->setRequest( $request );
 
@@ -298,6 +297,7 @@ class NewsletterContentHandler extends JsonContentHandler {
 		return $status;
 	}
 
+	/** @inheritDoc */
 	public function getSlotDiffRendererWithOptions( IContextSource $context, $options = [] ) {
 		return new NewsletterSlotDiffRenderer(
 			$this->createTextSlotDiffRenderer( $options ),
@@ -307,7 +307,7 @@ class NewsletterContentHandler extends JsonContentHandler {
 
 	/**
 	 * @param array $publishersList
-	 * @return bool|UserArrayFromResult
+	 * @return bool|UserArray
 	 */
 	private function getPublishersFromJSONData( $publishersList ) {
 		if ( count( $publishersList ) === 0 ) {
@@ -404,7 +404,7 @@ class NewsletterContentHandler extends JsonContentHandler {
 	 *
 	 * @return HTMLForm
 	 */
-	private function getHTMLForm( array $fields, /* callable */ $submit ) {
+	private function getHTMLForm( array $fields, $submit ) {
 		$form = HTMLForm::factory(
 			'ooui',
 			$fields,
@@ -418,9 +418,9 @@ class NewsletterContentHandler extends JsonContentHandler {
 	 * Batch query to determine whether user pages and user talk pages exist
 	 * or not and add them to LinkCache
 	 *
-	 * @param Iterator $users
+	 * @param UserArray $users
 	 */
-	private function doLinkCacheQuery( Iterator $users ) {
+	private function doLinkCacheQuery( UserArray $users ) {
 		$batch = MediaWikiServices::getInstance()->getLinkBatchFactory()->newLinkBatch();
 		foreach ( $users as $user ) {
 			$batch->addObj( $user->getUserPage() );
@@ -432,11 +432,11 @@ class NewsletterContentHandler extends JsonContentHandler {
 	/**
 	 * Get a list of users with user-related links next to each username
 	 *
-	 * @param Iterator $users
+	 * @param UserArray $users
 	 *
 	 * @return string
 	 */
-	private function buildUserList( Iterator $users ) {
+	private function buildUserList( UserArray $users ) {
 		$str = '';
 		foreach ( $users as $user ) {
 			$str .= Html::rawElement(

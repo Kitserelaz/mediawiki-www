@@ -1,0 +1,46 @@
+/**
+ * CSS definitions for the Approved Revs extension
+ */
+
+@import 'mediawiki.skin.variables.less';
+
+span.approvedAndLatestMsg {
+}
+
+span.notLatestMsg {
+}
+
+span.approvedRevIsLatest {
+}
+
+span.approvedRevNotLatest {
+	font-style: italic;
+}
+
+span.approvingUser {
+	display: block;
+}
+
+/**
+ * Highlight approved rev in revision history
+ **/
+.approved-revision {
+	background-color: @background-color-success-subtle !important;
+}
+
+li.approved-revision {
+	border: solid @border-color-success 1px !important;
+}
+
+tr.approved-revision td {
+	border-top: solid @border-color-success 2px !important;
+	border-bottom: solid @border-color-success 2px !important;
+}
+
+tr.approved-revision td:first-child {
+	border-left: solid @border-color-success 2px !important;
+}
+
+tr.approved-revision td:last-child {
+	border-right: solid @border-color-success 2px !important;
+}

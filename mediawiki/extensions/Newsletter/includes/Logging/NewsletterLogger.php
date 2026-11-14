@@ -2,9 +2,9 @@
 
 namespace MediaWiki\Extension\Newsletter\Logging;
 
-use ManualLogEntry;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Extension\Newsletter\Newsletter;
+use MediaWiki\Logging\ManualLogEntry;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
@@ -50,6 +50,13 @@ class NewsletterLogger {
 		$log->publish( $log->insert() );
 	}
 
+	/**
+	 * @param User $publisher
+	 * @param Newsletter $newsletter
+	 * @param Title $issueTitle
+	 * @param int $issueId
+	 * @param string $comment
+	 */
 	public function logNewIssue(
 		User $publisher,
 		Newsletter $newsletter,
@@ -63,7 +70,7 @@ class NewsletterLogger {
 		$log->setParameters( [
 			'4:newsletter-link:nl_id' => "{$newsletter->getId()}:{$newsletter->getName()}",
 			'5::nli_issue_id' => $issueId,
-			'6::nl_issue_title' => $issueTitle->getPrefixedText(),
+			'6::nl_issue_title' => $issueTitle->getFullText()
 		] );
 		$log->setComment( $comment );
 		$log->setRelations( [ 'nl_id' => $newsletter->getId() ] );

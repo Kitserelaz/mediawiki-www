@@ -1,18 +1,5 @@
 <?php
-
-namespace MediaWiki\Extension\ThreeD;
-
-use File;
-use ImageHandler;
-use MediaTransformError;
-use MediaTransformOutput;
-use MediaWiki\Shell\Shell;
-use Parser;
-use ThumbnailImage;
-use TransformParameterError;
-
 /**
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -28,6 +15,17 @@ use TransformParameterError;
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  * http://www.gnu.org/copyleft/gpl.html
  */
+
+namespace MediaWiki\Extension\ThreeD;
+
+use MediaWiki\FileRepo\File\File;
+use MediaWiki\Media\ImageHandler;
+use MediaWiki\Media\MediaTransformError;
+use MediaWiki\Media\MediaTransformOutput;
+use MediaWiki\Media\ThumbnailImage;
+use MediaWiki\Media\TransformParameterError;
+use MediaWiki\Parser\Parser;
+use MediaWiki\Shell\Shell;
 
 class ThreeDHandler extends ImageHandler {
 	/**
@@ -75,6 +73,14 @@ class ThreeDHandler extends ImageHandler {
 				$params['physicalHeight'] = $wgSVGMaxSize;
 			}
 		}
+
+		// Make it follow thumb steps
+		$srcWidth = $image->getWidth();
+		$srcHeight = $image->getHeight();
+		$params['physicalWidth'] = $this->getSteppedThumbWidth(
+			$image, $params['physicalWidth'], $srcWidth, $srcHeight
+		);
+		$params['physicalHeight'] = File::scaleHeight( $srcWidth, $srcHeight, $params['physicalWidth'] );
 
 		return true;
 	}

@@ -28,7 +28,7 @@ const CommentStreams = ( function () {
 			const env = {
 				username: username,
 				isLoggedIn: username !== null,
-				associatedPageId: mw.config.get( 'wgArticleId' ),
+				associatedPageId: config.associatedPageId,
 				canComment: config.canComment,
 				moderatorEdit: config.moderatorEdit,
 				moderatorDelete: config.moderatorDelete,
@@ -38,7 +38,9 @@ const CommentStreams = ( function () {
 				initiallyCollapsed: config.initiallyCollapsed,
 				enableVoting: config.enableVoting,
 				enableWatchlist: config.enableWatchlist,
-				targetComment: null
+				targetComment: null,
+				historyHandler: config.historyHandler,
+				associatedPage: config.associatedPage
 			};
 
 			this.defaultblock = null;
@@ -75,7 +77,7 @@ const CommentStreams = ( function () {
 					if ( blockName === null ) {
 						const anchorElement = document.createElement( 'a' );
 						anchorElement.innerHTML = comment.commenttitle;
-						anchorElement.href = `#cs-comment-${comment.pageid}`;
+						anchorElement.href = `#cs-comment-${ comment.id }`;
 						const listItem = document.createElement( 'li' );
 						listItem.appendChild( anchorElement );
 						commentList.appendChild( listItem );
@@ -98,7 +100,7 @@ const CommentStreams = ( function () {
 				if ( blockName === undefined ) {
 					$blockDiv
 						.detach()
-						.insertAfter( '#catlinks' );
+						.appendTo( '#bodyContent' );
 					self.defaultblock = new Block( self, env, querier, null, $blockDiv );
 				} else {
 					self.namedblocks[ blockName ] =
@@ -109,7 +111,7 @@ const CommentStreams = ( function () {
 			if ( $blocks.length === 0 ) {
 				const $mainDiv = $( '<div>' )
 					.addClass( 'cs-comments' )
-					.insertAfter( '#catlinks' );
+					.appendTo( '#bodyContent' );
 				this.defaultblock = new Block( this, env, querier, null, $mainDiv );
 			}
 		},
@@ -119,6 +121,7 @@ const CommentStreams = ( function () {
 				const blockName = parentComment.commentblockname;
 				if ( blockName === null && this.defaultblock ) {
 					this.defaultblock.addStream( parentComment );
+
 				} else if ( blockName in this.namedblocks ) {
 					this.namedblocks[ blockName ].addStream( parentComment );
 				} else {
@@ -139,9 +142,21 @@ const CommentStreams = ( function () {
 ( function () {
 	'use strict';
 
-	$( function () {
+	$( () => {
 		if ( mw.config.exists( 'CommentStreams' ) ) {
-			CommentStreams.initialize();
+			mw.loader.using( [
+				'oojs-ui-core',
+				'oojs-ui-widgets',
+				'oojs-ui-windows',
+				'oojs-ui.styles.icons-alerts',
+				'oojs-ui.styles.icons-content',
+				'oojs-ui.styles.icons-editing-core',
+				'oojs-ui.styles.icons-interactions',
+				'oojs-ui.styles.icons-moderation',
+				'oojs-ui.styles.icons-movement'
+			] ).then( () => {
+				CommentStreams.initialize();
+			} );
 		}
 	} );
 }() );

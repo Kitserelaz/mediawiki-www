@@ -25,10 +25,10 @@ use MediaWiki\Html\Html;
 use MediaWiki\HTMLForm\Field\HTMLTextField;
 use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Skin\Skin;
 use MediaWiki\SpecialPage\QueryPage;
 use MediaWiki\Status\Status;
 use MediaWiki\Title\Title;
-use Skin;
 use Wikimedia\Rdbms\IReadableDatabase;
 use Wikimedia\Rdbms\IResultWrapper;
 
@@ -44,7 +44,11 @@ class SpecialPage extends QueryPage {
 	public function __construct() {
 		parent::__construct();
 		$this->mName = 'PageAssessments';
-		$this->mIncludable = true;
+	}
+
+	/** @inheritDoc */
+	public function isIncludable(): bool {
+		return true;
 	}
 
 	/**
@@ -294,7 +298,7 @@ class SpecialPage extends QueryPage {
 		$this->getOutput()->addModules( 'ext.pageassessments.special' );
 
 		// Add a list of all projects to the page's JS.
-		$projects = $this->getDBLoadBalancer()->getConnection( DB_REPLICA )->newSelectQueryBuilder()
+		$projects = $this->getDatabaseProvider()->getReplicaDatabase()->newSelectQueryBuilder()
 			->select( 'pap_project_title' )
 			->from( 'page_assessments_projects' )
 			->orderBy( 'pap_project_title' )

@@ -1,13 +1,26 @@
 {
 	"@metadata": {
 		"authors": [
+			"Aca",
 			"BadDog",
-			"Milicevic01",
 			"Kizule",
-			"Aca"
+			"Milicevic01"
 		]
 	},
 	"commentstreams-toc": "Коментари",
 	"commentstreams-buttontooltip-history": "историја",
-	"action-cs-comment": "објављујете, уређујете или бришете коментаре"
+	"commentstreams-datetext-lastedited": "Последња измена:",
+	"action-cs-comment": "објављујете, уређујете или бришете коментаре",
+	"commentstreams-ui-close": "Затвори",
+	"commentstreams-history-timestamp": "Време",
+	"commentstreams-history-text": "Коментар",
+	"commentstreams-button-add-comment": "Додај коментар",
+	"commentstreams-button-cancel": "Откажи",
+	"commentstreams-event-new-comment-desc": "Нови коментар",
+	"commentstreams-event-new-comment": "{{GENDER:$1|додао|додала}} нови коментар на страницу $2",
+	"commentstreams-event-new-comment-reply": "{{GENDER:$1|одговорио|одговорила}} је на коментар на страници $2",
+	"logentry-commentstreams-reply-create-v2": "$1 је {{GENDER:$2|[[$6|одговорио]]|[[$6|одговорила]]}}  на [[$4|$5]] на $3",
+	"logentry-commentstreams-comment-edit-v2": "$1 је {{GENDER:$2|уредио|уредила}} коментар [[$4|$5]] на $3",
+	"logentry-commentstreams-comment-delete-v2": "$1 је {{GENDER:$2|обрисао|обрисала}} коментар ''$5'' на $3",
+	"logentry-commentstreams-reply-delete-v2": "$1 је {{GENDER:$2|обрисао|обрисала}} одговор на [[$4|$5]] на $3"
 }

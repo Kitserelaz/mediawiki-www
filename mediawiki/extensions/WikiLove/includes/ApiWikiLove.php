@@ -6,9 +6,9 @@ use LqtDispatch;
 use MediaWiki\Api\ApiBase;
 use MediaWiki\Api\ApiMain;
 use MediaWiki\Api\ApiMessage;
+use MediaWiki\ChangeTags\ChangeTagsStore;
 use MediaWiki\Context\DerivativeContext;
 use MediaWiki\Deferred\DeferredUpdates;
-use MediaWiki\MediaWikiServices;
 use MediaWiki\Parser\ParserFactory;
 use MediaWiki\Parser\Sanitizer;
 use MediaWiki\Permissions\PermissionManager;
@@ -21,21 +21,15 @@ use Wikimedia\Rdbms\DBQueryError;
 use Wikimedia\Rdbms\IConnectionProvider;
 
 class ApiWikiLove extends ApiBase {
-	private IConnectionProvider $dbProvider;
-	private ParserFactory $parserFactory;
-	private PermissionManager $permissionManager;
-
 	public function __construct(
 		ApiMain $main,
 		string $action,
-		IConnectionProvider $dbProvider,
-		ParserFactory $parserFactory,
-		PermissionManager $permissionManager
+		private readonly ChangeTagsStore $changeTagsStore,
+		private readonly IConnectionProvider $dbProvider,
+		private readonly ParserFactory $parserFactory,
+		private readonly PermissionManager $permissionManager,
 	) {
 		parent::__construct( $main, $action );
-		$this->dbProvider = $dbProvider;
-		$this->parserFactory = $parserFactory;
-		$this->permissionManager = $permissionManager;
 	}
 
 	/** @inheritDoc */
@@ -76,7 +70,7 @@ class ApiWikiLove extends ApiBase {
 				'subject' => $params['subject'],
 				'reason' => $summary,
 				'text' => $params['text'],
-				'token' => $params['token']
+				'token' => $params['token'],
 			];
 		// If Flow is installed and enabled, use it.
 		} elseif ( $extReg->isLoaded( 'Flow' ) && $talk->hasContentModel( CONTENT_MODEL_FLOW_BOARD ) ) {
@@ -86,7 +80,7 @@ class ApiWikiLove extends ApiBase {
 				'page' => $talk->getFullText(),
 				'nttopic' => $params['subject'],
 				'ntcontent' => $params['text'],
-				'token' => $params['token']
+				'token' => $params['token'],
 			];
 		} else {
 			// Requires MediaWiki 1.19 or later
@@ -99,7 +93,7 @@ class ApiWikiLove extends ApiBase {
 				'token' => $params['token'],
 				'summary' => $summary,
 				'tags' => implode( '|', $params['tags'] ?? [] ),
-				'notminor' => true
+				'notminor' => true,
 			];
 		}
 
@@ -117,9 +111,8 @@ class ApiWikiLove extends ApiBase {
 		$result = $api->getResult()->getResultData();
 		if ( isset( $result['edit'] ) && $result['edit']['result'] === "Success" ) {
 			$revId = $result['edit']['newrevid'];
-			DeferredUpdates::addCallableUpdate( static function () use ( $revId ) {
-				MediaWikiServices::getInstance()->getChangeTagsStore()
-					->addTags( [ 'wikilove' ], null, $revId );
+			DeferredUpdates::addCallableUpdate( function () use ( $revId ) {
+				$this->changeTagsStore->addTags( [ 'wikilove' ], null, $revId );
 			} );
 		}
 
@@ -163,7 +156,7 @@ class ApiWikiLove extends ApiBase {
 				->row( $values )
 				->caller( __METHOD__ )
 				->execute();
-		} catch ( DBQueryError $dbqe ) {
+		} catch ( DBQueryError ) {
 			$this->addWarning( 'Action was not logged' );
 		}
 	}
@@ -177,7 +170,7 @@ class ApiWikiLove extends ApiBase {
 				'target' => User::newFromName( $talk->getSubjectPage()->getBaseText() )->getName(),
 				'subject' => $subject,
 				'text' => $text,
-				'token' => $token
+				'token' => $token,
 			],
 			true
 		) );

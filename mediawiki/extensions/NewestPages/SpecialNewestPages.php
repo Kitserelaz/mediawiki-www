@@ -11,30 +11,22 @@
  * @license GPL-2.0-or-later
  */
 
+use MediaWiki\HTMLForm\HTMLForm;
+use MediaWiki\Request\WebRequest;
+use MediaWiki\SpecialPage\IncludableSpecialPage;
+use MediaWiki\Title\Title;
 use Wikimedia\Rdbms\IConnectionProvider;
 
 class SpecialNewestPages extends IncludableSpecialPage {
 
-	/** @var int|null */
-	private $limit = null;
+	private ?int $limit = null;
+	private ?int $namespace = null;
+	private ?bool $redirects = null;
 
-	/** @var int|null */
-	private $namespace = null;
-
-	/** @var bool|null */
-	private $redirects = null;
-
-	/** @var IConnectionProvider */
-	private $dbProvider;
-
-	/**
-	 * @param IConnectionProvider $dbProvider
-	 */
 	public function __construct(
-		IConnectionProvider $dbProvider
+		private readonly IConnectionProvider $dbProvider,
 	) {
 		parent::__construct( 'NewestPages' );
-		$this->dbProvider = $dbProvider;
 	}
 
 	/**
@@ -105,13 +97,10 @@ class SpecialNewestPages extends IncludableSpecialPage {
 		}
 	}
 
-	/**
-	 * @param WebRequest $req
-	 */
-	private function setOptions( WebRequest $req ) {
+	private function setOptions( WebRequest $req ): void {
 		$newestPagesLimit = $this->getConfig()->get( 'NewestPagesLimit' );
 		if ( $this->limit === null ) {
-			$this->limit = $this->sanitiseLimit( $req->getInt( 'limit', $newestPagesLimit ) );
+			$this->setLimit( $req->getInt( 'limit', $newestPagesLimit ) );
 		}
 		if ( $this->namespace === null ) {
 			$this->namespace = $this->extractNamespace( $req->getVal( 'namespace', -1 ) );
@@ -121,23 +110,22 @@ class SpecialNewestPages extends IncludableSpecialPage {
 		}
 	}
 
-	/**
-	 * @param int|string $limit
-	 * @return int
-	 */
-	private function sanitiseLimit( $limit ): int {
-		return min( (int)$limit, 5000 );
+	private function setLimit( int $limit ): void {
+		if ( $limit < 0 ) {
+			$limit = 0;
+		}
+		if ( $limit > 5000 ) {
+			$limit = 5000;
+		}
+		$this->limit = $limit;
 	}
 
-	/**
-	 * @param string|null $par
-	 */
-	private function decipherParams( $par ) {
+	private function decipherParams( ?string $par ): void {
 		if ( $par ) {
 			$bits = explode( '/', $par );
 			foreach ( $bits as $bit ) {
 				if ( is_numeric( $bit ) ) {
-					$this->limit = $this->sanitiseLimit( $bit );
+					$this->setLimit( (int)$bit );
 				} else {
 					$this->namespace = $this->extractNamespace( $bit );
 				}
@@ -147,7 +135,6 @@ class SpecialNewestPages extends IncludableSpecialPage {
 
 	/**
 	 * @param int|string $namespace
-	 * @return int
 	 */
 	private function extractNamespace( $namespace ): int {
 		if ( is_numeric( $namespace ) ) {
@@ -163,10 +150,7 @@ class SpecialNewestPages extends IncludableSpecialPage {
 		return -1;
 	}
 
-	/**
-	 * @return string
-	 */
-	private function getNsFragment() {
+	private function getNsFragment(): string {
 		return $this->namespace > -1 ? "page_namespace = {$this->namespace}" : 'page_namespace != 8';
 	}
 
@@ -174,7 +158,7 @@ class SpecialNewestPages extends IncludableSpecialPage {
 	 * @param stdClass $row
 	 * @return string HTML
 	 */
-	private function makeListItem( $row ) {
+	private function makeListItem( stdClass $row ): string {
 		$title = Title::newFromRow( $row );
 		$link = $this->getLinkRenderer()->makeKnownLink( $title );
 		if ( $title->isRedirect() ) {
@@ -186,7 +170,7 @@ class SpecialNewestPages extends IncludableSpecialPage {
 	/**
 	 * @return string HTML
 	 */
-	private function makeLimitLinks() {
+	private function makeLimitLinks(): string {
 		$lang = $this->getLanguage();
 		$limits = [ 10, 20, 30, 50, 100, 150 ];
 		$links = [];
@@ -204,7 +188,7 @@ class SpecialNewestPages extends IncludableSpecialPage {
 	/**
 	 * @return string HTML
 	 */
-	private function makeRedirectToggle() {
+	private function makeRedirectToggle(): string {
 		$label = $this->msg(
 				$this->redirects ? 'newestpages-hideredir' : 'newestpages-showredir' )->text();
 		return $this->makeSelfLink( $label, [ 'redirects' => (int)!$this->redirects ] );
@@ -215,7 +199,7 @@ class SpecialNewestPages extends IncludableSpecialPage {
 	 * @param array $attr Additional attributes for the link
 	 * @return string HTML
 	 */
-	private function makeSelfLink( $label, array $attr ) {
+	private function makeSelfLink( string $label, array $attr ): string {
 		$linkRenderer = $this->getLinkRenderer();
 		$self = $this->getPageTitle();
 		$attr = array_merge( [
@@ -227,10 +211,7 @@ class SpecialNewestPages extends IncludableSpecialPage {
 		return $linkRenderer->makeKnownLink( $self, $label, [], $attr );
 	}
 
-	/**
-	 * @return true
-	 */
-	private function makeNamespaceForm() {
+	private function makeNamespaceForm(): void {
 		$self = $this->getPageTitle();
 		$formDescriptor = [
 			'namespace' => [
@@ -252,8 +233,6 @@ class SpecialNewestPages extends IncludableSpecialPage {
 			->setWrapperLegend( null )
 			->prepareForm()
 			->displayForm( false );
-
-		 return true;
 	}
 
 	/**

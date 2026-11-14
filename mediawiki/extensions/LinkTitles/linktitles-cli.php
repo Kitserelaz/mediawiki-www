@@ -23,6 +23,8 @@
  */
 namespace LinkTitles;
 
+use MediaWiki\Title\Title;
+
 // Attempt to include the maintenance base class from:
 //   $wgScriptPath/maintenance/Maintenance.php
 // Our script is normally located at:
@@ -143,7 +145,7 @@ class Cli extends \Maintenance {
 	private function singlePage() {
 		$pageName = strval( $this->getOption( 'page' ) );
 		$this->output( "Processing single page: '$pageName'\n" );
-		$title = \Title::newFromText( $pageName );
+		$title = Title::newFromText( $pageName );
 		$success = Extension::processPage( $title, \RequestContext::getMain() );
 		if ( $success ) {
 			$this->output( "Finished.\n" );
@@ -184,7 +186,7 @@ class Cli extends \Maintenance {
 
 		$numProcessed = 0;
 		foreach ( $res as $row ) {
-			$title = \Title::makeTitleSafe( $row->page_namespace, $row->page_title );
+			$title = Title::makeTitleSafe( $row->page_namespace, $row->page_title );
 			$numProcessed += 1;
 			$index += 1;
 			if ( $verbose ) {

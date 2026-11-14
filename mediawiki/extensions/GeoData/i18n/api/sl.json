@@ -26,7 +26,7 @@
 	"apihelp-query+geosearch-param-coord": "Koordinate, okoli katerih naj poteka iskanje.",
 	"apihelp-query+geosearch-param-page": "Naslov strani, v bližini katerega želite iskati",
 	"apihelp-query+geosearch-param-radius": "Polmer iskanja v metrih.",
-	"apihelp-query+geosearch-param-sort": "Nastavitev vrstenga reda vrnjenih rezultatov.",
+	"apihelp-query+geosearch-param-sort": "Nastavitev vrstnega reda vrnjenih zadetkov.",
 	"apihelp-query+geosearch-paramvalue-sort-distance": "Razvrstitev strani po njihovi oddaljenosti od središča.",
 	"apihelp-query+geosearch-paramvalue-sort-relevance": "Razvrsti strani po ustreznosti s [[mw:Extension:CirrusSearch|CirrusSearch]], podobno kot to počne [[Special:Search]]. Trenutno podprto samo v vikijih, ki uporabljajo zaledje ElasticSearch; glejte [[mw:Extension:GeoData#Search backends]].",
 	"apihelp-query+geosearch-param-maxdim": "Omejitev iskanja na objete, ki niso večji od tega, v metrih.",
@@ -41,7 +41,6 @@
 	"apierror-geodata-nocoord": "Koordinate strani neznane.",
 	"apierror-geodata-noprimarycoord": "Stran $1 nima primarnih koordinat.",
 	"apierror-geodata-norelevancesort": "Razvrščanje zadetkov po ustreznosti je trenutno podprto samo v vikijih, ki uporabljajo zaledje ElasticSearch.",
-	"apierror-geodata-notonearth": "Koordinate te strani niso na Zemlji.",
 	"apierror-geodata-invalidbox": "Neveljavno omejevalno polje.",
 	"apierror-geodata-boxtoobig": "Omejevalno polje je preveliko",
 	"apierror-geodata-badcoord": "Napačna koordinata"

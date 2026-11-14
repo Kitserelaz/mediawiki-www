@@ -62,7 +62,6 @@ class MintyDocsPublish extends UnlistedSpecialPage {
 		$mdPage = MintyDocsUtils::pageFactory( $title );
 		if ( !$mdPage->userCanAdminister( $this->getUser() ) ) {
 			$this->displayRestrictionError();
-			return;
 		}
 
 		$publish = $req->getCheck( 'mdPublish' );
@@ -117,7 +116,7 @@ class MintyDocsPublish extends UnlistedSpecialPage {
 		$out->enableOOUI();
 
 		// Display checkboxes.
-		$text = '<form id="mdPublishForm" action="" method="post">';
+		$text = Html::openElement( 'form', [ 'id' => 'mdPublishForm', 'action' => '', 'method' => 'post' ] );
 		if ( $req->getCheck( 'single' ) ) {
 			$isSinglePage = true;
 		} else {
@@ -131,10 +130,10 @@ class MintyDocsPublish extends UnlistedSpecialPage {
 				$out->addHTML( $error );
 				return;
 			}
-			$text .= Html::element( 'p', null, $this->msg( self::$mSinglePageMsg )->text() );
+			$text .= Html::element( 'p', [], $this->msg( self::$mSinglePageMsg )->text() );
 			$text .= Html::hidden( 'page_name_1', $title->getText() );
 		} else {
-			$text .= '<h3>Pages for ' . $mdPage->getLink() . ':</h3>';
+			$text .= Html::rawElement( 'h3', [], 'Pages for ' . $mdPage->getLink() . ':' );
 			$text .= ( new ListToggle( $this->getOutput() ) )->getHTML();
 			$text .= Html::rawElement(
 				'ul',
@@ -144,13 +143,13 @@ class MintyDocsPublish extends UnlistedSpecialPage {
 			$pagesTree = $this->makePagesTree( $mdPage );
 			$text .= Html::rawElement(
 				'ul',
-				null,
+				[],
 				$this->displayCheckboxesForTree( $pagesTree['node'], $pagesTree['tree'] )
 			);
 		}
 
 		if ( !$isSinglePage && self::$mCheckboxNumber == 1 ) {
-			$text = '<p>(' . self::$mNoActionNeededMessage . ")</p>\n";
+			$text = Html::element( 'p', [], '(' . self::$mNoActionNeededMessage . ')' ) . "\n";
 			$out->addHTML( $text );
 			return;
 		}
@@ -163,11 +162,11 @@ class MintyDocsPublish extends UnlistedSpecialPage {
 				'name' => 'mdPublish',
 				'type' => 'submit',
 				'flags' => [ 'progressive', 'primary' ],
-				'label' => $this->msg( self::$mButtonMsg )->parse()
+				'label' => $this->msg( self::$mButtonMsg )->text()
 			]
 		);
 
-		$text .= '</form>';
+		$text .= Html::closeElement( 'form' );
 		$out->addHTML( $text );
 	}
 
@@ -186,7 +185,7 @@ class MintyDocsPublish extends UnlistedSpecialPage {
 		return null;
 	}
 
-	function displayPageParents( $mdPage ) {
+	function displayPageParents( MintyDocsPage $mdPage ) {
 		$parentPage = $mdPage->getParentPage();
 		if ( $parentPage == null ) {
 			return '';
@@ -199,8 +198,15 @@ class MintyDocsPublish extends UnlistedSpecialPage {
 		// We use the <li> tag so that MediaWiki's toggle JS will
 		// work on these checkboxes.
 		return $this->displayPageParents( $parentMDPage ) .
-			'<li class="parentPage"><em>' . $parentMDPage->getPageTypeValue() . '</em>: ' .
-			$this->displayLine( $parentMDPage ) . '</li>';
+			Html::rawElement(
+				'li',
+				[ 'class' => 'parentPage' ],
+				Html::element(
+					'em',
+					[],
+					$parentMDPage->getPageTypeValue()
+				) . ': ' . $this->displayLine( $parentMDPage )
+			);
 	}
 
 	static function makePagesTree( $mdPage, $numTopicIndents = 0 ) {
@@ -240,20 +246,20 @@ class MintyDocsPublish extends UnlistedSpecialPage {
 		if ( $node == null ) {
 			// Do nothing.
 		} elseif ( is_string( $node ) ) {
-			$text .= "\n<li><em>" . $node . '</em></li>';
+			$text .= "\n" . Html::rawElement( 'li', [], Html::rawElement( 'em', [], $node ) );
 		} elseif ( $node instanceof MintyDocsTopic && $node->isBorrowed() ) {
-			$text .= "\n<li>" . $node->getLink() . ' (this is a borrowed page)</li>';
+			$text .= "\n" . Html::rawElement( 'li', [], $node->getLink() . ' (this is a borrowed page)' );
 		} else {
-			$text .= "\n<li>" . $this->displayLine( $node ) . '</li>';
+			$text .= "\n" . Html::rawElement( 'li', [], $this->displayLine( $node ) );
 		}
 		if ( count( $tree ) > 0 ) {
-			$text .= '<ul>';
+			$text .= Html::openElement( 'ul' );
 			foreach ( $tree as $node ) {
 				$innerNode = $node['node'];
 				$innerTree = $node['tree'];
 				$text .= $this->displayCheckboxesForTree( $innerNode, $innerTree );
 			}
-			$text .= '</ul>';
+			$text .= Html::closeElement( 'ul' );
 		}
 		return $text;
 	}
@@ -308,7 +314,7 @@ class MintyDocsPublish extends UnlistedSpecialPage {
 		if ( $toPageExists ) {
 			$str .= $mdPage->getLink();
 		} else {
-			$str .= '<strong>' . $mdPage->getLink() . '</strong>';
+			$str .= Html::rawElement( 'strong', [], $mdPage->getLink() );
 		}
 		if ( $cannotBePublished ) {
 			$str .= ' (cannot be published because its parent page has not been published)';
@@ -377,6 +383,7 @@ class MintyDocsPublish extends UnlistedSpecialPage {
 		if ( count( $jobs ) == 0 ) {
 			$text = 'No pages were specified.';
 		} elseif ( count( $jobs ) == 1 ) {
+			$toTitle = $toTitles[0];
 			if ( $toTitle->exists() ) {
 				$text = 'The page ' . $linkRenderer->makeLink( $toTitle ) . ' will be modified.';
 			} else {

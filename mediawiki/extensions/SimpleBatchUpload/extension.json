@@ -1,18 +1,18 @@
 {
 	"name": "SimpleBatchUpload",
-	"version": "2.0.1",
+	"version": "4.0.1",
 	"author": [
 		"[https://www.mediawiki.org/wiki/User:F.trott Stephan Gambke]",
-		"[https://professional.wiki/ Professional.Wiki]",
+		"[https://professional.wiki/ Professional Wiki]",
 		"..."
 	],
-	"url": "https://www.mediawiki.org/wiki/Extension:SimpleBatchUpload",
+	"url": "https://professional.wiki/en/extension/simplebatchupload",
 	"descriptionmsg": "simplebatchupload-desc",
 	"namemsg": "simplebatchupload-name",
 	"license-name": "GPL-2.0-or-later",
 	"type": "specialpage",
 	"requires": {
-		"MediaWiki": ">=1.35"
+		"MediaWiki": ">=1.43"
 	},
 	"MessagesDirs": {
 		"SimpleBatchUpload": [
@@ -21,7 +21,7 @@
 	},
 	"config": {
 		"SimpleBatchUploadMaxFilesPerBatch": {
-			"value":{
+			"value": {
 				"*": 1000
 			}
 		}
@@ -43,40 +43,151 @@
 		"ParserFirstCallInit": "MediaWiki\\Extension\\SimpleBatchUpload\\SimpleBatchUpload::registerParserFunction",
 		"MakeGlobalVariablesScript": "MediaWiki\\Extension\\SimpleBatchUpload\\SimpleBatchUpload::onMakeGlobalVariablesScript"
 	},
-	"ResourceFileModulePaths": {
-		"localBasePath": "res",
-		"remoteExtPath": "SimpleBatchUpload/res"
-	},
 	"ResourceModules": {
-		"ext.SimpleBatchUpload.jquery-file-upload": {
-			"scripts": [
-				"jquery.fileupload.js"
-			],
-			"styles": [
-				"jquery.fileupload.css"
-			],
-			"position": "top",
-			"dependencies": [
-				"jquery.ui"
-			]
-		},
 		"ext.SimpleBatchUpload": {
-			"scripts": [
-				"ext.SimpleBatchUpload.js"
+			"class": "MediaWiki\\ResourceLoader\\CodexModule",
+			"localBasePath": "res/ext.SimpleBatchUpload",
+			"remoteExtPath": "SimpleBatchUpload/res/ext.SimpleBatchUpload",
+			"codexComponents": [
+				"CdxButton",
+				"CdxCheckbox",
+				"CdxField",
+				"CdxIcon",
+				"CdxMessage",
+				"CdxTextArea",
+				"CdxTextInput",
+				"CdxThumbnail"
+			],
+			"packageFiles": [
+				"ext.SimpleBatchUpload.js",
+				{
+					"name": "icons.json",
+					"callback": "MediaWiki\\ResourceLoader\\CodexModule::getIcons",
+					"callbackParam": [
+						"cdxIconAlert",
+						"cdxIconCancel",
+						"cdxIconClose",
+						"cdxIconError",
+						"cdxIconImage",
+						"cdxIconReload",
+						"cdxIconSuccess",
+						"cdxIconUpload"
+					]
+				},
+				"FileRow.vue",
+				"ListItem.vue",
+				"StatusDock.vue",
+				"UploadPanel.vue",
+				"batch.js",
+				"batchLimit.js",
+				"fileSize.js",
+				"folderDrop.js",
+				"missedDrop.js",
+				"nameClash.js",
+				"rateLimitGate.js",
+				"rateLimits.js",
+				"remainingTime.js",
+				"renamePattern.js",
+				"thumbnail.js",
+				"thumbnailer.js",
+				"toolbar.js",
+				"uploadQueue.js",
+				"uploadRequest.js",
+				"uploadResult.js",
+				"uploadRunner.js"
 			],
 			"styles": [
 				"ext.SimpleBatchUpload.css"
 			],
-			"position": "top",
 			"dependencies": [
-				"ext.SimpleBatchUpload.jquery-file-upload",
 				"mediawiki.Title",
+				"mediawiki.api",
 				"mediawiki.jqueryMsg",
-				"mediawiki.api"
+				"mediawiki.language",
+				"mediawiki.util",
+				"vue"
 			],
 			"messages": [
-				"simplebatchupload-comment",
-				"simplebatchupload-max-files-alert"
+				"comma-separator",
+				"simplebatchupload-action-add-back",
+				"simplebatchupload-action-for-file",
+				"simplebatchupload-action-keep",
+				"simplebatchupload-action-replace",
+				"simplebatchupload-action-retry",
+				"simplebatchupload-action-skip",
+				"simplebatchupload-action-skip-file",
+				"simplebatchupload-add-autoupload",
+				"simplebatchupload-add-capacity",
+				"simplebatchupload-add-first",
+				"simplebatchupload-add-hint",
+				"simplebatchupload-add-hint-more",
+				"simplebatchupload-add-more",
+				"simplebatchupload-buttonlabel",
+				"simplebatchupload-comment-title",
+				"simplebatchupload-details-done",
+				"simplebatchupload-details-edit",
+				"simplebatchupload-details-lines",
+				"simplebatchupload-details-no-comment",
+				"simplebatchupload-details-no-rule",
+				"simplebatchupload-details-no-text",
+				"simplebatchupload-details-rule",
+				"simplebatchupload-details-rule-start",
+				"simplebatchupload-details-title",
+				"simplebatchupload-dock-attention",
+				"simplebatchupload-dock-batch-progress",
+				"simplebatchupload-dock-failed",
+				"simplebatchupload-dock-on-hold",
+				"simplebatchupload-dock-overwriting",
+				"simplebatchupload-dock-pause",
+				"simplebatchupload-dock-pausing",
+				"simplebatchupload-dock-ready",
+				"simplebatchupload-dock-show-all",
+				"simplebatchupload-dock-show-on-hold",
+				"simplebatchupload-dock-skipped",
+				"simplebatchupload-dock-upload",
+				"simplebatchupload-dock-uploaded",
+				"simplebatchupload-dock-uploading",
+				"simplebatchupload-drop-truncated",
+				"simplebatchupload-error-rename-pattern",
+				"simplebatchupload-estimate-minutes",
+				"simplebatchupload-estimate-under-a-minute",
+				"simplebatchupload-group-clash",
+				"simplebatchupload-group-held",
+				"simplebatchupload-group-replace-all",
+				"simplebatchupload-group-skip-all",
+				"simplebatchupload-max-files-reached",
+				"simplebatchupload-rate-limit-paused",
+				"simplebatchupload-rename-count",
+				"simplebatchupload-rename-find",
+				"simplebatchupload-rename-find-placeholder",
+				"simplebatchupload-rename-label",
+				"simplebatchupload-rename-matches-nothing",
+				"simplebatchupload-rename-regex",
+				"simplebatchupload-rename-replace",
+				"simplebatchupload-rename-rule-unreadable",
+				"simplebatchupload-rename-show-only",
+				"simplebatchupload-rename-title",
+				"simplebatchupload-result-network-error",
+				"simplebatchupload-result-unknown-error",
+				"simplebatchupload-row-no-extension",
+				"simplebatchupload-row-nth-of",
+				"simplebatchupload-status-clash",
+				"simplebatchupload-status-done",
+				"simplebatchupload-status-failed",
+				"simplebatchupload-status-held",
+				"simplebatchupload-status-queued",
+				"simplebatchupload-status-skipped",
+				"simplebatchupload-status-uploading",
+				"simplebatchupload-text-directive-not-read",
+				"simplebatchupload-text-title",
+				"simplebatchupload-warning-duplicate",
+				"simplebatchupload-warning-exists",
+				"simplebatchupload-warning-no-change",
+				"simplebatchupload-warning-other",
+				"size-bytes",
+				"size-gigabytes",
+				"size-kilobytes",
+				"size-megabytes"
 			]
 		}
 	},

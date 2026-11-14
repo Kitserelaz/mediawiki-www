@@ -12,10 +12,15 @@
 	"license-name": "GPL-2.0-or-later",
 	"type": "parserhook",
 	"requires": {
-		"MediaWiki": ">= 1.43"
+		"MediaWiki": ">= 1.46"
 	},
 	"APIListModules": {
-		"projectpages": "MediaWiki\\Extension\\PageAssessments\\Api\\ApiQueryProjectPages",
+		"projectpages": {
+			"class": "MediaWiki\\Extension\\PageAssessments\\Api\\ApiQueryProjectPages",
+			"services": [
+				"PageAssessments.Store"
+			]
+		},
 		"projects": "MediaWiki\\Extension\\PageAssessments\\Api\\ApiQueryProjects"
 	},
 	"APIPropModules": {
@@ -24,24 +29,49 @@
 	"AutoloadNamespaces": {
 		"MediaWiki\\Extension\\PageAssessments\\": "src/"
 	},
+	"TestAutoloadNamespaces": {
+		"MediaWiki\\Extension\\PageAssessments\\Tests\\": "tests/phpunit/"
+	},
 	"ExtensionMessagesFiles": {
 		"PageAssessmentsMagic": "PageAssessments.i18n.magic.php",
 		"PageAssessmentsAlias": "PageAssessments.i18n.alias.php"
 	},
+	"ServiceWiringFiles": [
+		"src/ServiceWiring.php"
+	],
 	"Hooks": {
-		"ParserFirstCallInit": "main",
+		"ParserFirstCallInit": "parser",
 		"LoadExtensionSchemaUpdates": "schema",
-		"LinksUpdateComplete": "main",
-		"ArticleDeleteComplete": "main"
+		"RevisionDataUpdates": "parser",
+		"CirrusSearchAddQueryFeatures": "cirrussearch"
 	},
 	"HookHandlers": {
-		"main": {
-			"class": "MediaWiki\\Extension\\PageAssessments\\Hooks"
+		"parser": {
+			"class": "MediaWiki\\Extension\\PageAssessments\\HookHandler\\ParserHooks",
+			"services": [
+				"PageAssessments.Store",
+				"NamespaceInfo",
+				"MainConfig"
+			]
 		},
 		"schema": {
-			"class": "MediaWiki\\Extension\\PageAssessments\\SchemaHooks"
+			"class": "MediaWiki\\Extension\\PageAssessments\\HookHandler\\SchemaHooks"
+		},
+		"cirrussearch": {
+			"class": "MediaWiki\\Extension\\PageAssessments\\HookHandler\\CirrusSearchHooks"
 		}
 	},
+	"DomainEventIngresses": [
+		{
+			"events": [
+				"PageDeleted"
+			],
+			"class": "MediaWiki\\Extension\\PageAssessments\\EventIngress",
+			"services": [
+				"PageAssessments.Store"
+			]
+		}
+	],
 	"MessagesDirs": {
 		"PageAssessments": [
 			"i18n",
@@ -70,6 +100,19 @@
 		},
 		"PageAssessmentsSubprojects": {
 			"value": false
+		}
+	},
+	"attributes": {
+		"Scribunto": {
+			"LuaExtraTitleAttributes": {
+				"pageAssessments": {
+					"class": "MediaWiki\\Extension\\PageAssessments\\LuaProjectsAttributeResolver",
+					"services": [
+						"PageAssessments.Store",
+						"MainConfig"
+					]
+				}
+			}
 		}
 	},
 	"manifest_version": 2

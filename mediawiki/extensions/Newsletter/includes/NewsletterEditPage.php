@@ -2,8 +2,12 @@
 
 namespace MediaWiki\Extension\Newsletter;
 
-use BadRequestError;
 use MediaWiki\Context\IContextSource;
+use MediaWiki\Exception\BadRequestError;
+use MediaWiki\Exception\PermissionsError;
+use MediaWiki\Exception\ReadOnlyError;
+use MediaWiki\Exception\ThrottledError;
+use MediaWiki\Exception\UserBlockedError;
 use MediaWiki\Extension\Newsletter\Content\NewsletterContentHandler;
 use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\MediaWikiServices;
@@ -14,16 +18,11 @@ use MediaWiki\Status\Status;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
 use MediaWiki\User\UserArray;
-use PermissionsError;
-use ReadOnlyError;
-use ThrottledError;
-use UserBlockedError;
 
 /**
  * @license GPL-2.0-or-later
  * @author tonythomas
  */
-
 class NewsletterEditPage {
 
 	/** @var bool */
@@ -178,7 +177,8 @@ class NewsletterEditPage {
 				) {
 					$fields['Summary']['default'] = '';
 				}
-			} elseif /* Undoing the latest revision */ ( $revId && $undoId ) {
+			} elseif ( $revId && $undoId ) {
+				// Undoing the latest revision
 				$oldRevRecord = $revLookup->getRevisionById( $revId );
 				$undoRevRecord = $revLookup->getRevisionById( $undoId );
 				$undoMainSlot = $undoRevRecord->getSlot(
@@ -197,7 +197,8 @@ class NewsletterEditPage {
 							->params( $undoRevRecord->getId(), $userText )
 							->inContentLanguage()
 							->text();
-				} else /* User attempts to undo prior revision */ {
+				} else {
+					// User attempts to undo prior revision
 					throw new BadRequestError(
 						'newsletter-oldrev-undo-error-title',
 						'newsletter-oldrev-undo-error-body'
@@ -242,6 +243,9 @@ class NewsletterEditPage {
 		return $form;
 	}
 
+	/**
+	 * @return HTMLForm
+	 */
 	protected function getForm() {
 		$form = HTMLForm::factory(
 			'ooui',

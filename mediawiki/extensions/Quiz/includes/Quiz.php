@@ -2,13 +2,14 @@
 
 namespace MediaWiki\Extension\Quiz;
 
+use MediaWiki\Context\RequestContext;
 use MediaWiki\Extension\Quiz\Hooks\HookRunner;
 use MediaWiki\Html\TemplateParser;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Parser\Parser;
 use MediaWiki\Request\WebRequest;
 use MediaWiki\Title\Title;
-use StringUtils;
+use Wikimedia\StringUtils\StringUtils;
 
 /**
  * Processes quiz markup
@@ -77,18 +78,16 @@ class Quiz {
 	 * @param Parser $parser
 	 */
 	public function __construct( $argv, Parser $parser ) {
-		global $wgRequest;
 		$this->mParser = $parser;
-		$this->mRequest = $wgRequest;
+		$this->mRequest = RequestContext::getMain()->getRequest();
 		// Allot a unique identifier to the quiz.
-		$this->mQuizId = $this->getQuizId();
-		self::$sQuizId++;
+		$this->mQuizId = self::$sQuizId++;
 		// Reset the unique identifier of the questions.
 		$this->mQuestionId = 0;
 		// Reset the counter of div "shuffle" or "noshuffle" inside the quiz.
 		$this->mShuffleDiv = 0;
 		// Determine if this quiz is being corrected or not, according to the quizId
-		$this->mBeingCorrected = ( $wgRequest->getVal( 'quizId' ) == strval( $this->mQuizId ) );
+		$this->mBeingCorrected = ( $this->mRequest->getVal( 'quizId' ) == strval( $this->mQuizId ) );
 		// Initialize various parameters used for the score calculation
 		$this->mState = 'NA';
 		$this->numberQuestions = 0;
@@ -143,17 +142,6 @@ class Quiz {
 		$this->mIncludePattern = '`^\{\{:?(.*)\}\}[ \t]*`m';
 	}
 
-	public static function resetQuizID() {
-		self::$sQuizId = 0;
-	}
-
-	/**
-	 * @return int Quiz Id
-	 */
-	public function getQuizId() {
-		return self::$sQuizId;
-	}
-
 	/**
 	 * Get HTML from template using TemplateParser
 	 *
@@ -165,6 +153,7 @@ class Quiz {
 		$settingsTable = $templateParser->processTemplate(
 			'Setting',
 			[
+				'quizId' => $this->mQuizId,
 				'isSettingFirstRow' => ( !$this->mDisplaySimple || $this->mBeingCorrected ||
 					$this->mState === 'error' ),
 				'isSettingOtherRow' => ( !$this->mDisplaySimple || $this->mBeingCorrected ),
@@ -176,14 +165,14 @@ class Quiz {
 					$this->mState === 'error',
 				'error' => $this->mState === 'error',
 				'wfMessage' => [
-					'quiz_added' => wfMessage( 'quiz_addedPoints', $this->mAddedPoints )->text(),
-					'quiz_cutoff' => wfMessage( 'quiz_cutoffPoints', $this->mCutoffPoints )->text(),
-					'quiz_ignoreCoef' => wfMessage( 'quiz_ignoreCoef' )->text(),
-					'quiz_legend_correct' => wfMessage( 'quiz_legend_correct' )->text(),
-					'quiz_legend_incorrect' => wfMessage( 'quiz_legend_incorrect' )->text(),
-					'quiz_legend_unanswered' => wfMessage( 'quiz_legend_unanswered' )->text(),
-					'quiz_legend_error' => wfMessage( 'quiz_legend_error' )->text(),
-					'quiz_shuffle' => wfMessage( 'quiz_shuffle' )->text()
+					'quiz_added' => wfMessage( 'quiz-added-points', $this->mAddedPoints )->text(),
+					'quiz_cutoff' => wfMessage( 'quiz-cutoff-points', $this->mCutoffPoints )->text(),
+					'quiz_ignoreCoef' => wfMessage( 'quiz-ignore-coef' )->text(),
+					'quiz_legend_correct' => wfMessage( 'quiz-legend-correct' )->text(),
+					'quiz_legend_incorrect' => wfMessage( 'quiz-legend-incorrect' )->text(),
+					'quiz_legend_unanswered' => wfMessage( 'quiz-legend-unanswered' )->text(),
+					'quiz_legend_error' => wfMessage( 'quiz-legend-error' )->text(),
+					'quiz_shuffle' => wfMessage( 'quiz-shuffle' )->text()
 				],
 				'mAddedPoints' => $this->mAddedPoints,
 				'mCutoffPoints' => $this->mCutoffPoints,
@@ -201,11 +190,8 @@ class Quiz {
 	 * @return string
 	 */
 	public function parseQuiz( $input ) {
-		// Output the style and the script to the header once for all.
-		if ( $this->mQuizId == 0 ) {
-			$this->mParser->getOutput()->addModules( [ 'ext.quiz' ] );
-			$this->mParser->getOutput()->addModuleStyles( [ 'ext.quiz.styles' ] );
-		}
+		$this->mParser->getOutput()->addModules( [ 'ext.quiz' ] );
+		$this->mParser->getOutput()->addModuleStyles( [ 'ext.quiz.styles' ] );
 
 		if ( $input === null ) {
 			return '';
@@ -219,7 +205,7 @@ class Quiz {
 		// Determine the content of the settings table.
 		$settingsTable = $this->getSettingsTable( $templateParser );
 
-		$quiz_score = wfMessage( 'quiz_score' )->rawParams(
+		$quiz_score = wfMessage( 'quiz-score' )->rawParams(
 			'<span class="score">' . $this->mScore . '</span>',
 			'<span class="total">' . $this->mTotal . '</span>' )->escaped();
 
@@ -233,8 +219,8 @@ class Quiz {
 				],
 				'settingsTable' => $settingsTable,
 				'wfMessage' => [
-					'quiz_correction' => wfMessage( 'quiz_correction' )->escaped(),
-					'quiz_reset' => wfMessage( 'quiz_reset' )->escaped(),
+					'quiz_correction' => wfMessage( 'quiz-correction' )->escaped(),
+					'quiz_reset' => wfMessage( 'quiz-reset' )->escaped(),
 					'quiz_score' => $quiz_score
 				]
 			]
@@ -339,7 +325,8 @@ class Quiz {
 			$this->mCaseSensitive,
 			$this->mQuestionId,
 			$this->shuffleAnswers,
-			$this->mParser
+			$this->mParser,
+			$this->mRequest,
 		);
 		( new HookRunner( MediaWikiServices::getInstance()->getHookContainer() ) )
 			->onQuizQuestionCreated( $this, $question );
@@ -382,17 +369,13 @@ class Quiz {
 		$this->mQuestionId++;
 
 		// This will generate the answers HTML code
-		$answers = call_user_func(
-			// Calling singleChoiceParseObject, multipleChoiceParseObject and textFieldParseObject
-			[ $question, $question->mType . 'ParseObject' ],
-			$matches[3]
-		);
+		$answers = $question->parseObject( $matches[3] );
 
 		// Set default table title and style
 
 		$tableTitle = "";
 
-		$lState = $question->getState(); // correct, incorrect or unanswered?
+		$lState = $question->getState();
 
 		if ( $lState != '' ) {
 			// if the question is of type=simple
@@ -405,8 +388,8 @@ class Quiz {
 					$this->mScore += $this->mAddedPoints * $question->mCoef;
 
 					$tableTitle = wfMessage(
-						'quiz_points',
-						wfMessage( 'quiz_legend_correct' )->text(),
+						'quiz-points',
+						wfMessage( 'quiz-legend-correct' )->text(),
 						$this->mAddedPoints * $question->mCoef
 					)->escaped();
 					break;
@@ -416,8 +399,8 @@ class Quiz {
 					$this->mScore -= $this->mCutoffPoints * $question->mCoef;
 
 					$tableTitle = wfMessage(
-						'quiz_points',
-						wfMessage( 'quiz_legend_incorrect' )->text(),
+						'quiz-points',
+						wfMessage( 'quiz-legend-incorrect' )->text(),
 						-$this->mCutoffPoints * $question->mCoef
 					)->escaped();
 					break;
@@ -426,8 +409,8 @@ class Quiz {
 					$this->mTotal += $this->mAddedPoints * $question->mCoef;
 
 					$tableTitle = wfMessage(
-						'quiz_points',
-						wfMessage( 'quiz_legend_unanswered' )->text(),
+						'quiz-points',
+						wfMessage( 'quiz-legend-unanswered' )->text(),
 						0
 					)->escaped();
 					break;

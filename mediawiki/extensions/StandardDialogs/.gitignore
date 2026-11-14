@@ -19,3 +19,4 @@ screenshots/*.png
 
 # OS
 .DS_Store
+/.stylelintcache

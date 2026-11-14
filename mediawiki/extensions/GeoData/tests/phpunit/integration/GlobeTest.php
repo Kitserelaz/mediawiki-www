@@ -3,7 +3,6 @@
 namespace GeoData\Test;
 
 use GeoData\Globe;
-use GeoData\Math;
 use MediaWikiIntegrationTestCase;
 
 /**
@@ -30,13 +29,14 @@ class GlobeTest extends MediaWikiIntegrationTestCase {
 		$this->assertEquals( -180, $g->getMinLongitude() );
 		$this->assertEquals( 180, $g->getMaxLongitude() );
 		$this->assertSame( 1, $g->getEastSign() );
-		$this->assertSame( Math::EARTH_RADIUS, $g->getRadius() );
+		$this->assertSame( Globe::EARTH_RADIUS, $g->getRadius() );
 		$this->assertTrue( $g->equalsTo( new Globe( Globe::EARTH ) ) );
+		$this->assertTrue( $g->equalsTo( Globe::EARTH ) );
 	}
 
 	public function testMars() {
-		$g = new Globe( 'mars' );
-		$this->assertEquals( 'mars', $g->getName() );
+		$g = new Globe( Globe::MARS );
+		$this->assertEquals( Globe::MARS, $g->getName() );
 		$this->assertTrue( $g->isKnown() );
 		$this->assertSame( 0, $g->getMinLongitude() );
 		$this->assertEquals( 360, $g->getMaxLongitude() );
@@ -70,9 +70,9 @@ class GlobeTest extends MediaWikiIntegrationTestCase {
 			[ Globe::EARTH, 90, 180, true ],
 			[ Globe::EARTH, 90.001, 0, false ],
 			[ Globe::EARTH, 0, -181, false ],
-			[ 'moon', 0, 0, true ],
-			[ 'moon', 89, -179, true ],
-			[ 'moon', 0, 181, false ],
+			[ Globe::MOON, 0, 0, true ],
+			[ Globe::MOON, 89, -179, true ],
+			[ Globe::MOON, 0, 181, false ],
 			[ '(unknown globe)', 0, 0, true ],
 			[ '(unknown globe)', -89, -359, true ],
 			[ '(unknown globe)', 89, 359, true ],

@@ -4,7 +4,6 @@ namespace GeoData\Api;
 
 use GeoData\Coord;
 use GeoData\GeoData;
-use GeoData\Globe;
 use MediaWiki\Api\ApiBase;
 use MediaWiki\Api\ApiQuery;
 use MediaWiki\Api\ApiQueryBase;
@@ -19,11 +18,12 @@ use Wikimedia\ParamValidator\TypeDef\IntegerDef;
  */
 class QueryCoordinates extends ApiQueryBase {
 
-	private WikiPageFactory $wikiPageFactory;
-
-	public function __construct( ApiQuery $query, string $moduleName, WikiPageFactory $wikiPageFactory ) {
+	public function __construct(
+		ApiQuery $query,
+		string $moduleName,
+		private readonly WikiPageFactory $wikiPageFactory
+	) {
 		parent::__construct( $query, $moduleName, 'co' );
-		$this->wikiPageFactory = $wikiPageFactory;
 	}
 
 	public function execute(): void {
@@ -33,7 +33,8 @@ class QueryCoordinates extends ApiQueryBase {
 		}
 
 		$params = $this->extractRequestParams();
-		$from = $this->getFromCoord( $params );
+		$this->requireMaxOneParameter( $params, 'distancefrompoint', 'distancefrompage' );
+
 		$this->addTables( 'geo_tags' );
 		$this->addFields( [ 'gt_id', 'gt_page_id', 'gt_lat', 'gt_lon', 'gt_primary', 'gt_globe' ] );
 		foreach ( $params['prop'] as $prop ) {
@@ -79,11 +80,9 @@ class QueryCoordinates extends ApiQueryBase {
 					$vals[$prop] = $row->$column;
 				}
 			}
-			if ( $from && $row->gt_globe == $from->globe ) {
-				$vals['dist'] = round(
-					$from->distanceTo( Coord::newFromRow( $row ) ),
-					1
-				);
+			$dist = $this->getDistFrom( $params, Coord::newFromRow( $row ) );
+			if ( $dist !== null ) {
+				$vals['dist'] = round( $dist, 1 );
 			}
 			$fit = $this->addPageSubItem( $row->gt_page_id, $vals );
 			if ( !$fit ) {
@@ -92,25 +91,35 @@ class QueryCoordinates extends ApiQueryBase {
 		}
 	}
 
-	private function getFromCoord( array $params ): ?Coord {
-		$this->requireMaxOneParameter( $params, 'distancefrompoint', 'distancefrompage' );
-		$globe = new Globe( Globe::EARTH );
+	private function getDistFrom( array $params, Coord $pageCoord ): ?float {
+		$fromCoord = null;
+
 		if ( $params['distancefrompoint'] !== null ) {
 			$arr = explode( '|', $params['distancefrompoint'] );
+			$globe = $pageCoord->getGlobeObj();
 			if ( count( $arr ) != 2 || !$globe->coordinatesAreValid( $arr[0], $arr[1] ) ) {
 				$this->dieWithError( 'apierror-geodata-badcoord', 'invalid-coord' );
 			}
-			return new Coord( (float)$arr[0], (float)$arr[1], $globe->getName() );
+			$fromCoord = new Coord( (float)$arr[0], (float)$arr[1], $globe );
+		} elseif ( $params['distancefrompage'] !== null ) {
+			$fromCoord = $this->getCoordinatesFromPage( $params['distancefrompage'] );
 		}
-		if ( $params['distancefrompage'] !== null ) {
-			$title = Title::newFromText( $params['distancefrompage'] );
+
+		return $fromCoord?->sameGlobe( $pageCoord ) ? $fromCoord->distanceTo( $pageCoord ) : null;
+	}
+
+	private function getCoordinatesFromPage( string $pageName ): Coord {
+		static $coord;
+
+		if ( !$coord ) {
+			$title = Title::newFromText( $pageName );
 			if ( !$title || !$title->exists() ) {
 				$this->dieWithError( [
 					'apierror-invalidtitle',
-					wfEscapeWikiText( $params['distancefrompage'] )
+					wfEscapeWikiText( $pageName )
 				] );
 			}
-			// @phan-suppress-next-line PhanTypeMismatchArgumentNullable T240141
+
 			$page = $this->wikiPageFactory->newFromTitle( $title );
 			$redirectTarget = $page->getRedirectTarget();
 			if ( $redirectTarget ) {
@@ -126,12 +135,9 @@ class QueryCoordinates extends ApiQueryBase {
 					'no-coordinates'
 				);
 			}
-			if ( $coord->globe !== Globe::EARTH ) {
-				$this->dieWithError( 'apierror-geodata-notonearth', 'notonearth' );
-			}
-			return $coord;
 		}
-		return null;
+
+		return $coord;
 	}
 
 	/** @inheritDoc */

@@ -3,7 +3,6 @@
 namespace MediaWiki\Extension\Description2;
 
 use Config;
-use ConfigFactory;
 use OutputPage;
 use Parser;
 use ParserOutput;
@@ -31,15 +30,20 @@ class Hooks implements
 	/** @var DescriptionProvider */
 	private DescriptionProvider $descriptionProvider;
 
+	/** @var int */
+	private int $maxChars;
+
 	/**
-	 * @param ConfigFactory $configFactory
+	 * @param Config $config
+	 * @param DescriptionProvider $descriptionProvider
 	 */
 	public function __construct(
-		ConfigFactory $configFactory,
+		Config $config,
 		DescriptionProvider $descriptionProvider
 	) {
-		$this->config = $configFactory->makeConfig( 'Description2' );
+		$this->config = $config;
 		$this->descriptionProvider = $descriptionProvider;
+		$this->maxChars = $this->config->get( 'DescriptionMaxChars' );
 	}
 
 	/**
@@ -58,22 +62,27 @@ class Hooks implements
 
 		// Avoid running the algorithm multiple times if we already have determined the description. This may happen
 		// on file pages.
-		if ( method_exists( $parserOutput, 'getPageProperty' ) ) {
-			// MW 1.38+
-			$description = $parserOutput->getPageProperty( 'description' );
-		} else {
-			$description = $parserOutput->getProperty( 'description' );
-		}
+		$description = $parserOutput->getPageProperty( 'description' );
 		if ( $description ) {
 			return true;
 		}
 
 		$desc = $this->descriptionProvider->derive( $text );
-
-		if ( $desc ) {
-			Description2::setDescription( $parser, $desc );
+		if ( !$desc ) {
+			return true;
 		}
 
+		if ( $this->maxChars > 0 ) {
+			$truncated = Description2::getFirstChars( $desc, $this->maxChars );
+			if ( $truncated !== $desc ) {
+				$desc = $truncated;
+				if ( !preg_match( '/\p{P}$/u', $truncated ) ) {
+					$desc = $truncated . wfMessage( 'ellipsis' )->text();
+				}
+			}
+		}
+
+		Description2::setDescription( $parser, $desc );
 		return true;
 	}
 
@@ -100,15 +109,7 @@ class Hooks implements
 	 */
 	public function onOutputPageParserOutput( $out, $parserOutput ): void {
 		// Export the description from the main parser output into the OutputPage
-		if ( method_exists( $parserOutput, 'getPageProperty' ) ) {
-			// MW 1.38+
-			$description = $parserOutput->getPageProperty( 'description' );
-		} else {
-			$description = $parserOutput->getProperty( 'description' );
-			if ( $description === false ) {
-				$description = null;
-			}
-		}
+		$description = $parserOutput->getPageProperty( 'description' );
 		if ( $description !== null ) {
 			$out->addMeta( 'description', $description );
 		}

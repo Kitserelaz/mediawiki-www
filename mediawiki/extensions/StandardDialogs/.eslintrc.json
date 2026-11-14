@@ -1,7 +1,7 @@
 {
 	"root": true,
 	"extends": [
-		"wikimedia/client-es6",
+		"wikimedia/client",
 		"wikimedia/jquery",
 		"wikimedia/mediawiki"
 	],
@@ -19,6 +19,7 @@
 		"max-len": "off",
 		"no-jquery/no-class-state": "off",
 		"no-jquery/no-global-selector": "off",
-		"no-jquery/variable-pattern": "off"
+		"no-jquery/variable-pattern": "off",
+		"no-jquery/no-done-fail": "warn"
 	}
 }

@@ -4,7 +4,8 @@
 			"Mainframe98",
 			"McDutchie",
 			"Romaine",
-			"SPQRobin"
+			"SPQRobin",
+			"Siebrand"
 		]
 	},
 	"ratePage-desc": "Hiermee kunnen gebruikers pagina’s beoordelen en wedstrijden organiseren.",
@@ -57,7 +58,7 @@
 	"ratePage-results-list-avg": "Gemiddelde beoordeling",
 	"ratePage-results-list-count": "Aantal stemmen",
 	"ratePage-results-list-ans": "Beoordeling $1",
-	"ratePage-edit-done": "Wedstrijd $1 is succesvol bewerkt.",
+	"ratePage-edit-done": "Wedstrijd $1 is bewerkt.",
 	"ratePage-contest-log": "Wedstrijdenlogboek",
 	"ratePage-contest-log-header": "Dit is een logboek van wijzigingen in RatePage-wedstrijden.",
 	"logentry-ratepage-contest-create": "$1 heeft $4 {{GENDER:$2|aangemaakt}}",
@@ -79,6 +80,6 @@
 	"ratePage-edit-see-before-vote": "Beoordelingen weergeven voordat u stemt",
 	"ratePage-prompt-can-see": "U hebt nog niet gestemd",
 	"ratePage-edit-export": "Resultaten exporteren",
-	"ratepage-contests-invalid-path": "De gevraagde handeling is ongeldig.",
+	"ratepage-contests-invalid-path": "De gevraagde handeling is onjuist.",
 	"ratePage-page-cannot-be-rated": "Beoordelingen voor pagina $1 zijn uitgeschakeld."
 }

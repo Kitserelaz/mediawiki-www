@@ -38,7 +38,7 @@ class MintyDocsUtils {
 
 	public static function titlePagePropIncludesValue( Title $title, $propName, $value ) {
 		$fullValue = self::getPagePropForTitle( $title, $propName );
-		$individualValues = explode( ',', $fullValue );
+		$individualValues = $fullValue ? explode( ',', $fullValue ) : [];
 		foreach ( $individualValues as $individualValue ) {
 			if ( trim( $individualValue ) == $value ) {
 				return true;
@@ -103,9 +103,6 @@ class MintyDocsUtils {
 
 	public static function createOrModifyPage( Title $title, $pageText, $editSummary, $user ) {
 		$wikiPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $title );
-		if ( !$wikiPage ) {
-			throw new MWException( 'Wiki page not found "' . $title->getPrefixedDBkey() . '"' );
-		}
 
 		// It's strange that doEditContent() doesn't
 		// automatically attach the 'bot' flag when the user

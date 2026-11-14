@@ -15,6 +15,7 @@ use MediaWikiIntegrationTestCase;
  * @covers \GeoData\CoordinatesOutput::getOrBuildFromParserOutput()
  * @covers \GeoData\CoordinatesOutput::getFromParserOutput()
  * @group GeoData
+ * @group Database
  */
 class TagTest extends MediaWikiIntegrationTestCase {
 
@@ -31,18 +32,17 @@ class TagTest extends MediaWikiIntegrationTestCase {
 		$title = Title::makeTitle( NS_MAIN, __METHOD__ );
 		$title->setContentModel( CONTENT_MODEL_WIKITEXT );
 		$out = $p->parse( $input, $title, $opt );
+		$coordinatesOutput = CoordinatesOutput::getFromParserOutput( $out );
+
 		if ( !$expected ) {
-			$this->assertNull( CoordinatesOutput::getFromParserOutput( $out ),
-				'Expected a failure but a result was found: ' .
-					print_r( CoordinatesOutput::getFromParserOutput( $out ), true )
-			);
+			$this->assertNull( $coordinatesOutput );
 			return;
 		}
-		$this->assertNotNull( CoordinatesOutput::getFromParserOutput( $out ) );
-		$all = CoordinatesOutput::getFromParserOutput( $out )->getAll();
+
+		$this->assertInstanceOf( CoordinatesOutput::class, $coordinatesOutput );
+		$all = $coordinatesOutput->getAll();
 		$this->assertCount( 1, $all,
-			'A result was expected, but there was error: ' . strip_tags( $out->getText() ) );
-		/** @var Coord $coord */
+			'A result was expected, but there was error: ' . strip_tags( $out->getRawText() ) );
 		$coord = $all[0];
 		$this->assertTrue( $coord->fullyEqualsTo( $expected ),
 			'Comparing ' . print_r( $coord, true ) .
@@ -123,11 +123,11 @@ class TagTest extends MediaWikiIntegrationTestCase {
 			],
 			[
 				'{{#coordinates:10|20|globe:Moon dim:10_region:RU-mos}}',
-				new Coord( 10, 20, 'moon', [ 'country' => 'RU', 'region' => 'MOS', 'dim' => 10 ] ),
+				new Coord( 10, 20, Globe::MOON, [ 'country' => 'RU', 'region' => 'MOS', 'dim' => 10 ] ),
 			],
 			[
 				'{{#coordinates:10|20|globe:Moon dim:10_region:RU}}',
-				new Coord( 10, 20, 'moon', [ 'country' => 'RU', 'dim' => 10 ] ),
+				new Coord( 10, 20, Globe::MOON, [ 'country' => 'RU', 'dim' => 10 ] ),
 			],
 			[
 				'{{#coordinates: 10|20|_dim:3Km_}}',

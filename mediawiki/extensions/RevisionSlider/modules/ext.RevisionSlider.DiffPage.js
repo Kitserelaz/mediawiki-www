@@ -1,3 +1,4 @@
+const utils = require( './ext.RevisionSlider.util.js' );
 /**
  * Module handling diff page reloading and the RevisionSlider browser history
  *
@@ -23,27 +24,21 @@ Object.assign( DiffPage.prototype, {
 	refresh: function ( diff, oldid, sliderView, retryAttempt ) {
 		const self = this,
 			retryLimit = 2,
-			data = {
-				diff: diff,
-				oldid: oldid
-			},
-			params = this.getExtraDiffPageParams();
+			params = this.getCurrentDiffPageParams();
 
+		params.diff = diff;
+		params.oldid = oldid;
 		retryAttempt = retryAttempt || 0;
-
-		if ( Object.keys( params ).length > 0 ) {
-			Object.assign( data, params );
-		}
 
 		if ( this.lastRequest ) {
 			this.lastRequest.abort();
 		}
 
-		$( 'table.diff[data-mw="interface"]' ).addClass( 'mw-revslider-diff-loading' );
+		$( 'table.diff[data-mw-interface]' ).addClass( 'mw-revslider-diff-loading' );
 
 		this.lastRequest = $.ajax( {
 			url: mw.util.wikiScript( 'index' ),
-			data: data,
+			data: params,
 			tryCount: 0
 		} );
 		// Don't chain, so lastRequest is a jQuery.jqXHR object
@@ -60,9 +55,9 @@ Object.assign( DiffPage.prototype, {
 			$( '#mw-content-text' ).replaceWith( $contentText );
 			$( '.printfooter' ).replaceWith( $data.find( '.printfooter' ) );
 
-			const $catlinks = $data.find( '.catlinks[data-mw="interface"]' );
+			const $catlinks = $data.find( '.catlinks[data-mw-interface]' );
 			mw.hook( 'wikipage.categories' ).fire( $catlinks );
-			$( '.catlinks[data-mw="interface"]' ).replaceWith( $catlinks );
+			$( '.catlinks[data-mw-interface]' ).replaceWith( $catlinks );
 
 			// Replace navigation menus. See also T211557
 			[ '#t-permalink', '#ca-delete', '#ca-edit', '#footer-places-mobileview' ].forEach( ( selector ) => {
@@ -78,20 +73,20 @@ Object.assign( DiffPage.prototype, {
 
 			$( '.mw-revslider-revisions-container' ).scrollLeft( scrollLeft );
 
-			self.addHandlersToCoreLinks( sliderView );
+			this.addHandlersToCoreLinks( sliderView );
 
 			// Re-trigger existing, stable core hooks under the same circumstances as in core
 			mw.hook( 'wikipage.content' ).fire( $contentText );
 
-			const $nodes = $( 'table.diff[data-mw="interface"]' );
+			const $nodes = $( 'table.diff[data-mw-interface]' );
 			if ( $nodes.length ) {
 				mw.hook( 'wikipage.diff' ).fire( $nodes.eq( 0 ) );
 			}
 		}, function ( xhr ) {
-			$( 'table.diff[data-mw="interface"]' ).removeClass( 'mw-revslider-diff-loading' );
+			$( 'table.diff[data-mw-interface]' ).removeClass( 'mw-revslider-diff-loading' );
 			if ( xhr.statusText !== 'abort' ) {
 				this.tryCount++;
-				mw.track( 'counter.MediaWiki.RevisionSlider.error.refresh' );
+				utils.incrementErrorStats( 'refresh' );
 				if ( retryAttempt <= retryLimit ) {
 					self.refresh( diff, oldid, sliderView, retryAttempt + 1 );
 				}
@@ -159,12 +154,10 @@ Object.assign( DiffPage.prototype, {
 	 * @return {string}
 	 */
 	getStateUrl: function ( diff, oldid ) {
-		let url = mw.util.wikiScript( 'index' ) + '?diff=' + diff + '&oldid=' + oldid;
-		const params = this.getExtraDiffPageParams();
-		for ( const key in params ) {
-			url += '&' + key + '=' + params[ key ];
-		}
-		return url;
+		const params = this.getCurrentDiffPageParams();
+		params.diff = diff;
+		params.oldid = oldid;
+		return mw.util.wikiScript( 'index' ) + '?' + $.param( params );
 	},
 
 	/**
@@ -174,13 +167,13 @@ Object.assign( DiffPage.prototype, {
 	 * @private
 	 * @return {Object}
 	 */
-	getExtraDiffPageParams: function () {
-		const params = {},
-			paramArray = location.search.slice( 1 ).split( '&' ).filter( ( elem ) => elem.indexOf( '=' ) > 0 && elem.match( /^(diff|oldid)=/ ) === null );
-		paramArray.forEach( ( elem ) => {
-			const pair = elem.split( '=', 2 );
-			params[ pair[ 0 ] ] = pair[ 1 ];
-		} );
+	getCurrentDiffPageParams: function () {
+		const urlSearchParams = new URLSearchParams( location.search );
+		// In the future this can use ES2019 'Object.fromEntries' method
+		const params = {};
+		for ( const [ k, v ] of urlSearchParams.entries() ) {
+			params[ k ] = v;
+		}
 		return params;
 	},
 
@@ -192,7 +185,7 @@ Object.assign( DiffPage.prototype, {
 			if ( event.state === null ) {
 				return;
 			}
-			mw.track( 'counter.MediaWiki.RevisionSlider.event.historyChange' );
+			require( 'ext.RevisionSlider.Slider' ).utils.incrementEventStats( 'historyChange' );
 			sliderView.slider.setFirstVisibleRevisionIndex( event.state.sliderPos );
 			sliderView.updatePointersAndDiffView(
 				event.state.pointerNewerPos,

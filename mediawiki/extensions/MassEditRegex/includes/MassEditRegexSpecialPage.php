@@ -14,8 +14,11 @@
  * @license GPL-2.0-or-later
  */
 
+use MediaWiki\Cache\BacklinkCacheFactory;
+use MediaWiki\Category\Category;
+use MediaWiki\CommentFormatter\CommentFormatter;
 use MediaWiki\Html\Html;
-use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
 
 /// Maximum number of pages/diffs to display when previewing the changes
 define( 'MER_MAX_PREVIEW_DIFFS', 20 );
@@ -60,8 +63,16 @@ class MassEditRegexSpecialPage extends SpecialPage {
 	 */
 	private $massEditRegex;
 
-	function __construct() {
-		parent::__construct( 'MassEditRegex', 'masseditregex' );
+	function __construct(
+		private readonly BacklinkCacheFactory $backlinkCacheFactory,
+		private readonly CommentFormatter $commentFormatter,
+	) {
+		parent::__construct( 'MassEditRegex' );
+	}
+
+	/** @inheritDoc */
+	public function getRestriction(): string {
+		return 'masseditregex';
 	}
 
 	public function doesWrites() {
@@ -130,7 +141,12 @@ class MassEditRegexSpecialPage extends SpecialPage {
 								$pageTitle )->escaped();
 							break;
 						}
-						$titleArray = $cat->getMembers( $pageCountLimit - $iArticleCount );
+						// T163056 - don't query the category members if we already have more results than the limit
+						// allows
+						$catMembersToQuery = $pageCountLimit - $iArticleCount;
+						if ( $catMembersToQuery > 0 ) {
+							$titleArray = $cat->getMembers( $catMembersToQuery );
+						}
 						break;
 
 					case 'backlinks':
@@ -142,8 +158,7 @@ class MassEditRegexSpecialPage extends SpecialPage {
 							}
 							break;
 						}
-						$blc = MediaWikiServices::getInstance()->getBacklinkCacheFactory()
-							->getBacklinkCache( $t );
+						$blc = $this->backlinkCacheFactory->getBacklinkCache( $t );
 						if ( $t->getNamespace() == NS_TEMPLATE ) {
 							// Backlinks for Template pages are in a different table
 							$table = 'templatelinks';
@@ -316,12 +331,13 @@ class MassEditRegexSpecialPage extends SpecialPage {
 				// Give grep a chance to find the usages:
 				// masseditregex-listtype-pagenames, masseditregex-listtype-pagename-prefixes,
 				// masseditregex-listtype-categories, masseditregex-listtype-backlinks
-				Xml::radioLabel(
-					$this->msg( 'masseditregex-listtype-' . $strValue )->text(),
+				Html::radio(
 					'wpPageListType',
-					$strValue,
-					'masseditregex-radio-' . $strValue,
-					$strValue == $this->strPageListType
+					$strValue == $this->strPageListType,
+					[ 'value' => $strValue, 'id' => 'masseditregex-radio-' . $strValue ]
+				) . "\u{00A0}" . Html::label(
+					$this->msg( 'masseditregex-listtype-' . $strValue )->text(),
+					'masseditregex-radio-' . $strValue
 				)
 			) );
 		}
@@ -375,7 +391,7 @@ class MassEditRegexSpecialPage extends SpecialPage {
 			Html::rawElement( 'div',
 				[ 'class' => 'mw-summary-preview' ],
 				$this->msg( 'summary-preview' )->parse() .
-					MediaWikiServices::getInstance()->getCommentFormatter()
+					$this->commentFormatter
 						->formatBlock( $this->massEditRegex->getSummary() )
 			) .
 			Html::closeElement( 'div' ) . // class=editOptions
@@ -405,14 +421,14 @@ class MassEditRegexSpecialPage extends SpecialPage {
 				[
 					'style' => 'margin-left: 1em;'
 				],
-				Xml::checkLabel(
-					$this->msg( 'masseditregex-js-clientside' )->text(),
-					'wpClientSide',
+				Html::check(
 					'wpClientSide',
 					$this->isClientSide,
-					[
-						'title' => $this->msg( 'masseditregex-js-execution' )->text(),
-					]
+					[ 'id' => 'wpClientSide', 'title' => $this->msg( 'masseditregex-js-execution' )->text() ]
+				) . "\u{00A0}" . Html::label(
+					$this->msg( 'masseditregex-js-clientside' )->text(),
+					'wpClientSide',
+					[ 'title' => $this->msg( 'masseditregex-js-execution' )->text() ]
 				)
 			)
 		);
@@ -431,8 +447,7 @@ class MassEditRegexSpecialPage extends SpecialPage {
 		$out->addHTML(
 			Html::element( 'p', [], $this->msg( 'masseditregex-hint-intro' )->text() )
 		);
-		$out->addHTML( Xml::buildTable(
-
+		$out->addHTML( self::buildTable(
 			// Table rows (the hints)
 			[
 				[
@@ -476,56 +491,38 @@ class MassEditRegexSpecialPage extends SpecialPage {
 				$this->msg( 'masseditregex-hint-headeffect' )->text()
 			]
 
-		) ); // Xml::buildTable
+		) ); // self::buildTable
 	}
 
 	/**
-	 * @param SkinTemplate $sktemplate
-	 * @param array[][] &$links
-	 *
-	 * @return true
+	 * @param string[][] $rows
+	 * @param array $attribs An array of attributes to apply to the table tag
+	 * @param array $headers An array of strings to use as table headers
+	 * @return string
 	 */
-	public static function efSkinTemplateNavigationUniversal( $sktemplate, &$links ) {
-		$title = $sktemplate->getTitle();
-		$ns = $title->getNamespace();
+	private static function buildTable( $rows, $attribs, $headers ) {
+		$s = Html::openElement( 'table', $attribs );
 
-		if ( !$sktemplate->getUser()->isAllowed( 'masseditregex' ) ) {
-			return true;
+		$s .= Html::openElement( 'thead', $attribs );
+
+		foreach ( $headers as $header ) {
+			$s .= Html::element( 'th', [], $header );
+		}
+		$s .= Html::closeElement( 'thead' );
+
+		foreach ( $rows as $cells ) {
+			$s .= Html::openElement( 'tr' );
+
+			foreach ( $cells as $cell ) {
+				$s .= Html::element( 'td', [], $cell );
+			}
+
+			$s .= Html::closeElement( 'tr' );
 		}
 
-		if ( $ns == NS_CATEGORY ) {
-			$url = SpecialPage::getTitleFor( 'MassEditRegex' )->getLocalURL(
-				[
-					'wpPageList' => $title->getText(),
-					'wpPageListType' => 'categories',
-				]
-			);
-		} elseif (
-			( $ns == NS_SPECIAL )
-			&& ( $title->isSpecial( 'Whatlinkshere' ) )
-		) {
-			$titleParts = MediaWikiServices::getInstance()
-				->getSpecialPageFactory()
-				->resolveAlias( $title->getText() );
+		$s .= Html::closeElement( 'table' );
 
-			$url = SpecialPage::getTitleFor( 'MassEditRegex' )->getLocalURL(
-				[
-					'wpPageList' => $titleParts[1],
-					'wpPageListType' => 'backlinks',
-				]
-			);
-		} else {
-			// No tab
-			return true;
-		}
-
-		$links['views']['masseditregex'] = [
-			'class' => false,
-			'text' => wfMessage( 'masseditregex-editall' )->text(),
-			'href' => $url,
-			'context' => 'main',
-		];
-		return true;
+		return $s;
 	}
 
 	/**

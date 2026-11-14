@@ -24,6 +24,8 @@
  */
 namespace LinkTitles;
 
+use MediaWiki\Title\Title as MWTitle;
+
 /**
  * Performs the actual linking of content to existing pages.
  */
@@ -61,12 +63,12 @@ class Linker {
 	/**
 	 * Core function of the extension, performs the actual parsing of the content.
 	 *
-	 * This method receives a Title object and the string representation of the
+	 * This method receives a MWTitle object and the string representation of the
 	 * source page. It does not work on a WikiPage object directly because the
 	 * callbacks in the Extension class do not always get a WikiPage object in the
 	 * first place.
 	 *
-	 * @param \Title &$title Title object for the current page.
+	 * @param MWTitle &$title MWTitle object for the current page.
 	 * @param String $text String that holds the article content
 	 * @return String|null Source page text with links to target pages, or null if no links were added
 	 */
@@ -85,6 +87,9 @@ class Linker {
 		// Iterate through the target page titles
 		foreach( $targets->queryResult as $row ) {
 			$target = new Target( $row->page_namespace, $row->page_title, $this->config );
+			if ( !$target->isValid() ) {
+				continue;
+			}
 
 			// Don't link current page and don't link if the target page redirects
 			// to the current page or has the __NOAUTOLINKTARGET__ magic word

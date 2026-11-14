@@ -1,10 +1,9 @@
 ( function () {
 	/**
-	 * @enum
-	 * @alternateClassName gt.TransitionAction
-	 *
 	 * Special actions to take when there's a transition (other than simply returning
 	 * another step)
+	 *
+	 * @namespace mw.guidedTour.TransitionAction
 	 */
 	mw.guidedTour.TransitionAction = {
 		/**
@@ -16,6 +15,6 @@
 		 * End the tour, removing the user's saved state (including their saved
 		 * position).
 		 */
-		END: 2
+		END: 2,
 	};
 }() );

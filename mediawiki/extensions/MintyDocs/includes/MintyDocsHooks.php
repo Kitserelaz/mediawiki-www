@@ -55,23 +55,29 @@ class MintyDocsHooks {
 	 * @param User &$user
 	 * @param string $action
 	 * @param string &$result
+	 * @return bool|null
 	 */
 	public static function checkPermissions( &$title, &$user, $action, &$result ) {
 		$mdPage = MintyDocsUtils::pageFactory( $title );
 		if ( $mdPage == null ) {
 			return;
 		}
+
+		// Unlike most hooks, getUserPermissionsErrors requires returning false
+		// if there's an error.
 		if ( ( $action == 'edit' || $action == 'formedit' ) && !$mdPage->userCanEdit( $user ) ) {
 			$result = false;
+			return false;
 		} elseif ( $action == 'read' && !$mdPage->userCanView( $user ) ) {
 			$result = false;
+			return false;
 		}
 	}
 
 	/**
 	 * @param OutputPage &$out
 	 * @param string &$text
-	 * @return bool
+	 * @return void
 	 */
 	public static function addTextToPage( &$out, &$text ) {
 		global $wgMintyDocsDisplayFooterElementsInSidebar;
@@ -91,7 +97,9 @@ class MintyDocsHooks {
 			$wikiPage = $services->getWikiPageFactory()->newFromTitle( $inheritedPage->getTitle() );
 			$rawAccess = MediaWiki\Revision\RevisionRecord::RAW;
 			$inheritedPageText = $wikiPage->getContent( $rawAccess )->getText();
-			$text .= $services->getParser()->parse( $inheritedPageText, $title, ParserOptions::newFromAnon() )->getText();
+			$parser = $services->getParser();
+			$parserOutput = $parser->parse( $inheritedPageText, $title, ParserOptions::newFromAnon() );
+			$text .= $parserOutput->runOutputPipeline( $parser->getOptions() )->getContentHolderText();
 		}
 		$text = $mdPage->getHeader() . $text;
 
@@ -103,7 +111,7 @@ class MintyDocsHooks {
 	/**
 	 * @param OutputPage &$out
 	 * @param string &$text
-	 * @return bool
+	 * @return void
 	 */
 	public static function showNoticeForDraftPage( &$out, &$text ) {
 		$action = Action::getActionName( $out->getContext() );
@@ -158,7 +166,7 @@ class MintyDocsHooks {
 	/**
 	 * @param Skin $skin
 	 * @param array[] &$sidebar
-	 * @return bool
+	 * @return void
 	 */
 	public static function addTextToSidebar( Skin $skin, &$sidebar ) {
 		global $wgRequest;
@@ -203,10 +211,6 @@ class MintyDocsHooks {
 		string $summary, int $flags,
 		MediaWiki\Revision\RevisionStoreRecord $revisionRecord,
 		MediaWiki\Storage\EditResult $editResult ) {
-		if ( $revisionRecord === null ) {
-			return;
-		}
-
 		$title = $wikiPage->getTitle();
 		$mdPage = MintyDocsUtils::pageFactory( $title );
 
@@ -226,7 +230,7 @@ class MintyDocsHooks {
 
 	/**
 	 * @param array &$vars
-	 * @return bool
+	 * @return void
 	 */
 	static function setGlobalJSVariables( &$vars ) {
 		global $wgScriptPath;
@@ -238,7 +242,7 @@ class MintyDocsHooks {
 	 * Register wiki markup words associated with MAG_NIFTYVAR as a variable
 	 *
 	 * @param array &$customVariableIDs
-	 * @return bool
+	 * @return void
 	 */
 	public static function declareVarIDs( &$customVariableIDs ) {
 		$customVariableIDs[] = 'MAG_MINTYDOCSPRODUCT';
@@ -254,7 +258,7 @@ class MintyDocsHooks {
 	 * @param array &$cache
 	 * @param string $magicWordId
 	 * @param string &$ret
-	 * @return bool
+	 * @return void
 	 */
 	public static function assignAValue( $parser, &$cache, $magicWordId, &$ret ) {
 		$handledIDs = [

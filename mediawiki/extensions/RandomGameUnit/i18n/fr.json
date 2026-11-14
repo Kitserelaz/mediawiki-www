@@ -2,8 +2,8 @@
 	"@metadata": {
 		"authors": [
 			"Gomoko",
-			"Verdy p",
-			"McDutchie"
+			"McDutchie",
+			"Verdy p"
 		]
 	},
 	"game-unit-desc": "Affiche un jeu d’image, un sondage ou un quiz choisi aléatoirement",

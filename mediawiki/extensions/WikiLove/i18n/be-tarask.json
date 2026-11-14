@@ -5,10 +5,11 @@
 			"Jim-by",
 			"Red Winged Duck",
 			"Renessaince",
+			"Ucukor",
 			"Wizardist"
 		]
 	},
-	"wikilove-desc": "Дадае інтэрфэйс для спрашчэньне дадаваньня станоўчых водгукаў на старонках гутарак удзельнікаў",
+	"wikilove-desc": "Дадае інтэрфэйс для спрашчэньня дадаваньня пазытыўных водгукаў на старонках гутарак удзельнікаў",
 	"wikilove": "WikiLove",
 	"wikilove-enable-preference": "Дазволіць закладку WikiLove для паказу ўдзячнасьці іншым удзельнікам",
 	"wikilove-tab-text": "WikiLove",
@@ -29,7 +30,7 @@
 	"wikilove-image-example": "(прыклад: Trophy.png)",
 	"wikilove-button-preview": "Папярэдні прагляд",
 	"wikilove-preview": "Папярэдні прагляд",
-	"wikilove-notify": "Паведаміць удзельніку праз электронную пошту",
+	"wikilove-notify": "Абвяшчаць удзельніка праз электронную пошту",
 	"wikilove-button-send": "Даслаць WikiLove",
 	"wikilove-type-barnstars": "Ордэны",
 	"wikilove-type-food": "Ежа і напоі",

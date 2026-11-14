@@ -3,6 +3,7 @@ name: CI
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 jobs:
   test:
@@ -12,26 +13,26 @@ jobs:
     strategy:
       matrix:
         include:
-          - mw: 'REL1_35'
-            php: '8.0'
-            experimental: false
-          - mw: 'REL1_39'
+          - mw: 'REL1_43'
             php: '8.1'
             experimental: false
-          - mw: 'REL1_40'
-            php: '8.2'
-            experimental: false
-          - mw: 'REL1_41'
-            php: '8.2'
-            experimental: false
-          - mw: 'REL1_42'
+          - mw: 'REL1_43'
             php: '8.2'
             experimental: false
           - mw: 'REL1_43'
             php: '8.3'
             experimental: false
-          - mw: 'master'
+          - mw: 'REL1_44'
             php: '8.4'
+            experimental: false
+          - mw: 'REL1_45'
+            php: '8.4'
+            experimental: false
+          - mw: 'REL1_46'
+            php: '8.4'
+            experimental: false
+          - mw: 'master'
+            php: '8.5'
             experimental: true
 
     runs-on: ubuntu-latest
@@ -50,7 +51,7 @@ jobs:
 
       - name: Cache MediaWiki
         id: cache-mediawiki
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             mediawiki
@@ -59,21 +60,21 @@ jobs:
           key: mw_${{ matrix.mw }}-php${{ matrix.php }}_v4
 
       - name: Cache Composer cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.composer/cache
           key: composer-php${{ matrix.php }}
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
-            path: EarlyCopy
+          path: EarlyCopy
 
       - name: Install MediaWiki
         if: steps.cache-mediawiki.outputs.cache-hit != 'true'
         working-directory: ~
         run: bash EarlyCopy/.github/workflows/installMediaWiki.sh ${{ matrix.mw }} SimpleBatchUpload
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           path: mediawiki/extensions/SimpleBatchUpload
 
@@ -83,11 +84,147 @@ jobs:
         run: php maintenance/update.php --quick
 
       - name: Run PHPUnit
-        run: php tests/phpunit/phpunit.php -c extensions/SimpleBatchUpload/
+        run: |
+          if [ -f tests/phpunit/phpunit.php ]; then
+            php tests/phpunit/phpunit.php -c extensions/SimpleBatchUpload/
+          else
+            # MW 1.46 and later
+            if [ ! -f phpunit.xml.template ]; then
+              wget -q -O phpunit.xml.template "https://raw.githubusercontent.com/wikimedia/mediawiki/${{ matrix.mw }}/phpunit.xml.template"
+            fi
+            composer phpunit:config
+            MEDIAWIKI_HAS_INTEGRATION_TESTS=1 vendor/bin/phpunit -c phpunit.xml extensions/SimpleBatchUpload/tests/phpunit
+          fi
 
-      - name: Run PHPUnit with code coverage
-        run: php tests/phpunit/phpunit.php -c extensions/SimpleBatchUpload/ --coverage-clover coverage.xml
+  phpstan:
+    name: "PHPStan"
 
-      - name: Upload code coverage
-        run: bash <(curl -s https://codecov.io/bash)
-        if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: mediawiki
+
+    steps:
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, intl
+          tools: composer, cs2pr
+
+      - name: Cache MediaWiki
+        id: cache-mediawiki
+        uses: actions/cache@v6
+        with:
+          path: |
+            mediawiki
+            !mediawiki/extensions/
+            !mediawiki/vendor/
+          key: mw_REL1_43-php8.3_v4
+
+      - name: Cache Composer cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.composer/cache
+          key: composer_static_analysis
+
+      - uses: actions/checkout@v7
+        with:
+          path: EarlyCopy
+
+      - name: Install MediaWiki
+        if: steps.cache-mediawiki.outputs.cache-hit != 'true'
+        working-directory: ~
+        run: bash EarlyCopy/.github/workflows/installMediaWiki.sh REL1_43 SimpleBatchUpload
+
+      - uses: actions/checkout@v7
+        with:
+          path: mediawiki/extensions/SimpleBatchUpload
+
+      - run: composer update
+
+      - name: Install extension dev dependencies
+        run: cd extensions/SimpleBatchUpload && composer install --no-progress --no-interaction --prefer-dist
+
+      - name: PHPStan
+        run: cd extensions/SimpleBatchUpload && vendor/bin/phpstan analyse --memory-limit=512M --error-format=checkstyle --no-progress | cs2pr
+
+  phpcs:
+    name: "Code style"
+
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: mediawiki/extensions/SimpleBatchUpload
+
+    steps:
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, intl
+          tools: composer
+
+      - uses: actions/checkout@v7
+        with:
+          path: mediawiki/extensions/SimpleBatchUpload
+
+      - name: Cache Composer cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.composer/cache
+          key: composer_static_analysis
+
+      - name: Composer install
+        run: composer install --no-progress --no-interaction --prefer-dist
+
+      - run: vendor/bin/phpcs -p -s
+
+  npm-lint:
+    name: "NPM: Lint"
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Silence warnings
+        run: |
+          echo "::remove-matcher owner=eslint-compact::"
+          echo "::remove-matcher owner=eslint-stylish::"
+
+      - name: Setup NPM dependencies
+        run: npm ci
+
+      - name: Lint i18n
+        run: npm run lint:i18n
+
+      - name: Lint styles
+        run: npm run lint:styles
+
+      - name: Lint JS
+        run: npm run lint:js
+
+  js-test:
+    name: "JS: Unit tests"
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Setup NPM dependencies
+        run: npm ci
+
+      - name: Run Vitest
+        run: npm run test:unit

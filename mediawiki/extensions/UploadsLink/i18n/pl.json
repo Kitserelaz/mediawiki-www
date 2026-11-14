@@ -2,12 +2,13 @@
 	"@metadata": {
 		"authors": [
 			"Chrumps",
-			"Woytecr"
+			"Woytecr",
+			"PanWor"
 		]
 	},
 	"uploadslink-desc": "Dodaje link do listy przesłanych przez obecnie zalogowanego użytkownika plików, umieszczony w linkach osobistych. Oprócz tego dodaje link w menu narzędzi podczas przeglądania strony użytkownika lub jego wkładu.",
 	"uploadslink-portlet-label": "Przesłane pliki",
-	"tooltip-pt-uploads": "Lista przesłanych przez ciebie plików",
+	"tooltip-pt-uploads": "Lista przesłanych przez Ciebie plików",
 	"uploadslink-toobox-label": "Przesłane pliki {{GENDER:$1|użytkownika|użytkowniczki}}",
 	"tooltip-tb-uploads": "Lista plików przesłanych przez {{GENDER:$1|tego użytkownika|tą użytkowniczkę}}"
 }

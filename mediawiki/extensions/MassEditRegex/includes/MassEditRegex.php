@@ -1,8 +1,13 @@
 <?php
 
+use MediaWiki\Content\Content;
+use MediaWiki\Content\TextContent;
+use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
+use MediaWiki\Title\Title;
+use MediaWiki\User\User;
 
 class MassEditRegex {
 	/**
@@ -26,7 +31,7 @@ class MassEditRegex {
 	private $diffEngine;
 
 	/**
-	 * @var \User
+	 * @var User
 	 */
 	private $user;
 
@@ -36,7 +41,7 @@ class MassEditRegex {
 	 * @param string $summary
 	 * @param User|null $user
 	 */
-	function __construct( $search, $replace, $summary, ?\User $user = null ) {
+	function __construct( $search, $replace, $summary, ?User $user = null ) {
 		$this->setReplace( $replace );
 		$this->setSearch( $search );
 		$this->setSummary( $summary );
@@ -53,10 +58,13 @@ class MassEditRegex {
 	 *
 	 * @return int number of changes performed on given title
 	 */
-	public function editPage( \Title $title ) {
+	public function editPage( Title $title ) {
 		$rev = $this->getRevisionRecord( $title );
 		$content = $this->getContent( $rev );
-		$curText = $content->getNativeData();
+		if ( !$content instanceof TextContent ) {
+			return 0;
+		}
+		$curText = $content->getText();
 		[ $newText, $changes ] = $this->replaceText( $curText );
 
 		if ( strcmp( $curText, $newText ) != 0 ) {
@@ -80,18 +88,29 @@ class MassEditRegex {
 	 *
 	 * @return string html diff
 	 */
-	public function previewPage( \Title $title ) {
+	public function previewPage( Title $title ) {
 		$rev = $this->getRevisionRecord( $title );
 		$content = $this->getContent( $rev );
-		$curText = $content->getNativeData();
+		if ( !$content instanceof TextContent ) {
+			return '';
+		}
+		$curText = $content->getText();
 		[ $newText ] = $this->replaceText( $curText );
 
 		$this->diffEngine->setContent( $content, ContentHandler::makeContent( $newText, $title ) );
 
-		return $this->diffEngine->getDiff( '<b>'
-			. htmlspecialchars( $title->getPrefixedText() ) . ' - '
-			. wfMessage( 'masseditregex-before' )->text() . '</b>',
-			'<b>' . wfMessage( 'masseditregex-after' )->text() . '</b>' );
+		return $this->diffEngine->getDiff(
+			Html::element(
+				'b',
+				[],
+				$title->getPrefixedText() . ' - ' . wfMessage( 'masseditregex-before' )->text()
+			),
+			Html::element(
+				'b',
+				[],
+				wfMessage( 'masseditregex-after' )->text()
+			)
+		);
 	}
 
 	/**
@@ -131,7 +150,7 @@ class MassEditRegex {
 	 * @return RevisionRecord
 	 * @throws BadTitleError
 	 */
-	private function getRevisionRecord( \Title $title ) {
+	private function getRevisionRecord( Title $title ) {
 		$revisionRecord = MediaWikiServices::getInstance()
 			->getRevisionLookup()
 			->getRevisionByTitle( $title, 0, IDBAccessObject::READ_LATEST );
@@ -176,7 +195,7 @@ class MassEditRegex {
 	}
 
 	/**
-	 * @return \User
+	 * @return User
 	 */
 	public function getUser() {
 		return $this->user;
@@ -197,7 +216,7 @@ class MassEditRegex {
 	}
 
 	/**
-	 * @param \User|null $user
+	 * @param User|null $user
 	 */
 	public function setUser( $user = null ) {
 		if ( $user === null ) {

@@ -25,6 +25,7 @@
 namespace LinkTitles;
 
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title as MWTitle;
 
 /**
  * Represents a page that is a potential link target.
@@ -46,11 +47,11 @@ class Source {
 	private $content;
 
 	/**
-	 * Creates a Source object from a \Title.
-	 * @param  \Title  $title  Title object from which to create the Source.
+	 * Creates a Source object from a Title.
+	 * @param  MWTitle  $title  MWTitle object from which to create the Source.
 	 * @return Source          Source object created from the title.
 	 */
-	public static function createFromTitle( \Title $title, Config $config ) {
+	public static function createFromTitle( MWTitle $title, Config $config ) {
 		$source = new Source( $config );
 		$source->title = $title;
 		return $source;
@@ -62,12 +63,12 @@ class Source {
 	 * This factory can be called e.g. from a onPageContentSave event handler
 	 * which knows both these parameters.
 	 *
-	 * @param  \Title $title Title of the source page
+	 * @param  MWTitle $title MWTitle of the source page
 	 * @param  String $text  String representation of the page content
 	 * @param  Config    $config   LinkTitles configuration
 	 * @return Source        Source object created from the title and the text
 	 */
-	public static function createFromTitleAndText( \Title $title, $text, Config $config ) {
+	public static function createFromTitleAndText( MWTitle $title, $text, Config $config ) {
 		$source = Source::createFromTitle( $title, $config);
 		$source->text = $text;
 		return $source;
@@ -158,7 +159,7 @@ class Source {
 	/**
 	 * Gets the title.
 	 *
-	 * @return \Title Title of the source page.
+	 * @return MWTitle MWTitle of the source page.
 	 */
 	public function getTitle() {
 		if ( $this->title === null ) {
@@ -249,7 +250,7 @@ class Source {
 	/**
  	 * Obtain a WikiPage object.
 	 * Workaround for MediaWiki 1.36+ which deprecated Wikipage::factory.
-	 * @param \Title $title
+	 * @param MWTitle $title
 	 * @return WikiPage object
 	 */
 	private static function getPageObject( $title ) {

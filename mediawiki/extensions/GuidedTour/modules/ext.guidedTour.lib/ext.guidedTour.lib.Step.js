@@ -1,11 +1,11 @@
 ( function () {
-	var gt = mw.guidedTour,
+	const gt = mw.guidedTour,
 		guiders = mw.libs.guiders,
 		skin = mw.config.get( 'skin' ),
 		callbackNameToPropertySetMap = {
 			next: 'isNextCallbackSet',
 			back: 'isBackCallbackSet',
-			transition: 'isTransitionCallbackSet'
+			transition: 'isTransitionCallbackSet',
 		};
 
 	/**
@@ -63,13 +63,13 @@
 			onShow: function () {},
 			allowAutomaticNext: true,
 			allowAutomaticBack: true,
-			allowAutomaticOkay: true
+			allowAutomaticOkay: true,
 		}, stepSpec );
 
 		// Required by guiders.initGuider
 		this.specification.id = gt.makeTourId( {
 			name: tour.name,
-			step: this.name
+			step: this.name,
 		} );
 
 		/**
@@ -116,7 +116,6 @@
 		 *
 		 * @private
 		 *
-		 * // @return {mw.guidedTour.Step} Step object for next step
 		 * @throws {mw.guidedTour.TourDefinitionError} If the next step is
 		 *   not set, or set to an invalid value or callback
 		 */
@@ -141,11 +140,7 @@
 		 *  or TransitionAction
 		 */
 		this.transitionCallback = function () {
-			// With just 'return this;', jsduck auto-detects it as chainable
-			// However, it's not chainable if this method is set to a custom
-			// value, which it is if StepBuilder.step is called.
-			var self = this;
-			return self;
+			return this;
 		};
 	}
 
@@ -193,19 +188,17 @@
 	 * @return {Object} Guiders button specification
 	 */
 	Step.prototype.getActionButton = function ( button ) {
-		var messageKey,
-			actionButtonClass = 'guidedtour-' + button.action + '-button',
-			buttonTypeClass = getButtonTypeClass( button ),
-			messageKeyMapping,
-			hasIcon;
+		const actionButtonClass = 'guidedtour-' + button.action + '-button',
+			buttonTypeClass = getButtonTypeClass( button );
 
-		messageKeyMapping = {
+		const messageKeyMapping = {
 			next: 'guidedtour-next-button',
 			back: 'guidedtour-back-button',
 			okay: 'guidedtour-okay-button',
-			end: 'guidedtour-okay-button'
+			end: 'guidedtour-okay-button',
 		};
 
+		let messageKey;
 		// TODO: Refactor how namemsg is handled, for code reuse.
 		if ( button.namemsg ) {
 			messageKey = button.namemsg;
@@ -214,6 +207,7 @@
 			delete button.namemsg;
 		}
 
+		let hasIcon;
 		if ( button.name ) {
 			hasIcon = false;
 		} else {
@@ -223,7 +217,7 @@
 			hasIcon = true;
 		}
 
-		var btnClass = guiders._buttonClass + ' ' + actionButtonClass + ' ' + buttonTypeClass;
+		let btnClass = guiders._buttonClass + ' ' + actionButtonClass + ' ' + buttonTypeClass;
 		if ( hasIcon ) {
 			btnClass += ' cdx-button--icon-only';
 		}
@@ -235,9 +229,9 @@
 				button.callback( this );
 			},
 			html: {
-				class: btnClass
+				class: btnClass,
 			},
-			hasIcon: hasIcon
+			hasIcon: hasIcon,
 		};
 	};
 
@@ -262,18 +256,18 @@
 	 * @return {string} returns mw style button class
 	 */
 	function getButtonTypeClass( button ) {
-		var buttonTypes = {
-				neutral: '',
-				progressive: 'cdx-button--weight-primary cdx-button--action-progressive',
-				destructive: 'cdx-button--action-destructive',
-				quiet: 'cdx-button--weight-quiet'
-			},
-			classString = '';
+		const buttonTypes = {
+			neutral: '',
+			progressive: 'cdx-button--weight-primary cdx-button--action-progressive',
+			destructive: 'cdx-button--action-destructive',
+			quiet: 'cdx-button--weight-quiet',
+		};
+		let classString = '';
 
 		// Build button class string
 		if ( button.type ) {
 			if ( Array.isArray( button.type ) ) {
-				button.type.forEach( function ( key ) {
+				button.type.forEach( ( key ) => {
 					classString += buttonTypes[ key ] + ' ';
 				} );
 				return classString;
@@ -303,7 +297,7 @@
 	 * @return {Object} Modified button
 	 */
 	function modifyLinkButton( button, isExternal, url, title ) {
-		var classString = guiders._buttonClass +
+		const classString = guiders._buttonClass +
 			' ' + getButtonTypeClass( button ) +
 			// Distinguish between standard buttons and these
 			// (semantically links).
@@ -316,13 +310,12 @@
 			// and href should not be passed as a key per guidance on
 			// https://doc.wikimedia.org/codex/latest/components/demos/button.html#link-buttons-and-other-elements
 			// This currently works around T364062
-			' cdx-button--fake-button cdx-button--fake-button--enabled',
-			html;
+			' cdx-button--fake-button cdx-button--fake-button--enabled';
 
-		html = {
+		const html = {
 			href: url,
 			title: title,
-			class: classString
+			class: classString,
 		};
 
 		if ( button.namemsg ) {
@@ -333,7 +326,7 @@
 
 		$.extend( true, button, {
 			buttonElement: '<a></a>',
-			html: html
+			html: html,
 		} );
 
 		return button;
@@ -386,8 +379,6 @@
 	 */
 
 	Step.prototype.getButtons = function ( options ) {
-		var i, buttons, okayButton, nextButton, backButton, guiderButtons, currentButton, url;
-
 		function next() {
 			guiders.doStep( 'next' );
 		}
@@ -400,10 +391,11 @@
 			gt.endTour();
 		}
 
-		buttons = options.buttons || [];
-		guiderButtons = [];
-		for ( i = 0; i < buttons.length; i++ ) {
-			currentButton = buttons[ i ];
+		const buttons = options.buttons || [];
+		const guiderButtons = [];
+		let nextButton, backButton, okayButton;
+		for ( let i = 0; i < buttons.length; i++ ) {
+			const currentButton = buttons[ i ];
 			if ( currentButton.action !== undefined ) {
 				switch ( currentButton.action ) {
 					case 'next':
@@ -426,11 +418,12 @@
 						currentButton.callback = endTour.bind( this );
 						okayButton = this.getActionButton( currentButton );
 						break;
-					case 'wikiLink':
-						url = mw.util.getUrl( currentButton.page );
+					case 'wikiLink': {
+						const url = mw.util.getUrl( currentButton.page );
 						guiderButtons.push( modifyLinkButton( currentButton, false, url, currentButton.page ) );
 						delete currentButton.page;
 						break;
+					}
 					case 'externalLink':
 						guiderButtons.push( modifyLinkButton( currentButton, true, currentButton.url ) );
 						delete currentButton.url;
@@ -461,12 +454,20 @@
 			// a next, since the user is prompted to do something else
 			// (e.g. click 'Edit')
 			if ( okayButton === undefined && nextButton === undefined ) {
-				okayButton = this.getActionButton( {
-					action: 'okay',
-					callback: function () {
-						gt.hideAll();
-					}
-				} );
+				if ( !this.hasCallback( 'next' ) && !this.hasCallback( 'transition' ) ) {
+					// If there is no way to go to a next step, end the tour
+					okayButton = this.getActionButton( {
+						action: 'end',
+						callback: endTour,
+					} );
+				} else {
+					okayButton = this.getActionButton( {
+						action: 'okay',
+						callback: function () {
+							gt.hideAll();
+						},
+					} );
+				}
 			}
 		}
 
@@ -500,7 +501,7 @@
 	 *  value for key has an invalid type
 	 */
 	function getValueForSkin( options, key ) {
-		var value = options[ key ], type = typeof value;
+		const value = options[ key ], type = typeof value;
 		if ( type === 'string' || value instanceof $ ) {
 			return value;
 		} else if ( $.isPlainObject( value ) ) {
@@ -524,8 +525,6 @@
 	 * @private
 	 *
 	 * @param {string} hookName Name of mw.hook
-	 *
-	 * @return {void}
 	 */
 	Step.prototype.registerMwHookListener = function ( hookName ) {
 		// mw.hook has a feature called memory, which means that hooks that have
@@ -535,10 +534,10 @@
 		// many times without a page reload.  However, if we want to change steps
 		// when they exit the current VisualEditor session, past firings are not
 		// relevant.
-		var isDoneRegistration = false, listener;
+		let isDoneRegistration = false;
 
-		listener = function () {
-			var transitionEvent, stepAfterTransition;
+		const listener = function () {
+			let transitionEvent, stepAfterTransition;
 
 			// If it fires while we're registering it, disregard as a memory firing.
 			if ( isDoneRegistration ) {
@@ -564,8 +563,6 @@
 	 * @private
 	 *
 	 * @param {string} hookName name of hook to listen for
-	 *
-	 * @return {void}
 	 */
 	Step.prototype.listenForMwHook = function ( hookName ) {
 		this.hookListeners[ hookName ] = null;
@@ -575,11 +572,9 @@
 	 * Registers mw.hook listeners
 	 *
 	 * @private
-	 *
-	 * @return {void}
 	 */
 	Step.prototype.registerMwHooks = function () {
-		var hookName;
+		let hookName;
 
 		for ( hookName in this.hookListeners ) {
 			this.registerMwHookListener( hookName );
@@ -590,11 +585,9 @@
 	 * Unregisters mw.hook listeners
 	 *
 	 * @private
-	 *
-	 * @return {void}
 	 */
 	Step.prototype.unregisterMwHooks = function () {
-		var hookName;
+		let hookName;
 		for ( hookName in this.hookListeners ) {
 			mw.hook( hookName ).remove( this.hookListeners[ hookName ] );
 			this.hookListeners[ hookName ] = null;
@@ -611,11 +604,9 @@
 	 * @private
 	 *
 	 * @param {Object} guider Guider object provided by Guiders.js
-	 *
-	 * @return {void}
 	 */
 	Step.prototype.handleOnShow = function ( guider ) {
-		var tourInfo = gt.parseTourId( guider.id ), priorCurrentStep;
+		const tourInfo = gt.parseTourId( guider.id );
 
 		// We delete the cookie to allow the server to launch single-page
 		// tours by cookie.
@@ -624,11 +615,11 @@
 		} else {
 			gt.updateUserStateForTour( {
 				tourInfo: tourInfo,
-				wasShown: true
+				wasShown: true,
 			} );
 		}
 
-		priorCurrentStep = this.tour.currentStep;
+		const priorCurrentStep = this.tour.currentStep;
 		if ( priorCurrentStep !== null ) {
 			priorCurrentStep.unregisterMwHooks();
 		}
@@ -683,10 +674,11 @@
 	 * @throws {mw.guidedTour.TourDefinitionError} On invalid input
 	 */
 	Step.prototype.getDescription = function ( descriptionSource ) {
-		var contentToParse, api, ajaxData = {
-			uselang: mw.config.get( 'wgUserLanguage' )
+		const ajaxData = {
+			uselang: mw.config.get( 'wgUserLanguage' ),
 		};
 
+		let contentToParse;
 		if ( descriptionSource instanceof mw.guidedTour.WikitextDescription ) {
 			contentToParse = descriptionSource.getWikitext();
 
@@ -705,7 +697,7 @@
 			return $.Deferred().reject( new gt.TourDefinitionError( 'description must be mw.guidedTour.WikitextDescription (wikitext), mw.Title (a page title), or a string (HTML)' ) );
 		}
 
-		api = new mw.Api();
+		const api = new mw.Api();
 		return api.parse( contentToParse, ajaxData );
 	};
 
@@ -726,17 +718,19 @@
 	 * @private
 	 */
 	Step.prototype.initialize = function () {
-		var self = this, options = this.specification,
-			passedInOnClose = options.onClose, passedInOnShow = options.onShow;
+		const step = this,
+			options = this.specification,
+			passedInOnClose = options.onClose;
+		let passedInOnShow = options.onShow;
 
 		// For passedInOnClose and passedInOnShow, 'this' is the
 		// individual guider object.
 		//
-		// For Step.prototype.{handleOnClose,handleOnShow,unregisterMwHooks}, self
+		// For Step.prototype.{handleOnClose,handleOnShow,unregisterMwHooks}, step
 		// (the Step) is used for 'this'.
 		options.onClose = function () {
 			passedInOnClose.apply( this, arguments );
-			return Step.prototype.handleOnClose.apply( self, arguments );
+			return Step.prototype.handleOnClose.apply( step, arguments );
 		};
 
 		if ( options.titlemsg ) {
@@ -773,7 +767,7 @@
 			// Unlike the above the order is different.  This ensures
 			// handleOnShow (which does not return a value) always runs, and
 			// the user-provided function (if any) can return a value.
-			Step.prototype.handleOnShow.apply( self, arguments );
+			Step.prototype.handleOnShow.apply( step, arguments );
 			return passedInOnShow.apply( this, arguments );
 		};
 
@@ -792,25 +786,25 @@
 			options.position = getValueForSkin( options, 'position' );
 			if ( this.tour.flipRTL ) {
 				options.position = guiders.getFlippedPosition( options.position, {
-					horizontal: true
+					horizontal: true,
 				} );
 			}
 		}
 
 		options.next = function () {
-			return self.nextCallback().specification.id;
+			return step.nextCallback().specification.id;
 		};
 
 		options.back = function () {
-			return self.backCallback().specification.id;
+			return step.backCallback().specification.id;
 		};
 
 		return this.getDescription( options.description ).then(
-			function ( description ) {
+			( description ) => {
 				options.description = description;
 
 				guiders.initGuider( options );
-			}
+			},
 		);
 	};
 
@@ -826,7 +820,7 @@
 	 *  should be displayed now
 	 */
 	Step.prototype.checkTransition = function ( transitionEvent ) {
-		var transitionReturn = this.transitionCallback( transitionEvent );
+		const transitionReturn = this.transitionCallback( transitionEvent );
 
 		if ( typeof transitionReturn === 'number' ) {
 			// TransitionAction enum

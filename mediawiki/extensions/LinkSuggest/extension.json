@@ -15,7 +15,7 @@
 	"descriptionmsg": "linksuggest-desc",
 	"type": "other",
 	"requires": {
-		"MediaWiki": ">= 1.35.0"
+		"MediaWiki": ">= 1.42"
 	},
 	"MessagesDirs": {
 		"LinkSuggest": [
@@ -43,7 +43,7 @@
 		]
 	},
 	"ConfigRegistry": {
-		"linksuggest": "GlobalVarConfig::newInstance"
+		"linksuggest": "MediaWiki\\Config\\GlobalVarConfig::newInstance"
 	},
 	"ResourceFileModulePaths": {
 		"localBasePath": "",

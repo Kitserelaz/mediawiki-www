@@ -8,23 +8,17 @@ use Wikimedia\ObjectCache\WANObjectCache;
 
 class SpecialFeedItem extends UnlistedSpecialPage {
 
-	/** @var WANObjectCache */
-	private $wanObjectCache;
-
-	/**
-	 * @param WANObjectCache $wanObjectCache
-	 */
 	public function __construct(
-		WANObjectCache $wanObjectCache
+		private readonly WANObjectCache $wanObjectCache,
 	) {
 		parent::__construct( 'FeedItem' );
-		$this->wanObjectCache = $wanObjectCache;
 	}
 
+	/** @inheritDoc */
 	public function execute( $par = '' ) {
 		$this->setHeaders();
 		$out = $this->getOutput();
-		$parts = explode( '/', $par );
+		$parts = explode( '/', $par ?? '' );
 		if ( count( $parts ) != 3 ) {
 			$out->showErrorPage( 'error', 'ffeed-no-feed' );
 			return;
@@ -81,6 +75,10 @@ class SpecialFeedItem extends UnlistedSpecialPage {
 		}
 	}
 
+	/**
+	 * @param string $date
+	 * @return string|false
+	 */
 	private function parseTimestamp( $date ) {
 		if ( strlen( $date ) !== 14 ) {
 			return false;

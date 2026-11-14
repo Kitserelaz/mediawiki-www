@@ -2,13 +2,15 @@
 
 namespace MediaWiki\Extension\Newsletter\Specials;
 
-use LogEventsList;
 use MediaWiki\Config\ConfigException;
+use MediaWiki\Exception\ThrottledError;
+use MediaWiki\Exception\UserBlockedError;
 use MediaWiki\Extension\Newsletter\Newsletter;
 use MediaWiki\Extension\Newsletter\NewsletterStore;
 use MediaWiki\Extension\Notifications\Model\Event;
 use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\Linker\Linker;
+use MediaWiki\Logging\LogEventsList;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Permissions\PermissionStatus;
 use MediaWiki\Registration\ExtensionRegistry;
@@ -19,8 +21,6 @@ use MediaWiki\Title\Title;
 use MediaWiki\User\User;
 use MediaWiki\User\UserArray;
 use RuntimeException;
-use ThrottledError;
-use UserBlockedError;
 
 /**
  * Special page to handle actions related to specific newsletters
@@ -46,6 +46,7 @@ class SpecialNewsletter extends UnlistedSpecialPage {
 		parent::__construct( 'Newsletter' );
 	}
 
+	/** @inheritDoc */
 	public function doesWrites() {
 		return true;
 	}
@@ -189,7 +190,7 @@ class SpecialNewsletter extends UnlistedSpecialPage {
 	 *
 	 * @return HTMLForm
 	 */
-	private function getHTMLForm( array $fields, /* callable */ $submit ) {
+	private function getHTMLForm( array $fields, $submit ) {
 		$form = HTMLForm::factory(
 			'ooui',
 			$fields,
@@ -415,6 +416,8 @@ class SpecialNewsletter extends UnlistedSpecialPage {
 					'newsletter-name' => $this->newsletter->getName(),
 					'newsletter-id' => $this->newsletter->getId(),
 					'section-text' => $summary,
+					// Default to '' if no fragment is given
+					'title-fragment' => $title->getFragment(),
 				],
 				'agent' => $user,
 			]

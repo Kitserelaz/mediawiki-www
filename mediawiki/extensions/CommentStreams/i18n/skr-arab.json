@@ -22,11 +22,12 @@
 	"commentstreams-dialog-buttontext-cancel": "منسوخ",
 	"commentstreams-dialog-buttontext-yes": "جیا",
 	"commentstreams-dialog-buttontext-no": "کو",
+	"commentstreams-datetext-posted": "پوسٹ تھی ڳیا:",
 	"notification-link-label-commentstreams-comment-on-watched-page": "رائے ݙیکھو",
 	"notification-link-label-commentstreams-reply-on-watched-page": "جواب ݙیکھو",
 	"notification-link-label-commentstreams-reply-to-watched-comment": "جواب ݙیکھو",
-	"commentstreamsallcomments": "سارے تبصرے",
-	"commentstreams-allcomments-label-wikitext": "رائے",
-	"commentstreams-allcomments-label-author": "مصنف",
-	"commentstreams-allcomments-label-created": "بݨ ڳیا"
+	"commentstreams-ui-close": "بند کرو",
+	"commentstreams-history-timestamp": "ویلا",
+	"commentstreams-history-actor": "مصنف",
+	"commentstreams-event-new-comment-desc": "نواں تبصرہ"
 }

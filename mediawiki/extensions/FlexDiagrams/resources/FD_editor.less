@@ -1,0 +1,32 @@
+.ext-flexdiagrams-editor {
+	position: relative;
+	height: 70vh;
+	border: 1px solid var( --border-color-subtle, #c8ccd1 ); // TODO: Use Codex token directly on 1.43+
+
+	&-fullscreen-button {
+		position: absolute;
+		top: 8px;
+		right: 8px;
+
+		&.oo-ui-buttonWidget {
+			margin-right: 0; // Remove the default margin added by OOUI
+
+			> .oo-ui-buttonElement-button {
+				/**
+				 * OOUI framed buttons have weird default widths and heights,
+				 * so we set them to 32px to match the icon size.
+				 * These styles are only applied to the fullscreen button.
+				 */
+				width: 32px;
+				height: 32px;
+				padding: 0;
+			}
+		}
+	}
+
+	// Match the init background color of the draw.io editor.
+	// This has to be placed in this module so that it is loaded before the editor is initialized.
+	&[ data-mw-flexdiagrams-type='drawio' ] {
+		background-color: light-dark( #f1f3f4, #1b1d1e );
+	}
+}

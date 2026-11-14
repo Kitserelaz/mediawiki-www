@@ -109,8 +109,8 @@ Object.assign( RevisionListView.prototype, {
 						self.onRevisionHover( $( this ), event );
 					} )
 					.on( 'mouseleave', () => {
-						self.removeAllRevisionPreviewHighlights();
-						self.removeCurrentRevisionFocusWithDelay();
+						this.removeAllRevisionPreviewHighlights();
+						this.removeCurrentRevisionFocusWithDelay();
 					} )
 				);
 		}
@@ -154,7 +154,7 @@ Object.assign( RevisionListView.prototype, {
 			$neighborRevisionWrapper = $revisionWrapper.next();
 		}
 
-		if ( $neighborRevisionWrapper.length === 0 ) {
+		if ( !$neighborRevisionWrapper.length ) {
 			return;
 		}
 
@@ -315,14 +315,12 @@ Object.assign( RevisionListView.prototype, {
 	 * @private
 	 */
 	closeTooltipsOnClick: function () {
-		const self = this;
-
 		$( document )
 			.on( 'click', ( event ) => {
 				const $inside = $( event.target )
 					.closest( '.mw-revslider-revision-tooltip, .mw-revslider-revisions-container' );
 				if ( !$inside.length ) {
-					self.removeCurrentRevisionFocus();
+					this.removeCurrentRevisionFocus();
 				}
 			} );
 	},
@@ -399,8 +397,8 @@ Object.assign( RevisionListView.prototype, {
 			$userBubble
 		);
 
-		if ( self.selectedUser === userString ) {
-			self.selectedTag = '';
+		if ( this.selectedUser === userString ) {
+			this.selectedTag = '';
 			$userLine.addClass( 'mw-revslider-filter-highlight' );
 			$userBubble.addClass( 'mw-revslider-filter-highlight-bubble' );
 		}
@@ -519,8 +517,8 @@ Object.assign( RevisionListView.prototype, {
 				'<br>'
 			);
 
-			if ( self.selectedTag === tags[ i ] ) {
-				self.selectedUser = '';
+			if ( this.selectedTag === tags[ i ] ) {
+				this.selectedUser = '';
 				$tagLine.addClass( 'mw-revslider-filter-highlight' );
 				$tagLine.find( $tagBubble ).addClass( 'mw-revslider-filter-highlight-bubble' );
 			}
@@ -584,7 +582,7 @@ Object.assign( RevisionListView.prototype, {
 		const revs = this.revisionList.getRevisions();
 
 		for ( let i = 0; i < revs.length; i++ ) {
-			if ( revs[ i ].getTags().indexOf( tagName ) !== -1 ) {
+			if ( revs[ i ].getTags().includes( tagName ) ) {
 				$( '[data-revid="' + revs[ i ].id + '"]' ).parent()
 					.addClass( 'mw-revslider-revision-filter-highlight' );
 			}

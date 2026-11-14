@@ -2,6 +2,7 @@
 
 namespace Miraheze\GlobalNewFiles\Specials;
 
+use MediaWiki\Parser\ParserOptions;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\User\CentralId\CentralIdLookup;
 use Miraheze\GlobalNewFiles\GlobalNewFilesPager;
@@ -17,7 +18,7 @@ class SpecialGlobalNewFiles extends SpecialPage {
 	}
 
 	/**
-	 * @param ?string $par
+	 * @param ?string $par @phan-unused-param
 	 */
 	public function execute( $par ): void {
 		$this->setHeaders();
@@ -35,7 +36,8 @@ class SpecialGlobalNewFiles extends SpecialPage {
 		);
 
 		$table = $pager->getFullOutput();
-		$this->getOutput()->addParserOutputContent( $table );
+		$parserOptions = ParserOptions::newFromContext( $this->getContext() );
+		$this->getOutput()->addParserOutputContent( $table, $parserOptions );
 	}
 
 	/** @inheritDoc */

@@ -1,0 +1,22 @@
+{
+	"@metadata": {
+		"authors": [
+			"Toliño"
+		]
+	},
+	"apihelp-ratepage-summary": "Permite que un usuario vote por unha páxina e obteña a avaliación da páxina. Cómpre especificar un destes dous parámetros: «pageid» ou «pagetitle».",
+	"apihelp-ratepage-param-pageid": "Identificador da páxina",
+	"apihelp-ratepage-param-pagetitle": "Título da páxina",
+	"apihelp-ratepage-param-answer": "Avaliación da páxina feita polo usuario (de 1 a 5 inclusive por defecto, pódese modificar mediante a configuración)",
+	"apihelp-ratepage-param-contest": "Identificador do concurso",
+	"apihelp-ratepage-example-1": "Obtén a avaliación actual da páxina «Example».",
+	"apihelp-ratepage-example-2": "Avaliar a páxina «Example» cun 2.",
+	"apihelp-query+pagerating-summary": "Devolve os votos desta páxina e os permisos de voto deste usuario.",
+	"apihelp-query+pagerating-param-contest": "Identificador do concurso",
+	"apierror-ratepage-contest-id-too-long": "A lonxitude do identificador do concurso supera o límite (255 caracteres).",
+	"apierror-ratepage-contest-id-allowed-chars": "O identificador do concurso debe conter só díxitos e letras latinas. Non se permiten outros caracteres.",
+	"apierror-ratepage-contest-not-exists": "O concurso «$1» non existe.",
+	"apierror-ratepage-page-not-exists": "A páxina especificada non existe.",
+	"apierror-ratepage-cannot-vote-in-contest": "Non ten os permisos necesarios para votar neste concurso.",
+	"apierror-ratepage-invalid-answer": "Especificouse unha resposta non válida. A resposta debe ser maior ou igual que $1 e menor ou igual que $2."
+}

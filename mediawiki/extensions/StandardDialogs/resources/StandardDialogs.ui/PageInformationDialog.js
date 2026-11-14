@@ -24,7 +24,8 @@ StandardDialogs.ui.PageInformationDialog.prototype.getSetupProcess = function ( 
 	let page = null;
 	for ( const key in this.panelRegistry.registry ) {
 		page = new this.panelRegistry.registry[ key ]( key, {
-			pageName: this.pageName
+			pageName: this.pageName,
+			dialog: this
 		} );
 		this.pages.push( page );
 	}
@@ -33,7 +34,8 @@ StandardDialogs.ui.PageInformationDialog.prototype.getSetupProcess = function ( 
 		this.pages
 	);
 	this.bookletLayout.on( 'set', ( page ) => { // eslint-disable-line no-shadow
-		if ( page.onInfoPanelSelect ) {
+		this.setSize( 'large' );
+		if ( typeof page.onInfoPanelSelect === 'function' ) {
 			page.onInfoPanelSelect();
 		}
 	} );

@@ -1,42 +1,28 @@
 <?php
 
-use MediaWiki\MediaWikiServices;
+use MediaWiki\JobQueue\JobFactory;
+use MediaWiki\Page\WikiPageFactory;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Storage\EditResult;
-use MediaWiki\Storage\Hook\PageSaveCompleteHook;
 use MediaWiki\User\UserFactory;
 use MediaWiki\User\UserGroupManager;
 use MediaWiki\User\UserIdentity;
+use Wikimedia\ObjectCache\WANObjectCache;
 
-class HAWelcomeHooks implements PageSaveCompleteHook {
-	/**
-	 * @var ReadOnlyMode
-	 */
-	private $readOnlyMode;
-
-	/**
-	 * @var UserGroupManager
-	 */
-	private $userGroupManager;
-
-	/**
-	 * @var UserFactory
-	 */
-	private $userFactory;
-
-	/**
-	 * @param ReadOnlyMode $readOnlyMode
-	 * @param UserGroupManager $userGroupManager
-	 * @param UserFactory $userFactory
-	 */
+class HAWelcomeHooks implements
+	\MediaWiki\Storage\Hook\PageSaveCompleteHook,
+	\MediaWiki\User\Hook\UserGetReservedNamesHook,
+	\MediaWiki\User\Hook\UserGroupsChangedHook
+{
 	public function __construct(
-		ReadOnlyMode $readOnlyMode,
-		UserGroupManager $userGroupManager,
-		UserFactory $userFactory
+		private readonly JobFactory $jobFactory,
+		private readonly JobQueueGroup $jobQueueGroup,
+		private readonly ReadOnlyMode $readOnlyMode,
+		private readonly UserFactory $userFactory,
+		private readonly UserGroupManager $userGroupManager,
+		private readonly WANObjectCache $cache,
+		private readonly WikiPageFactory $wikiPageFactory,
 	) {
-		$this->readOnlyMode = $readOnlyMode;
-		$this->userGroupManager = $userGroupManager;
-		$this->userFactory = $userFactory;
 	}
 
 	/**
@@ -56,13 +42,11 @@ class HAWelcomeHooks implements PageSaveCompleteHook {
 		$revisionRecord,
 		$editResult
 	) {
-		global $wgCommandLineMode;
-
 		$context = RequestContext::getMain();
 
 		// Do not create job when DB is locked (rt#12229)
 		// Ditto for when we're in command line mode
-		if ( $this->readOnlyMode->isReadOnly() || $wgCommandLineMode ) {
+		if ( $this->readOnlyMode->isReadOnly() || MW_ENTRY_POINT === 'cli' ) {
 			return;
 		}
 
@@ -88,8 +72,7 @@ class HAWelcomeHooks implements PageSaveCompleteHook {
 
 		// Put possible welcomer into cache, RT#14067
 		if ( $user->getId() && $this->isWelcomer( $user ) ) {
-			$cache = MediaWikiServices::getInstance()->getMainWANObjectCache();
-			$cache->set( $cache->makeKey( 'last-sysop-id' ), $user->getId(), 86400 );
+			$this->cache->set( $this->cache->makeKey( 'last-sysop-id' ), $user->getId(), 86400 );
 			wfDebugLog( 'HAWelcome', 'Storing possible welcomer in cache' );
 		}
 
@@ -97,18 +80,20 @@ class HAWelcomeHooks implements PageSaveCompleteHook {
 		// if the content model is wikitext. Only wikitext talk pages are supported.
 		$talkPage = $user->getUserPage()->getTalkPage();
 		if ( $talkPage && $talkPage->getContentModel() === CONTENT_MODEL_WIKITEXT ) {
-			$talkWikiPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $talkPage );
+			$talkWikiPage = $this->wikiPageFactory->newFromTitle( $talkPage );
 			if ( !$talkWikiPage->exists() ) {
-				$welcomeJob = new HAWelcomeJob(
-					$title,
+				$welcomeJob = $this->jobFactory->newJob(
+					'HAWelcome',
 					[
+						'namespace' => $title->getNamespace(),
+						'title'     => $title->getDBkey(),
 						'is_anon'   => $user->isAnon(),
 						'user_id'   => $user->getId(),
 						'user_ip'   => $context->getRequest()->getIP(),
 						'user_name' => $user->getName(),
 					]
 				);
-				MediaWikiServices::getInstance()->getJobQueueGroup()->push( $welcomeJob );
+				$this->jobQueueGroup->push( $welcomeJob );
 			}
 		}
 	}
@@ -151,13 +136,17 @@ class HAWelcomeHooks implements PageSaveCompleteHook {
 	 * @param array $removed
 	 * @param bool|User $performer
 	 * @param string $reason
+	 * @param UserGroupMembership[] $oldUGMs
+	 * @param UserGroupMembership[] $newUGMs
 	 */
-	public static function onUserGroupsChanged( User $user, array $added, array $removed, $performer, $reason ) {
+	public function onUserGroupsChanged( $user, $added, $removed, $performer, $reason, $oldUGMs, $newUGMs ) {
 		// Only remove the cache key if the user has the sysop group removed since other group
 		// changes are not relevant
-		$cache = MediaWikiServices::getInstance()->getMainWANObjectCache();
-		if ( $user->getId() === $cache->get( $cache->makeKey( 'last-sysop-id' ) ) && in_array( 'sysop', $removed ) ) {
-			$cache->delete( $cache->makeKey( 'last-sysop-id' ) );
+		if (
+			$user->getId() === $this->cache->get( $this->cache->makeKey( 'last-sysop-id' ) ) &&
+			in_array( 'sysop', $removed )
+		) {
+			$this->cache->delete( $this->cache->makeKey( 'last-sysop-id' ) );
 		}
 	}
 
@@ -167,7 +156,7 @@ class HAWelcomeHooks implements PageSaveCompleteHook {
 	 *
 	 * @param array &$reservedUsernames
 	 */
-	public static function onUserGetReservedNames( array &$reservedUsernames ) {
+	public function onUserGetReservedNames( &$reservedUsernames ) {
 		global $wgHAWelcomeWelcomeUsername;
 
 		$reservedUsernames[] = $wgHAWelcomeWelcomeUsername;

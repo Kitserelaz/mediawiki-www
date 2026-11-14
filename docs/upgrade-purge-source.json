@@ -1,0 +1,16 @@
+{
+  "component": "mediawiki/extensions/Purge",
+  "baseline": "4a155b17d36e5e1258acf2f0e66eae3515465501",
+  "target": "ca4c5d5f8ad183526970d8c33de052ec0a41753e",
+  "preserved_changes": [
+    {
+      "path": "CHANGELOG.md",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/sh.json",
+      "change": "local-deletion"
+    }
+  ],
+  "dependency_status": "runtime-requirements-unchanged"
+}

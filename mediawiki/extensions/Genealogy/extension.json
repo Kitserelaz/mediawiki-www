@@ -1,16 +1,16 @@
 {
 	"name": "Genealogy",
 	"namemsg": "genealogy",
-	"version": "2.4.0",
+	"version": "2.5.1",
 	"author": [
 		"[https://samwilson.id.au/ Sam Wilson]"
 	],
-	"url": "https://www.mediawiki.org/wiki/Extension:Genealogy",
+	"url": "https://www.mediawiki.org/wiki/Special:MyLanguage/Extension:Genealogy",
 	"descriptionmsg": "genealogy-desc",
 	"license-name": "GPL-3.0-or-later",
 	"type": "parserhook",
 	"requires": {
-		"MediaWiki": ">= 1.39"
+		"MediaWiki": ">= 1.40"
 	},
 	"ExtensionMessagesFiles": {
 		"GenealogyMagic": "Genealogy.i18n.magic.php"

@@ -1,5 +1,5 @@
 # Mermaid
-[![CI](https://github.com/SemanticMediaWiki/Mermaid/actions/workflows/main.yml/badge.svg)](https://github.com/SemanticMediaWiki/Mermaid/actions/workflows/main.yml)
+[![CI](https://github.com/SemanticMediaWiki/Mermaid/actions/workflows/ci.yml/badge.svg)](https://github.com/SemanticMediaWiki/Mermaid/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/SemanticMediaWiki/Mermaid/branch/master/graph/badge.svg?token=65C6fSUmuO)](https://codecov.io/gh/SemanticMediaWiki/Mermaid)
 [![Latest Stable Version](https://poser.pugx.org/mediawiki/mermaid/version.png)](https://packagist.org/packages/mediawiki/mermaid)
 [![Packagist download count](https://poser.pugx.org/mediawiki/mermaid/d/total.png)](https://packagist.org/packages/mediawiki/mermaid)
@@ -15,10 +15,17 @@ This extension provides the `#mermaid` parser function to support the generation
 - Entity Relationship Diagram
 - Git Flow Chart
 - User Journey Chart
+- Quadrant Chart
+- Requirement Diagram
+- C4 Diagram
+- Timeline Diagram
+- Sankey Diagram
+- XY Chart
+- Block Diagram
 
 ## Requirements
 
-Requirements for Mermaid 4.x:
+Requirements for Mermaid 6.x:
 
 - PHP 7.4 or later
 - MediaWiki 1.39 or later

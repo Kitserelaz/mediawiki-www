@@ -9,6 +9,7 @@
 			"Eduardoaddad",
 			"Fasouzafreitas",
 			"Felipe L. Ewald",
+			"Fúlvio",
 			"Giro720",
 			"Kaldari",
 			"Luckas",
@@ -166,6 +167,8 @@
 	"wikilove-kittens-header": "Um gatinho para você!",
 	"wikilove-type-goats": "Cabras",
 	"wikilove-goats-header": "Uma cabra para você!",
+	"wikilove-type-foxes": "Raposas",
+	"wikilove-foxes-header": "Uma raposa para você!",
 	"wikilove-type-makeyourown": "Crie o seu",
 	"wikilove-err-header": "Introduza um cabeçalho, por favor.",
 	"wikilove-err-title": "Introduza um título, por favor.",
@@ -195,7 +198,7 @@
 	"wikilove-commons-url": "//commons.wikimedia.org",
 	"wikilove-terms": "Ao enviar, concorda que os seus comentários podem se tornar públicos, conforme esses $1.",
 	"wikilove-terms-link": "termos",
-	"wikilove-terms-url": "//foundation.wikimedia.org/wiki/Feedback_privacy_statement",
+	"wikilove-terms-url": "//foundation.wikimedia.org/wiki/Legal:Wikimedia_Foundation_Feedback_Privacy_Statement",
 	"tag-wikilove-description": "Edição feita usando a ferramenta WikiLove",
 	"wikiLove.js": "/* O Javascript que colocar aqui personalizará a extensão WikiLove. Favor ler https://www.mediawiki.org/wiki/Special:MyLanguage/Extension:WikiLove#Custom_configuration */"
 }

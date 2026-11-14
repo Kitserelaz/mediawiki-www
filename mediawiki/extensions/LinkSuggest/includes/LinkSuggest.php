@@ -18,9 +18,12 @@
  * @link https://www.mediawiki.org/wiki/Extension:LinkSuggest Documentation
  */
 
+use MediaWiki\EditPage\EditPage;
 use MediaWiki\Hook\EditPage__showEditForm_initialHook;
+use MediaWiki\Output\OutputPage;
 use MediaWiki\Preferences\Hook\GetPreferencesHook;
-use MediaWiki\User\UserOptionsManager;
+use MediaWiki\User\Options\UserOptionsManager;
+use MediaWiki\User\User;
 
 // phpcs:disable Squiz.Classes.ValidClassName.NotCamelCaps
 class LinkSuggest implements
@@ -58,7 +61,7 @@ class LinkSuggest implements
 	 * @param OutputPage $output
 	 */
 	public function onEditPage__showEditForm_initial( $editPage, $output ) {
-		if ( $this->userOptionsManager->getOption( $output->getUser(), 'disablelinksuggest' ) != true ) {
+		if ( !$this->userOptionsManager->getOption( $output->getUser(), 'disablelinksuggest' ) ) {
 			// Load CSS and JS by using ResourceLoader
 			$output->addModules( 'ext.LinkSuggest' );
 		}

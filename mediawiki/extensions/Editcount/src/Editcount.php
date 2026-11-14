@@ -16,8 +16,6 @@ class Editcount extends IncludableSpecialPage {
 		$target = $par ?? $this->getRequest()->getText( 'username' );
 
 		[ $username, $namespace ] = $this->extractParameters( $target );
-		$this->getOutput()->enableOOUI();
-		$this->getOutput()->addWikiMsg( 'editcount-before' );
 
 		$user = User::newFromName( $username );
 		$username = $user ? $user->getName() : '';
@@ -34,9 +32,11 @@ class Editcount extends IncludableSpecialPage {
 			} else {
 				$out = $contLang->formatNum( $this->editsInNs( $user, $namespace ) );
 			}
-			// @phan-suppress-next-line SecurityCheck-XSS
-			$this->getOutput()->addHTML( $out );
+			$this->getOutput()->addHTML( htmlspecialchars( $out ) );
 		} else {
+			$this->getOutput()->enableOOUI();
+			$this->getOutput()->addWikiMsg( 'editcount-before' );
+
 			$nscount = $this->editsByNs( $user );
 			$html = new EditcountHTML;
 			$html->setContext( $this->getContext() );
@@ -79,7 +79,8 @@ class Editcount extends IncludableSpecialPage {
 			->join( 'page', null, 'page_id = rev_page' )
 			->join( 'actor', null, 'rev_actor = actor_id' )
 			->where( [ "actor_id" => $actorId ] )
-			->groupBy( 'page_namespace' );
+			->groupBy( 'page_namespace' )
+			->orderBy( 'page_namespace' );
 		$res = $query->fetchResultSet();
 
 		$nsCount = [];

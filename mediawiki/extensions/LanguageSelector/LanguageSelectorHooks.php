@@ -1,11 +1,25 @@
 <?php
 
+use MediaWiki\Context\IContextSource;
+use MediaWiki\Context\RequestContext;
+use MediaWiki\Html\Html;
 use MediaWiki\Languages\LanguageNameUtils;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Output\OutputPage;
+use MediaWiki\Parser\Parser;
+use MediaWiki\Parser\Sanitizer;
+use MediaWiki\Title\Title;
+use MediaWiki\User\User;
 
-class LanguageSelectorHooks {
+class LanguageSelectorHooks implements
+	\MediaWiki\Auth\Hook\LocalUserCreatedHook,
+	\MediaWiki\Hook\BeforePageDisplayHook,
+	\MediaWiki\Hook\GetCacheVaryCookiesHook,
+	\MediaWiki\Hook\ParserFirstCallInitHook,
+	\MediaWiki\Hook\UserGetLanguageObjectHook
+{
 	public static function onRegistration() {
-		global $wgLanguageSelectorDetectLanguage, $wgLanguageSelectorLocation, $wgParserOutputHooks;
+		global $wgLanguageSelectorDetectLanguage, $wgLanguageSelectorLocation;
 
 		define( 'LANGUAGE_SELECTOR_USE_CONTENT_LANG', 0 ); # no detection
 		define( 'LANGUAGE_SELECTOR_PREFER_CONTENT_LANG', 1 ); # use content language if accepted by the client
@@ -30,24 +44,29 @@ class LanguageSelectorHooks {
 		define( 'LANGUAGE_SELECTOR_INTO_CATLINKS', 14 ); # put after catlinks text
 
 		$wgLanguageSelectorLocation = LANGUAGE_SELECTOR_AT_TOP_OF_TEXT;
-
-		$wgParserOutputHooks['languageselector'] = 'LanguageSelectorHooks::addJavascript';
 	}
 
 	public static function extension() {
-		global $wgLanguageSelectorLocation, $wgHooks;
+		global $wgLanguageSelectorLocation;
 
 		// We'll probably be beaten to this by the call in onUserGetLanguageObject(),
 		// but just in case, call this to make sure the global is properly initialised
 		self::getLanguageSelectorLanguages();
 
 		if ( $wgLanguageSelectorLocation != LANGUAGE_SELECTOR_MANUAL && $wgLanguageSelectorLocation != LANGUAGE_SELECTOR_AT_TOP_OF_TEXT ) {
+			$hookContainer = MediaWikiServices::getInstance()->getHookContainer();
 			switch ( $wgLanguageSelectorLocation ) {
 				case LANGUAGE_SELECTOR_IN_TOOLBOX:
-					$wgHooks['SkinAfterPortlet'][] = 'LanguageSelectorHooks::onSkinAfterPortlet';
+					$hookContainer->register(
+						'SkinAfterPortlet',
+						[ self::class, 'onSkinAfterPortlet' ]
+					);
 					break;
 				default:
-					$wgHooks['SkinTemplateOutputPageBeforeExec'][] = 'LanguageSelectorHooks::onSkinTemplateOutputPageBeforeExec';
+					$hookContainer->register(
+						'SkinTemplateOutputPageBeforeExec',
+						[ self::class, 'onSkinTemplateOutputPageBeforeExec' ]
+					);
 					break;
 			}
 		}
@@ -56,7 +75,7 @@ class LanguageSelectorHooks {
 	/**
 	 * @param Parser $parser
 	 */
-	public static function onParserFirstCallInit( Parser $parser ) {
+	public function onParserFirstCallInit( $parser ) {
 		$parser->setHook( 'languageselector', [ __CLASS__, 'languageSelectorTag' ] );
 	}
 
@@ -81,25 +100,22 @@ class LanguageSelectorHooks {
 	/**
 	 * @param User $user
 	 * @param string &$code
+	 * @param IContextSource $context
 	 */
-	public static function onUserGetLanguageObject( $user, &$code ) {
-		global $wgLanguageSelectorDetectLanguage,
-			$wgCommandLineMode, $wgRequest;
+	public function onUserGetLanguageObject( $user, &$code, $context ) {
+		global $wgLanguageSelectorDetectLanguage;
 
-		if ( $wgCommandLineMode ) {
-			return;
-		}
-
-		$setlang = $wgRequest->getRawVal( 'setlang' );
+		$request = $context->getRequest();
+		$setlang = $request->getRawVal( 'setlang' );
 		if ( $setlang && !in_array( $setlang, self::getLanguageSelectorLanguages() ) ) {
 			$setlang = null; // ignore invalid
 		}
 
 		if ( $setlang ) {
-			$wgRequest->response()->setcookie( 'LanguageSelectorLanguage', $setlang );
+			$request->response()->setcookie( 'LanguageSelectorLanguage', $setlang );
 			$requestedLanguage = $setlang;
 		} else {
-			$requestedLanguage = $wgRequest->getCookie( 'LanguageSelectorLanguage' );
+			$requestedLanguage = $request->getCookie( 'LanguageSelectorLanguage' );
 		}
 
 		if ( $setlang && !$user->isAnon() ) {
@@ -111,12 +127,12 @@ class LanguageSelectorHooks {
 			}
 		}
 
-		if ( !$wgRequest->getRawVal( 'uselang' ) && $user->isAnon() ) {
+		if ( !$request->getRawVal( 'uselang' ) && $user->isAnon() ) {
 			if ( $wgLanguageSelectorDetectLanguage != LANGUAGE_SELECTOR_USE_CONTENT_LANG ) {
 				if ( $requestedLanguage ) {
 					$code = $requestedLanguage;
 				} else {
-					$languages = $wgRequest->getAcceptLang();
+					$languages = $request->getAcceptLang();
 
 					// see if the content language is accepted by the client.
 					if ( $wgLanguageSelectorDetectLanguage != LANGUAGE_SELECTOR_PREFER_CONTENT_LANG
@@ -152,7 +168,7 @@ class LanguageSelectorHooks {
 	 * @param OutputPage $out
 	 * @param Skin $skin
 	 */
-	public static function onBeforePageDisplay( OutputPage $out, Skin $skin ) {
+	public function onBeforePageDisplay( $out, $skin ): void {
 		global $wgLanguageSelectorLocation;
 
 		if ( $wgLanguageSelectorLocation == LANGUAGE_SELECTOR_MANUAL ) {
@@ -173,7 +189,7 @@ class LanguageSelectorHooks {
 	 * @param OutputPage $out
 	 * @param array &$cookies
 	 */
-	public static function onGetCacheVaryCookies( $out, &$cookies ) {
+	public function onGetCacheVaryCookies( $out, &$cookies ) {
 		global $wgCookiePrefix;
 
 		$cookies[] = $wgCookiePrefix . 'LanguageSelectorLanguage';
@@ -204,7 +220,7 @@ class LanguageSelectorHooks {
 		$showcode = $args['showcode'] ?? null;
 
 		if ( $style ) {
-			$style = htmlspecialchars( $style, ENT_QUOTES );
+			$style = Sanitizer::checkCss( $style );
 		}
 
 		if ( $class ) {
@@ -234,7 +250,7 @@ class LanguageSelectorHooks {
 		}
 
 		# So that this also works with parser cache
-		$parser->getOutput()->addOutputHook( 'languageselector' );
+		$parser->getOutput()->addModules( [ 'ext.languageSelector' ] );
 
 		return self::languageSelectorHTML( $parser->getTitle(), $style, $class, $selectorstyle, $buttonstyle, $showcode );
 	}
@@ -293,7 +309,7 @@ class LanguageSelectorHooks {
 	 * @param User $user
 	 * @param bool $autocreated
 	 */
-	public static function onLocalUserCreated( $user, $autocreated ) {
+	public function onLocalUserCreated( $user, $autocreated ) {
 		$context = RequestContext::getMain();
 
 		// inherit language;
@@ -303,15 +319,6 @@ class LanguageSelectorHooks {
 			$userOptionsManager = MediaWikiServices::getInstance()->getUserOptionsManager();
 			$userOptionsManager->setOption( $user, 'language', $context->getLanguage()->getCode() );
 		}
-	}
-
-	/**
-	 * @param OutputPage $outputPage
-	 * @param ParserOutput $parserOutput
-	 * @param mixed $data
-	 */
-	public static function addJavascript( $outputPage, $parserOutput, $data ) {
-		$outputPage->addModules( 'ext.languageSelector' );
 	}
 
 	/**
@@ -343,13 +350,13 @@ class LanguageSelectorHooks {
 		$code = $wgLang->getCode();
 
 		$html = '';
-		$html .= Xml::openElement( 'span', [
+		$html .= Html::openElement( 'span', [
 			'id' => 'languageselector-box-' . $id,
 			'class' => 'languageselector ' . $class,
 			'style' => $style
 		] );
 
-		$html .= Xml::openElement( 'form', [
+		$html .= Html::openElement( 'form', [
 			'name' => 'languageselector-form-' . $id,
 			'id' => 'languageselector-form-' . $id,
 			'method' => 'get',
@@ -358,7 +365,7 @@ class LanguageSelectorHooks {
 		] );
 
 		$html .= Html::hidden( 'title', $title->getPrefixedDBkey() );
-		$html .= Xml::openElement( 'select', [
+		$html .= Html::openElement( 'select', [
 			'name' => 'setlang',
 			'id' => 'languageselector-select-' . $id,
 			'style' => $selectorstyle
@@ -371,14 +378,14 @@ class LanguageSelectorHooks {
 				$name = LanguageCode::bcp47( $ln ) . ' - ' . $name;
 			}
 
-			$html .= Xml::option( $name, $ln, $ln == $code );
+			$html .= Html::element( 'option', [ 'value' => $ln, 'selected' => $ln == $code ], $name );
 		}
 
-		$html .= Xml::closeElement( 'select' );
-		$html .= Xml::submitButton( wfMessage( 'languageselector-setlang' )->text(),
+		$html .= Html::closeElement( 'select' );
+		$html .= Html::submitButton( wfMessage( 'languageselector-setlang' )->text(),
 			[ 'id' => 'languageselector-commit-' . $id, 'style' => $buttonstyle ] );
-		$html .= Xml::closeElement( 'form' );
-		$html .= Xml::closeElement( 'span' );
+		$html .= Html::closeElement( 'form' );
+		$html .= Html::closeElement( 'span' );
 
 		return $html;
 	}

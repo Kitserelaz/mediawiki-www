@@ -1,0 +1,22 @@
+{
+	"@metadata": {
+		"authors": [
+			"AhmedG612"
+		]
+	},
+	"apihelp-ratepage-summary": "Waxay u oggolaanaysaa isticmaale inuu bog u codeeyo isla markaana helo qiimeynta bogga. Waxay u baahan tahay in la qeexo mid ka mid ah labada halbeeg: pageid ama pagetitle.",
+	"apihelp-ratepage-param-pageid": "Aqoonsiga boga",
+	"apihelp-ratepage-param-pagetitle": "Cinwaanka bogga",
+	"apihelp-ratepage-param-answer": "Qiimeynta bogga isticmaalaha (inta u dhexeysa 1 ilaa 5 sida caadiga ah, waxaana lagu beddeli karaa dejimaha qaabeynta)",
+	"apihelp-ratepage-param-contest": "Aqoonsiga tartanka",
+	"apihelp-ratepage-example-1": "Hel qiimeynta hadda ee bogga Example.",
+	"apihelp-ratepage-example-2": "Qiimee bogga Example 2.",
+	"apihelp-query+pagerating-summary": "Waxay soo celisaa codadka boggan iyo oggolaanshaha codaynta ee isticmaalahan.",
+	"apihelp-query+pagerating-param-contest": "Aqoonsiga tartanka",
+	"apierror-ratepage-contest-id-too-long": "Dhererka Aqoonsiga tartanka wuxuu ka badan yahay xadka (255 xaraf).",
+	"apierror-ratepage-contest-id-allowed-chars": "Aqoonsiga tartanka waa inuu ka koobnaadaa oo keliya tirooyin iyo xarfo Laatiin ah. Calaamado kale lama oggola.",
+	"apierror-ratepage-contest-not-exists": "Tartanka $1 ma jiro.",
+	"apierror-ratepage-page-not-exists": "Bogga la cayimay ma jiro.",
+	"apierror-ratepage-cannot-vote-in-contest": "Ma lihid oggolaansho aad ugu codayso tartankan.",
+	"apierror-ratepage-invalid-answer": "Jawaab aan sax ahayn ayaa la cayimay. Jawaabtu waa inay ka weyn tahay ama la mid tahay $1, isla markaana ka yar tahay ama la mid tahay $2."
+}

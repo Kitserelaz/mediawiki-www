@@ -1,0 +1,6 @@
+[
+	{
+		"resourceModule": "ext.CommentStreams",
+		"maxSize": "10 kB"
+	}
+]

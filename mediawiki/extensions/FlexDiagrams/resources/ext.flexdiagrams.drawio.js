@@ -6,12 +6,8 @@
 ( function ( $, mw, fd ) {
 
 	'use strict';
-
-	var gLinkedPages = {};
-
 	/**
 	 * Inheritance class for the fd.base constructor
-	 *
 	 *
 	 * @class
 	 */
@@ -23,140 +19,189 @@
 	 */
 	fd.drawio = function () {};
 
-	var drawio_proto = new fd.base();
+	const drawio_proto = new fd.base();
 
-	var editor = 'https://embed.diagrams.net/?embed=1&spin=1&proto=json';
+	const baseUrl = 'https://embed.diagrams.net/';
 
-	function edit( path, content ) {
-		var $iframe = $( '<iframe>' );
-		$iframe.attr( 'frameborder', '0' );
+	// For possible URL parameters, see:
+	// https://www.drawio.com/doc/faq/supported-url-parameters
+	// https://www.drawio.com/doc/faq/embed-mode
+	const editorParams = {
+		embed: 1,
+		proto: 'json',
+		configure: 1,
+		// Disable save and exit buttons
+		saveAndExit: 0,
+		noSaveBtn: 1,
+		noExitBtn: 1
+	};
+	const editor = `${ baseUrl }?${ new URLSearchParams( editorParams ).toString() }`;
 
-		var close = function () {
-			var diagramURL = mw.config.get( 'wgServer' ) + mw.config.get( 'wgScript' ) +
-				'?title=' + encodeURIComponent( pageName );
-			window.location.href = diagramURL;
-		};
+	// https://www.drawio.com/doc/faq/configure-diagram-editor
+	const config = {
+		defaultAdaptiveColors: 'none' // Force light mode for now so that SVG works the same as PNG
+	};
 
-		var receive = function ( evt ) {
-			if ( evt.data.length > 0 ) {
-				var msg = JSON.parse( evt.data );
+	// Avoid repeated calls to mw.config.get()
+	const mwConfig = {
+		wgServer: mw.config.get( 'wgServer' ),
+		wgScript: mw.config.get( 'wgScript' ),
+		wgAction: mw.config.get( 'wgAction' ),
+		wgPageName: mw.config.get( 'wgPageName' )
+	};
 
-				if ( msg.event === 'init' ) {
-					if ( content === null ) {
-						$iframe[ 0 ].contentWindow.postMessage( JSON.stringify(
-							{
-								action: 'load',
-								autosave: 0,
-								xml: ''
-							} ), '*' );
-					} else if ( /(\.png)$/i.test( path ) ) {
-						$iframe[ 0 ].contentWindow.postMessage( JSON.stringify(
-							{
-								action: 'load',
-								autosave: 0,
-								xmlpng: 'data:image/png;base64,' + content
-							} ), '*' );
-					} else {
-						$iframe[ 0 ].contentWindow.postMessage( JSON.stringify(
-							{
-								action: 'load',
-								autosave: 0,
-								xml: content
-							} ), '*' );
-					}
-				} else if ( msg.event === 'export' ) {
-					var data = ( msg.data.slice( 0, 5 ) === 'data:' ) ?
-						msg.data.slice( Math.max( 0, msg.data.indexOf( ',' ) + 1 ) ) :
-						btoa( msg.data );
-				} else if ( msg.event === 'save' ) {
-					if ( ( /\.(png|svg|html)$/i ).test( path ) ) {
-						var ext = path.slice( Math.max( 0, path.lastIndexOf( '.' ) + 1 ) );
+	let $iframe;
+	let saveInProgress = false;
 
-						// Additional export step required for PNG, SVG and HTML
-						$iframe[ 0 ].contentWindow.postMessage( JSON.stringify(
-							{
-								spin: 'Saving',
-								action: 'export',
-								format: ( /(\.html)$/i.test( path ) ) ? 'html' : 'xml' + ext,
-								xml: msg.xml
-							} ), '*' );
-					} else {
-						// Additional export step required for PNG, SVG and HTML
-						$iframe[ 0 ].contentWindow.postMessage( JSON.stringify(
-							{
-								spin: 'Saving',
-								action: 'export',
-								format: 'xmlpng',
-								xmlpng: content
-							} ), '*' );
-					}
-				} else if ( msg.event === 'exit' ) {
-					close();
-				}
-			}
-		};
-
-		window.addEventListener( 'message', receive );
-		$iframe.attr( 'src', editor );
-		$( '#canvas' ).append( $iframe );
+	// See https://www.drawio.com/doc/faq/embed-mode for possible actions
+	function postMessageToIframe( message ) {
+		if ( $iframe && $iframe.length > 0 ) {
+			$iframe[ 0 ].contentWindow.postMessage( JSON.stringify( message ), '*' );
+		}
 	}
 
 	fd.drawio.prototype = drawio_proto;
 
 	drawio_proto.initialize = function () {
-		if ( mw.config.get( 'wgArticleId' ) === 0 ) {
-			edit( pageName + '.png' );
-		} else {
-			var diagramURL = mw.config.get( 'wgServer' ) + mw.config.get( 'wgScript' ) +
+		const $containers = $( '[data-mw-flexdiagrams-type="drawio"]' );
+
+		$containers.each( function () {
+			const $container = $( this );
+			const pageName = $container.attr( 'data-mw-flexdiagrams-page' ) || mwConfig.wgPageName;
+
+			const diagramURL = mwConfig.wgServer + mwConfig.wgScript +
 				'?title=' + encodeURIComponent( pageName ) + '&action=raw';
-			$.get( diagramURL, function ( data ) {
-				if ( mw.config.get( 'wgAction' ) == 'editdiagram' ) {
-					var $saveInfo = new OO.ui.MessageWidget( {
-						type: 'notice',
-						label: new OO.ui.HtmlSnippet( mw.message( 'flexdiagrams-drawio-saveinfo',
-							$( '#wpSave' ).attr( 'value' ) ).text() )
-					} );
-					$saveInfo.$element.insertBefore( '#bodyContent' );
-					edit( null, data );
-				} else {
-					var $img = $( '<img>' );
-					$img.attr( 'id', 'diagramContainer' );
-					$img.attr( 'src', data );
-					$( '#canvas' ).append( $img );
-				}
-			} );
-		}
+
+			$.get( diagramURL )
+				.catch( ( jqXHR ) => {
+					if ( mwConfig.wgAction === 'editdiagram' && jqXHR.status === 404 ) {
+						return '';
+					}
+					return $.Deferred().reject( jqXHR );
+				} )
+				.then( ( xml ) => {
+					if ( mwConfig.wgAction === 'editdiagram' ) {
+						renderEditor( xml, $container );
+					} else {
+						renderDiagram( xml, $container );
+					}
+				} );
+		} );
 
 		this.enableSave( this );
 	};
 
-	var imgData = null;
+	/**
+	 * Initializes the editor for the given container.
+	 *
+	 * @param {string|null} xml - The XML content of the diagram, or null if the diagram is empty.
+	 * @param {jQuery} $container - The container element.
+	 */
+	function renderEditor( xml, $container ) {
+		$iframe = fd.editor.createEditor( $container, {
+			src: editor,
+			allowFullscreen: true
+		} );
 
-	window.addEventListener( 'message', onmessage, false );
-	window.onmessage = function ( e ) {
-		var obj = JSON.parse( e.data );
-		if ( obj.event == 'export' ) {
-			imgData = obj.data;
-		}
-	};
+		const receive = function ( evt ) {
+			if ( evt.data.length > 0 ) {
+				const msg = JSON.parse( evt.data );
+				switch ( msg.event ) {
+					case 'init':
+						postMessageToIframe(
+							{
+								action: 'load',
+								autosave: 0,
+								xml: xml || ''
+							} );
+						break;
+					case 'export':
+						imgData = msg.data;
+						if ( saveInProgress ) {
+							drawio_proto.updatePageAndRedirectUser( mwConfig.wgPageName, imgData );
+							saveInProgress = false;
+						}
+						break;
+					case 'configure':
+						postMessageToIframe( {
+							action: 'configure',
+							config: config
+						} );
+						break;
+				}
+			}
+		};
 
-	drawio_proto.exportDiagram = function ( data ) {
-		if ( imgData != null ) {
-			drawio_proto.updatePageAndRedirectUser( pageName, imgData );
-		} else {
-			var diagramURL = mw.config.get( 'wgServer' ) + mw.config.get( 'wgScript' ) +
-				'?title=' + encodeURIComponent( pageName );
-			window.location.href = diagramURL;
-		}
-
-	};
-
-	var pageName = $( '#canvas' ).attr( 'data-wiki-page' );
-	if ( pageName == null ) {
-		pageName = mw.config.get( 'wgPageName' );
+		window.addEventListener( 'message', receive );
 	}
 
-	var drawioHandler = new fd.drawio();
+	/**
+	 * Renders the diagram for the given container.
+	 *
+	 * @param {string} xml - The XML content of the diagram.
+	 * @param {jQuery} $container - The container element.
+	 */
+	function renderDiagram( xml, $container ) {
+		const useSVG = $container.attr( 'data-mw-flexdiagrams-svg' ) === 'true';
+
+		if ( useSVG && xml && xml.startsWith( 'data:image/svg+xml;base64,' ) ) {
+			const base64Data = xml.slice( 'data:image/svg+xml;base64,'.length );
+			try {
+				const decodedSvg = atob( base64Data );
+
+				// Use DOMParser to safely parse the SVG XML without executing scripts.
+				const parser = new DOMParser();
+				const svgDoc = parser.parseFromString( decodedSvg, 'image/svg+xml' );
+				const svgElement = svgDoc.documentElement;
+
+				if ( svgElement.querySelector( 'parsererror' ) ) {
+					throw new Error( '[FlexDiagrams] Error parsing SVG data.' );
+				}
+
+				const $svg = $( svgElement );
+				$svg.attr( 'class', 'ext-flexdiagrams-diagram' );
+				$container.append( $svg );
+				return;
+			} catch ( e ) {
+				mw.log.error( '[FlexDiagrams] Error decoding or parsing SVG data.', e );
+			}
+		}
+
+		const $img = $( '<img>' );
+		$img.attr( 'class', 'ext-flexdiagrams-diagram' );
+		$img.attr( 'src', xml );
+		$container.append( $img );
+	}
+
+	let imgData = null;
+
+	drawio_proto.exportDiagram = function () {
+		if ( imgData !== null ) {
+			drawio_proto.updatePageAndRedirectUser( mwConfig.wgPageName, imgData );
+		} else if ( $iframe ) {
+			saveInProgress = true;
+			// HACK: Reset the modified status to false to get rid of the confirmation dialog.
+			// This is sent before the 'export' action. Since 'export' is async and takes time,
+			// this 'status' message will be processed by the iframe before the page unloads,
+			// preventing the confirmation dialog.
+			postMessageToIframe( {
+				action: 'status',
+				modified: false
+			} );
+			const useSVG = $iframe.parent().attr( 'data-mw-flexdiagrams-drawio-use-svg' ) === 'true';
+			postMessageToIframe( {
+				action: 'export',
+				format: useSVG ? 'xmlsvg' : 'xmlpng',
+				background: 'transparent'
+			} );
+		} else {
+			const diagramURL = mwConfig.wgServer + mwConfig.wgScript +
+				'?title=' + encodeURIComponent( mwConfig.wgPageName );
+			window.location.href = diagramURL;
+		}
+	};
+
+	const drawioHandler = new fd.drawio();
 	drawioHandler.initialize();
 
 }( jQuery, mediaWiki, flexdiagrams ) );

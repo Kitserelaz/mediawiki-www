@@ -43,7 +43,7 @@ class FDMermaidContentHandler extends TextContentHandler {
 		ParserOutput &$output
 	) {
 		$html = $content->getHtml();
-		$output->setText( $html );
+		$output->setContentHolderText( $html );
 	}
 
 }

@@ -4,17 +4,17 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Network\EntryPoints;
 
-use Html;
-use IncludableSpecialPage;
 use MediaWiki\Extension\Network\Extension;
 use MediaWiki\Extension\Network\NetworkFunction\NetworkConfig;
 use MediaWiki\Extension\Network\NetworkFunction\NetworkPresenter;
 use MediaWiki\Extension\Network\NetworkFunction\NetworkUseCase;
 use MediaWiki\Extension\Network\NetworkFunction\RequestModel;
+use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
-use Message;
-use Title;
-use WebRequest;
+use MediaWiki\Message\Message;
+use MediaWiki\Request\WebRequest;
+use MediaWiki\SpecialPage\IncludableSpecialPage;
+use MediaWiki\Title\Title;
 
 /**
  * @psalm-suppress PropertyNotSetInConstructor
@@ -25,7 +25,9 @@ class SpecialNetwork extends IncludableSpecialPage {
 		parent::__construct( 'Network' );
 	}
 
-	// phpcs:ignore MediaWiki.Commenting.FunctionComment.MissingDocumentationPublic
+	/**
+	 * @inheritDoc
+	 */
 	public function execute( $subPage ): void {
 		$this->setHeaders();
 

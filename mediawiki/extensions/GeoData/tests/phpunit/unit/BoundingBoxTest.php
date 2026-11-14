@@ -41,8 +41,8 @@ class BoundingBoxTest extends MediaWikiUnitTestCase {
 			[ 1077, 85, 0, 85.001, 0.001 ],
 			[ 21, 89.9, 0, 89.901, 0.001 ],
 			[ 7612, 52, 13, 52.001, 13.001, Globe::EARTH ],
-			[ 2154, 52, 13, 52.001, 13.001, 'mars' ],
-			[ 565, 52, 13, 52.001, 13.001, 'moon' ],
+			[ 2154, 52, 13, 52.001, 13.001, Globe::MARS ],
+			[ 565, 52, 13, 52.001, 13.001, Globe::MOON ],
 		];
 	}
 
@@ -57,11 +57,11 @@ class BoundingBoxTest extends MediaWikiUnitTestCase {
 		float $lat2,
 		float $lon2
 	) {
-		$bbox = BoundingBox::newFromNumbers( $lat1, $lon1, $lat2, $lon2, 'moon' );
+		$bbox = BoundingBox::newFromNumbers( $lat1, $lon1, $lat2, $lon2, Globe::MOON );
 		$center = $bbox->center();
 		$this->assertEquals( $latExpected, $center->lat, 'Comparing latitudes...' );
 		$this->assertEquals( $lonExpected, $center->lon, 'Comparing longitudes...' );
-		$this->assertSame( 'moon', $center->globe );
+		$this->assertTrue( $center->sameGlobe( Globe::MOON ) );
 	}
 
 	public static function provideCenter() {

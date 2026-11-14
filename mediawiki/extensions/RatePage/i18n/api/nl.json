@@ -2,7 +2,8 @@
 	"@metadata": {
 		"authors": [
 			"Mainframe98",
-			"McDutchie"
+			"McDutchie",
+			"Siebrand"
 		]
 	},
 	"apihelp-ratepage-summary": "Laat een gebruiker over een pagina stemmen en verkrijgt de beoordeling van een pagina. Vereist één van de twee parameters: pageid of pagetitle.",
@@ -19,5 +20,5 @@
 	"apierror-ratepage-contest-not-exists": "Wedstrijd $1 bestaat niet.",
 	"apierror-ratepage-page-not-exists": "De opgegeven pagina bestaat niet.",
 	"apierror-ratepage-cannot-vote-in-contest": "U hebt geen toestemming om te stemmen in deze wedstrijd.",
-	"apierror-ratepage-invalid-answer": "Er is een ongeldig antwoord opgegeven. Het antwoord moet groter dan of gelijk zijn aan $1 en kleiner dan of gelijk aan $2."
+	"apierror-ratepage-invalid-answer": "Er is een incorrect antwoord opgegeven. Het antwoord moet groter dan of gelijk zijn aan $1 en kleiner dan of gelijk aan $2."
 }

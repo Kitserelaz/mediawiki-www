@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Warudo"
+		]
+	},
+	"uploadslink-portlet-label": "Μεταφορτώσεις",
+	"tooltip-pt-uploads": "Κατάλογος των αρχείων που έχετε ανεβάσει",
+	"uploadslink-toobox-label": "Μεταφορτώσεις {{GENDER:$1|χρήστη|χρήστριας}}",
+	"tooltip-tb-uploads": "Λίστα με τις μεταφορτώσεις {{GENDER:$1|αυτού του χρήστη|αυτής της χρήστριας}}"
+}

@@ -9,7 +9,7 @@
 	"descriptionmsg": "3d-desc",
 	"license-name": "GPL-2.0-or-later",
 	"requires": {
-		"MediaWiki": ">= 1.42"
+		"MediaWiki": ">= 1.46"
 	},
 	"type": "media",
 	"manifest_version": 2,
@@ -20,7 +20,7 @@
 	},
 	"ResourceModules": {
 		"ext.3d": {
-			"scripts": [
+			"packageFiles": [
 				"ext.3d.js"
 			],
 			"styles": [
@@ -54,7 +54,7 @@
 			]
 		},
 		"mmv.3d.head": {
-			"scripts": [
+			"packageFiles": [
 				"mmv.3d.head.js"
 			],
 			"styles": [
@@ -72,7 +72,7 @@
 			]
 		},
 		"ext.3d.special.upload": {
-			"scripts": [
+			"packageFiles": [
 				"ext.3d.special.upload.js"
 			],
 			"dependencies": [
@@ -93,7 +93,10 @@
 	},
 	"HookHandlers": {
 		"main": {
-			"class": "MediaWiki\\Extension\\ThreeD\\Hooks"
+			"class": "MediaWiki\\Extension\\ThreeD\\Hooks",
+			"services": [
+				"RepoGroup"
+			]
 		}
 	},
 	"Hooks": {

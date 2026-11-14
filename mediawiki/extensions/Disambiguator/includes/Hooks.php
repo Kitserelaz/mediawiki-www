@@ -8,28 +8,29 @@
 
 namespace MediaWiki\Extension\Disambiguator;
 
-use ExtensionRegistry;
 use MediaWiki\ChangeTags\Hook\ChangeTagsListActiveHook;
 use MediaWiki\ChangeTags\Hook\ListDefinedTagsHook;
 use MediaWiki\Config\Config;
+use MediaWiki\Deferred\LinksUpdate\LinksTable;
 use MediaWiki\Deferred\LinksUpdate\LinksUpdate;
 use MediaWiki\EditPage\EditPage;
 use MediaWiki\Extension\Disambiguator\Specials\SpecialDisambiguationPageLinks;
 use MediaWiki\Extension\Disambiguator\Specials\SpecialDisambiguationPages;
-use MediaWiki\Hook\AncientPagesQueryHook;
 use MediaWiki\Hook\EditPage__showEditForm_initialHook;
 use MediaWiki\Hook\GetDoubleUnderscoreIDsHook;
-use MediaWiki\Hook\GetLinkColoursHook;
-use MediaWiki\Hook\LonelyPagesQueryHook;
-use MediaWiki\Hook\RandomPageQueryHook;
-use MediaWiki\Hook\RecentChange_saveHook;
-use MediaWiki\Hook\ShortPagesQueryHook;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Page\PageStore;
+use MediaWiki\Parser\Hook\GetLinkColoursHook;
+use MediaWiki\RecentChanges\Hook\RecentChange_saveHook;
+use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\SpecialPage\Hook\WgQueryPagesHook;
+use MediaWiki\Specials\Hook\AncientPagesQueryHook;
+use MediaWiki\Specials\Hook\LonelyPagesQueryHook;
+use MediaWiki\Specials\Hook\RandomPageQueryHook;
+use MediaWiki\Specials\Hook\ShortPagesQueryHook;
 use MediaWiki\Title\Title;
 
-// phpcs:disable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
 class Hooks implements
 	ListDefinedTagsHook,
 	ChangeTagsListActiveHook,
@@ -48,21 +49,17 @@ class Hooks implements
 		'disambiguator-link-added'
 	];
 
-	/** @var Lookup */
-	private $lookup;
-
 	/** @var bool */
 	private $showNotifications;
 
 	/** @var bool[] Rev IDs are used as keys */
 	private static $revsToTag = [];
 
-	/**
-	 * @param Lookup $lookup
-	 * @param Config $options
-	 */
-	public function __construct( Lookup $lookup, Config $options ) {
-		$this->lookup = $lookup;
+	public function __construct(
+		private readonly Lookup $lookup,
+		Config $options,
+		private readonly PageStore $pageStore,
+	) {
 		$this->showNotifications = $options->get( 'DisambiguatorNotifications' );
 	}
 
@@ -192,15 +189,19 @@ class Hooks implements
 	 * @param LinksUpdate $linksUpdate
 	 */
 	public function onLinksUpdateComplete( LinksUpdate $linksUpdate ) {
-		$addedLinks = $linksUpdate->getAddedLinks();
+		$addedLinks = $linksUpdate->getPageReferenceIterator( 'pagelinks', LinksTable::INSERTED );
 
-		if ( !$addedLinks ) {
-			return;
+		$pageIds = [];
+		foreach ( $addedLinks as $pageReference ) {
+			$pageRecord = $this->pageStore->getPageByReference( $pageReference );
+			if ( $pageRecord ) {
+				$pageIds[] = $pageRecord->getId();
+			}
 		}
 
-		$pageIds = array_map( static function ( Title $title ) {
-			return $title->getId();
-		}, $addedLinks );
+		if ( !$pageIds ) {
+			return;
+		}
 
 		$disambigs = $this->lookup->filterDisambiguationPageIds( $pageIds, true );
 		$rev = $linksUpdate->getRevisionRecord();
@@ -230,10 +231,7 @@ class Hooks implements
 		}
 	}
 
-	/**
-	 * @inheritDoc
-	 */
-	// phpcs:disable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
+	/** @inheritDoc */
 	public function onRecentChange_save( $recentChange ) {
 		$revId = $recentChange->getAttribute( 'rc_this_oldid' );
 		if ( $recentChange->getAttribute( 'rc_log_type' ) ) {

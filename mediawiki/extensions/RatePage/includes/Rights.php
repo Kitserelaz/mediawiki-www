@@ -3,6 +3,7 @@
 namespace RatePage;
 
 use IContextSource;
+use MediaWiki\MediaWikiServices;
 use User;
 
 class Rights {
@@ -25,8 +26,10 @@ class Rights {
 
 	public static function checkUserCanExecute( $allowed, User $user ) : bool {
 		$groups = explode( ',', $allowed );
+		$effectiveGroups = MediaWikiServices::getInstance()->getUserGroupManager()
+			->getUserEffectiveGroups( $user );
 
-		return (bool) sizeof( array_intersect( $groups, $user->getEffectiveGroups() ) );
+		return (bool) sizeof( array_intersect( $groups, $effectiveGroups ) );
 	}
 
 	/**
@@ -36,7 +39,8 @@ class Rights {
 	 * @return bool[]
 	 */
 	public static function checkUserPermissionsOnContest( $contest, User $user ) : array {
-		$eg = $user->getEffectiveGroups();
+		$eg = MediaWikiServices::getInstance()->getUserGroupManager()
+			->getUserEffectiveGroups( $user );
 
 		if ( !$contest ) {
 			return [

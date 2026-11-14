@@ -1,6 +1,8 @@
 <?php
 
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
+use MediaWiki\User\ActorMigration;
 
 class AuthorProtect {
 
@@ -50,18 +52,17 @@ class AuthorProtect {
 	/**
 	 * @param User $user
 	 * @param Title $title
-	 * @param bool|string $checkMaster
 	 *
 	 * @return string
 	 */
-	public static function userIsAuthor( $user, $title, $checkMaster = false ) {
+	public static function userIsAuthor( $user, $title ) {
 		if ( !$title instanceof Title ) {
 			// quick hack to prevent the API from messing up.
 			return false;
 		}
 
-		if ( $user->getID() === 0 ) {
-			// don't allow anons, they shouldn't even get this far but just in case...
+		if ( !$user->isNamed() ) {
+			// don't allow anons or temporary users, they shouldn't even get this far but just in case...
 			return false;
 		}
 
@@ -86,19 +87,10 @@ class AuthorProtect {
 	 * @return string
 	 */
 	private static function authorProtectMessage( $title ) {
-		if ( method_exists( MediaWikiServices::class, 'getRestrictionStore' ) ) {
-			// MW 1.37+
-			$restrictionStore = MediaWikiServices::getInstance()->getRestrictionStore();
-			foreach ( $restrictionStore->listApplicableRestrictionTypes( $title ) as $type ) {
-				if ( in_array( 'author', $restrictionStore->getRestrictions( $title, $type ) ) ) {
-					return 'unprotect';
-				}
-			}
-		} else {
-			foreach ( $title->getRestrictionTypes() as $type ) {
-				if ( in_array( 'author', $title->getRestrictions( $type ) ) ) {
-					return 'unprotect';
-				}
+		$restrictionStore = MediaWikiServices::getInstance()->getRestrictionStore();
+		foreach ( $restrictionStore->listApplicableRestrictionTypes( $title ) as $type ) {
+			if ( in_array( 'author', $restrictionStore->getRestrictions( $title, $type ) ) ) {
+				return 'unprotect';
 			}
 		}
 		return 'protect';

@@ -1,11 +1,11 @@
 {
 	"@metadata": {
 		"authors": [
+			"Aca",
 			"BadDog",
 			"Milicevic01",
 			"Zenfiric",
-			"Милан Јелисавчић",
-			"Aca"
+			"Милан Јелисавчић"
 		]
 	},
 	"disambig-desc": "Додаје ознаку <code><nowiki>__DISAMBIG__</nowiki></code> за обележавање [[Special:DisambiguationPages|вишезначних одредница]]",

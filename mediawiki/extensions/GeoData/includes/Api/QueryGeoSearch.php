@@ -10,13 +10,12 @@ use MediaWiki\Api\ApiBase;
 use MediaWiki\Api\ApiPageSet;
 use MediaWiki\Api\ApiQuery;
 use MediaWiki\Api\ApiQueryGeneratorBase;
-use MediaWiki\Config\Config;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Title\NamespaceInfo;
 use MediaWiki\Title\Title;
 use RuntimeException;
 use Wikimedia\ParamValidator\ParamValidator;
 use Wikimedia\ParamValidator\TypeDef\IntegerDef;
-use WikiPage;
 
 class QueryGeoSearch extends ApiQueryGeneratorBase {
 	private const MIN_RADIUS = 10;
@@ -33,7 +32,7 @@ class QueryGeoSearch extends ApiQueryGeneratorBase {
 	protected $bbox;
 
 	/**
-	 * @var int Search radius
+	 * @var int Search radius in meter
 	 */
 	protected $radius;
 
@@ -45,14 +44,13 @@ class QueryGeoSearch extends ApiQueryGeneratorBase {
 	public static function factory(
 		ApiQuery $query,
 		string $moduleName,
-		Config $config,
 		NamespaceInfo $namespaceInfo
 	): self {
 		$geoDataBackend = $query->getConfig()->get( 'GeoDataBackend' );
 
 		switch ( strtolower( $geoDataBackend ) ) {
 			case 'db':
-				return new QueryGeoSearchDb( $query, $moduleName, $config );
+				return new QueryGeoSearchDb( $query, $moduleName );
 			case 'elastic':
 				return new QueryGeoSearchElastic( $query, $moduleName, $namespaceInfo );
 			default:
@@ -89,7 +87,7 @@ class QueryGeoSearch extends ApiQueryGeneratorBase {
 		) {
 			$this->dieWithError( 'apierror-geodata-invalidbox', 'invalid-bbox' );
 		}
-		$bbox = BoundingBox::newFromNumbers( $vals[0], $vals[1], $vals[2], $vals[3], $globe->getName() );
+		$bbox = BoundingBox::newFromNumbers( $vals[0], $vals[1], $vals[2], $vals[3], $globe );
 		$area = $bbox->area();
 		$maxRadius = $this->getConfig()->get( 'MaxGeoSearchRadius' );
 		if ( $area > $maxRadius * $maxRadius * 4 || $area < 100 ) {
@@ -112,7 +110,7 @@ class QueryGeoSearch extends ApiQueryGeneratorBase {
 			if ( count( $arr ) != 2 || !$globe->coordinatesAreValid( $arr[0], $arr[1] ) ) {
 				$this->dieWithError( 'apierror-geodata-badcoord', 'invalid-coord' );
 			}
-			$this->coord = new Coord( floatval( $arr[0] ), floatval( $arr[1] ), $globe->getName() );
+			$this->coord = new Coord( floatval( $arr[0] ), floatval( $arr[1] ), $globe );
 		} elseif ( isset( $params['page'] ) ) {
 			$t = Title::newFromText( $params['page'] );
 			if ( !$t || !$t->canExist() ) {
@@ -201,9 +199,13 @@ class QueryGeoSearch extends ApiQueryGeneratorBase {
 				IntegerDef::PARAM_MAX => ApiBase::LIMIT_BIG1,
 				IntegerDef::PARAM_MAX2 => ApiBase::LIMIT_BIG2
 			],
-			// @todo: globe selection disabled until we have a real use case
 			'globe' => [
-				ParamValidator::PARAM_TYPE => [ Globe::EARTH ],
+				ParamValidator::PARAM_TYPE => [
+					Globe::EARTH,
+					Globe::MOON,
+					Globe::MARS,
+					Globe::VENUS,
+				],
 				ParamValidator::PARAM_DEFAULT => Globe::EARTH,
 			],
 			'namespace' => [

@@ -29,7 +29,7 @@ module.exports = function ( grunt ) {
 				cache: true
 			},
 			all: [
-				'**/*.css',
+				'**/*.{css,less}',
 				'!node_modules/**',
 				'!vendor/**'
 			]

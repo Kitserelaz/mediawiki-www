@@ -3,7 +3,7 @@
  * File containing the ParameterProvider class
  *
  * @copyright (C) 2016 - 2017, Stephan Gambke
- * @license   GNU General Public License, version 2 (or any later version)
+ * @license GPL-2.0-or-later
  *
  * This software is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,9 +23,12 @@
  */
 
 namespace MediaWiki\Extension\SimpleBatchUpload;
-use Parser;
-use PPFrame;
-use Html;
+
+use MediaWiki\Html\Html;
+use MediaWiki\Parser\Parser;
+use MediaWiki\Parser\PPFrame;
+use MediaWiki\Parser\PPNode;
+use MediaWiki\Parser\Sanitizer;
 
 /**
  * Class UploadButtonRenderer
@@ -40,12 +43,72 @@ class UploadButtonRenderer {
 	 * @return array
 	 */
 	public function renderParserFunction( Parser $parser, PPFrame $frame, $args ): array {
-		$args = array_map( [ $frame, 'expand' ], $args );
+		$stripState = $parser->getStripState();
+
+		// The arguments end up in an attribute, where the quotes in a strip
+		// marker are escaped and the parser can no longer put back what it set
+		// aside. So it is put back here: for a <nowiki>, the text that was
+		// written inside it, since this is wikitext for the file pages; anything
+		// else a marker stands for is HTML, and has no place there.
+		$expand = static fn ( PPNode|string $node ): string => $stripState->killMarkers(
+			$stripState->replaceNoWikis(
+				$frame->expand( $node ),
+				static fn ( string $content ) => Sanitizer::decodeCharReferences( $content )
+			)
+		);
+
+		$renameRule = null;
+		$autoUpload = false;
+		$templateArgs = [];
+
+		foreach ( $args as $arg ) {
+			$rule = $arg instanceof PPNode ? $this->renameRuleIn( $arg, $frame ) : null;
+
+			if ( $rule !== null ) {
+				$renameRule = trim( $expand( $rule ) );
+			} elseif ( $arg instanceof PPNode && $this->isAutoUpload( $arg, $frame ) ) {
+				$autoUpload = true;
+			} else {
+				$templateArgs[] = $expand( $arg );
+			}
+		}
+
 		$output = $parser->getOutput();
 
-		$html = $this->renderUploadButton( $args, $output );
+		$html = $this->renderUploadButton( $templateArgs, $renameRule, $autoUpload, $output );
 
 		return [ $html, 'isHTML' => true, 'noparse' => true, 'nowiki' => false ];
+	}
+
+	/**
+	 * The value of a +rename rule, which the panel reads rather than the
+	 * template being given it. Found among the arguments the parser has already
+	 * told apart, so a parameter of that name in a template nested in another
+	 * argument stays that template's. The + marks it as the upload area's: every
+	 * other argument is the template's.
+	 */
+	private function renameRuleIn( PPNode $arg, PPFrame $frame ): ?PPNode {
+		$parts = $arg->splitArg();
+		$name = $parts['name'];
+		$value = $parts['value'];
+
+		if ( $parts['index'] !== '' || !$name instanceof PPNode || !$value instanceof PPNode ) {
+			return null;
+		}
+
+		return trim( $frame->expand( $name ) ) === '+rename' ? $value : null;
+	}
+
+	/**
+	 * Whether the argument is the bare +autoupload flag, which the panel reads
+	 * rather than the template being given it.
+	 */
+	private function isAutoUpload( PPNode $arg, PPFrame $frame ): bool {
+		$parts = $arg->splitArg();
+		$value = $parts['value'];
+
+		return $parts['index'] !== '' && $value instanceof PPNode &&
+			trim( $frame->expand( $value ) ) === '+autoupload';
 	}
 
 	/**
@@ -56,7 +119,7 @@ class UploadButtonRenderer {
 		$args = [ $templateName ];
 		$output = $specialPage->getOutput();
 
-		$html = $this->renderUploadButton( $args, $output );
+		$html = $this->renderUploadButton( $args, null, false, $output );
 
 		$output->addHTML( $html );
 	}
@@ -66,7 +129,7 @@ class UploadButtonRenderer {
 	 * @param \ParserOutput | \OutputPage $output
 	 * @return string
 	 */
-	protected function renderUploadButton( $args, $output ) {
+	protected function renderUploadButton( $args, ?string $renameRule, bool $autoUpload, $output ) {
 		$paramProvider = $this->prepareParameterProvider( $args );
 
 		$this->addModulesToOutput( $output );
@@ -75,36 +138,28 @@ class UploadButtonRenderer {
 			$output->setPageTitle( $paramProvider->getSpecialPageTitle() );
 		}
 
-		return $this->getHtml( $paramProvider );
+		return $this->getHtml( $paramProvider, $renameRule, $autoUpload );
 	}
 
 	/**
-	 * @param $paramProvider
+	 * The element the upload panel is mounted on.
+	 *
+	 * Empty, and everything the panel needs is on it: the interface is drawn by
+	 * ext.SimpleBatchUpload, and {{#batchupload:}} output is parser cached for
+	 * up to a day, so any markup rendered here would outlive the script that
+	 * understands it.
+	 *
+	 * @param ParameterProvider $paramProvider
 	 * @return string
 	 */
-	protected function getHtml( ParameterProvider $paramProvider ) {
-
-		$escapedUploadComment = $paramProvider->getEscapedUploadComment();
-		$uploadPageText = $paramProvider->getUploadPageText();
-
-		return
-
-			'<div class="fileupload-container"> ' .
-				'<label>' . \Message::newFromKey( 'upload-form-label-infoform-description' )->escaped() . ':<br>'.
-					'<span class="mw-input">' .
-						Html::element('textarea', ['name' => 'wfUploadDescription', 'cols' => '80', 'rows' => '8'], $uploadPageText) .
-					'</span>' .
-				'</label><br> '.
-				'<span class="fileupload-dropzone fileinput-button"> ' .
-					'<i class="glyphicon glyphicon-plus"></i> ' .
-					'<span>' . \Message::newFromKey( 'simplebatchupload-buttonlabel' )->escaped() . '</span> ' .
-					'<!-- The file input field used as target for the file upload widget -->' .
-					'<input class="fileupload" type="file" name="file" multiple ' .
-					'    data-url="' . wfScript( 'api' ) . '" ' .
-					'    data-comment="' . $escapedUploadComment . '" ' .
-					'> ' .
-				'</span><ul class="fileupload-results"></ul> ' .
-			'</div>';
+	protected function getHtml( ParameterProvider $paramProvider, ?string $renameRule, bool $autoUpload ): string {
+		return Html::element( 'div', [
+			'class' => 'ext-sbu-mount',
+			'data-mw-sbu-description' => $paramProvider->getUploadPageText(),
+			'data-mw-sbu-comment' => $paramProvider->getUploadComment(),
+			'data-mw-sbu-rename' => $renameRule,
+			'data-mw-sbu-autoupload' => $autoUpload ? '' : null,
+		] );
 	}
 
 	/**
@@ -112,7 +167,6 @@ class UploadButtonRenderer {
 	 */
 	protected function addModulesToOutput( $output ) {
 		$output->addModules( [ 'ext.SimpleBatchUpload' ] );
-		$output->addModuleStyles( [ 'ext.SimpleBatchUpload', 'ext.SimpleBatchUpload.jquery-file-upload' ] );
 	}
 
 	/**
@@ -120,7 +174,6 @@ class UploadButtonRenderer {
 	 * @return ParameterProvider
 	 */
 	protected function prepareParameterProvider( $args ): ParameterProvider {
-
 		$templateName = $args[ 0 ];
 
 		$paramProvider = new ParameterProvider( $templateName );

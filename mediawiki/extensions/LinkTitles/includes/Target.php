@@ -25,14 +25,15 @@
 namespace LinkTitles;
 
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title as MWTitle;
 
 /**
  * Represents a page that is a potential link target.
  */
 class Target {
 	/**
-	 * A Title object for the target page currently being examined.
-	 * @var \Title $title
+	 * A MWTitle object for the target page currently being examined.
+	 * @var MWTitle $title
 	 */
 	private $title;
 
@@ -76,8 +77,7 @@ class Target {
 	 * @param String &$title Title of the target page
 	 */
 	public function __construct( $namespace, $title, Config &$config ) {
-		$this->title = \Title::makeTitleSafe( $namespace, $title );
-		$this->titleValue = $this->title->getTitleValue();
+		$this->title = MWTitle::makeTitleSafe( $namespace, $title );
 		$this->config = $config;
 
 		// Use unicode character properties rather than \b escape sequences
@@ -86,6 +86,18 @@ class Target {
 		// --enable-unicode-properties
 		( $config->wordStartOnly ) ? $this->wordStart = '(?<!\pL|\pN)' : $this->wordStart = '';
 		( $config->wordEndOnly ) ? $this->wordEnd = '(?!\pL|\pN)' : $this->wordEnd = '';
+	}
+
+	/**
+	 * Whether the title could be resolved.
+	 *
+	 * A row from the page table should always yield a valid title, but this
+	 * guards against edge cases where MWTitle::makeTitleSafe() returns null
+	 * (e.g. a namespace that is no longer registered).
+	 * @return boolean
+	 */
+	public function isValid() {
+		return $this->title !== null;
 	}
 
 	/**
@@ -252,7 +264,7 @@ class Target {
 	/**
  	 * Obtain a page's content.
 	 * Workaround for MediaWiki 1.36+ which deprecated Wikipage::factory.
-	 * @param  \Title $title
+	 * @param  MWTitle $title
 	 * @return Content content object of the page
 	 */
 	private static function getPageContents( $title ) {

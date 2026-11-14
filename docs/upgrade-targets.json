@@ -574,6 +574,411 @@
       "commit": "96602bf239ee075659cca55b1f4d3a9b53779186",
       "batch_port_report": "docs/upgrade-batch-1-ports.json",
       "branch": "REL1_46"
+    },
+    "3D": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-3D",
+      "commit": "500f179b3b84f210ed61def4a0eaacfb68e0eb3d",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "ApprovedRevs": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-ApprovedRevs",
+      "commit": "2a34f062cbede494f07bf43b6edffc51c7619931",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "ArticleCreationWorkflow": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-ArticleCreationWorkflow",
+      "commit": "e6557fe205a26a410d7f18186285889a9f2f7328",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "ArticleRatings": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-ArticleRatings",
+      "commit": "2dfa0fb760c8eeedf103c66a409fe5e04201f202",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "ArticleToCategory2": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-ArticleToCategory2",
+      "commit": "ff4f8ca236094dc6ae46513d1dfdb7a9c516829d",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "AuthorProtect": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-AuthorProtect",
+      "commit": "6993075932e261894c7cce50794707bb3d8c9296",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "Calendar": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-Calendar",
+      "commit": "d52a1f1d3b250a9bc46da51bc9afa69b4a7a1873",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "CharInsert": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-CharInsert",
+      "commit": "85b9f439f95d25634f377211c526781d5b8be523",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "CollapsibleVector": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-CollapsibleVector",
+      "commit": "3b25f47eea07391bc913af40a8a1620f8bdc4cea",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "CommentStreams": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-CommentStreams",
+      "commit": "b346608f716ae31992e8effa04a7dc0fe0fd6c4c",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "ContactPage": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-ContactPage",
+      "commit": "1fe4ddecea4605cfc5d89c5883176c0fd98fd6b7",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "CookieWarning": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-CookieWarning",
+      "commit": "8de2b800a848634d597dd201d2203a139f64189e",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "CreatePage": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-CreatePage",
+      "commit": "cc13a6ce3fc09f8be1505e6b7b91247ba72b2e22",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "CreatePageUw": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-CreatePageUw",
+      "commit": "bb1dc58e9d43842ef072c731b0e54b6c17af7454",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "CreatedPagesList": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-CreatedPagesList",
+      "commit": "6216398b2485491e58734a0db50770b6d16fa94b",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "Description2": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-Description2",
+      "commit": "fe19f68d9aa19b7b54f411d2d5bab8719157d034",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "Disambiguator": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-Disambiguator",
+      "commit": "f1171e65d3a0a5abc923f3a0950daf3618066520",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "EditSubpages": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-EditSubpages",
+      "commit": "b8155bb149ec638305a6204532a3b111232bea67",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "Editcount": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-Editcount",
+      "commit": "f1d30db83acae9e5b13ada7d58718b91dcb821e3",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "FeaturedFeeds": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-FeaturedFeeds",
+      "commit": "1208e156591831e2780d392c233ee855551bc7a6",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "FlexDiagrams": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-FlexDiagrams",
+      "commit": "df5c82fea7d2b20640dbfdb8b3c83bb8e9e20b2b",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "ForcePreview": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-ForcePreview",
+      "commit": "3d90390d93176fea0fe87f22418d949e2ac4e00e",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "Genealogy": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-Genealogy",
+      "commit": "4c90263214b3ca57bcb36979b41e6c2ae81e5219",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "GeoData": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-GeoData",
+      "commit": "7729d9528c7b1eef717551eed37a655a676317ce",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "GlobalNewFiles": {
+      "repository": "https://github.com/miraheze/GlobalNewFiles",
+      "commit": "86f7eb2484ed19c725852ec09f2c9ab1ab11e928",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "GoogleDocs4MW": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-GoogleDocs4MW",
+      "commit": "e953be569397c8427b10e5ba9246da8407e6fec6",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "GuidedTour": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-GuidedTour",
+      "commit": "b84a4f8cc41407d2cd7313e4aa627d81f510b71c",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "HAWelcome": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-HAWelcome",
+      "commit": "41f00640ddd848dfd9e42a82ce7b1e6035b1cc09",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "HeaderTabs": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-HeaderTabs",
+      "commit": "58438a0ae08fd4cfb9f539ef7754564561f14453",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "InterwikiSorting": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-InterwikiSorting",
+      "commit": "0ed12d6b58c1bf664812582d3df1f211698643bb",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "JsCalendar": {
+      "repository": "https://github.com/edwardspec/mediawiki-extension-JsCalendar",
+      "commit": "12155cb443f4982debc0de35320d02d0f7fcde35",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "LanguageSelector": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-LanguageSelector",
+      "commit": "53d1f2c038bcfdf371ac3e4165fe59c744193ab9",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "LinkSuggest": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-LinkSuggest",
+      "commit": "b2f4491fc4c8290a5dfaed1e3f9fc37c1081fa31",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "LinkTitles": {
+      "repository": "https://github.com/bovender/LinkTitles",
+      "commit": "ae53d01c1f2432f4c2c381c98baa49db064b8ab5",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "MassEditRegex": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-MassEditRegex",
+      "commit": "0105bee34e3d99011664e8977c456a6597790c12",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "Mermaid": {
+      "repository": "https://github.com/SemanticMediaWiki/Mermaid",
+      "commit": "bc7363f003057888b2f0087f350fd63c172afb05",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json",
+      "source_port_report": "docs/upgrade-mermaid-source.json"
+    },
+    "MintyDocs": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-MintyDocs",
+      "commit": "3942b70a70f45ad28bfcde829de00d358c1e6188",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "MsCalendar": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-MsCalendar",
+      "commit": "6e5e00a662627a0d7333ec979393b07f2dd6f318",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "MsLinks": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-MsLinks",
+      "commit": "69448e541bc798a99d28e202a620a712251118e5",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "MultiBoilerplate": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-MultiBoilerplate",
+      "commit": "42886fea493fbb396eed4eb866cc732ac89058e6",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "MultiPurge": {
+      "repository": "https://github.com/octfx/mediawiki-extensions-MultiPurge",
+      "commit": "09f4457ba6302c950a5503541b97732a287ac8df",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "Network": {
+      "repository": "https://github.com/ProfessionalWiki/Network",
+      "commit": "9e79548d64e4edb84d2b457d1e1d2f9bba1505f8",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json",
+      "source_port_report": "docs/upgrade-network-source.json"
+    },
+    "NewestPages": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-NewestPages",
+      "commit": "37bbe342507097962d4a9cd49f2f85891403b17a",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "Newsletter": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-Newsletter",
+      "commit": "d97189e4d4ed6e2bbae0e4dbb06b430ab1a0ce88",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "PageAssessments": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-PageAssessments",
+      "commit": "3de2591cf694b573084b0e6e0f2eeb65e98da19f",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "PageLanguage": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-PageLanguage",
+      "commit": "0be32a9ebb7e796c682be067361e1e243d953223",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "PollNY": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-PollNY",
+      "commit": "68820ef882b543e1ce923265b1e621b226519eaa",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "Purge": {
+      "repository": "https://github.com/NekoCharm01/mediawiki-extensions-Purge",
+      "commit": "ca4c5d5f8ad183526970d8c33de052ec0a41753e",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json",
+      "source_port_report": "docs/upgrade-purge-source.json"
+    },
+    "Quiz": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-Quiz",
+      "commit": "7c907e0ea1dbf3bee8b363750737f28fa0f0299c",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "QuizGame": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-QuizGame",
+      "commit": "8e8e9bf8f0c1f8881dd48dc8e003bf8796d41108",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "RSS": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-RSS",
+      "commit": "791f68e1e4cf78b7dd90cd29063e91580a9af2fd",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "RandomGameUnit": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-RandomGameUnit",
+      "commit": "2d2303b4035756b4db516b8cc86afdd0b9d61c1e",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "RatePage": {
+      "repository": "https://gitlab.com/nonsensopedia/extensions/ratepage.git",
+      "commit": "ce936e1b2a539207b9c41df37db47d45030671e9",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "RevisionSlider": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-RevisionSlider",
+      "commit": "81ce181e0b5e9028777e8cc1eadcf63a6a86a742",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "RightFunctions": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-RightFunctions",
+      "commit": "8fa40bf55d325a46f03e2244d82c57c61507612a",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "SandboxLink": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-SandboxLink",
+      "commit": "d156a9b50fe492dca977204ef2886599f406c957",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "SimpleBatchUpload": {
+      "repository": "https://github.com/ProfessionalWiki/SimpleBatchUpload",
+      "commit": "a4d7e419a08688fa27922144903505d3598988af",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "SkinPerPage": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-SkinPerPage",
+      "commit": "c152f11a9dbd1dc8b32b3644c10ba2cb19de92e5",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "SoftRedirector": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-SoftRedirector",
+      "commit": "e10518aaf729451aadce784d22559fc916b96419",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "StandardDialogs": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-StandardDialogs",
+      "commit": "7ca3619a2a0beb7fccafc84e4fdee353b5e54772",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "StructuredNavigation": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-StructuredNavigation",
+      "commit": "78a12cf5f6471ce764a1dd24007ba1d66faf00fa",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "SubPageList3": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-SubPageList3",
+      "commit": "d5cd894c9e603e7fa6cb7e1581216ede0202f6e3",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "Theme": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-Theme",
+      "commit": "22bbb442b071419e641903fb48e4610a6f8ea6cb",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "Tilesheets": {
+      "repository": "https://github.com/FTB-Gamepedia/Tilesheets",
+      "commit": "c44c3e2ba61601b545251124ab5b2e177556dfc6",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "TitleKey": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-TitleKey",
+      "commit": "3dc1d8bf28b5f7ad549b4aa2b2c0e3a00a2f7288",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "UploadsLink": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-UploadsLink",
+      "commit": "637e9e42311af00dd0ff7efb0703198e25f7c8ac",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "UserFunctions": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-UserFunctions",
+      "commit": "6ed7145fc40801066caf99f07b21757862fea1c3",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "WebChat": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-WebChat",
+      "commit": "5d84f916f4204f5495b67275e265bf4677d86937",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "WikiForum": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-WikiForum",
+      "commit": "b19f8b41684b14cc92205873ad298f776249a477",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "WikiLove": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-WikiLove",
+      "commit": "b3b9eb3e5699d504d345b0c2f12abf64ad9d0a5e",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
+    },
+    "WikiSEO": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-WikiSEO",
+      "commit": "a9fe0f4b7a68521b27db6e1d0a56334890630c3d",
+      "branch": "REL1_46",
+      "batch_port_report": "docs/upgrade-batch-2-ports.json"
     }
   },
   "rollback_images": [

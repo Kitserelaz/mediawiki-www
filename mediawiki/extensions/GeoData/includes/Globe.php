@@ -8,6 +8,10 @@ namespace GeoData;
 class Globe {
 
 	public const EARTH = 'earth';
+	public const EARTH_RADIUS = 6371010.0;
+	public const MOON = 'moon';
+	public const MARS = 'mars';
+	public const VENUS = 'venus';
 
 	private string $name;
 
@@ -52,9 +56,9 @@ class Globe {
 			return $data;
 		}
 
-		$earth   = [ 'lon' => [ -180, 180 ], 'east' => +1 ];
-		$east360 = [ 'lon' => [ 0, 360 ], 'east' => +1 ];
-		$west360 = [ 'lon' => [ 0, 360 ], 'east' => -1 ];
+		$earth   = [ 'lon' => [ -180 ] ];
+		$east360 = [];
+		$west360 = [ 'east' => -1 ];
 
 		/**
 		 * Format:
@@ -65,12 +69,12 @@ class Globe {
 		 * Radii taken from Wikipedia. Globes that are too irregular in shape don't have radius set.
 		 */
 		$data = [
-			self::EARTH => $earth + [ 'radius' => Math::EARTH_RADIUS ],
+			self::EARTH => $earth + [ 'radius' => self::EARTH_RADIUS ],
 			'mercury'   => $west360 + [ 'radius' => 2439700.0 ],
-			'venus'     => $east360 + [ 'radius' => 6051800.0 ],
-			'moon'      => $earth + [ 'radius' => 1737100.0 ],
+			self::VENUS => $east360 + [ 'radius' => 6051800.0 ],
+			self::MOON => $earth + [ 'radius' => 1737100.0 ],
 			// Assuming MDIM 2.1
-			'mars'      => $east360 + [ 'radius' => 3389500.0 ],
+			self::MARS => $east360 + [ 'radius' => 3389500.0 ],
 			'phobos'    => $west360,
 			'deimos'    => $west360,
 			// 'ceres' => ???,
@@ -149,9 +153,12 @@ class Globe {
 
 	/**
 	 * Compares this globe to another
+	 *
+	 * @param Globe|string $other
+	 * @return bool
 	 */
-	public function equalsTo( Globe $other ): bool {
-		return $this->name === $other->name;
+	public function equalsTo( $other ): bool {
+		return $this->name === ( $other instanceof Globe ? $other->name : $other );
 	}
 
 	/**

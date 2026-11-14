@@ -53,7 +53,7 @@ class ViewPoll extends SpecialPage {
 		$limit = $per_page;
 
 		$limitvalue = 0;
-		// @phan-suppress-next-line PhanSuspiciousValueComparison
+		// @phan-suppress-next-line PhanRedundantValueComparison
 		if ( $limit > 0 && $page ) {
 			$limitvalue = $page * $limit - ( $limit );
 		}
@@ -107,7 +107,7 @@ class ViewPoll extends SpecialPage {
 
 		$output .= '</div>';
 
-		if ( isset( $user ) ) {
+		if ( $user !== null ) {
 			$out->setPageTitle( $this->msg( 'poll-view-title', $user )->parse() );
 		} else {
 			$out->setPageTitle( $this->msg( 'viewpoll' )->text() );

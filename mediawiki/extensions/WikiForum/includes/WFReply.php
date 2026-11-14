@@ -1,5 +1,6 @@
 <?php
 
+use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
 
 class WFReply extends ContextSource {
@@ -393,21 +394,16 @@ class WFReply extends ContextSource {
 		}
 
 		$dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_REPLICA );
-		$doublepost = $dbr->selectRow(
-			'wikiforum_replies',
-			'wfr_reply_id',
-			[
+		$doublepost = $dbr->newSelectQueryBuilder()
+			->select( 'wfr_reply_id' )
+			->from( 'wikiforum_replies' )
+			->where( [
 				'wfr_reply_text' => $text,
 				'wfr_actor' => $user->getActorId(),
 				'wfr_thread' => $thread->getId(),
-				// @todo FIXME: This would need $dbw->timestamp() but the results of calling that
-				// on either $timestamp or the completed calculation seem odd...namely that
-				// $dbw->timestamp( $timestamp - ( 24 * 3600 ) ) is NOT the same as $timestamp - ( 24 * 3600 )
-				// even on MySQL/MariaDB?! I don't even...
-				'wfr_posted_timestamp > ' . ( $timestamp - ( 24 * 3600 ) )
-			],
-			__METHOD__
-		);
+				$dbr->expr( 'wfr_posted_timestamp', '>', $dbr->timestamp( time() - ( 24 * 3600 ) ) )
+			] )
+			->caller( __METHOD__ )->fetchRow();
 
 		if ( $doublepost ) {
 			return WikiForum::showErrorMessage( 'wikiforum-error-add', 'wikiforum-error-double-post' );
@@ -491,6 +487,6 @@ class WFReply extends ContextSource {
 	 * @return string
 	 */
 	static function showGeneralEditor( $params, User $user, $text_prev = '', $showCancel = false ) {
-		return WikiForumGui::showWriteForm( $showCancel, $params, '', '10em', $text_prev, 'wikiforum-save-reply', $user );
+		return WikiForumGui::showWriteForm( $showCancel, $params, '', '', $text_prev, 'wikiforum-save-reply', $user );
 	}
 }

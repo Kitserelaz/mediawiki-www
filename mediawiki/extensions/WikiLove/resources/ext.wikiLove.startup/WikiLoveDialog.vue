@@ -24,7 +24,7 @@
 						<li>{{ $i18n( 'wikilove-get-started-list-3' ) }}</li>
 					</ol>
 					<p>
-						<a target="_blank" :href="$i18n( 'wikilove-what-is-this-link' )">
+						<a target="_blank" :href="whatIsThisLink">
 							{{ $i18n( 'wikilove-what-is-this' ) }}
 						</a>
 					</p>
@@ -72,8 +72,7 @@
 							class="text"
 							@change="onImageChange"
 						>
-						<!-- eslint-disable-next-line vue/no-v-html -->
-						<div id="mw-wikilove-commons-text" v-html="commonsText"></div>
+						<div id="mw-wikilove-commons-text" v-i18n-html:wikilove-commons-text="[ commonsLink ]"></div>
 						<label id="mw-wikilove-message-label" for="mw-wikilove-message">{{ $i18n( 'wikilove-enter-message' ) }}</label>
 						<span id="mw-wikilove-message-note" class="mw-wikilove-note">{{ $i18n( 'wikilove-omit-sig' ) }}</span>
 						<textarea id="mw-wikilove-message" rows="4"></textarea>
@@ -99,8 +98,7 @@
 					<span class="mw-wikilove-number">3</span>
 					<h3>{{ $i18n( 'wikilove-preview' ) }}</h3>
 					<div id="mw-wikilove-preview-area"></div>
-					<!-- eslint-disable-next-line vue/no-v-html -->
-					<div id="mw-wikilove-terms" v-html="terms"></div>
+					<div id="mw-wikilove-terms" v-i18n-html:wikilove-terms="[ termsLink ]"></div>
 					<form id="mw-wikilove-send-form">
 						<cdx-button
 							id="mw-wikilove-button-send"
@@ -119,6 +117,7 @@
 
 <script>
 const { cdxIconClose } = require( './icons.json' );
+const { whatIsThisLink, commonsUrl, termsUrl } = require( './data.json' );
 const { CdxIcon, CdxButton } = require( '@wikimedia/codex' );
 const Vue = require( 'vue' );
 
@@ -127,32 +126,31 @@ module.exports = Vue.defineComponent( {
 	name: 'WikiLoveDialog',
 	components: {
 		CdxButton,
-		CdxIcon
+		CdxIcon,
 	},
 	props: {
 		closeIcon: {
 			type: String,
-			default: cdxIconClose
+			default: cdxIconClose,
 		},
-		commonsLink: {
-			type: String,
-			required: true
-		},
-		termsLink: {
-			type: String,
-			required: true
-		}
 	},
 	emits: [ 'close' ],
+	data: () => ( {
+		whatIsThisLink,
+	} ),
 	computed: {
-		terms() {
-			// TODO improve this logic so that v-html isn't needed
-			return mw.message( 'wikilove-terms' ).parse().replace( '$1', this.termsLink );
+		termsLink() {
+			return $( '<a>' )
+				.attr( 'href', termsUrl )
+				.attr( 'target', '_blank' )
+				.text( mw.msg( 'wikilove-terms-link' ) );
 		},
-		commonsText() {
-			// TODO improve this logic so that v-html isn't needed
-			return mw.message( 'wikilove-commons-text' ).parse().replace( '$1', this.commonsLink );
-		}
+		commonsLink() {
+			return $( '<a>' )
+				.attr( 'href', commonsUrl )
+				.attr( 'target', '_blank' )
+				.text( mw.msg( 'wikilove-commons-link' ) );
+		},
 	},
 	methods: {
 		onImageChange: function () {
@@ -161,8 +159,8 @@ module.exports = Vue.defineComponent( {
 			$( '#mw-wikilove-dialog' ).find( '.mw-wikilove-error' ).remove();
 			$( '#mw-wikilove-preview' ).hide();
 			/* eslint-enable no-jquery/no-global-selector */
-		}
-	}
+		},
+	},
 } );
 
 </script>
@@ -183,7 +181,7 @@ module.exports = Vue.defineComponent( {
 }
 
 .wikilove-dialog {
-	background: #f2f5f7;
+	background: @background-color-neutral-subtle;
 	padding: 0.5em 1em;
 	border: @border-base;
 	box-shadow: 0 2px 2px 0 rgba( 0, 0, 0, 0.25 );
@@ -194,7 +192,7 @@ module.exports = Vue.defineComponent( {
 
 .wikilove-dialog header {
 	border: 1px solid #aed0ea;
-	background: #f0f0f0;
+	background: @background-color-neutral;
 	padding: 0.9em 1.4em 0.6em;
 	font-weight: bold;
 	display: flex;
@@ -216,7 +214,7 @@ module.exports = Vue.defineComponent( {
 
 .wikilove-transparent-overlay {
 	opacity: @opacity-medium;
-	background: #fff;
+	background: @background-color-base;
 	position: absolute;
 	left: 0;
 	right: 0;

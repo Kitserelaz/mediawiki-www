@@ -7,11 +7,11 @@ use ApiResult;
 use ApiUsageException;
 use IContextSource;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
 use MWException;
 use RatePage\ContestDB;
 use RatePage\Rights;
 use RatePage\Rating;
-use Title;
 use User;
 
 /**

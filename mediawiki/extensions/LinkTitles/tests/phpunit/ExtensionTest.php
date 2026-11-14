@@ -25,6 +25,11 @@
  * @group bovender
  * @group Database
  */
+
+use MediaWiki\Title\Title;
+use MediaWiki\Page\WikiPageFactory;
+use MediaWiki\MediaWikiServices;
+
 class ExtensionTest extends LinkTitles\TestCase {
 
 	/**
@@ -36,7 +41,9 @@ class ExtensionTest extends LinkTitles\TestCase {
 			'wgLinkTitlesParseOnRender' => !$parseOnEdit
 		] );
 		$pageId = $this->insertPage( 'test page', $input )['id'];
-		$page = WikiPage::newFromId( $pageId );
+		$title = Title::newFromID( $pageId );
+		$wpf = MediaWikiServices::getInstance()->getWikiPageFactory();
+		$page = $wpf->newFromTitle( $title );
 		$this->assertSame( $expectedOutput, self::getPageText( $page ) );
 	}
 
@@ -71,10 +78,11 @@ class ExtensionTest extends LinkTitles\TestCase {
 		] );
 		$title = $this->insertPage( 'test page', $input )['title'];
 		$page = new WikiPage( $title );
-		$user = MediaWiki\User\UserFactory::newAnonymous();
+		$userFactory = MediaWikiServices::getInstance()->getUserFactory();
+		$user = $userFactory->newAnonymous();
 		$output = $page->getParserOutput( new ParserOptions( $user ), null, true );
-		$lines = explode( "\n", $output->getText() );
-		$this->assertRegexp( $expectedOutput, $lines[0] );
+		$lines = explode( "\n", $output->getRawText() );
+		$this->assertMatchesRegularExpression( $expectedOutput, $lines[0] );
 	}
 
 	public function provideParseOnRenderData() {

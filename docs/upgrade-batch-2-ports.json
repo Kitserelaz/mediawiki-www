@@ -1,0 +1,738 @@
+{
+ "mediawiki": "1.46.2",
+ "php": "8.4.27",
+ "components": {
+  "3D": {
+   "component": "mediawiki/extensions/3D",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-3D",
+   "baseline": "d586691d5bf5",
+   "merge_base": "da7659bae31845008ef5d1fa6c2c47be3c77ed73",
+   "target": "500f179b3b84f210ed61def4a0eaacfb68e0eb3d",
+   "ref": "REL1_46",
+   "files_updated": 34,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "ApprovedRevs": {
+   "component": "mediawiki/extensions/ApprovedRevs",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-ApprovedRevs",
+   "baseline": "1a85555e7eb7",
+   "merge_base": "1a85555e7eb723359e9e3f6e764eca8ace7fd6c4",
+   "target": "2a34f062cbede494f07bf43b6edffc51c7619931",
+   "ref": "2.4.3",
+   "files_updated": 48,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "ArticleCreationWorkflow": {
+   "component": "mediawiki/extensions/ArticleCreationWorkflow",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-ArticleCreationWorkflow",
+   "baseline": "f40c58c56939",
+   "merge_base": "44f56cd7782e01712b6144e73e5eabd2cc937cac",
+   "target": "e6557fe205a26a410d7f18186285889a9f2f7328",
+   "ref": "REL1_46",
+   "files_updated": 18,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "ArticleRatings": {
+   "component": "mediawiki/extensions/ArticleRatings",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-ArticleRatings",
+   "baseline": "3a60bc9fd0ab",
+   "merge_base": "5f940842218cd5b30f5a1faa0f42bb7ddbeefa02",
+   "target": "2dfa0fb760c8eeedf103c66a409fe5e04201f202",
+   "ref": "2.7",
+   "files_updated": 47,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "ArticleToCategory2": {
+   "component": "mediawiki/extensions/ArticleToCategory2",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-ArticleToCategory2",
+   "baseline": "a0faa0c16cd4",
+   "merge_base": "906159d96efc220dc84d5f19c21d03bad61f52b5",
+   "target": "ff4f8ca236094dc6ae46513d1dfdb7a9c516829d",
+   "ref": "REL1_46",
+   "files_updated": 17,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "AuthorProtect": {
+   "component": "mediawiki/extensions/AuthorProtect",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-AuthorProtect",
+   "baseline": "2b8acd007412",
+   "merge_base": "6130512f7f50e043138b86b6e10c1736b3ae94e1",
+   "target": "6993075932e261894c7cce50794707bb3d8c9296",
+   "ref": "REL1_46",
+   "files_updated": 29,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "Calendar": {
+   "component": "mediawiki/extensions/Calendar",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-Calendar",
+   "baseline": "aa314c33f240",
+   "merge_base": "c9123ed3d46008a1d163900499e6430c4cce6dce",
+   "target": "d52a1f1d3b250a9bc46da51bc9afa69b4a7a1873",
+   "ref": "REL1_46",
+   "files_updated": 14,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "CharInsert": {
+   "component": "mediawiki/extensions/CharInsert",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-CharInsert",
+   "baseline": "d42e5b073fd2",
+   "merge_base": "42eacf3ea7c94dcdcec73bf2f72ef6521d2cef3d",
+   "target": "85b9f439f95d25634f377211c526781d5b8be523",
+   "ref": "REL1_46",
+   "files_updated": 13,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "CollapsibleVector": {
+   "component": "mediawiki/extensions/CollapsibleVector",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-CollapsibleVector",
+   "baseline": "924fb7fed870",
+   "merge_base": "2c29bc72ba906fc3871244eda28faaf22bbc1b08",
+   "target": "3b25f47eea07391bc913af40a8a1620f8bdc4cea",
+   "ref": "REL1_46",
+   "files_updated": 20,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "CommentStreams": {
+   "component": "mediawiki/extensions/CommentStreams",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-CommentStreams",
+   "baseline": "91a8c792f669",
+   "merge_base": "eea85059c68fc179bcb625f402a7392a58f17d00",
+   "target": "b346608f716ae31992e8effa04a7dc0fe0fd6c4c",
+   "ref": "9.1.0",
+   "files_updated": 342,
+   "dependency_status": "component-dependencies-vendored: component-events 4.0.4 and componentloader 1.0.1 with isolated vendor tree; events classes are NotifyMe-gated and NotifyMe is not installed",
+   "vendored_runtime_files": 157
+  },
+  "ContactPage": {
+   "component": "mediawiki/extensions/ContactPage",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-ContactPage",
+   "baseline": "a102f49a3d45",
+   "merge_base": "249664cefcc07ffbff35c104b63a390a8d4f2cdd",
+   "target": "1fe4ddecea4605cfc5d89c5883176c0fd98fd6b7",
+   "ref": "REL1_46",
+   "files_updated": 99,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "CookieWarning": {
+   "component": "mediawiki/extensions/CookieWarning",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-CookieWarning",
+   "baseline": "ec0787cd03a6",
+   "merge_base": "ec0787cd03a6aa20b2b08c1dfdd9934277aff77b",
+   "target": "8de2b800a848634d597dd201d2203a139f64189e",
+   "ref": "REL1_46",
+   "files_updated": 7,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "CreatePage": {
+   "component": "mediawiki/extensions/CreatePage",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-CreatePage",
+   "baseline": "0d74eca3a3aa",
+   "merge_base": "ed823f1b1e0d813552ecaef10c5e4c4ff18abc71",
+   "target": "cc13a6ce3fc09f8be1505e6b7b91247ba72b2e22",
+   "ref": "REL1_46",
+   "files_updated": 14,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "CreatePageUw": {
+   "component": "mediawiki/extensions/CreatePageUw",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-CreatePageUw",
+   "baseline": "03fbfde1b306",
+   "merge_base": "3cf0b42843bd51f044ea7f23ef046a51b4797d05",
+   "target": "bb1dc58e9d43842ef072c731b0e54b6c17af7454",
+   "ref": "REL1_46",
+   "files_updated": 9,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "CreatedPagesList": {
+   "component": "mediawiki/extensions/CreatedPagesList",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-CreatedPagesList",
+   "baseline": "80a9cbb93b8f",
+   "merge_base": "c5852e6ff0ff798b69f9c079dc685f7065889b5a",
+   "target": "6216398b2485491e58734a0db50770b6d16fa94b",
+   "ref": "REL1_46",
+   "files_updated": 24,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "Description2": {
+   "component": "mediawiki/extensions/Description2",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-Description2",
+   "baseline": "0aeb63785167",
+   "merge_base": "859b31417f642f3b31d444ab6128cff089e79f3f",
+   "target": "fe19f68d9aa19b7b54f411d2d5bab8719157d034",
+   "ref": "master",
+   "files_updated": 16,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "Disambiguator": {
+   "component": "mediawiki/extensions/Disambiguator",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-Disambiguator",
+   "baseline": "394f27ccd801",
+   "merge_base": "5129b5ecc34a190c5f4e049c57b042cfc89572b5",
+   "target": "f1171e65d3a0a5abc923f3a0950daf3618066520",
+   "ref": "REL1_46",
+   "files_updated": 51,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "EditSubpages": {
+   "component": "mediawiki/extensions/EditSubpages",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-EditSubpages",
+   "baseline": "5a9fcee1de9e",
+   "merge_base": "e307f784bac455d1df7275d550652f8dffacf95d",
+   "target": "b8155bb149ec638305a6204532a3b111232bea67",
+   "ref": "3.5.1",
+   "files_updated": 12,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "Editcount": {
+   "component": "mediawiki/extensions/Editcount",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-Editcount",
+   "baseline": "96b9f3f0c7d9",
+   "merge_base": "991d86c21aec39868766e75024c29e2a5bf94d40",
+   "target": "f1d30db83acae9e5b13ada7d58718b91dcb821e3",
+   "ref": "REL1_46",
+   "files_updated": 23,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "FeaturedFeeds": {
+   "component": "mediawiki/extensions/FeaturedFeeds",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-FeaturedFeeds",
+   "baseline": "ff031159467e",
+   "merge_base": "54c0533d2bdb2cadf426617feb3d27a5c2aa9968",
+   "target": "1208e156591831e2780d392c233ee855551bc7a6",
+   "ref": "REL1_46",
+   "files_updated": 35,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "FlexDiagrams": {
+   "component": "mediawiki/extensions/FlexDiagrams",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-FlexDiagrams",
+   "baseline": "2f7767540bd0",
+   "merge_base": "2f7767540bd01c4d6e98d69f89d8e60470ebc6c1",
+   "target": "df5c82fea7d2b20640dbfdb8b3c83bb8e9e20b2b",
+   "ref": "1.0",
+   "files_updated": 52,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "ForcePreview": {
+   "component": "mediawiki/extensions/ForcePreview",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-ForcePreview",
+   "baseline": "4738f28f0609",
+   "merge_base": "cec471ccf1acad4c7d7550a77dc84beeaf52cde9",
+   "target": "3d90390d93176fea0fe87f22418d949e2ac4e00e",
+   "ref": "REL1_46",
+   "files_updated": 16,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "Genealogy": {
+   "component": "mediawiki/extensions/Genealogy",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-Genealogy",
+   "baseline": "c756b3ea4c57",
+   "merge_base": "e21084a8428b1d33bfb8e641252f668d503bbdfd",
+   "target": "4c90263214b3ca57bcb36979b41e6c2ae81e5219",
+   "ref": "2.5.2",
+   "files_updated": 12,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "GeoData": {
+   "component": "mediawiki/extensions/GeoData",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-GeoData",
+   "baseline": "a07637d82ff1",
+   "merge_base": "1e4ca7cd888831219bee65811fd5c5c033e12bb9",
+   "target": "7729d9528c7b1eef717551eed37a655a676317ce",
+   "ref": "REL1_46",
+   "files_updated": 70,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "GlobalNewFiles": {
+   "component": "mediawiki/extensions/GlobalNewFiles",
+   "repository": "https://github.com/miraheze/GlobalNewFiles",
+   "baseline": "d644ce2f4007",
+   "merge_base": "d644ce2f40076ca6ead6e13aad2993253b8c2c2c",
+   "target": "86f7eb2484ed19c725852ec09f2c9ab1ab11e928",
+   "ref": "main",
+   "files_updated": 23,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "GoogleDocs4MW": {
+   "component": "mediawiki/extensions/GoogleDocs4MW",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-GoogleDocs4MW",
+   "baseline": "70e2fe5318fe",
+   "merge_base": "34ac0af52d18dbeb710984a422f6df74fdeb9825",
+   "target": "e953be569397c8427b10e5ba9246da8407e6fec6",
+   "ref": "REL1_46",
+   "files_updated": 11,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "GuidedTour": {
+   "component": "mediawiki/extensions/GuidedTour",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-GuidedTour",
+   "baseline": "5d83fad2f49d",
+   "merge_base": "455347a3f62992bb79e1e8aede7904d49614daa4",
+   "target": "b84a4f8cc41407d2cd7313e4aa627d81f510b71c",
+   "ref": "REL1_46",
+   "files_updated": 63,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "HAWelcome": {
+   "component": "mediawiki/extensions/HAWelcome",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-HAWelcome",
+   "baseline": "6a6345f3be05",
+   "merge_base": "6a6345f3be0528299fa1f6f4f7559aaf50947580",
+   "target": "41f00640ddd848dfd9e42a82ce7b1e6035b1cc09",
+   "ref": "REL1_46",
+   "files_updated": 19,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "HeaderTabs": {
+   "component": "mediawiki/extensions/HeaderTabs",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-HeaderTabs",
+   "baseline": "2d34b93322c5",
+   "merge_base": "fa293b1850ca5f01fdb0ed4dccb07dec032916cb",
+   "target": "58438a0ae08fd4cfb9f539ef7754564561f14453",
+   "ref": "2.4.1",
+   "files_updated": 14,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "InterwikiSorting": {
+   "component": "mediawiki/extensions/InterwikiSorting",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-InterwikiSorting",
+   "baseline": "16abba4ff26b",
+   "merge_base": "f4a594ba6a41fd12415f72eac968daa7e5b14042",
+   "target": "0ed12d6b58c1bf664812582d3df1f211698643bb",
+   "ref": "REL1_46",
+   "files_updated": 11,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "JsCalendar": {
+   "component": "mediawiki/extensions/JsCalendar",
+   "repository": "https://github.com/edwardspec/mediawiki-extension-JsCalendar",
+   "baseline": "7407339f2a01",
+   "merge_base": "7407339f2a017815b1e1a2d089c6eaf20e0db845",
+   "target": "12155cb443f4982debc0de35320d02d0f7fcde35",
+   "ref": "master",
+   "files_updated": 6,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "LanguageSelector": {
+   "component": "mediawiki/extensions/LanguageSelector",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-LanguageSelector",
+   "baseline": "42ff1e3498ac",
+   "merge_base": "581ebf46846fadeac7691ec7a78a6779a89e5c13",
+   "target": "53d1f2c038bcfdf371ac3e4165fe59c744193ab9",
+   "ref": "REL1_46",
+   "files_updated": 16,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "LinkSuggest": {
+   "component": "mediawiki/extensions/LinkSuggest",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-LinkSuggest",
+   "baseline": "0775bf33c24c",
+   "merge_base": "f3afa1c88f6f541043591cb9d1d8351e7ea9ee27",
+   "target": "b2f4491fc4c8290a5dfaed1e3f9fc37c1081fa31",
+   "ref": "REL1_46",
+   "files_updated": 13,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "LinkTitles": {
+   "component": "mediawiki/extensions/LinkTitles",
+   "repository": "https://github.com/bovender/LinkTitles",
+   "baseline": "8eb903e6ae8b",
+   "merge_base": "8eb903e6ae8b22d93e059393338b857b77574bc7",
+   "target": "ae53d01c1f2432f4c2c381c98baa49db064b8ab5",
+   "ref": "v9.0.0",
+   "files_updated": 20,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "MassEditRegex": {
+   "component": "mediawiki/extensions/MassEditRegex",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-MassEditRegex",
+   "baseline": "dcfef9b8434f",
+   "merge_base": "48a5a2bc78e675fa45ebecb2f6de5e06fa98ac13",
+   "target": "0105bee34e3d99011664e8977c456a6597790c12",
+   "ref": "REL1_46",
+   "files_updated": 28,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "Mermaid": {
+   "component": "mediawiki/extensions/Mermaid",
+   "repository": "https://github.com/SemanticMediaWiki/Mermaid",
+   "baseline": "5f8ff5366e72",
+   "merge_base": "5f8ff5366e72abe642c02837fd3bd1d8e0224a1e",
+   "target": "bc7363f003057888b2f0087f350fd63c172afb05",
+   "ref": "6.0.2",
+   "files_updated": 77,
+   "dependency_status": "runtime-requirements-unchanged",
+   "preserved_changes": [
+    "build/.gitignore",
+    "build/Dockerfile",
+    "build/Makefile",
+    "build/README.adoc",
+    "build/docker-compose-ci.yml",
+    "build/docker-compose-dev.yml",
+    "build/docker-compose.override.yml.SAMPLE",
+    "build/docker-compose.yml"
+   ],
+   "source_port_report": "docs/upgrade-mermaid-source.json"
+  },
+  "MintyDocs": {
+   "component": "mediawiki/extensions/MintyDocs",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-MintyDocs",
+   "baseline": "8300e744a124",
+   "merge_base": "8300e744a12476e42f34e4571b0d6613dc9929c7",
+   "target": "3942b70a70f45ad28bfcde829de00d358c1e6188",
+   "ref": "1.4.2",
+   "files_updated": 27,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "MsCalendar": {
+   "component": "mediawiki/extensions/MsCalendar",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-MsCalendar",
+   "baseline": "3e4e8c4955e4",
+   "merge_base": "1a76f2a8ac10fc6561cc09e24f3d823d3aa5c5af",
+   "target": "6e5e00a662627a0d7333ec979393b07f2dd6f318",
+   "ref": "3.1",
+   "files_updated": 23,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "MsLinks": {
+   "component": "mediawiki/extensions/MsLinks",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-MsLinks",
+   "baseline": "b00aee8315f6",
+   "merge_base": "83c5b42d8ee869c2ada9b00fec5070ecc614ab09",
+   "target": "69448e541bc798a99d28e202a620a712251118e5",
+   "ref": "REL1_46",
+   "files_updated": 9,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "MultiBoilerplate": {
+   "component": "mediawiki/extensions/MultiBoilerplate",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-MultiBoilerplate",
+   "baseline": "aa9e09e092fd",
+   "merge_base": "69346a7542b53f821da26d5f304fba532115255a",
+   "target": "42886fea493fbb396eed4eb866cc732ac89058e6",
+   "ref": "REL1_46",
+   "files_updated": 11,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "MultiPurge": {
+   "component": "mediawiki/extensions/MultiPurge",
+   "repository": "https://github.com/octfx/mediawiki-extensions-MultiPurge",
+   "baseline": "51b3e23b4f33",
+   "merge_base": "51b3e23b4f33f5f7d51a3208dc9c06db1014c996",
+   "target": "09f4457ba6302c950a5503541b97732a287ac8df",
+   "ref": "v2.0.0",
+   "files_updated": 18,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "Network": {
+   "component": "mediawiki/extensions/Network",
+   "repository": "https://github.com/ProfessionalWiki/Network",
+   "baseline": "f68d4c99d4e7",
+   "merge_base": "f68d4c99d4e7fb8e0c35d0962dd93de8cae98acf",
+   "target": "9e79548d64e4edb84d2b457d1e1d2f9bba1505f8",
+   "ref": "4.1.0",
+   "files_updated": 40,
+   "dependency_status": "runtime-requirements-changed",
+   "preserved_changes": [
+    ".github/network.png",
+    ".github/youtube.png"
+   ],
+   "source_port_report": "docs/upgrade-network-source.json"
+  },
+  "NewestPages": {
+   "component": "mediawiki/extensions/NewestPages",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-NewestPages",
+   "baseline": "97959ff8e9cf",
+   "merge_base": "1ca3e84924b957c5f550de7e90bcc20e7de5e13b",
+   "target": "37bbe342507097962d4a9cd49f2f85891403b17a",
+   "ref": "REL1_46",
+   "files_updated": 19,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "Newsletter": {
+   "component": "mediawiki/extensions/Newsletter",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-Newsletter",
+   "baseline": "4a7a9a863231",
+   "merge_base": "bfe74a113cd7cee82071627fb631a743b49e6174",
+   "target": "d97189e4d4ed6e2bbae0e4dbb06b430ab1a0ce88",
+   "ref": "REL1_46",
+   "files_updated": 88,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "PageAssessments": {
+   "component": "mediawiki/extensions/PageAssessments",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-PageAssessments",
+   "baseline": "8fd3272a6c05",
+   "merge_base": "d672ed0b73bcb8bcd06978e18ddbbd2ebb8b82d2",
+   "target": "3de2591cf694b573084b0e6e0f2eeb65e98da19f",
+   "ref": "REL1_46",
+   "files_updated": 51,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "PageLanguage": {
+   "component": "mediawiki/extensions/PageLanguage",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-PageLanguage",
+   "baseline": "d95a38d4a03d",
+   "merge_base": "19a4fc5e9ee534dca251941c1eabdcbafbb53af8",
+   "target": "0be32a9ebb7e796c682be067361e1e243d953223",
+   "ref": "REL1_46",
+   "files_updated": 8,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "PollNY": {
+   "component": "mediawiki/extensions/PollNY",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-PollNY",
+   "baseline": "e0b90a457c58",
+   "merge_base": "e0b90a457c585836ca27d5cae829233491557972",
+   "target": "68820ef882b543e1ce923265b1e621b226519eaa",
+   "ref": "REL1_46",
+   "files_updated": 69,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "Purge": {
+   "component": "mediawiki/extensions/Purge",
+   "repository": "https://github.com/NekoCharm01/mediawiki-extensions-Purge",
+   "baseline": "4a155b17d36e",
+   "merge_base": "4a155b17d36e5e1258acf2f0e66eae3515465501",
+   "target": "ca4c5d5f8ad183526970d8c33de052ec0a41753e",
+   "ref": "v2.1.2",
+   "files_updated": 19,
+   "dependency_status": "runtime-requirements-unchanged",
+   "preserved_changes": [
+    "CHANGELOG.md",
+    "i18n/sh.json"
+   ],
+   "source_port_report": "docs/upgrade-purge-source.json"
+  },
+  "Quiz": {
+   "component": "mediawiki/extensions/Quiz",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-Quiz",
+   "baseline": "335f591acb0e",
+   "merge_base": "583857fc348b24a41bc2eddcf358c5e4480b0c3a",
+   "target": "7c907e0ea1dbf3bee8b363750737f28fa0f0299c",
+   "ref": "REL1_46",
+   "files_updated": 164,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "QuizGame": {
+   "component": "mediawiki/extensions/QuizGame",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-QuizGame",
+   "baseline": "fadfb71d6554",
+   "merge_base": "fadfb71d655447ba5063ab48a1192e64cefdf028",
+   "target": "8e8e9bf8f0c1f8881dd48dc8e003bf8796d41108",
+   "ref": "REL1_46",
+   "files_updated": 45,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "RSS": {
+   "component": "mediawiki/extensions/RSS",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-RSS",
+   "baseline": "c92efc9bdacf",
+   "merge_base": "6dd4f1bcc165e8d0a8007ded54786f704f42ce00",
+   "target": "791f68e1e4cf78b7dd90cd29063e91580a9af2fd",
+   "ref": "REL1_46",
+   "files_updated": 17,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "RandomGameUnit": {
+   "component": "mediawiki/extensions/RandomGameUnit",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-RandomGameUnit",
+   "baseline": "086c33a19248",
+   "merge_base": "7bd5dff3e2797cd707854269c191900a9ce563ff",
+   "target": "2d2303b4035756b4db516b8cc86afdd0b9d61c1e",
+   "ref": "2.9.0",
+   "files_updated": 19,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "RatePage": {
+   "component": "mediawiki/extensions/RatePage",
+   "repository": "https://gitlab.com/nonsensopedia/extensions/ratepage.git",
+   "baseline": "b345c379b1c4",
+   "merge_base": "b345c379b1c4e07a74fc3133cffe646991454ed9",
+   "target": "ce936e1b2a539207b9c41df37db47d45030671e9",
+   "ref": "master",
+   "files_updated": 39,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "RevisionSlider": {
+   "component": "mediawiki/extensions/RevisionSlider",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-RevisionSlider",
+   "baseline": "5f6581adea3b",
+   "merge_base": "4f4efd1f1d7365577c53ee9e42217374541b0c94",
+   "target": "81ce181e0b5e9028777e8cc1eadcf63a6a86a742",
+   "ref": "REL1_46",
+   "files_updated": 64,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "RightFunctions": {
+   "component": "mediawiki/extensions/RightFunctions",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-RightFunctions",
+   "baseline": "d232a499271b",
+   "merge_base": "708cfeca3d6ba16819a5f5793294c08f18833b95",
+   "target": "8fa40bf55d325a46f03e2244d82c57c61507612a",
+   "ref": "REL1_46",
+   "files_updated": 11,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "SandboxLink": {
+   "component": "mediawiki/extensions/SandboxLink",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-SandboxLink",
+   "baseline": "11d255e4b0e9",
+   "merge_base": "435da8e26a0f47902a23e7ab904baf7cf0452dc2",
+   "target": "d156a9b50fe492dca977204ef2886599f406c957",
+   "ref": "REL1_46",
+   "files_updated": 20,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "SimpleBatchUpload": {
+   "component": "mediawiki/extensions/SimpleBatchUpload",
+   "repository": "https://github.com/ProfessionalWiki/SimpleBatchUpload",
+   "baseline": "56aaa37eee15",
+   "merge_base": "56aaa37eee1537e86e1c930a309944bb351369be",
+   "target": "a4d7e419a08688fa27922144903505d3598988af",
+   "ref": "4.0.1",
+   "files_updated": 124,
+   "dependency_status": "runtime-requirements-changed"
+  },
+  "SkinPerPage": {
+   "component": "mediawiki/extensions/SkinPerPage",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-SkinPerPage",
+   "baseline": "38ca3d10065b",
+   "merge_base": "fd1ae80e25a84c8a33b2eda7b5adecc2a7772025",
+   "target": "c152f11a9dbd1dc8b32b3644c10ba2cb19de92e5",
+   "ref": "REL1_46",
+   "files_updated": 14,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "SoftRedirector": {
+   "component": "mediawiki/extensions/SoftRedirector",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-SoftRedirector",
+   "baseline": "31480b5c95fb",
+   "merge_base": "9c6cab195de6b5b84e6c7fe7bccfaa72c45551ba",
+   "target": "e10518aaf729451aadce784d22559fc916b96419",
+   "ref": "REL1_46",
+   "files_updated": 11,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "StandardDialogs": {
+   "component": "mediawiki/extensions/StandardDialogs",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-StandardDialogs",
+   "baseline": "6bb4d7cb56a9",
+   "merge_base": "6dce5a58032506b20a7055b85c94efee61183e54",
+   "target": "7ca3619a2a0beb7fccafc84e4fdee353b5e54772",
+   "ref": "4.0.0-alpha",
+   "files_updated": 60,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "StructuredNavigation": {
+   "component": "mediawiki/extensions/StructuredNavigation",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-StructuredNavigation",
+   "baseline": "2e393eb27575",
+   "merge_base": "be436f74c8674c1d61142133f7aebf2639c48f3d",
+   "target": "78a12cf5f6471ce764a1dd24007ba1d66faf00fa",
+   "ref": "master",
+   "files_updated": 22,
+   "dependency_status": "runtime-requirements-changed"
+  },
+  "SubPageList3": {
+   "component": "mediawiki/extensions/SubPageList3",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-SubPageList3",
+   "baseline": "2ef575b7b8ad",
+   "merge_base": "8a318cb787d9960ae29af58b83c28431af91aaee",
+   "target": "d5cd894c9e603e7fa6cb7e1581216ede0202f6e3",
+   "ref": "REL1_46",
+   "files_updated": 18,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "Theme": {
+   "component": "mediawiki/extensions/Theme",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-Theme",
+   "baseline": "93f21a3f46a7",
+   "merge_base": "b402bea731bbde12756ac9b3a6c232d9bc905945",
+   "target": "22bbb442b071419e641903fb48e4610a6f8ea6cb",
+   "ref": "2.5.1",
+   "files_updated": 41,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "Tilesheets": {
+   "component": "mediawiki/extensions/Tilesheets",
+   "repository": "https://github.com/FTB-Gamepedia/Tilesheets",
+   "baseline": "8debbf8ee6dd",
+   "merge_base": "8debbf8ee6ddb02bf9c756bab5c085b007d72c50",
+   "target": "c44c3e2ba61601b545251124ab5b2e177556dfc6",
+   "ref": "5.0.4",
+   "files_updated": 15,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "TitleKey": {
+   "component": "mediawiki/extensions/TitleKey",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-TitleKey",
+   "baseline": "f18fc27d837c",
+   "merge_base": "21d252fa0a60209cc7b4013dcc92b06d33a52b95",
+   "target": "3dc1d8bf28b5f7ad549b4aa2b2c0e3a00a2f7288",
+   "ref": "REL1_46",
+   "files_updated": 8,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "UploadsLink": {
+   "component": "mediawiki/extensions/UploadsLink",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-UploadsLink",
+   "baseline": "992b71c21d00",
+   "merge_base": "8b2b00fd8c769a2436d9831aee14f8acb6793b1b",
+   "target": "637e9e42311af00dd0ff7efb0703198e25f7c8ac",
+   "ref": "REL1_46",
+   "files_updated": 23,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "UserFunctions": {
+   "component": "mediawiki/extensions/UserFunctions",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-UserFunctions",
+   "baseline": "1c1010f06c09",
+   "merge_base": "84d16acba42cff9066f8b131b1d2aaef5bf39cc0",
+   "target": "6ed7145fc40801066caf99f07b21757862fea1c3",
+   "ref": "REL1_46",
+   "files_updated": 8,
+   "dependency_status": "runtime-requirements-changed"
+  },
+  "WebChat": {
+   "component": "mediawiki/extensions/WebChat",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-WebChat",
+   "baseline": "8f923989a52e",
+   "merge_base": "6f29af087b9b70884e879380c12dfc17ade975d9",
+   "target": "5d84f916f4204f5495b67275e265bf4677d86937",
+   "ref": "REL1_46",
+   "files_updated": 22,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "WikiForum": {
+   "component": "mediawiki/extensions/WikiForum",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-WikiForum",
+   "baseline": "b9cea81d7eb8",
+   "merge_base": "b9cea81d7eb8f39ced869d202847c63e378320cd",
+   "target": "b19f8b41684b14cc92205873ad298f776249a477",
+   "ref": "REL1_46",
+   "files_updated": 42,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "WikiLove": {
+   "component": "mediawiki/extensions/WikiLove",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-WikiLove",
+   "baseline": "9885d8ce58f8",
+   "merge_base": "878814463b50ec324398d5ee141086662a996300",
+   "target": "b3b9eb3e5699d504d345b0c2f12abf64ad9d0a5e",
+   "ref": "REL1_46",
+   "files_updated": 86,
+   "dependency_status": "runtime-requirements-unchanged"
+  },
+  "WikiSEO": {
+   "component": "mediawiki/extensions/WikiSEO",
+   "repository": "https://github.com/wikimedia/mediawiki-extensions-WikiSEO",
+   "baseline": "578acdbb0fec",
+   "merge_base": "9424bbfed6e4b005beb51a497c6cb9fc37cdde8f",
+   "target": "a9fe0f4b7a68521b27db6e1d0a56334890630c3d",
+   "ref": "REL1_46",
+   "files_updated": 21,
+   "dependency_status": "runtime-requirements-changed"
+  }
+ }
+}

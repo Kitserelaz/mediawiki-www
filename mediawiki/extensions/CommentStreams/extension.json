@@ -1,10 +1,11 @@
 {
 	"name": "CommentStreams",
-	"version": "8.0.2",
+	"version": "9.1.0",
 	"author": [
 		"[https://www.mediawiki.org/wiki/User:Jji Jason Ji]",
 		"[https://www.mediawiki.org/wiki/User:Cindy.cicalese Cindy Cicalese]",
-		"[https://www.mediawiki.org/wiki/User:MarkAHershberger Mark A. Hershberger]"
+		"[https://www.mediawiki.org/wiki/User:MarkAHershberger Mark A. Hershberger]",
+		"[https://www.hallowelt.com Hallo Welt! GmbH]"
 	],
 	"url": "https://www.mediawiki.org/wiki/Extension:CommentStreams",
 	"descriptionmsg": "commentstreams-desc",
@@ -12,20 +13,78 @@
 	"type": "parserhook",
 	"license-name": "MIT",
 	"requires": {
-		"MediaWiki": ">= 1.39.0",
+		"MediaWiki": ">= 1.43.0",
 		"platform": {
-			"php": ">= 7.4"
+			"php": ">= 8.0"
 		}
 	},
-	"SpecialPages": {
-		"CommentStreamsAllComments": {
-			"class": "MediaWiki\\Extension\\CommentStreams\\CommentStreamsAllComments",
-			"services": [
-				"CommentStreamsStore",
-				"CommentStreamsFactory",
-				"LinkRenderer",
-				"WikiPageFactory"
-			]
+	"attributes": {
+		"CommentStreams": {
+			"Store": {
+				"namespace-page": {
+					"class": "MediaWiki\\Extension\\CommentStreams\\Store\\NamespacePageStore",
+					"services": [
+						"DBLoadBalancer",
+						"PermissionManager",
+						"UserFactory",
+						"WikiPageFactory",
+						"TitleFactory",
+						"CommentStreamsSMWInterface",
+						"RevisionLookup",
+						"CommentStreamsLogger",
+						"HookContainer"
+					]
+				},
+				"talk-page": {
+					"class": "MediaWiki\\Extension\\CommentStreams\\Store\\TalkPageStore",
+					"services": [
+						"DBLoadBalancer",
+						"TitleFactory",
+						"RevisionLookup",
+						"WikiPageFactory",
+						"CommentStreamsLogger",
+						"UserFactory",
+						"UserGroupManager",
+						"NamespaceInfo",
+						"HookContainer",
+						"UserNameUtils"
+					]
+				}
+			},
+			"Notifier": {
+				"echo": {
+					"class": "MediaWiki\\Extension\\CommentStreams\\Notifier\\EchoNotifier",
+					"services": [ "PageProps", "CommentStreamsSerializer" ]
+				},
+				"notify-me": {
+					"class": "MediaWiki\\Extension\\CommentStreams\\Notifier\\NotifyMeNotifier",
+					"services": [ "MWStake.Notifier" ]
+				}
+			}
+		},
+		"NotifyMe": {
+			"SubscriberProviders": {
+				"comment-streams-watchers": {
+					"class": "MediaWiki\\Extension\\CommentStreams\\NotifyMeSubscriptionProvider",
+					"services": [ "CommentStreamsStore" ]
+				}
+			},
+			"Events": {
+				"cs-new-comment": {
+					"spec": {
+						"class": "MediaWiki\\Extension\\CommentStreams\\Notifier\\Event\\NewCommentEvent"
+					},
+					"buckets": [ "content-high-freq" ],
+					"description": "commentstreams-event-new-comment-desc-label"
+				},
+				"cs-new-comment-reply": {
+					"spec": {
+						"class": "MediaWiki\\Extension\\CommentStreams\\Notifier\\Event\\NewReplyEvent"
+					},
+					"buckets": [ "content-high-freq" ],
+					"description": "commentstreams-event-new-comment-reply-desc-label"
+				}
+			}
 		}
 	},
 	"MessagesDirs": {
@@ -33,19 +92,7 @@
 			"i18n"
 		]
 	},
-	"ExtensionMessagesFiles": {
-		"CommentStreamsAlias": "includes/CommentStreams.alias.php"
-	},
 	"ResourceModules": {
-		"ext.CommentStreams.searchUpdate": {
-			"packageFiles": [
-				"SearchUpdate.js"
-			],
-			"targets": [
-				"desktop",
-				"mobile"
-			]
-		},
 		"ext.CommentStreams": {
 			"styles": [
 				"CommentStreams.css"
@@ -56,15 +103,7 @@
 				"Block.js",
 				"Stream.js"
 			],
-			"dependencies": [
-				"oojs-ui",
-				"oojs-ui.styles.icons-alerts",
-				"oojs-ui.styles.icons-content",
-				"oojs-ui.styles.icons-editing-core",
-				"oojs-ui.styles.icons-interactions",
-				"oojs-ui.styles.icons-moderation",
-				"oojs-ui.styles.icons-movement"
-			],
+			"dependencies": [],
 			"targets": [
 				"desktop",
 				"mobile"
@@ -123,20 +162,32 @@
 				"commentstreams-dialog-buttontext-no",
 				"commentstreams-urldialog-instructions",
 				"commentstreams-datetext-postedon",
+				"commentstreams-datetext-posted",
 				"commentstreams-datetext-lasteditedon",
+				"commentstreams-datetext-lastedited",
 				"commentstreams-datetext-moderated",
 				"commentstreams-title-field-placeholder",
 				"commentstreams-body-field-placeholder",
-				"commentstreams-ve-conversion-error"
+				"commentstreams-ve-conversion-error",
+				"commentstreams-button-add-comment",
+				"commentstreams-button-cancel",
+				"commentstreams-link-copied"
 			]
 		},
-		"ext.CommentStreamsAllComments": {
-			"styles": [
-				"CommentStreamsAllComments.css"
+		"ext.commentStreams.talkPageStore.history": {
+			"scripts": [
+				"talkPageStore/History.js"
 			],
-			"targets": [
-				"desktop",
-				"mobile"
+			"messages": [
+				"commentstreams-history-title",
+				"commentstreams-ui-close",
+				"commentstreams-history-timestamp",
+				"commentstreams-history-actor",
+				"commentstreams-history-text"
+			],
+			"dependencies": [
+				"oojs-ui-core",
+				"oojs-ui-windows"
 			]
 		}
 	},
@@ -157,8 +208,8 @@
 		"cspostcomment": {
 			"class": "MediaWiki\\Extension\\CommentStreams\\ApiCSPostComment",
 			"services": [
-				"CommentStreamsFactory",
-				"CommentStreamsEchoInterface",
+				"CommentStreamsStore",
+				"CommentStreamsNotifierInterface",
 				"MainConfig",
 				"WikiPageFactory"
 			]
@@ -166,8 +217,8 @@
 		"cspostreply": {
 			"class": "MediaWiki\\Extension\\CommentStreams\\ApiCSPostReply",
 			"services": [
-				"CommentStreamsFactory",
-				"CommentStreamsEchoInterface",
+				"CommentStreamsStore",
+				"CommentStreamsNotifierInterface",
 				"MainConfig",
 				"WikiPageFactory"
 			]
@@ -175,63 +226,65 @@
 		"csquerycomment": {
 			"class": "MediaWiki\\Extension\\CommentStreams\\ApiCSQueryComment",
 			"services": [
-				"CommentStreamsFactory",
-				"MainConfig"
+				"CommentStreamsStore",
+				"MainConfig",
+				"CommentStreamsSerializer"
 			]
 		},
 		"csqueryreply": {
 			"class": "MediaWiki\\Extension\\CommentStreams\\ApiCSQueryReply",
 			"services": [
-				"CommentStreamsFactory",
-				"MainConfig"
+				"CommentStreamsStore",
+				"MainConfig",
+				"CommentStreamsSerializer"
 			]
 		},
 		"cseditcomment": {
 			"class": "MediaWiki\\Extension\\CommentStreams\\ApiCSEditComment",
 			"services": [
-				"CommentStreamsFactory",
+				"CommentStreamsStore",
 				"MainConfig"
 			]
 		},
 		"cseditreply": {
 			"class": "MediaWiki\\Extension\\CommentStreams\\ApiCSEditReply",
 			"services": [
-				"CommentStreamsFactory",
+				"CommentStreamsStore",
 				"MainConfig"
 			]
 		},
 		"csdeletecomment": {
 			"class": "MediaWiki\\Extension\\CommentStreams\\ApiCSDeleteComment",
 			"services": [
-				"CommentStreamsFactory",
+				"CommentStreamsStore",
 				"MainConfig"
 			]
 		},
 		"csdeletereply": {
 			"class": "MediaWiki\\Extension\\CommentStreams\\ApiCSDeleteReply",
 			"services": [
-				"CommentStreamsFactory",
+				"CommentStreamsStore",
 				"MainConfig"
 			]
 		},
 		"csvote": {
 			"class": "MediaWiki\\Extension\\CommentStreams\\ApiCSVote",
 			"services": [
-				"CommentStreamsFactory",
+				"CommentStreamsStore",
 				"MainConfig"
 			]
 		},
 		"cswatch": {
 			"class": "MediaWiki\\Extension\\CommentStreams\\ApiCSWatch",
 			"services": [
-				"CommentStreamsFactory",
+				"CommentStreamsStore",
 				"MainConfig"
 			]
 		},
 		"csunwatch": {
 			"class": "MediaWiki\\Extension\\CommentStreams\\ApiCSUnwatch",
 			"services": [
-				"CommentStreamsFactory",
+				"CommentStreamsStore",
 				"MainConfig"
 			]
 		}
@@ -241,7 +294,6 @@
 			"class": "MediaWiki\\Extension\\CommentStreams\\MainHooks",
 			"services": [
 				"CommentStreamsHandler",
-				"CommentStreamsFactory",
 				"CommentStreamsStore",
 				"LinkRenderer",
 				"RevisionStore",
@@ -252,6 +304,23 @@
 		},
 		"noservice": {
 			"class": "MediaWiki\\Extension\\CommentStreams\\NoServiceHooks"
+		},
+		"smw": {
+			"class": "MediaWiki\\Extension\\CommentStreams\\SMWHooks",
+			"services": [
+				"CommentStreamsStore",
+				"WikiPageFactory",
+				"MainConfig"
+			]
+		},
+		"talkPageStore": {
+			"class": "MediaWiki\\Extension\\CommentStreams\\Store\\TalkPageStoreHooks"
+		},
+		"registerUsageTracker": {
+			"class": "MediaWiki\\Extension\\CommentStreams\\UsageTracker\\RegisterUsageTracker"
+		},
+		"addNamespaceProperties": {
+			"class": "MediaWiki\\Extension\\CommentStreams\\Hook\\NamespaceManagerCollectNamespaceProperties\\AddNamespaceProperties"
 		}
 	},
 	"Hooks": {
@@ -267,12 +336,29 @@
 		"AfterImportPage": "main",
 		"CanonicalNamespaces": "noservice",
 		"LoadExtensionSchemaUpdates": "noservice",
-		"BeforeCreateEchoEvent": "MediaWiki\\Extension\\CommentStreams\\EchoInterface::onBeforeCreateEchoEvent",
-		"SMW::Property::initProperties": "MediaWiki\\Extension\\CommentStreams\\SMWHooks::initProperties",
-		"SMWStore::updateDataBefore": "MediaWiki\\Extension\\CommentStreams\\SMWHooks::updateData",
-		"SMW::Settings::BeforeInitializationComplete": "MediaWiki\\Extension\\CommentStreams\\SMWHooks::onSMWInitialization"
+		"BeforeCreateEchoEvent": "MediaWiki\\Extension\\CommentStreams\\Notifier\\EchoNotifier::onBeforeCreateEchoEvent",
+		"SMW::Property::initProperties": "smw",
+		"SMWStore::updateDataBefore": "smw",
+		"SMW::Settings::BeforeInitializationComplete": "smw",
+		"MediaWikiServices": "talkPageStore",
+		"BSUsageTrackerRegisterCollectors": "registerUsageTracker",
+		"NamespaceManagerCollectNamespaceProperties": "addNamespaceProperties"
 	},
 	"callback": "MediaWiki\\Extension\\CommentStreams\\MainHooks::onRegistration",
+	"load_composer_autoloader": true,
+	"RestRoutes": [
+		{
+			"method": "GET",
+			"path": "/commentstreams/v1/comments/{comment}/history",
+			"class": "MediaWiki\\Extension\\CommentStreams\\Rest\\TaskPageStoreCommentHistoryHandler",
+			"services": [
+				"CommentStreamsStore",
+				"PermissionManager",
+				"ContentLanguage",
+				"UserFactory"
+			]
+		}
+	],
 	"config": {
 		"CommentStreamsNamespaceIndex": {
 			"value": 844
@@ -312,6 +398,14 @@
 		},
 		"CommentStreamsTimeFormat": {
 			"value": "M j, Y \\a\\t g:i a"
+		},
+		"CommentStreamsStoreModel": {
+			"description": "The model to use for storing comments. Note that models are not interchangeable. When switching model, all comments made using another model will not be available anymore",
+			"value": "namespace-page"
+		},
+		"CommentStreamsNotifier": {
+			"description": "The notifier to use for notifying users of new comments. If null, first available notifier will be used",
+			"value": null
 		}
 	}
 }

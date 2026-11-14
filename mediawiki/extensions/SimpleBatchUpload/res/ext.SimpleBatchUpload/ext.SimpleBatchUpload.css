@@ -1,0 +1,21 @@
+/**
+ * What more than one component needs. Everything else is in the component that
+ * draws it; ResourceLoader concatenates the style blocks of the .vue files into
+ * this module's stylesheet, so a rule's home is the file it belongs to.
+ */
+
+/* Read aloud, never drawn: the file a row's button acts on, the figure behind a
+   ring, and the panel's announcements. Clipped rather than display: none, which
+   would take it out of the accessibility tree along with the pixels. */
+.ext-sbu-visually-hidden {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	overflow: hidden;
+	border: 0;
+	clip-path: inset( 50% );
+	white-space: nowrap;
+}

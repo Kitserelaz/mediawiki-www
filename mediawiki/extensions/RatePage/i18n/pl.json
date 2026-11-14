@@ -3,6 +3,7 @@
 		"authors": [
 			"Kwilke",
 			"Ostrzyciel",
+			"PanWor",
 			"Polskacafe"
 		]
 	},
@@ -59,8 +60,8 @@
 	"ratePage-edit-done": "Pomyślnie zmodyfikowano konkurs $1.",
 	"ratePage-contest-log": "Rejestr konkursów",
 	"ratePage-contest-log-header": "Rejestr zmian w konkursach RatePage.",
-	"logentry-ratepage-contest-create": "$1 {{GENDER:$2|utworzył|utworzyła}} $4",
-	"logentry-ratepage-contest-change": "$1 {{GENDER:$2|zmienił|zmieniła}} $4",
+	"logentry-ratepage-contest-create": "{{GENDER:$2|$1 utworzył|$1 utworzyła|$1 utworzył(a)}} $4",
+	"logentry-ratepage-contest-change": "{{GENDER:$2|$1 zmienił|$1 zmieniła|$1 zmienił(a)}} $4",
 	"ratePage-log-contest-formatter": "konkurs $1",
 	"ratePage-no-such-contest": "Błąd: konkurs „$1” nie istnieje.",
 	"ratePage-page-cannot-vote": "",

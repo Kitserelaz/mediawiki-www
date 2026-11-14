@@ -1,5 +1,8 @@
 <?php
 
+use MediaWiki\Html\FormOptions;
+use MediaWiki\Html\Html;
+use MediaWiki\Title\Title;
 use Wikimedia\Rdbms\ILoadBalancer;
 use MediaWiki\User\UserGroupManager;
 
@@ -69,7 +72,7 @@ class SheetManager extends SpecialPage {
 		$out->addHTML($this->buildSearchForm());
 
 		if ($mod == '') return;
-		
+
 		$userGroups = $this->groupManager->getUserGroups($this->getUser());
 
 		// Update stuff
@@ -92,16 +95,16 @@ class SheetManager extends SpecialPage {
 	 */
 	public static function deleteEntry($mod, $user, ILoadBalancer $dbLoadBalancer, $comment = "") {
 		$dbw = $dbLoadBalancer->getConnection(DB_PRIMARY);
-		$numRows = $dbw->newSelectQueryBuilder()
+		$row = $dbw->newSelectQueryBuilder()
 			->select('*')
 			->from('ext_tilesheet_images')
 			->where(array('`mod`' => $mod))
-			->fetchRowCount();
-		
-		if ($numRows == 0) {
+			->fetchRow();
+
+		if (!$row) {
 			return false;
 		}
-		
+
 		try {
 			$dbw->newDeleteQueryBuilder()
 				->deleteFrom('ext_tilesheet_images')
@@ -116,7 +119,7 @@ class SheetManager extends SpecialPage {
 		$logEntry->setPerformer($user);
 		$logEntry->setTarget(Title::newFromText("Sheet/$mod", NS_SPECIAL));
 		$logEntry->setComment($comment);
-		$logEntry->setParameters(array("4::mod" => $mod, "5::sizes" => $stuff->current()->sizes));
+		$logEntry->setParameters(array("4::mod" => $mod, "5::sizes" => $row->sizes));
 		$logId = $logEntry->insert();
 		$logEntry->publish($logId);
 		// End log
@@ -139,9 +142,9 @@ class SheetManager extends SpecialPage {
 			->from('ext_tilesheet_items')
 			->where(array('`mod_name`' => $mod))
 			->fetchResultSet();
-		
+
 		if ($stuff->numRows() == 0) return false;
-		
+
 		try {
 			$dbw->newDeleteQueryBuilder()
 				->deleteFrom('ext_tilesheet_items')
@@ -252,7 +255,7 @@ class SheetManager extends SpecialPage {
 		$result = $dbr->newSelectQueryBuilder()
 			->select('*')
 			->from('ext_tilesheet_images')
-			->where(array('`mod' => $mod))
+			->where(array('`mod`' => $mod))
 			->fetchRow();
 		if (!$result) {
 			return $this->msg('tilesheet-fail-norows')->text();

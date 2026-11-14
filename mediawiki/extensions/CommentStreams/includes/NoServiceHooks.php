@@ -24,7 +24,6 @@ namespace MediaWiki\Extension\CommentStreams;
 use MediaWiki\Hook\CanonicalNamespacesHook;
 use MediaWiki\Installer\DatabaseUpdater;
 use MediaWiki\Installer\Hook\LoadExtensionSchemaUpdatesHook;
-use MigrateToAbstractSchema;
 
 class NoServiceHooks implements
 	CanonicalNamespacesHook,
@@ -51,6 +50,14 @@ class NoServiceHooks implements
 		$updater->addExtensionTable( 'cs_replies', $dir . '/cs_replies.sql' );
 		$updater->addExtensionTable( 'cs_votes', $dir . '/cs_votes.sql' );
 		$updater->addExtensionTable( 'cs_watchlist', $dir . '/cs_watchlist.sql' );
-		$updater->addPostDatabaseUpdateMaintenance( MigrateToAbstractSchema::class );
+		$updater->addExtensionTable( 'cs_associated_pages', $dir . '/cs_associated_pages.sql' );
+
+		if ( $updater->fieldExists( 'cs_watchlist', 'cst_wl_page_id' ) ) {
+			$updater->modifyExtensionTable( 'cs_watchlist', $dir . '/cs_watchlist_comment_id_patch.sql' );
+		}
+		if ( $updater->fieldExists( 'cs_votes', 'cst_v_page_id' ) ) {
+			$updater->modifyExtensionTable( 'cs_votes', $dir . '/cs_votes_comment_id_patch.sql' );
+		}
+		$updater->addPostDatabaseUpdateMaintenance( \MigrateToAbstractSchema::class );
 	}
 }

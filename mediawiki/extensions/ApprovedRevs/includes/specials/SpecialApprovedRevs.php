@@ -78,9 +78,9 @@ class SpecialApprovedRevs extends QueryPage {
 		}
 
 		$navLine = $this->msg( 'approvedrevs-view' )->escaped() . ' ' . implode( ' | ', $navLinks );
-		$header = Xml::tags( 'p', null, $navLine ) . "\n";
+		$header = Html::rawElement( 'p', [], $navLine ) . "\n";
 
-		return Xml::tags(
+		return Html::rawElement(
 			'div', [ 'class' => 'specialapprovedrevs-header' ], $header
 		);
 	}
@@ -96,7 +96,7 @@ class SpecialApprovedRevs extends QueryPage {
 	public function createHeaderLink( $msg, $mode ) {
 		if ( $this->mMode == $mode ) {
 			return Html::element( 'strong',
-				null,
+				[],
 				$this->msg( $msg )->text()
 			);
 		} else {
@@ -205,7 +205,7 @@ class SpecialApprovedRevs extends QueryPage {
 		}
 
 		if ( $this->mMode == 'all' ) {
-			$additionalInfo = Xml::element( 'span',
+			$additionalInfo = Html::element( 'span',
 				[
 					'class' => $result->rev_id == $result->latest_id ? 'approvedRevIsLatest' : 'approvedRevNotLatest'
 				],
@@ -217,7 +217,11 @@ class SpecialApprovedRevs extends QueryPage {
 				$timestamp = $lang->timeanddate( $timestampInteger, true );
 				$date = $lang->date( $timestampInteger, true );
 				$time = $lang->time( $timestampInteger, true );
-				$userLink = Linker::userLink( $result->log_user, $result->log_user_name );
+				if ( $result->log_user ) {
+					$userLink = Linker::userLink( $result->log_user, $result->log_user_name );
+				} else {
+					$userLink = $result->log_user_name;
+				}
 				$additionalInfo .= ', ' . $this->msg( 'approvedrevs-approvedby' )
 					->rawParams( $userLink )
 					->params(
@@ -236,7 +240,7 @@ class SpecialApprovedRevs extends QueryPage {
 			$line = $pageLink;
 			if ( $egApprovedRevsShowApproveLatest &&
 				ApprovedRevs::checkPermission( $user, $title, 'approverevisions' ) ) {
-				$line .= ' (' . Xml::element( 'a',
+				$line .= ' (' . Html::element( 'a',
 					[ 'href' => $title->getLocalUrl(
 						[
 							'action' => 'approve',
@@ -252,7 +256,7 @@ class SpecialApprovedRevs extends QueryPage {
 			return $pageLink;
 		} else {
 			// approved revision is not latest
-			$diffLink = Xml::element( 'a',
+			$diffLink = Html::element( 'a',
 				[ 'href' => $title->getLocalUrl(
 					[
 						'diff' => $result->latest_id,
@@ -283,7 +287,7 @@ class SpecialApprovedRevs extends QueryPage {
 			global $egApprovedRevsShowApproveLatest;
 
 			if ( $egApprovedRevsShowApproveLatest && ApprovedRevs::userCanApprove( $this->getUser(), $title ) ) {
-				$approveLink = ' (' . Xml::element(
+				$approveLink = ' (' . Html::element(
 					'a',
 					[
 						'href' => $title->getLocalUrl(
@@ -306,7 +310,6 @@ class SpecialApprovedRevs extends QueryPage {
 		# mode: invalidfiles
 		#
 		} elseif ( $this->mMode == 'invalidfiles' ) {
-
 			if ( !ApprovedRevs::fileIsApprovable( $title ) ) {
 				// if showing invalid files only, don't show files
 				// that have real approvability
@@ -338,7 +341,11 @@ class SpecialApprovedRevs extends QueryPage {
 				$timestamp = $lang->timeanddate( $timestampInteger, true );
 				$date = $lang->date( $timestampInteger, true );
 				$time = $lang->time( $timestampInteger, true );
-				$userLink = Linker::userLink( $result->log_user, $result->log_user_name );
+				if ( $result->log_user ) {
+					$userLink = Linker::userLink( $result->log_user, $result->log_user_name );
+				} else {
+					$userLink = $result->log_user_name;
+				}
 				$additionalInfo .= ', ' . $this->msg( 'approvedrevs-approvedby' )
 					->rawParams( $userLink )
 					->params(
@@ -366,11 +373,11 @@ class SpecialApprovedRevs extends QueryPage {
 				[ 'time' => $result->latest_ts ]
 			);
 
-			$approvedLink = Xml::element( 'a',
+			$approvedLink = Html::element( 'a',
 				[ 'href' => $approved_file->getUrl() ],
 				$this->msg( 'approvedrevs-approvedfile' )->text()
 			);
-			$latestLink = Xml::element( 'a',
+			$latestLink = Html::element( 'a',
 				[ 'href' => $latest_file->getUrl() ],
 				$this->msg( 'approvedrevs-latestfile' )->text()
 			);

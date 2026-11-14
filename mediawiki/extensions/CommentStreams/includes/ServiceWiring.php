@@ -21,9 +21,13 @@
 
 namespace MediaWiki\Extension\CommentStreams;
 
-use ExtensionRegistry;
+use MediaWiki\Config\ConfigException;
 use MediaWiki\Config\ServiceOptions;
+use MediaWiki\Extension\CommentStreams\Notifier\NullNotifier;
+use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Registration\ExtensionRegistry;
+use Psr\Log\LoggerInterface;
 
 // PHP unit does not understand code coverage for this file
 // as the @covers annotation cannot cover a specific file
@@ -35,53 +39,50 @@ return [
 		static function ( MediaWikiServices $services ): CommentStreamsHandler {
 			return new CommentStreamsHandler(
 				new ServiceOptions( CommentStreamsHandler::CONSTRUCTOR_OPTIONS, $services->getMainConfig() ),
-				$services->getService( 'CommentStreamsFactory' ),
 				$services->getService( 'CommentStreamsStore' ),
-				$services->getService( 'CommentStreamsEchoInterface' ),
-				$services->getNamespaceInfo(),
-				$services->getPermissionManager()
+				$services->getService( 'CommentStreamsNotifierInterface' ),
+				$services->getPermissionManager(),
+				$services->getService( 'CommentStreamsSerializer' ),
+				$services->getNamespaceInfo()
 			);
 		},
 	'CommentStreamsStore' =>
-		static function ( MediaWikiServices $services ): CommentStreamsStore {
-			return new CommentStreamsStore(
-				$services->getDBLoadBalancer(),
-				$services->getPermissionManager(),
-				$services->getUserFactory(),
-				$services->getWikiPageFactory()
-			);
+		static function ( MediaWikiServices $services ): ICommentStreamsStore {
+			$attribute = ExtensionRegistry::getInstance()->getAttribute( 'CommentStreamsStore' );
+			$selectedStoreModel = $services->getMainConfig()->get( 'CommentStreamsStoreModel' );
+			if ( !$selectedStoreModel || !isset( $attribute[$selectedStoreModel] ) ) {
+				throw new ConfigException( 'Invalid CommentStreamsStoreModel' );
+			}
+			$object = $services->getObjectFactory()->createObject( $attribute[$selectedStoreModel] );
+			if ( !( $object instanceof ICommentStreamsStore ) ) {
+				throw new \RuntimeException( 'Invalid CommentStreamsStoreModel object' );
+			}
+			return $object;
 		},
-	'CommentStreamsFactory' =>
-		static function ( MediaWikiServices $services ): CommentStreamsFactory {
-			return new CommentStreamsFactory(
-				new ServiceOptions( CommentStreamsFactory::CONSTRUCTOR_OPTIONS, $services->getMainConfig() ),
-				$services->getService( 'CommentStreamsStore' ),
-				$services->getService( 'CommentStreamsEchoInterface' ),
-				$services->getService( 'CommentStreamsSMWInterface' ),
-				$services->getService( 'CommentStreamsSocialProfileInterface' ),
-				$services->getLinkRenderer(),
-				$services->getRepoGroup(),
-				$services->getRevisionStore(),
-				$services->getParserFactory(),
-				$services->getUserFactory(),
-				$services->getPageProps(),
-				$services->getWikiPageFactory()
-			);
-		},
-	'CommentStreamsEchoInterface' =>
-		static function ( MediaWikiServices $services ): EchoInterface {
-			return new EchoInterface(
-				ExtensionRegistry::getInstance(),
-				$services->getPageProps()
-			);
+	'CommentStreamsNotifierInterface' =>
+		static function ( MediaWikiServices $services ): NotifierInterface {
+			$config = $services->getMainConfig();
+			$notifierName = $config->get( 'CommentStreamsNotifier' );
+			$specs = ExtensionRegistry::getInstance()->getAttribute( 'CommentStreamsNotifier' );
+			foreach ( $specs as $key => $spec ) {
+				$notifier = $services->getObjectFactory()->createObject( $spec );
+				if ( !( $notifier instanceof NotifierInterface ) ) {
+					continue;
+				}
+				if ( $notifierName && $notifierName === $key ) {
+					return $notifier;
+				}
+				if ( !$notifierName && $notifier->isLoaded() ) {
+					return $notifier;
+				}
+			}
+			return new NullNotifier();
 		},
 	'CommentStreamsSMWInterface' =>
 		static function ( MediaWikiServices $services ): SMWInterface {
 			return new SMWInterface(
 				new ServiceOptions( SMWInterface::CONSTRUCTOR_OPTIONS, $services->getMainConfig() ),
 				ExtensionRegistry::getInstance(),
-				$services->getService( 'CommentStreamsStore' ),
-				$services->getWikiPageFactory(),
 				$services->getJobQueueGroup()
 			);
 		},
@@ -94,6 +95,30 @@ return [
 				)
 			);
 		},
+	'CommentStreamsLogger' => static function ( MediaWikiServices $services ): LoggerInterface {
+		return LoggerFactory::getInstance( 'CommentStreams' );
+	},
+	'CommentStreamsSerializer' => static function ( MediaWikiServices $services ): CommentSerializer {
+		$optionKeys = [
+			'CommentStreamsTimeFormat',
+			'CommentStreamsUserAvatarPropertyName',
+			'CommentStreamsUserRealNamePropertyName',
+			'CommentStreamsEnableVoting'
+		];
+		$options = new ServiceOptions( $optionKeys, $services->getMainConfig() );
+		$options->assertRequiredOptions( $optionKeys );
+		return new CommentSerializer(
+			$options,
+			$services->getService( 'CommentStreamsStore' ),
+			$services->getParserFactory(),
+			$services->getService( 'CommentStreamsSMWInterface' ),
+			$services->getLinkRenderer(),
+			$services->getUserFactory(),
+			$services->getPageProps(),
+			$services->getService( 'CommentStreamsSocialProfileInterface' ),
+			$services->getRepoGroup()
+		);
+	},
 ];
 
 // @codeCoverageIgnoreEnd

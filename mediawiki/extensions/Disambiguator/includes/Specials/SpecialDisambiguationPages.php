@@ -9,36 +9,33 @@
 
 namespace MediaWiki\Extension\Disambiguator\Specials;
 
-use MediaWiki\Cache\LinkBatchFactory;
+use MediaWiki\Page\LinkBatchFactory;
 use MediaWiki\SpecialPage\QueryPage;
 use MediaWiki\Title\Title;
-use Wikimedia\Rdbms\IDatabase;
-use Wikimedia\Rdbms\ILoadBalancer;
+use Wikimedia\Rdbms\IConnectionProvider;
+use Wikimedia\Rdbms\IReadableDatabase;
 use Wikimedia\Rdbms\IResultWrapper;
 
 class SpecialDisambiguationPages extends QueryPage {
 
-	/**
-	 * @param LinkBatchFactory $linkBatchFactory
-	 * @param ILoadBalancer $loadBalancer
-	 */
 	public function __construct(
 		LinkBatchFactory $linkBatchFactory,
-		ILoadBalancer $loadBalancer
+		IConnectionProvider $dbProvider
 	) {
 		parent::__construct( 'DisambiguationPages' );
 		$this->setLinkBatchFactory( $linkBatchFactory );
-		$this->setDBLoadBalancer( $loadBalancer );
+		$this->setDatabaseProvider( $dbProvider );
 	}
 
-	public function isExpensive() {
+	public function isExpensive(): bool {
 		return false;
 	}
 
-	public function isSyndicated() {
+	public function isSyndicated(): bool {
 		return false;
 	}
 
+	/** @inheritDoc */
 	public function getQueryInfo() {
 		return [
 			'tables' => [
@@ -57,6 +54,9 @@ class SpecialDisambiguationPages extends QueryPage {
 		];
 	}
 
+	/**
+	 * @param string|null $par
+	 */
 	public function execute( $par ) {
 		$this->addHelpLink( 'Extension:Disambiguator' );
 		parent::execute( $par );
@@ -71,23 +71,26 @@ class SpecialDisambiguationPages extends QueryPage {
 		return [ 'value' ];
 	}
 
+	/** @inheritDoc */
 	public function sortDescending() {
 		return false;
 	}
 
 	/**
-	 * @param IDatabase $db
+	 * @param IReadableDatabase $db
 	 * @param IResultWrapper $res
 	 */
 	public function preprocessResults( $db, $res ) {
 		$this->executeLBFromResultWrapper( $res );
 	}
 
+	/** @inheritDoc */
 	public function formatResult( $skin, $result ) {
 		$title = Title::makeTitle( $result->namespace, $result->title );
 		return $this->getLinkRenderer()->makeKnownLink( $title );
 	}
 
+	/** @inheritDoc */
 	protected function getGroupName() {
 		return 'pages';
 	}

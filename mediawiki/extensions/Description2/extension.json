@@ -9,13 +9,32 @@
 	"license-name": "GPL-2.0-or-later",
 	"type": "other",
 	"requires": {
-		"MediaWiki": ">= 1.35.0"
+		"MediaWiki": ">= 1.41.0"
 	},
 	"config": {
-		"EnableMetaDescriptionFunctions": false
-	},
-	"ConfigRegistry": {
-		"Description2": "GlobalVarConfig::newInstance"
+		"EnableMetaDescriptionFunctions": false,
+		"DescriptionMaxChars": 300,
+		"DescriptionAlgorithm": "MediaWiki\\Extension\\Description2\\RemexDescriptionProvider",
+		"DescriptionRemoveElements": [
+			"table",
+			"div",
+			"script",
+			"style",
+			"figure",
+			"input",
+			"div.infobox",
+			"div.ambox",
+			"div.dmbox",
+			"ul.gallery",
+			".mw-editsection",
+			"sup.reference",
+			"ul.references",
+			".error",
+			".nomobile",
+			".noprint",
+			".noexcerpt",
+			".sortkey"
+		]
 	},
 	"ServiceWiringFiles": [
 		"includes/ServiceWiring.php"
@@ -35,7 +54,7 @@
 		"Description2": {
 			"class": "MediaWiki\\Extension\\Description2\\Hooks",
 			"services": [
-				"ConfigFactory",
+				"MainConfig",
 				"Description2.DescriptionProvider"
 			]
 		}

@@ -2,9 +2,13 @@
 	"@metadata": {
 		"authors": [
 			"LacoR",
-			"Luky001"
+			"Luky001",
+			"Wizzard"
 		]
 	},
+	"uploadslink-desc": "Pridáva do ponuky osobných nástrojov odkaz na zoznam súborov nahratých aktuálnym používateľom a do bočnej ponuky Nástroje odkaz na zoznam súborov nahratých príslušným používateľom",
 	"uploadslink-portlet-label": "Nahrané súbory",
-	"uploadslink-toobox-label": "Nahrané súbory {{GENDER:$1|používateľa|používateľky}}"
+	"tooltip-pt-uploads": "Zoznam súborov, ktoré ste nahrali",
+	"uploadslink-toobox-label": "Nahrané súbory {{GENDER:$1|používateľa|používateľky}}",
+	"tooltip-tb-uploads": "Zoznam súborov nahratých {{GENDER:$1|týmto používateľom|touto používateľkou}}"
 }

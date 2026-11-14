@@ -2,9 +2,8 @@
 // Designed to work on any Wikipedia article, and can work for other sites with minor message changes.
 
 ( function ( gt ) {
-	var hasEditSectionAtLoadTime, editSectionSelector = '.mw-editsection-visualeditor',
-		editPageDescription, editSectionDescription, tour,
-		pointSavePageStep;
+	const editSectionSelector = '.mw-editsection-visualeditor';
+	let pointSavePageStep = null;
 
 	function shouldShowForPage() {
 		// Excludes pages outside the main namespace and pages with editing restrictions
@@ -23,7 +22,7 @@
 	}
 
 	function handleVeChange( transitionEvent ) {
-		var isSaveButtonDisabled;
+		let isSaveButtonDisabled;
 
 		if ( transitionEvent.type === gt.TransitionEvent.MW_HOOK ) {
 			if ( transitionEvent.hookName === 've.toolbarSaveButton.stateChanged' ) {
@@ -37,21 +36,21 @@
 		}
 	}
 
-	hasEditSectionAtLoadTime = $( editSectionSelector ).length > 0;
+	const hasEditSectionAtLoadTime = $( editSectionSelector ).length > 0;
 
-	editPageDescription = mw.message(
+	const editPageDescription = mw.message(
 		'guidedtour-tour-firsteditve-edit-page-description',
-		$( '#ca-edit a' ).text()
+		$( '#ca-edit a' ).text(),
 	).parse();
 
-	editSectionDescription = mw.message(
+	const editSectionDescription = mw.message(
 		'guidedtour-tour-firsteditve-edit-section-description',
-		mw.message( 'editsection' ).parse()
+		mw.message( 'editsection' ).parse(),
 	).parse();
 
-	tour = new gt.TourBuilder( {
+	const tour = new gt.TourBuilder( {
 		name: 'firsteditve',
-		showConditionally: 'VisualEditor'
+		showConditionally: 'VisualEditor',
 	} );
 
 	tour.firstStep( {
@@ -68,10 +67,10 @@
 				} else {
 					mw.libs.guiders.hideAll();
 				}
-			}
+			},
 		} ],
 		allowAutomaticNext: false,
-		allowAutomaticOkay: false
+		allowAutomaticOkay: false,
 	// Tour-level listeners would avoid repeating this for two steps
 	} ).listenForMwHooks( 've.activationComplete', 've.toolbarSaveButton.stateChanged' )
 		.transition( handleVeChange )
@@ -83,9 +82,9 @@
 		description: editSectionDescription,
 		position: 'right',
 		attachTo: editSectionSelector,
-		width: 300
+		width: 300,
 	} ).listenForMwHooks( 've.activationComplete', 've.toolbarSaveButton.stateChanged' )
-		.transition( function ( transitionEvent ) {
+		.transition( ( transitionEvent ) => {
 			if (
 				transitionEvent.type === gt.TransitionEvent.BUILTIN &&
 				!hasEditSection()
@@ -103,9 +102,9 @@
 		descriptionmsg: 'guidedtour-tour-firsteditve-save-description',
 		attachTo: '.ve-ui-toolbar-saveButton',
 		position: 'bottomRight',
-		closeOnClickOutside: false
+		closeOnClickOutside: false,
 	} ).listenForMwHooks( 've.deactivationComplete' )
-		.transition( function () {
+		.transition( () => {
 			if ( !gt.isEditing() ) {
 				return gt.TransitionAction.END;
 			}

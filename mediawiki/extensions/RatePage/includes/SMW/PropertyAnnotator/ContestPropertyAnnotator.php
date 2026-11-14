@@ -2,12 +2,12 @@
 
 namespace RatePage\SMW\PropertyAnnotator;
 
+use MediaWiki\Title\Title;
 use RatePage\SMW\Hooks;
 use SMW\SemanticData;
 use SMW\Subobject;
 use SMWDIBlob;
 use SMWDIProperty;
-use Title;
 
 class ContestPropertyAnnotator extends PropertyAnnotator {
 	/**

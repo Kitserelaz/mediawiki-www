@@ -15,76 +15,82 @@
  * along with The 3D extension. If not, see <http://www.gnu.org/licenses/>.
  */
 
-( function () {
-	'use strict';
+mw.threed.mmv = {
+	mmvBootstrap: null,
 
-	mw.threed.mmv = {
-		mmvBootstrap: null,
+	/**
+	 * @param {jQuery} $images
+	 */
+	attachControls: function ( $images ) {
+		$images.each( ( i, image ) => {
+			const $image = $( image ),
+				$link = $image.closest( 'a' );
 
-		/**
-		 * @param {jQuery} $images
-		 */
-		attachControls: function ( $images ) {
-			var self = this;
-			$images.each( function () {
-				var $image = $( this ),
-					$link = $image.closest( 'a' );
+			mw.threed.base.thumbnailLoadComplete( $image[ 0 ] )
+				.then( () => {
+					const $wrap = mw.threed.base.wrap( $image ),
+						view = new OO.ui.ButtonWidget( {
+							icon: 'eye',
+							flags: [ 'progressive' ],
+							invisibleLabel: true,
+							label: mw.msg( 'view' )
+						} ),
+						download = new OO.ui.ButtonWidget( {
+							icon: 'download',
+							flags: [ 'progressive' ],
+							invisibleLabel: true,
+							label: mw.msg( 'download' )
+						} ),
+						$buttonWrap = $( '<span>' )
+							.addClass( 'mw-3d-control-wrapper' )
+							.append( view.$element, download.$element );
 
-				mw.threed.base.thumbnailLoadComplete( $image[ 0 ] )
-					.then( function () {
-						var $wrap = mw.threed.base.wrap( $image ),
-							view = new OO.ui.ButtonWidget( {
-								icon: 'eye',
-								flags: [ 'progressive' ],
-								title: mw.message( 'view' ).text()
-							} ),
-							download = new OO.ui.ButtonWidget( {
-								icon: 'download',
-								flags: [ 'progressive' ],
-								title: mw.message( 'download' ).text()
-							} ),
-							$buttonWrap = $( '<span>' )
-								.addClass( 'mw-3d-control-wrapper' )
-								.append( view.$element, download.$element );
+					view.on( 'click', this.open.bind( this, $image ) );
+					download.on( 'click', this.download.bind( this, $link ) );
 
-						view.on( 'click', self.open.bind( self, $image ) );
-						download.on( 'click', self.download.bind( self, $link ) );
-
-						$wrap.append( $buttonWrap );
-					} );
-
-				// Clicking the file should open it in MMV instead of prompting download
-				$link.on( 'click', function ( e ) {
-					e.preventDefault();
-					self.open( $image );
+					$wrap.append( $buttonWrap );
 				} );
+
+			// Clicking the file should open it in MMV instead of prompting download
+			$link.on( 'click', ( e ) => {
+				e.preventDefault();
+				this.open( $image );
 			} );
-		},
+		} );
+	},
 
-		/**
-		 * @param {jQuery} $image
-		 */
-		open: function ( $image ) {
-			mw.loader.using( [ 'mmv.bootstrap' ] ).then( function ( req ) {
-				if ( this.mmvBootstrap === null ) {
-					var MultimediaViewerBootstrap = req( 'mmv.bootstrap' ).MultimediaViewerBootstrap;
-					this.mmvBootstrap = new MultimediaViewerBootstrap();
-					this.mmvBootstrap.setupEventHandlers();
-				}
+	/**
+	 * @param {jQuery} $image
+	 */
+	open: function ( $image ) {
+		mw.loader.using( [ 'mmv.bootstrap' ] ).then( ( req ) => {
+			if ( this.mmvBootstrap === null ) {
+				const MultimediaViewerBootstrap = req( 'mmv.bootstrap' ).MultimediaViewerBootstrap;
+				this.mmvBootstrap = new MultimediaViewerBootstrap();
+				this.mmvBootstrap.setupEventHandlers();
+			}
 
-				var title = mw.Title.newFromImg( $image );
-				this.mmvBootstrap.openImage( title );
-			}.bind( this ) );
-		},
+			const title = mw.Title.newFromImg( $image );
+			const LightboxImage = req( 'mmv.bootstrap' ).LightboxImage;
+			const image = new LightboxImage(
+				$image.prop( 'src' ),
+				title,
+				1,
+				1,
+				$image[ 0 ],
+				''
+			);
+			this.mmvBootstrap.openImage( image );
+		} );
+	},
 
-		/**
-		 * @param {jQuery} $link
-		 */
-		download: function ( $link ) {
-			window.location = $link.attr( 'href' );
-		}
-	};
+	/**
+	 * @param {jQuery} $link
+	 */
+	download: function ( $link ) {
+		window.location = $link.attr( 'href' );
+	}
+};
 
-	// eslint-disable-next-line no-jquery/no-global-selector
-	mw.threed.mmv.attachControls( $( '.fullImageLink .mw-3d-wrapper img' ) );
-}() );
+// eslint-disable-next-line no-jquery/no-global-selector
+mw.threed.mmv.attachControls( $( '.fullImageLink .mw-3d-wrapper img' ) );

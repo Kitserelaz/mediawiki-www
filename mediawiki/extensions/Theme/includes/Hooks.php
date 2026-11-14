@@ -2,19 +2,19 @@
 
 namespace MediaWiki\Extension\Theme;
 
-use Config;
-use IContextSource;
-use MediaWiki\Hook\BeforePageDisplayHook;
-use MediaWiki\Hook\OutputPageBodyAttributesHook;
+use MediaWiki\Config\Config;
+use MediaWiki\Context\IContextSource;
+use MediaWiki\Context\RequestContext;
+use MediaWiki\Output\Hook\BeforePageDisplayHook;
+use MediaWiki\Output\Hook\OutputPageBodyAttributesHook;
+use MediaWiki\Output\OutputPage;
+use MediaWiki\Parser\Sanitizer;
 use MediaWiki\Preferences\Hook\GetPreferencesHook;
 use MediaWiki\ResourceLoader\Hook\ResourceLoaderGetConfigVarsHook;
-use MediaWiki\User\UserOptionsLookup;
-use OutputPage;
-use RequestContext;
-use Sanitizer;
+use MediaWiki\User\Options\UserOptionsLookup;
+use MediaWiki\User\User;
 use Skin;
 use SkinFactory;
-use User;
 
 class Hooks implements
 	BeforePageDisplayHook,
@@ -46,7 +46,7 @@ class Hooks implements
 	 * @return void This hook must not abort, it must return no value
 	 */
 	public function onBeforePageDisplay( $out, $sk ): void {
-		$this->addJSonPreferences( $out, $sk );
+		$this->addJSonPreferences( $out );
 
 		$theme = $this->getTheme( $out );
 
@@ -86,10 +86,8 @@ class Hooks implements
 	 * on Special:Preferences and its global version, Special:GlobalPreferences.
 	 *
 	 * @param OutputPage $out
-	 * @param Skin $sk
-	 * @return void This hook must not abort, it must return no value
 	 */
-	private function addJSonPreferences( $out, $sk ): void {
+	private function addJSonPreferences( $out ): void {
 		if (
 			$out->getTitle()->isSpecial( 'Preferences' ) ||
 			$out->getTitle()->isSpecial( 'GlobalPreferences' )
@@ -127,7 +125,11 @@ class Hooks implements
 			$themeArray[$themeDisplayName] = $theme;
 		}
 
-		$skinsWithThemes = Theme::getSkinsWithThemes( $this->skinFactory->getSkinNames() );
+		$skinsWithThemes = Theme::getSkinsWithThemes(
+			method_exists( $this->skinFactory, 'getInstalledSkins' ) ?
+				// @phan-suppress-next-line PhanUndeclaredMethod
+				$this->skinFactory->getInstalledSkins() : $this->skinFactory->getSkinNames()
+		);
 		$showIf = [ 'OR' ];
 		foreach ( $skinsWithThemes as $skin ) {
 			$showIf[] = [ '===', 'skin', $skin ];

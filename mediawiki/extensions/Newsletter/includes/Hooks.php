@@ -1,13 +1,14 @@
 <?php
 
-// phpcs:disable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
-
 namespace MediaWiki\Extension\Newsletter;
 
-use Article;
+use MediaWiki\Actions\Hook\CustomEditorHook;
 use MediaWiki\Content\Content;
 use MediaWiki\Content\Hook\ContentModelCanBeUsedOnHook;
 use MediaWiki\Context\IContextSource;
+use MediaWiki\Exception\PermissionsError;
+use MediaWiki\Exception\ReadOnlyError;
+use MediaWiki\Exception\ThrottledError;
 use MediaWiki\Extension\Newsletter\Content\NewsletterContent;
 use MediaWiki\Extension\Newsletter\Notifications\EchoNewsletterAnnouncePresentationModel;
 use MediaWiki\Extension\Newsletter\Notifications\EchoNewsletterPublisherAddedPresentationModel;
@@ -16,27 +17,24 @@ use MediaWiki\Extension\Newsletter\Notifications\EchoNewsletterSubscribedPresent
 use MediaWiki\Extension\Newsletter\Notifications\EchoNewsletterUnsubscribedPresentationModel;
 use MediaWiki\Extension\Newsletter\Notifications\EchoNewsletterUserLocator;
 use MediaWiki\Extension\Notifications\UserLocator;
-use MediaWiki\Hook\CustomEditorHook;
 use MediaWiki\Hook\EditFilterMergedContentHook;
-use MediaWiki\Hook\LoginFormValidErrorMessagesHook;
-use MediaWiki\Hook\SkinTemplateNavigation__UniversalHook;
 use MediaWiki\Hook\TitleMoveHook;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Page\Article;
 use MediaWiki\Page\Hook\ArticleDeleteHook;
 use MediaWiki\Page\Hook\PageUndeleteHook;
 use MediaWiki\Page\ProperPageIdentity;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Permissions\Hook\GetUserPermissionsErrorsHook;
+use MediaWiki\Skin\Hook\SkinTemplateNavigation__UniversalHook;
+use MediaWiki\Skin\SkinTemplate;
+use MediaWiki\Specials\Hook\LoginFormValidErrorMessagesHook;
 use MediaWiki\Status\Status;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
-use PermissionsError;
-use ReadOnlyError;
 use RuntimeException;
-use SkinTemplate;
 use StatusValue;
-use ThrottledError;
-use WikiPage;
 
 /**
  * Class to add Hooks used by Newsletter.

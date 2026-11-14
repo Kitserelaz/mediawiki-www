@@ -2,9 +2,10 @@
 	"@metadata": {
 		"authors": [
 			"Bosogo",
-			"Chorobek"
+			"Chorobek",
+			"Элдин беги"
 		]
 	},
-	"quiz_legend_correct": "Туура",
-	"quiz_reset": "Тазала"
+	"quiz-legend-correct": "Туура",
+	"quiz-reset": "Баштапкы калыбына келтирүү"
 }

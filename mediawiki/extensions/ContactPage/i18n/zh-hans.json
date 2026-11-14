@@ -2,17 +2,18 @@
 	"@metadata": {
 		"authors": [
 			"DannyS712",
+			"GuoPC",
 			"Gzdavidwong",
 			"Liangent",
+			"LittlePaw365",
 			"Liuxinyu970226",
 			"Shinjiman",
 			"WhitePhosphorus",
 			"Wmr89502270",
 			"Xiaomingyan",
-			"铁桶",
+			"XtexChooser",
 			"沈澄心",
-			"LittlePaw365",
-			"XtexChooser"
+			"铁桶"
 		]
 	},
 	"contactpage": "联系页面",
@@ -32,6 +33,8 @@
 	"contactpage-config-error-title": "联络表单错误",
 	"contactpage-config-error": "联络表单未对此页面配置，或者配置有误。",
 	"contactpage-mustbeloggedin": "请登录以提交联络表单。",
+	"contactpage-mustbeloggedin-for-temp-user": "请创建一个账号以提交联系表单。",
 	"contactpage-musthaveemail-error-title": "缺少已确认的电子邮件地址",
-	"contactpage-musthaveemail-error": "请在您的[[Special:Preferences|参数设置]]中设置已确认的电子邮件地址以提交联系表单。"
+	"contactpage-musthaveemail-error": "请在您的[[Special:Preferences|参数设置]]中设置已确认的电子邮件地址以提交联系表单。",
+	"contactpage-sender-address": "发件人的电子邮件地址：$1"
 }

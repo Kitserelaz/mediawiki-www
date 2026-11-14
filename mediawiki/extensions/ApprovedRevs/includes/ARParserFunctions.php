@@ -25,6 +25,7 @@
  * for each.
  */
 
+use MediaWiki\Page\PageIdentity;
 use MediaWiki\Title\Title;
 
 class ARParserFunctions {
@@ -82,45 +83,47 @@ class ARParserFunctions {
 	/**
 	 * Helper function for all the display parser functions.
 	 *
-	 * @param Title $title
+	 * @param PageIdentity $title
 	 * @return array{?int, ?int}|null
 	 */
 	public static function getApprovalInfo( $title ) {
-		$pageID = $title->getArticleID();
-		if ( array_key_exists( $pageID, self::$mAllApprovalInfo ) ) {
-			return self::$mAllApprovalInfo[$pageID];
+		$pageId = $title->getId();
+		if ( array_key_exists( $pageId, self::$mAllApprovalInfo ) ) {
+			return self::$mAllApprovalInfo[$pageId];
 		}
 
 		$dbr = ApprovedRevs::getReadDB();
 
 		// There is no consistency between the structures of these two
 		// DB tables, unfortunately.
-		if ( $title->getNamespace() == NS_FILE ) {
+		if ( $title->inNamespace( NS_FILE ) ) {
 			$pageName = $title->getText();
-			$res = $dbr->select( 'approved_revs_files', [ 'approved_timestamp' ], [ 'file_title' => $pageName ] );
+			$res = $dbr->select( 'approved_revs_files', [ 'approved_timestamp' ],
+				[ 'file_title' => $pageName ], __METHOD__ );
 		} else {
-			$res = $dbr->select( 'approved_revs', [ 'approver_id', 'approval_date' ], [ 'page_id' => $pageID ] );
+			$res = $dbr->select( 'approved_revs', [ 'approver_id', 'approval_date' ],
+				[ 'page_id' => $pageId ], __METHOD__ );
 		}
 
 		if ( $res->numRows() == 0 ) {
 			return null;
 		}
 		$row = $res->fetchRow();
-		if ( $title->getNamespace() == NS_FILE ) {
-			self::$mAllApprovalInfo[$pageID] = [ strtotime( $row['approved_timestamp'] ), null ];
+		if ( $title->inNamespace( NS_FILE ) ) {
+			self::$mAllApprovalInfo[$pageId] = [ strtotime( $row['approved_timestamp'] ), null ];
 		} else {
-			self::$mAllApprovalInfo[$pageID] = [ strtotime( $row['approval_date'] ), $row['approver_id'] ];
+			self::$mAllApprovalInfo[$pageId] = [ strtotime( $row['approval_date'] ), $row['approver_id'] ];
 		}
-		return self::$mAllApprovalInfo[$pageID];
+		return self::$mAllApprovalInfo[$pageId];
 	}
 
 	/**
 	 * @param Parser $parser
-	 * @param string $pageName
+	 * @param ?string $pageName
 	 * @param string $formatString
 	 * @return string|null
 	 */
-	public static function formatApprovalDate( Parser $parser, string $pageName, $formatString ) {
+	public static function formatApprovalDate( Parser $parser, ?string $pageName, $formatString ) {
 		if ( $pageName !== '' ) {
 			$title = Title::newFromText( $pageName );
 		} else {

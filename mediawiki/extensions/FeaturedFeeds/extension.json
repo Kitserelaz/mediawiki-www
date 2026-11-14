@@ -8,13 +8,19 @@
 	"type": "other",
 	"license-name": "WTFPL",
 	"requires": {
-		"MediaWiki": ">= 1.43"
+		"MediaWiki": ">= 1.46"
 	},
 	"ExtensionMessagesFiles": {
 		"FeaturedFeedsAliases": "FeaturedFeeds.alias.php"
 	},
 	"APIModules": {
-		"featuredfeed": "MediaWiki\\Extension\\FeaturedFeeds\\ApiFeaturedFeeds"
+		"featuredfeed": {
+			"class": "MediaWiki\\Extension\\FeaturedFeeds\\ApiFeaturedFeeds",
+			"services": [
+				"LanguageNameUtils",
+				"UrlUtils"
+			]
+		}
 	},
 	"Hooks": {
 		"BeforePageDisplay": "FeaturedFeedsHooks",

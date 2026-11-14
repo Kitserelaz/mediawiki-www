@@ -1,5 +1,6 @@
 <?php
 
+use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
 
 /**
@@ -90,12 +91,7 @@ class WikiForumHooks {
 			return wfMessage( 'wikiforum-thread-not-found-text' )->escaped();
 		}
 
-		if ( method_exists( $parser, 'getUserIdentity' ) ) {
-			// MW 1.36+
-			$user = $parser->getUserIdentity();
-		} else {
-			$user = $parser->getUser();
-		}
+		$user = $parser->getUserIdentity();
 		$output = WikiForumGui::showHeaderRow( $thread->showHeaderLinks(), $user );
 
 		$posted = $thread->showPostedInfo();

@@ -17,13 +17,7 @@ use Wikimedia\Rdbms\SelectQueryBuilder;
  */
 class NewsletterDb {
 
-	/**
-	 * @var ILoadBalancer
-	 */
-	private $lb;
-
-	public function __construct( ILoadBalancer $lb ) {
-		$this->lb = $lb;
+	public function __construct( private readonly ILoadBalancer $lb ) {
 	}
 
 	/**
@@ -181,7 +175,7 @@ class NewsletterDb {
 				->caller( __METHOD__ )
 				->execute();
 			return $dbw->insertId();
-		} catch ( DBQueryError $ex ) {
+		} catch ( DBQueryError ) {
 			return false;
 		}
 	}
@@ -196,7 +190,7 @@ class NewsletterDb {
 
 		$rowData = [
 			// nl_newsletters.nl_desc is a blob but put some limit
-			// here which is less than the max size for blobs
+			// here, which is less than the max size for blobs
 			'nl_desc' => $contLang->truncateForDatabase( $description, 600000 ),
 		];
 		$conds = [
@@ -211,7 +205,7 @@ class NewsletterDb {
 				->where( $conds )
 				->caller( __METHOD__ )
 				->execute();
-		} catch ( DBQueryError $ex ) {
+		} catch ( DBQueryError ) {
 			return false;
 		}
 
@@ -239,7 +233,7 @@ class NewsletterDb {
 				->where( $conds )
 				->caller( __METHOD__ )
 				->execute();
-		} catch ( DBQueryError $ex ) {
+		} catch ( DBQueryError ) {
 			return false;
 		}
 
@@ -267,7 +261,7 @@ class NewsletterDb {
 				->where( $conds )
 				->caller( __METHOD__ )
 				->execute();
-		} catch ( DBQueryError $ex ) {
+		} catch ( DBQueryError ) {
 			return false;
 		}
 
@@ -455,7 +449,7 @@ class NewsletterDb {
 				->caller( __METHOD__ )
 				->execute();
 			$dbw->endAtomic( __METHOD__ );
-		} catch ( DBQueryError $ex ) {
+		} catch ( DBQueryError ) {
 			$dbw->rollback( __METHOD__ );
 			return false;
 		}

@@ -10,69 +10,46 @@
 namespace MediaWiki\Extension\Disambiguator\Specials;
 
 use Exception;
-use MediaWiki\Cache\LinkBatchFactory;
 use MediaWiki\Content\IContentHandlerFactory;
-use MediaWiki\Linker\LinksMigration;
+use MediaWiki\Page\LinkBatchFactory;
 use MediaWiki\SpecialPage\QueryPage;
 use MediaWiki\Title\NamespaceInfo;
 use MediaWiki\Title\Title;
 use Wikimedia\Rdbms\DBError;
 use Wikimedia\Rdbms\IConnectionProvider;
-use Wikimedia\Rdbms\IDatabase;
+use Wikimedia\Rdbms\IReadableDatabase;
 use Wikimedia\Rdbms\IResultWrapper;
+use Wikimedia\Rdbms\SelectQueryBuilder;
 
 class SpecialDisambiguationPageLinks extends QueryPage {
 
-	/** @var NamespaceInfo */
-	private $namespaceInfo;
-
-	/** @var LinkBatchFactory */
-	private $linkBatchFactory;
-
-	/** @var IContentHandlerFactory */
-	private $contentHandlerFactory;
-	private IConnectionProvider $dbProvider;
-	private LinksMigration $linksMigration;
-
-	/**
-	 * @param NamespaceInfo $namespaceInfo
-	 * @param LinkBatchFactory $linkBatchFactory
-	 * @param IContentHandlerFactory $contentHandlerFactory
-	 * @param IConnectionProvider $dbProvider
-	 * @param LinksMigration $linksMigration
-	 */
 	public function __construct(
-		NamespaceInfo $namespaceInfo,
-		LinkBatchFactory $linkBatchFactory,
-		IContentHandlerFactory $contentHandlerFactory,
-		IConnectionProvider $dbProvider,
-		LinksMigration $linksMigration
+		private readonly NamespaceInfo $namespaceInfo,
+		private readonly LinkBatchFactory $linkBatchFactory,
+		private readonly IContentHandlerFactory $contentHandlerFactory,
+		private readonly IConnectionProvider $dbProvider,
 	) {
 		parent::__construct( 'DisambiguationPageLinks' );
-		$this->namespaceInfo = $namespaceInfo;
-		$this->linkBatchFactory = $linkBatchFactory;
-		$this->contentHandlerFactory = $contentHandlerFactory;
-		$this->dbProvider = $dbProvider;
-		$this->linksMigration = $linksMigration;
 	}
 
-	public function isExpensive() {
+	public function isExpensive(): bool {
 		return true;
 	}
 
-	public function isSyndicated() {
+	public function isSyndicated(): bool {
 		return false;
 	}
 
+	/** @inheritDoc */
 	public function getQueryInfo() {
-		[ $blNamespace, $blTitle ] = $this->linksMigration->getTitleFields( 'pagelinks' );
-		$queryInfo = $this->linksMigration->getQueryInfo( 'pagelinks', 'pagelinks' );
 		return [
-			'tables' => array_merge( $queryInfo['tables'], [
+			'tables' => [
+				'linktarget',
+				'pagelinks',
 				'p1' => 'page',
 				'p2' => 'page',
 				'page_props'
-			] ),
+			],
 			// The fields we are selecting correspond with fields in the
 			// querycachetwo table so that the results are cachable.
 			'fields' => [
@@ -87,11 +64,12 @@ class SpecialDisambiguationPageLinks extends QueryPage {
 				'p2.page_namespace' => $this->namespaceInfo->getContentNamespaces(),
 				'p2.page_is_redirect != 1'
 			],
-			'join_conds' => array_merge( $queryInfo['joins'], [
-				'p1' => [ 'JOIN', [ "$blNamespace = p1.page_namespace", "$blTitle = p1.page_title" ] ],
+			'join_conds' => [
+				'pagelinks' => [ 'JOIN', [ 'pl_target_id = lt_id' ] ],
+				'p1' => [ 'JOIN', [ 'lt_namespace = p1.page_namespace', 'lt_title = p1.page_title' ] ],
 				'page_props' => [ 'JOIN', [ 'p1.page_id = pp_page' ] ],
 				'p2' => [ 'JOIN', [ 'p2.page_id = pl_from' ] ]
-			] )
+			]
 		];
 	}
 
@@ -106,10 +84,11 @@ class SpecialDisambiguationPageLinks extends QueryPage {
 		return [ 'value', 'to_namespace', 'to_title' ];
 	}
 
-	public function sortDescending() {
+	public function sortDescending(): bool {
 		return false;
 	}
 
+	/** @inheritDoc */
 	public function formatResult( $skin, $result ) {
 		$fromTitle = Title::makeTitle( $result->namespace, $result->title );
 		$toTitle = Title::makeTitle( $result->to_namespace, $result->to_title );
@@ -136,6 +115,7 @@ class SpecialDisambiguationPageLinks extends QueryPage {
 		return "$from $arr $to";
 	}
 
+	/** @inheritDoc */
 	protected function getGroupName() {
 		return 'pages';
 	}
@@ -187,18 +167,30 @@ class SpecialDisambiguationPageLinks extends QueryPage {
 
 				$dbw->startAtomic( __METHOD__ );
 				// Clear out any old cached data
-				$dbw->delete( 'querycachetwo', [ 'qcc_type' => $this->getName() ], $fname );
+				$dbw->newDeleteQueryBuilder()
+					->deleteFrom( 'querycachetwo' )
+					->where( [ 'qcc_type' => $this->getName() ] )
+					->caller( $fname )
+					->execute();
 				// Save results into the querycachetwo table on the master
 				if ( count( $vals ) ) {
-					$dbw->insert( 'querycachetwo', $vals, __METHOD__ );
+					$dbw->newInsertQueryBuilder()
+						->insertInto( 'querycachetwo' )
+						->rows( $vals )
+						->caller( $fname )
+						->execute();
 				}
 				// Update the querycache_info record for the page
-				$dbw->delete( 'querycache_info', [ 'qci_type' => $this->getName() ], $fname );
-				$dbw->insert(
-					'querycache_info',
-					[ 'qci_type' => $this->getName(), 'qci_timestamp' => $dbw->timestamp() ],
-					$fname
-				);
+				$dbw->newDeleteQueryBuilder()
+					->deleteFrom( 'querycache_info' )
+					->where( [ 'qci_type' => $this->getName() ] )
+					->caller( $fname )
+					->execute();
+				$dbw->newInsertQueryBuilder()
+					->insertInto( 'querycache_info' )
+					->row( [ 'qci_type' => $this->getName(), 'qci_timestamp' => $dbw->timestamp() ] )
+					->caller( $fname )
+					->execute();
 				$dbw->endAtomic( __METHOD__ );
 			}
 		} catch ( DBError $e ) {
@@ -213,6 +205,9 @@ class SpecialDisambiguationPageLinks extends QueryPage {
 		return $num;
 	}
 
+	/**
+	 * @param string|null $par
+	 */
 	public function execute( $par ) {
 		$this->addHelpLink( 'Extension:Disambiguator' );
 		parent::execute( $par );
@@ -227,39 +222,40 @@ class SpecialDisambiguationPageLinks extends QueryPage {
 	 */
 	public function fetchFromCache( $limit, $offset = false ) {
 		$dbr = $this->dbProvider->getReplicaDatabase();
-		$options = [];
-		if ( $limit !== false ) {
-			$options['LIMIT'] = intval( $limit );
-		}
-		if ( $offset !== false ) {
-			$options['OFFSET'] = intval( $offset );
-		}
-		// Set sort order. This should match the ordering in getOrderFields().
-		if ( $this->sortDescending() ) {
-			$options['ORDER BY'] = 'qcc_value, qcc_namespacetwo, qcc_titletwo DESC';
-		} else {
-			$options['ORDER BY'] = 'qcc_value, qcc_namespacetwo, qcc_titletwo ASC';
-		}
-		$res = $dbr->select(
-			'querycachetwo',
-			[
+
+		$queryBuilder = $dbr->newSelectQueryBuilder()
+			->select( [
 				'value' => 'qcc_value',
 				'namespace' => 'qcc_namespace',
 				'title' => 'qcc_title',
 				'to_namespace' => 'qcc_namespacetwo',
 				'to_title' => 'qcc_titletwo',
-			],
-			[ 'qcc_type' => $this->getName() ],
-			__METHOD__,
-			$options
-		);
-		return $res;
+			] )
+			->from( 'querycachetwo' )
+			->where( [ 'qcc_type' => $this->getName() ] )
+			->caller( __METHOD__ );
+
+		if ( $limit !== false ) {
+			$queryBuilder->limit( intval( $limit ) );
+		}
+		if ( $offset !== false ) {
+			$queryBuilder->offset( intval( $offset ) );
+		}
+		// Set sort order. This should match the ordering in getOrderFields().
+		$queryBuilder->orderBy( [ 'qcc_value', 'qcc_namespacetwo' ] );
+		if ( $this->sortDescending() ) {
+			$queryBuilder->orderBy( 'qcc_titletwo', SelectQueryBuilder::SORT_DESC );
+		} else {
+			$queryBuilder->orderBy( 'qcc_titletwo', SelectQueryBuilder::SORT_ASC );
+		}
+
+		return $queryBuilder->fetchResultSet();
 	}
 
 	/**
 	 * Cache page content model for performance
 	 *
-	 * @param IDatabase $db
+	 * @param IReadableDatabase $db
 	 * @param IResultWrapper $res
 	 */
 	public function preprocessResults( $db, $res ) {

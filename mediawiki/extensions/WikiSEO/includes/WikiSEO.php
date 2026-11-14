@@ -41,11 +41,6 @@ class WikiSEO {
 	private const MODE_PARSER = 'parser';
 
 	/**
-	 * @var string 'tag' or 'parser' used to determine the error message
-	 */
-	private $mode;
-
-	/**
 	 * prepend, append or replace the new title to the existing title
 	 *
 	 * @var string
@@ -83,12 +78,12 @@ class WikiSEO {
 	 * WikiSEO constructor.
 	 * Loads generator names from LocalSettings
 	 *
-	 * @param string $mode the parser mode
+	 * @param string $mode the parser mode. 'tag' or 'parser' used to determine the error message
 	 */
-	public function __construct( $mode = self::MODE_PARSER ) {
+	public function __construct(
+		private readonly string $mode = self::MODE_PARSER,
+	) {
 		$this->setMetadataGenerators();
-
-		$this->mode = $mode;
 	}
 
 	/**
@@ -98,7 +93,7 @@ class WikiSEO {
 	 */
 	public function setMetadataFromPageProps( OutputPage $outputPage ): void {
 		if ( $outputPage->getTitle() === null ) {
-			$this->errors[] = wfMessage( 'wiki-seo-missing-page-title' );
+			$this->errors[] = wfMessage( 'wiki-seo-missing-page-title' )->parse();
 
 			return;
 		}
@@ -304,7 +299,7 @@ class WikiSEO {
 	public function finalize( ParserOutput $output ): string {
 		if ( empty( $this->metadata ) ) {
 			$message = sprintf( 'wiki-seo-empty-attr-%s', $this->mode );
-			$this->errors[] = wfMessage( $message );
+			$this->errors[] = wfMessage( $message )->parse();
 
 			return $this->makeErrorHtml();
 		}

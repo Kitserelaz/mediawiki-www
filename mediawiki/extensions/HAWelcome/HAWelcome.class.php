@@ -12,8 +12,20 @@
  * @license GPL-2.0-or-later
  */
 
-use MediaWiki\MediaWikiServices;
+use MediaWiki\Language\Language;
+use MediaWiki\Page\WikiPageFactory;
+use MediaWiki\Registration\ExtensionRegistry;
+use MediaWiki\Revision\RevisionStore;
+use MediaWiki\Title\Title;
+use MediaWiki\User\CentralId\CentralIdLookup;
+use MediaWiki\User\Options\UserOptionsManager;
+use MediaWiki\User\User;
+use MediaWiki\User\UserFactory;
+use MediaWiki\User\UserGroupManager;
+use MediaWiki\User\UserRigorOptions;
 use Wikimedia\IPUtils;
+use Wikimedia\ObjectCache\WANObjectCache;
+use Wikimedia\Rdbms\IConnectionProvider;
 
 class HAWelcomeJob extends Job {
 
@@ -22,10 +34,7 @@ class HAWelcomeJob extends Job {
 	 */
 	private $mUser;
 
-	/**
-	 * @var bool
-	 */
-	private $mAnon;
+	private readonly bool $mAnon;
 
 	/**
 	 * @var bool
@@ -35,8 +44,31 @@ class HAWelcomeJob extends Job {
 	/**
 	 * @param Title $title The title linked to
 	 * @param array $params Job parameters (table, start and end page_ids)
+	 * @param CentralIdLookup $centralIdLookup
+	 * @param IConnectionProvider $dbProvider
+	 * @param Language $contentLanguage
+	 * @param ExtensionRegistry $extensionRegistry
+	 * @param RevisionStore $revisionStore
+	 * @param UserFactory $userFactory
+	 * @param UserGroupManager $userGroupManager
+	 * @param UserOptionsManager $userOptionsManager
+	 * @param WANObjectCache $cache
+	 * @param WikiPageFactory $wikiPageFactory
 	 */
-	public function __construct( $title, $params ) {
+	public function __construct(
+		$title,
+		$params,
+		private readonly CentralIdLookup $centralIdLookup,
+		private readonly IConnectionProvider $dbProvider,
+		private readonly Language $contentLanguage,
+		private readonly ExtensionRegistry $extensionRegistry,
+		private readonly RevisionStore $revisionStore,
+		private readonly UserFactory $userFactory,
+		private readonly UserGroupManager $userGroupManager,
+		private readonly UserOptionsManager $userOptionsManager,
+		private readonly WANObjectCache $cache,
+		private readonly WikiPageFactory $wikiPageFactory,
+	) {
 		parent::__construct( 'HAWelcome', $title, $params );
 
 		$userId = $params['user_id'];
@@ -46,14 +78,15 @@ class HAWelcomeJob extends Job {
 		$this->mSysop    = false;
 
 		if ( $this->mAnon ) {
-			$this->mUser = User::newFromName( IPUtils::sanitizeIP( $userIP ), false );
+			$this->mUser = $this->userFactory->newFromName( IPUtils::sanitizeIP( $userIP ),
+				UserRigorOptions::RIGOR_NONE );
 		} else {
-			$this->mUser = User::newFromId( $userId );
+			$this->mUser = $this->userFactory->newFromId( $userId );
 		}
 
 		// Fallback
 		if ( !$this->mUser ) {
-			$this->mUser = User::newFromName( $userName );
+			$this->mUser = $this->userFactory->newFromName( $userName );
 		}
 	}
 
@@ -70,7 +103,7 @@ class HAWelcomeJob extends Job {
 			return true;
 		}
 
-		$welcomeUser = User::newFromName( $wgHAWelcomeWelcomeUsername );
+		$welcomeUser = $this->userFactory->newFromName( $wgHAWelcomeWelcomeUsername );
 		$flags = 0;
 		if ( $welcomeUser && $welcomeUser->isBot() ) {
 			$flags = EDIT_FORCE_BOT;
@@ -86,8 +119,7 @@ class HAWelcomeJob extends Job {
 				$signature = $this->expandSig();
 
 				$welcomeMsg = false;
-				$services = MediaWikiServices::getInstance();
-				$talkWikiPage = $services->getWikiPageFactory()->newFromTitle( $talkPage );
+				$talkWikiPage = $this->wikiPageFactory->newFromTitle( $talkPage );
 
 				if ( !$talkWikiPage->exists() ) {
 					if ( $this->mAnon ) {
@@ -108,7 +140,7 @@ class HAWelcomeJob extends Job {
 						if ( $this->isEnabled( 'page-user' ) ) {
 							$userPage = $this->getUserPage();
 							if ( $userPage ) {
-								$userWikiPage = $services->getWikiPageFactory()->newFromTitle( $userPage );
+								$userWikiPage = $this->wikiPageFactory->newFromTitle( $userPage );
 
 								if ( !$userWikiPage->exists() ) {
 									$pageMsg = wfMessage( 'welcome-user-page' )->inContentLanguage()->text();
@@ -192,21 +224,13 @@ class HAWelcomeJob extends Job {
 
 			if ( !in_array( $sysop, [ '@disabled', '-' ] ) ) {
 				if ( in_array( $sysop, [ '@latest', '@sysop' ] ) ) {
-					$services = MediaWikiServices::getInstance();
 					// First: check cache, maybe we have already stored id of sysop
-					$cache = $services->getMainWANObjectCache();
-					$sysopId = $cache->get( $cache->makeKey( 'last-sysop-id' ) );
+					$sysopId = $this->cache->get( $this->cache->makeKey( 'last-sysop-id' ) );
 					if ( $sysopId ) {
-						$this->mSysop = User::newFromId( $sysopId );
+						$this->mSysop = $this->userFactory->newFromId( $sysopId );
 					} else {
 						// Second: check database, could be expensive for database
-						if ( version_compare( MW_VERSION, '1.42', '>=' ) ) {
-							$dbr = MediaWikiServices::getInstance()
-								->getConnectionProvider()
-								->getReplicaDatabase();
-						} else {
-							$dbr = wfGetDB( DB_REPLICA );
-						}
+						$dbr = $this->dbProvider->getReplicaDatabase();
 
 						/**
 						 * Get all users which are sysops/sysops or staff but not bots
@@ -218,24 +242,14 @@ class HAWelcomeJob extends Job {
 
 						$bots = [];
 						$admins = [];
-						$groupManager = $services->getUserGroupManager();
-						if ( version_compare( MW_VERSION, '1.40', '>=' ) ) {
-							$queryBuilder = $groupManager->newQueryBuilder( $dbr );
-							$res = $queryBuilder
-								->where( $groups )
-								->caller( __METHOD__ )
-								->fetchResultSet();
-						} else {
-							$res = $dbr->select(
-								'user_groups',
-								$groupManager->getQueryInfo()['fields'],
-								$dbr->makeList( $groups, LIST_OR ),
-								__METHOD__
-							);
-						}
+						$queryBuilder = $this->userGroupManager->newQueryBuilder( $dbr );
+						$res = $queryBuilder
+							->where( $groups )
+							->caller( __METHOD__ )
+							->fetchResultSet();
 
 						foreach ( $res as $row ) {
-							$ugm = $groupManager->newGroupMembershipFromRow( $row );
+							$ugm = $this->userGroupManager->newGroupMembershipFromRow( $row );
 							if ( !$ugm->isExpired() ) {
 								if ( $ugm->getGroup() === 'bot' ) {
 									$bots[] = $ugm->getUserId();
@@ -254,7 +268,7 @@ class HAWelcomeJob extends Job {
 						// @author Jack Phoenix <jack@shoutwiki.com>
 						// @date October 13, 2009
 						$wantStaff = $sysop !== '@sysop' &&
-							ExtensionRegistry::getInstance()->isLoaded( 'GlobalUserrights' );
+							$this->extensionRegistry->isLoaded( 'GlobalUserrights' );
 						$staff = [];
 
 						if ( $wantStaff ) {
@@ -266,15 +280,13 @@ class HAWelcomeJob extends Job {
 								__METHOD__
 							);
 
-							$lookup = $services->getCentralIdLookupFactory()->getLookup();
-
 							foreach ( $res2 as $row2 ) {
 								$gugm = GlobalUserGroupMembership::newFromRow( $row2 );
 								if ( !$gugm->isExpired() ) {
 									// Get the local user id, since GlobalUserrights stores
 									// central ID's. This is a two step process, because you can't
 									// get a local ID directly from a central Id.
-									$staffMember = $lookup->localUserFromCentralId( $gugm->getUserId() );
+									$staffMember = $this->centralIdLookup->localUserFromCentralId( $gugm->getUserId() );
 									$staff[] = $staffMember->getId();
 								}
 							}
@@ -294,17 +306,15 @@ class HAWelcomeJob extends Job {
 
 						// Convert user IDs to actor IDs because new tables don't care about UIDs
 						foreach ( $uniqueHumanAdmins as $uniqueHumanAdmin ) {
-							$user = User::newFromId( $uniqueHumanAdmin );
-							if ( $user ) {
-								$actorIds[] = $user->getActorId();
-							}
+							$user = $this->userFactory->newFromId( $uniqueHumanAdmin );
+							$actorIds[] = $user->getActorId();
 						}
 
 						$admins = [
 							'rev_actor' => $actorIds
 						];
 
-						$revQuery = $services->getRevisionStore()->getQueryInfo();
+						$revQuery = $this->revisionStore->getQueryInfo();
 
 						$sixtyDaysAgo = time() - 5184000;
 						// Get the sysop who was active last
@@ -322,19 +332,22 @@ class HAWelcomeJob extends Job {
 						);
 
 						if ( $row && $row->rev_actor ) {
-							$userFactory = $services->getUserFactory();
-							$this->mSysop = $userFactory->newFromActorId( $row->rev_actor );
-							$cache->set( $cache->makeKey( 'last-sysop-id' ), $this->mSysop->getId(), 86400 );
+							$this->mSysop = $this->userFactory->newFromActorId( $row->rev_actor );
+							$this->cache->set( $this->cache->makeKey(
+								'last-sysop-id' ),
+								$this->mSysop->getId(),
+								86400
+							);
 						} elseif ( $wantStaff ) {
 							$staffCount = count( $staff );
 							// Pick a random staff member so no-one gets left out
 							$index = mt_rand( 0, $staffCount - 1 );
-							$this->mSysop = User::newFromId( $staffCount[$index] );
-							$cache->set( $cache->makeKey( 'last-sysop-id' ), $staffCount[$index], 86400 );
+							$this->mSysop = $this->userFactory->newFromId( $staffCount[$index] );
+							$this->cache->set( $this->cache->makeKey( 'last-sysop-id' ), $staffCount[$index], 86400 );
 						}
 					}
 				} else {
-					$this->mSysop = User::newFromName( $sysop );
+					$this->mSysop = $this->userFactory->newFromName( $sysop );
 				}
 			}
 
@@ -342,7 +355,7 @@ class HAWelcomeJob extends Job {
 			if ( $this->mSysop instanceof User && $this->mSysop->getId() ) {
 				wfDebugLog( 'HAWelcome', 'Found sysop: ' . $this->mSysop->getName() );
 			} else {
-				$this->mSysop = User::newFromName( $wgHAWelcomeWelcomeUsername );
+				$this->mSysop = $this->userFactory->newFromName( $wgHAWelcomeWelcomeUsername );
 			}
 		}
 
@@ -358,8 +371,6 @@ class HAWelcomeJob extends Job {
 		global $wgHAWelcomeSignatureFromPreferences;
 
 		$this->mSysop = $this->getLastSysop();
-		$services = MediaWikiServices::getInstance();
-		$contLang = $services->getContentLanguage();
 
 		$sysopName = wfEscapeWikiText( $this->mSysop->getName() );
 		$signature = wfMessage( 'signature' )->params( $sysopName, $sysopName )->plain();
@@ -368,12 +379,11 @@ class HAWelcomeJob extends Job {
 
 		if ( $wgHAWelcomeSignatureFromPreferences ) {
 			// Nickname references to the preference that stores the custom signature
-			$userOptionsManager = $services->getUserOptionsManager();
-			$signature = $userOptionsManager->getOption( $this->mSysop, 'nickname', $signature );
+			$signature = $this->userOptionsManager->getOption( $this->mSysop, 'nickname', $signature );
 		}
 
 		// Append timestamp
-		$signature .= ' ' . $contLang->timeanddate( wfTimestampNow() );
+		$signature .= ' ' . $this->contentLanguage->timeanddate( wfTimestampNow() );
 
 		return $signature;
 	}

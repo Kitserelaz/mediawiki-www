@@ -10,18 +10,8 @@
 var PollNY = {
 	voted: 0,
 
-	/**
-	 * @return Boolean: true if the browser is Firefox under Mac
-	 */
-	detectMacXFF: function () {
-		var userAgent = navigator.userAgent.toLowerCase();
-		if ( userAgent.indexOf( 'mac' ) != -1 && userAgent.indexOf( 'firefox' ) != -1 ) {
-			return true;
-		}
-	},
-
 	show: function () {
-		var loadingElement = document.getElementById( 'loading-poll' ),
+		const loadingElement = document.getElementById( 'loading-poll' ),
 			displayElement = document.getElementById( 'poll-display' );
 		if ( loadingElement ) {
 			loadingElement.style.display = 'none';
@@ -34,24 +24,19 @@ var PollNY = {
 	},
 
 	/**
-	 * Show the "Loading..." text in the lightbox; Firefox on Mac gets only
-	 * that whereas all other User-Agents get the pretty animation.
+	 * Show a loading animation in the lightbox
 	 */
 	loadingLightBox: function () {
 		// pop up the lightbox
-		var objLink = {};
+		const objLink = {};
 		objLink.href = '';
 		objLink.title = '';
 
 		window.LightBox.show( objLink );
 
-		if ( !PollNY.detectMacXFF() ) {
-			window.LightBox.setText(
-				'<img src="' + mw.config.get( 'wgExtensionAssetsPath' ) + '/SocialProfile/images/ajax-loader-white.gif" alt="" />'
-			);
-		} else {
-			window.LightBox.setText( mw.msg( 'poll-js-loading' ) );
-		}
+		window.LightBox.setText(
+			'<img src="' + mw.config.get( 'wgExtensionAssetsPath' ) + '/SocialProfile/images/ajax-loader-white.gif" alt="" />'
+		);
 	},
 
 	/**
@@ -65,7 +50,7 @@ var PollNY = {
 			what: 'vote',
 			pollID: document.getElementById( 'poll_id' ).value,
 			choiceID: -1
-		} ).done( function () {
+		} ).done( () => {
 			PollNY.goToNewPoll();
 		} );
 	},
@@ -81,8 +66,8 @@ var PollNY = {
 		PollNY.voted = 1;
 
 		PollNY.loadingLightBox();
-		var choice_id = 0;
-		for ( var i = 0; i < document.poll.poll_choice.length; i++ ) {
+		let choice_id = 0;
+		for ( let i = 0; i < document.poll.poll_choice.length; i++ ) {
 			if ( document.poll.poll_choice[ i ].checked ) {
 				choice_id = document.poll.poll_choice[ i ].value;
 			}
@@ -96,7 +81,7 @@ var PollNY = {
 				what: 'vote',
 				pollID: document.getElementById( 'poll_id' ).value,
 				choiceID: choice_id
-			} ).done( function () {
+			} ).done( () => {
 				PollNY.goToNewPoll();
 			} );
 		}
@@ -117,7 +102,7 @@ var PollNY = {
 				what: 'getRandom',
 				format: 'json'
 			}
-		} ).done( function ( data ) {
+		} ).done( ( data ) => {
 			// redirect to next poll they haven't voted for
 			if ( data.pollny.result !== 'error' ) {
 				window.location = mw.config.get( 'wgServer' ) +
@@ -132,11 +117,11 @@ var PollNY = {
 				} else {
 					// We have run out of polls to show
 					// Show a lightbox prompting the user to create more polls
-					window.LightBox.setText( mw.msg(
+					window.LightBox.setText( mw.message(
 						'poll-finished',
 						mw.util.getUrl( mw.config.get( 'wgFormattedNamespaces' )[ -1 ] + ':' + 'CreatePoll' ),
 						window.location
-					) );
+					).parse() );
 				}
 			}
 		} );
@@ -149,7 +134,7 @@ var PollNY = {
 	 * @param status Integer: 0 = closed, 1 = open, 2 = flagged
 	 */
 	toggleStatus: function ( status ) {
-		var msg;
+		let msg;
 		switch ( status ) {
 			case 0:
 				msg = mw.msg( 'poll-close-message' );
@@ -162,7 +147,7 @@ var PollNY = {
 				break;
 		}
 
-		OO.ui.confirm( msg ).done( function ( confirmed ) {
+		OO.ui.confirm( msg ).done( ( confirmed ) => {
 			if ( confirmed ) {
 				( new mw.Api() ).postWithToken( 'csrf', {
 					action: 'pollny',
@@ -170,7 +155,7 @@ var PollNY = {
 					what: 'updateStatus',
 					pollID: document.getElementById( 'poll_id' ).value,
 					status: status
-				} ).done( function () {
+				} ).done( () => {
 					window.location.reload();
 				} );
 			}
@@ -179,7 +164,7 @@ var PollNY = {
 
 	// Embed poll stuff
 	showEmbedPoll: function ( id ) {
-		var loadingElement = document.getElementById( 'loading-poll_' + id ),
+		const loadingElement = document.getElementById( 'loading-poll_' + id ),
 			displayElement = document.getElementById( 'poll-display_' + id );
 		if ( loadingElement ) {
 			loadingElement.style.display = 'none';
@@ -196,10 +181,10 @@ var PollNY = {
 	 * @param pageId Integer:
 	 */
 	pollEmbedVote: function ( id, pageId ) {
-		var choice_id = 0,
+		let choice_id = 0,
 			poll_form = eval( 'document.poll_' + id + '.poll_choice' );
 
-		for ( var i = 0; i < poll_form.length; i++ ) {
+		for ( let i = 0; i < poll_form.length; i++ ) {
 			if ( poll_form[ i ].checked ) {
 				choice_id = poll_form[ i ].value;
 			}
@@ -213,7 +198,7 @@ var PollNY = {
 				what: 'vote',
 				pollID: id,
 				choiceID: choice_id
-			} ).done( function () {
+			} ).done( () => {
 				PollNY.showResults( id, pageId );
 			} );
 		}
@@ -235,7 +220,7 @@ var PollNY = {
 				pageID: pageId,
 				format: 'json'
 			}
-		} ).done( function ( data ) {
+		} ).done( ( data ) => {
 			jQuery( '#poll-display_' + id ).html( data.pollny.result );
 		} );
 	},
@@ -251,7 +236,7 @@ var PollNY = {
 	 * element, while toggleStatus() reloads the page
 	 */
 	poll_admin_status: function ( id, status ) {
-		var msg;
+		let msg;
 		switch ( status ) {
 			case 0:
 				msg = mw.msg( 'poll-close-message' );
@@ -264,7 +249,7 @@ var PollNY = {
 				break;
 		}
 
-		OO.ui.confirm( msg ).done( function ( confirmed ) {
+		OO.ui.confirm( msg ).done( ( confirmed ) => {
 			if ( confirmed ) {
 				( new mw.Api() ).postWithToken( 'csrf', {
 					action: 'pollny',
@@ -272,8 +257,8 @@ var PollNY = {
 					what: 'updateStatus',
 					pollID: id,
 					status: status
-				} ).done( function () {
-					jQuery( '#poll-' + id + '-controls' ).html( mw.msg( 'poll-js-action-complete' ) );
+				} ).done( () => {
+					jQuery( '#poll-' + id + '-controls' ).text( mw.msg( 'poll-js-action-complete' ) );
 				} );
 			}
 		} );
@@ -285,17 +270,17 @@ var PollNY = {
 	 * @param id Integer: ID number of the poll that we're about to delete
 	 */
 	poll_delete: function ( id ) {
-		var msg = mw.msg( 'poll-delete-message' );
+		const msg = mw.msg( 'poll-delete-message' );
 
-		OO.ui.confirm( msg ).done( function ( confirmed ) {
+		OO.ui.confirm( msg ).done( ( confirmed ) => {
 			if ( confirmed ) {
 				( new mw.Api() ).postWithToken( 'csrf', {
 					action: 'pollny',
 					format: 'json',
 					what: 'delete',
 					pollID: id
-				} ).done( function () {
-					jQuery( '#poll-' + id + '-controls' ).html( mw.msg( 'poll-js-action-complete' ) );
+				} ).done( () => {
+					jQuery( '#poll-' + id + '-controls' ).text( mw.msg( 'poll-js-action-complete' ) );
 				} );
 			}
 		} );
@@ -303,8 +288,8 @@ var PollNY = {
 
 	// from Special:CreatePoll UI template
 	updateAnswerBoxes: function () {
-		var elem;
-		for ( var x = 1; x <= 9; x++ ) {
+		let elem;
+		for ( let x = 1; x <= 9; x++ ) {
 			if ( document.getElementById( 'answer_' + x ).value ) {
 				elem = document.getElementById( 'poll_answer_' + ( x + 1 ) );
 				elem.style.display = 'block';
@@ -314,7 +299,7 @@ var PollNY = {
 	},
 
 	resetUpload: function () {
-		var uploadElement = document.getElementById( 'imageUpload-frame' );
+		const uploadElement = document.getElementById( 'imageUpload-frame' );
 		uploadElement.src = mw.util.getUrl( mw.config.get( 'wgFormattedNamespaces' )[ -1 ] + ':' + 'PollAjaxUpload' ) + '?wpThumbWidth=75';
 		uploadElement.style.display = 'block';
 		uploadElement.style.visibility = 'visible';
@@ -349,7 +334,7 @@ var PollNY = {
 		jQuery( '#poll_image' ).append(
 			jQuery( '<a>' )
 				.attr( 'href', '#' )
-				.on( 'click', function () {
+				.on( 'click', () => {
 					PollNY.resetUpload();
 				} )
 				.text( mw.msg( 'poll-upload-new-image' ) )
@@ -373,8 +358,8 @@ var PollNY = {
 	 * with the exact same title.
 	 */
 	create: function () {
-		var answers = 0;
-		for ( var x = 1; x <= 9; x++ ) {
+		let answers = 0;
+		for ( let x = 1; x <= 9; x++ ) {
 			if ( document.getElementById( 'answer_' + x ).value ) {
 				answers++;
 			}
@@ -385,13 +370,13 @@ var PollNY = {
 			return '';
 		}
 
-		var val = document.getElementById( 'poll_question' ).value;
+		let val = document.getElementById( 'poll_question' ).value;
 		if ( !val ) {
 			OO.ui.alert( mw.msg( 'poll-enterquestion' ) );
 			return '';
 		}
 
-		if ( val.indexOf( '#' ) > -1 ) {
+		if ( val.includes( '#' ) ) {
 			OO.ui.alert( mw.msg( 'poll-hash' ) );
 			return '';
 		}
@@ -406,7 +391,7 @@ var PollNY = {
 			titles: mw.config.get( 'wgFormattedNamespaces' )[ 300 ] + ':' + val,
 			format: 'json',
 			formatversion: 2
-		} ).done( function ( data ) {
+		} ).done( ( data ) => {
 			// Missing page means that we can create it, obviously!
 			if ( data.query.pages[ 0 ] && data.query.pages[ 0 ].missing === true ) {
 				document.form1.submit();
@@ -418,12 +403,12 @@ var PollNY = {
 	}
 };
 
-jQuery( function () {
+jQuery( () => {
 	// This is assuming that NS_POLL == 300 and no-one ever touches
 	// Poll.namespaces.php in order to change that...
 	if ( jQuery( 'body' ).hasClass( 'ns-300' ) ) {
 		// If LightBox is not yet loaded, well, load it!
-		mw.loader.using( 'ext.socialprofile.LightBox', function () {
+		mw.loader.using( 'ext.socialprofile.LightBox', () => {
 			LightBox.init();
 		} );
 		PollNY.show();
@@ -433,15 +418,15 @@ jQuery( function () {
 			PollNY.toggleStatus( jQuery( this ).data( 'status' ) );
 		} );
 
-		jQuery( 'div.poll-choice input[type="radio"]' ).on( 'click', function () {
+		jQuery( 'div.poll-choice input[type="radio"]' ).on( 'click', () => {
 			PollNY.vote();
 		} );
 
-		jQuery( 'a.poll-skip-link' ).on( 'click', function () {
+		jQuery( 'a.poll-skip-link' ).on( 'click', () => {
 			PollNY.skip();
 		} );
 
-		jQuery( 'a.poll-next-poll-link' ).on( 'click', function ( e ) {
+		jQuery( 'a.poll-next-poll-link' ).on( 'click', ( e ) => {
 			e.preventDefault();
 			PollNY.loadingLightBox();
 			PollNY.goToNewPoll();
@@ -451,7 +436,7 @@ jQuery( function () {
 	// Polls embedded via the <pollembed> tag
 	if ( jQuery( '.poll-embed-title' ).length > 0 ) {
 		// This is somewhat of a hack, because I'm lazy
-		var id = jQuery( 'div.poll-loading-msg' ).attr( 'id' ),
+		const id = jQuery( 'div.poll-loading-msg' ).attr( 'id' ),
 			pollID = id.replace( /loading-poll_/, '' );
 		PollNY.showEmbedPoll( pollID );
 
@@ -482,14 +467,14 @@ jQuery( function () {
 
 	// Code specific to Special:CreatePoll
 	if ( mw.config.get( 'wgCanonicalSpecialPageName' ) == 'CreatePoll' ) {
-		jQuery( 'div.create-poll-top input[type="button"]' ).on( 'click', function () {
+		jQuery( 'div.create-poll-top input[type="button"]' ).on( 'click', () => {
 			PollNY.goToNewPoll();
 		} );
 
 		// Register PollNY.updateAnswerBoxes() as the handler for elements that
 		// have an ID ranging from answer_2 to answer_9
-		for ( var x = 1; x <= 9; x++ ) {
-			jQuery( 'input#answer_' + x ).on( 'keyup', function () {
+		for ( let x = 1; x <= 9; x++ ) {
+			jQuery( 'input#answer_' + x ).on( 'keyup', () => {
 				PollNY.updateAnswerBoxes();
 			} );
 			// Mobile (Android) support
@@ -501,7 +486,7 @@ jQuery( function () {
 			} );
 		}
 
-		jQuery( 'input#poll-create-button' ).on( 'click', function ( e ) {
+		jQuery( 'input#poll-create-button' ).on( 'click', ( e ) => {
 			e.preventDefault();
 			PollNY.create();
 		} );

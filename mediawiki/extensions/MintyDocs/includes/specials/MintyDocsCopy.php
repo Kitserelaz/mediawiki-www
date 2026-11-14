@@ -31,7 +31,6 @@ class MintyDocsCopy extends MintyDocsPublish {
 		// Check permissions.
 		if ( !$this->getUser()->isAllowed( 'mintydocs-administer' ) ) {
 			$this->displayRestrictionError();
-			return;
 		}
 
 		$setVersion = $req->getCheck( 'mdSetVersion' );
@@ -112,7 +111,7 @@ class MintyDocsCopy extends MintyDocsPublish {
 				'name' => 'mdSetVersion',
 				'type' => 'submit',
 				'flags' => 'progressive',
-				'label' => $this->msg( 'apisandbox-continue' )->parse()
+				'label' => $this->msg( 'apisandbox-continue' )->text()
 			]
 		);
 		$text = Html::rawElement( 'form', [ 'method' => 'post' ], $text );
@@ -122,9 +121,13 @@ class MintyDocsCopy extends MintyDocsPublish {
 
 	function displayPageParents( $mdPage ) {
 		$targetTitle = $this->generateTargetTitle( $mdPage->getTitle()->getText() );
-		$text = '<p>These will be copied to the location ' . $this->getLinkRenderer()
-			->makeLink( $targetTitle ) . ".</p>\n";
-		$text .= Html::hidden( 'target_version', $this->mTargetVersion );
+		$targetLink = $this->getLinkRenderer()->makeLink( $targetTitle );
+		$text = Html::rawElement(
+			'p',
+			[],
+			"These will be copied to the location $targetLink."
+		);
+		$text .= "\n" . Html::hidden( 'target_version', $this->mTargetVersion );
 		return $text;
 	}
 

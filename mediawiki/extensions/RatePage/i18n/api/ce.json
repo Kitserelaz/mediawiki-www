@@ -1,0 +1,22 @@
+{
+	"@metadata": {
+		"authors": [
+			"Умар"
+		]
+	},
+	"apihelp-ratepage-summary": "Декъашхочун аьтто бо агӀонна тӀехь кхаж таса а, агӀонан рейтинг эца а. Шина параметрах цхьаъ оьшу: pageid йа pagetitle.",
+	"apihelp-ratepage-param-pageid": "АгӀонан ID",
+	"apihelp-ratepage-param-pagetitle": "АгӀонан цӀе",
+	"apihelp-ratepage-param-answer": "Декъашхочун агӀонан рейтинг (1-5 кхаччалц стандартан кепара, хийца йиш йу конфигурацин параметрашца)",
+	"apihelp-ratepage-param-contest": "Конкурсан иидентификатор",
+	"apihelp-ratepage-example-1": "АгӀонан карара рейтинг схьаэца, Масала.",
+	"apihelp-ratepage-example-2": "ХӀокху масаллин агӀонан мах хадабе 2.",
+	"apihelp-query+pagerating-summary": "ХӀокху агӀонан тӀехь кхаьжнаш а, оцу декъашхочун кхаж таса бакъонаш а йухайерзайо.",
+	"apihelp-query+pagerating-param-contest": "Конкурсан иидентификатор",
+	"apierror-ratepage-contest-id-too-long": "Конкурсан ID-н йохалла совйаьлла дозанал (255 хьаьрк).",
+	"apierror-ratepage-contest-id-allowed-chars": "Конкурсан ID терахьех а, латинан элпех а бен лаьтташ хила ца йеза. Кхин символаш лело мегар дац.",
+	"apierror-ratepage-contest-not-exists": "$1 конкурс йац.",
+	"apierror-ratepage-page-not-exists": "Билгалйаьккхина агӀо йац.",
+	"apierror-ratepage-cannot-vote-in-contest": "Хьан бакъо йац оцу конкурсехь кхаж таса.",
+	"apierror-ratepage-invalid-answer": "Нийса доцу жоп билгалдаьккхина. Жоп $1 доккха йа цхьатерра хила деза, $2 кӀезиг йа цхьатерра хила деза."
+}

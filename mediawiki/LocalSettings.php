@@ -288,7 +288,7 @@ $wmgUploadHostname = "meta.cloudwiki.us";
 $wgForceHTTPS = true;
 // $wgMaxUploadSize = 1024 * 1024 *25;
 #require_once "$IP/config/LocalSettings.php";
-$wgShowExceptionDetails = false;
+$wgShowExceptionDetails = true;
 $wgDebugLogLevel = 1; // Set to a higher level for more detailed logs
 $wgDebugLogGroups['ImportDump'] = "/var/log/mediawiki/id.log";
 $wgDebugLogGroups['SkywikiMagic'] = "/var/log/mediawiki/wom.log";

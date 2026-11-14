@@ -141,6 +141,7 @@ class StatementModificationHelper {
 		}
 
 		/** @var EntityId $entityId */
+		// @phan-suppress-next-line PhanPossiblyUndeclaredVariable
 		return $entityId;
 	}
 

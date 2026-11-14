@@ -52,6 +52,7 @@ class PropertyView extends EntityView {
 	 * @param DataTypeFactory $dataTypeFactory
 	 * @param string $languageCode
 	 * @param LocalizedTextProvider $textProvider
+	 * @param array $viewOptions
 	 */
 	public function __construct(
 		TemplateFactory $templateFactory,
@@ -60,9 +61,10 @@ class PropertyView extends EntityView {
 		StatementSectionsView $statementSectionsView,
 		DataTypeFactory $dataTypeFactory,
 		$languageCode,
-		LocalizedTextProvider $textProvider
+		LocalizedTextProvider $textProvider,
+		array $viewOptions,
 	) {
-		parent::__construct( $templateFactory, $languageDirectionalityLookup, $languageCode );
+		parent::__construct( $templateFactory, $languageDirectionalityLookup, $languageCode, $viewOptions );
 
 		$this->statementSectionsView = $statementSectionsView;
 		$this->dataTypeFactory = $dataTypeFactory;
@@ -114,7 +116,9 @@ class PropertyView extends EntityView {
 		$html = $this->getHtmlForTerms( $property )
 			. $this->templateFactory->render( 'wikibase-toc' )
 			. $this->getHtmlForDataType( $property->getDataTypeId() )
-			. $this->statementSectionsView->getHtml( $property->getStatements() );
+			. $this->statementSectionsView->getHtml(
+				$property->getStatements(), entityId: $property->getId(), wbui2025Ready: true
+			);
 
 		$footer = wfMessage( 'wikibase-property-footer' );
 		$footer = $footer->exists() ? $footer->parse() : '';
@@ -143,7 +147,7 @@ class PropertyView extends EntityView {
 		try {
 			$dataType = $this->dataTypeFactory->getType( $propertyType );
 			$dataTypeLabelHtml = $this->textProvider->getEscaped( $dataType->getMessageKey() );
-		} catch ( OutOfBoundsException $ex ) {
+		} catch ( OutOfBoundsException ) {
 			$dataTypeLabelHtml = '<span class="error">' .
 				$this->textProvider->getEscaped( 'wikibase-propertypage-bad-datatype', [ $propertyType ] ) .
 				'</span>';

@@ -3,10 +3,10 @@
 declare( strict_types = 1 );
 namespace Wikibase\Repo\Tests\FederatedProperties\ParserOutput;
 
-use MediaWiki\Cache\LinkBatch;
-use MediaWiki\Cache\LinkBatchFactory;
+use MediaWiki\FileRepo\RepoGroup;
+use MediaWiki\Page\LinkBatch;
+use MediaWiki\Page\LinkBatchFactory;
 use Psr\SimpleCache\CacheInterface;
-use RepoGroup;
 use Wikibase\DataModel\Entity\EntityId;
 use Wikibase\DataModel\Entity\Item;
 use Wikibase\DataModel\Entity\ItemId;
@@ -60,7 +60,7 @@ class FederatedPropertiesPrefetchingEntityParserOutputGeneratorDecoratorTest ext
 
 		$expectedIds = [ $fedPropId1, $fedPropId2 ];
 
-		$this->entityViewFactory = $this->mockEntityViewFactory( false );
+		$this->entityViewFactory = $this->mockEntityViewFactory( true );
 
 		$apiEntityLookup = $this->createMock( ApiEntityLookup::class );
 		$apiEntityLookup->expects( $this->once() )
@@ -118,7 +118,7 @@ class FederatedPropertiesPrefetchingEntityParserOutputGeneratorDecoratorTest ext
 
 		if ( $dataUpdaters === null ) {
 			$dataUpdaters = [
-				new ItemParserOutputUpdater( $statementUpdater ),
+				new ItemParserOutputUpdater( $statementUpdater, false, false ),
 				new ReferencedEntitiesDataUpdater(
 					$this->newEntityReferenceExtractor(),
 					$this->getEntityTitleLookupMock(),
@@ -139,6 +139,7 @@ class FederatedPropertiesPrefetchingEntityParserOutputGeneratorDecoratorTest ext
 			$entityDataFormatProvider,
 			$dataUpdaters,
 			$this->getServiceContainer()->getLanguageFactory()->getLanguage( $language ),
+			false,
 			false
 		);
 	}

@@ -7,6 +7,7 @@ namespace Wikibase\Repo\Tests\Interactors;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Permissions\PermissionStatus;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\Status\Status;
 use MediaWiki\Title\Title;
@@ -76,9 +77,9 @@ class RedirectCreationInteractorTest extends \PHPUnit\Framework\TestCase {
 				$userWithoutPermissionName = 'UserWithoutPermission';
 
 				if ( $user->getName() === $userWithoutPermissionName ) {
-					return Status::newFatal( 'permissiondenied' );
+					return PermissionStatus::newFatal( 'permissiondenied' );
 				} else {
-					return Status::newGood();
+					return PermissionStatus::newGood();
 				}
 			} );
 
@@ -160,7 +161,7 @@ class RedirectCreationInteractorTest extends \PHPUnit\Framework\TestCase {
 		return $context;
 	}
 
-	public function createRedirectProvider_success(): iterable {
+	public static function createRedirect_successProvider(): iterable {
 		return [
 			'redirect empty entity' => [ new ItemId( 'Q11' ), new ItemId( 'Q12' ) ],
 			'update redirect' => [ new ItemId( 'Q22' ), new ItemId( 'Q11' ) ],
@@ -169,7 +170,7 @@ class RedirectCreationInteractorTest extends \PHPUnit\Framework\TestCase {
 	}
 
 	/**
-	 * @dataProvider createRedirectProvider_success
+	 * @dataProvider createRedirect_successProvider
 	 */
 	public function testCreateRedirect_success( EntityId $fromId, EntityId $toId ) {
 		$interactor = $this->newInteractor( $this->once() );
@@ -191,7 +192,7 @@ class RedirectCreationInteractorTest extends \PHPUnit\Framework\TestCase {
 		$status->getSavedTempUser();
 	}
 
-	public function createRedirectProvider_failure(): iterable {
+	public static function createRedirect_failureProvider(): iterable {
 		return [
 			'source not found' => [
 				new ItemId( 'Q77' ),
@@ -247,7 +248,7 @@ class RedirectCreationInteractorTest extends \PHPUnit\Framework\TestCase {
 	}
 
 	/**
-	 * @dataProvider createRedirectProvider_failure
+	 * @dataProvider createRedirect_failureProvider
 	 */
 	public function testCreateRedirect_failure(
 		EntityId $fromId,

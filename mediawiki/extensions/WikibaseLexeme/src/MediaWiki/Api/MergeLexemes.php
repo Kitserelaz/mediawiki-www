@@ -39,7 +39,7 @@ class MergeLexemes extends ApiBase {
 
 	public function __construct(
 		ApiMain $mainModule,
-		$moduleName,
+		string $moduleName,
 		callable $errorReporterCallback,
 		MergeLexemesInteractor $mergeLexemesInteractor
 	) {
@@ -97,10 +97,11 @@ class MergeLexemes extends ApiBase {
 			);
 		}
 
+		// @phan-suppress-next-line PhanPossiblyUndeclaredVariable
 		$this->showSuccessMessage( $params, $savedTempUser );
 	}
 
-	private function getLexemeIdFromParamOrDie( $serialization ): LexemeId {
+	private function getLexemeIdFromParamOrDie( string $serialization ): LexemeId {
 		try {
 			return new LexemeId( $serialization );
 		} catch ( InvalidArgumentException $e ) {

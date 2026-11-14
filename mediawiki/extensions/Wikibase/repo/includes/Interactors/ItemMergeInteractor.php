@@ -7,6 +7,7 @@ namespace Wikibase\Repo\Interactors;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Permissions\PermissionManager;
+use MediaWiki\Status\Status;
 use MediaWiki\User\User;
 use Wikibase\DataModel\Entity\EntityDocument;
 use Wikibase\DataModel\Entity\EntityId;
@@ -84,7 +85,7 @@ class ItemMergeInteractor {
 		if ( !$status->isOK() ) {
 			// XXX: This is silly, we really want to pass the Status object to the API error handler.
 			// Perhaps we should get rid of ItemMergeException and use Status throughout.
-			throw new ItemMergeException( $status->getWikiText(), 'permissiondenied' );
+			throw new ItemMergeException( (string)$status, 'permissiondenied' );
 		}
 	}
 
@@ -274,6 +275,9 @@ class ItemMergeInteractor {
 		);
 	}
 
+	/**
+	 * @throws ItemMergeException
+	 */
 	private function saveItem(
 		Item $item,
 		FormatableSummary $summary,
@@ -303,7 +307,7 @@ class ItemMergeInteractor {
 		);
 		if ( !$status->isOK() ) {
 			// as in checkPermissions() above, it would be better to just pass the Status to the API
-			throw new ItemMergeException( $status->getWikiText(), 'failed-save' );
+			throw new ItemMergeException( Status::cast( $status )->getWikiText(), 'failed-save' );
 		}
 
 		return $status;

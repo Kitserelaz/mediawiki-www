@@ -2,8 +2,8 @@
 
 namespace Wikibase\Lexeme\DataAccess\Store;
 
+use MediaWiki\Exception\PermissionsError;
 use MediaWiki\User\User;
-use PermissionsError;
 use UnexpectedValueException;
 use Wikibase\DataModel\Entity\EntityDocument;
 use Wikibase\DataModel\Entity\EntityId;
@@ -108,6 +108,7 @@ class FormStore implements EntityStore {
 	 * @param User $user
 	 * @param int $flags
 	 * @param int|bool $baseRevId
+	 * @param array $tags
 	 *
 	 * @throws \DomainException always
 	 * @return never

@@ -77,6 +77,9 @@ trait AliasChangeOpDeserializationTester {
 		);
 	}
 
+	/**
+	 * @return AliasesProvider|EntityDocument
+	 */
 	private function getEntityWithExistingAliases() {
 		$existingEnAliases = [ 'en-existingAlias1', 'en-existingAlias2' ];
 		$entity = $this->getEntity();
@@ -88,7 +91,7 @@ trait AliasChangeOpDeserializationTester {
 	/**
 	 * @return AliasesProvider|EntityDocument
 	 */
-	abstract protected function getEntity();
+	abstract protected static function getEntity();
 
 	/**
 	 * @return ChangeOpDeserializer

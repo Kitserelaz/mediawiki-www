@@ -5,8 +5,8 @@ namespace Wikibase\Lexeme\Tests\MediaWiki\Diff;
 use Diff\Comparer\ComparableComparer;
 use Diff\Differ\OrderedListDiffer;
 use Diff\DiffOp\Diff\Diff;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\Language\RawMessage;
-use MessageLocalizer;
 use PHPUnit\Framework\TestCase;
 use Wikibase\DataModel\Entity\NumericPropertyId;
 use Wikibase\DataModel\Services\EntityId\EntityIdFormatter;
@@ -180,7 +180,7 @@ class SenseDiffViewTest extends TestCase {
 	/**
 	 * @return Statement
 	 */
-	private function someStatement( $propertyId, $guid ) {
+	private function someStatement( string $propertyId, string $guid ) {
 		$statement = new Statement(
 			new PropertySomeValueSnak( new NumericPropertyId( $propertyId ) )
 		);

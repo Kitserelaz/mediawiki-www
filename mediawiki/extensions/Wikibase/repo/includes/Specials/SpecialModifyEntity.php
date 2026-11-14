@@ -49,6 +49,7 @@ abstract class SpecialModifyEntity extends SpecialWikibaseRepoPage {
 	 * @param SummaryFormatter $summaryFormatter
 	 * @param EntityTitleLookup $entityTitleLookup
 	 * @param MediaWikiEditEntityFactory $editEntityFactory
+	 * @param AnonymousEditWarningBuilder $anonymousEditWarningBuilder
 	 */
 	public function __construct(
 		$title,
@@ -61,7 +62,6 @@ abstract class SpecialModifyEntity extends SpecialWikibaseRepoPage {
 	) {
 		parent::__construct(
 			$title,
-			'edit',
 			$tags,
 			$copyrightView,
 			$summaryFormatter,
@@ -71,6 +71,12 @@ abstract class SpecialModifyEntity extends SpecialWikibaseRepoPage {
 		$this->anonymousEditWarningBuilder = $anonymousEditWarningBuilder;
 	}
 
+	/** @inheritDoc */
+	public function getRestriction(): string {
+		return 'edit';
+	}
+
+	/** @inheritDoc */
 	public function doesWrites() {
 		return true;
 	}
@@ -107,7 +113,7 @@ abstract class SpecialModifyEntity extends SpecialWikibaseRepoPage {
 					'Entity ID "' . $id->getSerialization() . '" is unknown'
 				);
 			}
-		} catch ( UnresolvedEntityRedirectException $ex ) {
+		} catch ( UnresolvedEntityRedirectException ) {
 			throw new UserInputException(
 				'wikibase-wikibaserepopage-unresolved-redirect',
 				[ $id->getSerialization() ],
@@ -143,7 +149,7 @@ abstract class SpecialModifyEntity extends SpecialWikibaseRepoPage {
 					'Entity ID "' . $id->getSerialization() . '" is unknown'
 				);
 			}
-		} catch ( UnresolvedEntityRedirectException $ex ) {
+		} catch ( UnresolvedEntityRedirectException ) {
 			throw new UserInputException(
 				'wikibase-wikibaserepopage-unresolved-redirect',
 				[ $id->getSerialization() ],
@@ -286,10 +292,10 @@ abstract class SpecialModifyEntity extends SpecialWikibaseRepoPage {
 			$this->getOutput()->addHTML( $this->getCopyrightHTML( $submitKey ) );
 		}
 		if ( !$this->getUser()->isRegistered() ) {
-			$this->getOutput()->addHTML( Html::rawElement(
-				'p',
-				[ 'class' => 'warning' ],
-				$this->anonymousEditWarningBuilder->buildAnonymousEditWarningHTML( $this->getFullTitle()->getPrefixedText() )
+			$this->getOutput()->addModuleStyles( 'mediawiki.codex.messagebox.styles' );
+			$this->getOutput()->addHTML( Html::warningBox(
+				$this->msg( $this->anonymousEditWarningBuilder->buildAnonymousEditWarningMessage( $this->getFullTitle() ) )
+					->parse()
 			) );
 		}
 

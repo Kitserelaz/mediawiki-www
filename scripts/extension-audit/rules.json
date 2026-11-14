@@ -1,0 +1,492 @@
+{
+  "platform": {
+    "imageFamily": "-fpm-bookworm",
+    "coreModules": [
+      "ctype",
+      "curl",
+      "date",
+      "dom",
+      "fileinfo",
+      "filter",
+      "hash",
+      "iconv",
+      "json",
+      "libxml",
+      "mbstring",
+      "mysqlnd",
+      "openssl",
+      "pcre",
+      "pdo",
+      "pdo_sqlite",
+      "phar",
+      "posix",
+      "random",
+      "reflection",
+      "session",
+      "simplexml",
+      "sodium",
+      "spl",
+      "sqlite3",
+      "standard",
+      "tokenizer",
+      "xml",
+      "xmlreader",
+      "xmlwriter",
+      "zlib"
+    ]
+  },
+  "legacy": [
+    "mediawiki/extensions/SocialProfile/SocialProfile.php",
+    "mediawiki/extensions/Validator/Validator.php"
+  ],
+  "components": {
+    "mediawiki/extensions/AWS": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:AWS"
+    },
+    "mediawiki/extensions/AdminLinks": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:Admin_Links"
+    },
+    "mediawiki/extensions/ApprovedRevs": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:Approved_Revs"
+    },
+    "mediawiki/extensions/ArchiveWikiImport": {
+      "localOnly": "Farm-maintained source has no independent release channel."
+    },
+    "mediawiki/extensions/AutoCreateCategoryPages": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:Auto_Create_Category_Pages"
+    },
+    "mediawiki/extensions/AutoCreatePage": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:AutoCreatePage"
+    },
+    "mediawiki/extensions/Babel": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:Babel"
+    },
+    "mediawiki/extensions/BlogPage": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:BlogPage"
+    },
+    "mediawiki/extensions/Bootstrap": {
+      "evidence": "docs/EXTENSION-DEPENDENCIES.md",
+      "notes": "Chameleon requires Bootstrap 5. Review and update Chameleon before adopting a new Bootstrap major version."
+    },
+    "mediawiki/extensions/CFCachePurge": {
+      "localOnly": "Farm-maintained source has no independent release channel."
+    },
+    "mediawiki/extensions/Cargo": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:Cargo"
+    },
+    "mediawiki/extensions/CentralAuth": {
+      "notes": "Preserve shared database routing and coordinate with CheckUser.",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:CentralAuth"
+    },
+    "mediawiki/extensions/CheckUser": {
+      "notes": "Preserve virtual database routing and coordinate with CentralAuth.",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:CheckUser"
+    },
+    "mediawiki/extensions/CirrusSearch": {
+      "composerScope": "root",
+      "notes": "Requires the optional Elasticsearch profile. Coordinate with Elastica.",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:CirrusSearch"
+    },
+    "mediawiki/extensions/CleanChanges": {
+      "channel": "default",
+      "blocked": "Upstream archived the extension.",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:CleanChanges"
+    },
+    "mediawiki/extensions/CommentStreams": {
+      "channel": "tags",
+      "composerScope": "root",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:CommentStreams"
+    },
+    "mediawiki/extensions/CreateWiki": {
+      "channel": "default",
+      "notes": "Coordinate provisioning and local form changes with ManageWiki.",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:CreateWiki"
+    },
+    "mediawiki/extensions/CustomSearchProfiles": {
+      "channel": "default"
+    },
+    "mediawiki/extensions/CustomSubtitle": {
+      "channel": "default"
+    },
+    "mediawiki/extensions/DataDump": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:DataDump"
+    },
+    "mediawiki/extensions/DataTransfer": {
+      "channel": "tags",
+      "notes": "Preserve linktarget, schema, and Lua changes.",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:Data_Transfer"
+    },
+    "mediawiki/extensions/DeleteUserPages": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:DeleteUserPages"
+    },
+    "mediawiki/extensions/Description2": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:Description2"
+    },
+    "mediawiki/extensions/DiscordAuth": {
+      "localOnly": "Farm-maintained source has no independent release channel."
+    },
+    "mediawiki/extensions/DiscordNotifications": {
+      "channel": "default",
+      "notes": "Requires a configured Discord webhook.",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:DiscordNotifications"
+    },
+    "mediawiki/extensions/DummyFandoomMainpageTags": {
+      "repository": "https://github.com/ciencia/mediawiki-extensions-DummyFandoomMainpageTags",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:DummyFandoomMainpageTags"
+    },
+    "mediawiki/extensions/DynamicPageList3": {
+      "repository": "https://github.com/Universal-Omega/DynamicPageList4",
+      "blocked": "The successor registers as DynamicPageList4. Migrate ManageWiki selections and configuration first.",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:DynamicPageList3"
+    },
+    "mediawiki/extensions/Elastica": {
+      "notes": "Preserve the PHP 8 Match alias and coordinate with CirrusSearch.",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:Elastica"
+    },
+    "mediawiki/extensions/EmbedVideo": {
+      "notes": "Keep the configured FFmpeg setup for local media.",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:EmbedVideo"
+    },
+    "mediawiki/extensions/EventStreamConfig": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:EventStreamConfig"
+    },
+    "mediawiki/extensions/ExternalData": {
+      "channel": "default",
+      "composerScope": "root",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:External_Data"
+    },
+    "mediawiki/extensions/FlexDiagrams": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:Flex_Diagrams"
+    },
+    "mediawiki/extensions/Genealogy": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:Genealogy"
+    },
+    "mediawiki/extensions/GlobalAccountClosure": {
+      "localOnly": "Farm-maintained source has no independent release channel."
+    },
+    "mediawiki/extensions/GlobalNewFiles": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:GlobalNewFiles"
+    },
+    "mediawiki/extensions/GoogleForms": {
+      "channel": "default"
+    },
+    "mediawiki/extensions/Graph": {
+      "blocked": "Upstream archived the extension.",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:Graph"
+    },
+    "mediawiki/extensions/HeaderTabs": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:Header_Tabs"
+    },
+    "mediawiki/extensions/HideSection": {
+      "channel": "tags",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:HideSection"
+    },
+    "mediawiki/extensions/ImportDump": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:ImportDump"
+    },
+    "mediawiki/extensions/IncidentReporting": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:IncidentReporting"
+    },
+    "mediawiki/extensions/Interwiki": {
+      "blocked": "The bundled legacy extension is superseded by core Interwiki.",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:Interwiki"
+    },
+    "mediawiki/extensions/InterwikiDispatcher": {
+      "repository": "https://github.com/Markus-Rost/InterwikiDispatcher",
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:InterwikiDispatcher"
+    },
+    "mediawiki/extensions/JavascriptSlideshow": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:JavascriptSlideshow"
+    },
+    "mediawiki/extensions/JsCalendar": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:JsCalendar"
+    },
+    "mediawiki/extensions/LdapAuthentication": {
+      "blocked": "Upstream retired this LDAP implementation.",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:LDAP_Authentication"
+    },
+    "mediawiki/extensions/Lingo": {
+      "blocked": "The publisher officially supports MediaWiki LTS releases only.",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:Lingo"
+    },
+    "mediawiki/extensions/LinkCards": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:LinkCards"
+    },
+    "mediawiki/extensions/LinkTarget": {
+      "ltsOnly": true,
+      "evidence": "https://www.mediawiki.org/wiki/Extension:LinkTarget"
+    },
+    "mediawiki/extensions/LockAuthor": {
+      "ltsOnly": true,
+      "evidence": "https://www.mediawiki.org/wiki/Extension:LockAuthor"
+    },
+    "mediawiki/extensions/ManageWiki": {
+      "channel": "default",
+      "notes": "Coordinate provisioning with CreateWiki.",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:ManageWiki"
+    },
+    "mediawiki/extensions/Maps": {
+      "notes": "External tile and geocoding endpoints require deployment configuration.",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:Maps"
+    },
+    "mediawiki/extensions/MatomoAnalytics": {
+      "channel": "default",
+      "notes": "Requires a configured Matomo service and the analytics profile.",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:MatomoAnalytics"
+    },
+    "mediawiki/extensions/MintyDocs": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:MintyDocs"
+    },
+    "mediawiki/extensions/MirahezeMagic": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:MirahezeMagic"
+    },
+    "mediawiki/extensions/MobileTabsPlugin": {
+      "channel": "default"
+    },
+    "mediawiki/extensions/Moderation": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:Moderation"
+    },
+    "mediawiki/extensions/MoeCounter": {
+      "localOnly": "Farm-maintained source has no independent release channel."
+    },
+    "mediawiki/extensions/MsUpload": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:MsUpload"
+    },
+    "mediawiki/extensions/MyVariables": {
+      "ltsOnly": true,
+      "evidence": "https://www.mediawiki.org/wiki/Extension:MyVariables"
+    },
+    "mediawiki/extensions/NativeSvgHandler": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:NativeSvgHandler"
+    },
+    "mediawiki/extensions/NewUserNotif": {
+      "blocked": "Upstream archived the extension.",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:New_User_Email_Notification"
+    },
+    "mediawiki/extensions/OAuth": {
+      "notes": "Preserve farm key and storage settings.",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:OAuth"
+    },
+    "mediawiki/extensions/OOJSPlus": {
+      "repository": "https://github.com/wikimedia/mediawiki-extensions-OOJSPlus",
+      "blocked": "Upstream documents LTS release support.",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:OOJSPlus"
+    },
+    "mediawiki/extensions/OpenGraphMeta": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:OpenGraphMeta"
+    },
+    "mediawiki/extensions/PageForms": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:Page_Forms"
+    },
+    "mediawiki/extensions/PageProperties": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:PageProperties"
+    },
+    "mediawiki/extensions/PageSchemas": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:Page_Schemas"
+    },
+    "mediawiki/extensions/PerPageLanguage": {
+      "ltsOnly": true,
+      "evidence": "https://www.mediawiki.org/wiki/Extension:PerPageLanguage"
+    },
+    "mediawiki/extensions/Phonos": {
+      "channel": "default",
+      "blocked": "The default eSpeak renderer is absent from the farm image.",
+      "evidence": "docs/EXTENSION-DEPENDENCIES.md"
+    },
+    "mediawiki/extensions/PipeEscape": {
+      "blocked": "Upstream archived the extension.",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:Pipe_Escape"
+    },
+    "mediawiki/extensions/PortableInfobox": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:PortableInfobox"
+    },
+    "mediawiki/extensions/ProtectionIndicator": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:ProtectionIndicator"
+    },
+    "mediawiki/extensions/Purge": {
+      "repository": "https://github.com/NekoCharm01/mediawiki-extensions-Purge",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:Purge"
+    },
+    "mediawiki/extensions/RatePage": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:RatePage"
+    },
+    "mediawiki/extensions/RemovePII": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:RemovePII"
+    },
+    "mediawiki/extensions/Report": {
+      "notes": "Preserve the local HTML import and exception detail fixes.",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:Report"
+    },
+    "mediawiki/extensions/RequestSSL": {
+      "channel": "default",
+      "evidence": "https://github.com/miraheze/RequestSSL"
+    },
+    "mediawiki/extensions/RottenLinks": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:RottenLinks"
+    },
+    "mediawiki/extensions/Score": {
+      "blocked": "The farm lacks the isolated Shellbox and LilyPond renderer.",
+      "evidence": "docs/EXTENSION-DEPENDENCIES.md"
+    },
+    "mediawiki/extensions/ShortDescription": {
+      "repository": "https://github.com/StarCitizenTools/mediawiki-extensions-ShortDescription",
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:ShortDescription"
+    },
+    "mediawiki/extensions/SimpleTooltip": {
+      "repository": "https://github.com/gesinn-it-pub/SimpleTooltip",
+      "channel": "tags",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:SimpleTooltip"
+    },
+    "mediawiki/extensions/SkyWikiMagic": {
+      "localOnly": "Farm-maintained source has no independent release channel."
+    },
+    "mediawiki/extensions/Spoilers": {
+      "repository": "https://github.com/Telshin/Spoilers",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:Spoilers"
+    },
+    "mediawiki/extensions/StructuredNavigation": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:StructuredNavigation"
+    },
+    "mediawiki/extensions/SyntaxHighlight_GeSHi": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:SyntaxHighlight"
+    },
+    "mediawiki/extensions/TabberNeue": {
+      "evidence": "https://www.mediawiki.org/wiki/Extension:TabberNeue"
+    },
+    "mediawiki/extensions/TemplateStylesExtender": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:TemplateStylesExtender"
+    },
+    "mediawiki/extensions/TimezoneConverter": {
+      "repository": "https://github.com/samwilson/TimezoneConverter",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:TimezoneConverter"
+    },
+    "mediawiki/extensions/Translate": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:Translate"
+    },
+    "mediawiki/extensions/TwitterTag": {
+      "blocked": "Upstream archived the extension.",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:TwitterTag"
+    },
+    "mediawiki/extensions/UniversalLanguageSelector": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:UniversalLanguageSelector"
+    },
+    "mediawiki/extensions/UnlinkedWikibase": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:UnlinkedWikibase"
+    },
+    "mediawiki/extensions/UserFunctions": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:UserFunctions"
+    },
+    "mediawiki/extensions/VEForAll": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:VEForAll"
+    },
+    "mediawiki/extensions/Validator": {
+      "repository": "https://github.com/JeroenDeDauw/Validator",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:Validator"
+    },
+    "mediawiki/extensions/VisualEditor": {
+      "notes": "Preserve the bundled VisualEditor submodule and browser assets.",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:VisualEditor"
+    },
+    "mediawiki/extensions/VoteNY": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:VoteNY"
+    },
+    "mediawiki/extensions/WebAuthn": {
+      "blocked": "Upstream archived the extension.",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:WebAuthn"
+    },
+    "mediawiki/extensions/WikiCategoryTagCloud": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:WikiCategoryTagCloud"
+    },
+    "mediawiki/extensions/WikiDiscover": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:WikiDiscover"
+    },
+    "mediawiki/extensions/Wikibase": {
+      "notes": "Retain both registrations, shared root dependencies, and built frontend assets.",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:Wikibase_Client"
+    },
+    "mediawiki/extensions/WikibaseCirrusSearch": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:WikibaseCirrusSearch"
+    },
+    "mediawiki/extensions/WikibaseLexeme": {
+      "notes": "Coordinate with Wikibase.",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:WikibaseLexeme"
+    },
+    "mediawiki/extensions/WikibaseLexemeCirrusSearch": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:WikibaseLexemeCirrusSearch"
+    },
+    "mediawiki/extensions/cldr": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:CLDR"
+    },
+    "mediawiki/extensions_staging/CreateWiki-old": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:CreateWiki"
+    },
+    "mediawiki/extensions_staging/MatomoAnalytics-test": {
+      "channel": "default",
+      "evidence": "https://www.mediawiki.org/wiki/Extension:MatomoAnalytics",
+      "repository": "https://github.com/miraheze/MatomoAnalytics"
+    },
+    "mediawiki/skins/chameleon/extensions/Bootstrap": {
+      "evidence": "docs/EXTENSION-DEPENDENCIES.md",
+      "notes": "Chameleon requires Bootstrap 5. Review and update Chameleon before adopting a new Bootstrap major version."
+    },
+    "mediawiki/vendor/wikimedia/parsoid": {
+      "repository": "https://github.com/wikimedia/mediawiki-services-parsoid",
+      "channel": "tags",
+      "notes": "Compare the current core-constrained release against the checkout.",
+      "evidence": "mediawiki/composer.json",
+      "respectCorePin": true
+    }
+  }
+}

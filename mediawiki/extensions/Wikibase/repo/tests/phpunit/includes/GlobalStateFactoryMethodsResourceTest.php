@@ -21,9 +21,11 @@ use Wikibase\Repo\WikibaseRepo;
  */
 class GlobalStateFactoryMethodsResourceTest extends ExtensionJsonTestBase {
 
-	protected string $extensionJsonPath = __DIR__ . '/../../../../extension-repo.json';
+	protected static string $extensionJsonPath = __DIR__ . '/../../../../extension-repo.json';
 
 	protected ?string $serviceNamePrefix = 'WikibaseRepo.';
+
+	protected static bool $requireHookHandlers = true;
 
 	/** @dataProvider provideWikibaseServicesMethods */
 	public function testWikibaseServicesMethod( string $methodName ) {
@@ -44,5 +46,4 @@ class GlobalStateFactoryMethodsResourceTest extends ExtensionJsonTestBase {
 		TermboxFlag::getInstance();
 		$this->assertTrue( true );
 	}
-
 }

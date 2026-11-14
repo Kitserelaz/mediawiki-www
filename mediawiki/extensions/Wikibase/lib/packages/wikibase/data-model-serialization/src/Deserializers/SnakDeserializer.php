@@ -137,6 +137,9 @@ class SnakDeserializer implements DispatchableDeserializer {
 		}
 	}
 
+	/**
+	 * @param array $serialization
+	 */
 	private function assertValidDataValue( $serialization ): void {
 		if ( !is_array( $serialization ) || !array_key_exists( DataValueDeserializer::TYPE_KEY, $serialization ) ) {
 			throw new MissingTypeException( 'Not an array or missing the key "' . DataValueDeserializer::TYPE_KEY . '"' );
@@ -156,7 +159,7 @@ class SnakDeserializer implements DispatchableDeserializer {
 			array_keys( $this->dataTypeToValueTypeMap, $valueType, true )
 		);
 
-		return !empty( array_intersect( $possibleDataTypeKeys, array_keys( $this->deserializerBuilders ) ) );
+		return array_intersect( $possibleDataTypeKeys, array_keys( $this->deserializerBuilders ) ) !== [];
 	}
 
 	/**
@@ -165,7 +168,7 @@ class SnakDeserializer implements DispatchableDeserializer {
 	private function deserializePropertyId( string $serialization ): PropertyId {
 		try {
 			$id = $this->propertyIdParser->parse( $serialization );
-		} catch ( EntityIdParsingException $ex ) {
+		} catch ( EntityIdParsingException ) {
 			throw new InvalidAttributeException(
 				'property',
 				$serialization,
@@ -184,6 +187,9 @@ class SnakDeserializer implements DispatchableDeserializer {
 		);
 	}
 
+	/**
+	 * @param array $serialization
+	 */
 	private function assertCanDeserialize( $serialization ): void {
 		if ( !is_array( $serialization ) ) {
 			throw new DeserializationException( 'The snak serialization should be an array' );

@@ -4,8 +4,8 @@ namespace Wikibase\Repo\Specials;
 
 use MediaWiki\Html\Html;
 use MediaWiki\HTMLForm\HTMLForm;
-use MediaWiki\Languages\LanguageNameUtils;
-use MediaWiki\Status\Status;
+use MediaWiki\Language\LanguageNameUtils;
+use MediaWiki\Permissions\PermissionStatus;
 use Wikibase\DataModel\Entity\EntityDocument;
 use Wikibase\DataModel\Entity\EntityId;
 use Wikibase\Lib\ContentLanguages;
@@ -94,6 +94,7 @@ abstract class SpecialModifyTerm extends SpecialModifyEntity {
 		$this->languageNameUtils = $languageNameUtils;
 	}
 
+	/** @inheritDoc */
 	public function doesWrites() {
 		return true;
 	}
@@ -182,19 +183,14 @@ abstract class SpecialModifyTerm extends SpecialModifyEntity {
 		try {
 			$summary = $this->setValue( $entity, $this->languageCode, $this->value );
 		} catch ( ChangeOpException | UserInputException $e ) {
-			$this->showErrorHTML( $e->getMessage() );
+			$this->showErrorHTML( htmlspecialchars( $e->getMessage() ) );
 			return false;
 		}
 
 		return $summary;
 	}
 
-	/**
-	 * @param EntityId $entityId
-	 *
-	 * @return Status
-	 */
-	private function checkTermChangePermissions( EntityId $entityId ) {
+	private function checkTermChangePermissions( EntityId $entityId ): PermissionStatus {
 		return $this->permissionChecker->getPermissionStatusForEntityId(
 			$this->getUser(),
 			EntityPermissionChecker::ACTION_EDIT_TERMS,
@@ -228,7 +224,7 @@ abstract class SpecialModifyTerm extends SpecialModifyEntity {
 		$languageName = $this->languageNameUtils
 			->getLanguageName( $this->languageCode, $this->getLanguage()->getCode() );
 
-		if ( $entity !== null && $this->languageCode !== null && $languageName !== '' ) {
+		if ( $entity !== null && $languageName !== '' ) {
 			// Messages:
 			// wikibase-setlabel-introfull
 			// wikibase-setdescription-introfull

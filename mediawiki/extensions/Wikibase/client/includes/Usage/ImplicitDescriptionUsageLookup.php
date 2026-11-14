@@ -4,7 +4,7 @@ declare( strict_types = 1 );
 
 namespace Wikibase\Client\Usage;
 
-use MediaWiki\Cache\LinkBatchFactory;
+use MediaWiki\Page\LinkBatchFactory;
 use MediaWiki\Title\TitleFactory;
 use Traversable;
 use Wikibase\Client\Store\DescriptionLookup;
@@ -31,7 +31,9 @@ use Wikibase\Lib\Store\SiteLinkLookup;
  * unless the client page also has a local description overriding the central one.
  * This is because the description is used, for example,
  * as part of the search result for the page (typically on mobile),
- * even if it is never used in the page itself.
+ * even if it is never used in the page itself. The item's description is also
+ * referenced in the page's LinkedDataSchema, so implicit usage tracking ensures
+ * the cached schema remains up-to-date.
  *
  * @see @ref docs_topics_usagetracking for virtual usage,
  * a similar but separate concept.

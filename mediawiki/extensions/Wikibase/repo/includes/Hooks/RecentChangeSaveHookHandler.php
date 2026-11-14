@@ -5,9 +5,9 @@ declare( strict_types=1 );
 namespace Wikibase\Repo\Hooks;
 
 use MediaWiki\MediaWikiServices;
+use MediaWiki\RecentChanges\RecentChange;
 use MediaWiki\User\CentralId\CentralIdLookup;
 use MediaWiki\User\CentralId\CentralIdLookupFactory;
-use RecentChange;
 use Wikibase\Lib\Changes\Change;
 use Wikibase\Lib\Changes\ChangeRow;
 use Wikibase\Lib\Changes\ChangeStore;
@@ -96,15 +96,15 @@ class RecentChangeSaveHookHandler {
 			return;
 		}
 
+		// If there are other changes, they should still be propagated and the job should be dispatched
 		$this->setChangeMetaData( $change, $recentChange, $centralUserId );
 		$this->changeStore->saveChange( $change );
-
 		$this->enqueueDispatchChangesJob(
 			$change->getEntityId()->getSerialization()
 		);
 	}
 
-	private function changeNeedsDispatching( EntityChange $change ) {
+	private function changeNeedsDispatching( EntityChange $change ): bool {
 		return $this->subscriptionLookup->getSubscribers( $change->getEntityId() ) ||
 			( $change instanceof ItemChange && $change->getSiteLinkDiff()->getOperations() );
 	}

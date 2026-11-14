@@ -8,9 +8,9 @@ use MediaWiki\Tests\MockDatabase;
 use MediaWikiCoversValidator;
 use MediaWikiTestCaseTrait;
 use PHPUnit\Framework\TestCase;
+use Wikibase\Lib\Rdbms\TermsDomainDb;
 use Wikibase\Repo\Store\Sql\Terms\EntityTermsSelectQueryBuilder;
 use Wikimedia\Rdbms\IExpression;
-use Wikimedia\Rdbms\IReadableDatabase;
 
 /**
  * @covers \Wikibase\Repo\Store\Sql\Terms\EntityTermsSelectQueryBuilder
@@ -21,7 +21,7 @@ class EntityTermsSelectQueryBuilderTest extends TestCase {
 	use MediaWikiCoversValidator;
 	use MediaWikiTestCaseTrait;
 
-	public function provideEntityTypeAndExpectedQueryInfo(): iterable {
+	public static function provideEntityTypeAndExpectedQueryInfo(): iterable {
 		yield 'item' => [
 			'entityType' => 'item',
 			'expectedTables' => [
@@ -80,9 +80,7 @@ class EntityTermsSelectQueryBuilderTest extends TestCase {
 		array $expectedJoinConds,
 		string $expectedEntityIdColumn
 	): void {
-		$db = $this->createStub( IReadableDatabase::class );
-
-		$sqb = new EntityTermsSelectQueryBuilder( $db, $entityType );
+		$sqb = new EntityTermsSelectQueryBuilder( $this->newTermsDb(), $entityType );
 		$queryInfo = $sqb->getQueryInfo();
 
 		$this->assertSame( $expectedTables, $queryInfo['tables'] );
@@ -92,8 +90,7 @@ class EntityTermsSelectQueryBuilderTest extends TestCase {
 	}
 
 	public function testWhereTerm(): void {
-		$db = $this->createStub( IReadableDatabase::class );
-		$sqb = new EntityTermsSelectQueryBuilder( $db, 'item' );
+		$sqb = new EntityTermsSelectQueryBuilder( $this->newTermsDb(), 'item' );
 
 		$sqb->whereTerm( 1, 'lang', 'text' );
 
@@ -106,7 +103,7 @@ class EntityTermsSelectQueryBuilderTest extends TestCase {
 
 	public function testWhereMultiTerm(): void {
 		$db = new MockDatabase();
-		$sqb = new EntityTermsSelectQueryBuilder( $db, 'item' );
+		$sqb = new EntityTermsSelectQueryBuilder( $this->newTermsDb( $db ), 'item' );
 
 		$sqb->whereMultiTerm( 1, [ 'l1', 'l2' ], [ 't1', 't2' ] );
 
@@ -122,6 +119,14 @@ class EntityTermsSelectQueryBuilderTest extends TestCase {
 			[ $expected ],
 			$actualConds
 		);
+	}
+
+	public function newTermsDb( ?MockDatabase $db = null ): TermsDomainDb {
+		$db ??= new MockDatabase();
+		$termsDb = $this->createStub( TermsDomainDb::class );
+		$termsDb->method( 'getReadConnection' )->willReturn( $db );
+
+		return $termsDb;
 	}
 
 }

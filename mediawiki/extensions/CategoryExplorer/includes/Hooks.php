@@ -1,30 +1,36 @@
 <?php
 namespace CategoryExplorer;
 
-use MediaWiki\MediaWikiServices;
+use MediaWiki\Linker\LinkRenderer;
+use MediaWiki\Title\Title;
 use Skin;
-use Title;
 
-class Hooks {
+class Hooks implements
+	\MediaWiki\Skins\Hook\SkinAfterPortletHook
+{
+	public function __construct(
+		private readonly LinkRenderer $linkRenderer,
+	) {
+	}
+
 	/**
 	 * Render the array as a series of links.
 	 * @param array $tree Categories tree returned by Title::getParentCategoryTree
 	 * @return string Separated by &gt;, terminate with "\n"
 	 */
-	private static function drawCategoryBrowser( array $tree ): string {
+	private function drawCategoryBrowser( array $tree ): string {
 		$return = '';
-		$linkRenderer = MediaWikiServices::getInstance()->getLinkRenderer();
 		foreach ( $tree as $element => $parent ) {
 			if ( !$parent ) {
 				# element start a new list
 				$return .= "\n";
 			} else {
 				# grab the others elements
-				$return .= self::drawCategoryBrowser( $parent ) . ' &gt; ';
+				$return .= $this->drawCategoryBrowser( $parent ) . ' &gt; ';
 			}
 			# add our current element to the list
 			$eltitle = Title::newFromText( $element );
-			$return .= $linkRenderer->makeLink( $eltitle, $eltitle->getText() );
+			$return .= $this->linkRenderer->makeLink( $eltitle, $eltitle->getText() );
 		}
 		return $return;
 	}
@@ -35,7 +41,7 @@ class Hooks {
 	 * @param string $portlet
 	 * @param string &$html
 	 */
-	public static function onSkinAfterPortlet( Skin $skin, string $portlet, string &$html ) {
+	public function onSkinAfterPortlet( $skin, $portlet, &$html ) {
 		// Code goes here.
 		if ( $portlet === 'category-normal' ) {
 			$title = $skin->getOutput()->getTitle();
@@ -44,7 +50,7 @@ class Hooks {
 			$parenttree = $title->getParentCategoryTree();
 			# Skin object passed by reference cause it can not be
 			# accessed under the method subfunction drawCategoryBrowser
-			$tempout = explode( "\n", self::drawCategoryBrowser( $parenttree ) );
+			$tempout = explode( "\n", $this->drawCategoryBrowser( $parenttree ) );
 			# Clean out bogus first entry and sort them
 			unset( $tempout[0] );
 			asort( $tempout );

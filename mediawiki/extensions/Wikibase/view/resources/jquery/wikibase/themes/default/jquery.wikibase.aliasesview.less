@@ -2,34 +2,13 @@
  * @license GNU GPL v2+
  * @author H. Snater < mediawiki@snater.com >
  */
-.wikibase-aliasesview,
-.wikibase-aliasesview-empty {
+@import 'mediawiki.skin.variables.less';
+
+.wikibase-aliasesview {
 	float: left; /* necessary for highlighting in edit mode */
 	width: 100%;
 }
 
-.wikibase-aliasesview .wikibase-aliasesview-container {
-	/* stylelint-disable-next-line declaration-no-important */
-	display: block !important;
-	padding-left: 10px;
-	padding-right: 19em;
-	position: relative;
-}
-
-.wikibase-aliasesview-label {
-	float: left;
-	font-weight: bold;
-	margin-right: 1em;
-	margin-top: 1px; /* even out border of alias values */
-	margin-bottom: -3px; /* IE 7 would not wrap around directly but instead leave empty space
-							underneath the label for one line in some cases */
-}
-
-.wikibase-aliasesview.wb-empty .wikibase-aliasesview-label {
-	font-weight: normal;
-}
-
-.wikibase-aliasesview .wikibase-aliasesview-label,
 .wikibase-aliasesview ul {
 	overflow: auto;
 }
@@ -49,7 +28,7 @@
 	margin: 0.2em 12px 0.2em 0;
 	display: inline;
 	list-style-type: none;
-	border: 1px solid #c8ccd1;
+	border: 1px solid @border-color-subtle;
 	padding: 0 12px 0 7px;
 	line-height: 136%;
 	background-color: #f8f9fa;

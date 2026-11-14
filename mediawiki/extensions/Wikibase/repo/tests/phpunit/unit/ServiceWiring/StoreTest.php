@@ -12,7 +12,7 @@ use Wikibase\Lib\Changes\EntityChangeFactory;
 use Wikibase\Lib\SettingsArray;
 use Wikibase\Lib\Store\EntityIdLookup;
 use Wikibase\Lib\Store\EntityNamespaceLookup;
-use Wikibase\Lib\Store\PropertyInfoLookup;
+use Wikibase\Repo\Hooks\WikibaseRepoHookRunner;
 use Wikibase\Repo\Store\EntityTitleStoreLookup;
 use Wikibase\Repo\Store\IdGenerator;
 use Wikibase\Repo\Store\Sql\SqlStore;
@@ -44,8 +44,8 @@ class StoreTest extends ServiceWiringTestCase {
 			$this->createMock( IdGenerator::class ) );
 		$this->mockService( 'WikibaseRepo.WikibaseServices',
 			$this->createMock( WikibaseServices::class ) );
-		$this->serviceContainer->expects( $this->once() )
-			->method( 'getHookContainer' );
+		$this->mockService( 'WikibaseRepo.HookRunner',
+			$this->createMock( WikibaseRepoHookRunner::class ) );
 		$this->mockService( 'WikibaseRepo.LocalEntitySource',
 			$this->createMock( DatabaseEntitySource::class ) );
 		$this->mockService( 'WikibaseRepo.Settings',
@@ -55,8 +55,6 @@ class StoreTest extends ServiceWiringTestCase {
 				'sharedCacheType' => CACHE_NONE,
 				'sharedCacheDuration' => 60 * 60,
 			] ) );
-		$this->mockService( 'WikibaseRepo.PropertyInfoLookup',
-			$this->createMock( PropertyInfoLookup::class ) );
 		$this->serviceContainer->expects( $this->once() )
 				->method( 'getObjectCacheFactory' );
 

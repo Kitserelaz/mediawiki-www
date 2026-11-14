@@ -4,16 +4,16 @@ namespace Wikibase\Lexeme\Tests\MediaWiki\Specials;
 
 use Exception;
 use HamcrestPHPUnitIntegration;
+use MediaWiki\Exception\PermissionsError;
 use MediaWiki\Language\RawMessage;
 use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Permissions\PermissionManager;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\Request\WebResponse;
+use MediaWiki\Tests\Specials\SpecialPageTestBase;
 use MediaWiki\Tests\User\TempUser\TempUserTestTrait;
-use PermissionsError;
 use PHPUnit\Framework\MockObject\MockObject;
-use SpecialPageTestBase;
 use Wikibase\DataModel\Entity\EntityDocument;
 use Wikibase\DataModel\Tests\NewItem;
 use Wikibase\Lexeme\Domain\Merge\Exceptions\MergingException;

@@ -2,8 +2,7 @@
 
 namespace Wikibase\Lib\Tests\Store\Sql\Terms;
 
-use JobQueueGroup;
-use MediaWiki\MediaWikiServices;
+use MediaWiki\JobQueue\JobQueueGroup;
 use MediaWikiIntegrationTestCase;
 use Wikibase\DataModel\Entity\NumericPropertyId;
 use Wikibase\DataModel\Term\AliasGroup;
@@ -15,7 +14,6 @@ use Wikibase\DataModel\Term\TermTypes;
 use Wikibase\Lib\Store\Sql\Terms\DatabasePropertyTermStoreWriter;
 use Wikibase\Lib\Store\Sql\Terms\DatabaseTermInLangIdsAcquirer;
 use Wikibase\Lib\Store\Sql\Terms\DatabaseTermInLangIdsResolver;
-use Wikibase\Lib\Store\Sql\Terms\DatabaseTypeIdsStore;
 use Wikibase\Lib\Store\Sql\Terms\PrefetchingPropertyTermLookup;
 use Wikibase\Lib\StringNormalizer;
 use Wikibase\Lib\Tests\Rdbms\LocalRepoDbTestHelper;
@@ -48,27 +46,16 @@ class PrefetchingPropertyTermLookupTest extends MediaWikiIntegrationTestCase {
 		}
 		parent::setUp();
 
-		$repoDb = $this->getRepoDomainDb();
-		$typeIdsStore = new DatabaseTypeIdsStore(
-			$repoDb,
-			MediaWikiServices::getInstance()->getMainWANObjectCache()
-		);
-		$termIdsStore = new DatabaseTermInLangIdsResolver(
-			$typeIdsStore,
-			$typeIdsStore,
-			$repoDb
-		);
+		$termsDb = $this->getTermsDomainDb();
+		$termIdsStore = new DatabaseTermInLangIdsResolver( $termsDb );
 		$this->lookup = new PrefetchingPropertyTermLookup(
 			$termIdsStore
 		);
 
 		$propertyTermStoreWriter = new DatabasePropertyTermStoreWriter(
-			$repoDb,
+			$termsDb,
 			$this->createMock( JobQueueGroup::class ),
-			new DatabaseTermInLangIdsAcquirer(
-				$repoDb,
-				$typeIdsStore
-			),
+			new DatabaseTermInLangIdsAcquirer( $termsDb ),
 			$termIdsStore,
 			new StringNormalizer()
 		);

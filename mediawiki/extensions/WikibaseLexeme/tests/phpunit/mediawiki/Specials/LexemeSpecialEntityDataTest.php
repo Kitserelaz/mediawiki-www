@@ -5,6 +5,7 @@ namespace Wikibase\Lexeme\Tests\MediaWiki\Specials;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\Request\FauxResponse;
 use MediaWiki\SpecialPage\SpecialPage;
+use MediaWiki\Tests\Specials\SpecialPageTestBase;
 use Wikibase\Lexeme\Domain\Model\Lexeme;
 use Wikibase\Lexeme\Tests\Unit\DataModel\NewForm;
 use Wikibase\Lexeme\Tests\Unit\DataModel\NewLexeme;
@@ -21,7 +22,7 @@ use Wikibase\Repo\WikibaseRepo;
  * @group Database
  * @group medium
  */
-class LexemeSpecialEntityDataTest extends \SpecialPageTestBase {
+class LexemeSpecialEntityDataTest extends SpecialPageTestBase {
 
 	private const LEXEME_ID = 'L1222';
 
@@ -49,9 +50,7 @@ class LexemeSpecialEntityDataTest extends \SpecialPageTestBase {
 	 * @param Lexeme|NewLexeme|null $lexeme
 	 */
 	private function saveLexemeToDb( $lexeme = null ) {
-		if ( $lexeme === null ) {
-			$lexeme = NewLexeme::havingId( self::LEXEME_ID );
-		}
+		$lexeme ??= NewLexeme::havingId( self::LEXEME_ID );
 		if ( $lexeme instanceof NewLexeme ) {
 			$lexeme = $lexeme->build();
 		}

@@ -1,0 +1,132 @@
+@import 'mediawiki.skin.variables.less';
+
+.mw-body-content .wikibase-wbui2025-snak-value .snakValue a.external.free {
+	word-wrap: anywhere;
+}
+
+.wikibase-wbui2025-time-value {
+	.wb-calendar-name {
+		font-style: italic;
+		padding-left: 0.5em;
+	}
+}
+
+.wikibase-wbui2025-media-value {
+	gap: 1rem;
+	margin: 0;
+	display: block;
+
+	.thumb {
+		margin: 0;
+		padding: 0;
+		width: 100%;
+
+		img {
+			max-height: 13.4375rem;
+			max-width: 10.0625rem;
+			height: auto;
+			width: auto;
+			margin: 0;
+			padding: 0;
+		}
+	}
+
+	.commons-media-caption {
+		padding-top: 0.625rem;
+		clear: both;
+		font-size: @font-size-medium;
+		line-height: 1.6rem;
+		letter-spacing: -0.003rem;
+	}
+}
+
+.wikibase-wbui2025-globe-coordinate-value {
+	> .snakValue {
+		flex: 1 1 auto;
+		display: block;
+		min-width: 0;
+	}
+
+	> .snakValue > div {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.wikibase-kartographer-caption {
+		order: 1;
+		line-height: 1.25rem;
+	}
+
+	.mw-parser-output {
+		order: 0;
+	}
+
+	a.mw-kartographer-map {
+		width: 100%;
+		max-width: 310px;
+	}
+}
+
+.wikibase-wbui2025-main-snak:has( .wikibase-wbui2025-media-value ) {
+	align-items: flex-start;
+}
+
+.wikibase-wbui2025-main-snak:has( .wikibase-wbui2025-globe-coordinate-value ) {
+	align-items: flex-start;
+}
+
+.wikibase-wbui2025-snak-value {
+	display: inline-flex;
+	justify-content: flex-start;
+	flex-grow: 1;
+	align-items: center;
+	margin: 0;
+	padding: @spacing-0 @spacing-0 @spacing-0 @spacing-30;
+
+	// Apply overflow constraints to base class so they work without JavaScript
+	// This prevents layout shift for all datatypes that may need horizontal scrolling
+	// The long string snack values are also wrapped in a span with this class
+	// Limiting to certain cases only.
+	// Without it, the .cdx-text-input might not trigger any dropdown menu properly
+	&:has( .mw-ext-score ),
+	&:has( .extiw ),
+	&:has( .mwe-math-element ) {
+		overflow-x: auto;
+	}
+
+	.wikibase-snakview-variation-novaluesnak,
+	.wikibase-snakview-variation-somevaluesnak {
+		color: @color-placeholder;
+		font-family: 'Inter', sans-serif;
+		font-weight: 500;
+		font-size: 1rem;
+		line-height: 1.25;
+	}
+
+	span.indicators {
+		cursor: pointer;
+		padding-left: @spacing-125;
+
+		.wikibase-wbui2025-indicator-icon--error {
+			.cdx-mixin-css-icon( @cdx-icon-error, @color-icon-error );
+			padding: 3px 0 3px 0;
+		}
+	}
+}
+
+.wikibase-wbui2025-musical-notation-value:not( .wikibase-wbui2025-snak-value--popover-visible ),
+.wikibase-wbui2025-math-value:not( .wikibase-wbui2025-snak-value--popover-visible ) {
+	mask-image: linear-gradient( to left, transparent 0, @color-emphasized 3em );
+	mask-repeat: no-repeat;
+	mask-position: 100% 0;
+	padding-inline-end: 3em;
+
+	[ dir='rtl' ] & {
+		mask-image: linear-gradient( to right, transparent 0, @color-emphasized 3em );
+		direction: rtl;
+	}
+}
+
+.wikibase-wbui2025-snak-value--error-message {
+	color: @color-placeholder;
+}

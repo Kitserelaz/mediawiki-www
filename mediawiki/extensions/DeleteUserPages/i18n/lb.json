@@ -1,10 +1,13 @@
 {
 	"@metadata": {
 		"authors": [
-			"Robby"
+			"Robby",
+			"Volvox"
 		]
 	},
-	"deleteuserpages-desc": "Léisst Benotzer hir eege Benotzersäite läschen",
-	"right-delete-rootuserpages": "Eege Benotzer- a Benotzer-Diskussiouns-Säit läschen",
-	"right-delete-usersubpages": "Ënnersäite vu senger eegener Benotzersäit läschen"
+	"deleteuserpages-desc": "Erméiglecht et Benotzer fir hir eege Benotzersäiten ze läschen",
+	"action-delete-rootuserpages": "Är eege Benotzer- a Benotzerdiskussiounssäit ze läschen",
+	"right-delete-rootuserpages": "Eege Benotzer- a Benotzerdiskussiounssäit läschen",
+	"action-delete-usersubpages": "Ënnersäite vun Ärer eegener Benotzersäit ze läschen",
+	"right-delete-usersubpages": "Ënnersäite vun der eegener Benotzersäit läschen"
 }

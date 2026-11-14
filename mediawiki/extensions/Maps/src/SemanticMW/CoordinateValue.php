@@ -43,7 +43,7 @@ class CoordinateValue extends SMWDataValue {
 			throw new InvalidArgumentException( '$value needs to be a string' );
 		}
 
-		[ $distance, $comparator ] = $this->parseUserValue( $value );
+		[ $distance, $comparator ] = $this->parseCoordinateValue( $value );
 		$distance = $this->parserDistance( $distance );
 
 		$this->setUserValue( $value );
@@ -69,7 +69,11 @@ class CoordinateValue extends SMWDataValue {
 	/**
 	 * @see SMWDataValue::parseUserValue
 	 */
-	protected function parseUserValue( $value ) {
+	protected function parseUserValue( $value ): void {
+		$this->parseCoordinateValue( $value );
+	}
+
+	private function parseCoordinateValue( $value ): array {
 		if ( !is_string( $value ) ) {
 			throw new InvalidArgumentException( '$value needs to be a string' );
 		}
@@ -248,7 +252,7 @@ class CoordinateValue extends SMWDataValue {
 	 *
 	 * @return array
 	 */
-	protected function getServiceLinkParams() {
+	protected function getServiceLinkParams(): array {
 		$coordinateSet = $this->m_dataitem->getCoordinateSet();
 		return [
 			$this->getFormattedCoord( $this->m_dataitem, 'float' ), // TODO

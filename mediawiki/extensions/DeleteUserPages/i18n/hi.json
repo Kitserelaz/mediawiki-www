@@ -1,8 +1,13 @@
 {
 	"@metadata": {
 		"authors": [
+			"Saurmandal",
 			"Smtchahal"
 		]
 	},
-	"deleteuserpages-desc": "सदस्यों को अपना सदस्य पृष्ठ हटाने दें"
+	"deleteuserpages-desc": "सदस्यों को अपना सदस्य पृष्ठ हटाने दें",
+	"action-delete-rootuserpages": "अपना सदस्य पृष्ठ और सदस्य वार्ता पृष्ठ हटाने",
+	"right-delete-rootuserpages": "अपना सदस्य पृष्ठ और सदस्य वार्ता पृष्ठ हटाना",
+	"action-delete-usersubpages": "अपने सदस्य पृष्ठ के उपपृष्ठ हटाने",
+	"right-delete-usersubpages": "अपने सदस्य पृष्ठ के उपपृष्ठ हटाना"
 }

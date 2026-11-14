@@ -3,7 +3,7 @@
 namespace Wikibase\Lib\Formatters\Reference;
 
 use DataValues\StringValue;
-use MessageLocalizer;
+use MediaWiki\Language\MessageLocalizer;
 use Wikibase\DataModel\Reference;
 use Wikibase\DataModel\Snak\PropertyValueSnak;
 use Wikibase\Lib\Formatters\SnakFormatter;

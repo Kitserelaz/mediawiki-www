@@ -1,8 +1,9 @@
 <?php
 
+declare( strict_types = 1 );
+
 namespace Wikibase\Repo\EditEntity;
 
-use Liuggio\StatsdClient\Factory\StatsdDataFactoryInterface;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\User\Options\UserOptionsLookup;
 use MediaWiki\User\TempUser\TempUserCreator;
@@ -13,6 +14,7 @@ use Wikibase\Lib\Store\EntityRevisionLookup;
 use Wikibase\Lib\Store\EntityStore;
 use Wikibase\Repo\Store\EntityPermissionChecker;
 use Wikibase\Repo\Store\EntityTitleStoreLookup;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * @license GPL-2.0-or-later
@@ -20,63 +22,20 @@ use Wikibase\Repo\Store\EntityTitleStoreLookup;
  */
 class MediaWikiEditEntityFactory {
 
-	/**
-	 * @var EntityTitleStoreLookup
-	 */
-	private $titleLookup;
-
-	/**
-	 * @var EntityRevisionLookup
-	 */
-	private $entityRevisionLookup;
-
-	/**
-	 * @var EntityStore
-	 */
-	private $entityStore;
-
-	/**
-	 * @var EntityPermissionChecker
-	 */
-	private $permissionChecker;
-
-	/**
-	 * @var EntityDiffer
-	 */
-	private $entityDiffer;
-
-	/**
-	 * @var EntityPatcher
-	 */
-	private $entityPatcher;
-
-	/**
-	 * @var EditFilterHookRunner
-	 */
-	private $editFilterHookRunner;
-
-	/**
-	 * @var StatsdDataFactoryInterface
-	 */
-	private $stats;
-
-	/**
-	 * @var UserOptionsLookup
-	 */
-	private $userOptionsLookup;
-
-	/**
-	 * @var TempUserCreator
-	 */
-	private $tempUserCreator;
-
-	/**
-	 * @var int
-	 */
-	private $maxSerializedEntitySize;
+	private EntityTitleStoreLookup $titleLookup;
+	private EntityRevisionLookup $entityRevisionLookup;
+	private EntityStore $entityStore;
+	private EntityPermissionChecker $permissionChecker;
+	private EntityDiffer $entityDiffer;
+	private EntityPatcher $entityPatcher;
+	private EditFilterHookRunner $editFilterHookRunner;
+	private StatsFactory $statsFactory;
+	private UserOptionsLookup $userOptionsLookup;
+	private TempUserCreator $tempUserCreator;
+	private int $maxSerializedEntitySize;
 
 	/** @var string[] */
-	private $localEntityTypes;
+	private array $localEntityTypes;
 
 	public function __construct(
 		EntityTitleStoreLookup $titleLookup,
@@ -86,10 +45,10 @@ class MediaWikiEditEntityFactory {
 		EntityDiffer $entityDiffer,
 		EntityPatcher $entityPatcher,
 		EditFilterHookRunner $editFilterHookRunner,
-		StatsdDataFactoryInterface $statsdDataFactory,
+		StatsFactory $statsFactory,
 		UserOptionsLookup $userOptionsLookup,
 		TempUserCreator $tempUserCreator,
-		$maxSerializedEntitySize,
+		int $maxSerializedEntitySize,
 		array $localEntityTypes
 	) {
 		$this->titleLookup = $titleLookup;
@@ -99,7 +58,7 @@ class MediaWikiEditEntityFactory {
 		$this->entityDiffer = $entityDiffer;
 		$this->entityPatcher = $entityPatcher;
 		$this->editFilterHookRunner = $editFilterHookRunner;
-		$this->stats = $statsdDataFactory;
+		$this->statsFactory = $statsFactory;
 		$this->userOptionsLookup = $userOptionsLookup;
 		$this->tempUserCreator = $tempUserCreator;
 		$this->maxSerializedEntitySize = $maxSerializedEntitySize;
@@ -124,24 +83,21 @@ class MediaWikiEditEntityFactory {
 		int $baseRevId = 0,
 		$allowMasterConnection = true
 	) {
-		$statsTimingPrefix = "wikibase.repo.EditEntity.timing";
-		return new StatsdSaveTimeRecordingEditEntity(
+		return new StatslibSaveTimeRecordingEditEntity(
 			new MediaWikiEditEntity( $this->titleLookup,
 				$this->entityRevisionLookup,
-				new StatsdSaveTimeRecordingEntityStore(
+				new StatslibSaveTimeRecordingEntityStore(
 					$this->entityStore,
-					$this->stats,
-					$statsTimingPrefix . '.EntityStore'
+					$this->statsFactory
 				),
 				$this->permissionChecker,
 				$this->entityDiffer,
 				$this->entityPatcher,
 				$entityId,
 				$context,
-				new StatsdTimeRecordingEditFilterHookRunner(
+				new StatslibTimeRecordingEditFilterHookRunner(
 					$this->editFilterHookRunner,
-					$this->stats,
-					$statsTimingPrefix . '.EditFilterHookRunner'
+					$this->statsFactory
 				),
 				$this->userOptionsLookup,
 				$this->tempUserCreator,
@@ -150,8 +106,7 @@ class MediaWikiEditEntityFactory {
 				$baseRevId,
 				$allowMasterConnection
 			),
-			$this->stats,
-			$statsTimingPrefix . '.EditEntity'
+			$this->statsFactory
 		);
 	}
 

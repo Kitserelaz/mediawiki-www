@@ -3,9 +3,9 @@ declare( strict_types = 1 );
 
 namespace Wikibase\Repo\Tests\Unit\ServiceWiring;
 
-use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use Wikibase\DataModel\Services\EntityId\EntityIdComposer;
-use Wikibase\Lib\Rdbms\RepoDomainDbFactory;
+use Wikibase\Lib\Rdbms\TermsDomainDbFactory;
 use Wikibase\Lib\Store\MatchingTermsLookupFactory;
 use Wikibase\Repo\Tests\Unit\ServiceWiringTestCase;
 
@@ -26,17 +26,13 @@ class MatchingTermsLookupFactoryTest extends ServiceWiringTestCase {
 
 		$this->mockService(
 			'WikibaseRepo.Logger',
-			$this->createMock( LoggerInterface::class )
+			new NullLogger()
 		);
 
 		$this->mockService(
-			'WikibaseRepo.RepoDomainDbFactory',
-			$this->createStub( RepoDomainDbFactory::class )
+			'WikibaseRepo.TermsDomainDbFactory',
+			$this->createStub( TermsDomainDbFactory::class )
 		);
-
-		$this->serviceContainer
-			->expects( $this->once() )
-			->method( 'getMainWANObjectCache' );
 
 		$this->assertInstanceOf(
 			MatchingTermsLookupFactory::class,

@@ -4,13 +4,17 @@ declare( strict_types = 1 );
 
 namespace Wikibase\Repo\Api;
 
+use LogicException;
 use MediaWiki\Api\ApiBase;
 use MediaWiki\Api\ApiMain;
+use MediaWiki\MediaWikiServices;
 use MediaWiki\Registration\ExtensionRegistry;
 use Wikibase\DataModel\Entity\EntityId;
 use Wikibase\DataModel\Entity\EntityIdParser;
 use Wikibase\DataModel\Entity\EntityIdParsingException;
+use Wikibase\Lib\Formatters\SnakFormatter;
 use Wikibase\View\EntityIdFormatterFactory;
+use Wikimedia\Assert\Assert;
 use Wikimedia\ParamValidator\ParamValidator;
 use Wikimedia\RemexHtml\HTMLData;
 use Wikimedia\RemexHtml\Serializer\HtmlFormatter;
@@ -19,7 +23,7 @@ use Wikimedia\RemexHtml\Serializer\SerializerNode;
 use Wikimedia\RemexHtml\Tokenizer\Tokenizer;
 use Wikimedia\RemexHtml\TreeBuilder\Dispatcher;
 use Wikimedia\RemexHtml\TreeBuilder\TreeBuilder;
-use Wikimedia\Stats\IBufferingStatsdDataFactory;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * API module for formatting a set of entity IDs.
@@ -36,7 +40,12 @@ class FormatEntities extends ApiBase {
 	/**
 	 * @var EntityIdFormatterFactory
 	 */
-	private $entityIdFormatterFactory;
+	private $entityIdHtmlFormatterFactory;
+
+	/**
+	 * @var EntityIdFormatterFactory
+	 */
+	private $entityIdTextFormatterFactory;
 
 	/**
 	 * @var ResultBuilder
@@ -49,44 +58,60 @@ class FormatEntities extends ApiBase {
 	private $errorReporter;
 
 	/**
-	 * @var IBufferingStatsdDataFactory
+	 * @var StatsFactory
 	 */
-	private $dataFactory;
+	private $statsFactory;
 
 	public function __construct(
 		ApiMain $mainModule,
 		string $moduleName,
 		EntityIdParser $entityIdParser,
-		EntityIdFormatterFactory $entityIdFormatterFactory,
+		EntityIdFormatterFactory $entityIdHtmlFormatterFactory,
+		EntityIdFormatterFactory $entityIdTextFormatterFactory,
 		ResultBuilder $resultBuilder,
 		ApiErrorReporter $errorReporter,
-		IBufferingStatsdDataFactory $dataFactory
+		StatsFactory $statsFactory
 	) {
 		parent::__construct( $mainModule, $moduleName, '' );
+		$htmlFormat = $entityIdHtmlFormatterFactory->getOutputFormat();
+		Assert::parameter(
+			$htmlFormat === SnakFormatter::FORMAT_HTML,
+			'$entityIdHtmlFormatterFactory',
+			'must format to ' . SnakFormatter::FORMAT_HTML . ', not ' . $htmlFormat
+		);
+		$textFormat = $entityIdTextFormatterFactory->getOutputFormat();
+		Assert::parameter(
+			$textFormat === SnakFormatter::FORMAT_PLAIN,
+			'$entityIdTextFormatterFactory',
+			'must format to ' . SnakFormatter::FORMAT_PLAIN . ', not ' . $textFormat
+		);
 
 		$this->entityIdParser = $entityIdParser;
-		$this->entityIdFormatterFactory = $entityIdFormatterFactory;
+		$this->entityIdHtmlFormatterFactory = $entityIdHtmlFormatterFactory;
+		$this->entityIdTextFormatterFactory = $entityIdTextFormatterFactory;
 		$this->resultBuilder = $resultBuilder;
 		$this->errorReporter = $errorReporter;
-		$this->dataFactory = $dataFactory;
+		$this->statsFactory = $statsFactory->withComponent( 'WikibaseRepo' );
 	}
 
 	public static function factory(
 		ApiMain $apiMain,
 		string $moduleName,
-		IBufferingStatsdDataFactory $dataFactory,
+		StatsFactory $statsFactory,
 		ApiHelperFactory $apiHelperFactory,
-		EntityIdFormatterFactory $entityIdFormatterFactory,
+		EntityIdFormatterFactory $entityIdHtmlFormatterFactory,
+		EntityIdFormatterFactory $entityIdTextFormatterFactory,
 		EntityIdParser $entityIdParser
 	): self {
 		return new self(
 			$apiMain,
 			$moduleName,
 			$entityIdParser,
-			$entityIdFormatterFactory,
+			$entityIdHtmlFormatterFactory,
+			$entityIdTextFormatterFactory,
 			$apiHelperFactory->getResultBuilder( $apiMain ),
 			$apiHelperFactory->getErrorReporter( $apiMain ),
-			$dataFactory
+			$statsFactory
 		);
 	}
 
@@ -94,19 +119,29 @@ class FormatEntities extends ApiBase {
 		$this->getMain()->setCacheMode( 'public' );
 
 		$language = $this->getMain()->getLanguage();
-		$entityIdFormatter = $this->entityIdFormatterFactory->getEntityIdFormatter( $language );
-
 		$params = $this->extractRequestParams();
+
+		if ( $params['generate'] === SnakFormatter::FORMAT_HTML ) {
+			$entityIdFormatterFactory = $this->entityIdHtmlFormatterFactory;
+		} elseif ( $params['generate'] === SnakFormatter::FORMAT_PLAIN ) {
+			$entityIdFormatterFactory = $this->entityIdTextFormatterFactory;
+		} else {
+			throw new LogicException( 'Unexpected "generate" parameter value: ' . $params['generate'] );
+		}
+		$entityIdFormatter = $entityIdFormatterFactory->getEntityIdFormatter( $language );
+
 		$entityIds = $this->getEntityIdsFromIdParam( $params );
 
-		$this->dataFactory->updateCount(
-			'wikibase.repo.api.formatentities.entities',
-			count( $entityIds )
-		);
+		$metric = $this->statsFactory->getCounter( 'formatentities_entities_total' );
+		$metric->copyToStatsdAt(
+			'wikibase.repo.api.formatentities.entities'
+		)->incrementBy( count( $entityIds ) );
 
 		foreach ( $entityIds as $entityId ) {
 			$formatted = $entityIdFormatter->formatEntityId( $entityId );
-			$formatted = self::makeLinksAbsolute( $formatted );
+			if ( $params['generate'] === SnakFormatter::FORMAT_HTML ) {
+				$formatted = self::makeLinksAbsolute( $formatted );
+			}
 			$this->resultBuilder->setValue( $this->getModuleName(), $entityId->getSerialization(), $formatted );
 		}
 
@@ -123,7 +158,7 @@ class FormatEntities extends ApiBase {
 		foreach ( $params['ids'] as $id ) {
 			try {
 				$ids[] = $this->entityIdParser->parse( $id );
-			} catch ( EntityIdParsingException $e ) {
+			} catch ( EntityIdParsingException ) {
 				$this->errorReporter->dieWithError(
 					[ 'wikibase-api-no-such-entity', $id ],
 					'no-such-entity',
@@ -137,7 +172,7 @@ class FormatEntities extends ApiBase {
 
 	/**
 	 * Make the `href=""` attributes of `<a>` elements in an HTML snippet absolute.
-	 * URLs are expanded using {@link wfExpandUrl}.
+	 * URLs are expanded using {@link \MediaWiki\Utils\UrlUtils::expand}.
 	 *
 	 * @param string $html
 	 * @return string
@@ -145,18 +180,26 @@ class FormatEntities extends ApiBase {
 	private static function makeLinksAbsolute( string $html ): string {
 		$formatter = new class extends HtmlFormatter {
 
+			/**
+			 * @inheritDoc
+			 */
 			public function element( SerializerNode $parent, SerializerNode $node, $contents ) {
 				if ( $node->namespace === HTMLData::NS_HTML
 					&& $node->name === 'a'
 					&& isset( $node->attrs['href'] )
 				) {
+					$urlUtils = MediaWikiServices::getInstance()->getUrlUtils();
+
 					$node = clone $node;
 					$node->attrs = clone $node->attrs;
-					$node->attrs['href'] = wfExpandUrl( $node->attrs['href'], PROTO_CANONICAL );
+					$node->attrs['href'] = $urlUtils->expand( $node->attrs['href'], PROTO_CANONICAL );
 				}
 				return parent::element( $parent, $node, $contents );
 			}
 
+			/**
+			 * @inheritDoc
+			 */
 			public function startDocument( $fragmentNamespace, $fragmentName ) {
 				return '';
 			}
@@ -181,6 +224,15 @@ class FormatEntities extends ApiBase {
 			'ids' => [
 				ParamValidator::PARAM_TYPE => 'string',
 				ParamValidator::PARAM_ISMULTI => true,
+				ParamValidator::PARAM_REQUIRED => true,
+			],
+			'generate' => [
+				ParamValidator::PARAM_TYPE => [
+					SnakFormatter::FORMAT_PLAIN,
+					SnakFormatter::FORMAT_HTML,
+				],
+				ParamValidator::PARAM_DEFAULT => SnakFormatter::FORMAT_HTML,
+				ParamValidator::PARAM_REQUIRED => false,
 			],
 		];
 	}
@@ -203,6 +255,8 @@ class FormatEntities extends ApiBase {
 		$exampleMessages = array_merge( $exampleMessages, [
 			'action=wbformatentities&ids=Q2|Q3|Q4&uselang=fr'
 				=> 'apihelp-wbformatentities-example-4',
+			'action=wbformatentities&ids=Q2|Q3|Q4|P2&generate=text/plain'
+				=> 'apihelp-wbformatentities-example-5',
 		] );
 
 		return $exampleMessages;

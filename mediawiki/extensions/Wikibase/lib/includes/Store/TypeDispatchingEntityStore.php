@@ -3,8 +3,9 @@
 namespace Wikibase\Lib\Store;
 
 use InvalidArgumentException;
+use MediaWiki\Exception\PermissionsError;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\User\User;
-use PermissionsError;
 use Wikibase\DataModel\Entity\EntityDocument;
 use Wikibase\DataModel\Entity\EntityId;
 use Wikibase\DataModel\Entity\EntityRedirect;
@@ -98,6 +99,7 @@ class TypeDispatchingEntityStore implements EntityStore {
 	 * @param User $user
 	 * @param int $flags
 	 * @param int|bool $baseRevId
+	 * @param array $tags
 	 *
 	 * @throws StorageException
 	 * @throws PermissionsError
@@ -191,8 +193,7 @@ class TypeDispatchingEntityStore implements EntityStore {
 		}
 
 		if ( is_callable( $this->stores[$entityType] ) ) {
-			$this->stores[$entityType] = call_user_func(
-				$this->stores[$entityType],
+			$this->stores[$entityType] = $this->stores[$entityType](
 				$this->defaultStore,
 				$this->lookup
 			);
@@ -215,7 +216,7 @@ class TypeDispatchingEntityStore implements EntityStore {
 	 * @param EntityId $entityId
 	 *
 	 * @throws \LogicException
-	 * @return \WikiPage
+	 * @return WikiPage
 	 */
 	public function getWikiPageForEntity( EntityId $entityId ) {
 		$store = $this->getStore( $entityId->getEntityType() );

@@ -262,7 +262,7 @@ class AddForm extends ApiBase {
 		try {
 			$lexemeRevision = $this->entityRevisionLookup->getEntityRevision(
 				$lexemeId,
-				self::LATEST_REVISION,
+				$request->getBaseRevId() ?? self::LATEST_REVISION,
 				LookupConstants::LATEST_FROM_MASTER
 			);
 		} catch ( StorageException $e ) {
@@ -283,7 +283,6 @@ class AddForm extends ApiBase {
 			$this->dieWithError( $error->asApiMessage( AddFormRequestParser::PARAM_LEXEME_ID, [] ) );
 		}
 
-		// @phan-suppress-next-line PhanTypeMismatchReturnNullable
 		return $lexemeRevision;
 	}
 

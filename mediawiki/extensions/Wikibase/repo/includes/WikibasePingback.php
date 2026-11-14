@@ -10,11 +10,11 @@ use MediaWiki\Http\HttpRequestFactory;
 use MediaWiki\Json\FormatJson;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\ObjectCache\ObjectCacheFactory;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\SiteStats\SiteStats;
+use MediaWiki\Utils\MWCryptRand;
 use MediaWiki\Utils\MWTimestamp;
-use MWCryptRand;
-use ObjectCacheFactory;
 use Psr\Log\LoggerInterface;
 use Wikibase\Lib\Rdbms\RepoDomainDb;
 use Wikibase\Lib\SettingsArray;
@@ -51,9 +51,6 @@ class WikibasePingback {
 	/** @var string Randomly-generated identifier for this wiki */
 	protected $id;
 
-	/**
-	 * @var int
-	 */
 	public const HEARTBEAT_TIMEOUT = 60 * 60 * 24 * 30;
 
 	/**
@@ -106,13 +103,13 @@ class WikibasePingback {
 		?RepoDomainDb $repoDomainDb = null,
 		?string $key = null
 	) {
-		$this->config = $config ?: RequestContext::getMain()->getConfig();
-		$this->logger = $logger ?: LoggerFactory::getInstance( __CLASS__ );
-		$this->extensionRegistry = $extensionRegistry ?: ExtensionRegistry::getInstance();
-		$this->wikibaseRepoSettings = $wikibaseRepoSettings ?: WikibaseRepo::getSettings();
-		$this->requestFactory = $requestFactory ?: MediaWikiServices::getInstance()->getHttpRequestFactory();
-		$this->objectCacheFactory = $objectCacheFactory ?: MediaWikiServices::getInstance()->getObjectCacheFactory();
-		$this->repoConnections = $repoDomainDb ? $repoDomainDb->connections() :
+		$this->config = $config ?? RequestContext::getMain()->getConfig();
+		$this->logger = $logger ?? LoggerFactory::getInstance( __CLASS__ );
+		$this->extensionRegistry = $extensionRegistry ?? ExtensionRegistry::getInstance();
+		$this->wikibaseRepoSettings = $wikibaseRepoSettings ?? WikibaseRepo::getSettings();
+		$this->requestFactory = $requestFactory ?? MediaWikiServices::getInstance()->getHttpRequestFactory();
+		$this->objectCacheFactory = $objectCacheFactory ?? MediaWikiServices::getInstance()->getObjectCacheFactory();
+		$this->repoConnections = $repoDomainDb?->connections() ??
 			WikibaseRepo::getRepoDomainDbFactory()->newRepoDb()->connections();
 
 		$this->key = $key ?: 'WikibasePingback-' . MW_VERSION;
@@ -374,7 +371,7 @@ class WikibasePingback {
 	}
 
 	public static function doSchedule( ?WikibasePingback $instance = null ) {
-		$instance = $instance ?: new WikibasePingback;
+		$instance ??= new WikibasePingback();
 		if ( $instance->shouldSend() ) {
 			$instance->sendPingback();
 		}

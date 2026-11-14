@@ -1,9 +1,9 @@
 {
 	"@metadata": {
 		"authors": [
+			"Jon Harald Søby",
 			"Kimberli Mäkäräinen (WMNO)",
-			"Yupik",
-			"Jon Harald Søby"
+			"Yupik"
 		]
 	},
 	"wikibase-deletedentity-property": "Sihkkojuvvon iešvuohta",

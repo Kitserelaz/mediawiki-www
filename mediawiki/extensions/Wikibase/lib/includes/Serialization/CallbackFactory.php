@@ -51,7 +51,7 @@ class CallbackFactory {
 	public function getCallbackToAddDataTypeToSnaksGroupedByProperty(
 		PropertyDataTypeLookup $dataTypeLookup,
 		EntityIdParser $entityIdParser
-	) {
+	): callable {
 		return function ( $array ) use ( $dataTypeLookup, $entityIdParser ) {
 			if ( !is_array( $array ) ) {
 				return $array;
@@ -65,7 +65,7 @@ class CallbackFactory {
 					foreach ( $snakGroup as &$snak ) {
 						$snak['datatype'] = $dataType;
 					}
-				} catch ( PropertyDataTypeLookupException $e ) {
+				} catch ( PropertyDataTypeLookupException ) {
 					//XXX: shall we set $serialization['datatype'] = 'bad' ??
 				}
 			}
@@ -73,7 +73,7 @@ class CallbackFactory {
 		};
 	}
 
-	public function getCallbackToAddDataTypeToSnak( PropertyDataTypeLookup $dataTypeLookup, EntityIdParser $entityIdParser ) {
+	public function getCallbackToAddDataTypeToSnak( PropertyDataTypeLookup $dataTypeLookup, EntityIdParser $entityIdParser ): callable {
 		return function ( $array ) use ( $dataTypeLookup, $entityIdParser ) {
 			if ( is_array( $array ) ) {
 				try {
@@ -81,7 +81,7 @@ class CallbackFactory {
 						$entityIdParser,
 						$array['property']
 					) );
-				} catch ( PropertyDataTypeLookupException $e ) {
+				} catch ( PropertyDataTypeLookupException ) {
 					//XXX: shall we set $serialization['datatype'] = 'bad' ??
 				}
 			}

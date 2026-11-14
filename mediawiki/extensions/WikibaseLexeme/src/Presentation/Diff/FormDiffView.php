@@ -8,7 +8,7 @@ use Diff\DiffOp\DiffOpAdd;
 use Diff\DiffOp\DiffOpChange;
 use Diff\DiffOp\DiffOpRemove;
 use InvalidArgumentException;
-use MessageLocalizer;
+use MediaWiki\Language\MessageLocalizer;
 use Wikibase\Lexeme\Domain\Diff\FormDiff;
 use Wikibase\Repo\Diff\BasicDiffView;
 use Wikibase\Repo\Diff\ClaimDiffer;
@@ -46,6 +46,7 @@ class FormDiffView extends BasicDiffView {
 	 * @param Diff $diff
 	 * @param ClaimDiffer $claimDiffer
 	 * @param ClaimDifferenceVisualizer $claimDiffVisualizer
+	 * @param ItemReferenceDifferenceVisualizer $itemReferenceDifferenceVisualizer
 	 * @param MessageLocalizer $messageLocalizer
 	 */
 	public function __construct(
@@ -89,7 +90,7 @@ class FormDiffView extends BasicDiffView {
 		return $html;
 	}
 
-	private function generateFormOpHtml( array $path, FormDiff $op, $key ) {
+	private function generateFormOpHtml( array $path, FormDiff $op, string $key ): string {
 		$html = '';
 
 		$html .= parent::generateOpHtml(

@@ -11,19 +11,10 @@ use Wikimedia\Rdbms\ILBFactory;
  */
 class ClientDomainDbFactory {
 
-	/**
-	 * @var ILBFactory
-	 */
-	private $lbFactory;
+	private ILBFactory $lbFactory;
 
-	/**
-	 * @var string[]
-	 */
-	private $loadGroups;
-
-	public function __construct( ILBFactory $lbFactory, array $loadGroups = [] ) {
+	public function __construct( ILBFactory $lbFactory ) {
 		$this->lbFactory = $lbFactory;
-		$this->loadGroups = $loadGroups;
 	}
 
 	public function newLocalDb(): ClientDomainDb {
@@ -31,8 +22,7 @@ class ClientDomainDbFactory {
 
 		return new ClientDomainDb(
 			$this->lbFactory,
-			$localDomain,
-			$this->loadGroups
+			$localDomain
 		);
 	}
 

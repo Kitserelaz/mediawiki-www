@@ -4,15 +4,16 @@ declare( strict_types = 1 );
 
 namespace Wikibase\Client\Hooks;
 
-use EnhancedChangesList;
-use MediaWiki\Hook\EnhancedChangesListModifyBlockLineDataHook;
-use MediaWiki\Hook\EnhancedChangesListModifyLineDataHook;
-use MediaWiki\Hook\OldChangesListRecentChangesLineHook;
+use MediaWiki\CommentFormatter\CommentFormatter;
 use MediaWiki\Language\Language;
-use MediaWiki\MediaWikiServices;
+use MediaWiki\Linker\LinkRenderer;
+use MediaWiki\RecentChanges\EnhancedChangesList;
+use MediaWiki\RecentChanges\Hook\EnhancedChangesListModifyBlockLineDataHook;
+use MediaWiki\RecentChanges\Hook\EnhancedChangesListModifyLineDataHook;
+use MediaWiki\RecentChanges\Hook\OldChangesListRecentChangesLineHook;
+use MediaWiki\RecentChanges\OldChangesList;
+use MediaWiki\RecentChanges\RecentChange;
 use MediaWiki\User\UserNameUtils;
-use OldChangesList;
-use RecentChange;
 use UnexpectedValueException;
 use Wikibase\Client\RecentChanges\ChangeLineFormatter;
 use Wikibase\Client\RecentChanges\ExternalChangeFactory;
@@ -50,7 +51,9 @@ class ChangesListLinesHandler implements
 	}
 
 	public static function factory(
+		CommentFormatter $commentFormatter,
 		Language $contentLanguage,
+		LinkRenderer $linkRenderer,
 		UserNameUtils $userNameUtils,
 		EntityIdParser $entityIdParser,
 		RepoLinker $repoLinker,
@@ -64,8 +67,8 @@ class ChangesListLinesHandler implements
 		$formatter = new ChangeLineFormatter(
 			$repoLinker,
 			$userNameUtils,
-			MediaWikiServices::getInstance()->getLinkRenderer(),
-			MediaWikiServices::getInstance()->getCommentFormatter()
+			$linkRenderer,
+			$commentFormatter
 		);
 
 		return new self( $changeFactory, $formatter );
@@ -88,7 +91,7 @@ class ChangesListLinesHandler implements
 		if ( RecentChangeFactory::isWikibaseChange( $rc ) ) {
 			try {
 				$externalChange = $this->changeFactory->newFromRecentChange( $rc );
-			} catch ( UnexpectedValueException $e ) {
+			} catch ( UnexpectedValueException ) {
 				return;
 			}
 
@@ -124,7 +127,7 @@ class ChangesListLinesHandler implements
 		if ( RecentChangeFactory::isWikibaseChange( $rc ) ) {
 			try {
 				$externalChange = $this->changeFactory->newFromRecentChange( $rc );
-			} catch ( UnexpectedValueException $e ) {
+			} catch ( UnexpectedValueException ) {
 				return;
 			}
 
@@ -159,7 +162,7 @@ class ChangesListLinesHandler implements
 		if ( RecentChangeFactory::isWikibaseChange( $rc ) ) {
 			try {
 				$externalChange = $this->changeFactory->newFromRecentChange( $rc );
-			} catch ( UnexpectedValueException $e ) {
+			} catch ( UnexpectedValueException ) {
 				return;
 			}
 

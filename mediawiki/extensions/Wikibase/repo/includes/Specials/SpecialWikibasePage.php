@@ -2,9 +2,9 @@
 
 namespace Wikibase\Repo\Specials;
 
+use MediaWiki\Exception\UserBlockedError;
 use MediaWiki\Message\Message;
 use MediaWiki\SpecialPage\SpecialPage;
-use UserBlockedError;
 use Wikibase\Lib\StringNormalizer;
 
 /**
@@ -26,11 +26,9 @@ abstract class SpecialWikibasePage extends SpecialPage {
 
 	/**
 	 * @param string $name
-	 * @param string $restriction
-	 * @param bool $listed
 	 */
-	public function __construct( $name = '', $restriction = '', $listed = true ) {
-		parent::__construct( $name, $restriction, $listed );
+	public function __construct( $name = '' ) {
+		parent::__construct( $name );
 
 		// XXX: Use StringNormalizer as a plain composite - since it
 		//      doesn't have any dependencies, local instantiation isn't an issue.

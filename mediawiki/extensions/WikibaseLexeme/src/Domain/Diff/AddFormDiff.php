@@ -1,5 +1,7 @@
 <?php
 
+// @phan-file-suppress PhanPluginNeverReturnMethod
+
 namespace Wikibase\Lexeme\Domain\Diff;
 
 use Diff\DiffOp\Diff\Diff;
@@ -7,7 +9,6 @@ use Wikibase\Lexeme\Domain\Model\Form;
 
 /**
  * @license GPL-2.0-or-later
- * @phan-file-suppress PhanPluginNeverReturnMethod
  */
 class AddFormDiff implements FormDiff {
 
@@ -28,7 +29,7 @@ class AddFormDiff implements FormDiff {
 		$this->diffOps = $diffOps;
 	}
 
-	public function getAddedForm() {
+	public function getAddedForm(): Form {
 		return $this->form;
 	}
 

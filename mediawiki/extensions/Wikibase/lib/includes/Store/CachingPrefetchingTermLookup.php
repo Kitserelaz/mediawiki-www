@@ -88,6 +88,7 @@ final class CachingPrefetchingTermLookup implements PrefetchingTermLookup {
 		$this->prefetchAndCache( $uncachedIds, $uncachedTermTypes, $uncachedLanguageCodes );
 	}
 
+	/** @inheritDoc */
 	public function getPrefetchedTerm( EntityId $entityId, $termType, $languageCode ) {
 		if ( isset( $this->prefetchedTerms[$entityId->getSerialization()][$termType][$languageCode] ) ) {
 			return $this->prefetchedTerms[$entityId->getSerialization()][$termType][$languageCode];
@@ -95,6 +96,7 @@ final class CachingPrefetchingTermLookup implements PrefetchingTermLookup {
 		return $this->lookup->getPrefetchedTerm( $entityId, $termType, $languageCode );
 	}
 
+	/** @inheritDoc */
 	public function getPrefetchedAliases( EntityId $entityId, $languageCode ) {
 		if ( isset( $this->prefetchedTerms[$entityId->getSerialization()][TermTypes::TYPE_ALIAS][$languageCode] ) ) {
 			// @phan-suppress-next-line PhanTypeArraySuspiciousNullable
@@ -103,6 +105,7 @@ final class CachingPrefetchingTermLookup implements PrefetchingTermLookup {
 		return $this->lookup->getPrefetchedAliases( $entityId, $languageCode );
 	}
 
+	/** @inheritDoc */
 	public function getLabel( EntityId $entityId, $languageCode ): ?string {
 		if ( !$this->termLanguages->hasLanguage( $languageCode ) ) {
 			return null;
@@ -111,6 +114,7 @@ final class CachingPrefetchingTermLookup implements PrefetchingTermLookup {
 		return $this->getTerm( $entityId, $languageCode, TermTypes::TYPE_LABEL );
 	}
 
+	/** @inheritDoc */
 	public function getDescription( EntityId $entityId, $languageCode ): ?string {
 		if ( !$this->termLanguages->hasLanguage( $languageCode ) ) {
 			return null;
@@ -119,7 +123,7 @@ final class CachingPrefetchingTermLookup implements PrefetchingTermLookup {
 		return $this->getTerm( $entityId, $languageCode, TermTypes::TYPE_DESCRIPTION );
 	}
 
-	private function getTerm( EntityId $entityId, string $languageCode, string $termType ) {
+	private function getTerm( EntityId $entityId, string $languageCode, string $termType ): ?string {
 		$cachedTerm = $this->getBufferedOrCachedEntry( $entityId, $termType, $languageCode );
 		if ( $cachedTerm !== null ) {
 			return $cachedTerm ?: null;
@@ -140,11 +144,13 @@ final class CachingPrefetchingTermLookup implements PrefetchingTermLookup {
 		return $freshTerm;
 	}
 
+	/** @inheritDoc */
 	public function getLabels( EntityId $entityId, array $languageCodes ) {
 		$validTermLanguageCodes = $this->filterValidTermLanguages( $languageCodes );
 		return $this->getMultipleTermsByLanguage( $entityId, TermTypes::TYPE_LABEL, $validTermLanguageCodes );
 	}
 
+	/** @inheritDoc */
 	public function getDescriptions( EntityId $entityId, array $languageCodes ) {
 		$validTermLanguageCodes = $this->filterValidTermLanguages( $languageCodes );
 		return $this->getMultipleTermsByLanguage( $entityId, TermTypes::TYPE_DESCRIPTION, $validTermLanguageCodes );
@@ -240,6 +246,9 @@ final class CachingPrefetchingTermLookup implements PrefetchingTermLookup {
 		return $terms;
 	}
 
+	/**
+	 * @return string|string[]|false|null
+	 */
 	private function getTermFromLookup( EntityId $entity, string $termType, string $language ) {
 		if ( $termType === TermTypes::TYPE_LABEL || $termType === TermTypes::TYPE_DESCRIPTION ) {
 			return $this->lookup->getPrefetchedTerm( $entity, $termType, $language );
@@ -252,8 +261,8 @@ final class CachingPrefetchingTermLookup implements PrefetchingTermLookup {
 	 * @param EntityId $entityId
 	 * @param string $termType
 	 * @param string $languageCode
-	 * @param string|string[]|false $value string for existing label or description, string[] for existing aliases, false for term known
-	 *                                     to not exist.
+	 * @param string|string[]|false $value string for existing label or description, string[] for existing aliases,
+	 *  false for term known to not exist.
 	 */
 	private function setPrefetchedTermBuffer( EntityId $entityId, string $termType, string $languageCode, $value ): void {
 		if ( !isset( $this->prefetchedTerms[$entityId->getSerialization()] ) ) {
@@ -270,8 +279,8 @@ final class CachingPrefetchingTermLookup implements PrefetchingTermLookup {
 	 * @param EntityId $entityId
 	 * @param string $termType
 	 * @param string $languageCode
-	 * @param string|string[] $freshTerm string for existing label or description, string[] for existing aliases
-	 *                                   Should never be null or false @see bufferAndCacheMissingTerm
+	 * @param string|string[] $freshTerm string for existing label or description, string[] for existing aliases.
+	 *  Should never be null or false, see {@link bufferAndCacheMissingTerm}.
 	 */
 	private function bufferAndCacheExistingTerm( EntityId $entityId, string $termType, string $languageCode, $freshTerm ): void {
 		$this->setPrefetchedTermBuffer( $entityId, $termType, $languageCode, $freshTerm );
@@ -299,7 +308,7 @@ final class CachingPrefetchingTermLookup implements PrefetchingTermLookup {
 		);
 	}
 
-	private function getCacheKey( EntityId $id, string $language, string $termType ) {
+	private function getCacheKey( EntityId $id, string $language, string $termType ): ?string {
 		$resolutionResult = $this->redirectResolvingRevisionLookup->lookupLatestRevisionResolvingRedirect( $id );
 		if ( $resolutionResult === null ) {
 			return null;
@@ -308,6 +317,9 @@ final class CachingPrefetchingTermLookup implements PrefetchingTermLookup {
 		return $this->buildCacheKey( $resolutionResult[1], $resolutionResult[0], $language, $termType );
 	}
 
+	/**
+	 * @return string|false|null
+	 */
 	private function getBufferedOrCachedEntry( EntityId $entityId, string $termType, string $languageCode ) {
 		// Check if it's prefetched already.
 		$prefetchedTerm = $this->getPrefetchedTerm( $entityId, $termType, $languageCode );
@@ -320,7 +332,7 @@ final class CachingPrefetchingTermLookup implements PrefetchingTermLookup {
 		return $cacheKey === null ? null : $this->cache->get( $cacheKey );
 	}
 
-	private function getMultipleTermsByLanguageFromBuffer( EntityId $entityId, string $termType, array $languages ) {
+	private function getMultipleTermsByLanguageFromBuffer( EntityId $entityId, string $termType, array $languages ): array {
 		$terms = [];
 
 		// Lookup in termbuffer
@@ -334,7 +346,7 @@ final class CachingPrefetchingTermLookup implements PrefetchingTermLookup {
 		return $terms;
 	}
 
-	private function getMultipleTermsByLanguageFromCache( EntityId $entityId, string $termType, array $languages ) {
+	private function getMultipleTermsByLanguageFromCache( EntityId $entityId, string $termType, array $languages ): array {
 		$terms = [];
 
 		$languagesToCacheKeys = [];
@@ -359,7 +371,7 @@ final class CachingPrefetchingTermLookup implements PrefetchingTermLookup {
 		return $terms;
 	}
 
-	private function getMultipleTermsByLanguageFromLookup( EntityId $entityId, string $termType, array $languages ) {
+	private function getMultipleTermsByLanguageFromLookup( EntityId $entityId, string $termType, array $languages ): array {
 		if ( $termType === TermTypes::TYPE_LABEL ) {
 			$freshTerms = $this->lookup->getLabels( $entityId, $languages );
 		} else {
@@ -377,7 +389,7 @@ final class CachingPrefetchingTermLookup implements PrefetchingTermLookup {
 		return $freshTerms;
 	}
 
-	private function getMultipleTermsByLanguage( EntityId $entityId, string $termType, array $languages ) {
+	private function getMultipleTermsByLanguage( EntityId $entityId, string $termType, array $languages ): array {
 		$terms = $this->getMultipleTermsByLanguageFromBuffer( $entityId, $termType, $languages );
 
 		// languages without prefetched terms

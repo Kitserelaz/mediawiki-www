@@ -6,7 +6,6 @@ use Deserializers\Deserializer;
 use Deserializers\Exceptions\DeserializationException;
 use Deserializers\Exceptions\InvalidAttributeException;
 use InvalidArgumentException;
-use Wikibase\DataModel\Entity\Item;
 use Wikibase\DataModel\Term\AliasGroup;
 use Wikibase\DataModel\Term\AliasGroupList;
 use Wikibase\DataModel\Term\Fingerprint;
@@ -23,7 +22,7 @@ class LegacyFingerprintDeserializer implements Deserializer {
 	/**
 	 * @param array $serialization
 	 *
-	 * @return Item
+	 * @return Fingerprint
 	 * @throws DeserializationException
 	 */
 	public function deserialize( $serialization ) {
@@ -45,7 +44,7 @@ class LegacyFingerprintDeserializer implements Deserializer {
 		}
 	}
 
-	private function getLabels( array $serialization ) {
+	private function getLabels( array $serialization ): TermList {
 		$labels = [];
 
 		foreach ( $this->getArrayFromKey( 'label', $serialization ) as $langCode => $text ) {
@@ -55,7 +54,7 @@ class LegacyFingerprintDeserializer implements Deserializer {
 		return new TermList( $labels );
 	}
 
-	private function getDescriptions( array $serialization ) {
+	private function getDescriptions( array $serialization ): TermList {
 		$descriptions = [];
 
 		foreach ( $this->getArrayFromKey( 'description', $serialization ) as $langCode => $text ) {
@@ -65,7 +64,7 @@ class LegacyFingerprintDeserializer implements Deserializer {
 		return new TermList( $descriptions );
 	}
 
-	private function getAliases( array $serialization ) {
+	private function getAliases( array $serialization ): AliasGroupList {
 		$descriptions = [];
 
 		foreach ( $this->getArrayFromKey( 'aliases', $serialization ) as $langCode => $texts ) {
@@ -77,7 +76,7 @@ class LegacyFingerprintDeserializer implements Deserializer {
 		return new AliasGroupList( $descriptions );
 	}
 
-	private function getArrayFromKey( $key, array $serialization ) {
+	private function getArrayFromKey( string $key, array $serialization ): array {
 		if ( !array_key_exists( $key, $serialization ) ) {
 			return [];
 		}

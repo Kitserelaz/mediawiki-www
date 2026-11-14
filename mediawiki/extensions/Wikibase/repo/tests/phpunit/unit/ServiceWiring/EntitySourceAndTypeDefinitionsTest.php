@@ -1,4 +1,5 @@
 <?php
+
 declare( strict_types = 1 );
 
 namespace Wikibase\Repo\Tests\Unit\ServiceWiring;
@@ -19,6 +20,7 @@ use Wikibase\Repo\Tests\Unit\ServiceWiringTestCase;
 class EntitySourceAndTypeDefinitionsTest extends ServiceWiringTestCase {
 
 	public function testConstruction(): void {
+		$this->mockService( 'WikibaseRepo.EntityTypeDefinitionsArray', [] );
 		$this->mockService( 'WikibaseRepo.Settings', new SettingsArray( [ 'federatedPropertiesEnabled' => false ] ) );
 		$entitySourceDefinitions = $this->createStub( EntitySourceDefinitions::class );
 		$entitySourceDefinitions->method( 'getSources' )->willReturn( [

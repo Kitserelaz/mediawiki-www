@@ -4,8 +4,10 @@ namespace Wikibase\Repo\Store\Sql;
 
 use InvalidArgumentException;
 use MediaWiki\CommentStore\CommentStoreComment;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Page\WikiPageFactory;
 use MediaWiki\Permissions\PermissionManager;
+use MediaWiki\RecentChanges\RecentChange;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\RevisionStore;
 use MediaWiki\Revision\SlotRecord;
@@ -14,7 +16,6 @@ use MediaWiki\Title\Title;
 use MediaWiki\User\ActorNormalization;
 use MediaWiki\User\User;
 use MediaWiki\Watchlist\WatchlistManager;
-use RecentChange;
 use Wikibase\DataAccess\DatabaseEntitySource;
 use Wikibase\DataModel\Entity\EntityDocument;
 use Wikibase\DataModel\Entity\EntityId;
@@ -31,7 +32,6 @@ use Wikibase\Repo\GenericEventDispatcher;
 use Wikibase\Repo\Store\EntityTitleStoreLookup;
 use Wikibase\Repo\Store\IdGenerator;
 use Wikimedia\Rdbms\SelectQueryBuilder;
-use WikiPage;
 
 /**
  * EntityStore implementation based on WikiPage.
@@ -201,15 +201,13 @@ class WikiPageEntityStore implements EntityStore {
 		return $handler->canCreateWithCustomId( $id );
 	}
 
-	private function entityIdFromKnownSource( EntityId $id ) {
+	private function entityIdFromKnownSource( EntityId $id ): bool {
 		return in_array( $id->getEntityType(), $this->entitySource->getEntityTypes() );
 	}
 
 	/**
 	 * Registers a watcher that will be notified whenever an entity is
 	 * updated or deleted.
-	 *
-	 * @param EntityStoreWatcher $watcher
 	 */
 	public function registerWatcher( EntityStoreWatcher $watcher ) {
 		$this->dispatcher->registerWatcher( $watcher );

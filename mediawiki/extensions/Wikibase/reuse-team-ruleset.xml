@@ -1,0 +1,69 @@
+<?xml version="1.0"?>
+<ruleset name="Reuse Team">
+	<!-- This is not a standalone ruleset but an extension of Wikibase's main PHPCS configuration.
+     It is invoked separately to prevent conflicts between multiple rule sets.
+
+     This ruleset is maintained by the Reuse Team and applies only to directories owned by them. -->
+
+	<rule ref="Generic.PHP.RequireStrictTypes" />
+	<rule ref="Generic.WhiteSpace.ScopeIndent" />
+	<rule ref="Generic.Arrays.ArrayIndent">
+		<exclude name="Generic.Arrays.ArrayIndent.CloseBraceNotNewLine" />
+	</rule>
+	<rule ref="PEAR.Functions.FunctionCallSignature.Indent" />
+	<rule ref="Squiz.Strings.DoubleQuoteUsage">
+		<exclude name="Squiz.Strings.DoubleQuoteUsage.ContainsVar" />
+	</rule>
+	<rule ref="SlevomatCodingStandard.TypeHints.ParameterTypeHint">
+		<exclude name="SlevomatCodingStandard.TypeHints.ParameterTypeHint.MissingTraversableTypeHintSpecification" />
+		<exclude name="SlevomatCodingStandard.TypeHints.ParameterTypeHint.UselessAnnotation" />
+	</rule>
+	<rule ref="SlevomatCodingStandard.TypeHints.ReturnTypeHint">
+		<exclude name="SlevomatCodingStandard.TypeHints.ReturnTypeHint.MissingTraversableTypeHintSpecification" />
+		<exclude name="SlevomatCodingStandard.TypeHints.ReturnTypeHint.UselessAnnotation" />
+	</rule>
+	<rule ref="SlevomatCodingStandard.TypeHints.PropertyTypeHint">
+		<exclude name="SlevomatCodingStandard.TypeHints.PropertyTypeHint.MissingTraversableTypeHintSpecification" />
+	</rule>
+	<rule ref="SlevomatCodingStandard.TypeHints.UselessConstantTypeHint" />
+	<rule ref="SlevomatCodingStandard.Files.TypeNameMatchesFileName">
+		<properties>
+			<property name="rootNamespaces" type="array">
+				<element key="repo/tests/architecture" value="Wikibase\Repo\Tests\Architecture"/>
+				<element key="repo/rest-api/src" value="Wikibase\Repo\RestApi"/>
+				<element key="repo/rest-api/tests/phpunit" value="Wikibase\Repo\Tests\RestApi"/>
+				<element key="repo/rest-api/tests/architecture" value="Wikibase\Repo\Tests\RestApi\Architecture"/>
+				<element key="repo/domains/search/src" value="Wikibase\Repo\Domains\Search"/>
+				<element key="repo/domains/search/tests/phpunit" value="Wikibase\Repo\Tests\Domains\Search"/>
+				<element key="repo/domains/search/tests/architecture" value="Wikibase\Repo\Tests\Domains\Search\Architecture"/>
+				<element key="repo/domains/crud/src" value="Wikibase\Repo\Domains\Crud"/>
+				<element key="repo/domains/crud/tests/phpunit" value="Wikibase\Repo\Tests\Domains\Crud"/>
+				<element key="repo/domains/crud/tests/architecture" value="Wikibase\Repo\Tests\Domains\Crud\Architecture"/>
+				<element key="repo/domains/reuse/src" value="Wikibase\Repo\Domains\Reuse"/>
+				<element key="repo/domains/reuse/tests/phpunit" value="Wikibase\Repo\Tests\Domains\Reuse"/>
+				<element key="repo/domains/reuse/tests/architecture" value="Wikibase\Repo\Tests\Domains\Reuse\Architecture"/>
+			</property>
+		</properties>
+	</rule>
+	<rule ref="SlevomatCodingStandard.Functions.ArrowFunctionDeclaration">
+		<properties>
+			<property name="spacesCountAfterKeyword" value="0"/>
+		</properties>
+	</rule>
+	<rule ref="MediaWiki.Classes.FullQualifiedClassName">
+		<severity>5</severity>
+		<properties>
+			<property name="allowMainNamespace" value="false" />
+			<property name="allowInheritance" value="false" />
+			<property name="allowFunctions" value="false" />
+		</properties>
+	</rule>
+
+	<file>repo/rest-api</file>
+	<file>repo/domains/crud</file>
+	<file>repo/domains/search</file>
+	<file>repo/domains/reuse</file>
+	<arg name="tab-width" value="4" />
+	<arg name="extensions" value="php" />
+	<exclude-pattern>node_modules/</exclude-pattern>
+</ruleset>

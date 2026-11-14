@@ -3,8 +3,8 @@
 namespace Wikibase\Repo\Diff;
 
 use Diff\DiffOp\Diff\Diff;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\Site\SiteLookup;
-use MessageLocalizer;
 use Wikibase\DataModel\Services\Diff\EntityDiff;
 use Wikibase\DataModel\Services\EntityId\EntityIdFormatter;
 use Wikibase\Repo\Content\EntityContentDiff;
@@ -41,7 +41,7 @@ class ItemDiffVisualizer implements EntityDiffVisualizer {
 		MessageLocalizer $messageLocalizer,
 		SiteLookup $siteLookup,
 		EntityIdFormatter $entityIdFormatter,
-		EntityDiffVisualizer $basicEntityDiffVisualizer
+		BasicEntityDiffVisualizer $basicEntityDiffVisualizer
 	) {
 		$this->messageLocalizer = $messageLocalizer;
 		$this->siteLookup = $siteLookup;

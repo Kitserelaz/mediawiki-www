@@ -10,9 +10,9 @@ use MediaWiki\Api\ApiUsageException;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Permissions\PermissionManager;
 use MediaWiki\Revision\RevisionLookup;
-use MediaWiki\Status\Status;
 use MediaWiki\Title\TitleFactory;
 use OutOfBoundsException;
+use StatusValue;
 use Wikibase\DataModel\Entity\EntityDocument;
 use Wikibase\DataModel\Entity\EntityId;
 use Wikibase\DataModel\Entity\EntityIdParser;
@@ -103,7 +103,7 @@ class EntitySavingHelper extends EntityLoadingHelper {
 
 	public function __construct(
 		bool $isWriteMode,
-		$needsToken,
+		bool $needsToken,
 		RevisionLookup $revisionLookup,
 		TitleFactory $titleFactory,
 		EntityIdParser $idParser,
@@ -275,7 +275,7 @@ class EntitySavingHelper extends EntityLoadingHelper {
 
 		try {
 			$entity = $this->entityFactory->newEmpty( $entityType );
-		} catch ( OutOfBoundsException $ex ) {
+		} catch ( OutOfBoundsException ) {
 			$this->errorReporter->dieError(
 				"No such entity type: '$entityType'",
 				'no-such-entity-type'
@@ -338,7 +338,7 @@ class EntitySavingHelper extends EntityLoadingHelper {
 	 * @param int $flags The edit flags (see WikiPage::doEditContent)
 	 *
 	 * @throws LogicException if not in write mode
-	 * @return Status the status of the save operation, as returned by EditEntityHandler::attemptSave()
+	 * @return StatusValue the status of the save operation, as returned by EditEntityHandler::attemptSave()
 	 * @see  EditEntityHandler::attemptSave()
 	 */
 	public function attemptSaveEntity(
@@ -347,7 +347,7 @@ class EntitySavingHelper extends EntityLoadingHelper {
 		array $requestParams,
 		IContextSource $context,
 		int $flags = 0
-	): Status {
+	): StatusValue {
 		if ( !$this->isApiModuleWriteMode ) {
 			// sanity/safety check
 			throw new LogicException(
@@ -456,12 +456,12 @@ class EntitySavingHelper extends EntityLoadingHelper {
 	 * An ApiErrorHandler is used to report the status, if necessary.
 	 * If $status->isOK() is false, this method will terminate with an ApiUsageException.
 	 *
-	 * @param Status $status The status to report
+	 * @param StatusValue $status The status to report
 	 * @param string|null $errorCode The API error code to use in case $status->isOK() returns false
 	 *
 	 * @throws ApiUsageException If $status->isOK() returns false.
 	 */
-	private function handleStatus( Status $status, $errorCode ): void {
+	private function handleStatus( StatusValue $status, $errorCode ): void {
 		if ( $status->isGood() ) {
 			return;
 		} elseif ( $status->isOK() ) {

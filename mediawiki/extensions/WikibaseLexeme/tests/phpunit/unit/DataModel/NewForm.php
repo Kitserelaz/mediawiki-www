@@ -155,7 +155,7 @@ class NewForm {
 	public static function __callStatic( string $name, array $arguments ): self {
 		$result = new self();
 		$methodName = str_replace( 'having', 'and', $name );
-		return call_user_func_array( [ $result, $methodName ], $arguments );
+		return $result->$methodName( ...$arguments );
 	}
 
 	public function __clone() {
@@ -167,8 +167,10 @@ class NewForm {
 	}
 
 	/**
+	 * @phpcs:ignore MediaWiki.Commenting.FunctionComment.ObjectTypeHintParam
 	 * @param object[] $objects
 	 *
+	 * @phpcs:ignore MediaWiki.Commenting.FunctionComment.ObjectTypeHintReturn
 	 * @return object[]
 	 */
 	private function cloneArrayOfObjects( array $objects ): array {

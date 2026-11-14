@@ -38,17 +38,18 @@ class PlaintextTimeFormatter implements ValueFormatter {
 		ValueFormatter $dateTimeFormatter,
 		ShowCalendarModelDecider $decider
 	) {
-		$this->options = $options ?: new FormatterOptions();
-		$this->options->defaultOption( ValueFormatter::OPT_LANG, 'en' );
-		// for backwards compatibility with older versions, of Wikibase,
-		// never show the calendar model by default (users have to opt into 'auto')
-		$this->options->defaultOption( ShowCalendarModelDecider::OPT_SHOW_CALENDAR, false );
+		$this->options = ( $options ?: new FormatterOptions() )
+			->withDefaultOption( ValueFormatter::OPT_LANG, 'en' )
+			// for backwards compatibility with older versions, of Wikibase,
+			// never show the calendar model by default (users have to opt into 'auto')
+			->withDefaultOption( ShowCalendarModelDecider::OPT_SHOW_CALENDAR, false );
 
 		$this->dateTimeFormatter = $dateTimeFormatter;
 		$this->decider = $decider;
 	}
 
-	public function format( $value ): string {
+	/** @inheritDoc */
+	public function format( $value ) {
 		$formatted = $this->dateTimeFormatter->format( $value );
 
 		if ( $this->decider->showCalendarModel( $value, $this->options ) ) {

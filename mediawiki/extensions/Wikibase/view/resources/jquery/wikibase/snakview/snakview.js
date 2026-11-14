@@ -184,8 +184,8 @@
 				}
 			} else if ( key === 'locked' && typeof value === 'boolean' ) {
 				var locked = value;
-				value = $.extend( {}, $.wikibase.snakview.prototype.options.locked );
-				Object.keys( $.wikibase.snakview.prototype.options.locked ).forEach( function ( k ) {
+				value = Object.assign( {}, $.wikibase.snakview.prototype.options.locked );
+				Object.keys( $.wikibase.snakview.prototype.options.locked ).forEach( ( k ) => {
 					value[ k ] = locked;
 				} );
 			}
@@ -237,7 +237,7 @@
 				responseErrorFactory: wb.api.RepoApiError.newFromApiResponse
 			} )
 			.prop( 'placeholder', mw.msg( 'wikibase-snakview-property-input-placeholder' ) )
-			.on( 'eachchange', function ( event, oldValue ) {
+			.on( 'eachchange', ( event, oldValue ) => {
 				// remove out-dated variations
 				if ( self._variation ) {
 					self.drawSnakTypeSelector();
@@ -246,7 +246,7 @@
 					self._trigger( 'change' );
 				}
 			} )
-			.on( 'entityselectorselected', function ( event, entityId ) {
+			.on( 'entityselectorselected', ( event, entityId ) => {
 				self._selectProperty();
 			} );
 		},
@@ -277,7 +277,7 @@
 			// the property might not be valid anymore aborting the rendering of the value
 			// view.
 			if ( this._variation ) {
-				$( this._variation ).one( 'afterstartediting', function () {
+				$( this._variation ).one( 'afterstartediting', () => {
 					self._variation.focus();
 				} );
 			}
@@ -310,7 +310,7 @@
 			}
 
 			if ( this._variation ) {
-				$( this._variation ).one( 'afterstartediting', function () {
+				$( this._variation ).one( 'afterstartediting', () => {
 					deferred.resolve();
 				} );
 				this.draw();
@@ -457,7 +457,7 @@
 				value.hash = serialization.hash;
 			}
 
-			return this._variation ? $.extend( this._variation.value(), value ) : value;
+			return this._variation ? Object.assign( this._variation.value(), value ) : value;
 		},
 
 		/**
@@ -603,13 +603,13 @@
 				if ( !value.datavalue
 					&& this._cachedValues[ snakType ] && this._cachedValues[ snakType ].datavalue
 				) {
-					value.datavalue = $.extend( {}, this._cachedValues[ snakType ].datavalue );
+					value.datavalue = Object.assign( {}, this._cachedValues[ snakType ].datavalue );
 				}
 
 				// Update Variation with fields not directly managed by the snakview. If necessary
 				// within the Variation, those fields should be accessed via the Variation's
 				// ViewState object.
-				var serializationCopy = $.extend( {}, value );
+				var serializationCopy = Object.assign( {}, value );
 				delete serializationCopy.property;
 				delete serializationCopy.snaktype;
 				this._variation.value( serializationCopy );
@@ -633,8 +633,8 @@
 		 */
 		updateHash: function () {
 			var hash;
-			this.element.removeClass( function ( index, className ) {
-				// eslint-disable-next-line security/detect-unsafe-regex
+			this.element.removeClass( ( index, className ) => {
+
 				var matches = className.match( /\bwikibase-snakview-([0-9a-fA-F]{40})?(\s|$)/g );
 				return matches ? matches.join( ' ' ) : '';
 			} );
@@ -665,11 +665,11 @@
 			}
 
 			this._getPropertyDOM( propertyId )
-			.done( function ( $property ) {
+			.done( ( $property ) => {
 				self.$property.empty().append( $property );
 				deferred.resolve();
 			} )
-			.fail( function () {
+			.fail( () => {
 				self.$property.empty().text( propertyId );
 				deferred.reject();
 			} );
@@ -702,7 +702,7 @@
 				}
 			} else {
 				if ( editable ) {
-					this.options.entityIdPlainFormatter.format( propertyId ).done( function ( propertyLabel ) {
+					this.options.entityIdPlainFormatter.format( propertyId ).done( ( propertyLabel ) => {
 						deferred.resolve( self._createPropertyDOM( propertyLabel ) );
 					} );
 				} else {
@@ -800,7 +800,7 @@
 				propertyId = value ? value.property : null;
 
 			if ( propertyId && this._variation ) {
-				$( this._variation ).one( 'afterdraw', function () {
+				$( this._variation ).one( 'afterdraw', () => {
 					if ( self.isInEditMode() ) {
 						self.variation().startEditing();
 					}
@@ -846,7 +846,7 @@
 			var changeEvent = ( selector.widgetEventPrefix + 'change' ).toLowerCase();
 
 			// bind user interaction on selector to snakview's state:
-			$anchor.on( changeEvent + '.' + this.widgetName, function ( event ) {
+			$anchor.on( changeEvent + '.' + this.widgetName, ( event ) => {
 				self.updateVariation();
 				self.drawVariation();
 				if ( self._variation ) {
@@ -881,6 +881,6 @@
 		}
 	} );
 
-	$.extend( $.wikibase.snakview, existingSnakview );
+	Object.assign( $.wikibase.snakview, existingSnakview );
 
 }( wikibase, dataValues ) );

@@ -3,7 +3,7 @@
 declare( strict_types = 1 );
 namespace Wikibase\Client\Hooks;
 
-use MediaWiki\Hook\LoginFormValidErrorMessagesHook;
+use MediaWiki\Specials\Hook\LoginFormValidErrorMessagesHook;
 
 /**
  * @license GPL-2.0-or-later

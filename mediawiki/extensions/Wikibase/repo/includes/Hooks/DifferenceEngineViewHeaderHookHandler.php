@@ -3,50 +3,27 @@
 declare( strict_types = 1 );
 namespace Wikibase\Repo\Hooks;
 
+use MediaWiki\Diff\DifferenceEngine;
 use MediaWiki\Diff\Hook\DifferenceEngineViewHeaderHook;
-use Psr\Log\LoggerInterface;
 use Wikibase\DataAccess\PrefetchingTermLookup;
 use Wikibase\DataModel\Term\TermTypes;
 use Wikibase\Lib\LanguageFallbackChainFactory;
-use Wikibase\Lib\SettingsArray;
 use Wikibase\Lib\Store\LinkTargetEntityIdLookup;
-use Wikibase\Repo\FederatedProperties\SummaryParsingPrefetchHelper;
 
 /**
- * Hook for prefetching and handling federated properties before links are rendered.
+ * Hook for prefetching the terms of entities mentioned in edit summaries on diff pages.
  *
  * @license GPL-2.0-or-later
  */
 class DifferenceEngineViewHeaderHookHandler implements DifferenceEngineViewHeaderHook {
 
-	/**
-	 * @var SummaryParsingPrefetchHelper
-	 */
-	private $summaryParsingPrefetcher;
+	private SummaryParsingPrefetchHelper $summaryParsingPrefetcher;
 
-	/**
-	 * @var LinkTargetEntityIdLookup
-	 */
-	private $linkLookup;
+	private LinkTargetEntityIdLookup $linkLookup;
 
-	/**
-	 * @var LanguageFallbackChainFactory
-	 */
-	private $languageFallbackChainFactory;
+	private LanguageFallbackChainFactory $languageFallbackChainFactory;
 
-	/**
-	 * @var bool
-	 */
-	private $federatedPropertiesEnabled;
-
-	/**
-	 * @param bool $federatedPropertiesEnabled
-	 * @param LanguageFallbackChainFactory $languageFallbackChainFactory
-	 * @param LinkTargetEntityIdLookup $linkTargetEntityIdLookup
-	 * @param SummaryParsingPrefetchHelper $summaryParsingPrefetcher
-	 */
 	public function __construct(
-		bool $federatedPropertiesEnabled,
 		LanguageFallbackChainFactory $languageFallbackChainFactory,
 		LinkTargetEntityIdLookup $linkTargetEntityIdLookup,
 		SummaryParsingPrefetchHelper $summaryParsingPrefetcher
@@ -54,32 +31,25 @@ class DifferenceEngineViewHeaderHookHandler implements DifferenceEngineViewHeade
 		$this->summaryParsingPrefetcher = $summaryParsingPrefetcher;
 		$this->languageFallbackChainFactory = $languageFallbackChainFactory;
 		$this->linkLookup = $linkTargetEntityIdLookup;
-		$this->federatedPropertiesEnabled = $federatedPropertiesEnabled;
 	}
 
 	public static function factory(
 		LanguageFallbackChainFactory $languageFallbackChainFactory,
 		LinkTargetEntityIdLookup $linkTargetEntityIdLookup,
-		LoggerInterface $logger,
-		PrefetchingTermLookup $prefetchingTermLookup,
-		SettingsArray $repoSettings
+		PrefetchingTermLookup $prefetchingTermLookup
 	): self {
 		return new self(
-			$repoSettings->getSetting( 'federatedPropertiesEnabled' ),
 			$languageFallbackChainFactory,
 			$linkTargetEntityIdLookup,
-			new SummaryParsingPrefetchHelper( $prefetchingTermLookup, $logger )
+			new SummaryParsingPrefetchHelper( $prefetchingTermLookup )
 		);
 	}
 
+	/**
+	 * @param DifferenceEngine $differenceEngine
+	 * @return void True or no return value to continue or false to abort
+	 */
 	public function onDifferenceEngineViewHeader( $differenceEngine ) {
-
-		// If federated properties is enabled,
-		// prefetch the property terms that occur in the revision data of the difference engine
-		if ( !$this->federatedPropertiesEnabled ) {
-			return;
-		}
-
 		$differenceEngine->loadRevisionData();
 		$entityId = $this->linkLookup->getEntityId( $differenceEngine->getTitle() );
 
@@ -87,10 +57,10 @@ class DifferenceEngineViewHeaderHookHandler implements DifferenceEngineViewHeade
 			return;
 		}
 
-		$this->summaryParsingPrefetcher->prefetchFederatedProperties(
+		$this->summaryParsingPrefetcher->prefetchTermsForMentionedEntities(
 			[ $differenceEngine->getOldRevision(), $differenceEngine->getNewRevision() ],
 			$this->languageFallbackChainFactory->newFromContext( $differenceEngine->getContext() )->getFetchLanguageCodes(),
-			[ TermTypes::TYPE_LABEL ]
+			[ TermTypes::TYPE_LABEL, TermTypes::TYPE_DESCRIPTION ]
 		);
 	}
 }

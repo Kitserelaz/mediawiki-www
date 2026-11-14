@@ -936,8 +936,8 @@ class MirahezeFunctions {
 	/** Build the name/path index without registering mutually exclusive extensions. */
 	public static function rebuildExtensionListCache(): void {
 		$paths = array_merge(
-			glob( self::MEDIAWIKI_DIRECTORY . '/extensions/*/extension*.json' ),
-			glob( self::MEDIAWIKI_DIRECTORY . '/skins/*/skin.json' )
+			glob( self::MEDIAWIKI_DIRECTORY . 'extensions/*/extension*.json' ),
+			glob( self::MEDIAWIKI_DIRECTORY . 'skins/*/skin.json' )
 		);
 		$list = [];
 		foreach ( $paths as $path ) {
@@ -1003,7 +1003,7 @@ class MirahezeFunctions {
 
 			$pathInfo = pathinfo( $path )['extension'] ?? false;
 			if ( $path && $pathInfo === 'json' ) {
-				ExtensionRegistry::getInstance()->queue( $path );
+				ExtensionRegistry::getInstance()->queue( realpath( $path ) ?: $path );
 			}
 		}
 	}

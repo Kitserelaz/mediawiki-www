@@ -56,7 +56,7 @@ class QuantityRdfBuilder implements ValueSnakRdfBuilder {
 		$value = $snak->getDataValue();
 		'@phan-var UnboundedQuantityValue $value';
 		$writer->say( $propertyValueNamespace, $propertyValueLName )
-			->value( $value->getAmount(), 'xsd', 'decimal' );
+			->value( $value->getAmount()->getValue(), 'xsd', 'decimal' );
 		//FIXME: this is meaningless without a unit identifier!
 
 		if ( $this->complexValueHelper !== null ) {
@@ -163,20 +163,18 @@ class QuantityRdfBuilder implements ValueSnakRdfBuilder {
 	 * Write data for the value.
 	 * This expects the current subject of the RDF writer to be the value node.
 	 * No instance-of statement is written about the value.
-	 *
-	 * @param UnboundedQuantityValue $value
 	 */
 	public function writeQuantityValue( UnboundedQuantityValue $value ) {
 		$valueWriter = $this->complexValueHelper->getValueNodeWriter();
 
 		$valueWriter->say( RdfVocabulary::NS_ONTOLOGY, 'quantityAmount' )
-			->value( $value->getAmount(), 'xsd', 'decimal' );
+			->value( $value->getAmount()->getValue(), 'xsd', 'decimal' );
 
 		if ( $value instanceof QuantityValue ) {
 			$valueWriter->say( RdfVocabulary::NS_ONTOLOGY, 'quantityUpperBound' )
-				->value( $value->getUpperBound(), 'xsd', 'decimal' );
+				->value( $value->getUpperBound()->getValue(), 'xsd', 'decimal' );
 			$valueWriter->say( RdfVocabulary::NS_ONTOLOGY, 'quantityLowerBound' )
-				->value( $value->getLowerBound(), 'xsd', 'decimal' );
+				->value( $value->getLowerBound()->getValue(), 'xsd', 'decimal' );
 		}
 
 		$unitUri = trim( $value->getUnit() );

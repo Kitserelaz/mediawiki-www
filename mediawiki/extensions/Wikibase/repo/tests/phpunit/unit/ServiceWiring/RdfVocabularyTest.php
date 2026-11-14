@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 namespace Wikibase\Repo\Tests\Unit\ServiceWiring;
 
 use MediaWiki\Config\HashConfig;
+use MediaWiki\MainConfigNames;
 use Wikibase\DataAccess\DatabaseEntitySource;
 use Wikibase\DataAccess\EntitySourceDefinitions;
 use Wikibase\DataModel\Entity\Property;
@@ -61,9 +62,7 @@ class RdfVocabularyTest extends ServiceWiringTestCase {
 			] ) );
 		$this->serviceContainer->expects( $this->once() )
 			->method( 'getMainConfig' )
-			->willReturn( new HashConfig( [
-				'DummyLanguageCodes' => [ 'd1' => 'dummy-1' ],
-			] ) );
+			->willReturn( new HashConfig( [ MainConfigNames::DummyLanguageCodes => [ 'd1' => 'dummy-1' ] ] ) );
 		$this->serviceContainer->expects( $this->once() )
 			->method( 'getTitleFactory' );
 
@@ -78,7 +77,7 @@ class RdfVocabularyTest extends ServiceWiringTestCase {
 		$this->assertSame( 'https://license.test/cc0', $rdfVocabulary->getLicenseUrl() );
 		$this->assertSame( 'https://local.test/', $rdfVocabulary->getNamespaceURI( 'tl' ) );
 		$this->assertSame( 'https://local.test/prop/statement/', $rdfVocabulary->getNamespaceURI( 'lps' ) );
-		$this->assertSame( 'https://other.test/reference/', $rdfVocabulary->getNamespaceURI( 'oref' ) );
+		$this->assertSame( 'https://other.test/reference/', $rdfVocabulary->getNamespaceURI( 'toref' ) );
 		$testProperty = new Property( null, null, 'test' );
 		$testType = $testProperty->getDataTypeId();
 		$this->assertSame( 'https://rdf.test/Datatype', $rdfVocabulary->getDataTypeURI( $testType ) );

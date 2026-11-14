@@ -4,19 +4,26 @@ declare( strict_types = 1 );
 
 namespace Wikibase\Lib\TermFallbackCache;
 
-use ObjectCacheFactory;
+use MediaWiki\ObjectCache\ObjectCacheFactory;
 use Psr\SimpleCache\CacheInterface;
 use Wikibase\Lib\SimpleCacheWithBagOStuff;
-use Wikibase\Lib\StatsdRecordingSimpleCache;
+use Wikibase\Lib\StatslibRecordingSimpleCache;
 use Wikimedia\ObjectCache\BagOStuff;
 use Wikimedia\ObjectCache\CachedBagOStuff;
-use Wikimedia\Stats\IBufferingStatsdDataFactory;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * @license GPL-2.0-or-later
  */
 class TermFallbackCacheServiceFactory {
 
+	/**
+	 * Get a cached instance of the specified type of cache object.
+	 *
+	 * @param string|int $termFallbackCacheType A key in $wgObjectCaches.
+	 * @param ObjectCacheFactory $objectCacheFactory
+	 * @return BagOStuff
+	 */
 	public function newSharedCache( $termFallbackCacheType, ObjectCacheFactory $objectCacheFactory ): BagOStuff {
 		return $objectCacheFactory->getInstance( $termFallbackCacheType );
 	}
@@ -29,11 +36,12 @@ class TermFallbackCacheServiceFactory {
 		return new SimpleCacheWithBagOStuff( $bagOStuff, $prefix, $secret );
 	}
 
-	public function newStatsdRecordingCache(
+	public function newStatslibRecordingCache(
 		CacheInterface $inner,
-		IBufferingStatsdDataFactory $statsdDataFactory,
-		array $statsKeys
-	): StatsdRecordingSimpleCache {
-		return new StatsdRecordingSimpleCache( $inner, $statsdDataFactory, $statsKeys );
+		StatsFactory $statsFactory,
+		array $statsdKeys,
+		string $statsKey
+	): StatslibRecordingSimpleCache {
+		return new StatslibRecordingSimpleCache( $inner, $statsFactory, $statsdKeys, $statsKey );
 	}
 }

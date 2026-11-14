@@ -1,7 +1,7 @@
 <?php
 
+use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
-use Wikimedia\AtEase\AtEase;
 use Wikimedia\Minify\CSSMin;
 
 class ScreenplayParser {
@@ -151,9 +151,8 @@ class ScreenplayParser {
 
 			// Skip html tags that contain no content
 			$doc = new DOMDocument;
-			AtEase::suppressWarnings();
-			$doc->loadHTML( $block );
-			AtEase::restoreWarnings();
+			// phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
+			@$doc->loadHTML( $block );
 			if ( self::isHtmlTags( $doc->documentElement ) ) {
 				return $block;
 			}

@@ -1,0 +1,1584 @@
+{
+  "component": "mediawiki/extensions/Wikibase",
+  "baseline": "5d76d04f93f8df1bc2cef2223b4bf23906d000b9",
+  "target": "c8050c025decb4fc8729ea77bc8bbe5688509a0b",
+  "preserved_changes": [
+    {
+      "path": "client/i18n/aig.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "client/i18n/anp.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/api/ce.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/api/yue-hant.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "client/i18n/ar.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/ary.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/az.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/ban.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/be-tarask.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/be.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/blk.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/bo.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/bol.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/bom.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "client/i18n/cbk-zam.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/ce.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/cnr-latn.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/crh-ro.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/de.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/dlg.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "client/i18n/el.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/fa.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/fi.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/fr.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/frp.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/got.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/ha.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/hak-latn.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "client/i18n/he.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/hi.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/hr.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/hu.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/ia.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/ja.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/kaa.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/kab.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/kaj.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/kg.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/kk-cyrl.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/ks.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "client/i18n/kus.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/lb.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/li.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/ln.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/lo.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/mfa.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/mnw.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/mrh.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/ms.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/mui.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/nan-latn-pehoeji.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/ne.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/nup.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/nyn.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/ppl.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/ps.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/pt.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/qqq.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/ru.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/rue.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/rut.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/ryu.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/sas.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "client/i18n/se.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/ses.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/sh-latn.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/shi.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/shn.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/sk.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/sl.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/smn.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/sq.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/sr-ec.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/tg-cyrl.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/tok.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/tt-cyrl.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/uk.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/vi.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/xon.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "client/i18n/yue-hant.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/zgh.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/zh-hans.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "client/i18n/zh-hant.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/i18n/aig.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "lib/i18n/ar.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/i18n/bo.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/i18n/bom.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "lib/i18n/br.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/i18n/cs.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/i18n/dlg.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "lib/i18n/el.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/i18n/fa.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/i18n/he.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/i18n/ka.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/i18n/kg.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "lib/i18n/kri.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/i18n/mfa.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/i18n/ms-arab.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/i18n/ms.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/i18n/nb.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/i18n/nn.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/i18n/ppl.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "lib/i18n/sas.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "lib/i18n/sk.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/i18n/sq.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/i18n/tg-cyrl.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/i18n/tok.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/i18n/tr.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/i18n/xon.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "lib/i18n/yue-hant.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/.gitattributes",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/.gitignore",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/.scrutinizer.yml",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/.travis.yml",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/composer.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/phpunit.xml.dist",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/bootstrap.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/data/items/Q1.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/data/items/Q1752.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/data/items/Q183.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/data/items/simple.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/data/properties/P18.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/data/properties/P6.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/data/properties/simple.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/integration/EntityDeserializationCompatibilityTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/integration/EntitySerializationRoundtripTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/integration/ReferenceSerializationRoundtripTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/integration/ReferencesSerializationRoundtripTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/integration/SiteLinkSerializationRoundtripTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/integration/SnakListSerializationRoundtripTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/integration/SnakSerializationRoundtripTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/integration/StatementListSerializationRoundtripTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/integration/StatementSerializationRoundtripTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/unit/DeserializerFactoryTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Deserializers/AliasGroupListDeserializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Deserializers/DispatchableDeserializerTestCase.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Deserializers/EntityIdDeserializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Deserializers/ItemDeserializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Deserializers/PropertyDeserializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Deserializers/ReferenceDeserializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Deserializers/ReferenceListDeserializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Deserializers/SiteLinkDeserializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Deserializers/SnakDeserializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Deserializers/SnakListDeserializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Deserializers/SnakValueDeserializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Deserializers/StatementDeserializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Deserializers/StatementListDeserializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Deserializers/TermDeserializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Deserializers/TermListDeserializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/unit/SerializerFactoryTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Serializers/AliasGroupListSerializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Serializers/AliasGroupSerializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Serializers/DispatchableSerializerTestCase.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Serializers/ItemSerializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Serializers/PropertySerializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Serializers/ReferenceListSerializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Serializers/ReferenceSerializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Serializers/SiteLinkListSerializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Serializers/SiteLinkSerializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Serializers/SnakListSerializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Serializers/SnakSerializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Serializers/StatementListSerializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Serializers/StatementSerializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Serializers/TermListSerializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Serializers/TermSerializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Serializers/TypedSnakSerializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/.gitattributes",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/.gitignore",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/.scrutinizer.yml",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/.travis.yml",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/composer.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/phpmd.xml",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/phpunit.xml.dist",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/bootstrap.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/fixtures/EntityOfUnknownType.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/fixtures/FakeEntityDocument.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/fixtures/ItemFixtures.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/fixtures/PropertyFixtures.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/ByPropertyIdGrouperTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/DataValue/ValuesFinderTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Diff/EntityDiffOldTestCase.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Diff/EntityDiffTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Diff/EntityDifferTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Diff/EntityPatcherTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Diff/EntityTypeAwareDiffOpFactoryTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Diff/Internal/AliasGroupListPatcherTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Diff/Internal/FingerprintPatcherTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Diff/Internal/SiteLinkListPatcherTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Diff/ItemDiffTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Diff/ItemDifferTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Diff/ItemPatcherTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Diff/PropertyDifferTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Diff/PropertyPatcherTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Diff/StatementListDifferTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Diff/StatementListPatcherTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Diff/TermListPatcherTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Entity/PropertyDataTypeMatcherTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/EntityId/EntityIdComposerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/EntityId/EntityIdLabelFormatterTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/EntityId/EscapingEntityIdFormatterTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/EntityId/InMemoryEntityIdPagerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/EntityId/PlainEntityIdFormatterTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/EntityId/SuffixEntityIdParserTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/DisabledEntityTypesEntityLookupTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/EntityLookupExceptionTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/EntityRedirectLookupExceptionTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/EntityRetrievingClosestReferencedEntityIdLookupTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/EntityRetrievingDataTypeLookupTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/EntityRetrievingTermLookupTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/ExceptionIgnoringEntityLookupTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/InMemoryDataTypeLookupTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/InMemoryEntityLookupTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/InProcessCachingDataTypeLookupTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/ItemLookupExceptionTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/LabelDescriptionLookupExceptionTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/LanguageLabelDescriptionLookupTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/LegacyAdapterItemLookupTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/LegacyAdapterPropertyLookupTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/MaxReferenceDepthExhaustedExceptionTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/MaxReferencedEntityVisitsExhaustedExceptionTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/PropertyDataTypeLookupExceptionTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/PropertyLookupExceptionTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/RedirectResolvingEntityLookupTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/ReferencedEntityIdLookupExceptionTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/RestrictedEntityLookupTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/TermLookupExceptionTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/UnknownForeignRepositoryExceptionTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/UnresolvedEntityRedirectExceptionTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Statement/Filter/DataTypeStatementFilterTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Statement/Filter/NullStatementFilterTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Statement/Filter/PropertySetStatementFilterTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Statement/Grouper/ByPropertyIdStatementGrouperTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Statement/Grouper/FilteringStatementGrouperTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Statement/Grouper/NullStatementGrouperTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Statement/GuidGeneratorTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Statement/StatementGuidParserTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Statement/StatementGuidValidatorTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model-services/tests/unit/Statement/V4GuidGeneratorTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/.gitattributes",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/.gitignore",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/.scrutinizer.yml",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/.travis.yml",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/composer.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/docs/foreign-entity-ids.wiki",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/phpmd.xml",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/phpunit.xml.dist",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/bootstrap.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/fixtures/CustomEntityId.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/ByPropertyIdArrayTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/Entity/BasicEntityIdParserTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/Entity/DispatchingEntityIdParserTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/Entity/EntityIdTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/Entity/EntityIdValueTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/Entity/EntityRedirectTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/Entity/ItemIdParserTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/Entity/ItemIdSetTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/Entity/ItemIdTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/Entity/ItemTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/Entity/NumericPropertyIdTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/Entity/PropertyTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/Internal/MapValueHasherTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/LegacyIdInterpreterTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/NewItem.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/NewStatement.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/ReferenceListTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/ReferenceTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/SiteLinkListTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/SiteLinkTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/Snak/DerivedPropertyValueSnakTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/Snak/PropertyNoValueSnakTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/Snak/PropertySomeValueSnakTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/Snak/PropertyValueSnakTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/Snak/SnakListTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/Snak/SnakTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/Snak/TypedSnakTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/Statement/ReferencedStatementFilterTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/Statement/StatementByGuidMapTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/Statement/StatementGuidTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/Statement/StatementListTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/Statement/StatementTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/Term/AliasGroupFallbackTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/Term/AliasGroupListTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/Term/AliasGroupTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/Term/FingerprintTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/Term/TermFallbackTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/Term/TermListTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/data-model/tests/unit/Term/TermTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/.gitattributes",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/.gitignore",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/.scrutinizer.yml",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/.travis.yml",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/composer.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/phpmd.xml",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/phpunit.xml.dist",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/tests/bootstrap.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/tests/data/items/current/Q1.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/tests/data/items/legacy/old/Q1-103.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/tests/data/items/legacy/old/Q1-10499806.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/tests/data/items/legacy/old/Q1-1622.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/tests/data/items/legacy/old/Q1-953112.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/tests/data/items/legacy/recent/Q1.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/tests/data/items/legacy/recent/Q2.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/tests/data/items/legacy/recent/Q3.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/tests/data/properties/legacy/old/P6-22681711.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/tests/data/properties/legacy/old/P6-51742868.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/tests/data/properties/legacy/old/P6-5788574.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/tests/data/properties/legacy/old/P6-5788751.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/tests/data/properties/legacy/recent/P18.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/tests/data/properties/legacy/recent/P227.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/tests/data/properties/legacy/recent/P31.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/tests/integration/DeserializerFactoryTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/tests/integration/Deserializers/EntityDeserializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/tests/integration/Deserializers/StatementDeserializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/tests/integration/LegacyDeserializerFactoryTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/tests/integration/RealEntitiesTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/tests/integration/SerializerFactoryTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/tests/integration/TestFactoryBuilder.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/tests/unit/Deserializers/EntityDeserializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/tests/unit/Deserializers/LegacyEntityDeserializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/tests/unit/Deserializers/LegacyEntityIdDeserializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/tests/unit/Deserializers/LegacyFingerprintDeserializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/tests/unit/Deserializers/LegacyItemDeserializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/tests/unit/Deserializers/LegacyPropertyDeserializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/tests/unit/Deserializers/LegacySiteLinkListDeserializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/tests/unit/Deserializers/LegacySnakDeserializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/tests/unit/Deserializers/LegacySnakListDeserializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/tests/unit/Deserializers/LegacyStatementDeserializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "lib/packages/wikibase/internal-serialization/tests/unit/Deserializers/StatementDeserializerTest.php",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/abr.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/aig.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "repo/i18n/api/ar.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/api/ce.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/api/lb.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/api/lt.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/api/nb.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/api/sq.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/api/yue-hant.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "repo/i18n/api/zh-hant.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/ar.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/ast.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/az.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/be-tarask.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/bg.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/bo.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/bol.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/bom.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "repo/i18n/ce.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/cnr-latn.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/cs.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/dlg.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "repo/i18n/el.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/et.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/fi.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/fr.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/fvr.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/gl.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/got.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/hi.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/hu.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/io.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/ja.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/kaa.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/kaj.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/ko.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/ks.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "repo/i18n/lb.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/lo.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/lv.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/mfa.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/mnw.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/mrt.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "repo/i18n/ms-arab.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/ms.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/nan-latn-pehoeji.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/nb.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/ne.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/nl.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/ppl.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/ps.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/pt.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/ryu.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/sas.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "repo/i18n/shn.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/sk.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/sq.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/tg-cyrl.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/tok.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/tt-cyrl.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/vi.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/xon.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "repo/i18n/yua.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/yue-hant.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/zh-hans.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "repo/i18n/zh-hant.json",
+      "change": "local-source-edit"
+    }
+  ],
+  "dependency_status": "Root Composer lock regenerated; see docs/upgrade-wikibase-migration.json"
+}

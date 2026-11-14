@@ -40,11 +40,9 @@ class ApiXmlFormatTest extends ApiFormatTestCase {
 	}
 
 	private function setupSiteLinkGroups() {
-		global $wgWBRepoSettings;
-
-		$customRepoSettings = $wgWBRepoSettings;
+		$customRepoSettings = $this->getConfVar( 'WBRepoSettings' );
 		$customRepoSettings['siteLinkGroups'] = [ 'wikipedia' ];
-		$this->setMwGlobals( 'wgWBRepoSettings', $customRepoSettings );
+		$this->overrideConfigValue( 'WBRepoSettings', $customRepoSettings );
 	}
 
 	/**
@@ -202,11 +200,12 @@ class ApiXmlFormatTest extends ApiFormatTestCase {
 			'linktitle' => 'Japan',
 			// TODO: Test badges in output.
 		];
-		$siteTargetProvider = new SiteLinkTargetProvider( new HashSiteStore( TestSites::getSites() ), [] );
+		$siteLinkGroups = [ 'wikipedia' ];
+		$siteTargetProvider = new SiteLinkTargetProvider( new HashSiteStore( TestSites::getSites() ), $siteLinkGroups );
 		$this->setService( 'WikibaseRepo.SiteLinkTargetProvider', $siteTargetProvider );
 		/** @var SetSiteLink $module */
 		$module = $this->getApiModule( SetSiteLink::class, 'wbsetsitelink', $params, true );
-		$siteLinkGlobalIdentifiersProvider = new SiteLinkGlobalIdentifiersProvider( $siteTargetProvider, new FakeCache() );
+		$siteLinkGlobalIdentifiersProvider = new SiteLinkGlobalIdentifiersProvider( $siteTargetProvider, new FakeCache(), $siteLinkGroups );
 		$module->setServices( $siteLinkGlobalIdentifiersProvider );
 		$result = $this->executeApiModule( $module );
 		$actual = $this->removePageInfoAttributes( $result, $entityId );
@@ -224,7 +223,6 @@ class ApiXmlFormatTest extends ApiFormatTestCase {
 
 		/** @var SetSiteLink $module */
 		$module = $this->getApiModule( SetSiteLink::class, 'wbsetsitelink', $params, true );
-		$siteLinkGlobalIdentifiersProvider = new SiteLinkGlobalIdentifiersProvider( $siteTargetProvider, new FakeCache() );
 		$module->setServices( $siteLinkGlobalIdentifiersProvider );
 		$result = $this->executeApiModule( $module );
 		$actual = $this->removePageInfoAttributes( $result, $entityId );

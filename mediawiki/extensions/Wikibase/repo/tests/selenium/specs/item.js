@@ -1,10 +1,8 @@
-'use strict';
-
-const Util = require( 'wdio-mediawiki/Util' );
-const WikibaseApi = require( 'wdio-wikibase/wikibase.api' );
-const EntityPage = require( 'wdio-wikibase/pageobjects/entity.page' );
-const ItemPage = require( 'wdio-wikibase/pageobjects/item.page' );
-const Page = require( 'wdio-mediawiki/Page' );
+import { getTestString } from 'wdio-mediawiki/Util.js';
+import WikibaseApi from 'wdio-wikibase/wikibase.api.js';
+import EntityPage from 'wdio-wikibase/pageobjects/entity.page.js';
+import ItemPage from 'wdio-wikibase/pageobjects/item.page.js';
+import Page from 'wdio-mediawiki/Page.js';
 
 describe( 'item', () => {
 	it( 'can add a statement using the keyboard', async () => {
@@ -15,7 +13,7 @@ describe( 'item', () => {
 		// - add reference,
 		// - save
 
-		const itemId = await WikibaseApi.createItem( Util.getTestString( 'T154869-' ) );
+		const itemId = await WikibaseApi.createItem( getTestString( 'T154869-' ) );
 		const propertyId = await WikibaseApi.getProperty( 'string' );
 
 		await EntityPage.open( itemId );
@@ -67,11 +65,11 @@ describe( 'item', () => {
 		await browser.keys( [ 'Enter' ] );
 		await ItemPage.valueInputField.waitForExist( { reverse: true } );
 
-		await expect( $( `#${propertyId}` ) ).toExist();
+		await expect( $( `#${ propertyId }` ) ).toExist();
 	} );
 
 	it( 'old revisions do not have an edit link', async () => {
-		const itemId = await WikibaseApi.createItem( Util.getTestString( 'T95406-' ) );
+		const itemId = await WikibaseApi.createItem( getTestString( 'T95406-' ) );
 		const item = await WikibaseApi.getEntity( itemId );
 
 		await EntityPage.open( itemId );
@@ -83,14 +81,13 @@ describe( 'item', () => {
 			async () => ( await WikibaseApi.getEntity( itemId ) ).lastrevid !== item.lastrevid
 		);
 
-		await ( new Page() ).openTitle( `Special:EntityPage/${itemId}`, { oldid: item.lastrevid } );
+		await ( new Page() ).openTitle( `Special:EntityPage/${ itemId }`, { oldid: item.lastrevid } );
 
 		await expect( ItemPage.editButton ).not.toExist();
 	} );
 
-	// TODO investigate and re-enable T378581
-	it.skip( 'has its label not rendered when linked on a Wikipage', async () => {
-		const itemId = await WikibaseApi.createItem( Util.getTestString( 'T111346-' ) );
+	it( 'has its label not rendered when linked on a Wikipage', async () => {
+		const itemId = await WikibaseApi.createItem( getTestString( 'T111346-' ) );
 		await EntityPage.open( itemId );
 
 		const {
@@ -101,19 +98,29 @@ describe( 'item', () => {
 			// eslint-disable-next-line no-undef
 			() => window.mw.config.get( [ 'wgPageName', 'wgFormattedNamespaces', 'wgNamespaceNumber' ] )
 		);
-		const talkPageTitle = wgFormattedNamespaces[ wgNamespaceNumber + 1 ] + ':' + itemTitle;
+		const talkPageTitle = wgFormattedNamespaces[ wgNamespaceNumber + 1 ] + ':' + itemId;
+		const wikitext = `[[${ itemTitle }]]`;
 
 		await ( new Page() ).openTitle( talkPageTitle, { action: 'submit', vehidebetadialog: 1, hidewelcomedialog: 1 } );
 
 		const wpTextbox1 = $( '#wpTextbox1' );
 		await wpTextbox1.waitForExist();
-		await wpTextbox1.setValue( `[[${itemTitle}]]` );
+		await wpTextbox1.setValue( wikitext );
 
 		// Now the actual action happens: an api request with action=stashedit that caused T111346
-		await $( '#wpSummary' ).click();
+		const wpSummary = $( '#wpSummary' );
+		await wpSummary.click();
 		await browser.keys( 'typing some letters so the action=stashedit API request can finish' );
 
+		if ( await wpTextbox1.getValue() !== wikitext ) {
+			// for some reason the input didn't get set, try again (T388228)
+			await wpTextbox1.setValue( wikitext );
+			await wpSummary.setValue( '' );
+			await wpSummary.click();
+			await browser.keys( 'typing some letters so the action=stashedit API request can finish' );
+		}
+
 		await $( '#wpSave' ).click();
-		await expect( $( '#mw-content-text' ) ).toHaveText( itemTitle );
+		await expect( $( '#mw-content-text .mw-content-ltr p' ) ).toHaveText( itemTitle );
 	} );
 } );

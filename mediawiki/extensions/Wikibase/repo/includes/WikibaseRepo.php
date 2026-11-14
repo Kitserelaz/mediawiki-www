@@ -5,7 +5,6 @@ namespace Wikibase\Repo;
 use DataValues\Deserializers\DataValueDeserializer;
 use Deserializers\Deserializer;
 use Deserializers\DispatchableDeserializer;
-use MediaWiki\Language\Language;
 use MediaWiki\MediaWikiServices;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -56,6 +55,7 @@ use Wikibase\Lib\Normalization\SnakNormalizer;
 use Wikibase\Lib\Normalization\StatementNormalizer;
 use Wikibase\Lib\Normalization\StringValueNormalizer;
 use Wikibase\Lib\Rdbms\RepoDomainDbFactory;
+use Wikibase\Lib\Rdbms\TermsDomainDbFactory;
 use Wikibase\Lib\SettingsArray;
 use Wikibase\Lib\Store\EntityArticleIdLookup;
 use Wikibase\Lib\Store\EntityContentDataCodec;
@@ -76,12 +76,8 @@ use Wikibase\Lib\Store\MatchingTermsLookupFactory;
 use Wikibase\Lib\Store\PropertyInfoLookup;
 use Wikibase\Lib\Store\RedirectResolvingLatestRevisionLookup;
 use Wikibase\Lib\Store\Sql\EntityChangeLookup;
-use Wikibase\Lib\Store\Sql\Terms\DatabaseTypeIdsStore;
 use Wikibase\Lib\Store\Sql\Terms\TermInLangIdsResolverFactory;
 use Wikibase\Lib\Store\Sql\Terms\TermStoreWriterFactory;
-use Wikibase\Lib\Store\Sql\Terms\TypeIdsAcquirer;
-use Wikibase\Lib\Store\Sql\Terms\TypeIdsLookup;
-use Wikibase\Lib\Store\Sql\Terms\TypeIdsResolver;
 use Wikibase\Lib\Store\Sql\WikiPageEntityMetaDataAccessor;
 use Wikibase\Lib\StringNormalizer;
 use Wikibase\Lib\SubEntityTypesMapper;
@@ -103,6 +99,7 @@ use Wikibase\Repo\EditEntity\EditFilterHookRunner;
 use Wikibase\Repo\EditEntity\MediaWikiEditEntityFactory;
 use Wikibase\Repo\FederatedProperties\ApiServiceFactory;
 use Wikibase\Repo\Hooks\Formatters\EntityLinkFormatterFactory;
+use Wikibase\Repo\Hooks\WikibaseRepoHookRunner;
 use Wikibase\Repo\Interactors\ItemMergeInteractor;
 use Wikibase\Repo\Interactors\ItemRedirectCreationInteractor;
 use Wikibase\Repo\Interactors\TokenCheckInteractor;
@@ -133,9 +130,11 @@ use Wikibase\Repo\Store\TermsCollisionDetectorFactory;
 use Wikibase\Repo\Validators\EntityConstraintProvider;
 use Wikibase\Repo\Validators\TermValidatorFactory;
 use Wikibase\Repo\Validators\ValidatorErrorLocalizer;
+use Wikibase\Repo\View\ScopedTypeaheadSearchConfig;
 use Wikibase\View\EntityIdFormatterFactory;
 use Wikibase\View\LanguageDirectionalityLookup;
 use Wikibase\View\ViewFactory;
+use Wikibase\View\Wbui2025FeatureFlag;
 
 /**
  * Top level factory for the WikibaseRepo extension.
@@ -194,16 +193,6 @@ class WikibaseRepo {
 	private function __construct() {
 	}
 
-	/**
-	 * @deprecated Avoid injecting the user language into a service.
-	 * If the service depends on a language, make it part of the parameters when the service is used
-	 * (possibly indirectly, e.g. via an {@link \IContextSource}).
-	 */
-	public static function getUserLanguage( ?ContainerInterface $services = null ): Language {
-		return ( $services ?: MediaWikiServices::getInstance() )
-			->get( 'WikibaseRepo.UserLanguage' );
-	}
-
 	public static function getDataTypeFactory( ?ContainerInterface $services = null ): DataTypeFactory {
 		return ( $services ?: MediaWikiServices::getInstance() )
 			->get( 'WikibaseRepo.DataTypeFactory' );
@@ -222,6 +211,21 @@ class WikibaseRepo {
 	public static function getEntityContentFactory( ?ContainerInterface $services = null ): EntityContentFactory {
 		return ( $services ?: MediaWikiServices::getInstance() )
 			->get( 'WikibaseRepo.EntityContentFactory' );
+	}
+
+	public static function getControllersArray( ?ContainerInterface $services = null ): array {
+		return ( $services ?: MediaWikiServices::getInstance() )
+			->get( 'WikibaseRepo.ControllersArray' );
+	}
+
+	public static function getControllerRegistry( ?ContainerInterface $services = null ): ControllerRegistry {
+		return ( $services ?: MediaWikiServices::getInstance() )
+			->get( 'WikibaseRepo.ControllerRegistry' );
+	}
+
+	public static function getEntityTypeDefinitionsArray( ?ContainerInterface $services = null ): array {
+		return ( $services ?: MediaWikiServices::getInstance() )
+			->get( 'WikibaseRepo.EntityTypeDefinitionsArray' );
 	}
 
 	public static function getEntityTypeDefinitions( ?ContainerInterface $services = null ): EntityTypeDefinitions {
@@ -284,6 +288,11 @@ class WikibaseRepo {
 			->get( 'WikibaseRepo.MobileSite' );
 	}
 
+	public static function getWbui2025FeatureFlag( ?ContainerInterface $services = null ): Wbui2025FeatureFlag {
+		return ( $services ?: MediaWikiServices::getInstance() )
+			->get( 'WikibaseRepo.Wbui2025FeatureFlag' );
+	}
+
 	public static function getEntityExistenceChecker( ?ContainerInterface $services = null ): EntityExistenceChecker {
 		return ( $services ?: MediaWikiServices::getInstance() )
 			->get( 'WikibaseRepo.EntityExistenceChecker' );
@@ -319,6 +328,15 @@ class WikibaseRepo {
 	): ItemRedirectCreationInteractor {
 		return ( $services ?: MediaWikiServices::getInstance() )
 			->get( 'WikibaseRepo.ItemRedirectCreationInteractor' );
+	}
+
+	/**
+	 * Get the WikibaseRepo hook runner. This should only be used in Wikibase itself.
+	 * (If other extensions need to run hooks, even Wikibase-related ones, they should create their own hook runner.)
+	 */
+	public static function getHookRunner( ?ContainerInterface $services = null ): WikibaseRepoHookRunner {
+		return ( $services ?: MediaWikiServices::getInstance() )
+			->get( 'WikibaseRepo.HookRunner' );
 	}
 
 	public static function getEditFilterHookRunner( ?ContainerInterface $services = null ): EditFilterHookRunner {
@@ -631,6 +649,11 @@ class WikibaseRepo {
 			->get( 'WikibaseRepo.LocalEntityTypes' );
 	}
 
+	public static function getScopedTypeaheadSearchConfig( ?ContainerInterface $services = null ): ScopedTypeaheadSearchConfig {
+		return ( $services ?: MediaWikiServices::getInstance() )
+			->get( 'WikibaseRepo.ScopedTypeaheadSearchConfig' );
+	}
+
 	public static function getEntityContentDataCodec( ?ContainerInterface $services = null ): EntityContentDataCodec {
 		return ( $services ?: MediaWikiServices::getInstance() )
 			->get( 'WikibaseRepo.EntityContentDataCodec' );
@@ -749,30 +772,9 @@ class WikibaseRepo {
 			->get( 'WikibaseRepo.RepoDomainDbFactory' );
 	}
 
-	/**
-	 * Do not use this service directly. Instead, use the service(s) for the interface(s) you need:
-	 * * {@link getTypeIdsAcquirer} for {@link TypeIdsAcquirer}
-	 * * {@link getTypeIdsLookup} for {@link TypeIdsLookup}
-	 * * {@link getTypeIdsResolver} for {@link TypeIdsResolver}
-	 */
-	public static function getDatabaseTypeIdsStore( ?ContainerInterface $services = null ): DatabaseTypeIdsStore {
+	public static function getTermsDomainDbFactory( ?ContainerInterface $services = null ): TermsDomainDbFactory {
 		return ( $services ?: MediaWikiServices::getInstance() )
-			->get( 'WikibaseRepo.DatabaseTypeIdsStore' );
-	}
-
-	public static function getTypeIdsAcquirer( ?ContainerInterface $services = null ): TypeIdsAcquirer {
-		return ( $services ?: MediaWikiServices::getInstance() )
-			->get( 'WikibaseRepo.TypeIdsAcquirer' );
-	}
-
-	public static function getTypeIdsLookup( ?ContainerInterface $services = null ): TypeIdsLookup {
-		return ( $services ?: MediaWikiServices::getInstance() )
-			->get( 'WikibaseRepo.TypeIdsLookup' );
-	}
-
-	public static function getTypeIdsResolver( ?ContainerInterface $services = null ): TypeIdsResolver {
-		return ( $services ?: MediaWikiServices::getInstance() )
-			->get( 'WikibaseRepo.TypeIdsResolver' );
+			->get( 'WikibaseRepo.TermsDomainDbFactory' );
 	}
 
 	public static function getFieldDefinitionsFactory( ?ContainerInterface $services = null ): FieldDefinitionsFactory {

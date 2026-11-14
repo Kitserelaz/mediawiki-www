@@ -60,8 +60,6 @@ return call_user_func( function() {
 		// in the parser functions and via Lua.
 		// Allows users to split the ParserCache by user language.
 		'allowDataAccessInUserLanguage' => false,
-		'moveConnectedItemLinkToOtherProjects' => false,
-
 		/**
 		 * Prefix to use for cache keys that should be shared among a Wikibase Repo instance and all
 		 * its clients. This is for things like caching entity blobs in memcached.
@@ -153,14 +151,16 @@ return call_user_func( function() {
 		'linkItemTags' => [],
 
 		/**
-		 * @note This config options is primarily added for Wikidata transition use-case and can be
-		 * considered temporary. It could be removed in the future with no warning.
-		 *
 		 * @var bool Whether to enable the 'mul' language code,
 		 * adding it to the term language codes and falling back to it before the implicit 'en' fallback
-		 * @see https://phabricator.wikimedia.org/T297393
+		 * @see https://phabricator.wikimedia.org/T312097
 		 */
-		'tmpEnableMulLanguageCode' => false,
+		'enableMulLanguageCode' => false,
+
+		/**
+		 * @var bool Whether to enable the icons for changes coming from Wikibase displayed in Recent Changes (T397258)
+		 */
+		'enableWikidataIconsInClientWatchlist' => false,
 	];
 
 	// Some defaults depend on information not available at this time.

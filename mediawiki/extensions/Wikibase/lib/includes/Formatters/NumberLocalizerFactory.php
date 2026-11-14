@@ -5,7 +5,7 @@ declare( strict_types=1 );
 namespace Wikibase\Lib\Formatters;
 
 use MediaWiki\Language\Language;
-use MediaWiki\Languages\LanguageFactory;
+use MediaWiki\Language\LanguageFactory;
 use ValueFormatters\NumberLocalizer;
 
 /**
@@ -18,9 +18,6 @@ class NumberLocalizerFactory {
 	 */
 	private $languageFactory;
 
-	/**
-	 * @param LanguageFactory $languageFactory
-	 */
 	public function __construct(
 		LanguageFactory $languageFactory
 	) {

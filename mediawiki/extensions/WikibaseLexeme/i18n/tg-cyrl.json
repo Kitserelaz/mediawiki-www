@@ -1,6 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
+			"Farorud",
 			"Robin van der Vliet",
 			"ToJack"
 		]
@@ -11,6 +12,7 @@
 	"datatypes-type-wikibase-sense": "Мазмун",
 	"special-mergelexemes": "Як кардани ду лексема",
 	"special-newlexeme": "Эҷоди лексемаи нав",
+	"wikibase-lexeme-scoped-search-scope-name": "Лексемаҳо",
 	"wikibase-lexeme-summary-add-form": "Шакли нави $3 бо {{PLURAL:$1|воридот}} илова шуд",
 	"wikibase-lexeme-summary-wbeditentity-create-form": "Шакли нав эҷод шуд",
 	"wikibase-lexeme-summary-wbeditentity-create-lexeme": "Лексемаи нав эҷод шуд",

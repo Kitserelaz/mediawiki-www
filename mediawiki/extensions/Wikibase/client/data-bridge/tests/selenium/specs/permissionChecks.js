@@ -1,28 +1,28 @@
-const assert = require( 'assert' ),
-	Api = require( 'wdio-mediawiki/Api' ),
-	DataBridgePage = require( '../pageobjects/dataBridge.page' ),
-	WikibaseApi = require( 'wdio-wikibase/wikibase.api' ),
-	LoginPage = require( 'wdio-mediawiki/LoginPage' );
+import assert from 'assert';
+import { createApiClient } from 'wdio-mediawiki/Api.js';
+import DataBridgePage from '../pageobjects/dataBridge.page.js';
+import WikibaseApi from 'wdio-wikibase/wikibase.api.js';
+import LoginPage from 'wdio-mediawiki/LoginPage.js';
 
 function blockUser( username, expiry ) {
-	browser.call( () => Api.bot().then( ( bot ) => {
-		return bot.request( {
+	browser.call( () => createApiClient().then( async ( api ) => {
+		return api.request( {
 			action: 'block',
-			user: username || browser.config.mwUser,
+			user: username || browser.options.capabilities[ 'mw:user' ],
 			reason: 'browser test',
-			token: bot.editToken,
+			token: await api.getEditToken(),
 			expiry,
 		} );
 	} ) );
 }
 
 function unblockUser( username ) {
-	browser.call( () => Api.bot().then( ( bot ) => {
-		return bot.request( {
+	browser.call( () => createApiClient().then( async ( api ) => {
+		return api.request( {
 			action: 'unblock',
-			user: username || browser.config.mwUser,
+			user: username || browser.options.capabilities[ 'mw:user' ],
 			reason: 'browser test done',
-			token: bot.editToken,
+			token: await api.getEditToken(),
 		} );
 	} ) );
 }
@@ -51,7 +51,7 @@ describe( 'permission checks', () => {
 			propertyId,
 			editFlow: 'single-best-value',
 		} ] );
-		browser.call( () => Api.bot().then( ( bot ) => bot.edit( title, content ) ) );
+		browser.call( () => createApiClient().then( ( api ) => api.edit( title, content ) ) );
 	} );
 
 	describe( 'if the client page is editable for the user', () => {
@@ -65,13 +65,13 @@ describe( 'permission checks', () => {
 		it( 'hide the editlink', () => {
 			// Protect the page
 			browser.call(
-				() => Api.bot().then( ( bot ) => {
-					return bot.request( {
+				() => createApiClient().then( async ( api ) => {
+					return api.request( {
 						action: 'protect',
 						title,
-						token: bot.editToken,
+						token: await api.getEditToken(),
 						reason: 'browser test',
-						user: browser.config.mwUser,
+						user: browser.options.capabilities[ 'mw:user' ],
 						protections: 'edit=sysop|move=sysop',
 					} );
 				} )
@@ -110,7 +110,7 @@ describe( 'permission checks', () => {
 		} );
 
 		it( 'show a permission error when opening bridge', () => {
-			LoginPage.loginAdmin();
+			await LoginPage.loginAdmin();
 			DataBridgePage.openAppOnPage( title );
 			DataBridgePage.error.waitForDisplayed();
 

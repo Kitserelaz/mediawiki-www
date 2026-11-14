@@ -11,6 +11,7 @@ use Wikibase\Lib\Formatters\CachingKartographerEmbeddingHandler;
 use Wikibase\Lib\LanguageFallbackChainFactory;
 use Wikibase\Lib\SettingsArray;
 use Wikibase\Lib\Store\EntityTitleLookup;
+use Wikibase\Repo\Hooks\WikibaseRepoHookRunner;
 use Wikibase\Repo\LinkedData\EntityDataFormatProvider;
 use Wikibase\Repo\ParserOutput\DispatchingEntityMetaTagsCreatorFactory;
 use Wikibase\Repo\ParserOutput\DispatchingEntityViewFactory;
@@ -43,6 +44,8 @@ class EntityParserOutputGeneratorFactoryTest extends ServiceWiringTestCase {
 			$this->createMock( LanguageFallbackChainFactory::class ) );
 		$this->mockService( 'WikibaseRepo.EntityDataFormatProvider',
 			new EntityDataFormatProvider() );
+		$this->mockService( 'WikibaseRepo.HookRunner',
+			$this->createMock( WikibaseRepoHookRunner::class ) );
 		$this->mockService( 'WikibaseRepo.MobileSite', false );
 		$this->mockService( 'WikibaseRepo.PropertyDataTypeLookup',
 			new InMemoryDataTypeLookup() );
@@ -53,13 +56,15 @@ class EntityParserOutputGeneratorFactoryTest extends ServiceWiringTestCase {
 		$this->mockService( 'WikibaseRepo.KartographerEmbeddingHandler',
 			$this->createMock( CachingKartographerEmbeddingHandler::class ) );
 		$this->serviceContainer->expects( $this->once() )
-			->method( 'getStatsdDataFactory' );
+			->method( 'getStatsFactory' );
 		$this->serviceContainer->expects( $this->once() )
 			->method( 'getRepoGroup' );
 		$this->serviceContainer->expects( $this->once() )
 			->method( 'getLinkBatchFactory' );
 		$this->serviceContainer->expects( $this->once() )
-			->method( 'getHookContainer' );
+			->method( 'getLanguageNameUtils' );
+		$this->serviceContainer->expects( $this->once() )
+			->method( 'getLanguageFactory' );
 
 		$this->assertInstanceOf(
 			EntityParserOutputGeneratorFactory::class,

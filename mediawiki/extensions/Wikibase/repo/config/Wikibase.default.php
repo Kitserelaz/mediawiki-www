@@ -9,8 +9,8 @@
  * @license GPL-2.0-or-later
  */
 
-use MediaWiki\MediaWikiServices;
 use Wikibase\Lib\SettingsArray;
+use Wikibase\Repo\WikibaseRepo;
 
 global $wgCdnMaxAge;
 
@@ -303,9 +303,6 @@ return [
 	// Search profiles available in wbsearchentities & query+wbsearch
 	'searchProfiles' => [ 'default' => null ],
 
-	// DB group to use in dump maintenance scripts. Defaults to "dump", per T147169.
-	'dumpDBDefaultGroup' => 'dump',
-
 	'useKartographerGlobeCoordinateFormatter' => false,
 
 	'useKartographerMaplinkInWikitext' => false,
@@ -340,7 +337,7 @@ return [
 
 	'entityTypesWithoutRdfOutput' => [],
 
-	'defaultEntityNamespaces' => false,
+	'defaultEntityNamespaces' => true,
 
 	'entitySources' => function ( SettingsArray $settings ) {
 		if ( $settings->getSetting( 'defaultEntityNamespaces' ) ) {
@@ -359,8 +356,8 @@ return [
 				'property' => WB_NS_PROPERTY,
 			];
 
-			$hookContainer = MediaWikiServices::getInstance()->getHookContainer();
-			$hookContainer->run( 'WikibaseRepoEntityNamespaces', [ &$entityNamespaces ] );
+			WikibaseRepo::getHookRunner()
+				 ->onWikibaseRepoEntityNamespaces( $entityNamespaces );
 
 			return [
 				$settings->getSetting( 'localEntitySourceName' ) => [
@@ -449,20 +446,54 @@ return [
 	'specialPageTags' => [],
 
 	/**
-	 * @note This config options is primarily added for Wikidata transition use-case and can be
-	 * considered temporary. It could be removed in the future with no warning.
-	 *
 	 * @var bool Whether to enable the 'mul' language code,
 	 * adding it to the term language codes and falling back to it before the implicit 'en' fallback
-	 * @see https://phabricator.wikimedia.org/T297393
+	 * @see https://phabricator.wikimedia.org/T312097
 	 */
-	'tmpEnableMulLanguageCode' => false,
+	'enableMulLanguageCode' => false,
 
 	/**
-	 * Feature Flag for the soft rollout of always showing the 'mul' language in the termbox.
+	 * @note This config option is primarily added for the Wikidata transition use-case
+	 * and must be considered temporary. It will be removed in the future with no warning.
 	 *
-	 * Add in https://phabricator.wikimedia.org/T339104, to be removed in https://phabricator.wikimedia.org/T330217
-	 * @var bool Whether to always show the 'mul' language code in the termbox
+	 * @var bool Whether to enable the "scoped type-ahead search" component,
+	 * replacing the standard search bar in Vector 2022.
+	 * @see https://phabricator.wikimedia.org/T338483
 	 */
-	'tmpAlwaysShowMulLanguageCode' => false,
+	'tmpEnableScopedTypeaheadSearch' => false,
+
+	/**
+	 * @note This config option is primarily added for the Wikidata transition use-case
+	 * and must be considered temporary. It will be removed in the future with no warning.
+	 *
+	 * @var bool Whether to enable the new mobile editing experience.
+	 * @see https://phabricator.wikimedia.org/T394292
+	 */
+	'tmpMobileEditingUI' => false,
+
+	/**
+	 * @note This config option is primarily added for the Wikidata transition use-case
+	 * and must be considered temporary. It will be removed in the future with no warning.
+	 *
+	 * @var bool Whether to expose the new mobile editing experience as beta feature.
+	 * @see https://phabricator.wikimedia.org/T394292
+	 */
+	'tmpEnableMobileEditingUIBetaFeature' => false,
+
+	/**
+	 * @note This config option is only used during the initial development of the GraphQL API.
+	 * It will be removed in the future with no warning.
+	 *
+	 * @var bool Whether to enable the new GraphQL API.
+	 * @see https://phabricator.wikimedia.org/T404842
+	 */
+	'tmpEnableGraphQL' => false,
+
+	// this will be removed once T421994 is done
+	'tmpTestingItemController' => false,
+
+	/**
+	 * @var bool Whether to enable the icons for changes coming from Wikibase displayed in Recent Changes (T397258)
+	 */
+	'enableWikidataIconsInClientWatchlist' => false,
 ];

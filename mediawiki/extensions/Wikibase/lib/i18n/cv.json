@@ -1,11 +1,13 @@
 {
 	"@metadata": {
 		"authors": [
+			"Astahar",
 			"Chuvash",
-			"Chuvash2014",
-			"Astahar"
+			"Chuvash2014"
 		]
 	},
+	"wikibase-itemlink-id-wrapper": "($1)",
+	"wikibase-itemlink-userlang-wrapper": "&nbsp;($1: $2)",
 	"wikibase-sitelinks-wikipedia": "Википеди",
 	"version-wikibase": "Вики-база"
 }

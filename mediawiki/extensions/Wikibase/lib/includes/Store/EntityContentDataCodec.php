@@ -5,7 +5,7 @@ namespace Wikibase\Lib\Store;
 use Deserializers\Deserializer;
 use Deserializers\Exceptions\DeserializationException;
 use InvalidArgumentException;
-use MWContentSerializationException;
+use MediaWiki\Content\ContentSerializationException;
 use Serializers\Exceptions\SerializationException;
 use Serializers\Serializer;
 use Wikibase\DataModel\Entity\EntityDocument;
@@ -14,7 +14,6 @@ use Wikibase\DataModel\Entity\EntityIdParser;
 use Wikibase\DataModel\Entity\EntityIdParsingException;
 use Wikibase\DataModel\Entity\EntityRedirect;
 use Wikibase\DataModel\LegacyIdInterpreter;
-use Wikimedia\AtEase\AtEase;
 
 /**
  * A codec for use by EntityContent resp EntityHandler subclasses for the
@@ -111,7 +110,7 @@ class EntityContentDataCodec {
 	 * @param string|null $format The desired serialization format.
 	 *
 	 * @throws InvalidArgumentException If the format is not supported.
-	 * @throws MWContentSerializationException If the array could not be encoded.
+	 * @throws ContentSerializationException If the array could not be encoded.
 	 * @return string the blob
 	 */
 	private function encodeEntityContentData( array $data, $format ) {
@@ -127,7 +126,7 @@ class EntityContentDataCodec {
 		}
 
 		if ( !is_string( $blob ) ) {
-			throw new MWContentSerializationException( "Failed to encode as $format" );
+			throw new ContentSerializationException( "Failed to encode as $format" );
 		}
 
 		return $blob;
@@ -142,7 +141,7 @@ class EntityContentDataCodec {
 	 * @param string|null $format The desired serialization format. One of the CONTENT_FORMAT_...
 	 *  constants or null for the default.
 	 *
-	 * @throws MWContentSerializationException
+	 * @throws ContentSerializationException
 	 * @throws EntityContentTooBigException
 	 * @return string
 	 */
@@ -151,7 +150,7 @@ class EntityContentDataCodec {
 			$data = $this->entitySerializer->serialize( $entity );
 			$blob = $this->encodeEntityContentData( $data, $format );
 		} catch ( SerializationException $ex ) {
-			throw new MWContentSerializationException( $ex->getMessage(), 0, $ex );
+			throw new ContentSerializationException( $ex->getMessage(), 0, $ex );
 		}
 
 		if ( $this->maxBlobSize > 0 && strlen( $blob ) > $this->maxBlobSize ) {
@@ -171,7 +170,7 @@ class EntityContentDataCodec {
 	 *  constants or null for the default.
 	 *
 	 * @throws InvalidArgumentException If the format is not supported.
-	 * @throws MWContentSerializationException
+	 * @throws ContentSerializationException
 	 * @return string A blob representing the given Entity.
 	 */
 	public function encodeRedirect( EntityRedirect $redirect, $format ) {
@@ -192,7 +191,7 @@ class EntityContentDataCodec {
 	 * @param string|null $format The serialization format of $blob
 	 *
 	 * @throws InvalidArgumentException If the format is not supported.
-	 * @throws MWContentSerializationException
+	 * @throws ContentSerializationException
 	 * @return array An array representation of an EntityContent object
 	 */
 	private function decodeEntityContentData( $blob, $format ) {
@@ -201,21 +200,23 @@ class EntityContentDataCodec {
 		}
 
 		$format = $this->sanitizeFormat( $format );
-		AtEase::suppressWarnings();
 		switch ( $format ) {
 			case CONTENT_FORMAT_JSON:
-				$data = json_decode( $blob, true );
+				// phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
+				$data = @json_decode( $blob, true );
 				break;
 			case CONTENT_FORMAT_SERIALIZED:
-				$data = unserialize( $blob );
+				// phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
+				$data = @unserialize( $blob, [
+					'allowed_classes' => false, // only nested arrays and primitives expected
+				] );
 				break;
 			default:
 				throw new InvalidArgumentException( "Unsupported decoding format: $format" );
 		}
-		AtEase::restoreWarnings();
 
 		if ( !is_array( $data ) ) {
-			throw new MWContentSerializationException( "Failed to decode as $format" );
+			throw new ContentSerializationException( "Failed to decode as $format" );
 		}
 
 		return $data;
@@ -231,13 +232,13 @@ class EntityContentDataCodec {
 	 *  CONTENT_FORMAT_... constants or null for the default.
 	 *
 	 * @throws InvalidArgumentException If the format is not supported.
-	 * @throws MWContentSerializationException
+	 * @throws ContentSerializationException
 	 * @return EntityDocument|null The entity represented by $blob, or null if $blob represents a
 	 *  redirect.
 	 */
 	public function decodeEntity( $blob, $format ) {
 		if ( $this->maxBlobSize > 0 && strlen( $blob ) > $this->maxBlobSize ) {
-			throw new MWContentSerializationException( 'Blob too big for deserialization!' );
+			throw new ContentSerializationException( 'Blob too big for deserialization!' );
 		}
 
 		$data = $this->decodeEntityContentData( $blob, $format );
@@ -250,7 +251,7 @@ class EntityContentDataCodec {
 		try {
 			$entity = $this->entityDeserializer->deserialize( $data );
 		} catch ( DeserializationException $ex ) {
-			throw new MWContentSerializationException( $ex->getMessage(), 0, $ex );
+			throw new ContentSerializationException( $ex->getMessage(), 0, $ex );
 		}
 
 		if ( !( $entity instanceof EntityDocument ) ) {
@@ -270,7 +271,7 @@ class EntityContentDataCodec {
 	 *  CONTENT_FORMAT_... constants or null for the default.
 	 *
 	 * @throws InvalidArgumentException If the format is not supported.
-	 * @throws MWContentSerializationException If the array could not be decoded.
+	 * @throws ContentSerializationException If the array could not be decoded.
 	 * @return EntityRedirect|null The EntityRedirect represented by $blob,
 	 *         or null if $blob does not represent a redirect.
 	 */
@@ -287,7 +288,7 @@ class EntityContentDataCodec {
 		$entityId = $this->extractEntityId( $data, 'entity' );
 
 		if ( !$entityId ) {
-			throw new MWContentSerializationException( 'No entity ID found in serialization data!' );
+			throw new ContentSerializationException( 'No entity ID found in serialization data!' );
 		}
 
 		try {
@@ -295,7 +296,7 @@ class EntityContentDataCodec {
 			$redirect = new EntityRedirect( $entityId, $targetId );
 			return $redirect;
 		} catch ( InvalidArgumentException $ex ) {
-			throw new MWContentSerializationException( $ex->getMessage(), 0, $ex );
+			throw new ContentSerializationException( $ex->getMessage(), 0, $ex );
 		}
 	}
 
@@ -303,7 +304,7 @@ class EntityContentDataCodec {
 	 * @param array $data An array representation of an EntityContent object.
 	 * @param string $key The key in $data that contains the serialized ID.
 	 *
-	 * @throws MWContentSerializationException
+	 * @throws ContentSerializationException
 	 * @return EntityId|null The ID of the entity (resp. redirect), or null if
 	 *         $key is not set in $data.
 	 */
@@ -319,14 +320,14 @@ class EntityContentDataCodec {
 				$stubbedId = $data[$key];
 				return LegacyIdInterpreter::newIdFromTypeAndNumber( $stubbedId[0], $stubbedId[1] );
 			} catch ( InvalidArgumentException $ex ) {
-				throw new MWContentSerializationException( $ex->getMessage(), 0, $ex );
+				throw new ContentSerializationException( $ex->getMessage(), 0, $ex );
 			}
 		}
 
 		try {
 			return $this->entityIdParser->parse( $data[$key] );
 		} catch ( EntityIdParsingException $ex ) {
-			throw new MWContentSerializationException( $ex->getMessage(), 0, $ex );
+			throw new ContentSerializationException( $ex->getMessage(), 0, $ex );
 		}
 	}
 

@@ -21,7 +21,7 @@ use Wikibase\Repo\SiteLinkGlobalIdentifiersProvider;
 use Wikibase\Repo\Store\Store;
 use Wikibase\Repo\WikibaseRepo;
 use Wikimedia\ParamValidator\ParamValidator;
-use Wikimedia\Stats\IBufferingStatsdDataFactory;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * API module to get the data for one or more Wikibase entities.
@@ -53,11 +53,6 @@ class GetEntities extends ApiBase {
 	private $entityPrefetcher;
 
 	/**
-	 * @var string[]
-	 */
-	private $siteLinkGroups;
-
-	/**
 	 * @var ApiErrorReporter
 	 */
 	protected $errorReporter;
@@ -80,8 +75,8 @@ class GetEntities extends ApiBase {
 	/** @var SiteLookup */
 	private $siteLookup;
 
-	/** @var IBufferingStatsdDataFactory */
-	private $stats;
+	/** @var StatsFactory */
+	private $statsFactory;
 
 	/**
 	 * @param ApiMain $mainModule
@@ -90,13 +85,12 @@ class GetEntities extends ApiBase {
 	 * @param LanguageFallbackChainFactory $languageFallbackChainFactory
 	 * @param SiteLinkGlobalIdentifiersProvider $siteLinkGlobalIdentifiersProvider
 	 * @param EntityPrefetcher $entityPrefetcher
-	 * @param string[] $siteLinkGroups
 	 * @param ApiErrorReporter $errorReporter
 	 * @param ResultBuilder $resultBuilder
 	 * @param EntityRevisionLookup $entityRevisionLookup
 	 * @param EntityIdParser $idParser
 	 * @param SiteLookup $siteLookup
-	 * @param IBufferingStatsdDataFactory $stats
+	 * @param StatsFactory $statsFactory
 	 * @param bool $federatedPropertiesEnabled
 	 *
 	 * @see ApiBase::__construct
@@ -108,13 +102,12 @@ class GetEntities extends ApiBase {
 		LanguageFallbackChainFactory $languageFallbackChainFactory,
 		SiteLinkGlobalIdentifiersProvider $siteLinkGlobalIdentifiersProvider,
 		EntityPrefetcher $entityPrefetcher,
-		array $siteLinkGroups,
 		ApiErrorReporter $errorReporter,
 		ResultBuilder $resultBuilder,
 		EntityRevisionLookup $entityRevisionLookup,
 		EntityIdParser $idParser,
 		SiteLookup $siteLookup,
-		IBufferingStatsdDataFactory $stats,
+		StatsFactory $statsFactory,
 		bool $federatedPropertiesEnabled
 	) {
 		parent::__construct( $mainModule, $moduleName );
@@ -123,13 +116,12 @@ class GetEntities extends ApiBase {
 		$this->languageFallbackChainFactory = $languageFallbackChainFactory;
 		$this->siteLinkGlobalIdentifiersProvider = $siteLinkGlobalIdentifiersProvider;
 		$this->entityPrefetcher = $entityPrefetcher;
-		$this->siteLinkGroups = $siteLinkGroups;
 		$this->errorReporter = $errorReporter;
 		$this->resultBuilder = $resultBuilder;
 		$this->entityRevisionLookup = $entityRevisionLookup;
 		$this->idParser = $idParser;
 		$this->siteLookup = $siteLookup;
-		$this->stats = $stats;
+		$this->statsFactory = $statsFactory->withComponent( 'WikibaseRepo' );
 		$this->federatedPropertiesEnabled = $federatedPropertiesEnabled;
 	}
 
@@ -137,7 +129,7 @@ class GetEntities extends ApiBase {
 		ApiMain $apiMain,
 		string $moduleName,
 		SiteLookup $siteLookup,
-		IBufferingStatsdDataFactory $stats,
+		StatsFactory $statsFactory,
 		ApiHelperFactory $apiHelperFactory,
 		EntityIdParser $entityIdParser,
 		EntityRevisionLookup $entityRevisionLookup,
@@ -155,13 +147,12 @@ class GetEntities extends ApiBase {
 			$siteLinkGlobalIdentifiersProvider,
 			// TODO move EntityPrefetcher to service container and inject that directly
 			$store->getEntityPrefetcher(),
-			$repoSettings->getSetting( 'siteLinkGroups' ),
 			$apiHelperFactory->getErrorReporter( $apiMain ),
 			$apiHelperFactory->getResultBuilder( $apiMain ),
 			$entityRevisionLookup,
 			$entityIdParser,
 			$siteLookup,
-			$stats,
+			$statsFactory,
 			$repoSettings->getSetting( 'federatedPropertiesEnabled' )
 		);
 	}
@@ -188,7 +179,11 @@ class GetEntities extends ApiBase {
 			$this->validateAlteringEntityById( $entityId );
 		}
 
-		$this->stats->updateCount( 'wikibase.repo.api.getentities.entities', count( $entityIds ) );
+		$getEntitiesKey = 'wikibase.repo.api.getentities.entities';
+		$metric = $this->statsFactory->getCounter( 'get_entities_total' );
+		$metric->copyToStatsdAt(
+				$getEntitiesKey,
+			)->incrementBy( count( $entityIds ) );
 
 		$entityRevisions = $this->getEntityRevisionsFromEntityIds( $entityIds, $resolveRedirects );
 
@@ -227,7 +222,7 @@ class GetEntities extends ApiBase {
 		foreach ( $params['ids'] as $id ) {
 			try {
 				$ids[] = $this->idParser->parse( $id );
-			} catch ( EntityIdParsingException $e ) {
+			} catch ( EntityIdParsingException ) {
 				$this->errorReporter->dieWithError(
 					[ 'wikibase-api-no-such-entity', $id ],
 					'no-such-entity',
@@ -383,7 +378,7 @@ class GetEntities extends ApiBase {
 	 * @inheritDoc
 	 */
 	protected function getAllowedParams(): array {
-		$siteIds = $this->siteLinkGlobalIdentifiersProvider->getList( $this->siteLinkGroups );
+		$siteIds = $this->siteLinkGlobalIdentifiersProvider->getSiteIds();
 
 		return array_merge( parent::getAllowedParams(), [
 			'ids' => [

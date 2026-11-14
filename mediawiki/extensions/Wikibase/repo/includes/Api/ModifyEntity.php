@@ -9,9 +9,10 @@ use MediaWiki\Api\ApiBase;
 use MediaWiki\Api\ApiCreateTempUserTrait;
 use MediaWiki\Api\ApiMain;
 use MediaWiki\Api\ApiUsageException;
+use MediaWiki\Content\ContentSerializationException;
 use MediaWiki\Status\Status;
 use MediaWiki\User\User;
-use MWContentSerializationException;
+use StatusValue;
 use Wikibase\DataModel\Entity\EntityDocument;
 use Wikibase\DataModel\Entity\EntityId;
 use Wikibase\Lib\Store\EntityRevisionLookup;
@@ -43,6 +44,8 @@ abstract class ModifyEntity extends ApiBase {
 	use FederatedPropertyApiValidatorTrait;
 	use ApiCreateTempUserTrait;
 
+	public const PARAM_SUMMARY = 'summary';
+
 	/**
 	 * @var StringNormalizer
 	 */
@@ -57,11 +60,6 @@ abstract class ModifyEntity extends ApiBase {
 	 * @var EntityTitleStoreLookup
 	 */
 	private $titleLookup;
-
-	/**
-	 * @var string[]
-	 */
-	protected $siteLinkGroups;
 
 	/**
 	 * @var string[]
@@ -132,7 +130,6 @@ abstract class ModifyEntity extends ApiBase {
 		$this->revisionLookup = WikibaseRepo::getStore()->getEntityRevisionLookup( Store::LOOKUP_CACHING_DISABLED );
 		$this->permissionChecker = WikibaseRepo::getEntityPermissionChecker();
 		$this->titleLookup = WikibaseRepo::getEntityTitleStoreLookup();
-		$this->siteLinkGroups = $settings->getSetting( 'siteLinkGroups' );
 		$this->badgeItems = $settings->getSetting( 'badgeItems' );
 
 		$this->federatedPropertiesEnabled = $federatedPropertiesEnabled;
@@ -160,7 +157,7 @@ abstract class ModifyEntity extends ApiBase {
 	 */
 	protected function createSummary( array $params ): Summary {
 		$summary = new Summary( $this->getModuleName() );
-		$summary->setUserSummary( $params['summary'] );
+		$summary->setUserSummary( $params[self::PARAM_SUMMARY] );
 		return $summary;
 	}
 
@@ -208,6 +205,7 @@ abstract class ModifyEntity extends ApiBase {
 				$this->errorReporter->dieException( $ex, 'unresolved-redirect' );
 			}
 
+			// @phan-suppress-next-line PhanPossiblyUndeclaredVariable
 			if ( $currentEntityRevision ) {
 				$currentEntityResult = $changeOp->validate( $currentEntityRevision->getEntity() );
 				if ( !$currentEntityResult->isValid() ) {
@@ -242,10 +240,6 @@ abstract class ModifyEntity extends ApiBase {
 		}
 	}
 
-	/**
-	 * @param array $params
-	 * @return array
-	 */
 	protected function prepareParameters( array $params ): array {
 		return $params;
 	}
@@ -259,8 +253,6 @@ abstract class ModifyEntity extends ApiBase {
 
 	/**
 	 * Make sure the required parameters are provided and that they are valid.
-	 *
-	 * @param array $params
 	 */
 	protected function validateParameters( array $params ): void {
 		$entityReferenceBySiteLinkGiven = isset( $params['site'] ) && isset( $params['title'] );
@@ -341,7 +333,7 @@ abstract class ModifyEntity extends ApiBase {
 				$this->extractRequestParams(),
 				$this->getContext()
 			);
-		} catch ( MWContentSerializationException $ex ) {
+		} catch ( ContentSerializationException $ex ) {
 			// This happens if the $entity created via modifyEntity() above (possibly cleared
 			// before) is not sufficiently initialized and failed serialization.
 			$this->errorReporter->dieError( $ex->getMessage(), 'failed-save' );
@@ -417,7 +409,7 @@ abstract class ModifyEntity extends ApiBase {
 		return $status;
 	}
 
-	private function addToOutput( EntityDocument $entity, Status $status, int $oldRevId ): void {
+	private function addToOutput( EntityDocument $entity, StatusValue $status, int $oldRevId ): void {
 		$params = $this->extractRequestParams();
 		$paramsForRedirect = $params;
 		if ( isset( $params['new'] ) && !isset( $paramsForRedirect['returnto'] ) ) {
@@ -476,7 +468,7 @@ abstract class ModifyEntity extends ApiBase {
 	 * @return array[]
 	 */
 	private function getAllowedParamsForSiteLink(): array {
-		$siteIds = $this->siteLinkGlobalIdentifiersProvider->getList( $this->siteLinkGroups );
+		$siteIds = $this->siteLinkGlobalIdentifiersProvider->getSiteIds();
 
 		return [
 			'site' => [
@@ -490,15 +482,13 @@ abstract class ModifyEntity extends ApiBase {
 
 	/**
 	 * Get allowed params for the entity in general
-	 *
-	 * @return array
 	 */
 	private function getAllowedParamsForEntity(): array {
 		return [
 			'baserevid' => [
 				ParamValidator::PARAM_TYPE => 'integer',
 			],
-			'summary' => [
+			self::PARAM_SUMMARY => [
 				ParamValidator::PARAM_TYPE => 'string',
 			],
 			'tags' => [

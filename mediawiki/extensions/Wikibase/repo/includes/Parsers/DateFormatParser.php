@@ -9,7 +9,6 @@ use ValueParsers\IsoTimestampParser;
 use ValueParsers\ParseException;
 use ValueParsers\ParserOptions;
 use ValueParsers\StringValueParser;
-use Wikimedia\AtEase\AtEase;
 
 /**
  * This parser is in essence the inverse operation of MediaWiki's Language::sprintfDate.
@@ -50,13 +49,13 @@ class DateFormatParser extends StringValueParser {
 	private $isoTimestampParser;
 
 	public function __construct( ?ParserOptions $options = null ) {
-		parent::__construct( $options );
-
-		$this->defaultOption( self::OPT_DATE_FORMAT, 'j F Y' );
-		// FIXME: Should not be an option. Options should be trivial, never arrays or objects!
-		$this->defaultOption( self::OPT_DIGIT_TRANSFORM_TABLE, null );
-		$this->defaultOption( self::OPT_MONTH_NAMES, null );
-		$this->defaultOption( self::OPT_PRECISION, null );
+		parent::__construct( ( $options ?? new ParserOptions() )
+			->withDefaultOption( self::OPT_DATE_FORMAT, 'j F Y' )
+			// FIXME: Should not be an option. Options should be trivial, never arrays or objects!
+			->withDefaultOption( self::OPT_DIGIT_TRANSFORM_TABLE, null )
+			->withDefaultOption( self::OPT_MONTH_NAMES, null )
+			->withDefaultOption( self::OPT_PRECISION, null )
+		);
 
 		$this->isoTimestampParser = new IsoTimestampParser(
 			new CalendarModelParser( $this->options ),
@@ -347,9 +346,8 @@ class DateFormatParser extends StringValueParser {
 	private function parseDate( $input ) {
 		$pattern = $this->parseDateFormat( $this->getDateFormat() );
 
-		AtEase::suppressWarnings();
-		$success = preg_match( $pattern, $input, $matches );
-		AtEase::restoreWarnings();
+		// phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
+		$success = @preg_match( $pattern, $input, $matches );
 
 		if ( !$success ) {
 			throw new ParseException(

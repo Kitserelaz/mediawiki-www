@@ -6,7 +6,7 @@
 	"license-name": "GPL-2.0-or-later",
 	"type": "other",
 	"requires": {
-		"MediaWiki": ">= 1.43"
+		"MediaWiki": ">= 1.46"
 	},
 	"MessagesDirs": {
 		"PageNotice": [
@@ -19,20 +19,12 @@
 	"TestAutoloadNamespaces": {
 		"MediaWiki\\Extension\\PageNotice\\Tests\\": "tests/phpunit/integration/"
 	},
-	"ResourceModules": {
-		"ext.pageNotice": {
-			"styles": [
-				"modules/ext.pageNotice.css"
-			]
-		}
-	},
-	"ResourceFileModulePaths": {
-		"localBasePath": "",
-		"remoteExtPath": "extensions/PageNotice"
-	},
 	"HookHandlers": {
 		"Hooks": {
-			"class": "MediaWiki\\Extension\\PageNotice\\Hooks"
+			"class": "MediaWiki\\Extension\\PageNotice\\Hooks",
+			"services": [
+				"ParserFactory"
+			]
 		}
 	},
 	"Hooks": {

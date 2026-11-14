@@ -2,18 +2,19 @@
 
 namespace Wikibase\Client\Tests\Integration\RecentChanges;
 
-use ChangesList;
 use HamcrestPHPUnitIntegration;
 use MediaWiki\CommentFormatter\CommentFormatter;
 use MediaWiki\Context\DerivativeContext;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Linker\LinkRenderer;
+use MediaWiki\MainConfigNames;
+use MediaWiki\RecentChanges\ChangesList;
+use MediaWiki\RecentChanges\RecentChange;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
 use MediaWiki\User\UserNameUtils;
 use MediaWikiLangTestCase;
-use RecentChange;
 use Wikibase\Client\RecentChanges\ChangeLineFormatter;
 use Wikibase\Client\RecentChanges\ExternalChangeFactory;
 use Wikibase\Client\RecentChanges\RecentChangeFactory;
@@ -45,12 +46,16 @@ class ChangeLineFormatterTest extends MediaWikiLangTestCase {
 	protected function setUp(): void {
 		parent::setUp();
 
+		$clientSettings = clone WikibaseClient::getSettings();
+		$clientSettings->setSetting( 'enableWikidataIconsInClientWatchlist', true );
+		$this->setService( 'WikibaseClient.Settings', $clientSettings );
+
 		// these are required because MediaWiki\CommentFormatter\CommentFormatter is used in ChangeLineFormatter
 		// @todo eliminate Linker or at least use of Linker in Wikibase :)
-		$this->setMwGlobals( [
-			'wgScriptPath' => '',
-			'wgScript' => '/index.php',
-			'wgArticlePath' => '/wiki/$1',
+		$this->overrideConfigValues( [
+			MainConfigNames::ScriptPath => '',
+			MainConfigNames::Script => '/index.php',
+			MainConfigNames::ArticlePath => '/wiki/$1',
 		] );
 
 		$this->repoLinker = new RepoLinker(
@@ -70,7 +75,8 @@ class ChangeLineFormatterTest extends MediaWikiLangTestCase {
 	/**
 	 * @dataProvider formatProvider
 	 */
-	public function testFormat( array $expectedTags, array $patterns, RecentChange $recentChange ) {
+	public function testFormat( array $expectedTags, array $patterns, callable $recentChangeFactory ) {
+		$recentChange = $recentChangeFactory( $this );
 		$context = $this->getTestContext();
 		$languageFactory = $this->getServiceContainer()->getLanguageFactory();
 
@@ -120,7 +126,8 @@ class ChangeLineFormatterTest extends MediaWikiLangTestCase {
 	/**
 	 * @dataProvider formatProvider
 	 */
-	public function testFormatDataForEnhancedLine( array $expectedTags, array $patterns, RecentChange $recentChange ) {
+	public function testFormatDataForEnhancedLine( array $expectedTags, array $patterns, callable $recentChangeFactory ) {
+		$recentChange = $recentChangeFactory( $this );
 		$formatter = new ChangeLineFormatter(
 			$this->repoLinker,
 			$this->userNameUtils,
@@ -204,7 +211,8 @@ class ChangeLineFormatterTest extends MediaWikiLangTestCase {
 	/**
 	 * @dataProvider formatProvider
 	 */
-	public function testFormatDataForEnhancedBlockLine( array $expectedTags, array $patterns, RecentChange $recentChange ) {
+	public function testFormatDataForEnhancedBlockLine( array $expectedTags, array $patterns, callable $recentChangeFactory ) {
+		$recentChange = $recentChangeFactory( $this );
 		$formatter = new ChangeLineFormatter(
 			$this->repoLinker,
 			$this->userNameUtils,
@@ -295,30 +303,30 @@ class ChangeLineFormatterTest extends MediaWikiLangTestCase {
 		return $context;
 	}
 
-	public function formatProvider() {
+	public static function formatProvider() {
 		$commentHtml = '<span><a href="http://acme.test">Linky</a> <script>we can run scripts here</script><span/>';
 
 		return [
 			'edit-change' => [
-				$this->getEditSiteLinkChangeTagMatchers(),
-				$this->getEditSiteLinkPatterns(),
-				$this->getEditSiteLinkRecentChange(
+				self::getEditSiteLinkChangeTagMatchers(),
+				self::getEditSiteLinkPatterns(),
+				fn ( self $self ) => $self->getEditSiteLinkRecentChange(
 					'/* wbsetclaim-update:2||1 */ [[Property:P213]]: [[Q850]]'
 				),
 			],
 			'log-change' => [
-				$this->getLogChangeTagMatchers(),
+				self::getLogChangeTagMatchers(),
 				[
 					'/Log Change Comment/',
 				],
-				$this->getLogRecentChange(),
+				fn ( self $self ) => $self->getLogRecentChange(),
 			],
 			'comment-fallback' => [
 				[],
 				[
 					'/<span class=\"comment\">.*\(Associated .*? item deleted\. Language links removed\.\)/',
 				],
-				$this->getEditSiteLinkRecentChange(
+				fn ( self $self ) => $self->getEditSiteLinkRecentChange(
 					'',
 					null,
 					[
@@ -332,7 +340,7 @@ class ChangeLineFormatterTest extends MediaWikiLangTestCase {
 				[
 					'/\(&lt;script&gt;evil&lt;\/script&gt;\)/',
 				],
-				$this->getEditSiteLinkRecentChange(
+				fn ( self $self ) => $self->getEditSiteLinkRecentChange(
 					'<script>evil</script>'
 				),
 			],
@@ -341,7 +349,7 @@ class ChangeLineFormatterTest extends MediaWikiLangTestCase {
 				[
 					'/<span class=\"comment\">.*' . preg_quote( $commentHtml, '/' ) . '/',
 				],
-				$this->getEditSiteLinkRecentChange(
+				fn ( self $self ) => $self->getEditSiteLinkRecentChange(
 					'this shall be ignored',
 					$commentHtml,
 					[
@@ -357,7 +365,7 @@ class ChangeLineFormatterTest extends MediaWikiLangTestCase {
 					// Make sure the user name is not mentioned
 					'/^(?!.*Cat).*$/',
 				],
-				$this->getEditSiteLinkRecentChange(
+				fn ( self $self ) => $self->getEditSiteLinkRecentChange(
 					'this shall be ignored',
 					'a',
 					[],
@@ -372,7 +380,7 @@ class ChangeLineFormatterTest extends MediaWikiLangTestCase {
 					// Make sure the edit summary is not mentioned
 					'/^(?!.*super-private).*$/',
 				],
-				$this->getEditSiteLinkRecentChange(
+				fn ( self $self ) => $self->getEditSiteLinkRecentChange(
 					'this shall be ignored',
 					'super-private',
 					[],
@@ -390,7 +398,7 @@ class ChangeLineFormatterTest extends MediaWikiLangTestCase {
 					// Make sure the edit summary is not mentioned
 					'/^(?!.*super-private).*$/',
 				],
-				$this->getEditSiteLinkRecentChange(
+				fn ( self $self ) => $self->getEditSiteLinkRecentChange(
 					'this shall be ignored',
 					'super-private',
 					[],
@@ -401,18 +409,18 @@ class ChangeLineFormatterTest extends MediaWikiLangTestCase {
 		];
 	}
 
-	public function getEditSiteLinkPatterns() {
+	public static function getEditSiteLinkPatterns() {
 		return [
 			'/title=Special%3AEntityPage%2FQ4&amp;curid=5&amp;action=history/',
 			'/title=Special%3AEntityPage%2FQ4&amp;curid=5&amp;diff=92&amp;oldid=90/',
 			'/<span class="comment">\('
-				. '‎<span dir="auto"><span class="autocomment">Changed claim: <\/span><\/span> '
+				. '‎<span dir="auto"><span class="autocomment"><i class="mw-update-icon"><\/i>Changed claim: <\/span><\/span> '
 				. '<a .*?>Property:P213<\/a>: <a .*?>Q850<\/a>'
 				. '\)<\/span>/',
 		];
 	}
 
-	public function getEditSiteLinkChangeTagMatchers() {
+	public static function getEditSiteLinkChangeTagMatchers() {
 		return [
 			'edit-difflink' => both( withTagName( 'a' ) )->andAlso( havingTextContents( 'diff' ) ),
 			'edit-histlink' => both( withTagName( 'a' ) )->andAlso( havingTextContents( 'hist' ) ),
@@ -515,7 +523,7 @@ class ChangeLineFormatterTest extends MediaWikiLangTestCase {
 		return $this->makeRecentChange( $params, $title, $comment, $visibility );
 	}
 
-	protected function getLogChangeTagMatchers() {
+	protected static function getLogChangeTagMatchers() {
 		return [
 			'delete-deletionlog' => both(
 				tagMatchingOutline( '<a href="http://www.wikidata.org/wiki/Special:Log/delete"/>' )
@@ -629,11 +637,9 @@ class ChangeLineFormatterTest extends MediaWikiLangTestCase {
 			'rc_comment_data' => null,
 			'rc_minor' => true,
 			'rc_bot' => $params['wikibase-repo-change']['bot'],
-			'rc_new' => false,
 			'rc_cur_id' => $title->getArticleID(),
 			'rc_this_oldid' => $title->getLatestRevID(),
 			'rc_last_oldid' => $title->getLatestRevID(),
-			'rc_type' => RC_EXTERNAL,
 			'rc_source' => RecentChangeFactory::SRC_WIKIBASE,
 			'rc_patrolled' => 2,
 			'rc_ip' => '127.0.0.1',

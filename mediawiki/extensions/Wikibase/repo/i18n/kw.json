@@ -1,6 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
+			"Flynn",
 			"GwikorFrank",
 			"Kw-Moon",
 			"Nrowe"
@@ -8,5 +9,7 @@
 	},
 	"wikibase-edit": "golegi",
 	"wikibase-add": "keworra",
+	"wikibase-label-empty": "Label styrys vyth",
+	"wikibase-description-empty": "Deskrifans styrys vyth",
 	"wikibase-sitelinks-special": "Gwiasvaow erel"
 }

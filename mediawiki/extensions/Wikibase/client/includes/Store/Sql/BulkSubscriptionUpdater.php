@@ -105,7 +105,6 @@ class BulkSubscriptionUpdater {
 
 			if ( $count > 0 ) {
 				$this->progressReporter->reportMessage( 'Updating subscription table: '
-					// @phan-suppress-next-line PhanTypePossiblyInvalidDimOffset
 					. "inserted $count subscriptions, continuing at entity #{$continuation[0]}." );
 			} else {
 				break;
@@ -241,7 +240,6 @@ class BulkSubscriptionUpdater {
 
 			if ( $count > 0 ) {
 				$this->progressReporter->reportMessage( 'Purging subscription table: '
-					// @phan-suppress-next-line PhanTypePossiblyInvalidDimOffset
 					. "deleted $count subscriptions, continuing at entity #{$continuation[0]}." );
 			} else {
 				break;

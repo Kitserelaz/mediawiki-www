@@ -9,6 +9,7 @@
 			"Grondin",
 			"Joan manel",
 			"Ladsgroup",
+			"Leptictidium",
 			"Macofe",
 			"MuratTheTurkish",
 			"Papapep",
@@ -21,16 +22,16 @@
 			"Vogone",
 			"Vriullop",
 			"Winston Sung",
-			"පසිඳු කාවින්ද",
-			"Leptictidium"
+			"පසිඳු කාවින්ද"
 		]
 	},
 	"wikibase-desc": "Repositori de dades estructurades",
 	"wikibase-entity": "entitat",
 	"wikibase-entity-item": "element",
-	"wikibase-entity-property": "propietat",
+	"wikibase-entity-property": "Propietat",
 	"wikibase-entity-query": "consulta",
 	"nstab-item": "Element",
+	"nstab-property": "Propietat",
 	"wikibase-edit": "modifica",
 	"wikibase-save": "desa",
 	"wikibase-publish": "publica",
@@ -119,7 +120,7 @@
 	"wikibase-statementview-rank-deprecated": "Rang obsolet",
 	"wikibase-statementview-rank-tooltip-deprecated": "Se sap que el valor és equivocat, però és o era suposat habitualment",
 	"wikibase-statementview-references-counter": "$1 {{PLURAL:$1|referència|referències}}",
-	"wikibase-snakview-property-input-placeholder": "propietat",
+	"wikibase-snakview-property-input-placeholder": "Propietat",
 	"wikibase-snakview-choosesnaktype": "Trieu un tipus de valor.",
 	"wikibase-snakview-variation-datavaluetypemismatch": "El valor no s'adiu amb la definició de la propietat.",
 	"wikibase-snakview-variation-datavaluetypemismatch-details": "Conflicte inesperat entre el tipus de propietat «$2» i el tipus de valor «$1».",
@@ -177,8 +178,6 @@
 	"wikibase-validator-no-such-media": "El fitxer «$1» no existeix a [https://commons.wikimedia.org/ Wikimedia Commons].",
 	"wikibase-validator-page-not-exists": "La pàgina «$1» no existeix.",
 	"wikibase-validator-not-a-language": "«$1» no és un codi d'idioma conegut.",
-	"wikibase-itemlink": "$1 $2",
-	"wikibase-itemlink-id-wrapper": "($1)",
 	"wikibase-item-reference-edit-placeholder": "Introduïu un ID d'element. P. ex., Q10",
 	"wikibase-item-reference-edit-invalid-format": "L'ID de l'element introduït no té un format vàlid",
 	"wikibase-item-reference-edit-nonexistent-item": "No existeix cap element amb aquest ID",
@@ -399,5 +398,9 @@
 	"wikibase-federated-properties-leaving-site-notice-header": "S'abandona el Wikibase local",
 	"wikibase-federated-properties-leaving-site-notice-checkbox-label": "No tornis a mostrar-me el missatge",
 	"wikibase-federated-properties-edit-request-failed-notice-try-again": "Torna-ho a provar",
-	"wikibase-federated-properties-edit-request-failed-notice-header": "L'edició ha fallat"
+	"wikibase-federated-properties-edit-request-failed-notice-header": "L'edició ha fallat",
+	"wikibase-scoped-search-search-entities": "Cerca entitats",
+	"wikibase-scoped-search-search-entities-description": "Cercau diferents tipus d'entitats de {{SITENAME}}",
+	"wikibase-scoped-search-item-scope-name": "Ítems",
+	"wikibase-scoped-search-property-scope-name": "Propietats"
 }

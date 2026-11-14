@@ -3,14 +3,22 @@
 namespace Wikibase\View\Tests;
 
 use InvalidArgumentException;
+use MediaWiki\MediaWikiServices;
+use Wikibase\DataModel\Entity\EntityIdParser;
+use Wikibase\DataModel\Serializers\SerializerFactory;
+use Wikibase\DataModel\Services\Lookup\PropertyDataTypeLookup;
 use Wikibase\DataModel\Services\Statement\Grouper\StatementGrouper;
 use Wikibase\DataModel\Snak\PropertyNoValueSnak;
 use Wikibase\DataModel\Statement\StatementList;
+use Wikibase\Lib\Formatters\SnakFormatter;
 use Wikibase\View\DummyLocalizedTextProvider;
+use Wikibase\View\EntityIdFormatterFactory;
 use Wikibase\View\StatementGroupListView;
 use Wikibase\View\StatementSectionsView;
 use Wikibase\View\Template\TemplateFactory;
 use Wikibase\View\Template\TemplateRegistry;
+use Wikibase\View\VueNoScriptRendering;
+use Wikibase\View\Wbui2025FeatureFlag;
 
 /**
  * @covers \Wikibase\View\StatementSectionsView
@@ -40,11 +48,24 @@ class StatementSectionsViewTest extends \PHPUnit\Framework\TestCase {
 		$statementListView->method( 'getHtml' )
 			->willReturn( '<LIST>' );
 
+		$vueNoScriptRendering = new VueNoScriptRendering(
+			$this->createMock( EntityIdFormatterFactory::class ),
+			$this->createMock( EntityIdParser::class ),
+			MediaWikiServices::getInstance()->getLanguageFactory()->getLanguage( 'en' ),
+			new DummyLocalizedTextProvider(),
+			$this->createMock( PropertyDataTypeLookup::class ),
+			$this->createMock( SerializerFactory::class ),
+			$this->createMock( SnakFormatter::class ),
+			$this->createMock( Wbui2025FeatureFlag::class ),
+		);
+
 		return new StatementSectionsView(
 			$templateFactory,
 			$statementGrouper,
 			$statementListView,
-			new DummyLocalizedTextProvider()
+			new DummyLocalizedTextProvider(),
+			$vueNoScriptRendering,
+			false
 		);
 	}
 

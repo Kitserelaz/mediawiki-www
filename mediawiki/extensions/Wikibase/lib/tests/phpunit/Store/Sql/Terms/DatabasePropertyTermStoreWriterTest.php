@@ -2,6 +2,7 @@
 
 namespace Wikibase\Lib\Tests\Store\Sql\Terms;
 
+use MediaWiki\JobQueue\JobQueueGroup;
 use MediaWikiIntegrationTestCase;
 use Wikibase\DataModel\Entity\NumericPropertyId;
 use Wikibase\DataModel\Term\Fingerprint;
@@ -11,12 +12,10 @@ use Wikibase\Lib\Store\Sql\Terms\CleanTermsIfUnusedJob;
 use Wikibase\Lib\Store\Sql\Terms\DatabasePropertyTermStoreWriter;
 use Wikibase\Lib\Store\Sql\Terms\DatabaseTermInLangIdsAcquirer;
 use Wikibase\Lib\Store\Sql\Terms\DatabaseTermInLangIdsResolver;
-use Wikibase\Lib\Store\Sql\Terms\DatabaseTypeIdsStore;
 use Wikibase\Lib\StringNormalizer;
 use Wikibase\Lib\Tests\Rdbms\LocalRepoDbTestHelper;
 use Wikibase\Lib\Tests\Store\Sql\Terms\Util\MockJobQueueFactory;
 use Wikibase\Lib\WikibaseSettings;
-use Wikimedia\ObjectCache\WANObjectCache;
 
 /**
  * @covers \Wikibase\Lib\Store\Sql\Terms\DatabasePropertyTermStoreWriter
@@ -43,11 +42,9 @@ class DatabasePropertyTermStoreWriterTest extends MediaWikiIntegrationTestCase {
 	/** @var Fingerprint */
 	private $fingerprintEmpty;
 
-	/** @var MockJobQueueFactory */
-	private $mockJobQueueFactory;
+	private MockJobQueueFactory $mockJobQueueFactory;
 
-	/** @var JobQueueGroup */
-	private $jobQueueMock;
+	private JobQueueGroup $jobQueueMock;
 
 	protected function setUp(): void {
 		if ( !WikibaseSettings::isRepoEnabled() ) {
@@ -79,14 +76,10 @@ class DatabasePropertyTermStoreWriterTest extends MediaWikiIntegrationTestCase {
 			$jobQueue = $this->getServiceContainer()->getJobQueueGroup();
 		}
 
-		$repoDb = $this->getRepoDomainDb();
-		$typeIdsStore = new DatabaseTypeIdsStore(
-			$repoDb,
-			WANObjectCache::newEmpty()
-		);
-		return new DatabasePropertyTermStoreWriter( $repoDb, $jobQueue,
-			new DatabaseTermInLangIdsAcquirer( $repoDb, $typeIdsStore ),
-			new DatabaseTermInLangIdsResolver( $typeIdsStore, $typeIdsStore, $repoDb ),
+		$termsDb = $this->getTermsDomainDb();
+		return new DatabasePropertyTermStoreWriter( $termsDb, $jobQueue,
+			new DatabaseTermInLangIdsAcquirer( $termsDb ),
+			new DatabaseTermInLangIdsResolver( $termsDb ),
 			new StringNormalizer()
 		);
 	}

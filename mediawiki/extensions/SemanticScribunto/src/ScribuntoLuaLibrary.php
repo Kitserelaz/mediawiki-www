@@ -2,9 +2,7 @@
 
 namespace SMW\Scribunto;
 
-use Scribunto_LuaLibraryBase;
-// TODO when dropping support for MW1.39, use the following instead
-// use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LibraryBase;
+use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LibraryBase as Scribunto_LuaLibraryBase;
 use SMW\DIProperty;
 use SMW\Query\QueryContext;
 use SMW\Services\ServicesFactory as ApplicationFactory;

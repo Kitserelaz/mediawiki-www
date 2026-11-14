@@ -2,11 +2,12 @@
 
 declare( strict_types = 1 );
 
-namespace Wikibase\Lexeme\Tests\Unit\mediawiki;
+namespace Wikibase\Lexeme\Tests\MediaWiki\Actions;
 
-use Article;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Message\Message;
+use MediaWiki\Page\Article;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Title\Title;
 use PHPUnit\Framework\TestCase;
 use Wikibase\DataModel\Services\Lookup\EntityLookup;
@@ -20,7 +21,6 @@ use Wikibase\Lexeme\MediaWiki\Actions\LexemeHistoryAction;
 use Wikibase\Lexeme\Presentation\Formatters\LexemeTermFormatter;
 use Wikibase\Lib\Store\EntityIdLookup;
 use Wikimedia\TestingAccessWrapper;
-use WikiPage;
 
 /**
  * @license GPL-2.0-or-later
@@ -43,7 +43,8 @@ final class LexemeHistoryActionTest extends TestCase {
 			$actualTitle = $actualTitle->text();
 		}
 
-		$this->assertSame( '(history-title: Page title)', $actualTitle );
+		$this->assertStringStartsWith( '(history-title: ', $actualTitle );
+		$this->assertStringContainsString( 'Page title', $actualTitle );
 	}
 
 	public function testReturnsLemmasInTitleProperlyEscaped(): void {

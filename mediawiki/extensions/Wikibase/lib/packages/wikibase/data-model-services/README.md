@@ -1,8 +1,6 @@
 # Wikibase DataModel Services
 
-[![Build Status](https://secure.travis-ci.org/wmde/WikibaseDataModelServices.png?branch=master)](http://travis-ci.org/wmde/WikibaseDataModelServices)
-[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/wmde/WikibaseDataModelServices/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/wmde/WikibaseDataModelServices/?branch=master)
-[![Code Coverage](https://scrutinizer-ci.com/g/wmde/WikibaseDataModelServices/badges/coverage.png?b=master)](https://scrutinizer-ci.com/g/wmde/WikibaseDataModelServices/?branch=master)
+[![Build Status](https://github.com/wmde/WikibaseDataModelServices/actions/workflows/lint-and-test.yaml/badge.svg?branch=master)](https://github.com/wmde/WikibaseDataModelServices/actions/workflows/lint-and-test.yaml)
 [![Download count](https://poser.pugx.org/wikibase/data-model-services/d/total.png)](https://packagist.org/packages/wikibase/data-model-services)
 [![License](https://poser.pugx.org/wikibase/data-model-services/license.svg)](https://packagist.org/packages/wikibase/data-model-services)
 
@@ -15,6 +13,9 @@ It is part of the [Wikibase software](http://wikiba.se/).
 
 
 Recent changes can be found in the [release notes](RELEASE-NOTES.md).
+
+Note that this repository is a mirror of part of the upstream [Wikibase project](https://gerrit.wikimedia.org/r/plugins/gitiles/mediawiki/extensions/Wikibase/+/refs/heads/master/lib/packages/wikibase/data-model-services/) on Gerrit.
+Contributions should be made to the directories there using MediaWiki's [Gerrit process](https://www.mediawiki.org/wiki/Gerrit).
 
 ## Library contents
 
@@ -60,12 +61,15 @@ in the root directory. You can use the tools in their standard manner, though ca
 required by our CI by executing `composer ci`. To just run tests use `composer test`, and to just
 run style checks use `composer cs`.
 
+## Contributing
+
+This repository is a mirror of part of the upstream [Wikibase project](https://gerrit.wikimedia.org/r/plugins/gitiles/mediawiki/extensions/Wikibase/+/refs/heads/master/lib/packages/wikibase/data-model-services/) on gerrit.
+Contributions should be made to the directories there using MediaWiki's [Gerrit process](https://www.mediawiki.org/wiki/Gerrit).
+
 ## Links
 
 * [Wikibase DataModel Services on Packagist](https://packagist.org/packages/wikibase/data-model-services)
-* [Wikibase DataModel Services on TravisCI](https://travis-ci.org/wmde/WikibaseDataModelServices)
-* [Wikibase DataModel Services on ScrutinizerCI](https://scrutinizer-ci.com/g/wmde/WikibaseDataModelServices)
- 
+
 ## See also
 
 * [Wikibase DataModel](https://github.com/wmde/WikibaseDataModel)

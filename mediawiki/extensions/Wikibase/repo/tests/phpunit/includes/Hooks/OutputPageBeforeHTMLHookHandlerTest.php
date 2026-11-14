@@ -28,7 +28,7 @@ use Wikibase\Repo\Hooks\OutputPageEntityIdReader;
 use Wikibase\Repo\ParserOutput\TermboxView;
 use Wikibase\Repo\WikibaseRepo;
 use Wikibase\View\Template\TemplateFactory;
-use Wikimedia\Stats\NullStatsdDataFactory;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * @covers \Wikibase\Repo\Hooks\OutputPageBeforeHTMLHookHandler
@@ -40,21 +40,14 @@ use Wikimedia\Stats\NullStatsdDataFactory;
  */
 class OutputPageBeforeHTMLHookHandlerTest extends MediaWikiIntegrationTestCase {
 
-	/** @var OutputPageEditability */
-	private $editability;
-	/** @var string */
-	private $uiLanguageCode;
-	/** @var EntityRevisionLookup */
-	private $entityRevisionLookup;
-	/** @var OutputPageEntityIdReader */
-	private $outputPageEntityIdReader;
-	/** @var EntityFactory */
-	private $entityFactory;
+	private OutputPageEditability $editability;
+	private string $uiLanguageCode;
+	private EntityRevisionLookup $entityRevisionLookup;
+	private OutputPageEntityIdReader $outputPageEntityIdReader;
+	private EntityFactory $entityFactory;
 	private ItemId $itemId;
-	/** @var LanguageNameLookup */
-	private $languageNameLookup;
-	/** @var UserPreferredContentLanguagesLookup */
-	private $preferredLanguageLookup;
+	private LanguageNameLookup $languageNameLookup;
+	private UserPreferredContentLanguagesLookup $preferredLanguageLookup;
 	private bool $isExternallyRendered;
 
 	/**
@@ -79,7 +72,7 @@ class OutputPageBeforeHTMLHookHandlerTest extends MediaWikiIntegrationTestCase {
 			'ssrServerUrl' => null,
 			'ssrServerTimeout' => 3,
 			'termboxUserSpecificSsrEnabled' => true,
-			'tmpEnableMulLanguageCode' => false,
+			'enableMulLanguageCode' => false,
 		] );
 
 		$this->preferredLanguageLookup = $this->createMock( UserPreferredContentLanguagesLookup::class );
@@ -108,7 +101,7 @@ class OutputPageBeforeHTMLHookHandlerTest extends MediaWikiIntegrationTestCase {
 	private function getHookHandler(): OutputPageBeforeHTMLHookHandler {
 		return new OutputPageBeforeHTMLHookHandler(
 			new NullHttpRequestFactory(),
-			new NullStatsdDataFactory(),
+			StatsFactory::newNull(),
 			$this->settings,
 			TemplateFactory::getDefaultInstance(),
 			$this->entityRevisionLookup,

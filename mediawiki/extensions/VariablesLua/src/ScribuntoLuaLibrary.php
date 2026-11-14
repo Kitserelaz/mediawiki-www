@@ -3,7 +3,7 @@
 namespace Liquipedia\Extension\VariablesLua;
 
 use ExtVariables;
-use Scribunto_LuaLibraryBase;
+use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LibraryBase as Scribunto_LuaLibraryBase;
 
 class ScribuntoLuaLibrary extends Scribunto_LuaLibraryBase {
 

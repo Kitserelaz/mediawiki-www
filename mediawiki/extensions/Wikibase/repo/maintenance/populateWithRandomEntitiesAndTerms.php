@@ -17,11 +17,13 @@ use Wikibase\Lib\WikibaseSettings;
 use Wikibase\Repo\EditEntity\MediaWikiEditEntityFactory;
 use Wikibase\Repo\WikibaseRepo;
 
+// @codeCoverageIgnoreStart
 $basePath = getenv( 'MW_INSTALL_PATH' ) !== false
 		  ? getenv( 'MW_INSTALL_PATH' )
 		  : __DIR__ . '/../../../..';
 
 require_once $basePath . '/maintenance/Maintenance.php';
+// @codeCoverageIgnoreEnd
 
 /**
  * Populates the database with generated entities.
@@ -157,7 +159,7 @@ class PopulateWithRandomEntitiesAndTerms extends Maintenance {
 		$status = $editEntity->attemptSave( $entity, self::SUMMARY_TEXT, EDIT_NEW, false );
 
 		if ( !$status->isOK() ) {
-			$this->output( "\n" . $status->getValue() . "\n" );
+			$this->error( $status );
 			return null;
 		} else {
 			return $editEntity->getEntityId();
@@ -290,11 +292,13 @@ class PopulateWithRandomEntitiesAndTerms extends Maintenance {
 		}
 	}
 
-	private function getDefaultLanguages() {
+	private function getDefaultLanguages(): array {
 		return [ 'de', 'en', 'fr', 'zh', 'es', 'ru', 'eo' ];
 	}
 
 }
 
+// @codeCoverageIgnoreStart
 $maintClass = PopulateWithRandomEntitiesAndTerms::class;
 require_once RUN_MAINTENANCE_IF_MAIN;
+// @codeCoverageIgnoreEnd

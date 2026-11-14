@@ -1,0 +1,12 @@
+{
+	"root": true,
+	"extends": [
+		"wikimedia/selenium"
+	],
+	"rules": {
+		"mocha/no-setup-in-describe": "warn"
+	},
+	"parserOptions": {
+		"sourceType": "module"
+	}
+}

@@ -1,6 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
+			"Aleator",
 			"ArenaL5",
 			"Armando-Martin",
 			"Canaan9801",
@@ -28,7 +29,7 @@
 			"Themasterriot",
 			"Vivaelcelta",
 			"Yupik",
-			"Aleator"
+			"Ovruni"
 		]
 	},
 	"wikibase-client-desc": "Cliente para la extensión Wikibase",
@@ -79,7 +80,7 @@
 	"wikibase-error-deserialize-error": "Error al deserializar datos.",
 	"wikibase-error-serialize-error": "Error al serializar datos.",
 	"wikibase-error-invalid-entity-id": "El sistema no reconoce el identificador «$2». Utiliza un identificador de entidad válido.",
-	"wikibase-error-exceeded-entity-access-limit": "Se accedieron a demasiadas entidades de {{WBREPONAME}}.",
+	"wikibase-error-exceeded-entity-access-limit": "Se accedió a demasiadas entidades de {{WBREPONAME}}. Número de entidades cargadas: $2/$3.",
 	"unconnectedpages": "Páginas no conectadas a elementos",
 	"unconnectedpages-summary": "Esta página muestra páginas sin ningún elemento de datos conectado (en los espacios de nombres que admiten elementos conectados).",
 	"wikibase-unconnectedpages-submit": "Mostrar páginas",
@@ -105,8 +106,13 @@
 	"wikibase-pageinfo-entity-usage-L-with-modifier": "Etiqueta: $1",
 	"wikibase-pageinfo-entity-usage-D": "Algunas descripciones",
 	"wikibase-pageinfo-entity-usage-D-with-modifier": "Descripción: $1",
+	"wikibase-pageinfo-entity-usage-A": "Algunos alias",
+	"wikibase-pageinfo-entity-usage-A-with-modifier": "Alias: $1",
 	"wikibase-pageinfo-entity-usage-T": "Título",
+	"wikibase-pageinfo-entity-usage-C": "Algunas declaraciones",
 	"wikibase-pageinfo-entity-usage-C-with-modifier": "Declaración: $1",
+	"wikibase-pageinfo-entity-usage-CQR": "Algunas declaraciones (con calificadores y referencias)",
+	"wikibase-pageinfo-entity-usage-CQR-with-modifier": "Declaración (con calificadores y referencias): $1",
 	"wikibase-pageinfo-entity-usage-X": "Todos los datos de la entidad",
 	"wikibase-pageinfo-entity-usage-O": "Otros (p. ej.: alias, existencia de entidades)",
 	"wikibase-property-render-error": "Error al procesar propiedad $1: $2",

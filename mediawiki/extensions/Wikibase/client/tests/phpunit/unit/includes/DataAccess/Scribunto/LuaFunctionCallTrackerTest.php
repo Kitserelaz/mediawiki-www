@@ -2,8 +2,8 @@
 
 namespace Wikibase\Client\Tests\Unit\DataAccess\Scribunto;
 
-use Liuggio\StatsdClient\Factory\StatsdDataFactoryInterface;
 use Wikibase\Client\DataAccess\Scribunto\LuaFunctionCallTracker;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * @covers \Wikibase\Client\DataAccess\Scribunto\LuaFunctionCallTracker
@@ -20,28 +20,29 @@ class LuaFunctionCallTrackerTest extends \PHPUnit\Framework\TestCase {
 	public static function incrementKeyProvider() {
 		return [
 			'logging disabled' => [
-				[],
+				// phpcs:ignore Generic.Files.LineLength.TooLong
+				[ 'mediawiki.WikibaseClient.Scribunto_Lua_function_calls_total:1|c|#module:wikibase,function_name:doStuff,site:not_tracked,site_group:not_tracked' ],
 				false,
 				false,
 				1,
 			],
 			'per site group logging only' => [
-				[ 'fancy.wikibase.client.scribunto.doStuff.call' ],
+				// phpcs:ignore Generic.Files.LineLength.TooLong
+				[ 'mediawiki.WikibaseClient.Scribunto_Lua_function_calls_total:1|c|#module:wikibase,function_name:doStuff,site:not_tracked,site_group:fancy' ],
 				true,
 				false,
 				1,
 			],
 			'per wiki logging only' => [
-				[ 'defancywiki.wikibase.client.scribunto.doStuff.call' ],
+				// phpcs:ignore Generic.Files.LineLength.TooLong
+				[ 'mediawiki.WikibaseClient.Scribunto_Lua_function_calls_total:1|c|#module:wikibase,function_name:doStuff,site:defancywiki,site_group:not_tracked' ],
 				false,
 				true,
 				1,
 			],
 			'per wiki and per site group logging' => [
-				[
-					'defancywiki.wikibase.client.scribunto.doStuff.call',
-					'fancy.wikibase.client.scribunto.doStuff.call',
-				],
+				// phpcs:ignore Generic.Files.LineLength.TooLong
+				[ 'mediawiki.WikibaseClient.Scribunto_Lua_function_calls_total:10|c|#module:wikibase,function_name:doStuff,site:defancywiki,site_group:fancy' ],
 				true,
 				true,
 				0.1,
@@ -57,28 +58,18 @@ class LuaFunctionCallTrackerTest extends \PHPUnit\Framework\TestCase {
 		$trackLuaFunctionCallsPerWiki,
 		$trackLuaFunctionCallsSampleRate
 	) {
-		$statsdFactory = $this->createMock( StatsdDataFactoryInterface::class );
-
-		$keyBuffer = [];
-		$statsdFactory->expects( $this->exactly( count( $expected ) ) )
-			->method( 'updateCount' )
-				->with( $this->isType( 'string' ), 1 / $trackLuaFunctionCallsSampleRate )
-			->willReturnCallback( function ( $key ) use ( &$keyBuffer ) {
-				$keyBuffer[] = $key;
-			} );
-
+		$statsHelper = StatsFactory::newUnitTestingHelper()->withComponent( 'WikibaseClient' );
+		$statsFactory = $statsHelper->getStatsFactory();
 		$tracker = new LuaFunctionCallTracker(
-			$statsdFactory,
+			$statsFactory,
 			'defancywiki',
 			'fancy',
 			$trackLuaFunctionCallsPerSiteGroup,
 			$trackLuaFunctionCallsPerWiki,
 			$trackLuaFunctionCallsSampleRate
 		);
-
-		$tracker->incrementKey( 'wikibase.client.scribunto.doStuff.call' );
-
-		$this->assertEquals( $expected, $keyBuffer );
+		$tracker->incrementKey( 'doStuff', 'wikibase' );
+		$this->assertSame( $expected, $statsHelper->consumeAllFormatted() );
 	}
 
 }

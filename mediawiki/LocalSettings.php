@@ -211,8 +211,6 @@ $wgManageWikiExtensions += [
 $wi::$disabledExtensions = [
 	'video' => 'broken',
 	'commentstreams' => 'broken',
-	'wikibaseclient' => 'broken',
-	'wikibaserepository' => 'broken',
 ];
 if ( getenv( "MW_DOCKER" ) ) {
     if (getenv('MW_SEARCH') !== '1') { $wi::$disabledExtensions['cirrussearch'] = 'Enable the Docker search profile first'; }
@@ -385,3 +383,12 @@ $wgGroupPermissions['bureaucrat']['managewiki-core'] = true;
 
 if ( getenv( "MW_DOCKER" ) ) { farmRuntime(); }
 require __DIR__ . '/S3Settings.php';
+
+// Use the Example skin on the local development Test Wiki.
+if ( getenv( 'MW_DOCKER' ) && getenv( 'MW_ENV' ) === 'development'
+    && ( getenv( 'MW_DOMAIN' ) ?: 'localhost' ) === 'localhost'
+    && $wi->dbname === 'testwiki'
+) {
+    wfLoadSkin( 'Example' );
+    $wgDefaultSkin = 'example';
+}

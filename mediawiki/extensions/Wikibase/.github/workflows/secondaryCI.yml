@@ -19,51 +19,52 @@ jobs:
             LANG: ru
             WB: both
             IPMASKING: enabled
-          php-versions: '7.4.32'
+          php-versions: '8.3.30'
         - env:
             MW_BRANCH: master
             DBTYPE: sqlite
             LANG: en
             WB: client
             IPMASKING: disabled
-          php-versions: '7.4.32'
+          php-versions: '8.3.30'
         - env:
             MW_BRANCH: master
             DBTYPE: mysql
             LANG: en
             WB: repo
             IPMASKING: enabled
-          php-versions: '7.4.32'
+          php-versions: '8.3.30'
         - env:
             MW_BRANCH: master
             DBTYPE: sqlite
             LANG: ar
             WB: both
             IPMASKING: disabled
-          php-versions: '7.4.32'
+          php-versions: '8.3.30'
         - env:
             MW_BRANCH: master
             DBTYPE: mysql
             LANG: en
             WB: both
             IPMASKING: enabled
-          php-versions: '7.4.32'
+          php-versions: '8.3.30'
+    services:
+      mariadb:
+        image: mariadb
+        ports:
+          - 3306:3306
+        env:
+          MARIADB_ROOT_PASSWORD: root
     steps:
     - name: Checkout
       uses: actions/checkout@v3
-    - name: Set up MySQL
-      uses: mirromutth/mysql-action@v1.1
-      with:
-        mysql version: '5.7'
-        mysql database: 'test_db_wiki'
-        mysql root password: 'root'
     - name: Setup PHP
       uses: shivammathur/setup-php@v2
       with:
         php-version: ${{ matrix.php-versions }}
         extensions: pdo_sqlite, mysqlnd
     - name: Cache Composer cache
-      uses: actions/cache@v3.2.6
+      uses: actions/cache@v4.2.3
       with:
         path: ${{ env.COMPOSER_HOME }}/cache
         key: composer-cache-php${{ matrix.php-versions }}

@@ -122,7 +122,6 @@ class SnakList extends ArrayObject {
 	}
 
 	/**
-	 *
 	 * The comparison is done purely value based, ignoring the order of the elements in the array.
 	 *
 	 * @since 0.3
@@ -241,7 +240,10 @@ class SnakList extends ArrayObject {
 	 * all common code needed for set operations, including
 	 * type checking and offset resolving.
 	 *
-	 * @param int|string $index
+	 * If null is supplied as an index, the next new offset
+	 * will be assigned.
+	 *
+	 * @param int|string|null $index
 	 * @param Snak $value
 	 *
 	 * @throws InvalidArgumentException
@@ -255,9 +257,7 @@ class SnakList extends ArrayObject {
 			return;
 		}
 
-		if ( $index === null ) {
-			$index = $this->getNewOffset();
-		}
+		$index ??= $this->getNewOffset();
 
 		$hash = $value->getHash();
 		$this->offsetHashes[$hash] = $index;

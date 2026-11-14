@@ -3,13 +3,15 @@
 		"authors": [
 			"BAB ZAA",
 			"Hubaishan",
+			"Mdktb",
 			"Meno25",
 			"Michel Bakni",
+			"Mohammed Qays",
+			"Mohanad",
 			"Mr. Ibrahem",
 			"ديفيد",
-			"محمد أحمد عبد الفتاح",
-			"Mohanad",
-			"شاه زمان پټان"
+			"شاه زمان پټان",
+			"محمد أحمد عبد الفتاح"
 		]
 	},
 	"content-model-wikibase-lexeme": "معجمية ويكيبيس",
@@ -42,6 +44,7 @@
 	"wikibase-lexeme-mergelexemes-success": "تم دمج وتحويل $1 إلى $2.",
 	"wikibase-lexeme-mergelexemes-to-id": "المعرف للدمج إليه",
 	"wikibase-lexeme-randomlexeme": "معجمية عشوائية",
+	"wikibase-lexeme-scoped-search-scope-name": "معجميات",
 	"wikibase-lexeme-summary-add-form": "إضافة صيغة جديدة $3 مع {{PLURAL:$1|تمثيل|تمثيلات}}",
 	"wikibase-lexeme-summary-add-form-grammatical-features": "إضافة {{PLURAL:$1|ميزة|مزايا}} نحوية للصيغة $3",
 	"wikibase-lexeme-summary-add-form-representations": "إضافة {{PLURAL:$1|تمثيل|تمثيلات}} للصيغة $3",

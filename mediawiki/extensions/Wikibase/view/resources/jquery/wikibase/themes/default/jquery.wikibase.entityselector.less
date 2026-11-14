@@ -2,6 +2,7 @@
  * @license GNU GPL v2+
  * @author H. Snater < mediawiki@snater.com >
  */
+@import 'mediawiki.skin.variables.less';
 
 .ui-entityselector-list {
 	overflow-x: hidden;
@@ -12,7 +13,7 @@
 
 .ui-entityselector-list li,
 .ui-entityselector-list li.ui-state-hover {
-	border-top: 1px dotted #c8ccd1;
+	border-top: 1px dotted @border-color-subtle;
 }
 
 .ui-entityselector-list li:first-child {
@@ -48,22 +49,22 @@
 .ui-entityselector-list .ui-entityselector-notfound,
 .ui-entityselector-list .ui-entityselector-error {
 	/* Common bright red .wb-error color */
-	background-color: #fee7e6;
+	background-color: @background-color-error-subtle;
 }
 
 .ui-entityselector-list .ui-entityselector-notfound.ui-state-hover a,
 .ui-entityselector-list .ui-entityselector-error.ui-state-hover a {
-	color: #000;
+	color: @color-base;
 }
 
 .ui-entityselector-list .ui-entityselector-more {
 	border-top-style: solid;
-	background-color: #f8f9fa;
+	background-color: @background-color-progressive-subtle;
 }
 
 .ui-entityselector-list .ui-entityselector-more.ui-state-hover {
 	border-top-style: solid;
-	background-color: #4c59a6;
+	background-color: @background-color-progressive-subtle--hover;
 }
 
 .ui-entityselector-list .ui-entityselector-more a {
@@ -73,10 +74,10 @@
 
 /* Specificity must be a little higher because of a valueview selector */
 .ui-suggester-input.ui-entityselector-input.ui-entityselector-input-recognized {
-	border-color: #14866d;
+	border-color: @border-color-success;
 }
 
 .ui-suggester-input.ui-entityselector-input.ui-entityselector-input-unrecognized {
-	background-color: #fee7e6;
-	border-color: #b32424;
+	background-color: @background-color-error-subtle;
+	border-color: @border-color-error;
 }

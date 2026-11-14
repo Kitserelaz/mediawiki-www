@@ -5,7 +5,6 @@ declare( strict_types=1 );
 namespace Wikibase\Repo\Tests\Store\Sql;
 
 use InvalidArgumentException;
-use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\SlotRecord;
 use MediaWikiIntegrationTestCase;
 use stdClass;
@@ -87,15 +86,13 @@ class WikiPageEntityMetaDataLookupTest extends MediaWikiIntegrationTestCase {
 	}
 
 	private function getWikiPageEntityMetaDataLookup( $namespaceLookup = null ): WikiPageEntityMetaDataLookup {
-		if ( $namespaceLookup === null ) {
-			$namespaceLookup = $this->getEntityNamespaceLookup();
-		}
+		$namespaceLookup ??= $this->getEntityNamespaceLookup();
 
 		return new WikiPageEntityMetaDataLookup(
 			$namespaceLookup,
 			new EntityIdLocalPartPageTableEntityQuery(
 				$namespaceLookup,
-				MediaWikiServices::getInstance()->getSlotRoleStore()
+				$this->getServiceContainer()->getSlotRoleStore()
 			),
 			$this->newEntitySource(),
 			$this->getRepoDomainDb()
@@ -150,7 +147,7 @@ class WikiPageEntityMetaDataLookupTest extends MediaWikiIntegrationTestCase {
 			$nsLookup,
 			new EntityIdLocalPartPageTableEntityQuery(
 				$nsLookup,
-				MediaWikiServices::getInstance()->getSlotRoleStore()
+				$this->getServiceContainer()->getSlotRoleStore()
 			),
 			$this->newEntitySource(),
 			new RepoDomainDb(
@@ -165,7 +162,7 @@ class WikiPageEntityMetaDataLookupTest extends MediaWikiIntegrationTestCase {
 	 *
 	 * @return IDatabase
 	 */
-	private function getLaggedDatabase( IDatabase $realDB, $selectCount ) {
+	private function getLaggedDatabase( IDatabase $realDB, int $selectCount ) {
 		$db = $this->getMockBuilder( IDatabase::class )
 			->onlyMethods( [ 'select', 'selectRow' ] )
 			->setProxyTarget( $realDB )
@@ -394,7 +391,7 @@ class WikiPageEntityMetaDataLookupTest extends MediaWikiIntegrationTestCase {
 			$namespaceLookup,
 			new EntityIdLocalPartPageTableEntityQuery(
 				$namespaceLookup,
-				MediaWikiServices::getInstance()->getSlotRoleStore()
+				$this->getServiceContainer()->getSlotRoleStore()
 			),
 			$itemSource,
 			$this->getRepoDomainDb()

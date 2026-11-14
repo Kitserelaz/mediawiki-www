@@ -56,7 +56,7 @@ class PropertyStubRdfBuilder implements PrefetchingEntityStubRdfBuilder {
 	private $dataTypes;
 
 	/** @var EntityId[] */
-	private $idsToPrefetch = [];
+	private array $idsToPrefetch = [];
 
 	public function __construct(
 		PrefetchingTermLookup $prefetchingLookup,
@@ -145,8 +145,6 @@ class PropertyStubRdfBuilder implements PrefetchingEntityStubRdfBuilder {
 
 	/**
 	 * Adds property info to the RDF graph
-	 *
-	 * @param PropertyId $propertyId
 	 */
 	private function addProperty( PropertyId $propertyId ) {
 		$propertyLName = $this->vocabulary->getEntityLName( $propertyId );

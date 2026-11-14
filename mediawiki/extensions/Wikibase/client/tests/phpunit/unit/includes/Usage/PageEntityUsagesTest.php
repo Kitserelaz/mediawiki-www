@@ -18,6 +18,8 @@ use Wikibase\DataModel\Entity\ItemId;
  */
 class PageEntityUsagesTest extends \PHPUnit\Framework\TestCase {
 
+	private const TEST_PAGE_ID = 6;
+
 	public function testGetters() {
 		$q7 = new ItemId( 'Q7' );
 		$q11 = new ItemId( 'Q11' );
@@ -29,9 +31,9 @@ class PageEntityUsagesTest extends \PHPUnit\Framework\TestCase {
 			new EntityUsage( $q11, EntityUsage::TITLE_USAGE ),
 		];
 
-		$pageUsages = new PageEntityUsages( 6, $usages );
+		$pageUsages = new PageEntityUsages( self::TEST_PAGE_ID, $usages );
 
-		$this->assertEquals( 6, $pageUsages->getPageId() );
+		$this->assertEquals( self::TEST_PAGE_ID, $pageUsages->getPageId() );
 
 		$expectedAspects = [
 			EntityUsage::LABEL_USAGE,

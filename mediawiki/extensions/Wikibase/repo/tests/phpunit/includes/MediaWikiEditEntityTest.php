@@ -5,6 +5,8 @@ declare( strict_types = 1 );
 namespace Wikibase\Repo\Tests;
 
 use MediaWiki\Context\RequestContext;
+use MediaWiki\MainConfigNames;
+use MediaWiki\Permissions\PermissionStatus;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\Status\Status;
 use MediaWiki\Title\Title;
@@ -13,6 +15,7 @@ use MediaWiki\User\TempUser\TempUserCreator;
 use MediaWiki\User\User;
 use MediaWikiIntegrationTestCase;
 use ReflectionMethod;
+use StatusValue;
 use Wikibase\DataModel\Entity\EntityId;
 use Wikibase\DataModel\Entity\EntityRedirect;
 use Wikibase\DataModel\Entity\Item;
@@ -68,9 +71,9 @@ class MediaWikiEditEntityTest extends MediaWikiIntegrationTestCase {
 			if ( $permissions === null
 				|| ( isset( $permissions[$action] ) && $permissions[$action] )
 			) {
-				return Status::newGood( true );
+				return PermissionStatus::newGood( true );
 			} else {
-				return Status::newFatal( 'badaccess-group0' );
+				return PermissionStatus::newFatal( 'badaccess-group0' );
 			}
 		};
 
@@ -316,7 +319,7 @@ class MediaWikiEditEntityTest extends MediaWikiIntegrationTestCase {
 		$this->assertEquals( $expectedOk, $status->isOK(), 'unresolved conflict?' );
 
 		if ( $expectedData !== null ) {
-			$this->assertTrue( $status->isOK(), '$status->isOK()' );
+			$this->assertStatusOK( $status );
 
 			$revision = $status->getRevision();
 			$newEntity = $revision->getEntity();
@@ -426,8 +429,13 @@ class MediaWikiEditEntityTest extends MediaWikiIntegrationTestCase {
 
 		$edit->attemptSave( $item, "testing", ( $item->getId() === null ? EDIT_NEW : EDIT_UPDATE ), $token );
 
-		$this->assertEquals( $expectedOK, $edit->getStatus()->isOK(), var_export( $edit->getStatus()->getErrorsArray(), true ) );
-		$this->assertNotEquals( $expectedOK, $edit->hasError( EditEntity::PERMISSION_ERROR ) );
+		if ( $expectedOK ) {
+			$this->assertStatusOK( $edit->getStatus() );
+			$this->assertFalse( $edit->hasError( EditEntity::PERMISSION_ERROR ) );
+		} else {
+			$this->assertStatusNotOK( $edit->getStatus() );
+			$this->assertTrue( $edit->hasError( EditEntity::PERMISSION_ERROR ) );
+		}
 	}
 
 	public function testCheckLocalEntityTypes() {
@@ -551,12 +559,10 @@ class MediaWikiEditEntityTest extends MediaWikiIntegrationTestCase {
 	public function testAttemptSaveRateLimit( array $limits, array $groups, array $edits ) {
 		$repo = $this->getMockRepository();
 
-		$this->setMwGlobals( [
-			'wgRateLimits' => $limits,
-			'wgGroupPermissions' => [
-				'*' => [ 'edit' => true ],
-				'sysop' => [ 'noratelimit' => true ],
-			],
+		$this->overrideConfigValue( MainConfigNames::RateLimits, $limits );
+		$this->setGroupPermissions( [
+			'*' => [ 'edit' => true ],
+			'sysop' => [ 'noratelimit' => true ],
 		] );
 
 		$user = $this->getTestUser( $groups )->getUser();
@@ -583,8 +589,13 @@ class MediaWikiEditEntityTest extends MediaWikiIntegrationTestCase {
 			$edit = $this->makeEditEntity( $repo, $item->getId(), $titleLookup, $user );
 			$edit->attemptSave( $item, "testing", ( $item->getId() === null ? EDIT_NEW : EDIT_UPDATE ), false );
 
-			$this->assertEquals( $expectedOK, $edit->getStatus()->isOK(), var_export( $edit->getStatus()->getErrorsArray(), true ) );
-			$this->assertNotEquals( $expectedOK, $edit->hasError( EditEntity::RATE_LIMIT_ERROR ) );
+			if ( $expectedOK ) {
+				$this->assertStatusOK( $edit->getStatus() );
+				$this->assertFalse( $edit->hasError( EditEntity::RATE_LIMIT_ERROR ) );
+			} else {
+				$this->assertStatusNotOK( $edit->getStatus() );
+				$this->assertTrue( $edit->hasError( EditEntity::RATE_LIMIT_ERROR ) );
+			}
 		}
 	}
 
@@ -734,7 +745,7 @@ class MediaWikiEditEntityTest extends MediaWikiIntegrationTestCase {
 		$edit = $this->makeEditEntity( $repo, $item->getId(), $titleLookup, $user );
 		$status = $edit->attemptSave( $item, "testing", $new ? EDIT_NEW : EDIT_UPDATE, false, $watch );
 
-		$this->assertTrue( $status->isOK(), "edit failed: " . $status->getWikiText() ); // sanity
+		$this->assertStatusOK( $status, 'edit failed' );
 
 		$this->assertEquals( $expected, $repo->isWatching( $user, $item->getId() ), "watched" );
 	}
@@ -755,11 +766,10 @@ class MediaWikiEditEntityTest extends MediaWikiIntegrationTestCase {
 		$edit = $this->makeEditEntity( $repo, $item->getId(), $titleLookup, $user );
 		$status = $edit->attemptSave( $item, "testing", EDIT_UPDATE, false );
 
-		$this->assertFalse( $status->isOK() );
-		$this->assertSame(
-			'(wikibase-save-unresolved-redirect: Q302, Q404)',
-			$status->getWikiText( null, null, 'qqx' )
-		);
+		$this->assertStatusNotOK( $status );
+		$this->assertStatusMessagesExactly(
+			StatusValue::newFatal( 'wikibase-save-unresolved-redirect', 'Q302', 'Q404' ),
+			$status );
 	}
 
 	public function testIsNew() {
@@ -769,7 +779,6 @@ class MediaWikiEditEntityTest extends MediaWikiIntegrationTestCase {
 		$user = $this->getTestUser()->getUser();
 
 		$isNew = new ReflectionMethod( MediaWikiEditEntity::class, 'isNew' );
-		$isNew->setAccessible( true );
 
 		$edit = $this->makeEditEntity( $repo, $item->getId(), $titleLookup, $user );
 		$this->assertTrue( $isNew->invoke( $edit ), 'New entity: No id' );

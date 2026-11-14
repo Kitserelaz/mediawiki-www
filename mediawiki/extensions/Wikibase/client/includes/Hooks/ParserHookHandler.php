@@ -4,11 +4,11 @@ declare( strict_types = 1 );
 
 namespace Wikibase\Client\Hooks;
 
-use MediaWiki\Hook\ParserClearStateHook;
-use MediaWiki\Hook\ParserLimitReportPrepareHook;
+use MediaWiki\Parser\Hook\ParserClearStateHook;
+use MediaWiki\Parser\Hook\ParserLimitReportPrepareHook;
 use MediaWiki\Parser\Parser;
 use MediaWiki\Parser\ParserOutput;
-use Wikibase\DataModel\Services\Lookup\RestrictedEntityLookup;
+use Wikibase\DataModel\Services\Lookup\RestrictedEntityLookupFactory;
 use Wikibase\Lib\SettingsArray;
 
 /**
@@ -21,27 +21,24 @@ class ParserHookHandler implements
 	ParserClearStateHook,
 	ParserLimitReportPrepareHook
 {
+	private RestrictedEntityLookupFactory $restrictedEntityLookupFactory;
 
-	/** @var RestrictedEntityLookup */
-	private $restrictedEntityLookup;
-
-	/** @var int */
-	private $entityAccessLimit;
+	private int $entityAccessLimit;
 
 	public function __construct(
-		RestrictedEntityLookup $restrictedEntityLookup,
+		RestrictedEntityLookupFactory $restrictedEntityLookupFactory,
 		int $entityAccessLimit
 	) {
-		$this->restrictedEntityLookup = $restrictedEntityLookup;
+		$this->restrictedEntityLookupFactory = $restrictedEntityLookupFactory;
 		$this->entityAccessLimit = $entityAccessLimit;
 	}
 
 	public static function factory(
-		RestrictedEntityLookup $restrictedEntityLookup,
+		RestrictedEntityLookupFactory $restrictedEntityLookupFactory,
 		SettingsArray $clientSettings
 	): self {
 		return new self(
-			$restrictedEntityLookup,
+			$restrictedEntityLookupFactory,
 			$clientSettings->getSetting( 'entityAccessLimit' )
 		);
 	}
@@ -53,7 +50,7 @@ class ParserHookHandler implements
 	 */
 	public function onParserClearState( $parser ) {
 		// Reset the entity access limits, per T127462
-		$this->restrictedEntityLookup->reset();
+		$this->restrictedEntityLookupFactory->getRestrictedEntityLookup( $parser )->reset();
 	}
 
 	/**
@@ -64,7 +61,7 @@ class ParserHookHandler implements
 		$parserOutput->setLimitReportData(
 			'limitreport-entityaccesscount',
 			[
-				$this->restrictedEntityLookup->getEntityAccessCount(),
+				$this->restrictedEntityLookupFactory->getRestrictedEntityLookup( $parser )->getEntityAccessCount(),
 				$this->entityAccessLimit,
 			]
 		);

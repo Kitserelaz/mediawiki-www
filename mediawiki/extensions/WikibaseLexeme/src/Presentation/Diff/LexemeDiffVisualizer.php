@@ -3,7 +3,7 @@
 namespace Wikibase\Lexeme\Presentation\Diff;
 
 use Diff\DiffOp\Diff\Diff;
-use MessageLocalizer;
+use MediaWiki\Language\MessageLocalizer;
 use Wikibase\Repo\Content\EntityContentDiff;
 use Wikibase\Repo\Diff\BasicDiffView;
 use Wikibase\Repo\Diff\BasicEntityDiffVisualizer;
@@ -44,7 +44,7 @@ class LexemeDiffVisualizer implements EntityDiffVisualizer {
 
 	public function __construct(
 		MessageLocalizer $messageLocalizer,
-		EntityDiffVisualizer $basicEntityDiffVisualizer,
+		BasicEntityDiffVisualizer $basicEntityDiffVisualizer,
 		ClaimDiffer $claimDiffer,
 		ClaimDifferenceVisualizer $claimDiffView,
 		ItemReferenceDifferenceVisualizer $itemReferenceDifferenceVisualizer

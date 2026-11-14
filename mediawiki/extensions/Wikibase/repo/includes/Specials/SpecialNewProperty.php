@@ -69,7 +69,6 @@ class SpecialNewProperty extends SpecialNewEntity {
 	) {
 		parent::__construct(
 			'NewProperty',
-			'property-create',
 			$tags,
 			$specialPageCopyrightView,
 			$entityNamespaceLookup,
@@ -119,6 +118,11 @@ class SpecialNewProperty extends SpecialNewEntity {
 			$errorLocalizer,
 			$isMobileView
 		);
+	}
+
+	/** @inheritDoc */
+	public function getRestriction(): string {
+		return 'property-create';
 	}
 
 	/**
@@ -231,7 +235,8 @@ class SpecialNewProperty extends SpecialNewEntity {
 	protected function getWarnings() {
 		if ( !$this->getUser()->isRegistered() ) {
 			return [
-				$this->anonymousEditWarningBuilder->buildAnonymousEditWarningHTML( $this->getFullTitle()->getPrefixedText() ),
+				$this->msg( $this->anonymousEditWarningBuilder->buildAnonymousEditWarningMessage( $this->getFullTitle() ) )
+					->parse(),
 			];
 		}
 
@@ -306,7 +311,7 @@ class SpecialNewProperty extends SpecialNewEntity {
 					'wikibase-validator-label-conflict',
 					$formData[self::FIELD_LABEL],
 					$formData[self::FIELD_LANG],
-					$collidingPropertyId
+					$collidingPropertyId->getSerialization()
 				);
 			}
 		}

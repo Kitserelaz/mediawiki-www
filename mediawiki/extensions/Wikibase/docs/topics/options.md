@@ -423,6 +423,10 @@ Text for data license link.
 
 DEFAULT: [$wgRightsText]
 
+#### defaultEntityNamespaces {#repo_defaultEntityNamespaces}
+If true, Wikibase will create Item and Property namespaces (ID 120 and 122), and the default [entitySources] setting will use those namespaces.
+If you e.g. want to have items in the main namespace instead, you need to set this setting to false, configure any custom namespaces yourself, and also configure custom [entitySources].
+
 #### localEntitySourceName
 Name of the entity source of the local repo (the same site).
 
@@ -682,11 +686,6 @@ Switch to allow accessing data in the user's language rather than the content la
 
 Useful for multilingual wikis
 Allows users to split the ParserCache by user language.
-
-DEFAULT: ```false```
-
-#### moveConnectedItemLinkToOtherProjects
-Switch to move connected wikibase item to the Other Projects section of the sidebar. This is a temporary switch to allow for a controlled release of the feature due to previous deployments requiring rollback.
 
 DEFAULT: ```false```
 

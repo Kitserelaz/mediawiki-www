@@ -6,12 +6,15 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname($vendorDir);
 
 return array(
+    'ValueParsers\\' => array($vendorDir . '/data-values/time/src', $vendorDir . '/data-values/number/src'),
+    'ValueFormatters\\' => array($vendorDir . '/data-values/time/src', $vendorDir . '/data-values/number/src'),
     'TextCat' => array($vendorDir . '/wikimedia/textcat/src'),
     'Net' => array($vendorDir . '/pear/net_smtp', $vendorDir . '/pear/net_socket'),
     'Mail' => array($vendorDir . '/pear/mail_mime', $vendorDir . '/pear/mail'),
     'Liuggio' => array($vendorDir . '/liuggio/statsd-php-client/src'),
     'Less' => array($vendorDir . '/wikimedia/less.php/lib'),
     'JsonMapper' => array($vendorDir . '/netresearch/jsonmapper/src'),
+    'DataValues\\' => array($vendorDir . '/data-values/time/src', $vendorDir . '/data-values/number/src'),
     'Console' => array($vendorDir . '/pear/console_getopt'),
     'CSSMin' => array($vendorDir . '/wikimedia/minify/src'),
     '' => array($vendorDir . '/wikimedia/cssjanus/src'),

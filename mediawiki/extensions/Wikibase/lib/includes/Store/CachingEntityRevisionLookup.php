@@ -81,13 +81,8 @@ class CachingEntityRevisionLookup implements EntityRevisionLookup, EntityStoreWa
 		Assert::parameterType( 'integer', $revisionId, '$revisionId' );
 		Assert::parameterType( 'string', $mode, '$mode' );
 
-		$entityRevision = $this->cacheRetrievingLookup->getEntityRevisionFromCache( $entityId, $revisionId, $mode );
-
-		if ( $entityRevision === null ) {
-			$entityRevision = $this->fetchEntityRevision( $entityId, $revisionId, $mode );
-		}
-
-		return $entityRevision;
+		return $this->cacheRetrievingLookup->getEntityRevisionFromCache( $entityId, $revisionId, $mode ) ??
+			$this->fetchEntityRevision( $entityId, $revisionId, $mode );
 	}
 
 	/**
@@ -128,8 +123,6 @@ class CachingEntityRevisionLookup implements EntityRevisionLookup, EntityStoreWa
 
 	/**
 	 * Notifies the cache that an Entity was created or updated.
-	 *
-	 * @param EntityRevision $entityRevision
 	 */
 	public function entityUpdated( EntityRevision $entityRevision ) {
 		$this->entityRevisionCache->set( $entityRevision );
@@ -148,8 +141,6 @@ class CachingEntityRevisionLookup implements EntityRevisionLookup, EntityStoreWa
 
 	/**
 	 * Notifies the cache that an Entity or redirect was deleted.
-	 *
-	 * @param EntityId $entityId
 	 */
 	public function entityDeleted( EntityId $entityId ) {
 		$this->entityRevisionCache->delete( $entityId );

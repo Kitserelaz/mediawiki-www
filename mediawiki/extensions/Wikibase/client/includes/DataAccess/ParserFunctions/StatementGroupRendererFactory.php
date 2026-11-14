@@ -5,18 +5,18 @@ declare( strict_types = 1 );
 namespace Wikibase\Client\DataAccess\ParserFunctions;
 
 use MediaWiki\Language\Language;
-use MediaWiki\Languages\LanguageConverterFactory;
-use MediaWiki\Languages\LanguageFactory;
+use MediaWiki\Language\LanguageConverterFactory;
+use MediaWiki\Language\LanguageFactory;
+use MediaWiki\Page\PageReference;
 use MediaWiki\Parser\Parser;
 use MediaWiki\Parser\ParserOutput;
-use MediaWiki\Title\Title;
 use Wikibase\Client\DataAccess\DataAccessSnakFormatterFactory;
 use Wikibase\Client\DataAccess\PropertyIdResolver;
 use Wikibase\Client\DataAccess\SnaksFinder;
 use Wikibase\Client\DataAccess\StatementTransclusionInteractor;
 use Wikibase\Client\Usage\UsageAccumulator;
 use Wikibase\Client\Usage\UsageAccumulatorFactory;
-use Wikibase\DataModel\Services\Lookup\EntityLookup;
+use Wikibase\DataModel\Services\Lookup\RestrictedEntityLookupFactory;
 use Wikibase\DataModel\Services\Term\PropertyLabelResolver;
 
 /**
@@ -42,9 +42,9 @@ class StatementGroupRendererFactory {
 	private $languageAwareRenderers = [];
 
 	/**
-	 * @var EntityLookup
+	 * @var RestrictedEntityLookupFactory
 	 */
-	private $entityLookup;
+	private $restrictedEntityLookupFactory;
 
 	/**
 	 * @var DataAccessSnakFormatterFactory
@@ -74,7 +74,7 @@ class StatementGroupRendererFactory {
 	public function __construct(
 		PropertyLabelResolver $propertyLabelResolver,
 		SnaksFinder $snaksFinder,
-		EntityLookup $entityLookup,
+		RestrictedEntityLookupFactory $restrictedEntityLookupFactory,
 		DataAccessSnakFormatterFactory $dataAccessSnakFormatterFactory,
 		UsageAccumulatorFactory $usageAccumulatorFactory,
 		LanguageConverterFactory $langConvFactory,
@@ -83,7 +83,7 @@ class StatementGroupRendererFactory {
 	) {
 		$this->propertyLabelResolver = $propertyLabelResolver;
 		$this->snaksFinder = $snaksFinder;
-		$this->entityLookup = $entityLookup;
+		$this->restrictedEntityLookupFactory = $restrictedEntityLookupFactory;
 		$this->dataAccessSnakFormatterFactory = $dataAccessSnakFormatterFactory;
 		$this->usageAccumulatorFactory = $usageAccumulatorFactory;
 		$this->langConvFactory = $langConvFactory;
@@ -109,8 +109,9 @@ class StatementGroupRendererFactory {
 				$type,
 				$targetLanguage,
 				$usageAccumulator,
+				$parser,
 				$parser->getOutput(),
-				$parser->getTitle()
+				$parser->getPage()
 			);
 		} elseif ( $this->useVariants( $parser ) ) {
 			$variants = $this->langConvFactory->getLanguageConverter( $parser->getTargetLanguage() )->getVariants();
@@ -118,8 +119,9 @@ class StatementGroupRendererFactory {
 				$type,
 				$variants,
 				$usageAccumulator,
+				$parser,
 				$parser->getOutput(),
-				$parser->getTitle()
+				$parser->getPage()
 			);
 		} else {
 			$targetLanguage = $parser->getTargetLanguage();
@@ -127,8 +129,9 @@ class StatementGroupRendererFactory {
 				$type,
 				$targetLanguage,
 				$usageAccumulator,
+				$parser,
 				$parser->getOutput(),
-				$parser->getTitle()
+				$parser->getPage()
 			);
 		}
 	}
@@ -137,15 +140,18 @@ class StatementGroupRendererFactory {
 	 * @param string $type One of DataAccessSnakFormatterFactory::TYPE_*
 	 * @param Language $language
 	 * @param UsageAccumulator $usageAccumulator
+	 * @param Parser $parser
 	 * @param ParserOutput $parserOutput
-	 * @param Title $title
+	 * @param PageReference|null $title
+	 * @return LanguageAwareRenderer
 	 */
 	private function newLanguageAwareRenderer(
 		string $type,
 		Language $language,
 		UsageAccumulator $usageAccumulator,
+		Parser $parser,
 		ParserOutput $parserOutput,
-		Title $title
+		?PageReference $title
 	): LanguageAwareRenderer {
 		$snakFormatter = $this->dataAccessSnakFormatterFactory->newWikitextSnakFormatter(
 			$language,
@@ -154,7 +160,7 @@ class StatementGroupRendererFactory {
 		);
 
 		$propertyIdResolver = new PropertyIdResolver(
-			$this->entityLookup,
+			$this->restrictedEntityLookupFactory->getRestrictedEntityLookup( $parser ),
 			$this->propertyLabelResolver,
 			$usageAccumulator
 		);
@@ -164,7 +170,7 @@ class StatementGroupRendererFactory {
 			$propertyIdResolver,
 			$this->snaksFinder,
 			$snakFormatter,
-			$this->entityLookup,
+			$this->restrictedEntityLookupFactory->getRestrictedEntityLookup( $parser ),
 			$usageAccumulator
 		);
 
@@ -180,21 +186,25 @@ class StatementGroupRendererFactory {
 	 * @param string $type One of DataAccessSnakFormatterFactory::TYPE_*
 	 * @param string $languageCode
 	 * @param UsageAccumulator $usageAccumulator
+	 * @param Parser $parser
 	 * @param ParserOutput $parserOutput
-	 * @param Title $title
+	 * @param PageReference|null $title
+	 * @return LanguageAwareRenderer
 	 */
 	private function getLanguageAwareRendererFromCode(
 		string $type,
 		string $languageCode,
 		UsageAccumulator $usageAccumulator,
+		Parser $parser,
 		ParserOutput $parserOutput,
-		Title $title
+		?PageReference $title
 	): LanguageAwareRenderer {
 		if ( !isset( $this->languageAwareRenderers[$languageCode] ) ) {
 			$this->languageAwareRenderers[$languageCode] = $this->newLanguageAwareRenderer(
 				$type,
 				$this->langFactory->getLanguage( $languageCode ),
 				$usageAccumulator,
+				$parser,
 				$parserOutput,
 				$title
 			);
@@ -207,8 +217,9 @@ class StatementGroupRendererFactory {
 	 * @param string $type One of DataAccessSnakFormatterFactory::TYPE_*
 	 * @param string[] $variants
 	 * @param UsageAccumulator $usageAccumulator
+	 * @param Parser $parser
 	 * @param ParserOutput $parserOutput
-	 * @param Title $title
+	 * @param PageReference|null $title
 	 *
 	 * @return VariantsAwareRenderer
 	 */
@@ -216,8 +227,9 @@ class StatementGroupRendererFactory {
 		string $type,
 		array $variants,
 		UsageAccumulator $usageAccumulator,
+		Parser $parser,
 		ParserOutput $parserOutput,
-		Title $title
+		?PageReference $title
 	): VariantsAwareRenderer {
 		$languageAwareRenderers = [];
 
@@ -226,6 +238,7 @@ class StatementGroupRendererFactory {
 				$type,
 				$variant,
 				$usageAccumulator,
+				$parser,
 				$parserOutput,
 				$title
 			);

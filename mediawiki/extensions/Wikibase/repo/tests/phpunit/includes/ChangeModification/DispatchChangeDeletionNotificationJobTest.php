@@ -3,20 +3,21 @@
 declare( strict_types = 1 );
 namespace Wikibase\Repo\Tests\ChangeModification;
 
-use IJobSpecification;
-use JobQueueGroup;
+use MediaWiki\JobQueue\IJobSpecification;
+use MediaWiki\JobQueue\JobQueueGroup;
 use MediaWiki\JobQueue\JobQueueGroupFactory;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Title\Title;
 use MediaWiki\Utils\MWTimestamp;
 use MediaWikiIntegrationTestCase;
 use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use Wikibase\DataModel\Entity\Item;
 use Wikibase\DataModel\Entity\ItemId;
 use Wikibase\Lib\Changes\RepoRevisionIdentifier;
 use Wikibase\Lib\Changes\RepoRevisionIdentifierFactory;
 use Wikibase\Repo\ChangeModification\DispatchChangeDeletionNotificationJob;
 use Wikibase\Repo\WikibaseRepo;
-use WikiPage;
 
 /**
  * @covers \Wikibase\Repo\ChangeModification\DispatchChangeDeletionNotificationJob
@@ -29,18 +30,17 @@ use WikiPage;
 class DispatchChangeDeletionNotificationJobTest extends MediaWikiIntegrationTestCase {
 
 	/** @var string[] */
-	private $expectedLocalClientWikis;
+	private array $expectedLocalClientWikis;
 
 	protected function setUp(): void {
 		parent::setUp();
 
 		$this->expectedLocalClientWikis = [ 'dewiki', 'enwiki', 'poolwiki' ];
 
-		global $wgWBRepoSettings;
-		$newRepoSettings = $wgWBRepoSettings;
+		$newRepoSettings = $this->getConfVar( 'WBRepoSettings' );
 		$newRepoSettings['localClientDatabases'] = $this->expectedLocalClientWikis;
 		$newRepoSettings['deleteNotificationClientRCMaxAge'] = 1 * 24 * 3600; // (1 days)
-		$this->setMwGlobals( 'wgWBRepoSettings', $newRepoSettings );
+		$this->overrideConfigValue( 'WBRepoSettings', $newRepoSettings );
 	}
 
 	public function testShouldDispatchJobsForClientWikis() {
@@ -54,7 +54,7 @@ class DispatchChangeDeletionNotificationJobTest extends MediaWikiIntegrationTest
 			new RepoRevisionIdentifier( "Q303", $timestamp, $revisionRecordId ),
 		];
 
-		$logger = $this->createMock( LoggerInterface::class );
+		$logger = new NullLogger();
 		$factory = $this->newJobQueueGroupFactory( $expectedRevIdentifiers );
 		$job = $this->getJobAndInitialize( $pageTitle, $params, $logger, $factory );
 

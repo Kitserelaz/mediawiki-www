@@ -1,5 +1,23 @@
 # CHANGELOG {#wb_rest_api_changelog}
 
+## Version 1.5
+
+* Wikibase REST API search endpoints v1 released
+
+## Version 1.4
+
+* Added endpoint `GET /wikibase/v0/suggest/properties` ([T397838](https://phabricator.wikimedia.org/T397838))
+
+## Version 1.3
+
+* Added endpoint `GET /wikibase/v0/suggest/items` ([T388209](https://phabricator.wikimedia.org/T388209))
+
+## Version 1.2
+
+* Added endpoint `GET /wikibase/v0/search/properties` ([T386377](https://phabricator.wikimedia.org/T386377))
+* Added endpoint `GET /wikibase/v0/search/items` ([T383132](https://phabricator.wikimedia.org/T383132))
+
+
 ## Version 1.1
 
 * Added endpoint `POST /wikibase/v1/entities/properties` ([T342992](https://phabricator.wikimedia.org/T342992))

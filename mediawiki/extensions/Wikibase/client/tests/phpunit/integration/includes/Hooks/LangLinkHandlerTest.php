@@ -2,8 +2,8 @@
 
 namespace Wikibase\Client\Tests\Integration\Hooks;
 
-use MediaWiki\HookContainer\HookContainer;
 use MediaWiki\Parser\ParserOutput;
+use MediaWiki\Parser\ParserOutputLinkTypes;
 use MediaWiki\Site\HashSiteStore;
 use MediaWiki\Site\Site;
 use MediaWiki\Tests\Site\TestSites;
@@ -15,6 +15,7 @@ use Wikibase\Client\Hooks\LangLinkHandler;
 use Wikibase\Client\Hooks\LanguageLinkBadgeDisplay;
 use Wikibase\Client\Hooks\NoLangLinkHandler;
 use Wikibase\Client\Hooks\SiteLinksForDisplayLookup;
+use Wikibase\Client\Hooks\WikibaseClientSiteLinksForItemHook;
 use Wikibase\Client\NamespaceChecker;
 use Wikibase\Client\Usage\UsageAccumulator;
 use Wikibase\DataModel\Entity\Item;
@@ -88,12 +89,15 @@ class LangLinkHandlerTest extends MediaWikiIntegrationTestCase {
 
 		return new LangLinkHandler(
 			$this->getLanguageLinkBadgeDisplay(),
-			new NamespaceChecker( [ NS_TALK ] ),
+			new NamespaceChecker(
+				$this->getServiceContainer()->getNamespaceInfo(),
+				[ NS_TALK ]
+			),
 			new SiteLinksForDisplayLookup(
 				$this->mockRepo,
 				$this->mockRepo,
 				$this->createMock( UsageAccumulator::class ),
-				$this->createMock( HookContainer::class ),
+				$this->createMock( WikibaseClientSiteLinksForItemHook::class ),
 				new NullLogger(),
 				'srwiki'
 			),
@@ -409,7 +413,15 @@ class LangLinkHandlerTest extends MediaWikiIntegrationTestCase {
 
 		$this->langLinkHandler->addLinksFromRepository( $title, $parserOutput );
 
-		$this->assertArrayEquals( $expectedLinks, $parserOutput->getLanguageLinks(), false, false );
+		$actualLinks = [];
+		foreach ( $parserOutput->getLinkList( ParserOutputLinkTypes::LANGUAGE ) as [ 'link' => $link ] ) {
+			$ll = $link->getInterwiki() . ':' . $link->getDBkey();
+			if ( $link->getFragment() !== '' ) {
+				$ll .= '#' . $link->getFragment();
+			}
+			$actualLinks[] = $ll;
+		}
+		$this->assertArrayEquals( $expectedLinks, $actualLinks, false, false );
 		$this->assertArrayEquals( $expectedBadges, $parserOutput->getExtensionData( 'wikibase_badges' ), false, true );
 	}
 

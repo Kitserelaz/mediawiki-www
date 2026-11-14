@@ -58,11 +58,19 @@ trait FederatedPropertiesTestTrait {
 		return 'http://wikidata.beta.wmflabs.org/entity/';
 	}
 
+	/**
+	 * @param string $name
+	 * @param mixed $value
+	 */
 	private function setWbSetting( string $name, $value ) {
 		$this->setWbSettingInGlobalIfMwIntegrationTest( $name, $value );
 		$this->setWbSettingInSettings( $name, $value );
 	}
 
+	/**
+	 * @param string $name
+	 * @param mixed $value
+	 */
 	private function setWbSettingInSettings( string $name, $value ) {
 		$settings = WikibaseRepo::getSettings();
 		$settings->setSetting( $name, $value );
@@ -107,13 +115,15 @@ trait FederatedPropertiesTestTrait {
 	/**
 	 * Only set the global value if this trait is being used in a MediaWiki integration test.
 	 * These tests will automatically reset the global at the end of processing a test.
+	 *
+	 * @param string $name
+	 * @param mixed $value
 	 */
 	private function setWbSettingInGlobalIfMwIntegrationTest( string $name, $value ) {
 		if ( method_exists( $this, 'setMwGlobals' ) ) {
-			global $wgWBRepoSettings;
-			$newRepoSettings = $wgWBRepoSettings;
+			$newRepoSettings = $this->getConfVar( 'WBRepoSettings' );
 			$newRepoSettings[$name] = $value;
-			$this->setMwGlobals( 'wgWBRepoSettings', $newRepoSettings );
+			$this->overrideConfigValue( 'WBRepoSettings', $newRepoSettings );
 		}
 	}
 

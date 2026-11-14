@@ -2,12 +2,17 @@
 
 namespace Wikibase\Repo\Tests\Api;
 
+use Diff\DiffOp\Diff\Diff;
+use Diff\DiffOp\DiffOpAdd;
+use Diff\DiffOp\DiffOpChange;
+use Diff\DiffOp\DiffOpRemove;
+use Wikibase\DataModel\Entity\Item;
+use Wikibase\DataModel\Services\Diff\EntityDiff;
+use Wikibase\DataModel\Services\Diff\EntityDiffer;
+use Wikibase\DataModel\Tests\NewItem;
+use Wikibase\DataModel\Tests\NewStatement;
 use Wikibase\Lib\Summary;
 use Wikibase\Repo\Api\EditSummaryHelper;
-use Wikibase\Repo\ChangeOp\ChangedLanguagesCollector;
-use Wikibase\Repo\ChangeOp\ChangedLanguagesCounter;
-use Wikibase\Repo\ChangeOp\DummyChangeOpResult;
-use Wikibase\Repo\ChangeOp\NonLanguageBoundChangesCounter;
 
 /**
  * @group API
@@ -18,79 +23,331 @@ use Wikibase\Repo\ChangeOp\NonLanguageBoundChangesCounter;
  * @license GPL-2.0-or-later
  */
 class EditSummaryHelperTest extends \PHPUnit\Framework\TestCase {
-	public static function provideChangeOpResultsForPrepareEditSummary() {
+	public static function provideEntityDiffsForGetEditSummary() {
+		$statementId = 'Q123$00000000-0000-0000-0000-000000000000';
+		$oldStatement = NewStatement::noValueFor( 'P1' )->build();
+		$newStatement = NewStatement::someValueFor( 'P1' )->build();
+		$statementsDiff = new Diff( [
+			$statementId => new DiffOpChange( $oldStatement, $newStatement ),
+		], true );
+
+		$fiftyOneDiffs = [];
+		for ( $i = 1; $i <= 51; $i++ ) {
+			$fiftyOneDiffs["en-x-$i"] = new DiffOpChange( "old en-x-$i label", "new en-x-$i label" );
+		}
+
 		return [
-			'no terms changed' => [
-				'collectChangedLanguages' => [],
-				'changedLanguagesCount' => 0,
-				'nonLanguageBoundChangesCount' => 1,
-				'expectedAction' => 'update',
-				'expectedAutoCommentArgs' => [],
+			'only one label changed' => [
+				'entityDiff' => new EntityDiff( [
+					'label' => new Diff( [ 'en' => new DiffOpChange( 'old', 'new' ) ], true ),
+				] ),
+				'expected' => new Summary( 'wbsetlabel', 'set', 'en', summaryArgs: [ 'new' ] ),
+			],
+			'only one label added' => [
+				'entityDiff' => new EntityDiff( [
+					'label' => new Diff( [ 'en' => new DiffOpAdd( 'new' ) ], true ),
+				] ),
+				'expected' => new Summary( 'wbsetlabel', 'add', 'en', summaryArgs: [ 'new' ] ),
+			],
+			'only one label removed' => [
+				'entityDiff' => new EntityDiff( [
+					'label' => new Diff( [ 'en' => new DiffOpRemove( 'old' ) ], true ),
+				] ),
+				'expected' => new Summary( 'wbsetlabel', 'remove', 'en', summaryArgs: [ 'old' ] ),
+			],
+			'only one description changed' => [
+				'entityDiff' => new EntityDiff( [
+					'description' => new Diff( [ 'de' => new DiffOpChange( 'alt', 'neu' ) ], true ),
+				] ),
+				'expected' => new Summary( 'wbsetdescription', 'set', 'de', summaryArgs: [ 'neu' ] ),
+			],
+			'only aliases in one language changed' => [
+				'entityDiff' => new EntityDiff( [
+					'aliases' => new Diff( [ 'en' => new Diff( [
+						new DiffOpRemove( 'old' ),
+						new DiffOpAdd( 'new' ),
+					] ) ], true ),
+				] ),
+				'expected' => new Summary( 'wbsetaliases', 'update', 'en',
+					summaryArgs: [ 'unchanged', 'new' ] ),
+				'newEntity' => NewItem::withAliases( 'en', [ 'unchanged', 'new' ] )->build(),
+			],
+			'only aliases in one language added' => [
+				'entityDiff' => new EntityDiff( [
+					'aliases' => new Diff( [ 'en' => new Diff( [
+						new DiffOpAdd( 'new 1' ),
+						new DiffOpAdd( 'new 2' ),
+						new DiffOpAdd( 'new 3' ),
+					] ) ], true ),
+				] ),
+				'expected' => new Summary( 'wbsetaliases', 'add', 'en',
+					summaryArgs: [ 'new 1', 'new 2', 'new 3' ] ),
+			],
+			'only aliases in one language removed' => [
+				'entityDiff' => new EntityDiff( [
+					'aliases' => new Diff( [ 'en' => new Diff( [
+						new DiffOpRemove( 'old 1' ),
+						new DiffOpRemove( 'old 2' ),
+						new DiffOpRemove( 'old 3' ),
+					] ) ], true ),
+				] ),
+				'expected' => new Summary( 'wbsetaliases', 'remove', 'en',
+					summaryArgs: [ 'old 1', 'old 2', 'old 3' ] ),
+			],
+			'several terms changed in one language' => [
+				'entityDiff' => new EntityDiff( [
+					'label' => new Diff( [ 'en' => new DiffOpAdd( 'new' ) ], true ),
+					'description' => new Diff( [ 'en' => new DiffOpRemove( 'old' ) ], true ),
+				] ),
+				'expected' => new Summary( 'wbsetlabeldescriptionaliases', languageCode: 'en',
+					summaryArgs: [ 'new', '', [ 'unchanged' ] ] ),
+				'newEntity' => NewItem::withLabel( 'en', 'new' )
+					->andAliases( 'en', [ 'unchanged' ] )
+					->build(),
 			],
 			'only terms changed in less than 50 languages' => [
-				'collectChangedLanguages' => [ 'en' ],
-				'changedLanguagesCount' => 1,
-				'nonLanguageBoundChangesCount' => 0,
-				'expectedAction' => 'update-languages-short',
-				'expectedAutoCommentArgs' => [ [ 'en' ] ],
+				'entityDiff' => new EntityDiff( [
+					'label' => new Diff( [
+						'en' => new DiffOpChange( 'old en label', 'new en label' ),
+						'en-gb' => new DiffOpChange( 'old en-gb label', 'new en-gb label' ),
+					], true ),
+				] ),
+				'expected' => new Summary(
+					'wbeditentity',
+					'update-languages-short',
+					commentArgs: [ [ 'en', 'en-gb' ] ],
+				),
 			],
-			' terms in less than 50 languages and other parts changed' => [
-				'collectChangedLanguages' => [ 'fr' ],
-				'changedLanguagesCount' => 1,
-				'nonLanguageBoundChangesCount' => 1,
-				'expectedAction' => 'update-languages-and-other-short',
-				'expectedAutoCommentArgs' => [ [ 'fr' ] ],
+			'terms in less than 50 languages and other parts changed' => [
+				'entityDiff' => new EntityDiff( [
+					'label' => new Diff( [ 'fr' => new DiffOpChange( 'old fr label', 'new fr label' ) ], true ),
+					'claim' => $statementsDiff,
+				] ),
+				'expected' => new Summary(
+					'wbeditentity',
+					'update-languages-and-other-short',
+					commentArgs: [ [ 'fr' ] ],
+				),
 			],
 			'terms in more than 50 languages changed' => [
-				'collectChangedLanguages' => [ 'en', '...' ],
-				'changedLanguagesCount' => 51,
-				'nonLanguageBoundChangesCount' => 0,
-				'expectedAction' => 'update-languages',
-				'expectedAutoCommentArgs' => [ 51 ],
+				'entityDiff' => new EntityDiff( [
+					'label' => new Diff( $fiftyOneDiffs, true ),
+				] ),
+				'expected' => new Summary(
+					'wbeditentity',
+					'update-languages',
+					commentArgs: [ 51 ],
+				),
 			],
-			'terms  in more than 50 languages and other parts changed' => [
-				'collectChangedLanguages' => [ 'en', '...' ],
-				'changedLanguagesCount' => 51,
-				'nonLanguageBoundChangesCount' => 3,
-				'expectedAction' => 'update-languages-and-other',
-				'expectedAutoCommentArgs' => [ 51 ],
+			'terms in more than 50 languages and other parts changed' => [
+				'entityDiff' => new EntityDiff( [
+					'label' => new Diff( $fiftyOneDiffs, true ),
+					'claim' => $statementsDiff,
+				] ),
+				'expected' => new Summary(
+					'wbeditentity',
+					'update-languages-and-other',
+					commentArgs: [ 51 ],
+				),
+			],
+			'single statement changed' => [
+				'entityDiff' => new EntityDiff( [ 'claim' => $statementsDiff ] ),
+				'expected' => new Summary(
+					'wbsetclaim',
+					'update',
+					commentArgs: [ 1 ], // one statement changed
+					summaryArgs: [ [ 'P1' => $newStatement->getMainSnak() ] ],
+				),
+			],
+			'single statement added' => [
+				'entityDiff' => new EntityDiff( [ 'claim' => new Diff( [
+					$statementId => new DiffOpAdd( $newStatement ),
+				], true ) ] ),
+				'expected' => new Summary(
+					'wbsetclaim',
+					'create',
+					commentArgs:  [ 1 ], // one statement added
+					summaryArgs: [ [ 'P1' => $newStatement->getMainSnak() ] ],
+				),
+			],
+			'single statement removed' => [
+				'entityDiff' => new EntityDiff( [ 'claim' => new Diff( [
+					$statementId => new DiffOpRemove( $oldStatement ),
+				], true ) ] ),
+				'expected' => new Summary(
+					'wbremoveclaims',
+					'remove',
+					summaryArgs: [ [ 'P1' => $oldStatement->getMainSnak() ] ],
+				),
+			],
+			'multiple statements for the same property ID added' => [
+				'entityDiff' => new EntityDiff( [ 'claim' => new Diff( [
+					'Q123$00000000-0000-0000-0000-000000000000' => new DiffOpAdd(
+						$newStatement,
+					),
+					'Q123$00000000-0000-0000-0000-000000000001' => new DiffOpAdd(
+						$newStatement,
+					),
+				], true ) ] ),
+				'expected' => new Summary(
+					'wbeditentity',
+					'statements-single-property-add',
+					commentArgs: [ 2 ], // two statements changed
+					summaryArgs: [ $oldStatement->getPropertyId() ],
+				),
+			],
+			'multiple statements for the same property ID removed' => [
+				'entityDiff' => new EntityDiff( [ 'claim' => new Diff( [
+					'Q123$00000000-0000-0000-0000-000000000000' => new DiffOpRemove(
+						$oldStatement,
+					),
+					'Q123$00000000-0000-0000-0000-000000000001' => new DiffOpRemove(
+						$oldStatement,
+					),
+				], true ) ] ),
+				'expected' => new Summary(
+					'wbeditentity',
+					'statements-single-property-remove',
+					commentArgs: [ 2 ], // two statements changed
+					summaryArgs: [ $oldStatement->getPropertyId() ],
+				),
+			],
+			'multiple statements for the same property ID changed' => [
+				'entityDiff' => new EntityDiff( [ 'claim' => new Diff( [
+					'Q123$00000000-0000-0000-0000-000000000000' => new DiffOpChange(
+						$oldStatement,
+						$newStatement,
+					),
+					'Q123$00000000-0000-0000-0000-000000000001' => new DiffOpChange(
+						$oldStatement,
+						$newStatement,
+					),
+				], true ) ] ),
+				'expected' => new Summary(
+					'wbeditentity',
+					'statements-single-property-update',
+					commentArgs: [ 2 ], // two statements changed
+					summaryArgs: [ $oldStatement->getPropertyId() ],
+				),
+			],
+			'multiple statements for the same property ID edited (mixed added + removed)' => [
+				'entityDiff' => new EntityDiff( [ 'claim' => new Diff( [
+					'Q123$00000000-0000-0000-0000-000000000000' => new DiffOpAdd(
+						$newStatement,
+					),
+					'Q123$00000000-0000-0000-0000-000000000001' => new DiffOpRemove(
+						$oldStatement,
+					),
+				], true ) ] ),
+				'expected' => new Summary(
+					'wbeditentity',
+					'statements-single-property-update',
+					commentArgs: [ 2 ], // two statements changed
+					summaryArgs: [ $oldStatement->getPropertyId() ],
+				),
+			],
+			'multiple statements for different property IDs added' => [
+				'entityDiff' => new EntityDiff( [ 'claim' => new Diff( [
+					'Q123$00000000-0000-0000-0000-000000000000' => new DiffOpAdd(
+						$newStatement,
+					),
+					'Q123$00000000-0000-0000-0000-000000000001' => new DiffOpAdd(
+						NewStatement::someValueFor( 'P2' )->build(),
+					),
+					'Q123$00000000-0000-0000-0000-000000000002' => new DiffOpAdd(
+						NewStatement::noValueFor( 'P2' )->build(),
+					),
+				], true ) ] ),
+				'expected' => new Summary(
+					'wbeditentity',
+					'statements-multiple-properties-add',
+					commentArgs: [ 2 ], // two properties affected (across three statements)
+				),
+			],
+			'multiple statements for different property IDs removed' => [
+				'entityDiff' => new EntityDiff( [ 'claim' => new Diff( [
+					'Q123$00000000-0000-0000-0000-000000000000' => new DiffOpRemove(
+						$oldStatement,
+					),
+					'Q123$00000000-0000-0000-0000-000000000001' => new DiffOpRemove(
+						NewStatement::noValueFor( 'P2' )->build(),
+					),
+					'Q123$00000000-0000-0000-0000-000000000002' => new DiffOpRemove(
+						NewStatement::someValueFor( 'P2' )->build(),
+					),
+				], true ) ] ),
+				'expected' => new Summary(
+					'wbeditentity',
+					'statements-multiple-properties-remove',
+					commentArgs: [ 2 ], // two properties affected (across three statements)
+				),
+			],
+			'multiple statements for different property IDs changed' => [
+				'entityDiff' => new EntityDiff( [ 'claim' => new Diff( [
+					'Q123$00000000-0000-0000-0000-000000000000' => new DiffOpChange(
+						$oldStatement,
+						$newStatement,
+					),
+					'Q123$00000000-0000-0000-0000-000000000001' => new DiffOpChange(
+						NewStatement::noValueFor( 'P2' )->build(),
+						NewStatement::someValueFor( 'P2' )->build(),
+					),
+					'Q123$00000000-0000-0000-0000-000000000002' => new DiffOpChange(
+						NewStatement::someValueFor( 'P2' )->build(),
+						NewStatement::noValueFor( 'P2' )->build(),
+					),
+				], true ) ] ),
+				'expected' => new Summary(
+					'wbeditentity',
+					'statements-multiple-properties-update',
+					commentArgs: [ 2 ], // two properties affected (across three statements)
+				),
+			],
+			'multiple statements for different property IDs edited (mixed added + removed)' => [
+				'entityDiff' => new EntityDiff( [ 'claim' => new Diff( [
+					'Q123$00000000-0000-0000-0000-000000000000' => new DiffOpAdd(
+						$newStatement,
+					),
+					'Q123$00000000-0000-0000-0000-000000000001' => new DiffOpAdd(
+						NewStatement::someValueFor( 'P2' )->build(),
+					),
+					'Q123$00000000-0000-0000-0000-000000000002' => new DiffOpRemove(
+						NewStatement::someValueFor( 'P2' )->build(),
+					),
+				], true ) ] ),
+				'expected' => new Summary(
+					'wbeditentity',
+					'statements-multiple-properties-update',
+					commentArgs: [ 2 ], // two properties affected (across three statements)
+				),
 			],
 		];
 	}
 
 	/**
-	 * @dataProvider provideChangeOpResultsForPrepareEditSummary
+	 * @dataProvider provideEntityDiffsForGetEditSummary
 	 */
-	public function testPrepareEditSummary(
-		$collectChangedLanguages,
-		$changedLanguagesCount,
-		$nonLanguageBoundChangsCount,
-		$expectedAction,
-		$expectedAutoCommentArgs
+	public function testGetEditSummary(
+		EntityDiff $entityDiff,
+		Summary $expected,
+		$newEntity = new Item(),
 	) {
-		$summary = new Summary();
+		$oldEntity = new Item();
+		$entityDiffer = $this->createMock( EntityDiffer::class );
+		$entityDiffer->expects( $this->once() )
+			->method( 'diffEntities' )
+			->with( $oldEntity, $newEntity )
+			->willReturn( $entityDiff );
+		$editSummaryHelper = new EditSummaryHelper( $entityDiffer );
 
-		$editSummaryHelper = $this->newEditSummaryHelper( $collectChangedLanguages, $changedLanguagesCount, $nonLanguageBoundChangsCount );
-		$editSummaryHelper->prepareEditSummary( $summary, new DummyChangeOpResult() );
+		$preparedParameters = [
+			'id' => 'Q1',
+			'clear' => false,
+			'summary' => 'user summary',
+		];
+		$summary = $editSummaryHelper->getEditSummary( $preparedParameters, $oldEntity, $newEntity );
 
-		$this->assertEquals( $expectedAction, $summary->getMessageKey() );
-		$this->assertEquals( $expectedAutoCommentArgs, $summary->getCommentArgs() );
-	}
-
-	private function newEditSummaryHelper( $collectChangedLanguages, $changedLanguagesCount, $nonLanguageBoundChangesCount ) {
-		$mockedChangedLanguagesCounter = $this->createMock( ChangedLanguagesCounter::class );
-		$mockedChangedLanguagesCounter->method( 'countChangedLanguages' )->willReturn( $changedLanguagesCount );
-
-		$mockedChangedLanguagesCollector = $this->createMock( ChangedLanguagesCollector::class );
-		$mockedChangedLanguagesCollector->method( 'collectChangedLanguages' )->willReturn( $collectChangedLanguages );
-
-		$mockedNonLanguageBoundChangesCounter = $this->createMock( NonLanguageBoundChangesCounter::class );
-		$mockedNonLanguageBoundChangesCounter->method( 'countChanges' )->willReturn( $nonLanguageBoundChangesCount );
-
-		return new EditSummaryHelper(
-			$mockedChangedLanguagesCollector,
-			$mockedChangedLanguagesCounter,
-			$mockedNonLanguageBoundChangesCounter
-		);
+		$expected->setUserSummary( 'user summary' );
+		$this->assertEquals( $expected, $summary );
 	}
 }

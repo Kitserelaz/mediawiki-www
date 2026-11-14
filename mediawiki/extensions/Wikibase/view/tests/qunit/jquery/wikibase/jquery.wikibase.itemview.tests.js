@@ -13,7 +13,7 @@
 	 * @return {jQuery}
 	 */
 	var createItemview = function ( options, $node ) {
-		options = $.extend( {
+		options = Object.assign( {
 			value: new datamodel.Item( 'Q1' ),
 			buildEntityTermsView: function () {},
 			buildStatementGroupListView: function () {},
@@ -44,9 +44,9 @@
 		}
 	} ) );
 
-	QUnit.test( 'Create & destroy', function ( assert ) {
+	QUnit.test( 'Create & destroy', ( assert ) => {
 		assert.throws(
-			function () {
+			() => {
 				createItemview( { value: null } );
 			},
 			'Throwing error when trying to initialize widget without a value.'

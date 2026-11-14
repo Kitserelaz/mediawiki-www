@@ -1,7 +1,5 @@
 <?php
 
-use Wikimedia\AtEase\AtEase;
-
 /**
  * Extension class with all the array functionality, also serves as store for arrays per
  * Parser object and offers public accessors for interaction with the 'Arrays' extension.
@@ -190,8 +188,7 @@ class ExtArrays {
 					$out = implode( self::$mDefaultSep, $array );
 					break;
 				case 'pretty':
-					global $wgLang;
-					$out = $wgLang->listToText( $array );
+					$out = $parser->getTargetLanguage()->listToText( $array );
 					break;
 			}
 		}
@@ -291,11 +288,12 @@ class ExtArrays {
 		switch ( self::array_value( $options, 'print' ) ) {
 			case 'pretty':
 				// pretty list print with ' and ' connecting the last two items
+				$lang = $parser->getTargetLanguage();
 				if ( $delimiter === '' ) {
 					// '' as delimiter isn't pretty, so in this case we take the (languages) default
-					$output = self::arrayToText( $rendered_values );
+					$output = self::arrayToText( $rendered_values, $lang );
 				} else {
-					$output = self::arrayToText( $rendered_values, $delimiter );
+					$output = self::arrayToText( $rendered_values, $lang, $delimiter );
 				}
 				break;
 
@@ -372,7 +370,7 @@ class ExtArrays {
 		$store = self::get( $parser );
 
 		if ( !$store->arrayExists( $arrayId ) ) {
-		   return '';
+			return '';
 		}
 
 		return count( $store->getArray( $arrayId ) );
@@ -568,7 +566,7 @@ class ExtArrays {
 		if ( $array === null
 			|| !is_numeric( $offset ) // don't ignore invalid offset
 		) {
-		   return '';
+			return '';
 		}
 
 		if ( !is_numeric( $length ) ) {
@@ -632,9 +630,9 @@ class ExtArrays {
 		$store = self::get( $parser );
 
 		if ( $store->arrayExists( $arrayId ) ) {
-		   $array = $store->getArray( $arrayId );
-		   $array = self::array_unique( $array );
-		   $store->setArray( $arrayId, $array );
+			$array = $store->getArray( $arrayId );
+			$array = self::array_unique( $array );
+			$store->setArray( $arrayId, $array );
 		}
 		return '';
 	}
@@ -660,7 +658,7 @@ class ExtArrays {
 		$array = $store->getArray( $arrayId );
 
 		if ( $array === null ) {
-		   return '';
+			return '';
 		}
 
 		// sort array and store it
@@ -726,7 +724,6 @@ class ExtArrays {
 	}
 
 	/**
-	 *
 	 * Usage:
 	 *    {{#arraydiff:arrayid_new |array1 |array2 |... |array n}}
 	 *
@@ -1177,23 +1174,23 @@ class ExtArrays {
 	 * @since 2.0
 	 *
 	 * @param array $array
+	 * @param Langauge $lang The target language used for parsing.
 	 * @param string|null $commaSep
 	 *
 	 * @return string
 	 */
-	public static function arrayToText( array $array, $commaSep = null ) {
-		global $wgLang;
+	public static function arrayToText( array $array, Language $lang, $commaSep = null ) {
 		$commaSep = $commaSep === null ? self::$mDefaultSep : $commaSep;
 		$s = '';
 		$m = count( $array ) - 1;
 		if ( $m == 1 ) {
-			return $array[0] . $wgLang->getMessageFromDB( 'and' ) . $wgLang->getMessageFromDB( 'word-separator' ) . $array[1];
+			return $array[0] . $lang->getMessageFromDB( 'and' ) . $lang->getMessageFromDB( 'word-separator' ) . $array[1];
 		} else {
 			for ( $i = $m; $i >= 0; $i-- ) {
 				if ( $i == $m ) {
 					$s = $array[$i];
 				} elseif ( $i == $m - 1 ) {
-					$s = $array[$i] . $wgLang->getMessageFromDB( 'and' ) . $wgLang->getMessageFromDB( 'word-separator' ) . $s;
+					$s = $array[$i] . $lang->getMessageFromDB( 'and' ) . $lang->getMessageFromDB( 'word-separator' ) . $s;
 				} else {
 					$s = $array[$i] . $commaSep . $s;
 				}
@@ -1248,9 +1245,8 @@ class ExtArrays {
 		if ( !preg_match( '/^([\\/\\|%]).*\\1[imsSuUx]*$/', $pattern ) ) {
 			return false;
 		}
-		AtEase::suppressWarnings(); // instead of using the evil @ operator!
-		$isValid = preg_match( $pattern, ' ' ) !== false; // preg_match returns false on error
-		AtEase::restoreWarnings();
+		// phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
+		$isValid = @preg_match( $pattern, ' ' ) !== false; // preg_match returns false on error
 		return $isValid;
 	}
 

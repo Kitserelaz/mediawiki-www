@@ -3,9 +3,10 @@
 namespace Wikibase\Lib;
 
 use MediaWiki\HookContainer\HookContainer;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Language\LanguageNameUtils;
 use MediaWiki\MediaWikiServices;
 use OutOfRangeException;
+use Wikibase\Lib\Hooks\WikibaseLibHookRunner;
 
 /**
  * A collection of {@link ContentLanguages} objects for different contexts.
@@ -51,25 +52,20 @@ class WikibaseContentLanguages {
 	public static function getDefaultInstance(
 		?HookContainer $hookContainer = null,
 		?LanguageNameUtils $languageNameUtils = null
-	) {
-		if ( $hookContainer === null ) {
-			$hookContainer = MediaWikiServices::getInstance()->getHookContainer();
-		}
+	): WikibaseContentLanguages {
+		$hookContainer ??= MediaWikiServices::getInstance()->getHookContainer();
 
 		$contentLanguages = [];
 		$contentLanguages[self::CONTEXT_TERM] = self::getDefaultTermsLanguages( $languageNameUtils );
 		$contentLanguages[self::CONTEXT_MONOLINGUAL_TEXT] = self::getDefaultMonolingualTextLanguages( $languageNameUtils );
 
-		$hookContainer->run(
-			'WikibaseContentLanguages',
-			[ &$contentLanguages ],
-			[ 'abortable' => false ]
-		);
+		( new WikibaseLibHookRunner( $hookContainer ) )
+			->onWikibaseContentLanguages( $contentLanguages );
 
 		return new self( $contentLanguages );
 	}
 
-	public static function getDefaultTermsLanguages( ?LanguageNameUtils $languageNameUtils = null ) {
+	public static function getDefaultTermsLanguages( ?LanguageNameUtils $languageNameUtils = null ): ContentLanguages {
 		// Note: this list is also the basis of getDefaultMonolingualTextLanguages(); custom
 		// (non-MediaWikiContentLanguages) terms languages also become monolingual text languages.
 		return new UnionContentLanguages(
@@ -84,6 +80,7 @@ class WikibaseContentLanguages {
 					'bax', // T263946
 					'bbj', // T263946
 					'bfd', // T263946
+					'bfw', // T381934
 					'bkc', // T263946
 					'bkh', // T263946
 					'bkm', // T263946
@@ -92,6 +89,7 @@ class WikibaseContentLanguages {
 					'cak', // T278854
 					'cal', // T308062
 					'cnh', // T278853
+					'dso', // T383785
 					'dua', // T263946
 					'en-us', // T154589
 					'eto', // T263946
@@ -99,10 +97,14 @@ class WikibaseContentLanguages {
 					'ewo', // T263946
 					'fkv', // T167259
 					'fmp', // T263946
+					'gju-arab', // T381934
+					'gju-deva', // T381934
 					'gya', // T263946
+					'hoc', // T381934
 					'isu', // T263946
 					'kea', // T127435
 					'ker', // T263946
+					'kgg', // T381934
 					'ksf', // T263946
 					'lem', // T263946
 					'lns', // T263946
@@ -129,6 +131,8 @@ class WikibaseContentLanguages {
 					'smj', // T146707
 					'sms', // T220118, T223544
 					'srq', // T113408
+					'sva', // T407106
+					'thq', // T383785
 					'tpv', // T308062
 					'tvu', // T263946
 					'vut', // T263946
@@ -143,7 +147,7 @@ class WikibaseContentLanguages {
 		);
 	}
 
-	public static function getDefaultMonolingualTextLanguages( ?LanguageNameUtils $languageNameUtils = null ) {
+	public static function getDefaultMonolingualTextLanguages( ?LanguageNameUtils $languageNameUtils = null ): ContentLanguages {
 		return new DifferenceContentLanguages(
 			new UnionContentLanguages(
 				self::getDefaultTermsLanguages( $languageNameUtils ),
@@ -165,6 +169,7 @@ class WikibaseContentLanguages {
 
 				// Language codes we don't want for semantic reasons
 				'de-formal',
+				'en-simple',
 				'es-formal',
 				'hu-formal',
 				'nl-informal',

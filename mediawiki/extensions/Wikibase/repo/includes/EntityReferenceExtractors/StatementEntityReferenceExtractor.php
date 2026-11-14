@@ -79,11 +79,11 @@ class StatementEntityReferenceExtractor implements EntityReferenceExtractor {
 		// TODO: EntityIds from TimeValue's calendar URI (Wikidata, not local item URI!)
 	}
 
-	private function processQuantityUnitUri( $uri ) {
+	private function processQuantityUnitUri( string $uri ) {
 		try {
 			$entityId = $this->quantityUnitEntityIdUriParser->parse( $uri );
 			$this->entityIds[$entityId->getSerialization()] = $entityId;
-		} catch ( EntityIdParsingException $ex ) {
+		} catch ( EntityIdParsingException ) {
 			// noop
 		}
 	}

@@ -23,6 +23,16 @@
     },
     {
       "type": "extensions",
+      "name": "AWS",
+      "manifest": "mediawiki/extensions/AWS/extension.json",
+      "version": "0.14.0",
+      "sha256": "8415292a2512d19b445d197f9751957992446f33585a61fbe9f1e20915ba547f",
+      "requires": {
+        "MediaWiki": ">= 1.43.0"
+      }
+    },
+    {
+      "type": "extensions",
       "name": "Abuse Filter",
       "manifest": "mediawiki/extensions/AbuseFilter/extension.json",
       "version": null,
@@ -69,6 +79,19 @@
       "sha256": "6ac4c6d9c899aa04545376862d3e1d5d333c495044dd0cfd52173963e77f7eb6",
       "requires": {
         "MediaWiki": ">= 1.40.0"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "ArchiveWikiImport",
+      "manifest": "mediawiki/extensions/ArchiveWikiImport/extension.json",
+      "version": "0.1.0",
+      "sha256": "f5ac84fb4bf01f75f54770b1d8baae1f405e87c34e3272a78e110cd3e674d03c",
+      "requires": {
+        "MediaWiki": ">= 1.46",
+        "platform": {
+          "php": ">= 8.1"
+        }
       }
     },
     {
@@ -247,9 +270,9 @@
       "name": "CategoryExplorer",
       "manifest": "mediawiki/extensions/CategoryExplorer/extension.json",
       "version": null,
-      "sha256": "390c2f6418babe70b22e45602b31b0e042418b7cf2e922aecfa15aaafa51b7f4",
+      "sha256": "bc36c55bce8d82a985c420e44cdfe2d046120a2b0df8e5d0a1bc68bfde7d9dc0",
       "requires": {
-        "MediaWiki": ">= 1.38.0"
+        "MediaWiki": ">= 1.42.0"
       }
     },
     {
@@ -287,7 +310,7 @@
       "name": "CentralAuth",
       "manifest": "mediawiki/extensions/CentralAuth/extension.json",
       "version": null,
-      "sha256": "4cb8a86849e01a2fa039a75516e64a440076a13b38e40a3599bd687394b0abab",
+      "sha256": "c0b33aa06aa5891f5e0102fe669378058e4b946a3274d70bcc2f61b83762b468",
       "requires": {
         "MediaWiki": ">= 1.46",
         "extensions": {
@@ -575,7 +598,7 @@
       "name": "CreateWiki",
       "manifest": "mediawiki/extensions/CreateWiki/extension.json",
       "version": null,
-      "sha256": "02e877fa11314a5e1db09a6feb33671b9c9bf5faf853f8889fd80f6a4c064d07",
+      "sha256": "48be88b784662e9ffb56eeeef7b3149390f5b511c48625af5b99076cf43862e9",
       "requires": {
         "MediaWiki": ">= 1.46.0"
       }
@@ -685,6 +708,19 @@
     },
     {
       "type": "extensions",
+      "name": "DiscordAuth",
+      "manifest": "mediawiki/extensions/DiscordAuth/extension.json",
+      "version": "1.0.0",
+      "sha256": "7032c58f1c15183404f4d3e3816c18158384f6b937e0c57fdeaf7a736bacc2b2",
+      "requires": {
+        "MediaWiki": ">= 1.46.0",
+        "extensions": {
+          "CentralAuth": "*"
+        }
+      }
+    },
+    {
+      "type": "extensions",
       "name": "DiscordNotifications",
       "manifest": "mediawiki/extensions/DiscordNotifications/extension.json",
       "version": "3.0.0",
@@ -724,10 +760,10 @@
       "type": "extensions",
       "name": "DisplayTitle",
       "manifest": "mediawiki/extensions/DisplayTitle/extension.json",
-      "version": "4.0.3",
-      "sha256": "f25987578a3e504d2d5a6297d96804aadb97f9b348eb7a4aaefbcc2a19956839",
+      "version": "4.1.0",
+      "sha256": "5c8856825ed7127f5619145fa58c4ad65bbc1fb34238913cf5955adc132af1a7",
       "requires": {
-        "MediaWiki": ">= 1.41.0"
+        "MediaWiki": ">= 1.43.0"
       }
     },
     {
@@ -773,9 +809,9 @@
       "name": "DynamicSidebar",
       "manifest": "mediawiki/extensions/DynamicSidebar/extension.json",
       "version": "1.1",
-      "sha256": "7357023d9219c939f5555ad497ae0cbb33d046117f517eef3473ebb0096bf4f8",
+      "sha256": "98b9effe50f693da4ccbb74809ec356da0014b88c07ab5bf04d813028c2bafef",
       "requires": {
-        "MediaWiki": ">= 1.35.0"
+        "MediaWiki": ">= 1.39.4"
       }
     },
     {
@@ -967,9 +1003,9 @@
       "name": "GeoCrumbs",
       "manifest": "mediawiki/extensions/GeoCrumbs/extension.json",
       "version": "2.0.1",
-      "sha256": "24c681eda7a1f28684e761f8242a69cce38f866ae6a3474bed4bb775ec8d5981",
+      "sha256": "abd8e5dd261e462790bc923090da4f23da854c2cac7ad8eaca1d54bdfa30f93c",
       "requires": {
-        "MediaWiki": ">= 1.43"
+        "MediaWiki": ">= 1.46"
       }
     },
     {
@@ -994,12 +1030,35 @@
     },
     {
       "type": "extensions",
+      "name": "GlobalAccountClosure",
+      "manifest": "mediawiki/extensions/GlobalAccountClosure/extension.json",
+      "version": null,
+      "sha256": "3048d7f767cb2e4cb4a2b5e0f5fc52ddebb7bb4aaf0ccaa9eea8458277cf18ec",
+      "requires": {
+        "MediaWiki": ">= 1.46.0",
+        "extensions": {
+          "CentralAuth": "*"
+        }
+      }
+    },
+    {
+      "type": "extensions",
       "name": "GlobalBlocking",
       "manifest": "mediawiki/extensions/GlobalBlocking/extension.json",
       "version": null,
-      "sha256": "737b50296addd2c6e65f528316f5b93db0b36c0286a2566547aefd64f29c33ff",
+      "sha256": "5588733cdf11ff30d9a6d57b39ad65497b4cde6bede86454117b3738fac4a346",
       "requires": {
         "MediaWiki": ">= 1.46"
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "GlobalContributions",
+      "manifest": "mediawiki/extensions/GlobalContributions/extension.json",
+      "version": "0.2.1",
+      "sha256": "398043bf48dd01385ab681d9abaf5ba0dbf824d048f54937d1c4938f48955e94",
+      "requires": {
+        "MediaWiki": ">= 1.40.0"
       }
     },
     {
@@ -1285,9 +1344,9 @@
       "name": "JSBreadCrumbs",
       "manifest": "mediawiki/extensions/JSBreadCrumbs/extension.json",
       "version": "1.1.2",
-      "sha256": "12f45626e347995384ca5d656df4f3e5e5c03a4e337722e981af60ebd4be9776",
+      "sha256": "e606fcdda3c5c4efc1de1d159b837637b3a64d6a70b1935422101283b4d326bd",
       "requires": {
-        "MediaWiki": ">= 1.35.0"
+        "MediaWiki": ">= 1.44.0"
       }
     },
     {
@@ -1305,9 +1364,9 @@
       "name": "Josa",
       "manifest": "mediawiki/extensions/Josa/extension.json",
       "version": "0.2.0",
-      "sha256": "31f15768e1eb49fb2812990c9783413f1cc6a2de656c6b8e6e148eae21e86aba",
+      "sha256": "512ebc20c4a2dfed5e5cfd3018c6996458a4d09e28e38da531acee397f3ec658",
       "requires": {
-        "MediaWiki": ">= 1.43"
+        "MediaWiki": ">= 1.46"
       }
     },
     {
@@ -1368,9 +1427,9 @@
       "name": "LastModified",
       "manifest": "mediawiki/extensions/LastModified/extension.json",
       "version": "1.2.0",
-      "sha256": "1b09a9cbf766fea88e9149f5899a4d66e5515cee49dbdd2cefad8684f1665dd3",
+      "sha256": "29e0f43cef735655c59f096bce33948d2a085937ca969122e1d99babc7d594b5",
       "requires": {
-        "MediaWiki": ">= 1.29.0"
+        "MediaWiki": ">= 1.43"
       }
     },
     {
@@ -1471,9 +1530,9 @@
       "name": "LogoFunctions",
       "manifest": "mediawiki/extensions/LogoFunctions/extension.json",
       "version": "2.2",
-      "sha256": "365d96a78725f99c0ce2bc0f0f875939a1484c9b2d1d9c7af297aac1f278bb40",
+      "sha256": "53444600dbe16acbd654e12924abc28804afb8419a83330a0c77fb05903ef587",
       "requires": {
-        "MediaWiki": ">= 1.39.0"
+        "MediaWiki": ">= 1.40.0"
       }
     },
     {
@@ -1995,9 +2054,9 @@
       "name": "PageNotice",
       "manifest": "mediawiki/extensions/PageNotice/extension.json",
       "version": null,
-      "sha256": "5207e050c0622110e9bfdfc6f701677b6259232d9ebe4aff69fe5c42dd6e6135",
+      "sha256": "d7458b7960e9929e046cef1020c05c417a718c22200b55d1da479148f6ddb507",
       "requires": {
-        "MediaWiki": ">= 1.43"
+        "MediaWiki": ">= 1.46"
       }
     },
     {
@@ -2183,9 +2242,9 @@
       "name": "ProtectionIndicator",
       "manifest": "mediawiki/extensions/ProtectionIndicator/extension.json",
       "version": "0.1",
-      "sha256": "6741e161479b4f8c512797fd8a13248a40e4fc32d52eb8bdcb4c0c5a5ccfc80d",
+      "sha256": "85adcf5eb926bbc42b4b43bdc1c6cecbd486f88e2ce731133acd15484bd5418c",
       "requires": {
-        "MediaWiki": ">= 1.39.0"
+        "MediaWiki": ">= 1.44.0"
       }
     },
     {
@@ -2443,9 +2502,9 @@
       "name": "Screenplay",
       "manifest": "mediawiki/extensions/Screenplay/extension.json",
       "version": "0.6",
-      "sha256": "3730223b3ffc4d9561ece3f58bf903ed92c91baaf982cd9ba0ec80fb3e639e05",
+      "sha256": "35291bf1e26c2b53a23a0183a0760f765fcd3cc9fa393f82844a5fd574f47f9a",
       "requires": {
-        "MediaWiki": ">= 1.39.0"
+        "MediaWiki": ">= 1.40.0"
       }
     },
     {
@@ -2603,7 +2662,7 @@
       "name": "SkywikiMagic",
       "manifest": "mediawiki/extensions/SkyWikiMagic/extension.json",
       "version": null,
-      "sha256": "167d7cc007a5c00ae2481168b85d849796dd7c7e74cccca389be20d18c6497a3",
+      "sha256": "891080c8cbe6bbd1e302a934a5d14b713ad0955f1f47330f9dfb73f71b1b1432",
       "requires": {
         "MediaWiki": ">= 1.42.0",
         "platform": {
@@ -2615,10 +2674,10 @@
       "type": "extensions",
       "name": "Snap! Project Embed",
       "manifest": "mediawiki/extensions/SnapProjectEmbed/extension.json",
-      "version": "3.2.0",
-      "sha256": "bc6c0706bf961034d5c960aac15d8f19b38071c663957638f3db87f1420ae797",
+      "version": "4.0.0",
+      "sha256": "42c17798824c7d1a54d75c721f5b57afd56b1a40d1cfcfbfce8b40362c5fabb7",
       "requires": {
-        "MediaWiki": ">=1.35.0"
+        "MediaWiki": ">=1.40.0"
       }
     },
     {
@@ -2701,10 +2760,10 @@
       "type": "extensions",
       "name": "Spoilers",
       "manifest": "mediawiki/extensions/Spoilers/extension.json",
-      "version": "2.2.6",
-      "sha256": "556590b27ee5211683dcadefcda5cd60468e1a364e66cd6f9cb3f56543d12133",
+      "version": "3.0.0",
+      "sha256": "e495c4f74bb48445452eadd4d5da09c09ace80eca43aaeb324df7a0b80074e6a",
       "requires": {
-        "MediaWiki": ">= 1.27.0"
+        "MediaWiki": ">= 1.41.0"
       }
     },
     {
@@ -2758,9 +2817,9 @@
       "name": "Subpage Fun",
       "manifest": "mediawiki/extensions/SubpageFun/extension.json",
       "version": "0.7.0",
-      "sha256": "df3d2ab14ed666d07fcbe616c5542ab3973d5dbdc02a8895b3eb837cb5fe00e5",
+      "sha256": "8b829cb88ea8614ef0101a7995e80d23a9231a439a3a6cc48ee92a090ab49b52",
       "requires": {
-        "MediaWiki": ">= 1.34.0"
+        "MediaWiki": ">= 1.39.4"
       }
     },
     {
@@ -2962,9 +3021,9 @@
       "name": "TocTree",
       "manifest": "mediawiki/extensions/TocTree/extension.json",
       "version": "1.12.0",
-      "sha256": "dde8672de5217cb7506e46d6a4626144c0f6266233a68dcd1170fbd9d35814fe",
+      "sha256": "f1be3c3bb440646087c2d65ed674f8498d196e75d615caacfd73f69b584bb258",
       "requires": {
-        "MediaWiki": ">= 1.43"
+        "MediaWiki": ">= 1.46"
       }
     },
     {
@@ -3294,9 +3353,9 @@
       "name": "WikiTextLoggedInOut",
       "manifest": "mediawiki/extensions/WikiTextLoggedInOut/extension.json",
       "version": "1.6.0",
-      "sha256": "0364dcca643b8bd784556ec6a7b0fed9b2d99fe533f051c4bd10db25ce3cb5c7",
+      "sha256": "fe9c903f8a7495f77c62f7716daad37e970336b1990673d69b6d909a1409654c",
       "requires": {
-        "MediaWiki": ">= 1.39.0"
+        "MediaWiki": ">= 1.41.0"
       }
     },
     {
@@ -3304,9 +3363,9 @@
       "name": "WikibaseClient",
       "manifest": "mediawiki/extensions/Wikibase/extension-client.json",
       "version": null,
-      "sha256": "65a04766d3be11330255318cc7d152944036be46094702bd54bdd1c954e20813",
+      "sha256": "254c37d8cc70623e68faf3e6c86899a9c1fc5792564fbc81da5232dd6ec20fe5",
       "requires": {
-        "MediaWiki": ">= 1.43"
+        "MediaWiki": ">= 1.46"
       }
     },
     {
@@ -3314,9 +3373,9 @@
       "name": "WikibaseRepository",
       "manifest": "mediawiki/extensions/Wikibase/extension-repo.json",
       "version": null,
-      "sha256": "a610456cd9ecfce77ba5c011f433aac50d177d3fb6b6885efb707fc8506e1273",
+      "sha256": "e23e05fabe36cc83061b229bcd40b49933bb5a52edee5c8548bbc121cb2f3532",
       "requires": {
-        "MediaWiki": ">= 1.43"
+        "MediaWiki": ">= 1.46"
       }
     },
     {
@@ -3347,9 +3406,9 @@
       "name": "WikibaseLexeme",
       "manifest": "mediawiki/extensions/WikibaseLexeme/extension.json",
       "version": null,
-      "sha256": "193b8b369495784ff3f5dc33e85a2953904630e2817635bb090ff743facb5194",
+      "sha256": "d085b70e7b5f469e7de91843582f305a44cb48c726203a0bf0bc31d2dbbce5c8",
       "requires": {
-        "MediaWiki": ">= 1.43"
+        "MediaWiki": ">= 1.46"
       }
     },
     {
@@ -3418,7 +3477,7 @@
       "name": "Wikimedia Incubator",
       "manifest": "mediawiki/extensions/WikimediaIncubator/extension.json",
       "version": "6.3.0",
-      "sha256": "24011a56923ff6a179cd84355b366a5ae019fc86ada7f62a05238551d5a27543",
+      "sha256": "367ae865ce28dba4d8de1c595565dde54fb86fed2e5c8f75699c4af858a25acd",
       "requires": {
         "MediaWiki": ">= 1.43"
       }
@@ -3551,6 +3610,16 @@
       "sha256": "904bc6b13ab9735840bf5e10423dc0670c3937c2d29779cf810350669f2b8661",
       "requires": {
         "MediaWiki": ">= 1.25.0"
+      }
+    },
+    {
+      "type": "skins",
+      "name": "Example",
+      "manifest": "mediawiki/skins/Example/skin.json",
+      "version": "1.0.0",
+      "sha256": "f29a664a15458eb6537ecda960427689ae1e55f1b27b62164b367799a7049de8",
+      "requires": {
+        "MediaWiki": ">= 1.46"
       }
     },
     {
@@ -3840,9 +3909,10 @@
     }
   ],
   "lockfiles": {
-    "mediawiki/composer.lock": "781089ddc1d8c848c78432e5c6f086b0ae9d84ec4a90967f37497c658fc549c8",
+    "mediawiki/composer.lock": "e3e4b54bbd5ad14dfcd7ff6c245506ff6ced998c4b88a4ba5334b7d21d240b16",
     "Moe-Counter/pnpm-lock.yaml": "bf2cdcba5fd4d8c2c977816a7ce3ea9fc5843eefa75104cb5ff0c4f7129695e0",
     "Moe-Counter/bun.lock": "72151d4740fca52ae1283d886ad4d16d3db32aa4de67e641a20a81d8f6f7c0d6",
+    "mediawiki/extensions/AWS/composer.lock": "940353399217d9b2b6d49c2e8c46b12d4a20c3aeff67c004b50cbda1c36c00d7",
     "mediawiki/extensions/AdminLinks/composer.lock": "5787c73e2c480d5c4e543973509b341185002f96b549f97fe8834bf7f5981c40",
     "mediawiki/extensions/AntiSpoof/composer.lock": "f02e6ca03e92d3c51202c22bdaa5fba0a7c0d73d760a01552941d990b2f677f3",
     "mediawiki/extensions/Babel/composer.lock": "13aeed95ae8a998a5a28a87bd371b252fab25b0e22b1d8f79e737a56e3d85b73",
@@ -3882,6 +3952,88 @@
     "mediawiki/extensions/DataDump/includes/Api/ApiGenerateDumps.php": "e24f7e5b42eb6ae09c566f12b1390ed678adc16cf35a5155dadf102f19e73022"
   },
   "installed_dependencies": {
+    "mediawiki/extensions/AWS/vendor/composer/installed.json": [
+      {
+        "name": "aws/aws-crt-php",
+        "version": "v1.2.7",
+        "reference": "d71d9906c7bb63a28295447ba12e74723bd3730e"
+      },
+      {
+        "name": "aws/aws-sdk-php",
+        "version": "3.402.0",
+        "reference": "661f6a54f2a63ac5137390c291535c74cfe6019e"
+      },
+      {
+        "name": "composer/installers",
+        "version": "v2.3.0",
+        "reference": "12fb2dfe5e16183de69e784a7b84046c43d97e8e"
+      },
+      {
+        "name": "guzzlehttp/guzzle",
+        "version": "7.15.2",
+        "reference": "744101956d78b7c1384d0cbf379db13e859167bf"
+      },
+      {
+        "name": "guzzlehttp/promises",
+        "version": "2.6.0",
+        "reference": "3d88c829bd5f13d13847b39067dbf09a60af2154"
+      },
+      {
+        "name": "guzzlehttp/psr7",
+        "version": "2.13.2",
+        "reference": "adee536f95101929f262b8c59e8a61472f347d58"
+      },
+      {
+        "name": "mtdowling/jmespath.php",
+        "version": "2.9.2",
+        "reference": "2157c5e50e813ec6a96c1eed3be7f64a20fb32a8"
+      },
+      {
+        "name": "psr/http-client",
+        "version": "1.0.3",
+        "reference": "bb5906edc1c324c9a05aa0873d40117941e5fa90"
+      },
+      {
+        "name": "psr/http-factory",
+        "version": "1.1.0",
+        "reference": "2b4765fddfe3b508ac62f829e852b1501d3f6e8a"
+      },
+      {
+        "name": "psr/http-message",
+        "version": "2.0",
+        "reference": "402d35bcb92c70c026d1a6a9883f06b2ead23d71"
+      },
+      {
+        "name": "ralouphie/getallheaders",
+        "version": "3.0.3",
+        "reference": "120b605dfeb996808c31b6477290a714d356e822"
+      },
+      {
+        "name": "symfony/deprecation-contracts",
+        "version": "v3.7.1",
+        "reference": "f3202fa1b5097b0af062dc978b32ecf63404e31d"
+      },
+      {
+        "name": "symfony/filesystem",
+        "version": "v8.1.9",
+        "reference": "43d109c803d22c00bb820ed45df250b6a8792ca2"
+      },
+      {
+        "name": "symfony/polyfill-ctype",
+        "version": "v1.37.0",
+        "reference": "141046a8f9477948ff284fa65be2095baafb94f2"
+      },
+      {
+        "name": "symfony/polyfill-mbstring",
+        "version": "v1.43.0",
+        "reference": "4d5d331bf731e0aedbc6b2f5e61135b7b7996a72"
+      },
+      {
+        "name": "symfony/polyfill-php80",
+        "version": "v1.43.0",
+        "reference": "9c6a5d6b01ca51d486c813e9a9c0ed55f208bb74"
+      }
+    ],
     "mediawiki/extensions/AdminLinks/vendor/composer/installed.json": [
       {
         "name": "composer/installers",
@@ -4878,9 +5030,29 @@
         "reference": "45aca708da1f7d39c4fca9e6c7373404627e083b"
       },
       {
+        "name": "data-values/geo",
+        "version": "4.6.0",
+        "reference": "ffcbb2a44338e2a75b9596e4a72a6e0dace1035b"
+      },
+      {
         "name": "data-values/interfaces",
         "version": "1.2.0",
         "reference": "22573cd52a7b37416f28ed6a8d8706543b0d430a"
+      },
+      {
+        "name": "data-values/number",
+        "version": "0.13.0",
+        "reference": "131964ceb9b8d48bb974a7c0246003f54b445560"
+      },
+      {
+        "name": "data-values/serialization",
+        "version": "1.2.5",
+        "reference": "b31b3af537a3ac9f3b70f42cc03f2221c6fd8fd7"
+      },
+      {
+        "name": "data-values/time",
+        "version": "1.2.0",
+        "reference": "d8e8cf713fa33f22f973fb06fbbafedd722401eb"
       },
       {
         "name": "data-values/validators",
@@ -4891,6 +5063,11 @@
         "name": "dealerdirect/phpcodesniffer-composer-installer",
         "version": "v1.2.1",
         "reference": "963f0c67bffde0eac41b56be71ac0e8ba132f0bd"
+      },
+      {
+        "name": "diff/diff",
+        "version": "3.4.0",
+        "reference": "19e5c8871868210ef2943c92bd7c223555b50b3f"
       },
       {
         "name": "doctrine/dbal",
@@ -4954,8 +5131,8 @@
       },
       {
         "name": "jeroen/message-reporter",
-        "version": "1.5.0",
-        "reference": "acf6cf8be76f8c6e39f6b22022e377016b6d2ac1"
+        "version": "1.4.2",
+        "reference": "ead8ef8f2868ccee6881e471295ebbaf8428c96c"
       },
       {
         "name": "justinrainbow/json-schema",
@@ -5026,6 +5203,11 @@
         "name": "okvpn/clock-lts",
         "version": "1.0.0",
         "reference": "5e7dc00d23a7d65e8ed2b0ff7a4dcf7860c05a14"
+      },
+      {
+        "name": "onoi/message-reporter",
+        "version": "1.4.2",
+        "reference": "ead8ef8f2868ccee6881e471295ebbaf8428c96c"
       },
       {
         "name": "oojs/oojs-ui",
@@ -5218,6 +5400,11 @@
         "reference": "d49695b909c3b7628b6289db5479a1c204601f11"
       },
       {
+        "name": "psr/simple-cache",
+        "version": "1.0.1",
+        "reference": "408d5eafb83c57f6365a3ca330ff23aa4a5fa39b"
+      },
+      {
         "name": "psy/psysh",
         "version": "v0.12.24",
         "reference": "ca0fdcf8a7617afa3adfdf1b5fef573dffb69ca1"
@@ -5328,6 +5515,11 @@
         "reference": "4c378e1a528ea066890fc2397cbdd2f94eb2fc91"
       },
       {
+        "name": "swaggest/json-diff",
+        "version": "v3.12.1",
+        "reference": "7ebc4eab95bcc73916433964c266588d09b35052"
+      },
+      {
         "name": "symfony/console",
         "version": "v7.4.21",
         "reference": "21f1bc2296f7ff6043241a8dcbc09559b3732820"
@@ -5376,6 +5568,11 @@
         "name": "webmozart/assert",
         "version": "2.5.0",
         "reference": "8a163706bbcac613733dba03f51e13b5eb1bb819"
+      },
+      {
+        "name": "webonyx/graphql-php",
+        "version": "v15.39.0",
+        "reference": "efa6b239d48f9ebe37ac0407d04a091b3685a869"
       },
       {
         "name": "wikimedia/alea",
@@ -5593,6 +5790,11 @@
         "reference": "4dd3ca958e1087c60a0933d10b53abc0423ad9dc"
       },
       {
+        "name": "wmde/php-vuejs-templating",
+        "version": "2.2.0-beta.12",
+        "reference": "0bb8b90c934bf35e1f3a1b207aa44d0af6c0af0d"
+      },
+      {
         "name": "zordius/lightncandy",
         "version": "v1.2.6",
         "reference": "b451f73e8b5c73e62e365997ba3c993a0376b72a"
@@ -5666,8 +5868,9 @@
       "Flow": {
         "repository": "https://github.com/wikimedia/mediawiki-extensions-Flow",
         "branch": "REL1_46",
-        "commit": "ee8925d5da919a06ac6f1bba0792b8dd9e85190b",
-        "source_port_report": "docs/upgrade-flow-source.json"
+        "commit": "5c6663c1704801211fd7bbacb3f607f07a5a30a9",
+        "source_port_report": "docs/upgrade-flow-source.json",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json"
       },
       "GlobalBlocking": {
         "repository": "https://github.com/wikimedia/mediawiki-extensions-GlobalBlocking",
@@ -5690,8 +5893,9 @@
       "TorBlock": {
         "repository": "https://github.com/wikimedia/mediawiki-extensions-TorBlock",
         "branch": "REL1_46",
-        "commit": "afb6f6e716d6f59c97aaa13bb5eb3d2c86854108",
-        "source_port_report": "docs/upgrade-torblock-source.json"
+        "commit": "716529f51075db07d524097add7195fc8c4e8878",
+        "source_port_report": "docs/upgrade-torblock-source.json",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json"
       },
       "SpamBlacklist": {
         "repository": "https://github.com/wikimedia/mediawiki-extensions-SpamBlacklist",
@@ -5714,8 +5918,9 @@
       "GlobalUsage": {
         "repository": "https://github.com/wikimedia/mediawiki-extensions-GlobalUsage",
         "branch": "REL1_46",
-        "commit": "26f01ac90f010b36d4cf7275d58b276d441fbcd1",
-        "source_port_report": "docs/upgrade-globalusage-source.json"
+        "commit": "2c9186e1f853c3aa242641a637a7e005eecebe71",
+        "source_port_report": "docs/upgrade-globalusage-source.json",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json"
       },
       "Cargo": {
         "repository": "https://github.com/wikimedia/mediawiki-extensions-Cargo",
@@ -5726,32 +5931,37 @@
       "CategoryTests": {
         "repository": "https://github.com/wikimedia/mediawiki-extensions-CategoryTests",
         "branch": "REL1_46",
-        "commit": "a1d46e632aff226cacd30283763f793eec7a0d16",
-        "source_port_report": "docs/upgrade-categorytests-source.json"
+        "commit": "4276074c6bc0f247900afd2b0591e84c7feff763",
+        "source_port_report": "docs/upgrade-categorytests-source.json",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json"
       },
       "DPLForum": {
         "repository": "https://github.com/wikimedia/mediawiki-extensions-DPLForum",
         "branch": "REL1_46",
-        "commit": "76f07d8a05ebf9dc48c507ba96c674bfb1c2e7b9",
-        "source_port_report": "docs/upgrade-dplforum-source.json"
+        "commit": "5f3f836dff1b8bd64a958404b4bf058c8a37b2e8",
+        "source_port_report": "docs/upgrade-dplforum-source.json",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json"
       },
       "DynamicPageList": {
         "repository": "https://github.com/wikimedia/mediawiki-extensions-intersection",
         "branch": "REL1_46",
-        "commit": "e33cc5a5c1ae847cbb19922ecf5e88db382ccab6",
-        "source_port_report": "docs/upgrade-dynamicpagelist-source.json"
+        "commit": "70c70ab6c7c1aa302fb97193d24c60f579940c57",
+        "source_port_report": "docs/upgrade-dynamicpagelist-source.json",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json"
       },
       "GoogleNewsSitemap": {
         "repository": "https://github.com/wikimedia/mediawiki-extensions-GoogleNewsSitemap",
         "branch": "REL1_46",
-        "commit": "b9a33f1bdfe1a4897923c40f05c9419bd2e5ae01",
-        "source_port_report": "docs/upgrade-googlenewssitemap-source.json"
+        "commit": "b2971e10a3a317c757699476edf3387eb4bdb0f6",
+        "source_port_report": "docs/upgrade-googlenewssitemap-source.json",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json"
       },
       "Kartographer": {
         "repository": "https://github.com/wikimedia/mediawiki-extensions-Kartographer",
         "branch": "REL1_46",
-        "commit": "a9d7df0091ef963c5e9582be2c8e022a7831c121",
-        "source_port_report": "docs/upgrade-kartographer-source.json"
+        "commit": "43ca0d9df58ccbf3d9d3ec722629dbd9f0ba00f6",
+        "source_port_report": "docs/upgrade-kartographer-source.json",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json"
       },
       "PageForms": {
         "repository": "https://github.com/wikimedia/mediawiki-extensions-PageForms",
@@ -5762,20 +5972,23 @@
       "ProofreadPage": {
         "repository": "https://github.com/wikimedia/mediawiki-extensions-ProofreadPage",
         "branch": "REL1_46",
-        "commit": "7b34246b450c8958e603e2d414146f4f1ddd9751",
-        "source_port_report": "docs/upgrade-proofreadpage-source.json"
+        "commit": "99d15bff3e796688de6638742f4d63172f55e9d1",
+        "source_port_report": "docs/upgrade-proofreadpage-source.json",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json"
       },
       "UploadWizard": {
         "repository": "https://github.com/wikimedia/mediawiki-extensions-UploadWizard",
         "branch": "REL1_46",
-        "commit": "ff3d080aaff079b63499568e989e46094130e6b4",
-        "source_port_report": "docs/upgrade-uploadwizard-source.json"
+        "commit": "17b916aa285efe174fd66cef0ddc627beca18071",
+        "source_port_report": "docs/upgrade-uploadwizard-source.json",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json"
       },
       "WikiCategoryTagCloud": {
         "repository": "https://github.com/wikimedia/mediawiki-extensions-WikiCategoryTagCloud",
         "branch": "REL1_46",
-        "commit": "521274a1db4a98dd46bd1344778308d4dd5ed25a",
-        "source_port_report": "docs/upgrade-wikicategorytagcloud-source.json"
+        "commit": "3bbda47e06616988f0dda0c34dacc73f09db0965",
+        "source_port_report": "docs/upgrade-wikicategorytagcloud-source.json",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json"
       },
       "CategoryTree": {
         "repository": "https://github.com/wikimedia/mediawiki-extensions-CategoryTree",
@@ -5980,6 +6193,190 @@
         "branch": "REL1_46",
         "commit": "99898373d2c31a91163a277f38a8122bfeefe401",
         "source_port_report": "docs/upgrade-adminlinks-source.json"
+      },
+      "Wikibase": {
+        "repository": "https://github.com/wikimedia/mediawiki-extensions-Wikibase",
+        "branch": "REL1_46",
+        "commit": "c8050c025decb4fc8729ea77bc8bbe5688509a0b",
+        "source_port_report": "docs/upgrade-wikibase-source.json"
+      },
+      "WikibaseLexeme": {
+        "repository": "https://github.com/wikimedia/mediawiki-extensions-WikibaseLexeme",
+        "branch": "REL1_46",
+        "commit": "224dc576f36b3407bb54f6e7271227e3996cc4c9",
+        "source_port_report": "docs/upgrade-wikibaselexeme-source.json"
+      },
+      "Arrays": {
+        "repository": "https://github.com/wikimedia/mediawiki-extensions-Arrays",
+        "commit": "e1b34925e75fb405e4c618221d4e98deb73b1ba7",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json",
+        "branch": "REL1_46"
+      },
+      "AutoCreatePage": {
+        "repository": "https://github.com/Universal-Omega/AutoCreatePage",
+        "commit": "77058a0239ddb7eeb46ccc2c5e150f5c23505951",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json",
+        "branch": "main"
+      },
+      "CategoryExplorer": {
+        "repository": "https://github.com/wikimedia/mediawiki-extensions-CategoryExplorer",
+        "commit": "a49b0ad466f775d55c59ca648e48b94bf03daace",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json",
+        "branch": "REL1_46"
+      },
+      "CategorySortHeaders": {
+        "repository": "https://github.com/wikimedia/mediawiki-extensions-CategorySortHeaders",
+        "commit": "cdd61f5eb845d4f3c1d27d1def38a93ffac84f65",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json",
+        "branch": "REL1_46"
+      },
+      "DeleteUserPages": {
+        "repository": "https://github.com/wikimedia/mediawiki-extensions-DeleteUserPages",
+        "commit": "a9095e7b8c7fcd8ccf469550b2eed66db867c2ee",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json",
+        "branch": "master"
+      },
+      "DynamicSidebar": {
+        "repository": "https://github.com/wikimedia/mediawiki-extensions-DynamicSidebar",
+        "commit": "24ff8352517ab9b6e6e6c6795b49bcb6818ef4f1",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json",
+        "branch": "REL1_46"
+      },
+      "GeoCrumbs": {
+        "repository": "https://github.com/wikimedia/mediawiki-extensions-GeoCrumbs",
+        "commit": "e62ce85b5d9c34c5a0e5de467cb9dae25569edba",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json",
+        "branch": "REL1_46"
+      },
+      "GeoGebra": {
+        "repository": "https://github.com/wikimedia/mediawiki-extensions-GeoGebra",
+        "commit": "7361f1e0a23ef90edaba7807f009752017a510f2",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json",
+        "branch": "REL1_46"
+      },
+      "JSBreadCrumbs": {
+        "repository": "https://github.com/wikimedia/mediawiki-extensions-JSBreadCrumbs",
+        "commit": "5bf7749853fa1205d2c443bcce83702e6dcc81ca",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json",
+        "branch": "REL1_46"
+      },
+      "Josa": {
+        "repository": "https://github.com/wikimedia/mediawiki-extensions-Josa",
+        "commit": "dc4ecd8f8f0a58dcb25ebf76334504b7f801fc04",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json",
+        "branch": "REL1_46"
+      },
+      "LastModified": {
+        "repository": "https://github.com/wikimedia/mediawiki-extensions-LastModified",
+        "commit": "2da8a9a3e97da496d5729cd6b84f3ac6f65893ba",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json",
+        "branch": "REL1_46"
+      },
+      "LogoFunctions": {
+        "repository": "https://github.com/wikimedia/mediawiki-extensions-LogoFunctions",
+        "commit": "0d6e2a3fd2a73d867060a54a5fc78237a23cb990",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json",
+        "branch": "REL1_46"
+      },
+      "Loops": {
+        "repository": "https://github.com/wikimedia/mediawiki-extensions-Loops",
+        "commit": "cb8d91d8d6eb4e47e53da2a562371aed4df7ee9d",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json",
+        "branch": "REL1_46"
+      },
+      "MobileDetect": {
+        "repository": "https://github.com/wikimedia/mediawiki-extensions-MobileDetect",
+        "commit": "721911f255263378ab634010f9bd5f8fbe1b2db7",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json",
+        "branch": "REL1_46"
+      },
+      "MsCatSelect": {
+        "repository": "https://github.com/wikimedia/mediawiki-extensions-MsCatSelect",
+        "commit": "f57e80b5f18ab2d2be1ed03025ca818a78ce0100",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json",
+        "branch": "REL1_46"
+      },
+      "NoTitle": {
+        "repository": "https://github.com/wikimedia/mediawiki-extensions-NoTitle",
+        "commit": "8d7b076ab87bce7c1480d3d2dd64b17d0d407a86",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json",
+        "branch": "REL1_46"
+      },
+      "OrphanedTalkPages": {
+        "repository": "https://github.com/wikimedia/mediawiki-extensions-OrphanedTalkPages",
+        "commit": "c285efd8357f5c51adf8ac5cca345f62e37fa03c",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json",
+        "branch": "REL1_46"
+      },
+      "PageNotice": {
+        "repository": "https://github.com/wikimedia/mediawiki-extensions-PageNotice",
+        "commit": "17c2fa8fee021e0b5aa98a5e734ee30f8ebd54ce",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json",
+        "branch": "REL1_46"
+      },
+      "ProtectionIndicator": {
+        "repository": "https://github.com/wikimedia/mediawiki-extensions-ProtectionIndicator",
+        "commit": "a9716b9161bc1727707386920366b830cbe3b053",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json",
+        "branch": "master"
+      },
+      "RegexFunctions": {
+        "repository": "https://github.com/wikimedia/mediawiki-extensions-RegexFunctions",
+        "commit": "7b58170cb2f1d6beb062f97d2411cf6843620bb3",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json",
+        "branch": "REL1_46"
+      },
+      "Screenplay": {
+        "repository": "https://github.com/wikimedia/mediawiki-extensions-Screenplay",
+        "commit": "d3abe9cb2292adb3bdeb2bfb4b7793824eff80c9",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json",
+        "branch": "REL1_46"
+      },
+      "SnapProjectEmbed": {
+        "repository": "https://github.com/snapwiki/SnapProjectEmbed",
+        "commit": "078557d69faef9fed87298f25d4daa652b90112b",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json"
+      },
+      "Spoilers": {
+        "repository": "https://github.com/Telshin/Spoilers",
+        "commit": "e092f1ce2117c85c9d97cc9315e6b9445001fa1d",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json"
+      },
+      "SubpageFun": {
+        "repository": "https://github.com/wikimedia/mediawiki-extensions-SubpageFun",
+        "commit": "e3cd3e803ca13e389f88f9ccb262c8ac3d4bc23f",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json",
+        "branch": "REL1_46"
+      },
+      "Tabs": {
+        "repository": "https://github.com/wikimedia/mediawiki-extensions-Tabs",
+        "commit": "a5bdf6e55cdeaef4bee86ef126db631c4b0e7f99",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json",
+        "branch": "REL1_46"
+      },
+      "TocTree": {
+        "repository": "https://github.com/wikimedia/mediawiki-extensions-TocTree",
+        "commit": "57003a1324cf602bef2c6b396f8c6162d0860a81",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json",
+        "branch": "REL1_46"
+      },
+      "UrlGetParameters": {
+        "repository": "https://github.com/wikimedia/mediawiki-extensions-UrlGetParameters",
+        "commit": "849b67e56871fdd5bc6a2a5ed15fa8b6e7b8896b",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json",
+        "branch": "REL1_46"
+      },
+      "Variables": {
+        "repository": "https://github.com/wikimedia/mediawiki-extensions-Variables",
+        "commit": "e1d84b3d53a6ef5ff34ff990b4cfb3612be1fd5d",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json",
+        "branch": "REL1_46"
+      },
+      "WikiTextLoggedInOut": {
+        "repository": "https://github.com/wikimedia/mediawiki-extensions-WikiTextLoggedInOut",
+        "commit": "96602bf239ee075659cca55b1f4d3a9b53779186",
+        "batch_port_report": "docs/upgrade-batch-1-ports.json",
+        "branch": "REL1_46"
       }
     },
     "rollback_images": [
@@ -6239,6 +6636,414 @@
           "Target const declaration retains local message-directory discovery in Gruntfile",
           "Use matching target npm lock; installed package manifest matched baseline"
         ]
+      }
+    },
+    "docs/upgrade-batch-1-ports.json": {
+      "sha256": "26f5250e8f703b06ccafe3be611bbf52265ae454c778e3f425e5f18ed0a176ae",
+      "report": {
+        "mediawiki": "1.46.2",
+        "components": {
+          "Arrays": {
+            "component": "mediawiki/extensions/Arrays",
+            "repository": "https://github.com/wikimedia/mediawiki-extensions-Arrays",
+            "baseline": "8aaca57ef6f88d75f132f8060ccb047926c5b03c",
+            "merge_base": "f64d94fce020e2ba04f1b584f5fd0d3794b98d60",
+            "target": "e1b34925e75fb405e4c618221d4e98deb73b1ba7",
+            "ref": "REL1_46",
+            "files_updated": 10,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "AutoCreatePage": {
+            "component": "mediawiki/extensions/AutoCreatePage",
+            "repository": "https://github.com/Universal-Omega/AutoCreatePage",
+            "baseline": "2fd94cfaf827204e66f3fa2824221f855d19490c",
+            "merge_base": "2fd94cfaf827204e66f3fa2824221f855d19490c",
+            "target": "77058a0239ddb7eeb46ccc2c5e150f5c23505951",
+            "ref": "main",
+            "files_updated": 13,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "CategoryExplorer": {
+            "component": "mediawiki/extensions/CategoryExplorer",
+            "repository": "https://github.com/wikimedia/mediawiki-extensions-CategoryExplorer",
+            "baseline": "b4341fe6be2bc6a12fba4b8fcb0d8476a574fed7",
+            "merge_base": "94f5fa3fc70ad2b8006e1ab493af92f7a721a29f",
+            "target": "a49b0ad466f775d55c59ca648e48b94bf03daace",
+            "ref": "REL1_46",
+            "files_updated": 8,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "CategorySortHeaders": {
+            "component": "mediawiki/extensions/CategorySortHeaders",
+            "repository": "https://github.com/wikimedia/mediawiki-extensions-CategorySortHeaders",
+            "baseline": "5ace38753941e6d1fd7fe7773fd4b055a47486d3",
+            "merge_base": "9b2342d5fb13a3338a333aa56b3691b2a4af319f",
+            "target": "cdd61f5eb845d4f3c1d27d1def38a93ffac84f65",
+            "ref": "REL1_46",
+            "files_updated": 7,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "CategoryTests": {
+            "component": "mediawiki/extensions/CategoryTests",
+            "repository": "https://github.com/wikimedia/mediawiki-extensions-CategoryTests",
+            "baseline": "a1d46e632aff226cacd30283763f793eec7a0d16",
+            "merge_base": "a1d46e632aff226cacd30283763f793eec7a0d16",
+            "target": "4276074c6bc0f247900afd2b0591e84c7feff763",
+            "ref": "REL1_46",
+            "files_updated": 1,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "DPLForum": {
+            "component": "mediawiki/extensions/DPLForum",
+            "repository": "https://github.com/wikimedia/mediawiki-extensions-DPLForum",
+            "baseline": "76f07d8a05ebf9dc48c507ba96c674bfb1c2e7b9",
+            "merge_base": "76f07d8a05ebf9dc48c507ba96c674bfb1c2e7b9",
+            "target": "5f3f836dff1b8bd64a958404b4bf058c8a37b2e8",
+            "ref": "REL1_46",
+            "files_updated": 1,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "DeleteUserPages": {
+            "component": "mediawiki/extensions/DeleteUserPages",
+            "repository": "https://github.com/wikimedia/mediawiki-extensions-DeleteUserPages",
+            "baseline": "7cba2a3fe9fda1dc0559ba5fbb89cb187b3d3727",
+            "merge_base": "e2e40b5aa82d80f56fd0d0094a8bd3913d7ee432",
+            "target": "a9095e7b8c7fcd8ccf469550b2eed66db867c2ee",
+            "ref": "master",
+            "files_updated": 12,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "DynamicPageList": {
+            "component": "mediawiki/extensions/DynamicPageList",
+            "repository": "https://github.com/wikimedia/mediawiki-extensions-intersection",
+            "baseline": "e33cc5a5c1ae847cbb19922ecf5e88db382ccab6",
+            "merge_base": "e33cc5a5c1ae847cbb19922ecf5e88db382ccab6",
+            "target": "70c70ab6c7c1aa302fb97193d24c60f579940c57",
+            "ref": "REL1_46",
+            "files_updated": 2,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "DynamicSidebar": {
+            "component": "mediawiki/extensions/DynamicSidebar",
+            "repository": "https://github.com/wikimedia/mediawiki-extensions-DynamicSidebar",
+            "baseline": "430af03d78c8006d343869cadf96d038227a1719",
+            "merge_base": "eb7dbc955a0ddf04463c7ca3c86cb034cfba7e80",
+            "target": "24ff8352517ab9b6e6e6c6795b49bcb6818ef4f1",
+            "ref": "REL1_46",
+            "files_updated": 9,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "Flow": {
+            "component": "mediawiki/extensions/Flow",
+            "repository": "https://github.com/wikimedia/mediawiki-extensions-Flow",
+            "baseline": "ee8925d5da919a06ac6f1bba0792b8dd9e85190b",
+            "merge_base": "ee8925d5da919a06ac6f1bba0792b8dd9e85190b",
+            "target": "5c6663c1704801211fd7bbacb3f607f07a5a30a9",
+            "ref": "REL1_46",
+            "files_updated": 4,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "GeoCrumbs": {
+            "component": "mediawiki/extensions/GeoCrumbs",
+            "repository": "https://github.com/wikimedia/mediawiki-extensions-GeoCrumbs",
+            "baseline": "3f087f94f86ae0ac239f602ec7e89a1972833d4c",
+            "merge_base": "81836854fe6aa9f90d7543cb69998e58801ae866",
+            "target": "e62ce85b5d9c34c5a0e5de467cb9dae25569edba",
+            "ref": "REL1_46",
+            "files_updated": 11,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "GeoGebra": {
+            "component": "mediawiki/extensions/GeoGebra",
+            "repository": "https://github.com/wikimedia/mediawiki-extensions-GeoGebra",
+            "baseline": "d2a69e461e2567b0b506b70ed63da9cb1b12ce0b",
+            "merge_base": "0fe8226c55ed063855641825eeba5f2af2e100e4",
+            "target": "7361f1e0a23ef90edaba7807f009752017a510f2",
+            "ref": "REL1_46",
+            "files_updated": 10,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "GlobalUsage": {
+            "component": "mediawiki/extensions/GlobalUsage",
+            "repository": "https://github.com/wikimedia/mediawiki-extensions-GlobalUsage",
+            "baseline": "26f01ac90f010b36d4cf7275d58b276d441fbcd1",
+            "merge_base": "26f01ac90f010b36d4cf7275d58b276d441fbcd1",
+            "target": "2c9186e1f853c3aa242641a637a7e005eecebe71",
+            "ref": "REL1_46",
+            "files_updated": 4,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "GoogleNewsSitemap": {
+            "component": "mediawiki/extensions/GoogleNewsSitemap",
+            "repository": "https://github.com/wikimedia/mediawiki-extensions-GoogleNewsSitemap",
+            "baseline": "b9a33f1bdfe1a4897923c40f05c9419bd2e5ae01",
+            "merge_base": "b9a33f1bdfe1a4897923c40f05c9419bd2e5ae01",
+            "target": "b2971e10a3a317c757699476edf3387eb4bdb0f6",
+            "ref": "REL1_46",
+            "files_updated": 1,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "JSBreadCrumbs": {
+            "component": "mediawiki/extensions/JSBreadCrumbs",
+            "repository": "https://github.com/wikimedia/mediawiki-extensions-JSBreadCrumbs",
+            "baseline": "983bf172685a7d6cd45726a405ebd63b3cd705a2",
+            "merge_base": "83d2dfbb0addd5d6b7fff58a5a2f6cc41d9a9eb8",
+            "target": "5bf7749853fa1205d2c443bcce83702e6dcc81ca",
+            "ref": "REL1_46",
+            "files_updated": 18,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "Josa": {
+            "component": "mediawiki/extensions/Josa",
+            "repository": "https://github.com/wikimedia/mediawiki-extensions-Josa",
+            "baseline": "4152d1933511e59f3ccfc7c3eba891362c12b213",
+            "merge_base": "68e9dddc773f09074eb985d4f9974e81994dbd50",
+            "target": "dc4ecd8f8f0a58dcb25ebf76334504b7f801fc04",
+            "ref": "REL1_46",
+            "files_updated": 13,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "Kartographer": {
+            "component": "mediawiki/extensions/Kartographer",
+            "repository": "https://github.com/wikimedia/mediawiki-extensions-Kartographer",
+            "baseline": "a9d7df0091ef963c5e9582be2c8e022a7831c121",
+            "merge_base": "a9d7df0091ef963c5e9582be2c8e022a7831c121",
+            "target": "43ca0d9df58ccbf3d9d3ec722629dbd9f0ba00f6",
+            "ref": "REL1_46",
+            "files_updated": 5,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "LastModified": {
+            "component": "mediawiki/extensions/LastModified",
+            "repository": "https://github.com/wikimedia/mediawiki-extensions-LastModified",
+            "baseline": "477ac5d08ca96f275d97ec88432731cc9fa0a14c",
+            "merge_base": "7e12780ac6f368bb207eaed8e1ac843fe615eaf8",
+            "target": "2da8a9a3e97da496d5729cd6b84f3ac6f65893ba",
+            "ref": "REL1_46",
+            "files_updated": 16,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "LogoFunctions": {
+            "component": "mediawiki/extensions/LogoFunctions",
+            "repository": "https://github.com/wikimedia/mediawiki-extensions-LogoFunctions",
+            "baseline": "0fd31149750bd7f38d0a6ffae4ac1fc250cb68e4",
+            "merge_base": "052a189673577e96b0b6c169dc5af1630ab0ab10",
+            "target": "0d6e2a3fd2a73d867060a54a5fc78237a23cb990",
+            "ref": "REL1_46",
+            "files_updated": 8,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "Loops": {
+            "component": "mediawiki/extensions/Loops",
+            "repository": "https://github.com/wikimedia/mediawiki-extensions-Loops",
+            "baseline": "2d13306cc3f4f3b564d168e776ddd054b487e1dd",
+            "merge_base": "f2bff84ee1701c609607829e76a590d1d05c8a07",
+            "target": "cb8d91d8d6eb4e47e53da2a562371aed4df7ee9d",
+            "ref": "REL1_46",
+            "files_updated": 15,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "MobileDetect": {
+            "component": "mediawiki/extensions/MobileDetect",
+            "repository": "https://github.com/wikimedia/mediawiki-extensions-MobileDetect",
+            "baseline": "7e3a1e17752096c4931654a79e4d465b8df9dc4f",
+            "merge_base": "7e3a1e17752096c4931654a79e4d465b8df9dc4f",
+            "target": "721911f255263378ab634010f9bd5f8fbe1b2db7",
+            "ref": "REL1_46",
+            "files_updated": 6,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "MsCatSelect": {
+            "component": "mediawiki/extensions/MsCatSelect",
+            "repository": "https://github.com/wikimedia/mediawiki-extensions-MsCatSelect",
+            "baseline": "6aa2e16f6945ec769285838cb7146cd883f2327e",
+            "merge_base": "f539e2cb1c69e506adc608f89aca8940feb32a95",
+            "target": "f57e80b5f18ab2d2be1ed03025ca818a78ce0100",
+            "ref": "REL1_46",
+            "files_updated": 11,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "NoTitle": {
+            "component": "mediawiki/extensions/NoTitle",
+            "repository": "https://github.com/wikimedia/mediawiki-extensions-NoTitle",
+            "baseline": "0f25a9363a1b9dd55ed5ad4ebae837e5c256e086",
+            "merge_base": "20aff7f0ec92a7146a85787de1be87abf5047e46",
+            "target": "8d7b076ab87bce7c1480d3d2dd64b17d0d407a86",
+            "ref": "REL1_46",
+            "files_updated": 7,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "OrphanedTalkPages": {
+            "component": "mediawiki/extensions/OrphanedTalkPages",
+            "repository": "https://github.com/wikimedia/mediawiki-extensions-OrphanedTalkPages",
+            "baseline": "1e6fbcb20e309848834a325b08768df2e4b757f4",
+            "merge_base": "dc4df1ba1ab523ee163ec9ba89ce621ff4e42b6b",
+            "target": "c285efd8357f5c51adf8ac5cca345f62e37fa03c",
+            "ref": "REL1_46",
+            "files_updated": 11,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "PageNotice": {
+            "component": "mediawiki/extensions/PageNotice",
+            "repository": "https://github.com/wikimedia/mediawiki-extensions-PageNotice",
+            "baseline": "60634c20e3e2a0c99436d94b17ad592e3fadaf5d",
+            "merge_base": "cc04f817e1524826519e851e200acf41e4c7c8d6",
+            "target": "17c2fa8fee021e0b5aa98a5e734ee30f8ebd54ce",
+            "ref": "REL1_46",
+            "files_updated": 15,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "ProofreadPage": {
+            "component": "mediawiki/extensions/ProofreadPage",
+            "repository": "https://github.com/wikimedia/mediawiki-extensions-ProofreadPage",
+            "baseline": "7b34246b450c8958e603e2d414146f4f1ddd9751",
+            "merge_base": "7b34246b450c8958e603e2d414146f4f1ddd9751",
+            "target": "99d15bff3e796688de6638742f4d63172f55e9d1",
+            "ref": "REL1_46",
+            "files_updated": 7,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "ProtectionIndicator": {
+            "component": "mediawiki/extensions/ProtectionIndicator",
+            "repository": "https://github.com/wikimedia/mediawiki-extensions-ProtectionIndicator",
+            "baseline": "acb2976aea25cce25206d2c3bbdbb1d47e79bc8c",
+            "merge_base": "9884330bc9637dff9b01c3bd5731b33cda860b40",
+            "target": "a9716b9161bc1727707386920366b830cbe3b053",
+            "ref": "master",
+            "files_updated": 13,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "RegexFunctions": {
+            "component": "mediawiki/extensions/RegexFunctions",
+            "repository": "https://github.com/wikimedia/mediawiki-extensions-RegexFunctions",
+            "baseline": "444c7ad5a019d0f0ba4d8e9c3b2178588571624d",
+            "merge_base": "9d88467f142091cb96d3c1c69d4a33d8d0fed219",
+            "target": "7b58170cb2f1d6beb062f97d2411cf6843620bb3",
+            "ref": "REL1_46",
+            "files_updated": 10,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "Screenplay": {
+            "component": "mediawiki/extensions/Screenplay",
+            "repository": "https://github.com/wikimedia/mediawiki-extensions-Screenplay",
+            "baseline": "18e7627885bbf30c4fc9281464f95ead5c88176a",
+            "merge_base": "7879654b7a7a4e007b592a1cc4ef3f16b03ed498",
+            "target": "d3abe9cb2292adb3bdeb2bfb4b7793824eff80c9",
+            "ref": "REL1_46",
+            "files_updated": 11,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "SnapProjectEmbed": {
+            "component": "mediawiki/extensions/SnapProjectEmbed",
+            "repository": "https://github.com/snapwiki/SnapProjectEmbed",
+            "baseline": "66079e35ea4582394924810b8ead01a2fb06f4c6",
+            "merge_base": "66079e35ea4582394924810b8ead01a2fb06f4c6",
+            "target": "078557d69faef9fed87298f25d4daa652b90112b",
+            "ref": "v4.0.0",
+            "files_updated": 3,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "Spoilers": {
+            "component": "mediawiki/extensions/Spoilers",
+            "repository": "https://github.com/Telshin/Spoilers",
+            "baseline": "29adc2827d842830ec8efced8e14ade122ecd4e6",
+            "merge_base": "29adc2827d842830ec8efced8e14ade122ecd4e6",
+            "target": "e092f1ce2117c85c9d97cc9315e6b9445001fa1d",
+            "ref": "3.0.0",
+            "files_updated": 11,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "SubpageFun": {
+            "component": "mediawiki/extensions/SubpageFun",
+            "repository": "https://github.com/wikimedia/mediawiki-extensions-SubpageFun",
+            "baseline": "014b9448ad346ef67f7cf27edffcce9251429dca",
+            "merge_base": "107310c950bd85c5b8d8a97a550ebebbf4ee27d9",
+            "target": "e3cd3e803ca13e389f88f9ccb262c8ac3d4bc23f",
+            "ref": "REL1_46",
+            "files_updated": 9,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "Tabs": {
+            "component": "mediawiki/extensions/Tabs",
+            "repository": "https://github.com/wikimedia/mediawiki-extensions-Tabs",
+            "baseline": "49e302f30ba6fee7f67b25644a66835c693fe168",
+            "merge_base": "d99cd0c47111ed5c8cdc44821f4a269a547687a1",
+            "target": "a5bdf6e55cdeaef4bee86ef126db631c4b0e7f99",
+            "ref": "REL1_46",
+            "files_updated": 9,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "TocTree": {
+            "component": "mediawiki/extensions/TocTree",
+            "repository": "https://github.com/wikimedia/mediawiki-extensions-TocTree",
+            "baseline": "2e56da08be9f850061eca8c416b7a055d39f0914",
+            "merge_base": "091e8ee5462640f33c3fb55b0c3ea79ea3e7b8bc",
+            "target": "57003a1324cf602bef2c6b396f8c6162d0860a81",
+            "ref": "REL1_46",
+            "files_updated": 17,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "TorBlock": {
+            "component": "mediawiki/extensions/TorBlock",
+            "repository": "https://github.com/wikimedia/mediawiki-extensions-TorBlock",
+            "baseline": "afb6f6e716d6f59c97aaa13bb5eb3d2c86854108",
+            "merge_base": "afb6f6e716d6f59c97aaa13bb5eb3d2c86854108",
+            "target": "716529f51075db07d524097add7195fc8c4e8878",
+            "ref": "REL1_46",
+            "files_updated": 6,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "UploadWizard": {
+            "component": "mediawiki/extensions/UploadWizard",
+            "repository": "https://github.com/wikimedia/mediawiki-extensions-UploadWizard",
+            "baseline": "ff3d080aaff079b63499568e989e46094130e6b4",
+            "merge_base": "ff3d080aaff079b63499568e989e46094130e6b4",
+            "target": "17b916aa285efe174fd66cef0ddc627beca18071",
+            "ref": "REL1_46",
+            "files_updated": 15,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "UrlGetParameters": {
+            "component": "mediawiki/extensions/UrlGetParameters",
+            "repository": "https://github.com/wikimedia/mediawiki-extensions-UrlGetParameters",
+            "baseline": "013427509ca51a710879c8811b6f4ef04d7b2e12",
+            "merge_base": "913d6bde612aa5115a1f7f2e7960a750f6e3a69d",
+            "target": "849b67e56871fdd5bc6a2a5ed15fa8b6e7b8896b",
+            "ref": "REL1_46",
+            "files_updated": 8,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "Variables": {
+            "component": "mediawiki/extensions/Variables",
+            "repository": "https://github.com/wikimedia/mediawiki-extensions-Variables",
+            "baseline": "81115fae09d0a219078d2a2511de83474fd2eb8f",
+            "merge_base": "fe29b81db571c7ae640096b09dbdd535c05a966d",
+            "target": "e1d84b3d53a6ef5ff34ff990b4cfb3612be1fd5d",
+            "ref": "REL1_46",
+            "files_updated": 10,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "WikiCategoryTagCloud": {
+            "component": "mediawiki/extensions/WikiCategoryTagCloud",
+            "repository": "https://github.com/wikimedia/mediawiki-extensions-WikiCategoryTagCloud",
+            "baseline": "521274a1db4a98dd46bd1344778308d4dd5ed25a",
+            "merge_base": "cea19d1a4dc8f45e091de0d85f5fcb77d63f0971",
+            "target": "3bbda47e06616988f0dda0c34dacc73f09db0965",
+            "ref": "master",
+            "files_updated": 3,
+            "dependency_status": "runtime-requirements-unchanged"
+          },
+          "WikiTextLoggedInOut": {
+            "component": "mediawiki/extensions/WikiTextLoggedInOut",
+            "repository": "https://github.com/wikimedia/mediawiki-extensions-WikiTextLoggedInOut",
+            "baseline": "1f76a4c11394d5fcf94db5d3d1a46bec11c534cd",
+            "merge_base": "e6f54668cbf44120f91a08885fb4eda9dc6ad77d",
+            "target": "96602bf239ee075659cca55b1f4d3a9b53779186",
+            "ref": "REL1_46",
+            "files_updated": 10,
+            "dependency_status": "runtime-requirements-unchanged"
+          }
+        }
       }
     },
     "docs/upgrade-cargo-source.json": {
@@ -7874,6 +8679,32 @@
         ],
         "dependency_status": "Runtime requirements unchanged; uses root dependencies",
         "translation_contract_migrations": "docs/upgrade-translation-contract-migrations.json"
+      }
+    },
+    "docs/upgrade-displaytitle-source.json": {
+      "sha256": "0ac3b6dde58e66a12efe98ae7ccb3f38a71bbce03f406a8bc85d10980dc0cb4c",
+      "report": {
+        "component": "mediawiki/extensions/DisplayTitle",
+        "baseline": "e8a5ccec980a88ef7c4d371f9da22e33b8550c50",
+        "target": "4e41492536204e6b33fbc152b751426658d14c9c",
+        "preserved_changes": [],
+        "dependency_status": "No runtime Composer dependencies or component Composer lock; upstream npm lock included.",
+        "upstream_branch": "REL1_46",
+        "version": "4.1.0",
+        "reason": "DisplayTitle 4.0.3 imported global PageProps, causing a TypeError with MediaWiki 1.46.2 when RecentChanges initialized the parser.",
+        "validation": {
+          "php": "8.4.27",
+          "mediawiki": "1.46.2",
+          "php_lint": "passed for all extension PHP files",
+          "upstream_phpunit": {
+            "tests": 92,
+            "assertions": 92,
+            "status": "passed",
+            "configuration": "Minimal dev-only configuration, metawiki temporary PHPUnit tables",
+            "note": "Initial testwiki attempt was blocked by a pre-existing crashed searchindex table; no repair was attempted."
+          },
+          "recentchanges": "Rendered changes list with DisplayTitle explicitly loaded in a private dev CLI configuration"
+        }
       }
     },
     "docs/upgrade-dplforum-source.json": {
@@ -21933,6 +22764,1740 @@
         "target": "30ad1784843cead7b2d25e3f576e99066a9a85b2",
         "preserved_changes": [],
         "dependency_status": "requires-lock-regeneration"
+      }
+    },
+    "docs/upgrade-wikibase-source.json": {
+      "sha256": "b1d567d4ee79a27fc12cbb331a0595d8d333d2e8c0dee2579246ab8e6e05cac4",
+      "report": {
+        "component": "mediawiki/extensions/Wikibase",
+        "baseline": "5d76d04f93f8df1bc2cef2223b4bf23906d000b9",
+        "target": "c8050c025decb4fc8729ea77bc8bbe5688509a0b",
+        "preserved_changes": [
+          {
+            "path": "client/i18n/aig.json",
+            "change": "local-deletion"
+          },
+          {
+            "path": "client/i18n/anp.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/api/ce.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/api/yue-hant.json",
+            "change": "local-deletion"
+          },
+          {
+            "path": "client/i18n/ar.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/ary.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/az.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/ban.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/be-tarask.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/be.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/blk.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/bo.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/bol.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/bom.json",
+            "change": "local-deletion"
+          },
+          {
+            "path": "client/i18n/cbk-zam.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/ce.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/cnr-latn.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/crh-ro.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/de.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/dlg.json",
+            "change": "local-deletion"
+          },
+          {
+            "path": "client/i18n/el.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/fa.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/fi.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/fr.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/frp.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/got.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/ha.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/hak-latn.json",
+            "change": "local-deletion"
+          },
+          {
+            "path": "client/i18n/he.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/hi.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/hr.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/hu.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/ia.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/ja.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/kaa.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/kab.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/kaj.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/kg.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/kk-cyrl.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/ks.json",
+            "change": "local-deletion"
+          },
+          {
+            "path": "client/i18n/kus.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/lb.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/li.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/ln.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/lo.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/mfa.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/mnw.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/mrh.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/ms.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/mui.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/nan-latn-pehoeji.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/ne.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/nup.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/nyn.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/ppl.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/ps.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/pt.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/qqq.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/ru.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/rue.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/rut.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/ryu.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/sas.json",
+            "change": "local-deletion"
+          },
+          {
+            "path": "client/i18n/se.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/ses.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/sh-latn.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/shi.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/shn.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/sk.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/sl.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/smn.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/sq.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/sr-ec.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/tg-cyrl.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/tok.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/tt-cyrl.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/uk.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/vi.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/xon.json",
+            "change": "local-deletion"
+          },
+          {
+            "path": "client/i18n/yue-hant.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/zgh.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/zh-hans.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "client/i18n/zh-hant.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/i18n/aig.json",
+            "change": "local-deletion"
+          },
+          {
+            "path": "lib/i18n/ar.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/i18n/bo.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/i18n/bom.json",
+            "change": "local-deletion"
+          },
+          {
+            "path": "lib/i18n/br.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/i18n/cs.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/i18n/dlg.json",
+            "change": "local-deletion"
+          },
+          {
+            "path": "lib/i18n/el.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/i18n/fa.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/i18n/he.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/i18n/ka.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/i18n/kg.json",
+            "change": "local-deletion"
+          },
+          {
+            "path": "lib/i18n/kri.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/i18n/mfa.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/i18n/ms-arab.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/i18n/ms.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/i18n/nb.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/i18n/nn.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/i18n/ppl.json",
+            "change": "local-deletion"
+          },
+          {
+            "path": "lib/i18n/sas.json",
+            "change": "local-deletion"
+          },
+          {
+            "path": "lib/i18n/sk.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/i18n/sq.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/i18n/tg-cyrl.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/i18n/tok.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/i18n/tr.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/i18n/xon.json",
+            "change": "local-deletion"
+          },
+          {
+            "path": "lib/i18n/yue-hant.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/.gitattributes",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/.gitignore",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/.scrutinizer.yml",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/.travis.yml",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/composer.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/phpunit.xml.dist",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/bootstrap.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/data/items/Q1.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/data/items/Q1752.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/data/items/Q183.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/data/items/simple.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/data/properties/P18.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/data/properties/P6.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/data/properties/simple.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/integration/EntityDeserializationCompatibilityTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/integration/EntitySerializationRoundtripTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/integration/ReferenceSerializationRoundtripTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/integration/ReferencesSerializationRoundtripTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/integration/SiteLinkSerializationRoundtripTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/integration/SnakListSerializationRoundtripTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/integration/SnakSerializationRoundtripTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/integration/StatementListSerializationRoundtripTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/integration/StatementSerializationRoundtripTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/unit/DeserializerFactoryTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Deserializers/AliasGroupListDeserializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Deserializers/DispatchableDeserializerTestCase.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Deserializers/EntityIdDeserializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Deserializers/ItemDeserializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Deserializers/PropertyDeserializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Deserializers/ReferenceDeserializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Deserializers/ReferenceListDeserializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Deserializers/SiteLinkDeserializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Deserializers/SnakDeserializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Deserializers/SnakListDeserializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Deserializers/SnakValueDeserializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Deserializers/StatementDeserializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Deserializers/StatementListDeserializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Deserializers/TermDeserializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Deserializers/TermListDeserializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/unit/SerializerFactoryTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Serializers/AliasGroupListSerializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Serializers/AliasGroupSerializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Serializers/DispatchableSerializerTestCase.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Serializers/ItemSerializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Serializers/PropertySerializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Serializers/ReferenceListSerializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Serializers/ReferenceSerializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Serializers/SiteLinkListSerializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Serializers/SiteLinkSerializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Serializers/SnakListSerializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Serializers/SnakSerializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Serializers/StatementListSerializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Serializers/StatementSerializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Serializers/TermListSerializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Serializers/TermSerializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-serialization/tests/unit/Serializers/TypedSnakSerializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/.gitattributes",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/.gitignore",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/.scrutinizer.yml",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/.travis.yml",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/composer.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/phpmd.xml",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/phpunit.xml.dist",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/bootstrap.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/fixtures/EntityOfUnknownType.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/fixtures/FakeEntityDocument.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/fixtures/ItemFixtures.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/fixtures/PropertyFixtures.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/ByPropertyIdGrouperTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/DataValue/ValuesFinderTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Diff/EntityDiffOldTestCase.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Diff/EntityDiffTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Diff/EntityDifferTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Diff/EntityPatcherTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Diff/EntityTypeAwareDiffOpFactoryTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Diff/Internal/AliasGroupListPatcherTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Diff/Internal/FingerprintPatcherTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Diff/Internal/SiteLinkListPatcherTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Diff/ItemDiffTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Diff/ItemDifferTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Diff/ItemPatcherTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Diff/PropertyDifferTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Diff/PropertyPatcherTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Diff/StatementListDifferTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Diff/StatementListPatcherTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Diff/TermListPatcherTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Entity/PropertyDataTypeMatcherTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/EntityId/EntityIdComposerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/EntityId/EntityIdLabelFormatterTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/EntityId/EscapingEntityIdFormatterTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/EntityId/InMemoryEntityIdPagerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/EntityId/PlainEntityIdFormatterTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/EntityId/SuffixEntityIdParserTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/DisabledEntityTypesEntityLookupTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/EntityLookupExceptionTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/EntityRedirectLookupExceptionTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/EntityRetrievingClosestReferencedEntityIdLookupTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/EntityRetrievingDataTypeLookupTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/EntityRetrievingTermLookupTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/ExceptionIgnoringEntityLookupTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/InMemoryDataTypeLookupTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/InMemoryEntityLookupTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/InProcessCachingDataTypeLookupTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/ItemLookupExceptionTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/LabelDescriptionLookupExceptionTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/LanguageLabelDescriptionLookupTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/LegacyAdapterItemLookupTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/LegacyAdapterPropertyLookupTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/MaxReferenceDepthExhaustedExceptionTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/MaxReferencedEntityVisitsExhaustedExceptionTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/PropertyDataTypeLookupExceptionTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/PropertyLookupExceptionTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/RedirectResolvingEntityLookupTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/ReferencedEntityIdLookupExceptionTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/RestrictedEntityLookupTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/TermLookupExceptionTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/UnknownForeignRepositoryExceptionTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Lookup/UnresolvedEntityRedirectExceptionTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Statement/Filter/DataTypeStatementFilterTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Statement/Filter/NullStatementFilterTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Statement/Filter/PropertySetStatementFilterTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Statement/Grouper/ByPropertyIdStatementGrouperTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Statement/Grouper/FilteringStatementGrouperTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Statement/Grouper/NullStatementGrouperTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Statement/GuidGeneratorTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Statement/StatementGuidParserTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Statement/StatementGuidValidatorTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model-services/tests/unit/Statement/V4GuidGeneratorTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/.gitattributes",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/.gitignore",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/.scrutinizer.yml",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/.travis.yml",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/composer.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/docs/foreign-entity-ids.wiki",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/phpmd.xml",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/phpunit.xml.dist",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/bootstrap.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/fixtures/CustomEntityId.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/ByPropertyIdArrayTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/Entity/BasicEntityIdParserTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/Entity/DispatchingEntityIdParserTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/Entity/EntityIdTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/Entity/EntityIdValueTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/Entity/EntityRedirectTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/Entity/ItemIdParserTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/Entity/ItemIdSetTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/Entity/ItemIdTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/Entity/ItemTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/Entity/NumericPropertyIdTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/Entity/PropertyTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/Internal/MapValueHasherTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/LegacyIdInterpreterTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/NewItem.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/NewStatement.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/ReferenceListTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/ReferenceTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/SiteLinkListTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/SiteLinkTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/Snak/DerivedPropertyValueSnakTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/Snak/PropertyNoValueSnakTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/Snak/PropertySomeValueSnakTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/Snak/PropertyValueSnakTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/Snak/SnakListTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/Snak/SnakTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/Snak/TypedSnakTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/Statement/ReferencedStatementFilterTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/Statement/StatementByGuidMapTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/Statement/StatementGuidTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/Statement/StatementListTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/Statement/StatementTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/Term/AliasGroupFallbackTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/Term/AliasGroupListTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/Term/AliasGroupTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/Term/FingerprintTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/Term/TermFallbackTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/Term/TermListTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/data-model/tests/unit/Term/TermTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/.gitattributes",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/.gitignore",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/.scrutinizer.yml",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/.travis.yml",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/composer.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/phpmd.xml",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/phpunit.xml.dist",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/tests/bootstrap.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/tests/data/items/current/Q1.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/tests/data/items/legacy/old/Q1-103.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/tests/data/items/legacy/old/Q1-10499806.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/tests/data/items/legacy/old/Q1-1622.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/tests/data/items/legacy/old/Q1-953112.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/tests/data/items/legacy/recent/Q1.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/tests/data/items/legacy/recent/Q2.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/tests/data/items/legacy/recent/Q3.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/tests/data/properties/legacy/old/P6-22681711.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/tests/data/properties/legacy/old/P6-51742868.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/tests/data/properties/legacy/old/P6-5788574.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/tests/data/properties/legacy/old/P6-5788751.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/tests/data/properties/legacy/recent/P18.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/tests/data/properties/legacy/recent/P227.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/tests/data/properties/legacy/recent/P31.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/tests/integration/DeserializerFactoryTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/tests/integration/Deserializers/EntityDeserializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/tests/integration/Deserializers/StatementDeserializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/tests/integration/LegacyDeserializerFactoryTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/tests/integration/RealEntitiesTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/tests/integration/SerializerFactoryTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/tests/integration/TestFactoryBuilder.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/tests/unit/Deserializers/EntityDeserializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/tests/unit/Deserializers/LegacyEntityDeserializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/tests/unit/Deserializers/LegacyEntityIdDeserializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/tests/unit/Deserializers/LegacyFingerprintDeserializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/tests/unit/Deserializers/LegacyItemDeserializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/tests/unit/Deserializers/LegacyPropertyDeserializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/tests/unit/Deserializers/LegacySiteLinkListDeserializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/tests/unit/Deserializers/LegacySnakDeserializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/tests/unit/Deserializers/LegacySnakListDeserializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/tests/unit/Deserializers/LegacyStatementDeserializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "lib/packages/wikibase/internal-serialization/tests/unit/Deserializers/StatementDeserializerTest.php",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/abr.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/aig.json",
+            "change": "local-deletion"
+          },
+          {
+            "path": "repo/i18n/api/ar.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/api/ce.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/api/lb.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/api/lt.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/api/nb.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/api/sq.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/api/yue-hant.json",
+            "change": "local-deletion"
+          },
+          {
+            "path": "repo/i18n/api/zh-hant.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/ar.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/ast.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/az.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/be-tarask.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/bg.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/bo.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/bol.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/bom.json",
+            "change": "local-deletion"
+          },
+          {
+            "path": "repo/i18n/ce.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/cnr-latn.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/cs.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/dlg.json",
+            "change": "local-deletion"
+          },
+          {
+            "path": "repo/i18n/el.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/et.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/fi.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/fr.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/fvr.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/gl.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/got.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/hi.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/hu.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/io.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/ja.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/kaa.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/kaj.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/ko.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/ks.json",
+            "change": "local-deletion"
+          },
+          {
+            "path": "repo/i18n/lb.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/lo.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/lv.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/mfa.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/mnw.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/mrt.json",
+            "change": "local-deletion"
+          },
+          {
+            "path": "repo/i18n/ms-arab.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/ms.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/nan-latn-pehoeji.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/nb.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/ne.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/nl.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/ppl.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/ps.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/pt.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/ryu.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/sas.json",
+            "change": "local-deletion"
+          },
+          {
+            "path": "repo/i18n/shn.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/sk.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/sq.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/tg-cyrl.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/tok.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/tt-cyrl.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/vi.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/xon.json",
+            "change": "local-deletion"
+          },
+          {
+            "path": "repo/i18n/yua.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/yue-hant.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/zh-hans.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "repo/i18n/zh-hant.json",
+            "change": "local-source-edit"
+          }
+        ],
+        "dependency_status": "Root Composer lock regenerated; see docs/upgrade-wikibase-migration.json"
+      }
+    },
+    "docs/upgrade-wikibaselexeme-source.json": {
+      "sha256": "6c0581965d86f598a3ca598a7c96d09922b27374b85a4427e2750ca44f8933c7",
+      "report": {
+        "component": "mediawiki/extensions/WikibaseLexeme",
+        "baseline": "92e19753099b8a1c71205f075da2c3dd93be7e6e",
+        "target": "224dc576f36b3407bb54f6e7271227e3996cc4c9",
+        "preserved_changes": [
+          {
+            "path": ".gitmodules",
+            "change": "use-current-upstream-module-url"
+          },
+          {
+            "path": "i18n/api/be-tarask.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "i18n/api/ce.json",
+            "change": "local-deletion"
+          },
+          {
+            "path": "i18n/api/el.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "i18n/api/mk.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "i18n/api/yue-hant.json",
+            "change": "local-deletion"
+          },
+          {
+            "path": "i18n/ar.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "i18n/be-tarask.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "i18n/be.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "i18n/cs.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "i18n/el.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "i18n/fi.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "i18n/hr.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "i18n/hsb.json",
+            "change": "local-deletion"
+          },
+          {
+            "path": "i18n/kaa.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "i18n/kea.json",
+            "change": "local-deletion"
+          },
+          {
+            "path": "i18n/ks.json",
+            "change": "local-deletion"
+          },
+          {
+            "path": "i18n/lb.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "i18n/lv.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "i18n/mk.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "i18n/nb.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "i18n/ne.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "i18n/nl.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "i18n/pl.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "i18n/pt.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "i18n/qqq.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "i18n/ru.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "i18n/smn.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "i18n/sms.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "i18n/sv.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "i18n/tg-cyrl.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "i18n/yue-hant.json",
+            "change": "local-deletion"
+          },
+          {
+            "path": "i18n/zh-hans.json",
+            "change": "local-source-edit"
+          },
+          {
+            "path": "package-lock.json",
+            "change": "reviewed-target-lock-replacement"
+          }
+        ],
+        "dependency_status": "Root Composer lock regenerated; see docs/upgrade-wikibase-migration.json"
       }
     },
     "docs/upgrade-wikicategorytagcloud-source.json": {

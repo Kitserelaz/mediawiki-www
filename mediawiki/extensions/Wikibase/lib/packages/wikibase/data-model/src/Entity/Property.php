@@ -71,9 +71,9 @@ class Property implements
 		?StatementList $statements = null
 	) {
 		$this->id = $id;
-		$this->fingerprint = $fingerprint ?: new Fingerprint();
+		$this->fingerprint = $fingerprint ?? new Fingerprint();
 		$this->setDataTypeId( $dataTypeId );
-		$this->statements = $statements ?: new StatementList();
+		$this->statements = $statements ?? new StatementList();
 	}
 
 	/**
@@ -90,7 +90,7 @@ class Property implements
 	/**
 	 * @since 0.5, can be null since 1.0
 	 *
-	 * @param PropertyId|null $id
+	 * @param EntityId|null $id
 	 *
 	 * @throws InvalidArgumentException
 	 */
@@ -279,7 +279,7 @@ class Property implements
 	 *
 	 * @param StatementList $statements
 	 */
-	public function setStatements( StatementList $statements ) {
+	public function setStatements( StatementList $statements ): void {
 		$this->statements = $statements;
 	}
 

@@ -26,7 +26,7 @@ class EntityIdReaderTest extends \PHPUnit\Framework\TestCase {
 		return __DIR__ . '/EntityIdReaderTest.txt';
 	}
 
-	protected function openIdReader( $file, $type = null ) {
+	protected static function openIdReader( $file, $type = null ) {
 		$path = __DIR__ . '/' . $file;
 		$handle = fopen( $path, 'r' );
 		return new EntityIdReader( new LineReader( $handle ), new BasicEntityIdParser(), $type );
@@ -81,7 +81,7 @@ class EntityIdReaderTest extends \PHPUnit\Framework\TestCase {
 	}
 
 	/**
-	 * @dataProvider listEntitiesProvider_paging
+	 * @dataProvider provideListEntities_paging
 	 */
 	public function testListEntities_paging( $file, $type, $limit, array $expectedChunks ) {
 		$reader = $this->openIdReader( $file, $type );
@@ -93,7 +93,7 @@ class EntityIdReaderTest extends \PHPUnit\Framework\TestCase {
 		}
 	}
 
-	public function listEntitiesProvider_paging() {
+	public static function provideListEntities_paging() {
 		$q1 = new ItemId( 'Q1' );
 		$p2 = new NumericPropertyId( 'P2' );
 		$q3 = new ItemId( 'Q3' );

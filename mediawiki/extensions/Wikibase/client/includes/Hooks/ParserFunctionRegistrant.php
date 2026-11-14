@@ -3,7 +3,7 @@
 namespace Wikibase\Client\Hooks;
 
 use MediaWiki\Hook\GetDoubleUnderscoreIDsHook;
-use MediaWiki\Hook\ParserFirstCallInitHook;
+use MediaWiki\Parser\Hook\ParserFirstCallInitHook;
 use MediaWiki\Parser\Parser;
 use MediaWiki\Parser\PPFrame;
 use Wikibase\Client\DataAccess\ParserFunctions\Runner;

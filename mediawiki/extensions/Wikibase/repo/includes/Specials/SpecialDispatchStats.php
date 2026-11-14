@@ -23,6 +23,7 @@ class SpecialDispatchStats extends SpecialWikibasePage {
 		$this->dispatchStats = $dispatchStats;
 	}
 
+	/** @inheritDoc */
 	public function execute( $subPage ): void {
 		parent::execute( $subPage );
 
@@ -59,9 +60,9 @@ class SpecialDispatchStats extends SpecialWikibasePage {
 	private function addChangeTimesToPage( string $freshestTime, string $stalestTime ): void {
 
 		$this->getOutput()->addHTML( Html::rawElement( 'p', [],
-			$this->msg( 'wikibase-dispatchstats-oldest' )->dateTimeParams( $stalestTime ) ) );
+			$this->msg( 'wikibase-dispatchstats-oldest' )->dateTimeParams( $stalestTime )->parse() ) );
 		$this->getOutput()->addHTML( Html::rawElement( 'p', [],
-			$this->msg( 'wikibase-dispatchstats-newest' )->dateTimeParams( $freshestTime ) ) );
+			$this->msg( 'wikibase-dispatchstats-newest' )->dateTimeParams( $freshestTime )->parse() ) );
 	}
 
 	private function addMinimumNumberOfChangesToPage( int $minNumberOfChanges ): void {

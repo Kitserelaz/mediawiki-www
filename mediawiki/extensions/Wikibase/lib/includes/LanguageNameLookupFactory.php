@@ -5,7 +5,7 @@ declare( strict_types = 1 );
 namespace Wikibase\Lib;
 
 use MediaWiki\Language\Language;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Language\LanguageNameUtils;
 
 /**
  * @license GPL-2.0-or-later

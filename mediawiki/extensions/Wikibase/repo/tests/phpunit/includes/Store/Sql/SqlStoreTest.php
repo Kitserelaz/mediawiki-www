@@ -21,7 +21,7 @@ use Wikibase\Lib\Store\SiteLinkStore;
 use Wikibase\Lib\Store\Sql\EntityChangeLookup;
 use Wikibase\Lib\Store\Sql\PrefetchingWikiPageEntityMetaDataAccessor;
 use Wikibase\Lib\Store\Sql\SqlChangeStore;
-use Wikibase\Lib\Tests\Store\MockPropertyInfoLookup;
+use Wikibase\Repo\Hooks\GetEntityByLinkedTitleLookupHook;
 use Wikibase\Repo\Store\EntityTitleStoreLookup;
 use Wikibase\Repo\Store\IdGenerator;
 use Wikibase\Repo\Store\Sql\SqlStore;
@@ -53,8 +53,6 @@ class SqlStoreTest extends MediaWikiIntegrationTestCase {
 			->willReturn( $this->createMock( EntityRevisionLookup::class ) );
 		$wikibaseServices->method( 'getEntityStoreWatcher' )
 			->willReturn( $this->createMock( EntityStoreWatcher::class ) );
-		$wikibaseServices->method( 'getPropertyInfoLookup' )
-			->willReturn( new MockPropertyInfoLookup() );
 
 		return new SqlStore(
 			$changeFactory,
@@ -65,7 +63,7 @@ class SqlStoreTest extends MediaWikiIntegrationTestCase {
 			new EntityNamespaceLookup( [] ),
 			$this->createMock( IdGenerator::class ),
 			$wikibaseServices,
-			$this->getServiceContainer()->getHookContainer(),
+			$this->createMock( GetEntityByLinkedTitleLookupHook::class ),
 			new DatabaseEntitySource( 'testsource', 'testdb', [], '', '', '', '' ),
 			new SettingsArray( [
 				'sharedCacheKeyPrefix' => 'wikibase_shared/testdb',
@@ -73,7 +71,6 @@ class SqlStoreTest extends MediaWikiIntegrationTestCase {
 				'sharedCacheType' => CACHE_NONE,
 				'sharedCacheDuration' => 60 * 60,
 			] ),
-			new MockPropertyInfoLookup(),
 			$this->getServiceContainer()->getObjectCacheFactory()
 		);
 	}

@@ -108,14 +108,12 @@ class EntityAccessor {
 		$this->termFallbackChain = $termFallbackChain;
 		$this->language = $language;
 		$this->termsLanguages = $termsLanguages;
-		$this->logger = $logger ?: new NullLogger();
+		$this->logger = $logger ?? new NullLogger();
 	}
 
 	/**
 	 * Recursively renumber a serialized array in place, so it is indexed at 1, not 0.
 	 * Just like Lua wants it.
-	 *
-	 * @param array &$entityArr
 	 */
 	private function renumber( array &$entityArr ) {
 		foreach ( $entityArr as &$value ) {
@@ -144,7 +142,7 @@ class EntityAccessor {
 
 		try {
 			$entityObject = $this->entityLookup->getEntity( $entityId );
-		} catch ( UnresolvedEntityRedirectException $ex ) {
+		} catch ( UnresolvedEntityRedirectException ) {
 			$this->logPossibleDoubleRedirect( $prefixedEntityId );
 
 			return null;
@@ -179,7 +177,7 @@ class EntityAccessor {
 		$this->usageAccumulator->addOtherUsage( $entityId );
 		try {
 			return $this->entityLookup->hasEntity( $entityId );
-		} catch ( UnresolvedEntityRedirectException $ex ) {
+		} catch ( UnresolvedEntityRedirectException ) {
 			$this->logPossibleDoubleRedirect( $prefixedEntityId );
 
 			return false;
@@ -204,7 +202,7 @@ class EntityAccessor {
 
 		try {
 			$entity = $this->entityLookup->getEntity( $entityId );
-		} catch ( UnresolvedEntityRedirectException $ex ) {
+		} catch ( UnresolvedEntityRedirectException ) {
 			$this->logPossibleDoubleRedirect( $prefixedEntityId );
 
 			return null;
@@ -227,7 +225,7 @@ class EntityAccessor {
 		return $serialization;
 	}
 
-	private function newClientEntitySerializer() {
+	private function newClientEntitySerializer(): ClientEntitySerializer {
 		return new ClientEntitySerializer(
 			$this->entitySerializer,
 			$this->dataTypeLookup,
@@ -241,7 +239,7 @@ class EntityAccessor {
 		);
 	}
 
-	private function newClientStatementListSerializer() {
+	private function newClientStatementListSerializer(): ClientStatementListSerializer {
 		return new ClientStatementListSerializer(
 			$this->statementSerializer,
 			$this->dataTypeLookup,

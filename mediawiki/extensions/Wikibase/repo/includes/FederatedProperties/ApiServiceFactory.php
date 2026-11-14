@@ -5,6 +5,7 @@ namespace Wikibase\Repo\FederatedProperties;
 
 use MediaWiki\Http\HttpRequestFactory;
 use MediaWiki\Logger\LoggerFactory;
+use Psr\Log\LoggerInterface;
 use Wikibase\DataAccess\EntitySourceDefinitions;
 use Wikibase\DataModel\Entity\Property;
 use Wikibase\Lib\DataTypeDefinitions;
@@ -49,11 +50,14 @@ class ApiServiceFactory {
 	 */
 	private $entitySourceDefinitions;
 
+	private LoggerInterface $logger;
+
 	public function __construct(
 		HttpRequestFactory $httpRequestFactory,
 		array $contentModelMappings,
 		DataTypeDefinitions $dataTypeDefinitions,
 		EntitySourceDefinitions $entitySourceDefinitions,
+		LoggerInterface $logger,
 		string $federatedPropertiesSourceScriptUrl,
 		string $serverName
 	) {
@@ -61,11 +65,12 @@ class ApiServiceFactory {
 		$this->contentModelMappings = $contentModelMappings;
 		$this->dataTypeDefinitions = $dataTypeDefinitions;
 		$this->entitySourceDefinitions = $entitySourceDefinitions;
+		$this->logger = $logger;
 		$this->federatedPropertiesSourceScriptUrl = $federatedPropertiesSourceScriptUrl;
 		$this->serverName = $serverName;
 	}
 
-	private function getUrlForScriptFile( $scriptFile ): string {
+	private function getUrlForScriptFile( string $scriptFile ): string {
 		return $this->federatedPropertiesSourceScriptUrl . $scriptFile;
 	}
 
@@ -90,7 +95,6 @@ class ApiServiceFactory {
 
 	/**
 	 * Returns the singleton instance of ApiEntityNamespaceInfoLookup
-	 * @return ApiEntityNamespaceInfoLookup
 	 */
 	private function getApiEntityNamespaceInfoLookup(): ApiEntityNamespaceInfoLookup {
 		if ( $this->apiEntityNamespaceInfoLookup === null ) {
@@ -123,13 +127,13 @@ class ApiServiceFactory {
 
 	public function newApiPrefetchingTermLookup(): ApiPrefetchingTermLookup {
 		return new ApiPrefetchingTermLookup(
-			$this->getApiEntityLookup()
+			$this->getApiEntityLookup(),
+			$this->logger
 		);
 	}
 
 	/**
 	 * Returns the singleton instance of ApiEntityLookup
-	 * @return ApiEntityLookup
 	 */
 	public function getApiEntityLookup(): ApiEntityLookup {
 		if ( $this->apiEntityLookupInstance === null ) {

@@ -4,9 +4,9 @@ declare( strict_types = 1 );
 
 namespace Wikibase\Repo\Content;
 
-use MediaWiki\HookContainer\HookContainer;
 use MediaWiki\Title\Title;
 use OutOfBoundsException;
+use Wikibase\DataAccess\Hooks\GetEntityContentModelForTitleHook;
 use Wikibase\DataModel\Entity\EntityId;
 use Wikibase\DataModel\Entity\EntityIdParsingException;
 use Wikibase\Lib\Store\EntityIdLookup;
@@ -18,22 +18,15 @@ use Wikibase\Lib\Store\StorageException;
  * @license GPL-2.0-or-later
  */
 class ContentHandlerEntityIdLookup implements EntityIdLookup {
-	/**
-	 * @var EntityContentFactory
-	 */
-	private $entityContentFactory;
-
-	/**
-	 * @var HookContainer
-	 */
-	private $hookContainer;
+	private EntityContentFactory $entityContentFactory;
+	private GetEntityContentModelForTitleHook $hookRunner;
 
 	public function __construct(
 		EntityContentFactory $entityContentFactory,
-		HookContainer $hookContainer
+		GetEntityContentModelForTitleHook $hookRunner
 	) {
 		$this->entityContentFactory = $entityContentFactory;
-		$this->hookContainer = $hookContainer;
+		$this->hookRunner = $hookRunner;
 	}
 
 	/**
@@ -45,14 +38,14 @@ class ContentHandlerEntityIdLookup implements EntityIdLookup {
 	public function getEntityIdForTitle( Title $title ): ?EntityId {
 		$contentModel = $title->getContentModel();
 
-		$this->hookContainer->run( 'GetEntityContentModelForTitle', [ $title, &$contentModel ] );
+		$this->hookRunner->onGetEntityContentModelForTitle( $title, $contentModel );
 
 		try {
 			$handler = $this->entityContentFactory->getEntityHandlerForContentModel( $contentModel );
 			return $handler->getIdForTitle( $title );
-		} catch ( OutOfBoundsException $ex ) {
+		} catch ( OutOfBoundsException ) {
 			// Not an entity content model
-		} catch ( EntityIdParsingException $ex ) {
+		} catch ( EntityIdParsingException ) {
 			// @phan-suppress-previous-line PhanPluginDuplicateCatchStatementBody
 			// Not a valid entity page title.
 		}

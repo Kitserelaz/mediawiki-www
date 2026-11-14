@@ -3,7 +3,9 @@ on:
     push:
         branches: [ master ]
         paths:
-            - repo/rest-api/src/RouteHandlers/openapi.json
+            - repo/rest-api/src/openapi.json
+            - .github/workflows/publishRestApiClient.yml
+            - .github/workflows/publishRestApiClient/**
 jobs:
     build-and-publish-api-client:
         runs-on: ubuntu-latest
@@ -15,20 +17,21 @@ jobs:
             - name: Define next package version
               run: |
                   NEXT_PATCH_VERSION=$(npx semver $(npm view @wmde/wikibase-rest-api version) --increment patch)
-                  CURRENT_OAS_DOC_INTERFACE_VERSION=$(npx semver --coerce $(jq -r .info.version repo/rest-api/src/RouteHandlers/openapi.json))
+                  CURRENT_OAS_DOC_INTERFACE_VERSION=$(npx semver --coerce $(jq -r .info.version repo/rest-api/src/openapi.json))
                   NEXT_VERSION=$(printf "$NEXT_PATCH_VERSION\n$CURRENT_OAS_DOC_INTERFACE_VERSION" | sort -V | tail -1)
                   echo "VERSION=$NEXT_VERSION" >> $GITHUB_ENV
             - name: Build the API client
               uses: addnab/docker-run-action@v3
               with:
-                  image: openapitools/openapi-generator-cli
+                  image: openapitools/openapi-generator-cli:v7.12.0
                   options: -v ${{ github.workspace }}:/local -w /local
                   run: |
                       /usr/local/bin/docker-entrypoint.sh generate \
-                          -i openapi-dereferenced.json \
+                          -i repo/rest-api/src/openapi.json \
                           -g javascript \
                           -o api-client \
                           --additional-properties=usePromises=true \
+                          --additional-properties=skipDefaultUserAgent=true \
                           --additional-properties=projectName=@wmde/wikibase-rest-api \
                           --additional-properties=projectDescription="Wikibase REST API Client" \
                           --additional-properties=licenseName="BSD-3-Clause license" \
@@ -49,3 +52,18 @@ jobs:
                   echo "//registry.npmjs.org/:_authToken=${{ secrets.WMDE_NPM_AUTH_TOKEN }}" > ~/.npmrc
                   cd api-client/
                   npm publish --access public
+            - name: Send mail
+              if: ${{ failure() }}
+              uses: dawidd6/action-send-mail@v3.7.1
+              with:
+                  server_address: smtp.gmail.com
+                  server_port: 465
+                  username: ${{secrets.WMDE_CI_MAIL_USERNAME}}
+                  password: ${{secrets.WMDE_CI_MAIL_PASSWORD}}
+                  subject: Github Action job failed for Wikibase
+                  html_body: |
+                      Job build-and-publish-api-client failed!
+                      The failed job can be found <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}">here</a>.
+                      The job definition can be found <a href="https://github.com/${{ github.repository }}/actions/workflows/publishRestApiClient.yml">here</a>.
+                  to: wikidata-ci-status@wikimedia.de
+                  from: Wikibase Github Action CI

@@ -1,0 +1,17 @@
+{
+	"extends": [
+		"stylelint-config-wikimedia/support-modern",
+		"stylelint-config-standard-scss",
+		"stylelint-config-recommended-vue/scss"
+	],
+	"plugins": ["@namics/stylelint-bem"],
+	"rules": {
+		"plugin/stylelint-bem-namics": {
+			"patternPrefixes": [],
+			"helperPrefixes": [],
+			"namespaces": ["wbl-snl-"]
+		},
+		"selector-max-id": 1,
+		"unit-disallowed-list": null
+	}
+}

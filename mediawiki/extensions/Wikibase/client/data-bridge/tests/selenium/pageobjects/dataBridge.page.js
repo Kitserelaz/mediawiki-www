@@ -1,6 +1,6 @@
-const Page = require( 'wdio-mediawiki/Page' ),
-	Util = require( 'wdio-mediawiki/Util' ),
-	WarningAnonymousEdit = require( './WarningAnonymousEdit' );
+import Page from 'wdio-mediawiki/Page.js';
+import { getTestString, waitForModuleState } from 'wdio-mediawiki/Util.js';
+import WarningAnonymousEdit from './WarningAnonymousEdit.js';
 
 class DataBridgePage extends Page {
 	static get ARTICLE_ELEMENTS() {
@@ -104,7 +104,7 @@ class DataBridgePage extends Page {
 	}
 
 	getDummyTitle() {
-		return Util.getTestString( 'Talk:Data-bridge-test-page-' );
+		return getTestString( 'Talk:Data-bridge-test-page-' );
 	}
 
 	/**
@@ -121,8 +121,8 @@ class DataBridgePage extends Page {
 	}
 
 	open( title ) {
-		super.openTitle( title );
-		Util.waitForModuleState( 'wikibase.client.data-bridge.app', 'ready', browser.config.waitforTimeout );
+		await super.openTitle( title );
+		await waitForModuleState( 'wikibase.client.data-bridge.app', 'ready', browser.options.waitforTimeout );
 	}
 
 	openAppOnPage( title ) {
@@ -132,7 +132,7 @@ class DataBridgePage extends Page {
 
 	launchApp() {
 		this.overloadedLink.click();
-		this.app.waitForDisplayed( { timeout: browser.config.nonApiTimeout } );
+		this.app.waitForDisplayed( { timeout: browser.options.capabilities[ 'mw:nonApiTimeout' ] } );
 		WarningAnonymousEdit.dismiss();
 	}
 
@@ -296,16 +296,14 @@ class DataBridgePage extends Page {
 			return; // don't change size if window has right dimensions already
 		}
 
-		browser.emulateDevice( {
-			viewport: {
-				width: targetWidth, // <number> page width in pixels.
-				height: targetHeight, // <number> page height in pixels.
-			},
-			userAgent: `acting like a ${mobile ? 'narrow' : 'wide'} viewport`,
+		browser.setViewport( {
+			width: targetWidth, // <number> page width in pixels.
+			height: targetHeight, // <number> page height in pixels.
 		} );
+		browser.emulate( 'userAgent', `acting like a ${mobile ? 'narrow' : 'wide'} viewport` );
 		// FIXME: reenable if tests become flaky and we still need that pause:
 		// browser.pause( 1000 ); // wait for resize animations to complete
 	}
 }
 
-module.exports = new DataBridgePage();
+export default new DataBridgePage();

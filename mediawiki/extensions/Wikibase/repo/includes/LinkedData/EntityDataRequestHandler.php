@@ -2,8 +2,8 @@
 
 namespace Wikibase\Repo\LinkedData;
 
-use HttpError;
 use MediaWiki\Cache\HTMLCacheUpdater;
+use MediaWiki\Exception\HttpError;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Request\WebRequest;
 use MediaWiki\Request\WebResponse;
@@ -24,6 +24,8 @@ use Wikibase\Lib\SubEntityTypesMapper;
 use Wikibase\Repo\Rdf\UnknownFlavorException;
 use Wikimedia\Http\HttpAcceptNegotiator;
 use Wikimedia\Http\HttpAcceptParser;
+use Wikimedia\Timestamp\ConvertibleTimestamp;
+use Wikimedia\Timestamp\TimestampFormat as TS;
 
 /**
  * Request handler implementing a linked data interface for Wikibase entities.
@@ -222,12 +224,12 @@ class EntityDataRequestHandler {
 		// If there is no ID, fail
 		if ( $id === null || $id === '' ) {
 			//TODO: different error message?
-			throw new HttpError( 400, $output->msg( 'wikibase-entitydata-bad-id', $id ) );
+			throw new HttpError( 400, $output->msg( 'wikibase-entitydata-bad-id', $id ?? '' ) );
 		}
 
 		try {
 			$entityId = $this->entityIdParser->parse( $id );
-		} catch ( EntityIdParsingException $ex ) {
+		} catch ( EntityIdParsingException ) {
 			throw new HttpError( 400, $output->msg( 'wikibase-entitydata-bad-id', $id ) );
 		}
 
@@ -532,7 +534,7 @@ class EntityDataRequestHandler {
 		// handle If-Modified-Since
 		$imsHeader = $request->getHeader( 'IF-MODIFIED-SINCE' );
 		if ( $imsHeader !== false ) {
-			$ims = wfTimestamp( TS_MW, $imsHeader );
+			$ims = ConvertibleTimestamp::convert( TS::MW, $imsHeader );
 
 			if ( $entityRevision->getTimestamp() <= $ims ) {
 				$response = $output->getRequest()->response();
@@ -612,7 +614,7 @@ class EntityDataRequestHandler {
 		$response->header( 'Content-Type: ' . $contentType . '; charset=UTF-8' );
 
 		if ( $lastModified ) {
-			$response->header( 'Last-Modified: ' . wfTimestamp( TS_RFC2822, $lastModified ) );
+			$response->header( 'Last-Modified: ' . ConvertibleTimestamp::convert( TS::RFC2822, $lastModified ) );
 		}
 
 		//Set X-Frame-Options API results (bug T41180)

@@ -1,5 +1,6 @@
 <?php
 
+use MediaWiki\Context\RequestContext;
 use MediaWiki\MediaWikiServices;
 use Wikibase\DataModel\Deserializers\TermDeserializer;
 use Wikibase\DataModel\Entity\ItemIdParser;
@@ -9,6 +10,7 @@ use Wikibase\Lexeme\DataAccess\ChangeOp\Validation\LexemeTermLanguageValidator;
 use Wikibase\Lexeme\DataAccess\ChangeOp\Validation\LexemeTermSerializationValidator;
 use Wikibase\Lexeme\DataAccess\Store\EntityLookupLemmaLookup;
 use Wikibase\Lexeme\DataAccess\Store\MediaWikiLexemeRedirector;
+use Wikibase\Lexeme\DataAccess\Store\NullLabelDescriptionLookup;
 use Wikibase\Lexeme\Domain\EntityReferenceExtractors\FormsStatementEntityReferenceExtractor;
 use Wikibase\Lexeme\Domain\EntityReferenceExtractors\LexemeStatementEntityReferenceExtractor;
 use Wikibase\Lexeme\Domain\EntityReferenceExtractors\SensesStatementEntityReferenceExtractor;
@@ -16,11 +18,12 @@ use Wikibase\Lexeme\Domain\Merge\LexemeFormsMerger;
 use Wikibase\Lexeme\Domain\Merge\LexemeMerger;
 use Wikibase\Lexeme\Domain\Merge\LexemeSensesMerger;
 use Wikibase\Lexeme\Domain\Merge\NoCrossReferencingLexemeStatements;
+use Wikibase\Lexeme\Domain\Storage\SenseLabelDescriptionLookup;
 use Wikibase\Lexeme\Interactors\MergeLexemes\MergeLexemesInteractor;
-use Wikibase\Lexeme\MediaWiki\Content\LexemeLanguageNameLookupFactory;
 use Wikibase\Lexeme\Presentation\ChangeOp\Deserialization\EditFormChangeOpDeserializer;
 use Wikibase\Lexeme\Presentation\ChangeOp\Deserialization\ItemIdListDeserializer;
 use Wikibase\Lexeme\Presentation\ChangeOp\Deserialization\RepresentationsChangeOpDeserializer;
+use Wikibase\Lexeme\Search\Elastic\WikibaseLexemeCirrusSearch;
 use Wikibase\Lexeme\WikibaseLexemeServices;
 use Wikibase\Lib\StaticContentLanguages;
 use Wikibase\Lib\Store\CachingItemOrderProvider;
@@ -29,8 +32,11 @@ use Wikibase\Lib\Store\LookupConstants;
 use Wikibase\Lib\Store\WikiPageItemOrderProvider;
 use Wikibase\Lib\UnionContentLanguages;
 use Wikibase\Lib\WikibaseContentLanguages;
+use Wikibase\Repo\Api\EntityIdSearchHelper;
+use Wikibase\Repo\Api\EntitySearchHelper;
 use Wikibase\Repo\ChangeOp\Deserialization\ClaimsChangeOpDeserializer;
 use Wikibase\Repo\EntityReferenceExtractors\StatementEntityReferenceExtractor;
+use Wikibase\Repo\MediaWikiLocalizedTextProvider;
 use Wikibase\Repo\Store\Store;
 use Wikibase\Repo\Validators\EntityExistsValidator;
 use Wikibase\Repo\WikibaseRepo;
@@ -78,59 +84,57 @@ return call_user_func( static function () {
 		'zh-yue',
 	];
 
-	$additionalLocalizedLanguages = array_merge( $additionalTermLanguages, [
-		// Languages that are supported in Wikibase (via cldr) but localized here in LexemeLanguageNameLookup.
-		// These should be localized via the cldr extension (T352922).
-		'apc',
-		'az-cyrl',
-		'bas',
-		'bfi',
-		'bzs',
-		'cak',
-		'ccp',
-		'cnh',
-		'ctg',
-		'de-1901',
-		'enm',
-		'fon',
-		'frm',
-		'fro',
-		'gmh',
-		'goh',
-		'gsg',
-		'hoc',
-		'ja-hira',
-		'ja-hrkt',
-		'ja-kana',
-		'lij-mc',
-		'mis',
-		'mvf',
-		'nd',
-		'non',
-		'non-runr',
-		'nr',
-		'nrf-gg',
-		'nrf-je',
-		'obt',
-		'pks',
-		'quc',
-		'rah',
-		'rkt',
-		'rm-puter',
-		'rm-rumgr',
-		'rm-surmiran',
-		'rm-sursilv',
-		'rm-sutsilv',
-		'rm-vallader',
-		'sia',
-		'sjk',
-		'tlh-latn',
-		'tlh-piqd',
-		'txg',
-		'xbm',
-	] );
-
 	return [
+		'WikibaseLexeme.FormSearchHelper' => static function (
+			MediaWikiServices $services
+		): EntitySearchHelper {
+			if ( $services->getExtensionRegistry()->isLoaded( 'WikibaseLexemeCirrusSearch' )
+				&& $services->getMainConfig()->get( 'LexemeUseCirrus' ) ) {
+				// @phan-suppress-next-line PhanUndeclaredClassMethod WikibaseLexemeCirrusSearch is ok here
+				return WikibaseLexemeCirrusSearch::getFormSearchHelper( $services );
+			}
+
+			return new EntityIdSearchHelper(
+				WikibaseRepo::getEntityLookup( $services ),
+				WikibaseRepo::getEntityIdParser( $services ),
+				new NullLabelDescriptionLookup(),
+				WikibaseRepo::getEnabledEntityTypes( $services )
+			);
+		},
+		'WikibaseLexeme.LexemeSearchHelper' => static function (
+			MediaWikiServices $services
+		): EntitySearchHelper {
+			if ( $services->getExtensionRegistry()->isLoaded( 'WikibaseLexemeCirrusSearch' )
+				&& $services->getMainConfig()->get( 'LexemeUseCirrus' ) ) {
+				// @phan-suppress-next-line PhanUndeclaredClassMethod WikibaseLexemeCirrusSearch is ok here
+				return WikibaseLexemeCirrusSearch::getLexemeSearchHelper( $services );
+			}
+
+			return new EntityIdSearchHelper(
+				WikibaseRepo::getEntityLookup( $services ),
+				WikibaseRepo::getEntityIdParser( $services ),
+				new NullLabelDescriptionLookup(),
+				WikibaseRepo::getEnabledEntityTypes( $services )
+			);
+		},
+		'WikibaseLexeme.SenseSearchHelper' => static function (
+			MediaWikiServices $services
+		): EntitySearchHelper {
+			$entityLookup = WikibaseRepo::getEntityLookup( $services );
+			$userLanguage = RequestContext::getMain()->getLanguage();
+			$senseLabelDescriptionLookup = new SenseLabelDescriptionLookup(
+				$entityLookup,
+				WikibaseRepo::getLanguageFallbackChainFactory( $services )->newFromLanguage( $userLanguage ),
+				new MediaWikiLocalizedTextProvider( $userLanguage )
+			);
+
+			return new EntityIdSearchHelper(
+				$entityLookup,
+				WikibaseRepo::getEntityIdParser( $services ),
+				$senseLabelDescriptionLookup,
+				WikibaseRepo::getEnabledEntityTypes( $services )
+			);
+		},
 		'WikibaseLexemeTermLanguages' => static function (
 			MediaWikiServices $mediawikiServices
 		) use (
@@ -141,16 +145,6 @@ return call_user_func( static function () {
 				WikibaseContentLanguages::getDefaultMonolingualTextLanguages(
 					$mediawikiServices->getLanguageNameUtils()
 				)
-			);
-		},
-		'WikibaseLexemeLanguageNameLookupFactory' => static function (
-			MediaWikiServices $mediawikiServices
-		) use (
-			$additionalLocalizedLanguages
-		): LexemeLanguageNameLookupFactory {
-			return new LexemeLanguageNameLookupFactory(
-				WikibaseRepo::getLanguageNameLookupFactory( $mediawikiServices ),
-				$additionalLocalizedLanguages
 			);
 		},
 		'WikibaseLexemeMobileView' =>
@@ -273,7 +267,8 @@ return call_user_func( static function () {
 				$entityTitleStoreLookup,
 				$mediaWikiServices->getWatchedItemStore(),
 				$entityRevisionLookup,
-				WikibaseRepo::getEditEntityFactory( $mediaWikiServices )
+				WikibaseRepo::getEditEntityFactory( $mediaWikiServices ),
+				$mediaWikiServices->getFormatterFactory(),
 			);
 		},
 	];

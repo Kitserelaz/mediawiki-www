@@ -3,8 +3,8 @@ declare( strict_types = 1 );
 
 namespace Wikibase\Client\Tests\Unit\ServiceWiring;
 
+use MediaWiki\ObjectCache\ObjectCacheFactory;
 use MediaWiki\Title\TitleFactory;
-use ObjectCacheFactory;
 use Psr\Log\NullLogger;
 use Wikibase\Client\Tests\Unit\ServiceWiringTestCase;
 use Wikibase\Lib\SettingsArray;

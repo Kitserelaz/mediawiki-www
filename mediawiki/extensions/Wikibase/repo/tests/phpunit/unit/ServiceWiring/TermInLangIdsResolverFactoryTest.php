@@ -3,8 +3,8 @@ declare( strict_types = 1 );
 
 namespace Wikibase\Repo\Tests\Unit\ServiceWiring;
 
-use Psr\Log\LoggerInterface;
-use Wikibase\Lib\Rdbms\RepoDomainDbFactory;
+use Psr\Log\NullLogger;
+use Wikibase\Lib\Rdbms\TermsDomainDbFactory;
 use Wikibase\Lib\Store\Sql\Terms\TermInLangIdsResolverFactory;
 use Wikibase\Repo\Tests\Unit\ServiceWiringTestCase;
 
@@ -20,16 +20,12 @@ class TermInLangIdsResolverFactoryTest extends ServiceWiringTestCase {
 	public function testConstruction(): void {
 		$this->mockService(
 			'WikibaseRepo.Logger',
-			$this->createMock( LoggerInterface::class )
+			new NullLogger()
 		);
 
-		$this->serviceContainer
-			->expects( $this->once() )
-			->method( 'getMainWANObjectCache' );
-
 		$this->mockService(
-			'WikibaseRepo.RepoDomainDbFactory',
-			$this->createStub( RepoDomainDbFactory::class )
+			'WikibaseRepo.TermsDomainDbFactory',
+			$this->createStub( TermsDomainDbFactory::class )
 		);
 
 		$this->assertInstanceOf(

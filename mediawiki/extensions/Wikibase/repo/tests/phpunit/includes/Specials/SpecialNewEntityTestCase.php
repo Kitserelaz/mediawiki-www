@@ -5,12 +5,12 @@ namespace Wikibase\Repo\Tests\Specials;
 use MediaWiki\Block\AbstractBlock;
 use MediaWiki\CommentStore\CommentStoreComment;
 use MediaWiki\Context\RequestContext;
+use MediaWiki\Exception\UserBlockedError;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\Request\FauxResponse;
+use MediaWiki\Tests\Specials\SpecialPageTestBase;
 use MediaWiki\Tests\Unit\MockBlockTrait;
 use PHPUnit\Framework\MockObject\MockObject;
-use SpecialPageTestBase;
-use UserBlockedError;
 use Wikibase\DataModel\Entity\EntityDocument;
 use Wikibase\DataModel\Entity\EntityId;
 use Wikibase\Repo\Specials\SpecialPageCopyrightView;
@@ -86,7 +86,7 @@ abstract class SpecialNewEntityTestCase extends SpecialPageTestBase {
 	 *
 	 * @return array[]
 	 */
-	abstract public function provideValidEntityCreationRequests();
+	abstract public static function provideValidEntityCreationRequests();
 
 	/**
 	 * @param string $url
@@ -127,6 +127,6 @@ abstract class SpecialNewEntityTestCase extends SpecialPageTestBase {
 	 *
 	 * @return array[]
 	 */
-	abstract public function provideInvalidEntityCreationRequests();
+	abstract public static function provideInvalidEntityCreationRequests();
 
 }

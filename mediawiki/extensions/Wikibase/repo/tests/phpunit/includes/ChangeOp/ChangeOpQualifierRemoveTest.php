@@ -22,12 +22,10 @@ use Wikibase\Repo\Store\EntityPermissionChecker;
  */
 class ChangeOpQualifierRemoveTest extends \PHPUnit\Framework\TestCase {
 
-	public static function invalidConstructorProvider() {
-		$args = [];
-		$args[] = [ '', '' ];
-		$args[] = [ 'foo', '' ];
-		$args[] = [ '', 'foo' ];
-		return $args;
+	public static function invalidConstructorProvider(): iterable {
+		yield [ '', '' ];
+		yield [ 'foo', '' ];
+		yield [ '', 'foo' ];
 	}
 
 	/**
@@ -38,11 +36,11 @@ class ChangeOpQualifierRemoveTest extends \PHPUnit\Framework\TestCase {
 		new ChangeOpQualifierRemove( $guid, $snakHash );
 	}
 
-	public function changeOpRemoveProvider() {
+	public static function changeOpRemoveProvider() {
 		$snak = new PropertyValueSnak( 2754236, new StringValue( 'test' ) );
 		$args = [];
 
-		$item = $this->newItemWithClaim( 'q345', $snak );
+		$item = self::newItemWithClaim( 'q345', $snak );
 		$statements = $item->getStatements()->toArray();
 		/** @var Statement $statement */
 		$statement = reset( $statements );
@@ -69,7 +67,7 @@ class ChangeOpQualifierRemoveTest extends \PHPUnit\Framework\TestCase {
 		$this->assertTrue( $changeOpResult->isEntityChanged() );
 	}
 
-	private function newItemWithClaim( $itemIdString, $snak ) {
+	private static function newItemWithClaim( $itemIdString, $snak ) {
 		$item = new Item( new ItemId( $itemIdString ) );
 
 		$item->getStatements()->addNewStatement(

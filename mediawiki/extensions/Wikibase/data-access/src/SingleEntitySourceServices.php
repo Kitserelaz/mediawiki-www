@@ -222,7 +222,7 @@ class SingleEntitySourceServices implements EntityStoreWatcher {
 	private function getEntityDeserializer(): Deserializer {
 		$deserializers = [];
 		foreach ( $this->deserializerFactoryCallbacks as $callback ) {
-			$deserializers[] = call_user_func( $callback, $this->deserializerFactory );
+			$deserializers[] = $callback( $this->deserializerFactory );
 		}
 
 		$internalDeserializerFactory = new InternalDeserializerFactory(
@@ -296,6 +296,10 @@ class SingleEntitySourceServices implements EntityStoreWatcher {
 		}
 	}
 
+	/**
+	 * @param EntityRedirect $entityRedirect
+	 * @param int $revisionId
+	 */
 	public function redirectUpdated( EntityRedirect $entityRedirect, $revisionId ): void {
 		// TODO: should this become more "generic" and somehow enumerate all services and
 		// update all of these which are instances of EntityStoreWatcher?

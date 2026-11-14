@@ -7,7 +7,11 @@
 			"Envlh",
 			"Gomoko",
 			"Guillom",
+			"JLTRY",
+			"Lenchanteur",
 			"Macofe",
+			"Mahabarata",
+			"McDutchie",
 			"Orlodrim",
 			"Pamputt",
 			"Pathe",
@@ -18,9 +22,7 @@
 			"VIGNERON",
 			"Verdy p",
 			"Wladek92",
-			"Yasten",
-			"Mahabarata",
-			"McDutchie"
+			"Yasten"
 		]
 	},
 	"apihelp-wbavailablebadges-summary": "Recherche les éléments de badge disponibles.",
@@ -70,7 +72,7 @@
 	"apihelp-wbformatvalue-param-generate": "Le format de sortie souhaité à générer.",
 	"apihelp-wbformatvalue-param-datatype": "Le type de donnée de la valeur. C’est distinct du type de la valeur",
 	"apihelp-wbformatvalue-param-datavalue": "La donnée à mettre en forme. Ce doit être une sérialisation JSON d’un objet DataValue.",
-	"apihelp-wbformatvalue-param-options": "Les options que devrait utiliser la mise en forme. Fournies sous forme d’objet JSON.",
+	"apihelp-wbformatvalue-param-options": "Les options que devrait utiliser la mise en forme. Fournies sous forme d’objet JSON.\n\nLes options prises en charge sont :\n; $1 : la langue dans laquelle la valeur doit être formatée (un code de langue MediaWiki).\n; $2 : s'il faut arrondir le nombre. Peut être un booléen (arrondir automatique/pas d'arrondi) ou un entier (représentant le nombre de décimal à conserver). Utile uniquement pour les valeurs de quantité.\n; $3 : s'il faut inclure l'unité de mesure dans la sortie (un booléen). Utile uniquement pour les valeurs de quantité.\n; $4 : s'il faut afficher le modèle de calendrier. Peut être un booléen (toujours/jamais) ou la chaîne <code>\"auto\"</code> (déterminera automatiquement s'il faut l'afficher ou non). Utile uniquement pour les valeurs de temps.",
 	"apihelp-wbformatvalue-param-property": "L'ID de propriété à laquelle la valeur de données appartient doit être utilisé à la place du paramètre <var>datatype</var>.",
 	"apihelp-wbformatvalue-example-1": "Mettre en forme une valeur de chaîne simple.",
 	"apihelp-wbformatvalue-example-2": "Mettre en forme une valeur de chaîne sous forme d’une URL en HTML.",
@@ -108,6 +110,7 @@
 	"apihelp-wbgetentities-example-11": "Obtenir l’élément de la page « <var>Berlin</var> » sur le site « <var>enwiki</var> » après normalisation du titre de « <var>berlin</var> »",
 	"apihelp-wbgetentities-example-12": "Obtenir les liens de site pour l’élément <samp>Q42</samp>",
 	"apihelp-wbgetentities-example-13": "Obtenir les entités d’identifiant <samp>Q42</samp> en affichant uniquement les liens de site de « <var>enwiki</var> »",
+	"apihelp-wbgraphql-summary": "Module GraphQl expérimental.",
 	"apihelp-wblinktitles-summary": "Associe deux pages sur deux wikis différents à un élément Wikibase.",
 	"apihelp-wblinktitles-param-tosite": "Un identifiant pour le site sur lequel réside la page.\nÀ utiliser avec <var>totitle</var> pour faire un lien de site complet.",
 	"apihelp-wblinktitles-param-totitle": "Titre de la page à associer.\nÀ utiliser avec <var>tosite</var> pour faire un lien de site complet.",
@@ -318,11 +321,13 @@
 	"apihelp-wbsetsitelink-example-6": "Changer les badges du lien vers la page polonaise à partir de l’élément ayant l’ID <samp>$1</samp> en deux badges pointant vers les articles ayant les Id « Q2 » et « Q149 » sans fournir de titre du lien",
 	"apihelp-wbsetsitelink-example-7": "Modifier le lien vers la page polonaise à partir de l’élément ayant l’ID <samp>$1</samp> sans changer les badges",
 	"apihelp-wbsetsitelink-example-8": "Modifier le lien vers la page polonaise depuis l’élément d’identifiant <samp>$1</samp> et supprimer tous ses badges",
-	"apihelp-wbformatentities-summary": "Met en forme les identifiants d’entité en HTML.",
+	"apihelp-wbformatentities-summary": "Met en forme les identifiants d’entité en HTML ou en texte brut.",
 	"apihelp-wbformatentities-extended-description": "La langue peut être spécifiée avec le paramètre global <var>uselang</var>.",
 	"apihelp-wbformatentities-param-ids": "Les identifiants d’entité à mettre en forme.",
-	"apihelp-wbformatentities-example-1": "Mettre en forme un unique identifiant d’élément.",
+	"apihelp-wbformatentities-param-generate": "Le format de sortie souhaité à générer.",
+	"apihelp-wbformatentities-example-1": "Formater un identifiant d'élément unique en HTML.",
 	"apihelp-wbformatentities-example-2": "Mettre en forme un identifiant d’élément et un identifiant de propriété.",
 	"apihelp-wbformatentities-example-3": "Mettre en forme un identifiant d’élément, un identifiant de propriété et un identifiant de lexème.",
-	"apihelp-wbformatentities-example-4": "Mettre en forme trois identifiants d’élément en français."
+	"apihelp-wbformatentities-example-4": "Mettre en forme trois identifiants d’élément en français.",
+	"apihelp-wbformatentities-example-5": "Formatez trois ID d'élément et un ID de propriété en texte brut."
 }

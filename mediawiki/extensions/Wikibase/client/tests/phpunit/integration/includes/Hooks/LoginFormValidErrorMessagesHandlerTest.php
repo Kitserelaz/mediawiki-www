@@ -3,7 +3,7 @@
 declare( strict_types = 1 );
 namespace Wikibase\Client\Tests\Integration\Hooks;
 
-use LoginHelper;
+use MediaWiki\Exception\LoginErrorHelper;
 use MediaWikiIntegrationTestCase;
 
 /**
@@ -17,7 +17,7 @@ use MediaWikiIntegrationTestCase;
 class LoginFormValidErrorMessagesHandlerTest extends MediaWikiIntegrationTestCase {
 
 	public function testIsRegistered() {
-		$messages = LoginHelper::getValidErrorMessages();
+		$messages = LoginErrorHelper::getValidErrorMessages();
 
 		$this->assertContains( 'wikibase-client-data-bridge-login-warning', $messages );
 	}

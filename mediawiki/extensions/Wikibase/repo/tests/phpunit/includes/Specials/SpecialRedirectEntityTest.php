@@ -7,14 +7,15 @@ namespace Wikibase\Repo\Tests\Specials;
 use Exception;
 use MediaWiki\Language\RawMessage;
 use MediaWiki\MainConfigNames;
+use MediaWiki\Permissions\PermissionStatus;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\Request\WebResponse;
 use MediaWiki\Status\Status;
+use MediaWiki\Tests\Specials\SpecialPageTestBase;
 use MediaWiki\Tests\User\TempUser\TempUserTestTrait;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
 use PHPUnit\Framework\Error\Error;
-use SpecialPageTestBase;
 use Wikibase\DataModel\Entity\EntityId;
 use Wikibase\Lib\MessageException;
 use Wikibase\Lib\Tests\MockRepository;
@@ -177,9 +178,9 @@ class SpecialRedirectEntityTest extends SpecialPageTestBase {
 			->willReturnCallback( function( User $user ) {
 				$name = 'UserWithoutPermission';
 				if ( $user->getName() === $name ) {
-					return Status::newFatal( 'permissiondenied' );
+					return PermissionStatus::newFatal( 'permissiondenied' );
 				} else {
-					return Status::newGood();
+					return PermissionStatus::newGood();
 				}
 			} );
 
@@ -225,21 +226,21 @@ class SpecialRedirectEntityTest extends SpecialPageTestBase {
 
 	public static function provideExceptionParamsData(): iterable {
 		return [
-			[ //toid bad
-				'p' => [ 'fromid' => 'Q1', 'toid' => 'ABCDE' ],
-				'e' => 'Wikibase\Lib\UserInputException:wikibase-wikibaserepopage-invalid-id' ],
-			[ //fromid bad
-				'p' => [ 'fromid' => 'ABCDE', 'toid' => 'Q1' ],
-				'e' => 'Wikibase\Lib\UserInputException:wikibase-wikibaserepopage-invalid-id' ],
-			[ //from id is property
-				'p' => [ 'fromid' => 'P1', 'toid' => 'Q1' ],
-				'e' => 'Wikibase\Repo\Interactors\RedirectCreationException:wikibase-redirect-target-is-incompatible' ],
-			[ //to id is property
-				'p' => [ 'fromid' => 'Q1', 'toid' => 'P1' ],
-				'e' => 'Wikibase\Repo\Interactors\RedirectCreationException:wikibase-redirect-target-is-incompatible' ],
-			[ //bad token
-				'p' => [ 'fromid' => 'Q1', 'toid' => 'Q2', 'wpEditToken' => 'BAD' ],
-				'e' => 'Wikibase\Repo\Interactors\TokenCheckException:wikibase-tokencheck-badtoken' ],
+			'toid bad' => [
+				'params' => [ 'fromid' => 'Q1', 'toid' => 'ABCDE' ],
+				'expected' => 'Wikibase\Lib\UserInputException:wikibase-wikibaserepopage-invalid-id' ],
+			'fromid bad' => [
+				'params' => [ 'fromid' => 'ABCDE', 'toid' => 'Q1' ],
+				'expected' => 'Wikibase\Lib\UserInputException:wikibase-wikibaserepopage-invalid-id' ],
+			'from id is property' => [
+				'params' => [ 'fromid' => 'P1', 'toid' => 'Q1' ],
+				'expected' => 'Wikibase\Repo\Interactors\RedirectCreationException:wikibase-redirect-target-is-incompatible' ],
+			'to id is property' => [
+				'params' => [ 'fromid' => 'Q1', 'toid' => 'P1' ],
+				'expected' => 'Wikibase\Repo\Interactors\RedirectCreationException:wikibase-redirect-target-is-incompatible' ],
+			'bad token' => [
+				'params' => [ 'fromid' => 'Q1', 'toid' => 'Q2', 'wpEditToken' => 'BAD' ],
+				'expected' => 'Wikibase\Repo\Interactors\TokenCheckException:wikibase-tokencheck-badtoken' ],
 		];
 	}
 

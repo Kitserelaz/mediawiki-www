@@ -47,9 +47,9 @@ class Fingerprint implements LabelsProvider, DescriptionsProvider, AliasesProvid
 		?TermList $descriptions = null,
 		?AliasGroupList $aliasGroups = null
 	) {
-		$this->labels = $labels ?: new TermList();
-		$this->descriptions = $descriptions ?: new TermList();
-		$this->aliasGroups = $aliasGroups ?: new AliasGroupList();
+		$this->labels = $labels ?? new TermList();
+		$this->descriptions = $descriptions ?? new TermList();
+		$this->aliasGroups = $aliasGroups ?? new AliasGroupList();
 	}
 
 	/**
@@ -215,7 +215,6 @@ class Fingerprint implements LabelsProvider, DescriptionsProvider, AliasesProvid
 	}
 
 	/**
-	 *
 	 * @since 0.7.4
 	 *
 	 * @param mixed $target

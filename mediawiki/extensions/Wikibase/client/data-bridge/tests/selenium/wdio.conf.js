@@ -1,18 +1,23 @@
 /**
  * See also: http://webdriver.io/guide/testrunner/configurationfile.html
  */
-const fs = require( 'fs' ),
-	saveScreenshot = require( 'wdio-mediawiki' ).saveScreenshot,
-	videoUtil = require( './VideoUtil' ),
-	networkUtil = require( './NetworkUtil' );
-const WikibaseApi = require( 'wdio-wikibase/wikibase.api' );
+import fs from 'fs';
+import { dirname } from 'wdio-mediawiki/Util.js';
+import { saveScreenshot } from 'wdio-mediawiki';
+import * as videoUtil from './VideoUtil.js';
+import * as networkUtil from './NetworkUtil.js';
+import WikibaseApi from 'wdio-wikibase/wikibase.api.js';
 
-exports.config = {
+const testDir = dirname( import.meta.url );
 
-	// Wiki admin
-	mwUser: process.env.MEDIAWIKI_USER || 'Admin',
-	mwPwd: process.env.MEDIAWIKI_PASSWORD || 'vagrant',
+export const config = {
+	// To enable video recording, enable video and disable browser headless
+	// recordVideo: true,
+	// useBrowserHeadless: false,
 	//
+	// To enable screenshots on all tests, disable screenshotsOnFailureOnly
+	// screenshotsOnFailureOnly: false,
+
 	// Set a base URL in order to shorten url command calls. If your `url` parameter starts
 	// with `/`, the base url gets prepended, not including the path portion of your baseUrl.
 	// If your `url` parameter starts without a scheme or `/` (like `some/path`), the base url
@@ -21,10 +26,6 @@ exports.config = {
 	baseUrl: ( process.env.MW_SERVER || 'http://127.0.0.1:8080' ) + (
 		process.env.MW_SCRIPT_PATH || '/w'
 	),
-
-	// Setting this enables automatic screenshots for when a browser command fails
-	// It is also used by afterTest for capturig failed assertions.
-	screenshotPath: process.env.LOG_DIR || `${__dirname}/log`,
 
 	//
 	// ====================
@@ -38,7 +39,7 @@ exports.config = {
 	path: '/wd/hub',
 
 	specs: [
-		`${__dirname}/specs/*.js`,
+		`${testDir}/specs/*.js`,
 	],
 
 	// ============
@@ -60,6 +61,17 @@ exports.config = {
 	services: [ 'devtools' ],
 
 	capabilities: [ {
+		// Wiki admin
+		'mw:mwUser': process.env.MEDIAWIKI_USER || 'Admin',
+		'mw:mwPwd': process.env.MEDIAWIKI_PASSWORD || 'vagrant',
+
+		// Setting this enables automatic screenshots for when a browser command fails
+		// It is also used by afterTest for capturig failed assertions.
+		'mw:screenshotPath': process.env.LOG_DIR || `${testDir}/log`,
+
+		// custom config to be used for waitFor* timeouts where we're not waiting for an API call or such
+		'mw:nonApiTimeout': 10000,
+
 		// maxInstances can get overwritten per capability. So if you have an in-house Selenium
 		// grid with only 5 firefox instances available you can make sure that not more than
 		// 5 instances get started at a time.
@@ -93,9 +105,6 @@ exports.config = {
 
 	// Default timeout for all waitFor* commands.
 	waitforTimeout: 20000,
-
-	// custom config to be used for waitFor* timeouts where we're not waiting for an API call or such
-	nonApiTimeout: 10000,
 
 	// Default timeout in milliseconds for request
 	// if Selenium Grid doesn't send response

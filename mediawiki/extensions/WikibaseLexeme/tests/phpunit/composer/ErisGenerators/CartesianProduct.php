@@ -44,12 +44,12 @@ class CartesianProduct {
 		$this->generatedValues = $generatedValues;
 	}
 
-	public function map( callable $fn, $generatorName = 'CartesianProduct' ) {
+	public function map( callable $fn, string $generatorName = 'CartesianProduct' ): GeneratedValueOptions {
 		$result = $this->combine( $generatorName );
 
 		return $result->map(
 			static function ( array $args ) use ( $fn ) {
-				return call_user_func_array( $fn, $args );
+				return $fn( ...$args );
 			},
 			$generatorName
 		);
@@ -98,9 +98,9 @@ class CartesianProduct {
 	private function cartesianProduct(
 		GeneratedValueOptions $v1,
 		GeneratedValueOptions $v2,
-		$generatorName,
+		string $generatorName,
 		callable $merge
-	) {
+	): GeneratedValueOptions {
 		$options = [];
 		foreach ( $v1 as $firstPart ) {
 			foreach ( $v2 as $secondPart ) {

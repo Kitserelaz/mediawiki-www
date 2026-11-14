@@ -3,16 +3,18 @@
 declare( strict_types = 1 );
 namespace Wikibase\Repo\Tests\Hooks;
 
-use IJobSpecification;
-use JobQueueGroup;
-use ManualLogEntry;
+use MediaWiki\JobQueue\IJobSpecification;
+use MediaWiki\JobQueue\JobQueueGroup;
+use MediaWiki\Logging\ManualLogEntry;
+use MediaWiki\Page\PageIdentityValue;
+use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Title\Title;
+use MediaWiki\Title\TitleFactory;
 use MediaWiki\User\User;
 use PHPUnit\Framework\TestCase;
 use Wikibase\DataModel\Entity\ItemId;
 use Wikibase\Lib\Store\EntityIdLookup;
 use Wikibase\Repo\Hooks\DeleteDispatcher;
-use WikiPage;
 
 /**
  * @covers \Wikibase\Repo\Hooks\DeleteDispatcher
@@ -23,27 +25,26 @@ use WikiPage;
  */
 class DeleteDispatcherTest extends TestCase {
 
-	/** @var string[] */
-	private $localClientDatabases = [ 'asdfwiki', 'somewiki' ];
+	private const LOCAL_CLIENT_DATABASES = [ 'asdfwiki', 'somewiki' ];
 
-	public function earlyAbortProvider() {
+	public static function earlyAbortProvider(): iterable {
 		$title = Title::makeTitle( NS_MAIN, 'Some_cool_page' );
-		$wikiPage = $this->createMock( WikiPage::class );
-		$wikiPage->method( 'getTitle' )
-			->willReturn( $title );
 
-		$entityIdLookup = $this->createMock( EntityIdLookup::class );
-		$entityIdLookup->expects( $this->once() )
-			->method( 'getEntityIdForTitle' )
-			->with( $title )
-			->willReturn( null );
+		$entityIdLookupFactory = function ( self $self ) use ( $title ) {
+			$lookup = $self->createMock( EntityIdLookup::class );
+			$lookup->expects( self::once() )
+				->method( 'getEntityIdForTitle' )
+				->with( $title )
+				->willReturn( null );
+			return $lookup;
+		};
 
-		$entityIdLookupNotCalled = $this->newEntityIdLookupNeverCalled();
+		$entityIdLookupNotCalledFactory = fn ( self $self ) => $self->newEntityIdLookupNeverCalled();
 
 		return [
-			'no client databases' => [ 1, [], $wikiPage, $entityIdLookupNotCalled ],
-			'no archive records' => [ 0, $this->localClientDatabases, $wikiPage, $entityIdLookupNotCalled ],
-			'not an entity page' => [ 1, $this->localClientDatabases, $wikiPage, $entityIdLookup ],
+			'no client databases' => [ 1, [], $title, $entityIdLookupNotCalledFactory ],
+			'no archive records' => [ 0, self::LOCAL_CLIENT_DATABASES, $title, $entityIdLookupNotCalledFactory ],
+			'not an entity page' => [ 1, self::LOCAL_CLIENT_DATABASES, $title, $entityIdLookupFactory ],
 		];
 	}
 
@@ -51,26 +52,33 @@ class DeleteDispatcherTest extends TestCase {
 	 * @dataProvider earlyAbortProvider
 	 * @param int $archivedRecordsCount
 	 * @param string[] $clients
-	 * @param WikiPage $wikiPage
-	 * @param EntityIdLookup $entityIdLookup
+	 * @param Title $title
+	 * @param callable $entityIdLookupFactory
 	 */
 	public function testShouldNotSpawnDeleteDispatchJobAndAbortEarly(
 		int $archivedRecordsCount,
 		array $clients,
-		WikiPage $wikiPage,
-		EntityIdLookup $entityIdLookup
+		Title $title,
+		callable $entityIdLookupFactory
 	) {
+		$entityIdLookup = $entityIdLookupFactory( $this );
+
+		$titleFactory = $this->createConfiguredMock( TitleFactory::class, [
+			'newFromPageIdentity' => $title,
+		] );
+
 		$deleteDispatcher = new DeleteDispatcher(
 			$this->newJobQueueGroupNeverCalled(),
+			$titleFactory,
 			$entityIdLookup,
 			$clients
 		);
-		$status = $deleteDispatcher->onArticleDeleteComplete(
-			$wikiPage,
+		$status = $deleteDispatcher->onPageDeleteComplete(
+			PageIdentityValue::localIdentity( 1, 0, "nothing" ),
 			$this->createMock( User::class ),
 			"reason",
 			1,
-			null,
+			$this->createMock( RevisionRecord::class ),
 			$this->createMock( ManualLogEntry::class ),
 			$archivedRecordsCount
 		);
@@ -93,22 +101,26 @@ class DeleteDispatcherTest extends TestCase {
 			->with( $title )
 			->willReturn( $entityId );
 
-		$deleteDispatcher = new DeleteDispatcher( $jobQueueGroup, $entityIdLookup, $this->localClientDatabases );
+		$titleFactory = $this->createConfiguredMock( TitleFactory::class, [
+			'newFromPageIdentity' => $title,
+		] );
 
-		$wikiPage = $this->createMock( WikiPage::class );
-
-		$wikiPage->method( 'getTitle' )
-			->willReturn( $title );
+		$deleteDispatcher = new DeleteDispatcher(
+			$jobQueueGroup,
+			$titleFactory,
+			$entityIdLookup,
+			self::LOCAL_CLIENT_DATABASES
+		);
 
 		$user = $this->createMock( User::class );
 		$logEntry = $this->createMock( ManualLogEntry::class );
 
-		$deleteDispatcher->onArticleDeleteComplete(
-			$wikiPage,
+		$deleteDispatcher->onPageDeleteComplete(
+			PageIdentityValue::localIdentity( 1, 0, "nothing" ),
 			$user,
 			"reason",
 			$id,
-			null,
+			$this->createMock( RevisionRecord::class ),
 			$logEntry,
 			$archivedRevisionCount
 		);

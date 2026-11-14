@@ -2,6 +2,7 @@
 
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Language\Language;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Request\WebRequest;
 use MediaWiki\Site\SiteLookup;
@@ -12,7 +13,6 @@ use Wikibase\DataModel\Services\EntityId\EntityIdFormatter;
 use Wikibase\Lexeme\DataAccess\ChangeOp\Validation\LexemeTermLanguageValidator;
 use Wikibase\Lexeme\DataAccess\ChangeOp\Validation\LexemeTermSerializationValidator;
 use Wikibase\Lexeme\DataAccess\Store\MediaWikiPageSubEntityMetaDataAccessor;
-use Wikibase\Lexeme\DataAccess\Store\NullLabelDescriptionLookup;
 use Wikibase\Lexeme\Domain\DummyObjects\BlankForm;
 use Wikibase\Lexeme\Domain\DummyObjects\BlankSense;
 use Wikibase\Lexeme\Domain\EntityReferenceExtractors\FormsStatementEntityReferenceExtractor;
@@ -21,7 +21,6 @@ use Wikibase\Lexeme\Domain\EntityReferenceExtractors\LanguageItemIdExtractor;
 use Wikibase\Lexeme\Domain\EntityReferenceExtractors\LexicalCategoryItemIdExtractor;
 use Wikibase\Lexeme\Domain\EntityReferenceExtractors\SensesStatementEntityReferenceExtractor;
 use Wikibase\Lexeme\Domain\Model\Lexeme;
-use Wikibase\Lexeme\Domain\Storage\SenseLabelDescriptionLookup;
 use Wikibase\Lexeme\MediaWiki\Content\LexemeContent;
 use Wikibase\Lexeme\MediaWiki\Content\LexemeHandler;
 use Wikibase\Lexeme\MediaWiki\EntityLinkFormatters\FormLinkFormatter;
@@ -64,7 +63,6 @@ use Wikibase\Lib\Store\TitleLookupBasedEntityTitleTextLookup;
 use Wikibase\Lib\Store\TitleLookupBasedEntityUrlLookup;
 use Wikibase\Lib\TermLanguageFallbackChain;
 use Wikibase\Repo\Api\EditEntity;
-use Wikibase\Repo\Api\EntityIdSearchHelper;
 use Wikibase\Repo\ChangeOp\Deserialization\ClaimsChangeOpDeserializer;
 use Wikibase\Repo\Diff\BasicEntityDiffVisualizer;
 use Wikibase\Repo\Diff\ClaimDiffer;
@@ -277,12 +275,7 @@ return [
 			);
 		},
 		Def::ENTITY_SEARCH_CALLBACK => static function ( WebRequest $request ) {
-			return new EntityIdSearchHelper(
-				WikibaseRepo::getEntityLookup(),
-				WikibaseRepo::getEntityIdParser(),
-				new NullLabelDescriptionLookup(),
-				WikibaseRepo::getEnabledEntityTypes()
-			);
+			return WikibaseLexemeServices::getLexemeSearchHelper();
 		},
 		Def::LINK_FORMATTER_CALLBACK => static function ( Language $language ) {
 			$requestContext = RequestContext::getMain();
@@ -354,12 +347,7 @@ return [
 			return LexemeHandler::factory( $services, $requestContext );
 		},
 		Def::ENTITY_SEARCH_CALLBACK => static function ( WebRequest $request ) {
-			return new EntityIdSearchHelper(
-				WikibaseRepo::getEntityLookup(),
-				WikibaseRepo::getEntityIdParser(),
-				new NullLabelDescriptionLookup(),
-				WikibaseRepo::getEnabledEntityTypes()
-			);
+			return WikibaseLexemeServices::getFormSearchHelper();
 		},
 		DEF::CHANGEOP_DESERIALIZER_CALLBACK => static function () {
 			$formChangeOpDeserializer = new FormChangeOpDeserializer(
@@ -494,20 +482,7 @@ return [
 			return LexemeHandler::factory( $services, $requestContext );
 		},
 		Def::ENTITY_SEARCH_CALLBACK => static function ( WebRequest $request ) {
-			$entityLookup = WikibaseRepo::getEntityLookup();
-			$userLanguage = WikibaseRepo::getUserLanguage();
-			$senseLabelDescriptionLookup = new SenseLabelDescriptionLookup(
-				$entityLookup,
-				WikibaseRepo::getLanguageFallbackChainFactory()->newFromLanguage( $userLanguage ),
-				new MediaWikiLocalizedTextProvider( $userLanguage )
-			);
-
-			return new EntityIdSearchHelper(
-				$entityLookup,
-				WikibaseRepo::getEntityIdParser(),
-				$senseLabelDescriptionLookup,
-				WikibaseRepo::getEnabledEntityTypes()
-			);
+			return WikibaseLexemeServices::getSenseSearchHelper();
 		},
 		Def::CHANGEOP_DESERIALIZER_CALLBACK => static function () {
 			$senseChangeOpDeserializer = new SenseChangeOpDeserializer(

@@ -3,10 +3,13 @@
 namespace Wikibase\View\Tests;
 
 use InvalidArgumentException;
-use MediaWiki\Languages\LanguageFactory;
+use MediaWiki\Language\LanguageFactory;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Site\HashSiteStore;
+use Wikibase\DataModel\Entity\EntityIdParser;
+use Wikibase\DataModel\Serializers\SerializerFactory;
 use Wikibase\DataModel\Services\EntityId\EntityIdFormatter;
+use Wikibase\DataModel\Services\Lookup\PropertyDataTypeLookup;
 use Wikibase\DataModel\Services\Statement\Grouper\NullStatementGrouper;
 use Wikibase\Lib\ContentLanguages;
 use Wikibase\Lib\DataTypeFactory;
@@ -29,6 +32,7 @@ use Wikibase\View\StatementSectionsView;
 use Wikibase\View\Template\TemplateFactory;
 use Wikibase\View\Template\TemplateRegistry;
 use Wikibase\View\ViewFactory;
+use Wikibase\View\Wbui2025FeatureFlag;
 
 /**
  * @covers \Wikibase\View\ViewFactory
@@ -75,6 +79,8 @@ class ViewFactoryTest extends \PHPUnit\Framework\TestCase {
 			$plainFactory ?: $this->getEntityIdFormatterFactory( SnakFormatter::FORMAT_PLAIN ),
 			$this->getSnakFormatterFactory(),
 			new NullStatementGrouper(),
+			$this->createMock( SerializerFactory::class ),
+			$this->createMock( PropertyDataTypeLookup::class ),
 			$this->createMock( PropertyOrderProvider::class ),
 			new HashSiteStore(),
 			new DataTypeFactory( [] ),
@@ -87,7 +93,9 @@ class ViewFactoryTest extends \PHPUnit\Framework\TestCase {
 			[],
 			$this->createMock( LocalizedTextProviderFactory::class ),
 			$this->createMock( SpecialPageLinker::class ),
-			$this->createMock( LanguageFactory::class )
+			$this->createMock( LanguageFactory::class ),
+			$this->createMock( EntityIdParser::class ),
+			$this->createMock( Wbui2025FeatureFlag::class ),
 		);
 	}
 
@@ -133,7 +141,7 @@ class ViewFactoryTest extends \PHPUnit\Framework\TestCase {
 
 	public function testNewStatementSectionsView() {
 		$statementSectionsView = $this->newViewFactory()->newStatementSectionsView(
-			'de',
+			MediaWikiServices::getInstance()->getLanguageFactory()->getLanguage( 'de' ),
 			new TermLanguageFallbackChain( [], $this->createStub( ContentLanguages::class ) ),
 			$this->createMock( EditSectionGenerator::class )
 		);

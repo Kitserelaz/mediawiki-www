@@ -56,7 +56,7 @@ class TypeDispatchingWikiPageEntityMetaDataAccessor implements WikiPageEntityMet
 		$repositoryName
 	) {
 		Assert::parameterElementType(
-			'callable|' . WikiPageEntityMetaDataAccessor::class,
+			[ 'callable', WikiPageEntityMetaDataAccessor::class ],
 			$instansiators,
 			'$instansiators'
 		);
@@ -163,8 +163,8 @@ class TypeDispatchingWikiPageEntityMetaDataAccessor implements WikiPageEntityMet
 		}
 
 		if ( is_callable( $this->accessors[$entityType] ) ) {
-			$this->accessors[$entityType] = call_user_func(
-				$this->accessors[$entityType],
+			// @phan-suppress-next-line PhanUndeclaredInvokeInCallable
+			$this->accessors[$entityType] = $this->accessors[$entityType](
 				$this->databaseName,
 				$this->repositoryName
 			);

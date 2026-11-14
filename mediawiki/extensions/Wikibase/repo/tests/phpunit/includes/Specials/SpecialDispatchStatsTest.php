@@ -4,7 +4,7 @@ declare( strict_types=1 );
 
 namespace Wikibase\Repo\Tests\Specials;
 
-use SpecialPageTestBase;
+use MediaWiki\Tests\Specials\SpecialPageTestBase;
 use Wikibase\Repo\Specials\SpecialDispatchStats;
 use Wikibase\Repo\Store\Sql\DispatchStats;
 

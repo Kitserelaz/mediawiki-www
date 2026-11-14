@@ -6,7 +6,7 @@ namespace Wikibase\Lib\Store\Sql\Terms;
 
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
-use Wikibase\Lib\Store\Sql\Terms\Util\StatsdMonitoring;
+use Wikibase\Lib\Store\Sql\Terms\Util\StatsMonitoring;
 use Wikimedia\Rdbms\IDatabase;
 use Wikimedia\Rdbms\IReadableDatabase;
 
@@ -20,7 +20,7 @@ use Wikimedia\Rdbms\IReadableDatabase;
  */
 class DatabaseInnerTermStoreCleaner {
 
-	use StatsdMonitoring;
+	use StatsMonitoring;
 
 	/** @var IReadableDatabase a connection to DB_REPLICA. Note only set on cleanTermInLangIds */
 	private ?IReadableDatabase $dbr = null;
@@ -33,7 +33,7 @@ class DatabaseInnerTermStoreCleaner {
 	public function __construct(
 		?LoggerInterface $logger = null
 	) {
-		$this->logger = $logger ?: new NullLogger();
+		$this->logger = $logger ?? new NullLogger();
 	}
 
 	/**
@@ -259,8 +259,6 @@ class DatabaseInnerTermStoreCleaner {
 
 	/**
 	 * Delete the specified text rows from the database.
-	 *
-	 * @param array $textIds
 	 */
 	private function cleanTextIds( array $textIds ): void {
 		if ( $textIds === [] ) {

@@ -1,0 +1,27 @@
+@import '~@wikimedia/codex-design-tokens/theme-wikimedia-ui';
+
+// cf. https://phabricator.wikimedia.org/diffusion/GOJU/browse/master/src/themes/wikimediaui/common.less$4
+$base-font-size: 16px; // assumed browser default
+$base-font-size-desired: 14px;
+
+$padding-vertical-base: #{ math.div( 6px, $base-font-size-desired ) }em;
+$padding-vertical-wide: #{ math.div( 12px, $base-font-size-desired ) }em;
+$padding-horizontal-base: #{ math.div( 12px, $base-font-size-desired ) }em;
+
+$content-padding-left: 0.5em;
+
+$size-input-binary: #{ math.div( 20px, $base-font-size-desired ) }em;
+
+$svg-pen: url( ../../assets/pen.svg );
+$svg-publish: url( ../../assets/transparent_checkmark_in_accent50_circle.svg );
+$svg-cancel: url( ../../assets/close.svg );
+$svg-arrow-up-base20: url( ../../assets/arrow_up_base20.svg );
+$svg-warning: url( ../../assets/warning_sign.svg );
+$svg-error: url( ../../assets/error_sign.svg );
+$svg-check: url( ../../assets/check.svg );
+
+$sm: 501px;
+$md: 952px;
+$lg: 1096px;
+
+$grid-breakpoints: ( sm: $sm, md: $md, lg: $lg );

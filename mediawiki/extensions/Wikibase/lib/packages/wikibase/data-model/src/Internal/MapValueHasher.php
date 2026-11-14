@@ -4,6 +4,7 @@ namespace Wikibase\DataModel\Internal;
 
 use InvalidArgumentException;
 use Traversable;
+use Wikibase\DataModel\Reference;
 
 /**
  * Generates hashes for associative arrays based on the values of their elements.
@@ -15,10 +16,9 @@ use Traversable;
  */
 class MapValueHasher {
 
-	/** @var bool */
-	private $isOrdered;
+	private bool $isOrdered;
 
-	public function __construct( $holdOrderIntoAccount = false ) {
+	public function __construct( bool $holdOrderIntoAccount = false ) {
 		$this->isOrdered = $holdOrderIntoAccount;
 	}
 
@@ -27,14 +27,14 @@ class MapValueHasher {
 	 *
 	 * @since 0.1
 	 *
-	 * @param Traversable $map
+	 * @param Traversable|Reference[] $map
 	 *
 	 * @return string
 	 * @throws InvalidArgumentException
 	 */
 	public function hash( $map ) {
 		if ( !is_iterable( $map ) ) {
-			throw new InvalidArgumentException( '$map must be an array or an instance of Traversable' );
+			throw new InvalidArgumentException( '$map must be a Reference array or an instance of Traversable' );
 		}
 
 		$hashes = [];

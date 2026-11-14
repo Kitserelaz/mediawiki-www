@@ -211,7 +211,7 @@ class SerializationModifierTest extends \PHPUnit\Framework\TestCase {
 					'de' => [ 'language' => 'de', 'value' => 'Label' ],
 				],
 			],
-			'alteredArray' => [
+			'expectedArray' => [
 				'type' => 'entity',
 				'labels' => [
 					'en' => [ 'language' => 'en', 'value' => 'label', 'type' => 'label' ],
@@ -234,7 +234,7 @@ class SerializationModifierTest extends \PHPUnit\Framework\TestCase {
 					],
 				],
 			],
-			'alteredArray' => [
+			'expectedArray' => [
 				'type' => 'entity',
 				'subentities' => [
 					[
@@ -260,7 +260,7 @@ class SerializationModifierTest extends \PHPUnit\Framework\TestCase {
 					],
 				],
 			],
-			'alteredArray' => [
+			'expectedArray' => [
 				'type' => 'entity',
 				'subentities' => [
 					[

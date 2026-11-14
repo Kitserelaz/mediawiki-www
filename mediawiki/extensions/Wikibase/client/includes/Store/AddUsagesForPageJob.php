@@ -2,8 +2,8 @@
 
 namespace Wikibase\Client\Store;
 
-use Job;
-use JobSpecification;
+use MediaWiki\JobQueue\Job;
+use MediaWiki\JobQueue\JobSpecification;
 use MediaWiki\Title\Title;
 use Wikibase\Client\Usage\EntityUsage;
 use Wikibase\Client\WikibaseClient;
@@ -54,10 +54,6 @@ class AddUsagesForPageJob extends Job {
 		);
 	}
 
-	/**
-	 * @param Title $title
-	 * @param array $params
-	 */
 	public function __construct( Title $title, array $params ) {
 		parent::__construct( 'wikibase-addUsagesForPage', $title, $params );
 

@@ -32,6 +32,9 @@ $cfg['directory_list'] = array_merge(
 		'data-access/src',
 		'client/includes',
 		'repo/includes',
+		'repo/domains/crud/src',
+		'repo/domains/search/src',
+		'repo/domains/reuse/src',
 		'repo/rest-api/src',
 		'lib/includes',
 		'client/maintenance',
@@ -63,10 +66,6 @@ if ( is_dir( 'vendor' ) ) {
 $cfg['exclude_analysis_directory_list'] = array_merge(
 	$cfg['exclude_analysis_directory_list'],
 	[
-		'lib/packages/wikibase/data-model/src/',
-		'lib/packages/wikibase/data-model-serialization/src/',
-		'lib/packages/wikibase/data-model-services/src/',
-		'lib/packages/wikibase/internal-serialization/src/',
 		'../../extensions/Babel/',
 		'../../extensions/CirrusSearch/',
 		'../../extensions/Echo/',

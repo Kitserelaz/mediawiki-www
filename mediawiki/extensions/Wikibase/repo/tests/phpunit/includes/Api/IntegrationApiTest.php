@@ -2,7 +2,6 @@
 
 namespace Wikibase\Repo\Tests\Api;
 
-use MediaWiki\MediaWikiServices;
 use MediaWiki\Tests\Api\ApiTestCase;
 use MediaWiki\Tests\Site\TestSites;
 
@@ -28,17 +27,15 @@ class IntegrationApiTest extends ApiTestCase {
 
 		$this->setupSiteLinkGroups();
 
-		$sitesTable = MediaWikiServices::getInstance()->getSiteStore();
+		$sitesTable = $this->getServiceContainer()->getSiteStore();
 		$sitesTable->clear();
 		$sitesTable->saveSites( TestSites::getSites() );
 	}
 
 	private function setupSitelinkGroups() {
-		global $wgWBRepoSettings;
-
-		$customRepoSettings = $wgWBRepoSettings;
+		$customRepoSettings = $this->getConfVar( 'WBRepoSettings' );
 		$customRepoSettings['siteLinkGroups'] = [ 'wikipedia' ];
-		$this->setMwGlobals( 'wgWBRepoSettings', $customRepoSettings );
+		$this->overrideConfigValue( 'WBRepoSettings', $customRepoSettings );
 	}
 
 	public static function apiRequestProvider() {

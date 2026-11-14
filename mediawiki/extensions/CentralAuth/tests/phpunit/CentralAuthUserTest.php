@@ -57,6 +57,19 @@ class CentralAuthUserTest extends MediaWikiIntegrationTestCase {
 		$this->assertFalse( $ca->isAttached() );
 	}
 
+	public function testQueryAttachedSkipsWikiWithoutJobQueue(): void {
+		$this->overrideConfigValue( 'LocalDatabases', [] );
+		$ca = $this->getMockBuilder( CentralAuthUser::class )
+			->setConstructorArgs( [ 'Example user' ] )
+			->onlyMethods( [ 'queryAttachedBasic' ] )
+			->getMock();
+		$ca->method( 'queryAttachedBasic' )->willReturn( [
+			'deletedtestwiki' => [ 'wiki' => 'deletedtestwiki' ],
+		] );
+
+		$this->assertSame( [], $ca->queryAttached() );
+	}
+
 	public function testAdminLockForTemporaryAccount() {
 		$this->enableAutoCreateTempUser();
 		$ca = CentralAuthUser::newUnattached( '~2024-1' );

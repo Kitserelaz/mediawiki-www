@@ -16,7 +16,6 @@ class PHPUnitTestCaseWrapper {
 		shrinkingTimeLimit as private traitShrinkingTimeLimit;
 		withRand as private traitWithRand;
 		seedingRandomNumberGeneration as private traitSeedingRandomNumberGeneration;
-		dumpSeedForReproducing as private traitDumpSeedForReproducing;
 	}
 
 	/**
@@ -28,37 +27,40 @@ class PHPUnitTestCaseWrapper {
 		$this->testCase = $testCase;
 	}
 
+	/** @inheritDoc */
 	public function __call( $name, $arguments ) {
-		return call_user_func_array( [ $this->testCase, $name ], $arguments );
+		return $this->testCase->$name( ...$arguments );
 	}
 
+	/** @inheritDoc */
 	public function seed( $seed ) {
 		$this->seed = $seed;
 		return $this;
 	}
 
+	/** @inheritDoc */
 	public function limitTo( $limit ) {
 		return $this->traitLimitTo( $limit );
 	}
 
+	/** @inheritDoc */
 	public function minimumEvaluationRatio( $ratio ) {
 		return $this->traitMinimumEvaluationRatio( $ratio );
 	}
 
+	/** @inheritDoc */
 	public function shrinkingTimeLimit( $shrinkingTimeLimit ) {
 		return $this->traitShrinkingTimeLimit( $shrinkingTimeLimit );
 	}
 
+	/** @inheritDoc */
 	public function withRand( $randFunction ) {
 		return $this->traitWithRand( $randFunction );
 	}
 
+	/** @inheritDoc */
 	public function seedingRandomNumberGeneration() {
 		return $this->traitSeedingRandomNumberGeneration();
-	}
-
-	public function dumpSeedForReproducing() {
-		return $this->traitDumpSeedForReproducing();
 	}
 
 }

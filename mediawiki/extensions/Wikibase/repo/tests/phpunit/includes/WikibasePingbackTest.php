@@ -11,8 +11,8 @@ use MediaWiki\SiteStats\SiteStats;
 use MediaWiki\SiteStats\SiteStatsInit;
 use MediaWiki\Utils\MWTimestamp;
 use MediaWikiIntegrationTestCase;
-use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
+use Psr\Log\NullLogger;
 use TestLogger;
 use Wikibase\Lib\Rdbms\RepoDomainDb;
 use Wikibase\Lib\SettingsArray;
@@ -21,7 +21,6 @@ use Wikibase\Lib\Tests\Store\Sql\Terms\Util\FakeLoadBalancer;
 use Wikibase\Repo\WikibasePingback;
 
 /**
- *
  * @covers \Wikibase\Repo\WikibasePingback
  * @group Wikibase
  * @group Database
@@ -35,12 +34,10 @@ class WikibasePingbackTest extends MediaWikiIntegrationTestCase {
 	protected function setUp(): void {
 		parent::setUp();
 
-		global $wgWBRepoSettings;
-
-		$settings = $wgWBRepoSettings;
+		$settings = $this->getConfVar( 'WBRepoSettings' );
 		$settings['wikibasePingback'] = true;
 		$settings['pingbackHost'] = 'http://localhost/event/beacon';
-		$this->setMwGlobals( 'wgWBRepoSettings', $settings );
+		$this->overrideConfigValue( 'WBRepoSettings', $settings );
 		SiteStatsInit::doPlaceholderInit();
 	}
 
@@ -160,7 +157,6 @@ class WikibasePingbackTest extends MediaWikiIntegrationTestCase {
 	}
 
 	private function getPingback( ?HttpRequestFactory $requestFactory = null ): WikibasePingback {
-		$logger = $this->createMock( LoggerInterface::class );
 		$extensions = $this->createMock( ExtensionRegistry::class );
 		$wikibaseRepoSettings = $this->createMock( SettingsArray::class );
 		$requestFactory ??= $this->createMock( HttpRequestFactory::class );
@@ -182,7 +178,7 @@ class WikibasePingbackTest extends MediaWikiIntegrationTestCase {
 
 		return new WikibasePingback(
 			new HashConfig( [ MainConfigNames::DBtype => '' ] ),
-			$logger,
+			new NullLogger(),
 			$extensions,
 			$wikibaseRepoSettings,
 			$requestFactory,

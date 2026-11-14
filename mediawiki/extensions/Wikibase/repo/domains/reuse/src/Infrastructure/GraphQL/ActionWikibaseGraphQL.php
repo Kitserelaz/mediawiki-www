@@ -1,0 +1,118 @@
+<?php declare( strict_types=1 );
+
+namespace Wikibase\Repo\Domains\Reuse\Infrastructure\GraphQL;
+
+use MediaWiki\Api\ApiBase;
+use MediaWiki\Api\ApiMain;
+use MediaWiki\Api\ApiResult;
+use MediaWiki\Request\WebRequest;
+use Wikibase\Repo\Domains\Reuse\Infrastructure\GraphQL\Errors\GraphQLErrorType;
+
+/**
+ * @license GPL-2.0-or-later
+ */
+class ActionWikibaseGraphQL extends ApiBase {
+
+	public function __construct(
+		ApiMain $mainModule,
+		string $moduleName,
+		private readonly GraphQLService $graphQLService,
+		private readonly GraphQLTracking $tracking,
+	) {
+		parent::__construct( $mainModule, $moduleName );
+	}
+
+	public function execute(): void {
+		if ( !$this->isMediaTypeSupported( $this->getRequest() ) ) {
+			// Mark the `query` parameter as used to prevent warnings about unrecognized parameters
+			// when it's sent as a request parameter with an unsupported media type (e.g., multipart/form-data)
+			$this->getMain()->markParamsUsed( 'query' );
+			$this->tracking->trackValidationError( GraphQLErrorType::UNSUPPORTED_MEDIA_TYPE->name );
+			$this->getResult()->addValue( null, 'errors', [
+				[ 'message' => "Requests must be sent as 'application/json'" ],
+			] );
+
+			return;
+		}
+
+		$rawBody = $this->getRequest()->getRawPostString();
+		$data = json_decode( $rawBody, true );
+
+		$variables = isset( $data['variables'] ) && is_array( $data['variables'] ) ? $data['variables'] : [];
+		$operationName = isset( $data['operationName'] ) && is_string( $data['operationName'] ) ? $data['operationName'] : null;
+
+		$result = $this->graphQLService->query( $data['query'] ?? '', $variables, $operationName );
+		$this->preserveKeysAndBooleans( $result );
+
+		foreach ( $result as $resultKey => $value ) {
+			$this->getResult()->addValue( null, $resultKey, $value );
+		}
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function isInternal() {
+		return true;
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function mustBePosted() {
+		return true;
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function needsToken() {
+		return false;
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function isWriteMode() {
+		return false;
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function getAllowedParams() {
+		return [];
+	}
+
+	/**
+	 * Fields starting with an underscore get stripped from the response by the Action API by default, because that is the naming convention
+	 * for metadata fields. This method adds a "_preservekeys" marker to all associative arrays to preserve introspection fields, and any
+	 * field aliases starting with an underscore.
+	 *
+	 * Additionally, boolean fields are transformed according to "backwards compatibility" unless explicitly listed, so this method also
+	 * adds a "_BC_bools" marker with all boolean fields.
+	 */
+	private function preserveKeysAndBooleans( array &$value ): void {
+		foreach ( $value as &$item ) {
+			if ( is_array( $item ) ) {
+				$this->preserveKeysAndBooleans( $item );
+				if ( !array_is_list( $item ) ) {
+					$item[ApiResult::META_PRESERVE_KEYS] = array_keys( $item );
+
+					// preserve boolean fields
+					$booleanKeys = array_keys( array_filter( $item, 'is_bool' ) );
+					if ( $booleanKeys ) {
+						$item[ApiResult::META_BC_BOOLS] = $booleanKeys;
+					}
+				}
+			}
+		}
+	}
+
+	private function isMediaTypeSupported( WebRequest $request ): bool {
+		$contentType = $request->getHeader( 'Content-Type' ) ?: '';
+		$mediaType = strtolower( trim( explode( ';', $contentType, 2 )[0] ) );
+
+		return $mediaType === 'application/json';
+	}
+}

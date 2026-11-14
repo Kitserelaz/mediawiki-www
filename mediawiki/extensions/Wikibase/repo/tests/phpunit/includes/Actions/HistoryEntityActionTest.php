@@ -2,11 +2,13 @@
 
 namespace Wikibase\Repo\Tests\Actions;
 
-use Article;
 use MediaWiki\Config\HashConfig;
 use MediaWiki\Context\IContextSource;
+use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Page\Article;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Request\WebRequest;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
@@ -16,7 +18,6 @@ use Wikibase\DataModel\Services\Lookup\LabelDescriptionLookup;
 use Wikibase\DataModel\Term\Term;
 use Wikibase\Lib\Store\EntityIdLookup;
 use Wikibase\Repo\Actions\HistoryEntityAction;
-use WikiPage;
 
 /**
  * @covers \Wikibase\Repo\Actions\HistoryEntityAction
@@ -34,10 +35,6 @@ class HistoryEntityActionTest extends \PHPUnit\Framework\TestCase {
 	/** @see \LanguageQqx */
 	private const DUMMY_LANGUAGE = 'qqx';
 
-	/**
-	 * @param Title $title
-	 * @return WikiPage
-	 */
 	private function getWikiPage( Title $title ): WikiPage {
 		$wikiPage = $this->createMock( WikiPage::class );
 		$wikiPage->method( 'getTitle' )
@@ -46,9 +43,6 @@ class HistoryEntityActionTest extends \PHPUnit\Framework\TestCase {
 		return $wikiPage;
 	}
 
-	/**
-	 * @return Article
-	 */
 	private function getArticle(): Article {
 		$title = Title::makeTitle( NS_MAIN, 'Page title' );
 		$article = $this->createMock( Article::class );
@@ -69,16 +63,15 @@ class HistoryEntityActionTest extends \PHPUnit\Framework\TestCase {
 		$context = $this->createMock( IContextSource::class );
 		$context->method( 'getConfig' )
 			->willReturn( new HashConfig( [
-				'UseFileCache' => false,
-				'UseMediaWikiUIEverywhere' => false,
-				'Localtimezone' => 'UTC',
-				'ShowUpdatedMarker' => true,
-				'LogRestrictions' => [],
-				'UserrightsInterwikiDelimiter' => '@',
-				'MiserMode' => true,
-				'ActionFilteredLogs' => [],
-				'MaxExecutionTimeForExpensiveQueries' => 0,
-				'Send404Code' => true,
+				MainConfigNames::UseFileCache => false,
+				MainConfigNames::Localtimezone => 'UTC',
+				MainConfigNames::ShowUpdatedMarker => true,
+				MainConfigNames::LogRestrictions => [],
+				MainConfigNames::UserrightsInterwikiDelimiter => '@',
+				MainConfigNames::MiserMode => true,
+				MainConfigNames::ActionFilteredLogs => [],
+				MainConfigNames::MaxExecutionTimeForExpensiveQueries => 0,
+				MainConfigNames::Send404Code => true,
 			] ) );
 		$context->method( 'getRequest' )
 			->willReturn( new WebRequest() );
@@ -111,7 +104,7 @@ class HistoryEntityActionTest extends \PHPUnit\Framework\TestCase {
 			'fallback to parent' => [
 				null,
 				null,
-				'(history-title: Page title)',
+				'/\(history-title: .*Page title.*\)/',
 			],
 			'without label' => [
 				new ItemId( 'Q1' ),
@@ -153,7 +146,11 @@ class HistoryEntityActionTest extends \PHPUnit\Framework\TestCase {
 			$labelLookup
 		);
 		$action->show();
-		$this->assertEquals( $expected, $pageTitle );
+		if ( str_starts_with( $expected, '/' ) ) {
+			$this->assertMatchesRegularExpression( $expected, $pageTitle );
+		} else {
+			$this->assertEquals( $expected, $pageTitle );
+		}
 	}
 
 }

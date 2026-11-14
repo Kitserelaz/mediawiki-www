@@ -6,10 +6,10 @@ use MediaWiki\Config\HashConfig;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Request\WebRequest;
+use MediaWiki\Skin\Skin;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
 use MediaWikiIntegrationTestCase;
-use Skin;
 use Wikibase\Client\Hooks\BeforePageDisplayHandler;
 use Wikibase\Client\NamespaceChecker;
 
@@ -260,6 +260,7 @@ class BeforePageDisplayHandlerTest extends MediaWikiIntegrationTestCase {
 
 	/**
 	 * @param bool $loggedIn
+	 * @param bool $tempUser
 	 *
 	 * @return User
 	 */
@@ -292,7 +293,7 @@ class BeforePageDisplayHandlerTest extends MediaWikiIntegrationTestCase {
 		$noexternallanglinks = null
 	) {
 		$output = new OutputPage( $context );
-		$output->setLanguageLinks( $langLinks );
+		$output->addLanguageLinks( $langLinks );
 
 		if ( $prefixedId ) {
 			$output->setProperty( 'wikibase_item', $prefixedId );

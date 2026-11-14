@@ -22,26 +22,28 @@ use Wikibase\View\Tests\EntityMetaTagsCreatorTestCase;
  */
 class LexemeMetaTagsCreatorTest extends EntityMetaTagsCreatorTestCase {
 
-	public function provideTestGetMetaTags() {
-		$labelDescriptionLookup = $this->createMock( FallbackLabelDescriptionLookup::class );
-
-		$lexemeMetaTags = new LexemeMetaTagsCreator( '/', $labelDescriptionLookup );
-
+	public static function provideTestGetMetaTags() {
 		$languageItemId = new ItemId( 'Q123' );
-		$languageTerm = new TermFallback( 'en', 'The language', 'en', null );
 
 		$categoryItemId = new ItemId( 'Q321' );
-		$categoryTerm = new TermFallback( 'en', 'The category', 'en', null );
 
-		$labelDescriptionLookup->method( 'getLabel' )->willReturnMap( [
-				[ $languageItemId, $languageTerm ],
-				[ $categoryItemId, $categoryTerm ],
-			] );
+		$metaTagsFactory = static function ( self $self ) use ( $categoryItemId, $languageItemId ) {
+			$categoryTerm = new TermFallback( 'en', 'The category', 'en', null );
+			$languageTerm = new TermFallback( 'en', 'The language', 'en', null );
+
+			$labelDescriptionLookup = $self->createMock( FallbackLabelDescriptionLookup::class );
+			$labelDescriptionLookup->method( 'getLabel' )->willReturnMap( [
+					[ $languageItemId, $languageTerm ],
+					[ $categoryItemId, $categoryTerm ],
+				] );
+
+			return new LexemeMetaTagsCreator( '/', $labelDescriptionLookup );
+		};
 
 		return [
 			[
-				$lexemeMetaTags,
-				new Lexeme(
+				$metaTagsFactory,
+				static fn () => new Lexeme(
 					new LexemeId( 'L84389' ),
 					new TermList( [ new Term( 'en', 'goat' ) ] ),
 					new ItemId( 'Q999' ),
@@ -54,8 +56,8 @@ class LexemeMetaTagsCreatorTest extends EntityMetaTagsCreatorTestCase {
 				],
 			],
 			[
-				$lexemeMetaTags,
-				new Lexeme(
+				$metaTagsFactory,
+				static fn () => new Lexeme(
 					new LexemeId( 'L84389' ),
 					new TermList( [ new Term( 'en', 'goat' ), new Term( 'fr', 'taog' ) ] ),
 					$categoryItemId,

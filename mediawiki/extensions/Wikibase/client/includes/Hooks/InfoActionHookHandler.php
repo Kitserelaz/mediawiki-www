@@ -2,8 +2,8 @@
 
 namespace Wikibase\Client\Hooks;
 
+use MediaWiki\Actions\Hook\InfoActionHook;
 use MediaWiki\Context\IContextSource;
-use MediaWiki\Hook\InfoActionHook;
 use MediaWiki\Html\Html;
 use MediaWiki\Title\Title;
 use Wikibase\Client\NamespaceChecker;
@@ -62,7 +62,7 @@ class InfoActionHookHandler implements InfoActionHook {
 		NamespaceChecker $namespaceChecker,
 		RepoLinker $repoLinker,
 		SiteLinkLookup $siteLinkLookup,
-		$siteId,
+		string $siteId,
 		UsageLookup $usageLookup,
 		FallbackLabelDescriptionLookupFactory $labelDescriptionLookupFactory,
 		DescriptionLookup $descriptionLookup
@@ -209,6 +209,8 @@ class InfoActionHookHandler implements InfoActionHook {
 			//   wikibase-pageinfo-entity-usage-D-with-modifier
 			//   wikibase-pageinfo-entity-usage-C
 			//   wikibase-pageinfo-entity-usage-C-with-modifier
+			//   wikibase-pageinfo-entity-usage-CQR
+			//   wikibase-pageinfo-entity-usage-CQR-with-modifier
 			//   wikibase-pageinfo-entity-usage-S
 			//   wikibase-pageinfo-entity-usage-T
 			//   wikibase-pageinfo-entity-usage-X

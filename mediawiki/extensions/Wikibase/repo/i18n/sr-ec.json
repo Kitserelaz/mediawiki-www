@@ -1,6 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
+			"Aca",
 			"Acamicamacaraca",
 			"BadDog",
 			"Kizule",
@@ -13,8 +14,7 @@
 			"Zenfiric",
 			"Zoranzoki21",
 			"Милан Јелисавчић",
-			"Сербијана",
-			"Aca"
+			"Сербијана"
 		]
 	},
 	"wikibase-desc": "Складиште структуираних података",
@@ -33,15 +33,20 @@
 	"wikibase-publish": "објави",
 	"wikibase-cancel": "откажи",
 	"wikibase-add": "додај",
+	"wikibase-addstatement": "додај изјаву",
 	"wikibase-addqualifier": "додај квалификатор",
 	"wikibase-addreference": "додај референцу",
 	"wikibase-save-inprogress": "Чување…",
 	"wikibase-publish-inprogress": "Објављивање…",
+	"wikibase-publishing-progress": "Објављивање у току…",
+	"wikibase-publishing-succeeded": "Ваше измене су сачуване!",
 	"wikibase-remove-inprogress": "Уклањање...",
 	"wikibase-statementlistview-add": "додај вредност",
+	"wikibase-addvalue": "Додај вредност",
 	"wikibase-statementlistview-add-tooltip": "Додајте нову вредност",
 	"wikibase-statementgrouplistview-add": "додај изјаву",
 	"wikibase-statementgrouplistview-add-tooltip": "Додајте нову изјаву",
+	"wikibase-statementgrouplistview-edit": "уреди {{PLURAL:$1|изјаву|изјаве}}",
 	"wikibase-entitytermsview-entitytermsforlanguagelistview-toggler": "На другим језицима",
 	"wikibase-entitytermsview-entitytermsforlanguagelistview-configure-link-label": "Конфигуриши",
 	"wikibase-setting-entitytermsview-showEntitytermslistview": "Прикажи називе, псеудониме и описе на свим мојим језицима",
@@ -135,7 +140,7 @@
 	"wikibase-copyrighttooltip-acknowledge": "Прихватам ове услове за своје будуће измене. Не приказуј ову поруку поново.",
 	"wikibase-entityselector-more": "још",
 	"wikibase-entityselector-notfound": "Нема подударања",
-	"wikibase-anonymouseditwarning": "Упозорење: Нисте пријављени. Ваша IP адреса биће јавно видљива ако начините било какву измену. <strong>[$1 Пријавите се]</strong> или <strong>[$2 отворите налог]</strong>. Тиме ће ваши доприноси бити приписивани корисничком имену које одаберете и стећи ћете многе погодности.",
+	"wikibase-anonymouseditwarning": "Упозорење: Нисте пријављени. Ваша IP адреса биће јавно видљива ако начините било какву измену. <strong>[$1 Пријавите се]</strong> или <strong>[$2 отворите налог]</strong>, тиме ће ваши доприноси бити приписивани корисничком имену које одаберете и стећи ћете многе погодности.",
 	"wikibase-anonymouseditwarning-heading": "Нисте пријављени",
 	"wikibase-anonymouseditwarning-message": "Ваша IP адреса биће јавно видљива ако начините било какву измену. Пријавите се или отворите налог. Тиме ће Ваши доприноси бити приписивани корисничком имену које одаберете и стећи ћете многе погодности.",
 	"wikibase-anonymouseditnotificationtempuser-message": "Пријавите се или отворите налог. Тиме ће Ваши доприноси бити приписивани корисничком имену и стећи ћете многе погодности.",
@@ -181,6 +186,8 @@
 	"wikibase-item-reference-edit-placeholder": "Унесите идентификатор ставке, нпр. Q10",
 	"wikibase-item-reference-edit-invalid-format": "Унесени ID ставке има неважећи формат",
 	"wikibase-item-reference-edit-nonexistent-item": "Ставка са овим ID-ем не постоји",
+	"wikibase-wbui2025-globecoordinateinput-precision-automatic": "Аутоматски",
+	"wikibase-wbui2025-timeinput-precision-automatic": "аутоматски",
 	"wikibase-wikibaserepopage-not-itemid": "„$1” није важећи ID ставке.",
 	"wikibase-wikibaserepopage-invalid-langcode": "Језички код „$1“ је непознат. Молимо користите језичке кодове познате систему, као што је „sr“.",
 	"wikibase-wikibaserepopage-invalid-id": "ID „$1” је непознат систему. Користите валидан ID ентитета.",
@@ -316,6 +323,8 @@
 	"wikibase-parse-error-entity-id": "ID ентитета је неисправно формирана.",
 	"wikibase-parse-error-quantity": "Вредност количине је неисправно формирана.",
 	"wikibase-parse-error-time": "Вредност за време је погрешно форматирана.",
+	"wikibase-quantitydetails-unit-optional": "Јединица (необавезно)",
+	"wikibase-monolingualtextcode-mandatory": "Језик (обавезно)",
 	"special-redirectentity": "Преусмеравање ентитета",
 	"wikibase-redirectentity-success": "$1 је преусмерено на $2.",
 	"wikibase-redirectentity-fromid": "ID са кога се преусмерава",
@@ -374,6 +383,7 @@
 	"wikibase-listdatatypes-time-head": "време",
 	"wikibase-listdatatypes-url-head": "адреса",
 	"wikibase-listdatatypes-external-id-head": "спољашњи идентификатор",
+	"wikibase-listdatavaluetypes-name-string": "низ",
 	"wikibase-listdatavaluetypes-name-globecoordinate": "географске координате",
 	"wikibase-listdatavaluetypes-name-monolingualtext": "једнојезички текст",
 	"wikibase-listdatavaluetypes-name-quantity": "количина",
@@ -413,5 +423,11 @@
 	"special-setaliases-parameterized": "Постави псеудониме $1",
 	"special-setlabel-parameterized": "Постави назив $1",
 	"special-setdescription-parameterized": "Постави опис $1",
-	"special-setlabeldescriptionaliases-parameterized": "Постави назив, опис и псеудоним за $1"
+	"special-setlabeldescriptionaliases-parameterized": "Постави назив, опис и псеудоним за $1",
+	"wikibase-scoped-search-search-entities": "Претрага ентитета",
+	"wikibase-scoped-search-item-scope-name": "Ставке",
+	"wikibase-scoped-search-property-scope-name": "Својства",
+	"wikibase-stepper-progress": "$1 од $2",
+	"wikibase-indicator-popover-multiple-issue-previous": "Претходно",
+	"wikibase-indicator-popover-multiple-issue-next": "Следеће"
 }

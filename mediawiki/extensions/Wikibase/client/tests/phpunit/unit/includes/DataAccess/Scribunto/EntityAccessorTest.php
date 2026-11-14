@@ -105,7 +105,7 @@ class EntityAccessorTest extends \PHPUnit\Framework\TestCase {
 	}
 
 	public function testGetEntity_usage() {
-		$item = $this->getItem();
+		$item = self::getItem();
 		$itemId = $item->getId();
 
 		$entityLookup = new MockRepository();
@@ -120,8 +120,8 @@ class EntityAccessorTest extends \PHPUnit\Framework\TestCase {
 		);
 	}
 
-	public function getEntityProvider() {
-		$item = $this->getItem();
+	public static function getEntityProvider() {
+		$item = self::getItem();
 
 		$entityLookup = new MockRepository();
 		$entityLookup->putEntity( $item );
@@ -134,7 +134,7 @@ class EntityAccessorTest extends \PHPUnit\Framework\TestCase {
 		];
 	}
 
-	protected function getItem() {
+	protected static function getItem() {
 		$item = new Item( new ItemId( 'Q666' ) );
 		$item->setLabel( 'en', 'Beer' );
 		$item->setDescription( 'en', 'yummy beverage' );
@@ -149,7 +149,6 @@ class EntityAccessorTest extends \PHPUnit\Framework\TestCase {
 	 */
 	public function testZeroIndexArray( array $array, array $expected ) {
 		$renumber = new ReflectionMethod( EntityAccessor::class, 'renumber' );
-		$renumber->setAccessible( true );
 		$renumber->invokeArgs( $this->getEntityAccessor(), [ &$array ] );
 
 		$this->assertSame( $expected, $array );
@@ -197,15 +196,15 @@ class EntityAccessorTest extends \PHPUnit\Framework\TestCase {
 		);
 	}
 
-	public function getEntityStatementsProvider() {
+	public static function getEntityStatementsProvider() {
 		return [
 			'Normal Statement, get best Statements' => [
-				$this->getItemWithStatementsClaimClientSerialization( false ),
+				self::getItemWithStatementsClaimClientSerialization( false ),
 				false,
 				'best',
 			],
 			'Normal Statement, get all Statements' => [
-				$this->getItemWithStatementsClaimClientSerialization( false ),
+				self::getItemWithStatementsClaimClientSerialization( false ),
 				false,
 				'all',
 			],
@@ -215,7 +214,7 @@ class EntityAccessorTest extends \PHPUnit\Framework\TestCase {
 				'best',
 			],
 			'Deprecated Statement, get all Statements' => [
-				$this->getItemWithStatementsClaimClientSerialization( true ),
+				self::getItemWithStatementsClaimClientSerialization( true ),
 				true,
 				'all',
 			],
@@ -247,7 +246,7 @@ class EntityAccessorTest extends \PHPUnit\Framework\TestCase {
 	/**
 	 * @return Item
 	 */
-	private function getItemWithStatements( $statementDeprecated = false ) {
+	private function getItemWithStatements( bool $statementDeprecated = false ) {
 		$p65 = new NumericPropertyId( 'P65' );
 		$p68 = new NumericPropertyId( 'P68' );
 
@@ -310,7 +309,7 @@ class EntityAccessorTest extends \PHPUnit\Framework\TestCase {
 					],
 				],
 			],
-			'claims' => $this->getItemWithStatementsClaimClientSerialization(),
+			'claims' => self::getItemWithStatementsClaimClientSerialization(),
 			'sitelinks' => [
 				'enwiki' => [
 					'site' => 'enwiki',
@@ -327,7 +326,7 @@ class EntityAccessorTest extends \PHPUnit\Framework\TestCase {
 		];
 	}
 
-	private function getItemWithStatementsClaimClientSerialization( $statementDeprecated = false ) {
+	private static function getItemWithStatementsClaimClientSerialization( $statementDeprecated = false ) {
 		return [
 			'P65' => [
 				1 => [

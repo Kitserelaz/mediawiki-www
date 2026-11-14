@@ -8,7 +8,7 @@ use Diff\DiffOp\DiffOpAdd;
 use Diff\DiffOp\DiffOpChange;
 use Diff\DiffOp\DiffOpRemove;
 use InvalidArgumentException;
-use MessageLocalizer;
+use MediaWiki\Language\MessageLocalizer;
 use Wikibase\Lexeme\Domain\Diff\SenseDiff;
 use Wikibase\Repo\Diff\BasicDiffView;
 use Wikibase\Repo\Diff\ClaimDiffer;
@@ -82,7 +82,7 @@ class SenseDiffView extends BasicDiffView {
 		return $html;
 	}
 
-	private function generateSenseOpHtml( array $path, SenseDiff $op, $key ) {
+	private function generateSenseOpHtml( array $path, SenseDiff $op, string $key ): string {
 		$html = '';
 
 		$html .= parent::generateOpHtml(

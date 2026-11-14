@@ -224,7 +224,7 @@ class LexemeDiffer implements EntityDifferStrategy {
 		return $result;
 	}
 
-	private function getNextFormIdCounterDiff( Lexeme $from, Lexeme $to ) {
+	private function getNextFormIdCounterDiff( Lexeme $from, Lexeme $to ): Diff {
 		if ( $to->getNextFormId() <= $from->getNextFormId() ) {
 			return new Diff( [] );
 		}
@@ -287,7 +287,7 @@ class LexemeDiffer implements EntityDifferStrategy {
 		return $result;
 	}
 
-	private function getNextSenseIdCounterDiff( Lexeme $from, Lexeme $to ) {
+	private function getNextSenseIdCounterDiff( Lexeme $from, Lexeme $to ): Diff {
 		if ( $to->getNextSenseId() <= $from->getNextSenseId() ) {
 			return new Diff( [] );
 		}
@@ -295,18 +295,18 @@ class LexemeDiffer implements EntityDifferStrategy {
 		return new Diff( [ new DiffOpChange( $from->getNextSenseId(), $to->getNextSenseId() ) ] );
 	}
 
-	private function getLexicalCategoryAsArray( Lexeme $lexeme ) {
+	private function getLexicalCategoryAsArray( Lexeme $lexeme ): array {
 		try {
 			return [ 'id' => $lexeme->getLexicalCategory() ];
-		} catch ( UnexpectedValueException $ex ) {
+		} catch ( UnexpectedValueException ) {
 			return []; // It's fine to skip uninitialized properties in a diff
 		}
 	}
 
-	private function getLanguageAsArray( Lexeme $lexeme ) {
+	private function getLanguageAsArray( Lexeme $lexeme ): array {
 		try {
 			return [ 'id' => $lexeme->getLanguage() ];
-		} catch ( UnexpectedValueException $ex ) {
+		} catch ( UnexpectedValueException ) {
 			return []; // It's fine to skip uninitialized properties in a diff
 		}
 	}

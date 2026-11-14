@@ -1,15 +1,18 @@
 <?php
 
+declare( strict_types = 1 );
+
 namespace Wikibase\Repo\ParserOutput;
 
-use Liuggio\StatsdClient\Factory\StatsdDataFactoryInterface;
-use MediaWiki\Cache\LinkBatchFactory;
 use MediaWiki\Extension\Math\MathDataUpdater;
-use MediaWiki\HookContainer\HookContainer;
+use MediaWiki\FileRepo\RepoGroup;
 use MediaWiki\Language\Language;
+use MediaWiki\Language\LanguageFactory;
+use MediaWiki\Language\LanguageNameUtils;
+use MediaWiki\Page\LinkBatchFactory;
+use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Registration\ExtensionRegistry;
 use PageImages\PageImages;
-use RepoGroup;
 use Wikibase\DataModel\Services\Entity\PropertyDataTypeMatcher;
 use Wikibase\DataModel\Services\Lookup\PropertyDataTypeLookup;
 use Wikibase\Lib\Formatters\CachingKartographerEmbeddingHandler;
@@ -19,8 +22,12 @@ use Wikibase\Lib\TermLanguageFallbackChain;
 use Wikibase\Repo\EntityReferenceExtractors\EntityReferenceExtractorDelegator;
 use Wikibase\Repo\FederatedProperties\FederatedPropertiesPrefetchingEntityParserOutputGeneratorDecorator;
 use Wikibase\Repo\FederatedProperties\FederatedPropertiesUiEntityParserOutputGeneratorDecorator;
+use Wikibase\Repo\Hooks\WikibaseRepoHookRunner;
+use Wikibase\Repo\Hooks\WikibaseRepoOnParserOutputUpdaterConstructionHook;
 use Wikibase\Repo\LinkedData\EntityDataFormatProvider;
 use Wikibase\Repo\WikibaseRepo;
+use Wikibase\View\Wbui2025FeatureFlag;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * @license GPL-2.0-or-later
@@ -28,35 +35,14 @@ use Wikibase\Repo\WikibaseRepo;
  */
 class EntityParserOutputGeneratorFactory {
 
-	/**
-	 * @var DispatchingEntityViewFactory
-	 */
-	private $entityViewFactory;
-
-	/**
-	 * @var DispatchingEntityMetaTagsCreatorFactory
-	 */
-	private $entityMetaTagsCreatorFactory;
-
-	/**
-	 * @var EntityTitleLookup
-	 */
-	private $entityTitleLookup;
-
-	/**
-	 * @var LanguageFallbackChainFactory
-	 */
-	private $languageFallbackChainFactory;
-
-	/**
-	 * @var EntityDataFormatProvider
-	 */
-	private $entityDataFormatProvider;
-
-	/**
-	 * @var PropertyDataTypeLookup
-	 */
-	private $propertyDataTypeLookup;
+	private DispatchingEntityViewFactory $entityViewFactory;
+	private DispatchingEntityMetaTagsCreatorFactory $entityMetaTagsCreatorFactory;
+	private EntityTitleLookup $entityTitleLookup;
+	private LanguageFactory $languageFactory;
+	private LanguageFallbackChainFactory $languageFallbackChainFactory;
+	private LanguageNameUtils $languageNameUtils;
+	private EntityDataFormatProvider $entityDataFormatProvider;
+	private PropertyDataTypeLookup $propertyDataTypeLookup;
 
 	/**
 	 * @var string[]
@@ -74,50 +60,29 @@ class EntityParserOutputGeneratorFactory {
 	 */
 	private $globeUris;
 
-	/**
-	 * @var EntityReferenceExtractorDelegator
-	 */
-	private $entityReferenceExtractorDelegator;
-
-	/**
-	 * @var CachingKartographerEmbeddingHandler|null
-	 */
-	private $kartographerEmbeddingHandler;
-
-	/**
-	 * @var StatsdDataFactoryInterface
-	 */
-	private $stats;
-
-	/**
-	 * @var RepoGroup
-	 */
-	private $repoGroup;
-
-	/**
-	 * @var LinkBatchFactory
-	 */
-	private $linkBatchFactory;
-
-	/**
-	 * @var HookContainer
-	 */
-	private $hookContainer;
+	private EntityReferenceExtractorDelegator $entityReferenceExtractorDelegator;
+	private ?CachingKartographerEmbeddingHandler $kartographerEmbeddingHandler;
+	private StatsFactory $statsFactory;
+	private RepoGroup $repoGroup;
+	private LinkBatchFactory $linkBatchFactory;
+	private WikibaseRepoOnParserOutputUpdaterConstructionHook $hookRunner;
 	private bool $isMobileView;
 
 	/**
 	 * @param DispatchingEntityViewFactory $entityViewFactory
 	 * @param DispatchingEntityMetaTagsCreatorFactory $entityMetaTagsCreatorFactory
 	 * @param EntityTitleLookup $entityTitleLookup
+	 * @param LanguageFactory $languageFactory
 	 * @param LanguageFallbackChainFactory $languageFallbackChainFactory
+	 * @param LanguageNameUtils $languageNameUtils
 	 * @param EntityDataFormatProvider $entityDataFormatProvider
 	 * @param PropertyDataTypeLookup $propertyDataTypeLookup
 	 * @param EntityReferenceExtractorDelegator $entityReferenceExtractorDelegator
 	 * @param CachingKartographerEmbeddingHandler|null $kartographerEmbeddingHandler
-	 * @param StatsdDataFactoryInterface $stats
+	 * @param StatsFactory $statsFactory
 	 * @param RepoGroup $repoGroup
 	 * @param LinkBatchFactory $linkBatchFactory
-	 * @param HookContainer $hookContainer
+	 * @param WikibaseRepoHookRunner $hookRunner
 	 * @param bool $isMobileView
 	 * @param string[] $preferredGeoDataProperties
 	 * @param string[] $preferredPageImagesProperties
@@ -128,15 +93,17 @@ class EntityParserOutputGeneratorFactory {
 		DispatchingEntityViewFactory $entityViewFactory,
 		DispatchingEntityMetaTagsCreatorFactory $entityMetaTagsCreatorFactory,
 		EntityTitleLookup $entityTitleLookup,
+		LanguageFactory $languageFactory,
 		LanguageFallbackChainFactory $languageFallbackChainFactory,
+		LanguageNameUtils $languageNameUtils,
 		EntityDataFormatProvider $entityDataFormatProvider,
 		PropertyDataTypeLookup $propertyDataTypeLookup,
 		EntityReferenceExtractorDelegator $entityReferenceExtractorDelegator,
 		?CachingKartographerEmbeddingHandler $kartographerEmbeddingHandler,
-		StatsdDataFactoryInterface $stats,
+		StatsFactory $statsFactory,
 		RepoGroup $repoGroup,
 		LinkBatchFactory $linkBatchFactory,
-		HookContainer $hookContainer,
+		WikibaseRepoOnParserOutputUpdaterConstructionHook $hookRunner,
 		bool $isMobileView,
 		array $preferredGeoDataProperties = [],
 		array $preferredPageImagesProperties = [],
@@ -145,22 +112,33 @@ class EntityParserOutputGeneratorFactory {
 		$this->entityViewFactory = $entityViewFactory;
 		$this->entityMetaTagsCreatorFactory = $entityMetaTagsCreatorFactory;
 		$this->entityTitleLookup = $entityTitleLookup;
+		$this->languageFactory = $languageFactory;
 		$this->languageFallbackChainFactory = $languageFallbackChainFactory;
+		$this->languageNameUtils = $languageNameUtils;
 		$this->entityDataFormatProvider = $entityDataFormatProvider;
 		$this->propertyDataTypeLookup = $propertyDataTypeLookup;
 		$this->entityReferenceExtractorDelegator = $entityReferenceExtractorDelegator;
 		$this->kartographerEmbeddingHandler = $kartographerEmbeddingHandler;
-		$this->stats = $stats;
+		$this->statsFactory = $statsFactory->withComponent( 'WikibaseRepo' );
 		$this->repoGroup = $repoGroup;
 		$this->linkBatchFactory = $linkBatchFactory;
-		$this->hookContainer = $hookContainer;
+		$this->hookRunner = $hookRunner;
 		$this->preferredGeoDataProperties = $preferredGeoDataProperties;
 		$this->preferredPageImagesProperties = $preferredPageImagesProperties;
 		$this->globeUris = $globeUris;
 		$this->isMobileView = $isMobileView;
 	}
 
-	public function getEntityParserOutputGenerator( Language $userLanguage ): EntityParserOutputGenerator {
+	private function getValidUserLanguage( Language $language ): Language {
+		if ( !$this->languageNameUtils->isValidBuiltInCode( $language->getCode() ) ) {
+			return $this->languageFactory->getLanguage( 'und' ); // T204791
+		}
+		return $language;
+	}
+
+	public function getEntityParserOutputGeneratorForParserOptions( ParserOptions $options ): EntityParserOutputGenerator {
+		$userLanguage = $this->getValidUserLanguage( $options->getUserLangObj() );
+
 		$pog = new FullEntityParserOutputGenerator(
 			$this->entityViewFactory,
 			$this->entityMetaTagsCreatorFactory,
@@ -169,13 +147,14 @@ class EntityParserOutputGeneratorFactory {
 			$this->entityDataFormatProvider,
 			$this->getDataUpdaters(),
 			$userLanguage,
+			$options->getOption( Wbui2025FeatureFlag::PARSER_OPTION_NAME ),
 			$this->isMobileView
 		);
 
-		$pog = new StatsdTimeRecordingEntityParserOutputGenerator(
+		$pog = new StatslibTimeRecordingEntityParserOutputGenerator(
 			$pog,
-			$this->stats,
-			'wikibase.repo.ParserOutputGenerator.timing'
+			$this->statsFactory,
+			'ParserOutputGenerator'
 		);
 
 		if ( WikibaseRepo::getSettings()->getSetting( 'federatedPropertiesEnabled' ) ) {
@@ -224,18 +203,17 @@ class EntityParserOutputGeneratorFactory {
 			$statementUpdater->addUpdater( new MathDataUpdater( $propertyDataTypeMatcher ) );
 		}
 
-		// FIXME: null implementation of KartographerEmbeddingHandler would seem better than null pointer
-		// in general, and would also remove the need for the check here
 		if ( $this->kartographerEmbeddingHandler ) {
-			$statementUpdater->addUpdater( $this->newKartographerDataUpdater() );
+			$statementUpdater->addUpdater(
+				$this->newKartographerDataUpdater( $this->kartographerEmbeddingHandler ) );
 		}
 
 		$entityUpdaters = [
 			new ItemParserOutputUpdater(
-				$statementUpdater
+				$statementUpdater,
 			),
 			new PropertyParserOutputUpdater(
-				$statementUpdater
+				$statementUpdater,
 			),
 			new ReferencedEntitiesDataUpdater(
 				$this->entityReferenceExtractorDelegator,
@@ -244,12 +222,9 @@ class EntityParserOutputGeneratorFactory {
 			),
 		];
 
-		$this->hookContainer->run(
-			'WikibaseRepoOnParserOutputUpdaterConstruction',
-			[
-				$statementUpdater,
-				&$entityUpdaters,
-			]
+		$this->hookRunner->onWikibaseRepoOnParserOutputUpdaterConstruction(
+			$statementUpdater,
+			$entityUpdaters
 		);
 
 		return $entityUpdaters;
@@ -262,7 +237,7 @@ class EntityParserOutputGeneratorFactory {
 		);
 	}
 
-	private function newGeoDataDataUpdater( $propertyDataTypeMatcher ): StatementDataUpdater {
+	private function newGeoDataDataUpdater( PropertyDataTypeMatcher $propertyDataTypeMatcher ): StatementDataUpdater {
 		return new GeoDataDataUpdater(
 			$propertyDataTypeMatcher,
 			$this->preferredGeoDataProperties,
@@ -270,10 +245,10 @@ class EntityParserOutputGeneratorFactory {
 		);
 	}
 
-	private function newKartographerDataUpdater(): StatementDataUpdater {
-		return new GlobeCoordinateKartographerDataUpdater(
-			$this->kartographerEmbeddingHandler
-		);
+	private function newKartographerDataUpdater(
+		CachingKartographerEmbeddingHandler $kartographerEmbeddingHandler
+	): StatementDataUpdater {
+		return new GlobeCoordinateKartographerDataUpdater( $kartographerEmbeddingHandler );
 	}
 
 }

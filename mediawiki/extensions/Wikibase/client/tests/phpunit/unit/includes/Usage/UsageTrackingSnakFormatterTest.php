@@ -10,6 +10,7 @@ use Wikibase\Client\Usage\UsageTrackingLanguageFallbackLabelDescriptionLookup;
 use Wikibase\Client\Usage\UsageTrackingSnakFormatter;
 use Wikibase\DataModel\Entity\EntityId;
 use Wikibase\DataModel\Entity\EntityIdParser;
+use Wikibase\DataModel\Entity\EntityIdParsingException;
 use Wikibase\DataModel\Entity\EntityIdValue;
 use Wikibase\DataModel\Entity\ItemId;
 use Wikibase\DataModel\Entity\ItemIdParser;
@@ -31,6 +32,8 @@ use Wikibase\Lib\Formatters\SnakFormatter;
  */
 class UsageTrackingSnakFormatterTest extends \PHPUnit\Framework\TestCase {
 	use MediaWikiCoversValidator;
+
+	private const NON_ITEM_UNIT = '1';
 
 	/**
 	 * @param string $method
@@ -95,7 +98,11 @@ class UsageTrackingSnakFormatterTest extends \PHPUnit\Framework\TestCase {
 		$parser->expects( $this->once() )
 			->method( 'parse' )
 			->willReturnCallback( function ( $id ) {
-				return $id === '1' ? null : new ItemId( $id );
+				if ( $id === self::NON_ITEM_UNIT ) {
+					throw new EntityIdParsingException();
+				} else {
+					return new ItemId( $id );
+				}
 			} );
 
 		return $parser;
@@ -103,7 +110,7 @@ class UsageTrackingSnakFormatterTest extends \PHPUnit\Framework\TestCase {
 
 	public static function formatSnakQuantityProvider() {
 		return [
-			[ '1', null ],
+			[ self::NON_ITEM_UNIT, null ],
 			[ 'Q1', new ItemId( 'Q1' ) ],
 		];
 	}

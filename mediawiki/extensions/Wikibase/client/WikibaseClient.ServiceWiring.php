@@ -1,18 +1,18 @@
 <?php
 
-declare( strict_types = 1 );
+declare( strict_types=1 );
 
 use DataValues\Deserializers\DataValueDeserializer;
 use DataValues\Serializers\DataValueSerializer;
 use DataValues\UnknownValue;
-use MediaWiki\Language\Language;
 use MediaWiki\Logger\LoggerFactory;
+use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
-use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\Site\MediaWikiSite;
 use MediaWiki\Site\Site;
 use MediaWiki\StubObject\StubObject;
 use MediaWiki\User\ExternalUserNames;
+use MediaWiki\WikiMap\WikiMap;
 use Psr\Log\LoggerInterface;
 use Serializers\DispatchingSerializer;
 use Serializers\Serializer;
@@ -27,6 +27,7 @@ use Wikibase\Client\DataAccess\ParserFunctions\Runner;
 use Wikibase\Client\DataAccess\ParserFunctions\StatementGroupRendererFactory;
 use Wikibase\Client\DataAccess\ReferenceFormatterFactory;
 use Wikibase\Client\DataAccess\SnaksFinder;
+use Wikibase\Client\Hooks\Formatter\ClientEntityLinkFormatter;
 use Wikibase\Client\Hooks\LangLinkHandlerFactory;
 use Wikibase\Client\Hooks\LanguageLinkBadgeDisplay;
 use Wikibase\Client\Hooks\OtherProjectsSidebarGeneratorFactory;
@@ -55,6 +56,7 @@ use Wikibase\DataAccess\EntitySource;
 use Wikibase\DataAccess\EntitySourceDefinitions;
 use Wikibase\DataAccess\EntitySourceDefinitionsConfigParser;
 use Wikibase\DataAccess\EntitySourceLookup;
+use Wikibase\DataAccess\Hooks\WikibaseDataAccessHookRunner;
 use Wikibase\DataAccess\MultipleEntitySourceServices;
 use Wikibase\DataAccess\PrefetchingTermLookup;
 use Wikibase\DataAccess\Serializer\ForbiddenSerializer;
@@ -75,7 +77,7 @@ use Wikibase\DataModel\Services\Lookup\DisabledEntityTypesEntityLookup;
 use Wikibase\DataModel\Services\Lookup\EntityLookup;
 use Wikibase\DataModel\Services\Lookup\EntityRetrievingDataTypeLookup;
 use Wikibase\DataModel\Services\Lookup\PropertyDataTypeLookup;
-use Wikibase\DataModel\Services\Lookup\RestrictedEntityLookup;
+use Wikibase\DataModel\Services\Lookup\RestrictedEntityLookupFactory;
 use Wikibase\DataModel\Services\Lookup\TermLookup;
 use Wikibase\DataModel\Services\Term\PropertyLabelResolver;
 use Wikibase\DataModel\Services\Term\TermBuffer;
@@ -100,8 +102,9 @@ use Wikibase\Lib\MediaWikiMessageInLanguageProvider;
 use Wikibase\Lib\MessageInLanguageProvider;
 use Wikibase\Lib\PropertyInfoDataTypeLookup;
 use Wikibase\Lib\Rdbms\ClientDomainDbFactory;
-use Wikibase\Lib\Rdbms\DomainDb;
 use Wikibase\Lib\Rdbms\RepoDomainDbFactory;
+use Wikibase\Lib\Rdbms\TermsDomainDbFactory;
+use Wikibase\Lib\Rdbms\VirtualTermsDomainDb;
 use Wikibase\Lib\ServiceBySourceAndTypeDispatcher;
 use Wikibase\Lib\SettingsArray;
 use Wikibase\Lib\Store\CachingPropertyInfoLookup;
@@ -119,7 +122,6 @@ use Wikibase\Lib\Store\Sql\EntityChangeLookup;
 use Wikibase\Lib\Store\Sql\PropertyInfoTable;
 use Wikibase\Lib\Store\Sql\Terms\CachedDatabasePropertyLabelResolver;
 use Wikibase\Lib\Store\Sql\Terms\DatabaseTermInLangIdsResolver;
-use Wikibase\Lib\Store\Sql\Terms\DatabaseTypeIdsStore;
 use Wikibase\Lib\Store\Sql\Terms\TermInLangIdsResolverFactory;
 use Wikibase\Lib\Store\TitleLookupBasedEntityExistenceChecker;
 use Wikibase\Lib\Store\TitleLookupBasedEntityRedirectChecker;
@@ -136,7 +138,6 @@ use Wikibase\Lib\WikibaseSettings;
 
 /** @phpcs-require-sorted-array */
 return [
-
 	'WikibaseClient.AffectedPagesFinder' => function ( MediaWikiServices $services ): AffectedPagesFinder {
 		return new AffectedPagesFinder(
 			WikibaseClient::getStore( $services )->getUsageLookup(),
@@ -197,12 +198,17 @@ return [
 		);
 	},
 
-	'WikibaseClient.ClientDomainDbFactory' => function( MediaWikiServices $services ): ClientDomainDbFactory {
+	'WikibaseClient.ClientDomainDbFactory' => function ( MediaWikiServices $services ): ClientDomainDbFactory {
 		$lbFactory = $services->getDBLoadBalancerFactory();
 
 		return new ClientDomainDbFactory(
-			$lbFactory,
-			[ DomainDb::LOAD_GROUP_FROM_CLIENT ]
+			$lbFactory
+		);
+	},
+
+	'WikibaseClient.ClientEntityLinkFormatter' => function ( MediaWikiServices $services ): ClientEntityLinkFormatter {
+		return new ClientEntityLinkFormatter(
+			$services->getLanguageFactory()
 		);
 	},
 
@@ -256,7 +262,7 @@ return [
 			$baseDataTypes
 		);
 
-		$services->getHookContainer()->run( 'WikibaseClientDataTypes', [ &$dataTypes ] );
+		WikibaseClient::getHookRunner( $services )->onWikibaseClientDataTypes( $dataTypes );
 
 		$settings = WikibaseClient::getSettings( $services );
 
@@ -395,7 +401,7 @@ return [
 				$services->getPageProps(),
 				WikibaseClient::getEntityIdParser( $services )
 			),
-			$services->getHookContainer()
+			new WikibaseDataAccessHookRunner( $services->getHookContainer() )
 		);
 	},
 
@@ -440,7 +446,7 @@ return [
 		$subEntityTypesMapper = new SubEntityTypesMapper( WikibaseClient::getEntityTypeDefinitions( $services )
 			->get( EntityTypeDefinitions::SUB_ENTITY_TYPES ) );
 
-		$configParser = new EntitySourceDefinitionsConfigParser();
+		$configParser = new EntitySourceDefinitionsConfigParser( WikiMap::getCurrentWikiId() );
 
 		return $configParser->newDefinitionsFromConfigArray( $settings->getSetting( 'entitySources' ), $subEntityTypesMapper );
 	},
@@ -454,7 +460,7 @@ return [
 			$baseEntityTypes
 		);
 
-		$services->getHookContainer()->run( 'WikibaseClientEntityTypes', [ &$entityTypes ] );
+		WikibaseClient::getHookRunner( $services )->onWikibaseClientEntityTypes( $entityTypes );
 
 		return new EntityTypeDefinitions( $entityTypes );
 	},
@@ -541,7 +547,7 @@ return [
 
 		if (
 			$settings->getSetting( 'useKartographerGlobeCoordinateFormatter' ) &&
-			ExtensionRegistry::getInstance()->isLoaded( 'Kartographer' ) // TODO T257586
+			$services->getExtensionRegistry()->isLoaded( 'Kartographer' )
 		) {
 			return new CachingKartographerEmbeddingHandler(
 				$services->getParserFactory()->create()
@@ -558,7 +564,7 @@ return [
 			WikibaseClient::getStore( $services )->getSiteLinkLookup(),
 			WikibaseClient::getEntityLookup( $services ),
 			$services->getSiteLookup(),
-			$services->getHookContainer(),
+			WikibaseClient::getHookRunner( $services ),
 			WikibaseClient::getLogger( $services ),
 			WikibaseClient::getSettings( $services )->getSetting( 'siteGlobalID' ),
 			WikibaseClient::getLangLinkSiteGroups( $services )
@@ -566,23 +572,13 @@ return [
 	},
 
 	'WikibaseClient.LangLinkSiteGroup' => function ( MediaWikiServices $services ): string {
-		$group = WikibaseClient::getSettings( $services )
-			->getSetting( 'languageLinkSiteGroup' );
-
-		if ( $group === null ) {
-			$group = WikibaseClient::getSiteGroup( $services );
-		}
-
-		return $group;
+		return WikibaseClient::getSettings( $services )->getSetting( 'languageLinkSiteGroup' ) ??
+			WikibaseClient::getSiteGroup( $services );
 	},
 
 	'WikibaseClient.LangLinkSiteGroups' => function ( MediaWikiServices $services ): array {
-		$groups = WikibaseClient::getSettings( $services )->getSetting( 'languageLinkAllowedSiteGroups' );
-		if ( $groups === null ) {
-			$groups = [ WikibaseClient::getLangLinkSiteGroup( $services ) ];
-		}
-
-		return $groups;
+		return WikibaseClient::getSettings( $services )->getSetting( 'languageLinkAllowedSiteGroups' ) ??
+			[ WikibaseClient::getLangLinkSiteGroup( $services ) ];
 	},
 
 	'WikibaseClient.LanguageFallbackChainFactory' => function ( MediaWikiServices $services ): LanguageFallbackChainFactory {
@@ -619,9 +615,9 @@ return [
 	'WikibaseClient.NamespaceChecker' => function ( MediaWikiServices $services ): NamespaceChecker {
 		$settings = WikibaseClient::getSettings( $services );
 		return new NamespaceChecker(
+			$services->getNamespaceInfo(),
 			$settings->getSetting( 'excludeNamespaces' ),
-			$settings->getSetting( 'namespaces' ),
-			$services->getNamespaceInfo()
+			$settings->getSetting( 'namespaces' )
 		);
 	},
 
@@ -634,7 +630,7 @@ return [
 			$services->getSiteLookup(),
 			WikibaseClient::getEntityLookup( $services ),
 			WikibaseClient::getSidebarLinkBadgeDisplay( $services ),
-			$services->getHookContainer(),
+			WikibaseClient::getHookRunner( $services ),
 			WikibaseClient::getLogger( $services )
 		);
 	},
@@ -664,7 +660,9 @@ return [
 			WikibaseClient::getEntityLookup( $services ),
 			WikibaseClient::getUsageAccumulatorFactory( $services ),
 			$settings->getSetting( 'siteGlobalID' ),
-			WikibaseClient::getLogger( $services )
+			$services->getRevisionLookup(),
+			WikibaseClient::getTermLookup( $services ),
+			WikibaseClient::getLogger( $services ),
 		);
 	},
 
@@ -678,7 +676,7 @@ return [
 			new EntitySourceLookup(
 				WikibaseClient::getEntitySourceDefinitions( $services ),
 				new SubEntityTypesMapper( WikibaseClient::getEntityTypeDefinitions( $services )
-				->get( EntityTypeDefinitions::SUB_ENTITY_TYPES ) )
+					->get( EntityTypeDefinitions::SUB_ENTITY_TYPES ) )
 			)
 		);
 	},
@@ -688,7 +686,7 @@ return [
 		return new PropertyInfoDataTypeLookup(
 			$infoLookup,
 			WikibaseClient::getLogger( $services ),
-			fn () => new EntityRetrievingDataTypeLookup( WikibaseClient::getEntityLookup( $services ) )
+			fn() => new EntityRetrievingDataTypeLookup( WikibaseClient::getEntityLookup( $services ) )
 		);
 	},
 
@@ -718,7 +716,7 @@ return [
 
 	'WikibaseClient.PropertyLabelResolver' => function ( MediaWikiServices $services ): PropertyLabelResolver {
 		// Required services
-		$languageCode = $services->getContentLanguage()->getCode();
+		$languageCode = $services->getContentLanguageCode()->toString();
 
 		$settings = WikibaseClient::getSettings( $services );
 		$cacheKeyPrefix = $settings->getSetting( 'sharedCacheKeyPrefix' );
@@ -728,20 +726,10 @@ return [
 		// Cache key needs to be language specific
 		$cacheKey = $cacheKeyPrefix . ':TermPropertyLabelResolver' . '/' . $languageCode;
 
-		$repoDb = WikibaseClient::getRepoDomainDbFactory( $services )
+		$termsDb = WikibaseClient::getTermsDomainDbFactory( $services )
 			->newForEntitySource( WikibaseClient::getPropertySource( $services ) );
-		$wanObjectCache = $services->getMainWANObjectCache();
 
-		$typeIdsStore = new DatabaseTypeIdsStore(
-			$repoDb,
-			$wanObjectCache
-		);
-
-		$databaseTermIdsResolver = new DatabaseTermInLangIdsResolver(
-			$typeIdsStore,
-			$typeIdsStore,
-			$repoDb
-		);
+		$databaseTermIdsResolver = new DatabaseTermInLangIdsResolver( $termsDb );
 
 		return new CachedDatabasePropertyLabelResolver(
 			$languageCode,
@@ -753,7 +741,7 @@ return [
 	},
 
 	'WikibaseClient.PropertyOrderProvider' => function ( MediaWikiServices $services ): CachingPropertyOrderProvider {
-		$title = $services->getTitleFactory()->newFromTextThrow( 'MediaWiki:Wikibase-SortedProperties' );
+		$title = $services->getTitleFactory()->makeTitle( NS_MEDIAWIKI, 'Wikibase-SortedProperties' );
 		$innerProvider = new WikiPagePropertyOrderProvider( $services->getWikiPageFactory(), $title );
 
 		$url = WikibaseClient::getSettings( $services )->getSetting( 'propertyOrderUrl' );
@@ -781,7 +769,7 @@ return [
 			WikibaseClient::getStatementGroupRendererFactory( $services ),
 			WikibaseClient::getStore( $services )->getSiteLinkLookup(),
 			WikibaseClient::getEntityIdParser( $services ),
-			WikibaseClient::getRestrictedEntityLookup( $services ),
+			WikibaseClient::getRestrictedEntityLookupFactory( $services ),
 			$settings->getSetting( 'siteGlobalID' ),
 			$settings->getSetting( 'allowArbitraryDataAccess' )
 		);
@@ -842,8 +830,7 @@ return [
 
 		return new RepoDomainDbFactory(
 			$lbFactory,
-			WikibaseClient::getItemAndPropertySource( $services )->getDatabaseName() ?: $lbFactory->getLocalDomainID(),
-			[ DomainDb::LOAD_GROUP_FROM_CLIENT ]
+			WikibaseClient::getItemAndPropertySource( $services )->getDatabaseName() ?: $lbFactory->getLocalDomainID()
 		);
 	},
 
@@ -868,13 +855,13 @@ return [
 		);
 	},
 
-	'WikibaseClient.RestrictedEntityLookup' => function ( MediaWikiServices $services ): RestrictedEntityLookup {
+	'WikibaseClient.RestrictedEntityLookupFactory' => function ( MediaWikiServices $services ): RestrictedEntityLookupFactory {
 		$settings = WikibaseClient::getSettings( $services );
 		$disabledEntityTypesEntityLookup = new DisabledEntityTypesEntityLookup(
 			WikibaseClient::getEntityLookup( $services ),
 			$settings->getSetting( 'disabledAccessEntityTypes' )
 		);
-		return new RestrictedEntityLookup(
+		return new RestrictedEntityLookupFactory(
 			$disabledEntityTypesEntityLookup,
 			$settings->getSetting( 'entityAccessLimit' )
 		);
@@ -885,14 +872,16 @@ return [
 	},
 
 	'WikibaseClient.SidebarLinkBadgeDisplay' => function ( MediaWikiServices $services ): SidebarLinkBadgeDisplay {
+		global $wgLang; // TODO don’t use user language in a service (cf. T344050)
+		StubObject::unstub( $wgLang );
+
 		$badgeClassNames = WikibaseClient::getSettings( $services )->getSetting( 'badgeClassNames' );
 		$labelDescriptionLookupFactory = WikibaseClient::getFallbackLabelDescriptionLookupFactory( $services );
-		$lang = WikibaseClient::getUserLanguage( $services );
 
 		return new SidebarLinkBadgeDisplay(
-			$labelDescriptionLookupFactory->newLabelDescriptionLookup( $lang ),
+			$labelDescriptionLookupFactory->newLabelDescriptionLookup( $wgLang ),
 			is_array( $badgeClassNames ) ? $badgeClassNames : [],
-			$lang
+			$wgLang
 		);
 	},
 
@@ -969,7 +958,7 @@ return [
 		return new StatementGroupRendererFactory(
 			WikibaseClient::getPropertyLabelResolver( $services ),
 			new SnaksFinder(),
-			WikibaseClient::getRestrictedEntityLookup( $services ),
+			WikibaseClient::getRestrictedEntityLookupFactory( $services ),
 			WikibaseClient::getDataAccessSnakFormatterFactory( $services ),
 			WikibaseClient::getUsageAccumulatorFactory( $services ),
 			$services->getLanguageConverterFactory(),
@@ -1012,7 +1001,7 @@ return [
 		return new TermFallbackCacheFactory(
 			$settings->getSetting( 'sharedCacheType' ),
 			WikibaseClient::getLogger( $services ),
-			$services->getStatsdDataFactory(),
+			$services->getStatsFactory()->withComponent( 'WikibaseClient' ),
 			hash( 'sha256', $services->getMainConfig()->get( 'SecretKey' ) ),
 			new TermFallbackCacheServiceFactory(),
 			$settings->getSetting( 'termFallbackCacheVersion' ),
@@ -1024,14 +1013,23 @@ return [
 		MediaWikiServices $services
 	): TermInLangIdsResolverFactory {
 		return new TermInLangIdsResolverFactory(
-			WikibaseClient::getRepoDomainDbFactory( $services ),
-			WikibaseClient::getLogger( $services ),
-			$services->getMainWANObjectCache()
+			WikibaseClient::getTermsDomainDbFactory( $services ),
+			WikibaseClient::getLogger( $services )
 		);
 	},
 
 	'WikibaseClient.TermLookup' => function ( MediaWikiServices $services ): TermLookup {
 		return WikibaseClient::getPrefetchingTermLookup( $services );
+	},
+
+	'WikibaseClient.TermsDomainDbFactory' => function ( MediaWikiServices $services ): TermsDomainDbFactory {
+		$virtualDomainsMapping = $services->getMainConfig()->get( MainConfigNames::VirtualDomainsMapping );
+
+		return new TermsDomainDbFactory(
+			isset( $virtualDomainsMapping[VirtualTermsDomainDb::VIRTUAL_DOMAIN_ID] ),
+			$services->getDBLoadBalancerFactory(),
+			WikibaseClient::getRepoDomainDbFactory( $services )
+		);
 	},
 
 	'WikibaseClient.TermsLanguages' => function ( MediaWikiServices $services ): ContentLanguages {
@@ -1050,21 +1048,6 @@ return [
 				WikibaseClient::getEntityRevisionLookup( $services )
 			)
 		);
-	},
-
-	'WikibaseClient.UserLanguage' => function ( MediaWikiServices $services ): Language {
-		global $wgLang;
-
-		// TODO: define a LanguageProvider service instead of using a global directly.
-		// NOTE: The $wgLang global may still be null when the SetupAfterCache hook is
-		// run during bootstrapping.
-
-		if ( !$wgLang ) {
-			throw new RuntimeException( 'Premature access: $wgLang is not yet initialized!' );
-		}
-
-		StubObject::unstub( $wgLang );
-		return $wgLang;
 	},
 
 	'WikibaseClient.ValueFormatterFactory' => function ( MediaWikiServices $services ): OutputFormatValueFormatterFactory {

@@ -3,8 +3,8 @@
 declare( strict_types = 1 );
 namespace Wikibase\Repo\Tests\FederatedProperties\ParserOutput;
 
+use MediaWiki\FileRepo\RepoGroup;
 use Psr\SimpleCache\CacheInterface;
-use RepoGroup;
 use Wikibase\DataModel\Entity\Item;
 use Wikibase\DataModel\Entity\ItemId;
 use Wikibase\DataModel\Services\Entity\PropertyDataTypeMatcher;
@@ -42,7 +42,7 @@ class FederatedPropertiesUiEntityParserOutputGeneratorDecoratorTest extends Enti
 
 		$updater = $this->createMock( ItemParserOutputUpdater::class );
 
-		$this->entityViewFactory = $this->mockEntityViewFactory( false );
+		$this->entityViewFactory = $this->mockEntityViewFactory( true );
 
 		$entityParserOutputGenerator = $this->newEntityParserOutputGenerator(
 			$this->newPrefetchingParserOutputGenerator( [ $updater ], $userLanguage ),
@@ -127,6 +127,7 @@ class FederatedPropertiesUiEntityParserOutputGeneratorDecoratorTest extends Enti
 				$entityDataFormatProvider,
 				$dataUpdaters,
 				$this->getServiceContainer()->getLanguageFactory()->getLanguage( $language ),
+				false,
 				false
 			),
 			$this->createStub( ApiEntityLookup::class )

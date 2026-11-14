@@ -26,7 +26,7 @@ class EntityChangeTest extends ChangeRowTest {
 	/**
 	 * @return string
 	 */
-	protected function getRowClass() {
+	protected static function getRowClass() {
 		return EntityChange::class;
 	}
 
@@ -37,8 +37,8 @@ class EntityChangeTest extends ChangeRowTest {
 		return $entityChange;
 	}
 
-	public function changeProvider() {
-		$rowClass = $this->getRowClass();
+	public static function changeProvider() {
+		$rowClass = static::getRowClass();
 
 		$changes = array_filter(
 			TestChanges::getChanges(),
@@ -214,6 +214,8 @@ class EntityChangeTest extends ChangeRowTest {
 			[],
 			[],
 			[],
+			[],
+			[],
 			false
 		);
 		$info = [ 'compactDiff' => $aspects->serialize() ];
@@ -225,6 +227,8 @@ class EntityChangeTest extends ChangeRowTest {
 	public function testSerializeAndUnserializeInfoCompactDiffBadSerialization() {
 		$aspects = new EntityDiffChangedAspects(
 			[ 'de' ],
+			[],
+			[],
 			[],
 			[],
 			[],

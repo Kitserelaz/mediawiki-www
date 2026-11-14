@@ -52,13 +52,8 @@ class ChangeOpsMergeTest extends MediaWikiIntegrationTestCase {
 	 */
 	private $statementsMerger;
 
-	/**
-	 * @param string|null $name
-	 * @param array $data
-	 * @param string $dataName
-	 */
-	public function __construct( $name = null, array $data = [], $dataName = '' ) {
-		parent::__construct( $name, $data, $dataName );
+	protected function setUp(): void {
+		parent::setUp();
 
 		$this->mockProvider = new ChangeOpTestMockProvider( $this );
 		$this->statementsMerger = $this->createMock( StatementsMerger::class );
@@ -70,9 +65,7 @@ class ChangeOpsMergeTest extends MediaWikiIntegrationTestCase {
 		array $ignoreConflicts = [],
 		$siteLookup = null
 	) {
-		if ( $siteLookup === null ) {
-			$siteLookup = new HashSiteStore( TestSites::getSites() );
-		}
+		$siteLookup ??= new HashSiteStore( TestSites::getSites() );
 		// A validator which makes sure that no site link is for page 'DUPE'
 		$siteLinkUniquenessValidator = $this->createMock( EntityValidator::class );
 		$siteLinkUniquenessValidator->method( 'validateEntity' )
@@ -126,9 +119,9 @@ class ChangeOpsMergeTest extends MediaWikiIntegrationTestCase {
 		$this->assertInstanceOf( ChangeOpsMerge::class, $changeOps );
 	}
 
-	public function provideValidConstruction() {
-		$from = $this->newItemWithId( 'Q111' );
-		$to = $this->newItemWithId( 'Q222' );
+	public static function provideValidConstruction() {
+		$from = self::newItemWithId( 'Q111' );
+		$to = self::newItemWithId( 'Q222' );
 		return [
 			[ $from, $to, [] ],
 			[ $from, $to, [ 'sitelink' ] ],
@@ -150,9 +143,9 @@ class ChangeOpsMergeTest extends MediaWikiIntegrationTestCase {
 		);
 	}
 
-	public function provideInvalidConstruction() {
-		$from = $this->newItemWithId( 'Q111' );
-		$to = $this->newItemWithId( 'Q222' );
+	public static function provideInvalidConstruction() {
+		$from = self::newItemWithId( 'Q111' );
+		$to = self::newItemWithId( 'Q222' );
 		return [
 			[ $from, $to, [ 'label' ] ],
 			[ $from, $to, [ 'foo' ] ],
@@ -160,7 +153,7 @@ class ChangeOpsMergeTest extends MediaWikiIntegrationTestCase {
 		];
 	}
 
-	private function newItemWithId( $idString ) {
+	private static function newItemWithId( $idString ) {
 		return NewItem::withId( $idString )
 			->build();
 	}

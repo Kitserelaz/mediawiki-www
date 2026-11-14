@@ -59,8 +59,12 @@ class SnakNormalizerTest extends TestCase {
 		return $normalizer;
 	}
 
-	/** Return a function which will always return the given constant value. */
-	private function constantCallable( $return ): callable {
+	/**
+	 * Return a function which will always return the given constant value.
+	 *
+	 * @param mixed $return
+	 */
+	private static function constantCallable( $return ): callable {
 		return static function () use ( $return ) {
 			return $return;
 		};
@@ -92,8 +96,8 @@ class SnakNormalizerTest extends TestCase {
 		$this->assertSame( $value, $normalizedSnak->getDataValue() );
 	}
 
-	public function provideEmptyDefinitions(): iterable {
-		$returnEmpty = $this->constantCallable( [] );
+	public static function provideEmptyDefinitions(): iterable {
+		$returnEmpty = self::constantCallable( [] );
 
 		yield 'no definitions' => [ [] ];
 		yield 'empty PT' => [ [ 'PT:string' => $returnEmpty ] ];

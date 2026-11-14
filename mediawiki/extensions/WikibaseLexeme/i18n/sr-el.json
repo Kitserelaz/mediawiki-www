@@ -34,6 +34,7 @@
 	"wikibase-lexeme-mergelexemes-success": "Leksema $1 je objedinjena u $2 i preusmerena.",
 	"wikibase-lexeme-mergelexemes-to-id": "Identifikator za spajanje u",
 	"wikibase-lexeme-randomlexeme": "Slučajna leksema",
+	"wikibase-lexeme-scoped-search-scope-name": "Leksema",
 	"wikibase-lexeme-summary-add-form": "Dodat novi oblik $3 sa {{PLURAL:$1|predstavljanjem|predstavljanjima}}",
 	"wikibase-lexeme-summary-add-form-grammatical-features": "{{PLURAL:$1|Dodata gramatička osobina|Dodate gramatičke osobine}} oblika $3",
 	"wikibase-lexeme-summary-add-sense-glosses": "{{PLURAL:$1|Dodato tumačenje ([$2])|Dodata tumačenja}} značenja $3",

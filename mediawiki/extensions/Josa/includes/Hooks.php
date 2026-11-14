@@ -8,10 +8,12 @@
 
 namespace MediaWiki\Extension\Josa;
 
-use MediaWiki\Hook\ParserFirstCallInitHook;
+use MediaWiki\Parser\Hook\ParserFirstCallInitHook;
 use MediaWiki\Parser\Parser;
 
 class Hooks implements ParserFirstCallInitHook {
+	// phpcs:disable MediaWiki.WhiteSpace.SpaceBeforeSingleLineComment.NewLineComment
+
 	/** @var array */
 	private static $josaMap = [
 		'Eul/Ruel' => [ '을', '를', '을(를)' ], // 곶감을 / 사과를
@@ -22,6 +24,8 @@ class Hooks implements ParserFirstCallInitHook {
 		'Euro/Ro'  => [ '으로', '로', '(으)로' ], // 집으로 / 학교로
 		'E/'  => [ '이', '', '(이)' ], // 태준이가 / 철수가
 	];
+
+	// phpcs:enable MediaWiki.WhiteSpace.SpaceBeforeSingleLineComment.NewLineComment
 
 	/**
 	 * This dictionary matches each numbers and alphabets to the corresponding hangul pronounces.
@@ -134,7 +138,7 @@ class Hooks implements ParserFirstCallInitHook {
 	 * @see https://ko.wikipedia.org/wiki/%ED%95%9C%EA%B8%80_%EC%83%81%EC%9A%A9_%EC%A1%B0%ED%95%A9%ED%98%95_%EC%9D%B8%EC%BD%94%EB%94%A9
 	 *
 	 * @param string $str String to convert
-	 * @return int|bool Converted Johab code
+	 * @return int|false Converted Johab code
 	 */
 	private static function convertToJohabCode( $str ) {
 		$values = [];

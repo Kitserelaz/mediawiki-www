@@ -41,7 +41,7 @@ use Wikibase\View\LanguageDirectionalityLookup;
 use Wikibase\View\Template\TemplateFactory;
 use Wikibase\View\Termbox\Renderer\TermboxRemoteRenderer;
 use Wikibase\View\ToolbarEditSectionGenerator;
-use Wikimedia\Stats\IBufferingStatsdDataFactory;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * Handler for the "OutputPageBeforeHTML" hook.
@@ -52,7 +52,7 @@ use Wikimedia\Stats\IBufferingStatsdDataFactory;
 class OutputPageBeforeHTMLHookHandler implements OutputPageBeforeHTMLHook {
 
 	private HttpRequestFactory $httpRequestFactory;
-	private IBufferingStatsdDataFactory $statsDataFactory;
+	private StatsFactory $statsFactory;
 	private SettingsArray $repoSettings;
 	private TemplateFactory $templateFactory;
 	private EntityRevisionLookup $entityRevisionLookup;
@@ -70,7 +70,7 @@ class OutputPageBeforeHTMLHookHandler implements OutputPageBeforeHTMLHook {
 
 	public function __construct(
 		HttpRequestFactory $httpRequestFactory,
-		IBufferingStatsdDataFactory $statsdDataFactory,
+		StatsFactory $statsFactory,
 		SettingsArray $repoSettings,
 		TemplateFactory $templateFactory,
 		EntityRevisionLookup $entityRevisionLookup,
@@ -78,7 +78,7 @@ class OutputPageBeforeHTMLHookHandler implements OutputPageBeforeHTMLHook {
 		OutputPageEntityIdReader $outputPageEntityIdReader,
 		EntityFactory $entityFactory,
 		OutputPageEditability $editability,
-		$isExternallyRendered,
+		bool $isExternallyRendered,
 		UserPreferredContentLanguagesLookup $userPreferredTermsLanguages,
 		OutputPageEntityViewChecker $entityViewChecker,
 		LanguageFallbackChainFactory $languageFallbackChainFactory,
@@ -87,7 +87,7 @@ class OutputPageBeforeHTMLHookHandler implements OutputPageBeforeHTMLHook {
 		?LoggerInterface $logger = null
 	) {
 		$this->httpRequestFactory = $httpRequestFactory;
-		$this->statsDataFactory = $statsdDataFactory;
+		$this->statsFactory = $statsFactory;
 		$this->repoSettings = $repoSettings;
 		$this->templateFactory = $templateFactory;
 		$this->entityRevisionLookup = $entityRevisionLookup;
@@ -101,13 +101,13 @@ class OutputPageBeforeHTMLHookHandler implements OutputPageBeforeHTMLHook {
 		$this->languageFallbackChainFactory = $languageFallbackChainFactory;
 		$this->userOptionsLookup = $userOptionsLookup;
 		$this->languageDirectionalityLookup = $languageDirectionalityLookup;
-		$this->logger = $logger ?: new NullLogger();
+		$this->logger = $logger ?? new NullLogger();
 	}
 
 	public static function factory(
 		Language $contentLanguage,
 		HttpRequestFactory $httpRequestFactory,
-		IBufferingStatsdDataFactory $statsdDataFactory,
+		StatsFactory $statsFactory,
 		UserOptionsLookup $userOptionsLookup,
 		EntityContentFactory $entityContentFactory,
 		EntityFactory $entityFactory,
@@ -124,7 +124,7 @@ class OutputPageBeforeHTMLHookHandler implements OutputPageBeforeHTMLHook {
 
 		return new self(
 			$httpRequestFactory,
-			$statsdDataFactory,
+			$statsFactory,
 			$settings,
 			TemplateFactory::getDefaultInstance(),
 			$entityRevisionLookup,
@@ -246,7 +246,7 @@ class OutputPageBeforeHTMLHookHandler implements OutputPageBeforeHTMLHook {
 			new MediaWikiLocalizedTextProvider( $language ),
 			$this->userOptionsLookup,
 			$this->languageFallbackChainFactory,
-			$this->repoSettings->getSetting( 'tmpEnableMulLanguageCode' ),
+			$this->repoSettings->getSetting( 'enableMulLanguageCode' ),
 			$entityTermsListHtml
 		);
 	}
@@ -264,11 +264,8 @@ class OutputPageBeforeHTMLHookHandler implements OutputPageBeforeHTMLHook {
 			return $userPreferredTermsLanguages;
 		}
 
-		if (
-			$this->repoSettings->getSetting( 'tmpEnableMulLanguageCode' )
-			&& $this->repoSettings->getSetting( 'tmpAlwaysShowMulLanguageCode' )
-		) {
-			return array_merge( $userPreferredTermsLanguages, [ 'mul' ] );
+		if ( $this->repoSettings->getSetting( 'enableMulLanguageCode' ) ) {
+			return array_merge( [ 'mul' ], $userPreferredTermsLanguages );
 		}
 
 		// Check both the html snippets and the (possibly empty) entity for a "mul" term.
@@ -281,8 +278,8 @@ class OutputPageBeforeHTMLHookHandler implements OutputPageBeforeHTMLHook {
 		}
 
 		if ( $hasMulTerm ) {
-			// There is a "mul" term present, show as last entry in the term box.
-			return array_merge( $userPreferredTermsLanguages, [ 'mul' ] );
+			// There is a "mul" term present, show as first entry in the term box.
+			return array_merge( [ 'mul' ], $userPreferredTermsLanguages );
 		}
 		return $userPreferredTermsLanguages;
 	}
@@ -298,7 +295,7 @@ class OutputPageBeforeHTMLHookHandler implements OutputPageBeforeHTMLHook {
 				$this->repoSettings->getSetting( 'ssrServerUrl' ),
 				$this->repoSettings->getSetting( 'ssrServerTimeout' ),
 				$this->logger,
-				$this->statsDataFactory
+				$this->statsFactory
 			),
 			$this->outputPageEntityIdReader,
 			new RepoSpecialPageLinker(),

@@ -60,11 +60,7 @@ class EntityDiffVisualizerFactory {
 		OutputFormatSnakFormatterFactory $snakFormatterFactory
 	) {
 		Assert::parameterElementType( 'callable', $entityDiffVisualizerInstantiators, '$entityDiffVisualizerInstantiators' );
-		Assert::parameterElementType(
-			'string',
-			array_keys( $entityDiffVisualizerInstantiators ),
-			'array_keys( $entityDiffVisualizerInstantiators )'
-		);
+		Assert::parameterKeyType( 'string', $entityDiffVisualizerInstantiators, '$entityDiffVisualizerInstantiators' );
 
 		$this->entityDiffVisualizerInstantiators = $entityDiffVisualizerInstantiators;
 		$this->claimDiffer = $claimDiffer;
@@ -74,9 +70,7 @@ class EntityDiffVisualizerFactory {
 	}
 
 	public function newEntityDiffVisualizer( ?string $type = null, ?IContextSource $context = null ): EntityDiffVisualizer {
-		if ( $context === null ) {
-			$context = RequestContext::getMain();
-		}
+		$context ??= RequestContext::getMain();
 		$langCode = $context->getLanguage()->getCode();
 		$options = new FormatterOptions( [
 			//TODO: fallback chain
@@ -99,8 +93,7 @@ class EntityDiffVisualizerFactory {
 			);
 		}
 
-		$visualizer = call_user_func(
-			$this->entityDiffVisualizerInstantiators[$type],
+		$visualizer = $this->entityDiffVisualizerInstantiators[$type](
 			$context,
 			$this->claimDiffer,
 			$claimDiffView,

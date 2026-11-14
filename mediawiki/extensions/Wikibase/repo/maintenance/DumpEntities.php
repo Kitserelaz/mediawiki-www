@@ -3,14 +3,11 @@
 namespace Wikibase\Repo\Maintenance;
 
 use MediaWiki\Maintenance\Maintenance;
-use MediaWiki\Registration\ExtensionRegistry;
-use MediaWiki\Settings\SettingsBuilder;
 use Onoi\MessageReporter\ObservableMessageReporter;
 use Wikibase\DataModel\Services\EntityId\EntityIdPager;
 use Wikibase\DataModel\Services\Lookup\EntityLookupException;
 use Wikibase\Lib\Reporting\ExceptionHandler;
 use Wikibase\Lib\Reporting\ReportingExceptionHandler;
-use Wikibase\Lib\WikibaseSettings;
 use Wikibase\Repo\Dumpers\DumpGenerator;
 use Wikibase\Repo\IO\EntityIdReader;
 use Wikibase\Repo\IO\LineReader;
@@ -18,11 +15,12 @@ use Wikibase\Repo\Store\Sql\SqlEntityIdPager;
 use Wikibase\Repo\Store\Sql\SqlEntityIdPagerFactory;
 use Wikibase\Repo\Store\Store;
 use Wikibase\Repo\WikibaseRepo;
-use Wikimedia\AtEase\AtEase;
 
+// @codeCoverageIgnoreStart
 $basePath = getenv( 'MW_INSTALL_PATH' ) !== false ? getenv( 'MW_INSTALL_PATH' ) : __DIR__ . '/../../../..';
 
 require_once $basePath . '/maintenance/Maintenance.php';
+// @codeCoverageIgnoreEnd
 
 /**
  * Maintenance script for generating a dump of entities in the repository.
@@ -168,6 +166,14 @@ abstract class DumpEntities extends Maintenance {
 	 * Do the actual work. All child classes will need to implement this
 	 */
 	public function execute() {
+		if ( $this->hasOption( 'dbgroupdefault' ) ) {
+			// make sure Maintenance::getLBFactory() (private) applies the dbgroupdefault
+			// option to the LBFactory in the service container.
+			$this->getReplicaDB();
+		} else {
+			$this->getServiceContainer()->getDBLoadBalancerFactory()->setDefaultGroupName( 'dump' );
+		}
+
 		//TODO: more validation for options
 		$shardingFactor = (int)$this->getOption( 'sharding-factor', 1 );
 		$shard = (int)$this->getOption( 'shard', 0 );
@@ -226,12 +232,19 @@ abstract class DumpEntities extends Maintenance {
 		$dumper->setBatchSize( $batchSize );
 
 		$db = WikibaseRepo::getRepoDomainDbFactory()->newRepoDb();
-		$dumper->setBatchCallback( [ $db, 'autoReconfigure' ] );
+		$dumper->setBatchCallback( function () use ( $db ) {
+			// Reconfigure the DB as needed, but not more than once per minute (T389199#10890818)
+			static $reconfigureNext = 0;
+
+			if ( $reconfigureNext < time() ) {
+				$db->autoReconfigure();
+				$reconfigureNext = time() + 60;
+			}
+		} );
 
 		$idStream = $this->makeIdStream( $entityTypes, $exceptionReporter );
-		AtEase::suppressWarnings();
-		$dumper->generateDump( $idStream );
-		AtEase::restoreWarnings();
+		// phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
+		@$dumper->generateDump( $idStream );
 
 		if ( $idStream instanceof EntityIdReader ) {
 			// close stream / free resources
@@ -239,38 +252,6 @@ abstract class DumpEntities extends Maintenance {
 		}
 
 		$this->closeLogFile();
-	}
-
-	/**
-	 * @inheritDoc
-	 */
-	public function finalSetup( SettingsBuilder $settingsBuilder ) {
-		parent::finalSetup( $settingsBuilder );
-
-		if ( $this->hasOption( 'dbgroupdefault' ) ) {
-			// A group was set via cli, so no need to set the default here
-			return;
-		}
-
-		$settingsBuilder->registerHookHandlers( [ 'MediaWikiServices' => [ function() {
-			global $wgDBDefaultGroup;
-			if ( !ExtensionRegistry::getInstance()->isLoaded( 'WikibaseRepository' ) ) {
-				// Something instantiates the MediaWikiServices before Wikibase
-				// is loaded, nothing we can do here.
-				wfWarn( self::class . ': Can not change default DB group.' );
-
-				return;
-			}
-
-			// Don't use WikibaseRepo or MediaWikiServices here as this is run very early on, thus
-			// the bootstrapping code is not ready yet (T202452).
-			$settings = WikibaseSettings::getRepoSettings();
-			$dumpDBDefaultGroup = $settings->getSetting( 'dumpDBDefaultGroup' );
-
-			if ( $dumpDBDefaultGroup !== null ) {
-				$wgDBDefaultGroup = $dumpDBDefaultGroup;
-			}
-		} ] ] );
 	}
 
 	/**

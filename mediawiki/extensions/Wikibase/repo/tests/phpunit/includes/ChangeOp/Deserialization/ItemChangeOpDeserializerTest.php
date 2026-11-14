@@ -116,14 +116,14 @@ class ItemChangeOpDeserializerTest extends \PHPUnit\Framework\TestCase {
 		$wiki->setGlobalId( self::SITE_ID );
 		$wiki->setGroup( self::SITELINK_GROUP );
 
-		return new SiteLinkTargetProvider( new HashSiteStore( [ $wiki ] ) );
+		return new SiteLinkTargetProvider( new HashSiteStore( [ $wiki ] ), [ self::SITELINK_GROUP ] );
 	}
 
 	public function getChangeOpDeserializer() {
 		return $this->newItemChangeOpDeserializer();
 	}
 
-	public function getEntity() {
+	public static function getEntity() {
 		return new Item( new ItemId( 'Q23' ) );
 	}
 

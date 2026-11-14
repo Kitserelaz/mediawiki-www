@@ -2,15 +2,11 @@
 	"name": "WikibaseLexeme",
 	"private": true,
 	"config": {
-		"remoteVersion": {
-			"vue": "https://raw.githubusercontent.com/wikimedia/mediawiki/#{ZUUL_BRANCH}/resources/lib/vue/vue.common.prod.js",
-			"vuex": "https://raw.githubusercontent.com/wikimedia/mediawiki/#{ZUUL_BRANCH}/resources/lib/vuex/vuex.js"
-		},
 		"snl": {
 			"src": "resources/special/new-lexeme",
 			"dist": "resources/special/new-lexeme-dist",
 			"cjs": "SpecialNewLexeme.cjs.js",
-			"css": "style.css"
+			"css": "new-lexeme-special-page.css"
 		}
 	},
 	"scripts": {
@@ -19,7 +15,6 @@
 		"test:grunt": "grunt test",
 		"test:snl-distnodiff": "run-s snl:install snl:build snl:cp snl:diff",
 		"test:snl-main": "git -C $npm_package_config_snl_src branch --contains HEAD main | grep -q .",
-		"test:mwlibs": "echo 'disabled (T297381)' # ZUUL_BRANCH=${ZUUL_BRANCH:-master} lib-version-check",
 		"fix": "grunt fix",
 		"bump-special-new-lexeme": "run-s snl:fetch snl:checkout snl:install snl:build snl:cp snl:add snl:restore",
 		"snl:fetch": "git -C $npm_package_config_snl_src fetch origin main",
@@ -38,22 +33,21 @@
 		"cypress:parallel": "cypress-parallel -s cypress:run -t 2 -d './cypress/e2e/**/*.cy.ts'"
 	},
 	"devDependencies": {
-		"@wmde/eslint-config-wikimedia-typescript": "^0.2.12",
-		"@wmde/lib-version-check": "^0.1.1-alpha.2",
-		"cypress": "^13.13.2",
+		"@wmde/eslint-config-wikimedia-typescript": "0.2.13",
+		"cypress": "^13.17.0",
 		"cypress-parallel": "^0.14.0",
-		"cypress-wikibase-api": "^0.0.6",
-		"eslint-config-wikimedia": "^0.28.2",
+		"cypress-wikibase-api": "^0.0.7",
+		"eslint-config-wikimedia": "0.29.1",
 		"eslint-plugin-chai-friendly": "^1.0.1",
-		"eslint-plugin-cypress": "^3.4.0",
-		"eslint-plugin-jsonc": "^2.16.0",
-		"eslint-plugin-promise": "^7.1.0",
+		"eslint-plugin-cypress": "^3.6.0",
+		"eslint-plugin-jsonc": "^2.18.2",
+		"eslint-plugin-promise": "^7.2.1",
 		"grunt": "1.6.1",
 		"grunt-banana-checker": "0.13.0",
 		"grunt-eslint": "^24.3.0",
 		"grunt-jasmine-nodejs": "^1.6.1",
 		"grunt-stylelint": "^0.20.1",
-		"jasmine": "^5.1.0",
+		"jasmine": "^5.5.0",
 		"jquery": "3.7.1",
 		"jsdom": "^25.0.1",
 		"lodash": "^4.17.21",
@@ -61,13 +55,13 @@
 		"npm-run-all": "^4.1.5",
 		"request": "^2.88.2",
 		"sinon": "^19.0.2",
-		"stylelint-config-wikimedia": "^0.17.2",
-		"typescript": "^5.5.4",
-		"typescript-eslint": "^8.2.0",
+		"stylelint-config-wikimedia": "^0.18.0",
+		"typescript": "^5.7.2",
+		"typescript-eslint": "^8.19.1",
 		"unexpected": "^13.2.1",
 		"unexpected-dom": "^6.0.1",
 		"unexpected-sinon": "^11.1.0",
-		"vue": "3.4.27",
+		"vue": "3.5.13",
 		"vuex": "4.0.2"
 	}
 }

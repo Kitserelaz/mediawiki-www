@@ -1,14 +1,25 @@
 {
 	"@metadata": {
 		"authors": [
+			"Dhondup",
+			"Pecha-Tsewang",
 			"Phurbutsering",
 			"TayfunEt.",
-			"Zolgoyo"
+			"Tenzin Thoesam",
+			"Zolgoyo",
+			"TsewangJamlingpa"
 		]
 	},
 	"wikibase-comment-unlink": "ཤོག་ངོས་འདི་{{WBREPONAME}} ནས་སྦྲེལ་མཐུད་བཅད་སོང། སྐད་ཡིག་སྦྲེལ་མཐུད་སྤོས་སོང།",
+	"wikibase-dataitem": "{{WBREPONAME}} དོན་ཚན།",
+	"wikibase-editlinks": "དྲ་ཐག་བསྐྱར་སྒྲིག",
+	"wikibase-linkitem-addlinks": "དྲ་ཐག་ཞོག",
+	"wikibase-linkitem-linkpage": "ཤོག་ངོས་དང་སྦྲེལ་མཐུད་བྱོས།",
+	"wikibase-linkitem-selectlink": "ཤོག་ངོས་འདི་དང་སྦྲེལ་མཐུད་བྱེད་པར་འདོད་པའི་དྲ་ཚིགས་དང་ཤོག་ངོས་ཤིག་གདམ་ཀ་བྱེད་རོགས།",
 	"wikibase-linkitem-input-site": "སྐད་རིགས།:",
 	"wikibase-linkitem-input-page": "ཤོག་ངོས།:",
 	"wikibase-rc-hide-wikidata": "$1 {{WBREPONAME}}",
-	"wikibase-otherprojects": "ལས་གཞི་གཞན་དག།"
+	"wikibase-pageinfo-entity-usage-A": "མིང་གཞན་ཁ་ཤས་",
+	"wikibase-pageinfo-entity-usage-O": "ཐ་སྙད་སྣ་ཚོགས། (དཔེར་ན། དངོས་པོའི་ཡོད་མེད།)",
+	"wikibase-otherprojects": "ལས་གཞི་གཞན་དག"
 }

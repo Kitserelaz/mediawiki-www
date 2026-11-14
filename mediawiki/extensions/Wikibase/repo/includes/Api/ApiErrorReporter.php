@@ -49,8 +49,6 @@ class ApiErrorReporter {
 	/**
 	 * Reports any warnings in the StatusValue object on the warnings section
 	 * of the result.
-	 *
-	 * @param StatusValue $status
 	 */
 	public function reportStatusWarnings( StatusValue $status ) {
 		$formatter = $this->apiModule->getErrorFormatter();
@@ -186,7 +184,7 @@ class ApiErrorReporter {
 	/**
 	 * @see ApiBase::dieWithError
 	 *
-	 * @param string|string[]|MessageSpecifier $msg
+	 * @param string|array|MessageSpecifier $msg
 	 * @param string $errorCode A code identifying the error.
 	 * @param int $httpRespCode The HTTP error code to send to the client
 	 * @param array|null $extraData Any extra data to include in the error report
@@ -275,9 +273,7 @@ class ApiErrorReporter {
 	 * @throws InvalidArgumentException
 	 */
 	private function addMessageToResult( MessageSpecifier $message, &$data ) {
-		if ( $data === null ) {
-			$data = [];
-		}
+		$data ??= [];
 
 		if ( !is_array( $data ) ) {
 			throw new InvalidArgumentException( '$data must be an array' );

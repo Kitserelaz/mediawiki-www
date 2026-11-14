@@ -1,8 +1,6 @@
 # Wikibase DataModel
 
-[![Build Status](https://secure.travis-ci.org/wmde/WikibaseDataModel.png?branch=master)](http://travis-ci.org/wmde/WikibaseDataModel)
-[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/wmde/WikibaseDataModel/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/wmde/WikibaseDataModel/?branch=master)
-[![Code Coverage](https://scrutinizer-ci.com/g/wmde/WikibaseDataModel/badges/coverage.png?b=master)](https://scrutinizer-ci.com/g/wmde/WikibaseDataModel/?branch=master)
+[![Build Status](https://github.com/wmde/WikibaseDataModel/actions/workflows/lint-and-test.yaml/badge.svg?branch=master)](https://github.com/wmde/WikibaseDataModel/actions/workflows/lint-and-test.yaml)
 [![Download count](https://poser.pugx.org/wikibase/data-model/d/total.png)](https://packagist.org/packages/wikibase/data-model)
 [![License](https://poser.pugx.org/wikibase/data-model/license.svg)](https://packagist.org/packages/wikibase/data-model)
 
@@ -17,6 +15,9 @@ It is primarily used by the Wikibase MediaWiki extensions, though
 has no dependencies whatsoever on these or on MediaWiki itself.
 
 Recent changes can be found in the [release notes](RELEASE-NOTES.md).
+
+Note that this repository is a mirror of part of the upstream [Wikibase project](https://gerrit.wikimedia.org/r/plugins/gitiles/mediawiki/extensions/Wikibase/+/refs/heads/master/lib/packages/wikibase/data-model/) on Gerrit.
+Contributions should be made to the directories there using MediaWiki's [Gerrit process](https://www.mediawiki.org/wiki/Gerrit).
 
 ## Installation
 
@@ -60,6 +61,11 @@ in the root directory. You can use the tools in their standard manner, though ca
 required by our CI by executing `composer ci`. To just run tests use `composer test`, and to just
 run style checks use `composer cs`.
 
+## Contributing
+
+This repository is a mirror of part of the upstream [Wikibase project](https://gerrit.wikimedia.org/r/plugins/gitiles/mediawiki/extensions/Wikibase/+/refs/heads/master/lib/packages/wikibase/data-model/) on Gerrit.
+Contributions should be made to the directories there using MediaWiki's [Gerrit process](https://www.mediawiki.org/wiki/Gerrit).
+
 ## Credits
 
 ### Development
@@ -81,9 +87,8 @@ Daniel Kinzler and Jeroen De Dauw.
 * [Wikibase DataModel on Packagist](https://packagist.org/packages/wikibase/data-model)
 * [Wikibase DataModel on Ohloh](https://www.ohloh.net/p/wikibasedatamodel/)
 * [Wikibase DataModel on TravisCI](https://travis-ci.org/wmde/WikibaseDataModel)
-* [Wikibase DataModel on ScrutinizerCI](https://scrutinizer-ci.com/g/wmde/WikibaseDataModel)
 * [Wikibase DataModel on Wikimedia's Phabricator](https://phabricator.wikimedia.org/project/view/920/)
- 
+
 ## See also
 
 * [Blog posts on Wikibase DataModel](http://www.bn2vs.com/blog/tag/wikibase-datamodel/)

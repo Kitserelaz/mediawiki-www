@@ -1,5 +1,7 @@
 <?php
 
+// @phan-file-suppress PhanPluginNeverReturnMethod
+
 namespace Wikibase\Lexeme\Domain\Diff;
 
 use Diff\DiffOp\Diff\Diff;
@@ -13,7 +15,6 @@ use Wikibase\DataModel\Services\Diff\EntityDiff;
  *
  * @license GPL-2.0-or-later
  * @author Amir Sarabadani <ladsgroup@gmail.com>
- * @phan-file-suppress PhanPluginNeverReturnMethod
  */
 class LexemeDiff extends EntityDiff {
 
@@ -91,11 +92,11 @@ class LexemeDiff extends EntityDiff {
 			&& $this->getNextSenseIdDiff()->isEmpty();
 	}
 
-	public function getNextFormIdDiff() {
+	public function getNextFormIdDiff(): Diff {
 		return $this['nextFormId'] ?? new Diff( [], true );
 	}
 
-	public function getNextSenseIdDiff() {
+	public function getNextSenseIdDiff(): Diff {
 		return $this['nextSenseId'] ?? new Diff( [], true );
 	}
 

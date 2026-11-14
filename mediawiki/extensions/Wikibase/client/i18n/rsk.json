@@ -59,7 +59,7 @@
 	"wikibase-error-deserialize-error": "Десериялизованє податкох ше нє удало.",
 	"wikibase-error-serialize-error": "Нєудатна сериялизация податкох.",
 	"wikibase-error-invalid-entity-id": "ID „$2” нєпознати систему. Хаснуйце валидни ID сущносци.",
-	"wikibase-error-exceeded-entity-access-limit": "Приступене ґу барз велькому числу {{WBREPONAME}} ентитетох.",
+	"wikibase-error-exceeded-entity-access-limit": "Приступене ґу барз велькому числу {{WBREPONAME}} ентитетох:$2/$3",
 	"wikibase-error-exceeded-referenced-entity-id-limit": "Єст превельо поволанки, лєм до $2 {{PLURAL:$2|допущене}}.",
 	"unconnectedpages": "Боки нє повязяни зоз елементами.",
 	"unconnectedpages-summary": "Тот окремни бок приказує боки хтори нє повязани зоз елементами (за простори назви хтори тото потримую).",

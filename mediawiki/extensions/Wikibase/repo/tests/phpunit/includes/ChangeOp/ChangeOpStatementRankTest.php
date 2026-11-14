@@ -23,18 +23,15 @@ use Wikibase\Repo\Store\EntityPermissionChecker;
  */
 class ChangeOpStatementRankTest extends \PHPUnit\Framework\TestCase {
 
-	public static function invalidArgumentProvider() {
+	public static function invalidArgumentProvider(): iterable {
 		$item = new Item( new ItemId( 'Q42' ) );
 
 		$guidGenerator = new GuidGenerator();
 		$validGuid = $guidGenerator->newGuid( $item->getId() );
 		$validRank = 1;
 
-		$args = [];
-		$args[] = [ 123, $validRank ];
-		$args[] = [ $validGuid, ':-)' ];
-
-		return $args;
+		yield [ 123, $validRank ];
+		yield [ $validGuid, ':-)' ];
 	}
 
 	/**
@@ -45,11 +42,11 @@ class ChangeOpStatementRankTest extends \PHPUnit\Framework\TestCase {
 		new ChangeOpStatementRank( $guid, $rank );
 	}
 
-	public function changeOpProvider() {
+	public static function changeOpProvider() {
 		$snak = new PropertyValueSnak( 2754236, new StringValue( 'test' ) );
 		$args = [];
 
-		$item = $this->newItemWithClaim( 'q123', $snak );
+		$item = self::newItemWithClaim( 'q123', $snak );
 		$statements = $item->getStatements()->toArray();
 		/** @var Statement $statement */
 		$statement = reset( $statements );
@@ -76,7 +73,7 @@ class ChangeOpStatementRankTest extends \PHPUnit\Framework\TestCase {
 		$this->assertTrue( $changeOpResult->isEntityChanged() );
 	}
 
-	private function newItemWithClaim( $itemIdString, $mainSnak ) {
+	private static function newItemWithClaim( $itemIdString, $mainSnak ) {
 		$item = new Item( new ItemId( $itemIdString ) );
 
 		$item->getStatements()->addNewStatement(

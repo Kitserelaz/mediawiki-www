@@ -29,18 +29,18 @@ class LinkTitlesTest extends WikibaseApiTestCase {
 
 	public static function provideLinkTitles(): iterable {
 		return [
-			[ //0 add nowiki as fromsite
-				'p' => [ 'tosite' => 'nnwiki', 'totitle' => 'Oslo', 'fromsite' => 'nowiki', 'fromtitle' => 'Oslo' ],
-				'e' => [ 'inresult' => 1 ] ],
-			[ //1 add svwiki as tosite
-				'p' => [ 'tosite' => 'svwiki', 'totitle' => 'Oslo', 'fromsite' => 'nowiki', 'fromtitle' => 'Oslo' ],
-				'e' => [ 'inresult' => 1 ] ],
-			[ //2 Create a link between 2 new pages
-				'p' => [ 'tosite' => 'svwiki', 'totitle' => 'NewTitle', 'fromsite' => 'nowiki', 'fromtitle' => 'NewTitle' ],
-				'e' => [ 'inresult' => 2 ] ],
-			[ //4 Create a link between 2 new pages
-				'p' => [ 'tosite' => 'svwiki', 'totitle' => 'ATitle', 'fromsite' => 'nowiki', 'fromtitle' => 'ATitle' ],
-				'e' => [ 'inresult' => 2 ] ],
+			'0 add nowiki as fromsite' => [
+				'params' => [ 'tosite' => 'nnwiki', 'totitle' => 'Oslo', 'fromsite' => 'nowiki', 'fromtitle' => 'Oslo' ],
+				'expected' => [ 'inresult' => 1 ] ],
+			'1 add svwiki as tosite' => [
+				'params' => [ 'tosite' => 'svwiki', 'totitle' => 'Oslo', 'fromsite' => 'nowiki', 'fromtitle' => 'Oslo' ],
+				'expected' => [ 'inresult' => 1 ] ],
+			'2 Create a link between 2 new pages' => [
+				'params' => [ 'tosite' => 'svwiki', 'totitle' => 'NewTitle', 'fromsite' => 'nowiki', 'fromtitle' => 'NewTitle' ],
+				'expected' => [ 'inresult' => 2 ] ],
+			'4 Create a link between 2 new pages' => [
+				'params' => [ 'tosite' => 'svwiki', 'totitle' => 'ATitle', 'fromsite' => 'nowiki', 'fromtitle' => 'ATitle' ],
+				'expected' => [ 'inresult' => 2 ] ],
 		];
 	}
 
@@ -80,34 +80,34 @@ class LinkTitlesTest extends WikibaseApiTestCase {
 		}
 	}
 
-	public function provideLinkTitleExceptions(): iterable {
+	public static function provideLinkTitleExceptions(): iterable {
 		return [
 			'notoken' => [
-				'p' => [
+				'params' => [
 					'tosite' => 'nnwiki',
 					'totitle' => 'Oslo',
 					'fromsite' => 'nowiki',
 					'fromtitle' => 'AnotherPage',
 				],
-				'e' => [ 'exception' => [
+				'expected' => [ 'exception' => [
 					'type' => ApiUsageException::class,
-					'code' => $this->logicalOr(
-						$this->equalTo( 'notoken' ),
-						$this->equalTo( 'missingparam' )
+					'code' => self::logicalOr(
+						self::equalTo( 'notoken' ),
+						self::equalTo( 'missingparam' )
 					),
 					'message' => 'The "token" parameter must be set',
 				] ],
 				'token' => false,
 			],
 			'badtoken' => [
-				'p' => [
+				'params' => [
 					'tosite' => 'nnwiki',
 					'totitle' => 'Oslo',
 					'fromsite' => 'nowiki',
 					'fromtitle' => 'AnotherPage',
 					'token' => '88888888888888888888888888888888+\\',
 				],
-				'e' => [ 'exception' => [
+				'expected' => [ 'exception' => [
 					'type' => ApiUsageException::class,
 					'code' => 'badtoken',
 					'message' => 'Invalid CSRF token.',
@@ -115,98 +115,98 @@ class LinkTitlesTest extends WikibaseApiTestCase {
 				'token' => false,
 			],
 			'add two links already exist together' => [
-				'p' => [
+				'params' => [
 					'tosite' => 'nnwiki',
 					'totitle' => 'Oslo',
 					'fromsite' => 'nowiki',
 					'fromtitle' => 'Oslo',
 				],
-				'e' => [ 'exception' => [
+				'expected' => [ 'exception' => [
 					'type' => ApiUsageException::class,
 					'code' => 'common-item',
 				] ],
 			],
 			'no common item' => [
-				'p' => [
+				'params' => [
 					'tosite' => 'dewiki',
 					'totitle' => 'Berlin',
 					'fromsite' => 'nlwiki',
 					'fromtitle' => 'Oslo',
 				],
-				'e' => [ 'exception' => [
+				'expected' => [ 'exception' => [
 					'type' => ApiUsageException::class,
 					'code' => 'no-common-item',
 				] ],
 			],
 			'add two links from the same site' => [
-				'p' => [
+				'params' => [
 					'tosite' => 'nnwiki',
 					'totitle' => 'Hammerfest',
 					'fromsite' => 'nnwiki',
 					'fromtitle' => 'Hammerfest',
 				],
-				'e' => [ 'exception' => [
+				'expected' => [ 'exception' => [
 					'type' => ApiUsageException::class,
 					'code' => 'param-illegal',
 				] ],
 			],
 			'missing title' => [
-				'p' => [
+				'params' => [
 					'tosite' => 'nnwiki',
 					'totitle' => '',
 					'fromsite' => 'dewiki',
 					'fromtitle' => 'Hammerfest',
 				],
-				'e' => [ 'exception' => [
+				'expected' => [ 'exception' => [
 					'type' => ApiUsageException::class,
-					'code' => $this->logicalOr(
-						$this->equalTo( 'nototitle' ),
-						$this->equalTo( 'missingparam' )
+					'code' => self::logicalOr(
+						self::equalTo( 'nototitle' ),
+						self::equalTo( 'missingparam' )
 					),
 				] ],
 			],
 			'bad tosite' => [
-				'p' => [
+				'params' => [
 					'tosite' => 'qwerty',
 					'totitle' => 'Hammerfest',
 					'fromsite' => 'nnwiki',
 					'fromtitle' => 'Hammerfest',
 				],
-				'e' => [ 'exception' => [
+				'expected' => [ 'exception' => [
 					'type' => ApiUsageException::class,
-					'code' => $this->logicalOr(
-						$this->equalTo( 'unknown_tosite' ),
-						$this->equalTo( 'badvalue' )
+					'code' => self::logicalOr(
+						self::equalTo( 'unknown_tosite' ),
+						self::equalTo( 'badvalue' )
 					),
 				] ],
 			],
 			'bad fromsite' => [
-				'p' => [
+				'params' => [
 					'tosite' => 'nnwiki',
 					'totitle' => 'Hammerfest',
 					'fromsite' => 'qwerty',
 					'fromtitle' => 'Hammerfest',
 				],
-				'e' => [ 'exception' => [
+				'expected' => [ 'exception' => [
 					'type' => ApiUsageException::class,
-					'code' => $this->logicalOr(
-						$this->equalTo( 'unknown_fromsite' ),
-						$this->equalTo( 'badvalue' )
+					'code' => self::logicalOr(
+						self::equalTo( 'unknown_fromsite' ),
+						self::equalTo( 'badvalue' )
 					),
 				] ],
 			],
 			'missing site' => [
-				'p' => [
+				'params' => [
 					'tosite' => 'nnwiki',
 					'totitle' => 'APage',
 					'fromsite' => '',
 					'fromtitle' => 'Hammerfest',
 				],
-				'e' => [ 'exception' => [
+				'expected' => [ 'exception' => [
 					'type' => ApiUsageException::class,
-					'code' => $this->logicalOr(
-						$this->equalTo( 'unknown_fromsite' ),
-						$this->equalTo( 'badvalue' )
+					'code' => self::logicalOr(
+						self::equalTo( 'unknown_fromsite' ),
+						self::equalTo( 'badvalue' )
 					),
 				] ],
 			],

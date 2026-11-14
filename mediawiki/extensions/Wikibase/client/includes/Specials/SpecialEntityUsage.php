@@ -2,20 +2,20 @@
 
 namespace Wikibase\Client\Specials;
 
-use HtmlArmor;
 use MediaWiki\Html\Html;
 use MediaWiki\HTMLForm\HTMLForm;
-use MediaWiki\Languages\LanguageConverterFactory;
+use MediaWiki\Language\LanguageConverterFactory;
 use MediaWiki\Linker\Linker;
+use MediaWiki\Skin\Skin;
 use MediaWiki\SpecialPage\QueryPage;
 use MediaWiki\Title\Title;
-use Skin;
 use Wikibase\Client\Usage\EntityUsage;
 use Wikibase\DataModel\Entity\EntityId;
 use Wikibase\DataModel\Entity\EntityIdParser;
 use Wikibase\DataModel\Entity\EntityIdParsingException;
 use Wikibase\Lib\Rdbms\ClientDomainDb;
 use Wikibase\Lib\Rdbms\ClientDomainDbFactory;
+use Wikimedia\HtmlArmor\HtmlArmor;
 
 /**
  * A special page that lists client wiki pages that use a given entity ID from the repository, and
@@ -79,7 +79,7 @@ class SpecialEntityUsage extends QueryPage {
 		if ( $entity ) {
 			try {
 				$this->entityId = $this->idParser->parse( $entity );
-			} catch ( EntityIdParsingException $ex ) {
+			} catch ( EntityIdParsingException ) {
 				$this->getOutput()->addHTML(
 					Html::element(
 						'p',

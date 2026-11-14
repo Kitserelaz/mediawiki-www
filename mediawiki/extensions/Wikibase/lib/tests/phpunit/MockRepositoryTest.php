@@ -402,33 +402,33 @@ class MockRepositoryTest extends TestCase {
 			'fresh' => [
 				'entity' => $item,
 				'flags' => EDIT_NEW,
-				'baseRevid' => false,
+				'baseRevId' => false,
 			],
 
 			'update' => [
 				'entity' => $secondItem,
 				'flags' => EDIT_UPDATE,
-				'baseRevid' => 1011,
+				'baseRevId' => 1011,
 			],
 
 			'not fresh' => [
 				'entity' => $thirdItem,
 				'flags' => EDIT_NEW,
-				'baseRevid' => false,
+				'baseRevId' => false,
 				'error' => StorageException::class,
 			],
 
 			'not exists' => [
 				'entity' => $fourthItem,
 				'flags' => EDIT_UPDATE,
-				'baseRevid' => false,
+				'baseRevId' => false,
 				'error' => StorageException::class,
 			],
 
 			'bad base' => [
 				'entity' => $fifthItem,
 				'flags' => EDIT_UPDATE,
-				'baseRevid' => 1234,
+				'baseRevId' => 1234,
 				'error' => StorageException::class,
 			],
 		];
@@ -437,15 +437,15 @@ class MockRepositoryTest extends TestCase {
 	/**
 	 * @dataProvider provideSaveEntity
 	 */
-	public function testSaveEntity( Item $item, $flags, $baseRevId, $error = null ) {
+	public function testSaveEntity( Item $entity, $flags, $baseRevId, $error = null ) {
 		$this->setupGetEntities();
 
 		if ( $error !== null ) {
 			$this->expectException( $error );
 		}
 
-		$rev = $this->repo->saveEntity( $item, 'f00', $this->getUserMock(), $flags, $baseRevId );
-		$itemId = $item->getId();
+		$rev = $this->repo->saveEntity( $entity, 'f00', $this->getUserMock(), $flags, $baseRevId );
+		$itemId = $entity->getId();
 		$revisionId = $rev->getRevisionId();
 
 		$logEntry = $this->repo->getLogEntry( $revisionId );
@@ -459,11 +459,11 @@ class MockRepositoryTest extends TestCase {
 		/** @var Item $savedItem */
 		$savedItem = $this->repo->getEntity( $itemId );
 
-		$this->assertTrue( $item->getFingerprint()->equals( $revisionItem->getFingerprint() ) );
-		$this->assertTrue( $item->getFingerprint()->equals( $savedItem->getFingerprint() ) );
+		$this->assertTrue( $entity->getFingerprint()->equals( $revisionItem->getFingerprint() ) );
+		$this->assertTrue( $entity->getFingerprint()->equals( $savedItem->getFingerprint() ) );
 
 		// test we can't mess with entities in the repo
-		$item->setLabel( 'en', 'STRANGE' );
+		$entity->setLabel( 'en', 'STRANGE' );
 		$savedItem = $this->repo->getEntity( $itemId );
 		$this->assertNotNull( $savedItem );
 		$this->assertNotEquals( 'STRANGE', $savedItem->getLabels()->getByLanguage( 'en' )->getText() );

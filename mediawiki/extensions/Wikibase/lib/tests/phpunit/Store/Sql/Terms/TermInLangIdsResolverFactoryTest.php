@@ -4,7 +4,6 @@ declare( strict_types = 1 );
 
 namespace Wikibase\Lib\Store\Sql\Terms;
 
-use MediaWiki\MediaWikiServices;
 use MediaWikiIntegrationTestCase;
 use Psr\Log\NullLogger;
 use Wikibase\DataAccess\DatabaseEntitySource;
@@ -29,7 +28,6 @@ class TermInLangIdsResolverFactoryTest extends MediaWikiIntegrationTestCase {
 		'he' => 'שלום עולם',
 	];
 
-	private const MOCK_TYPE_LABEL = 1;
 	/**
 	 * @var array
 	 */
@@ -45,15 +43,6 @@ class TermInLangIdsResolverFactoryTest extends MediaWikiIntegrationTestCase {
 		if ( !WikibaseSettings::isRepoEnabled() ) {
 			$this->markTestSkipped( "Skipping because WikibaseClient doesn't have local term store tables." );
 		}
-
-		$this->getDb()->newInsertQueryBuilder()
-			->insertInto( 'wbt_type' )
-			->row( [
-				'wby_id' => self::MOCK_TYPE_LABEL,
-				'wby_name' => 'label',
-			] )
-			->caller( __METHOD__ )
-			->execute();
 
 		$fname = __METHOD__;
 		$this->termIds = array_map(
@@ -78,7 +67,7 @@ class TermInLangIdsResolverFactoryTest extends MediaWikiIntegrationTestCase {
 				$this->getDb()->newInsertQueryBuilder()
 					->insertInto( 'wbt_term_in_lang' )
 					->row( [
-						'wbtl_type_id' => self::MOCK_TYPE_LABEL,
+						'wbtl_type_id' => TermTypeIds::LABEL_TYPE_ID,
 						'wbtl_text_in_lang_id' => $this->getDb()->insertId(),
 					] )
 					->caller( $fname )
@@ -97,9 +86,8 @@ class TermInLangIdsResolverFactoryTest extends MediaWikiIntegrationTestCase {
 		}, self::MOCK_LANG_LABELS );
 
 		$factory = new TermInLangIdsResolverFactory(
-			$this->getRepoDomainDbFactory(),
-			new NullLogger(),
-			MediaWikiServices::getInstance()->getMainWANObjectCache()
+			$this->getTermsDomainDbFactory(),
+			new NullLogger()
 		);
 
 		$entitySource = $this->createStub( DatabaseEntitySource::class );

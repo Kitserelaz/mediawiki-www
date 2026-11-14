@@ -4,6 +4,7 @@
 			"Cwlin0416",
 			"Gi25ni",
 			"Kly",
+			"LowensteinYang",
 			"Mutolisp",
 			"SaldırganSincap",
 			"Translatealcd",
@@ -57,7 +58,7 @@
 	"apihelp-wbformatvalue-param-generate": "預期得輸出格式",
 	"apihelp-wbformatvalue-param-datatype": "值的資料類型。不同於值的類型。",
 	"apihelp-wbformatvalue-param-datavalue": "要格式化的資料。這必須是資料值物件的 JSON 序列化。",
-	"apihelp-wbformatvalue-param-options": "格式化應使用的選項。以 JSON 物件作為提供。",
+	"apihelp-wbformatvalue-param-options": "格式化程式應使用的選項。以 JSON 物件形式提供。\n\n支援的選項為：\n; $1：數值應採用的格式化語言（是某個MediaWiki語言代碼）。\n; $2：是否對數字進行四捨五入。可為布林值（自動/不四捨五入）或整數（最後有效小數位數的指數）。僅適用於數量值。\n; $3：是否在輸出中包含單位（布林值）。僅適用於數量值。\n; $4：是否顯示日曆模型。可為布林值（始終顯示／從不顯示）或字串<code>「auto」</code>（自動判斷是否要顯示）。僅適用於時間值。",
 	"apihelp-wbformatvalue-param-property": "資料值所屬的屬性 ID，應取代 <var>datatype</var> 參數來使用。",
 	"apihelp-wbformatvalue-example-1": "格式化簡易字串值。",
 	"apihelp-wbformatvalue-example-2": "在 HTML 裡將字串值格式化為 URL。",
@@ -305,11 +306,13 @@
 	"apihelp-wbsetsitelink-example-6": "從 ID 為 <samp>$1</samp> 的項目更改連結至波蘭語頁面的徽章，來成為指向 ID 是「Q2」與「Q149」項目的兩個徽章，並不帶有所提供的連結標題",
 	"apihelp-wbsetsitelink-example-7": "從 ID 為 <samp>$1</samp> 的項目來更改連接至波蘭語的頁面，且不變動徽章",
 	"apihelp-wbsetsitelink-example-8": "從 ID 為 <samp>$1</samp> 的項目來更改連接至波蘭語的頁面，且移除所有徽章",
-	"apihelp-wbformatentities-summary": "格式化實體 ID 成 HTML。",
+	"apihelp-wbformatentities-summary": "將實體ID格式化成HTML或純文字。",
 	"apihelp-wbformatentities-extended-description": "語言能夠以全域 <var>uselang</var> 參數來指定。",
 	"apihelp-wbformatentities-param-ids": "要格式化的實體 ID。",
-	"apihelp-wbformatentities-example-1": "格式化單一項目 ID。",
+	"apihelp-wbformatentities-param-generate": "想要生成的輸出格式。",
+	"apihelp-wbformatentities-example-1": "將某個單一項目ID格式化為HTML。",
 	"apihelp-wbformatentities-example-2": "格式化項目編號與屬性編號",
 	"apihelp-wbformatentities-example-3": "格式化項目編號、屬性編號與詞位編號。",
-	"apihelp-wbformatentities-example-4": "格式化法語裡的三個項目 ID。"
+	"apihelp-wbformatentities-example-4": "格式化法語裡的三個項目 ID。",
+	"apihelp-wbformatentities-example-5": "將三個項目ID與一個屬性ID格式化為純文字。"
 }

@@ -9,7 +9,7 @@ use MediaWiki\Api\ApiBase;
 use MediaWiki\Api\ApiMain;
 use MediaWiki\Api\ApiResult;
 use MediaWiki\Api\ApiUsageException;
-use MediaWiki\Cache\LinkBatchFactory;
+use MediaWiki\Page\LinkBatchFactory;
 use Wikibase\DataAccess\EntitySourceLookup;
 use Wikibase\DataModel\Entity\EntityId;
 use Wikibase\DataModel\Term\Term;
@@ -21,6 +21,8 @@ use Wikibase\Lib\Store\EntityArticleIdLookup;
 use Wikibase\Lib\Store\EntityTitleLookup;
 use Wikibase\Lib\Store\EntityTitleTextLookup;
 use Wikibase\Lib\Store\EntityUrlLookup;
+use Wikibase\Repo\Domains\Search\Infrastructure\Controllers\DispatchingWbSearchEntitiesController;
+use Wikibase\Repo\Domains\Search\Infrastructure\Controllers\WbSearchEntitiesRequest;
 use Wikibase\Repo\FederatedProperties\FederatedPropertiesException;
 use Wikibase\Repo\WikibaseRepo;
 use Wikimedia\Assert\InvariantException;
@@ -52,7 +54,7 @@ class SearchEntities extends ApiBase {
 
 	private LinkBatchFactory $linkBatchFactory;
 
-	private EntitySearchHelper $entitySearchHelper;
+	private DispatchingWbSearchEntitiesController $searchController;
 
 	private ContentLanguages $termsLanguages;
 
@@ -80,7 +82,7 @@ class SearchEntities extends ApiBase {
 		ApiMain $mainModule,
 		string $moduleName,
 		LinkBatchFactory $linkBatchFactory,
-		EntitySearchHelper $entitySearchHelper,
+		DispatchingWbSearchEntitiesController $searchController,
 		ContentLanguages $termLanguages,
 		EntitySourceLookup $entitySourceLookup,
 		EntityTitleLookup $entityTitleLookup,
@@ -93,8 +95,7 @@ class SearchEntities extends ApiBase {
 	) {
 		parent::__construct( $mainModule, $moduleName, '' );
 
-		// Always try to add a conceptUri to results if not already set
-		$this->entitySearchHelper = new ConceptUriSearchHelper( $entitySearchHelper, $entitySourceLookup );
+		$this->searchController = $searchController;
 
 		$this->linkBatchFactory = $linkBatchFactory;
 		$this->termsLanguages = $termLanguages;
@@ -112,10 +113,10 @@ class SearchEntities extends ApiBase {
 		ApiMain $mainModule,
 		string $moduleName,
 		LinkBatchFactory $linkBatchFactory,
+		DispatchingWbSearchEntitiesController $searchController,
 		ApiHelperFactory $apiHelperFactory,
 		array $enabledEntityTypes,
 		EntityArticleIdLookup $entityArticleIdLookup,
-		EntitySearchHelper $entitySearchHelper,
 		EntitySourceLookup $entitySourceLookup,
 		EntityTitleLookup $entityTitleLookup,
 		EntityTitleTextLookup $entityTitleTextLookup,
@@ -128,7 +129,7 @@ class SearchEntities extends ApiBase {
 			$mainModule,
 			$moduleName,
 			$linkBatchFactory,
-			$entitySearchHelper,
+			$searchController,
 			$termsLanguages,
 			$entitySourceLookup,
 			$entityTitleLookup,
@@ -154,14 +155,16 @@ class SearchEntities extends ApiBase {
 	 */
 	private function getSearchResults( array $params ): array {
 		try {
-			return $this->entitySearchHelper->getRankedSearchResults(
-				$params['search'],
-				$params['language'],
-				$params['type'],
-				$params['continue'] + $params['limit'] + 1,
-				$params['strictlanguage'],
-				$this->searchProfiles[$params['profile']]
-			);
+			return $this->searchController
+				->getControllerForEntityType( $params['type'] )
+				->search( new WbSearchEntitiesRequest(
+					$params['search'],
+					$params['language'],
+					$this->getLanguageCode()->toBcp47Code(),
+					$params['continue'] + $params['limit'] + 1,
+					$params['strictlanguage'],
+					$this->searchProfiles[$params['profile']],
+				) );
 		} catch ( EntitySearchException $ese ) {
 			$this->dieStatus( $ese->getStatus() );
 
@@ -299,7 +302,7 @@ class SearchEntities extends ApiBase {
 	public function execute(): void {
 		try {
 			$this->executeInternal();
-		} catch ( FederatedPropertiesException $ex ) {
+		} catch ( FederatedPropertiesException ) {
 			$this->errorReporter->dieWithError(
 				'wikibase-federated-properties-search-api-error-message',
 				'failed-property-search'

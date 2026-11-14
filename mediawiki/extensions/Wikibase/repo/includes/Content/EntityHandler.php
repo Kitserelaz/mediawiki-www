@@ -2,12 +2,12 @@
 
 namespace Wikibase\Repo\Content;
 
-use Article;
 use Diff\Patcher\PatcherException;
 use InvalidArgumentException;
 use LogicException;
 use MediaWiki\Content\Content;
 use MediaWiki\Content\ContentHandler;
+use MediaWiki\Content\ContentSerializationException;
 use MediaWiki\Content\Renderer\ContentParseParams;
 use MediaWiki\Content\ValidationParams;
 use MediaWiki\Context\IContextSource;
@@ -15,15 +15,17 @@ use MediaWiki\Context\RequestContext;
 use MediaWiki\Html\Html;
 use MediaWiki\Language\Language;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Page\Article;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Parser\ParserCache;
 use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
+use MediaWiki\Search\SearchEngine;
+use MediaWiki\Search\SearchIndexField;
 use MediaWiki\Status\Status;
 use MediaWiki\Title\Title;
-use MWContentSerializationException;
-use SearchEngine;
 use ValueValidators\Result;
 use Wikibase\DataModel\Entity\EntityDocument;
 use Wikibase\DataModel\Entity\EntityId;
@@ -41,7 +43,6 @@ use Wikibase\Repo\Validators\EntityValidator;
 use Wikibase\Repo\Validators\ValidatorErrorLocalizer;
 use Wikibase\Repo\WikibaseRepo;
 use Wikimedia\Assert\Assert;
-use WikiPage;
 
 /**
  * Base handler class for Entity content classes.
@@ -102,7 +103,6 @@ abstract class EntityHandler extends ContentHandler {
 	 *        blob needs to be re-serialized on export. The callback must take two parameters,
 	 *        the blob an the serialization format. It must return true if re-serialization is needed.
 	 *        False positives are acceptable, false negatives are not.
-	 *
 	 */
 	public function __construct(
 		$modelId,
@@ -171,6 +171,7 @@ abstract class EntityHandler extends ContentHandler {
 		return EntityContentDiffView::class;
 	}
 
+	/** @inheritDoc */
 	protected function getSlotDiffRendererWithOptions( IContextSource $context, $options = [] ) {
 		$entityDiffVisualizerFactory = WikibaseRepo::getEntityDiffVisualizerFactory();
 		$diffVisualizer = new DispatchingEntityDiffVisualizer( $entityDiffVisualizerFactory, $context );
@@ -183,6 +184,7 @@ abstract class EntityHandler extends ContentHandler {
 	 * @see getValidationErrorLocalizer()
 	 *
 	 * @param bool $forCreation Whether the entity is created (true) or updated (false).
+	 * @param EntityId $entityId
 	 *
 	 * @return EntityValidator[]
 	 */
@@ -278,7 +280,7 @@ abstract class EntityHandler extends ContentHandler {
 	/**
 	 * @see ContentHandler::makeRedirectContent
 	 *
-	 * @warning This always throws an exception, since an EntityRedirects needs to know it's own
+	 * @warning This always throws an exception, since an EntityRedirect needs to know its own
 	 * ID in addition to the target ID. We have no way to guess that in makeRedirectContent().
 	 * Use makeEntityRedirectContent() instead.
 	 *
@@ -307,7 +309,7 @@ abstract class EntityHandler extends ContentHandler {
 			return $blob;
 		}
 
-		$needsTransform = call_user_func( $this->legacyExportFormatDetector, $blob, $format );
+		$needsTransform = ( $this->legacyExportFormatDetector )( $blob, $format );
 
 		if ( $needsTransform ) {
 			$format = ( $format === null ) ? $this->getDefaultFormat() : $format;
@@ -359,7 +361,7 @@ abstract class EntityHandler extends ContentHandler {
 	 * @param string|null $format
 	 *
 	 * @throws InvalidArgumentException
-	 * @throws MWContentSerializationException
+	 * @throws ContentSerializationException
 	 * @return string
 	 */
 	public function serializeContent( Content $content, $format = null ) {
@@ -384,7 +386,7 @@ abstract class EntityHandler extends ContentHandler {
 	 * @param string $blob
 	 * @param string|null $format
 	 *
-	 * @throws MWContentSerializationException
+	 * @throws ContentSerializationException
 	 * @return EntityContent
 	 */
 	public function unserializeContent( $blob, $format = null ) {
@@ -536,9 +538,7 @@ abstract class EntityHandler extends ContentHandler {
 	 * @return Language The page's language
 	 */
 	public function getPageViewLanguage( Title $title, ?Content $content = null ) {
-		global $wgLang;
-
-		return $wgLang;
+		return RequestContext::getMain()->getLanguage();
 	}
 
 	/**
@@ -608,7 +608,7 @@ abstract class EntityHandler extends ContentHandler {
 		try {
 			// apply the patch( new -> old ) to the current revision.
 			$patchedCurrent = $latestContent->getPatchedCopy( $patch );
-		} catch ( PatcherException $ex ) {
+		} catch ( PatcherException ) {
 			return false;
 		}
 
@@ -666,7 +666,7 @@ abstract class EntityHandler extends ContentHandler {
 
 	/**
 	 * @param SearchEngine $engine
-	 * @return \SearchIndexField[] List of fields this content handler can provide.
+	 * @return SearchIndexField[] List of fields this content handler can provide.
 	 */
 	public function getFieldsForSearchIndex( SearchEngine $engine ) {
 		$fields = [];
@@ -829,7 +829,7 @@ abstract class EntityHandler extends ContentHandler {
 				$language, $target, false
 			);
 			$parserOutput->setRedirectHeader( $html );
-			$parserOutput->setText( '' );
+			$parserOutput->setContentHolderText( '' );
 		}
 
 		return $parserOutput;
@@ -852,9 +852,7 @@ abstract class EntityHandler extends ContentHandler {
 		$generateHtml = true
 	) {
 		$outputGenerator = WikibaseRepo::getEntityParserOutputGeneratorFactory()
-			->getEntityParserOutputGenerator(
-				$this->getValidUserLanguage( $options->getUserLangObj() )
-			);
+			->getEntityParserOutputGeneratorForParserOptions( $options );
 
 		$entityRevision = $this->getEntityRevision( $content, $revisionId );
 
@@ -869,15 +867,6 @@ abstract class EntityHandler extends ContentHandler {
 		$this->applyEntityPageProperties( $content, $parserOutput );
 
 		return $parserOutput;
-	}
-
-	private function getValidUserLanguage( Language $language ) {
-		$services = MediaWikiServices::getInstance();
-		if ( !$services->getLanguageNameUtils()->isValidBuiltInCode( $language->getCode() ) ) {
-			return $services->getLanguageFactory()->getLanguage( 'und' ); // T204791
-		}
-
-		return $language;
 	}
 
 	/**

@@ -5,9 +5,8 @@ declare( strict_types = 1 );
 namespace Wikibase\Lib\Store\Sql\Terms\Util;
 
 use LogicException;
-use Wikibase\Lib\Rdbms\RepoDomainDb;
+use Wikibase\Lib\Rdbms\TermsDomainDb;
 use Wikimedia\Rdbms\IDatabase;
-use Wikimedia\Rdbms\ILoadBalancer;
 use Wikimedia\Rdbms\IReadableDatabase;
 
 /**
@@ -29,7 +28,7 @@ class ReplicaPrimaryAwareRecordIdsAcquirer {
 	 */
 	public const FLAG_IGNORE_REPLICA = 0x1;
 
-	private RepoDomainDb $repoDb;
+	private TermsDomainDb $termsDb;
 
 	private string $table;
 
@@ -40,20 +39,20 @@ class ReplicaPrimaryAwareRecordIdsAcquirer {
 	private int $waitForReplicationTimeout;
 
 	/**
-	 * @param RepoDomainDb $repoDb
+	 * @param TermsDomainDb $termsDb
 	 * @param string $table the name of the table this acquirer is for
 	 * @param string $idColumn the name of the column that contains the desired ids
 	 * @param int $flags {@see self::FLAG_IGNORE_REPLICA}
 	 * @param int $waitForReplicationTimeout in seconds, the timeout on waiting for replication
 	 */
 	public function __construct(
-		RepoDomainDb $repoDb,
+		TermsDomainDb $termsDb,
 		string $table,
 		string $idColumn,
 		int $flags = 0x0,
 		int $waitForReplicationTimeout = 2
 	) {
-		$this->repoDb = $repoDb;
+		$this->termsDb = $termsDb;
 		$this->table = $table;
 		$this->idColumn = $idColumn;
 		$this->flags = $flags;
@@ -169,7 +168,7 @@ class ReplicaPrimaryAwareRecordIdsAcquirer {
 				// gets stuck in an infinite loop. To avoid this, we read it with CONN_TRX_AUTOCOMMIT
 				// Surprisingly it's not too rare not to happen in production: T247553
 
-				$dbw = $this->repoDb->connections()->getWriteConnection( ILoadBalancer::CONN_TRX_AUTOCOMMIT );
+				$dbw = $this->termsDb->getAutoCommitPrimaryConnection();
 
 				$insertedRecords = array_merge(
 					$insertedRecords,
@@ -216,7 +215,7 @@ class ReplicaPrimaryAwareRecordIdsAcquirer {
 		// If not all needed records exist in replica,
 		// try wait for replication and fetch again from replica
 		if ( $neededRecords ) {
-			$this->repoDb->replication()->waitForAllAffectedClusters( $this->waitForReplicationTimeout );
+			$this->termsDb->waitForReplicationOfAllAffectedClusters( $this->waitForReplicationTimeout );
 
 			$existingRecords = array_merge(
 				$existingRecords,
@@ -230,11 +229,11 @@ class ReplicaPrimaryAwareRecordIdsAcquirer {
 	}
 
 	private function getDbReplica(): IReadableDatabase {
-		return $this->repoDb->connections()->getReadConnection();
+		return $this->termsDb->getReadConnection();
 	}
 
 	private function getDbPrimary(): IDatabase {
-		return $this->repoDb->connections()->getWriteConnection();
+		return $this->termsDb->getWriteConnection();
 	}
 
 	/**
@@ -271,9 +270,6 @@ class ReplicaPrimaryAwareRecordIdsAcquirer {
 		return $existingRecords;
 	}
 
-	/**
-	 * @param array $neededRecords
-	 */
 	private function insertNonExistingRecordsIntoPrimary( array $neededRecords ): void {
 		$this->getDbPrimary()->newInsertQueryBuilder()
 			->insertInto( $this->table )

@@ -52,15 +52,44 @@ $catalogueQueue = static function (string $file) use (&$catalogueQueue, &$catalo
     // Exercise shipped optional integrations while loading runtime declarations.
     // Missing providers stay absent and are explicitly recorded by the class gate.
     $optional = [
+        'ArticlePlaceholder' => ['WikibaseRepository'],
+        'Capiunto' => ['Scribunto'],
+        'Cargo' => ['Page Schemas'],
+        'CentralAuth' => ['SecurePoll'],
+        'CentralNotice' => ['Translate'],
         'CheckUser' => ['IPInfo'],
+        'Comments' => ['Echo'],
         'DiscussionTools' => ['Thanks'],
+        'EventLogging' => ['CodeEditor'],
+        'External Data' => ['Scribunto'],
         'Gadgets' => ['CodeEditor', 'CodeMirror'],
+        'GeoData' => ['CirrusSearch'],
+        'GrowthExperiments' => ['CirrusSearch'],
+        'JsonConfig' => ['CodeEditor'],
+        'Maps' => ['SemanticMediaWiki', 'Cargo'],
         'Math' => ['WikibaseRepository', 'WikibaseClient'],
+        'MinervaNeue' => ['MobileFrontend'],
+        'MintyDocs' => ['PageForms'],
+        'PageForms' => ['Page Schemas'],
         'PageImages' => ['MobileFrontend'],
+        'ProofreadPage' => ['CodeMirror'],
         'Replace Text' => ['Admin Links'],
+        'ReportIncident' => ['DiscussionTools'],
         'Scribunto' => ['CodeEditor', 'CodeMirror'],
+        'SemanticDrilldown' => ['Page Schemas'],
+        'Semantic Forms Select' => ['PageForms'],
+        'SemanticMediaWiki' => ['Page Schemas'],
+        'StructuredNavigation' => ['CodeEditor'],
         'TemplateStyles' => ['CodeEditor', 'CodeMirror'],
         'Thanks' => ['Flow'],
+        'Tilesheets' => ['OreDict'],
+        'UnlinkedWikibase' => ['Scribunto'],
+        'Translate' => ['Elastica'],
+        'Upload Wizard' => ['CodeEditor', 'CodeMirror'],
+        'WikibaseClient' => ['CirrusSearch'],
+        'WikibaseCirrusSearch' => ['CirrusSearch', 'WikibaseRepository', 'WikibaseClient'],
+        'WikibaseLexeme' => ['WikibaseClient'],
+        'WikibaseMediaInfo' => ['WikibaseClient'],
     ];
     foreach ($optional[$manifest['name']] ?? [] as $name) {
         if (isset($catalogueByName[$name])) { $catalogueQueue($catalogueByName[$name]); }
@@ -77,7 +106,13 @@ $catalogueQueue = static function (string $file) use (&$catalogueQueue, &$catalo
         if (!isset($catalogueByName[$name])) { throw new RuntimeException("Missing catalogue dependency: $name"); }
         $catalogueQueue($catalogueByName[$name]);
     }
-    MediaWiki\Registration\ExtensionRegistry::getInstance()->queue($file);
+    $registry = MediaWiki\Registration\ExtensionRegistry::getInstance();
+    // The farm may already have queued this manifest using a path with a
+    // different spelling (for example, a doubled slash in its cache).
+    foreach (array_keys($registry->getQueue()) as $queued) {
+        if (realpath($queued) === realpath($file)) { return; }
+    }
+    $registry->queue($file);
 };
 $catalogueQueue($catalogueTarget);
 foreach (json_decode(getenv('MW_CATALOGUE_EXTRA_COMPONENTS_JSON') ?: '[]', true, 512, JSON_THROW_ON_ERROR) as $name) {

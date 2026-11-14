@@ -10,6 +10,7 @@ use MediaWiki\Http\HttpRequestFactory;
 use MediaWiki\MediaWikiServices;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Wikibase\Client\Hooks\WikibaseClientHookRunner;
 use Wikimedia\ObjectFactory\ObjectFactory;
 use Wikimedia\Rdbms\ILoadBalancer;
 use Wikimedia\Rdbms\LBFactory;
@@ -65,11 +66,11 @@ abstract class ServiceWiringTestCase extends TestCase {
 		$this->disallowHttpAccess();
 	}
 
-	protected function tearDown(): void {
+	protected function assertPostConditions(): void {
 		$this->assertEqualsCanonicalizing( array_keys( $this->mockedServices ), array_keys( $this->accessedServices ),
 			'Expected every mocked service to be used' );
 
-		parent::tearDown();
+		parent::assertPostConditions();
 	}
 
 	private function getDefinition( $name ): callable {
@@ -113,18 +114,38 @@ abstract class ServiceWiringTestCase extends TestCase {
 	 * @param callable[][] $globalHooks
 	 * @param callable[][] $extensionHooks
 	 * @param callable[][] $deprecatedHooks
+	 * @return HookContainer
 	 */
 	protected function configureHookContainer(
 		array $globalHooks = [],
 		array $extensionHooks = [],
 		array $deprecatedHooks = []
-	): void {
+	): HookContainer {
 		$hookContainer = new HookContainer(
 			new StaticHookRegistry( $globalHooks, $extensionHooks, $deprecatedHooks ),
 			new ObjectFactory( $this->serviceContainer )
 		);
 		$this->serviceContainer->method( 'getHookContainer' )
 			->willReturn( $hookContainer );
+		return $hookContainer;
+	}
+
+	/**
+	 * Mock the WikibaseClient hook runner with the given hook handlers.
+	 *
+	 * @param callable[][] $globalHooks
+	 * @param callable[][] $extensionHooks
+	 * @param callable[][] $deprecatedHooks
+	 */
+	protected function configureHookRunner(
+		array $globalHooks = [],
+		array $extensionHooks = [],
+		array $deprecatedHooks = []
+	): void {
+		$hookContainer = $this->configureHookContainer(
+			$globalHooks, $extensionHooks, $deprecatedHooks );
+		$this->mockService( 'WikibaseClient.HookRunner',
+			new WikibaseClientHookRunner( $hookContainer ) );
 	}
 
 	public static function provideWiring(): iterable {

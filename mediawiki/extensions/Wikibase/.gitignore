@@ -1,10 +1,16 @@
 composer.phar
 composer.lock
 
+# Cypress
+cypress/.cache
+cypress/screenshots
+cypress/videos
+cypress/downloads
 vendor/
 extensions/
 node_modules/
 repo/tests/selenium/log/
+client/tests/selenium/log/
 easyrdf/
 
 .idea/
@@ -18,7 +24,10 @@ tests/browser/.idea
 tests/browser/.bundle/*
 tests/browser/config/config.yml
 .api-testing.config.json
-repo/rest-api/tests/mocha/helpers/.test-user-credentials.json
+repo/domains/crud/tests/mocha/helpers/.test-user-credentials.json
+
+# Generated
+repo/rest-api/specs/openapi-joined.json
 
 # Doxygen
 docs/php
@@ -29,6 +38,7 @@ docs/*.tmp
 /docs/data-bridge-dist-size/
 /docs/tainted-ref-dist-size/
 /docs/rest-api/
+/docs/graphql-explorer/
 
 # Editors
 *.kate-swp

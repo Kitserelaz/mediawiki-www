@@ -2,7 +2,8 @@
 
 namespace Wikibase\Repo\Search\Fields;
 
-use SearchEngine;
+use MediaWiki\Search\SearchEngine;
+use MediaWiki\Search\SearchIndexField;
 use Wikibase\DataModel\Entity\EntityDocument;
 
 /**
@@ -24,7 +25,7 @@ interface WikibaseIndexField {
 	 * @param SearchEngine $engine
 	 * @param string $name
 	 *
-	 * @return \SearchIndexField|null Null if mapping is not supported
+	 * @return SearchIndexField|null Null if mapping is not supported
 	 */
 	public function getMappingField( SearchEngine $engine, $name );
 

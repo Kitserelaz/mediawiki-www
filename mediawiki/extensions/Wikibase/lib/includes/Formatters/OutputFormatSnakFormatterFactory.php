@@ -83,15 +83,16 @@ class OutputFormatSnakFormatterFactory {
 	 *
 	 * @param string $format Use the SnakFormatter::FORMAT_XXX constants.
 	 * @param FormatterOptions $options
+	 * @param array $viewOptions
 	 *
 	 * @throws RuntimeException
 	 * @throws InvalidArgumentException
 	 * @return SnakFormatter
 	 */
-	public function getSnakFormatter( $format, FormatterOptions $options ) {
-		$options->defaultOption( SnakFormatter::OPT_ON_ERROR, SnakFormatter::ON_ERROR_WARN );
+	public function getSnakFormatter( $format, FormatterOptions $options, array $viewOptions = [] ) {
+		$options = $options->withDefaultOption( SnakFormatter::OPT_ON_ERROR, SnakFormatter::ON_ERROR_WARN );
 
-		$this->valueFormatterFactory->applyLanguageDefaults( $options );
+		$options = $this->valueFormatterFactory->applyLanguageDefaults( $options );
 		$lang = $options->getOption( ValueFormatter::OPT_LANG );
 
 		$noValueSnakFormatter = new MessageSnakFormatter(
@@ -158,7 +159,7 @@ class OutputFormatSnakFormatterFactory {
 		$formatters = [];
 
 		foreach ( $this->snakFormatterConstructorCallbacks as $key => $callback ) {
-			$instance = call_user_func( $callback, $format, $options );
+			$instance = $callback( $format, $options );
 
 			Assert::postcondition(
 				$instance instanceof SnakFormatter,

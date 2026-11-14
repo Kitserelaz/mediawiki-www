@@ -10,6 +10,8 @@ use Wikibase\DataModel\Entity\Property;
 use Wikibase\Lib\Store\EntityRevision;
 use Wikibase\Lib\Tests\MockRepository;
 use Wikibase\Repo\Rdf\RdfVocabulary;
+use Wikimedia\Timestamp\ConvertibleTimestamp;
+use Wikimedia\Timestamp\TimestampFormat as TS;
 
 /**
  * Provider class for EntityData tests.
@@ -47,7 +49,7 @@ class EntityDataTestProvider {
 		return [ $redirect ];
 	}
 
-	public static function getMockRepository() {
+	public static function getMockRepository(): MockRepository {
 		$mockRepository = new MockRepository();
 
 		foreach ( self::getEntityRevisions() as $entityRev ) {
@@ -61,7 +63,7 @@ class EntityDataTestProvider {
 		return $mockRepository;
 	}
 
-	public static function provideHandleRequest() {
+	public static function provideHandleRequest(): array {
 		$version = preg_quote( RdfVocabulary::FORMAT_VERSION );
 		$cases = [];
 
@@ -404,7 +406,7 @@ class EntityDataTestProvider {
 			'Q42.json', // subpage
 			[], // parameters
 			[ // headers
-				'If-Modified-Since' => wfTimestamp( TS_RFC2822, '20000101000000' ),
+				'If-Modified-Since' => ConvertibleTimestamp::convert( TS::RFC2822, '20000101000000' ),
 			],
 			'!!', // output regex
 			200, // http code

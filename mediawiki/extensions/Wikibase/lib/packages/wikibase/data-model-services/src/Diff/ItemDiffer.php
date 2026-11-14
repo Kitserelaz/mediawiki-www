@@ -49,19 +49,20 @@ class ItemDiffer implements EntityDifferStrategy {
 	 * @throws InvalidArgumentException
 	 */
 	public function diffEntities( EntityDocument $from, EntityDocument $to ) {
-		$this->assertIsItem( $from );
-		$this->assertIsItem( $to );
+		$fromItem = $this->assertIsItemAndCast( $from );
+		$toItem = $this->assertIsItemAndCast( $to );
 
-		return $this->diffItems( $from, $to );
+		return $this->diffItems( $fromItem, $toItem );
 	}
 
-	private function assertIsItem( EntityDocument $item ) {
+	private function assertIsItemAndCast( EntityDocument $item ): Item {
 		if ( !( $item instanceof Item ) ) {
 			throw new InvalidArgumentException( '$item must be an instance of Item' );
 		}
+		return $item;
 	}
 
-	public function diffItems( Item $from, Item $to ) {
+	public function diffItems( Item $from, Item $to ): ItemDiff {
 		$diffOps = $this->recursiveMapDiffer->doDiff(
 			$this->toDiffArray( $from ),
 			$this->toDiffArray( $to )
@@ -72,18 +73,16 @@ class ItemDiffer implements EntityDifferStrategy {
 		return new ItemDiff( $diffOps );
 	}
 
-	private function toDiffArray( Item $item ) {
-		$array = [];
-
-		$array['aliases'] = $item->getAliasGroups()->toTextArray();
-		$array['label'] = $item->getLabels()->toTextArray();
-		$array['description'] = $item->getDescriptions()->toTextArray();
-		$array['links'] = $this->getSiteLinksInDiffFormat( $item->getSiteLinkList() );
-
-		return $array;
+	private function toDiffArray( Item $item ): array {
+		return [
+			'aliases' => $item->getAliasGroups()->toTextArray(),
+			'label' => $item->getLabels()->toTextArray(),
+			'description' => $item->getDescriptions()->toTextArray(),
+			'links' => $this->getSiteLinksInDiffFormat( $item->getSiteLinkList() ),
+		];
 	}
 
-	private function getSiteLinksInDiffFormat( SiteLinkList $siteLinks ) {
+	private function getSiteLinksInDiffFormat( SiteLinkList $siteLinks ): array {
 		$linksInDiffFormat = [];
 
 		foreach ( $siteLinks->toArray() as $siteLink ) {
@@ -108,8 +107,8 @@ class ItemDiffer implements EntityDifferStrategy {
 	 * @throws InvalidArgumentException
 	 */
 	public function getConstructionDiff( EntityDocument $entity ) {
-		$this->assertIsItem( $entity );
-		return $this->diffEntities( new Item(), $entity );
+		$item = $this->assertIsItemAndCast( $entity );
+		return $this->diffEntities( new Item(), $item );
 	}
 
 	/**
@@ -119,8 +118,8 @@ class ItemDiffer implements EntityDifferStrategy {
 	 * @throws InvalidArgumentException
 	 */
 	public function getDestructionDiff( EntityDocument $entity ) {
-		$this->assertIsItem( $entity );
-		return $this->diffEntities( $entity, new Item() );
+		$item = $this->assertIsItemAndCast( $entity );
+		return $this->diffEntities( $item, new Item() );
 	}
 
 }

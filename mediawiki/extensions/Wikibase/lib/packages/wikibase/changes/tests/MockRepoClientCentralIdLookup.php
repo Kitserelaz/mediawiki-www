@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace Wikibase\Lib\Tests\Changes;
 
 use LogicException;
+use MediaWiki\Permissions\Authority;
 use MediaWiki\User\CentralId\CentralIdLookup;
 use MediaWiki\User\User;
 use MediaWiki\User\UserIdentity;
@@ -42,22 +43,41 @@ class MockRepoClientCentralIdLookup extends CentralIdLookup {
 		}
 	}
 
+	/** @inheritDoc */
 	public function isAttached( UserIdentity $user, $wikiId = null ): bool {
 		return true;
 	}
 
+	/** @inheritDoc */
 	public function lookupCentralIds(
 		array $idToName, $audience = self::AUDIENCE_PUBLIC, $flags = IDBAccessObject::READ_NORMAL
 	): array {
 		throw new LogicException( 'Not implemented' );
 	}
 
+	/** @inheritDoc */
 	public function lookupUserNames(
 		array $nameToId, $audience = self::AUDIENCE_PUBLIC, $flags = IDBAccessObject::READ_NORMAL
 	): array {
 		throw new LogicException( 'Not implemented' );
 	}
 
+	/**
+	 * @param array $nameToId
+	 * @param int $filter
+	 * @param int|Authority $audience
+	 * @param int $flags
+	 * @param string|false $wikiId
+	 * @return array|int[]
+	 */
+	protected function lookupUserNamesWithFilter(
+		array $nameToId, $filter, $audience = self::AUDIENCE_PUBLIC,
+		$flags = IDBAccessObject::READ_NORMAL, $wikiId = UserIdentity::LOCAL
+	): array {
+		throw new LogicException( 'Not implemented' );
+	}
+
+	/** @inheritDoc */
 	public function localUserFromCentralId(
 		$id, $audience = self::AUDIENCE_PUBLIC, $flags = IDBAccessObject::READ_NORMAL
 	): ?UserIdentity {
@@ -71,6 +91,7 @@ class MockRepoClientCentralIdLookup extends CentralIdLookup {
 		return User::newFromId( $localUserId );
 	}
 
+	/** @inheritDoc */
 	public function centralIdFromLocalUser(
 		UserIdentity $user, $audience = self::AUDIENCE_PUBLIC, $flags = IDBAccessObject::READ_NORMAL
 	): int {

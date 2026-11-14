@@ -2,22 +2,37 @@
 
 namespace MediaWiki\Extension\GeoCrumbs;
 
-use MediaWiki\Hook\ParserAfterTidyHook;
-use MediaWiki\Hook\ParserFirstCallInitHook;
+use MediaWiki\Config\Config;
 use MediaWiki\Html\Html;
-use MediaWiki\MediaWikiServices;
+use MediaWiki\Language\LanguageConverterFactory;
+use MediaWiki\Linker\LinkRenderer;
 use MediaWiki\Output\Hook\OutputPageParserOutputHook;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Page\PageProps;
+use MediaWiki\Page\WikiPageFactory;
+use MediaWiki\Parser\Hook\ParserFirstCallInitHook;
 use MediaWiki\Parser\Parser;
 use MediaWiki\Parser\ParserOutput;
+use MediaWiki\Title\NamespaceInfo;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
 
 class Hooks implements
 	ParserFirstCallInitHook,
-	ParserAfterTidyHook,
 	OutputPageParserOutputHook
 {
+	private readonly bool $useFallback;
+
+	public function __construct(
+		private readonly LanguageConverterFactory $langConvFactory,
+		private readonly LinkRenderer $linkRenderer,
+		private readonly NamespaceInfo $nsInfo,
+		private readonly PageProps $pageProps,
+		private readonly WikiPageFactory $wikiPageFactory,
+		Config $config
+	) {
+		$this->useFallback = $config->get( 'GeoCrumbsUseParserOutputFallback' );
+	}
 
 	/**
 	 * @param Parser $parser
@@ -36,52 +51,14 @@ class Hooks implements
 		$article = urldecode( $article );
 
 		$page = $parser->getPage();
-		$title = Title::newFromText( $article, $page ? $page->getNamespace() : NS_MAIN );
+		$title = Title::newFromText( $article, $page->getNamespace() );
 		if ( $title ) {
-			$article = [ 'id' => $title->getArticleID() ];
-			$parser->getOutput()->setExtensionData( 'GeoCrumbIsIn', $article );
+			$parser->getOutput()->setNumericPageProperty(
+				'geocrumb-is-in', $title->getArticleID()
+			);
 		}
 
 		return '';
-	}
-
-	/**
-	 * Assumes that mRevisionId is only set for primary wiki text when a new revision is saved.
-	 * We need this in order to save IsIn info appropriately.
-	 * We could add this at onSkinTemplateOutputPageBeforeExec too, but then it won't be in
-	 * ParserCache, available for other articles.
-	 *
-	 * @param Parser $parser
-	 * @param string &$text
-	 */
-	public function onParserAfterTidy( $parser, &$text ) {
-		$page = $parser->getPage();
-		if ( $page && MediaWikiServices::getInstance()->getNamespaceInfo()->isContent( $page->getNamespace() ) ) {
-			// @phan-suppress-next-line PhanTypeMismatchArgumentNullable The cast cannot return null here
-			self::completeImplicitIsIn( $parser->getOutput(), Title::castFromPageReference( $page ) );
-		}
-	}
-
-	/**
-	 * Generates an IsIn from title for subpages.
-	 *
-	 * @param ParserOutput $parserOutput
-	 * @param Title $title
-	 */
-	public static function completeImplicitIsIn( $parserOutput, Title $title ) {
-		// only do implicitly if none is defined through parser hook
-		$existing = $parserOutput->getExtensionData( 'GeoCrumbIsIn' );
-		if ( $existing !== null ) {
-			return;
-		}
-
-		// if we're dealing with a subpage, the parent should be in breadcrumb
-		$parent = $title->getBaseTitle();
-
-		if ( !$parent->equals( $title ) ) {
-			$article = [ 'id' => $parent->getArticleID() ];
-			$parserOutput->setExtensionData( 'GeoCrumbIsIn', $article );
-		}
 	}
 
 	/**
@@ -89,7 +66,7 @@ class Hooks implements
 	 * @param ParserOutput $parserOutput
 	 */
 	public function onOutputPageParserOutput( $out, $parserOutput ): void {
-		$breadCrumbs = self::makeTrail( $out->getTitle(), $parserOutput, $out->getUser() );
+		$breadCrumbs = $this->makeTrail( $out->getTitle(), $parserOutput, $out->getUser() );
 
 		if ( count( $breadCrumbs ) > 1 ) {
 			$breadCrumbs = Html::rawElement( 'span', [ 'class' => 'ext-geocrumbs-breadcrumbs' ],
@@ -105,15 +82,14 @@ class Hooks implements
 	 * @param User $user
 	 * @return array
 	 */
-	public static function makeTrail( Title $title, ParserOutput $parserOutput, User $user ): array {
+	public function makeTrail( Title $title, ParserOutput $parserOutput, User $user ): array {
 		if ( $title->getArticleID() <= 0 ) {
 			return [];
 		}
 
 		$breadCrumbs = [];
 		$idStack = [];
-		$langConverter = MediaWikiServices::getInstance()->getLanguageConverterFactory()
-			->getLanguageConverter( $title->getPageLanguage() );
+		$langConverter = $this->langConvFactory->getLanguageConverter( $title->getPageLanguage() );
 
 		for ( $i = 0; $title && $i < 20; $i++ ) {
 			$linkText = $langConverter->convert( $title->getSubpageText() );
@@ -122,8 +98,7 @@ class Hooks implements
 			if ( $i === 0 ) {
 				$link = $linkText;
 			} else {
-				$linkRenderer = MediaWikiServices::getInstance()->getLinkRenderer();
-				$link = $linkRenderer->makeLink( $title, $linkText );
+				$link = $this->linkRenderer->makeLink( $title, $linkText );
 			}
 
 			// mark redirects with italics.
@@ -143,28 +118,61 @@ class Hooks implements
 			}
 			$idStack[] = $title->getArticleID();
 
-			$parserOutput ??= self::getParserOutput( $title->getArticleID(), $user );
-			if ( $parserOutput ) {
-				$title = self::getParentRegion( $parserOutput );
-				// Reset so we can fetch parser output for the parent page
-				$parserOutput = null;
-			} else {
-				$title = null;
-			}
+			$title = $this->getParentRegion(
+				$title, ( $i === 0 ) ? $parserOutput : null, $user
+			);
 		}
 
 		return $breadCrumbs;
 	}
 
 	/**
-	 * @param ParserOutput $parserOutput
+	 * @param Title $title
+	 * @param ?ParserOutput $parserOutput
+	 * @param User $user
 	 * @return Title|null
 	 */
-	public static function getParentRegion( ParserOutput $parserOutput ) {
-		$article = $parserOutput->getExtensionData( 'GeoCrumbIsIn' );
-		if ( $article ) {
-			return Title::newFromID( $article['id'] );
+	public function getParentRegion(
+		Title $title, ?ParserOutput $parserOutput, User $user
+	): ?Title {
+		if ( $parserOutput ) {
+			$articleID = $parserOutput->getPageProperty( 'geocrumb-is-in' );
+			if ( $articleID !== null ) {
+				return Title::newFromID( $articleID );
+			}
+		} else {
+			$prop = $this->pageProps->getProperties( $title, 'geocrumb-is-in' );
+			if ( $prop ) {
+				return Title::newFromID( (int)$prop[$title->getArticleID()] );
+			}
+
+			// Fallback to extension data until page properties are populated
+			if ( $this->useFallback ) {
+				$parserOutput = $this->getParserOutput( $title->getArticleID(), $user );
+				if ( $parserOutput ) {
+					$article = $parserOutput->getExtensionData( 'GeoCrumbIsIn' );
+					if ( $article ) {
+						return Title::newFromID( $article['id'] );
+					}
+					// T391128: during a transition period, the page property
+					// will be present in the ParserOutput but not yet written
+					// to the database by RefreshLinksJob
+					$article = $parserOutput->getPageProperty( 'geocrumb-is-in' );
+					if ( $article ) {
+						return Title::newFromId( $article );
+					}
+				}
+			}
 		}
+
+		// Generates an implicit IsIn from title for subpages
+		if ( $this->nsInfo->isContent( $title->getNamespace() ) ) {
+			$parent = $title->getBaseTitle();
+			if ( !$parent->equals( $title ) ) {
+				return $parent;
+			}
+		}
+
 		return null;
 	}
 
@@ -173,14 +181,11 @@ class Hooks implements
 	 * @param User $user
 	 * @return bool|ParserOutput false if not found
 	 */
-	public static function getParserOutput( int $pageId, User $user ) {
+	public function getParserOutput( int $pageId, User $user ) {
 		if ( $pageId <= 0 ) {
 			return false;
 		}
-
-		$page = MediaWikiServices::getInstance()
-			->getWikiPageFactory()
-			->newFromID( $pageId );
+		$page = $this->wikiPageFactory->newFromID( $pageId );
 		if ( !$page ) {
 			return false;
 		}

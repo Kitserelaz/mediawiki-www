@@ -13,7 +13,7 @@
 	 * @return {jQuery}
 	 */
 	var createStatementgroupview = function ( options, $node ) {
-		options = $.extend( {
+		options = Object.assign( {
 			entityIdHtmlFormatter: {
 				format: function ( entityId ) {
 					return $.Deferred().resolve( 'Link to entity' ).promise();
@@ -56,7 +56,7 @@
 		}
 	} ) );
 
-	QUnit.test( 'Create & destroy', function ( assert ) {
+	QUnit.test( 'Create & destroy', ( assert ) => {
 		var $statementgroupview = createStatementgroupview(),
 			statementgroupview = $statementgroupview.data( 'statementgroupview' );
 
@@ -88,7 +88,7 @@
 		);
 	} );
 
-	QUnit.test( 'value()', function ( assert ) {
+	QUnit.test( 'value()', ( assert ) => {
 		var statementGroup1 = new datamodel.StatementGroup( 'P1', new datamodel.StatementList( [
 				new datamodel.Statement(
 					new datamodel.Claim( new datamodel.PropertyNoValueSnak( 'P1' ) )
@@ -167,7 +167,7 @@
 		statementlistview.value( statementList3 );
 
 		assert.throws(
-			function () {
+			() => {
 				statementgroupview.value();
 			},
 			'Property of Statements in statementlistview differ resulting in not being able to '
@@ -175,7 +175,7 @@
 		);
 	} );
 
-	QUnit.test( 'Given a value, sets html id attribute on creation', function ( assert ) {
+	QUnit.test( 'Given a value, sets html id attribute on creation', ( assert ) => {
 		var $statementgroupview = createStatementgroupview( {
 				value: new datamodel.StatementGroup( 'P1' )
 			} ),
@@ -187,7 +187,7 @@
 		);
 	} );
 
-	QUnit.test( 'Given a value, sets property id data attribute on creation', function ( assert ) {
+	QUnit.test( 'Given a value, sets property id data attribute on creation', ( assert ) => {
 		var $statementgroupview = createStatementgroupview( {
 				value: new datamodel.StatementGroup( 'P1' )
 			} ),
@@ -197,9 +197,14 @@
 			statementgroupview.element.data( 'property-id' ),
 			'P1'
 		);
+
+		assert.strictEqual(
+			statementgroupview.element.attr( 'data-property-id' ),
+			'P1'
+		);
 	} );
 
-	QUnit.test( 'Given a value and a prefix, sets prefixed html id attribute on creation', function ( assert ) {
+	QUnit.test( 'Given a value and a prefix, sets prefixed html id attribute on creation', ( assert ) => {
 		var $statementgroupview = createStatementgroupview( {
 				value: new datamodel.StatementGroup( 'P1' ),
 				htmlIdPrefix: 'X1-Y2'

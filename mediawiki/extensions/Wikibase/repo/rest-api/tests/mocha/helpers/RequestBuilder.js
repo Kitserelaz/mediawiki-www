@@ -5,8 +5,8 @@ const { assert, clientFactory } = require( 'api-testing' );
 const { default: OpenAPIRequestCoercer } = require( 'openapi-request-coercer' );
 const { default: OpenAPIRequestValidator } = require( 'openapi-request-validator' );
 
-const basePath = 'rest.php/wikibase/v1';
-const openapiSchema = JSON.parse( readFileSync( `${__dirname}/../../../src/RouteHandlers/openapi.json` ) );
+const basePath = 'rest.php/wikibase';
+const openapiSchema = JSON.parse( readFileSync( `${__dirname}/../../../src/openapi.json` ) );
 
 class RequestBuilder {
 
@@ -21,11 +21,12 @@ class RequestBuilder {
 		this.configOverrides = {};
 		this.validate = false;
 		this.assertValid = false;
+		this.validateRoute = true;
 	}
 
 	/**
 	 * @param {string} method HTTP method to use for the request
-	 * @param {string} route the route as it appears in the spec, e.g. '/entities/items/{item_id}'
+	 * @param {string} route the route as it appears in the spec, e.g. '/v1/entities/items/{item_id}'
 	 * @return {this}
 	 */
 	withRoute( method, route ) {
@@ -35,7 +36,7 @@ class RequestBuilder {
 	}
 
 	/**
-	 * @param {string} name path param name, e.g. 'item_id' for /entities/items/{item_id}
+	 * @param {string} name path param name, e.g. 'item_id' for /v1/entities/items/{item_id}
 	 * @param {string} value
 	 * @return {this}
 	 */
@@ -102,20 +103,27 @@ class RequestBuilder {
 			this.withHeader( 'Cookie', `XDEBUG_SESSION=${XDEBUG_SESSION}` );
 		}
 
-		this.validateRouteAndMethod( openapiSchema );
+		if ( this.routeValidation ) {
+			this.validateRouteAndMethod( openapiSchema );
+		}
 		if ( this.validate ) {
 			this.validateRequest( openapiSchema );
 		}
 
 		let body = null;
-		switch ( this.headers[ 'content-type' ] ) {
-			case 'multipart/form-data':
+		const contentType = this.headers[ 'content-type' ];
+		switch ( contentType ) {
+			case 'application/x-www-form-urlencoded':
 				body = new URLSearchParams( this.jsonBodyParams ).toString();
 				break;
 			case 'application/json':
 			case 'application/json-patch+json':
 				body = this.jsonBodyParams;
 				break;
+			case undefined:
+				break;
+			default:
+				throw new Error( `${this.constructor.name} doesn't support Content-Type '${contentType}'` );
 		}
 
 		for ( const setting in this.configOverrides ) {

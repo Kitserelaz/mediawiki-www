@@ -5,6 +5,7 @@ namespace Wikibase\Lexeme\Tests\MediaWiki\Api;
 use MediaWiki\Api\ApiUsageException;
 use MediaWiki\Api\IApiMessage;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Registration\ExtensionRegistry;
 use Wikibase\DataModel\Entity\Item;
 use Wikibase\DataModel\Entity\ItemId;
 use Wikibase\DataModel\Entity\NumericPropertyId;
@@ -48,6 +49,9 @@ class LexemeEditEntityTest extends WikibaseLexemeApiTestCase {
 	private const EXISTING_LEXEME_FORM_2_ID = 'F2';
 	private const EXISTING_LEXEME_FORM_2_LANGUAGE = 'en';
 	private const EXISTING_LEXEME_FORM_2_TEXT = 'Malus';
+	/**
+	 * 'mis' is defined by cldr as the 'unsupported language'
+	 */
 	private const SPECIAL_TERM_LANGUAGE = 'mis';
 	private const EXISTING_LEXEME_SENSE_ID = 'S1';
 	private const EXISTING_LEXEME_SENSE_GLOSS_LANG = 'en';
@@ -206,6 +210,14 @@ class LexemeEditEntityTest extends WikibaseLexemeApiTestCase {
 	}
 
 	public function testGivenIdOfExistingLexemeAndLemmaWithSpecialLanguage_lemmaIsAdded() {
+		if ( !(
+			ExtensionRegistry::getInstance()->isLoaded( 'cldr' )
+			|| ExtensionRegistry::getInstance()->isLoaded( 'CLDR' )
+		) ) {
+			// For 'mis' language
+			$this->markTestSkipped( 'cldr extension is required for this test' );
+		}
+
 		$this->saveDummyLexemeToDatabase();
 
 		$params = [
@@ -2090,6 +2102,14 @@ class LexemeEditEntityTest extends WikibaseLexemeApiTestCase {
 	}
 
 	public function testGivenExistingFormAndRepresentationsWithSpecialLanguage_formIsUpdated() {
+		if ( !(
+			ExtensionRegistry::getInstance()->isLoaded( 'cldr' )
+			|| ExtensionRegistry::getInstance()->isLoaded( 'CLDR' )
+		) ) {
+			// For 'mis' language
+			$this->markTestSkipped( 'cldr extension is required for this test' );
+		}
+
 		$this->saveDummyLexemeToDatabase();
 
 		$params = [

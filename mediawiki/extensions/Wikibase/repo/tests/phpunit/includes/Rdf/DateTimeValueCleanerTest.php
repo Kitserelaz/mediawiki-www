@@ -41,7 +41,7 @@ class DateTimeValueCleanerTest extends \PHPUnit\Framework\TestCase {
 		];
 	}
 
-	public function getDates() {
+	public static function provideDates() {
 		$greg = TimeValue::CALENDAR_GREGORIAN;
 		$jul = TimeValue::CALENDAR_JULIAN;
 		$year1m = TimeValue::PRECISION_YEAR1M;
@@ -58,6 +58,11 @@ class DateTimeValueCleanerTest extends \PHPUnit\Framework\TestCase {
 			[ '+02000000200-00-00T00:00:00Z', $greg, '2000000200-01-01T00:00:00Z' ],
 			[ '+92000000200-05-31T00:00:00Z', $greg, '92000000200-01-01T00:00:00Z', $year1m ],
 			[ '+92000000200-05-31T00:00:00Z', $greg, '92000000200-05-31T00:00:00Z' ],
+			[ '+92000000200-02-31T00:00:00Z', $greg, '92000000200-02-28T00:00:00Z' ],
+			[ '+92000000201-02-31T00:00:00Z', $greg, '92000000201-02-28T00:00:00Z' ],
+			[ '+92000000204-02-31T00:00:00Z', $greg, '92000000204-02-29T00:00:00Z' ],
+			[ '+92000000400-02-31T00:00:00Z', $greg, '92000000400-02-29T00:00:00Z' ],
+			[ '+92000000000-02-31T00:00:00Z', $greg, '92000000000-02-29T00:00:00Z' ],
 			[ '-02000000200-05-22T00:00:00Z', $greg, '-2000000200-05-22T00:00:00Z' ],
 			[ '-02000000200-02-31T00:00:00Z', $greg, '-2000000200-02-29T00:00:00Z' ],
 			[ '+00000000200-02-31T00:00:00Z', $greg, '0200-02-28T00:00:00Z' ],
@@ -93,7 +98,7 @@ class DateTimeValueCleanerTest extends \PHPUnit\Framework\TestCase {
 		];
 	}
 
-	public function getDatesXSD11() {
+	public static function provideDatesXSD11() {
 		$greg = TimeValue::CALENDAR_GREGORIAN;
 		$jul = TimeValue::CALENDAR_JULIAN;
 		$year10 = TimeValue::PRECISION_YEAR10;
@@ -124,7 +129,7 @@ class DateTimeValueCleanerTest extends \PHPUnit\Framework\TestCase {
 	}
 
 	/**
-	 * @dataProvider getDates
+	 * @dataProvider provideDates
 	 */
 	public function testCleanDate(
 		$date,
@@ -147,7 +152,7 @@ class DateTimeValueCleanerTest extends \PHPUnit\Framework\TestCase {
 	}
 
 	/**
-	 * @dataProvider getDatesXSD11
+	 * @dataProvider provideDatesXSD11
 	 */
 	public function testCleanDateXSD11(
 		$date,

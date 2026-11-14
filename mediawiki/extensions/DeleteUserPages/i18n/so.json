@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"AhmedG612"
+		]
+	},
+	"deleteuserpages-desc": "U oggolow isticmaalayaasha inay tirtiraan bogaggooda isticmaale",
+	"action-delete-rootuserpages": "Tirtir bogga isticmaalaha iyo bogga wada hadalka ee isticmaalaha",
+	"right-delete-rootuserpages": "U oggolow isticmaalaha inuu tirtiro boggiisa isticmaale iyo boggiisa wada hadalka",
+	"action-delete-usersubpages": "Tirtir bogagga hoos yimaada bogga isticmaalaha ee ay leeyihiin",
+	"right-delete-usersubpages": "Tirtir bogagga hoos yimaada bogga isticmaalaha ee ay leeyihiin"
+}

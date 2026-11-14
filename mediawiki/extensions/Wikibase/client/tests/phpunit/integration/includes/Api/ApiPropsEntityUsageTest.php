@@ -5,6 +5,7 @@ namespace Wikibase\Client\Tests\Integration\Api;
 use MediaWiki\Api\ApiMain;
 use MediaWiki\Api\ApiPageSet;
 use MediaWiki\Api\ApiQuery;
+use MediaWiki\Api\ApiUsageException;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\Title\Title;
@@ -171,7 +172,7 @@ class ApiPropsEntityUsageTest extends MediaWikiLangTestCase {
 		$module = new ApiPropsEntityUsage(
 			$this->getQueryModule( $params, $titles ),
 			'entityusage',
-			WikibaseClient::getRepoLinker()
+			WikibaseClient::getRepoLinker(),
 		);
 
 		$module->execute();
@@ -224,6 +225,26 @@ class ApiPropsEntityUsageTest extends MediaWikiLangTestCase {
 					],
 				] ],
 			],
+			'continue' => [
+				[
+					'action' => 'query',
+					'prop' => 'wbentityusage',
+					'titles' => 'Vienna11|Berlin22',
+					'entities' => 'Q3|Q4',
+					'wbeucontinue' => '11|Q3|S',
+				],
+				[ "11" => [
+					"entityusage" => [
+						"Q3" => [ "aspects" => [ "S" ] ],
+					],
+				],
+				"22" => [
+					"entityusage" => [
+						"Q4" => [ "aspects" => [ "S" ] ],
+						"Q5" => [ "aspects" => [ "S" ] ],
+					],
+				] ],
+			],
 		];
 	}
 
@@ -233,6 +254,8 @@ class ApiPropsEntityUsageTest extends MediaWikiLangTestCase {
 	public function testEntityUsage( array $params, array $expected ) {
 		$result = $this->callApiModule( $params );
 
+		$this->assertArrayNotHasKey( 'warnings', $result );
+
 		if ( isset( $result['error'] ) ) {
 			$this->fail( 'API error: ' . print_r( $result['error'], true ) );
 		}
@@ -240,6 +263,17 @@ class ApiPropsEntityUsageTest extends MediaWikiLangTestCase {
 		$this->assertArrayHasKey( 'query', $result );
 		$this->assertArrayHasKey( 'pages', $result['query'] );
 		$this->assertSame( $expected, $result['query']['pages'] );
+	}
+
+	public function testEntityUsage_invalidContinue(): void {
+		$this->expectException( ApiUsageException::class );
+		$this->callApiModule( [
+			'action' => 'query',
+			'prop' => 'wbentityusage',
+			'titles' => 'Vienna11|Berlin22',
+			'entities' => 'Q3|Q4',
+			'wbeucontinue' => '-',
+		] );
 	}
 
 }

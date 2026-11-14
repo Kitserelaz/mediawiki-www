@@ -7,28 +7,26 @@ namespace Wikibase\Repo\Api;
 use MediaWiki\Api\ApiMain;
 use MediaWiki\Api\ApiUsageException;
 use MediaWiki\Title\Title;
+use Psr\Log\LoggerInterface;
 use Serializers\Exceptions\SerializationException;
 use Wikibase\DataModel\Entity\ClearableEntity;
 use Wikibase\DataModel\Entity\EntityDocument;
 use Wikibase\DataModel\Entity\EntityId;
 use Wikibase\DataModel\Entity\EntityIdParser;
 use Wikibase\DataModel\Entity\Property;
+use Wikibase\DataModel\Services\Diff\EntityDiffer;
 use Wikibase\Lib\DataTypeDefinitions;
 use Wikibase\Lib\SettingsArray;
 use Wikibase\Lib\Store\EntityRevisionLookup;
 use Wikibase\Lib\Store\LookupConstants;
 use Wikibase\Lib\Summary;
-use Wikibase\Repo\ChangeOp\ChangedLanguagesCollector;
-use Wikibase\Repo\ChangeOp\ChangedLanguagesCounter;
 use Wikibase\Repo\ChangeOp\ChangeOp;
 use Wikibase\Repo\ChangeOp\ChangeOpException;
-use Wikibase\Repo\ChangeOp\ChangeOpResult;
 use Wikibase\Repo\ChangeOp\Deserialization\ChangeOpDeserializationException;
 use Wikibase\Repo\ChangeOp\EntityChangeOpProvider;
-use Wikibase\Repo\ChangeOp\NonLanguageBoundChangesCounter;
 use Wikibase\Repo\Store\Store;
 use Wikimedia\ParamValidator\ParamValidator;
-use Wikimedia\Stats\IBufferingStatsdDataFactory;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * Derived class for API modules modifying a single entity identified by id xor a combination of
@@ -43,9 +41,9 @@ class EditEntity extends ModifyEntity {
 	public const PARAM_CLEAR = 'clear';
 
 	/**
-	 * @var IBufferingStatsdDataFactory
+	 * @var StatsFactory
 	 */
-	private $statsdDataFactory;
+	private $statsFactory;
 
 	/**
 	 * @var EntityRevisionLookup
@@ -80,7 +78,7 @@ class EditEntity extends ModifyEntity {
 	public function __construct(
 		ApiMain $mainModule,
 		string $moduleName,
-		IBufferingStatsdDataFactory $statsdDataFactory,
+		StatsFactory $statsFactory,
 		EntityRevisionLookup $revisionLookup,
 		EntityIdParser $idParser,
 		array $propertyDataTypes,
@@ -91,7 +89,7 @@ class EditEntity extends ModifyEntity {
 	) {
 		parent::__construct( $mainModule, $moduleName, $federatedPropertiesEnabled );
 
-		$this->statsdDataFactory = $statsdDataFactory;
+		$this->statsFactory = $statsFactory->withComponent( 'WikibaseRepo' );
 		$this->revisionLookup = $revisionLookup;
 		$this->idParser = $idParser;
 		$this->propertyDataTypes = $propertyDataTypes;
@@ -104,26 +102,24 @@ class EditEntity extends ModifyEntity {
 	public static function factory(
 		ApiMain $mainModule,
 		string $moduleName,
-		IBufferingStatsdDataFactory $statsdDataFactory,
+		StatsFactory $statsFactory,
 		DataTypeDefinitions $dataTypeDefinitions,
 		EntityChangeOpProvider $entityChangeOpProvider,
+		EntityDiffer $entityDiffer,
 		EntityIdParser $entityIdParser,
+		LoggerInterface $logger,
 		SettingsArray $settings,
 		Store $store
 	): self {
 		return new self(
 			$mainModule,
 			$moduleName,
-			$statsdDataFactory,
+			$statsFactory,
 			$store->getEntityRevisionLookup( Store::LOOKUP_CACHING_DISABLED ),
 			$entityIdParser,
 			$dataTypeDefinitions->getTypeIds(),
 			$entityChangeOpProvider,
-			new EditSummaryHelper(
-				new ChangedLanguagesCollector(),
-				new ChangedLanguagesCounter(),
-				new NonLanguageBoundChangesCounter()
-			),
+			new EditSummaryHelper( $entityDiffer, $logger ),
 			$settings->getSetting( 'federatedPropertiesEnabled' ),
 			$settings->getSetting( 'sandboxEntityIds' )
 		);
@@ -147,11 +143,6 @@ class EditEntity extends ModifyEntity {
 		return true;
 	}
 
-	/**
-	 * @param EntityId $entityId
-	 *
-	 * @return bool
-	 */
 	private function entityExists( EntityId $entityId ): bool {
 		$title = $this->getTitleLookup()->getTitleForId( $entityId );
 		return ( $title !== null && $title->exists() );
@@ -177,7 +168,7 @@ class EditEntity extends ModifyEntity {
 			if ( $preparedParameters['baserevid'] && $exists ) {
 				$latestRevisionResult = $this->revisionLookup->getLatestRevisionId(
 					$entity->getId(),
-					 LookupConstants::LATEST_FROM_MASTER
+					LookupConstants::LATEST_FROM_MASTER
 				);
 
 				$returnFalse = function () {
@@ -219,9 +210,11 @@ class EditEntity extends ModifyEntity {
 
 		if ( $preparedParameters[self::PARAM_CLEAR] ) {
 			$this->dieIfNotClearable( $entity );
-			$this->statsdDataFactory->increment( 'wikibase.api.EditEntity.modifyEntity.clear' );
+			$metric = $this->statsFactory->getCounter( 'edit_entity_modify_entity_clear' );
+			$metric->copyToStatsdAt( 'wikibase.api.EditEntity.modifyEntity.clear' )->increment();
 		} else {
-			$this->statsdDataFactory->increment( 'wikibase.api.EditEntity.modifyEntity.no-clear' );
+			$metric = $this->statsFactory->getCounter( 'edit_entity_modify_entity_no_clear' );
+			$metric->copyToStatsdAt( 'wikibase.api.EditEntity.modifyEntity.no-clear' )->increment();
 		}
 
 		if ( !$exists ) {
@@ -230,17 +223,18 @@ class EditEntity extends ModifyEntity {
 				$entity->setDataTypeId( $data['datatype'] );
 			}
 
-			$this->statsdDataFactory->increment( 'wikibase.api.EditEntity.modifyEntity.create' );
+			$metric = $this->statsFactory->getCounter( 'edit_entity_modify_entity_create' );
+			$metric->copyToStatsdAt( 'wikibase.api.EditEntity.modifyEntity.create' )->increment();
 		}
 
+		$oldEntity = clone $entity;
 		if ( $preparedParameters[self::PARAM_CLEAR] ) {
-			$oldEntity = clone $entity;
 			$entity->clear();
 
 			// Validate it only by applying the changeOp on the current entity
 			// instead of an empty one due avoid issues like T243158.
 			// We are going to save the cleared entity instead,
-			$changeOpResult = $this->applyChangeOp( $changeOp, $oldEntity );
+			$this->applyChangeOp( $changeOp, $oldEntity );
 
 			try {
 				$changeOp->apply( $entity );
@@ -249,7 +243,7 @@ class EditEntity extends ModifyEntity {
 			}
 
 		} else {
-			$changeOpResult = $this->applyChangeOp( $changeOp, $entity );
+			$this->applyChangeOp( $changeOp, $entity );
 		}
 
 		try {
@@ -263,34 +257,7 @@ class EditEntity extends ModifyEntity {
 			);
 		}
 
-		return $this->getSummary( $preparedParameters, $entity, $changeOpResult );
-	}
-
-	private function getSummary(
-		array $preparedParameters,
-		EntityDocument $entity,
-		ChangeOpResult $changeOpResult
-	): Summary {
-		$summary = $this->createSummary( $preparedParameters );
-
-		if ( $this->isUpdatingExistingEntity( $preparedParameters ) ) {
-			if ( $preparedParameters[self::PARAM_CLEAR] !== false ) {
-				$summary->setAction( 'override' );
-			} else {
-				$this->editSummaryHelper->prepareEditSummary( $summary, $changeOpResult );
-			}
-		} else {
-			$summary->setAction( 'create-' . $entity->getType() );
-		}
-
-		return $summary;
-	}
-
-	private function isUpdatingExistingEntity( array $preparedParameters ): bool {
-		$isTargetingEntity = isset( $preparedParameters['id'] );
-		$isTargetingPage = isset( $preparedParameters['site'] ) && isset( $preparedParameters['title'] );
-
-		return $isTargetingEntity xor $isTargetingPage;
+		return $this->editSummaryHelper->getEditSummary( $preparedParameters, $oldEntity, $entity );
 	}
 
 	/**

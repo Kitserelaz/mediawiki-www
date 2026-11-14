@@ -1,26 +1,22 @@
-<?php
+<?php declare( strict_types = 1 );
 
 namespace Wikibase\Lib\Tests\Store;
 
-use MediaWiki\MediaWikiServices;
 use MediaWikiIntegrationTestCase;
 use Psr\Log\NullLogger;
 use Wikibase\DataAccess\DatabaseEntitySource;
 use Wikibase\DataModel\Entity\Item;
 use Wikibase\DataModel\Entity\ItemId;
 use Wikibase\DataModel\Services\EntityId\EntityIdComposer;
-use Wikibase\Lib\Rdbms\RepoDomainDbFactory;
+use Wikibase\Lib\Rdbms\TermsDomainDbFactory;
 use Wikibase\Lib\Store\MatchingTermsLookupFactory;
 use Wikibase\Lib\Store\Sql\Terms\DatabaseItemTermStoreWriter;
 use Wikibase\Lib\Store\Sql\Terms\DatabaseTermInLangIdsAcquirer;
 use Wikibase\Lib\Store\Sql\Terms\DatabaseTermInLangIdsResolver;
-use Wikibase\Lib\Store\Sql\Terms\DatabaseTypeIdsStore;
-use Wikibase\Lib\Store\TermIndexSearchCriteria;
 use Wikibase\Lib\StringNormalizer;
 use Wikibase\Lib\TermIndexEntry;
 use Wikibase\Lib\Tests\Rdbms\LocalRepoDbTestHelper;
 use Wikibase\Lib\WikibaseSettings;
-use Wikimedia\ObjectCache\WANObjectCache;
 
 /**
  * @covers \Wikibase\Lib\Store\MatchingTermsLookupFactory
@@ -34,15 +30,7 @@ class MatchingTermsLookupFactoryTest extends MediaWikiIntegrationTestCase {
 
 	use LocalRepoDbTestHelper;
 
-	/**
-	 * @var RepoDomainDbFactory
-	 */
-	private $dbFactory;
-
-	/**
-	 * @var WANObjectCache
-	 */
-	private $objectCache;
+	private TermsDomainDbFactory $dbFactory;
 
 	private const MOCK_ITEM_LABELS = [
 		'Q100' => 'Hello',
@@ -60,20 +48,14 @@ class MatchingTermsLookupFactoryTest extends MediaWikiIntegrationTestCase {
 			$this->markTestSkipped( "Skipping because WikibaseClient doesn't have local term store tables." );
 		}
 
-		$this->dbFactory = $this->getRepoDomainDbFactory();
-		$this->objectCache = MediaWikiServices::getInstance()->getMainWANObjectCache();
-		$repoDb = $this->dbFactory->newRepoDb();
-
-		$typeIdsStore = new DatabaseTypeIdsStore(
-			$repoDb,
-			$this->objectCache
-		);
+		$this->dbFactory = $this->getTermsDomainDbFactory();
+		$termsDb = $this->dbFactory->newTermsDb();
 
 		$itemTermStoreWriter = new DatabaseItemTermStoreWriter(
-			$repoDb,
+			$termsDb,
 			$this->getServiceContainer()->getJobQueueGroup(),
-			new DatabaseTermInLangIdsAcquirer( $repoDb, $typeIdsStore ),
-			new DatabaseTermInLangIdsResolver( $typeIdsStore, $typeIdsStore, $repoDb ),
+			new DatabaseTermInLangIdsAcquirer( $termsDb ),
+			new DatabaseTermInLangIdsResolver( $termsDb ),
 			new StringNormalizer()
 		);
 
@@ -88,7 +70,7 @@ class MatchingTermsLookupFactoryTest extends MediaWikiIntegrationTestCase {
 		}
 	}
 
-	public function testReturnsWorkingLookup() {
+	public function testReturnsWorkingLookup(): void {
 		$factory = new MatchingTermsLookupFactory(
 			new EntityIdComposer( [
 				Item::ENTITY_TYPE => function( $uniquePartOfId ) {
@@ -96,8 +78,7 @@ class MatchingTermsLookupFactoryTest extends MediaWikiIntegrationTestCase {
 				},
 			] ),
 			$this->dbFactory,
-			new NullLogger(),
-			$this->objectCache
+			new NullLogger()
 		);
 
 		$itemSource = $this->createMock( DatabaseEntitySource::class );
@@ -107,11 +88,7 @@ class MatchingTermsLookupFactoryTest extends MediaWikiIntegrationTestCase {
 
 		$matchingTermsLookup = $factory->getLookupForSource( $itemSource );
 
-		$criteria = new TermIndexSearchCriteria( [
-			'termText' => self::MOCK_ITEM_LABELS['Q100'],
-		] );
-
-		$actual = $matchingTermsLookup->getMatchingTerms( [ $criteria ] );
+		$actual = $matchingTermsLookup->getMatchingTerms( self::MOCK_ITEM_LABELS['Q100'], Item::ENTITY_TYPE );
 		$results = array_map( function ( TermIndexEntry $entry ) {
 			return $entry->getEntityId()->getSerialization();
 		}, $actual );

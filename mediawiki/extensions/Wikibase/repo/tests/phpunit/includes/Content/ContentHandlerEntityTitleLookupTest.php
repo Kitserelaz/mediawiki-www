@@ -3,7 +3,6 @@
 namespace Wikibase\Repo\Tests\Content;
 
 use MediaWiki\Interwiki\InterwikiLookup;
-use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\SlotRecord;
 use MediaWikiIntegrationTestCase;
 use Wikibase\DataAccess\DatabaseEntitySource;
@@ -49,12 +48,8 @@ class ContentHandlerEntityTitleLookupTest extends MediaWikiIntegrationTestCase {
 				'property' => PropertyContent::CONTENT_MODEL_ID,
 			],
 			[
-				'item' => function() {
-					return WikibaseRepo::getItemHandler();
-				},
-				'property' => function() {
-					return WikibaseRepo::getPropertyHandler();
-				},
+				'item' => WikibaseRepo::getItemHandler( ... ),
+				'property' => WikibaseRepo::getPropertyHandler( ... ),
 			]
 		);
 	}
@@ -75,7 +70,7 @@ class ContentHandlerEntityTitleLookupTest extends MediaWikiIntegrationTestCase {
 			$this->newFactory(),
 			new EntitySourceDefinitions( [ $itemSource, $propertySource ], new SubEntityTypesMapper( [] ) ),
 			$itemSource,
-			MediaWikiServices::getInstance()->getInterwikiLookup()
+			$this->getServiceContainer()->getInterwikiLookup()
 		);
 	}
 

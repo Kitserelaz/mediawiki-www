@@ -26,13 +26,16 @@ class AliasGroupListSerializer extends MapSerializer implements Serializer {
 
 	/**
 	 * @param AliasGroupList $object
-	 * @return array|::stdClass
+	 * @return array|\stdClass
 	 */
 	public function serialize( $object ) {
 		$this->assertIsSerializerFor( $object );
 		return $this->serializeMap( $this->generateSerializedArrayRepresentation( $object ) );
 	}
 
+	/**
+	 * @param AliasGroupList $object
+	 */
 	private function assertIsSerializerFor( $object ) {
 		if ( !( $object instanceof AliasGroupList ) ) {
 			throw new UnsupportedObjectException(

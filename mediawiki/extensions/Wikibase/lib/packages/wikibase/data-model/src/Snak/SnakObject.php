@@ -67,9 +67,6 @@ abstract class SnakObject implements Snak {
 		return $this->propertyId;
 	}
 
-	/**
-	 * @return string
-	 */
 	public function getHash(): string {
 		return sha1( $this->getSerializationForHash() );
 	}
@@ -77,8 +74,6 @@ abstract class SnakObject implements Snak {
 	/**
 	 * The serialization to use for hashing, for compatibility reasons this is
 	 * equivalent to the old (pre 7.4) PHP serialization.
-	 *
-	 * @return string
 	 */
 	public function getSerializationForHash(): string {
 		$data = $this->serialize();
@@ -87,7 +82,6 @@ abstract class SnakObject implements Snak {
 	}
 
 	/**
-	 *
 	 * @since 0.3
 	 *
 	 * @param mixed $target
@@ -125,7 +119,7 @@ abstract class SnakObject implements Snak {
 	public function unserialize( $serialized ) {
 		try {
 			$this->propertyId = new NumericPropertyId( $serialized );
-		} catch ( InvalidArgumentException $ex ) {
+		} catch ( InvalidArgumentException ) {
 			// Backwards compatibility with the previous serialization format
 			$this->propertyId = NumericPropertyId::newFromNumber( unserialize( $serialized ) );
 		}

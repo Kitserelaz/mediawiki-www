@@ -27,7 +27,7 @@ class UnknownTypeEntityIdHtmlLinkFormatter implements EntityIdFormatter {
 
 	public function __construct(
 		EntityTitleLookup $entityTitleLookup,
-		EntityIdFormatter $nonExistingFormatter
+		NonExistingEntityIdHtmlFormatter $nonExistingFormatter
 	) {
 		$this->entityTitleLookup = $entityTitleLookup;
 		$this->nonExistingFormatter = $nonExistingFormatter;

@@ -2,8 +2,6 @@
 
 namespace Wikibase\Lexeme\Presentation\View;
 
-use MediaWiki\Context\DerivativeContext;
-use MediaWiki\Context\RequestContext;
 use MediaWiki\Language\Language;
 use Wikibase\Lexeme\Presentation\Formatters\LexemeTermFormatter;
 use Wikibase\Lexeme\Presentation\View\Template\LexemeTemplateFactory;
@@ -39,7 +37,7 @@ class LexemeViewFactory {
 		$this->language = $language;
 	}
 
-	public function newLexemeView() {
+	public function newLexemeView(): LexemeView {
 		$templates = include __DIR__ . '/../../../resources/templates.php';
 		$templateFactory = new LexemeTemplateFactory( $templates );
 
@@ -50,13 +48,11 @@ class LexemeViewFactory {
 
 		$editSectionGenerator = $this->newToolbarEditSectionGenerator();
 
-		$context = new DerivativeContext( RequestContext::getMain() );
-		$context->setLanguage( $this->language );
-		$languageNameLookup = WikibaseLexemeServices::getLanguageNameLookupFactory()
-			->getForContextSource( $context );
+		$languageNameLookup = WikibaseRepo::getLanguageNameLookupFactory()
+			->getForLanguage( $this->language );
 
 		$statementSectionsView = $viewFactory->newStatementSectionsView(
-			$this->language->getCode(),
+			$this->language,
 			$this->termFallbackChain,
 			$editSectionGenerator
 		);
@@ -101,7 +97,7 @@ class LexemeViewFactory {
 		);
 	}
 
-	private function newToolbarEditSectionGenerator() {
+	private function newToolbarEditSectionGenerator(): ToolbarEditSectionGenerator {
 		return new ToolbarEditSectionGenerator(
 			new RepoSpecialPageLinker(),
 			TemplateFactory::getDefaultInstance(),

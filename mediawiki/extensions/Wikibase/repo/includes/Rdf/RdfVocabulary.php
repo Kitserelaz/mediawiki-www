@@ -214,9 +214,9 @@ class RdfVocabulary {
 			$this->entityNamespaceNames[$repositoryOrSourceName] = $nodeNamespacePrefix . self::NS_ENTITY;
 			$this->dataNamespaceNames[$repositoryOrSourceName] = $predicateNamespacePrefix . self::NS_DATA;
 			$this->statementNamespaceNames[$repositoryOrSourceName] = [
-				self::NS_STATEMENT => $predicateNamespacePrefix . self::NS_STATEMENT,
-				self::NS_REFERENCE => $predicateNamespacePrefix . self::NS_REFERENCE,
-				self::NS_VALUE => $predicateNamespacePrefix . self::NS_VALUE,
+				self::NS_STATEMENT => $nodeNamespacePrefix . self::NS_STATEMENT,
+				self::NS_REFERENCE => $nodeNamespacePrefix . self::NS_REFERENCE,
+				self::NS_VALUE => $nodeNamespacePrefix . self::NS_VALUE,
 			];
 
 			$this->propertyNamespaceNames[$repositoryOrSourceName] = array_combine(
@@ -297,9 +297,9 @@ class RdfVocabulary {
 		return [
 			$nodeNamespacePrefix . self::NS_ENTITY => $baseUri,
 			$predicateNamespacePrefix . self::NS_DATA => $dataUri,
-			$predicateNamespacePrefix . self::NS_STATEMENT => $baseUri . 'statement/',
-			$predicateNamespacePrefix . self::NS_REFERENCE => $topUri . 'reference/',
-			$predicateNamespacePrefix . self::NS_VALUE => $topUri . 'value/',
+			$nodeNamespacePrefix . self::NS_STATEMENT => $baseUri . 'statement/',
+			$nodeNamespacePrefix . self::NS_REFERENCE => $topUri . 'reference/',
+			$nodeNamespacePrefix . self::NS_VALUE => $topUri . 'value/',
 			// predicates
 			$nodeNamespacePrefix . self::NSP_DIRECT_CLAIM => $propUri . 'direct/',
 			$nodeNamespacePrefix . self::NSP_DIRECT_CLAIM_NORM => $propUri . 'direct-normalized/',

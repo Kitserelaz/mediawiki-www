@@ -11,12 +11,16 @@ use Onoi\MessageReporter\ObservableMessageReporter;
 use Wikibase\DataModel\Entity\ItemId;
 use Wikibase\DataModel\Services\Lookup\LegacyAdapterItemLookup;
 use Wikibase\DataModel\Services\Lookup\LegacyAdapterPropertyLookup;
+use Wikibase\DataModel\Term\TermTypes;
+use Wikibase\Lib\Rdbms\VirtualTermsDomainDb;
+use Wikibase\Lib\Store\Sql\Terms\TermTypeIds;
 use Wikibase\Repo\RangeTraversable;
 use Wikibase\Repo\Store\ItemTermsRebuilder;
 use Wikibase\Repo\Store\PropertyTermsRebuilder;
 use Wikibase\Repo\Store\Store;
 use Wikibase\Repo\WikibaseRepo;
 use Wikimedia\Rdbms\IDatabase;
+use Wikimedia\Rdbms\IMaintainableDatabase;
 
 /**
  * @license GPL-2.0-or-later
@@ -60,10 +64,14 @@ class DatabaseSchemaUpdater implements LoadExtensionSchemaUpdatesHook {
 			$updater->dropExtensionTable( 'wb_entity_per_page' );
 		}
 
-		$updater->addExtensionTable(
+		$updater->addExtensionUpdateOnVirtualDomain( [
+			VirtualTermsDomainDb::VIRTUAL_DOMAIN_ID,
+			'addTable',
 			'wbt_text',
-			$this->getScriptPath( 'term_store', $db->getType() )
-		);
+			$this->getScriptPath( 'term_store', $db->getType() ),
+			true,
+		] );
+
 		if ( !$updater->updateRowExists( __CLASS__ . '::rebuildPropertyTerms' ) ) {
 			$updater->addExtensionUpdate( [
 				[ __CLASS__, 'rebuildPropertyTerms' ],
@@ -104,6 +112,9 @@ class DatabaseSchemaUpdater implements LoadExtensionSchemaUpdatesHook {
 		);
 
 		$updater->dropExtensionTable( 'wb_changes_dispatch' );
+
+		$this->sanitizeTermTypeIds( $updater );
+		$updater->dropExtensionTable( 'wbt_type' );
 	}
 
 	private function updateChangesSubscriptionTable( DatabaseUpdater $dbUpdater ): void {
@@ -230,16 +241,17 @@ class DatabaseSchemaUpdater implements LoadExtensionSchemaUpdatesHook {
 			}
 		);
 
-		$highestId = $updater->getDB()->newSelectQueryBuilder()
+		$highestId = (int)$updater->getDB()->newSelectQueryBuilder()
 			->select( 'id_value' )
 			->from( 'wb_id_counters' )
 			->where( [ 'id_type' => 'wikibase-item' ] )
-			->caller( __METHOD__ )->fetchRow();
-		if ( $highestId === false ) {
+			->caller( __METHOD__ )
+			->fetchField();
+		if ( !$highestId ) {
 			// Fresh instance, no need to rebuild anything
+			$updater->insertUpdateRow( __CLASS__ . '::rebuildItemTerms' );
 			return;
 		}
-		$highestId = (int)$highestId->id_value;
 
 		// Tables have potentially only just been created and we may need to wait, T268944
 		$db = WikibaseRepo::getRepoDomainDbFactory()->newForEntitySource( $itemSource );
@@ -273,11 +285,11 @@ class DatabaseSchemaUpdater implements LoadExtensionSchemaUpdatesHook {
 		}
 	}
 
-	private function getUpdateScriptPath( $name, $type ) {
+	private function getUpdateScriptPath( string $name, string $type ): string {
 		return $this->getScriptPath( 'archives/' . $name, $type );
 	}
 
-	private function getScriptPath( $name, $type ) {
+	private function getScriptPath( string $name, string $type ): string {
 		$types = [
 			$type,
 			'mysql',
@@ -312,6 +324,57 @@ class DatabaseSchemaUpdater implements LoadExtensionSchemaUpdatesHook {
 		$primer->setProgressReporter( $reporter );
 
 		$primer->fillSubscriptionTable();
+	}
+
+	private function sanitizeTermTypeIds( DatabaseUpdater $updater ): void {
+		$db = $updater->getDB();
+		if ( !$db->tableExists( 'wbt_type', __METHOD__ ) ) {
+			return;
+		}
+
+		$currentTypeIds = $this->getCurrentTermTypeIds( $db );
+		if ( $currentTypeIds == TermTypeIds::TYPE_IDS ) {
+			return;
+		}
+
+		$updater->output( "...sanitizing Wikibase term type IDs.\n" );
+
+		// setting temporary IDs so that they don't get mixed up
+		$tmpTypeIds = [ TermTypes::TYPE_LABEL => 101, TermTypes::TYPE_DESCRIPTION => 102, TermTypes::TYPE_ALIAS => 103 ];
+		foreach ( $currentTypeIds as $type => $currentId ) {
+			if ( $currentId !== TermTypeIds::TYPE_IDS[$type] ) {
+				$updater->output( "...setting temporary Wikibase $type IDs.\n" );
+				$this->updateTermTypeId( $db, $currentId, $tmpTypeIds[$type] );
+			}
+		}
+
+		// update to final type IDs
+		foreach ( array_keys( TermTypeIds::TYPE_IDS ) as $type ) {
+			$updater->output( "...setting final Wikibase $type IDs.\n" );
+			$this->updateTermTypeId( $db, $tmpTypeIds[$type], TermTypeIds::TYPE_IDS[$type] );
+		}
+	}
+
+	private function getCurrentTermTypeIds( IMaintainableDatabase $db ): array {
+		$currentTypes = [];
+		$termTypeRows = $db->newSelectQueryBuilder()
+			->select( '*' )
+			->from( 'wbt_type' )
+			->caller( __METHOD__ )->fetchResultSet();
+
+		foreach ( $termTypeRows as $row ) {
+			$currentTypes[$row->wby_name] = (int)$row->wby_id;
+		}
+
+		return $currentTypes;
+	}
+
+	private function updateTermTypeId( IMaintainableDatabase $db, int $currentId, int $newId ): void {
+		$db->newUpdateQueryBuilder()
+			->update( 'wbt_term_in_lang' )
+			->set( [ 'wbtl_type_id' => $newId ] )
+			->where( [ 'wbtl_type_id' => $currentId ] )
+			->caller( __METHOD__ )->execute();
 	}
 
 }

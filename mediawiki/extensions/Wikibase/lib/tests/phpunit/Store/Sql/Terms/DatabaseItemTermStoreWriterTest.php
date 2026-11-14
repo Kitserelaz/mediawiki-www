@@ -2,7 +2,7 @@
 
 namespace Wikibase\Lib\Tests\Store\Sql\Terms;
 
-use JobQueueGroup;
+use MediaWiki\JobQueue\JobQueueGroup;
 use MediaWikiIntegrationTestCase;
 use Wikibase\DataModel\Entity\ItemId;
 use Wikibase\DataModel\Entity\NumericPropertyId;
@@ -14,12 +14,10 @@ use Wikibase\Lib\Store\Sql\Terms\DatabaseItemTermStoreWriter;
 use Wikibase\Lib\Store\Sql\Terms\DatabasePropertyTermStoreWriter;
 use Wikibase\Lib\Store\Sql\Terms\DatabaseTermInLangIdsAcquirer;
 use Wikibase\Lib\Store\Sql\Terms\DatabaseTermInLangIdsResolver;
-use Wikibase\Lib\Store\Sql\Terms\DatabaseTypeIdsStore;
 use Wikibase\Lib\StringNormalizer;
 use Wikibase\Lib\Tests\Rdbms\LocalRepoDbTestHelper;
 use Wikibase\Lib\Tests\Store\Sql\Terms\Util\MockJobQueueFactory;
 use Wikibase\Lib\WikibaseSettings;
-use Wikimedia\ObjectCache\WANObjectCache;
 
 /**
  * @covers \Wikibase\Lib\Store\Sql\Terms\DatabaseItemTermStoreWriter
@@ -82,15 +80,11 @@ class DatabaseItemTermStoreWriterTest extends MediaWikiIntegrationTestCase {
 			$jobQueue = $this->getServiceContainer()->getJobQueueGroup();
 		}
 
-		$repoDb = $this->getRepoDomainDb();
-		$typeIdsStore = new DatabaseTypeIdsStore(
-			$repoDb,
-			WANObjectCache::newEmpty()
-		);
+		$termsDb = $this->getTermsDomainDb();
 
-		return new DatabaseItemTermStoreWriter( $repoDb, $jobQueue,
-			new DatabaseTermInLangIdsAcquirer( $repoDb, $typeIdsStore ),
-			new DatabaseTermInLangIdsResolver( $typeIdsStore, $typeIdsStore, $repoDb ),
+		return new DatabaseItemTermStoreWriter( $termsDb, $jobQueue,
+			new DatabaseTermInLangIdsAcquirer( $termsDb ),
+			new DatabaseTermInLangIdsResolver( $termsDb ),
 			new StringNormalizer()
 		);
 	}
@@ -299,15 +293,11 @@ class DatabaseItemTermStoreWriterTest extends MediaWikiIntegrationTestCase {
 	public function testT237984UnexpectedMissingTextRow() {
 		$itemStoreWriter = $this->getItemTermStoreWriter();
 
-		$repoDb = $this->getRepoDomainDb();
-		$typeIdsStore = new DatabaseTypeIdsStore(
-			$repoDb,
-			WANObjectCache::newEmpty()
-		);
-		$propertyTermStoreWriter = new DatabasePropertyTermStoreWriter( $repoDb,
+		$termsDb = $this->getTermsDomainDb();
+		$propertyTermStoreWriter = new DatabasePropertyTermStoreWriter( $termsDb,
 			$this->getServiceContainer()->getJobQueueGroup(),
-			new DatabaseTermInLangIdsAcquirer( $repoDb, $typeIdsStore ),
-			new DatabaseTermInLangIdsResolver( $typeIdsStore, $typeIdsStore, $repoDb ), new StringNormalizer()
+			new DatabaseTermInLangIdsAcquirer( $termsDb ),
+			new DatabaseTermInLangIdsResolver( $termsDb ), new StringNormalizer()
 		);
 
 		$propertyTermStoreWriter->storeTerms( new NumericPropertyId( 'P12' ), new Fingerprint(

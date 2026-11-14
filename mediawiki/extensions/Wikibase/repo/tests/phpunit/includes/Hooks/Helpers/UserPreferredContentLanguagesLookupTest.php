@@ -17,10 +17,8 @@ use Wikibase\Repo\Hooks\Helpers\UserPreferredContentLanguagesLookup;
  */
 class UserPreferredContentLanguagesLookupTest extends TestCase {
 
-	/** @var UserLanguageLookup */
-	private $userLanguageLookup;
-	/** @var StaticContentLanguages */
-	private $contentLanguages;
+	private UserLanguageLookup $userLanguageLookup;
+	private StaticContentLanguages $contentLanguages;
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -95,7 +93,7 @@ class UserPreferredContentLanguagesLookupTest extends TestCase {
 	/**
 	 * @return UserPreferredContentLanguagesLookup
 	 */
-	private function newUserPreferredTermsLanguagesLookup( $wikiDefaultLanguage = 'en' ) {
+	private function newUserPreferredTermsLanguagesLookup( string $wikiDefaultLanguage = 'en' ) {
 		return new UserPreferredContentLanguagesLookup(
 			$this->contentLanguages, $this->userLanguageLookup, $wikiDefaultLanguage
 		);

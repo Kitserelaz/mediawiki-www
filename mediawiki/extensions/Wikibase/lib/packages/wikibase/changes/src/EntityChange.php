@@ -147,7 +147,7 @@ class EntityChange extends DiffChange {
 	}
 
 	/**
-	 * @param string $timestamp Timestamp in TS_MW format
+	 * @param string $timestamp Timestamp in TS::MW format
 	 */
 	public function setTimestamp( string $timestamp ): void {
 		$this->setField( ChangeRow::TIME, $timestamp );
@@ -200,8 +200,6 @@ class EntityChange extends DiffChange {
 	 * @return array the info array
 	 */
 	protected function unserializeInfo( $serialization ): array {
-		static $factory = null;
-
 		$info = parent::unserializeInfo( $serialization );
 
 		if ( isset( $info[ChangeRow::COMPACT_DIFF] ) && is_string( $info[ChangeRow::COMPACT_DIFF] ) ) {

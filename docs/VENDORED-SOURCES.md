@@ -26,6 +26,10 @@ source fingerprint observed during conversion. Subsequent upgrade targets and
 preserved local changes are recorded separately in `upgrade-targets.json` and
 the component source-port reports. Conversion fingerprints are historical
 provenance, not assertions that later edited source still has the same hash.
+The [local extension modifications inventory](LOCAL-EXTENSION-MODIFICATIONS.md)
+summarizes known behavior changes, compatibility ports, and source-port records.
+The [Wikibase migration guide](WIKIBASE-MIGRATION.md) covers its pinned frontend
+sources, isolated checks, and outstanding release limitations.
 
 For future component upgrades, clone upstream outside the source tree and use
 `scripts/upgrade-component.py` with an identified baseline, an immutable target

@@ -1,6 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
+			"123Rkhader",
 			"Abanima",
 			"Antime",
 			"Asaifm",
@@ -15,6 +16,7 @@
 			"Maroen1990",
 			"Meno25",
 			"Mido",
+			"Mohammed Qays",
 			"Mr. Ibrahem",
 			"Sonic N800",
 			"Tarawneh",
@@ -22,9 +24,7 @@
 			"زكريا",
 			"سامي الرحيلي",
 			"محمد أحمد عبد الفتاح",
-			"مشعل الحربي",
-			"Mohammed Qays",
-			"123Rkhader"
+			"مشعل الحربي"
 		]
 	},
 	"specialpages-group-wikibase": "قاعدة الويكي",
@@ -60,6 +60,7 @@
 	"wikibase-snakview-snaktypeselector-somevalue": "قيمة مجهولة",
 	"wikibase-snakview-snaktypeselector-novalue": "لا قيمة",
 	"wikibase-undeserializable-value": "القيمة غير صالحة ولا يمكن عرضها.",
+	"wikibase-undisplayable-value": "تعذر عرض القيمة.",
 	"datatypes-type-string": "نص",
 	"datatypes-type-quantity": "كمية",
 	"datatypes-type-monolingualtext": "نص بلغة وحيدة",
@@ -107,6 +108,12 @@
 	"wikibase-entity-summary-wbeditentity-update-languages-short": "غير التسمية، الوصف و/أو الأسماء الأخرى في {{#commaseparatedlist: $3}}",
 	"wikibase-entity-summary-wbeditentity-update-languages-and-other": "غير التسمية، الوصف و/أو الأسماء الأخرى في $3 {{PLURAL:$3|لغة|لغات}}، والأجزاء الأخرى",
 	"wikibase-entity-summary-wbeditentity-update-languages-and-other-short": "غير التسمية، الوصف و/أو الأسماء الأخرى في {{#commaseparatedlist: $3}}، وأجزاء أخرى",
+	"wikibase-entity-summary-wbeditentity-statements-single-property-add": "تمت إضافة {{PLURAL:$3|بيان واحد| $3 بيانات}}",
+	"wikibase-entity-summary-wbeditentity-statements-single-property-remove": "تمت إزالة {{PLURAL:$3|عبارة واحدة| $3 عبارات}}",
+	"wikibase-entity-summary-wbeditentity-statements-single-property-update": "تم تغيير {{PLURAL:$3|بيان واحد| $3 بيانات}}",
+	"wikibase-entity-summary-wbeditentity-statements-multiple-properties-add": "تمت إضافة عبارات لـ {{PLURAL:$3|خاصية واحدة| $3 خصائص}}",
+	"wikibase-entity-summary-wbeditentity-statements-multiple-properties-remove": "تمت إزالة العبارات الخاصة بـ {{PLURAL:$3|خاصية واحدة| $3 خصائص}}",
+	"wikibase-entity-summary-wbeditentity-statements-multiple-properties-update": "تم تغيير العبارات لـ {{PLURAL:$3|خاصية واحدة| $3 خصائص}}",
 	"wikibase-entity-summary-wbsetreference": "تحديد مرجع",
 	"wikibase-entity-summary-wbsetreference-add": "إضافة مرجع إلى ادعاء",
 	"wikibase-entity-summary-wbsetreference-set": "تعديل مرجع الادعاء",

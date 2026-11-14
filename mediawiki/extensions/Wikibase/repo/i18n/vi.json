@@ -3,6 +3,7 @@
 		"authors": [
 			"CactiStaccingCrane",
 			"Caden99",
+			"Chaiwan2009",
 			"Cheers!",
 			"Doraemonluonbentoi",
 			"Flyplanevn27",
@@ -13,6 +14,7 @@
 			"NguoiDungKhongDinhDanh",
 			"Nguyenphutrong2",
 			"Nguyễn Mạnh An",
+			"Nvdtn19",
 			"Pisceskaze",
 			"Shirayuki",
 			"SongNgu.xyz",
@@ -40,6 +42,7 @@
 	"wikibase-publish": "đăng",
 	"wikibase-cancel": "hủy bỏ",
 	"wikibase-add": "thêm",
+	"wikibase-addstatement": "thêm lời phát biểu",
 	"wikibase-addqualifier": "thêm từ hạn định",
 	"wikibase-addreference": "thêm chú thích",
 	"wikibase-save-inprogress": "Đang lưu…",
@@ -407,9 +410,9 @@
 	"wikibase-listdatatypes-quantity-head": "Số lượng",
 	"wikibase-listdatatypes-quantity-body": "Trường dữ liệu trực tiếp cho số lượng có liên quan đến một đơn vị xác định nào đó. Đơn vị dứt khoát được bao gồm trong các giá trị dữ liệu được nhập.\n* amount – phần ẩn của chuỗi (tương quan đến tiền tố đơn vị không rõ)\n* unit – phần ẩn của chuỗi (tương quan đến cơ quan tiêu chuẩn không rõ; mặc định là 1)\n* upperbound – cận trên của số lượng\n* lowerbound – cận dưới của số lượng",
 	"wikibase-listdatatypes-monolingualtext-head": "Văn bản đơn ngữ",
-	"wikibase-listdatatypes-monolingualtext-body": "Trường dữ liệu trực tiếp cho chuỗi không được dịch ra ngôn ngữ khác. Kiểu chuỗi này được định rõ một lần rồi được sử dụng lại trong mọi ngôn ngữ. Thí dụ địa danh trong ngôn ngữ địa phương, các định danh nào đó, công thức hóa học, hoặc tên khoa học Latinh.\n* language – giá trị hiện định rõ ngôn ngữ của phần text\n* value – giá trị hiện của chuỗi tùy ngôn ngữ",
+	"wikibase-listdatatypes-monolingualtext-body": "Trường dữ liệu trực tiếp cho chuỗi không được dịch sang ngôn ngữ khác. Kiểu chuỗi này được định rõ một lần rồi được sử dụng lại trong mọi ngôn ngữ. Thí dụ địa danh trong ngôn ngữ địa phương, các định danh nào đó, công thức hóa học, hoặc tên khoa học Latinh.\n* language – giá trị hiện định rõ ngôn ngữ của phần text\n* value – giá trị hiện của chuỗi tùy ngôn ngữ",
 	"wikibase-listdatatypes-multilingualtext-head": "Văn bản đa ngữ",
-	"wikibase-listdatatypes-multilingualtext-body": "Trường dữ liệu trực tiếp cho chuỗi được dịch ra các ngôn ngữ khác. Thí dụ thuật ngữ quan trọng ở khắp thế giới có tên khác nhau trong nhiều ngôn ngữ. Các tên có thể tùy theo ngôn ngữ hoặc hệ thống viết.\n* language – giá trị hiện định rõ ngôn ngữ của phần text\n* value – giá trị hiện của chuỗi tùy ngôn ngữ",
+	"wikibase-listdatatypes-multilingualtext-body": "Trường dữ liệu trực tiếp cho chuỗi được dịch sang các ngôn ngữ khác. Thí dụ thuật ngữ quan trọng ở khắp thế giới có tên khác nhau trong nhiều ngôn ngữ. Các tên có thể tùy theo ngôn ngữ hoặc hệ thống viết.\n* language – giá trị hiện định rõ ngôn ngữ của phần text\n* value – giá trị hiện của chuỗi tùy ngôn ngữ",
 	"wikibase-listdatatypes-string-head": "Chuỗi",
 	"wikibase-listdatatypes-string-body": "Trường dữ liệu trực tiếp cho chuỗi chữ, thí dụ định danh không thay đổi tùy theo ngôn ngữ của người đọc.\n* text – giá trị hiện của chuỗi tùy ngôn ngữ",
 	"wikibase-listdatatypes-time-head": "Thời điểm",
@@ -469,5 +472,11 @@
 	"special-setaliases-parameterized": "Đặt biệt danh $1",
 	"special-setlabel-parameterized": "Đặt nhãn $1",
 	"special-setdescription-parameterized": "Đặt miêu tả $1",
-	"special-setlabeldescriptionaliases-parameterized": "Đặt nhãn, miêu tả, và biệt danh $1"
+	"special-setlabeldescriptionaliases-parameterized": "Đặt nhãn, miêu tả, và biệt danh $1",
+	"wikibase-scoped-search-search-entities": "Tìm kiếm thực thể",
+	"wikibase-scoped-search-search-entities-description": "Tìm các kiểu thực thể {{SITENAME}}",
+	"wikibase-scoped-search-item-scope-name": "Khoản mục",
+	"wikibase-scoped-search-property-scope-name": "Thuộc tính",
+	"wikibase-mobile-editing-ui-beta-feature-message": "Giao diện sửa đổi di động",
+	"wikibase-mobile-editing-ui-beta-feature-description": "Kích hoạt giao diện sửa đổi di động mới đang được thử nghiệm."
 }

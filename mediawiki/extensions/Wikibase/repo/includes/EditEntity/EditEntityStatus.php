@@ -14,6 +14,7 @@ use Wikimedia\Assert\Assert;
 /**
  * A Status representing the result of an {@link EditEntity} edit.
  *
+ * @inherits TempUserStatus<array{savedTempUser:?UserIdentity,context:IContextSource,revision:EntityRevision}>
  * @license GPL-2.0-or-later
  */
 class EditEntityStatus extends TempUserStatus {
@@ -28,21 +29,11 @@ class EditEntityStatus extends TempUserStatus {
 		], $savedTempUser, $context );
 	}
 
-	/** @return static */
-	public static function wrap( $sv ) {
-		// This implementation only exists to change the declared return type,
-		// from Status to static (i.e. EditEntityStatus);
-		// it would become redundant if Ic1a8eccc53 is merged.
-		// (Note that the parent *implementation* already returns static,
-		// it just isn’t declared as such yet.)
-		// @phan-suppress-next-line PhanTypeMismatchReturnSuperType
-		return parent::wrap( $sv );
-	}
-
 	/**
 	 * Set the "OK" flag to false and the value to the given error flags.
 	 */
 	public function setErrorFlags( int $errorFlags ): void {
+		// @phan-suppress-next-line PhanTypeMismatchArgument
 		$this->setResult( false, [ 'errorFlags' => $errorFlags ] );
 	}
 
@@ -65,6 +56,7 @@ class EditEntityStatus extends TempUserStatus {
 		Assert::precondition( !$this->isOK(), '!$this->isOK()' );
 		$value = $this->getValue();
 		if ( is_array( $value ) || $value instanceof ArrayAccess ) {
+			// @phan-suppress-next-line PhanTypeMismatchReturn
 			return $value['errorFlags'] ?? null;
 		} else {
 			return null;

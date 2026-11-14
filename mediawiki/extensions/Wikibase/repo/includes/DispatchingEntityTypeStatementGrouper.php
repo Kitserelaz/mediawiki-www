@@ -1,5 +1,7 @@
 <?php
 
+declare( strict_types = 1 );
+
 namespace Wikibase\Repo;
 
 use InvalidArgumentException;
@@ -19,12 +21,9 @@ class DispatchingEntityTypeStatementGrouper implements StatementGrouper {
 	/**
 	 * @var StatementGrouper[]
 	 */
-	private $statementGroupers = [];
+	private array $statementGroupers = [];
 
-	/**
-	 * @var StatementGuidParser
-	 */
-	private $guidParser;
+	private StatementGuidParser $guidParser;
 
 	/**
 	 * @param StatementGuidParser $statementGuidParser
@@ -54,20 +53,15 @@ class DispatchingEntityTypeStatementGrouper implements StatementGrouper {
 	 *
 	 * @return StatementList[]
 	 */
-	public function groupStatements( StatementList $statements ) {
+	public function groupStatements( StatementList $statements ): array {
 		return $this->guessStatementGrouper( $statements )->groupStatements( $statements );
 	}
 
-	/**
-	 * @param StatementList $statements
-	 *
-	 * @return StatementGrouper
-	 */
-	private function guessStatementGrouper( StatementList $statements ) {
+	private function guessStatementGrouper( StatementList $statements ): StatementGrouper {
 		foreach ( $statements->toArray() as $statement ) {
 			$entityType = $this->getEntityType( $statement );
 
-			if ( array_key_exists( $entityType, $this->statementGroupers ) ) {
+			if ( $entityType !== null && array_key_exists( $entityType, $this->statementGroupers ) ) {
 				return $this->statementGroupers[$entityType];
 			}
 
@@ -77,19 +71,14 @@ class DispatchingEntityTypeStatementGrouper implements StatementGrouper {
 		return new NullStatementGrouper();
 	}
 
-	/**
-	 * @param Statement $statement
-	 *
-	 * @return string|null
-	 */
-	private function getEntityType( Statement $statement ) {
+	private function getEntityType( Statement $statement ): ?string {
 		$statementGuid = $statement->getGuid();
 		if ( $statementGuid === null ) {
 			return null;
 		}
 		try {
 			$guid = $this->guidParser->parse( $statementGuid );
-		} catch ( StatementGuidParsingException $ex ) {
+		} catch ( StatementGuidParsingException ) {
 			// FIXME: Fail when there is a statement with no GUID?
 			return null;
 		}

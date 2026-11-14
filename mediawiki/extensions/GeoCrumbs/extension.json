@@ -11,7 +11,7 @@
 	"descriptionmsg": "geocrumbs-desc",
 	"type": "parserhook",
 	"requires": {
-		"MediaWiki": ">= 1.43"
+		"MediaWiki": ">= 1.46"
 	},
 	"MessagesDirs": {
 		"GeoCrumbs": [
@@ -26,12 +26,24 @@
 	},
 	"Hooks": {
 		"ParserFirstCallInit": "main",
-		"ParserAfterTidy": "main",
 		"OutputPageParserOutput": "main"
 	},
 	"HookHandlers": {
 		"main": {
-			"class": "MediaWiki\\Extension\\GeoCrumbs\\Hooks"
+			"class": "MediaWiki\\Extension\\GeoCrumbs\\Hooks",
+			"services": [
+				"LanguageConverterFactory",
+				"LinkRenderer",
+				"NamespaceInfo",
+				"PageProps",
+				"WikiPageFactory",
+				"MainConfig"
+			]
+		}
+	},
+	"config": {
+		"GeoCrumbsUseParserOutputFallback": {
+			"value": false
 		}
 	},
 	"manifest_version": 2

@@ -26,6 +26,7 @@ class SearchEntitiesTest extends FederatedPropertiesApiTestCase {
 
 	protected function setUp(): void {
 		$this->withLocalPropertySource = true;
+		$this->overrideConfigValue( 'WBCSUseCirrus', false );
 
 		parent::setUp();
 	}

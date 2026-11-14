@@ -142,9 +142,7 @@ abstract class EntityContent extends AbstractContent {
 		$searchTextGenerator = new FingerprintSearchTextGenerator();
 		$text = $searchTextGenerator->generate( $this->getEntity() );
 
-		if ( !MediaWikiServices::getInstance()->getHookContainer()
-			->run( 'WikibaseTextForSearchIndex', [ $this, &$text ] )
-		) {
+		if ( !WikibaseRepo::getHookRunner()->onWikibaseTextForSearchIndex( $this, $text ) ) {
 			return '';
 		}
 
@@ -179,7 +177,7 @@ abstract class EntityContent extends AbstractContent {
 			return $this->getRedirectText();
 		}
 
-		// @todo this text for filters stuff should be it's own class with test coverage!
+		// @todo this text for filters stuff should be its own class with test coverage!
 		$codec = WikibaseRepo::getEntityContentDataCodec();
 		$json = $codec->encodeEntity( $this->getEntity(), CONTENT_FORMAT_JSON );
 		$data = json_decode( $json, true );
@@ -264,8 +262,10 @@ abstract class EntityContent extends AbstractContent {
 	 *
 	 * @return string[]|EntityDocument An undefined data structure representing the content. This is
 	 *  not guaranteed to conform to any serialization structure used in the database or externally.
+	 * @deprecated since 1.33 Use ::getEntity() instead.
 	 */
 	public function getNativeData() {
+		wfDeprecated( __METHOD__, '1.33' );
 		if ( $this->isRedirect() ) {
 			return $this->getRedirectData();
 		}
@@ -274,7 +274,7 @@ abstract class EntityContent extends AbstractContent {
 		$serializer = WikibaseRepo::getAllTypesEntitySerializer();
 		try {
 			return $serializer->serialize( $this->getEntity() );
-		} catch ( SerializationException $ex ) {
+		} catch ( SerializationException ) {
 			return $this->getEntity();
 		}
 	}
@@ -285,7 +285,19 @@ abstract class EntityContent extends AbstractContent {
 	 * @return int
 	 */
 	public function getSize() {
-		return strlen( serialize( $this->getNativeData() ) );
+		if ( $this->isRedirect() ) {
+			$data = $this->getRedirectData();
+		} else {
+			// NOTE: this may or may not be consistent with what EntityContentCodec does!
+			$serializer = WikibaseRepo::getAllTypesEntitySerializer();
+			$entity = $this->getEntity();
+			try {
+				$data = $serializer->serialize( $entity );
+			} catch ( SerializationException ) {
+				$data = $entity;
+			}
+		}
+		return strlen( serialize( $data ) );
 	}
 
 	/**

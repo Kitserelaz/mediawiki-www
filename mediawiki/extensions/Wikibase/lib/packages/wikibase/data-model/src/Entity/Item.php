@@ -68,9 +68,9 @@ class Item implements
 		?StatementList $statements = null
 	) {
 		$this->id = $id;
-		$this->fingerprint = $fingerprint ?: new Fingerprint();
-		$this->siteLinks = $siteLinks ?: new SiteLinkList();
-		$this->statements = $statements ?: new StatementList();
+		$this->fingerprint = $fingerprint ?? new Fingerprint();
+		$this->siteLinks = $siteLinks ?? new SiteLinkList();
+		$this->statements = $statements ?? new StatementList();
 	}
 
 	/**
@@ -87,7 +87,7 @@ class Item implements
 	/**
 	 * @since 0.5, can be null since 1.0
 	 *
-	 * @param ItemId|null $id
+	 * @param EntityId|null $id
 	 *
 	 * @throws InvalidArgumentException
 	 */
@@ -297,7 +297,7 @@ class Item implements
 	 *
 	 * @param StatementList $statements
 	 */
-	public function setStatements( StatementList $statements ) {
+	public function setStatements( StatementList $statements ): void {
 		$this->statements = $statements;
 	}
 

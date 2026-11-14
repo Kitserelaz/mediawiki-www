@@ -6,6 +6,7 @@ use MediaWiki\Html\Html;
 use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\Site\Site;
 use MediaWiki\Site\SiteLookup;
+use MediaWiki\SpecialPage\SpecialPage;
 use Psr\Log\LoggerInterface;
 use Wikibase\Lib\LanguageNameLookup;
 use Wikibase\Lib\LanguageNameLookupFactory;
@@ -56,13 +57,6 @@ class SpecialItemByTitle extends SpecialWikibasePage {
 	private $logger;
 
 	/**
-	 * site link groups
-	 *
-	 * @var string[]
-	 */
-	private $groups;
-
-	/**
 	 * @see SpecialWikibasePage::__construct
 	 *
 	 * @param EntityTitleLookup $titleLookup
@@ -71,7 +65,6 @@ class SpecialItemByTitle extends SpecialWikibasePage {
 	 * @param SiteLinkLookup $siteLinkLookup
 	 * @param SiteLinkTargetProvider $siteLinkTargetProvider
 	 * @param LoggerInterface $logger
-	 * @param string[] $siteLinkGroups
 	 */
 	public function __construct(
 		EntityTitleLookup $titleLookup,
@@ -80,9 +73,8 @@ class SpecialItemByTitle extends SpecialWikibasePage {
 		SiteLinkLookup $siteLinkLookup,
 		SiteLinkTargetProvider $siteLinkTargetProvider,
 		LoggerInterface $logger,
-		array $siteLinkGroups
 	) {
-		parent::__construct( 'ItemByTitle', '', true );
+		parent::__construct( 'ItemByTitle' );
 
 		$this->titleLookup = $titleLookup;
 		$this->languageNameLookup = $languageNameLookup;
@@ -90,7 +82,6 @@ class SpecialItemByTitle extends SpecialWikibasePage {
 		$this->siteLinkLookup = $siteLinkLookup;
 		$this->siteLinkTargetProvider = $siteLinkTargetProvider;
 		$this->logger = $logger;
-		$this->groups = $siteLinkGroups;
 	}
 
 	public static function factory(
@@ -103,7 +94,8 @@ class SpecialItemByTitle extends SpecialWikibasePage {
 	): self {
 		$siteLinkTargetProvider = new SiteLinkTargetProvider(
 			$siteLookup,
-			$repoSettings->getSetting( 'specialSiteLinkGroups' )
+			$repoSettings->getSetting( 'siteLinkGroups' ),
+			$repoSettings->getSetting( 'specialSiteLinkGroups' ),
 		);
 
 		return new self(
@@ -114,7 +106,6 @@ class SpecialItemByTitle extends SpecialWikibasePage {
 			$store->newSiteLinkStore(),
 			$siteLinkTargetProvider,
 			$logger,
-			$repoSettings->getSetting( 'siteLinkGroups' )
 		);
 	}
 
@@ -189,7 +180,7 @@ class SpecialItemByTitle extends SpecialWikibasePage {
 	 */
 	private function getSiteOptions() {
 		$options = [];
-		foreach ( $this->siteLinkTargetProvider->getSiteList( $this->groups ) as $site ) {
+		foreach ( $this->siteLinkTargetProvider->getSiteList() as $site ) {
 			$siteId = $site->getGlobalId();
 			$languageName = $this->languageNameLookup->getName( $site->getLanguageCode() );
 			$options["$languageName ($siteId)"] = $siteId;
@@ -205,7 +196,7 @@ class SpecialItemByTitle extends SpecialWikibasePage {
 	 */
 	private function switchForm( $siteId, $page ) {
 		$siteExists = $siteId
-			&& $this->siteLinkTargetProvider->getSiteList( $this->groups )->hasSite( $siteId );
+			&& $this->siteLinkTargetProvider->getSiteList()->hasSite( $siteId );
 
 		$this->logger->debug(
 			'{method}: Site {siteId} exists: {siteExists}',
@@ -250,15 +241,13 @@ class SpecialItemByTitle extends SpecialWikibasePage {
 		} elseif ( $siteExists && $page ) {
 			$this->showErrorHTML( $this->msg( 'wikibase-itembytitle-error-item' )->parse() );
 
-			$createLink = $this->getTitleFor( 'NewItem' );
-			$this->getOutput()->addHTML(
-				Html::openElement( 'div' )
-				. $this->msg(
+			$createLink = SpecialPage::getTitleFor( 'NewItem' );
+			$this->getOutput()->addHTML( Html::rawElement( 'div', [],
+				$this->msg(
 					'wikibase-itembytitle-create',
 					$createLink->getFullURL( [ 'site' => $siteId, 'page' => $page ] )
 				)->parse()
-				. Html::closeElement( 'div' )
-			);
+			) );
 		}
 	}
 

@@ -175,7 +175,7 @@ class SetSiteLink extends ModifyEntity {
 			return $this->siteLinkChangeOpFactory->newRemoveSiteLinkOp( $linksite );
 		} else {
 			$linksite = $this->stringNormalizer->trimToNFC( $preparedParameters['linksite'] );
-			$sites = $this->siteLinkTargetProvider->getSiteList( $this->siteLinkGroups );
+			$sites = $this->siteLinkTargetProvider->getSiteList();
 			$site = $sites->getSite( $linksite );
 
 			if ( $site === false ) {
@@ -209,19 +209,20 @@ class SetSiteLink extends ModifyEntity {
 		}
 	}
 
-	private function getLinkTitleFromExistingSiteLink( EntityDocument $entity, string $linksite ) {
+	private function getLinkTitleFromExistingSiteLink( EntityDocument $entity, string $linksite ): string {
 		if ( !( $entity instanceof Item ) ) {
 			$this->errorReporter->dieWithError( "The given entity is not an item", "not-item" );
 		}
 		$item = $entity;
 		try {
 			$siteLink = $item->getSiteLinkList()->getBySiteId( $linksite );
-		} catch ( OutOfBoundsException $ex ) {
+		} catch ( OutOfBoundsException ) {
 			$this->errorReporter->dieWithError(
 				[ 'wikibase-validator-no-such-sitelink', $linksite ],
 				'no-such-sitelink'
 			);
 		}
+		// @phan-suppress-next-line PhanPossiblyUndeclaredVariable
 		return $siteLink->getPageName();
 	}
 
@@ -245,7 +246,7 @@ class SetSiteLink extends ModifyEntity {
 	 * @inheritDoc
 	 */
 	protected function getAllowedParams(): array {
-		$siteIds = $this->siteLinkGlobalIdentifiersProvider->getList( $this->siteLinkGroups );
+		$siteIds = $this->siteLinkGlobalIdentifiersProvider->getSiteIds();
 
 		return array_merge(
 			parent::getAllowedParams(),

@@ -6,10 +6,10 @@ use MediaWiki\Request\WebResponse;
 use MediaWiki\Site\HashSiteStore;
 use MediaWiki\Site\Site;
 use MediaWiki\Site\SiteLookup;
+use MediaWiki\Tests\Specials\SpecialPageTestBase;
 use MediaWiki\Title\Title;
 use PHPUnit\Framework\MockObject\MockObject;
 use Psr\Log\NullLogger;
-use SpecialPageTestBase;
 use Wikibase\DataModel\Entity\EntityId;
 use Wikibase\DataModel\Entity\ItemId;
 use Wikibase\Lib\LanguageNameLookup;
@@ -102,7 +102,7 @@ class SpecialItemByTitleTest extends SpecialPageTestBase {
 
 		$siteLookup = $this->getMockSiteLookup();
 
-		$siteLinkTargetProvider = new SiteLinkTargetProvider( $siteLookup, [] );
+		$siteLinkTargetProvider = new SiteLinkTargetProvider( $siteLookup, [ 'wikipedia' ] );
 
 		$page = new SpecialItemByTitle(
 			$this->getMockTitleLookup(),
@@ -111,7 +111,6 @@ class SpecialItemByTitleTest extends SpecialPageTestBase {
 			$this->getMockSiteLinkLookup(),
 			$siteLinkTargetProvider,
 			new NullLogger(),
-			[ 'wikipedia' ]
 		);
 
 		return $page;
@@ -136,16 +135,14 @@ class SpecialItemByTitleTest extends SpecialPageTestBase {
 	}
 
 	public function testRedirectsToCorrespondingItem_WhenGivenSubPageReferencesExistingPage() {
-
 		$itemId = self::EXISTING_ITEM_ID;
 		$subPage = self::EXISTING_WIKI . '/' . self::EXISTING_PAGE;
 
 		/** @var WebResponse $response */
 		[ , $response ] = $this->executeSpecialPage( $subPage );
 
-		$itemUrl = Title::newFromTextThrow( $itemId )->getFullURL();
-		$expectedUrl = wfExpandUrl( $itemUrl, PROTO_CURRENT );
-		$this->assertEquals( $expectedUrl, $response->getHeader( 'Location' ), 'Redirect' );
+		$expectedUrl = Title::newFromTextThrow( $itemId )->getFullURL();
+		$this->assertSame( $expectedUrl, $response->getHeader( 'Location' ), 'Redirect' );
 	}
 
 }

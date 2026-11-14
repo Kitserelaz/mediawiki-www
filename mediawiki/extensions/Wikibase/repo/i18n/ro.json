@@ -14,7 +14,9 @@
 			"Stelistcristi",
 			"Strainu",
 			"Wintereu",
-			"XXN"
+			"XXN",
+			"Blaséd",
+			"Vellion Eagle"
 		]
 	},
 	"wikibase-desc": "Depozit de date structurate",
@@ -31,6 +33,7 @@
 	"wikibase-addreference": "adaugă referință",
 	"wikibase-save-inprogress": "Se salvează...",
 	"wikibase-publish-inprogress": "Se publică...",
+	"wikibase-publishing-succeeded": "Modificările dvs. au fost publicate!",
 	"wikibase-remove-inprogress": "Se elimină...",
 	"wikibase-statementlistview-add": "adăugați o valoare",
 	"wikibase-statementlistview-add-tooltip": "Adăugați o valoare nouă",
@@ -56,7 +59,7 @@
 	"wikibase-diffview-rank": "rang",
 	"wikibase-diffview-rank-preferred": "Rang preferat",
 	"wikibase-diffview-rank-normal": "Rang normal",
-	"wikibase-diffview-rank-deprecated": "Rang perimat",
+	"wikibase-diffview-rank-deprecated": "Rang depreciat",
 	"wikibase-diffview-qualifier": "calificativ",
 	"wikibase-diffview-label": "etichetă",
 	"wikibase-diffview-alias": "aliasuri",
@@ -92,7 +95,7 @@
 	"wikibase-statementview-rank-tooltip-preferred": "Valoare validă și actuală",
 	"wikibase-statementview-rank-normal": "Rang normal",
 	"wikibase-statementview-rank-tooltip-normal": "Valoare validă, dar posibil istorică",
-	"wikibase-statementview-rank-deprecated": "Rang perimat",
+	"wikibase-statementview-rank-deprecated": "Rang depreciat",
 	"wikibase-statementview-references-counter": "$1 {{PLURAL:$1|referință|referințe|de referințe}}",
 	"wikibase-snakview-property-input-placeholder": "proprietate",
 	"wikibase-snakview-choosesnaktype": "Alegeți un tip de valoare.",

@@ -1,4 +1,4 @@
-# Lua
+# Lua {#docs_topics_lua}
 
 WikibaseLexeme provides a Lua [Scribunto](https://www.mediawiki.org/wiki/Scribunto) interface that implements functions to access data from the Wikibase repository, if the Wikibase Client configuration enables `allowDataTransclusion` and `$wgLexemeEnableDataTransclusion`. Lua modules and wiki templates can invoke these functions.
 
@@ -183,4 +183,4 @@ An example call might look like this:
 sense:getGloss( 'en' ) -- example: 'a rubber sack designed to be inflated with air', 'en'
 ```
 
-[mw.wikibase.entity]: https://doc.wikimedia.org/Wikibase/master/php/md_docs_topics_lua.html#mw_wikibase_entity
+[mw.wikibase.entity]: https://doc.wikimedia.org/Wikibase/master/php/docs_topics_lua.html#mw_wikibase_entity

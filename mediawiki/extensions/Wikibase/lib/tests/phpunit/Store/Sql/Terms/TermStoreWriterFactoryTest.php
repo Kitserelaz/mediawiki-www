@@ -2,19 +2,17 @@
 
 namespace Wikibase\Lib\Tests\Store\Sql\Terms;
 
-use JobQueueGroup;
 use LogicException;
+use MediaWiki\JobQueue\JobQueueGroup;
 use MediaWiki\Revision\SlotRecord;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use Wikibase\DataAccess\DatabaseEntitySource;
 use Wikibase\DataModel\Services\Term\ItemTermStoreWriter;
 use Wikibase\DataModel\Services\Term\PropertyTermStoreWriter;
-use Wikibase\Lib\Rdbms\RepoDomainDb;
-use Wikibase\Lib\Store\Sql\Terms\DatabaseTypeIdsStore;
+use Wikibase\Lib\Rdbms\TermsDomainDb;
 use Wikibase\Lib\Store\Sql\Terms\TermStoreWriterFactory;
 use Wikibase\Lib\StringNormalizer;
-use Wikimedia\ObjectCache\WANObjectCache;
 
 /**
  * @covers \Wikibase\Lib\Store\Sql\Terms\TermStoreWriterFactory
@@ -26,13 +24,13 @@ use Wikimedia\ObjectCache\WANObjectCache;
  */
 class TermStoreWriterFactoryTest extends TestCase {
 
-	public function provideTestCreateWriters() {
-		yield [ $this->getEntitySourceWithNoEntities(), 'newItemTermStoreWriter', false ];
-		yield [ $this->getEntitySourceWithNoEntities(), 'newPropertyTermStoreWriter', false ];
-		yield [ $this->getEntitySourceWithTypes( [ 'item' ] ), 'newItemTermStoreWriter', ItemTermStoreWriter::class ];
-		yield [ $this->getEntitySourceWithTypes( [ 'item' ] ), 'newPropertyTermStoreWriter', false ];
-		yield [ $this->getEntitySourceWithTypes( [ 'property' ] ), 'newItemTermStoreWriter', false ];
-		yield [ $this->getEntitySourceWithTypes( [ 'property' ] ), 'newPropertyTermStoreWriter', PropertyTermStoreWriter::class ];
+	public static function provideTestCreateWriters() {
+		yield [ self::getEntitySourceWithNoEntities(), 'newItemTermStoreWriter', false ];
+		yield [ self::getEntitySourceWithNoEntities(), 'newPropertyTermStoreWriter', false ];
+		yield [ self::getEntitySourceWithTypes( [ 'item' ] ), 'newItemTermStoreWriter', ItemTermStoreWriter::class ];
+		yield [ self::getEntitySourceWithTypes( [ 'item' ] ), 'newPropertyTermStoreWriter', false ];
+		yield [ self::getEntitySourceWithTypes( [ 'property' ] ), 'newItemTermStoreWriter', false ];
+		yield [ self::getEntitySourceWithTypes( [ 'property' ] ), 'newPropertyTermStoreWriter', PropertyTermStoreWriter::class ];
 	}
 
 	/**
@@ -43,17 +41,12 @@ class TermStoreWriterFactoryTest extends TestCase {
 		string $method,
 		$expected
 	) {
-		$databaseTypeIdsStore = $this->createMock( DatabaseTypeIdsStore::class );
 		$factory = new TermStoreWriterFactory(
 			$entitySource,
 			$this->createMock( StringNormalizer::class ),
-			$databaseTypeIdsStore,
-			$databaseTypeIdsStore,
-			$databaseTypeIdsStore,
-			$this->newStubRepoDb(),
-			$this->createMock( WANObjectCache::class ),
+			$this->createStub( TermsDomainDb::class ),
 			$this->createMock( JobQueueGroup::class ),
-			$this->createMock( LoggerInterface::class )
+			new NullLogger()
 		);
 
 		if ( !$expected ) {
@@ -65,20 +58,16 @@ class TermStoreWriterFactoryTest extends TestCase {
 		$this->assertInstanceOf( $expected, $result );
 	}
 
-	private function getEntitySourceWithNoEntities() {
+	private static function getEntitySourceWithNoEntities() {
 		return new DatabaseEntitySource( 'empty', false, [], '', '', '', '' );
 	}
 
-	private function getEntitySourceWithTypes( array $types ) {
+	private static function getEntitySourceWithTypes( array $types ) {
 		$entityTypeData = [];
 		foreach ( $types as $typeName ) {
 			$entityTypeData[$typeName] = [ 'namespaceId' => 1, 'slot' => SlotRecord::MAIN ];
 		}
 		return new DatabaseEntitySource( 'empty', false, $entityTypeData, '', '', '', '' );
-	}
-
-	private function newStubRepoDb() {
-		return $this->createStub( RepoDomainDb::class );
 	}
 
 }

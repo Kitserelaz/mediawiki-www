@@ -3,7 +3,7 @@
 namespace Wikibase\Repo\Specials;
 
 use InvalidArgumentException;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Language\LanguageNameUtils;
 use Wikibase\DataModel\Entity\EntityDocument;
 use Wikibase\DataModel\Term\DescriptionsProvider;
 use Wikibase\Lib\ContentLanguages;
@@ -84,6 +84,7 @@ class SpecialSetDescription extends SpecialModifyTerm {
 		);
 	}
 
+	/** @inheritDoc */
 	public function doesWrites() {
 		return true;
 	}

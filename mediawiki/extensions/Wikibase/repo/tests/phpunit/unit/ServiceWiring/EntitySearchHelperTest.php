@@ -3,9 +3,7 @@ declare( strict_types = 1 );
 
 namespace Wikibase\Repo\Tests\Unit\ServiceWiring;
 
-use Wikibase\Lib\SettingsArray;
 use Wikibase\Repo\Api\EntitySearchHelper;
-use Wikibase\Repo\FederatedProperties\ApiServiceFactory;
 use Wikibase\Repo\Tests\Unit\ServiceWiringTestCase;
 
 /**
@@ -18,12 +16,6 @@ use Wikibase\Repo\Tests\Unit\ServiceWiringTestCase;
 class EntitySearchHelperTest extends ServiceWiringTestCase {
 
 	public function testConstruction(): void {
-
-		$this->mockService(
-			'WikibaseRepo.Settings',
-			new SettingsArray( [ 'federatedPropertiesEnabled' => false ] )
-		);
-
 		$this->mockService(
 			'WikibaseRepo.EntitySearchHelperCallbacks',
 			[ 'item' => fn() => null ]
@@ -34,28 +26,4 @@ class EntitySearchHelperTest extends ServiceWiringTestCase {
 			$this->getService( 'WikibaseRepo.EntitySearchHelper' )
 		);
 	}
-
-	public function testConstructionWithFederatedPropertiesEnabled(): void {
-
-		$this->mockService(
-			'WikibaseRepo.Settings',
-			new SettingsArray( [ 'federatedPropertiesEnabled' => true ] )
-		);
-
-		$this->mockService(
-			'WikibaseRepo.EntitySearchHelperCallbacks',
-			[ 'item' => fn() => null ]
-		);
-
-		$this->mockService(
-			'WikibaseRepo.FederatedPropertiesServiceFactory',
-			$this->createMock( ApiServiceFactory::class )
-		);
-
-		$this->assertInstanceOf(
-			EntitySearchHelper::class,
-			$this->getService( 'WikibaseRepo.EntitySearchHelper' )
-		);
-	}
-
 }

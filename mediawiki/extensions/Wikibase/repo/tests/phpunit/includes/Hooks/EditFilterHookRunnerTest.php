@@ -5,7 +5,6 @@ namespace Wikibase\Repo\Tests\Hooks;
 use MediaWiki\Content\Content;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Context\RequestContext;
-use MediaWiki\MediaWikiServices;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Status\Status;
@@ -41,7 +40,7 @@ class EditFilterHookRunnerTest extends MediaWikiIntegrationTestCase {
 		$entityTitleLookup = $this->createMock( EntityTitleStoreLookup::class );
 		$entityTitleLookup->method( 'getTitleForId' )
 			->willReturnCallback( function( EntityId $id ) {
-				return Title::newFromTextThrow( $id->getSerialization(), NS_MAIN );
+				return Title::makeTitle( NS_MAIN, $id->getSerialization() );
 			} );
 
 		$entityContentFactory = $this->createMock( EntityContentFactory::class );
@@ -76,7 +75,7 @@ class EditFilterHookRunnerTest extends MediaWikiIntegrationTestCase {
 		$this->assertStatusGood( $status );
 	}
 
-	public function runData() {
+	public static function provideRunData() {
 		return [
 			'good existing item' => [
 				Status::newGood(),
@@ -140,7 +139,7 @@ class EditFilterHookRunnerTest extends MediaWikiIntegrationTestCase {
 	 * @param EntityDocument|EntityRedirect|null $new
 	 * @param array $expected
 	 *
-	 * @dataProvider runData
+	 * @dataProvider provideRunData
 	 */
 	public function testRun_hooksAreCalled( Status $inputStatus, $new, array $expected ) {
 		$this->clearHook( 'EditFilterMergedContent' );
@@ -155,7 +154,7 @@ class EditFilterHookRunnerTest extends MediaWikiIntegrationTestCase {
 				User $user,
 				$minoredit
 			) use ( $expected, $inputStatus ) {
-				$wikiPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $context->getTitle() );
+				$wikiPage = $this->getServiceContainer()->getWikiPageFactory()->newFromTitle( $context->getTitle() );
 				$this->assertSame( $expected['title'], $context->getTitle()->getFullText() );
 				$this->assertSame( $context->getTitle(), $wikiPage->getTitle() );
 				$this->assertSame( $expected['namespace'], $context->getTitle()->getNamespace() );

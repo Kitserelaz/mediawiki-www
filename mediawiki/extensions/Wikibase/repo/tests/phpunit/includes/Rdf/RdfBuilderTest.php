@@ -5,7 +5,6 @@ declare( strict_types = 1 );
 namespace Wikibase\Repo\Tests\Rdf;
 
 use MediaWiki\Context\RequestContext;
-use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Site\SiteLookup;
 use MediaWikiIntegrationTestCase;
@@ -160,7 +159,7 @@ class RdfBuilderTest extends MediaWikiIntegrationTestCase {
 				$mentionedEntityTracker,
 				$dedupe
 			) {
-				$services = MediaWikiServices::getInstance();
+				$services = $this->getServiceContainer();
 				$entityTypeDefinitions = WikibaseRepo::getEntityTypeDefinitions( $services );
 				$propertyDataLookup = WikibaseRepo::getPropertyDataTypeLookup();
 				$valueSnakRdfBuilderFactory = new ValueSnakRdfBuilderFactory(
@@ -461,7 +460,7 @@ class RdfBuilderTest extends MediaWikiIntegrationTestCase {
 		$this->helper->assertNTriplesEquals( $expected, $builder->getRDF() );
 	}
 
-	public function getProduceOptions(): iterable {
+	public static function provideProduceOptions(): iterable {
 		return [
 			[
 				'Q4',
@@ -532,7 +531,7 @@ class RdfBuilderTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @dataProvider getProduceOptions
+	 * @dataProvider provideProduceOptions
 	 */
 	public function testRdfOptions( string $entityName, int $produceOption, $dataSetNames ): void {
 		$entity = $this->getEntityData( $entityName );
@@ -586,7 +585,7 @@ class RdfBuilderTest extends MediaWikiIntegrationTestCase {
 		$this->helper->assertNTriplesEqualsDataset( 'Q7_Q9_dedup_foreignsource_properties', $data1 . $data2 );
 	}
 
-	public function getProps(): iterable {
+	public static function provideProps(): iterable {
 		return [
 			'simple prop' => [
 				'prop1',
@@ -636,7 +635,7 @@ class RdfBuilderTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @dataProvider getProps
+	 * @dataProvider provideProps
 	 * @param string $name Datafile name
 	 * @param array $props Property config
 	 */

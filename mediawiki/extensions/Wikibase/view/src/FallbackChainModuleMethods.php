@@ -14,7 +14,7 @@ class FallbackChainModuleMethods {
 
 	public static function buildFallbackChains(): array {
 		$services = MediaWikiServices::getInstance();
-		if ( !WikibaseRepo::getSettings( $services )->getSetting( 'tmpEnableMulLanguageCode' ) ) {
+		if ( !WikibaseRepo::getSettings( $services )->getSetting( 'enableMulLanguageCode' ) ) {
 			return [];
 		}
 		$localCache = $services->getLocalServerObjectCache();
@@ -22,7 +22,10 @@ class FallbackChainModuleMethods {
 			$localCache->makeKey( 'wikibase-fallback-chains' ),
 			$localCache::TTL_WEEK,
 			function () use ( $services ) {
-				$startTime = microtime( true );
+				$statsFactory = $services->getStatsFactory()->withComponent( 'WikibaseRepo' );
+				$timing = $statsFactory
+					->getTiming( 'fallbackchains_timing_seconds' )
+					->start();
 
 				$fallbackChainFactory = WikibaseRepo::getLanguageFallbackChainFactory( $services );
 				$languages = WikibaseRepo::getTermsLanguages( $services )->getLanguages();
@@ -32,9 +35,8 @@ class FallbackChainModuleMethods {
 					$chains[$language] = $fallbackChainFactory->newFromLanguageCode( $language )->getFetchLanguageCodes();
 				}
 
-				$endTime = microtime( true );
-				$statsdFactory = $services->getStatsdDataFactory();
-				$statsdFactory->timing( 'wikibase.view.fallbackchains.timing', ( $endTime - $startTime ) * 1000 );
+				$timing->stop();
+
 				return $chains;
 			}
 		);

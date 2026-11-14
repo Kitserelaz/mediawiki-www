@@ -5,11 +5,11 @@ declare( strict_types = 1 );
 namespace Wikibase\Lib\Modules;
 
 use InvalidArgumentException;
+use MediaWiki\Language\MessageLocalizer;
 // phpcs:disable MediaWiki.Classes.FullQualifiedClassName -- T308814
 use MediaWiki\ResourceLoader as RL;
 use MediaWiki\Site\MediaWikiSite;
 use MediaWiki\Site\Site;
-use MessageLocalizer;
 use Wikibase\Lib\LanguageNameLookupFactory;
 use Wikibase\Lib\SettingsArray;
 
@@ -46,8 +46,8 @@ abstract class SitesModuleBase extends RL\Module {
 		?SettingsArray $repoSettings,
 		LanguageNameLookupFactory $languageNameLookupFactory
 	) {
-		$this->clientSettings = $clientSettings ?: new SettingsArray();
-		$this->repoSettings = $repoSettings ?: new SettingsArray();
+		$this->clientSettings = $clientSettings ?? new SettingsArray();
+		$this->repoSettings = $repoSettings ?? new SettingsArray();
 		$this->languageNameLookupFactory = $languageNameLookupFactory;
 	}
 
@@ -133,8 +133,8 @@ abstract class SitesModuleBase extends RL\Module {
 	}
 
 	/**
-	 * @param MessageLocalizer $localizer
+	 * @param RL\Context $context
 	 * @return string JavaScript Code
 	 */
-	abstract protected function makeScript( MessageLocalizer $localizer ): string;
+	abstract protected function makeScript( RL\Context $context ): string;
 }

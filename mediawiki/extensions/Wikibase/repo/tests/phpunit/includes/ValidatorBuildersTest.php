@@ -117,15 +117,15 @@ class ValidatorBuildersTest extends \PHPUnit\Framework\TestCase {
 	}
 
 	public static function commonsFileNamesWithIllegalCharactersProvider() {
-		yield [ 'Illegal character: open square bracket' => 'a[a.jpg' ];
-		yield [ 'Illegal character: close square bracket' => 'a]a.jpg' ];
-		yield [ 'Illegal character: open curly bracket' => 'a{a.jpg' ];
-		yield [ 'Illegal character: close curly bracket' => 'a}a.jpg' ];
-		yield [ 'Illegal character: pipe' => 'a|a.jpg' ];
-		yield [ 'Illegal character: hash' => 'Foo#bar.jpg' ];
-		yield [ 'Illegal character: colon' => 'Foo:bar.jpg' ];
-		yield [ 'Illegal character: slash' => 'Foo/bar.jpg' ];
-		yield [ 'Illegal character: backslash' => 'Foo\bar.jpg' ];
+		yield 'Illegal character: open square bracket' => [ 'a[a.jpg' ];
+		yield 'Illegal character: close square bracket' => [ 'a]a.jpg' ];
+		yield 'Illegal character: open curly bracket' => [ 'a{a.jpg' ];
+		yield 'Illegal character: close curly bracket' => [ 'a}a.jpg' ];
+		yield 'Illegal character: pipe' => [ 'a|a.jpg' ];
+		yield 'Illegal character: hash' => [ 'Foo#bar.jpg' ];
+		yield 'Illegal character: colon' => [ 'Foo:bar.jpg' ];
+		yield 'Illegal character: slash' => [ 'Foo/bar.jpg' ];
+		yield 'Illegal character: backslash' => [ 'Foo\bar.jpg' ];
 	}
 
 	public function testCommonsMediaValidationFailsWhenFileTypeIsMissing() {
@@ -562,7 +562,7 @@ class ValidatorBuildersTest extends \PHPUnit\Framework\TestCase {
 			'wikibase-property' => [ $builders, 'buildPropertyValidators' ],
 		];
 
-		$validators = call_user_func( $validatorMap[$typeId] );
+		$validators = $validatorMap[$typeId]();
 
 		$this->assertValidation( $expected, $validators, $value );
 	}

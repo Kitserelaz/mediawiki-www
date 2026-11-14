@@ -47,7 +47,7 @@ class StatementsMerger {
 		$mergeOps->apply( $target );
 	}
 
-	private function generateMergeChangeOps( StatementListProvider $source, StatementListProvider $target ) {
+	private function generateMergeChangeOps( StatementListProvider $source, StatementListProvider $target ): ChangeOps {
 		$changeOps = new ChangeOps();
 
 		foreach ( $source->getStatements()->toArray() as $sourceStatement ) {
@@ -123,11 +123,15 @@ class StatementsMerger {
 		return $changeOps;
 	}
 
-	private function generateRemoveStatementOps( StatementListProvider $source ) {
+	private function generateRemoveStatementOps( StatementListProvider $source ): ChangeOps {
 		$changeOps = new ChangeOps();
 
 		foreach ( $source->getStatements() as $statement ) {
-			$changeOps->add( $this->changeOpFactory->newRemoveStatementOp( $statement->getGuid() ) );
+			$guid = $statement->getGuid();
+			if ( $guid === null ) {
+				continue;
+			}
+			$changeOps->add( $this->changeOpFactory->newRemoveStatementOp( $guid ) );
 		}
 
 		return $changeOps;

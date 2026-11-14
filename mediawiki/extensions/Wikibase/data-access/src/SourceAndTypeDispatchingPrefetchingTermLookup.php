@@ -27,10 +27,10 @@ class SourceAndTypeDispatchingPrefetchingTermLookup extends EntityTermLookupBase
 
 	/**
 	 * @param EntityId[] $entityIds
-	 * @param string[]|null $termTypes
-	 * @param string[]|null $languageCodes
+	 * @param string[] $termTypes
+	 * @param string[] $languageCodes
 	 */
-	public function prefetchTerms( array $entityIds, ?array $termTypes = null, ?array $languageCodes = null ) {
+	public function prefetchTerms( array $entityIds, array $termTypes, array $languageCodes ) {
 		$entityIdsGroupedBySourceAndType = $this->groupEntityIdsBySourceAndType( $entityIds );
 
 		foreach ( $entityIdsGroupedBySourceAndType as $entityIdsGroupedByType ) {
@@ -54,6 +54,7 @@ class SourceAndTypeDispatchingPrefetchingTermLookup extends EntityTermLookupBase
 		return $entityIdsGroupedBySourceAndType;
 	}
 
+	/** @inheritDoc */
 	public function getPrefetchedTerm( EntityId $entityId, $termType, $languageCode ) {
 		return $this->getLookupForEntitySourceAndType(
 			$this->sourceLookup->getEntitySourceById( $entityId ),
@@ -61,10 +62,14 @@ class SourceAndTypeDispatchingPrefetchingTermLookup extends EntityTermLookupBase
 		)->getPrefetchedTerm( $entityId, $termType, $languageCode );
 	}
 
+	/**
+	 * @return PrefetchingTermLookup
+	 */
 	private function getLookupForEntitySourceAndType( EntitySource $source, string $type ) {
 		return $this->dispatcher->getServiceForSourceAndType( $source->getSourceName(), $type, [ $source ] );
 	}
 
+	/** @inheritDoc */
 	protected function getTermsOfType( EntityId $entityId, $termType, array $languageCodes ) {
 		$this->prefetchTerms( [ $entityId ], [ $termType ], $languageCodes );
 
@@ -76,6 +81,7 @@ class SourceAndTypeDispatchingPrefetchingTermLookup extends EntityTermLookupBase
 		return array_filter( $terms, 'is_string' );
 	}
 
+	/** @inheritDoc */
 	public function getPrefetchedAliases( EntityId $entityId, $languageCode ) {
 		return $this->getLookupForEntitySourceAndType(
 			$this->sourceLookup->getEntitySourceById( $entityId ),

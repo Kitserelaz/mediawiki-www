@@ -1,5 +1,7 @@
 <?php
 
+declare( strict_types = 1 );
+
 namespace Wikibase\Repo\Tests;
 
 use InvalidArgumentException;
@@ -20,28 +22,26 @@ use Wikibase\Repo\DispatchingEntityTypeStatementGrouper;
  */
 class DispatchingEntityTypeStatementGrouperTest extends \PHPUnit\Framework\TestCase {
 
-	/**
-	 * @param int $count
-	 *
-	 * @return StatementGrouper
-	 */
-	private function newGrouper( $count ) {
+	private function newGrouper( int $count ): StatementGrouper {
 		$grouper = $this->createMock( StatementGrouper::class );
 
 		$grouper->expects( $this->exactly( $count ) )
-			->method( 'groupStatements' );
+			->method( 'groupStatements' )
+			->willReturnCallback( fn ( $statements ) => [ 'default' => $statements ] );
 
 		return $grouper;
 	}
 
-	private function getStatementGuidParser() {
+	private function getStatementGuidParser(): StatementGuidParser {
 		return new StatementGuidParser( new ItemIdParser() );
 	}
 
 	/**
 	 * @dataProvider invalidConstructorArgumentProvider
 	 */
-	public function testInvalidConstructorArgument( array $groupers ) {
+	public function testInvalidConstructorArgument( callable $groupersFactory ) {
+		$groupers = $groupersFactory( $this );
+
 		$this->expectException( InvalidArgumentException::class );
 		new DispatchingEntityTypeStatementGrouper(
 			$this->getStatementGuidParser(),
@@ -49,10 +49,10 @@ class DispatchingEntityTypeStatementGrouperTest extends \PHPUnit\Framework\TestC
 		);
 	}
 
-	public function invalidConstructorArgumentProvider() {
+	public static function invalidConstructorArgumentProvider(): iterable {
 		return [
-			[ [ $this->newGrouper( 0 ) ] ],
-			[ [ 'item' => 'invalid' ] ],
+			[ fn ( self $self ) => [ $self->newGrouper( 0 ) ] ],
+			[ fn () => [ 'item' => 'invalid' ] ],
 		];
 	}
 

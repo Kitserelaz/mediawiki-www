@@ -77,11 +77,10 @@ class AliasGroup implements Countable {
 	 * @return bool
 	 */
 	public function isEmpty() {
-		return empty( $this->aliases );
+		return $this->aliases === [];
 	}
 
 	/**
-	 *
 	 * @param mixed $target
 	 *
 	 * @return bool

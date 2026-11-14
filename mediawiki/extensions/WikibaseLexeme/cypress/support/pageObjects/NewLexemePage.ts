@@ -11,12 +11,6 @@ export class NewLexemePage {
 		};
 	}
 
-	private static get WIKIT_LOOKUP_SELECTORS(): Record<string, string> {
-		return {
-			SELECTED_ELEMENT: '.wikit-LookupInput__menu .wikit-OptionsMenu__item'
-		};
-	}
-
 	public open(): this {
 		cy.visit( 'index.php?title=Special:NewLexeme' );
 		return this;
@@ -39,34 +33,44 @@ export class NewLexemePage {
 	}
 
 	public setLemma( lemma: string ): this {
-		cy.get( this.constructor.NEW_LEXEME_SELECTORS.LEMMA + ' input' ).clear().type( lemma );
+		cy.get( this.constructor.NEW_LEXEME_SELECTORS.LEMMA + ' input' ).clear();
+		cy.get( this.constructor.NEW_LEXEME_SELECTORS.LEMMA + ' input' ).type( lemma );
 		return this;
 	}
 
 	public setLexemeLanguage( language: string ): this {
-		cy.get( this.constructor.NEW_LEXEME_SELECTORS.LANGUAGE ).within( () => {
-			this._wikitValueLookup( language );
-		} );
+		this._setCodexLookupValue(
+			this.constructor.NEW_LEXEME_SELECTORS.LANGUAGE,
+			language
+		);
 		return this;
 	}
 
 	public setLexicalCategory( lexicalCategory: string ): this {
-		cy.get( this.constructor.NEW_LEXEME_SELECTORS.LEXICAL_CATEGORY ).within( () => {
-			this._wikitValueLookup( lexicalCategory );
-		} );
+		this._setCodexLookupValue(
+			this.constructor.NEW_LEXEME_SELECTORS.LEXICAL_CATEGORY,
+			lexicalCategory
+		);
 		return this;
 	}
 
 	public setSpellingVariant( languageVariant: string ): this {
-		cy.get( this.constructor.NEW_LEXEME_SELECTORS.SPELLING_VARIANT ).within( () => {
-			this._wikitValueLookup( languageVariant );
-		} );
+		this._setCodexLookupValue(
+			this.constructor.NEW_LEXEME_SELECTORS.SPELLING_VARIANT,
+			languageVariant
+		);
 		return this;
 	}
 
-	private _wikitValueLookup( value: string ): void {
-		cy.get( 'input' ).clear().type( value );
-		cy.get( this.constructor.WIKIT_LOOKUP_SELECTORS.SELECTED_ELEMENT ).click();
+	private _setCodexLookupValue( selector: string, value: string ): this {
+		cy.get( selector ).find( 'input[aria-controls]' ).clear();
+		cy.get( selector ).find( 'input[aria-controls]' ).type( value );
+		cy.get( selector ).find( 'input[aria-controls]' ).invoke( 'attr', 'aria-controls' )
+			.then( ( id ) => {
+				cy.get( `#${ id }` ).find( '.cdx-menu-item--enabled' )
+					.click();
+			} );
+		return this;
 	}
 
 	public submit(): this {

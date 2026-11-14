@@ -4,8 +4,8 @@ declare( strict_types = 1 );
 
 namespace Wikibase\Repo\ChangeModification;
 
-use IJobSpecification;
-use Job;
+use MediaWiki\JobQueue\IJobSpecification;
+use MediaWiki\JobQueue\Job;
 use MediaWiki\JobQueue\JobQueueGroupFactory;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
@@ -54,7 +54,7 @@ abstract class DispatchChangeModificationNotificationJob extends Job {
 		$this->initServices(
 			new ContentHandlerEntityIdLookup(
 				WikibaseRepo::getEntityContentFactory( $mwServices ),
-				$mwServices->getHookContainer()
+				WikibaseRepo::getHookRunner( $mwServices )
 			),
 			WikibaseRepo::getLogger( $mwServices ),
 			$mwServices->getJobQueueGroupFactory()

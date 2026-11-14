@@ -37,7 +37,7 @@
 	 * @return {jQuery}
 	 */
 	var newEntitysearch = function ( options ) {
-		options = $.extend( {
+		options = Object.assign( {
 			source: entityStubs
 		}, options || {} );
 
@@ -46,7 +46,7 @@
 			.entitysearch( options );
 	};
 
-	QUnit.test( 'Create & destroy', function ( assert ) {
+	QUnit.test( 'Create & destroy', ( assert ) => {
 		var $entitysearch = newEntitysearch();
 
 		assert.true(

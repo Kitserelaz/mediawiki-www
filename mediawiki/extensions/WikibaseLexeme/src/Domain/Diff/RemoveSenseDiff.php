@@ -1,5 +1,7 @@
 <?php
 
+// @phan-file-suppress PhanPluginNeverReturnMethod
+
 namespace Wikibase\Lexeme\Domain\Diff;
 
 use Diff\DiffOp\Diff\Diff;
@@ -8,7 +10,6 @@ use Wikibase\Lexeme\Domain\Model\SenseId;
 
 /**
  * @license GPL-2.0-or-later
- * @phan-file-suppress PhanPluginNeverReturnMethod
  */
 class RemoveSenseDiff implements SenseDiff {
 
@@ -29,7 +30,7 @@ class RemoveSenseDiff implements SenseDiff {
 		$this->diffOps = $diffOps;
 	}
 
-	public function getRemovedSenseId() {
+	public function getRemovedSenseId(): SenseId {
 		return $this->senseId;
 	}
 

@@ -7,7 +7,8 @@ namespace Wikibase\Repo\Tests\Api;
 use MediaWiki\Api\ApiMain;
 use MediaWiki\Api\ApiUsageException;
 use MediaWiki\Context\RequestContext;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Language\LanguageNameUtils;
+use MediaWiki\Permissions\PermissionStatus;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\Site\HashSiteStore;
 use MediaWiki\Site\SiteLookup;
@@ -44,7 +45,7 @@ use Wikibase\Repo\Validators\EntityConstraintProvider;
 use Wikibase\Repo\Validators\SnakValidator;
 use Wikibase\Repo\Validators\TermValidatorFactory;
 use Wikibase\Repo\WikibaseRepo;
-use Wikimedia\Stats\NullStatsdDataFactory;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * @covers \Wikibase\Repo\Api\MergeItems
@@ -96,9 +97,9 @@ class MergeItemsTest extends MediaWikiIntegrationTestCase {
 
 		$callback = function ( User $user, $permission ) {
 			if ( $user->getName() === 'UserWithoutPermission' && $permission === 'edit' ) {
-				return Status::newFatal( 'permissiondenied' );
+				return PermissionStatus::newFatal( 'permissiondenied' );
 			} else {
-				return Status::newGood();
+				return PermissionStatus::newGood();
 			}
 		};
 		$permissionChecker->method( 'getPermissionStatusForEntityId' )
@@ -175,7 +176,7 @@ class MergeItemsTest extends MediaWikiIntegrationTestCase {
 			WikibaseRepo::getEntityDiffer( $services ),
 			WikibaseRepo::getEntityPatcher( $services ),
 			WikibaseRepo::getEditFilterHookRunner( $services ),
-			new NullStatsdDataFactory(),
+			StatsFactory::newNull(),
 			$services->getUserOptionsLookup(),
 			$services->getTempUserCreator(),
 			4096,
@@ -409,73 +410,73 @@ class MergeItemsTest extends MediaWikiIntegrationTestCase {
 
 	public static function provideExceptionParamsData(): iterable {
 		return [
-			[ //0 no ids given
-				'p' => [],
-				'e' => [ 'exception' => [
+			'0 no ids given' => [
+				'params' => [],
+				'expected' => [ 'exception' => [
 					'type' => ApiUsageException::class,
 					'code' => 'param-missing',
 				] ],
 			],
-			[ //1 only from id
-				'p' => [ 'fromid' => 'Q1' ],
-				'e' => [ 'exception' => [
+			'1 only from id' => [
+				'params' => [ 'fromid' => 'Q1' ],
+				'expected' => [ 'exception' => [
 					'type' => ApiUsageException::class,
 					'code' => 'param-missing',
 				] ],
 			],
-			[ //2 only to id
-				'p' => [ 'toid' => 'Q1' ],
-				'e' => [ 'exception' => [
+			'2 only to id' => [
+				'params' => [ 'toid' => 'Q1' ],
+				'expected' => [ 'exception' => [
 					'type' => ApiUsageException::class,
 					'code' => 'param-missing',
 				] ],
 			],
-			[ //3 toid bad
-				'p' => [ 'fromid' => 'Q1', 'toid' => 'ABCDE' ],
-				'e' => [ 'exception' => [
+			'3 toid bad' => [
+				'params' => [ 'fromid' => 'Q1', 'toid' => 'ABCDE' ],
+				'expected' => [ 'exception' => [
 					'type' => ApiUsageException::class,
 					'code' => 'invalid-entity-id',
 				] ],
 			],
-			[ //4 fromid bad
-				'p' => [ 'fromid' => 'ABCDE', 'toid' => 'Q1' ],
-				'e' => [ 'exception' => [
+			'4 fromid bad' => [
+				'params' => [ 'fromid' => 'ABCDE', 'toid' => 'Q1' ],
+				'expected' => [ 'exception' => [
 					'type' => ApiUsageException::class,
 					'code' => 'invalid-entity-id',
 				] ],
 			],
-			[ //5 both same id
-				'p' => [ 'fromid' => 'Q1', 'toid' => 'Q1' ],
-				'e' => [ 'exception' => [
+			'5 both same id' => [
+				'params' => [ 'fromid' => 'Q1', 'toid' => 'Q1' ],
+				'expected' => [ 'exception' => [
 					'type' => ApiUsageException::class,
 					'code' => 'invalid-entity-id',
 					'message' => 'You must provide unique ids',
 				] ],
 			],
-			[ //6 from id is property
-				'p' => [ 'fromid' => 'P1', 'toid' => 'Q1' ],
-				'e' => [ 'exception' => [
+			'6 from id is property' => [
+				'params' => [ 'fromid' => 'P1', 'toid' => 'Q1' ],
+				'expected' => [ 'exception' => [
 					'type' => ApiUsageException::class,
 					'code' => 'not-item',
 				] ],
 			],
-			[ //7 to id is property
-				'p' => [ 'fromid' => 'Q1', 'toid' => 'P1' ],
-				'e' => [ 'exception' => [
+			'7 to id is property' => [
+				'params' => [ 'fromid' => 'Q1', 'toid' => 'P1' ],
+				'expected' => [ 'exception' => [
 					'type' => ApiUsageException::class,
 					'code' => 'not-item',
 				] ],
 			],
-			[ //8 bad ignoreconficts
-				'p' => [ 'fromid' => 'Q2', 'toid' => 'Q2', 'ignoreconflicts' => 'foo' ],
-				'e' => [ 'exception' => [
+			'8 bad ignoreconficts' => [
+				'params' => [ 'fromid' => 'Q2', 'toid' => 'Q2', 'ignoreconflicts' => 'foo' ],
+				'expected' => [ 'exception' => [
 					'type' => ApiUsageException::class,
 					'code' => 'invalid-entity-id',
 				] ],
 			],
-			[ //9 bad ignoreconficts
-				'p' => [ 'fromid' => 'Q2', 'toid' => 'Q2', 'ignoreconflicts' => 'label|foo' ],
-				'e' => [ 'exception' => [
+			'9 bad ignoreconficts' => [
+				'params' => [ 'fromid' => 'Q2', 'toid' => 'Q2', 'ignoreconflicts' => 'label|foo' ],
+				'expected' => [ 'exception' => [
 					'type' => ApiUsageException::class,
 					'code' => 'invalid-entity-id',
 				] ],

@@ -52,7 +52,7 @@ class EntityExistsValidatorTest extends \PHPUnit\Framework\TestCase {
 	}
 
 	/**
-	 * @dataProvider provideValidate()
+	 * @dataProvider provideValidate
 	 */
 	public function testValidate( $value, $type ) {
 		$validator = new EntityExistsValidator( $this->getEntityLookup(), $type );
@@ -70,7 +70,7 @@ class EntityExistsValidatorTest extends \PHPUnit\Framework\TestCase {
 	}
 
 	/**
-	 * @dataProvider provideValidate_failure()
+	 * @dataProvider provideValidate_failure
 	 */
 	public function testValidate_failure( $value, $type, $errorCode ) {
 		$validator = new EntityExistsValidator( $this->getEntityLookup(), $type );
@@ -90,12 +90,11 @@ class EntityExistsValidatorTest extends \PHPUnit\Framework\TestCase {
 	public static function provideValidate_exception() {
 		return [
 			"Not an EntityId" => [ 'Q3', null ],
-			"Type is not a string" => [ new ItemId( 'Q8' ), [ 'foo' ] ],
 		];
 	}
 
 	/**
-	 * @dataProvider provideValidate_exception()
+	 * @dataProvider provideValidate_exception
 	 */
 	public function testValidate_exception( $value, $type ) {
 		$this->expectException( InvalidArgumentException::class );

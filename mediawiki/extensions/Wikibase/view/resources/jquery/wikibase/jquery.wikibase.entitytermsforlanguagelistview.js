@@ -93,7 +93,7 @@
 			}
 
 			PARENT.prototype._create.call( this );
-			this._defaultLanguages = this.options.userLanguages;
+			this._defaultLanguages = this.options.userLanguages.slice();
 
 			this._amendDefaultLanguages();
 
@@ -107,19 +107,11 @@
 			if ( !mw.config.get( 'wbEnableMulLanguageCode' ) ) {
 				return;
 			}
-			// eslint-disable-next-line es-x/no-array-prototype-includes
 			if ( this._defaultLanguages.includes( 'mul' ) ) {
 				return;
 			}
 
-			if ( mw.config.get( 'wbTmpAlwaysShowMulLanguageCode' ) === false ) {
-				// temporarily show "mul" only if it has a label or alias, see T330217 for removing this block
-				if ( !( 'mul' in this._getMoreLanguages() ) ) {
-					return;
-				}
-			}
-
-			this._defaultLanguages.push( 'mul' );
+			this._defaultLanguages.unshift( 'mul' );
 		},
 
 		/**
@@ -162,8 +154,8 @@
 					.match( /(?:^|\s)wikibase-entitytermsforlanguageview-(\S+)/ );
 				if ( match && match[ 1 ] !== languages[ i ] ) {
 					if ( match[ 1 ] !== 'mul' ) {
-						// "mul" might be included in the existing term box, but we want it to be after
-						// everything else, thus discarding it is expected.
+						// "mul" might be included in the existing term box, but we want it to be the
+						// first entry, thus discarding it is expected.
 						mw.log.warn( 'Existing entitytermsforlanguagelistview DOM does not match configured languages' );
 					}
 					mismatchAt = i;
@@ -188,12 +180,12 @@
 
 			// Fully encapsulate child widgets by suppressing their events:
 			this.element
-			.on( prefix + 'change.' + this.widgetName, function ( event, lang ) {
+			.on( prefix + 'change.' + this.widgetName, ( event, lang ) => {
 				event.stopPropagation();
 				// The only event handler for this is in entitytermsview.
 				self._trigger( 'change', null, [ lang ] );
 			} )
-			.on( prefix + 'toggleerror.' + this.widgetName, function ( event, error ) {
+			.on( prefix + 'toggleerror.' + this.widgetName, ( event, error ) => {
 				event.stopPropagation();
 				self.setError( error );
 			} )
@@ -204,7 +196,7 @@
 					prefix + 'afterstopediting.' + this.widgetName,
 					prefix + 'disable.' + this.widgetName
 				].join( ' ' ),
-				function ( event ) {
+				( event ) => {
 					event.stopPropagation();
 				}
 			);
@@ -222,9 +214,7 @@
 						};
 					}
 				} ),
-				value: this._defaultLanguages.map( function ( lang ) {
-					return self._getValueForLanguage( lang );
-				} ),
+				value: this._defaultLanguages.map( ( lang ) => self._getValueForLanguage( lang ) ),
 				listItemNodeName: 'TR'
 			} );
 
@@ -344,7 +334,7 @@
 				lia = listview.listItemAdapter(),
 				self = this;
 
-			Object.keys( this._getMoreLanguages() ).sort().forEach( function ( languageCode ) {
+			Object.keys( this._getMoreLanguages() ).sort().forEach( ( languageCode ) => {
 				var $item = listview.addItem( self._getValueForLanguage( languageCode ) );
 				if ( self.isInEditMode() ) {
 					lia.liInstance( $item ).startEditing();
@@ -376,17 +366,17 @@
 			var fingerprint = this.options.value,
 				languages = {};
 
-			fingerprint.getLabels().each( function ( lang ) {
+			fingerprint.getLabels().each( ( lang ) => {
 				languages[ lang ] = lang;
 			} );
-			fingerprint.getDescriptions().each( function ( lang ) {
+			fingerprint.getDescriptions().each( ( lang ) => {
 				languages[ lang ] = lang;
 			} );
-			fingerprint.getAliases().each( function ( lang ) {
+			fingerprint.getAliases().each( ( lang ) => {
 				languages[ lang ] = lang;
 			} );
 
-			this._defaultLanguages.forEach( function ( lang ) {
+			this._defaultLanguages.forEach( ( lang ) => {
 				delete languages[ lang ];
 			} );
 
@@ -419,7 +409,7 @@
 				var dontShowMulPopupCheckbox = new OO.ui.CheckboxInputWidget( {
 					value: true,
 					selected: false
-				} ).on( 'change', function ( value ) {
+				} ).on( 'change', ( value ) => {
 					new mw.Api().saveOption( 'wb-dont-show-again-mul-popup', value ? '1' : null );
 					mw.user.options.set( 'wb-dont-show-again-mul-popup', value ? '1' : null );
 				} );
@@ -474,7 +464,7 @@
 		_startEditing: function () {
 			var self = this;
 			var listview = this.$listview.data( 'listview' );
-			return listview.startEditing().done( function () {
+			return listview.startEditing().done( () => {
 				self.updateInputSize();
 
 				if ( $( self.element ).find( '.mw-pulsating-dot-container' ).length ) {
@@ -493,9 +483,7 @@
 
 			var listview = this.$listview.data( 'listview' );
 
-			return $.when.apply( $, listview.value().map( function ( entitytermsforlanguageview ) {
-				return entitytermsforlanguageview.stopEditing( dropValue );
-			} ) );
+			return $.when.apply( $, listview.value().map( ( entitytermsforlanguageview ) => entitytermsforlanguageview.stopEditing( dropValue ) ) );
 		},
 
 		/**
@@ -509,7 +497,7 @@
 			listview.items().each( function () {
 				var entitytermsforlanguageview = lia.liInstance( $( this ) );
 
-				[ 'label', 'description', 'aliases' ].forEach( function ( name ) {
+				[ 'label', 'description', 'aliases' ].forEach( ( name ) => {
 					var $view = entitytermsforlanguageview[ '$' + name + 'view' ],
 						autoExpandInput = $view.find( 'input,textarea' ).data( 'inputautoexpand' );
 
@@ -604,7 +592,7 @@
 
 			if ( key === 'value' ) {
 				var self = this;
-				this.$listview.data( 'listview' ).value().forEach( function ( entitytermsforlanguageview ) {
+				this.$listview.data( 'listview' ).value().forEach( ( entitytermsforlanguageview ) => {
 					entitytermsforlanguageview.value( self._getValueForLanguage( entitytermsforlanguageview.value().language ) );
 				} );
 			}

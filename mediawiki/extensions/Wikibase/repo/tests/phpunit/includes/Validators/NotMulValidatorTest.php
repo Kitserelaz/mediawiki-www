@@ -4,7 +4,7 @@ declare( strict_types = 1 );
 
 namespace Wikibase\Repo\Tests\Validators;
 
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Language\LanguageNameUtils;
 use Wikibase\Repo\Validators\NotMulValidator;
 use Wikibase\Repo\Validators\ValidatorErrorLocalizer;
 

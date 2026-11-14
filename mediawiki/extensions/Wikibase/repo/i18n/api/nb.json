@@ -54,7 +54,7 @@
 	"apihelp-wbformatvalue-param-generate": "Det ønskede resultatformatet som skal gerereres.",
 	"apihelp-wbformatvalue-param-datatype": "Vediens datatype. Dette er forskjellige fra verdiens type",
 	"apihelp-wbformatvalue-param-datavalue": "Data som skal formateres. Dette må være en JSON-serialisering av et DataValue-objekt.",
-	"apihelp-wbformatvalue-param-options": "Valgene formatereren bør bruke. Angis som et JSON-objekt.",
+	"apihelp-wbformatvalue-param-options": "Valgene formatereren bør bruke. Angis som et JSON-objekt.\n\nAlternativene som støttes er:\n; $1: Språket verdien skal formateres på (en MediaWiki-språkkode).\n; $2: Hvorvidt avrunding av tallet skal foretas. Kan være boolsk (automatisk/ingen avrunding) eller et heltall (eksponent av det siste signifikante sifferet). Kun nyttig for kvantitetsverdier.\n; $3: Hvorvidt enheten skal inkluderes i resultatet (boolsk verdi). Kun nyttig for kvantitetsverdier.\n; $4: Hvorvidt kalendermodellen skal vises. Kan være boolsk (vis alltid/aldri) eller strengen <code>\"auto\"</code> (avgjør automatisk hvorvidt den skal vises). Kun nyttig for tidsverdier.",
 	"apihelp-wbformatvalue-param-property": "Egenskaps-ID dataverdien tilhører, bør brukes i stedet for <var>datatype</var>-parameteren.",
 	"apihelp-wbformatvalue-example-1": "Formater en enkel strengverdi.",
 	"apihelp-wbformatvalue-example-2": "Formater en strengverdi som URL i HTML.",
@@ -92,6 +92,7 @@
 	"apihelp-wbgetentities-example-11": "Hent elementet for siden «<var>Berlin</var>» på nettstedet «<var>enwiki</var>» etter å ha normalisert tittelen fra «<var>berlin</var>»",
 	"apihelp-wbgetentities-example-12": "Hent sidelenker for elementet <samp>Q42</samp>",
 	"apihelp-wbgetentities-example-13": "Hent entiteter med ID <samp>Q42</samp> som viser kun sidelenker fra «<var>enwiki</var>»",
+	"apihelp-wbgraphql-summary": "Eksperimentell GraphQL-modul.",
 	"apihelp-wblinktitles-summary": "Kobler to sider på to forskjellige wikier med et Wikibase-element.",
 	"apihelp-wblinktitles-param-tosite": "En identifikator for nettstedet hvor siden ligger.\nBruk sammen med <var>totitle</var> for å lage en komplett sidelenke.",
 	"apihelp-wblinktitles-param-totitle": "Tittelen på siden som skal assosieres.\nBruk sammen med <var>tosite</var> for å lage en komplett sidelenke.",
@@ -302,11 +303,13 @@
 	"apihelp-wbsetsitelink-example-6": "Endrer merker for lenka til den polskspråklige siden fra elementet med ID «$1» til to merker som peker til elementene med ID «Q2» og «Q149» uten å oppgi lenketittelen",
 	"apihelp-wbsetsitelink-example-7": "Endre lenka til den polskspråklige siden fra elementet med ID «$1» uten å endre merker",
 	"apihelp-wbsetsitelink-example-8": "Endre lenka til den polskspråklige siden fra elementet med ID «$1» og fjern alle merker",
-	"apihelp-wbformatentities-summary": "Formaterer entitets-ID-er som HTML.",
+	"apihelp-wbformatentities-summary": "Formaterer entitets-ID-er som HTML eller ren tekst.",
 	"apihelp-wbformatentities-extended-description": "Språket kan spesifiseres med parameteren <var>uselang</var>.",
 	"apihelp-wbformatentities-param-ids": "Entitets-ID-ene som skal formateres.",
-	"apihelp-wbformatentities-example-1": "Formater en enkel element-ID.",
+	"apihelp-wbformatentities-param-generate": "Det ønskede resultatformatet som skal gerereres.",
+	"apihelp-wbformatentities-example-1": "Formater en enkel element-ID til HTML.",
 	"apihelp-wbformatentities-example-2": "Formater en element-ID og en egenskaps-ID.",
 	"apihelp-wbformatentities-example-3": "Formater en element-ID, en egenskaps-ID og en leksem-ID.",
-	"apihelp-wbformatentities-example-4": "Formater tre element-ID-er på fransk."
+	"apihelp-wbformatentities-example-4": "Formater tre element-ID-er på fransk.",
+	"apihelp-wbformatentities-example-5": "Formater tre element-ID-er og en egenskaps-ID til ren tekst."
 }

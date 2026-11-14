@@ -1,12 +1,13 @@
 import SwaggerUI from 'swagger-ui';
 import 'swagger-ui/dist/swagger-ui.css';
 
-import spec from '../specs/openapi.json';
+import spec from '../src/openapi.json';
 
 const ui = SwaggerUI( {
 	spec,
 	dom_id: '#swagger', // eslint-disable-line camelcase
-	deepLinking: true
+	deepLinking: true,
+	showCommonExtensions: true
 } );
 
 ui.initOAuth( {

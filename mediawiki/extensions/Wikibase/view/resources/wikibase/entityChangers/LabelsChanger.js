@@ -8,32 +8,26 @@
 	var MODULE = wb.entityChangers,
 		datamodel = require( 'wikibase.datamodel' );
 
-	/**
-	 * @param {wikibase.api.RepoApi} api
-	 * @param {wikibase.RevisionStore} revisionStore
-	 * @param {datamodel.Entity} entity
-	 */
-	var SELF = MODULE.LabelsChanger = function WbEntityChangersLabelsChanger( api, revisionStore, entity ) {
-		this._api = api;
-		this._revisionStore = revisionStore;
-		this._entity = entity;
-	};
-
-	$.extend( SELF.prototype, {
+	MODULE.LabelsChanger = class {
 		/**
-		 * @type {datamodel.Entity}
+		 * @param {wikibase.api.RepoApi} api
+		 * @param {wikibase.RevisionStore} revisionStore
+		 * @param {datamodel.Entity} entity
 		 */
-		_entity: null,
-
-		/**
-		 * @type {wikibase.RevisionStore}
-		 */
-		_revisionStore: null,
-
-		/**
-		 * @type {wikibase.api.RepoApi}
-		 */
-		_api: null,
+		constructor( api, revisionStore, entity ) {
+			/**
+			 * @type {wikibase.api.RepoApi}
+			 */
+			this._api = api;
+			/**
+			 * @type {wikibase.RevisionStore}
+			 */
+			this._revisionStore = revisionStore;
+			/**
+			 * @type {datamodel.Entity}
+			 */
+			this._entity = entity;
+		}
 
 		/**
 		 * @param {datamodel.Term} label
@@ -44,7 +38,7 @@
 		 *         Rejected parameters:
 		 *         - {wikibase.api.RepoApiError}
 		 */
-		setLabel: function ( label, tempUserWatcher ) {
+		setLabel( label, tempUserWatcher ) {
 			var self = this,
 				deferred = $.Deferred(),
 				language = label.getLanguageCode();
@@ -55,7 +49,7 @@
 				label.getText(),
 				language
 			)
-			.done( function ( result ) {
+			.done( ( result ) => {
 				var savedText = result.entity.labels[ language ].value,
 					savedTerm = savedText ? new datamodel.Term( language, savedText ) : null;
 
@@ -70,11 +64,11 @@
 
 				deferred.resolve( savedTerm );
 			} )
-			.fail( function ( errorCode, error ) {
+			.fail( ( errorCode, error ) => {
 				deferred.reject( wb.api.RepoApiError.newFromApiResponse( error, 'save' ) );
 			} );
 
 			return deferred.promise();
 		}
-	} );
+	};
 }( wikibase ) );

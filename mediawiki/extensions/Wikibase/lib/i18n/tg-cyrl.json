@@ -1,10 +1,10 @@
 {
 	"@metadata": {
 		"authors": [
+			"Farorud",
 			"Ibrahim",
 			"ToJack",
-			"Vashgird",
-			"Farorud"
+			"Vashgird"
 		]
 	},
 	"specialpages-group-wikibase": "Википойгоҳ",
@@ -19,6 +19,8 @@
 	"wikibase-error-remove-timeout": "Хатогиҳои техникӣ рӯх доданд. Бори дигар кушиш кунед.",
 	"wikibase-error-ui-no-external-page": "Саҳифаи \"$2\" дар \"$1\" ёфта нашуд.",
 	"wikibase-error-ui-edit-conflict": "Бархурди вироишот ба амал омад. Лутфан тағиротҳои худро ба таври маҳаллӣ захира кунед, саҳифаро аз нав бор кунед ва дубора захира кунед.",
+	"wikibase-itemlink-id-wrapper": "($1)",
+	"wikibase-itemlink-userlang-wrapper": "&nbsp;($1: $2)",
 	"wikibase-language-fallback-transliteration-hint": "$1 (транслитерӣ)",
 	"wikibase-language-name-for-terms-mul": "пешфарз барои ҳамаи забонҳо",
 	"wikibase-quantitydetails-amount": "Натиҷа",
@@ -110,14 +112,14 @@
 	"wikibase-entity-summary-wbsetsitelink-remove": "Пайванд ба [$2] ҳазф шуд",
 	"wikibase-entity-summary-wblinktitles-create": "Тасдиқот ба саҳифаи пайваста сохта шуд",
 	"wikibase-entity-summary-wblinktitles-connect": "Пайванди забонӣ ба саҳифаҳои пайваста илова шуд",
-	"wikibase-entity-summary-wbcreateclaim-value": "{{PLURAL:$3|Тасдиқ эҷод шуд}}",
+	"wikibase-entity-summary-wbcreateclaim-value": "{{PLURAL:$1|Тасдиқ сохта шуд|Тасдиқот сохта шуданд}}",
 	"wikibase-entity-summary-wbcreateclaim-novalue": "{{PLURAL:$1|Тасдиқ|Тасдиқҳо}} эҷод {{PLURAL:$1|шуд|шуданд}}",
-	"wikibase-entity-summary-wbcreateclaim-somevalue": "{{PLURAL:$3|Тасдиқ эҷод шуд}}",
-	"wikibase-entity-summary-wbcreateclaim": "{{PLURAL:$3|Тасдиқ эҷод шуд}}",
+	"wikibase-entity-summary-wbcreateclaim-somevalue": "{{PLURAL:$1|Тасдиқ эҷод шуд|Тасдиқҳо эҷод шуданд}}",
+	"wikibase-entity-summary-wbcreateclaim": "{{PLURAL:$1|Тасдиқ эҷод шуд|Тасдиқҳо эҷод шуданд}}",
 	"wikibase-entity-summary-wbsetclaimvalue": "{{PLURAL:$1|Маъно барои тасдиқ муайян шуд}}",
-	"wikibase-entity-summary-wbremoveclaims": "{{PLURAL:$3|Тасдиқ ҳазф шуд}}",
-	"wikibase-entity-summary-wbremoveclaims-remove": "{{PLURAL:$3|Тасдиқ ҳазф шуд}}",
-	"wikibase-entity-summary-wbremoveclaims-update": "{{PLURAL:$3|Тасдиқ ҳазф шуд}}",
+	"wikibase-entity-summary-wbremoveclaims": "{{PLURAL:$1|Тасдиқ ҳазф шуд|Тасдиқҳо ҳазф шуданд}}",
+	"wikibase-entity-summary-wbremoveclaims-remove": "{{PLURAL:$1|Тасдиқ ҳазф шуд|Тасдиқот ҳазф шуданд}}",
+	"wikibase-entity-summary-wbremoveclaims-update": "{{PLURAL:$1|Тасдиқ ҳазф шуд|Тасдиқот ҳазф шуданд}}",
 	"wikibase-entity-summary-special-create-item": "[$2] элемент бо {{PLURAL:$1|маъно}} эҷод шуд",
 	"wikibase-entity-summary-wbcreateclaim-create": "Тасдиқ эҷод шуд",
 	"wikibase-entity-summary-wbsetclaim-update": "{{PLURAL:$3|Тасдиқ тағйир дода шуд}}",
@@ -127,7 +129,7 @@
 	"wikibase-entity-summary-wbsetclaim-update-rank": "Рутбаи {{PLURAL:$3|тасдиқ}} тағйир дода шуд",
 	"wikibase-entity-summary-clientsitelink-update": "Саҳифа аз [$3] ба [$4] кӯчонида шуд",
 	"wikibase-entity-summary-clientsitelink-remove": "Саҳифа дар [$3] ҳазф шуд",
-	"wikibase-entity-summary-wbsetqualifier-add": "{{PLURAL:$4|як муайянкунанда|$4 муайянкунанда}} илова шуд",
+	"wikibase-entity-summary-wbsetqualifier-add": "{{PLURAL:1|муайянкунанда илова шуд| муайянкунандаҳо илова шуданд}}",
 	"wikibase-entity-summary-wbsetqualifier-update": "{{PLURAL:$4|муайянкунанда}} тағйир ёфт",
 	"wikibase-entity-summary-wbremovequalifiers-remove": "{{PLURAL:$1|Муайянкунанда}} ҳазф шуд",
 	"wikibase-entity-summary-wbremovequalifiers-update": "{{PLURAL:$1|Муайянкунанда}} ҳазф шуд",

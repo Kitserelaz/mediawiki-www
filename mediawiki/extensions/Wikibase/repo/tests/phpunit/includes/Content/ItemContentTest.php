@@ -10,6 +10,7 @@ use Diff\DiffOp\Diff\Diff;
 use Diff\DiffOp\DiffOpAdd;
 use Diff\DiffOp\DiffOpRemove;
 use InvalidArgumentException;
+use MediaWiki\MainConfigNames;
 use MediaWiki\Title\Title;
 use Wikibase\DataModel\Entity\EntityId;
 use Wikibase\DataModel\Entity\EntityRedirect;
@@ -63,14 +64,14 @@ use Wikibase\Repo\WikibaseRepo;
  */
 class ItemContentTest extends EntityContentTestCase {
 
-	public function provideValidConstructorArguments() {
+	public static function provideValidConstructorArguments() {
 		return [
-			'empty' => [ null, null, null ],
-			'empty item' => [ new EntityInstanceHolder( new Item() ), null, null ],
+			'empty' => [ fn () => null, null, null ],
+			'empty item' => [ fn () => null, new EntityInstanceHolder( new Item() ), null ],
 			'redirect' => [
+				fn ( self $self ) => $self->createMock( Title::class ),
 				null,
 				new EntityRedirect( new ItemId( 'Q1' ), new ItemId( 'Q2' ) ),
-				$this->createMock( Title::class ),
 			],
 		];
 	}
@@ -79,35 +80,38 @@ class ItemContentTest extends EntityContentTestCase {
 	 * @dataProvider provideValidConstructorArguments
 	 */
 	public function testConstructor(
+		callable $titleFactory,
 		?EntityHolder $holder,
-		?EntityRedirect $redirect,
-		?Title $title
+		?EntityRedirect $redirect
 	) {
+		$title = $titleFactory( $this );
 		$content = new ItemContent( $holder, $redirect, $title );
 		$this->assertInstanceOf( ItemContent::class, $content );
 	}
 
-	public function provideInvalidConstructorArguments() {
+	public static function provideInvalidConstructorArguments() {
 		$holder = new EntityInstanceHolder( new Item() );
 		$redirect = new EntityRedirect( new ItemId( 'Q1' ), new ItemId( 'Q2' ) );
-		$title = $this->createMock( Title::class );
+		$titleFactory = fn ( self $self ) => $self->createMock( Title::class );
 
 		$propertyHolder = new EntityInstanceHolder( Property::newFromType( 'string' ) );
 
-		$badTitle = $this->createMock( Title::class );
-		$badTitle->method( 'getContentModel' )
-			->willReturn( 'bad content model' );
-		$badTitle->method( 'exists' )
-			->willReturn( true );
+		$badTitleFactory = function ( self $self ) {
+			$badTitle = $self->createMock( Title::class );
+			$badTitle->method( 'getContentModel' )
+				->willReturn( 'bad content model' );
+			$badTitle->method( 'exists' )
+				->willReturn( true );
+		};
 
 		return [
-			'all' => [ $holder, $redirect, $title ],
+			'all' => [ $holder, $redirect, $titleFactory ],
 			'holder and redirect' => [ $holder, $redirect, null ],
-			'holder and title' => [ $holder, null, $title ],
+			'holder and title' => [ $holder, null, $titleFactory ],
 			'redirect only' => [ null, $redirect, null ],
-			'title only' => [ null, null, $title ],
+			'title only' => [ null, null, $titleFactory ],
 			'bad entity type' => [ $propertyHolder, null, null ],
-			'bad title' => [ null, $redirect, $badTitle ],
+			'bad title' => [ null, $redirect, $badTitleFactory ],
 		];
 	}
 
@@ -117,8 +121,9 @@ class ItemContentTest extends EntityContentTestCase {
 	public function testConstructorExceptions(
 		?EntityHolder $holder,
 		?EntityRedirect $redirect,
-		?Title $title
+		?callable $titleFactory
 	) {
+		$title = $titleFactory == null ? null : $titleFactory( $this );
 		$this->expectException( InvalidArgumentException::class );
 		new ItemContent( $holder, $redirect, $title );
 	}
@@ -126,21 +131,21 @@ class ItemContentTest extends EntityContentTestCase {
 	/**
 	 * @return ItemId
 	 */
-	protected function getDummyId() {
+	protected static function getDummyId() {
 		return new ItemId( 'Q100' );
 	}
 
 	/**
 	 * @return string
 	 */
-	protected function getEntityType() {
+	protected static function getEntityType() {
 		return Item::ENTITY_TYPE;
 	}
 
 	/**
 	 * @return ItemContent
 	 */
-	protected function newEmpty() {
+	protected static function newEmpty() {
 		return new ItemContent();
 	}
 
@@ -150,7 +155,7 @@ class ItemContentTest extends EntityContentTestCase {
 	 * @throws InvalidArgumentException
 	 * @return ItemContent
 	 */
-	protected function newBlank( ?EntityId $itemId = null ) {
+	protected static function newBlank( ?EntityId $itemId = null ) {
 		return new ItemContent( new EntityInstanceHolder( new Item( $itemId ) ) );
 	}
 
@@ -184,8 +189,8 @@ class ItemContentTest extends EntityContentTestCase {
 		return ItemContent::newFromRedirect( new EntityRedirect( $itemId, $targetId ), $title );
 	}
 
-	public function getTextForSearchIndexProvider() {
-		$itemContent = $this->newBlank();
+	public static function getTextForSearchIndexProvider() {
+		$itemContent = self::newBlank();
 		$itemContent->getItem()->setLabel( 'en', 'cake' );
 		$itemContent->getItem()->getSiteLinkList()->addNewSiteLink( 'dewiki', 'Berlin' );
 
@@ -266,8 +271,8 @@ class ItemContentTest extends EntityContentTestCase {
 	/**
 	 * @return EntityContent
 	 */
-	private function getItemContentWithSiteLink() {
-		$itemContent = $this->newBlank();
+	private static function getItemContentWithSiteLink() {
+		$itemContent = self::newBlank();
 		$item = $itemContent->getItem();
 
 		$item->setSiteLinkList( new SiteLinkList( [
@@ -277,7 +282,7 @@ class ItemContentTest extends EntityContentTestCase {
 		return $itemContent;
 	}
 
-	public function provideGetEntityPageProperties() {
+	public static function provideGetEntityPageProperties() {
 		$cases = parent::provideGetEntityPageProperties();
 
 		// expect wb-sitelinks => 0 for all inherited cases
@@ -287,15 +292,15 @@ class ItemContentTest extends EntityContentTestCase {
 		}
 
 		$cases['redirect'] = [
-			ItemContent::newFromRedirect(
+			fn ( self $self ) => ItemContent::newFromRedirect(
 				new EntityRedirect( new ItemId( 'Q1' ), new ItemId( 'Q2' ) ),
-				$this->createMock( Title::class )
+				$self->createMock( Title::class )
 			),
 			[],
 		];
 
 		$cases['claims'] = [
-			$this->getItemContentWithClaim(),
+			fn ( self $self ) => $self->getItemContentWithClaim(),
 			[
 				'wb-claims' => 1,
 				'wb-identifiers' => 0,
@@ -304,7 +309,7 @@ class ItemContentTest extends EntityContentTestCase {
 		];
 
 		$cases['sitelinks'] = [
-			$this->getItemContentWithSiteLink(),
+			fn ( self $self ) => $self->getItemContentWithSiteLink(),
 			[
 				'wb-claims' => 0,
 				'wb-identifiers' => 0,
@@ -313,7 +318,7 @@ class ItemContentTest extends EntityContentTestCase {
 		];
 
 		$cases['identifiers'] = [
-			$this->getItemContentWithIdentifierClaims(),
+			fn ( self $self ) => $self->getItemContentWithIdentifierClaims(),
 			[
 				'wb-claims' => 1,
 				'wb-identifiers' => 1,
@@ -324,16 +329,15 @@ class ItemContentTest extends EntityContentTestCase {
 		return $cases;
 	}
 
-	public function diffProvider() {
+	public static function diffProvider() {
 		$cases = parent::diffProvider();
 
 		$q10 = new ItemId( 'Q10' );
-		$empty = $this->newBlank( $q10 );
+		$empty = self::newBlank( $q10 );
 
-		$spam = $this->newBlank( $q10 );
+		$spam = self::newBlank( $q10 );
 		$spam->getItem()->setLabel( 'en', 'Spam' );
 
-		$redir = $this->newRedirect( $q10, new ItemId( 'Q17' ) );
 		$redirTarget = 'Q17';
 
 		$emptyToRedirDiff = new EntityContentDiff(
@@ -341,7 +345,7 @@ class ItemContentTest extends EntityContentTestCase {
 			new Diff( [
 				'redirect' => new DiffOpAdd( $redirTarget ),
 			], true ),
-			$this->getEntityType()
+			self::getEntityType()
 		);
 
 		$spamToRedirDiff = new EntityContentDiff(
@@ -353,7 +357,7 @@ class ItemContentTest extends EntityContentTestCase {
 			new Diff( [
 				'redirect' => new DiffOpAdd( $redirTarget ),
 			], true ),
-			$this->getEntityType()
+			self::getEntityType()
 		);
 
 		$redirToSpamDiff = new EntityContentDiff(
@@ -365,39 +369,53 @@ class ItemContentTest extends EntityContentTestCase {
 			new Diff( [
 				'redirect' => new DiffOpRemove( $redirTarget ),
 			], true ),
-			$this->getEntityType()
+			self::getEntityType()
 		);
 
-		$cases['same redir'] = [ $redir, $redir, new EntityContentDiff(
-			new EntityDiff(),
-			new Diff(),
-			$this->getEntityType()
-		) ];
-		$cases['empty to redir'] = [ $empty, $redir, $emptyToRedirDiff ];
-		$cases['entity to redir'] = [ $spam, $redir, $spamToRedirDiff ];
-		$cases['redir to entity'] = [ $redir, $spam, $redirToSpamDiff ];
+		$cases['same redir'] = [
+			function ( self $self ) use ( $q10 ) {
+				$redir = $self->newRedirect( $q10, new ItemId( 'Q17' ) );
+				return [ $redir, $redir ];
+			},
+			new EntityContentDiff(
+				new EntityDiff(),
+				new Diff(),
+				self::getEntityType()
+			),
+		];
+		$cases['empty to redir'] = [
+			fn ( self $self ) => [ $empty, $self->newRedirect( $q10, new ItemId( 'Q17' ) ) ],
+			$emptyToRedirDiff,
+		];
+		$cases['entity to redir'] = [
+			fn ( self $self ) => [ $spam, $self->newRedirect( $q10, new ItemId( 'Q17' ) ) ],
+			$spamToRedirDiff,
+		];
+		$cases['redir to entity'] = [
+			fn ( self $self ) => [ $self->newRedirect( $q10, new ItemId( 'Q17' ) ), $spam ],
+			$redirToSpamDiff,
+		];
 
 		return $cases;
 	}
 
-	public function patchedCopyProvider() {
+	public static function patchedCopyProvider() {
 		$cases = parent::patchedCopyProvider();
 
 		$q10 = new ItemId( 'Q10' );
-		$empty = $this->newBlank( $q10 );
+		$empty = self::newBlank( $q10 );
 
-		$spam = $this->newBlank( $q10 );
+		$spam = self::newBlank( $q10 );
 		$spam->getItem()->setLabel( 'en', 'Spam' );
 
 		$redirTarget = 'Q17';
-		$redir = $this->newRedirect( $q10, new ItemId( $redirTarget ) );
 
 		$emptyToRedirDiff = new EntityContentDiff(
 			new EntityDiff( [] ),
 			new Diff( [
 				'redirect' => new DiffOpAdd( $redirTarget ),
 			], true ),
-			$this->getEntityType()
+			self::getEntityType()
 		);
 
 		$spamToRedirDiff = new EntityContentDiff(
@@ -409,7 +427,7 @@ class ItemContentTest extends EntityContentTestCase {
 			new Diff( [
 				'redirect' => new DiffOpAdd( $redirTarget ),
 			], true ),
-			$this->getEntityType()
+			self::getEntityType()
 		);
 
 		$redirToSpamDiff = new EntityContentDiff(
@@ -421,65 +439,88 @@ class ItemContentTest extends EntityContentTestCase {
 			new Diff( [
 				'redirect' => new DiffOpRemove( $redirTarget ),
 			], true ),
-			$this->getEntityType()
+			self::getEntityType()
 		);
 
-		$cases['empty to redir'] = [ $empty, $emptyToRedirDiff, $redir ];
-		$cases['entity to redir'] = [ $spam, $spamToRedirDiff, $redir ];
-		$cases['redir to entity'] = [ $redir, $redirToSpamDiff, $spam ];
-		$cases['redir with entity clash'] = [ $spam, $emptyToRedirDiff, $redir ];
+		$cases['empty to redir'] = [
+			fn ( self $self ) => [ $empty, $emptyToRedirDiff, $self->newRedirect( $q10, new ItemId( $redirTarget ) ) ],
+		];
+		$cases['entity to redir'] = [
+			fn ( self $self ) => [ $spam, $spamToRedirDiff, $self->newRedirect( $q10, new ItemId( $redirTarget ) ) ],
+		];
+		$cases['redir to entity'] = [
+			fn ( self $self ) => [ $self->newRedirect( $q10, new ItemId( $redirTarget ) ), $redirToSpamDiff, $spam ],
+		];
+		$cases['redir with entity clash'] = [
+			fn ( self $self ) => [ $spam, $emptyToRedirDiff, $self->newRedirect( $q10, new ItemId( $redirTarget ) ) ],
+		];
 
 		return $cases;
 	}
 
-	public function copyProvider() {
+	public static function copyProvider() {
 		$cases = parent::copyProvider();
 
-		$redir = $this->newRedirect( new ItemId( 'Q5' ), new ItemId( 'Q7' ) );
-
-		$cases['redirect'] = [ $redir ];
+		$cases['redirect'] = [
+			fn ( self $self ) => $self->newRedirect( new ItemId( 'Q5' ), new ItemId( 'Q7' ) ),
+		];
 
 		return $cases;
 	}
 
-	public function equalsProvider() {
+	public static function equalsProvider() {
 		$cases = parent::equalsProvider();
 
-		$redir = $this->newRedirect( new ItemId( 'Q5' ), new ItemId( 'Q7' ) );
-
-		$labels1 = $this->newBlank();
+		$labels1 = self::newBlank();
 		$labels1->getItem()->setLabel( 'en', 'Foo' );
 
-		$cases['same redirect'] = [ $redir, $redir, true ];
-		$cases['redirect vs labels'] = [ $redir, $labels1, false ];
-		$cases['labels vs redirect'] = [ $labels1, $redir, false ];
+		$cases['same redirect'] = [
+			function ( self $self ) {
+				$redir = $self->newRedirect( new ItemId( 'Q5' ), new ItemId( 'Q7' ) );
+				return [ $redir, $redir ];
+			},
+			true,
+		];
+		$cases['redirect vs labels'] = [
+			fn ( self $self ) => [
+				$self->newRedirect( new ItemId( 'Q5' ), new ItemId( 'Q7' ) ),
+				$labels1,
+			],
+			false,
+		];
+		$cases['labels vs redirect'] = [
+			fn ( self $self ) => [
+				$labels1,
+				$self->newRedirect( new ItemId( 'Q5' ), new ItemId( 'Q7' ) ),
+			],
+			false,
+		];
 
 		return $cases;
 	}
 
-	public function provideGetEntityId() {
+	public static function provideGetEntityId() {
 		$q11 = new ItemId( 'Q11' );
 		$q12 = new ItemId( 'Q12' );
 
-		$cases = [];
-		$cases['entity id'] = [ $this->newBlank( $q11 ), $q11 ];
-		$cases['redirect id'] = [ $this->newRedirect( $q11, $q12 ), $q11 ];
-
-		return $cases;
+		yield 'entity id' => [ fn () => [ static::newBlank( $q12 ), $q12 ] ];
+		yield 'redirect id' => [
+			fn ( self $self ) => [ $self->newRedirect( $q11, $q12 ), $q11 ],
+		];
 	}
 
-	public function provideContentObjectsWithoutId() {
+	public static function provideContentObjectsWithoutId() {
 		return [
 			'no holder' => [ new ItemContent() ],
 			'no ID' => [ new ItemContent( new EntityInstanceHolder( new Item() ) ) ],
 		];
 	}
 
-	public function entityRedirectProvider() {
+	public static function entityRedirectProvider() {
 		$cases = parent::entityRedirectProvider();
 
 		$cases['redirect'] = [
-			$this->newRedirect( new ItemId( 'Q11' ), new ItemId( 'Q12' ) ),
+			fn ( self $self ) => $self->newRedirect( new ItemId( 'Q11' ), new ItemId( 'Q12' ) ),
 			new EntityRedirect( new ItemId( 'Q11' ), new ItemId( 'Q12' ) ),
 		];
 
@@ -570,7 +611,7 @@ class ItemContentTest extends EntityContentTestCase {
 	}
 
 	private function setLanguageCodeEnglish() {
-		$this->setMwGlobals( 'wgLanguageCode', 'en' );
+		$this->overrideConfigValue( MainConfigNames::LanguageCode, 'en' );
 	}
 
 	public function testGetSummaryText() {

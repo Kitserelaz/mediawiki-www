@@ -30,7 +30,7 @@ class ApiEntitySearchHelperTest extends TestCase {
 	private const CONCEPT_BASE_URI = 'https://wikidata.beta.wmflabs.org/entity/';
 
 	/** @var string[] */
-	private $responseDataFiles = [
+	private array $responseDataFiles = [
 		'api-entity-search-helper-test-data-emptyResponse.json',
 		'api-entity-search-helper-test-data-oneResponse.json',
 		'api-entity-search-helper-test-data-twoResponse.json',
@@ -42,7 +42,7 @@ class ApiEntitySearchHelperTest extends TestCase {
 	];
 
 	/** @var string[] */
-	private $data = [];
+	private array $data = [];
 
 	protected function setUp(): void {
 
@@ -55,13 +55,9 @@ class ApiEntitySearchHelperTest extends TestCase {
 	}
 
 	private function getNewApiSearchHelper( $api, $dataTypes = null ) {
-		if ( $dataTypes === null ) {
-			$dataTypes = WikibaseRepo::getDataTypeDefinitions()->getTypeIds();
-		}
-
 		return new ApiEntitySearchHelper(
 			$api,
-			$dataTypes,
+			$dataTypes ?? WikibaseRepo::getDataTypeDefinitions()->getTypeIds(),
 			new ApiEntitySource( 'feddy prop source', [ 'property' ], self::CONCEPT_BASE_URI, '', '', '' )
 		);
 	}
@@ -243,7 +239,7 @@ class ApiEntitySearchHelperTest extends TestCase {
 		string $langCode,
 		array $params,
 		string $responseDataFile,
-		?int $statusCode
+		int $statusCode
 	) {
 		$api = $this->setupTestApi( $params, $langCode, $responseDataFile, $statusCode );
 		$apiEntitySearchHelper = $this->getNewApiSearchHelper( $api );
@@ -288,7 +284,7 @@ class ApiEntitySearchHelperTest extends TestCase {
 					'strictlanguage' => false,
 				],
 				'api-entity-search-helper-test-data-unexpectedResponse.json',
-				null,
+				400,
 			],
 		];
 	}

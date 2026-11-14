@@ -2,7 +2,6 @@
 
 use MediaWiki\MediaWikiServices;
 use MediaWiki\ResourceLoader\Context;
-use MediaWiki\ResourceLoader\ResourceLoader;
 use Wikibase\Repo\CopyrightMessageBuilder;
 use Wikibase\Repo\WikibaseRepo;
 use Wikibase\View\Module\TemplateModule;
@@ -95,6 +94,10 @@ return call_user_func( function() {
 				'wikibase/wikibase.itemlink.less',
 				'wikibase/wikibase.monolingualtext.less',
 			],
+			'skinStyles' => [
+				'timeless' => 'wikibase/wikibase.timeless.less',
+				'vector-2022' => 'wikibase/wikibase.vector-2022.less',
+			],
 		],
 
 		// desktop-only (though some of these should be on mobile too, see T326428)
@@ -113,36 +116,15 @@ return call_user_func( function() {
 				'jquery/wikibase/themes/default/jquery.wikibase.sitelinklistview.less',
 				'jquery/wikibase/themes/default/jquery.wikibase.sitelinkview.less',
 				'jquery/wikibase/themes/default/jquery.wikibase.statementgroupview.less',
+				'jquery/wikibase/themes/default/jquery.ui.less',
 			],
 		],
 
 		// mobile-only
 		'wikibase.mobile' => $moduleTemplate + [
 			'styles' => [
-				'wikibase/wikibase.mobile.css',
+				'wikibase/wikibase.mobile.less',
 				'jquery/wikibase/themes/default/jquery.wikibase.statementview.RankSelector.less',
-			],
-		],
-
-		// deprecated: this is effectively wikibase.alltargets + wikibase.desktop, use those instead
-		'wikibase.common' => $moduleTemplate + [
-			'styles' => [
-				// Order must be hierarchical, do not order alphabetically
-				'wikibase/wikibase.less',
-				'wikibase/wikibase.itemlink.less',
-				'jquery/wikibase/themes/default/jquery.wikibase.aliasesview.less',
-				'jquery/wikibase/themes/default/jquery.wikibase.descriptionview.less',
-				'jquery/wikibase/themes/default/jquery.wikibase.entityview.less',
-				'jquery/wikibase/themes/default/jquery.wikibase.entitytermsview.less',
-				'jquery/wikibase/themes/default/jquery.wikibase.entitytermsforlanguagelistview.less',
-				'jquery/wikibase/themes/default/jquery.wikibase.entitytermsforlanguageview.less',
-				'jquery/wikibase/themes/default/jquery.wikibase.labelview.less',
-				'jquery/wikibase/themes/default/jquery.wikibase.sitelinkgrouplistview.less',
-				'jquery/wikibase/themes/default/jquery.wikibase.sitelinkgroupview.less',
-				'jquery/wikibase/themes/default/jquery.wikibase.sitelinklistview.less',
-				'wikibase/wikibase.badgedisplay.less',
-				'jquery/wikibase/themes/default/jquery.wikibase.sitelinkview.less',
-				'jquery/wikibase/themes/default/jquery.wikibase.statementgroupview.less',
 			],
 		],
 
@@ -282,7 +264,7 @@ return call_user_func( function() {
 				'resources/jquery/wikibase/themes/default/jquery.wikibase.sitelinkgrouplistview.less',
 				'resources/jquery/wikibase/themes/default/jquery.wikibase.labelview.less',
 				'resources/jquery/wikibase/themes/default/jquery.wikibase.descriptionview.less',
-				'resources/jquery/ui/jquery.ui.tagadata.css',
+				'resources/jquery/ui/jquery.ui.tagadata.less',
 				'resources/jquery/wikibase/themes/default/jquery.wikibase.aliasesview.less',
 				'resources/jquery/wikibase/themes/default/jquery.wikibase.entitytermsforlanguageview.less',
 				'resources/jquery/wikibase/themes/default/jquery.wikibase.entitytermsforlanguagelistview.less',
@@ -326,7 +308,6 @@ return call_user_func( function() {
 				'mediawiki.util',
 				'mw.config.values.wbRefTabsEnabled',
 				'mw.config.values.wbEnableMulLanguageCode',
-				'mw.config.values.wbTmpAlwaysShowMulLanguageCode',
 				'mw.config.values.wbRepo',
 				'oojs-ui',
 				'util.highlightSubstring',
@@ -338,6 +319,7 @@ return call_user_func( function() {
 			],
 			'messages' => [
 				'parentheses',
+				'wikibase-addstatement',
 				'wikibase-addqualifier',
 				'wikibase-addreference',
 				'wikibase-badgeselector-badge-placeholder-title',
@@ -398,6 +380,8 @@ return call_user_func( function() {
 				'wikibase-statementview-rank-preferred',
 				'wikibase-statementview-rank-tooltip-preferred',
 				'wikibase-statementview-rank-normal',
+				'wikibase-statementview-rank-preferred',
+				'wikibase-statementview-rank-deprecated',
 				'wikibase-statementview-rank-tooltip-normal',
 				'wikibase-statementview-rank-deprecated',
 				'wikibase-statementview-rank-tooltip-deprecated',
@@ -889,9 +873,6 @@ return call_user_func( function() {
 				'valueview-expert-timeinput-precision-year',
 				'valueview-expert-timeinput-precision-month',
 				'valueview-expert-timeinput-precision-day',
-				'valueview-expert-timeinput-precision-hour',
-				'valueview-expert-timeinput-precision-minute',
-				'valueview-expert-timeinput-precision-second',
 				'valueview-expert-timevalue-calendar-gregorian',
 				'valueview-expert-timevalue-calendar-julian',
 			],
@@ -996,13 +977,15 @@ return call_user_func( function() {
 							$language,
 							$saveMessageKey
 						);
-						return ResourceLoader::makeConfigSetScript( [
-							'wbMultiLingualStringLimit' => $repoSettings->getSetting( 'string-limits' )['multilang']['length'],
-							'wbCopyright' => [
-								'version' => $context->msg( 'wikibase-shortcopyrightwarning-version' )->parse(),
-								'messageHtml' => $copyrightMessage->inLanguage( $language )->parse(),
-							],
-						] );
+						return 'mw.config.set('
+								. $context->encodeJson( [
+									'wbMultiLingualStringLimit' => $repoSettings->getSetting( 'string-limits' )['multilang']['length'],
+									'wbCopyright' => [
+									'version' => $context->msg( 'wikibase-shortcopyrightwarning-version' )->parse(),
+									'messageHtml' => $copyrightMessage->inLanguage( $language )->parse(),
+									],
+								] )
+								. ');';
 					},
 				],
 			],

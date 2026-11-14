@@ -37,7 +37,7 @@ class ApiModuleTestHelper {
 		if ( is_string( $instantiator ) && class_exists( $instantiator ) ) {
 			$module = new $instantiator( $main, $name );
 		} else {
-			$module = call_user_func( $instantiator, $main, $name );
+			$module = $instantiator( $main, $name );
 		}
 
 		return $module;
@@ -45,8 +45,6 @@ class ApiModuleTestHelper {
 
 	/**
 	 * Asserts that the given API response represents a successful call.
-	 *
-	 * @param array $response
 	 */
 	public function assertResultSuccess( array $response ) {
 		Assert::assertArrayHasKey( 'success', $response, "Missing 'success' marker in response." );

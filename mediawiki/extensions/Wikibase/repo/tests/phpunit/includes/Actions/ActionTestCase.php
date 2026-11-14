@@ -2,12 +2,13 @@
 
 namespace Wikibase\Repo\Tests\Actions;
 
-use Action;
-use Article;
 use Exception;
 use InvalidArgumentException;
+use MediaWiki\Actions\Action;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Page\Article;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\User\User;
 use MediaWikiIntegrationTestCase;
@@ -19,7 +20,6 @@ use Wikibase\DataModel\Entity\Item;
 use Wikibase\Lib\Store\EntityRevision;
 use Wikibase\Repo\Content\ItemContent;
 use Wikibase\Repo\WikibaseRepo;
-use WikiPage;
 
 /**
  * @license GPL-2.0-or-later
@@ -28,10 +28,12 @@ use WikiPage;
 class ActionTestCase extends MediaWikiIntegrationTestCase {
 
 	/** @var User */
-	protected static $user;
+	protected $user;
 
 	protected function setUp(): void {
 		parent::setUp();
+
+		$this->user = ( new \TestUser( 'ActionTestUser' ) )->getUser();
 
 		$this->setRequest( new FauxRequest() );
 		$this->setMwGlobals( [
@@ -63,8 +65,7 @@ class ActionTestCase extends MediaWikiIntegrationTestCase {
 	 * Creates the test items defined by makeTestItemData() in the database.
 	 */
 	public function addDBDataOnce() {
-		$testUser = new \TestUser( 'ActionTestUser' );
-		self::$user = $testUser->getUser();
+		$this->user = ( new \TestUser( 'ActionTestUser' ) )->getUser();
 		$itemData = $this->makeTestItemData();
 
 		foreach ( $itemData as $handle => $revisions ) {
@@ -161,13 +162,11 @@ class ActionTestCase extends MediaWikiIntegrationTestCase {
 	protected function createAction( string $actionName, WikiPage $page, ?array $params = null, $wasPosted = false ) {
 		global $wgLang;
 
-		if ( $params == null ) {
-			$params = [];
-		}
+		$params ??= [];
 
 		$context = new RequestContext();
 		$context->setRequest( new FauxRequest( $params, $wasPosted ) );
-		$context->setUser( self::$user );     // determined by setUser()
+		$context->setUser( $this->user );     // determined by setUser()
 		$context->setLanguage( $wgLang ); // qqx as per setUp()
 		$context->setWikiPage( $page );
 		$article = Article::newFromWikiPage( $page, $context );
@@ -223,7 +222,7 @@ class ActionTestCase extends MediaWikiIntegrationTestCase {
 
 		foreach ( $revisions as $entity ) {
 			$flags = ( $id !== null ) ? EDIT_UPDATE : EDIT_NEW;
-			$result = $this->createTestContentRevision( $entity, $id, self::$user, $flags );
+			$result = $this->createTestContentRevision( $entity, $id, $flags );
 
 			if ( $result instanceof EntityRedirect ) {
 				$id = $result->getEntityId();
@@ -238,13 +237,12 @@ class ActionTestCase extends MediaWikiIntegrationTestCase {
 	/**
 	 * @param EntityDocument|string $entity
 	 * @param EntityId|null $id
-	 * @param User $user
 	 * @param int $flags
 	 *
 	 * @throws RuntimeException
 	 * @return EntityDocument|EntityRedirect
 	 */
-	private function createTestContentRevision( $entity, $id, User $user, $flags ) {
+	private function createTestContentRevision( $entity, $id, $flags ) {
 		if ( $flags == EDIT_NEW ) {
 			$comment = "Creating test item";
 		} else {
@@ -258,21 +256,21 @@ class ActionTestCase extends MediaWikiIntegrationTestCase {
 				throw new RuntimeException( 'Can\'t create a redirect as the first revision of a test entity page.' );
 			}
 
-			$result = $this->createTestRedirect( $id, $entity, $comment, $user, $flags );
+			$result = $this->createTestRedirect( $id, $entity, $comment, $flags );
 		} else {
 			if ( $id ) {
 				$entity->setId( $id );
 			}
 
-			$result = $this->createTestItem( $entity, $comment, $user, $flags );
+			$result = $this->createTestItem( $entity, $comment, $flags );
 		}
 
 		return $result;
 	}
 
-	private function createTestItem( EntityDocument $entity, $comment, $user, $flags ) {
+	private function createTestItem( EntityDocument $entity, $comment, $flags ) {
 		$store = WikibaseRepo::getEntityStore();
-		$rev = $store->saveEntity( $entity, $comment, $user, $flags );
+		$rev = $store->saveEntity( $entity, $comment, $this->user, $flags );
 
 		$result = $rev->getEntity();
 
@@ -285,18 +283,17 @@ class ActionTestCase extends MediaWikiIntegrationTestCase {
 	 * @param EntityId $entityId
 	 * @param string $targetHandle
 	 * @param string $comment
-	 * @param User $user
 	 * @param int $flags
 	 *
 	 * @return EntityRedirect
 	 * @throws RuntimeException
 	 */
-	private function createTestRedirect( EntityId $entityId, $targetHandle, $comment, User $user, $flags ) {
+	private function createTestRedirect( EntityId $entityId, $targetHandle, $comment, $flags ) {
 		$targetId = $this->getTestItemId( $targetHandle );
 		$redirect = new EntityRedirect( $entityId, $targetId );
 
 		$store = WikibaseRepo::getEntityStore();
-		$revId = $store->saveRedirect( $redirect, $comment, $user, $flags );
+		$revId = $store->saveRedirect( $redirect, $comment, $this->user, $flags );
 
 		$result = $redirect;
 

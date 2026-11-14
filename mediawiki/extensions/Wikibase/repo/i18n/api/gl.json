@@ -54,7 +54,7 @@
 	"apihelp-wbformatvalue-param-generate": "O formato de saída desexado a xerar.",
 	"apihelp-wbformatvalue-param-datatype": "O tipo de dato do valor. Isto é diferente do tipo do valor",
 	"apihelp-wbformatvalue-param-datavalue": "Datos a formatar. Isto ten que ser a serialización JSON dun obxecto DataValue.",
-	"apihelp-wbformatvalue-param-options": "As opcións que o formatador debería usar. Proporcionadas como un obxecto JSON.",
+	"apihelp-wbformatvalue-param-options": "As opcións que debería usar o formatador. Proporciónanse como un obxecto JSON.\n\nAs opcións admitidas son:\n; $1: A lingua na que se debería formatar o valor (un código de lingua de MediaWiki).\n; $2: Indica se aplicar un arredondamento ao número. Pode ser un valor booleano (automático/sen arredondamento) ou un número enteiro (exponente dos últimos díxitos decimais significativos). Unicamente é útil para os valores de cantidade.\n; $3: Indica se incluír a unidade se saída (un valor booleano). Unicamente é útil para os valores de cantidade.\n; $4: Indica se amosar o modelo de calendario. Pode ser un valor booleano (amosar sempre/nunca) ou a cadea de texto <code>\"auto\"</code> (determinar automaticamente se amosalo ou non). Unicamente é útil para os valores de tempo.",
 	"apihelp-wbformatvalue-param-property": "O identificador de propiedade á que pertence o valor de dato; debería usarse no canto do parámetro <var>datatype</var>.",
 	"apihelp-wbformatvalue-example-1": "Formatar un valor dunha cadea simple de texto.",
 	"apihelp-wbformatvalue-example-2": "Formatar un valor dunha cadea de texto como un enderezo URL en HTML.",
@@ -92,6 +92,7 @@
 	"apihelp-wbgetentities-example-11": "Obtén o elemento da páxina \"<var>Berlin</var>\" no sitio \"<var>enwiki</var>\" despois de normalizar o título a \"<var>berlin</var>\"",
 	"apihelp-wbgetentities-example-12": "Obter as ligazóns de sitio do elemento <samp>Q42</samp>",
 	"apihelp-wbgetentities-example-13": "Obter as entidades con identificador <samp>Q42</samp> que só teñen ligazóns de sitio de \"<var>enwiki</var>\"",
+	"apihelp-wbgraphql-summary": "Módulo experimental de GraphQL.",
 	"apihelp-wblinktitles-summary": "Asocia dúas páxinas en dous wikis diferentes cun elemento de Wikibase.",
 	"apihelp-wblinktitles-param-tosite": "Un identificador para o sitio no que reside a páxina.\nÚseo xunto con <var>totitle</var> para crear unha ligazón completa ó sitio.",
 	"apihelp-wblinktitles-param-totitle": "Título da páxina a asociar.\nÚseo xunto con <var>tosite</var> para crear unha ligazón completa ó sitio.",
@@ -302,11 +303,13 @@
 	"apihelp-wbsetsitelink-example-6": "Cambia os distintivos da ligazón á páxina en polaco do elemento con identificador <samp>$1</samp> por dous distintivos apuntando ós elementos con identificadores \"Q2\" e \"Q149\" sen proporcionar o título da ligazón",
 	"apihelp-wbsetsitelink-example-7": "Cambia a ligazón á páxina en polaco do elemento con identificador <samp>$1</samp> sen cambiar os distintivos",
 	"apihelp-wbsetsitelink-example-8": "Cambia a ligazón á páxina en polaco do elemento con identificador <samp>$1</samp> e elimina todos os seus distintivos",
-	"apihelp-wbformatentities-summary": "Formata os identificadores de entidade en HTML.",
+	"apihelp-wbformatentities-summary": "Formata os identificadores de entidade en HTML ou texto sen formato.",
 	"apihelp-wbformatentities-extended-description": "A lingua pódese especificar co parámetro global <var>uselang</var>.",
 	"apihelp-wbformatentities-param-ids": "Os identificadores de entidades a formatar.",
-	"apihelp-wbformatentities-example-1": "Formatar un único identificador de elemento.",
+	"apihelp-wbformatentities-param-generate": "O formato de saída desexado a xerar.",
+	"apihelp-wbformatentities-example-1": "Formatar un único identificador de elemento en HTML.",
 	"apihelp-wbformatentities-example-2": "Formatar un identificador de elemento e un identificador de propiedade.",
 	"apihelp-wbformatentities-example-3": "Formatar un identificador de elemento, un identificador de propiedade e un identificador de lexema.",
-	"apihelp-wbformatentities-example-4": "Formatar tres identificadores de elemento en francés."
+	"apihelp-wbformatentities-example-4": "Formatar tres identificadores de elemento en francés.",
+	"apihelp-wbformatentities-example-5": "Formatar tres identificadores de elementos e un identificador de propiedade en texto sen formato."
 }

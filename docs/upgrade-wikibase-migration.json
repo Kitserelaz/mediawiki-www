@@ -1,0 +1,162 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-26",
+  "scope": "Local checkout and disposable development farm; no production deployment",
+  "baselines": {
+    "Wikibase": "5d76d04f93f8df1bc2cef2223b4bf23906d000b9",
+    "WikibaseLexeme": "92e19753099b8a1c71205f075da2c3dd93be7e6e"
+  },
+  "targets": {
+    "Wikibase": "c8050c025decb4fc8729ea77bc8bbe5688509a0b",
+    "WikibaseLexeme": "224dc576f36b3407bb54f6e7271227e3996cc4c9"
+  },
+  "frontend_sources": [
+    {
+      "path": "lib/resources/wikibase-api",
+      "upstream": "wikibase/javascript-api",
+      "commit": "7f076e3534686ab35f7807462539fcef08b6e9f2"
+    },
+    {
+      "path": "view/lib/wikibase-data-model",
+      "upstream": "wmde/WikibaseDataModelJavaScript",
+      "commit": "6b304daeb804591ddc4520925337429ac086515c"
+    },
+    {
+      "path": "view/lib/wikibase-data-values",
+      "upstream": "wmde/DataValuesJavaScript",
+      "commit": "457733ebe7b0d090a67e2623350be2e4286077fe"
+    },
+    {
+      "path": "view/lib/wikibase-serialization",
+      "upstream": "wmde/WikibaseSerializationJavaScript",
+      "commit": "e9b9a736f19e42497bfe45cb6f323781b00b5023"
+    },
+    {
+      "path": "view/lib/wikibase-data-values-value-view",
+      "upstream": "data-values/value-view",
+      "commit": "7d7ff681d26da4ae7947bf444d28f507982064c8"
+    },
+    {
+      "path": "view/lib/wikibase-termbox",
+      "upstream": "wikibase/termbox",
+      "commit": "d1eca1b1e37fc6d451a10006537ba050b663036e"
+    },
+    {
+      "path": "WikibaseLexeme/resources/special/new-lexeme",
+      "upstream": "wikibase/new-lexeme-special-page",
+      "commit": "f1e59473e0cab6d03f9f5da82a7ba9b2a2cfbb9e"
+    }
+  ],
+  "source_port_reports": [
+    "docs/upgrade-wikibase-source.json",
+    "docs/upgrade-wikibaselexeme-source.json",
+    "docs/upgrade-wikibase-translation-contracts.json"
+  ],
+  "composer_lock_sha256": "e3e4b54bbd5ad14dfcd7ff6c245506ff6ced998c4b88a4ba5334b7d21d240b16",
+  "composer_audit": "No advisories in the candidate lock on the recorded date",
+  "npm_audit": [
+    {
+      "component": "Wikibase",
+      "all_dependencies": {
+        "info": 0,
+        "low": 0,
+        "moderate": 7,
+        "high": 23,
+        "critical": 1,
+        "total": 31
+      },
+      "production_dependencies": {
+        "info": 0,
+        "low": 0,
+        "moderate": 0,
+        "high": 0,
+        "critical": 0,
+        "total": 0
+      },
+      "production_advisory_packages": []
+    },
+    {
+      "component": "Wikibase data bridge",
+      "all_dependencies": {
+        "info": 0,
+        "low": 9,
+        "moderate": 40,
+        "high": 67,
+        "critical": 8,
+        "total": 124
+      },
+      "production_dependencies": {
+        "info": 0,
+        "low": 0,
+        "moderate": 1,
+        "high": 5,
+        "critical": 0,
+        "total": 6
+      },
+      "production_advisory_packages": [
+        "@vue/server-renderer",
+        "nanoid",
+        "postcss",
+        "source-map-js",
+        "uuid",
+        "vue"
+      ]
+    },
+    {
+      "component": "WikibaseLexeme",
+      "all_dependencies": {
+        "info": 0,
+        "low": 2,
+        "moderate": 7,
+        "high": 11,
+        "critical": 3,
+        "total": 23
+      },
+      "production_dependencies": {
+        "info": 0,
+        "low": 0,
+        "moderate": 0,
+        "high": 0,
+        "critical": 0,
+        "total": 0
+      },
+      "production_advisory_packages": []
+    }
+  ],
+  "notes": [
+    "Client data bridge has six production-dependency advisories; target defaults dataBridgeEnabled to false. Review and remediate before enabling or production rollout.",
+    "The target npm lockfiles replace locally installed locks after comparison; no direct dependency overrides were present in the older package manifests.",
+    "The full final build, immutable-image and browser acceptance are separate gates; consult actual build/test results."
+  ],
+  "isolated_tests": {
+    "registration": [
+      "WikibaseClient",
+      "WikibaseRepository",
+      "WikibaseLexeme"
+    ],
+    "schema_updates": "two successful runs on disposable testwiki",
+    "entity_fixture": "item create/update/read, property and Lexeme create/read passed",
+    "resource_loader": "63 Wikibase modules built",
+    "managewiki": "Repository, Client, Lexeme and UniversalLanguageSelector enabled on a fresh testwiki; obsolete wbt_type installer entry removed",
+    "repeatable_check": "python3 scripts/test-wikibase-migration.py --source passed",
+    "write_guard": "refused without explicit disposable-test opt-in",
+    "catalogue_fixture": "deduplicates canonical manifest paths already queued by the farm"
+  },
+  "image_build": {
+    "status": "not completed",
+    "reason": "Full build stopped during context transfer after prolonged Docker contention",
+    "source_overlay_tests_are_not_immutable_image_acceptance": true
+  },
+  "local_compatibility_edits": [
+    {
+      "path": "mediawiki/extensions/Wikibase/client/includes/DataAccess/Scribunto/mw.wikibase.entity.lua",
+      "sha256": "eae7a0b36cb549b11b668c376b55849eb75850a51bf39041629f2e35de6515a2",
+      "reason": "Normalize upstream whitespace without changing Lua behavior"
+    },
+    {
+      "path": "mediawiki/extensions/Wikibase/client/tests/phpunit/integration/includes/DataAccess/Scribunto/WikibaseLibraryTests.lua",
+      "sha256": "1a377dd46f17af1e06837203765b3fc3876fd073677c7d0a0007bebd0f2977b7",
+      "reason": "Normalize upstream whitespace without changing Lua behavior"
+    }
+  ]
+}

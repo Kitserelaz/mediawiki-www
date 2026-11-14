@@ -19,6 +19,7 @@
 
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Language\Language;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Request\WebRequest;
 use MediaWiki\Site\SiteLookup;
@@ -32,10 +33,9 @@ use Wikibase\Lib\DataTypeDefinitions;
 use Wikibase\Lib\EntityTypeDefinitions as Def;
 use Wikibase\Lib\EntityTypeDefinitions;
 use Wikibase\Lib\Formatters\LabelsProviderEntityIdHtmlLinkFormatter;
-use Wikibase\Lib\Interactors\MatchingTermsLookupSearchInteractor;
 use Wikibase\Lib\SimpleCacheWithBagOStuff;
 use Wikibase\Lib\StaticContentLanguages;
-use Wikibase\Lib\StatsdRecordingSimpleCache;
+use Wikibase\Lib\StatslibRecordingSimpleCache;
 use Wikibase\Lib\Store\CachingPrefetchingTermLookup;
 use Wikibase\Lib\Store\Sql\Terms\PrefetchingItemTermLookup;
 use Wikibase\Lib\Store\Sql\Terms\PrefetchingPropertyTermLookup;
@@ -45,10 +45,6 @@ use Wikibase\Lib\Store\TitleLookupBasedEntityRedirectChecker;
 use Wikibase\Lib\Store\TitleLookupBasedEntityTitleTextLookup;
 use Wikibase\Lib\Store\TitleLookupBasedEntityUrlLookup;
 use Wikibase\Lib\TermLanguageFallbackChain;
-use Wikibase\Repo\Api\CombinedEntitySearchHelper;
-use Wikibase\Repo\Api\EntityIdSearchHelper;
-use Wikibase\Repo\Api\EntityTermSearchHelper;
-use Wikibase\Repo\Api\PropertyDataTypeSearchHelper;
 use Wikibase\Repo\ChangeOp\Deserialization\ItemChangeOpDeserializer;
 use Wikibase\Repo\ChangeOp\Deserialization\PropertyChangeOpDeserializer;
 use Wikibase\Repo\Content\ItemContent;
@@ -57,6 +53,7 @@ use Wikibase\Repo\Diff\BasicEntityDiffVisualizer;
 use Wikibase\Repo\Diff\ClaimDiffer;
 use Wikibase\Repo\Diff\ClaimDifferenceVisualizer;
 use Wikibase\Repo\Diff\ItemDiffVisualizer;
+use Wikibase\Repo\Domains\Search\WbSearch;
 use Wikibase\Repo\EntityReferenceExtractors\EntityReferenceExtractorCollection;
 use Wikibase\Repo\EntityReferenceExtractors\SiteLinkBadgeItemReferenceExtractor;
 use Wikibase\Repo\EntityReferenceExtractors\StatementEntityReferenceExtractor;
@@ -92,7 +89,8 @@ return [
 		Def::VIEW_FACTORY_CALLBACK => function(
 			Language $language,
 			TermLanguageFallbackChain $fallbackChain,
-			EntityDocument $entity
+			EntityDocument $entity,
+			array $viewOptions,
 		) {
 			$viewFactory = WikibaseRepo::getViewFactory();
 			return $viewFactory->newItemView(
@@ -104,7 +102,8 @@ return [
 						$language,
 						$fallbackChain,
 						TermboxFlag::getInstance()->shouldRenderTermbox()
-					)
+					),
+				$viewOptions,
 			);
 		},
 		Def::META_TAGS_CREATOR_CALLBACK => function ( $userLanguage ) {
@@ -213,33 +212,7 @@ return [
 			);
 		},
 		Def::ENTITY_SEARCH_CALLBACK => function ( WebRequest $request ) {
-			$itemSource = WikibaseRepo::getEntitySourceDefinitions()
-				->getDatabaseSourceForEntityType( Item::ENTITY_TYPE );
-			if ( $itemSource === null ) {
-				throw new LogicException( 'No source providing Items configured!' );
-			}
-
-			$languageFallbackChainFactory = WikibaseRepo::getLanguageFallbackChainFactory();
-			$language = WikibaseRepo::getUserLanguage();
-			return new CombinedEntitySearchHelper(
-					[
-						new EntityIdSearchHelper(
-							WikibaseRepo::getEntityLookup(),
-							WikibaseRepo::getEntityIdParser(),
-							WikibaseRepo::getFallbackLabelDescriptionLookupFactory()
-								->newLabelDescriptionLookup( $language ),
-							WikibaseRepo::getEnabledEntityTypes()
-						),
-						new EntityTermSearchHelper(
-							new MatchingTermsLookupSearchInteractor(
-								WikibaseRepo::getMatchingTermsLookupFactory()->getLookupForSource( $itemSource ),
-								$languageFallbackChainFactory,
-								WikibaseRepo::getPrefetchingTermLookup(),
-								$language->getCode()
-							)
-						),
-					]
-			);
+			return WbSearch::getItemSearchHelper();
 		},
 		Def::LINK_FORMATTER_CALLBACK => function( Language $language ) {
 			$services = MediaWikiServices::getInstance();
@@ -304,7 +277,8 @@ return [
 		Def::VIEW_FACTORY_CALLBACK => function(
 			Language $language,
 			TermLanguageFallbackChain $fallbackChain,
-			EntityDocument $entity
+			EntityDocument $entity,
+			array $viewOptions,
 		) {
 			$viewFactory = WikibaseRepo::getViewFactory();
 			return $viewFactory->newPropertyView(
@@ -316,7 +290,8 @@ return [
 						$language,
 						$fallbackChain,
 						TermboxFlag::getInstance()->shouldRenderTermbox()
-					)
+					),
+				$viewOptions
 			);
 		},
 		Def::META_TAGS_CREATOR_CALLBACK => function ( Language $userLanguage ) {
@@ -415,37 +390,7 @@ return [
 			);
 		},
 		Def::ENTITY_SEARCH_CALLBACK => function ( WebRequest $request ) {
-			$propertySource = WikibaseRepo::getEntitySourceDefinitions()
-				->getDatabaseSourceForEntityType( Property::ENTITY_TYPE );
-			if ( $propertySource === null ) {
-				throw new LogicException( 'No source providing Properties configured!' );
-			}
-
-			$languageFallbackChainFactory = WikibaseRepo::getLanguageFallbackChainFactory();
-			$language = WikibaseRepo::getUserLanguage();
-			return new PropertyDataTypeSearchHelper(
-				new CombinedEntitySearchHelper(
-					[
-						new EntityIdSearchHelper(
-							WikibaseRepo::getEntityLookup(),
-							WikibaseRepo::getEntityIdParser(),
-
-							WikibaseRepo::getFallbackLabelDescriptionLookupFactory()
-								->newLabelDescriptionLookup( $language ),
-							WikibaseRepo::getEnabledEntityTypes()
-						),
-						new EntityTermSearchHelper(
-							new MatchingTermsLookupSearchInteractor(
-								WikibaseRepo::getMatchingTermsLookupFactory()->getLookupForSource( $propertySource ),
-								$languageFallbackChainFactory,
-								WikibaseRepo::getPrefetchingTermLookup(),
-								$language->getCode()
-							)
-						),
-					]
-				),
-				WikibaseRepo::getPropertyDataTypeLookup()
-			);
+			return WbSearch::getPropertySearchHelper();
 		},
 		Def::LINK_FORMATTER_CALLBACK => function( Language $language ) {
 			$services = MediaWikiServices::getInstance();
@@ -490,13 +435,14 @@ return [
 				'wikibase.prefetchingPropertyTermLookup.',
 				$cacheSecret
 			);
-			$cache = new StatsdRecordingSimpleCache(
+			$cache = new StatslibRecordingSimpleCache(
 				$cache,
-				$mwServices->getStatsdDataFactory(),
+				$mwServices->getStatsFactory()->withComponent( 'WikibaseRepo' ),
 				[
 					'miss' => 'wikibase.prefetchingPropertyTermLookupCache.miss',
 					'hit' => 'wikibase.prefetchingPropertyTermLookupCache.hit',
-				]
+				],
+				"prefetchingPropertyTermLookupCache_total"
 			);
 
 			return new CachingPrefetchingTermLookup(

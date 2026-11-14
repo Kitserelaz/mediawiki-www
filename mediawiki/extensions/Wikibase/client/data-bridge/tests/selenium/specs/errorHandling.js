@@ -1,14 +1,14 @@
-const assert = require( 'assert' ),
-	Api = require( 'wdio-mediawiki/Api' ),
-	LoginPage = require( 'wdio-mediawiki/LoginPage' ),
-	DataBridgePage = require( '../pageobjects/dataBridge.page' ),
-	ErrorSavingAssertUser = require( '../pageobjects/ErrorSavingAssertUser' ),
-	ErrorSavingEditConflict = require( '../pageobjects/ErrorSavingEditConflict' ),
-	WarningAnonymousEdit = require( '../pageobjects/WarningAnonymousEdit' ),
-	WikibaseApi = require( 'wdio-wikibase/wikibase.api' ),
-	DomUtil = require( './../DomUtil' ),
-	NetworkUtil = require( './../NetworkUtil' ),
-	WindowUtil = require( './../WindowUtil' );
+import assert from 'assert';
+import { createApiClient } from 'wdio-mediawiki/Api.js';
+import LoginPage from 'wdio-mediawiki/LoginPage.js';
+import DataBridgePage from '../pageobjects/dataBridge.page.js';
+import ErrorSavingAssertUser from '../pageobjects/ErrorSavingAssertUser.js';
+import ErrorSavingEditConflict from '../pageobjects/ErrorSavingEditConflict.js';
+import WarningAnonymousEdit from '../pageobjects/WarningAnonymousEdit.js';
+import WikibaseApi from 'wdio-wikibase/wikibase.api.js';
+import * as DomUtil from './../DomUtil.js';
+import * as NetworkUtil from './../NetworkUtil.js';
+import * as WindowUtil from './../WindowUtil.js';
 
 describe( 'App', () => {
 	it( 'shows ErrorUnknown when launching bridge for a non-existent entity', () => {
@@ -22,7 +22,7 @@ describe( 'App', () => {
 			editFlow: 'single-best-value',
 		} ] );
 
-		browser.call( () => Api.bot().then( ( bot ) => bot.edit( title, content ) ) );
+		browser.call( () => createApiClient().then( ( api ) => api.edit( title, content ) ) );
 
 		DataBridgePage.openAppOnPage( title );
 
@@ -55,19 +55,19 @@ describe( 'App', () => {
 			propertyId,
 			editFlow: 'single-best-value',
 		} ] );
-		browser.call( () => Api.bot().then( ( bot ) => bot.edit( title, content ) ) );
+		browser.call( () => createApiClient().then( ( api ) => api.edit( title, content ) ) );
 
 		DataBridgePage.open( title );
 
 		NetworkUtil.disableNetwork();
 		DataBridgePage.launchApp();
-		DataBridgePage.error.waitForDisplayed( { timeout: browser.config.nonApiTimeout } );
+		DataBridgePage.error.waitForDisplayed( { timeout: browser.options.capabilities[ 'mw:nonApiTimeout' ] } );
 
 		assert.ok( DataBridgePage.showsErrorUnknown() );
 
 		NetworkUtil.enableNetwork();
 		DataBridgePage.errorUnknownRelaunch.click();
-		DataBridgePage.app.waitForDisplayed( { timeout: browser.config.nonApiTimeout } );
+		DataBridgePage.app.waitForDisplayed( { timeout: browser.options.capabilities[ 'mw:nonApiTimeout' ] } );
 		WarningAnonymousEdit.dismiss();
 		DataBridgePage.bridge.waitForDisplayed();
 	} );
@@ -93,7 +93,7 @@ describe( 'App', () => {
 			propertyId,
 			editFlow: 'single-best-value',
 		} ] );
-		browser.call( () => Api.bot().then( ( bot ) => bot.edit( title, content ) ) );
+		browser.call( () => createApiClient().then( ( api ) => api.edit( title, content ) ) );
 
 		DataBridgePage.openAppOnPage( title );
 
@@ -107,7 +107,7 @@ describe( 'App', () => {
 
 		// show License
 		DataBridgePage.saveButton.click();
-		DataBridgePage.licensePopup.waitForDisplayed( { timeout: browser.config.nonApiTimeout } );
+		DataBridgePage.licensePopup.waitForDisplayed( { timeout: browser.options.capabilities[ 'mw:nonApiTimeout' ] } );
 
 		// lose internet connection
 		NetworkUtil.disableNetwork();
@@ -116,7 +116,7 @@ describe( 'App', () => {
 		DataBridgePage.saveButton.click();
 
 		// show ErrorSaving screen
-		DataBridgePage.error.waitForDisplayed( { timeout: browser.config.nonApiTimeout } );
+		DataBridgePage.error.waitForDisplayed( { timeout: browser.options.capabilities[ 'mw:nonApiTimeout' ] } );
 
 		assert.ok( DataBridgePage.showsErrorSaving() );
 
@@ -147,7 +147,7 @@ describe( 'App', () => {
 			propertyId,
 			editFlow: 'single-best-value',
 		} ] );
-		browser.call( () => Api.bot().then( ( bot ) => bot.edit( title, content ) ) );
+		browser.call( () => createApiClient().then( ( api ) => api.edit( title, content ) ) );
 
 		DataBridgePage.openAppOnPage( title );
 
@@ -161,7 +161,7 @@ describe( 'App', () => {
 
 		// show License
 		DataBridgePage.saveButton.click();
-		DataBridgePage.licensePopup.waitForDisplayed( { timeout: browser.config.nonApiTimeout } );
+		DataBridgePage.licensePopup.waitForDisplayed( { timeout: browser.options.capabilities[ 'mw:nonApiTimeout' ] } );
 
 		// lose internet connection
 		NetworkUtil.disableNetwork();
@@ -188,7 +188,7 @@ describe( 'App', () => {
 	describe( 'when assertuser fails', () => {
 		beforeEach( 'login, run bridge, logout, trigger error', () => {
 			// log in
-			LoginPage.loginAdmin();
+			await LoginPage.loginAdmin();
 
 			// prepare Bridge for saving
 			const title = DataBridgePage.getDummyTitle();
@@ -211,7 +211,7 @@ describe( 'App', () => {
 				propertyId,
 				editFlow: 'single-best-value',
 			} ] );
-			browser.call( () => Api.bot().then( ( bot ) => bot.edit( title, content ) ) );
+			browser.call( () => createApiClient().then( ( api ) => api.edit( title, content ) ) );
 
 			DataBridgePage.openAppOnPage( title );
 			DataBridgePage.bridge.waitForDisplayed();
@@ -222,7 +222,9 @@ describe( 'App', () => {
 			DataBridgePage.editDecision( 'replace' ).click();
 
 			DataBridgePage.saveButton.click();
-			DataBridgePage.licensePopup.waitForDisplayed( { timeout: browser.config.nonApiTimeout } );
+			DataBridgePage.licensePopup.waitForDisplayed( {
+				timeout: browser.options.capabilities[ 'mw:nonApiTimeout' ],
+			} );
 
 			// log out
 			browser.deleteCookies();
@@ -238,7 +240,9 @@ describe( 'App', () => {
 			// go back, try again
 			ErrorSavingAssertUser.clickBackButton();
 			DataBridgePage.saveButton.click();
-			DataBridgePage.licensePopup.waitForDisplayed( { timeout: browser.config.nonApiTimeout } );
+			DataBridgePage.licensePopup.waitForDisplayed( {
+				timeout: browser.options.capabilities[ 'mw:nonApiTimeout' ],
+			} );
 			DataBridgePage.saveButton.click();
 			DataBridgePage.error.waitForDisplayed();
 
@@ -257,8 +261,8 @@ describe( 'App', () => {
 			ErrorSavingAssertUser.loginButton.click();
 			WindowUtil.doInOtherWindow( () => {
 				LoginPage.username.waitForDisplayed();
-				DomUtil.setValue( LoginPage.username, browser.config.mwUser );
-				DomUtil.setValue( LoginPage.password, browser.config.mwPwd );
+				DomUtil.setValue( LoginPage.username, browser.options.capabilities[ 'mw:user' ] );
+				DomUtil.setValue( LoginPage.password, browser.options.capabilities[ 'mw:pwd' ] );
 				LoginPage.loginButton.click();
 				LoginPage.username.waitForDisplayed( {
 					reverse: true,
@@ -338,7 +342,7 @@ describe( 'App', () => {
 				propertyId,
 				editFlow: 'single-best-value',
 			} ] );
-			browser.call( () => Api.bot().then( ( bot ) => bot.edit( title, content ) ) );
+			browser.call( () => createApiClient().then( ( api ) => api.edit( title, content ) ) );
 
 			DataBridgePage.openAppOnPage( title );
 			DataBridgePage.bridge.waitForDisplayed();
@@ -349,13 +353,15 @@ describe( 'App', () => {
 			DataBridgePage.editDecision( 'replace' ).click();
 
 			DataBridgePage.saveButton.click();
-			DataBridgePage.licensePopup.waitForDisplayed( { timeout: browser.config.nonApiTimeout } );
+			DataBridgePage.licensePopup.waitForDisplayed( {
+				timeout: browser.options.capabilities[ 'mw:nonApiTimeout' ],
+			} );
 
 			// clear the item, removing the target statement
-			browser.call( () => Api.bot().then( ( bot ) => bot.request( {
+			browser.call( () => createApiClient().then( async ( api ) => api.request( {
 				action: 'wbeditentity',
 				id: entityId,
-				token: bot.editToken,
+				token: await api.getEditToken(),
 				data: '{}',
 				clear: 1,
 			} ) ) );

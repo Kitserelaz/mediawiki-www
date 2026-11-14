@@ -4,7 +4,8 @@ declare( strict_types = 1 );
 
 namespace Wikibase\Repo\Maintenance;
 
-use IJobSpecification;
+use MediaWiki\JobQueue\IJobSpecification;
+use MediaWiki\MainConfigNames;
 use MediaWiki\Maintenance\Maintenance;
 use MediaWiki\MediaWikiServices;
 use Wikibase\Lib\Changes\EntityChange;
@@ -12,9 +13,12 @@ use Wikibase\Lib\WikibaseSettings;
 use Wikibase\Repo\ChangeModification\DispatchChangesJob;
 use Wikibase\Repo\WikibaseRepo;
 use Wikimedia\Timestamp\ConvertibleTimestamp;
+use Wikimedia\Timestamp\TimestampFormat as TS;
 
+// @codeCoverageIgnoreStart
 $basePath = getenv( 'MW_INSTALL_PATH' ) !== false ? getenv( 'MW_INSTALL_PATH' ) : __DIR__ . '/../../../..';
 require_once $basePath . '/maintenance/Maintenance.php';
+// @codeCoverageIgnoreEnd
 
 /**
  * Resubmit stuck jobs based on old changes in the Wikibase wb_changes table
@@ -38,8 +42,12 @@ class ResubmitChanges extends Maintenance {
 		}
 
 		$minimumAge = $this->getOption( 'minimum-age', 60 * 60 * 24 );
-		$thisTimeOrOlder = ConvertibleTimestamp::convert( TS_MW, time() - $minimumAge );
-		$stats = MediaWikiServices::getInstance()->getPerDbNameStatsdDataFactory();
+		$thisTimeOrOlder = ConvertibleTimestamp::convert( TS::MW, time() - $minimumAge );
+		$services = MediaWikiServices::getInstance();
+		$mainConfig = $services->getMainConfig();
+
+		$statsPrefix = rtrim( $mainConfig->get( MainConfigNames::DBname ), '.' );
+		$stats = MediaWikiServices::getInstance()->getStatsFactory()->withComponent( 'WikibaseRepo' );
 		$entityChangeLookup = WikibaseRepo::getEntityChangeLookup();
 		$jobQueueGroup = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup();
 
@@ -47,7 +55,11 @@ class ResubmitChanges extends Maintenance {
 		$changes = $entityChangeLookup->loadChangesBefore( $thisTimeOrOlder, $this->mBatchSize, $offset );
 		while ( $changes ) {
 			$numberOfChanges = count( $changes );
-			$stats->updateCount( 'wikibase.repo.ResubmitChanges.numberOfChanges', $numberOfChanges );
+			$stats->getCounter( 'resubmit_changes_number_of_changes_total' )
+			->setLabel( "db", $statsPrefix )
+			->copyToStatsdAt( "$statsPrefix.wikibase.repo.ResubmitChanges.numberOfChanges" )
+			->incrementBy( $numberOfChanges );
+
 			$this->log( 'Resubmitting ' . $numberOfChanges . ' changes older than ' . $minimumAge . ' seconds.' );
 
 			$jobQueueGroup->push( $this->makeChangesIntoJobs( $changes ) );
@@ -73,5 +85,7 @@ class ResubmitChanges extends Maintenance {
 	}
 }
 
+// @codeCoverageIgnoreStart
 $maintClass = ResubmitChanges::class;
 require_once RUN_MAINTENANCE_IF_MAIN;
+// @codeCoverageIgnoreEnd

@@ -7,28 +7,42 @@ use Psr\Container\ContainerInterface;
 use Wikibase\Lexeme\DataAccess\ChangeOp\Validation\LemmaTermValidator;
 use Wikibase\Lexeme\DataAccess\Store\LemmaLookup;
 use Wikibase\Lexeme\Interactors\MergeLexemes\MergeLexemesInteractor;
-use Wikibase\Lexeme\MediaWiki\Content\LexemeLanguageNameLookupFactory;
 use Wikibase\Lexeme\Presentation\ChangeOp\Deserialization\EditFormChangeOpDeserializer;
 use Wikibase\Lib\ContentLanguages;
 use Wikibase\Lib\Store\ItemOrderProvider;
+use Wikibase\Repo\Api\EntitySearchHelper;
 
 /**
  * @license GPL-2.0-or-later
  */
 class WikibaseLexemeServices {
 
+	public static function getFormSearchHelper(
+		?ContainerInterface $services = null
+	): EntitySearchHelper {
+		return ( $services ?: MediaWikiServices::getInstance() )
+			->get( 'WikibaseLexeme.FormSearchHelper' );
+	}
+
+	public static function getLexemeSearchHelper(
+		?ContainerInterface $services = null
+	): EntitySearchHelper {
+		return ( $services ?: MediaWikiServices::getInstance() )
+			->get( 'WikibaseLexeme.LexemeSearchHelper' );
+	}
+
+	public static function getSenseSearchHelper(
+		?ContainerInterface $services = null
+	): EntitySearchHelper {
+		return ( $services ?: MediaWikiServices::getInstance() )
+			->get( 'WikibaseLexeme.SenseSearchHelper' );
+	}
+
 	public static function getTermLanguages(
 		?ContainerInterface $services = null
 	): ContentLanguages {
 		return ( $services ?: MediaWikiServices::getInstance() )
 			->get( 'WikibaseLexemeTermLanguages' );
-	}
-
-	public static function getLanguageNameLookupFactory(
-		?ContainerInterface $services = null
-	): LexemeLanguageNameLookupFactory {
-		return ( $services ?: MediaWikiServices::getInstance() )
-			->get( 'WikibaseLexemeLanguageNameLookupFactory' );
 	}
 
 	public static function getMobileView(

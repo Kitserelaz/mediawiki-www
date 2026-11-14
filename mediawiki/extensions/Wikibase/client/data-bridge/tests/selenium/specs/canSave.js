@@ -1,22 +1,22 @@
-const assert = require( 'assert' ),
-	Api = require( 'wdio-mediawiki/Api' ),
-	DataBridgePage = require( '../pageobjects/dataBridge.page' ),
-	WikibaseApi = require( 'wdio-wikibase/wikibase.api' ),
-	DomUtil = require( './../DomUtil' );
+import assert from 'assert';
+import { createApiClient } from 'wdio-mediawiki/Api.js';
+import DataBridgePage from '../pageobjects/dataBridge.page.js';
+import WikibaseApi from 'wdio-wikibase/wikibase.api.js';
+import * as DomUtil from './../DomUtil.js';
 
 function createTag( tagname, reason ) {
-	return Api.bot().then( ( bot ) => bot.request( {
+	return createApiClient().then( async ( api ) => api.request( {
 		action: 'managetags',
 		operation: 'create',
 		tag: tagname,
 		reason,
-		token: bot.editToken,
+		token: await api.getEditToken(),
 	} ) );
 }
 
 function getLatestRevisionTags( title ) {
-	return Api.bot().then( ( bot ) => {
-		return bot.request( {
+	return createApiClient().then( ( api ) => {
+		return api.request( {
 			titles: title,
 			action: 'query',
 			prop: 'revisions',
@@ -71,7 +71,7 @@ describe( 'App', () => {
 			propertyId,
 			editFlow: 'single-best-value',
 		} ] );
-		browser.call( () => Api.bot().then( ( bot ) => bot.edit( title, content ) ) );
+		browser.call( () => createApiClient().then( ( api ) => api.edit( title, content ) ) );
 
 		DataBridgePage.openAppOnPage( title );
 
@@ -102,12 +102,12 @@ describe( 'App', () => {
 		browser.switchWindow( title );
 
 		DataBridgePage.app.waitForDisplayed( {
-			timeout: browser.config.nonApiTimeout,
+			timeout: browser.options.capabilities[ 'mw:nonApiTimeout' ],
 			reverse: true,
 			timeoutMsg: 'App is still being displayed after clicking the save button',
 		} );
 		DataBridgePage.app.waitForExist( {
-			timeout: browser.config.nonApiTimeout,
+			timeout: browser.options.capabilities[ 'mw:nonApiTimeout' ],
 			reverse: true,
 			timeoutMsg: 'App still exists in the DOM after clicking the save button',
 		} );
@@ -150,7 +150,7 @@ describe( 'App', () => {
 			propertyId,
 			editFlow: 'single-best-value',
 		} ] );
-		browser.call( () => Api.bot().then( ( bot ) => bot.edit( title, content ) ) );
+		browser.call( () => createApiClient().then( ( api ) => api.edit( title, content ) ) );
 
 		DataBridgePage.openAppOnPage( title );
 
@@ -185,7 +185,7 @@ describe( 'App', () => {
 		DataBridgePage.closeButton.click();
 
 		DataBridgePage.app.waitForDisplayed( {
-			timeout: browser.config.nonApiTimeout,
+			timeout: browser.options.capabilities[ 'mw:nonApiTimeout' ],
 			reverse: true,
 			timeoutMsg: 'App is still being displayed after clicking the save button',
 		} );

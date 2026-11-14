@@ -31,14 +31,13 @@ module.exports = ( function ( require, wb ) {
 	/**
 	 * @param {mw.messages} messages
 	 * @param {string} template
-	 * @param {[{ value: string, language: string }]} glosses
+	 * @param {{ value: string, language: string }} glosses
 	 * @param {Function} beforeUpdate
 	 * @param {Function} getDirectionality
 	 * @return {Object}
 	 */
 	function newGlossWidget( messages, template, glosses, beforeUpdate, getDirectionality ) {
 		return {
-			compatConfig: { MODE: 3 },
 			template: template,
 
 			mixins: [

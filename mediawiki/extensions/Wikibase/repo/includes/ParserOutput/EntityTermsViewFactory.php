@@ -46,7 +46,7 @@ class EntityTermsViewFactory {
 		EntityDocument $entity,
 		Language $language,
 		TermLanguageFallbackChain $termFallbackChain
-	) {
+	): PlaceholderEmittingEntityTermsView {
 		$services = MediaWikiServices::getInstance();
 		$textProvider = new MediaWikiLocalizedTextProvider( $language );
 		$templateFactory = TemplateFactory::getDefaultInstance();
@@ -57,7 +57,7 @@ class EntityTermsViewFactory {
 			$entityLookup->addEntity( $entity );
 		}
 
-		$mulEnabled = WikibaseRepo::getSettings( $services )->getSetting( 'tmpEnableMulLanguageCode' );
+		$mulEnabled = WikibaseRepo::getSettings( $services )->getSetting( 'enableMulLanguageCode' );
 		return new PlaceholderEmittingEntityTermsView(
 			new FallbackHintHtmlTermRenderer(
 				$languageDirectionalityLookup,
@@ -106,7 +106,7 @@ class EntityTermsViewFactory {
 				$repoSettings->getSetting( 'ssrServerUrl' ),
 				$repoSettings->getSetting( 'ssrServerTimeout' ),
 				WikibaseRepo::getLogger( $services ),
-				$services->getStatsdDataFactory()
+				$services->getStatsFactory()
 			),
 			$textProvider,
 			new RepoSpecialPageLinker(),

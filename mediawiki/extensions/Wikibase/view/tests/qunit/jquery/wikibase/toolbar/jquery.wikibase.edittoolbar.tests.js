@@ -27,14 +27,14 @@
 	function createEdittoolbar( options ) {
 		return $( '<span>' )
 			.addClass( 'test_edittoolbar' )
-			.edittoolbar( $.extend( {
+			.edittoolbar( Object.assign( {
 				getHelpMessage: function () {
 					return $.Deferred().resolve().promise();
 				}
 			}, options || {} ) );
 	}
 
-	QUnit.skip( 'Create & destroy', function ( assert ) {
+	QUnit.skip( 'Create & destroy', ( assert ) => {
 		var $edittoolbar = createEdittoolbar(),
 			edittoolbar = $edittoolbar.data( 'edittoolbar' );
 
@@ -68,7 +68,7 @@
 		);
 	} );
 
-	QUnit.skip( 'Deferred button initialization', function ( assert ) {
+	QUnit.skip( 'Deferred button initialization', ( assert ) => {
 		var $edittoolbar = createEdittoolbar(),
 			edittoolbar = $edittoolbar.data( 'edittoolbar' ),
 			deferredButtons = [ 'save', 'remove', 'cancel' ];
@@ -103,7 +103,7 @@
 		);
 	} );
 
-	QUnit.skip( 'toEditMode(), toNonEditMode()', function ( assert ) {
+	QUnit.skip( 'toEditMode(), toNonEditMode()', ( assert ) => {
 		var $edittoolbar = createEdittoolbar(),
 			edittoolbar = $edittoolbar.data( 'edittoolbar' );
 
@@ -153,7 +153,7 @@
 			'Verified toolbar\'s button being the "edit" button.'
 		);
 
-		edittoolbar.option( 'onRemove', function () {} );
+		edittoolbar.option( 'onRemove', () => {} );
 
 		edittoolbar.toEditMode();
 

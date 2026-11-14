@@ -73,7 +73,7 @@
 	"apihelp-wbformatvalue-param-generate": "The desired output format to generate.",
 	"apihelp-wbformatvalue-param-datatype": "The value's data type. This is distinct from the value's type",
 	"apihelp-wbformatvalue-param-datavalue": "The data to format. This has to be the JSON serialization of a DataValue object.",
-	"apihelp-wbformatvalue-param-options": "The options the formatter should use. Provided as a JSON object.",
+	"apihelp-wbformatvalue-param-options": "The options the formatter should use. Provided as a JSON object.\n\nThe supported options are:\n; $1: The language in which the value should be formatted (a MediaWiki language code).\n; $2: Whether to apply rounding to the number. Can be a boolean (automatic / no rounding) or an integer (exponent of the last significant decimal digits). Only useful for quantity values.\n; $3: Whether to include the unit in the output (a boolean). Only useful for quantity values.\n; $4: Whether to show the calendar model. Can be a boolean (always / never show) or the string <code>\"auto\"</code> (automatically determine whether to show). Only useful for time values.",
 	"apihelp-wbformatvalue-param-property": "Property ID the data value belongs to, should be used instead of the <var>datatype</var> parameter.",
 	"apihelp-wbformatvalue-example-1": "Format a simple string value.",
 	"apihelp-wbformatvalue-example-2": "Format a string value as a URL in HTML.",
@@ -111,6 +111,7 @@
 	"apihelp-wbgetentities-example-11": "Get the item for page \"<var>Berlin</var>\" on the site \"<var>enwiki</var>\" after normalizing the title from \"<var>berlin</var>\"",
 	"apihelp-wbgetentities-example-12": "Get the sitelinks for item <samp>Q42</samp>",
 	"apihelp-wbgetentities-example-13": "Get entities with ID <samp>Q42</samp> showing only sitelinks from \"<var>enwiki</var>\"",
+	"apihelp-wbgraphql-summary": "Experimental GraphQL module.",
 	"apihelp-wblinktitles-summary": "Associates two pages on two different wikis with a Wikibase item.",
 	"apihelp-wblinktitles-param-tosite": "An identifier for the site on which the page resides.\nUse together with <var>totitle</var> to make a complete sitelink.",
 	"apihelp-wblinktitles-param-totitle": "Title of the page to associate.\nUse together with <var>tosite</var> to make a complete sitelink.",
@@ -321,11 +322,13 @@
 	"apihelp-wbsetsitelink-example-6": "Change badges for the link to the Polish page from the item with ID <samp>$1</samp> to two badges pointing to the items with IDs \"Q2\" and \"Q149\" without providing the link title",
 	"apihelp-wbsetsitelink-example-7": "Change the link to the Polish page from the item with ID <samp>$1</samp> without changing badges",
 	"apihelp-wbsetsitelink-example-8": "Change the link to the Polish page from the item with ID <samp>$1</samp> and remove all of its badges",
-	"apihelp-wbformatentities-summary": "Formats entity IDs to HTML.",
+	"apihelp-wbformatentities-summary": "Formats entity IDs to HTML or plain text.",
 	"apihelp-wbformatentities-extended-description": "The language can be specified with the global <var>uselang</var> parameter.",
 	"apihelp-wbformatentities-param-ids": "The entity IDs to format.",
-	"apihelp-wbformatentities-example-1": "Format a single item ID.",
+	"apihelp-wbformatentities-param-generate": "The desired output format to generate.",
+	"apihelp-wbformatentities-example-1": "Format a single item ID to HTML.",
 	"apihelp-wbformatentities-example-2": "Format an item ID and a property ID.",
 	"apihelp-wbformatentities-example-3": "Format an item ID, a property ID and a lexeme ID.",
-	"apihelp-wbformatentities-example-4": "Format three item IDs in French."
+	"apihelp-wbformatentities-example-4": "Format three item IDs in French.",
+	"apihelp-wbformatentities-example-5": "Format three item IDs and a property ID to plain text."
 }

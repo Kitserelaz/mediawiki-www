@@ -24,12 +24,15 @@ use Wikimedia\Rdbms\IResultWrapper;
  */
 class ApiListEntityUsage extends ApiQueryGeneratorBase {
 
-	/**
-	 * @var RepoLinker
-	 */
-	private $repoLinker;
+	use ApiQueryWithContinueTrait;
 
-	public function __construct( ApiQuery $query, string $moduleName, RepoLinker $repoLinker ) {
+	private RepoLinker $repoLinker;
+
+	public function __construct(
+		ApiQuery $query,
+		string $moduleName,
+		RepoLinker $repoLinker
+	) {
 		parent::__construct( $query, $moduleName, 'wbleu' );
 
 		$this->repoLinker = $repoLinker;
@@ -94,7 +97,7 @@ class ApiListEntityUsage extends ApiQueryGeneratorBase {
 
 			if ( $previousRow !== null && $row->eu_page_id !== $previousRow->eu_page_id ) {
 				// finish previous entry: Let's add the data and check if it needs continuation
-				$fit = $this->formatPageData( $previousRow, intval( $previousRow->eu_page_id ), $entry, $result );
+				$fit = $this->formatPageData( $previousRow, $entry, $result );
 				if ( !$fit ) {
 					$this->setContinueFromRow( $row );
 					break;
@@ -112,7 +115,7 @@ class ApiListEntityUsage extends ApiQueryGeneratorBase {
 
 		}
 		if ( $entry ) {
-			$this->formatPageData( $previousRow, intval( $previousRow->eu_page_id ), $entry, $result );
+			$this->formatPageData( $previousRow, $entry, $result );
 		}
 	}
 
@@ -133,7 +136,6 @@ class ApiListEntityUsage extends ApiQueryGeneratorBase {
 	 */
 	private function formatPageData(
 		object $row,
-		int $pageId,
 		array $entry,
 		ApiResult $result
 	): bool {
@@ -186,7 +188,7 @@ class ApiListEntityUsage extends ApiQueryGeneratorBase {
 		$this->addWhereFld( 'eu_entity_id', $params['entities'] );
 
 		if ( $params['continue'] !== null ) {
-			$this->addContinue( $params['continue'] );
+			$this->addContinue( $params['continue'], $this->getDB() );
 		}
 
 		$orderBy = [ 'eu_page_id', 'eu_entity_id' ];
@@ -200,18 +202,6 @@ class ApiListEntityUsage extends ApiQueryGeneratorBase {
 		$this->addOption( 'LIMIT', $params['limit'] + 1 );
 		$res = $this->select( __METHOD__ );
 		return $res;
-	}
-
-	private function addContinue( string $continueParam ): void {
-		$db = $this->getDB();
-		[ $pageContinue, $entityContinue, $aspectContinue ] = explode( '|', $continueParam, 3 );
-		// Filtering out results that have been shown already and
-		// starting the query from where it ended.
-		$this->addWhere( $db->buildComparison( '>=', [
-			'eu_page_id' => (int)$pageContinue,
-			'eu_entity_id' => $entityContinue,
-			'eu_aspect' => $aspectContinue,
-		] ) );
 	}
 
 	public function getAllowedParams(): array {
@@ -241,6 +231,9 @@ class ApiListEntityUsage extends ApiQueryGeneratorBase {
 					EntityUsage::DESCRIPTION_USAGE => 'apihelp-query+wbentityusage-paramvalue-aspect-D',
 					EntityUsage::TITLE_USAGE => 'apihelp-query+wbentityusage-paramvalue-aspect-T',
 					EntityUsage::STATEMENT_USAGE => 'apihelp-query+wbentityusage-paramvalue-aspect-C',
+					// Please do not add new usages of "all'("X") aspects. This places too much pressure
+					// on client recentchanges table and generates unnecessary reparses.
+					// The method only remains to monitor redirect pages
 					EntityUsage::ALL_USAGE => 'apihelp-query+wbentityusage-paramvalue-aspect-X',
 					EntityUsage::OTHER_USAGE => 'apihelp-query+wbentityusage-paramvalue-aspect-O',
 				],

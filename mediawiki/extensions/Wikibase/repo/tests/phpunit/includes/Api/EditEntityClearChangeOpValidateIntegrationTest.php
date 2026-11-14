@@ -17,15 +17,12 @@ use Wikibase\DataModel\Term\Term;
 use Wikibase\DataModel\Term\TermList;
 use Wikibase\Repo\Api\EditEntity;
 use Wikibase\Repo\Api\EditSummaryHelper;
-use Wikibase\Repo\ChangeOp\ChangedLanguagesCollector;
-use Wikibase\Repo\ChangeOp\ChangedLanguagesCounter;
 use Wikibase\Repo\ChangeOp\ChangeOp;
 use Wikibase\Repo\ChangeOp\ChangeOpApplyException;
-use Wikibase\Repo\ChangeOp\NonLanguageBoundChangesCounter;
 use Wikibase\Repo\Store\Store;
 use Wikibase\Repo\Tests\ChangeOp\ChangeOpResultStub;
 use Wikibase\Repo\WikibaseRepo;
-use Wikimedia\Stats\NullStatsdDataFactory;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * @covers \Wikibase\Repo\Api\EditEntity
@@ -91,7 +88,6 @@ class EditEntityClearChangeOpValidateIntegrationTest extends MediaWikiIntegratio
 
 		$modifyEntity = ( new ReflectionClass( $api ) )
 			->getMethod( 'modifyEntity' );
-		$modifyEntity->setAccessible( true );
 
 		$modifyEntity->invokeArgs( $api, [ &$item, $changeOp, $params ] );
 
@@ -111,7 +107,6 @@ class EditEntityClearChangeOpValidateIntegrationTest extends MediaWikiIntegratio
 
 		$modifyEntity = ( new ReflectionClass( $api ) )
 			->getMethod( 'modifyEntity' );
-		$modifyEntity->setAccessible( true );
 
 		$this->expectException( ApiUsageException::class );
 		$modifyEntity->invokeArgs( $api, [ &$item, $changeOp, $params ] );
@@ -123,17 +118,13 @@ class EditEntityClearChangeOpValidateIntegrationTest extends MediaWikiIntegratio
 		return new EditEntity(
 			new ApiMain( $request ),
 			'test',
-			new NullStatsdDataFactory(),
+			StatsFactory::newNull(),
 			WikibaseRepo::getStore()
 				->getEntityRevisionLookup( Store::LOOKUP_CACHING_DISABLED ),
 			WikibaseRepo::getEntityIdParser(),
 			WikibaseRepo::getDataTypeDefinitions()->getTypeIds(),
 			WikibaseRepo::getEntityChangeOpProvider(),
-			new EditSummaryHelper(
-				new ChangedLanguagesCollector(),
-				new ChangedLanguagesCounter(),
-				new NonLanguageBoundChangesCounter()
-			),
+			new EditSummaryHelper( WikibaseRepo::getEntityDiffer() ),
 			false,
 			[ 'mainItem' => 'Q42' ]
 		);

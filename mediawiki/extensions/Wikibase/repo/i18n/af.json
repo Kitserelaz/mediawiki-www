@@ -186,5 +186,7 @@
 	"wikibase-tainted-ref-popper-text": "Die waarde van hierdie stelling is verander, maar die verwysing het dieselfde gebly. U mag hierdie waarskuwing verwyder indien die verwysing nog steeds korrek is.",
 	"wikibase-tainted-ref-popper-help-link-text": "Hulp",
 	"wikibase-tainted-ref-popper-remove-warning": "Verwyder die waarskuwing",
-	"wikibase-federated-properties-edit-request-failed-notice-try-again": "Probeer weer"
+	"wikibase-federated-properties-edit-request-failed-notice-try-again": "Probeer weer",
+	"wikibase-scoped-search-item-scope-name": "Items",
+	"wikibase-scoped-search-property-scope-name": "Eienskappe"
 }

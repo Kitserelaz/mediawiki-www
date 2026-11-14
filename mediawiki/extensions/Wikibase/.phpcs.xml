@@ -1,11 +1,16 @@
 <?xml version="1.0"?>
 <ruleset>
-	<rule ref="./vendor/mediawiki/mediawiki-codesniffer/MediaWiki">
-		<exclude name="MediaWiki.Commenting.FunctionComment.MissingDocumentationPrivate" />
-		<exclude name="MediaWiki.Commenting.FunctionComment.MissingDocumentationProtected" />
-		<exclude name="MediaWiki.Commenting.FunctionComment.MissingDocumentationPublic" />
-		<exclude name="MediaWiki.Commenting.FunctionComment.MissingParamTag" />
-		<exclude name="MediaWiki.Usage.StaticClosure.StaticClosure" />
+
+	<rule ref="./vendor/mediawiki/mediawiki-codesniffer/MediaWiki" />
+
+    <!-- Setting here so that LibraryUpgrader doesn't try to auto-convert, as it's very noisy. -->
+	<rule ref="MediaWiki.Usage.StaticClosure.StaticClosure">
+	    <severity>0</severity>
+	</rule>
+
+	<!-- Use of @SuppressWarnings from PHPMD -->
+	<rule ref="MediaWiki.Commenting.ClassAnnotations.UnrecognizedAnnotation">
+	    <severity>0</severity>
 	</rule>
 
 	<!-- Starting a function's body with an empty line can be helpful after a very large header.
@@ -35,6 +40,8 @@
 	</rule>
 	<rule ref="Generic.PHP.NoSilencedErrors.Discouraged">
 		<exclude-pattern>tests/phpunit/*</exclude-pattern>
+		<!-- For /lib/packages/*/tests/unit/**/*.php -->
+		<exclude-pattern>tests/unit/*</exclude-pattern>
 	</rule>
 
 	<!-- NOTE: We can not use the Squiz.Arrays.ArrayBracketSpacing sniff because it conflicts with
@@ -82,10 +89,6 @@
 	</rule>
 	<rule ref="MediaWiki.Commenting.LicenseComment.LicenseTagNonFileComment">
 		<exclude-pattern>WikibaseLibraryTestCase\.php</exclude-pattern>
-		<exclude-pattern>DispatchingQueryBuilderTest\.php</exclude-pattern>
-	</rule>
-	<rule ref="MediaWiki.Commenting.PhpunitAnnotations.NotClassTrait">
-		<exclude-pattern>DispatchingQueryBuilderTest\.php</exclude-pattern>
 	</rule>
 	<rule ref="MediaWiki.Arrays.TrailingComma">
 		<properties>
@@ -112,7 +115,12 @@
 	<arg name="extensions" value="php" />
 	<arg name="encoding" value="UTF-8" />
 	<arg name="bootstrap" value="./vendor/mediawiki/mediawiki-codesniffer/utils/bootstrap-ci.php"/>
-	<exclude-pattern>.phan/stubs</exclude-pattern>
-	<exclude-pattern>repo/tests/browser</exclude-pattern>
+	<exclude-pattern type="relative">^docs/*</exclude-pattern>
+	<exclude-pattern type="relative">^\.phan/stubs/</exclude-pattern>
 	<exclude-pattern type="relative">^extensions/</exclude-pattern>
+	<exclude-pattern type="relative">^client/data-bridge/node_modules/</exclude-pattern>
+	<exclude-pattern type="relative">^lib/packages/*/*/vendor/</exclude-pattern>
+	<exclude-pattern type="relative">^repo/rest-api/node_modules/</exclude-pattern>
+	<exclude-pattern type="relative">^repo/tests/browser</exclude-pattern>
+	<exclude-pattern type="relative">^view/lib/*/node_modules/</exclude-pattern>
 </ruleset>

@@ -22,8 +22,7 @@ class InMemoryPrefetchingTermLookup implements PrefetchingTermLookup {
 
 	/** @var (string|string[])[][] */
 	private $buffer;
-	/** @var array */
-	private $entityData;
+	private array $entityData;
 	private bool $loadEntitiesIfNotPrefetched;
 
 	/**
@@ -50,18 +49,10 @@ class InMemoryPrefetchingTermLookup implements PrefetchingTermLookup {
 
 	/**
 	 * @param array $entityIds
-	 * @param array|null $termTypes if null, defaults to labels and descriptions only
-	 * @param array|null $languageCodes if null, defaults to nothing
-	 * @note These defaults do not strictly obey the definitions of the interface
-	 * but instead are similar to the FakePrefetchingTermLookup
+	 * @param array $termTypes
+	 * @param array $languageCodes
 	 */
-	public function prefetchTerms( array $entityIds, ?array $termTypes = null, ?array $languageCodes = null ) {
-		if ( $termTypes === null ) {
-			$termTypes = [ TermTypes::TYPE_LABEL, TermTypes::TYPE_DESCRIPTION ];
-		}
-		if ( $languageCodes === null ) {
-			$languageCodes = [];
-		}
+	public function prefetchTerms( array $entityIds, array $termTypes, array $languageCodes ) {
 		$this->bufferStubTermsForEntities( $entityIds, $termTypes, $languageCodes );
 	}
 
@@ -79,11 +70,11 @@ class InMemoryPrefetchingTermLookup implements PrefetchingTermLookup {
 		}
 	}
 
-	private function bufferNonAliasTerm( EntityId $id, $type, $lang ) {
+	private function bufferNonAliasTerm( EntityId $id, string $type, string $lang ) {
 		$this->buffer[$id->getSerialization()][$type][$lang] = $this->getFromEntityData( $id, $type, $lang );
 	}
 
-	private function getFromEntityData( EntityId $id, $type, $lang ): ?string {
+	private function getFromEntityData( EntityId $id, string $type, string $lang ): ?string {
 		if ( !array_key_exists( $id->getSerialization(), $this->entityData ) ) {
 			return null;
 		}
@@ -99,7 +90,7 @@ class InMemoryPrefetchingTermLookup implements PrefetchingTermLookup {
 		return null;
 	}
 
-	public function getPrefetchedTerms() {
+	public function getPrefetchedTerms(): array {
 		$terms = [];
 
 		foreach ( $this->buffer as $entityTerms ) {
@@ -113,11 +104,13 @@ class InMemoryPrefetchingTermLookup implements PrefetchingTermLookup {
 		return $terms;
 	}
 
+	/** @inheritDoc */
 	public function getPrefetchedTerm( EntityId $entityId, $termType, $languageCode ) {
 		$id = $entityId->getSerialization();
 		return $this->buffer[$id][$termType][$languageCode] ?? null;
 	}
 
+	/** @inheritDoc */
 	public function getLabel( EntityId $entityId, $languageCode ) {
 		if ( $this->loadEntitiesIfNotPrefetched ) {
 			return $this->getFromEntityData( $entityId, TermTypes::TYPE_LABEL, $languageCode );
@@ -125,6 +118,7 @@ class InMemoryPrefetchingTermLookup implements PrefetchingTermLookup {
 		return $this->getPrefetchedTerm( $entityId, TermTypes::TYPE_LABEL, $languageCode );
 	}
 
+	/** @inheritDoc */
 	public function getLabels( EntityId $entityId, array $languageCodes ) {
 		$labels = [];
 
@@ -150,6 +144,7 @@ class InMemoryPrefetchingTermLookup implements PrefetchingTermLookup {
 		return $labels;
 	}
 
+	/** @inheritDoc */
 	public function getDescription( EntityId $entityId, $languageCode ) {
 		if ( $this->loadEntitiesIfNotPrefetched ) {
 			return $this->getFromEntityData( $entityId, TermTypes::TYPE_DESCRIPTION, $languageCode );
@@ -157,6 +152,7 @@ class InMemoryPrefetchingTermLookup implements PrefetchingTermLookup {
 		return $this->getPrefetchedTerm( $entityId, TermTypes::TYPE_DESCRIPTION, $languageCode );
 	}
 
+	/** @inheritDoc */
 	public function getDescriptions( EntityId $entityId, array $languageCodes ) {
 		$descriptions = [];
 
@@ -173,6 +169,7 @@ class InMemoryPrefetchingTermLookup implements PrefetchingTermLookup {
 		return $descriptions;
 	}
 
+	/** @inheritDoc */
 	public function getPrefetchedAliases( EntityId $entityId, $languageCode ) {
 		throw new RuntimeException( 'Not Implemented' );
 	}

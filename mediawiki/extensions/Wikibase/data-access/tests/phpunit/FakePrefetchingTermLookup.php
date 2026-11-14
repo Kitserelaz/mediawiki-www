@@ -20,16 +20,10 @@ class FakePrefetchingTermLookup implements PrefetchingTermLookup {
 
 	/**
 	 * @param array $entityIds
-	 * @param array|null $termTypes if null, defaults to labels and descriptions only
-	 * @param array|null $languageCodes if null, defaults to de and en
+	 * @param array $termTypes
+	 * @param array $languageCodes
 	 */
 	public function prefetchTerms( array $entityIds, array $termTypes, array $languageCodes ) {
-		if ( $termTypes === null ) {
-			$termTypes = [ TermTypes::TYPE_LABEL, TermTypes::TYPE_DESCRIPTION ];
-		}
-		if ( $languageCodes === null ) {
-			$languageCodes = [ 'de', 'en' ];
-		}
 		$this->bufferFakeTermsForEntities( $entityIds, $termTypes, $languageCodes );
 	}
 
@@ -47,11 +41,11 @@ class FakePrefetchingTermLookup implements PrefetchingTermLookup {
 		}
 	}
 
-	private function bufferNonAliasTerm( EntityId $id, $type, $lang ) {
+	private function bufferNonAliasTerm( EntityId $id, string $type, string $lang ) {
 		$this->buffer[$id->getSerialization()][$type][$lang] = $this->generateFakeTerm( $id, $type, $lang );
 	}
 
-	private function bufferAliasTerms( EntityId $id, $type, $lang ) {
+	private function bufferAliasTerms( EntityId $id, string $type, string $lang ) {
 		$this->buffer[$id->getSerialization()][$type][$lang] = [];
 		$this->buffer[$id->getSerialization()][$type][$lang][] = $this->generateFakeTerm( $id, $type, $lang, 1 );
 		$this->buffer[$id->getSerialization()][$type][$lang][] = $this->generateFakeTerm( $id, $type, $lang, 2 );
@@ -70,7 +64,7 @@ class FakePrefetchingTermLookup implements PrefetchingTermLookup {
 		return $id->getSerialization() . ' ' . $lang . ' ' . $type . $suffix;
 	}
 
-	public function getPrefetchedTerms() {
+	public function getPrefetchedTerms(): array {
 		$terms = [];
 
 		foreach ( $this->buffer as $entityTerms ) {
@@ -84,15 +78,18 @@ class FakePrefetchingTermLookup implements PrefetchingTermLookup {
 		return $terms;
 	}
 
+	/** @inheritDoc */
 	public function getPrefetchedTerm( EntityId $entityId, $termType, $languageCode ) {
 		$id = $entityId->getSerialization();
 		return $this->buffer[$id][$termType][$languageCode] ?? null;
 	}
 
+	/** @inheritDoc */
 	public function getLabel( EntityId $entityId, $languageCode ) {
 		return $this->generateFakeTerm( $entityId, TermTypes::TYPE_LABEL, $languageCode );
 	}
 
+	/** @inheritDoc */
 	public function getLabels( EntityId $entityId, array $languageCodes ) {
 		$labels = [];
 
@@ -102,10 +99,12 @@ class FakePrefetchingTermLookup implements PrefetchingTermLookup {
 		return $labels;
 	}
 
+	/** @inheritDoc */
 	public function getDescription( EntityId $entityId, $languageCode ) {
 		return $this->generateFakeTerm( $entityId, TermTypes::TYPE_DESCRIPTION, $languageCode );
 	}
 
+	/** @inheritDoc */
 	public function getDescriptions( EntityId $entityId, array $languageCodes ) {
 		$descriptions = [];
 
@@ -115,6 +114,7 @@ class FakePrefetchingTermLookup implements PrefetchingTermLookup {
 		return $descriptions;
 	}
 
+	/** @inheritDoc */
 	public function getPrefetchedAliases( EntityId $entityId, $languageCode ) {
 		$id = $entityId->getSerialization();
 		if ( array_key_exists( $id, $this->buffer ) ) {

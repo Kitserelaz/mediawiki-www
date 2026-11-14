@@ -51,11 +51,9 @@ abstract class SpecialWikibaseQueryPage extends SpecialWikibasePage {
 
 	/**
 	 * @param string $name
-	 * @param string $restriction
-	 * @param bool $listed
 	 */
-	public function __construct( $name = '', $restriction = '', $listed = true ) {
-		parent::__construct( $name, $restriction, $listed );
+	public function __construct( $name = '' ) {
+		parent::__construct( $name );
 
 		$this->entityTitleLookup = WikibaseRepo::getEntityTitleLookup();
 	}

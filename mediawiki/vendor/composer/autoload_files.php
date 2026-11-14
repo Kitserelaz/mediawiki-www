@@ -23,6 +23,7 @@ return array(
     '606a39d89246991a373564698c2d8383' => $vendorDir . '/symfony/polyfill-php85/bootstrap.php',
     '667aeda72477189d0494fecd327c3641' => $vendorDir . '/symfony/var-dumper/Resources/functions/dump.php',
     'c50606d667a3fde2b80a955639479d3d' => $vendorDir . '/wikimedia/timestamp/src/defines.php',
+    '3ef87127dc6892a0a78f223558a0b940' => $vendorDir . '/diff/diff/Diff.php',
     'a84de8315bd92c71bcb39ff2ace7383d' => $vendorDir . '/giorgiosironi/eris/src/Generator/functions.php',
     '1e1cb42dd2499e18ea5eab984a9f5c8b' => $baseDir . '/extensions/SemanticMediaWiki/src/Defines.php',
     'f00fcfe521bbee4acc1af52627a2bc7a' => $baseDir . '/extensions/SemanticMediaWiki/src/enableSemantics.php',

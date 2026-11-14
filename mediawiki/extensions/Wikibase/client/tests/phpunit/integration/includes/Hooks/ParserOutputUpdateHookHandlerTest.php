@@ -5,8 +5,11 @@ declare( strict_types = 1 );
 namespace Wikibase\Client\Tests\Integration\Hooks;
 
 use MediaWiki\Content\Content;
-use MediaWiki\HookContainer\HookContainer;
+use MediaWiki\Content\ContentHandler;
 use MediaWiki\Parser\ParserOutput;
+use MediaWiki\Parser\ParserOutputLinkTypes;
+use MediaWiki\Revision\RevisionLookup;
+use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Site\HashSiteStore;
 use MediaWiki\Site\MediaWikiSite;
 use MediaWiki\Site\Site;
@@ -20,6 +23,7 @@ use Wikibase\Client\Hooks\NoLangLinkHandler;
 use Wikibase\Client\Hooks\OtherProjectsSidebarGeneratorFactory;
 use Wikibase\Client\Hooks\ParserOutputUpdateHookHandler;
 use Wikibase\Client\Hooks\SidebarLinkBadgeDisplay;
+use Wikibase\Client\Hooks\WikibaseClientHookRunner;
 use Wikibase\Client\NamespaceChecker;
 use Wikibase\Client\ParserOutput\ClientParserOutputDataUpdater;
 use Wikibase\Client\Usage\EntityUsage;
@@ -34,6 +38,7 @@ use Wikibase\DataModel\Entity\NumericPropertyId;
 use Wikibase\DataModel\Services\Lookup\EntityRedirectTargetLookup;
 use Wikibase\DataModel\Services\Lookup\InMemoryEntityLookup;
 use Wikibase\DataModel\Services\Lookup\LabelDescriptionLookup;
+use Wikibase\DataModel\Services\Lookup\TermLookup;
 use Wikibase\DataModel\SiteLink;
 use Wikibase\DataModel\SiteLinkList;
 use Wikibase\DataModel\Snak\PropertyValueSnak;
@@ -237,7 +242,7 @@ class ParserOutputUpdateHookHandlerTest extends MediaWikiIntegrationTestCase {
 			$this->getSiteLookup(),
 			$this->getEntityLookup( $siteLinkData ),
 			$sidebarLinkBadgeDisplay,
-			$this->createMock( HookContainer::class ),
+			$this->createMock( WikibaseClientHookRunner::class ),
 			new NullLogger()
 		);
 	}
@@ -323,7 +328,7 @@ class ParserOutputUpdateHookHandlerTest extends MediaWikiIntegrationTestCase {
 	) {
 		$titleWrapper = TestingAccessWrapper::newFromObject( $title );
 		$titleWrapper->mRedirect = false;
-		$content = $this->createMock( Content::class );
+		$content = $this->mockContent();
 		$parserOutput = $this->newParserOutput( $extensionDataAppend, [] );
 		$handler = $this->newParserOutputUpdateHookHandler( $this->getTestSiteLinkData() );
 
@@ -353,7 +358,7 @@ class ParserOutputUpdateHookHandlerTest extends MediaWikiIntegrationTestCase {
 	}
 
 	public function testDoContentAlterParserOutput_sitelinkOfNoItem() {
-		$content = $this->createMock( Content::class );
+		$content = $this->mockContent();
 		$title = Title::makeTitle( NS_MAIN, 'Plutonium' );
 
 		$parserOutput = $this->newParserOutput( [], [] );
@@ -364,7 +369,7 @@ class ParserOutputUpdateHookHandlerTest extends MediaWikiIntegrationTestCase {
 		$this->assertNull( $parserOutput->getPageProperty( 'wikibase_item' ) );
 		$this->assertSame( -NS_MAIN, $parserOutput->getPageProperty( 'unexpectedUnconnectedPage' ) );
 
-		$this->assertSame( [], $parserOutput->getLanguageLinks() );
+		$this->assertSame( [], $parserOutput->getLinkList( ParserOutputLinkTypes::LANGUAGE ) );
 		$this->assertSame( [], $parserOutput->getExtensionData( 'wikibase-otherprojects-sidebar' ) );
 
 		$this->assertNull( $parserOutput->getExtensionData( ParserOutputUsageAccumulator::EXTENSION_DATA_KEY ) );
@@ -383,11 +388,118 @@ class ParserOutputUpdateHookHandlerTest extends MediaWikiIntegrationTestCase {
 		$this->assertNull( $parserOutput->getPageProperty( 'wikibase_item' ) );
 		$this->assertNull( $parserOutput->getPageProperty( 'unexpectedUnconnectedPage' ) );
 
-		$this->assertSame( [], $parserOutput->getLanguageLinks() );
+		$this->assertSame( [], $parserOutput->getLinkList( ParserOutputLinkTypes::LANGUAGE ) );
 		$this->assertNull( $parserOutput->getExtensionData( 'wikibase-otherprojects-sidebar' ) );
 
 		$this->assertNull( $parserOutput->getExtensionData( ParserOutputUsageAccumulator::EXTENSION_DATA_KEY ) );
 		$this->assertNull( $parserOutput->getExtensionData( 'wikibase_badges' ) );
+	}
+
+	public function testFirstRevisionTimestampInParserOutput() {
+		$title = Title::makeTitle( NS_MAIN, 'Foobarium' );
+
+		$namespaceChecker = $this->newNamespaceChecker();
+
+		$mockRepo = new MockRepository();
+
+		$content = $this->mockContent();
+
+		$parserOutput = $this->newParserOutput( [], [] );
+		$langLinkHandlerFactory = $this->newLangLinkHandlerFactory( $namespaceChecker, $mockRepo );
+		$settings = $this->newSettings();
+
+		$firstRevision = $this->createMock( RevisionRecord::class );
+		$firstRevision->method( 'getTimestamp' )->willReturn( '946782245' ); // 2000-01-02T03:04:05Z
+		$revisionLookup = $this->createMock( RevisionLookup::class );
+		$revisionLookup->method( 'getFirstRevision' )->with( $title )->willReturn( $firstRevision );
+
+		$parserOutputDataUpdater = new ClientParserOutputDataUpdater(
+			$this->getOtherProjectsSidebarGeneratorFactory( $settings, $mockRepo, $this->getTestSiteLinkData() ),
+			$mockRepo,
+			$mockRepo,
+			$this->newUsageAccumulatorFactory(),
+			$settings->getSetting( 'siteGlobalID' ),
+			$revisionLookup,
+			$this->createMock( TermLookup::class )
+		);
+
+		$handler = new ParserOutputUpdateHookHandler(
+			$langLinkHandlerFactory,
+			$namespaceChecker,
+			$parserOutputDataUpdater,
+			$this->newUsageAccumulatorFactory()
+		);
+
+		$this->assertNull( $parserOutput->getExtensionData( 'first_revision_timestamp' ) );
+
+		$handler->doContentAlterParserOutput( $content, $title, $parserOutput );
+		$this->assertSame( '946782245', $parserOutput->getExtensionData( 'first_revision_timestamp' ) );
+	}
+
+	private function testWikibaseItemDescriptionInParserOutput( ?string $wikibaseItemId, ?string $wikibaseItemDescription ): ParserOutput {
+		$pageTitle = 'Foobarium';
+		$title = Title::makeTitle( NS_MAIN, $pageTitle );
+		$titleWrapper = TestingAccessWrapper::newFromObject( $title );
+		$titleWrapper->mRedirect = false;
+
+		$namespaceChecker = $this->newNamespaceChecker();
+
+		$mockRepo = new MockRepository();
+		if ( $wikibaseItemId ) {
+			$siteLink = new SiteLink( 'enwiki', $pageTitle );
+			$item = new Item(
+				new ItemId( $wikibaseItemId ),
+				null,
+				new SiteLinkList( [ $siteLink ] ),
+				new StatementList()
+			);
+			$mockRepo->putEntity( $item );
+		}
+
+		$content = $this->mockContent();
+
+		$parserOutput = $this->newParserOutput( [], [] );
+		$langLinkHandlerFactory = $this->newLangLinkHandlerFactory( $namespaceChecker, $mockRepo );
+		$settings = $this->newSettings();
+
+		$termLookup = $this->createMock( TermLookup::class );
+		$termLookup->method( 'getDescription' )->willReturn( $wikibaseItemDescription );
+
+		$parserOutputDataUpdater = new ClientParserOutputDataUpdater(
+			$this->getOtherProjectsSidebarGeneratorFactory(
+				$settings, $mockRepo, $wikibaseItemId ? [ $wikibaseItemId => [ $siteLink ] ] : []
+			),
+			$mockRepo,
+			$mockRepo,
+			$this->newUsageAccumulatorFactory(),
+			$settings->getSetting( 'siteGlobalID' ),
+			$this->createMock( RevisionLookup::class ),
+			$termLookup
+		);
+
+		$handler = new ParserOutputUpdateHookHandler(
+			$langLinkHandlerFactory,
+			$namespaceChecker,
+			$parserOutputDataUpdater,
+			$this->newUsageAccumulatorFactory()
+		);
+
+		$this->assertNull( $parserOutput->getExtensionData( 'wikibase_item_description' ) );
+
+		$handler->doContentAlterParserOutput( $content, $title, $parserOutput );
+
+		return $parserOutput;
+	}
+
+	public function testWikibaseItemDescriptionInParserOutput_withWbItem() {
+		$wikibaseItemDescription = "This is Foobarium description";
+		$parserOutput = $this->testWikibaseItemDescriptionInParserOutput( 'Q555', $wikibaseItemDescription );
+		$this->assertEquals( $wikibaseItemDescription, $parserOutput->getExtensionData( 'wikibase_item_description' ) );
+	}
+
+	public function testWikibaseItemDescriptionInParserOutput_withoutWbItem() {
+		$parserOutput = $this->testWikibaseItemDescriptionInParserOutput( null, null );
+		$this->assertNull( $parserOutput->getExtensionData( 'wikibase_item_description' ) );
 	}
 
 	public function testGivenSitelinkHasStatementWithUnknownEntityType_linkDataIsAddedNormally() {
@@ -421,7 +533,7 @@ class ParserOutputUpdateHookHandlerTest extends MediaWikiIntegrationTestCase {
 			$this->newUsageAccumulatorFactory()
 		);
 
-		$content = $this->createMock( Content::class );
+		$content = $this->mockContent();
 		$title = Title::makeTitle( NS_MAIN, 'Foobarium' );
 		$titleWrapper = TestingAccessWrapper::newFromObject( $title );
 		$titleWrapper->mRedirect = false;
@@ -437,7 +549,14 @@ class ParserOutputUpdateHookHandlerTest extends MediaWikiIntegrationTestCase {
 	private function assertLanguageLinks( $links, ParserOutput $parserOutput ) {
 		$this->assertIsArray( $links );
 
-		$actualLinks = $parserOutput->getLanguageLinks();
+		$actualLinks = [];
+		foreach ( $parserOutput->getLinkList( ParserOutputLinkTypes::LANGUAGE ) as [ 'link' => $link ] ) {
+			$ll = $link->getInterwiki() . ':' . $link->getDBkey();
+			if ( $link->getFragment() !== '' ) {
+				$ll .= '#' . $link->getFragment();
+			}
+			$actualLinks[] = $ll;
+		}
 
 		foreach ( $links as $link ) {
 			$this->assertContains( $link, $actualLinks, 'LanguageLink: ' );
@@ -465,7 +584,11 @@ class ParserOutputUpdateHookHandlerTest extends MediaWikiIntegrationTestCase {
 		$settings = $this->newSettings();
 
 		$namespaces = $settings->getSetting( 'namespaces' );
-		$namespaceChecker = new NamespaceChecker( [], $namespaces );
+		$namespaceChecker = new NamespaceChecker(
+			$this->getServiceContainer()->getNamespaceInfo(),
+			[],
+			$namespaces
+		);
 
 		return $namespaceChecker;
 	}
@@ -478,7 +601,9 @@ class ParserOutputUpdateHookHandlerTest extends MediaWikiIntegrationTestCase {
 			$mockRepo,
 			$mockRepo,
 			$this->newUsageAccumulatorFactory(),
-			$settings->getSetting( 'siteGlobalID' )
+			$settings->getSetting( 'siteGlobalID' ),
+			$this->createMock( RevisionLookup::class ),
+			$this->createMock( TermLookup::class )
 		);
 	}
 
@@ -491,11 +616,23 @@ class ParserOutputUpdateHookHandlerTest extends MediaWikiIntegrationTestCase {
 			$mockRepo,
 			$mockRepo,
 			$this->getSiteLookup(),
-			$this->createMock( HookContainer::class ),
+			$this->createMock( WikibaseClientHookRunner::class ),
 			new NullLogger(),
 			$settings->getSetting( 'siteGlobalID' ),
 			$settings->getSetting( 'languageLinkAllowedSiteGroups' )
 		);
+	}
+
+	private function mockContent() {
+		$contentHandler = $this->createMock( ContentHandler::class );
+		$contentHandler->method( 'getPageLanguage' )
+			->willReturn( $this->getServiceContainer()->getLanguageFactory()->getLanguage( 'en' ) );
+
+		$content = $this->createMock( Content::class );
+		$content->method( 'getContentHandler' )
+			->willReturn( $contentHandler );
+
+		return $content;
 	}
 
 }

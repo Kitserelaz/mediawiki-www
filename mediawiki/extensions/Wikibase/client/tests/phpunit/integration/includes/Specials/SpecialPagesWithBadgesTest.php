@@ -2,7 +2,7 @@
 
 namespace Wikibase\Client\Tests\Integration\Specials;
 
-use SpecialPageTestBase;
+use MediaWiki\Tests\Specials\SpecialPageTestBase;
 use Wikibase\Client\Specials\SpecialPagesWithBadges;
 use Wikibase\DataModel\Entity\ItemId;
 use Wikibase\DataModel\Term\TermFallback;

@@ -2,13 +2,13 @@
 
 namespace Wikibase\Repo\Tests\Hooks;
 
-use HtmlArmor;
 use MediaWiki\Context\ContextSource;
 use MediaWiki\Language\RawMessage;
+use MediaWiki\Registration\ExtensionRegistry;
+use MediaWiki\Search\SearchResult;
 use MediaWiki\Specials\SpecialSearch;
 use MediaWiki\Title\Title;
 use MediaWikiIntegrationTestCase;
-use SearchResult;
 use Wikibase\DataModel\Entity\Item;
 use Wikibase\DataModel\Entity\ItemId;
 use Wikibase\DataModel\Services\Lookup\EntityLookup;
@@ -20,6 +20,7 @@ use Wikibase\Lib\Store\EntityIdLookup;
 use Wikibase\Lib\TermLanguageFallbackChain;
 use Wikibase\Repo\Content\EntityContentFactory;
 use Wikibase\Repo\Hooks\ShowSearchHitHandler;
+use Wikimedia\HtmlArmor\HtmlArmor;
 
 /**
  * @covers \Wikibase\Repo\Hooks\ShowSearchHitHandler
@@ -210,7 +211,7 @@ class ShowSearchHitHandlerTest extends MediaWikiIntegrationTestCase {
 		return $entityContentFactory;
 	}
 
-	public function getPlainSearches() {
+	public static function providePlainSearches() {
 		return [
 			"simple" => [
 				'Q1',
@@ -251,7 +252,7 @@ class ShowSearchHitHandlerTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @dataProvider getPlainSearches
+	 * @dataProvider providePlainSearches
 	 */
 	public function testShowSearchHitPlain(
 		string $title,
@@ -260,7 +261,12 @@ class ShowSearchHitHandlerTest extends MediaWikiIntegrationTestCase {
 		array $languages,
 		string $expected
 	) {
-		$this->markTestSkippedIfExtensionNotLoaded( 'CLDR' );
+		if ( !(
+			ExtensionRegistry::getInstance()->isLoaded( 'cldr' )
+			|| ExtensionRegistry::getInstance()->isLoaded( 'CLDR' )
+		) ) {
+			self::markTestSkipped( 'cldr extension is required for this test' );
+		}
 
 		$testFile = __DIR__ . '/../../data/searchHits/' . $expected . ".plain.html";
 

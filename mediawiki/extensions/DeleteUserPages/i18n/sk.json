@@ -1,8 +1,13 @@
 {
 	"@metadata": {
 		"authors": [
-			"Luky001"
+			"Luky001",
+			"Wizzard"
 		]
 	},
-	"action-delete-rootuserpages": "zmazať vlastnú používateľskú a diskusnú stránku"
+	"deleteuserpages-desc": "Umožňuje používateľom mazať vlastné používateľské stránky",
+	"action-delete-rootuserpages": "zmazať vlastnú používateľskú a diskusnú stránku",
+	"right-delete-rootuserpages": "Mazať vlastnú používateľskú a diskusnú stránku",
+	"action-delete-usersubpages": "mazať podstránky vlastnej používateľskej stránky",
+	"right-delete-usersubpages": "Mazať podstránky vlastnej používateľskej stránky"
 }

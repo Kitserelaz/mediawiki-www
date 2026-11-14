@@ -52,7 +52,7 @@
 	"apihelp-wbformatvalue-param-generate": "תסדיר הפלט המבוקש.",
 	"apihelp-wbformatvalue-param-datatype": "סוג הנתונים של הערך. זה שונה מסוג הערך",
 	"apihelp-wbformatvalue-param-datavalue": "הנתונים שצריך לעצב. זו צריכה להיות הסדרת JSON של עצם DataValue.",
-	"apihelp-wbformatvalue-param-options": "האפשרויות שהמעצב צריך להשתמש בהן. מסופק בתור עצם JSON.",
+	"apihelp-wbformatvalue-param-options": "האפשרויות שהמעצב צריך להשתמש בהן. מסופק בתור עצם JSON.\n\nהאפשרויות הנתמכות הן:\n; $1 : השפה שצריך לעצב בה את הערך (קוד שפה של מדיה־ויקי).\n; $2 : האם לעגל את המספר. זה יכול להיות בוליאני (אוטומטי / ללא עיגול) או מספר שלם (המעריך של הספרות העשרוניות המשמעותיות האחרונות). שימושי רק לערכי כמות.\n; $3 : האם לכלול את היחידה בפלט (בוליאני). שימושי רק לערכי כמות.\n; $4 : האם להציג את דגם לוח השנה. יכול להיות בוליאני (תמיד / לעולם לא להראות) או המחרוזת <code>\"auto\"</code> (קובע באופן אוטומטי אם להראות). שימושי רק לערכי זמן.",
 	"apihelp-wbformatvalue-param-property": "מזהה המאפיין שערך הנתונים שייך אליו, אמור לשמש במקום פרמטר <var>datatype</var>.",
 	"apihelp-wbformatvalue-example-1": "עיצוב ערך מחרוזת פשוט.",
 	"apihelp-wbformatvalue-example-2": "עיצוב ערך מחרוזת בתור URL ל־HTML",
@@ -300,11 +300,13 @@
 	"apihelp-wbsetsitelink-example-6": "שינוי הסמלים עבור הקישור לדף פולני מהפריט עם המזהה <samp>$1</samp> לשני סמלים שמצביעים לפריטים עם המזהים \"Q2\" ו־\"Q149\" בלא אספקת כותרת הקישור",
 	"apihelp-wbsetsitelink-example-7": "שינוי הקישור לדף פולני מהפריט עם המזהה <samp>$1</samp> ללא שינוי הסמלים",
 	"apihelp-wbsetsitelink-example-8": "שינוי הקישור לדף הפולני מהפריט עם מזהה <samp>$1</samp> והסרת כל הסמלים",
-	"apihelp-wbformatentities-summary": "עיצוב מזהי ישות בתור HTML.",
+	"apihelp-wbformatentities-summary": "עיצוב מזהי ישות בתור HTML או טקסט רגיל.",
 	"apihelp-wbformatentities-extended-description": "אפשר להגדיר את השפה באמצעות הפרמטר הגלובלי <var>uselang</var>.",
 	"apihelp-wbformatentities-param-ids": "מזהי הישויות לעיצוב.",
-	"apihelp-wbformatentities-example-1": "עיצוב מזהה פריט בודד.",
+	"apihelp-wbformatentities-param-generate": "תסדיר הפלט המבוקש.",
+	"apihelp-wbformatentities-example-1": "עיצוב מזהה פריט בודד בתור HTML.",
 	"apihelp-wbformatentities-example-2": "עיצוב מזהה פריט ומזהה מאפיין.",
 	"apihelp-wbformatentities-example-3": "עיצוב מזהה פריט, מזהה מאפיין, ומזהה יחידה מילונית.",
-	"apihelp-wbformatentities-example-4": "עיצוב שלושה מזהי פריט בצרפתית."
+	"apihelp-wbformatentities-example-4": "עיצוב שלושה מזהי פריט בצרפתית.",
+	"apihelp-wbformatentities-example-5": "עיצוב שלושה מזהה פריטים ומזהה מאפיין בטקסט רגיל."
 }

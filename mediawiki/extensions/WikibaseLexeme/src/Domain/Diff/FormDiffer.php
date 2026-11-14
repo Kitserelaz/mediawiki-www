@@ -1,5 +1,7 @@
 <?php
 
+// @phan-file-suppress PhanPluginNeverReturnMethod
+
 namespace Wikibase\Lexeme\Domain\Diff;
 
 use Diff\Differ\MapDiffer;
@@ -15,7 +17,6 @@ use Wikibase\Lexeme\Domain\Model\Form;
 
 /**
  * @license GPL-2.0-or-later
- * @phan-file-suppress PhanPluginNeverReturnMethod
  */
 class FormDiffer implements EntityDifferStrategy {
 
@@ -101,7 +102,7 @@ class FormDiffer implements EntityDifferStrategy {
 		return new ChangeFormDiffOp( $old->getId(), new Diff( $diffOps ) );
 	}
 
-	public function getAddFormDiff( Form $form ) {
+	public function getAddFormDiff( Form $form ): FormDiff {
 		$diffOps = $this->recursiveMapDiffer->doDiff(
 			[],
 			$this->toFormDiffArray( $form )
@@ -114,7 +115,7 @@ class FormDiffer implements EntityDifferStrategy {
 		return new AddFormDiff( $form, new Diff( $diffOps ) );
 	}
 
-	public function getRemoveFormDiff( Form $form ) {
+	public function getRemoveFormDiff( Form $form ): FormDiff {
 		$diffOps = $this->recursiveMapDiffer->doDiff(
 			$this->toFormDiffArray( $form ),
 			[]

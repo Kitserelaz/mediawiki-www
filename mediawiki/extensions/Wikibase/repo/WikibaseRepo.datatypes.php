@@ -31,6 +31,9 @@ use DataValues\QuantityValue;
 use DataValues\StringValue;
 use DataValues\TimeValue;
 use DataValues\UnboundedQuantityValue;
+use GraphQL\Type\Definition\ObjectType;
+use GraphQL\Type\Definition\ResolveInfo;
+use GraphQL\Type\Definition\Type;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
 use ValueFormatters\FormatterOptions;
@@ -45,6 +48,9 @@ use Wikibase\Lib\Formatters\SnakFormat;
 use Wikibase\Lib\Formatters\SnakFormatter;
 use Wikibase\Lib\Store\FieldPropertyInfoProvider;
 use Wikibase\Lib\Store\PropertyInfoStore;
+use Wikibase\Repo\Domains\Reuse\Domain\Model\PropertyValuePair;
+use Wikibase\Repo\Domains\Reuse\Domain\Model\Statement;
+use Wikibase\Repo\Domains\Reuse\WbReuse;
 use Wikibase\Repo\Parsers\EntityIdValueParser;
 use Wikibase\Repo\Parsers\MediaWikiNumberUnlocalizer;
 use Wikibase\Repo\Parsers\MonolingualTextParser;
@@ -98,9 +104,11 @@ return call_user_func( function() {
 			'expert-module' => 'jquery.valueview.experts.CommonsMediaType',
 			'validator-factory-callback' => function() {
 				$factory = WikibaseRepo::getDefaultValidatorBuilders();
-				// Don't go for commons during unit tests.
+				// Don't go for commons during tests.
 				return $factory->buildMediaValidators(
-					defined( 'MW_PHPUNIT_TEST' ) ? 'doNotCheckExistence' : 'checkExistence'
+					defined( 'MW_PHPUNIT_TEST' ) || defined( 'MW_QUIBBLE_CI' )
+						? 'doNotCheckExistence'
+						: 'checkExistence'
 				);
 			},
 			'formatter-factory-callback' => function( $format, FormatterOptions $options ) {
@@ -126,14 +134,19 @@ return call_user_func( function() {
 				}
 				return WikibaseRepo::getCommonsMediaValueNormalizer();
 			},
+			'graphql-value-type' => static function () {
+				return WbReuse::getGraphQLTypes()->getCommonsMediaValueType();
+			},
 		],
 		'PT:geo-shape' => [
 			'expert-module' => 'jquery.valueview.experts.GeoShape',
 			'validator-factory-callback' => function() {
 				$factory = WikibaseRepo::getDefaultValidatorBuilders();
-				// Don't go for commons during unit tests.
+				// Don't go for commons during tests.
 				return $factory->buildGeoShapeValidators(
-					defined( 'MW_PHPUNIT_TEST' ) ? 'doNotCheckExistence' : 'checkExistence'
+					defined( 'MW_PHPUNIT_TEST' ) || defined( 'MW_QUIBBLE_CI' )
+						? 'doNotCheckExistence'
+						: 'checkExistence'
 				);
 			},
 			'formatter-factory-callback' => function( $format ) {
@@ -152,14 +165,17 @@ return call_user_func( function() {
 			'rdf-data-type' => function() {
 				return PropertySpecificComponentsRdfBuilder::OBJECT_PROPERTY;
 			},
+			'graphql-value-type' => static fn() => WbReuse::getGraphQLTypes()->getGeoShapeValueType(),
 		],
 		'PT:tabular-data' => [
 			'expert-module' => 'jquery.valueview.experts.TabularData',
 			'validator-factory-callback' => function() {
 				$factory = WikibaseRepo::getDefaultValidatorBuilders();
-				// Don't go for commons during unit tests.
+				// Don't go for commons during tests.
 				return $factory->buildTabularDataValidators(
-					defined( 'MW_PHPUNIT_TEST' ) ? 'doNotCheckExistence' : 'checkExistence'
+					defined( 'MW_PHPUNIT_TEST' ) || defined( 'MW_QUIBBLE_CI' )
+						? 'doNotCheckExistence'
+						: 'checkExistence'
 				);
 			},
 			'formatter-factory-callback' => function( $format, FormatterOptions $options ) {
@@ -178,6 +194,8 @@ return call_user_func( function() {
 			'rdf-data-type' => function() {
 				return PropertySpecificComponentsRdfBuilder::OBJECT_PROPERTY;
 			},
+
+			'graphql-value-type' => static fn() => WbReuse::getGraphQLTypes()->getTabularValueType(),
 		],
 		'VT:globecoordinate' => [
 			'expert-module' => 'jquery.valueview.experts.GlobeCoordinateInput',
@@ -203,6 +221,21 @@ return call_user_func( function() {
 				$complexValueHelper = ( $flags & RdfProducer::PRODUCE_FULL_VALUES ) ?
 					new ComplexValueRdfHelper( $vocab, $writer->sub(), $dedupe ) : null;
 				return new GlobeCoordinateRdfBuilder( $complexValueHelper );
+			},
+			'graphql-value-type' => static function () {
+				return new ObjectType( [
+					'name' => 'GlobeCoordinateValue',
+					'fields' => [
+						'latitude' => Type::nonNull( Type::float() ),
+						'longitude' => Type::nonNull( Type::float() ),
+						'precision' => Type::float(),
+						'globe' => Type::nonNull( Type::string() ),
+					],
+					'resolveField' => function ( Statement|PropertyValuePair $valueProvider, $args, $context, ResolveInfo $info ) {
+						return $valueProvider->value
+							->getArrayValue()[$info->fieldName] ?? null;
+					},
+				] );
 			},
 		],
 		'VT:monolingualtext' => [
@@ -230,6 +263,19 @@ return call_user_func( function() {
 				DedupeBag $dedupe
 			) {
 				return new MonolingualTextRdfBuilder();
+			},
+			'graphql-value-type' => static function () {
+				return new ObjectType( [
+					'name' => 'MonolingualTextValue',
+					'fields' => [
+						'language' => Type::nonNull( Type::string() ),
+						'text' => Type::nonNull( Type::string() ),
+					],
+					'resolveField' => function ( Statement|PropertyValuePair $valueProvider, $args, $context, ResolveInfo $info ) {
+						return $valueProvider->value
+							->getArrayValue()[$info->fieldName] ?? null;
+					},
+				] );
 			},
 		],
 		'VT:quantity' => [
@@ -264,6 +310,21 @@ return call_user_func( function() {
 			},
 			'search-index-data-formatter-callback' => function ( UnboundedQuantityValue $value ) {
 				return (string)round( $value->getAmount()->getValueFloat() );
+			},
+			'graphql-value-type' => static function () {
+				return new ObjectType( [
+					'name' => 'QuantityValue',
+					'fields' => [
+						'amount' => Type::nonNull( Type::string() ),
+						'unit' => Type::nonNull( Type::string() ),
+						'lowerBound' => Type::string(),
+						'upperBound' => Type::string(),
+					],
+					'resolveField' => function ( Statement|PropertyValuePair $valueProvider, $args, $context, ResolveInfo $info ) {
+						return $valueProvider->value
+							->getArrayValue()[$info->fieldName] ?? null;
+					},
+				] );
 			},
 		],
 		'VT:string' => [
@@ -300,6 +361,9 @@ return call_user_func( function() {
 			'normalizer-factory-callback' => static function () {
 				return WikibaseRepo::getStringValueNormalizer();
 			},
+			'graphql-value-type' => static function () {
+				return WbReuse::getGraphQLTypes()->getStringValueType();
+			},
 		],
 		'VT:time' => [
 			'expert-module' => 'jquery.valueview.experts.TimeInput',
@@ -329,6 +393,25 @@ return call_user_func( function() {
 					new ComplexValueRdfHelper( $vocab, $writer->sub(), $dedupe ) : null;
 				return new TimeRdfBuilder( $dateCleaner, $complexValueHelper );
 			},
+			'graphql-value-type' => static function () {
+				return new ObjectType( [
+					'name' => 'TimeValue',
+					'fields' => [
+						'time' => Type::nonNull( Type::string() ),
+						'timezone' => Type::nonNull( Type::int() ),
+						'before' => Type::nonNull( Type::int() ),
+						'after' => Type::nonNull( Type::int() ),
+						'precision' => Type::nonNull( Type::int() ),
+						'calendarModel' => Type::nonNull( Type::string() ),
+					],
+					'resolveField' => function ( Statement|PropertyValuePair $valueProvider, $args, $context, ResolveInfo $info ) {
+						$value = $valueProvider->value->getArrayValue();
+						$value['calendarModel'] = $value['calendarmodel'] ?? null; // prefer camel case over all lowercase
+
+						return $value[$info->fieldName] ?? null;
+					},
+				] );
+			},
 		],
 		'PT:url' => [
 			'validator-factory-callback' => function() {
@@ -354,6 +437,9 @@ return call_user_func( function() {
 			'rdf-data-type' => function() {
 				return PropertySpecificComponentsRdfBuilder::OBJECT_PROPERTY;
 			},
+			'graphql-value-type' => static function () {
+				return WbReuse::getGraphQLTypes()->getUrlValueType();
+			},
 		],
 		'PT:external-id' => [
 			// NOTE: for 'formatter-factory-callback', we fall back to plain text formatting
@@ -374,6 +460,9 @@ return call_user_func( function() {
 				);
 				return new ExternalIdentifierRdfBuilder( $vocab, $uriPatternProvider );
 			},
+			'graphql-value-type' => static function () {
+				return WbReuse::getGraphQLTypes()->getExternalIdValueType();
+			},
 		],
 		'VT:wikibase-entityid' => [
 			'validator-factory-callback' => function() {
@@ -383,16 +472,16 @@ return call_user_func( function() {
 			'deserializer-builder' => static function ( $value ) {
 				// TODO this should perhaps be factored out into a class
 				if ( isset( $value['id'] ) ) {
+					if ( !is_string( $value['id'] ) ) {
+						throw new InvalidArgumentException(
+							'Can not parse id of type ' . get_debug_type( $value['id'] ) . ' to build EntityIdValue with'
+						);
+					}
 					try {
 						return new EntityIdValue( WikibaseRepo::getEntityIdParser()->parse( $value['id'] ) );
 					} catch ( EntityIdParsingException $parsingException ) {
-						if ( is_string( $value['id'] ) ) {
-							$message = 'Can not parse id \'' . $value['id'] . '\' to build EntityIdValue with';
-						} else {
-							$message = 'Can not parse id of type ' . get_debug_type( $value['id'] ) . ' to build EntityIdValue with';
-						}
 						throw new InvalidArgumentException(
-							$message,
+							'Can not parse id \'' . $value['id'] . '\' to build EntityIdValue with',
 							0,
 							$parsingException
 						);
@@ -420,6 +509,9 @@ return call_user_func( function() {
 			},
 			'search-index-data-formatter-callback' => function ( EntityIdValue $value ) {
 				return $value->getEntityId()->getSerialization();
+			},
+			'graphql-value-type' => static function() {
+				return WbReuse::getGraphQLTypes()->getEntityValueType();
 			},
 		],
 		'PT:wikibase-item' => [
@@ -453,6 +545,9 @@ return call_user_func( function() {
 			'rdf-data-type' => function() {
 				return PropertySpecificComponentsRdfBuilder::OBJECT_PROPERTY;
 			},
+			'graphql-value-type' => static function() {
+				return WbReuse::getGraphQLTypes()->getItemValueType();
+			},
 		],
 		'PT:wikibase-property' => [
 			'expert-module' => 'wikibase.experts.Property',
@@ -484,6 +579,9 @@ return call_user_func( function() {
 			},
 			'rdf-data-type' => function() {
 				return PropertySpecificComponentsRdfBuilder::OBJECT_PROPERTY;
+			},
+			'graphql-value-type' => static function() {
+				return WbReuse::getGraphQLTypes()->getPropertyValueType();
 			},
 		],
 	];

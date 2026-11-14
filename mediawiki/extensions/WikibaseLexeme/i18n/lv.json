@@ -12,6 +12,7 @@
 	"wikibase-lexeme-language-selector-label": "$1 ($2)",
 	"wikibase-lexeme-lemma-language-option": "$1 ($2)",
 	"wikibase-lexeme-mergelexemes-submit": "Apvienot leksēmas",
+	"wikibase-lexeme-scoped-search-scope-name": "Leksēmas",
 	"wikibase-listdatatypes-wikibase-form-head": "Forma",
 	"wikibase-listdatatypes-wikibase-lexeme-head": "Leksēma",
 	"wikibaselexeme-deletedentity-form": "Dzēsta forma",

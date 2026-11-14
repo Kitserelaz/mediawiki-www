@@ -3,7 +3,7 @@
 namespace Wikibase\Repo\Tests\Validators;
 
 use InvalidArgumentException;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Language\LanguageNameUtils;
 use ValueValidators\ValueValidator;
 use Wikibase\DataModel\Entity\BasicEntityIdParser;
 use Wikibase\DataModel\Entity\Item;

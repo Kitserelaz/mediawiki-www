@@ -4,7 +4,9 @@
             "include": [
                 "extensions/AbuseFilter/composer.json",
                 "extensions/CreateWiki/composer.json",
-                "extensions/ManageWiki/composer.json"
+                "extensions/ManageWiki/composer.json",
+                "extensions/Wikibase/composer.json",
+                "extensions/WikibaseLexeme/composer.json"
             ],
             "merge-dev": false
         }

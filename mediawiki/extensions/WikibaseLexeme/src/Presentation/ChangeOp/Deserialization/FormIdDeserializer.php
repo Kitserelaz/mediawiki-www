@@ -26,14 +26,19 @@ class FormIdDeserializer {
 	}
 
 	/**
-	 * @param string $id
+	 * @param mixed $id
 	 * @param ValidationContext $validationContext
 	 * @return FormId|null
 	 */
 	public function deserialize( $id, ValidationContext $validationContext ) {
+		if ( !is_string( $id ) ) {
+			$validationContext->addViolation( new ParameterIsNotFormId( $id ) );
+			return null;
+		}
+
 		try {
 			$formId = $this->entityIdParser->parse( $id );
-		} catch ( EntityIdParsingException $e ) {
+		} catch ( EntityIdParsingException ) {
 			$validationContext->addViolation( new ParameterIsNotFormId( $id ) );
 			return null;
 		}

@@ -7,6 +7,7 @@ namespace Wikibase\Repo\EditEntity;
 use InvalidArgumentException;
 use MediaWiki\Context\DerivativeContext;
 use MediaWiki\Context\IContextSource;
+use MediaWiki\Exception\ReadOnlyError;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Message\Message;
 use MediaWiki\Status\Status;
@@ -14,7 +15,6 @@ use MediaWiki\Title\Title;
 use MediaWiki\User\Options\UserOptionsLookup;
 use MediaWiki\User\TempUser\TempUserCreator;
 use MediaWiki\User\User;
-use ReadOnlyError;
 use RuntimeException;
 use Wikibase\DataModel\Entity\EntityDocument;
 use Wikibase\DataModel\Entity\EntityId;
@@ -453,11 +453,7 @@ class MediaWikiEditEntity implements EditEntity {
 	 * Resolve user specific default default for watch state, if $watch is null.
 	 */
 	private function getDesiredWatchState( ?bool $watch ): bool {
-		if ( $watch === null ) {
-			$watch = $this->getWatchDefault();
-		}
-
-		return $watch;
+		return $watch ?? $this->getWatchDefault();
 	}
 
 	/**
@@ -511,6 +507,9 @@ class MediaWikiEditEntity implements EditEntity {
 		return in_array( $entity->getType(), $this->localEntityTypes );
 	}
 
+	/**
+	 * @inheritDoc
+	 */
 	public function attemptSave( EntityDocument $newEntity, string $summary, $flags, $token, $watch = null, array $tags = [] ) {
 		$this->checkReadOnly( $newEntity ); // throws, exception formatted by MediaWiki (cf. MWExceptionRenderer::getExceptionTitle)
 		$this->checkEntityId( $newEntity->getId() ); // throws internal error (unexpected condition)
@@ -623,7 +622,7 @@ class MediaWikiEditEntity implements EditEntity {
 			}
 
 			$this->errorType |= EditEntity::SAVE_ERROR;
-		} catch ( EntityContentTooBigException $ex ) {
+		} catch ( EntityContentTooBigException ) {
 			$this->status->setErrorFlags( $this->errorType );
 			$this->status->error( wfMessage( 'wikibase-error-entity-too-big' )->sizeParams( $this->maxSerializedEntitySize * 1024 ) );
 			return $this->status;
@@ -647,7 +646,7 @@ class MediaWikiEditEntity implements EditEntity {
 	private function checkEditFilter( EntityDocument $newEntity, string $summary ): void {
 		try {
 			$hookStatus = $this->editFilterHookRunner->run( $newEntity, $this->context, $summary );
-		} catch ( EntityContentTooBigException $ex ) {
+		} catch ( EntityContentTooBigException ) {
 			$this->status->error( wfMessage( 'wikibase-error-entity-too-big' )->sizeParams( $this->maxSerializedEntitySize * 1024 ) );
 			return;
 		}

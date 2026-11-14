@@ -116,12 +116,8 @@ class EntityContentFactoryTest extends MediaWikiIntegrationTestCase {
 				'property' => PropertyContent::CONTENT_MODEL_ID,
 			],
 			[
-				'item' => function() {
-					return WikibaseRepo::getItemHandler();
-				},
-				'property' => function() {
-					return WikibaseRepo::getPropertyHandler();
-				},
+				'item' => WikibaseRepo::getItemHandler( ... ),
+				'property' => WikibaseRepo::getPropertyHandler( ... ),
 			]
 		);
 	}
@@ -215,7 +211,7 @@ class EntityContentFactoryTest extends MediaWikiIntegrationTestCase {
 		$this->assertNotNull( $content->getRedirectTarget() );
 	}
 
-	public function newFromRedirectProvider_unsupported() {
+	public static function newFromRedirect_unsupportedProvider() {
 		$p1 = new NumericPropertyId( 'P1' );
 		$p2 = new NumericPropertyId( 'P2' );
 
@@ -225,7 +221,7 @@ class EntityContentFactoryTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @dataProvider newFromRedirectProvider_unsupported
+	 * @dataProvider newFromRedirect_unsupportedProvider
 	 */
 	public function testNewFromRedirect_unsupported( EntityRedirect $redirect ) {
 		$factory = $this->newFactory();

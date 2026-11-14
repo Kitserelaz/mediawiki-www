@@ -87,7 +87,7 @@ class ItemTermsRebuilder {
 		}
 	}
 
-	private function getIdBatches() {
+	private function getIdBatches(): iterable {
 		$idsInBatch = [];
 
 		foreach ( $this->itemIds as $itemId ) {
@@ -108,11 +108,8 @@ class ItemTermsRebuilder {
 		foreach ( $itemIds as $itemId ) {
 			try {
 				$item = $this->itemLookup->getItemForId( $itemId );
-			} catch ( UnresolvedEntityRedirectException $entityRedirectException ) {
+			} catch ( UnresolvedEntityRedirectException | ItemLookupException ) {
 				// Nothing to do, ignore
-				continue;
-			} catch ( ItemLookupException $exception ) {
-				// Unresolved redirects, nothing to do.
 				continue;
 			}
 

@@ -1,11 +1,21 @@
 {
 	"@metadata": {
 		"authors": [
-			"Winston Sung"
+			"Al12si",
+			"H78c67c",
+			"JeffreyKim",
+			"Ktchankt",
+			"Winston Sung",
+			"Yueman"
 		]
 	},
 	"wikibase-edit": "改",
 	"wikibase-add": "加",
+	"wikibase-addstatement": "加語句",
+	"wikibase-publishing-error": "儲存你嘅修改出咗問題。等陣再試吓。",
+	"wikibase-publishing-progress": "完成緊你嘅修改…",
+	"wikibase-publishing-succeeded": "你嘅修改已經儲存咗！",
+	"wikibase-statementgrouplistview-edit": "編輯 {{PLURAL:$1|項陳述}}",
 	"wikibase-entitytermsforlanguagelistview-less": "少啲語言",
 	"wikibase-label-empty": "未定義標籤",
 	"wikibase-description-empty": "未定義描述",
@@ -13,5 +23,20 @@
 	"wikibase-sitelinks-special": "第啲網站",
 	"wikibase-statementview-rank-normal": "正常等級",
 	"wikibase-statementview-references-counter": "$1 {{PLURAL:$1|參考來源}}",
-	"wikibase-validator-bad-url": "不允許包含某啲字符（例如空格同方括號）嘅鏈接"
+	"wikibase-validator-bad-url": "不允許包含某啲字符（例如空格同方括號）嘅鏈接",
+	"wikibase-api-not-recognized-datatype": "預期有個數據類型，但係佢一係唔見咗，一係就唔識別。",
+	"wikibase-api-invalid-formatter-options-lang": "畀咗嘅非法\"選項\"：\"lang\"需要係字串（MediaWiki 語言代碼）。",
+	"wikibase-api-invalid-formatter-options-apply-rounding": "畀咗嘅非法「選項」：「應用四捨五入」需要係一個 bool 或者字串。",
+	"wikibase-api-invalid-formatter-options-apply-unit": "畀咗嘅非法「選項」：「applyUnit」需要係一個 bool 。",
+	"wikibase-api-invalid-formatter-options-showcalendar": "提供嘅非法「選項」：「顯示日曆」需要係 bool 或者「自動」。",
+	"wikibase-api-invalid-formatter-options-unknown-option": "畀咗唔支援嘅「選項」：未知選項「$1」通過。",
+	"wikibase-listdatatypes-monolingualtext-body": "唔會翻譯成其他語言嘅字串嘅字面資料欄位呢種字串會被定義一次，並且喺所有語言入面重複使用。典型用途係用當地語言寫嘅地名、各種識別碼、化學公式同埋拉丁學名。\n* 語言 – 用嚟識別文字部分嘅語言嘅明確值\n* 數值 – 語言特定變體字串嘅明確值",
+	"wikibase-listdatatypes-multilingualtext-body": "必須翻譯成其他語言嘅字串嘅文字數據欄位。典型嘅用途係一個全球感興趣嘅實體名，而呢個實體名有非本地嘅書面形式。 呢啲喺語言同腳本系統上都可能有所唔同。\n* 語言 – 用嚟識別文字部分嘅語言嘅明確值\n* 數值 – 語言特定嘅變體字串嘅明確值",
+	"wikibase-listdatatypes-string-body": "一串字形嘅字面資料欄位嘅典型用途係有唔依賴讀者語言嘅書面形式嘅識別碼。\n* 參數 – 語言特定嘅變體字串嘅明確參數",
+	"wikibase-scoped-search-search-entities": "搵實體",
+	"wikibase-scoped-search-search-entities-description": "搵唔同類型嘅{{SITENAME}}實體",
+	"wikibase-scoped-search-item-scope-name": "項目",
+	"wikibase-scoped-search-property-scope-name": "屬性",
+	"wikibase-mobile-editing-ui-beta-feature-message": "流動編輯用戶介面",
+	"wikibase-mobile-editing-ui-beta-feature-description": "啟用全新嘅實驗性流動編輯用戶介面。"
 }

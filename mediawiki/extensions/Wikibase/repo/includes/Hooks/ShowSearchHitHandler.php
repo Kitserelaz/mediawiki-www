@@ -4,16 +4,15 @@ declare( strict_types = 1 );
 
 namespace Wikibase\Repo\Hooks;
 
-use HtmlArmor;
 use InvalidArgumentException;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Search\Hook\ShowSearchHitHook;
 use MediaWiki\Search\Hook\ShowSearchHitTitleHook;
+use MediaWiki\Search\SearchResult;
 use MediaWiki\Specials\SpecialSearch;
 use MediaWiki\Title\Title;
-use SearchResult;
 use Wikibase\DataModel\Entity\EntityDocument;
 use Wikibase\DataModel\Entity\Item;
 use Wikibase\DataModel\Services\Lookup\EntityLookup;
@@ -27,6 +26,7 @@ use Wikibase\Lib\Store\EntityIdLookup;
 use Wikibase\Repo\Content\EntityContentFactory;
 use Wikibase\Repo\Search\ExtendedResult;
 use Wikibase\Repo\WikibaseRepo;
+use Wikimedia\HtmlArmor\HtmlArmor;
 
 /**
  * Handler to format entities in the search results
@@ -95,7 +95,7 @@ class ShowSearchHitHandler implements ShowSearchHitHook, ShowSearchHitTitleHook 
 
 		try {
 			$entity = $this->getEntity( $title );
-		} catch ( UnresolvedEntityRedirectException $exception ) {
+		} catch ( UnresolvedEntityRedirectException ) {
 			return;
 		}
 
@@ -228,7 +228,7 @@ class ShowSearchHitHandler implements ShowSearchHitHook, ShowSearchHitTitleHook 
 		try {
 			$termFallback = new TermFallback( $displayLanguage, HtmlArmor::getHtml( $text['value'] ),
 					$text['language'], null );
-		} catch ( InvalidArgumentException $e ) {
+		} catch ( InvalidArgumentException ) {
 			return $text;
 		}
 		$fallback = new LanguageFallbackIndicator(

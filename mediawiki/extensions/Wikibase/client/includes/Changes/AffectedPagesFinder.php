@@ -6,7 +6,7 @@ namespace Wikibase\Client\Changes;
 
 use ArrayIterator;
 use InvalidArgumentException;
-use MediaWiki\Cache\LinkBatchFactory;
+use MediaWiki\Page\LinkBatchFactory;
 use MediaWiki\Page\PageRecord;
 use MediaWiki\Page\PageStore;
 use MediaWiki\Title\Title;
@@ -80,7 +80,7 @@ class AffectedPagesFinder {
 		$this->pageStore = $pageStore;
 		$this->linkBatchFactory = $linkBatchFactory;
 		$this->siteId = $siteId;
-		$this->logger = $logger ?: new NullLogger();
+		$this->logger = $logger ?? new NullLogger();
 	}
 
 	/**
@@ -133,9 +133,28 @@ class AffectedPagesFinder {
 			$aspects = array_merge( $aspects, $descriptionsAspects );
 		}
 
-		if ( $diffAspects->getStatementChanges() !== [] ) {
-			$statementAspects = $this->getChangedStatementAspects(
-				$diffAspects->getStatementChanges()
+		if ( $diffAspects->getAliasChanges() !== [] ) {
+			$aliasAspects = $this->getChangedTermAspects(
+				EntityUsage::ALIAS_USAGE,
+				$diffAspects->getAliasChanges()
+			);
+			$aspects = array_merge( $aspects, $aliasAspects );
+		}
+
+		// If a statement mainsnak changes, we need to tell any pages which have STATEMENT_USAGE or STATEMENT_WITH_QUAL_OR_REF_USAGE
+		// This is regardless of whether it also includes a reference/qualifer change, in addition to the mainSnak change
+		if ( $diffAspects->getStatementChangesExcludingQualOrRefOnly() !== [] ) {
+			$statementAspects = $this->getChangedStatementAspects( //tells STATEMENT_USAGE and STATEMENT_WITH_QUAL_OR_REF_USAGE
+				$diffAspects->getStatementChangesExcludingQualOrRefOnly()
+			);
+			$aspects = array_merge( $aspects, $statementAspects );
+		}
+
+		// If it is a qualifer or ref only change (no mainsnak change), we don't need to tell those with STATEMENT_USAGE, but those with
+		// STATEMENT_WITH_QUAL_OR_REF_USAGE
+		if ( $diffAspects->getStatementChangesQualOrRefOnly() !== [] ) {
+			$statementAspects = $this->getChangedStatementAspectsQualOrRefOnlyChange( //only tells STATEMENT_WITH_QUAL_OR_REF_USAGE
+				$diffAspects->getStatementChangesQualOrRefOnly()
 			);
 			$aspects = array_merge( $aspects, $statementAspects );
 		}
@@ -156,15 +175,39 @@ class AffectedPagesFinder {
 	 * @param string[] $diff
 	 *
 	 * @return string[]
+	 *
+	 * If a statement changes, we need to tell any pages which have STATEMENT_USAGE or STATEMENT_WITH_QUAL_OR_REF_USAGE
 	 */
 	private function getChangedStatementAspects( array $diff ) {
 		$aspects = [];
 
 		foreach ( $diff as $propertyId ) {
 			$aspects[] = EntityUsage::makeAspectKey( EntityUsage::STATEMENT_USAGE, $propertyId );
+			$aspects[] = EntityUsage::makeAspectKey( EntityUsage::STATEMENT_WITH_QUAL_OR_REF_USAGE, $propertyId );
 		}
 
 		$aspects[] = EntityUsage::makeAspectKey( EntityUsage::STATEMENT_USAGE );
+		$aspects[] = EntityUsage::makeAspectKey( EntityUsage::STATEMENT_WITH_QUAL_OR_REF_USAGE );
+
+		return $aspects;
+	}
+
+	/**
+	 * @param string[] $diff
+	 *
+	 * @return string[]
+	 *
+	 * If any statement's qual/ref changes, we need to tell any pages which have STATEMENT_WITH_QUAL_OR_REF_USAGE,
+	 * but do not need to tell those with STATEMENT_USAGE
+	 */
+	private function getChangedStatementAspectsQualOrRefOnlyChange( array $diff ) {
+		$aspects = [];
+
+		foreach ( $diff as $propertyId ) {
+			$aspects[] = EntityUsage::makeAspectKey( EntityUsage::STATEMENT_WITH_QUAL_OR_REF_USAGE, $propertyId );
+		}
+
+		$aspects[] = EntityUsage::makeAspectKey( EntityUsage::STATEMENT_WITH_QUAL_OR_REF_USAGE );
 
 		return $aspects;
 	}
@@ -251,7 +294,7 @@ class AffectedPagesFinder {
 	}
 
 	/**
-	 * @param array[] $siteLinkDiff
+	 * @param array<string,array{0: ?string, 1: ?string, 2: bool}> $siteLinkDiff
 	 *
 	 * @throws UnexpectedValueException
 	 * @return string[]
@@ -272,7 +315,7 @@ class AffectedPagesFinder {
 	}
 
 	/**
-	 * @param array $siteLinkDiff
+	 * @param array{0: ?string, 1: ?string, 2: bool} $siteLinkDiff
 	 *
 	 * @return bool
 	 */

@@ -1,0 +1,119 @@
+<template>
+	<div
+		class="wikibase-wbui2025-snak-value"
+		:data-snak-hash="snak.hash"
+		:class="snakValueClass"
+	>
+		<span class="snakValue" v-html="snakValueHtmlForHash( snak.hash )"></span>
+		<span
+			v-if="indicatorsHtml"
+			ref="snakAnchor"
+			class="indicators"
+			@click="togglePopover"
+			v-html="indicatorsHtml"
+		></span>
+		<wbui2025-indicator-popover
+			v-if="popoverVisible"
+			:snak-hash="snak.hash"
+			:statement-id="statementId"
+			:is-qualifier="isQualifier"
+			:reference-hash="referenceHash"
+			:anchor="$refs.snakAnchor"
+			@close="popoverVisible = false"
+		>
+		</wbui2025-indicator-popover>
+	</div>
+</template>
+
+<script>
+const { defineComponent } = require( 'vue' );
+const wbui2025 = require( 'wikibase.wbui2025.lib' );
+const Wbui2025IndicatorPopover = require( './indicatorPopover.vue' );
+
+// @vue/component
+module.exports = exports = defineComponent( {
+	name: 'WikibaseWbui2025SnakValue',
+	components: {
+		Wbui2025IndicatorPopover
+	},
+	props: {
+		snak: {
+			type: Object,
+			required: true
+		},
+		statementId: {
+			type: String,
+			required: true
+		},
+		isQualifier: {
+			type: Boolean,
+			default: false
+		},
+		referenceHash: {
+			type: String,
+			default: null
+		}
+	},
+	data() {
+		return {
+			popoverVisible: false
+		};
+	},
+	computed: {
+		snakValueClass() {
+			return {
+				'wikibase-wbui2025-snak-value--error-message': wbui2025.store.snakValueHtmlForHashHasError( this.snak.hash ),
+				'wikibase-wbui2025-snak-value--popover-visible': this.popoverVisible,
+				'wikibase-wbui2025-media-value': this.snak.datatype === 'commonsMedia',
+				'wikibase-wbui2025-time-value': this.snak.datatype === 'time',
+				'wikibase-wbui2025-globe-coordinate-value': this.snak.datatype === 'globe-coordinate',
+				'wikibase-wbui2025-tabular-data-value': this.snak.datatype === 'tabular-data',
+				'wikibase-wbui2025-geo-shape-value': this.snak.datatype === 'geo-shape',
+				'wikibase-wbui2025-musical-notation-value': this.snak.datatype === 'musical-notation',
+				'wikibase-wbui2025-math-value': this.snak.datatype === 'math'
+			};
+		},
+		indicatorsHtml() {
+			if ( this.referenceHash !== null ) {
+				return wbui2025.store.getIndicatorHtmlForReferenceSnak(
+					this.statementId,
+					this.referenceHash,
+					this.snak.hash
+				);
+			}
+			if ( this.isQualifier ) {
+				return wbui2025.store.getIndicatorHtmlForQualifier(
+					this.statementId,
+					this.snak.hash
+				);
+			}
+			return wbui2025.store.getIndicatorHtmlForMainSnak(
+				this.statementId
+			);
+		}
+	},
+	methods: {
+		snakValueHtmlForHash( hash ) {
+			if ( wbui2025.store.snakValueHtmlForHashHasError( hash ) ) {
+				return mw.message( 'wikibase-undisplayable-value' ).parse();
+			}
+			return wbui2025.store.snakValueHtmlForHash( hash );
+		},
+		togglePopover() {
+			this.popoverVisible = !this.popoverVisible;
+		}
+	},
+
+	mounted() {
+		if ( this.snak.datatype === 'globe-coordinate' ) {
+			wbui2025.util.initKartographerPreview( this.$el );
+		}
+	},
+
+	updated() {
+		if ( this.snak.datatype === 'globe-coordinate' ) {
+			wbui2025.util.initKartographerPreview( this.$el );
+		}
+	}
+} );
+</script>

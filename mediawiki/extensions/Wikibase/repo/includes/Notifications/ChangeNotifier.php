@@ -49,7 +49,7 @@ class ChangeNotifier {
 	 *
 	 * @param EntityContent $content
 	 * @param UserIdentity $user
-	 * @param string $timestamp timestamp in TS_MW format.
+	 * @param string $timestamp timestamp in TS::MW format.
 	 *
 	 * @throws InvalidArgumentException
 	 * @throws ChangeTransmitterException
@@ -156,8 +156,6 @@ class ChangeNotifier {
 
 	/**
 	 * Transmit changes via all registered transmitters
-	 *
-	 * @param EntityChange $change
 	 */
 	private function transmitChange( EntityChange $change ) {
 		foreach ( $this->changeTransmitters as $transmitter ) {

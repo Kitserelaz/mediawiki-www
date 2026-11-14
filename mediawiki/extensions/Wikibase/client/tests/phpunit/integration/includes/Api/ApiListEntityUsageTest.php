@@ -7,6 +7,7 @@ namespace Wikibase\Client\Tests\Integration\Api;
 use MediaWiki\Api\ApiContinuationManager;
 use MediaWiki\Api\ApiMain;
 use MediaWiki\Api\ApiPageSet;
+use MediaWiki\Api\ApiUsageException;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\Title\Title;
@@ -126,13 +127,21 @@ class ApiListEntityUsageTest extends MediaWikiLangTestCase {
 		return $data;
 	}
 
-	private function callApiModuleAsGenerator( array $params ): ApiPageSet {
+	/** @return array( ApiPageSet $pageSet, array $data ) */
+	private function callApiModuleAsGenerator( array $params ): array {
 		$module = $this->getListEntityUsageModule( $params );
 		$pageSet = new ApiPageSet( $module );
 
 		$module->executeGenerator( $pageSet );
 
-		return $pageSet;
+		$result = $module->getResult();
+		$data = $result->getResultData( null, [
+			'BC' => [],
+			'Types' => [],
+			'Strip' => 'all',
+		] );
+
+		return [ $pageSet, $data ];
 	}
 
 	public static function entityUsageProvider(): iterable {
@@ -224,8 +233,12 @@ class ApiListEntityUsageTest extends MediaWikiLangTestCase {
 	/**
 	 * @dataProvider entityUsageProvider
 	 */
-	public function testEntityUsage( array $params, array $expected ): void {
+	public function testEntityUsage(
+		array $params,
+		array $expected
+	): void {
 		$result = $this->callApiModule( $params );
+		$this->assertArrayNotHasKey( 'warnings', $result );
 
 		if ( isset( $result['error'] ) ) {
 			$this->fail( 'API error: ' . print_r( $result['error'], true ) );
@@ -237,8 +250,12 @@ class ApiListEntityUsageTest extends MediaWikiLangTestCase {
 	}
 
 	/** @dataProvider entityUsageProvider */
-	public function testEntityUsageAsGenerator( array $params, array $expected ): void {
-		$pageSet = $this->callApiModuleAsGenerator( $params );
+	public function testEntityUsageAsGenerator(
+		array $params,
+		array $expected
+	): void {
+		[ $pageSet, $result ] = $this->callApiModuleAsGenerator( $params );
+		$this->assertArrayNotHasKey( 'warnings', $result );
 
 		$pages = $pageSet->getGoodPages();
 		$this->assertSameSize( $expected, $pages );
@@ -251,6 +268,14 @@ class ApiListEntityUsageTest extends MediaWikiLangTestCase {
 			$this->assertSame( $expectedPage['ns'], $page->getNamespace() );
 			$this->assertSame( $expectedPage['title'], $page->getDBkey() );
 		}
+	}
+
+	public function testEntityUsageInvalidContinue(): void {
+		$this->expectException( ApiUsageException::class );
+		$this->callApiModule( [
+			'wbleuentities' => 'Q3|Q5',
+			'wbleucontinue' => '-',
+		] );
 	}
 
 }

@@ -9,6 +9,7 @@
 	 * Statements are currently not serialized.
 	 *
 	 * @class wikibase.lexeme.serialization.FormSerializer
+	 *
 	 * @extends serialization.Serializer
 	 * @license GNU GPL v2+
 	 *

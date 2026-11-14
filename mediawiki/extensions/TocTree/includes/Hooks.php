@@ -11,19 +11,28 @@ use MediaWiki\Api\Hook\ApiParseMakeOutputPageHook;
 use MediaWiki\Output\Hook\BeforePageDisplayHook;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Preferences\Hook\GetPreferencesHook;
+use MediaWiki\Skin\Skin;
+use MediaWiki\Skin\SkinFactory;
 use MediaWiki\User\User;
-use Skin;
 
 class Hooks implements
 	ApiParseMakeOutputPageHook,
 	BeforePageDisplayHook,
 	GetPreferencesHook
 {
+	public function __construct(
+		private readonly SkinFactory $skinFactory,
+	) {
+	}
+
 	/**
 	 * @param OutputPage $out
 	 */
 	private function addModules( OutputPage $out ) {
-		if ( $out->isTOCEnabled() ) {
+		if (
+			$out->isTOCEnabled() &&
+			$this->skinFactory->getSkinOptions( $out->getSkin()->getSkinName() )['toc']
+		) {
 			$out->addModules( 'ext.toctree' );
 		}
 	}

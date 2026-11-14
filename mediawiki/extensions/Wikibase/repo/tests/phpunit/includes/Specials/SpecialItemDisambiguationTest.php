@@ -7,7 +7,7 @@ namespace Wikibase\Repo\Tests\Specials;
 use InvalidArgumentException;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\Status\Status;
-use SpecialPageTestBase;
+use MediaWiki\Tests\Specials\SpecialPageTestBase;
 use Wikibase\DataModel\Entity\ItemId;
 use Wikibase\DataModel\Term\Term;
 use Wikibase\Lib\ContentLanguages;

@@ -62,8 +62,6 @@ class ChangeOpDescription extends ChangeOpBase {
 
 	/**
 	 * Applies the change to the descriptions
-	 *
-	 * @param TermList $descriptions
 	 */
 	private function updateDescriptions( TermList $descriptions ) {
 		if ( $this->description === null ) {
@@ -141,19 +139,22 @@ class ChangeOpDescription extends ChangeOpBase {
 			throw new InvalidArgumentException( '$entity must be a DescriptionsProvider' );
 		}
 
-		$languageValidator = $this->termValidatorFactory->getDescriptionLanguageValidator();
-		$termValidator = $this->termValidatorFactory->getDescriptionValidator();
+		$result = Result::newSuccess();
 
-		// check that the language is valid
-		$result = $languageValidator->validate( $this->languageCode );
+		if ( $this->description !== null ) {
+			// check that the language is valid
+			$languageValidator = $this->termValidatorFactory->getDescriptionLanguageValidator();
+			$result = $languageValidator->validate( $this->languageCode );
+			if ( !$result->isValid() ) {
+				return $result;
+			}
 
-		if ( $result->isValid() && $this->description !== null ) {
 			// Check that the new description is valid
+			$termValidator = $this->termValidatorFactory->getDescriptionValidator();
 			$result = $termValidator->validate( $this->description );
-		}
-
-		if ( !$result->isValid() ) {
-			return $result;
+			if ( !$result->isValid() ) {
+				return $result;
+			}
 		}
 
 		if ( $entity instanceof LabelsProvider ) {

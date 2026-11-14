@@ -3,7 +3,7 @@
 namespace Wikibase\Repo\Tests\Actions;
 
 use MediaWiki\Context\IContextSource;
-use MediaWiki\MediaWikiServices;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Status\Status;
 use MediaWiki\Tests\User\TempUser\TempUserTestTrait;
 use MediaWiki\Title\Title;
@@ -14,7 +14,6 @@ use Wikibase\Repo\Actions\EditEntityAction;
 use Wikibase\Repo\Actions\SubmitEntityAction;
 use Wikibase\Repo\Content\EntityContent;
 use Wikibase\Repo\WikibaseRepo;
-use WikiPage;
 
 /**
  * @covers \Wikibase\Repo\Actions\EditEntityAction
@@ -92,7 +91,7 @@ class EditEntityActionTest extends ActionTestCase {
 			return;
 		}
 
-		$revLookup = MediaWikiServices::getInstance()->getRevisionLookup();
+		$revLookup = $this->getServiceContainer()->getRevisionLookup();
 		for ( $i = abs( $ofs ); $i > 0; $i -= 1 ) {
 			$rev = $revLookup->getPreviousRevision( $rev );
 			if ( !$rev ) {
@@ -104,7 +103,7 @@ class EditEntityActionTest extends ActionTestCase {
 		$params[ $key ] = $rev->getId();
 	}
 
-	public function provideUndoForm() {
+	public static function provideUndoForm() {
 		// based upon well known test items defined in ActionTestCase::makeTestItemData
 
 		yield 'edit, no parameters' => [
@@ -278,7 +277,7 @@ class EditEntityActionTest extends ActionTestCase {
 		// -- bad page -----------------------------------
 		yield 'non-existing page' => [
 			'edit', // action
-			Title::newFromTextThrow( 'XXX', $this->getItemNamespace() ),
+			Title::newFromTextThrow( 'XXX', self::getItemNamespace() ),
 			[ // params
 				'restore' => [ 'London', 0 ], // ok revision
 			],
@@ -448,7 +447,7 @@ class EditEntityActionTest extends ActionTestCase {
 		$this->tryUndoAction( $action, $page, $params, $post, $user, $htmlPattern, $expectedProps );
 	}
 
-	public function provideUndoSubmit() {
+	public static function provideUndoSubmit() {
 		// based upon well known test items defined in ActionTestCase::makeTestItemData
 		yield "submit with legal undo, but don't post" => [
 			'submit', // action
@@ -658,7 +657,7 @@ class EditEntityActionTest extends ActionTestCase {
 		// -- bad page -----------------------------------
 		yield 'non-existing page' => [
 			'submit', // action
-			Title::newFromTextThrow( 'XXX', $this->getItemNamespace() ),
+			Title::newFromTextThrow( 'XXX', self::getItemNamespace() ),
 			[ // params
 				'wpSave' => 1,
 				'wpEditToken' => true, // automatic token
@@ -945,7 +944,7 @@ class EditEntityActionTest extends ActionTestCase {
 		$this->adjustRevisionParam( 'restore', $params, $page );
 
 		if ( isset( $params['wpEditToken'] ) && $params['wpEditToken'] === true ) {
-			$params['wpEditToken'] = self::$user->getEditToken(); //TODO: $user
+			$params['wpEditToken'] = $this->user->getEditToken(); //TODO: $user
 		}
 
 		$out = $this->callAction( $action, $page, $params, $post );
@@ -957,7 +956,7 @@ class EditEntityActionTest extends ActionTestCase {
 		if ( $expectedProps ) {
 			foreach ( $expectedProps as $p => $pattern ) {
 				$func = 'get' . ucfirst( $p );
-				$act = call_user_func( [ $out, $func ] );
+				$act = $out->$func();
 
 				if ( $pattern === true ) {
 					$this->assertNotSame( '', $act, $p );
@@ -1098,7 +1097,7 @@ class EditEntityActionTest extends ActionTestCase {
 		$this->adjustRevisionParam( 'restore', $params, $page );
 
 		if ( !isset( $params['wpEditToken'] ) ) {
-			$params['wpEditToken'] = self::$user->getEditToken();
+			$params['wpEditToken'] = $this->user->getEditToken();
 		}
 
 		if ( !isset( $params['wpSave'] ) ) {
@@ -1177,7 +1176,7 @@ class EditEntityActionTest extends ActionTestCase {
 		$page = $this->getTestItemPage( $handle );
 
 		$params = [
-			'wpEditToken' => self::$user->getEditToken(),
+			'wpEditToken' => $this->user->getEditToken(),
 			'wpSave' => 1,
 			'undo' => $page->getLatest(),
 		];
@@ -1217,11 +1216,11 @@ class EditEntityActionTest extends ActionTestCase {
 
 		$page = $this->getTestItemPage( $handle );
 
-		$originalUser = self::$user;
+		$originalUser = $this->user;
 		$this->setUser( $this->getServiceContainer()->getUserFactory()->newAnonymous() );
 
 		$params = [
-			'wpEditToken' => self::$user->getEditToken(),
+			'wpEditToken' => $this->user->getEditToken(),
 			'wpSave' => 1,
 			'undo' => $page->getLatest(),
 		];
@@ -1241,19 +1240,19 @@ class EditEntityActionTest extends ActionTestCase {
 		self::resetTestItem( $handle );
 	}
 
-	private function getItemNamespace(): int {
+	private static function getItemNamespace(): int {
 		 $entityNamespaceLookup = WikibaseRepo::getEntityNamespaceLookup();
 		 return $entityNamespaceLookup->getEntityNamespace( 'item' );
 	}
 
 	/**
-	 * Changes self::$user and resets any associated state
+	 * Changes $this->user and resets any associated state
 	 *
 	 * @param User $user the desired user
 	 */
 	private function setUser( User $user ) {
-		if ( $user->getName() !== self::$user->getName() ) {
-			self::$user = $user;
+		if ( $user->getName() !== $this->user->getName() ) {
+			$this->user = $user;
 		}
 	}
 }

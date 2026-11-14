@@ -10,10 +10,12 @@ use DataValues\StringValue;
 use MediaWiki\Api\ApiMessage;
 use MediaWiki\Api\ApiUsageException;
 use MediaWiki\Json\FormatJson;
+use MediaWiki\MainConfigNames;
 use Wikibase\DataModel\Entity\EntityDocument;
 use Wikibase\DataModel\Entity\EntityId;
 use Wikibase\DataModel\Entity\Item;
 use Wikibase\DataModel\Entity\Property;
+use Wikibase\DataModel\Entity\PropertyId;
 use Wikibase\DataModel\Reference;
 use Wikibase\DataModel\ReferenceList;
 use Wikibase\DataModel\Serializers\SerializerFactory;
@@ -46,7 +48,7 @@ use Wikimedia\TestingAccessWrapper;
 class SetClaimTest extends WikibaseApiTestCase {
 
 	/** @var PropertyId[] */
-	private static $propertyIds;
+	private static array $propertyIds;
 
 	public function addDBDataOnce() {
 		$this->setupUser();
@@ -118,7 +120,7 @@ class SetClaimTest extends WikibaseApiTestCase {
 	}
 
 	public function testAddClaim() {
-		$this->overrideConfigValue( 'RateLimits',
+		$this->overrideConfigValue( MainConfigNames::RateLimits,
 			[ 'wikibase-idgenerator' => [ '&can-bypass' => true, 'user' => [ 1000, 60 ] ] ] );
 		$store = $this->getEntityStore();
 		$guidGenerator = new GuidGenerator();

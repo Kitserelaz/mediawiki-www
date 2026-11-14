@@ -8,11 +8,15 @@ use DataValues\TimeValue;
 use DataValues\UnboundedQuantityValue;
 use MediaWiki\Api\ApiUsageException;
 use MediaWiki\Tests\Api\ApiTestCase;
+use ValueFormatters\FormatterOptions;
+use ValueFormatters\QuantityFormatter;
+use ValueFormatters\ValueFormatter;
 use Wikibase\DataModel\Entity\EntityIdValue;
 use Wikibase\DataModel\Entity\Item;
 use Wikibase\DataModel\Entity\ItemId;
 use Wikibase\DataModel\Entity\Property;
 use Wikibase\DataModel\Entity\PropertyId;
+use Wikibase\Lib\Formatters\ShowCalendarModelDecider;
 use Wikibase\Lib\Formatters\SnakFormatter;
 use Wikibase\Repo\WikibaseRepo;
 
@@ -383,6 +387,103 @@ class FormatSnakValueTest extends ApiTestCase {
 			->saveEntity( Property::newFromType( $dataType ), '', $this->getTestUser()->getUser(), EDIT_NEW )
 			->getEntity()
 			->getId();
+	}
+
+	/** @dataProvider provideInvalidLang */
+	public function testApiRequest_invalidLangInOptions( string $invalidLang ): void {
+		$formatterWasUsed = false;
+		$this->setTemporaryHook( 'WikibaseRepoDataTypes', function ( array &$datatypes ) use ( &$formatterWasUsed ) {
+			$datatypes['PT:string']['formatter-factory-callback'] = function ( $_, FormatterOptions $options ) use ( &$formatterWasUsed ) {
+				$this->assertSame( 'und', $options->getOption( ValueFormatter::OPT_LANG ) );
+				$formatterWasUsed = true;
+			};
+		} );
+		$this->resetServices();
+
+		$this->doApiRequest( [
+			'action' => 'wbformatvalue',
+			'datatype' => 'string',
+			'datavalue' => json_encode( ( new StringValue( 'string' ) )->toArray() ),
+			'options' => json_encode( [ ValueFormatter::OPT_LANG => $invalidLang ] ),
+		] );
+
+		$this->assertTrue( $formatterWasUsed, 'custom test formatter should have been called' );
+	}
+
+	public static function provideInvalidLang(): iterable {
+		yield '!isValidBuiltInCode, isValidCode' => [ '-' ];
+		yield '!isValidBuiltInCode, !isValidCode' => [ '\\' ];
+	}
+
+	/** @dataProvider provideInvalidTypeLang */
+	public function testApiRequest_invalidTypeLangInOptions( $invalidTypeLang ): void {
+		$this->expectException( ApiUsageException::class, 'wikibase-api-invalid-formatter-options-lang' );
+
+		$this->doApiRequest( [
+			'action' => 'wbformatvalue',
+			'datatype' => 'string',
+			'datavalue' => json_encode( ( new StringValue( 'string' ) )->toArray() ),
+			'options' => json_encode( [ ValueFormatter::OPT_LANG => $invalidTypeLang ] ),
+		] );
+	}
+
+	public static function provideInvalidTypeLang(): iterable {
+		yield 'null' => [ null ];
+		yield 'int' => [ 1 ];
+		yield 'array' => [ [] ];
+	}
+
+	public function testApiRequest_invalidApplyRoundingInOptions(): void {
+		$this->expectException( ApiUsageException::class, 'wikibase-api-invalid-formatter-options-apply-rounding' );
+
+		$this->doApiRequest( [
+			'action' => 'wbformatvalue',
+			'datatype' => 'quantity',
+			'datavalue' => json_encode( ( new StringValue( 'string' ) )->toArray() ),
+			'options' => json_encode( [ QuantityFormatter::OPT_APPLY_ROUNDING => 'invalid' ] ),
+		] );
+	}
+
+	public function testApiRequest_invalidApplyUnitInOptions(): void {
+		$this->expectException( ApiUsageException::class, 'wikibase-api-invalid-formatter-options-apply-unit' );
+
+		$this->doApiRequest( [
+			'action' => 'wbformatvalue',
+			'datatype' => 'quantity',
+			'datavalue' => json_encode( ( new StringValue( 'string' ) )->toArray() ),
+			'options' => json_encode( [ QuantityFormatter::OPT_APPLY_UNIT => 'invalid' ] ),
+		] );
+	}
+
+	/** @dataProvider provideInvalidShowcalendar */
+	public function testApiRequest_invalidShowcalendarInOptions( $showcalendar ): void {
+		$this->expectException( ApiUsageException::class, 'wikibase-api-invalid-formatter-options-showcalendar' );
+
+		$this->doApiRequest( [
+			'action' => 'wbformatvalue',
+			'datatype' => 'time',
+			'datavalue' => json_encode( ( new StringValue( 'string' ) )->toArray() ),
+			'options' => json_encode( [ ShowCalendarModelDecider::OPT_SHOW_CALENDAR => $showcalendar ] ),
+		] );
+	}
+
+	public static function provideInvalidShowcalendar(): iterable {
+		yield [ 'invalid' ];
+		yield [ 12 ];
+	}
+
+	public function testApiRequest_unknownOption(): void {
+		$this->expectException(
+			ApiUsageException::class,
+			[ 'wikibase-api-invalid-formatter-options-unknown-option', 'foo' ]
+		);
+
+		$this->doApiRequest( [
+			'action' => 'wbformatvalue',
+			'datatype' => 'time',
+			'datavalue' => json_encode( ( new StringValue( 'string' ) )->toArray() ),
+			'options' => json_encode( [ 'foo' => 'bar' ] ),
+		] );
 	}
 
 }

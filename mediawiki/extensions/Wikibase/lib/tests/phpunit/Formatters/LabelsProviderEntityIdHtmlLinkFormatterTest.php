@@ -31,18 +31,12 @@ class LabelsProviderEntityIdHtmlLinkFormatterTest extends MediaWikiIntegrationTe
 
 	private const DEFAULT_URL = '/wiki/Q42';
 
-	/** @var LabelDescriptionLookup */
-	private $labelDescriptionLookup;
-	/** @var LanguageNameLookup */
-	private $languageNameLookup;
-	/** @var EntityExistenceChecker */
-	private $existenceChecker;
-	/** @var EntityTitleTextLookup */
-	private $titleTextFormatter;
-	/** @var EntityUrlLookup */
-	private $urlLookup;
-	/** @var EntityRedirectChecker */
-	private $redirectChecker;
+	private LabelDescriptionLookup $labelDescriptionLookup;
+	private LanguageNameLookup $languageNameLookup;
+	private EntityExistenceChecker $existenceChecker;
+	private EntityTitleTextLookup $titleTextFormatter;
+	private EntityUrlLookup $urlLookup;
+	private EntityRedirectChecker $redirectChecker;
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -86,7 +80,7 @@ class LabelsProviderEntityIdHtmlLinkFormatterTest extends MediaWikiIntegrationTe
 		];
 	}
 
-	public function formatProvider_fallback() {
+	public static function format_fallbackProvider() {
 		$deTerm = new Term( 'de', 'Kätzchen' );
 		$deTermFallback = new TermFallback( 'de', 'Kätzchen', 'de', 'de' );
 		$deAtTerm = new TermFallback( 'de-at', 'Kätzchen', 'de', 'de' );
@@ -155,7 +149,7 @@ class LabelsProviderEntityIdHtmlLinkFormatterTest extends MediaWikiIntegrationTe
 	}
 
 	/**
-	 * @dataProvider formatProvider_fallback
+	 * @dataProvider format_fallbackProvider
 	 */
 	public function testFormat_fallback( $expectedPattern, Term $term ) {
 		$entityId = new ItemId( 'Q42' );

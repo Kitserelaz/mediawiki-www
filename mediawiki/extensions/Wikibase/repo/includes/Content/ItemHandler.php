@@ -2,9 +2,9 @@
 
 namespace Wikibase\Repo\Content;
 
-use Article;
 use MediaWiki\Content\Content;
 use MediaWiki\Context\IContextSource;
+use MediaWiki\Page\Article;
 use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Revision\SlotRenderingProvider;
 use MediaWiki\Title\Title;
@@ -111,6 +111,7 @@ class ItemHandler extends EntityHandler {
 		$this->db = $db;
 	}
 
+	/** @inheritDoc */
 	public function getActionOverrides() {
 		return [
 			'history' => function ( Article $article, IContextSource $context ) {
@@ -145,6 +146,7 @@ class ItemHandler extends EntityHandler {
 		return Item::ENTITY_TYPE;
 	}
 
+	/** @inheritDoc */
 	public function getSecondaryDataUpdates(
 		Title $title,
 		Content $content,
@@ -192,6 +194,7 @@ class ItemHandler extends EntityHandler {
 		return $updates;
 	}
 
+	/** @inheritDoc */
 	public function getDeletionUpdates( Title $title, $role ) {
 		$updates = parent::getDeletionUpdates( $title, $role );
 
@@ -263,10 +266,6 @@ class ItemHandler extends EntityHandler {
 		return new ItemId( $id );
 	}
 
-	/**
-	 * @param StatementList $statementList
-	 * @return int
-	 */
 	public function getIdentifiersCount( StatementList $statementList ): int {
 		$identifiers = 0;
 		foreach ( $statementList as $statement ) {
@@ -276,7 +275,7 @@ class ItemHandler extends EntityHandler {
 				try {
 					$this->isExternalIdByPropertyId[$propertyIdSerialization] =
 						$this->dataTypeLookup->getDataTypeIdForProperty( $propertyId ) === 'external-id';
-				} catch ( PropertyDataTypeLookupException $e ) {
+				} catch ( PropertyDataTypeLookupException ) {
 					$this->isExternalIdByPropertyId[$propertyIdSerialization] = false;
 					continue;
 				}

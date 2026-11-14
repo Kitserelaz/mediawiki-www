@@ -1,0 +1,92 @@
+{
+	"name": "Example",
+	"version": "1.0.0",
+	"author": [
+		"..."
+	],
+	"url": "https://www.mediawiki.org/wiki/Skin:Example",
+	"descriptionmsg": "example-skin-desc",
+	"namemsg": "skinname-example",
+	"license-name": "CC0-1.0",
+	"type": "skin",
+	"AutoloadClasses": {
+		"MediaWiki\\Skins\\Example\\SkinExample": "includes/SkinExample.php",
+		"MediaWiki\\Skins\\Example\\WikiNavigation": "includes/WikiNavigation.php"
+	},
+	"requires": {
+		"MediaWiki": ">= 1.46"
+	},
+	"ValidSkinNames": {
+		"example": {
+			"class": "MediaWiki\\Skins\\Example\\SkinExample",
+			"args": [
+				{
+					"name": "example",
+					"responsive": true,
+					"menus": [
+						"user-page",
+						"notifications",
+						"associated-pages",
+						"variants",
+						"views",
+						"actions",
+						"user-interface-preferences",
+						"languages"
+					],
+					"messages": [
+						"example-no-categories",
+						"sitetitle",
+						"search",
+						"otherlanguages",
+						"tagline",
+						"navigation-heading"
+					],
+					"styles": [
+						"skins.example.styles"
+					],
+					"scripts": [
+						"skins.example"
+					]
+				}
+			]
+		}
+	},
+	"MessagesDirs": {
+		"Example": [
+			"i18n"
+		]
+	},
+	"ResourceModules": {
+		"skins.example.styles": {
+			"class": "MediaWiki\\ResourceLoader\\SkinModule",
+			"features": {
+				"normalize": true,
+				"elements": true,
+				"content-tables": true,
+				"content-links": false,
+				"content-media": false,
+				"content-links-external": false,
+				"interface-category": false,
+				"toc": true
+			},
+			"styles": [
+				"resources/skin.less"
+			]
+		},
+		"skins.example": {
+			"packageFiles": [
+				"resources/skin.js"
+			]
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "",
+		"remoteSkinPath": "Example"
+	},
+	"ResourceModuleSkinStyles": {
+		"example": {
+			"+ext.echo.styles.badge": "resources/extensions/echo.styles.badge.less"
+		}
+	},
+	"manifest_version": 2
+}

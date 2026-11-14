@@ -14,7 +14,7 @@ use Wikibase\Lib\Tests\NoBadUsageTestBase;
  */
 class ClientNoBadUsageTest extends NoBadUsageTestBase {
 
-	protected function getBadPatternsWithAllowedUsages(): array {
+	protected static function getBadPatternsWithAllowedUsages(): array {
 		return [
 			// don’t reference repo in client
 			'WikibaseRepo::' => [
@@ -32,7 +32,7 @@ class ClientNoBadUsageTest extends NoBadUsageTestBase {
 				'tests/phpunit/unit/includes/ServiceWiringTestCase.php' => true, // mock
 			],
 			'/\b((get)?(DB)?|I|)LoadBalancer(Factory)?(?!::|;)/' => [
-				'WikibaseClient.ServiceWiring.php' => 2, // RepoDomainDbFactory+ClientDomainDbFactory service wiring
+				'WikibaseClient.ServiceWiring.php' => 3, // RepoDomainDbFactory+ClientDomainDbFactory+TermsDomainDbFactory service wiring
 				'tests/phpunit/integration/includes/RecentChanges/RecentChangesFinderTest.php' => true, // TODO migrate?
 				'tests/phpunit/integration/includes/Usage/Sql/SqlSubscriptionManagerTest.php' => true, // TODO migrate?
 				'tests/phpunit/integration/includes/Usage/Sql/SqlUsageTrackerTest.php' => true, // TODO migrate?
@@ -43,11 +43,11 @@ class ClientNoBadUsageTest extends NoBadUsageTestBase {
 		];
 	}
 
-	protected function getBaseDir(): string {
+	protected static function getBaseDir(): string {
 		return __DIR__ . '/../../../../';
 	}
 
-	protected function getThisFile(): string {
+	protected static function getThisFile(): string {
 		return __FILE__;
 	}
 

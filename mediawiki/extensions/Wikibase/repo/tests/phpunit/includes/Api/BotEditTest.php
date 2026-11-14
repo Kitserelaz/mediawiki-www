@@ -37,60 +37,60 @@ class BotEditTest extends WikibaseApiTestCase {
 	public static function provideData() {
 		return [
 			[ //0
-				'p' => [ 'handle' => 'Empty', 'bot' => '', 'action' => 'wbsetlabel',
+				'params' => [ 'handle' => 'Empty', 'bot' => '', 'action' => 'wbsetlabel',
 					'language' => 'en', 'value' => 'ALabel' ],
-				'e' => [ 'bot' => true, 'new' => false ] ],
+				'expected' => [ 'bot' => true, 'new' => false ] ],
 			[ //1
-				'p' => [ 'handle' => 'Empty', 'action' => 'wbsetlabel', 'language' => 'en',
+				'params' => [ 'handle' => 'Empty', 'action' => 'wbsetlabel', 'language' => 'en',
 					'value' => 'ALabel2' ],
-				'e' => [ 'bot' => false, 'new' => false ] ],
+				'expected' => [ 'bot' => false, 'new' => false ] ],
 			[ //2
-				'p' => [ 'handle' => 'Empty', 'bot' => '', 'action' => 'wbsetdescription',
+				'params' => [ 'handle' => 'Empty', 'bot' => '', 'action' => 'wbsetdescription',
 					'language' => 'de', 'value' => 'ADesc' ],
-				'e' => [ 'bot' => true, 'new' => false ] ],
+				'expected' => [ 'bot' => true, 'new' => false ] ],
 			[ //3
-				'p' => [ 'handle' => 'Empty', 'action' => 'wbsetdescription',
+				'params' => [ 'handle' => 'Empty', 'action' => 'wbsetdescription',
 					'language' => 'de', 'value' => 'ADesc2' ],
-				'e' => [ 'bot' => false, 'new' => false ] ],
+				'expected' => [ 'bot' => false, 'new' => false ] ],
 			[ //4
-				'p' => [ 'handle' => 'Empty', 'bot' => '', 'action' => 'wbsetaliases',
+				'params' => [ 'handle' => 'Empty', 'bot' => '', 'action' => 'wbsetaliases',
 					'language' => 'de', 'set' => 'ali1' ],
-				'e' => [ 'bot' => true, 'new' => false ] ],
+				'expected' => [ 'bot' => true, 'new' => false ] ],
 			[ //5
-				'p' => [ 'handle' => 'Empty', 'action' => 'wbsetaliases', 'language' => 'de',
+				'params' => [ 'handle' => 'Empty', 'action' => 'wbsetaliases', 'language' => 'de',
 					'set' => 'ali2' ],
-				'e' => [ 'bot' => false, 'new' => false ] ],
+				'expected' => [ 'bot' => false, 'new' => false ] ],
 			[ //6
-				'p' => [ 'handle' => 'Empty', 'bot' => '', 'action' => 'wbsetsitelink',
+				'params' => [ 'handle' => 'Empty', 'bot' => '', 'action' => 'wbsetsitelink',
 					'linksite' => 'enwiki', 'linktitle' => 'PageEn' ],
-				'e' => [ 'bot' => true, 'new' => false ] ],
+				'expected' => [ 'bot' => true, 'new' => false ] ],
 			[ //7
-				'p' => [ 'handle' => 'Empty', 'action' => 'wbsetsitelink',
+				'params' => [ 'handle' => 'Empty', 'action' => 'wbsetsitelink',
 					'linksite' => 'dewiki', 'linktitle' => 'PageDe' ],
-				'e' => [ 'bot' => false, 'new' => false ] ],
+				'expected' => [ 'bot' => false, 'new' => false ] ],
 			[ //8
-				'p' => [ 'bot' => '', 'action' => 'wblinktitles', 'tosite' => 'enwiki',
+				'params' => [ 'bot' => '', 'action' => 'wblinktitles', 'tosite' => 'enwiki',
 					'totitle' => 'PageEn2', 'fromsite' => 'svwiki', 'fromtitle' => 'SvPage' ],
-				'e' => [ 'bot' => true, 'new' => true ] ],
+				'expected' => [ 'bot' => true, 'new' => true ] ],
 			[ //9
-				'p' => [ 'action' => 'wblinktitles', 'tosite' => 'dewiki',
+				'params' => [ 'action' => 'wblinktitles', 'tosite' => 'dewiki',
 					'totitle' => 'PageDe2', 'fromsite' => 'nowiki', 'fromtitle' => 'NoPage' ],
-				'e' => [ 'bot' => false, 'new' => true ] ],
+				'expected' => [ 'bot' => false, 'new' => true ] ],
 			[ //10
-				'p' => [ 'bot' => '', 'action' => 'wbeditentity', 'new' => 'item',
+				'params' => [ 'bot' => '', 'action' => 'wbeditentity', 'new' => 'item',
 					'data' => '{}' ],
-				'e' => [ 'bot' => true, 'new' => true ] ],
+				'expected' => [ 'bot' => true, 'new' => true ] ],
 			[ //11
-				'p' => [ 'action' => 'wbeditentity', 'new' => 'item', 'data' => '{}' ],
-				'e' => [ 'bot' => false, 'new' => true ] ],
+				'params' => [ 'action' => 'wbeditentity', 'new' => 'item', 'data' => '{}' ],
+				'expected' => [ 'bot' => false, 'new' => true ] ],
 			[ //12
-				'p' => [ 'action' => 'wbmergeitems', 'fromid' => 'Osaka', 'toid' => 'Empty',
+				'params' => [ 'action' => 'wbmergeitems', 'fromid' => 'Osaka', 'toid' => 'Empty',
 					'bot' => '' ],
-				'e' => [ 'bot' => true, 'new' => false ] ],
+				'expected' => [ 'bot' => true, 'new' => false ] ],
 			[ //13
-				'p' => [ 'action' => 'wbmergeitems', 'fromid' => 'Leipzig', 'toid' => 'Empty',
+				'params' => [ 'action' => 'wbmergeitems', 'fromid' => 'Leipzig', 'toid' => 'Empty',
 					'ignoreconflicts' => 'description' ],
-				'e' => [ 'bot' => false, 'new' => false ] ],
+				'expected' => [ 'bot' => false, 'new' => false ] ],
 			// TODO: Claims, references, qualifiers.
 		];
 	}

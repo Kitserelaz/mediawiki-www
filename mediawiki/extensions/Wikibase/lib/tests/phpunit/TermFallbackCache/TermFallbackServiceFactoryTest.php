@@ -4,15 +4,15 @@ declare( strict_types = 1 );
 
 namespace Wikibase\Lib\Tests\TermFallbackCache;
 
-use ObjectCacheFactory;
+use MediaWiki\ObjectCache\ObjectCacheFactory;
 use PHPUnit\Framework\TestCase;
 use Psr\SimpleCache\CacheInterface;
 use Wikibase\Lib\SimpleCacheWithBagOStuff;
-use Wikibase\Lib\StatsdRecordingSimpleCache;
+use Wikibase\Lib\StatslibRecordingSimpleCache;
 use Wikibase\Lib\TermFallbackCache\TermFallbackCacheServiceFactory;
 use Wikimedia\ObjectCache\BagOStuff;
 use Wikimedia\ObjectCache\CachedBagOStuff;
-use Wikimedia\Stats\IBufferingStatsdDataFactory;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * @covers \Wikibase\Lib\TermFallbackCache\TermFallbackCacheServiceFactory
@@ -52,14 +52,16 @@ class TermFallbackServiceFactoryTest extends TestCase {
 		);
 	}
 
-	public function testNewStatsdRecordingCache() {
+	public function testNewStatslibRecordingCache() {
 		$cache = $this->createMock( CacheInterface::class );
-		$statsdDataFactory = $this->createMock( IBufferingStatsdDataFactory::class );
+
+		$statsHelper = StatsFactory::newUnitTestingHelper();
+		$statsFactory = $statsHelper->getStatsFactory();
 
 		$sut = $this->createSUT();
 		$this->assertInstanceOf(
-			StatsdRecordingSimpleCache::class,
-			$sut->newStatsdRecordingCache( $cache, $statsdDataFactory, [ 'miss' => 'sad', 'hit' => 'hey' ] )
+			StatslibRecordingSimpleCache::class,
+			$sut->newStatslibRecordingCache( $cache, $statsFactory, [ 'miss' => 'sad', 'hit' => 'hey' ], 'cacheKey_total' )
 		);
 	}
 

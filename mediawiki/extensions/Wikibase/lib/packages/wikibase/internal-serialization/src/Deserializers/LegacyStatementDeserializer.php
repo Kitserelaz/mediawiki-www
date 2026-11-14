@@ -54,13 +54,18 @@ class LegacyStatementDeserializer implements DispatchableDeserializer {
 		return $this->newStatement( $serialization );
 	}
 
+	/**
+	 * @param array $serialization
+	 * @param string $key
+	 * @param string $message
+	 */
 	private function assertHasKey( array $serialization, $key, $message ) {
 		if ( !array_key_exists( $key, $serialization ) ) {
 			throw new MissingAttributeException( $key, $message );
 		}
 	}
 
-	private function newStatement( array $serialization ) {
+	private function newStatement( array $serialization ): Statement {
 		/* @var Snak $snak */
 		$snak = $this->snakDeserializer->deserialize( $serialization['m'] );
 		/* @var SnakList $snakList */
@@ -79,7 +84,7 @@ class LegacyStatementDeserializer implements DispatchableDeserializer {
 		return $statement;
 	}
 
-	private function getReferences( array $refs ) {
+	private function getReferences( array $refs ): ReferenceList {
 		$references = [];
 
 		foreach ( $refs as $serialization ) {

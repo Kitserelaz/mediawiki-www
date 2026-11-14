@@ -13,6 +13,7 @@ use Wikibase\DataModel\Services\Diff\EntityDiffer;
 use Wikibase\DataModel\SiteLink;
 use Wikibase\DataModel\Snak\PropertyNoValueSnak;
 use Wikibase\DataModel\Snak\PropertySomeValueSnak;
+use Wikibase\DataModel\Snak\SnakList;
 use Wikibase\DataModel\Statement\Statement;
 use Wikibase\DataModel\Statement\StatementList;
 use Wikibase\Lib\Changes\EntityDiffChangedAspects;
@@ -29,12 +30,14 @@ use Wikibase\Lib\Changes\EntityDiffChangedAspectsFactory;
  */
 class EntityDiffChangedAspectsFactoryTest extends \PHPUnit\Framework\TestCase {
 
-	public function provideNewFromEntityDiff() {
+	public static function provideNewFromEntityDiff() {
 		$emptyDiff = [
 			'arrayFormatVersion' => EntityDiffChangedAspects::ARRAYFORMATVERSION,
 			'labelChanges' => [],
 			'descriptionChanges' => [],
-			'statementChanges' => [],
+			'aliasChanges' => [],
+			'statementChangesExcludingQualOrRefOnlyChanges' => [],
+			'statementChangesQualOrRefOnly' => [],
 			'siteLinkChanges' => [],
 			'otherChanges' => false,
 		];
@@ -45,14 +48,23 @@ class EntityDiffChangedAspectsFactoryTest extends \PHPUnit\Framework\TestCase {
 		$descriptionDiff = $emptyDiff;
 		$descriptionDiff['descriptionChanges'] = [ 'ru' ];
 
+		$aliasDiff = $emptyDiff;
+		$aliasDiff['aliasChanges'] = [ 'tr' ];
+
 		$statementP1Diff = $emptyDiff;
-		$statementP1Diff['statementChanges'] = [ 'P1' ];
+		$statementP1Diff['statementChangesExcludingQualOrRefOnlyChanges'] = [ 'P1' ];
 
 		$statementP2Diff = $emptyDiff;
-		$statementP2Diff['statementChanges'] = [ 'P2' ];
+		$statementP2Diff['statementChangesExcludingQualOrRefOnlyChanges'] = [ 'P2' ];
 
 		$statementP1P2Diff = $emptyDiff;
-		$statementP1P2Diff['statementChanges'] = [ 'P1', 'P2' ];
+		$statementP1P2Diff['statementChangesExcludingQualOrRefOnlyChanges'] = [ 'P1', 'P2' ];
+
+		$statementChangesQualOrRefOnlyP2Diff = $emptyDiff;
+		$statementChangesQualOrRefOnlyP2Diff['statementChangesQualOrRefOnly'] = [ 'P2' ];
+
+		$statementChangesMainSnakAndQualDiff = $emptyDiff;
+		$statementChangesMainSnakAndQualDiff['statementChangesExcludingQualOrRefOnlyChanges'] = [ 'P2' ];
 
 		$siteLinkDiff = $emptyDiff;
 		$siteLinkDiff['siteLinkChanges'] = [ 'enwiki' => [ null, 'PHP', false ] ];
@@ -67,7 +79,9 @@ class EntityDiffChangedAspectsFactoryTest extends \PHPUnit\Framework\TestCase {
 			'arrayFormatVersion' => EntityDiffChangedAspects::ARRAYFORMATVERSION,
 			'labelChanges' => [ 'de', 'ru' ],
 			'descriptionChanges' => [ 'de', 'es' ],
-			'statementChanges' => [ 'P2' ],
+			'aliasChanges' => [ 'de', 'es' ],
+			'statementChangesExcludingQualOrRefOnlyChanges' => [ 'P2' ],
+			'statementChangesQualOrRefOnly' => [],
 			'siteLinkChanges' => [
 				'dewiki' => [ null, 'Berlin', true ],
 				'enwiki' => [ null, 'Berlin', false ],
@@ -79,7 +93,9 @@ class EntityDiffChangedAspectsFactoryTest extends \PHPUnit\Framework\TestCase {
 			'arrayFormatVersion' => EntityDiffChangedAspects::ARRAYFORMATVERSION,
 			'labelChanges' => [ 'fr', 'ru' ],
 			'descriptionChanges' => [ 'de', 'es', 'pl' ],
-			'statementChanges' => [ 'P2' ],
+			'aliasChanges' => [ 'de', 'es', 'pl' ],
+			'statementChangesExcludingQualOrRefOnlyChanges' => [ 'P2' ],
+			'statementChangesQualOrRefOnly' => [],
 			'siteLinkChanges' => [
 				'dewiki' => [ null, 'Paris', true ],
 				'enwiki' => [ null, 'Paris', false ],
@@ -92,7 +108,9 @@ class EntityDiffChangedAspectsFactoryTest extends \PHPUnit\Framework\TestCase {
 			'arrayFormatVersion' => EntityDiffChangedAspects::ARRAYFORMATVERSION,
 			'labelChanges' => [ 'de', 'fr', 'ru' ],
 			'descriptionChanges' => [ 'pl' ],
-			'statementChanges' => [ 'P2' ],
+			'aliasChanges' => [ 'pl' ],
+			'statementChangesExcludingQualOrRefOnlyChanges' => [ 'P2' ],
+			'statementChangesQualOrRefOnly' => [],
 			'siteLinkChanges' => [
 				'dewiki' => [ 'Berlin', 'Paris', false ],
 				'enwiki' => [ 'Berlin', 'Paris', false ],
@@ -114,6 +132,14 @@ class EntityDiffChangedAspectsFactoryTest extends \PHPUnit\Framework\TestCase {
 		$someValueStatement = new Statement( new PropertySomeValueSnak( $p2 ) );
 		$someValueStatements = new StatementList( $someValueStatement );
 
+		$someValueStatementWithQualifier = new Statement( new PropertySomeValueSnak( $p2 ) );
+		$someValueStatementWithQualifier->setQualifiers( new SnakList( [
+			new PropertyNoValueSnak( 42 ),
+			new PropertySomeValueSnak( 24 ),
+			new PropertyNoValueSnak( 24 ),
+		] ) );
+		$someValueStatementsWithQualifier = new StatementList( $someValueStatementWithQualifier );
+
 		$emptyItem = new Item( $q2, null, null, null );
 		$emptyProperty = new Property( $p2, null, 'hey', null );
 
@@ -123,6 +149,9 @@ class EntityDiffChangedAspectsFactoryTest extends \PHPUnit\Framework\TestCase {
 		$descriptionItem = $emptyItem->copy();
 		$descriptionItem->setDescription( 'ru', 'ru desc' );
 
+		$aliasItem = $emptyItem->copy();
+		$aliasItem->setAliases( 'tr', [ 'tr alias', 'tr alias2' ] );
+
 		$noValueP1StatementItem = $emptyItem->copy();
 		$noValueP1StatementItem->setStatements( $noValueP1Statements );
 
@@ -131,6 +160,9 @@ class EntityDiffChangedAspectsFactoryTest extends \PHPUnit\Framework\TestCase {
 
 		$someValueStatementItem = $emptyItem->copy();
 		$someValueStatementItem->setStatements( $someValueStatements );
+
+		$someValueStatementItemWithQualifer = $emptyItem->copy();
+		$someValueStatementItemWithQualifer->setStatements( $someValueStatementsWithQualifier );
 
 		$siteLinkItem = $emptyItem->copy();
 		$siteLinkItem->addSiteLink( new SiteLink( 'enwiki', 'PHP' ) );
@@ -145,6 +177,8 @@ class EntityDiffChangedAspectsFactoryTest extends \PHPUnit\Framework\TestCase {
 		$berlinItem->setLabel( 'ru', 'Берлин' );
 		$berlinItem->setDescription( 'de', 'abc' );
 		$berlinItem->setDescription( 'es', 'def' );
+		$berlinItem->setAliases( 'de', [ 'abc' ] );
+		$berlinItem->setAliases( 'es', [ 'def', 'ghi' ] );
 		$berlinItem->setStatements( $someValueStatements );
 
 		$parisItem = $emptyItem->copy();
@@ -156,6 +190,9 @@ class EntityDiffChangedAspectsFactoryTest extends \PHPUnit\Framework\TestCase {
 		$parisItem->setDescription( 'de', 'abc' );
 		$parisItem->setDescription( 'es', 'def' );
 		$parisItem->setDescription( 'pl', 'xyz' );
+		$parisItem->setAliases( 'de', [ 'abc' ] );
+		$parisItem->setAliases( 'es', [ 'def', 'ghi' ] );
+		$parisItem->setAliases( 'pl', [ 'xyz' ] );
 		$parisItem->setStatements( $noValueP2Statements );
 
 		$noValueP1Property = $emptyProperty->copy();
@@ -181,6 +218,11 @@ class EntityDiffChangedAspectsFactoryTest extends \PHPUnit\Framework\TestCase {
 				$emptyDiff,
 				$descriptionItem,
 				$descriptionItem,
+			],
+			'$aliasItem === $aliasItem' => [
+				$emptyDiff,
+				$aliasItem,
+				$aliasItem,
 			],
 			'$noValueP1StatementItem === $noValueP1StatementItem' => [
 				$emptyDiff,
@@ -232,6 +274,11 @@ class EntityDiffChangedAspectsFactoryTest extends \PHPUnit\Framework\TestCase {
 				$emptyItem,
 				$descriptionItem,
 			],
+			'alias changes' => [
+				$aliasDiff,
+				$emptyItem,
+				$aliasItem,
+			],
 			'item statement change (no value)' => [
 				$statementP1Diff,
 				$emptyItem,
@@ -256,6 +303,16 @@ class EntityDiffChangedAspectsFactoryTest extends \PHPUnit\Framework\TestCase {
 				$statementP2Diff,
 				$someValueStatementItem,
 				$noValueP2StatementItem,
+			],
+			'statement change (only add qualifier)' => [
+				$statementChangesQualOrRefOnlyP2Diff,
+				$someValueStatementItem,
+				$someValueStatementItemWithQualifer,
+			],
+			'statement change (add value and a qualifier) - so both mainSnak and qualifier change' => [
+				$statementChangesMainSnakAndQualDiff,
+				$noValueP2StatementItem,
+				$someValueStatementItemWithQualifer,
 			],
 			'sitelink changes' => [
 				$siteLinkDiff,
@@ -293,7 +350,7 @@ class EntityDiffChangedAspectsFactoryTest extends \PHPUnit\Framework\TestCase {
 		$reverseTests = [];
 		foreach ( $cases as $testDescription => $case ) {
 			$reverseTests[$testDescription . ' (reversed)'] = [
-				$this->reverseDiff( $case[0] ),
+				self::reverseDiff( $case[0] ),
 				$case[2],
 				$case[1],
 			];
@@ -302,11 +359,11 @@ class EntityDiffChangedAspectsFactoryTest extends \PHPUnit\Framework\TestCase {
 		return array_merge( $cases, $reverseTests );
 	}
 
-	private function reverseDiff( array $diffs ) {
+	private static function reverseDiff( array $diffs ) {
 		$newDiff = [];
 		foreach ( $diffs as $diffType => $diff ) {
 			if ( $diffType === 'siteLinkChanges' ) {
-				$newDiff[$diffType] = $this->reverseSiteLinkDiff( $diff );
+				$newDiff[$diffType] = self::reverseSiteLinkDiff( $diff );
 				continue;
 			}
 
@@ -316,7 +373,7 @@ class EntityDiffChangedAspectsFactoryTest extends \PHPUnit\Framework\TestCase {
 		return $newDiff;
 	}
 
-	private function reverseSiteLinkDiff( $diff ) {
+	private static function reverseSiteLinkDiff( $diff ) {
 		$newSiteLinkDiff = [];
 		foreach ( $diff as $site => $siteDiff ) {
 			$newSiteLinkDiff[$site] = [ $siteDiff[1], $siteDiff[0], $siteDiff[2] ];
@@ -356,7 +413,9 @@ class EntityDiffChangedAspectsFactoryTest extends \PHPUnit\Framework\TestCase {
 			'arrayFormatVersion' => EntityDiffChangedAspects::ARRAYFORMATVERSION,
 			'labelChanges' => [],
 			'descriptionChanges' => [],
-			'statementChanges' => [],
+			'aliasChanges' => [],
+			'statementChangesExcludingQualOrRefOnlyChanges' => [],
+			'statementChangesQualOrRefOnly' => [],
 			'siteLinkChanges' => [],
 			'otherChanges' => true,
 		];
@@ -366,8 +425,6 @@ class EntityDiffChangedAspectsFactoryTest extends \PHPUnit\Framework\TestCase {
 
 	/**
 	 * Sort all sub-arrays (but leave the array itself alone).
-	 *
-	 * @param array &$arr
 	 */
 	private function sortSubArrays( array &$arr ) {
 		foreach ( $arr as &$subArr ) {

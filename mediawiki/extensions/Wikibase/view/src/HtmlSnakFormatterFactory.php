@@ -16,11 +16,13 @@ interface HtmlSnakFormatterFactory {
 	/**
 	 * @param string $languageCode
 	 * @param TermLanguageFallbackChain $termLanguageFallbackChain
+	 * @param array $viewOptions
 	 * @return SnakFormatter
 	 */
 	public function getSnakFormatter(
 		$languageCode,
-		TermLanguageFallbackChain $termLanguageFallbackChain
+		TermLanguageFallbackChain $termLanguageFallbackChain,
+		array $viewOptions,
 	);
 
 }

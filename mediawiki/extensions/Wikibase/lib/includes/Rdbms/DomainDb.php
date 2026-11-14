@@ -5,8 +5,8 @@ declare( strict_types=1 );
 namespace Wikibase\Lib\Rdbms;
 
 use Wikimedia\Rdbms\ConnectionManager;
+use Wikimedia\Rdbms\IDatabase;
 use Wikimedia\Rdbms\ILBFactory;
-use Wikimedia\Rdbms\ILoadBalancer;
 use Wikimedia\Rdbms\SessionConsistentConnectionManager;
 
 /**
@@ -21,44 +21,21 @@ use Wikimedia\Rdbms\SessionConsistentConnectionManager;
  * @license GPL-2.0-or-later
  */
 abstract class DomainDb {
-
-	public const LOAD_GROUP_FROM_CLIENT = 'from-client';
-	public const LOAD_GROUP_FROM_REPO = 'from-repo';
-
-	/**
-	 * @var ILBFactory
-	 */
-	private $lbFactory;
-
-	/**
-	 * @var string
-	 */
-	private $domainId;
-
-	/**
-	 * @var ReplicationWaiter
-	 */
-	private $replicationWaiter;
+	private ILBFactory $lbFactory;
+	private string $domainId;
+	private ReplicationWaiter $replicationWaiter;
 
 	/**
 	 * @var string[]
 	 */
-	private $loadGroups;
+	private array $loadGroups;
 
-	/**
-	 * @var ?SessionConsistentConnectionManager
-	 */
-	private $sessionConsistentConnectionManager = null;
+	private ?SessionConsistentConnectionManager $sessionConsistentConnectionManager = null;
+	private ?ConnectionManager $connectionManager = null;
 
-	/**
-	 * @var ?ConnectionManager
-	 */
-	private $connectionManager = null;
-
-	public function __construct( ILBFactory $lbFactory, string $domainId, array $loadGroups = [] ) {
+	public function __construct( ILBFactory $lbFactory, string $domainId ) {
 		$this->lbFactory = $lbFactory;
 		$this->domainId = $domainId;
-		$this->loadGroups = $loadGroups;
 
 		$this->replicationWaiter = new ReplicationWaiter(
 			$lbFactory,
@@ -74,8 +51,7 @@ abstract class DomainDb {
 		if ( $this->sessionConsistentConnectionManager === null ) {
 			$this->sessionConsistentConnectionManager = new SessionConsistentConnectionManager(
 				$this->lbFactory->getMainLB( $this->domainId ),
-				$this->domainId,
-				$this->loadGroups
+				$this->domainId
 			);
 		}
 		return $this->sessionConsistentConnectionManager;
@@ -83,17 +59,20 @@ abstract class DomainDb {
 
 	/**
 	 * WARNING: Do _not_ override the load-groups in individual method calls on ConnectionManager!
-	 * Instead add them to the factory method!
+	 * Instead, add them to the factory method!
 	 */
 	public function connections(): ConnectionManager {
 		if ( $this->connectionManager === null ) {
 			$this->connectionManager = new ConnectionManager(
 				$this->lbFactory->getMainLB( $this->domainId ),
-				$this->domainId,
-				$this->loadGroups
+				$this->domainId
 			);
 		}
 		return $this->connectionManager;
+	}
+
+	public function getAutoCommitPrimaryConnection(): IDatabase {
+		return $this->lbFactory->getAutoCommitPrimaryConnection( $this->domainId );
 	}
 
 	public function replication(): ReplicationWaiter {
@@ -131,13 +110,6 @@ abstract class DomainDb {
 	 */
 	public function autoReconfigure(): void {
 		$this->lbFactory->autoReconfigure();
-	}
-
-	/**
-	 * @deprecated Don't use this unless it needs to be passed to a service we don't control
-	 */
-	public function loadBalancer(): ILoadBalancer {
-		return $this->lbFactory->getMainLB( $this->domainId );
 	}
 
 	/**

@@ -1,10 +1,12 @@
 {
 	"@metadata": {
 		"authors": [
-			"Ajiniyaz Nurniyazov"
+			"Ajiniyaz Nurniyazov",
+			"Inabat Allanova"
 		]
 	},
 	"nstab-lexeme": "Leksema",
 	"tooltip-ca-nstab-lexeme": "Leksemanıń anıqlaması",
+	"wikibase-lexeme-scoped-search-scope-name": "Leksemalar",
 	"wikibaselexeme-form-field-required": "Shártli maydan"
 }

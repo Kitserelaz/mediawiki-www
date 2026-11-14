@@ -95,10 +95,11 @@ class CacheAwarePropertyInfoStore implements PropertyInfoStore {
 
 		// Update per property cache
 		$this->logger->debug(
-			'{method}: updating cache after updating property {id}',
+			'{method}: updating cache ({cacheType}) after updating property {id}',
 			[
 				'method' => __METHOD__,
 				'id' => $id,
+				'cacheType' => get_class( $this->cache ),
 			]
 		);
 
@@ -130,10 +131,11 @@ class CacheAwarePropertyInfoStore implements PropertyInfoStore {
 
 		// Update external cache
 		$this->logger->debug(
-			'{method}: updating cache after removing property {id}',
+			'{method}: updating cache ({cacheType}) after removing property {id}',
 			[
 				'method' => __METHOD__,
 				'id' => $id,
+				'cacheType' => get_class( $this->cache ),
 			]
 		);
 
@@ -146,14 +148,14 @@ class CacheAwarePropertyInfoStore implements PropertyInfoStore {
 		return true;
 	}
 
-	private function getFullTableCacheKey() {
+	private function getFullTableCacheKey(): string {
 		return $this->cache->makeGlobalKey(
 			self::CACHE_CLASS,
 			$this->cacheKeyGroup
 		);
 	}
 
-	private function getSinglePropertyCacheKey( NumericPropertyId $propertyId ) {
+	private function getSinglePropertyCacheKey( NumericPropertyId $propertyId ): string {
 		return $this->cache->makeGlobalKey(
 			self::CACHE_CLASS,
 			$this->cacheKeyGroup,

@@ -6,24 +6,19 @@ namespace Wikibase\Client\Hooks;
 
 use MediaWiki\Content\ContentHandler;
 use MediaWiki\Content\Hook\SearchDataForIndexHook;
-use MediaWiki\Hook\AbortEmailNotificationHook;
 use MediaWiki\Hook\MaintenanceShellStartHook;
 use MediaWiki\Hook\UnitTestsListHook;
 use MediaWiki\Output\Hook\BeforePageDisplayHook;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Search\Hook\SearchIndexFieldsHook;
+use MediaWiki\Search\SearchEngine;
+use MediaWiki\Search\SearchIndexField;
+use MediaWiki\Skin\Skin;
 use MediaWiki\SpecialPage\Hook\WgQueryPagesHook;
-use MediaWiki\Title\Title;
-use MediaWiki\User\User;
-use RecentChange;
-use SearchEngine;
-use SearchIndexField;
-use Skin;
-use Wikibase\Client\RecentChanges\RecentChangeFactory;
 use Wikibase\Client\Specials\SpecialUnconnectedPages;
-use WikiPage;
 
 /**
  * Handler for “trivial” hooks:
@@ -33,7 +28,6 @@ use WikiPage;
  * @license GPL-2.0-or-later
  */
 class TrivialHookHandler implements
-	AbortEmailNotificationHook,
 	BeforePageDisplayHook,
 	SearchDataForIndexHook,
 	SearchIndexFieldsHook,
@@ -41,20 +35,6 @@ class TrivialHookHandler implements
 	WgQueryPagesHook,
 	MaintenanceShellStartHook
 {
-	/**
-	 * @param User $editor
-	 * @param Title $title
-	 * @param RecentChange $recentChange
-	 *
-	 * @return bool
-	 */
-	public function onAbortEmailNotification( $editor, $title, $recentChange ): bool {
-		if ( $recentChange->getAttribute( 'rc_source' ) === RecentChangeFactory::SRC_WIKIBASE ) {
-			return false;
-		}
-
-		return true;
-	}
 
 	/**
 	 * Add the connected item prefixed id as a JS config variable, for gadgets etc.
@@ -63,6 +43,7 @@ class TrivialHookHandler implements
 	 */
 	public function onBeforePageDisplay( $outputPage, $skin ): void {
 		$prefixedId = $outputPage->getProperty( 'wikibase_item' );
+		$outputPage->addModules( 'wikibase.databox.fromWikidata' );
 
 		if ( $prefixedId !== null ) {
 			$outputPage->addJsConfigVars( 'wgWikibaseItemId', $prefixedId );
@@ -100,10 +81,6 @@ class TrivialHookHandler implements
 		$this->doSearchDataForIndex( $fields, $output );
 	}
 
-	/**
-	 * @param array &$fields
-	 * @param ParserOutput $parserOutput
-	 */
 	private function doSearchDataForIndex( array &$fields, ParserOutput $parserOutput ): void {
 		$wikibaseItem = $parserOutput->getPageProperty( 'wikibase_item' );
 		if ( $wikibaseItem ) {

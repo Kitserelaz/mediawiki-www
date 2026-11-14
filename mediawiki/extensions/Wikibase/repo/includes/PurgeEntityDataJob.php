@@ -4,11 +4,11 @@ declare( strict_types = 1 );
 
 namespace Wikibase\Repo;
 
-use BatchRowIterator;
-use Job;
 use MediaWiki\Cache\HTMLCacheUpdater;
+use MediaWiki\JobQueue\Job;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
+use MediaWiki\Utils\BatchRowIterator;
 use Wikibase\DataModel\Entity\EntityIdParser;
 use Wikibase\Lib\Rdbms\RepoDomainDb;
 use Wikibase\Repo\LinkedData\EntityDataUriManager;
@@ -57,7 +57,7 @@ class PurgeEntityDataJob extends Job {
 			WikibaseRepo::getEntityIdParser( $services ),
 			WikibaseRepo::getEntityDataUriManager( $services ),
 			WikibaseRepo::getRepoDomainDbFactory( $services )->newRepoDb(),
-			$services->getHtmlCacheUpdater(),
+			$services->getHTMLCacheUpdater(),
 			$services->getMainConfig()->get( 'UpdateRowsPerQuery' ),
 			$params
 		);

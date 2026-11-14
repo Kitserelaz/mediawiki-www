@@ -34,12 +34,16 @@ class DispatchingEntityViewFactoryTest extends \PHPUnit\Framework\TestCase {
 		$factory = new DispatchingEntityViewFactory(
 			[]
 		);
+		$entity = $this->createMock( EntityDocument::class );
+		$entity->expects( $this->once() )
+			->method( 'getType' )
+			->willReturn( 'unknown' );
 
 		$this->expectException( OutOfBoundsException::class );
 		$factory->newEntityView(
 			MediaWikiServices::getInstance()->getLanguageFactory()->getLanguage( 'en' ),
 			new TermLanguageFallbackChain( [], $this->createStub( ContentLanguages::class ) ),
-			$this->createMock( EntityDocument::class )
+			$entity
 		);
 	}
 

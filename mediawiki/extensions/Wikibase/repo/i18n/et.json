@@ -6,6 +6,7 @@
 			"Boxmein",
 			"Macofe",
 			"Pikne",
+			"Rivoz",
 			"WikedKentaur"
 		]
 	},
@@ -23,15 +24,18 @@
 	"wikibase-publish": "avalda",
 	"wikibase-cancel": "loobu",
 	"wikibase-add": "lisa",
+	"wikibase-addstatement": "lisa avaldus",
 	"wikibase-addqualifier": "lisa täpsustus",
 	"wikibase-addreference": "lisa viide",
 	"wikibase-save-inprogress": "Salvestamine...",
 	"wikibase-publish-inprogress": "Avaldamine...",
 	"wikibase-remove-inprogress": "Eemaldamine...",
 	"wikibase-statementlistview-add": "lisa väärtus",
+	"wikibase-addvalue": "Väärtuse lisamine",
 	"wikibase-statementlistview-add-tooltip": "Lisa uus väärtus",
 	"wikibase-statementgrouplistview-add": "lisa avaldus",
 	"wikibase-statementgrouplistview-add-tooltip": "Lisa uus avaldus",
+	"wikibase-statementgrouplistview-edit": "{{PLURAL:$1|Avalduse|Avalduste}} muutmine",
 	"wikibase-entitytermsview-entitytermsforlanguagelistview-toggler": "Teistes keeltes",
 	"wikibase-entitytermsview-entitytermsforlanguagelistview-configure-link-label": "Häälesta",
 	"wikibase-setting-entitytermsview-showEntitytermslistview": "Näita silte, rööpkujusid ja kirjeldusi kõigis minu keeltes",
@@ -177,6 +181,9 @@
 	"wikibase-item-reference-edit-placeholder": "Sisesta üksuse identifikaator, nt Q10",
 	"wikibase-item-reference-edit-invalid-format": "Sisestatud üksuse identifikaator on vigases vormingus",
 	"wikibase-item-reference-edit-nonexistent-item": "Sellise identifikaatoriga üksust pole olemas",
+	"wikibase-wbui2025-editable-snak-value-preview-label": "kuvatakse kujul:",
+	"wikibase-wbui2025-globecoordinateinput-precision-automatic": "Automaatne",
+	"wikibase-wbui2025-timeinput-precision-automatic": "automaatne",
 	"wikibase-wikibaserepopage-not-itemid": "\"$1\" pole sobiv üksuse identifikaator.",
 	"wikibase-wikibaserepopage-invalid-langcode": "Keelekood \"$1\" on tundmatu. Palun kasuta süsteemile tuntavat keelekoodi nagu \"en\".",
 	"wikibase-wikibaserepopage-invalid-id": "Identifikaator \"$1\" on süsteemis tundmatu. Palun kasuta sobivat olemi identifikaatorit.",
@@ -424,5 +431,9 @@
 	"special-setaliases-parameterized": "Olemi ($1) rööpkujude määramine",
 	"special-setlabel-parameterized": "Olemi ($1) sildi määramine",
 	"special-setdescription-parameterized": "Olemi ($1) kirjelduse määramine",
-	"special-setlabeldescriptionaliases-parameterized": "Olemi ($1) sildi, kirjelduse ja rööpkujude määramine"
+	"special-setlabeldescriptionaliases-parameterized": "Olemi ($1) sildi, kirjelduse ja rööpkujude määramine",
+	"wikibase-scoped-search-search-entities": "Otsi olemeid",
+	"wikibase-scoped-search-search-entities-description": "Leia {{GRAMMAR:elative|{{SITENAME}}}} eri tüüpi olemeid",
+	"wikibase-scoped-search-item-scope-name": "Üksused",
+	"wikibase-scoped-search-property-scope-name": "Omadused"
 }

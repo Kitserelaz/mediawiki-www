@@ -33,7 +33,7 @@ class PermissionsTest extends PermissionsTestCase {
 		];
 	}
 
-	public function provideEditPermissions() {
+	public static function provideEditPermissions() {
 		yield from self::provideReadPermissions();
 
 		yield [
@@ -57,16 +57,16 @@ class PermissionsTest extends PermissionsTestCase {
 	 * @dataProvider provideReadPermissions
 	 * @covers \Wikibase\Repo\Api\GetEntities
 	 */
-	public function testGetEntities( ?array $permissions, $expectedError ) {
+	public function testGetEntities( ?array $permissions, $error ) {
 		$params = [
 			'ids' => EntityTestHelper::getId( 'Oslo' ),
 		];
 
-		$this->doPermissionsTest( 'wbgetentities', $params, $permissions, $expectedError );
+		$this->doPermissionsTest( 'wbgetentities', $params, $permissions, $error );
 	}
 
-	public function provideCreateEntityPermissions() {
-		yield from $this->provideEditPermissions();
+	public static function provideCreateEntityPermissions() {
+		yield from self::provideEditPermissions();
 
 		yield [
 			'permissions' => [
@@ -81,7 +81,7 @@ class PermissionsTest extends PermissionsTestCase {
 	 * @dataProvider provideCreateEntityPermissions
 	 * @covers \Wikibase\Repo\Api\EditEntity
 	 */
-	public function testCreateItem( ?array $permissions, $expectedError ) {
+	public function testCreateItem( ?array $permissions, $error ) {
 		$itemData = [
 			'labels' => [ "en" => [ "language" => 'en', "value" => 'Test' ] ],
 		];
@@ -91,11 +91,11 @@ class PermissionsTest extends PermissionsTestCase {
 			'new' => 'item',
 		];
 
-		$this->doPermissionsTest( 'wbeditentity', $params, $permissions, $expectedError );
+		$this->doPermissionsTest( 'wbeditentity', $params, $permissions, $error );
 	}
 
-	public function provideCreatePropertyPermissions() {
-		yield from $this->provideEditPermissions();
+	public static function provideCreatePropertyPermissions() {
+		yield from self::provideEditPermissions();
 
 		yield [
 			'permissions' => [
@@ -110,7 +110,7 @@ class PermissionsTest extends PermissionsTestCase {
 	 * @dataProvider provideCreatePropertyPermissions
 	 * @covers \Wikibase\Repo\Api\EditEntity
 	 */
-	public function testCreateProperty( ?array $permissions, $expectedError ) {
+	public function testCreateProperty( ?array $permissions, $error ) {
 		$itemData = [
 			'labels' => [ "en" => [ "language" => 'en', "value" => 'Testttttttt' ] ],
 			'datatype' => 'string',
@@ -121,11 +121,11 @@ class PermissionsTest extends PermissionsTestCase {
 			'new' => 'property',
 		];
 
-		$this->doPermissionsTest( 'wbeditentity', $params, $permissions, $expectedError );
+		$this->doPermissionsTest( 'wbeditentity', $params, $permissions, $error );
 	}
 
-	public function provideItemTermPermissions() {
-		yield from $this->provideEditPermissions();
+	public static function provideItemTermPermissions() {
+		yield from self::provideEditPermissions();
 
 		yield [
 			'permissions' => [
@@ -140,32 +140,32 @@ class PermissionsTest extends PermissionsTestCase {
 	 * @dataProvider provideItemTermPermissions
 	 * @covers \Wikibase\Repo\Api\SetLabel
 	 */
-	public function testSetLabel( ?array $permissions, $expectedError ) {
+	public function testSetLabel( ?array $permissions, $error ) {
 		$params = [
 			'id' => EntityTestHelper::getId( 'Oslo' ),
 			'language' => 'de',
 			'value' => 'Oslo',
 		];
 
-		$this->doPermissionsTest( 'wbsetlabel', $params, $permissions, $expectedError );
+		$this->doPermissionsTest( 'wbsetlabel', $params, $permissions, $error );
 	}
 
 	/**
 	 * @dataProvider provideItemTermPermissions
 	 * @covers \Wikibase\Repo\Api\SetDescription
 	 */
-	public function testSetDescription( ?array $permissions, $expectedError ) {
+	public function testSetDescription( ?array $permissions, $error ) {
 		$params = [
 			'id' => EntityTestHelper::getId( 'Oslo' ),
 			'language' => 'en',
 			'value' => 'Capitol of Norway',
 		];
 
-		$this->doPermissionsTest( 'wbsetdescription', $params, $permissions, $expectedError );
+		$this->doPermissionsTest( 'wbsetdescription', $params, $permissions, $error );
 	}
 
-	public function provideMergeItemsPermissions() {
-		yield from $this->provideEditPermissions();
+	public static function provideMergeItemsPermissions() {
+		yield from self::provideEditPermissions();
 
 		yield [
 			'permissions' => [
@@ -180,13 +180,13 @@ class PermissionsTest extends PermissionsTestCase {
 	 * @dataProvider provideMergeItemsPermissions
 	 * @covers \Wikibase\Repo\Api\MergeItems
 	 */
-	public function testMergeItems( ?array $permissions, $expectedError ) {
+	public function testMergeItems( ?array $permissions, $error ) {
 		$params = [
 			'fromid' => EntityTestHelper::getId( 'Oslo' ),
 			'toid' => EntityTestHelper::getId( 'Empty' ),
 		];
 
-		$this->doPermissionsTest( 'wbmergeitems', $params, $permissions, $expectedError );
+		$this->doPermissionsTest( 'wbmergeitems', $params, $permissions, $error );
 	}
 
 }

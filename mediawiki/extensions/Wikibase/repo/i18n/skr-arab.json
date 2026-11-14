@@ -175,5 +175,7 @@
 	"wikibase-federated-properties-leaving-site-notice-header": "مقامی وکی بیس چھوڑیندا پئے",
 	"wikibase-federated-properties-edit-request-failed-notice-try-again": "ولدا کوشش کرو",
 	"special-setlabel-parameterized": "$1 لیبل مقرر کرو",
-	"special-setdescription-parameterized": "$1 وضاحت مقرر کرو"
+	"special-setdescription-parameterized": "$1 وضاحت مقرر کرو",
+	"wikibase-indicator-popover-multiple-issue-previous": "پچھلا",
+	"wikibase-indicator-popover-multiple-issue-next": "اڳلا"
 }

@@ -4,10 +4,10 @@ declare( strict_types = 1 );
 
 namespace Wikibase\Client\Changes;
 
-use CannotCreateActorException;
 use InvalidArgumentException;
-use Job;
-use JobSpecification;
+use MediaWiki\Exception\CannotCreateActorException;
+use MediaWiki\JobQueue\Job;
+use MediaWiki\JobQueue\JobSpecification;
 use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
@@ -134,7 +134,7 @@ class InjectRCRecordsJob extends Job {
 		);
 		// TODO: disallow integer once T172394 has been deployed and old jobs have cleared the queue.
 		Assert::parameterType(
-			'integer|array',
+			[ 'integer', 'array' ],
 			$params['change'],
 			'$params[\'change\']'
 		);
@@ -174,7 +174,7 @@ class InjectRCRecordsJob extends Job {
 
 		$job->setLogger( WikibaseClient::getLogger( $mwServices ) );
 		$job->setStatsFactory(
-			$mwServices->getStatsFactory(),
+			$mwServices->getStatsFactory()->withComponent( 'WikibaseClient' ),
 			$mwServices->getMainConfig()->get( MainConfigNames::DBname )
 		);
 
@@ -276,14 +276,14 @@ class InjectRCRecordsJob extends Job {
 		}
 
 		if ( $this->statsFactory !== null ) {
-			$this->statsFactory->withComponent( 'WikibaseClient' )
+			$this->statsFactory
 				->getCounter( 'PageUpdates_InjectRCRecords_run_titles_total' )
 				->setLabel( 'DBname', $this->dbName )
 				->copyToStatsdAt( [
 					'wikibase.client.pageupdates.InjectRCRecords.run.titles',
 				] )
 				->incrementBy( count( $titles ) );
-			$this->statsFactory->withComponent( 'WikibaseClient' )
+			$this->statsFactory
 				->getTiming( 'PageUpdates_InjectRCRecords_delay_seconds' )
 				->setLabel( 'DBname', $this->dbName )
 				->copyToStatsdAt( [

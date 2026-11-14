@@ -8,7 +8,7 @@ use DataValues\Geo\Formatters\GlobeCoordinateFormatter;
 use DataValues\Geo\Formatters\LatLongFormatter;
 use InvalidArgumentException;
 use MediaWiki\Context\RequestContext;
-use MediaWiki\Languages\LanguageFactory;
+use MediaWiki\Language\LanguageFactory;
 use MediaWiki\Parser\ParserOptions;
 use ValueFormatters\DecimalFormatter;
 use ValueFormatters\FormatterOptions;
@@ -31,12 +31,11 @@ use Wikibase\Lib\Store\EntityUrlLookup;
 use Wikibase\Lib\Store\LanguageFallbackLabelDescriptionLookup;
 use Wikibase\Lib\Store\RedirectResolvingLatestRevisionLookup;
 use Wikibase\Lib\TermFallbackCache\TermFallbackCacheFacade;
-use Wikibase\Lib\TermLanguageFallbackChain;
 
 /**
  * Low level factory for ValueFormatters for well known data types.
  *
- * @warning: This is a low level factory for use by bootstrap code only!
+ * @warning This is a low level factory for use by bootstrap code only!
  * Program logic should use an instance of OutputFormatValueFormatterFactory
  * resp. OutputFormatSnakFormatterFactory.
  *
@@ -186,7 +185,7 @@ class WikibaseValueFormatterBuilders {
 		$this->languageFactory = $languageFactory;
 	}
 
-	private function newPlainEntityIdFormatter( FormatterOptions $options ) {
+	private function newPlainEntityIdFormatter( FormatterOptions $options ): EntityIdValueFormatter {
 		$labelDescriptionLookup = $this->labelDescriptionLookupFactory->getLabelDescriptionLookup( $options );
 		return new EntityIdValueFormatter(
 			new EntityIdLabelFormatter( $labelDescriptionLookup )
@@ -248,7 +247,7 @@ class WikibaseValueFormatterBuilders {
 		return $this->escapeValueFormatter( $format, $plainFormatter );
 	}
 
-	public function newPropertyIdHtmlLinkFormatter( FormatterOptions $options ) {
+	public function newPropertyIdHtmlLinkFormatter( FormatterOptions $options ): ItemPropertyIdHtmlLinkFormatter {
 		return new ItemPropertyIdHtmlLinkFormatter(
 			$this->getLabelDescriptionLookup( $options ),
 			$this->entityTitleLookup,
@@ -261,7 +260,7 @@ class WikibaseValueFormatterBuilders {
 		);
 	}
 
-	public function newItemIdHtmlLinkFormatter( FormatterOptions $options ) {
+	public function newItemIdHtmlLinkFormatter( FormatterOptions $options ): ItemPropertyIdHtmlLinkFormatter {
 		return new ItemPropertyIdHtmlLinkFormatter(
 			$this->getLabelDescriptionLookup( $options ),
 			$this->entityTitleLookup,
@@ -270,14 +269,14 @@ class WikibaseValueFormatterBuilders {
 		);
 	}
 
-	private function getNonCachingLookup( FormatterOptions $options ) {
+	private function getNonCachingLookup( FormatterOptions $options ): LanguageFallbackLabelDescriptionLookup {
 		return new LanguageFallbackLabelDescriptionLookup(
 			new EntityRetrievingTermLookup( $this->entityLookup ),
 			$options->getOption( FormatterLabelDescriptionLookupFactory::OPT_LANGUAGE_FALLBACK_CHAIN )
 		);
 	}
 
-	private function getLabelDescriptionLookup( FormatterOptions $options ) {
+	private function getLabelDescriptionLookup( FormatterOptions $options ): CachingFallbackLabelDescriptionLookup {
 		return new CachingFallbackLabelDescriptionLookup(
 			$this->cache,
 			$this->redirectResolvingLatestRevisionLookup,
@@ -520,7 +519,7 @@ class WikibaseValueFormatterBuilders {
 		}
 	}
 
-	public function newLabelsProviderEntityIdHtmlLinkFormatter( FormatterOptions $options ) {
+	public function newLabelsProviderEntityIdHtmlLinkFormatter( FormatterOptions $options ): LabelsProviderEntityIdHtmlLinkFormatter {
 		$lookup = $this->labelDescriptionLookupFactory->getLabelDescriptionLookup( $options );
 		return new LabelsProviderEntityIdHtmlLinkFormatter(
 			$lookup,
@@ -533,20 +532,10 @@ class WikibaseValueFormatterBuilders {
 	}
 
 	private function newLanguageNameLookup( FormatterOptions $options ): LanguageNameLookup {
-		if ( $options->hasOption( ValueFormatter::OPT_LANG ) ) {
-			return $this->languageNameLookupFactory->getForLanguageCode(
-				$options->getOption( ValueFormatter::OPT_LANG )
-			);
-		} elseif ( $options->hasOption( FormatterLabelDescriptionLookupFactory::OPT_LANGUAGE_FALLBACK_CHAIN ) ) {
-			/** @var TermLanguageFallbackChain $chain */
-			$chain = $options->getOption( FormatterLabelDescriptionLookupFactory::OPT_LANGUAGE_FALLBACK_CHAIN );
-			'@phan-var TermLanguageFallbackChain $chain';
-			return $this->languageNameLookupFactory->getForLanguageCode(
-				$chain->getFallbackChain()[0]->getLanguageCode()
-			);
-		} else {
-			throw new InvalidArgumentException( 'FormatterOptions must have OPT_LANG or OPT_LANGUAGE_FALLBACK_CHAIN' );
-		}
+		$options->requireOption( ValueFormatter::OPT_LANG );
+		return $this->languageNameLookupFactory->getForLanguageCode(
+			$options->getOption( ValueFormatter::OPT_LANG )
+		);
 	}
 
 }

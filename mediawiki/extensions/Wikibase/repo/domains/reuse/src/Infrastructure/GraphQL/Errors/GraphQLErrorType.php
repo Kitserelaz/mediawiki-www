@@ -1,0 +1,22 @@
+<?php declare( strict_types=1 );
+
+namespace Wikibase\Repo\Domains\Reuse\Infrastructure\GraphQL\Errors;
+
+/**
+ * @license GPL-2.0-or-later
+ */
+enum GraphQLErrorType {
+	case ITEM_NOT_FOUND;
+	case INVALID_EXTERNAL_ID_PROPERTY;
+	case INVALID_SEARCH_CURSOR;
+	case INVALID_SEARCH_LIMIT;
+	case INVALID_SEARCH_QUERY;
+	case SEARCH_NOT_AVAILABLE;
+
+	// used only as error codes for tracking
+	case INVALID_QUERY;
+	case MISSING_QUERY;
+	case QUERY_TOO_COMPLEX;
+	case UNSUPPORTED_MEDIA_TYPE;
+	case UNKNOWN;
+}

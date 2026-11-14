@@ -2,7 +2,11 @@
 /** Load declared runtime classes without constructing services or invoking features. */
 function catalogueRuntimeClasses( string $manifestPath, array $manifest ): array {
     $root = '/var/www/mediawiki/' . dirname( $manifestPath );
-    $classes = array_keys( $manifest['AutoloadClasses'] ?? [] );
+    $classes = [];
+    foreach ( $manifest['AutoloadClasses'] ?? [] as $name => $file ) {
+        // Some legacy manifests put PHPUnit helpers in the runtime class map.
+        if ( !preg_match( '~(^|/)(tests|Tests)/~', $file ) ) { $classes[] = $name; }
+    }
     foreach ( $manifest['AutoloadNamespaces'] ?? [] as $prefix => $directory ) {
         $path = $root . '/' . $directory;
         if ( !is_dir( $path ) ) {
@@ -43,6 +47,10 @@ function catalogueRuntimeClasses( string $manifestPath, array $manifest ): array
             // entry class. Load that entry first, as production autoloading does.
             $relative = substr( $file->getRealPath(), strlen( realpath( $path ) ) + 1, -4 );
             $primary = $prefix . str_replace( '/', '\\', $relative );
+            // Standalone maintenance scripts often declare a class whose name
+            // differs from the script filename and is not PSR-4 autoloadable.
+            if ( !in_array( $primary, $declared, true ) &&
+                preg_match( '~(^|/)maintenance/~i', $file->getPathname() ) ) { continue; }
             if ( in_array( $primary, $declared, true ) ) {
                 $classes[] = $primary;
             }
@@ -69,6 +77,8 @@ function catalogueRuntimeClasses( string $manifestPath, array $manifest ): array
             $absent = [
                 'MediaWiki\\Extension\\UserMerge\\' => 'UserMerge',
                 'MediaWiki\\Extension\\CommunityConfiguration\\' => 'CommunityConfiguration',
+                'BlueSpice\\Discovery\\' => 'BlueSpiceDiscovery',
+                'BlueSpice\\Bookshelf\\' => 'BlueSpiceBookshelf',
             ];
             $provider = null;
             if ( preg_match( '/^(?:Class|Interface|Trait) "([^"]+)" not found$/D', $error->getMessage(), $match ) ) {

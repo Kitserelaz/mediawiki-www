@@ -3,13 +3,14 @@
 declare( strict_types = 1 );
 namespace Wikibase\Repo\Tests\Hooks;
 
-use HtmlArmor;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Linker\LinkRenderer;
+use MediaWiki\MainConfigNames;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Title\Title;
 use Wikibase\Lib\Store\EntityUrlLookup;
 use Wikibase\Repo\WikibaseRepo;
+use Wikimedia\HtmlArmor\HtmlArmor;
 use Wikimedia\TestingAccessWrapper;
 
 /**
@@ -70,9 +71,9 @@ class HtmlPageLinkRendererEndHookHandlerTest extends HtmlPageLinkRendererEndHook
 		$this->assertEquals( [], $customAttribs );
 	}
 
-	public function overrideSpecialNewEntityLinkProvider(): iterable {
+	public static function overrideSpecialNewEntityLinkProvider(): iterable {
 		$entityContentFactory = WikibaseRepo::getEntityContentFactory();
-		$namespaceLookup = $this->getEntityNamespaceLookup();
+		$namespaceLookup = self::getEntityNamespaceLookup();
 
 		foreach ( $entityContentFactory->getEntityTypes() as $entityType ) {
 			$entityHandler = $entityContentFactory->getContentHandlerForType( $entityType );
@@ -113,8 +114,8 @@ class HtmlPageLinkRendererEndHookHandlerTest extends HtmlPageLinkRendererEndHook
 		$this->assertStringContainsString( $specialPageTitle->getFullText(), $html );
 	}
 
-	public function noOverrideSpecialNewEntityLinkProvider(): iterable {
-		$lookup = $this->getEntityNamespaceLookup();
+	public static function noOverrideSpecialNewEntityLinkProvider(): iterable {
+		$lookup = self::getEntityNamespaceLookup();
 		$itemNs = $lookup->getEntityNamespace( 'item' );
 		$propertyNs = $lookup->getEntityNamespace( 'property' );
 		return [
@@ -471,7 +472,7 @@ class HtmlPageLinkRendererEndHookHandlerTest extends HtmlPageLinkRendererEndHook
 			->caller( __METHOD__ )
 			->execute();
 
-		$this->setMwGlobals( 'wgExtraInterlanguageLinkPrefixes', [ 'madeuplanguage' ] );
+		$this->overrideConfigValue( MainConfigNames::ExtraInterlanguageLinkPrefixes, [ 'madeuplanguage' ] );
 		$linkTarget = $namespace !== null ?
 			Title::makeTitle( $namespace, $linkTargetText ) :
 			Title::newFromTextThrow( $linkTargetText );

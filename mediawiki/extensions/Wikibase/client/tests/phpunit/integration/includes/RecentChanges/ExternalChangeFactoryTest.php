@@ -2,9 +2,9 @@
 
 namespace Wikibase\Client\Tests\Integration\RecentChanges;
 
+use MediaWiki\RecentChanges\RecentChange;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWikiIntegrationTestCase;
-use RecentChange;
 use Wikibase\Client\RecentChanges\ExternalChange;
 use Wikibase\Client\RecentChanges\ExternalChangeFactory;
 use Wikibase\Client\RecentChanges\RevisionData;
@@ -376,11 +376,9 @@ class ExternalChangeFactoryTest extends MediaWikiIntegrationTestCase {
 			'rc_comment_data' => null,
 			'rc_minor' => 1,
 			'rc_bot' => $bot ? 1 : 0,
-			'rc_new' => 0,
 			'rc_cur_id' => 52,
 			'rc_this_oldid' => 114,
 			'rc_last_oldid' => 114,
-			'rc_type' => 5,
 			'rc_patrolled' => 2,
 			'rc_ip' => '',
 			'rc_old_len' => 2,

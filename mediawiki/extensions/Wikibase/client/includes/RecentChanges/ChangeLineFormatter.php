@@ -205,7 +205,7 @@ class ChangeLineFormatter {
 	}
 
 	private function formatTimestampHTML( string $timestamp, Language $lang, UserIdentity $user ): string {
-		return wfMessage( 'semicolon-separator' )->text()
+		return wfMessage( 'semicolon-separator' )->escaped()
 			. '<span class="mw-changeslist-date">'
 			. $lang->userTime( $timestamp, $user )
 			. '</span> <span class="mw-changeslist-separator">. .</span> ';
@@ -250,10 +250,10 @@ class ChangeLineFormatter {
 		$ret = [];
 
 		$ret[] = $links['contribs'];
-		$ret[] = wfMessage( 'word-separator' )->plain()
+		$ret[] = wfMessage( 'word-separator' )->escaped()
 			. wfMessage( 'parentheses' )->rawParams(
 				$links['usertalk']
-			)->text();
+			)->escaped();
 
 		return $ret;
 	}
@@ -274,11 +274,11 @@ class ChangeLineFormatter {
 			$links['contribs'],
 		];
 
-		$ret[] = wfMessage( 'word-separator' )->plain()
+		$ret[] = wfMessage( 'word-separator' )->escaped()
 			. '<span class="mw-usertoollinks">'
 			. wfMessage( 'parentheses' )->rawParams(
 				$lang->pipeList( $usertools )
-			)->text()
+			)->escaped()
 			. '</span>';
 
 		return $ret;
@@ -287,8 +287,8 @@ class ChangeLineFormatter {
 	private function formatEntityLinkHTML( EntityId $entityId ): string {
 		$entityLink = $this->repoLinker->buildEntityLink( $entityId );
 
-		return wfMessage( 'word-separator' )->plain()
-			. wfMessage( 'parentheses' )->rawParams( $entityLink )->text();
+		return wfMessage( 'word-separator' )->escaped()
+			. wfMessage( 'parentheses' )->rawParams( $entityLink )->escaped();
 	}
 
 	private function formatDeletionLogLinkHTML(): string {
@@ -297,7 +297,7 @@ class ChangeLineFormatter {
 			wfMessage( 'dellogpage' )->text()
 		);
 
-		return wfMessage( 'parentheses' )->rawParams( $logLink )->text();
+		return wfMessage( 'parentheses' )->rawParams( $logLink )->escaped();
 	}
 
 	private function formatDiffHistHTML( EntityId $entityId, RevisionData $rev, int $count, Language $lang ): string {
@@ -306,7 +306,7 @@ class ChangeLineFormatter {
 
 		return wfMessage( 'parentheses' )->rawParams(
 			$lang->pipeList( [ $diffLink, $historyLink ] )
-		)->text();
+		)->escaped();
 	}
 
 	private function buildPermanentLinkHTML( EntityId $entityId, RevisionData $rev, Language $lang, UserIdentity $user ): string {
@@ -324,7 +324,7 @@ class ChangeLineFormatter {
 		);
 	}
 
-	private function buildDiffLinkHTML( EntityId $entityId, RevisionData $rev, $count ): string {
+	private function buildDiffLinkHTML( EntityId $entityId, RevisionData $rev, int $count ): string {
 		$params = [
 			'title' => $this->repoLinker->getEntityTitle( $entityId ),
 			'curid' => $rev->getPageId(),
@@ -376,9 +376,7 @@ class ChangeLineFormatter {
 		// for namespaces and special pages
 		$link = $this->repoLinker->getPageUrl( "Special:Contributions/$userName" );
 
-		if ( $text === null ) {
-			$text = wfMessage( 'contribslink' )->text();
-		}
+		$text ??= wfMessage( 'contribslink' )->text();
 
 		return $this->repoLinker->formatLink( $link, $text );
 	}

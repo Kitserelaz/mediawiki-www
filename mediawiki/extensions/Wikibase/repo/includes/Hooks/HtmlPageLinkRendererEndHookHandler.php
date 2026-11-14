@@ -4,7 +4,6 @@ declare( strict_types = 1 );
 
 namespace Wikibase\Repo\Hooks;
 
-use HtmlArmor;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Interwiki\InterwikiLookup;
 use MediaWiki\Linker\Hook\HtmlPageLinkRendererEndHook;
@@ -30,6 +29,7 @@ use Wikibase\Lib\Store\LanguageFallbackLabelDescriptionLookup;
 use Wikibase\Lib\Store\LinkTargetEntityIdLookup;
 use Wikibase\Repo\FederatedProperties\FederatedPropertiesException;
 use Wikibase\Repo\Hooks\Formatters\EntityLinkFormatterFactory;
+use Wikimedia\HtmlArmor\HtmlArmor;
 
 /**
  * Handler for the HtmlPageLinkRendererEnd hook, used to change the default link text of links to
@@ -201,7 +201,7 @@ class HtmlPageLinkRendererEndHookHandler implements HtmlPageLinkRendererEndHook 
 
 		try {
 			return $this->internalDoHtmlPageLinkRendererEnd( $linkRenderer, $target, $text, $customAttribs, $context, $html );
-		} catch ( FederatedPropertiesException $ex ) {
+		} catch ( FederatedPropertiesException ) {
 			$this->federatedPropsDegradedDoHtmlPageLinkRendererEnd( $target, $text, $customAttribs );
 
 			return true;
@@ -306,7 +306,7 @@ class HtmlPageLinkRendererEndHookHandler implements HtmlPageLinkRendererEndHook 
 		try {
 			$label = $labelDescriptionLookup->getLabel( $entityId );
 			$description = $labelDescriptionLookup->getDescription( $entityId );
-		} catch ( LabelDescriptionLookupException $ex ) {
+		} catch ( LabelDescriptionLookupException ) {
 			return true;
 		}
 
@@ -378,7 +378,7 @@ class HtmlPageLinkRendererEndHookHandler implements HtmlPageLinkRendererEndHook 
 		if ( $foreignId !== null ) {
 			try {
 				return $this->entityIdParser->parse( $foreignId );
-			} catch ( EntityIdParsingException $ex ) {
+			} catch ( EntityIdParsingException ) {
 			}
 		}
 

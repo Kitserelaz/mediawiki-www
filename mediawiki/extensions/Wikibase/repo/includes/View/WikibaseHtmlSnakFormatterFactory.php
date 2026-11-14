@@ -4,11 +4,13 @@ namespace Wikibase\Repo\View;
 
 use ValueFormatters\FormatterOptions;
 use ValueFormatters\ValueFormatter;
+use Wikibase\Lib\Formatters\CachingKartographerEmbeddingHandler;
 use Wikibase\Lib\Formatters\FormatterLabelDescriptionLookupFactory;
 use Wikibase\Lib\Formatters\OutputFormatSnakFormatterFactory;
 use Wikibase\Lib\Formatters\SnakFormatter;
 use Wikibase\Lib\TermLanguageFallbackChain;
 use Wikibase\View\HtmlSnakFormatterFactory;
+use Wikibase\View\Wbui2025FeatureFlag;
 
 /**
  * An HtmlSnakFormatterFactory implementation using an OutputFormatSnakFormatterFactory
@@ -30,33 +32,41 @@ class WikibaseHtmlSnakFormatterFactory implements HtmlSnakFormatterFactory {
 	/**
 	 * @param string $languageCode
 	 * @param TermLanguageFallbackChain $termLanguageFallbackChain
+	 * @param array $viewOptions
 	 * @return FormatterOptions
 	 */
 	private function getFormatterOptions(
 		$languageCode,
-		TermLanguageFallbackChain $termLanguageFallbackChain
+		TermLanguageFallbackChain $termLanguageFallbackChain,
+		array $viewOptions = [],
 	) {
-		$formatterOptions = new FormatterOptions( [
+		$optionsArray = [
 			ValueFormatter::OPT_LANG => $languageCode,
 			FormatterLabelDescriptionLookupFactory::OPT_LANGUAGE_FALLBACK_CHAIN => $termLanguageFallbackChain,
-		] );
-		return $formatterOptions;
+		];
+		if ( Wbui2025FeatureFlag::wbui2025EnabledForViewOptions( $viewOptions ) ) {
+			$optionsArray[ CachingKartographerEmbeddingHandler::OPT_KARTOGRAPHER_VARIABLE_WIDTH ] = true;
+		}
+		return new FormatterOptions( $optionsArray );
 	}
 
 	/**
 	 * @param string $languageCode
 	 * @param TermLanguageFallbackChain $termLanguageFallbackChain
+	 * @param array $viewOptions
 	 * @return SnakFormatter
 	 */
 	public function getSnakFormatter(
 		$languageCode,
-		TermLanguageFallbackChain $termLanguageFallbackChain
+		TermLanguageFallbackChain $termLanguageFallbackChain,
+		array $viewOptions,
 	) {
-		$formatterOptions = $this->getFormatterOptions( $languageCode, $termLanguageFallbackChain );
+		$formatterOptions = $this->getFormatterOptions( $languageCode, $termLanguageFallbackChain, $viewOptions );
 
 		return $this->snakFormatterFactory->getSnakFormatter(
 			SnakFormatter::FORMAT_HTML_VERBOSE,
-			$formatterOptions
+			$formatterOptions,
+			$viewOptions,
 		);
 	}
 

@@ -26,9 +26,6 @@ class ExtensionLoadHandler {
 	/** @var HookContainer */
 	private $hookContainer;
 
-	/**
-	 * @param HookContainer $hookContainer
-	 */
 	public function __construct(
 		HookContainer $hookContainer
 	) {
@@ -45,14 +42,9 @@ class ExtensionLoadHandler {
 		global $wgWBClientSettings, $wgAPIModules;
 
 		$handler = self::factory();
-
 		$handler->registerHooks();
 
-		if ( $wgWBClientSettings === null ) {
-			$wgWBClientSettings = [];
-		}
-
-		$apiFormatReferenceSpec = $handler->getApiFormatReferenceSpec( $wgWBClientSettings );
+		$apiFormatReferenceSpec = $handler->getApiFormatReferenceSpec( $wgWBClientSettings ?? [] );
 		if ( $apiFormatReferenceSpec !== null ) {
 			$wgAPIModules['wbformatreference'] = $apiFormatReferenceSpec;
 		}
@@ -69,7 +61,7 @@ class ExtensionLoadHandler {
 		//
 		// recent changes / watchlist hooks
 		$this->hookContainer->register( 'ChangesListSpecialPageStructuredFilters',
-			ChangesListSpecialPageHookHandler::class . '::onChangesListSpecialPageStructuredFilters' );
+			ChangesListSpecialPageHookHandler::onChangesListSpecialPageStructuredFilters( ... ) );
 	}
 
 	public function getApiFormatReferenceSpec( array $clientSettings ): ?array {

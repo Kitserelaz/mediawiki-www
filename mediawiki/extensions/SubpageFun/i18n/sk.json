@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": [
+			"Wizzard"
+		]
+	},
+	"subpagefun-desc": "Pridáva funkcie syntaktického analyzátora umožňujúce získať rozsiahle informácie o [https://www.mediawiki.org/wiki/Special:MyLanguage/Help:Subpages podstránkach]"
+}

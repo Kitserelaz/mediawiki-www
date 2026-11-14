@@ -23,7 +23,7 @@ use MediaWiki\Title\Title;
 class GetEntitiesTest extends WikibaseApiTestCase {
 
 	/** @var string[] */
-	private static $usedHandles = [ 'StringProp', 'Berlin', 'London', 'Oslo', 'Guangzhou', 'Empty' ];
+	private static array $usedHandles = [ 'StringProp', 'Berlin', 'London', 'Oslo', 'Guangzhou', 'Empty' ];
 
 	public function addDBDataOnce() {
 		$this->initTestEntities( self::$usedHandles );
@@ -31,55 +31,54 @@ class GetEntitiesTest extends WikibaseApiTestCase {
 
 	/**
 	 * @var array[]
-	 * The key 'p' contains the params, the key 'e' contains things to expect
 	 * handles will automatically be converted into the ID pointing to the item
 	 */
 	protected static $goodItems = [
-		[ //1 good id
-			'p' => [ 'handles' => [ 'Berlin' ] ],
-			'e' => [ 'count' => 1 ] ],
-		[ //2 good ids
-			'p' => [ 'handles' => [ 'London', 'Oslo' ] ],
-			'e' => [ 'count' => 2 ] ],
-		[ //1 id requested twice (should only return 1 entity)
-			'p' => [ 'handles' => [ 'London', 'London' ] ],
-			'e' => [ 'count' => 1 ] ],
-		[ //1 good site title combination
-			'p' => [ 'sites' => 'dewiki', 'titles' => 'Berlin' ],
-			'e' => [ 'count' => 1 ] ],
-		[ //2 title, 1 site should return 2 entities
-			'p' => [ 'sites' => 'dewiki', 'titles' => 'Berlin|London' ],
-			'e' => [ 'count' => 2 ] ],
-		[ //2 sites, 1 title should return 1 entity
-			'p' => [ 'sites' => 'dewiki|enwiki', 'titles' => 'Oslo' ],
-			'e' => [ 'count' => 1 ] ],
-		[ //2 sites and 2 titles should return the two entities
-			'p' => [ 'sites' => 'dewiki|enwiki', 'titles' => 'Oslo|London' ],
-			'e' => [ 'count' => 2 ] ],
-		[ //1 id and 2 site title combinations returns 3 entities
-			'p' => [ 'handles' => [ 'Berlin' ], 'sites' => 'dewiki|enwiki', 'titles' => 'Oslo|London' ],
-			'e' => [ 'count' => 3 ] ],
-		[ //1 title with normalization works and gets normalized
-			'p' => [ 'sites' => 'dewiki', 'titles' => 'berlin', 'normalize' => '' ],
-			'e' => [ 'count' => 1, 'normalized' => true ] ],
-		[ //1 title with normalization works and doesn't get normalized if it doesn't need to
-			'p' => [ 'sites' => 'dewiki', 'titles' => 'Berlin', 'normalize' => '' ],
-			'e' => [ 'count' => 1, 'normalized' => false ] ],
-		[ //we still normalise even for non existing pages
-			'p' => [ 'sites' => 'dewiki', 'titles' => 'hoo', 'normalize' => '' ],
-			'e' => [ 'count' => 1, 'missing' => 1, 'normalized' => true ] ],
-		[ //1 non existing item by id
-			'p' => [ 'ids' => 'q999999999' ],
-			'e' => [ 'count' => 1, 'missing' => 1 ] ],
-		[ //2 non existing items by id
-			'p' => [ 'ids' => 'q999999999|q7777777' ],
-			'e' => [ 'count' => 2, 'missing' => 2 ] ],
-		[ //1 non existing item by site and title
-			'p' => [ 'sites' => 'enwiki', 'titles' => 'IDoNotExist' ],
-			'e' => [ 'count' => 1, 'missing' => 1 ] ],
-		[ //2 non existing items by site and title
-			'p' => [ 'sites' => 'enwiki', 'titles' => 'IDoNotExist|ImNotHere' ],
-			'e' => [ 'count' => 2, 'missing' => 2 ] ],
+		'1 good id' => [
+			'params' => [ 'handles' => [ 'Berlin' ] ],
+			'expected' => [ 'count' => 1 ] ],
+		'2 good ids' => [
+			'params' => [ 'handles' => [ 'London', 'Oslo' ] ],
+			'expected' => [ 'count' => 2 ] ],
+		'1 id requested twice (should only return 1 entity)' => [
+			'params' => [ 'handles' => [ 'London', 'London' ] ],
+			'expected' => [ 'count' => 1 ] ],
+		'1 good site title combination' => [
+			'params' => [ 'sites' => 'dewiki', 'titles' => 'Berlin' ],
+			'expected' => [ 'count' => 1 ] ],
+		'2 title, 1 site should return 2 entities' => [
+			'params' => [ 'sites' => 'dewiki', 'titles' => 'Berlin|London' ],
+			'expected' => [ 'count' => 2 ] ],
+		'2 sites, 1 title should return 1 entity' => [
+			'params' => [ 'sites' => 'dewiki|enwiki', 'titles' => 'Oslo' ],
+			'expected' => [ 'count' => 1 ] ],
+		'2 sites and 2 titles should return the two entities' => [
+			'params' => [ 'sites' => 'dewiki|enwiki', 'titles' => 'Oslo|London' ],
+			'expected' => [ 'count' => 2 ] ],
+		'1 id and 2 site title combinations returns 3 entities' => [
+			'params' => [ 'handles' => [ 'Berlin' ], 'sites' => 'dewiki|enwiki', 'titles' => 'Oslo|London' ],
+			'expected' => [ 'count' => 3 ] ],
+		'1 title with normalization works and gets normalized' => [
+			'params' => [ 'sites' => 'dewiki', 'titles' => 'berlin', 'normalize' => '' ],
+			'expected' => [ 'count' => 1, 'normalized' => true ] ],
+		"1 title with normalization works and doesn't get normalized if it doesn't need to" => [
+			'params' => [ 'sites' => 'dewiki', 'titles' => 'Berlin', 'normalize' => '' ],
+			'expected' => [ 'count' => 1, 'normalized' => false ] ],
+		'we still normalise even for non existing pages' => [
+			'params' => [ 'sites' => 'dewiki', 'titles' => 'hoo', 'normalize' => '' ],
+			'expected' => [ 'count' => 1, 'missing' => 1, 'normalized' => true ] ],
+		'1 non existing item by id' => [
+			'params' => [ 'ids' => 'q999999999' ],
+			'expected' => [ 'count' => 1, 'missing' => 1 ] ],
+		'2 non existing items by id' => [
+			'params' => [ 'ids' => 'q999999999|q7777777' ],
+			'expected' => [ 'count' => 2, 'missing' => 2 ] ],
+		'1 non existing item by site and title' => [
+			'params' => [ 'sites' => 'enwiki', 'titles' => 'IDoNotExist' ],
+			'expected' => [ 'count' => 1, 'missing' => 1 ] ],
+		'2 non existing items by site and title' => [
+			'params' => [ 'sites' => 'enwiki', 'titles' => 'IDoNotExist|ImNotHere' ],
+			'expected' => [ 'count' => 2, 'missing' => 2 ] ],
 	];
 
 	/**
@@ -128,24 +127,24 @@ class GetEntitiesTest extends WikibaseApiTestCase {
 	public static function provideData() {
 		// Test cases for props filter
 		foreach ( self::$goodProps  as $propData ) {
-			foreach ( self::$goodItems as $testCase ) {
-				$testCase['p']['props'] = $propData;
-				yield $testCase;
+			foreach ( self::$goodItems as $testName => $testCase ) {
+				$testCase['params']['props'] = $propData;
+				yield $testName . ' - ' . $propData => $testCase;
 			}
 		}
 
 		// Test cases for languages
 		foreach ( self::$goodLangs as $langData ) {
-			foreach ( self::$goodItems as $testCase ) {
-				$testCase['p']['languages'] = $langData;
-				yield $testCase;
+			foreach ( self::$goodItems as $testName => $testCase ) {
+				$testCase['params']['languages'] = $langData;
+				yield $testName . ' - ' . $langData => $testCase;
 			}
 		}
 
 		// Test cases for different formats (for one item)
 		foreach ( self::$goodFormats as $formatData ) {
 			$testCase = reset( self::$goodItems );
-			$testCase['p']['format'] = $formatData;
+			$testCase['params']['format'] = $formatData;
 			yield $testCase;
 		}
 	}
@@ -278,9 +277,6 @@ class GetEntitiesTest extends WikibaseApiTestCase {
 		);
 	}
 
-	/**
-	 * @param array $entity
-	 */
 	private function assertEntityPropsInfo( array $entity ) {
 		$this->assertArrayHasKey( 'pageid', $entity, 'An entity is missing the pageid value' );
 		$this->assertIsInt( $entity['pageid'] );
@@ -309,9 +305,6 @@ class GetEntitiesTest extends WikibaseApiTestCase {
 		$this->assertArrayHasKey( 'type', $entity, 'An entity is missing the type value' );
 	}
 
-	/**
-	 * @param array $entity
-	 */
 	private function assertEntityPropsSitelinksUrls( array $entity ) {
 		foreach ( $entity['sitelinks'] as $siteLink ) {
 			$this->assertArrayHasKey( 'url', $siteLink );
@@ -319,9 +312,6 @@ class GetEntitiesTest extends WikibaseApiTestCase {
 		}
 	}
 
-	/**
-	 * @param array $entity
-	 */
 	private function assertEntityPropsSitelinksBadges( array $entity ) {
 		foreach ( $entity['sitelinks'] as $siteLink ) {
 			$this->assertArrayHasKey( 'badges', $siteLink );
@@ -374,36 +364,36 @@ class GetEntitiesTest extends WikibaseApiTestCase {
 	public static function provideExceptionData() {
 		// TODO: More exception checks should be added once bug T55038 is resolved.
 		return [
-			[ //0 no params
-				'p' => [],
-				'e' => [ 'exception' => [ 'type' => ApiUsageException::class, 'code' => 'param-missing' ] ] ],
-			[ //1 bad id
-				'p' => [ 'ids' => 'ABCD' ],
-				'e' => [ 'exception' => [ 'type' => ApiUsageException::class, 'code' => 'no-such-entity', 'id' => 'ABCD' ] ] ],
-			[ //2 bad site
-				'p' => [ 'sites' => 'qwertyuiop', 'titles' => 'Berlin' ],
-				'e' => [ 'exception' => [ 'type' => ApiUsageException::class, 'code' => 'param-missing' ] ] ],
-			[ //3 bad and good id
-				'p' => [ 'ids' => 'q1|aaaa' ],
-				'e' => [ 'exception' => [ 'type' => ApiUsageException::class, 'code' => 'no-such-entity', 'id' => 'aaaa' ] ] ],
-			[ //4 site and no title
-				'p' => [ 'sites' => 'enwiki' ],
-				'e' => [ 'exception' => [ 'type' => ApiUsageException::class, 'code' => 'param-missing' ] ] ],
-			[ //5 title and no site
-				'p' => [ 'titles' => 'Berlin' ],
-				'e' => [ 'exception' => [ 'type' => ApiUsageException::class, 'code' => 'param-missing' ] ] ],
-			[ //6 normalization fails with 2 titles
-				'p' => [ 'sites' => 'enwiki', 'titles' => 'Foo|Bar', 'normalize' => '' ],
-				'e' => [ 'exception' => [ 'type' => ApiUsageException::class, 'code' => 'params-illegal' ] ] ],
-			[ //7 normalization fails with 2 sites
-				'p' => [ 'sites' => 'enwiki|dewiki', 'titles' => 'Boo', 'normalize' => '' ],
-				'e' => [ 'exception' => [ 'type' => ApiUsageException::class, 'code' => 'params-illegal' ] ] ],
-			[ //8 normalization fails with 2 sites and 2 titles
-				'p' => [ 'sites' => 'enwiki|dewiki', 'titles' => 'Foo|Bar', 'normalize' => '' ],
-				'e' => [ 'exception' => [ 'type' => ApiUsageException::class, 'code' => 'params-illegal' ] ] ],
-			[ //9 must request one site, one title, or an equal number of sites and titles
-				'p' => [ 'sites' => 'dewiki|enwiki', 'titles' => 'Oslo|Berlin|London' ],
-				'e' => [ 'exception' => [ 'type' => ApiUsageException::class, 'code' => 'params-illegal' ] ] ],
+			'0 no params' => [
+				'params' => [],
+				'expected' => [ 'exception' => [ 'type' => ApiUsageException::class, 'code' => 'param-missing' ] ] ],
+			'1 bad id' => [
+				'params' => [ 'ids' => 'ABCD' ],
+				'expected' => [ 'exception' => [ 'type' => ApiUsageException::class, 'code' => 'no-such-entity', 'id' => 'ABCD' ] ] ],
+			'2 bad site' => [
+				'params' => [ 'sites' => 'qwertyuiop', 'titles' => 'Berlin' ],
+				'expected' => [ 'exception' => [ 'type' => ApiUsageException::class, 'code' => 'param-missing' ] ] ],
+			'3 bad and good id' => [
+				'params' => [ 'ids' => 'q1|aaaa' ],
+				'expected' => [ 'exception' => [ 'type' => ApiUsageException::class, 'code' => 'no-such-entity', 'id' => 'aaaa' ] ] ],
+			'4 site and no title' => [
+				'params' => [ 'sites' => 'enwiki' ],
+				'expected' => [ 'exception' => [ 'type' => ApiUsageException::class, 'code' => 'param-missing' ] ] ],
+			'5 title and no site' => [
+				'params' => [ 'titles' => 'Berlin' ],
+				'expected' => [ 'exception' => [ 'type' => ApiUsageException::class, 'code' => 'param-missing' ] ] ],
+			'6 normalization fails with 2 titles' => [
+				'params' => [ 'sites' => 'enwiki', 'titles' => 'Foo|Bar', 'normalize' => '' ],
+				'expected' => [ 'exception' => [ 'type' => ApiUsageException::class, 'code' => 'params-illegal' ] ] ],
+			'7 normalization fails with 2 sites' => [
+				'params' => [ 'sites' => 'enwiki|dewiki', 'titles' => 'Boo', 'normalize' => '' ],
+				'expected' => [ 'exception' => [ 'type' => ApiUsageException::class, 'code' => 'params-illegal' ] ] ],
+			'8 normalization fails with 2 sites and 2 titles' => [
+				'params' => [ 'sites' => 'enwiki|dewiki', 'titles' => 'Foo|Bar', 'normalize' => '' ],
+				'expected' => [ 'exception' => [ 'type' => ApiUsageException::class, 'code' => 'params-illegal' ] ] ],
+			'9 must request one site, one title, or an equal number of sites and titles' => [
+				'params' => [ 'sites' => 'dewiki|enwiki', 'titles' => 'Oslo|Berlin|London' ],
+				'expected' => [ 'exception' => [ 'type' => ApiUsageException::class, 'code' => 'params-illegal' ] ] ],
 		];
 	}
 

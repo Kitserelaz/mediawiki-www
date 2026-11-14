@@ -1,17 +1,17 @@
 # Message Reporter
 
-[![CI](https://github.com/JeroenDeDauw/message-reporter/actions/workflows/ci.yml/badge.svg)](https://github.com/JeroenDeDauw/message-reporter/actions/workflows/ci.yml)
-![Latest Stable Version](https://img.shields.io/packagist/v/jeroen/message-reporter.svg)
-![Total Download Count](https://img.shields.io/packagist/dt/jeroen/message-reporter.svg)
-[![codecov](https://codecov.io/gh/JeroenDeDauw/message-reporter/graph/badge.svg?token=Si45N9MsGq)](https://codecov.io/gh/JeroenDeDauw/message-reporter)
-
+[![Build Status](https://secure.travis-ci.org/onoi/message-reporter.svg?branch=master)](http://travis-ci.org/onoi/message-reporter)
+[![Code Coverage](https://scrutinizer-ci.com/g/onoi/message-reporter/badges/coverage.png?b=master)](https://scrutinizer-ci.com/g/onoi/message-reporter/?branch=master)
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/onoi/message-reporter/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/onoi/message-reporter/?branch=master)
+[![Latest Stable Version](https://poser.pugx.org/onoi/message-reporter/version.png)](https://packagist.org/packages/onoi/message-reporter)
+[![Packagist download count](https://poser.pugx.org/onoi/message-reporter/d/total.png)](https://packagist.org/packages/onoi/message-reporter)
 
 An interface to report and relay arbitrary messages to registered handlers. This was part of
 the [Semantic MediaWiki][smw] code base and is now being deployed as independent library.
 
 ## Requirements
 
-PHP 8.1 or later
+PHP 5.6.99 or later
 
 ## Installation
 
@@ -20,7 +20,7 @@ The recommended installation method for this library is to add it as dependency 
 ```json
 {
 	"require": {
-		"jeroen/message-reporter": "~1.5"
+		"onoi/message-reporter": "~1.3"
 	}
 }
 ```
@@ -83,10 +83,10 @@ $bar->setMessageReporter( $observableMessageReporter );
 ## Contribution and support
 
 If you want to contribute work to the project please subscribe to the
-developers mailing list and have a look at the [contribution guideline](/CONTRIBUTING.md). A list of people who have made contributions in the past can be found [here][contributors].
+developers mailing list and have a look at the [contribution guidelinee](/CONTRIBUTING.md). A list of people who have made contributions in the past can be found [here][contributors].
 
-* [File an issue](https://github.com/JeroenDeDauw/message-reporter/issues)
-* [Submit a pull request](https://github.com/JeroenDeDauw/message-reporter/pulls)
+* [File an issue](https://github.com/onoi/message-reporter/issues)
+* [Submit a pull request](https://github.com/onoi/message-reporter/pulls)
 
 ## Development
 
@@ -112,43 +112,39 @@ You can also invoke PHPUnit directly to pass it arguments, as follows
 
 ## Release notes
 
-### 1.5.0 (2026-03-30)
-* Publish under jeroen/message-reporter
-* Bumps minimum php version to 8.1
-* Add support for php 8.1-8.4
+* 1.4.2 (2021-01-15)
+  - Added support for PHP 8
+  - Changed minimum PHP version to 7.3
 
-### 1.4.2 (2021-01-15)
-* Added support for PHP 8
-* Changed minimum PHP version to 7.3
+* 1.4.1 (2019-04-10)
+  - Added `.gitattributes`
 
-### 1.4.1 (2019-04-10)
-* Added `.gitattributes`
+* 1.4.0 (2019-04-08)
+  - Added `CallbackMessageReporter`
+  - Changed minimum PHP version to 5.6.99
 
-### 1.4.0 (2019-04-08)
-* Added `CallbackMessageReporter`
-* Changed minimum PHP version to 5.6.99
+* 1.3.0 (2017-11-05)
+  - Added `MessageReporterAwareTrait`
 
-### 1.3.0 (2017-11-05)
-* Added `MessageReporterAwareTrait`
+* 1.2.0 (2016-08-02)
+  - Added `MessageReporterAware` and `SpyMessageReporter`
 
-### 1.2.0 (2016-08-02)
-* Added `MessageReporterAware` and `SpyMessageReporter`
+* 1.1.0 (2016-04-13)
+  - `ObservableMessageReporter::registerReporterCallback` to register only callable handlers
 
-### 1.1.0 (2016-04-13)
-* `ObservableMessageReporter::registerReporterCallback` to register only callable handlers
-
-### 1.0.0 (2015-01-24)
-* Initial release
-* `MessageReporterFactory`
-* `ObservableMessageReporter`
-* `NullMessageReporter`
-* `MessageReporter`
+* 1.0.0 (2015-01-24)
+  - Initial release
+  - `MessageReporterFactory`
+  - `ObservableMessageReporter`
+  - `NullMessageReporter`
+  - `MessageReporter`
 
 ## License
 
 [GNU General Public License 2.0 or later][license].
 
 [composer]: https://getcomposer.org/
-[contributors]: https://github.com/JeroenDeDauw/message-reporter/graphs/contributors
+[contributors]: https://github.com/onoi/message-reporter/graphs/contributors
 [license]: https://www.gnu.org/copyleft/gpl.html
+[travis]: https://travis-ci.org/onoi/message-reporter
 [smw]: https://github.com/SemanticMediaWiki/SemanticMediaWiki/

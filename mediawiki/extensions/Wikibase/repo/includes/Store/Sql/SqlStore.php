@@ -2,9 +2,8 @@
 
 namespace Wikibase\Repo\Store\Sql;
 
-use MediaWiki\HookContainer\HookContainer;
 use MediaWiki\MediaWikiServices;
-use ObjectCacheFactory;
+use MediaWiki\ObjectCache\ObjectCacheFactory;
 use Wikibase\DataAccess\DatabaseEntitySource;
 use Wikibase\DataAccess\WikibaseServices;
 use Wikibase\DataModel\Entity\EntityIdParser;
@@ -27,17 +26,16 @@ use Wikibase\Lib\Store\EntityRevisionLookup;
 use Wikibase\Lib\Store\EntityStore;
 use Wikibase\Lib\Store\EntityStoreWatcher;
 use Wikibase\Lib\Store\LookupConstants;
-use Wikibase\Lib\Store\PropertyInfoLookup;
 use Wikibase\Lib\Store\PropertyInfoStore;
 use Wikibase\Lib\Store\RevisionBasedEntityLookup;
 use Wikibase\Lib\Store\SiteLinkStore;
 use Wikibase\Lib\Store\Sql\EntityChangeLookup;
-use Wikibase\Lib\Store\Sql\PrefetchingWikiPageEntityMetaDataAccessor;
 use Wikibase\Lib\Store\Sql\PropertyInfoTable;
 use Wikibase\Lib\Store\Sql\SiteLinkTable;
 use Wikibase\Lib\Store\Sql\SqlChangeStore;
 use Wikibase\Lib\Store\TypeDispatchingEntityRevisionLookup;
 use Wikibase\Lib\Store\TypeDispatchingEntityStore;
+use Wikibase\Repo\Hooks\GetEntityByLinkedTitleLookupHook;
 use Wikibase\Repo\Store\DispatchingEntityStoreWatcher;
 use Wikibase\Repo\Store\EntityTitleStoreLookup;
 use Wikibase\Repo\Store\IdGenerator;
@@ -97,11 +95,6 @@ class SqlStore implements Store {
 	private $entityStoreWatcher = null;
 
 	/**
-	 * @var PropertyInfoLookup
-	 */
-	private PropertyInfoLookup $propertyInfoLookup;
-
-	/**
 	 * @var PropertyInfoStore|null
 	 */
 	private $propertyInfoStore = null;
@@ -112,7 +105,7 @@ class SqlStore implements Store {
 	private $propertyInfoTable = null;
 
 	/**
-	 * @var PrefetchingWikiPageEntityMetaDataAccessor|null
+	 * @var EntityPrefetcher|null
 	 */
 	private $entityPrefetcher = null;
 
@@ -136,10 +129,7 @@ class SqlStore implements Store {
 	 */
 	private $wikibaseServices;
 
-	/**
-	 * @var HookContainer
-	 */
-	private $hookContainer;
+	private GetEntityByLinkedTitleLookupHook $hookRunner;
 
 	/**
 	 * @var string
@@ -174,19 +164,6 @@ class SqlStore implements Store {
 	 */
 	private $objectCacheFactory;
 
-	/**
-	 * @param EntityChangeFactory $entityChangeFactory
-	 * @param EntityIdParser $entityIdParser
-	 * @param EntityIdComposer $entityIdComposer
-	 * @param EntityIdLookup $entityIdLookup
-	 * @param EntityTitleStoreLookup $entityTitleLookup
-	 * @param EntityNamespaceLookup $entityNamespaceLookup
-	 * @param IdGenerator $idGenerator
-	 * @param WikibaseServices $wikibaseServices Service container providing data access services
-	 * @param HookContainer $hookContainer Service container providing data access services
-	 * @param DatabaseEntitySource $entitySource
-	 * @param SettingsArray $settings
-	 */
 	public function __construct(
 		EntityChangeFactory $entityChangeFactory,
 		EntityIdParser $entityIdParser,
@@ -196,10 +173,9 @@ class SqlStore implements Store {
 		EntityNamespaceLookup $entityNamespaceLookup,
 		IdGenerator $idGenerator,
 		WikibaseServices $wikibaseServices,
-		HookContainer $hookContainer,
+		GetEntityByLinkedTitleLookupHook $hookRunner,
 		DatabaseEntitySource $entitySource,
 		SettingsArray $settings,
-		PropertyInfoLookup $propertyInfoLookup,
 		ObjectCacheFactory $objectCacheFactory
 	) {
 		$this->entityChangeFactory = $entityChangeFactory;
@@ -210,7 +186,7 @@ class SqlStore implements Store {
 		$this->entityNamespaceLookup = $entityNamespaceLookup;
 		$this->idGenerator = $idGenerator;
 		$this->wikibaseServices = $wikibaseServices;
-		$this->hookContainer = $hookContainer;
+		$this->hookRunner = $hookRunner;
 		$this->entitySource = $entitySource;
 		$this->objectCacheFactory = $objectCacheFactory;
 
@@ -218,7 +194,6 @@ class SqlStore implements Store {
 		$this->cacheKeyGroup = $settings->getSetting( 'sharedCacheKeyGroup' );
 		$this->cacheType = $settings->getSetting( 'sharedCacheType' );
 		$this->cacheDuration = $settings->getSetting( 'sharedCacheDuration' );
-		$this->propertyInfoLookup = $propertyInfoLookup;
 	}
 
 	/**
@@ -242,7 +217,7 @@ class SqlStore implements Store {
 	public function getEntityByLinkedTitleLookup() {
 		$lookup = $this->newSiteLinkStore();
 
-		$this->hookContainer->run( 'GetEntityByLinkedTitleLookup', [ &$lookup ] );
+		$this->hookRunner->onGetEntityByLinkedTitleLookup( $lookup );
 
 		return $lookup;
 	}
@@ -454,15 +429,6 @@ class SqlStore implements Store {
 	}
 
 	/**
-	 * @deprecated use WikibaseRepo::getPropertyInfoLookup instead
-	 *
-	 * @return PropertyInfoLookup
-	 */
-	public function getPropertyInfoLookup(): PropertyInfoLookup {
-		return $this->propertyInfoLookup;
-	}
-
-	/**
 	 * @see Store::getPropertyInfoStore
 	 *
 	 * @return PropertyInfoStore
@@ -476,9 +442,8 @@ class SqlStore implements Store {
 	}
 
 	/**
-	 * Creates a new PropertyInfoStore
-	 * Note: cache key used by the lookup should be the same as the cache key used
-	 * by CachedPropertyInfoLookup.
+	 * Note: cache key used by {@link CacheAwarePropertyInfoStore} should be the same as the cache key used
+	 * by {@link CachingPropertyInfoLookup}.
 	 *
 	 * @return PropertyInfoStore
 	 */
@@ -517,7 +482,7 @@ class SqlStore implements Store {
 	}
 
 	/**
-	 * @return PrefetchingWikiPageEntityMetaDataAccessor
+	 * @return EntityPrefetcher
 	 */
 	public function getEntityPrefetcher() {
 		if ( $this->entityPrefetcher === null ) {

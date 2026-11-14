@@ -12,8 +12,8 @@ use Wikibase\DataModel\Entity\NumericPropertyId;
 use Wikibase\DataModel\Entity\Property;
 use Wikibase\DataModel\Term\Term;
 use Wikibase\DataModel\Term\TermList;
-use Wikibase\Lib\Rdbms\RepoDomainDb;
-use Wikibase\Lib\Store\Sql\Terms\TypeIdsLookup;
+use Wikibase\Lib\Rdbms\TermsDomainDb;
+use Wikibase\Lib\Store\Sql\Terms\TermTypeIds;
 use Wikibase\Repo\Store\TermsCollisionDetector;
 
 /**
@@ -25,21 +25,17 @@ class DatabaseTermsCollisionDetector implements TermsCollisionDetector {
 
 	private string $entityType;
 
-	private RepoDomainDb $db;
-
-	private TypeIdsLookup $typeIdsLookup;
+	private TermsDomainDb $db;
 
 	/**
 	 * @param string $entityType one of the two supported types: Item::ENTITY_TYPE or Property::ENTITY_TYPE
-	 * @param RepoDomainDb $db
-	 * @param TypeIdsLookup $typeIdsLookup
+	 * @param TermsDomainDb $db
 	 *
 	 * @throws InvalidArgumentException when non supported entity type is given
 	 */
 	public function __construct(
 		string $entityType,
-		RepoDomainDb $db,
-		TypeIdsLookup $typeIdsLookup
+		TermsDomainDb $db
 	) {
 		if ( !in_array( $entityType, [ Item::ENTITY_TYPE, Property::ENTITY_TYPE ] ) ) {
 			throw new InvalidArgumentException(
@@ -49,7 +45,6 @@ class DatabaseTermsCollisionDetector implements TermsCollisionDetector {
 
 		$this->entityType = $entityType;
 		$this->db = $db;
-		$this->typeIdsLookup = $typeIdsLookup;
 	}
 
 	/**
@@ -59,13 +54,7 @@ class DatabaseTermsCollisionDetector implements TermsCollisionDetector {
 		string $lang,
 		string $label
 	): ?EntityId {
-		$labelTypeId = $this->typeIdsLookup->lookupTypeIds( [ 'label' ] )['label'] ?? null;
-
-		if ( $labelTypeId === null ) {
-			return null;
-		}
-
-		$entityId = $this->findEntityIdsWithTermInLang( $lang, $label, $labelTypeId, true )[0] ?? null;
+		$entityId = $this->findEntityIdsWithTermInLang( $lang, $label, TermTypeIds::LABEL_TYPE_ID, true )[0] ?? null;
 
 		return $this->makeEntityId( $entityId );
 	}
@@ -78,14 +67,7 @@ class DatabaseTermsCollisionDetector implements TermsCollisionDetector {
 		string $label,
 		string $description
 	): ?EntityId {
-		$labelTypeId = $this->typeIdsLookup->lookupTypeIds( [ 'label' ] )['label'] ?? null;
-		$descTypeId = $this->typeIdsLookup->lookupTypeIds( [ 'description' ] )['description'] ?? null;
-
-		if ( $labelTypeId === null || $descTypeId === null ) {
-			return null;
-		}
-
-		$entityIdsWithLabel = $this->findEntityIdsWithTermInLang( $lang, $label, $labelTypeId );
+		$entityIdsWithLabel = $this->findEntityIdsWithTermInLang( $lang, $label, TermTypeIds::LABEL_TYPE_ID );
 
 		if ( !$entityIdsWithLabel ) {
 			return null;
@@ -94,7 +76,7 @@ class DatabaseTermsCollisionDetector implements TermsCollisionDetector {
 		$entityId = $this->findEntityIdsWithTermInLang(
 			$lang,
 			$description,
-			$descTypeId,
+			TermTypeIds::DESCRIPTION_TYPE_ID,
 			true,
 			$entityIdsWithLabel
 		)[0] ?? null;
@@ -107,11 +89,6 @@ class DatabaseTermsCollisionDetector implements TermsCollisionDetector {
 			return [];
 		}
 
-		$labelTypeId = $this->typeIdsLookup->lookupTypeIds( [ 'label' ] )['label'] ?? null;
-
-		if ( $labelTypeId === null ) {
-			return [];
-		}
 		$lang = [];
 		$labels = [];
 
@@ -120,7 +97,7 @@ class DatabaseTermsCollisionDetector implements TermsCollisionDetector {
 			$labels[] = $label->getText();
 		}
 
-		return $this->findEntityIdsWithTermsInLangs( $lang, $labels, $labelTypeId );
+		return $this->findEntityIdsWithTermsInLangs( $lang, $labels, TermTypeIds::LABEL_TYPE_ID );
 	}
 
 	/**
@@ -135,7 +112,7 @@ class DatabaseTermsCollisionDetector implements TermsCollisionDetector {
 		return $this->composeEntityId( $numericEntityId );
 	}
 
-	private function composeEntityId( $numericEntityId ) {
+	private function composeEntityId( string $numericEntityId ): EntityId {
 		if ( $this->entityType === Item::ENTITY_TYPE ) {
 			return ItemId::newFromNumber( $numericEntityId );
 		} elseif ( $this->entityType === Property::ENTITY_TYPE ) {
@@ -195,10 +172,7 @@ class DatabaseTermsCollisionDetector implements TermsCollisionDetector {
 	}
 
 	private function newSelectQueryBuilder(): EntityTermsSelectQueryBuilder {
-		return new EntityTermsSelectQueryBuilder(
-			$this->db->connections()->getReadConnection(),
-			$this->entityType
-		);
+		return new EntityTermsSelectQueryBuilder( $this->db, $this->entityType );
 	}
 
 }

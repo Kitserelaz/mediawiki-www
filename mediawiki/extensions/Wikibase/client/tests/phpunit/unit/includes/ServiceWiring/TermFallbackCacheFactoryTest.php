@@ -4,11 +4,12 @@ declare( strict_types = 1 );
 namespace Wikibase\Client\Tests\Unit\ServiceWiring;
 
 use MediaWiki\Config\HashConfig;
+use MediaWiki\MainConfigNames;
 use Psr\Log\NullLogger;
 use Wikibase\Client\Tests\Unit\ServiceWiringTestCase;
 use Wikibase\Lib\SettingsArray;
 use Wikibase\Lib\TermFallbackCacheFactory;
-use Wikimedia\Stats\NullStatsdDataFactory;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * @coversNothing
@@ -28,13 +29,11 @@ class TermFallbackCacheFactoryTest extends ServiceWiringTestCase {
 		$this->mockService( 'WikibaseClient.Logger',
 			new NullLogger() );
 		$this->serviceContainer->expects( $this->once() )
-			->method( 'getStatsdDataFactory' )
-			->willReturn( new NullStatsdDataFactory() );
+			->method( 'getStatsFactory' )
+			->willReturn( StatsFactory::newNull() );
 		$this->serviceContainer->expects( $this->once() )
 			->method( 'getMainConfig' )
-			->willReturn( new HashConfig( [
-				'SecretKey' => 'not so secret',
-			] ) );
+			->willReturn( new HashConfig( [ MainConfigNames::SecretKey => 'not so secret' ] ) );
 
 		$termFallbackCacheFactory = $this->getService( 'WikibaseClient.TermFallbackCacheFactory' );
 

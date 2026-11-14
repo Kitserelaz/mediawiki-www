@@ -6,8 +6,8 @@ namespace Wikibase\Repo\Tests\Interactors;
 
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Context\RequestContext;
-use MediaWiki\MediaWikiServices;
 use MediaWiki\Permissions\Authority;
+use MediaWiki\Permissions\PermissionStatus;
 use MediaWiki\Permissions\RateLimiter;
 use MediaWiki\Site\HashSiteStore;
 use MediaWiki\Status\Status;
@@ -34,7 +34,7 @@ use Wikibase\Repo\Store\EntityPermissionChecker;
 use Wikibase\Repo\Store\EntityTitleStoreLookup;
 use Wikibase\Repo\Tests\EntityModificationTestHelper;
 use Wikibase\Repo\WikibaseRepo;
-use Wikimedia\Stats\NullStatsdDataFactory;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * @covers \Wikibase\Repo\Interactors\ItemMergeInteractor
@@ -102,9 +102,9 @@ class ItemMergeInteractorTest extends MediaWikiIntegrationTestCase {
 
 		$callback = function ( User $user ) {
 			if ( $user->getName() === self::USER_NAME_WITHOUT_PERMISSION ) {
-				return Status::newFatal( 'permissiondenied' );
+				return PermissionStatus::newFatal( 'permissiondenied' );
 			} else {
-				return Status::newGood();
+				return PermissionStatus::newGood();
 			}
 		};
 		$permissionChecker->method( 'getPermissionStatusForEntityId' )
@@ -164,7 +164,7 @@ class ItemMergeInteractorTest extends MediaWikiIntegrationTestCase {
 			new EntityDiffer(),
 			new EntityPatcher(),
 			$editFilterHookRunner,
-			new NullStatsdDataFactory(),
+			StatsFactory::newNull(),
 			$services->getUserOptionsLookup(),
 			$tempUserCreator,
 			1024 * 1024,
@@ -368,7 +368,7 @@ class ItemMergeInteractorTest extends MediaWikiIntegrationTestCase {
 		] );
 
 		$user = $this->getTestSysop()->getUser();
-		$watchlistManager = MediaWikiServices::getInstance()->getWatchlistManager();
+		$watchlistManager = $this->getServiceContainer()->getWatchlistManager();
 		$watchlistManager->addWatch( $user, $entityTitleLookup->getTitleForId( $fromId ) );
 
 		$tag = __METHOD__ . '-tag';

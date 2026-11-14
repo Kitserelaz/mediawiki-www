@@ -34,7 +34,7 @@ class SpecialMobileEditWatchlist extends SpecialEditWatchlist {
 	/**
 	 * Renders the subheader.
 	 */
-	protected function outputSubtitle() {
+	protected function outputSubtitle(): void {
 		$user = $this->getUser();
 	}
 

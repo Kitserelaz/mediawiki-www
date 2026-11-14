@@ -2,7 +2,7 @@
 
 namespace Wikibase\Repo\Tests\Specials;
 
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Language\LanguageNameUtils;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\Request\WebResponse;
 use MediaWiki\Session\Session;
@@ -60,7 +60,7 @@ class SpecialNewItemTest extends SpecialNewEntityTestCase {
 		$this->siteStore = new HashSiteStore();
 
 		$settings = clone WikibaseRepo::getSettings();
-		$settings->setSetting( 'tmpEnableMulLanguageCode', true );
+		$settings->setSetting( 'enableMulLanguageCode', true );
 		$settings->setSetting( 'badgeItems', [
 			self::BADGE_GOOD_ARTICLE => 'good-article',
 			self::BADGE_SITELINK_TO_REDIRECT => 'sitelink-to-redirect',
@@ -86,10 +86,9 @@ class SpecialNewItemTest extends SpecialNewEntityTestCase {
 			$this->getTermValidatorFactoryMock(),
 			WikibaseRepo::getItemTermsCollisionDetector(),
 			WikibaseRepo::getValidatorErrorLocalizer(),
-			new SiteLinkTargetProvider( $this->siteStore ),
+			new SiteLinkTargetProvider( $this->siteStore, [ 'wikiblah' ] ),
 			WikibaseRepo::getFallbackLabelDescriptionLookupFactory(),
 			WikibaseRepo::getSettings()->getSetting( 'badgeItems' ),
-			[ 'wikiblah' ],
 			false
 		);
 	}
@@ -135,7 +134,7 @@ class SpecialNewItemTest extends SpecialNewEntityTestCase {
 		$this->assertHtmlContainsInputWithNameAndValue( $html, SpecialNewItem::FIELD_DESCRIPTION, $subPagePart2 );
 	}
 
-	public function provideValidEntityCreationRequests() {
+	public static function provideValidEntityCreationRequests() {
 		return [
 			'only label is set' => [
 				[
@@ -204,7 +203,7 @@ class SpecialNewItemTest extends SpecialNewEntityTestCase {
 		];
 	}
 
-	public function provideInvalidEntityCreationRequests() {
+	public static function provideInvalidEntityCreationRequests() {
 		return [
 			'unknown language' => [
 				[
@@ -356,6 +355,7 @@ class SpecialNewItemTest extends SpecialNewEntityTestCase {
 			'anon' => [ 1, 60 ],
 			'user' => [ 1, 60 ],
 		] ] );
+		$this->mergeMwGlobalArrayValue( 'wgAutoCreateTempUser', [ 'enabled' => false ] );
 
 		$formData = [
 			SpecialNewItem::FIELD_LANG => 'en',
@@ -449,10 +449,6 @@ class SpecialNewItemTest extends SpecialNewEntityTestCase {
 		return new ItemId( $matches[0] );
 	}
 
-	/**
-	 * @param array $form
-	 * @param EntityDocument $entity
-	 */
 	protected function assertEntityMatchesFormData( array $form, EntityDocument $entity ) {
 		$this->assertInstanceOf( Item::class, $entity );
 		/** @var Item $entity */

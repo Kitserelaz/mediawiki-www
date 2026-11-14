@@ -11,7 +11,6 @@ module.exports = ( function () {
 	 */
 	return function ( watchedProperty, validLanguages ) {
 		var definition = {
-			compatConfig: { MODE: 3 },
 			data: function () {
 				return {
 					InvalidLanguages: []
@@ -29,7 +28,7 @@ module.exports = ( function () {
 				 * @return {boolean}
 				 */
 				isInvalidLanguage: function ( language ) {
-					return this.InvalidLanguages.indexOf( language ) > -1;
+					return this.InvalidLanguages.includes( language );
 				}
 			}
 		};
@@ -47,7 +46,7 @@ module.exports = ( function () {
 						continue; // don't validate blank values
 					}
 
-					if ( validLanguages.indexOf( language ) === -1 ) {
+					if ( !validLanguages.includes( language ) ) {
 						InvalidLanguages.push( language );
 					}
 				}

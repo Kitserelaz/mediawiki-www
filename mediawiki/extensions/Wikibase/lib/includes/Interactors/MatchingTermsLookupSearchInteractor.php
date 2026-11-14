@@ -1,4 +1,4 @@
-<?php
+<?php declare( strict_types=1 );
 
 namespace Wikibase\Lib\Interactors;
 
@@ -8,7 +8,6 @@ use Wikibase\DataModel\Term\Term;
 use Wikibase\Lib\LanguageFallbackChainFactory;
 use Wikibase\Lib\Store\LanguageFallbackLabelDescriptionLookup;
 use Wikibase\Lib\Store\MatchingTermsLookup;
-use Wikibase\Lib\Store\TermIndexSearchCriteria;
 use Wikibase\Lib\TermIndexEntry;
 use Wikimedia\Assert\Assert;
 
@@ -18,47 +17,24 @@ use Wikimedia\Assert\Assert;
  */
 class MatchingTermsLookupSearchInteractor implements ConfigurableTermSearchInteractor {
 
-	/**
-	 * @var MatchingTermsLookup
-	 */
-	private $matchingTermsLookup;
-
-	/**
-	 * @var LanguageFallbackChainFactory
-	 */
-	private $languageFallbackChainFactory;
-
-	/**
-	 * @var PrefetchingTermLookup
-	 */
-	private $bufferingTermLookup;
-
-	/**
-	 * @var LanguageFallbackLabelDescriptionLookup
-	 */
-	private $labelDescriptionLookup;
-
-	/**
-	 * @var string languageCode to use for display terms
-	 */
-	private $displayLanguageCode;
-
-	/**
-	 * @var TermSearchOptions
-	 */
-	private $termSearchOptions;
+	private MatchingTermsLookup $matchingTermsLookup;
+	private LanguageFallbackChainFactory $languageFallbackChainFactory;
+	private PrefetchingTermLookup $bufferingTermLookup;
+	private string $displayLanguageCode;
+	private LanguageFallbackLabelDescriptionLookup $labelDescriptionLookup;
+	private TermSearchOptions $termSearchOptions;
 
 	/**
 	 * @param MatchingTermsLookup $matchingTermsLookup Used to search the terms
 	 * @param LanguageFallbackChainFactory $fallbackFactory
 	 * @param PrefetchingTermLookup $bufferingTermLookup Provides the displayTerms
-	 * @param string $displayLanguageCode
+	 * @param string $displayLanguageCode languageCode to use for display terms
 	 */
 	public function __construct(
 		MatchingTermsLookup $matchingTermsLookup,
 		LanguageFallbackChainFactory $fallbackFactory,
 		PrefetchingTermLookup $bufferingTermLookup,
-		$displayLanguageCode
+		string $displayLanguageCode
 	) {
 		Assert::parameterType( 'string', $displayLanguageCode, '$displayLanguageCode' );
 		$this->matchingTermsLookup = $matchingTermsLookup;
@@ -73,7 +49,7 @@ class MatchingTermsLookupSearchInteractor implements ConfigurableTermSearchInter
 		$this->termSearchOptions = new TermSearchOptions();
 	}
 
-	public function setTermSearchOptions( TermSearchOptions $termSearchOptions ) {
+	public function setTermSearchOptions( TermSearchOptions $termSearchOptions ): void {
 		$this->termSearchOptions = $termSearchOptions;
 	}
 
@@ -88,11 +64,11 @@ class MatchingTermsLookupSearchInteractor implements ConfigurableTermSearchInter
 	 * @return TermSearchResult[]
 	 */
 	public function searchForEntities(
-		$text,
-		$languageCode,
-		$entityType,
+		string $text,
+		string $languageCode,
+		string $entityType,
 		array $termTypes
-	) {
+	): array {
 		$matchedTermIndexEntries = $this->getMatchingTermIndexEntries(
 			$text,
 			$languageCode,
@@ -114,21 +90,16 @@ class MatchingTermsLookupSearchInteractor implements ConfigurableTermSearchInter
 	 * @return TermIndexEntry[]
 	 */
 	private function getMatchingTermIndexEntries(
-		$text,
-		$languageCode,
-		$entityType,
+		string $text,
+		string $languageCode,
+		string $entityType,
 		array $termTypes
-	) {
-		$languageCodes = [ $languageCode ];
-
+	): array {
 		$matchedTermIndexEntries = $this->matchingTermsLookup->getMatchingTerms(
-			$this->makeTermIndexSearchCriteria(
-				$text,
-				$languageCodes,
-				$termTypes
-			),
-			null,
+			$text,
 			$entityType,
+			$languageCode,
+			$termTypes,
 			$this->getTermIndexOptions()
 		);
 
@@ -140,7 +111,7 @@ class MatchingTermsLookupSearchInteractor implements ConfigurableTermSearchInter
 				$matchedTermIndexEntries,
 				$this->getFallbackMatchedTermIndexEntries(
 					$text,
-					$languageCodes,
+					$languageCode,
 					$termTypes,
 					$entityType,
 					$this->getMatchedEntityIdSerializations( $matchedTermIndexEntries )
@@ -160,7 +131,7 @@ class MatchingTermsLookupSearchInteractor implements ConfigurableTermSearchInter
 	 *
 	 * @return string[]
 	 */
-	private function getMatchedEntityIdSerializations( array $matchedTermIndexEntries ) {
+	private function getMatchedEntityIdSerializations( array $matchedTermIndexEntries ): array {
 		$matchedEntityIdSerializations = [];
 
 		foreach ( $matchedTermIndexEntries as $termIndexEntry ) {
@@ -172,7 +143,7 @@ class MatchingTermsLookupSearchInteractor implements ConfigurableTermSearchInter
 
 	/**
 	 * @param string $text
-	 * @param string[] $languageCodes
+	 * @param string $languageCode
 	 * @param string[] $termTypes
 	 * @param string $entityType
 	 * @param string[] $matchedEntityIdSerializations
@@ -180,24 +151,21 @@ class MatchingTermsLookupSearchInteractor implements ConfigurableTermSearchInter
 	 * @return TermIndexEntry[]
 	 */
 	private function getFallbackMatchedTermIndexEntries(
-		$text,
-		array $languageCodes,
-		$termTypes,
-		$entityType,
+		string $text,
+		string $languageCode,
+		array $termTypes,
+		string $entityType,
 		array $matchedEntityIdSerializations
-	) {
+	): array {
 		$fallbackMatchedTermIndexEntries = $this->matchingTermsLookup->getMatchingTerms(
-			$this->makeTermIndexSearchCriteria(
-				$text,
-				$this->addFallbackLanguageCodes( $languageCodes ),
-				$termTypes
-			),
-			null,
+			$text,
 			$entityType,
+			$this->getFallbackLanguageCodes( $languageCode ),
+			$termTypes,
 			$this->getTermIndexOptions()
 		);
 
-		// Remove any IndexEntries that are already have an match for
+		// Remove any IndexEntries that there is already a match for
 		foreach ( $fallbackMatchedTermIndexEntries as $key => $termIndexEntry ) {
 			if ( in_array(
 				$termIndexEntry->getEntityId()->getSerialization(),
@@ -215,7 +183,7 @@ class MatchingTermsLookupSearchInteractor implements ConfigurableTermSearchInter
 	 *
 	 * @return TermSearchResult[]
 	 */
-	private function getSearchResults( array $termIndexEntries ) {
+	private function getSearchResults( array $termIndexEntries ): array {
 		$searchResults = [];
 		foreach ( $termIndexEntries as $termIndexEntry ) {
 			$searchResults[] = $this->convertToSearchResult( $termIndexEntry );
@@ -226,11 +194,11 @@ class MatchingTermsLookupSearchInteractor implements ConfigurableTermSearchInter
 	/**
 	 * @param EntityId[] $entityIds
 	 */
-	private function preFetchLabelsAndDescriptionsForDisplay( array $entityIds ) {
+	private function preFetchLabelsAndDescriptionsForDisplay( array $entityIds ): void {
 		$this->bufferingTermLookup->prefetchTerms(
 			$entityIds,
 			[ TermIndexEntry::TYPE_LABEL, TermIndexEntry::TYPE_DESCRIPTION ],
-			$this->addFallbackLanguageCodes( [ $this->displayLanguageCode ] )
+			$this->getFallbackLanguageCodes( $this->displayLanguageCode )
 		);
 	}
 
@@ -239,7 +207,7 @@ class MatchingTermsLookupSearchInteractor implements ConfigurableTermSearchInter
 	 *
 	 * @return EntityId[]
 	 */
-	private function getEntityIdsForTermIndexEntries( array $termsIndexEntries ) {
+	private function getEntityIdsForTermIndexEntries( array $termsIndexEntries ): array {
 		$entityIds = [];
 		foreach ( $termsIndexEntries as $termIndexEntry ) {
 			$entityId = $termIndexEntry->getEntityId();
@@ -252,12 +220,7 @@ class MatchingTermsLookupSearchInteractor implements ConfigurableTermSearchInter
 		return $entityIds;
 	}
 
-	/**
-	 * @param TermIndexEntry $termIndexEntry
-	 *
-	 * @return TermSearchResult
-	 */
-	private function convertToSearchResult( TermIndexEntry $termIndexEntry ) {
+	private function convertToSearchResult( TermIndexEntry $termIndexEntry ): TermSearchResult {
 		$entityId = $termIndexEntry->getEntityId();
 		return new TermSearchResult(
 			$termIndexEntry->getTerm(),
@@ -268,7 +231,7 @@ class MatchingTermsLookupSearchInteractor implements ConfigurableTermSearchInter
 		);
 	}
 
-	private function getTermIndexOptions() {
+	private function getTermIndexOptions(): array {
 		return [
 			'caseSensitive' => $this->termSearchOptions->getIsCaseSensitive(),
 			'prefixSearch' => $this->termSearchOptions->getIsPrefixSearch(),
@@ -277,60 +240,20 @@ class MatchingTermsLookupSearchInteractor implements ConfigurableTermSearchInter
 	}
 
 	/**
-	 * @param string[] $languageCodes
+	 * @param string $languageCode
 	 *
 	 * @return string[]
 	 */
-	private function addFallbackLanguageCodes( array $languageCodes ) {
-		$languageCodesWithFallback = [];
-		foreach ( $languageCodes as $languageCode ) {
-			$fallbackChain = $this->languageFallbackChainFactory->newFromLanguageCode( $languageCode );
-			$languageCodesWithFallback = array_merge(
-				$languageCodesWithFallback,
-				$fallbackChain->getFetchLanguageCodes()
-			);
-		}
-
-		return array_unique( $languageCodesWithFallback );
+	private function getFallbackLanguageCodes( string $languageCode ): array {
+		return $this->languageFallbackChainFactory->newFromLanguageCode( $languageCode )->getFetchLanguageCodes();
 	}
 
-	/**
-	 * @param EntityId $entityId
-	 *
-	 * @return null|Term
-	 */
-	private function getLabelDisplayTerm( EntityId $entityId ) {
+	private function getLabelDisplayTerm( EntityId $entityId ): ?Term {
 		return $this->labelDescriptionLookup->getLabel( $entityId );
 	}
 
-	/**
-	 * @param EntityId $entityId
-	 *
-	 * @return null|Term
-	 */
-	private function getDescriptionDisplayTerm( EntityId $entityId ) {
+	private function getDescriptionDisplayTerm( EntityId $entityId ): ?Term {
 		return $this->labelDescriptionLookup->getDescription( $entityId );
-	}
-
-	/**
-	 * @param string $text
-	 * @param string[] $languageCodes
-	 * @param string[] $termTypes
-	 *
-	 * @return TermIndexSearchCriteria[]
-	 */
-	private function makeTermIndexSearchCriteria( $text, array $languageCodes, array $termTypes ) {
-		$terms = [];
-		foreach ( $languageCodes as $languageCode ) {
-			foreach ( $termTypes as $termType ) {
-				$terms[] = new TermIndexSearchCriteria( [
-					'termText' => $text,
-					'termLanguage' => $languageCode,
-					'termType' => $termType,
-				] );
-			}
-		}
-		return $terms;
 	}
 
 }

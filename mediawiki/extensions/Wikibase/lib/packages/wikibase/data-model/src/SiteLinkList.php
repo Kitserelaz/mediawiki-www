@@ -5,7 +5,6 @@ namespace Wikibase\DataModel;
 use ArrayIterator;
 use Countable;
 use InvalidArgumentException;
-use Iterator;
 use IteratorAggregate;
 use OutOfBoundsException;
 use Traversable;
@@ -103,7 +102,7 @@ class SiteLinkList implements IteratorAggregate, Countable {
 	 *
 	 * Returns an Iterator of SiteLink in which the keys are the site ids.
 	 *
-	 * @return Iterator|SiteLink[]
+	 * @return Traversable<SiteLink>
 	 */
 	public function getIterator(): Traversable {
 		return new ArrayIterator( $this->siteLinks );
@@ -150,7 +149,6 @@ class SiteLinkList implements IteratorAggregate, Countable {
 	}
 
 	/**
-	 *
 	 * @since 0.7.4
 	 *
 	 * @param mixed $target
@@ -172,7 +170,7 @@ class SiteLinkList implements IteratorAggregate, Countable {
 	 * @return bool
 	 */
 	public function isEmpty() {
-		return empty( $this->siteLinks );
+		return $this->siteLinks === [];
 	}
 
 	/**

@@ -6,8 +6,10 @@ namespace Wikibase\Repo\Tests\Api;
 
 use DataValues\StringValue;
 use MediaWiki\Api\ApiUsageException;
+use MediaWiki\MainConfigNames;
 use Wikibase\DataModel\Entity\Item;
 use Wikibase\DataModel\Entity\Property;
+use Wikibase\DataModel\Entity\PropertyId;
 use Wikibase\DataModel\Services\Statement\GuidGenerator;
 use Wikibase\DataModel\Snak\PropertyNoValueSnak;
 use Wikibase\DataModel\Snak\PropertySomeValueSnak;
@@ -33,8 +35,7 @@ use Wikibase\Repo\WikibaseRepo;
  */
 class RemoveClaimsTest extends WikibaseApiTestCase {
 
-	/** @var PropertyId */
-	private static $propertyId;
+	private static PropertyId $propertyId;
 
 	private function addStatementsAndSave( Item $item ): Item {
 		$store = $this->getEntityStore();
@@ -81,7 +82,7 @@ class RemoveClaimsTest extends WikibaseApiTestCase {
 	}
 
 	public function testValidRequests() {
-		$this->overrideConfigValue( 'RateLimits',
+		$this->overrideConfigValue( MainConfigNames::RateLimits,
 			[ 'edit' => [ '&can-bypass' => true, 'user' => [ 1000, 60 ] ] ] );
 		foreach ( $this->itemProvider() as $item ) {
 			$this->doTestValidRequestSingle( $item );

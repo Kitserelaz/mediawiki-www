@@ -29,14 +29,14 @@ class DispatchingEntityMetaTagsCreatorFactory {
 	}
 
 	public function newEntityMetaTags(
-		$entityType,
+		string $entityType,
 		Language $userLanguage
-	) {
+	): EntityMetaTagsCreator {
 		if ( !isset( $this->entityMetaTagsFactoryCallbacks[$entityType] ) ) {
 			return new DefaultMetaTagsCreator();
 		}
 
-		$entityMetaTags = call_user_func( $this->entityMetaTagsFactoryCallbacks[$entityType], $userLanguage );
+		$entityMetaTags = $this->entityMetaTagsFactoryCallbacks[$entityType]( $userLanguage );
 
 		Assert::postcondition(
 			$entityMetaTags instanceof EntityMetaTagsCreator,

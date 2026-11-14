@@ -5,9 +5,9 @@ namespace Wikibase\Client\Specials;
 use InvalidArgumentException;
 use MediaWiki\Html\Html;
 use MediaWiki\HTMLForm\HTMLForm;
+use MediaWiki\Skin\Skin;
 use MediaWiki\SpecialPage\QueryPage;
 use MediaWiki\Title\Title;
-use Skin;
 use Wikibase\DataModel\Entity\ItemId;
 use Wikibase\Lib\SettingsArray;
 use Wikibase\Lib\Store\FallbackLabelDescriptionLookupFactory;
@@ -87,12 +87,12 @@ class SpecialPagesWithBadges extends QueryPage {
 		}
 	}
 
-	private function prepareParams( $subPage ) {
+	private function prepareParams( ?string $subPage ) {
 		$badge = $this->getRequest()->getText( 'badge', $subPage ?: '' );
 
 		try {
 			$this->badgeId = new ItemId( $badge );
-		} catch ( InvalidArgumentException $ex ) {
+		} catch ( InvalidArgumentException ) {
 			if ( $badge ) {
 				$this->getOutput()->addHTML(
 					Html::element(
@@ -141,7 +141,7 @@ class SpecialPagesWithBadges extends QueryPage {
 			->getHTML( '' );
 	}
 
-	private function getOptionsArray() {
+	private function getOptionsArray(): array {
 		/** @var ItemId[] $badgeItemIds */
 		$badgeItemIds = array_map(
 			function( $badgeId ) {

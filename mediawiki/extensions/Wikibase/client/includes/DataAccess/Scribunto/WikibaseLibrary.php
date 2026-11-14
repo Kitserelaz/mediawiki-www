@@ -23,6 +23,7 @@ use Wikibase\Client\WikibaseClient;
 use Wikibase\DataModel\Entity\EntityId;
 use Wikibase\DataModel\Entity\EntityIdParser;
 use Wikibase\DataModel\Entity\EntityIdParsingException;
+use Wikibase\DataModel\Entity\NumericPropertyId;
 use Wikibase\DataModel\Entity\PropertyId;
 use Wikibase\DataModel\Services\Lookup\EntityAccessLimitException;
 use Wikibase\DataModel\Services\Lookup\EntityRetrievingClosestReferencedEntityIdLookup;
@@ -190,7 +191,7 @@ class WikibaseLibrary extends LibraryBase implements ParserOutputProvider {
 			$settings = WikibaseClient::getSettings( $mwServices );
 
 			$this->luaFunctionCallTracker = new LuaFunctionCallTracker(
-				$mwServices->getStatsdDataFactory(),
+				$mwServices->getStatsFactory(),
 				$settings->getSetting( 'siteGlobalID' ),
 				WikibaseClient::getSiteGroup( $mwServices ),
 				$settings->getSetting( 'trackLuaFunctionCallsPerSiteGroup' ),
@@ -209,9 +210,11 @@ class WikibaseLibrary extends LibraryBase implements ParserOutputProvider {
 	}
 
 	private function newEntityAccessor(): EntityAccessor {
+		$parser = $this->getParser();
+
 		return new EntityAccessor(
 			$this->getEntityIdParser(),
-			WikibaseClient::getRestrictedEntityLookup(),
+			WikibaseClient::getRestrictedEntityLookupFactory()->getRestrictedEntityLookup( $parser ),
 			$this->getUsageAccumulator(),
 			WikibaseClient::getCompactEntitySerializer(),
 			WikibaseClient::getCompactBaseDataModelSerializerFactory()
@@ -325,7 +328,7 @@ class WikibaseLibrary extends LibraryBase implements ParserOutputProvider {
 	private function parseUserGivenEntityId( string $idSerialization ): EntityId {
 		try {
 			return $this->getEntityIdParser()->parse( $idSerialization );
-		} catch ( EntityIdParsingException $ex ) {
+		} catch ( EntityIdParsingException ) {
 			throw new ScribuntoException(
 				'wikibase-error-invalid-entity-id',
 				[ 'args' => [ $idSerialization ] ]
@@ -350,6 +353,7 @@ class WikibaseLibrary extends LibraryBase implements ParserOutputProvider {
 			'entityExists' => [ $this, 'entityExists' ],
 			'getBadges' => [ $this, 'getBadges' ],
 			'getEntityStatements' => [ $this, 'getEntityStatements' ],
+			'addStatementWithQualOrRefUsage' => [ $this, 'addStatementWithQualOrRefUsage' ],
 			'getEntityUrl' => [ $this, 'getEntityUrl' ],
 			'renderSnak' => [ $this, 'renderSnak' ],
 			'formatValue' => [ $this, 'formatValue' ],
@@ -392,14 +396,16 @@ class WikibaseLibrary extends LibraryBase implements ParserOutputProvider {
 		try {
 			$entityArr = $this->getEntityAccessor()->getEntity( $prefixedEntityId );
 			return [ $entityArr ];
-		} catch ( EntityIdParsingException $ex ) {
+		} catch ( EntityIdParsingException ) {
 			throw new ScribuntoException(
 				'wikibase-error-invalid-entity-id',
 				[ 'args' => [ $prefixedEntityId ] ]
 			);
 		} catch ( EntityAccessLimitException $ex ) {
-			throw new ScribuntoException( 'wikibase-error-exceeded-entity-access-limit' );
-		} catch ( Exception $ex ) {
+			throw new ScribuntoException( 'wikibase-error-exceeded-entity-access-limit',
+				[ 'args' => [ $ex->getEntityAccessCount(), $ex->getEntityAccessLimit() ] ]
+			);
+		} catch ( Exception ) {
 			throw new ScribuntoException( 'wikibase-error-serialize-error' );
 		}
 	}
@@ -453,7 +459,7 @@ class WikibaseLibrary extends LibraryBase implements ParserOutputProvider {
 	public function entityExists( string $prefixedEntityId ): array {
 		try {
 			return [ $this->getEntityAccessor()->entityExists( $prefixedEntityId ) ];
-		} catch ( EntityIdParsingException $ex ) {
+		} catch ( EntityIdParsingException ) {
 			throw new ScribuntoException(
 				'wikibase-error-invalid-entity-id',
 				[ 'args' => [ $prefixedEntityId ] ]
@@ -477,16 +483,32 @@ class WikibaseLibrary extends LibraryBase implements ParserOutputProvider {
 			$parser = $this->getEngine()->getParser();
 			$parser->addTrackingCategory( 'exceeded-entity-limit-category' );
 
-			throw new ScribuntoException( 'wikibase-error-exceeded-entity-access-limit' );
-		} catch ( EntityIdParsingException $ex ) {
+			throw new ScribuntoException( 'wikibase-error-exceeded-entity-access-limit',
+				[ 'args' => [ $ex->getEntityAccessCount(), $ex->getEntityAccessLimit() ] ]
+			);
+		} catch ( EntityIdParsingException ) {
 			throw new ScribuntoException(
 				'wikibase-error-invalid-entity-id',
 				[ 'args' => [ $prefixedEntityId ] ]
 			);
-		} catch ( Exception $ex ) {
+		} catch ( Exception ) {
 			throw new ScribuntoException( 'wikibase-error-serialize-error' );
 		}
 		return [ $statements ];
+	}
+
+	/**
+	 * Add a statement usage (called once specific statements are accessed) when the qualifiers and/or references are also accessed.
+	 *
+	 * @param string $entityId The Entity from which the statements were accessed.
+	 * @param string $propertyId Property id of the statements accessed.
+	 */
+	public function addStatementWithQualOrRefUsage( string $entityId, string $propertyId ): void {
+		$entityId = trim( $entityId );
+		$entityId = $this->entityIdParser->parse( $entityId );
+		$propertyId = new NumericPropertyId( $propertyId );
+
+		$this->usageAccumulator->addStatementWithQualOrRefUsage( $entityId, $propertyId );
 	}
 
 	/**
@@ -506,7 +528,7 @@ class WikibaseLibrary extends LibraryBase implements ParserOutputProvider {
 			$url = $this->getRepoLinker()->getEntityUrl(
 				$this->getEntityIdParser()->parse( $entityIdSerialization )
 			);
-		} catch ( EntityIdParsingException $ex ) {
+		} catch ( EntityIdParsingException ) {
 			$url = null;
 		}
 
@@ -603,7 +625,7 @@ class WikibaseLibrary extends LibraryBase implements ParserOutputProvider {
 					DataAccessSnakFormatterFactory::TYPE_ESCAPED_PLAINTEXT
 				)->renderSnak( $snakSerialization ),
 			];
-		} catch ( DeserializationException $e ) {
+		} catch ( DeserializationException ) {
 			throw new ScribuntoException( 'wikibase-error-deserialize-error' );
 		}
 	}
@@ -621,7 +643,7 @@ class WikibaseLibrary extends LibraryBase implements ParserOutputProvider {
 					DataAccessSnakFormatterFactory::TYPE_RICH_WIKITEXT
 				)->renderSnak( $snakSerialization ),
 			];
-		} catch ( DeserializationException $e ) {
+		} catch ( DeserializationException ) {
 			throw new ScribuntoException( 'wikibase-error-deserialize-error' );
 		}
 	}
@@ -641,7 +663,7 @@ class WikibaseLibrary extends LibraryBase implements ParserOutputProvider {
 					DataAccessSnakFormatterFactory::TYPE_ESCAPED_PLAINTEXT
 				)->renderSnaks( $snaksSerialization ),
 			];
-		} catch ( DeserializationException $e ) {
+		} catch ( DeserializationException ) {
 			throw new ScribuntoException( 'wikibase-error-deserialize-error' );
 		}
 	}
@@ -661,7 +683,7 @@ class WikibaseLibrary extends LibraryBase implements ParserOutputProvider {
 					DataAccessSnakFormatterFactory::TYPE_RICH_WIKITEXT
 				)->renderSnaks( $snaksSerialization ),
 			];
-		} catch ( DeserializationException $e ) {
+		} catch ( DeserializationException ) {
 			throw new ScribuntoException( 'wikibase-error-deserialize-error' );
 		}
 	}
@@ -675,11 +697,11 @@ class WikibaseLibrary extends LibraryBase implements ParserOutputProvider {
 		try {
 			$propertyId = $this->getPropertyIdResolver()->resolvePropertyId(
 				$propertyLabelOrId,
-				MediaWikiServices::getInstance()->getContentLanguage()->getCode()
+				MediaWikiServices::getInstance()->getContentLanguageCode()->toString()
 			);
 			$ret = [ $propertyId->getSerialization() ];
 			return $ret;
-		} catch ( PropertyLabelNotResolvedException $e ) {
+		} catch ( PropertyLabelNotResolvedException ) {
 			return [ null ];
 		}
 	}
@@ -726,8 +748,8 @@ class WikibaseLibrary extends LibraryBase implements ParserOutputProvider {
 	/**
 	 * Increment the given stats key.
 	 */
-	public function incrementStatsKey( string $key ): void {
-		$this->getLuaFunctionCallTracker()->incrementKey( $key );
+	public function incrementStatsKey( string $key, string $module ): void {
+		$this->getLuaFunctionCallTracker()->incrementKey( $key, $module );
 	}
 
 	/**
@@ -740,7 +762,7 @@ class WikibaseLibrary extends LibraryBase implements ParserOutputProvider {
 			$entityId = $this->getEntityIdParser()->parse( $prefixedEntityId );
 			$type = $entityId->getEntityType();
 			$moduleName = $this->getLuaEntityModules()[$type] ?? 'mw.wikibase.entity';
-		} catch ( EntityIdParsingException $e ) {
+		} catch ( EntityIdParsingException ) {
 			$moduleName = 'mw.wikibase.entity';
 		}
 		return [ $moduleName ];

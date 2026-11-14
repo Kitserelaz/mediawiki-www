@@ -3,9 +3,10 @@
 namespace Wikibase\Client\Tests\Integration\Specials;
 
 use Iterator;
+use MediaWiki\Skin\Skin;
+use MediaWiki\Tests\Specials\SpecialPageTestBase;
 use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleFactory;
-use SpecialPageTestBase;
 use Wikibase\Client\NamespaceChecker;
 use Wikibase\Client\Specials\SpecialUnconnectedPages;
 use Wikibase\Client\WikibaseClient;
@@ -30,6 +31,7 @@ class SpecialUnconnectedPagesTest extends SpecialPageTestBase {
 		$this->setService(
 			'WikibaseClient.NamespaceChecker',
 			new NamespaceChecker(
+				$this->getServiceContainer()->getNamespaceInfo(),
 				[],
 				[ $this->getDefaultWikitextNS(), $this->getDefaultWikitextNS() + 1 ]
 			)
@@ -207,7 +209,8 @@ class SpecialUnconnectedPagesTest extends SpecialPageTestBase {
 	 * @dataProvider provideBuildNamespaceConditionals
 	 */
 	public function testBuildNamespaceConditionals( ?int $ns, array $expected ) {
-		$checker = new NamespaceChecker( [ 2 ], [ 0, 4 ] );
+		$namespaceInfo = $this->getServiceContainer()->getNamespaceInfo();
+		$checker = new NamespaceChecker( $namespaceInfo, [ 2 ], [ 0, 4 ] );
 		$page = $this->newSpecialPage( $checker );
 		$page->getRequest()->setVal( 'namespace', $ns );
 		$this->assertSame( $expected, $page->buildNamespaceConditionals() );
@@ -259,18 +262,18 @@ class SpecialUnconnectedPagesTest extends SpecialPageTestBase {
 	}
 
 	public function testFormatResult() {
-		$skin = $this->createMock( \Skin::class );
-		$result = new \stdClass();
-		$result->value = 1;
+		$skin = $this->createMock( Skin::class );
+		$result = (object)[ 'value' => 1 ];
 
-		$namespaceChecker = new NamespaceChecker( [] );
+		$services = $this->getServiceContainer();
+		$namespaceInfo = $services->getNamespaceInfo();
+		$namespaceChecker = new NamespaceChecker( $namespaceInfo, [] );
 
 		$titleFactoryMock = $this->createMock( TitleFactory::class );
 
 		$titleFactoryMock->method( 'newFromID' )
 			->willReturn( null );
 
-		$services = $this->getServiceContainer();
 		$specialPage = new SpecialUnconnectedPages(
 			$services->getConnectionProvider(),
 			$services->getNamespaceInfo(),

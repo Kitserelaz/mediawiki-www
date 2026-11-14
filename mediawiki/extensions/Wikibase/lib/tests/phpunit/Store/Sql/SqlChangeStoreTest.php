@@ -15,6 +15,8 @@ use Wikibase\Lib\Changes\ItemChange;
 use Wikibase\Lib\Store\Sql\SqlChangeStore;
 use Wikibase\Lib\Tests\Rdbms\LocalRepoDbTestHelper;
 use Wikibase\Lib\WikibaseSettings;
+use Wikimedia\Timestamp\ConvertibleTimestamp;
+use Wikimedia\Timestamp\TimestampFormat as TS;
 
 /**
  * @covers \Wikibase\Lib\Store\Sql\SqlChangeStore
@@ -43,10 +45,10 @@ class SqlChangeStoreTest extends MediaWikiIntegrationTestCase {
 		return new SqlChangeStore( $this->getRepoDomainDb() );
 	}
 
-	public function saveChangeInsertProvider() {
-		$factory = $this->getEntityChangeFactory();
+	public static function saveChangeInsertProvider() {
+		$factory = self::getEntityChangeFactory();
 
-		$time = wfTimestamp( TS_MW );
+		$time = ConvertibleTimestamp::now( TS::MW );
 
 		$simpleChange = $factory->newForEntity( EntityChange::ADD, new ItemId( 'Q21389475' ) );
 
@@ -91,8 +93,9 @@ class SqlChangeStoreTest extends MediaWikiIntegrationTestCase {
 					'change_revision_id' => '0',
 					'change_user_id' => '0',
 					'change_info' => '{"compactDiff":"{\"arrayFormatVersion\":1,' .
-						'\"labelChanges\":[],\"descriptionChanges\":[],\"statementChanges\":[],' .
-						'\"siteLinkChanges\":[],\"otherChanges\":false}"}',
+						'\"labelChanges\":[],\"descriptionChanges\":[],\"aliasChanges\":[],' .
+						'\"statementChangesExcludingQualOrRefOnlyChanges\":[],' .
+						'\"statementChangesQualOrRefOnly\":[],\"siteLinkChanges\":[],\"otherChanges\":false}"}',
 				],
 				$changeWithDiff,
 			],
@@ -130,8 +133,8 @@ class SqlChangeStoreTest extends MediaWikiIntegrationTestCase {
 
 		$this->assertEqualsWithDelta(
 			// wfTimestamp returns string, assertEqualsWithDelta requires int
-			(int)wfTimestamp( TS_UNIX, $expected['change_time'] ),
-			(int)wfTimestamp( TS_UNIX, $row['change_time'] ),
+			(int)ConvertibleTimestamp::convert( TS::UNIX, $expected['change_time'] ),
+			(int)ConvertibleTimestamp::convert( TS::UNIX, $row['change_time'] ),
 			60 * 60, // 1 hour
 			'Change time'
 		);
@@ -146,7 +149,7 @@ class SqlChangeStoreTest extends MediaWikiIntegrationTestCase {
 	}
 
 	public function testSaveChange_update() {
-		$factory = $this->getEntityChangeFactory();
+		$factory = self::getEntityChangeFactory();
 		$change = $factory->newForEntity( EntityChange::ADD, new ItemId( 'Q21389475' ) );
 		$change->setField( 'time', wfTimestampNow() );
 
@@ -178,7 +181,7 @@ class SqlChangeStoreTest extends MediaWikiIntegrationTestCase {
 	}
 
 	public function testDeleteChangesByChangeIds(): void {
-		$factory = $this->getEntityChangeFactory();
+		$factory = self::getEntityChangeFactory();
 		$change = $factory->newForEntity( EntityChange::ADD, new ItemId( 'Q21389475' ) );
 		$store = $this->newSqlChangeStore();
 		$store->saveChange( $change );
@@ -191,7 +194,7 @@ class SqlChangeStoreTest extends MediaWikiIntegrationTestCase {
 		$this->assertSame( 0, $rows, 'row count' );
 	}
 
-	private function getEntityChangeFactory() {
+	private static function getEntityChangeFactory() {
 		$changeClasses = [
 			Item::ENTITY_TYPE => ItemChange::class,
 			// Other types of entities will use EntityChange

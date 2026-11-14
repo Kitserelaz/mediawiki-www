@@ -1,7 +1,8 @@
 {
 	"@metadata": {
 		"authors": [
-			"El-hussain14"
+			"El-hussain14",
+			"Mbfika"
 		]
 	},
 	"wikibase-dataitem": "{{WBREPONAME}} ƴa",
@@ -11,9 +12,9 @@
 	"wikibase-linkitem-title": "Gwanto ga shafi",
 	"wikibase-linkitem-linkpage": "Gwanti page 'yame",
 	"wikibase-linkitem-selectlink": "Nko Allah zaɓi yanar gizo shafi ga yalla ma dolan ma ayi gwanto ye",
-	"wikibase-linkitem-input-site": "bòo:",
+	"wikibase-linkitem-input-site": "Yare:",
 	"wikibase-linkitem-input-page": "Ngafe:",
 	"wikibase-rc-hide-wikidata-hide": "Bunko",
 	"wikibase-rc-hide-wikidata-show": "'yawe",
-	"wikibase-otherprojects": "Ga messe rutan payo"
+	"wikibase-otherprojects": "Ga messe rutan"
 }

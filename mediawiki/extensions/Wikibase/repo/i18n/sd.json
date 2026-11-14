@@ -68,5 +68,6 @@
 	"datatypes-type-url": "يوآرايل",
 	"wikibase-pageinfo-subscription-none": "ڪوبہ نہ",
 	"wikibase-search-bad-profile-name": "کوٽو ڳولها پروفائل نالو: $1",
-	"wikibase-search-config-badclass": "کوٽو ڪيوري بلڊر ڪلاس: $1"
+	"wikibase-search-config-badclass": "کوٽو ڪيوري بلڊر ڪلاس: $1",
+	"wikibase-indicator-popover-multiple-issue-next": "اڳيون"
 }

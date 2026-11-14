@@ -2,15 +2,15 @@
 
 namespace Wikibase\Repo\Diff;
 
-use DifferenceEngine;
+use MediaWiki\Diff\DifferenceEngine;
 use MediaWiki\Html\Html;
 use MediaWiki\Language\Language;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Revision\RevisionRecord;
 use Wikibase\Repo\FederatedProperties\FederatedPropertiesError;
 use Wikibase\View\ToolbarEditSectionGenerator;
-use WikiPage;
 
 /**
  * Difference view for Wikibase entities.
@@ -105,13 +105,13 @@ class EntityContentDiffView extends DifferenceEngine {
 
 		try {
 			$parserOutput = $page->getParserOutput( $parserOptions, $rev->getId() );
-		} catch ( FederatedPropertiesError $ex ) {
+		} catch ( FederatedPropertiesError ) {
 			$parserOutput = false;
 		}
 
 		if ( $parserOutput ) {
-			$parserOutput->setText( ToolbarEditSectionGenerator::enableSectionEditLinks(
-				$parserOutput->getRawText(),
+			$parserOutput->setContentHolderText( ToolbarEditSectionGenerator::enableSectionEditLinks(
+				$parserOutput->getContentHolderText(),
 				false
 			) );
 		}

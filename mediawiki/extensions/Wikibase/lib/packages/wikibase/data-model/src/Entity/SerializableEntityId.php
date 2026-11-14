@@ -5,7 +5,6 @@ namespace Wikibase\DataModel\Entity;
 use InvalidArgumentException;
 
 /**
- *
  * @license GPL-2.0-or-later
  */
 abstract class SerializableEntityId implements EntityId {
@@ -25,6 +24,9 @@ abstract class SerializableEntityId implements EntityId {
 		$this->serialization = self::normalizeIdSerialization( $serialization );
 	}
 
+	/**
+	 * @param string $serialization
+	 */
 	private static function assertValidSerialization( $serialization ) {
 		if ( !is_string( $serialization ) ) {
 			throw new InvalidArgumentException( '$serialization must be a string' );

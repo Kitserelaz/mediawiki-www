@@ -1,0 +1,5 @@
+@mixin descriptionFont() {
+	color: $color-emphasized;
+	line-height: 1.3em;
+	font-family: $font-family-base;
+}

@@ -1,0 +1,51 @@
+[
+  {
+    "path": "lib/i18n/tg-cyrl.json",
+    "key": "wikibase-entity-summary-wbcreateclaim-value",
+    "before": "{{PLURAL:$3|Тасдиқ эҷод шуд}}",
+    "after": "{{PLURAL:$1|Тасдиқ сохта шуд|Тасдиқот сохта шуданд}}",
+    "reason": "upstream changed parameter contract"
+  },
+  {
+    "path": "lib/i18n/tg-cyrl.json",
+    "key": "wikibase-entity-summary-wbcreateclaim-somevalue",
+    "before": "{{PLURAL:$3|Тасдиқ эҷод шуд}}",
+    "after": "{{PLURAL:$1|Тасдиқ эҷод шуд|Тасдиқҳо эҷод шуданд}}",
+    "reason": "upstream changed parameter contract"
+  },
+  {
+    "path": "lib/i18n/tg-cyrl.json",
+    "key": "wikibase-entity-summary-wbcreateclaim",
+    "before": "{{PLURAL:$3|Тасдиқ эҷод шуд}}",
+    "after": "{{PLURAL:$1|Тасдиқ эҷод шуд|Тасдиқҳо эҷод шуданд}}",
+    "reason": "upstream changed parameter contract"
+  },
+  {
+    "path": "lib/i18n/tg-cyrl.json",
+    "key": "wikibase-entity-summary-wbremoveclaims",
+    "before": "{{PLURAL:$3|Тасдиқ ҳазф шуд}}",
+    "after": "{{PLURAL:$1|Тасдиқ ҳазф шуд|Тасдиқҳо ҳазф шуданд}}",
+    "reason": "upstream changed parameter contract"
+  },
+  {
+    "path": "lib/i18n/tg-cyrl.json",
+    "key": "wikibase-entity-summary-wbremoveclaims-remove",
+    "before": "{{PLURAL:$3|Тасдиқ ҳазф шуд}}",
+    "after": "{{PLURAL:$1|Тасдиқ ҳазф шуд|Тасдиқот ҳазф шуданд}}",
+    "reason": "upstream changed parameter contract"
+  },
+  {
+    "path": "lib/i18n/tg-cyrl.json",
+    "key": "wikibase-entity-summary-wbremoveclaims-update",
+    "before": "{{PLURAL:$3|Тасдиқ ҳазф шуд}}",
+    "after": "{{PLURAL:$1|Тасдиқ ҳазф шуд|Тасдиқот ҳазф шуданд}}",
+    "reason": "upstream changed parameter contract"
+  },
+  {
+    "path": "lib/i18n/tg-cyrl.json",
+    "key": "wikibase-entity-summary-wbsetqualifier-add",
+    "before": "{{PLURAL:$4|як муайянкунанда|$4 муайянкунанда}} илова шуд",
+    "after": "{{PLURAL:1|муайянкунанда илова шуд| муайянкунандаҳо илова шуданд}}",
+    "reason": "upstream changed parameter contract"
+  }
+]

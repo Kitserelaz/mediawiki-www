@@ -5,7 +5,7 @@ declare( strict_types = 1 );
 namespace Wikibase\Repo\Dumpers;
 
 use InvalidArgumentException;
-use MWContentSerializationException;
+use MediaWiki\Content\ContentSerializationException;
 use Wikibase\DataModel\Entity\EntityId;
 use Wikibase\DataModel\Services\Entity\EntityPrefetcher;
 use Wikibase\DataModel\Services\Lookup\EntityLookupException;
@@ -19,6 +19,7 @@ use Wikibase\Repo\Rdf\RdfBuilderFactory;
 use Wikibase\Repo\Rdf\RdfProducer;
 use Wikibase\Repo\Rdf\UnknownFlavorException;
 use Wikimedia\Purtle\BNodeLabeler;
+use Wikimedia\Purtle\RdfWriter;
 use Wikimedia\Purtle\RdfWriterFactory;
 
 /**
@@ -118,7 +119,7 @@ class RdfDumpGenerator extends DumpGenerator {
 				$entityRevision->getEntity()
 			);
 
-		} catch ( MWContentSerializationException $ex ) {
+		} catch ( ContentSerializationException ) {
 			throw new StorageException( 'Deserialization error for ' . $entityId->getSerialization() );
 		} catch ( RevisionedUnresolvedRedirectException $e ) {
 			if ( $e->getRevisionId() > 0 ) {
@@ -143,7 +144,7 @@ class RdfDumpGenerator extends DumpGenerator {
 		$this->timestamp = $timestamp;
 	}
 
-	private static function getRdfWriter( string $name, ?BNodeLabeler $labeler ) {
+	private static function getRdfWriter( string $name, ?BNodeLabeler $labeler ): ?RdfWriter {
 		$factory = new RdfWriterFactory();
 		$format = $factory->getFormatName( $name );
 

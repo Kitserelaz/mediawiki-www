@@ -2,13 +2,17 @@
 
 namespace Wikibase\Repo\Tests\ParserOutput;
 
+use MediaWiki\FileRepo\RepoGroup;
+use MediaWiki\Parser\ParserOutputLinkTypes;
 use MediaWiki\SpecialPage\SpecialPage;
+use MediaWiki\User\Options\UserOptionsLookup;
+use MediaWiki\User\User;
 use Psr\SimpleCache\CacheInterface;
-use RepoGroup;
 use Wikibase\DataModel\Entity\EntityDocument;
 use Wikibase\DataModel\Entity\Item;
 use Wikibase\DataModel\Entity\ItemId;
 use Wikibase\DataModel\Services\Entity\PropertyDataTypeMatcher;
+use Wikibase\Lib\SettingsArray;
 use Wikibase\Lib\Store\EntityRevision;
 use Wikibase\Repo\LinkedData\EntityDataFormatProvider;
 use Wikibase\Repo\ParserOutput\CompositeStatementDataUpdater;
@@ -21,6 +25,7 @@ use Wikibase\Repo\ParserOutput\ReferencedEntitiesDataUpdater;
 use Wikibase\View\EntityView;
 use Wikibase\View\ViewContent;
 use Wikibase\View\ViewPlaceHolderEmitter;
+use Wikibase\View\Wbui2025FeatureFlag;
 
 /**
  * @covers \Wikibase\Repo\ParserOutput\FullEntityParserOutputGenerator
@@ -32,20 +37,22 @@ use Wikibase\View\ViewPlaceHolderEmitter;
  * @author Bene* < benestar.wikimedia@gmail.com >
  */
 class FullEntityParserOutputGeneratorTest extends EntityParserOutputGeneratorTestBase {
+	private string $language;
 
 	protected function setUp(): void {
 		parent::setUp();
 
 		$this->entityViewFactory = $this->mockEntityViewFactory( false );
+		$this->language = 'en';
 	}
 
-	public function provideTestGetParserOutput() {
+	public static function provideTestGetParserOutput() {
 		return [
 			[
-				$this->newItem(),
+				self::newItem(),
 				'kitten item',
 				[ 'http://an.url.com', 'https://another.url.org' ],
-				[ 'File:This_is_a_file.pdf', 'File:Selfie.jpg' ],
+				[ '6:File:This_is_a_file.pdf', '6:File:Selfie.jpg' ],
 			],
 			[ new Item(), null, [], [] ],
 		];
@@ -73,7 +80,7 @@ class FullEntityParserOutputGeneratorTest extends EntityParserOutputGeneratorTes
 		$parserOutput = $entityParserOutputGenerator->getParserOutput( $entityRevision );
 
 		$this->assertSame( 'EntityParserOutputGeneratorTestBase-TITLE', $parserOutput->getTitleText(), 'title text' );
-		$this->assertSame( 'EntityParserOutputGeneratorTestBase-HTML', $parserOutput->getText(), 'html text' );
+		$this->assertSame( 'EntityParserOutputGeneratorTestBase-HTML', $parserOutput->getRawText(), 'html text' );
 
 		/**
 		 * @see \Wikibase\Repo\Tests\ParserOutput\FullEntityParserOutputGeneratorIntegrationTest
@@ -97,7 +104,10 @@ class FullEntityParserOutputGeneratorTest extends EntityParserOutputGeneratorTes
 
 		$this->assertEquals(
 			$images,
-			array_keys( $parserOutput->getImages() ),
+			array_map(
+				fn( $item ) => strval( $item['link'] ),
+				$parserOutput->getLinkList( ParserOutputLinkTypes::MEDIA )
+			),
 			'images'
 		);
 
@@ -138,6 +148,11 @@ class FullEntityParserOutputGeneratorTest extends EntityParserOutputGeneratorTes
 	}
 
 	public function testGetParserOutput_dontGenerateHtml() {
+		$this->entityViewFactory = $this->createMock( DispatchingEntityViewFactory::class );
+		$this->entityViewFactory->expects( $this->once() )
+			->method( 'newEntityView' )
+			->willReturn( $this->createMock( EntityView::class ) );
+
 		$entityParserOutputGenerator = $this->newEntityParserOutputGenerator();
 
 		$item = $this->newItem();
@@ -195,7 +210,107 @@ class FullEntityParserOutputGeneratorTest extends EntityParserOutputGeneratorTes
 		);
 	}
 
-	private function newEntityParserOutputGenerator( $title = null, $description = null ) {
+	public function testSetsParserOutputLanguage(): void {
+		$this->language = 'de';
+		$entityRevision = new EntityRevision( $this->newItem(), 4711 );
+
+		$this->entityViewFactory = $this->createMock( DispatchingEntityViewFactory::class );
+		$this->entityViewFactory->expects( $this->once() )
+			->method( 'newEntityView' )
+			->willReturn( $this->createMock( EntityView::class ) );
+
+		$parserOutput = $this->newEntityParserOutputGenerator()->getParserOutput( $entityRevision, false );
+		$this->assertSame( 'de', $parserOutput->getLanguage()->toBcp47Code() );
+	}
+
+	public static function provideTestMobileEditingUI(): iterable {
+		return [
+			'not mobile view, flag disabled' => [
+				'isMobileView' => false,
+				'tmpMobileEditingUI' => false,
+				'expectedModules' => [ 'wikibase.ui.entityViewInit', 'wikibase.entityPage.entityLoaded' ],
+				'expectedModuleStyles' => [
+					'wikibase.desktop',
+					'wikibase.alltargets',
+					'jquery.wikibase.toolbar.styles',
+				],
+			],
+			'not mobile view, flag enabled' => [
+				'isMobileView' => false,
+				'tmpMobileEditingUI' => true,
+				'expectedModules' => [ 'wikibase.ui.entityViewInit', 'wikibase.entityPage.entityLoaded' ],
+				'expectedModuleStyles' => [
+					'wikibase.desktop',
+					'wikibase.alltargets',
+					'jquery.wikibase.toolbar.styles',
+				],
+			],
+			'mobile view, flag disabled' => [
+				'isMobileView' => true,
+				'tmpMobileEditingUI' => false,
+				'expectedModules' => [ 'wikibase.entityPage.entityLoaded' ],
+				'expectedModuleStyles' => [
+					'wikibase.alltargets',
+				],
+			],
+			'mobile view, flag enabled' => [
+				'isMobileView' => true,
+				'tmpMobileEditingUI' => true,
+				'expectedModules' => [ 'wikibase.entityPage.entityLoaded', 'wikibase.wbui2025.entityViewInit' ],
+				'expectedModuleStyles' => [
+					'wikibase.alltargets',
+					'wikibase.wbui2025.entityView.styles',
+				],
+			],
+		];
+	}
+
+	/** @dataProvider provideTestMobileEditingUI */
+	public function testMobileEditingUI(
+		bool $isMobileView,
+		bool $tmpMobileEditingUI,
+		array $expectedModules,
+		array $expectedModuleStyles
+	): void {
+		$featureFlag = new Wbui2025FeatureFlag(
+			$this->createMock( UserOptionsLookup::class ),
+			new SettingsArray( [
+				'tmpMobileEditingUI' => $tmpMobileEditingUI,
+				'tmpEnableMobileEditingUIBetaFeature' => false,
+			] ),
+		);
+		$entityRevision = new EntityRevision( $this->newItem(), 4711 );
+		$entityView = $this->createMock( EntityView::class );
+		$entityView->expects( $this->once() )
+			->method( 'getParserOutputOptions' )
+			->willReturn( [
+				Wbui2025FeatureFlag::EXTENSION_DATA_KEY =>
+					$featureFlag->generateWbMobileFlagValue( $isMobileView, $this->createMock( User::class ) ),
+			] );
+
+		$this->entityViewFactory = $this->createMock( DispatchingEntityViewFactory::class );
+		$this->entityViewFactory->expects( $this->once() )
+			->method( 'newEntityView' )
+			->willReturn( $entityView );
+
+		$parserOutput = $this->newEntityParserOutputGenerator( null, null, $isMobileView, $tmpMobileEditingUI )
+			->getParserOutput( $entityRevision, false );
+		$this->assertArrayEquals(
+			$expectedModules,
+			$parserOutput->getModules()
+		);
+		$this->assertArrayEquals(
+			$expectedModuleStyles,
+			$parserOutput->getModuleStyles()
+		);
+	}
+
+	private function newEntityParserOutputGenerator(
+		$title = null,
+		$description = null,
+		bool $isMobileView = false,
+		bool $tmpMobileEditingUI = false
+	) {
 		$entityDataFormatProvider = new EntityDataFormatProvider();
 		$entityDataFormatProvider->setAllowedFormats( [ 'json', 'ntriples' ] );
 
@@ -210,7 +325,7 @@ class FullEntityParserOutputGeneratorTest extends EntityParserOutputGeneratorTes
 		);
 
 		$dataUpdaters = [
-			new ItemParserOutputUpdater( $statementUpdater ),
+			new ItemParserOutputUpdater( $statementUpdater, $isMobileView, $tmpMobileEditingUI ),
 			new ReferencedEntitiesDataUpdater(
 				$this->newEntityReferenceExtractor(),
 				$entityTitleLookup,
@@ -229,8 +344,9 @@ class FullEntityParserOutputGeneratorTest extends EntityParserOutputGeneratorTes
 			$this->newLanguageFallbackChain(),
 			$entityDataFormatProvider,
 			$dataUpdaters,
-			$this->getServiceContainer()->getLanguageFactory()->getLanguage( 'en' ),
-			false
+			$this->getServiceContainer()->getLanguageFactory()->getLanguage( $this->language ),
+			$tmpMobileEditingUI ? Wbui2025FeatureFlag::WBMOBILE_WBUI2025_FLAG : $isMobileView,
+			$isMobileView,
 		);
 	}
 }

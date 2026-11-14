@@ -4,6 +4,7 @@ namespace Wikibase\Repo\Validators;
 
 use Generator;
 use InvalidArgumentException;
+use ValueValidators\Error;
 use ValueValidators\Result;
 use ValueValidators\ValueValidator;
 use Wikibase\DataModel\Entity\EntityId;
@@ -56,6 +57,11 @@ class FingerprintUniquenessValidator implements ValueValidator {
 		// noop
 	}
 
+	/**
+	 * @param mixed $value The value to validate
+	 *
+	 * @return Result
+	 */
 	public function validate( $value ) {
 		if ( !$value instanceof ChangeOpFingerprintResult ) {
 			throw new InvalidArgumentException( '$value can only be of type ChangeOpFingerprintResult' );
@@ -96,7 +102,7 @@ class FingerprintUniquenessValidator implements ValueValidator {
 
 	/**
 	 * @return Generator yielding entries of the shape
-	 *  [ language code => [ 'label' => label text, 'descripition' => description text ] ]
+	 *  [ language code => [ 'label' => label text, 'description' => description text ] ]
 	 */
 	private function getChangedLabelsAndDescriptionsPerLanguage( ChangeOpFingerprintResult $changeOpsResult ): Generator {
 		[ $newTerms, $oldTerms ] = $this->collectNewAndOldTerms( $changeOpsResult );
@@ -156,7 +162,7 @@ class FingerprintUniquenessValidator implements ValueValidator {
 	}
 
 	/**
-	 * In order to check label and decsription uniqueness, this validator need to know both the label and the description
+	 * In order to check label and description uniqueness, this validator need to know both the label and the description
 	 * in a language, where one or both of them are going to change.
 	 *
 	 * This method purpose is take those terms that are about to change ($newTerms) and make sure to yield pairs
@@ -164,7 +170,7 @@ class FingerprintUniquenessValidator implements ValueValidator {
 	 * term store directly.
 	 *
 	 * @return Generator yielding entries of the shape
-	 *  [ language code => [ 'label' => label text, 'descripition' => description text ] ]
+	 *  [ language code => [ 'label' => label text, 'description' => description text ] ]
 	 */
 	private function generateLabelDescriptionPairs( array $newTerms, array $oldTerms, EntityId $entityId ) {
 		foreach ( $newTerms as $lang => $terms ) {
@@ -186,7 +192,7 @@ class FingerprintUniquenessValidator implements ValueValidator {
 		}
 	}
 
-	private function getEntityTerm( EntityId $entityId, $lang, $termType ): string {
+	private function getEntityTerm( EntityId $entityId, string $lang, string $termType ): string {
 		if ( $termType === 'label' ) {
 			return $this->termLookup->getLabel( $entityId, $lang ) ?? '';
 		} elseif ( $termType === 'description' ) {
@@ -196,7 +202,7 @@ class FingerprintUniquenessValidator implements ValueValidator {
 		throw new InvalidArgumentException( "\$termType can only be 'label' or 'property'. '{$termType}' was given" );
 	}
 
-	private function collisionToError( $code, $collidingEntityId, $lang, $label ) {
+	private function collisionToError( string $code, EntityId $collidingEntityId, string $lang, string $label ): Error {
 		return new UniquenessViolation(
 			$collidingEntityId,
 			'found conflicting terms',

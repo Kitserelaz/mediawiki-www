@@ -46,7 +46,7 @@ class SpecialMergeItems extends SpecialWikibasePage {
 		bool $isMobileView,
 		TokenCheckInteractor $tokenCheck
 	) {
-		parent::__construct( 'MergeItems', 'item-merge' );
+		parent::__construct( 'MergeItems' );
 
 		$this->anonymousEditWarningBuilder = $anonymousEditWarningBuilder;
 		$this->idParser = $idParser;
@@ -57,6 +57,12 @@ class SpecialMergeItems extends SpecialWikibasePage {
 		$this->isMobileView = $isMobileView;
 	}
 
+	/** @inheritDoc */
+	public function getRestriction(): string {
+		return 'item-merge';
+	}
+
+	/** @inheritDoc */
 	public function doesWrites() {
 		return true;
 	}
@@ -83,7 +89,7 @@ class SpecialMergeItems extends SpecialWikibasePage {
 			}
 
 			return $id;
-		} catch ( EntityIdParsingException $ex ) {
+		} catch ( EntityIdParsingException ) {
 			throw new UserInputException(
 				'wikibase-wikibaserepopage-invalid-id',
 				[ $rawId ],
@@ -230,10 +236,10 @@ class SpecialMergeItems extends SpecialWikibasePage {
 
 		$pre = '';
 		if ( !$this->getUser()->isRegistered() ) {
-			$pre = Html::rawElement(
-				'p',
-				[ 'class' => 'warning' ],
-				$this->anonymousEditWarningBuilder->buildAnonymousEditWarningHTML( $this->getFullTitle()->getPrefixedText() )
+			$this->getOutput()->addModuleStyles( 'mediawiki.codex.messagebox.styles' );
+			$pre = Html::warningBox(
+				$this->msg( $this->anonymousEditWarningBuilder->buildAnonymousEditWarningMessage( $this->getFullTitle() ) )
+					->parse()
 			);
 		}
 

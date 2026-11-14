@@ -4,8 +4,11 @@ namespace Wikibase\View;
 
 use InvalidArgumentException;
 use MediaWiki\Language\Language;
-use MediaWiki\Languages\LanguageFactory;
+use MediaWiki\Language\LanguageFactory;
 use MediaWiki\Site\SiteLookup;
+use Wikibase\DataModel\Entity\EntityIdParser;
+use Wikibase\DataModel\Serializers\SerializerFactory;
+use Wikibase\DataModel\Services\Lookup\PropertyDataTypeLookup;
 use Wikibase\DataModel\Services\Statement\Grouper\StatementGrouper;
 use Wikibase\Lib\DataTypeFactory;
 use Wikibase\Lib\Formatters\NumberLocalizerFactory;
@@ -47,6 +50,16 @@ class ViewFactory {
 	 * @var StatementGrouper
 	 */
 	private $statementGrouper;
+
+	/**
+	 * @var SerializerFactory
+	 */
+	private $serializerFactory;
+
+	/**
+	 * @var PropertyDataTypeLookup
+	 */
+	private $propertyDataTypeLookup;
 
 	/**
 	 * @var PropertyOrderProvider
@@ -114,10 +127,22 @@ class ViewFactory {
 	private $languageFactory;
 
 	/**
+	 * @var EntityIdParser
+	 */
+	private $entityIdParser;
+
+	/**
+	 * @var Wbui2025FeatureFlag
+	 */
+	private Wbui2025FeatureFlag $wbui2025FeatureFlag;
+
+	/**
 	 * @param EntityIdFormatterFactory $htmlIdFormatterFactory
 	 * @param EntityIdFormatterFactory $plainTextIdFormatterFactory
 	 * @param HtmlSnakFormatterFactory $htmlSnakFormatterFactory
 	 * @param StatementGrouper $statementGrouper
+	 * @param SerializerFactory $serializerFactory
+	 * @param PropertyDataTypeLookup $propertyDataTypeLookup
 	 * @param PropertyOrderProvider $propertyOrderProvider
 	 * @param SiteLookup $siteLookup
 	 * @param DataTypeFactory $dataTypeFactory
@@ -131,6 +156,8 @@ class ViewFactory {
 	 * @param LocalizedTextProviderFactory $textProviderFactory
 	 * @param SpecialPageLinker $specialPageLinker
 	 * @param LanguageFactory $languageFactory
+	 * @param EntityIdParser $entityIdParser
+	 * @param Wbui2025FeatureFlag $wbui2025FeatureFlag
 	 *
 	 * @throws InvalidArgumentException
 	 */
@@ -139,6 +166,8 @@ class ViewFactory {
 		EntityIdFormatterFactory $plainTextIdFormatterFactory,
 		HtmlSnakFormatterFactory $htmlSnakFormatterFactory,
 		StatementGrouper $statementGrouper,
+		SerializerFactory $serializerFactory,
+		PropertyDataTypeLookup $propertyDataTypeLookup,
 		PropertyOrderProvider $propertyOrderProvider,
 		SiteLookup $siteLookup,
 		DataTypeFactory $dataTypeFactory,
@@ -151,7 +180,9 @@ class ViewFactory {
 		array $badgeItems,
 		LocalizedTextProviderFactory $textProviderFactory,
 		SpecialPageLinker $specialPageLinker,
-		LanguageFactory $languageFactory
+		LanguageFactory $languageFactory,
+		EntityIdParser $entityIdParser,
+		Wbui2025FeatureFlag $wbui2025FeatureFlag,
 	) {
 		if ( !$this->hasValidOutputFormat( $htmlIdFormatterFactory, 'text/html' )
 			|| !$this->hasValidOutputFormat( $plainTextIdFormatterFactory, 'text/plain' )
@@ -163,6 +194,8 @@ class ViewFactory {
 		$this->plainTextIdFormatterFactory = $plainTextIdFormatterFactory;
 		$this->htmlSnakFormatterFactory = $htmlSnakFormatterFactory;
 		$this->statementGrouper = $statementGrouper;
+		$this->propertyDataTypeLookup = $propertyDataTypeLookup;
+		$this->serializerFactory = $serializerFactory;
 		$this->propertyOrderProvider = $propertyOrderProvider;
 		$this->siteLookup = $siteLookup;
 		$this->dataTypeFactory = $dataTypeFactory;
@@ -176,6 +209,8 @@ class ViewFactory {
 		$this->textProviderFactory = $textProviderFactory;
 		$this->specialPageLinker = $specialPageLinker;
 		$this->languageFactory = $languageFactory;
+		$this->entityIdParser = $entityIdParser;
+		$this->wbui2025FeatureFlag = $wbui2025FeatureFlag;
 	}
 
 	/**
@@ -202,22 +237,25 @@ class ViewFactory {
 	 * @param Language $language
 	 * @param TermLanguageFallbackChain $termFallbackChain
 	 * @param CacheableEntityTermsView $entityTermsView
+	 * @param array $viewOptions
 	 *
 	 * @return ItemView
 	 */
 	public function newItemView(
 		Language $language,
 		TermLanguageFallbackChain $termFallbackChain,
-		CacheableEntityTermsView $entityTermsView
+		CacheableEntityTermsView $entityTermsView,
+		array $viewOptions = [],
 	) {
 		$textProvider = $this->textProviderFactory->getForLanguage( $language );
 		$numberLocalizer = $this->numberLocalizerFactory->getForLanguage( $language );
 		$editSectionGenerator = $this->newToolbarEditSectionGenerator( $textProvider );
 
 		$statementSectionsView = $this->newStatementSectionsView(
-			$language->getCode(),
+			$language,
 			$termFallbackChain,
-			$editSectionGenerator
+			$editSectionGenerator,
+			$viewOptions,
 		);
 
 		$siteLinksView = new SiteLinksView(
@@ -240,7 +278,8 @@ class ViewFactory {
 			$language->getCode(),
 			$siteLinksView,
 			$this->siteLinkGroups,
-			$textProvider
+			$textProvider,
+			$viewOptions,
 		);
 	}
 
@@ -250,19 +289,22 @@ class ViewFactory {
 	 * @param Language $language
 	 * @param TermLanguageFallbackChain $termFallbackChain
 	 * @param CacheableEntityTermsView $entityTermsView
+	 * @param array $viewOptions
 	 *
 	 * @return PropertyView
 	 */
 	public function newPropertyView(
 		Language $language,
 		TermLanguageFallbackChain $termFallbackChain,
-		CacheableEntityTermsView $entityTermsView
+		CacheableEntityTermsView $entityTermsView,
+		array $viewOptions = [],
 	) {
 		$textProvider = $this->textProviderFactory->getForLanguage( $language );
 		$statementSectionsView = $this->newStatementSectionsView(
-			$language->getCode(),
+			$language,
 			$termFallbackChain,
-			$this->newToolbarEditSectionGenerator( $textProvider )
+			$this->newToolbarEditSectionGenerator( $textProvider ),
+			$viewOptions,
 		);
 
 		return new PropertyView(
@@ -272,34 +314,55 @@ class ViewFactory {
 			$statementSectionsView,
 			$this->dataTypeFactory,
 			$language->getCode(),
-			$textProvider
+			$textProvider,
+			$viewOptions,
 		);
 	}
 
 	/**
-	 * @param string $languageCode
+	 * @param Language $language
 	 * @param TermLanguageFallbackChain $termFallbackChain
 	 * @param EditSectionGenerator $editSectionGenerator
+	 * @param array $viewOptions
 	 *
 	 * @return StatementSectionsView
 	 */
 	public function newStatementSectionsView(
-		$languageCode,
+		Language $language,
 		TermLanguageFallbackChain $termFallbackChain,
-		EditSectionGenerator $editSectionGenerator
+		EditSectionGenerator $editSectionGenerator,
+		array $viewOptions = [],
 	) {
-		$textProvider = $this->textProviderFactory->getForLanguageCode( $languageCode );
+		$textProvider = $this->textProviderFactory->getForLanguage( $language );
 		$statementGroupListView = $this->newStatementGroupListView(
-			$languageCode,
+			$language->getCode(),
 			$termFallbackChain,
-			$editSectionGenerator
+			$editSectionGenerator,
+			$viewOptions
+		);
+		$snakFormatter = $this->htmlSnakFormatterFactory->getSnakFormatter(
+			$language->getCode(),
+			$termFallbackChain,
+			$viewOptions,
+		);
+		$vueNoScriptRendering = new VueNoScriptRendering(
+			$this->htmlIdFormatterFactory,
+			$this->entityIdParser,
+			$language,
+			$textProvider,
+			$this->propertyDataTypeLookup,
+			$this->serializerFactory,
+			$snakFormatter,
+			$this->wbui2025FeatureFlag,
 		);
 
 		return new StatementSectionsView(
 			$this->templateFactory,
 			$this->statementGrouper,
 			$statementGroupListView,
-			$textProvider
+			$textProvider,
+			$vueNoScriptRendering,
+			Wbui2025FeatureFlag::wbui2025EnabledForViewOptions( $viewOptions ),
 		);
 	}
 
@@ -307,19 +370,22 @@ class ViewFactory {
 	 * @param string $languageCode
 	 * @param TermLanguageFallbackChain $termFallbackChain
 	 * @param EditSectionGenerator $editSectionGenerator
+	 * @param array $viewOptions
 	 *
 	 * @return StatementGroupListView
 	 */
 	public function newStatementGroupListView(
 		$languageCode,
 		TermLanguageFallbackChain $termFallbackChain,
-		EditSectionGenerator $editSectionGenerator
+		EditSectionGenerator $editSectionGenerator,
+		array $viewOptions = [],
 	) {
 		$textProvider = $this->textProviderFactory->getForLanguageCode( $languageCode );
 		$numberLocalizer = $this->numberLocalizerFactory->getForLanguageCode( $languageCode );
 		$snakFormatter = $this->htmlSnakFormatterFactory->getSnakFormatter(
 			$languageCode,
-			$termFallbackChain
+			$termFallbackChain,
+			$viewOptions,
 		);
 		$propertyIdFormatter = $this->htmlIdFormatterFactory->getEntityIdFormatter(
 			$this->languageFactory->getLanguage( $languageCode )

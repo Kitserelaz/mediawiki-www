@@ -3,7 +3,6 @@
 namespace Wikibase\Lib\Store\Sql;
 
 use InvalidArgumentException;
-use MapCacheLRU;
 use Psr\Log\LoggerInterface;
 use stdClass;
 use Wikibase\DataModel\Entity\EntityId;
@@ -12,6 +11,7 @@ use Wikibase\DataModel\Services\Entity\EntityPrefetcher;
 use Wikibase\Lib\Store\EntityRevision;
 use Wikibase\Lib\Store\EntityStoreWatcher;
 use Wikibase\Lib\Store\LookupConstants;
+use Wikimedia\ObjectCache\MapCacheLRU;
 
 /**
  * A WikiPageEntityMetaDataAccessor decorator that implements prefetching and caching.
@@ -258,7 +258,7 @@ class PrefetchingWikiPageEntityMetaDataAccessor implements
 		return $revisionIds;
 	}
 
-	private function doFetch( $mode ) {
+	private function doFetch( string $mode ) {
 		if ( !$this->toFetch ) {
 			return;
 		}

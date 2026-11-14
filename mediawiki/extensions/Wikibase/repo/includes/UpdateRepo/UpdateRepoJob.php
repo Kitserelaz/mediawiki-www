@@ -4,9 +4,11 @@ declare( strict_types = 1 );
 
 namespace Wikibase\Repo\UpdateRepo;
 
-use Job;
 use MediaWiki\Context\DerivativeContext;
 use MediaWiki\Context\RequestContext;
+use MediaWiki\JobQueue\Job;
+use MediaWiki\Language\FormatterFactory;
+use MediaWiki\Title\Title;
 use MediaWiki\User\User;
 use Psr\Log\LoggerInterface;
 use Wikibase\DataModel\Entity\Item;
@@ -27,54 +29,24 @@ use Wikibase\Repo\SummaryFormatter;
  */
 abstract class UpdateRepoJob extends Job {
 
-	/**
-	 * @var EntityLookup
-	 */
-	protected $entityLookup;
-
-	/**
-	 * @var EntityStore
-	 */
-	protected $entityStore;
-
-	/**
-	 * @var SummaryFormatter
-	 */
-	protected $summaryFormatter;
-
-	/**
-	 * @var LoggerInterface
-	 */
-	protected $logger;
-
-	/**
-	 * @var MediaWikiEditEntityFactory
-	 */
-	private $editEntityFactory;
-
 	/** @var string[] */
-	private $tags;
+	private array $tags;
 
-	protected function initRepoJobServices(
-		EntityLookup $entityLookup,
-		EntityStore $entityStore,
-		SummaryFormatter $summaryFormatter,
-		LoggerInterface $logger,
-		MediaWikiEditEntityFactory $editEntityFactory,
-		SettingsArray $settings
-	): void {
-		$this->entityLookup = $entityLookup;
-		$this->entityStore = $entityStore;
-		$this->summaryFormatter = $summaryFormatter;
-		$this->logger = $logger;
-		$this->editEntityFactory = $editEntityFactory;
-		$this->tags = $settings->getSetting( 'updateRepoTags' );
+	public function __construct(
+		string $command,
+		Title $title,
+		array $params,
+		private readonly FormatterFactory $formatterFactory,
+		private readonly MediaWikiEditEntityFactory $editEntityFactory,
+		private readonly EntityStore $entityStore,
+		SettingsArray $repoSettings,
+		private readonly EntityLookup $entityLookup,
+		private readonly SummaryFormatter $summaryFormatter,
+		protected readonly LoggerInterface $logger,
+	) {
+		parent::__construct( $command, $title, $params );
+		$this->tags = $repoSettings->getSetting( 'updateRepoTags' );
 	}
-
-	/**
-	 * Initialize repo services from global state.
-	 */
-	abstract protected function initRepoJobServicesFromGlobalState(): void;
 
 	/**
 	 * Get a Summary object for the edit
@@ -153,7 +125,8 @@ abstract class UpdateRepoJob extends Job {
 				[
 					'method' => __METHOD__,
 					'itemIdSerialization' => $itemId->getSerialization(),
-					'msgText' => $status->getMessage()->text(),
+					'msgText' => $this->formatterFactory->getStatusFormatter( RequestContext::getMain() )
+						->getMessage( $status )->text(),
 				]
 			);
 		}

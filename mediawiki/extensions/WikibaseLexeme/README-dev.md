@@ -155,8 +155,8 @@ The following dependencies are special cases that should potentially be ignored:
   so we should use the same versions for testing.
   The current versions shipped by MediaWiki core are listed in [foreign-resources.yaml](https://gerrit.wikimedia.org/g/mediawiki/core/+/master/resources/lib/foreign-resources.yaml).
 - [grunt-eslint](https://github.com/sindresorhus/grunt-eslint) no longer supports "flat" eslint config files (i.e. `.eslintrc.json`) since version 25.0.0 because of changes since eslint 9 (see issue [#176](https://github.com/sindresorhus/grunt-eslint/issues/176)). See [T364065](https://phabricator.wikimedia.org/T364065) for progress with our eslint 9 migration.
-- Any dependencies that are not compatible with Node 18, which we use in CI.
-  Ticket [T343827](https://phabricator.wikimedia.org/T343827) tracks the upgrade to Node 20
+- Any dependencies that are not compatible with Node 20, which we use in CI.
+  <!-- Ticket TBC [see T343827 for Node 20] tracks the upgrade to Node 22. -->
 
 All other dependencies should generally be updated to the latest version.
 If you discover that a dependency should not be updated for some reason, please add it to the above list.
@@ -178,5 +178,7 @@ Make sure that all checks still pass for every commit.
 
 Make sure your local dependencies are up-to-date by running `composer update`,
 then run `composer outdated --direct` to check that direct dependencies are up to date.
-There are no special cases to take into account here,
-and most of the time, there are few enough libraries to upgrade that no grouping is necessary.
+Most of the time, there are few enough libraries to upgrade that no grouping is necessary.
+The following dependencies are special cases that should potentially be ignored:
+
+- giorgiosironi/eris: Needs to stay on 0.14 until we use PHPUnit 10 (required by Eris 1.0.0; see [T328919](https://phabricator.wikimedia.org/T328919) and [T406470](https://phabricator.wikimedia.org/T406470)).

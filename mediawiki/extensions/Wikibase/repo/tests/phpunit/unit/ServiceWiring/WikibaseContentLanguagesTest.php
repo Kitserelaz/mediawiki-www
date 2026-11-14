@@ -2,7 +2,7 @@
 
 namespace Wikibase\Repo\Tests\Unit\ServiceWiring;
 
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Language\LanguageNameUtils;
 use Wikibase\Lib\StaticContentLanguages;
 use Wikibase\Lib\WikibaseContentLanguages;
 use Wikibase\Repo\Tests\Unit\ServiceWiringTestCase;

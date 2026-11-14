@@ -4,13 +4,12 @@ namespace Wikibase\Lib\Tests\Formatters;
 
 use DataValues\NumberValue;
 use DataValues\StringValue;
-use File;
 use InvalidArgumentException;
-use MediaTransformOutput;
-use MediaWiki\MediaWikiServices;
+use MediaWiki\FileRepo\File\File;
+use MediaWiki\FileRepo\RepoGroup;
+use MediaWiki\Media\MediaTransformOutput;
 use MediaWiki\Parser\ParserOptions;
 use MediaWikiIntegrationTestCase;
-use RepoGroup;
 use ValueFormatters\FormatterOptions;
 use ValueFormatters\ValueFormatter;
 use Wikibase\Lib\Formatters\CommonsInlineImageFormatter;
@@ -67,7 +66,7 @@ class CommonsInlineImageFormatterTest extends MediaWikiIntegrationTestCase {
 	 */
 	public function testFormat( StringValue $value, $pattern, $shouldContain = true ) {
 		if ( $shouldContain &&
-			!MediaWikiServices::getInstance()->getRepoGroup()->findFile( 'Example.jpg' )
+			!$this->getServiceContainer()->getRepoGroup()->findFile( 'Example.jpg' )
 		) {
 			$this->markTestSkipped( '"Example.jpg" not found? Instant commons disabled?' );
 		}
@@ -125,7 +124,7 @@ class CommonsInlineImageFormatterTest extends MediaWikiIntegrationTestCase {
 		$thumbSize = 0,
 		$thumbLimits = [ 120 ]
 	): CommonsInlineImageFormatter {
-		if ( !MediaWikiServices::getInstance()->getRepoGroup()->findFile( 'Example.jpg' ) ) {
+		if ( !$this->getServiceContainer()->getRepoGroup()->findFile( 'Example.jpg' ) ) {
 			$this->markTestSkipped( '"Example.jpg" not found? Instant commons disabled?' );
 		}
 

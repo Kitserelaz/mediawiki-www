@@ -14,8 +14,10 @@ use LogicException;
 use MediaWiki\Api\ApiBase;
 use MediaWiki\Api\ApiMain;
 use MediaWiki\Api\ApiUsageException;
+use MediaWiki\Language\LanguageNameUtils;
 use ValueFormatters\FormatterOptions;
 use ValueFormatters\FormattingException;
+use ValueFormatters\QuantityFormatter;
 use ValueFormatters\ValueFormatter;
 use Wikibase\DataModel\Deserializers\SnakValueDeserializer;
 use Wikibase\DataModel\Entity\EntityIdParser;
@@ -32,8 +34,7 @@ use Wikibase\Lib\Formatters\SnakFormatter;
 use Wikibase\Lib\Formatters\TypedValueFormatter;
 use Wikibase\Repo\FederatedProperties\FederatedPropertiesException;
 use Wikimedia\ParamValidator\ParamValidator;
-use Wikimedia\Stats\IBufferingStatsdDataFactory;
-use Wikimedia\Stats\NullStatsdDataFactory;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * API module for using value formatters.
@@ -50,7 +51,8 @@ class FormatSnakValue extends ApiBase {
 	private DataTypeFactory $dataTypeFactory;
 	private DataValueFactory $dataValueFactory;
 	private ApiErrorReporter $errorReporter;
-	private IBufferingStatsdDataFactory $stats;
+	private LanguageNameUtils $languageNameUtils;
+	private StatsFactory $statsFactory;
 	private EntityIdParser $entityIdParser;
 	private PropertyDataTypeLookup $dataTypeLookup;
 	private SnakValueDeserializer $snakValueDeserializer;
@@ -66,7 +68,8 @@ class FormatSnakValue extends ApiBase {
 		DataTypeFactory $dataTypeFactory,
 		DataValueFactory $dataValueFactory,
 		ApiErrorReporter $apiErrorReporter,
-		?IBufferingStatsdDataFactory $stats,
+		LanguageNameUtils $languageNameUtils,
+		?StatsFactory $statsFactory,
 		EntityIdParser $entityIdParser,
 		PropertyDataTypeLookup $dataTypeLookup,
 		SnakValueDeserializer $snakValueDeserializer
@@ -78,7 +81,10 @@ class FormatSnakValue extends ApiBase {
 		$this->dataTypeFactory = $dataTypeFactory;
 		$this->dataValueFactory = $dataValueFactory;
 		$this->errorReporter = $apiErrorReporter;
-		$this->stats = $stats ?: new NullStatsdDataFactory();
+		$this->languageNameUtils = $languageNameUtils;
+		$this->statsFactory = ( $statsFactory ?: StatsFactory::newNull() )
+						->withComponent( 'WikibaseRepo' );
+
 		$this->entityIdParser = $entityIdParser;
 		$this->dataTypeLookup = $dataTypeLookup;
 		$this->snakValueDeserializer = $snakValueDeserializer;
@@ -87,7 +93,8 @@ class FormatSnakValue extends ApiBase {
 	public static function factory(
 		ApiMain $mainModule,
 		string $moduleName,
-		IBufferingStatsdDataFactory $stats,
+		LanguageNameUtils $languageNameUtils,
+		StatsFactory $statsFactory,
 		ApiHelperFactory $apiHelperFactory,
 		DataTypeFactory $dataTypeFactory,
 		DataValueFactory $dataValueFactory,
@@ -105,7 +112,8 @@ class FormatSnakValue extends ApiBase {
 			$dataTypeFactory,
 			$dataValueFactory,
 			$apiHelperFactory->getErrorReporter( $mainModule ),
-			$stats,
+			$languageNameUtils,
+			$statsFactory,
 			$entityIdParser,
 			$dataTypeLookup,
 			$snakValueDeserializer
@@ -125,7 +133,7 @@ class FormatSnakValue extends ApiBase {
 			$value = $this->decodeDataValue( $params );
 			$dataTypeId = $this->getDataTypeId( $params );
 			$formattedValue = $this->formatValue( $params, $value, $dataTypeId );
-		} catch ( FederatedPropertiesException $ex ) {
+		} catch ( FederatedPropertiesException ) {
 			$this->errorReporter->dieException(
 				new FederatedPropertiesException(
 					$this->msg( 'wikibase-federated-properties-failed-request-api-error-message' )->text()
@@ -144,6 +152,7 @@ class FormatSnakValue extends ApiBase {
 		$this->getResult()->addValue(
 			null,
 			'result',
+			// @phan-suppress-next-line PhanPossiblyUndeclaredVariable
 			$formattedValue
 		);
 	}
@@ -229,20 +238,74 @@ class FormatSnakValue extends ApiBase {
 
 	private function getOptionsObject( ?string $optionsParam ): FormatterOptions {
 		$formatterOptions = new FormatterOptions();
-		$formatterOptions->setOption( ValueFormatter::OPT_LANG, $this->getLanguage()->getCode() );
+		$this->setValidOption( $formatterOptions, ValueFormatter::OPT_LANG, $this->getLanguage()->getCode() );
 
 		if ( is_string( $optionsParam ) && $optionsParam !== '' ) {
 			$options = json_decode( $optionsParam, true );
 
 			if ( is_array( $options ) ) {
 				foreach ( $options as $name => $value ) {
-					$this->stats->increment( "wikibase.repo.api.formatvalue.options.$name" );
-					$formatterOptions->setOption( $name, $value );
+					$metric = $this->statsFactory->getCounter( "formatvalue_options" )
+						->setLabel( "name", $name );
+					$metric->copyToStatsdAt( "wikibase.repo.api.formatvalue.options.$name" )->increment();
+					$this->setValidOption( $formatterOptions, $name, $value );
 				}
 			}
 		}
 
 		return $formatterOptions;
+	}
+
+	/**
+	 * @param FormatterOptions $options
+	 * @param string $option
+	 * @param mixed $value
+	 */
+	private function setValidOption( FormatterOptions $options, string $option, $value ): void {
+		switch ( $option ) {
+			case ValueFormatter::OPT_LANG:
+				if ( !is_string( $value ) ) {
+					$this->errorReporter->dieWithError(
+						'wikibase-api-invalid-formatter-options-lang',
+						'param-illegal'
+					);
+				}
+				if ( !$this->languageNameUtils->isValidBuiltInCode( $value ) ) {
+					// silently ignore invalid strings, like most of Wikibase / MediaWiki
+					$value = 'und';
+				}
+				break;
+			case QuantityFormatter::OPT_APPLY_ROUNDING:
+				if ( !is_bool( $value ) && !is_int( $value ) ) {
+					$this->errorReporter->dieWithError(
+						'wikibase-api-invalid-formatter-options-apply-rounding',
+						'param-illegal'
+					);
+				}
+				break;
+			case QuantityFormatter::OPT_APPLY_UNIT:
+				if ( !is_bool( $value ) ) {
+					$this->errorReporter->dieWithError(
+						'wikibase-api-invalid-formatter-options-apply-unit',
+						'param-illegal'
+					);
+				}
+				break;
+			case ShowCalendarModelDecider::OPT_SHOW_CALENDAR:
+				if ( !is_bool( $value ) && $value !== 'auto' ) {
+					$this->errorReporter->dieWithError(
+						'wikibase-api-invalid-formatter-options-showcalendar',
+						'param-illegal'
+					);
+				}
+				break;
+			default:
+				$this->errorReporter->dieWithError(
+					[ 'wikibase-api-invalid-formatter-options-unknown-option', $value ],
+					'param-illegal'
+				);
+		}
+		$options->setOption( $option, $value );
 	}
 
 	/**
@@ -277,7 +340,7 @@ class FormatSnakValue extends ApiBase {
 	private function lookUpPropertyDataType( string $id ): ?string {
 		try {
 			return $this->dataTypeLookup->getDataTypeIdForProperty( $this->parsePropertyId( $id ) );
-		} catch ( PropertyDataTypeLookupException $e ) {
+		} catch ( PropertyDataTypeLookupException ) {
 			return null; // property not found will be handled by the snak formatter later
 		}
 	}
@@ -313,6 +376,13 @@ class FormatSnakValue extends ApiBase {
 			'options' => [
 				ParamValidator::PARAM_TYPE => 'text',
 				ParamValidator::PARAM_REQUIRED => false,
+				ApiBase::PARAM_HELP_MSG => [
+					'apihelp-wbformatvalue-param-options',
+					ValueFormatter::OPT_LANG,
+					QuantityFormatter::OPT_APPLY_ROUNDING,
+					QuantityFormatter::OPT_APPLY_UNIT,
+					ShowCalendarModelDecider::OPT_SHOW_CALENDAR,
+				],
 			],
 		];
 	}

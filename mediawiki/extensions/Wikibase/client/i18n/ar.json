@@ -1,6 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
+			"123Rkhader",
 			"Abanima",
 			"Ali1",
 			"Alshamiri1",
@@ -15,10 +16,12 @@
 			"Hiba Alshawi",
 			"Hosseinblue",
 			"Hubaishan",
+			"Lolekek",
 			"Maroen1990",
 			"Meno25",
 			"Michel Bakni",
 			"Mido",
+			"Mohammed Qays",
 			"Mr. Ibrahem",
 			"NEHAOUA",
 			"OsamaK",
@@ -30,10 +33,7 @@
 			"ديفيد",
 			"زكريا",
 			"علاء",
-			"محمد أحمد عبد الفتاح",
-			"Lolekek",
-			"Mohammed Qays",
-			"123Rkhader"
+			"محمد أحمد عبد الفتاح"
 		]
 	},
 	"wikibase-client-desc": "عميل امتداد Wikibase",
@@ -91,7 +91,7 @@
 	"wikibase-error-deserialize-error": "فشل إلغاء تسلسل البيانات.",
 	"wikibase-error-serialize-error": "فشل في تسلسل البيانات.",
 	"wikibase-error-invalid-entity-id": "المعرِّف الذي $2 يجهله النظام; يُرجَى إدخال معرِّف كائن صالح.",
-	"wikibase-error-exceeded-entity-access-limit": "الكثير من كيانات {{WBREPONAME}} يتم الوصول لها.",
+	"wikibase-error-exceeded-entity-access-limit": "تم الوصول إلى عدد كبير جدا من كيانات {{WBREPONAME}}. عدد الكيانات المحملة: $2/$3.",
 	"wikibase-error-exceeded-referenced-entity-id-limit": "عدد كبير جدا من ادعاءات \"mw.wikibase.getReferencedEntityId\"، فقط ما يصل إلى $2 {{PLURAL:$2|مسموح به}}.",
 	"unconnectedpages": "صفحات غير متصلة بعناصر",
 	"unconnectedpages-summary": "تسرد هذه الصفحة الصفحات التي لا تحتوي على عنصر بيانات متصل (في مساحات الأسماء التي تدعم العناصر المتصلة).",
@@ -118,11 +118,15 @@
 	"wikibase-pageinfo-entity-usage-L-with-modifier": "التسمية: $1",
 	"wikibase-pageinfo-entity-usage-D": "بعض الأوصاف",
 	"wikibase-pageinfo-entity-usage-D-with-modifier": "الوصف: $1",
+	"wikibase-pageinfo-entity-usage-A": "بعض الأسماء المستعارة",
+	"wikibase-pageinfo-entity-usage-A-with-modifier": "الاسم المستعار: $1",
 	"wikibase-pageinfo-entity-usage-T": "عنوان",
 	"wikibase-pageinfo-entity-usage-C": "بعض العبارات",
 	"wikibase-pageinfo-entity-usage-C-with-modifier": "بيان: $1",
+	"wikibase-pageinfo-entity-usage-CQR": "بعض العبارات (مع المؤهلات والمراجع)",
+	"wikibase-pageinfo-entity-usage-CQR-with-modifier": "البيان (مع المؤهلات والمراجع): $1",
 	"wikibase-pageinfo-entity-usage-X": "كل بيانات الكيان",
-	"wikibase-pageinfo-entity-usage-O": "متنوع (مثل أسماء أخرى، وجود الشيء)",
+	"wikibase-pageinfo-entity-usage-O": "متفرقات (على سبيل المثال وجود الكيان)",
 	"wikibase-property-render-error": "فشل عرض الخاصية $1: $2",
 	"wikibase-otherprojects": "في مشاريع أخرى",
 	"wikibase-otherprojects-beta-message": "المشاريع الأخرى في الشريط الجانبي",

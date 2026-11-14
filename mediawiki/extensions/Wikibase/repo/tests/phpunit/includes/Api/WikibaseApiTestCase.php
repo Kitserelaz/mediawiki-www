@@ -5,7 +5,6 @@ namespace Wikibase\Repo\Tests\Api;
 use DataValues\StringValue;
 use MediaWiki\Api\ApiUsageException;
 use MediaWiki\CommentStore\CommentStoreComment;
-use MediaWiki\MediaWikiServices;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Site\HashSiteStore;
 use MediaWiki\Tests\Api\ApiTestCase;
@@ -67,11 +66,9 @@ abstract class WikibaseApiTestCase extends ApiTestCase {
 	}
 
 	private function setupSites() {
-		global $wgWBRepoSettings;
-
-		$customRepoSettings = $wgWBRepoSettings;
+		$customRepoSettings = $this->getConfVar( 'WBRepoSettings' );
 		$customRepoSettings['siteLinkGroups'] = [ 'wikipedia' ];
-		$this->setMwGlobals( 'wgWBRepoSettings', $customRepoSettings );
+		$this->overrideConfigValue( 'WBRepoSettings', $customRepoSettings );
 
 		$siteStore = new HashSiteStore( TestSites::getSites() );
 		$this->setService( 'SiteStore', $siteStore );
@@ -376,8 +373,6 @@ abstract class WikibaseApiTestCase extends ApiTestCase {
 
 	/**
 	 * Asserts that the given API response represents a successful call.
-	 *
-	 * @param array $response
 	 */
 	protected function assertResultSuccess( array $response ) {
 		$this->assertArrayHasKey( 'success', $response, "Missing 'success' marker in response." );
@@ -386,8 +381,6 @@ abstract class WikibaseApiTestCase extends ApiTestCase {
 
 	/**
 	 * Asserts that the given API response has a valid entity type if the result contains an entity
-	 *
-	 * @param array $response
 	 */
 	protected function assertResultHasEntityType( array $response ) {
 		if ( isset( $response['entity'] ) ) {
@@ -432,7 +425,7 @@ abstract class WikibaseApiTestCase extends ApiTestCase {
 			$regex = "!$r!";
 		}
 
-		$revRecord = MediaWikiServices::getInstance()
+		$revRecord = $this->getServiceContainer()
 			->getRevisionLookup()
 			->getRevisionById( $revid );
 		$this->assertNotNull( $revRecord, "revision not found: $revid" );

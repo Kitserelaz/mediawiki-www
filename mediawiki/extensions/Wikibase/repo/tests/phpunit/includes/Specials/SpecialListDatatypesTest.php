@@ -3,7 +3,7 @@
 namespace Wikibase\Repo\Tests\Specials;
 
 use MediaWiki\MainConfigNames;
-use SpecialPageTestBase;
+use MediaWiki\Tests\Specials\SpecialPageTestBase;
 use Wikibase\Lib\DataTypeDefinitions;
 use Wikibase\Repo\Specials\SpecialListDatatypes;
 

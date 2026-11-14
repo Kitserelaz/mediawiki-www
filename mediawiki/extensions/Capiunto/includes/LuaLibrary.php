@@ -2,7 +2,7 @@
 
 namespace Capiunto;
 
-use Scribunto_LuaLibraryBase;
+use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LibraryBase as Scribunto_LuaLibraryBase;
 
 /**
  * Registers our lua modules to Scribunto

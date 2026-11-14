@@ -9,7 +9,7 @@ use Wikibase\DataModel\Entity\EntityId;
 use Wikibase\DataModel\Entity\Int32EntityId;
 use Wikibase\DataModel\Term\TermTypes;
 use Wikibase\Lib\Store\EntityTermLookupBase;
-use Wikibase\Lib\Store\Sql\Terms\Util\StatsdMonitoring;
+use Wikibase\Lib\Store\Sql\Terms\Util\StatsMonitoring;
 
 /**
  * Base class for a {@link PrefetchingTermLookup} that only supports a single entity type,
@@ -23,7 +23,7 @@ use Wikibase\Lib\Store\Sql\Terms\Util\StatsdMonitoring;
 abstract class PrefetchingEntityTermLookupBase extends EntityTermLookupBase implements PrefetchingTermLookup {
 
 	use NormalizedTermStorageMappingTrait;
-	use StatsdMonitoring;
+	use StatsMonitoring;
 
 	/** @var string a subclass of {@link Int32EntityId} */
 	protected $entityIdClass;
@@ -42,9 +42,6 @@ abstract class PrefetchingEntityTermLookupBase extends EntityTermLookupBase impl
 	 */
 	private $termKeys = [];
 
-	/**
-	 * @param DatabaseTermInLangIdsResolver $termInlangIdsResolver
-	 */
 	public function __construct(
 		DatabaseTermInLangIdsResolver $termInlangIdsResolver
 	) {
@@ -107,6 +104,7 @@ abstract class PrefetchingEntityTermLookupBase extends EntityTermLookupBase impl
 		);
 	}
 
+	/** @inheritDoc */
 	public function getPrefetchedTerm( EntityId $entityId, $termType, $languageCode ) {
 		if ( !( $entityId instanceof $this->entityIdClass ) ) {
 			throw new InvalidArgumentException( "Not an {$this->entityIdClass}: " . $entityId->getSerialization() );
@@ -120,6 +118,7 @@ abstract class PrefetchingEntityTermLookupBase extends EntityTermLookupBase impl
 		return $this->getFromBuffer( $entityId, $termType, $languageCode )[0] ?? false;
 	}
 
+	/** @inheritDoc */
 	public function getPrefetchedAliases( EntityId $entityId, $languageCode ) {
 		if ( !( $entityId instanceof $this->entityIdClass ) ) {
 			throw new InvalidArgumentException( "Not a {$this->entityIdClass}: " . $entityId->getSerialization() );
@@ -133,13 +132,14 @@ abstract class PrefetchingEntityTermLookupBase extends EntityTermLookupBase impl
 		return $this->getFromBuffer( $entityId, TermTypes::TYPE_ALIAS, $languageCode ) ?? false;
 	}
 
-	private function getFromBuffer( EntityId $entityId, $termType, $languageCode ) {
+	private function getFromBuffer( EntityId $entityId, string $termType, string $languageCode ): ?array {
 		if ( !( $entityId instanceof Int32EntityId ) ) {
 			throw new InvalidArgumentException( "Not an Int32EntityId: " . $entityId->getSerialization() );
 		}
 		return $this->terms[$entityId->getNumericId()][$termType][$languageCode] ?? null;
 	}
 
+	/** @inheritDoc */
 	protected function getTermsOfType( EntityId $entityId, $termType, array $languageCodes ) {
 		$this->prefetchTerms( [ $entityId ], [ $termType ], $languageCodes );
 

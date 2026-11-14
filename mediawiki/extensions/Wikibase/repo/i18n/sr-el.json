@@ -407,5 +407,8 @@
 	"special-setaliases-parameterized": "Postavi pseudonime $1",
 	"special-setlabel-parameterized": "Postavi naziv $1",
 	"special-setdescription-parameterized": "Postavi opis $1",
-	"special-setlabeldescriptionaliases-parameterized": "Postavi naziv, opis i pseudonim za $1"
+	"special-setlabeldescriptionaliases-parameterized": "Postavi naziv, opis i pseudonim za $1",
+	"wikibase-scoped-search-search-entities": "Pretraga entiteta",
+	"wikibase-scoped-search-item-scope-name": "Stavke",
+	"wikibase-scoped-search-property-scope-name": "Svojstva"
 }

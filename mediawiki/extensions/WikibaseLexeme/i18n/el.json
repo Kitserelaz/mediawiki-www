@@ -3,11 +3,13 @@
 		"authors": [
 			"DesVaMan",
 			"GR",
+			"Jimkats",
 			"KATRINE1992",
 			"KATRINE1993",
 			"McDutchie",
 			"NikosLikomitros",
-			"Nikosgranturismogt"
+			"Nikosgranturismogt",
+			"Warudo"
 		]
 	},
 	"content-model-wikibase-lexeme": "Lexème Wikibase",
@@ -30,6 +32,7 @@
 	"wikibase-lexeme-mergelexemes-intro": "Αν συνδυάσετε δύο Lexemes, όλα τα Λήμματα, οι Φράσεις, Τύποι και Όροι θα μετακινηθούν από το  Lexeme στο άλλο.",
 	"wikibase-lexeme-mergelexemes-submit": "Συγχώνευση lexeme",
 	"wikibase-lexeme-randomlexeme": "Τυχαίο Λεξικό",
+	"wikibase-lexeme-scoped-search-scope-name": "Λεξήματα",
 	"wikibase-lexeme-summary-add-form": "Προστέθηκε νέα Φόρμα $3 with {{PLURAL:$1|γλωσσικός όρος//όροι}}",
 	"wikibase-lexeme-summary-add-form-grammatical-features": "Προστέθηκε στοιχείο γραμματικής της Φόρμας{{PLURAL:$1|feature|features}}  $3",
 	"wikibase-lexeme-summary-add-form-representations": "Γλωσσικός όρος που προστέθηκε  {{PLURAL:$1|έννοια|έννοιες}} Τύπου $3",

@@ -217,14 +217,14 @@ class SetClaimValueTest extends WikibaseApiTestCase {
 		}
 	}
 
-	public function invalidRequestProvider(): iterable {
+	public static function invalidRequestProvider(): iterable {
 		return [
 			'bad guid 1' => [ 'Berlin', 'xyz', 'value', 'abc', 'invalid-guid' ],
 			'bad guid 2' => [ 'Berlin', 'x$y$z', 'value', 'abc', 'invalid-guid' ],
 			'bad guid 3' => [ 'Berlin', 'i1813$358fa2a0-4345-82b6-12a4-7b0fee494a5f', 'value', 'abc', 'invalid-guid' ],
-			'bad snak type' => [ 'Berlin', null, 'alksdjf', 'abc', $this->logicalOr(
-				$this->equalTo( 'unknown_snaktype' ),
-				$this->equalTo( 'badvalue' )
+			'bad snak type' => [ 'Berlin', null, 'alksdjf', 'abc', self::logicalOr(
+				self::equalTo( 'unknown_snaktype' ),
+				self::equalTo( 'badvalue' )
 			) ],
 			'bad snak value' => [ 'Berlin', null, 'value', '    ', 'invalid-snak' ],
 		];
@@ -241,8 +241,6 @@ class SetClaimValueTest extends WikibaseApiTestCase {
 	/**
 	 * Returns an EntityIdFormatter like the one that should be used internally for generating
 	 * summaries.
-	 *
-	 * @return EntityIdFormatter
 	 */
 	private function getEntityIdFormatter(): EntityIdFormatter {
 		if ( !$this->entityIdFormatter ) {
@@ -256,8 +254,6 @@ class SetClaimValueTest extends WikibaseApiTestCase {
 	/**
 	 * Returns a ValueFormatter like the one that should be used internally for generating
 	 * summaries.
-	 *
-	 * @return ValueFormatter
 	 */
 	private function getPropertyValueFormatter(): ValueFormatter {
 		if ( !$this->propertyValueFormatter ) {

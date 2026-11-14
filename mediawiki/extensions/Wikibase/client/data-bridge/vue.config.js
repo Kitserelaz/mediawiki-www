@@ -1,4 +1,3 @@
-const { BannerPlugin } = require( 'webpack' );
 const TerserPlugin = require( 'terser-webpack-plugin' );
 
 const filePrefix = 'data-bridge.';
@@ -10,13 +9,9 @@ const DEV_MODE = process.env.WEBPACK_TARGET === 'dev';
  * in dev it is still webpack's job to make them available
  */
 function externals() {
-	if ( DEV_MODE ) {
-		return [];
-	}
-
-	// get external packages from @wmde/lib-version-check config
-	const package = require( './package.json' );
-	return Object.keys( package.config.remoteVersion );
+	return DEV_MODE ? [] : [
+		'vue',
+	];
 }
 
 module.exports = {
@@ -44,14 +39,6 @@ module.exports = {
 				extractComments: false,
 			} ) ],
 		},
-		plugins: [
-			// /*@nomin*/ instructs ResourceLoader not to try to minify our resources –
-			// especially important for the modern bundle (ES6 syntax not supported by RL).
-			new BannerPlugin( {
-				banner: '/*!/*@nomin*/', // /*! to avoid comment being removed later
-				raw: true, // must contain *exactly* that string, see ResourceLoader::FILTER_NOMIN
-			} ),
-		],
 	} ),
 	chainWebpack: ( config ) => {
 		if ( process.env.NODE_ENV === 'production' ) {
@@ -69,9 +56,6 @@ module.exports = {
 				return {
 					...options,
 					compilerOptions: {
-						compatConfig: {
-							MODE: 3,
-						},
 					},
 				};
 			} );

@@ -20,16 +20,16 @@ use Wikibase\View\EntityDocumentView;
  */
 class EntityTypesTest extends \PHPUnit\Framework\TestCase {
 
-	private function getRegistry() {
+	private static function getRegistry() {
 		return require __DIR__ . '/../../../WikibaseRepo.entitytypes.php';
 	}
 
-	public function provideEntityTypes() {
+	public static function provideEntityTypes() {
 		return array_map(
 			function( $entityType ) {
 				return [ $entityType ];
 			},
-			array_keys( $this->getRegistry() )
+			array_keys( self::getRegistry() )
 		);
 	}
 
@@ -53,11 +53,11 @@ class EntityTypesTest extends \PHPUnit\Framework\TestCase {
 
 		$this->assertIsCallable( $callback );
 
-		$entityView = call_user_func(
-			$callback,
+		$entityView = $callback(
 			MediaWikiServices::getInstance()->getLanguageFactory()->getLanguage( 'en' ),
 			new TermLanguageFallbackChain( [], $this->createStub( ContentLanguages::class ) ),
-			new Item( new ItemId( 'Q123' ) )
+			new Item( new ItemId( 'Q123' ) ),
+			[],
 		);
 
 		$this->assertInstanceOf( EntityDocumentView::class, $entityView );
@@ -88,7 +88,7 @@ class EntityTypesTest extends \PHPUnit\Framework\TestCase {
 		$this->assertIsCallable( $callback );
 
 		/** @var EntityHandler $entityHandler */
-		$entityHandler = call_user_func( $callback );
+		$entityHandler = $callback();
 
 		$this->assertInstanceOf( EntityHandler::class, $entityHandler );
 		$this->assertSame( $entityType, $entityHandler->getEntityType() );

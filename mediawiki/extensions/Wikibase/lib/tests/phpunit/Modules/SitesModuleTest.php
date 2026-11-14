@@ -6,7 +6,9 @@ namespace Wikibase\Lib\Tests\Modules;
 
 use MediaWiki\Language\RawMessage;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Request\FauxRequest;
 use MediaWiki\ResourceLoader\Context;
+use MediaWiki\ResourceLoader\ResourceLoader;
 use MediaWiki\Site\HashSiteStore;
 use MediaWiki\Site\MediaWikiSite;
 use MediaWiki\Site\Site;
@@ -28,7 +30,12 @@ use Wikimedia\ObjectCache\HashBagOStuff;
 class SitesModuleTest extends \PHPUnit\Framework\TestCase {
 
 	private function getContext(): Context {
-		$context = $this->createMock( Context::class );
+		$context = $this->getMockBuilder( Context::class )
+			->setConstructorArgs( [ $this->createMock( ResourceLoader::class ),
+				new FauxRequest( [ 'lang' => 'en' ] ) ] )
+			->onlyMethods( [ 'msg' ] )
+			->getMock();
+
 		$context->method( 'msg' )
 			->willReturnCallback( function ( $key ) {
 				return new RawMessage( "($key)" );
@@ -129,7 +136,6 @@ class SitesModuleTest extends \PHPUnit\Framework\TestCase {
 		$moduleLists = $this->getModulesForVersionHash();
 		$namesByHash = [];
 
-		/** @var SitesModule[][] $moduleLists */
 		foreach ( $moduleLists as $name => $modules ) {
 			$hashes = [];
 			foreach ( $modules as $module ) {
@@ -217,7 +223,10 @@ class SitesModuleTest extends \PHPUnit\Framework\TestCase {
 		];
 	}
 
-	private function getModulesForVersionHash() {
+	/**
+	 * @return array<string,SitesModule[]>
+	 */
+	private function getModulesForVersionHash(): array {
 		$site = new MediaWikiSite();
 		$site->setGlobalId( 'siteid' );
 		$site->setGroup( 'allowedgroup' );

@@ -8,9 +8,11 @@ use MediaWiki\Maintenance\OrderedStreamingForkController;
 use Wikibase\Repo\Api\EntitySearchHelper;
 use Wikibase\Repo\WikibaseRepo;
 
+// @codeCoverageIgnoreStart
 $basePath = getenv( 'MW_INSTALL_PATH' ) !== false ? getenv( 'MW_INSTALL_PATH' ) : __DIR__ . '/../../../..';
 
 require_once $basePath . '/maintenance/Maintenance.php';
+// @codeCoverageIgnoreEnd
 
 /**
  * The script is intended to run searches in the same way as wbsearchentities does.
@@ -140,9 +142,7 @@ class SearchEntities extends Maintenance {
 	 */
 	private function getSearchHelper( $engine ) {
 		$engines = [
-			'sql' => function() {
-				return WikibaseRepo::getEntitySearchHelper();
-			},
+			'sql' => WikibaseRepo::getEntitySearchHelper( ... ),
 		];
 
 		if ( !isset( $engines[$engine] ) ) {
@@ -155,5 +155,7 @@ class SearchEntities extends Maintenance {
 
 }
 
+// @codeCoverageIgnoreStart
 $maintClass = SearchEntities::class;
 require_once RUN_MAINTENANCE_IF_MAIN;
+// @codeCoverageIgnoreEnd

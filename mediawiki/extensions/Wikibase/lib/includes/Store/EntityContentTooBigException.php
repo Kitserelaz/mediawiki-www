@@ -2,12 +2,12 @@
 
 namespace Wikibase\Lib\Store;
 
-use MWContentSerializationException;
+use MediaWiki\Content\ContentSerializationException;
 
 /**
  * @license GPL-2.0-or-later
  * @author Noa Rave
  */
-class EntityContentTooBigException extends MWContentSerializationException {
+class EntityContentTooBigException extends ContentSerializationException {
 
 }

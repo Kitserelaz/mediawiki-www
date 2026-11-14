@@ -2,8 +2,8 @@
 
 namespace Wikibase\Client\Tests\Integration\RecentChanges;
 
+use MediaWiki\RecentChanges\RecentChange;
 use MediaWikiIntegrationTestCase;
-use RecentChange;
 use Wikibase\Client\RecentChanges\RecentChangeFactory;
 use Wikibase\Client\RecentChanges\RecentChangesFinder;
 use Wikimedia\Rdbms\SessionConsistentConnectionManager;
@@ -31,7 +31,6 @@ class RecentChangesFinderTest extends MediaWikiIntegrationTestCase {
 				'rc_namespace' => 0,
 				'rc_title' => 'Test',
 				'rc_comment' => 'Testing',
-				'rc_type' => RC_EXTERNAL,
 				'rc_source' => RecentChangeFactory::SRC_WIKIBASE,
 				'rc_last_oldid' => 11,
 				'rc_this_oldid' => 12,
@@ -48,7 +47,6 @@ class RecentChangesFinderTest extends MediaWikiIntegrationTestCase {
 				'rc_namespace' => 0,
 				'rc_title' => 'Test',
 				'rc_comment' => 'Kittens', // ignored
-				'rc_type' => RC_EXTERNAL,
 				'rc_source' => RecentChangeFactory::SRC_WIKIBASE,
 				'rc_last_oldid' => 1111, // ignored
 				'rc_this_oldid' => 1112, // ignored
@@ -65,7 +63,6 @@ class RecentChangesFinderTest extends MediaWikiIntegrationTestCase {
 				'rc_namespace' => 0,
 				'rc_title' => 'Test',
 				'rc_comment' => 'Testing',
-				'rc_type' => RC_EXTERNAL,
 				'rc_source' => RecentChangeFactory::SRC_WIKIBASE,
 				'rc_last_oldid' => 11,
 				'rc_this_oldid' => 12,
@@ -82,7 +79,6 @@ class RecentChangesFinderTest extends MediaWikiIntegrationTestCase {
 				'rc_namespace' => 0,
 				'rc_title' => 'Test',
 				'rc_comment' => 'Testing',
-				'rc_type' => RC_EXTERNAL,
 				'rc_source' => RecentChangeFactory::SRC_WIKIBASE,
 				'rc_last_oldid' => 11,
 				'rc_this_oldid' => 12,
@@ -99,7 +95,6 @@ class RecentChangesFinderTest extends MediaWikiIntegrationTestCase {
 				'rc_namespace' => 0,
 				'rc_title' => 'Kittens',
 				'rc_comment' => 'Testing',
-				'rc_type' => RC_EXTERNAL,
 				'rc_source' => RecentChangeFactory::SRC_WIKIBASE,
 				'rc_last_oldid' => 11,
 				'rc_this_oldid' => 12,
@@ -116,7 +111,6 @@ class RecentChangesFinderTest extends MediaWikiIntegrationTestCase {
 				'rc_namespace' => 0,
 				'rc_title' => 'Kittens',
 				'rc_comment' => 'Testing',
-				'rc_type' => RC_EXTERNAL,
 				'rc_source' => RecentChangeFactory::SRC_WIKIBASE,
 				'rc_last_oldid' => 11,
 				'rc_this_oldid' => 12,
@@ -167,11 +161,9 @@ class RecentChangesFinderTest extends MediaWikiIntegrationTestCase {
 			'rc_comment' => '',
 			'rc_minor' => false,
 			'rc_bot' => false,
-			'rc_new' => false,
 			'rc_cur_id' => 0,
 			'rc_this_oldid' => 0,
 			'rc_last_oldid' => 0,
-			'rc_type' => RC_EXTERNAL,
 			'rc_source' => RecentChangeFactory::SRC_WIKIBASE,
 			'rc_patrolled' => 0,
 			'rc_ip' => '127.0.0.1',
@@ -208,7 +200,6 @@ class RecentChangesFinderTest extends MediaWikiIntegrationTestCase {
 			'rc_namespace' => 0,
 			'rc_title' => 'Test',
 			'rc_comment' => 'Testing',
-			'rc_type' => RC_EXTERNAL,
 			'rc_source' => RecentChangeFactory::SRC_WIKIBASE,
 			'rc_last_oldid' => 11,
 			'rc_this_oldid' => 12,
@@ -226,7 +217,6 @@ class RecentChangesFinderTest extends MediaWikiIntegrationTestCase {
 			'rc_namespace' => 0,
 			'rc_title' => 'Test',
 			'rc_comment' => 'Testing',
-			'rc_type' => RC_EXTERNAL,
 			'rc_source' => 'foo', // different source
 			'rc_last_oldid' => 11,
 			'rc_this_oldid' => 12,
@@ -244,7 +234,6 @@ class RecentChangesFinderTest extends MediaWikiIntegrationTestCase {
 			'rc_namespace' => 0,
 			'rc_title' => 'Test',
 			'rc_comment' => 'Testing',
-			'rc_type' => RC_EXTERNAL,
 			'rc_source' => RecentChangeFactory::SRC_WIKIBASE,
 			'rc_last_oldid' => 11,
 			'rc_this_oldid' => 12,

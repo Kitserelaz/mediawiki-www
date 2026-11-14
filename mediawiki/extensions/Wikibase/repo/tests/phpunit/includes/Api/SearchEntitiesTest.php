@@ -6,8 +6,8 @@ namespace Wikibase\Repo\Tests\Api;
 
 use MediaWiki\Api\ApiMain;
 use MediaWiki\Api\ApiUsageException;
-use MediaWiki\Cache\LinkBatchFactory;
 use MediaWiki\Context\RequestContext;
+use MediaWiki\Page\LinkBatchFactory;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Status\Status;
@@ -33,6 +33,8 @@ use Wikibase\Repo\Api\EntitySearchException;
 use Wikibase\Repo\Api\EntitySearchHelper;
 use Wikibase\Repo\Api\PropertyDataTypeSearchHelper;
 use Wikibase\Repo\Api\SearchEntities;
+use Wikibase\Repo\Domains\Search\Infrastructure\Controllers\DispatchingWbSearchEntitiesController;
+use Wikibase\Repo\Domains\Search\Infrastructure\Controllers\FallbackEntitySearchHelperController;
 use Wikibase\Repo\WikibaseRepo;
 
 /**
@@ -130,13 +132,22 @@ class SearchEntitiesTest extends \PHPUnit\Framework\TestCase {
 			),
 		], new SubEntityTypesMapper( [] ) );
 
+		$entitySourceLookup = new EntitySourceLookup( $entitySourceDefinitions, new SubEntityTypesMapper( [] ) );
+		$searchHelper = $entitySearchHelper ?: $this->getMockEntitySearchHelper( $params );
+		$entityType = $params['type'] ?? 'item';
 		$module = new SearchEntities(
 			$this->getApiMain( $params ),
 			'wbsearchentities',
 			$this->createMock( LinkBatchFactory::class ),
-			$entitySearchHelper ?: $this->getMockEntitySearchHelper( $params ),
+			new DispatchingWbSearchEntitiesController( [
+				$entityType => static fn() => new FallbackEntitySearchHelperController(
+					$entityType,
+					$searchHelper,
+					$entitySourceLookup
+				),
+			] ),
 			$this->getContentLanguages(),
-			new EntitySourceLookup( $entitySourceDefinitions, new SubEntityTypesMapper( [] ) ),
+			$entitySourceLookup,
 			$this->createMock( EntityTitleLookup::class ),
 			$this->newMockTitleTextLookup(),
 			$this->newMockUrlLookup(),
@@ -441,13 +452,16 @@ class SearchEntitiesTest extends \PHPUnit\Framework\TestCase {
 			],
 			new SubEntityTypesMapper( [] )
 		);
+		$entitySourceLookup = new EntitySourceLookup( $entitySourceDefinitions, new SubEntityTypesMapper( [] ) );
 		$module = new SearchEntities(
 			$this->getApiMain( $params ),
 			'wbsearchentities',
 			$this->createMock( LinkBatchFactory::class ),
-			$searchHelper,
+			new DispatchingWbSearchEntitiesController( [
+				'kitten' => static fn() => new FallbackEntitySearchHelperController( 'kitten', $searchHelper, $entitySourceLookup ),
+			] ),
 			$this->getContentLanguages(),
-			new EntitySourceLookup( $entitySourceDefinitions, new SubEntityTypesMapper( [] ) ),
+			$entitySourceLookup,
 			$this->createMock( EntityTitleLookup::class ),
 			$this->newMockTitleTextLookup(),
 			$this->newMockUrlLookup(),

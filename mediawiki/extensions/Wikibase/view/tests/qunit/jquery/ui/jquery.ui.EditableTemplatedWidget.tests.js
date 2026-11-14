@@ -37,7 +37,7 @@
 		}
 	} ) );
 
-	QUnit.test( 'Create & destroy', function ( assert ) {
+	QUnit.test( 'Create & destroy', ( assert ) => {
 		var testSets = [
 			[
 				'<div><span>$1</span></div>',
@@ -52,7 +52,7 @@
 
 			var $subject = $( '<div>' );
 
-			$subject.editablewidget( $.extend( {
+			$subject.editablewidget( Object.assign( {
 				template: 'templatedWidget-test'
 			}, testSets[ i ][ 1 ] ) );
 

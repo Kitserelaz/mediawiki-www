@@ -121,10 +121,13 @@ abstract class EntityRedirectCreationInteractor {
 		if ( !$status->isOK() ) {
 			// XXX: This is silly, we really want to pass the Status object to the API error handler.
 			// Perhaps we should get rid of RedirectCreationException and use Status throughout.
-			throw new RedirectCreationException( $status->getWikiText(), 'permissiondenied' );
+			throw new RedirectCreationException( (string)$status, 'permissiondenied' );
 		}
 	}
 
+	/**
+	 * @throws RedirectCreationException
+	 */
 	private function checkRateLimits( IContextSource $context ): void {
 		if ( $context->getUser()->pingLimiter( 'edit' ) ) {
 			// use generic 'failed-save' because RedirectCreationException prepends 'wikibase-redirect-' for the message key,
@@ -159,7 +162,7 @@ abstract class EntityRedirectCreationInteractor {
 				$this->assertEntityIsRedirectable( $revision->getEntity() );
 			}
 
-		} catch ( RevisionedUnresolvedRedirectException $ex ) {
+		} catch ( RevisionedUnresolvedRedirectException ) {
 			// Nothing to do. It's ok to override a redirect with a redirect.
 		} catch ( StorageException $ex ) {
 			throw new RedirectCreationException( $ex->getMessage(), 'cant-load-entity-content', [], $ex );
@@ -210,6 +213,9 @@ abstract class EntityRedirectCreationInteractor {
 		}
 	}
 
+	/**
+	 * @throws RedirectCreationException
+	 */
 	private function checkSourceAndTargetNotTheSame( EntityId $fromId, EntityId $toId ): void {
 		if ( $fromId->getSerialization() === $toId->getSerialization() ) {
 			throw new RedirectCreationException(

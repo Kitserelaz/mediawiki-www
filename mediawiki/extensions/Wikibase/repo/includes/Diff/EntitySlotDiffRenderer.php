@@ -5,8 +5,8 @@ declare( strict_types = 1 );
 namespace Wikibase\Repo\Diff;
 
 use MediaWiki\Content\Content;
+use MediaWiki\Diff\SlotDiffRenderer;
 use MediaWiki\Output\OutputPage;
-use SlotDiffRenderer;
 use Wikibase\Repo\Content\EntityContent;
 
 /**
@@ -26,6 +26,7 @@ class EntitySlotDiffRenderer extends SlotDiffRenderer {
 		$this->langCode = $langCode;
 	}
 
+	/** @inheritDoc */
 	public function getDiff( ?Content $oldContent = null, ?Content $newContent = null ) {
 		$this->normalizeContents( $oldContent, $newContent, [ EntityContent::class ] );
 		'@phan-var EntityContent $oldContent'; /** @var EntityContent $oldContent */
@@ -40,6 +41,7 @@ class EntitySlotDiffRenderer extends SlotDiffRenderer {
 		$output->addModuleStyles( [ 'wikibase.alltargets' ] );
 	}
 
+	/** @inheritDoc */
 	public function getExtraCacheKeys() {
 		return [ "lang-{$this->langCode}" ];
 	}

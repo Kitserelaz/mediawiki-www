@@ -4,10 +4,12 @@ declare( strict_types = 1 );
 
 namespace Wikibase\Repo\Tests\Unit\ServiceWiring;
 
+use MediaWiki\ObjectCache\ObjectCacheFactory;
 use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleFactory;
-use ObjectCacheFactory;
+use Wikibase\DataModel\Entity\EntityIdParser;
 use Wikibase\DataModel\Entity\ItemIdParser;
+use Wikibase\DataModel\Serializers\SerializerFactory;
 use Wikibase\DataModel\Services\Lookup\InMemoryDataTypeLookup;
 use Wikibase\DataModel\Services\Statement\StatementGuidParser;
 use Wikibase\Lib\DataTypeFactory;
@@ -22,6 +24,7 @@ use Wikibase\Repo\LocalizedTextProviderFactory;
 use Wikibase\Repo\Tests\Unit\ServiceWiringTestCase;
 use Wikibase\View\LanguageDirectionalityLookup;
 use Wikibase\View\ViewFactory;
+use Wikibase\View\Wbui2025FeatureFlag;
 use Wikimedia\ObjectCache\BagOStuff;
 
 /**
@@ -40,11 +43,14 @@ class ViewFactoryTest extends ServiceWiringTestCase {
 				'siteLinkGroups' => [],
 				'specialSiteLinkGroups' => [],
 				'badgeItems' => [],
+				'tmpMobileEditingUI' => false,
 			] ) );
 		$this->mockService( 'WikibaseRepo.PropertyDataTypeLookup',
 			new InMemoryDataTypeLookup() );
 		$this->mockService( 'WikibaseRepo.StatementGuidParser',
 			new StatementGuidParser( new ItemIdParser() ) );
+		$this->mockService( 'WikibaseRepo.BaseDataModelSerializerFactory',
+			$this->createMock( SerializerFactory::class ) );
 		$this->serviceContainer->expects( $this->once() )
 			->method( 'getWikiPageFactory' );
 		$titleFactory = $this->createMock( TitleFactory::class );
@@ -89,6 +95,14 @@ class ViewFactoryTest extends ServiceWiringTestCase {
 		$this->mockService(
 			'WikibaseRepo.LocalizedTextProviderFactory',
 			$this->createMock( LocalizedTextProviderFactory::class )
+		);
+		$this->mockService(
+			'WikibaseRepo.EntityIdParser',
+			$this->createMock( EntityIdParser::class )
+		);
+		$this->mockService(
+			'WikibaseRepo.Wbui2025FeatureFlag',
+			$this->createMock( Wbui2025FeatureFlag::class ),
 		);
 		$this->serviceContainer->expects( $this->once() )
 			->method( 'getLanguageFactory' );

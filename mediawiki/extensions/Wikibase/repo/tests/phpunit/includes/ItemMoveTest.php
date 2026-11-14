@@ -3,7 +3,7 @@
 namespace Wikibase\Repo\Tests;
 
 use MediaWiki\Content\WikitextContent;
-use MediaWiki\MediaWikiServices;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Tests\Site\TestSites;
 use MediaWiki\Title\Title;
 use MediaWikiIntegrationTestCase;
@@ -11,7 +11,6 @@ use Wikibase\DataModel\Entity\Item;
 use Wikibase\DataModel\Entity\ItemId;
 use Wikibase\Lib\Store\EntityRevision;
 use Wikibase\Repo\WikibaseRepo;
-use WikiPage;
 
 /**
  * Tests prevention of moving pages in and out of the data NS.
@@ -56,7 +55,7 @@ class ItemMoveTest extends MediaWikiIntegrationTestCase {
 		static $hasSites = false;
 
 		if ( !$hasSites ) {
-			$sitesTable = MediaWikiServices::getInstance()->getSiteStore();
+			$sitesTable = $this->getServiceContainer()->getSiteStore();
 			$sitesTable->clear();
 			$sitesTable->saveSites( TestSites::getSites() );
 			$hasSites = true;
@@ -69,7 +68,7 @@ class ItemMoveTest extends MediaWikiIntegrationTestCase {
 		$this->itemTitle = WikibaseRepo::getEntityTitleStoreLookup()->getTitleForId( $id );
 
 		$title = Title::makeTitle( $this->getDefaultWikitextNS(), 'Wbmovetest' );
-		$this->page = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $title );
+		$this->page = $this->getServiceContainer()->getWikiPageFactory()->newFromTitle( $title );
 		$this->page->doUserEditContent(
 			new WikitextContent( 'foobar' ),
 			$this->getTestUser()->getUser(),

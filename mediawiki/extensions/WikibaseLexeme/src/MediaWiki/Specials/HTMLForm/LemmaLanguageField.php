@@ -5,9 +5,10 @@ namespace Wikibase\Lexeme\MediaWiki\Specials\HTMLForm;
 use InvalidArgumentException;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\HTMLForm\Field\HTMLComboboxField;
-use Wikibase\Lexeme\MediaWiki\Content\LexemeLanguageNameLookup;
 use Wikibase\Lexeme\WikibaseLexemeServices;
 use Wikibase\Lib\ContentLanguages;
+use Wikibase\Lib\LanguageNameLookup;
+use Wikibase\Repo\WikibaseRepo;
 
 /**
  * Class representing lexeme lemma language selector field
@@ -33,23 +34,17 @@ class LemmaLanguageField extends HTMLComboboxField {
 
 		$params['options'] = $this->constructOptions(
 			WikibaseLexemeServices::getTermLanguages(),
-			WikibaseLexemeServices::getLanguageNameLookupFactory()
-				->getForContextSource( RequestContext::getMain() )
+			WikibaseRepo::getLanguageNameLookupFactory()
+				->getForLanguage( RequestContext::getMain()->getLanguage() )
 		);
 
 		parent::__construct( $params );
 	}
 
-	/**
-	 * @param ContentLanguages $contentLanguages
-	 * @param LexemeLanguageNameLookup $lookup
-	 *
-	 * @return array
-	 */
 	private function constructOptions(
 		ContentLanguages $contentLanguages,
-		LexemeLanguageNameLookup $lookup
-	) {
+		LanguageNameLookup $lookup
+	): array {
 		$languageOptions = [];
 
 		foreach ( $contentLanguages->getLanguages() as $code ) {
@@ -66,6 +61,7 @@ class LemmaLanguageField extends HTMLComboboxField {
 		return $languageOptions;
 	}
 
+	/** @inheritDoc */
 	public function validate( $value, $alldata ) {
 		if ( !in_array( $value, $this->getOptions(), true ) ) {
 			return $this->msg( 'wikibase-lexeme-lemma-language-not-recognized' );

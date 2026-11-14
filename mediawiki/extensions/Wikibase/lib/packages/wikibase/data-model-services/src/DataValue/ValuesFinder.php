@@ -44,7 +44,14 @@ class ValuesFinder {
 				$this->isMatchingDataType( $snak->getPropertyId(), $dataType )
 			) {
 				$dataValue = $snak->getDataValue();
-				$found[$dataValue->getHash()] = $dataValue;
+				if ( method_exists( $dataValue, 'getHash' ) ) {
+					// We can only tag values as found that are
+					// hashable. DataValueObject should, but `getDataValue`
+					// only returns the `DataValue` interface, which doesn't
+					// define `getHash`
+					// @phan-suppress-next-line PhanUndeclaredMethod
+					$found[$dataValue->getHash()] = $dataValue;
+				}
 			}
 		}
 
@@ -60,7 +67,7 @@ class ValuesFinder {
 	private function isMatchingDataType( PropertyId $propertyId, $dataType ) {
 		try {
 			return $this->propertyDataTypeLookup->getDataTypeIdForProperty( $propertyId ) === $dataType;
-		} catch ( PropertyDataTypeLookupException $ex ) {
+		} catch ( PropertyDataTypeLookupException ) {
 			return false;
 		}
 	}

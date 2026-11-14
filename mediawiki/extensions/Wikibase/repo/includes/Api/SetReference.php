@@ -185,8 +185,10 @@ class SetReference extends ApiBase {
 				'snak-instantiation-failure'
 			);
 		}
+		// @phan-suppress-next-line PhanPossiblyUndeclaredVariable
 		$snakList->orderByProperty( $snaksOrder );
 
+		// @phan-suppress-next-line PhanPossiblyUndeclaredVariable
 		$newReference = new Reference( $snakList );
 		$changeOp = $this->getChangeOp( $newReference );
 

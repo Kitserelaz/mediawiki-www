@@ -1,6 +1,7 @@
 <?php
 
 use MediaWiki\Title\Title;
+use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LibraryBase as Scribunto_LuaLibraryBase;
 
 /**
  * Class for exposing the parser functions for External Data to Lua.
@@ -30,7 +31,7 @@ class EDScribunto extends Scribunto_LuaLibraryBase {
 			};
 		}
 		// @phan-suppress-next-line PhanUndeclaredMethod To make PHAN shut up.
-		$this->getEngine()->registerInterface( __DIR__ . '/mw.ext.externalData.lua', $functions, [] );
+		return $this->getEngine()->registerInterface( __DIR__ . '/mw.ext.externalData.lua', $functions, [] );
 	}
 
 	/**

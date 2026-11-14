@@ -2,8 +2,8 @@
 	"@metadata": {
 		"authors": [
 			"Bgo eiu",
-			"Kuldeepburjbhalaike",
-			"Cabal"
+			"Cabal",
+			"Kuldeepburjbhalaike"
 		]
 	},
 	"content-model-wikibase-lexeme": "ਵਿਕੀਅਧਾਰ ਸ਼ਬਦਾਵਲੀ",
@@ -16,6 +16,7 @@
 	"tooltip-ca-nstab-lexeme": "ਲੈਕਸੀਮ ਪਰਿਭਾਸ਼ਾ",
 	"wikibase-lexeme-mergelexemes-submit": "ਸ਼ਬਦਾਵਲੀਆਂ ਨੂੰ ਰਲਾਓ",
 	"wikibase-lexeme-randomlexeme": "ਬੇਤਰਤੀਬ ਲੈਕਸੀਮ",
+	"wikibase-lexeme-scoped-search-scope-name": "ਸ਼ਬਦਾਵਲੀ",
 	"wikibase-lexeme-summary-wbeditentity-create-lexeme": "ਇੱਕ ਨਵਾਂ ਲੈਕਸੀਮ ਬਣਾਓ",
 	"wikibase-listdatatypes-wikibase-form-head": "ਰੂਪ",
 	"wikibase-listdatatypes-wikibase-lexeme-head": "ਸ਼ਬਦਾਵਲੀ",

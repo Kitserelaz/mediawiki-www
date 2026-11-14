@@ -30,6 +30,7 @@ class EntityUriValidator implements ValueValidator {
 		$this->entityType = $entityType;
 	}
 
+	/** @inheritDoc */
 	public function validate( $value ): Result {
 		if ( !is_string( $value ) ) {
 			throw new InvalidArgumentException( 'Expected a string' );
@@ -48,7 +49,7 @@ class EntityUriValidator implements ValueValidator {
 
 		try {
 			$entityId = $this->entityIdParser->parse( $entityIdPart );
-		} catch ( EntityIdParsingException $e ) {
+		} catch ( EntityIdParsingException ) {
 			return Result::newError( [ Error::newError(
 				'Malformed ID',
 				null,

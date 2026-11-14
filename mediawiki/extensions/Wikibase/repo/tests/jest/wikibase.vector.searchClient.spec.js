@@ -3,20 +3,18 @@ describe( 'Vector Search Client', () => {
 	function getFakeMw( fakeConfig, fakeApiInstance ) {
 		return {
 			config: {
-				get: ( key ) => { return fakeConfig[ key ]; },
+				get: ( key ) => fakeConfig[ key ],
 				set: jest.fn()
 			},
 			msg: jest.fn().mockImplementation( ( key, ...args ) => {
 				if ( key === 'parentheses' ) {
 					expect( args ).toHaveLength( 1 );
-					return `(${args[ 0 ]})`;
+					return `(${ args[ 0 ] })`;
 				} else {
-					throw new Error( `Unknown message ${key}` );
+					throw new Error( `Unknown message ${ key }` );
 				}
 			} ),
-			Api: jest.fn().mockImplementation( () => {
-				return fakeApiInstance;
-			} )
+			Api: jest.fn().mockImplementation( () => fakeApiInstance )
 		};
 	}
 
@@ -73,9 +71,7 @@ describe( 'Vector Search Client', () => {
 			},
 			fakeApiInstance
 		);
-		require( '../../resources/wikibase.vector.searchClient.js' );
-		expect( global.mw.config.set.mock.calls[ 0 ][ 0 ] ).toBe( 'wgVectorSearchClient' );
-		const vectorSearchClient = global.mw.config.set.mock.calls[ 0 ][ 1 ];
+		const vectorSearchClient = require( '../../resources/wikibase.typeahead.search/searchClient.js' );
 
 		const exampleSearchString = 'abc';
 		const vectorOffset = 20;
@@ -107,7 +103,7 @@ describe( 'Vector Search Client', () => {
 			);
 			expectedParams.continue = vectorOffset;
 		} else {
-			throw new Error( `Unexpected test name ${name}` );
+			throw new Error( `Unexpected test name ${ name }` );
 		}
 		expect( fakeApiInstance.get ).toHaveBeenCalledWith( expectedParams );
 
@@ -249,9 +245,7 @@ describe( 'Vector Search Client', () => {
 			},
 			fakeApiInstance
 		);
-		require( '../../resources/wikibase.vector.searchClient.js' );
-		expect( global.mw.config.set.mock.calls[ 0 ][ 0 ] ).toBe( 'wgVectorSearchClient' );
-		const vectorSearchClient = global.mw.config.set.mock.calls[ 0 ][ 1 ];
+		const vectorSearchClient = require( '../../resources/wikibase.typeahead.search/searchClient.js' );
 
 		const apiController = vectorSearchClient.fetchByTitle(
 			searchQuery,

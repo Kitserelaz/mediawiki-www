@@ -5,7 +5,7 @@ namespace Wikibase\Lib\Formatters;
 use DataValues\TimeValue;
 use InvalidArgumentException;
 use MediaWiki\Language\Language;
-use MediaWiki\Languages\LanguageFactory;
+use MediaWiki\Language\LanguageFactory;
 use ValueFormatters\FormatterOptions;
 use ValueFormatters\ValueFormatter;
 
@@ -33,8 +33,8 @@ class MwTimeIsoFormatter implements ValueFormatter {
 		LanguageFactory $languageFactory,
 		?FormatterOptions $options = null
 	) {
-		$this->options = $options ?: new FormatterOptions();
-		$this->options->defaultOption( ValueFormatter::OPT_LANG, 'en' );
+		$this->options = ( $options ?: new FormatterOptions() )
+			->withDefaultOption( ValueFormatter::OPT_LANG, 'en' );
 
 		$languageCode = $this->options->getOption( ValueFormatter::OPT_LANG );
 		$this->language = $languageFactory->getLanguage( $languageCode );
@@ -66,7 +66,7 @@ class MwTimeIsoFormatter implements ValueFormatter {
 
 		try {
 			return $this->getLocalizedDate( $isoTimestamp, $timeValue->getPrecision() );
-		} catch ( InvalidArgumentException $ex ) {
+		} catch ( InvalidArgumentException ) {
 			return $isoTimestamp;
 		}
 	}
@@ -150,7 +150,7 @@ class MwTimeIsoFormatter implements ValueFormatter {
 	 *
 	 * @return string A date format for the month that roundtrips the Wikibase TimeParsers.
 	 */
-	private function getMonthFormat( $dateFormat ) {
+	private function getMonthFormat( ?string $dateFormat ): string {
 		if ( $dateFormat && preg_match( '/(?:[FMn]|(?<!x)m|xg)[.,]?/', $dateFormat, $matches ) ) {
 			return $matches[0];
 		}

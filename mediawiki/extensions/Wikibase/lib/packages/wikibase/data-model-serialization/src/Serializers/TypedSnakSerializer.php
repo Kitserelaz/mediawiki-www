@@ -38,6 +38,9 @@ class TypedSnakSerializer implements Serializer {
 		return $this->getSerialized( $object );
 	}
 
+	/**
+	 * @param TypedSnak $object
+	 */
 	private function assertIsSerializerFor( $object ) {
 		if ( !( $object instanceof TypedSnak ) ) {
 			throw new UnsupportedObjectException(
@@ -47,7 +50,7 @@ class TypedSnakSerializer implements Serializer {
 		}
 	}
 
-	private function getSerialized( TypedSnak $typedSnak ) {
+	private function getSerialized( TypedSnak $typedSnak ): array {
 		$serialization = $this->snakSerializer->serialize( $typedSnak->getSnak() );
 
 		$serialization['datatype'] = $typedSnak->getDataTypeId();

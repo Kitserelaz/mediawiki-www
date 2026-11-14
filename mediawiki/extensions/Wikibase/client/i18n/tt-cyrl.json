@@ -5,8 +5,10 @@
 			"Don Alessandro",
 			"Ilnur efende",
 			"Marat-avgust",
+			"Run Li",
 			"Ерней",
 			"З. ӘЙЛЕ",
+			"Ильгиз",
 			"Ильнар",
 			"Умар"
 		]
@@ -37,9 +39,10 @@
 	"wikibase-watchlist-show-changes-pref": "{{WBREPONAME}} булган үзгәртүләрне күзәтү исемлегендә карау",
 	"unconnectedpages": "Элементлар белән бәйләнмәгән битләр",
 	"wikibase-unconnectedpages-submit": "Битләрне күрсәтү",
-	"pageswithbadges": "Билгеле битләр",
+	"pageswithbadges": "Махсус тамгалы битләр",
 	"wikibase-pageswithbadges-badge": "Билге:",
 	"wikibase-pageswithbadges-submit": "Битләрне күрсәтү",
+	"entityusage": "Wikidata элементын куллану",
 	"wikibase-entityusage-entity": "Асылы:",
 	"wikibase-entityusage-submit": "Битләрне күрсәтү",
 	"wikibase-pageinfo-entity-id": "{{grammar:genitive|{{WBREPONAME}}}} ID элементы",

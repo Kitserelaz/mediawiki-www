@@ -5,7 +5,7 @@ declare( strict_types=1 );
 namespace Wikibase\Repo;
 
 use MediaWiki\Language\Language;
-use MediaWiki\Languages\LanguageFactory;
+use MediaWiki\Language\LanguageFactory;
 use Wikibase\View\LocalizedTextProvider;
 
 /**
@@ -17,9 +17,6 @@ class LocalizedTextProviderFactory {
 	 */
 	private $languageFactory;
 
-	/**
-	 * @param LanguageFactory $languageFactory
-	 */
 	public function __construct(
 		LanguageFactory $languageFactory
 	) {

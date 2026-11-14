@@ -4,9 +4,9 @@ declare( strict_types = 1 );
 
 namespace Wikibase\Lexeme\MediaWiki\Actions;
 
-use Article;
-use HistoryAction;
+use MediaWiki\Actions\HistoryAction;
 use MediaWiki\Context\IContextSource;
+use MediaWiki\Page\Article;
 use Wikibase\Lexeme\DataAccess\Store\LemmaLookup;
 use Wikibase\Lexeme\Domain\Model\LexemeId;
 use Wikibase\Lexeme\Presentation\Formatters\LexemeTermFormatter;
@@ -35,6 +35,7 @@ class LexemeHistoryAction extends HistoryAction {
 		$this->lexemeTermFormatter = $lexemeTermFormatter;
 	}
 
+	/** @inheritDoc */
 	protected function getPageTitle() {
 		/** @var LexemeId $lexemeId */
 		$lexemeId = $this->entityIdLookup->getEntityIdForTitle( $this->getTitle() );

@@ -2,20 +2,16 @@
 
 namespace Wikibase\Client\Tests\Integration\Changes;
 
-use HTMLCacheUpdateJob;
-use Job;
-use JobQueueGroup;
+use MediaWiki\JobQueue\Job;
+use MediaWiki\JobQueue\JobQueueGroup;
+use MediaWiki\JobQueue\Jobs\HTMLCacheUpdateJob;
+use MediaWiki\JobQueue\Jobs\RefreshLinksJob;
 use MediaWiki\Title\Title;
 use MediaWikiIntegrationTestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 use Psr\Log\NullLogger;
-use RefreshLinksJob;
-use UDPTransport;
 use Wikibase\Client\Changes\WikiPageUpdater;
 use Wikibase\Lib\Changes\EntityChange;
-use Wikimedia\Stats\IBufferingStatsdDataFactory;
-use Wikimedia\Stats\OutputFormats;
-use Wikimedia\Stats\StatsCache;
 use Wikimedia\Stats\StatsFactory;
 
 /**
@@ -77,58 +73,6 @@ class WikiPageUpdaterTest extends MediaWikiIntegrationTestCase {
 		return $title;
 	}
 
-	/**
-	 * Create a mock {@link StatsFactory} expecting certain stats.
-	 *
-	 * @param string[] $expectedStats The expected stats, in DogStatsD format.
-	 * Each entry is a string like "metric_name:123|c", or (with labels)
-	 * like "metric_name:123|c|#label1:value1,label2:value2".
-	 * @param int[] $expectedStatsdCopies The expected stats, as copied to statsd.
-	 * Each entry is a mapping from string $updateType to the counter $delta.
-	 * This can be removed when the legacy statsd copying is removed.
-	 * @return StatsFactory You must call {@link StatsFactory::flush()} on this
-	 * before the test ends.
-	 */
-	private function getStatsFactoryMock(
-		array $expectedStats,
-		array $expectedStatsdCopies
-	): StatsFactory {
-		// based on HashBagOStuffTest::testUpdateOpStats(), pending improvement (T368740)
-		$statsCache = new StatsCache();
-		$emitter = OutputFormats::getNewEmitter(
-			'mediawiki',
-			$statsCache,
-			OutputFormats::getNewFormatter( OutputFormats::DOGSTATSD )
-		);
-
-		$expectedStatsString = implode( "\n", $expectedStats );
-		$expectedStatsCount = count( $expectedStats );
-		$expectedStatsString .= "\nmediawiki.stats_buffered_total:$expectedStatsCount|c\n";
-		$transport = $this->createMock( UDPTransport::class );
-		$transport->expects( $this->once() )
-			->method( 'emit' )
-			->with( $expectedStatsString );
-		$emitter = $emitter->withTransport( $transport );
-
-		$statsdDataFactory = $this->createMock( IBufferingStatsdDataFactory::class );
-		$expectedStatsdArgs = [];
-		foreach ( $expectedStatsdCopies as $updateType => $delta ) {
-			// cast $delta to float, enforced by CounterMetric::incrementBy()
-			$expectedStatsdArgs[] = [ 'wikibase.client.pageupdates.' . $updateType, (float)$delta ];
-		}
-		$statsdDataFactory->method( 'updateCount' )
-			->willReturnCallback( function ( $key, $delta ) use ( &$expectedStatsdArgs ) {
-				if ( !$expectedStatsdArgs ) {
-					return;
-				}
-				$this->assertSame( array_shift( $expectedStatsdArgs ), [ $key, $delta ] );
-			} );
-
-		$stats = new StatsFactory( $statsCache, $emitter, new NullLogger() );
-		$stats->withStatsdDataFactory( $statsdDataFactory );
-		return $stats;
-	}
-
 	public function testPurgeWebCache() {
 		$titleFoo = $this->getTitleMock( 'Foo', 21 );
 		$titleBar = $this->getTitleMock( 'Bar', 22 );
@@ -151,16 +95,8 @@ class WikiPageUpdaterTest extends MediaWikiIntegrationTestCase {
 				}
 			} );
 
-		$statsFactory = $this->getStatsFactoryMock(
-			[
-				'mediawiki.WikibaseClient.PageUpdates_WebCache_jobs_total:2|c',
-				'mediawiki.WikibaseClient.PageUpdates_WebCache_titles_total:3|c',
-			],
-			[
-				'WebCache.jobs' => 2, // 2 batches (batch size 2, 3 titles)
-				'WebCache.titles' => 3,
-			]
-		);
+		$statsHelper = StatsFactory::newUnitTestingHelper();
+		$statsFactory = $statsHelper->getStatsFactory()->withComponent( 'WikibaseClient' );
 		$updater = new WikiPageUpdater(
 			$jobQueueGroup,
 			new NullLogger(),
@@ -177,7 +113,6 @@ class WikiPageUpdaterTest extends MediaWikiIntegrationTestCase {
 			'test~action',
 			'uid:1'
 		);
-		$statsFactory->flush();
 
 		$this->assertEquals( [ 21, 22, 23 ], array_keys( $pages ) );
 		$this->assertEquals( [ 0, 'Foo' ], $pages[21], '$pages[21]' );
@@ -192,6 +127,9 @@ class WikiPageUpdaterTest extends MediaWikiIntegrationTestCase {
 			$rootJobParams,
 			'$rootJobParams'
 		);
+
+		$this->assertSame( 2.0, $statsHelper->sum( 'WikibaseClient.PageUpdates_WebCache_jobs_total' ) );
+		$this->assertSame( 3.0, $statsHelper->sum( 'WikibaseClient.PageUpdates_WebCache_titles_total' ) );
 	}
 
 	public function testScheduleRefreshLinks() {
@@ -211,16 +149,8 @@ class WikiPageUpdaterTest extends MediaWikiIntegrationTestCase {
 				$rootJobParams = $job->getRootJobParams();
 			} );
 
-		$statsFactory = $this->getStatsFactoryMock(
-			[
-				'mediawiki.WikibaseClient.PageUpdates_RefreshLinks_jobs_total:3|c',
-				'mediawiki.WikibaseClient.PageUpdates_RefreshLinks_titles_total:3|c',
-			],
-			[
-				'RefreshLinks.jobs' => 3, // no batching
-				'RefreshLinks.titles' => 3,
-			]
-		);
+		$statsHelper = StatsFactory::newUnitTestingHelper();
+		$statsFactory = $statsHelper->getStatsFactory()->withComponent( 'WikibaseClient' );
 		$updater = new WikiPageUpdater(
 			$jobQueueGroup,
 			new NullLogger(),
@@ -236,7 +166,6 @@ class WikiPageUpdaterTest extends MediaWikiIntegrationTestCase {
 			'test~action',
 			'uid:1'
 		);
-		$statsFactory->flush();
 
 		$this->assertSame(
 			[ 'Foo', 'Bar', 'Cuzz' ],
@@ -252,6 +181,9 @@ class WikiPageUpdaterTest extends MediaWikiIntegrationTestCase {
 			$rootJobParams,
 			'$rootJobParams'
 		);
+
+		$this->assertSame( 3.0, $statsHelper->sum( 'WikibaseClient.PageUpdates_RefreshLinks_jobs_total' ) );
+		$this->assertSame( 3.0, $statsHelper->sum( 'WikibaseClient.PageUpdates_RefreshLinks_titles_total' ) );
 	}
 
 	public function testInjectRCRecords() {
@@ -278,21 +210,8 @@ class WikiPageUpdaterTest extends MediaWikiIntegrationTestCase {
 				}
 			);
 
-		$statsFactory = $this->getStatsFactoryMock(
-			[
-				'mediawiki.WikibaseClient.PageUpdates_InjectRCRecords_jobs_total:1|c',
-				'mediawiki.WikibaseClient.PageUpdates_InjectRCRecords_titles_total:2|c',
-				'mediawiki.WikibaseClient.PageUpdates_InjectRCRecords_discardedTitles_total:1|c',
-				'mediawiki.WikibaseClient.PageUpdates_InjectRCRecords_incompleteChanges_total:1|c',
-			],
-			[
-				// FIXME: Because of the hot fix for T177707 we expect only the first batch.
-				'InjectRCRecords.jobs' => 1,
-				'InjectRCRecords.titles' => 2,
-				'InjectRCRecords.discardedTitles' => 1,
-				'InjectRCRecords.incompleteChanges' => 1,
-			]
-		);
+		$statsHelper = StatsFactory::newUnitTestingHelper();
+		$statsFactory = $statsHelper->getStatsFactory()->withComponent( 'WikibaseClient' );
 		$updater = new WikiPageUpdater(
 			$jobQueueGroup,
 			new NullLogger(),
@@ -305,7 +224,6 @@ class WikiPageUpdaterTest extends MediaWikiIntegrationTestCase {
 			new EntityChange(),
 			[ 'rootJobTimestamp' => '20202211060708', 'rootJobSignature' => 'Kittens!' ]
 		);
-		$statsFactory->flush();
 
 		// FIXME: Because of the hot fix for T177707 we expect only the first batch.
 		$this->assertSame( [
@@ -321,6 +239,11 @@ class WikiPageUpdaterTest extends MediaWikiIntegrationTestCase {
 			$rootJobParams,
 			'$rootJobParams'
 		);
+
+		$this->assertSame( 1.0, $statsHelper->sum( 'WikibaseClient.PageUpdates_InjectRCRecords_jobs_total' ) );
+		$this->assertSame( 2.0, $statsHelper->sum( 'WikibaseClient.PageUpdates_InjectRCRecords_titles_total' ) );
+		$this->assertSame( 1.0, $statsHelper->sum( 'WikibaseClient.PageUpdates_InjectRCRecords_discardedTitles_total' ) );
+		$this->assertSame( 1.0, $statsHelper->sum( 'WikibaseClient.PageUpdates_InjectRCRecords_incompleteChanges_total' ) );
 	}
 
 }

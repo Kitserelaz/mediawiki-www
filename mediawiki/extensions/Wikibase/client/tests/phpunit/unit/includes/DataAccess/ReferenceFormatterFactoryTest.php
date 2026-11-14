@@ -3,7 +3,7 @@
 namespace Wikibase\Client\Tests\Unit\DataAccess;
 
 use MediaWiki\Language\Language;
-use MessageLocalizer;
+use MediaWiki\Language\MessageLocalizer;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LogLevel;
 use TestLogger;

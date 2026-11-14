@@ -58,11 +58,6 @@ class SpecialNewItem extends SpecialNewEntity {
 
 	private SiteLinkTargetProvider $siteLinkTargetProvider;
 
-	/**
-	 * @var string[]
-	 */
-	private array $siteLinkGroups;
-
 	private FallbackLabelDescriptionLookupFactory $labelDescriptionLookupFactory;
 
 	/**
@@ -85,12 +80,10 @@ class SpecialNewItem extends SpecialNewEntity {
 		SiteLinkTargetProvider $siteLinkTargetProvider,
 		FallbackLabelDescriptionLookupFactory $labelDescriptionLookupFactory,
 		array $badgeItems,
-		array $siteLinkGroups,
 		bool $isMobileView
 	) {
 		parent::__construct(
 			'NewItem',
-			'createpage',
 			$tags,
 			$copyrightView,
 			$entityNamespaceLookup,
@@ -105,7 +98,6 @@ class SpecialNewItem extends SpecialNewEntity {
 		$this->errorLocalizer = $errorLocalizer;
 		$this->siteLinkPageNormalizer = $siteLinkPageNormalizer;
 		$this->siteLinkTargetProvider = $siteLinkTargetProvider;
-		$this->siteLinkGroups = $siteLinkGroups;
 		$this->labelDescriptionLookupFactory = $labelDescriptionLookupFactory;
 		$this->badgeItems = $badgeItems;
 	}
@@ -146,9 +138,13 @@ class SpecialNewItem extends SpecialNewEntity {
 			$siteLinkTargetProvider,
 			$labelDescriptionLookupFactory,
 			$repoSettings->getSetting( 'badgeItems' ),
-			$repoSettings->getSetting( 'siteLinkGroups' ),
 			$isMobileView
 		);
+	}
+
+	/** @inheritDoc */
+	public function getRestriction(): string {
+		return 'createpage';
 	}
 
 	/**
@@ -234,7 +230,7 @@ class SpecialNewItem extends SpecialNewEntity {
 					$site = $this->getSiteLinkTargetSite( $siteId );
 
 					if ( $site === null ) {
-						return [ $this->msg( 'wikibase-newitem-not-recognized-siteid' )->text() ];
+						return $this->msg( 'wikibase-newitem-not-recognized-siteid' );
 					}
 
 					return true;
@@ -321,7 +317,10 @@ class SpecialNewItem extends SpecialNewEntity {
 	 */
 	protected function getWarnings(): array {
 		if ( !$this->getUser()->isRegistered() ) {
-			return [ $this->anonymousEditWarningBuilder->buildAnonymousEditWarningHTML( $this->getFullTitle()->getPrefixedText() ) ];
+			return [
+				$this->msg( $this->anonymousEditWarningBuilder->buildAnonymousEditWarningMessage( $this->getFullTitle() ) )
+					->parse(),
+			];
 		}
 
 		return [];
@@ -390,7 +389,7 @@ class SpecialNewItem extends SpecialNewEntity {
 					'wikibase-validator-label-with-description-conflict',
 					$formData[self::FIELD_LABEL],
 					$formData[self::FIELD_LANG],
-					$collidingItemId
+					$collidingItemId->getSerialization()
 				);
 			}
 		}
@@ -399,7 +398,7 @@ class SpecialNewItem extends SpecialNewEntity {
 	}
 
 	private function getSiteLinkTargetSite( string $siteId ): ?Site {
-		$targetSites = $this->siteLinkTargetProvider->getSiteList( $this->siteLinkGroups );
+		$targetSites = $this->siteLinkTargetProvider->getSiteList();
 		if ( !$targetSites->hasSite( $siteId ) ) {
 			return null;
 		}

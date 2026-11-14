@@ -42,38 +42,31 @@ class ChangeOpsTest extends \PHPUnit\Framework\TestCase {
 		return $mockProvider->getMockTermValidatorFactory();
 	}
 
-	/**
-	 * @return ChangeOp[]
-	 */
-	public function changeOpProvider() {
-		$validatorFactory = $this->getTermValidatorFactory();
-
-		$ops = [];
-		$ops[] = [ new ChangeOpLabel( 'en', 'myNewLabel', $validatorFactory ) ];
-		$ops[] = [ new ChangeOpDescription( 'de', 'myNewDescription', $validatorFactory ) ];
-		$ops[] = [ new ChangeOpLabel( 'en', null, $validatorFactory ) ];
-
-		return $ops;
+	public static function changeOpProvider(): iterable {
+		yield [ ChangeOpLabel::class, [ 'en', 'myNewLabel' ] ];
+		yield [ ChangeOpDescription::class, [ 'de', 'myNewDescription' ] ];
+		yield [ ChangeOpLabel::class, [ 'en', null ] ];
 	}
 
 	/**
 	 * @dataProvider changeOpProvider
 	 */
-	public function testAdd( ChangeOp $changeOp ) {
+	public function testAdd( string $changeOpClassName, array $changeOpParams ) {
+		$changeOpParams[] = $this->getTermValidatorFactory();
+		$changeOp = new $changeOpClassName( ...$changeOpParams );
+
 		$changeOps = new ChangeOps();
 		$changeOps->add( $changeOp );
 		$this->assertEquals( [ $changeOp ], $changeOps->getChangeOps() );
 	}
 
-	public function changeOpArrayProvider() {
-		$validatorFactory = $this->getTermValidatorFactory();
-
+	public static function changeOpArrayProvider(): iterable {
 		$ops = [];
 		$ops[] = [
 					[
-						new ChangeOpLabel( 'en', 'enLabel', $validatorFactory ),
-						new ChangeOpLabel( 'de', 'deLabel', $validatorFactory ),
-						new ChangeOpDescription( 'en', 'enDescr', $validatorFactory ),
+						[ ChangeOpLabel::class, [ 'en', 'enLabel' ] ],
+						[ ChangeOpLabel::class, [ 'de', 'deLabel' ] ],
+						[ ChangeOpDescription::class, [ 'en', 'enDescr' ] ],
 					],
 				];
 
@@ -83,49 +76,59 @@ class ChangeOpsTest extends \PHPUnit\Framework\TestCase {
 	/**
 	 * @dataProvider changeOpArrayProvider
 	 */
-	public function testAddArray( array $changeOpArray ) {
+	public function testAddArray( array $changeOpParamsArray ) {
+		$changeOpArray = array_map( function ( $changeOpParams ) {
+			$changeOpParams[1][] = $this->getTermValidatorFactory();
+			return new $changeOpParams[0]( ...$changeOpParams[1] );
+		}, $changeOpParamsArray );
+
 		$changeOps = new ChangeOps();
 		$changeOps->add( $changeOpArray );
 		$this->assertEquals( $changeOpArray, $changeOps->getChangeOps() );
 	}
 
-	public function invalidChangeOpProvider() {
-		$validatorFactory = $this->getTermValidatorFactory();
-
-		$ops = [];
-		$ops[] = [ 1234 ];
-		$ops[] = [ [ new ChangeOpLabel( 'en', 'test', $validatorFactory ), 123 ] ];
-
-		return $ops;
+	public static function invalidChangeOpProvider() {
+		yield [ fn () => 1234 ];
+		yield [
+			fn ( self $self ) => [
+				new ChangeOpLabel( 'en', 'test', $self->getTermValidatorFactory() ),
+				123,
+			],
+		];
 	}
 
 	/**
 	 * @dataProvider invalidChangeOpProvider
 	 */
-	public function testInvalidAdd( $invalidChangeOp ) {
+	public function testInvalidAdd( $invalidChangeOpFactory ) {
+		$invalidChangeOp = $invalidChangeOpFactory( $this );
 		$changeOps = new ChangeOps();
 		$this->expectException( InvalidArgumentException::class );
 		$changeOps->add( $invalidChangeOp );
 	}
 
-	public function changeOpsProvider() {
-		$validatorFactory = $this->getTermValidatorFactory();
-
-		$args = [];
-
+	public static function changeOpsProvider() {
 		$language = 'en';
-		$changeOps = new ChangeOps();
-		$changeOps->add( new ChangeOpLabel( $language, 'newLabel', $validatorFactory ) );
-		$changeOps->add( new ChangeOpDescription( $language, 'newDescription', $validatorFactory ) );
-		$args[] = [ $changeOps, $language, 'newLabel', 'newDescription' ];
+		$newLabel = 'newLabel';
+		$newDescription = 'newDescription';
 
-		return $args;
+		$changeOpsFactory = function ( self $self ) use ( $language, $newLabel, $newDescription ): ChangeOps {
+			$validatorFactory = $self->getTermValidatorFactory();
+			$changeOps = new ChangeOps();
+			$changeOps->add( new ChangeOpLabel( $language, $newLabel, $validatorFactory ) );
+			$changeOps->add( new ChangeOpDescription( $language, $newDescription, $validatorFactory ) );
+
+			return $changeOps;
+		};
+
+		yield [ $changeOpsFactory, $language, $newLabel, $newDescription ];
 	}
 
 	/**
 	 * @dataProvider changeOpsProvider
 	 */
-	public function testApply( ChangeOps $changeOps, $language, $expectedLabel, $expectedDescription ) {
+	public function testApply( callable $changeOpsFactory, $language, $expectedLabel, $expectedDescription ) {
+		$changeOps = $changeOpsFactory( $this );
 		$entity = new Item();
 
 		$changeOps->apply( $entity );

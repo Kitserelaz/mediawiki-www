@@ -40,7 +40,7 @@ class HTMLContentLanguageField extends HTMLComboboxField {
 			 || isset( $params['options-messages'] )
 		) {
 			throw new InvalidArgumentException(
-				"Cannot set options for content language field. It already has it's own options"
+				"Cannot set options for content language field. It already has its own options"
 			);
 		}
 
@@ -69,6 +69,7 @@ class HTMLContentLanguageField extends HTMLComboboxField {
 		return $languageOptions;
 	}
 
+	/** @inheritDoc */
 	public function validate( $value, $alldata ) {
 		$options = $this->getOptions();
 		if ( !in_array( $value, $options, true ) ) {

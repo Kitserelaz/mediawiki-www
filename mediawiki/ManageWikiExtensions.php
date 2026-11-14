@@ -3477,7 +3477,6 @@ $wgManageWikiExtensions = [
 				'wbt_term_in_lang' => "$IP/extensions/Wikibase/repo/sql/mysql/term_store.sql",
 				'wbt_text_in_lang' => "$IP/extensions/Wikibase/repo/sql/mysql/term_store.sql",
 				'wbt_text' => "$IP/extensions/Wikibase/repo/sql/mysql/term_store.sql",
-				'wbt_type' => "$IP/extensions/Wikibase/repo/sql/mysql/term_store.sql",
 				'wb_property_info' => "$IP/extensions/Wikibase/repo/sql/mysql/wb_property_info.sql",
 				'wbt_property_terms' => "$IP/extensions/Wikibase/repo/sql/mysql/term_store.sql",
 			],

@@ -6,12 +6,12 @@ namespace Wikibase\Lexeme\MediaWiki\Specials;
 
 use Exception;
 use InvalidArgumentException;
+use MediaWiki\Exception\UserBlockedError;
 use MediaWiki\Html\Html;
 use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\Message\Message;
 use MediaWiki\Permissions\PermissionManager;
 use MediaWiki\SpecialPage\SpecialPage;
-use UserBlockedError;
 use Wikibase\Lexeme\Domain\Merge\Exceptions\MergingException;
 use Wikibase\Lexeme\Domain\Model\LexemeId;
 use Wikibase\Lexeme\Interactors\MergeLexemes\MergeLexemesInteractor;
@@ -57,7 +57,7 @@ class SpecialMergeLexemes extends SpecialPage {
 		PermissionManager $permissionManager,
 		AnonymousEditWarningBuilder $anonymousEditWarningBuilder
 	) {
-		parent::__construct( 'MergeLexemes', 'item-merge' );
+		parent::__construct( 'MergeLexemes' );
 		$this->tags = $tags;
 		$this->mergeInteractor = $mergeInteractor;
 		$this->tokenCheckInteractor = $tokenCheckInteractor;
@@ -65,6 +65,11 @@ class SpecialMergeLexemes extends SpecialPage {
 		$this->exceptionLocalizer = $exceptionLocalizer;
 		$this->permissionManager = $permissionManager;
 		$this->anonymousEditWarningBuilder = $anonymousEditWarningBuilder;
+	}
+
+	/** @inheritDoc */
+	public function getRestriction(): string {
+		return 'item-merge';
 	}
 
 	/** @inheritDoc */
@@ -181,10 +186,10 @@ class SpecialMergeLexemes extends SpecialPage {
 	private function anonymousEditWarning(): string {
 		if ( !$this->getUser()->isRegistered() ) {
 			$fullTitle = $this->getPageTitle();
-			return Html::rawElement(
-				'p',
-				[ 'class' => 'warning' ],
-				$this->anonymousEditWarningBuilder->buildAnonymousEditWarningHTML( $fullTitle->getPrefixedText() )
+			$this->getOutput()->addModuleStyles( 'mediawiki.codex.messagebox.styles' );
+			return Html::warningBox(
+				$this->msg( $this->anonymousEditWarningBuilder->buildAnonymousEditWarningMessage( $fullTitle ) )
+					->parse()
 			);
 		}
 
@@ -251,7 +256,7 @@ class SpecialMergeLexemes extends SpecialPage {
 	private function getLexemeId( string $idSerialization ) {
 		try {
 			return new LexemeId( $idSerialization );
-		} catch ( InvalidArgumentException $e ) {
+		} catch ( InvalidArgumentException ) {
 			return false;
 		}
 	}
@@ -276,7 +281,7 @@ class SpecialMergeLexemes extends SpecialPage {
 		);
 	}
 
-	private function showInvalidLexemeIdError( $id ): void {
+	private function showInvalidLexemeIdError( string $id ): void {
 		$this->showErrorHTML(
 			( new Message( 'wikibase-lexeme-mergelexemes-error-invalid-id', [ $id ] ) )
 				->escaped()
@@ -287,7 +292,7 @@ class SpecialMergeLexemes extends SpecialPage {
 		return 'wikibase';
 	}
 
-	protected function showErrorHTML( $error ): void {
+	protected function showErrorHTML( string $error ): void {
 		$this->getOutput()->addHTML( '<p class="error">' . $error . '</p>' );
 	}
 

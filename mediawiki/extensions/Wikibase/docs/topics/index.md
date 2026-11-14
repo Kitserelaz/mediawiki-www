@@ -5,6 +5,7 @@ This directory collects some documentation of specific topics:
 * @subpage docs_topics_change-propagation
 * @subpage docs_topics_changeop-serializations
 * @subpage docs_topics_constraints
+* @subpage docs_topics_controllers
 * @subpage docs_topics_datatypes
 * @subpage docs_topics_entitysources
 * @subpage docs_topics_entitytypes

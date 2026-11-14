@@ -20,9 +20,6 @@ class EntityTermSearchHelper implements EntitySearchHelper {
 	 */
 	private $termSearchInteractor;
 
-	/**
-	 * @param ConfigurableTermSearchInteractor $termSearchInteractor
-	 */
 	public function __construct(
 		ConfigurableTermSearchInteractor $termSearchInteractor
 	) {
@@ -89,7 +86,7 @@ class EntityTermSearchHelper implements EntitySearchHelper {
 		$searchResultEntityIdSerializations = array_keys( $searchResults );
 
 		foreach ( $newSearchResults as $searchResultToAdd ) {
-			$entityIdString = $searchResultToAdd->getEntityId()->getSerialization();
+			$entityIdString = $searchResultToAdd->getEntityIdSerialization();
 
 			if ( !in_array( $entityIdString, $searchResultEntityIdSerializations ) ) {
 				$searchResults[$entityIdString] = $searchResultToAdd;

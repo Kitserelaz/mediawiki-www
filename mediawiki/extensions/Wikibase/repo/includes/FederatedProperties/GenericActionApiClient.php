@@ -61,7 +61,7 @@ class GenericActionApiClient {
 		$this->userAgentServerName = $userAgentServerName;
 	}
 
-	private function getUrlFromParams( array $params ) {
+	private function getUrlFromParams( array $params ): string {
 		return wfAppendQuery( $this->repoActionApiUrl, $params );
 	}
 
@@ -76,6 +76,9 @@ class GenericActionApiClient {
 		return $this->userAgent;
 	}
 
+	/**
+	 * @throws ApiRequestExecutionException
+	 */
 	public function get( array $params ): ResponseInterface {
 		$url = $this->getUrlFromParams( $params );
 		$request = $this->requestFactory->create(

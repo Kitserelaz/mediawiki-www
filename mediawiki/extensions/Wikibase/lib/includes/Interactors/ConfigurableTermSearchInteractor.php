@@ -1,4 +1,4 @@
-<?php
+<?php declare( strict_types = 1 );
 
 namespace Wikibase\Lib\Interactors;
 
@@ -9,6 +9,6 @@ namespace Wikibase\Lib\Interactors;
  */
 interface ConfigurableTermSearchInteractor extends TermSearchInteractor {
 
-	public function setTermSearchOptions( TermSearchOptions $termSearchOptions );
+	public function setTermSearchOptions( TermSearchOptions $termSearchOptions ): void;
 
 }

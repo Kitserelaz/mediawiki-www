@@ -5,7 +5,7 @@ namespace Wikibase\Repo\Tests\Dumpers;
 use DataValues\Serializers\DataValueSerializer;
 use Exception;
 use InvalidArgumentException;
-use MWContentSerializationException;
+use MediaWiki\Content\ContentSerializationException;
 use Onoi\MessageReporter\MessageReporter;
 use stdClass;
 use Wikibase\DataModel\Deserializers\DeserializerFactory;
@@ -196,8 +196,8 @@ class JsonDumpGeneratorTest extends \PHPUnit\Framework\TestCase {
 	/**
 	 * @dataProvider idProvider
 	 */
-	public function testGenerateDump_HandlesMWContentSerializationException( array $ids ) {
-		$ex = new MWContentSerializationException( 'cannot deserialize!' );
+	public function testGenerateDump_HandlesContentSerializationException( array $ids ) {
+		$ex = new ContentSerializationException( 'cannot deserialize!' );
 		$jsonDumper = $this->getJsonDumperWithExceptionHandler( $ids, $ex );
 		$pager = $this->makeIdPager( $ids );
 

@@ -2,29 +2,41 @@
  * See also: http://webdriver.io/guide/testrunner/configurationfile.html
  */
 
-'use strict';
+import { dirname } from 'wdio-mediawiki/Util.js';
+import { config as mwConfig } from 'wdio-mediawiki/wdio-defaults.conf.js';
+import WikibaseApi from 'wdio-wikibase/wikibase.api.js';
 
-const { config } = require( 'wdio-mediawiki/wdio-defaults.conf.js' );
-const WikibaseApi = require( 'wdio-wikibase/wikibase.api' );
+const testDir = dirname( import.meta.url );
 
-exports.config = {
-	...config,
+export const config = {
+	...mwConfig,
+
+	// To enable video recording, enable video and disable browser headless
+	// recordVideo: true,
+	// useBrowserHeadless: false,
+	//
+	// To enable screenshots on all tests, disable screenshotsOnFailureOnly
+	// screenshotsOnFailureOnly: false,
 
 	// ==================
 	// Test Files
 	// ==================
 	specs: [
-		__dirname + '/specs/*.js',
-		__dirname + '/../../../view/lib/wikibase-termbox/tests/selenium/specs/*.js'
+		testDir + '/specs/*.js',
+		testDir + '/../../../view/lib/wikibase-termbox/tests/selenium/specs/*.js'
 	],
 
 	// ===================
 	// Test Configurations
 	// ===================
 
-	// Setting this enables automatic screenshots for when a browser command fails
-	// It is also used by afterTest for capturig failed assertions.
-	screenshotPath: process.env.LOG_DIR || __dirname + '/log',
+	capabilities: [ {
+		...mwConfig.capabilities[ 0 ],
+
+		// Setting this enables automatic screenshots for when a browser command fails
+		// It is also used by afterTest for capturig failed assertions.
+		'mw:screenshotPath': process.env.LOG_DIR || testDir + '/log'
+	} ],
 
 	// Default timeout for each waitFor* command.
 	waitforTimeout: 10 * 1000,

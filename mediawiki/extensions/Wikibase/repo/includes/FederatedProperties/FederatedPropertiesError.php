@@ -3,7 +3,7 @@
 declare( strict_types = 1 );
 namespace Wikibase\Repo\FederatedProperties;
 
-use ErrorPageError;
+use MediaWiki\Exception\ErrorPageError;
 use MediaWiki\Html\Html;
 use MediaWiki\Language\RawMessage;
 use Wikibase\DataModel\Term\LabelsProvider;
@@ -52,6 +52,7 @@ class FederatedPropertiesError extends ErrorPageError {
 		parent::__construct( new RawMessage( $html ), $errorBody, [] );
 	}
 
+	/** @inheritDoc */
 	public function report( $action = self::SEND_OUTPUT ) {
 		if ( self::isCommandLine() || defined( 'MW_API' ) ) {
 			parent::report();

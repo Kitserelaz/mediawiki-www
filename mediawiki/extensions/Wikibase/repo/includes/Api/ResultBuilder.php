@@ -4,9 +4,9 @@ namespace Wikibase\Repo\Api;
 
 use MediaWiki\Api\ApiResult;
 use MediaWiki\Site\SiteLookup;
-use MediaWiki\Status\Status;
 use MediaWiki\User\UserIdentity;
 use Serializers\Serializer;
+use StatusValue;
 use Wikibase\DataModel\Entity\EntityDocument;
 use Wikibase\DataModel\Entity\EntityId;
 use Wikibase\DataModel\Entity\EntityIdParser;
@@ -312,9 +312,7 @@ class ResultBuilder {
 		$entity = $entityRevision->getEntity();
 		$entityId = $entity->getId();
 
-		if ( $sourceEntityIdSerialization === null ) {
-			$sourceEntityIdSerialization = $entityId->getSerialization();
-		}
+		$sourceEntityIdSerialization ??= $entityId->getSerialization();
 
 		$record = [];
 
@@ -323,7 +321,6 @@ class ResultBuilder {
 		if ( $props === [] ) {
 			$record = $this->addEntityInfoToRecord( $record, $entityId );
 		} else {
-			// @phan-suppress-next-line PhanTypeMismatchArgumentInternal False positive
 			if ( $props == 'all' || in_array( 'info', $props ) ) {
 				$record = $this->addPageInfo->add( $record, $entityRevision );
 			}
@@ -360,7 +357,7 @@ class ResultBuilder {
 		return $record;
 	}
 
-	private function addEntityRedirectInfoToRecord( array $record, $sourceEntityIdSerialization, EntityId $entityId ): array {
+	private function addEntityRedirectInfoToRecord( array $record, string $sourceEntityIdSerialization, EntityId $entityId ): array {
 		$record['redirects'] = [
 			'from' => $sourceEntityIdSerialization,
 			'to' => $entityId->getSerialization(),
@@ -444,14 +441,14 @@ class ResultBuilder {
 		return $serialization;
 	}
 
-	private function injectEntitySerializationWithSiteLinkUrls( array $serialization ) {
+	private function injectEntitySerializationWithSiteLinkUrls( array $serialization ): array {
 		if ( isset( $serialization['sitelinks'] ) ) {
 			$serialization['sitelinks'] = $this->getSiteLinkListArrayWithUrls( $serialization['sitelinks'] );
 		}
 		return $serialization;
 	}
 
-	private function sortEntitySerializationSiteLinks( array $serialization ) {
+	private function sortEntitySerializationSiteLinks( array $serialization ): array {
 		if ( isset( $serialization['sitelinks'] ) ) {
 			ksort( $serialization['sitelinks'] );
 		}
@@ -461,7 +458,7 @@ class ResultBuilder {
 	private function filterEntitySerializationUsingSiteIds(
 		array $serialization,
 		?array $siteIds
-	) {
+	): array {
 		if ( $siteIds && array_key_exists( 'sitelinks', $serialization ) ) {
 			foreach ( $serialization['sitelinks'] as $siteId => $siteLink ) {
 				if ( is_array( $siteLink ) && !in_array( $siteLink['site'], $siteIds ) ) {
@@ -481,7 +478,7 @@ class ResultBuilder {
 	private function addEntitySerializationFallbackInfo(
 		array $serialization,
 		array $termFallbackChains
-	) {
+	): array {
 		if ( isset( $serialization['labels'] ) ) {
 			$serialization['labels'] = $this->getTermsSerializationWithFallbackInfo(
 				$serialization['labels'],
@@ -564,7 +561,7 @@ class ResultBuilder {
 		return $serialization;
 	}
 
-	private function getEntitySerializationWithMetaData( array $serialization ) {
+	private function getEntitySerializationWithMetaData( array $serialization ): array {
 		$serializeEmptyListsAsObjects = WikibaseRepo::getSettings()->getSetting( 'tmpSerializeEmptyListsAsObjects' );
 		$modifications = [];
 
@@ -783,7 +780,7 @@ class ResultBuilder {
 		$this->setList( $path, 'sitelinks', $values, 'sitelink' );
 	}
 
-	private function getSiteLinkListArrayWithUrls( array $array ) {
+	private function getSiteLinkListArrayWithUrls( array $array ): array {
 		$siteLookup = $this->siteLookup;
 		$addUrlCallback = function( $array ) use ( $siteLookup ) {
 			$site = $siteLookup->getSite( $array['site'] );
@@ -795,7 +792,7 @@ class ResultBuilder {
 		return $this->modifier->modifyUsingCallbacks( $array, [ '*' => $addUrlCallback ] );
 	}
 
-	private function getSiteLinkListArrayWithMetaData( array $array ) {
+	private function getSiteLinkListArrayWithMetaData( array $array ): array {
 		$array[ApiResult::META_KVP_MERGE] = true;
 		return $this->modifier->modifyUsingCallbacks(
 			$array,
@@ -875,8 +872,6 @@ class ResultBuilder {
 
 	/**
 	 * Get serialized claim and add it to result
-	 *
-	 * @param Statement $statement
 	 */
 	public function addStatement( Statement $statement ) {
 		$serializer = $this->serializerFactory->newStatementSerializer();
@@ -963,8 +958,6 @@ class ResultBuilder {
 
 	/**
 	 * Get serialized reference and add it to result
-	 *
-	 * @param Reference $reference
 	 */
 	public function addReference( Reference $reference ) {
 		$serializer = $this->serializerFactory->newReferenceSerializer();
@@ -989,7 +982,7 @@ class ResultBuilder {
 		$this->setValue( null, 'reference', $value );
 	}
 
-	private function getReferenceArrayWithMetaData( array $array ) {
+	private function getReferenceArrayWithMetaData( array $array ): array {
 		return $this->modifier->modifyUsingCallbacks( $array, [
 			'snaks-order' => function ( $array ) {
 				ApiResult::setIndexedTagName( $array, 'property' );
@@ -1022,9 +1015,7 @@ class ResultBuilder {
 			$key = $missingDetails['id'];
 		}
 
-		if ( $key === null ) {
-			$key = $this->missingEntityCounter;
-		}
+		$key ??= $this->missingEntityCounter;
 
 		$this->appendValue(
 			'entities',
@@ -1061,22 +1052,22 @@ class ResultBuilder {
 	}
 
 	/**
-	 * Adds the ID of the new revision from the Status object to the API result structure.
+	 * Adds the ID of the new revision from the status object to the API result structure.
 	 * The status value is expected to be structured in the way that EditEntity::attemptSave()
 	 * resp WikiPage::doUserEditContent() do it: as an array, with an EntityRevision object in the
 	 *  'revision' field. If $oldRevId is set and the latest edit was null, a 'nochange' flag
 	 *  is also added.
 	 *
-	 * If no revision is found in the Status object, this method does nothing.
+	 * If no revision is found in the status object, this method does nothing.
 	 *
 	 * @see ApiResult::addValue()
 	 *
-	 * @param Status $status The status to get the revision ID from.
+	 * @param StatusValue<array> $status The status to get the revision ID from.
 	 * @param string|null|array $path Where in the result to put the revision id
 	 * @param int|null $oldRevId The id of the latest revision of the entity before
 	 *        the last (possibly null) edit
 	 */
-	public function addRevisionIdFromStatusToResult( Status $status, $path, ?int $oldRevId = null ) {
+	public function addRevisionIdFromStatusToResult( StatusValue $status, $path, ?int $oldRevId = null ) {
 		$value = $status->getValue();
 
 		if ( isset( $value['revision'] ) ) {
@@ -1097,16 +1088,16 @@ class ResultBuilder {
 	}
 
 	/**
-	 * Add the temp username if the Status object contains a temp user
+	 * Add the temp username if the status object contains a temp user
 	 *
-	 * @param Status $status As returned by {@link \Wikibase\Repo\EditEntity\EditEntity::attemptSave()}
+	 * @param StatusValue<array> $status As returned by {@link \Wikibase\Repo\EditEntity\EditEntity::attemptSave()}
 	 * @param callable $getTempUserRedirectUrl When called with a temp user, should return a redirect URL;
 	 * callers should use the {@link ApiCreateTempUserTrait} and pass this as
 	 * `fn( $user ) => $this->getTempUserRedirectUrl( $params, $user )`
 	 * @return void
 	 */
 	public function addTempUser(
-		Status $status,
+		StatusValue $status,
 		callable $getTempUserRedirectUrl
 	) {
 		/** @var ?UserIdentity $savedTempUser */

@@ -1,3 +1,7 @@
+/**
+ * @param {Object} wb Wikibase object
+ * @param {Object} util Util object
+ */
 ( function ( wb, util ) {
 	'use strict';
 

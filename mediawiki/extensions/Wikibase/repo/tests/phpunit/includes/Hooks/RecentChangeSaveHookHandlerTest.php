@@ -4,13 +4,12 @@ declare( strict_types=1 );
 
 namespace Wikibase\Repo\Tests\Hooks;
 
-use MediaWiki\MediaWikiServices;
+use MediaWiki\RecentChanges\RecentChange;
 use MediaWiki\User\CentralId\CentralIdLookup;
 use MediaWiki\User\UserIdentityValue;
 use MediaWiki\WikiMap\WikiMap;
 use MediaWikiIntegrationTestCase;
 use PHPUnit\Framework\MockObject\MockObject;
-use RecentChange;
 use Wikibase\Lib\Changes\ChangeStore;
 use Wikibase\Lib\Changes\EntityChange;
 use Wikibase\Lib\Changes\EntityDiffChangedAspects;
@@ -71,7 +70,7 @@ class RecentChangeSaveHookHandlerTest extends MediaWikiIntegrationTestCase {
 			'rc_user_text' => 'some_user',
 		];
 		$recentChange = $this->newStubRecentChangeWithAttributes( $recentChangeAttrs );
-		$entityChange = $this->newEntityChange();
+		$entityChange = $this->newEntityStatementChange();
 
 		$this->changeHolder->transmitChange( $entityChange );
 		$this->subscriptionLookup->method( 'getSubscribers' )
@@ -98,7 +97,7 @@ class RecentChangeSaveHookHandlerTest extends MediaWikiIntegrationTestCase {
 		$recentChange = $this->newStubRecentChangeWithAttributes( $recentChangeAttrs );
 		$recentChange->method( 'getPerformerIdentity' )
 			->willReturn( $testUser );
-		$entityChange = $this->newEntityChange();
+		$entityChange = $this->newEntityStatementChange();
 
 		$this->changeHolder->transmitChange( $entityChange );
 		$this->subscriptionLookup->method( 'getSubscribers' )
@@ -158,7 +157,7 @@ class RecentChangeSaveHookHandlerTest extends MediaWikiIntegrationTestCase {
 			'rc_user_text' => 'some_user',
 		];
 		$recentChange = $this->newStubRecentChangeWithAttributes( $recentChangeAttrs );
-		$entityChange = $this->newEntityChange();
+		$entityChange = $this->newEntityStatementChange();
 
 		$this->changeHolder->transmitChange( $entityChange );
 		$this->subscriptionLookup->method( 'getSubscribers' )
@@ -167,7 +166,7 @@ class RecentChangeSaveHookHandlerTest extends MediaWikiIntegrationTestCase {
 		$this->newHookHandler()->onRecentChange_save( $recentChange );
 
 		$wiki = WikiMap::getCurrentWikiDbDomain()->getId();
-		$jobQueueGroup = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup( $wiki );
+		$jobQueueGroup = $this->getServiceContainer()->getJobQueueGroupFactory()->makeJobQueueGroup( $wiki );
 		$queuedJobs = $jobQueueGroup->get( 'DispatchChanges' )->getAllQueuedJobs();
 		$job = $queuedJobs->current();
 		$this->assertNotNull( $job );
@@ -196,8 +195,33 @@ class RecentChangeSaveHookHandlerTest extends MediaWikiIntegrationTestCase {
 		$this->newHookHandler()->onRecentChange_save( $recentChange );
 
 		$wiki = WikiMap::getCurrentWikiDbDomain()->getId();
-		$jobQueueGroup = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup( $wiki );
+		$jobQueueGroup = $this->getServiceContainer()->getJobQueueGroupFactory()->makeJobQueueGroup( $wiki );
 		$this->assertTrue( $jobQueueGroup->get( 'DispatchChanges' )->isEmpty() );
+	}
+
+	public function testGivenRecentChangeForEntityChangeWithOneQualOrRefOnlyChange_schedulesDispatchJob() {
+		$recentChangeAttrs = [
+			'rc_timestamp' => 1234567890,
+			'rc_bot' => 1,
+			'rc_cur_id' => 42,
+			'rc_last_oldid' => 776,
+			'rc_this_oldid' => 777,
+			'rc_comment' => 'edit summary',
+			'rc_user' => 321,
+			'rc_user_text' => 'some_user',
+		];
+		$recentChange = $this->newStubRecentChangeWithAttributes( $recentChangeAttrs );
+		$entityChange = $this->newEntityStatementChangeQualOrRefOnlyChange();
+
+		$this->changeHolder->transmitChange( $entityChange );
+		$this->subscriptionLookup->method( 'getSubscribers' )
+			->willReturn( [ 'enwiki' ] );
+
+		$this->newHookHandler()->onRecentChange_save( $recentChange );
+
+		$wiki = WikiMap::getCurrentWikiDbDomain()->getId();
+		$jobQueueGroup = $this->getServiceContainer()->getJobQueueGroupFactory()->makeJobQueueGroup( $wiki );
+		$this->assertFalse( $jobQueueGroup->get( 'DispatchChanges' )->isEmpty() );
 	}
 
 	public function testGivenRecentChangeForAddingSitelink_schedulesDispatchJob() {
@@ -215,7 +239,7 @@ class RecentChangeSaveHookHandlerTest extends MediaWikiIntegrationTestCase {
 		$testItemChange = new ItemChange( [
 			'time' => '20210906122813',
 			'info' => [
-				'compactDiff' => new EntityDiffChangedAspects( [], [], [], [
+				'compactDiff' => new EntityDiffChangedAspects( [], [], [], [], [], [
 					'some_wiki' => [ null, 'some_page', false ],
 				], false ),
 				'metadata' => [
@@ -239,7 +263,7 @@ class RecentChangeSaveHookHandlerTest extends MediaWikiIntegrationTestCase {
 
 		$this->newHookHandler()->onRecentChange_save( $recentChange );
 
-		$jobQueueGroup = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup(
+		$jobQueueGroup = $this->getServiceContainer()->getJobQueueGroupFactory()->makeJobQueueGroup(
 			WikiMap::getCurrentWikiDbDomain()->getId()
 		);
 		$this->assertFalse( $jobQueueGroup->get( 'DispatchChanges' )->isEmpty() );
@@ -271,7 +295,13 @@ class RecentChangeSaveHookHandlerTest extends MediaWikiIntegrationTestCase {
 			'rc_log_action' => $logAction,
 		];
 		$recentChange = $this->newStubRecentChangeWithAttributes( $recentChangeAttrs );
-		$entityChange = $this->newEntityChange();
+
+		// the two 'change updated' examples in the dataProvider are entity
+		if ( $changeUpdated ) {
+			$entityChange = $this->newEntityStatementChange();
+		} else {
+			$entityChange = $this->newEntityChange();
+		}
 
 		$this->changeHolder->transmitChange( $entityChange );
 		$this->subscriptionLookup->method( 'getSubscribers' )
@@ -319,4 +349,34 @@ class RecentChangeSaveHookHandlerTest extends MediaWikiIntegrationTestCase {
 		return new EntityChange( [ 'type' => 'wikibase-someEntity~update', 'object_id' => 'Q1' ] );
 	}
 
+	private function newEntityStatementChange(): EntityChange {
+		return new EntityChange( [
+			'type' => 'wikibase-someEntity~update',
+			'object_id' => 'Q1',
+			'info' => [ //this is based on item change example, as we now need the diff
+				'compactDiff' => new EntityDiffChangedAspects( [], [], [], [ 'P1' ], [], [], false ),
+				'metadata' => [
+					'page_id' => 3,
+					'rev_id' => 123,
+					'parent_id' => 4,
+					'comment' => '...',
+					'user_text' => 'Admin',
+					'central_user_id' => 0,
+					'bot' => 0,
+				],
+			],
+		] );
+	}
+
+	private function newEntityStatementChangeQualOrRefOnlyChange(): EntityChange {
+		return new EntityChange( [
+			'type' => 'wikibase-someEntity~update',
+			'object_id' => 'Q1',
+			'info' => [
+				'compactDiff' => new EntityDiffChangedAspects( [], [], [], [], [ 'P1' ], [], false ),
+				'metadata' => [
+				],
+			],
+		] );
+	}
 }

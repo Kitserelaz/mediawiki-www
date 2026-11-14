@@ -6,7 +6,7 @@ use InvalidArgumentException;
 use MediaWiki\Config\Config;
 use MediaWiki\Html\Html;
 use MediaWiki\HTMLForm\HTMLForm;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Language\LanguageNameUtils;
 use MediaWiki\Logger\LoggerFactory;
 use Wikibase\DataModel\Entity\EntityDocument;
 use Wikibase\DataModel\Term\Fingerprint;
@@ -149,6 +149,7 @@ class SpecialSetLabelDescriptionAliases extends SpecialModifyEntity {
 		);
 	}
 
+	/** @inheritDoc */
 	public function doesWrites() {
 		return true;
 	}
@@ -412,7 +413,7 @@ class SpecialSetLabelDescriptionAliases extends SpecialModifyEntity {
 		try {
 			return $this->applyChangeOpList( $changeOps, $entity );
 		} catch ( ChangeOpException $ex ) {
-			$this->showErrorHTML( $ex->getMessage() );
+			$this->showErrorHTML( htmlspecialchars( $ex->getMessage() ) );
 			return false;
 		}
 	}
@@ -551,7 +552,7 @@ class SpecialSetLabelDescriptionAliases extends SpecialModifyEntity {
 		return $this->isEditFormStep( $entity );
 	}
 
-	private function isEditFormStep( ?EntityDocument $entity ) {
+	private function isEditFormStep( ?EntityDocument $entity ): bool {
 		return $entity !== null && $this->languageCode !== null;
 	}
 }

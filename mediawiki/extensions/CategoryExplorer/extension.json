@@ -5,10 +5,10 @@
 	"descriptionmsg": "categoryexplorer-desc",
 	"license-name": "GPL-2.0-or-later",
 	"requires": {
-		"MediaWiki": ">= 1.38.0"
+		"MediaWiki": ">= 1.42.0"
 	},
 	"ConfigRegistry": {
-		"categoryexplorer": "GlobalVarConfig::newInstance"
+		"categoryexplorer": "MediaWiki\\Config\\GlobalVarConfig::newInstance"
 	},
 	"SpecialPages": {},
 	"APIModules": {},
@@ -24,15 +24,23 @@
 		"CategoryExplorer\\": "includes/"
 	},
 	"TestAutoloadNamespaces": {
-		"CategoryExplorer\\Tests\\": "tests/phpunit"
+		"CategoryExplorer\\Tests\\": "tests/phpunit/"
 	},
 	"ResourceModules": {},
 	"ResourceFileModulePaths": {
 		"localBasePath": "",
 		"remoteExtPath": "CategoryExplorer"
 	},
+	"HookHandlers": {
+		"main": {
+			"class": "CategoryExplorer\\Hooks",
+			"services": [
+				"LinkRenderer"
+			]
+		}
+	},
 	"Hooks": {
-		"SkinAfterPortlet": "CategoryExplorer\\Hooks::onSkinAfterPortlet"
+		"SkinAfterPortlet": "main"
 	},
 	"config": {},
 	"DefaultUserOptions": {},

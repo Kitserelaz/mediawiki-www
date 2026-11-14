@@ -1,6 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
+			"SaldırganSincap",
 			"Исмаил Садуев",
 			"Умар"
 		]
@@ -21,7 +22,7 @@
 	"wikibase-comment-multi": "$1 {{PLURAL:$1|хийцам}}",
 	"wikibase-dataitem": "{{grammar:genitive|{{WBREPONAME}}}} чуьра элемент",
 	"wikibase-editlinks": "Хьажоргаш нисйар",
-	"wikibase-editlinkstitle": "Меттанийн йукъара хьажоргаш нисйар",
+	"wikibase-editlinkstitle": "Меттанийн хьажоргаш нисйар",
 	"wikibase-addlinkstitle": "ТӀетоха йукъаравикийн-хьажоргаш",
 	"wikibase-linkitem-addlinks": "ТӀетоха хьажоргаш",
 	"wikibase-linkitem-alreadylinked": "Ахьа кхечу Википедешкара агӀонашах тосуш йолу агӀо [$1 кхузахь] йолуш йу, хӀокхунна [[$2]] тӀе хьажийна. Элементан чохь хӀора Википеди чуьра ца агӀо бе хуьлийла дац. Дехар до кхин агӀо къастайе кхечу Википедеш чуьра агӀонашах таса.",
@@ -61,6 +62,7 @@
 	"wikibase-error-deserialize-error": "Хаамашна десериализаци йан цаделира.",
 	"wikibase-error-serialize-error": "Хаамашна сериализаци йан цаделира.",
 	"wikibase-error-invalid-entity-id": "ID  «$2» системина йевзаш йац. Дехар до, лелайе нийса ID.",
+	"wikibase-error-exceeded-entity-access-limit": "{{WBREPONAME}} чуьра тӀех дукха субъекташ схьаэцна. Чуйаьхна субъектийн дукхалла: $2/$3.",
 	"wikibase-error-exceeded-referenced-entity-id-limit": "ТӀех дукха кхайкхамаш \"mw.wikibase.getReferencedEntityId\" тӀе, {{PLURAL:$2|магийна}} уггаре дукха $2.",
 	"unconnectedpages": "Элементех тесна йоцу агӀонаш",
 	"unconnectedpages-summary": "ХӀокху агӀонан тӀехь бу агӀонийн могӀам, цхьа а зӀе йолу хаамийн элемент йоцуш (элементашца йолу зӀе латтош йолчу цӀерийн меттигашкахь).",
@@ -87,11 +89,13 @@
 	"wikibase-pageinfo-entity-usage-L-with-modifier": "Билгало: $1",
 	"wikibase-pageinfo-entity-usage-D": "Цхьаболу хаамаш",
 	"wikibase-pageinfo-entity-usage-D-with-modifier": "Хаам: $1",
+	"wikibase-pageinfo-entity-usage-A": "Цхьацца псевдонимаш",
+	"wikibase-pageinfo-entity-usage-A-with-modifier": "Псевдоним: $1",
 	"wikibase-pageinfo-entity-usage-T": "Корта",
 	"wikibase-pageinfo-entity-usage-C": "Цхьадолу тӀечӀагӀдарш",
 	"wikibase-pageinfo-entity-usage-C-with-modifier": "Хаам: $1",
 	"wikibase-pageinfo-entity-usage-X": "Духхера массо хаамаш",
-	"wikibase-pageinfo-entity-usage-O": "Кхин (масала, псевдонимаш, хӀуманаш хилар)",
+	"wikibase-pageinfo-entity-usage-O": "Тайп-тайпана (масала, дух хилар)",
 	"wikibase-property-render-error": "«$1» башхалла: $2 гучуйоккхуш гӀалат ду",
 	"wikibase-otherprojects": "Кхечу проекташкахь",
 	"wikibase-otherprojects-beta-message": "Кхечу проектийн агӀонгара панель",

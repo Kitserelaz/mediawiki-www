@@ -6,7 +6,7 @@ namespace Wikibase\Repo\Tests\Api;
 
 use MediaWiki\Api\ApiMain;
 use MediaWiki\Api\ApiUsageException;
-use MediaWiki\MediaWikiServices;
+use MediaWiki\Permissions\PermissionStatus;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\Status\Status;
 use MediaWiki\Tests\User\TempUser\TempUserTestTrait;
@@ -81,9 +81,9 @@ class CreateRedirectTest extends MediaWikiIntegrationTestCase {
 		$permissionChecker->method( 'getPermissionStatusForEntityId' )
 			->willReturnCallback( function( User $user ) {
 				if ( $user->getName() === 'UserWithoutPermission' ) {
-					return Status::newFatal( 'permissiondenied' );
+					return PermissionStatus::newFatal( 'permissiondenied' );
 				} else {
-					return Status::newGood();
+					return PermissionStatus::newGood();
 				}
 			} );
 
@@ -132,7 +132,7 @@ class CreateRedirectTest extends MediaWikiIntegrationTestCase {
 			new BasicEntityIdParser(),
 			$errorReporter,
 			$interactor,
-			MediaWikiServices::getInstance()->getPermissionManager(),
+			$this->getServiceContainer()->getPermissionManager(),
 			[ 'mainItem' => 'Q100', 'auxItem' => 'Q200' ]
 		);
 	}
@@ -179,7 +179,7 @@ class CreateRedirectTest extends MediaWikiIntegrationTestCase {
 		$this->assertSame( 1, $result['success'] );
 	}
 
-	public function setRedirectProvider_success(): iterable {
+	public static function setRedirect_successProvider(): iterable {
 		return [
 			'redirect empty entity' => [ 'Q11', 'Q12' ],
 			'update redirect' => [ 'Q22', 'Q11' ],
@@ -187,7 +187,7 @@ class CreateRedirectTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @dataProvider setRedirectProvider_success
+	 * @dataProvider setRedirect_successProvider
 	 */
 	public function testSetRedirect_success( string $from, string $to ): void {
 		$params = [ 'from' => $from, 'to' => $to ];
@@ -196,7 +196,7 @@ class CreateRedirectTest extends MediaWikiIntegrationTestCase {
 		$this->assertSuccess( $result );
 	}
 
-	public function setRedirectProvider_failure(): iterable {
+	public static function setRedirect_failureProvider(): iterable {
 		return [
 			'bad source id' => [ 'xyz', 'Q12', 'invalid-entity-id' ],
 			'bad target id' => [ 'Q11', 'xyz', 'invalid-entity-id' ],
@@ -212,7 +212,7 @@ class CreateRedirectTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @dataProvider setRedirectProvider_failure
+	 * @dataProvider setRedirect_failureProvider
 	 */
 	public function testSetRedirect_failure( string $from, string $to, string $expectedCode ): void {
 		$params = [ 'from' => $from, 'to' => $to ];

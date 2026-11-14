@@ -1,8 +1,8 @@
 {
 	"@metadata": {
 		"authors": [
-			"Tofeiku",
-			"Hakimi97"
+			"Hakimi97",
+			"Tofeiku"
 		]
 	},
 	"apierror-wikibaselexeme-form-must-have-at-least-one-representation": "Bentuk mesti mempunyai sekurang-kurangnya satu perwakilan",

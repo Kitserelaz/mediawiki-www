@@ -72,7 +72,7 @@ class InMemoryEntityLookup implements EntityLookup, ItemLookup, PropertyLookup {
 	 * @param EntityId $entityId
 	 *
 	 * @throws EntityLookupException
-	 * @return EntityDocument
+	 * @return ?EntityDocument
 	 */
 	public function getEntity( EntityId $entityId ) {
 		$this->throwExceptionIfNeeded( $entityId );
@@ -104,10 +104,12 @@ class InMemoryEntityLookup implements EntityLookup, ItemLookup, PropertyLookup {
 		}
 	}
 
+	/** @inheritDoc */
 	public function getItemForId( ItemId $itemId ) {
 		return ( new LegacyAdapterItemLookup( $this ) )->getItemForId( $itemId );
 	}
 
+	/** @inheritDoc */
 	public function getPropertyForId( PropertyId $propertyId ) {
 		return ( new LegacyAdapterPropertyLookup( $this ) )->getpropertyForId( $propertyId );
 	}

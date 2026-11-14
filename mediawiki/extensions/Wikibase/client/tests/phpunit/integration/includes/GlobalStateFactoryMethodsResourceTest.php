@@ -2,10 +2,10 @@
 
 namespace Wikibase\Client\Tests\Integration;
 
+use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\Tests\ExtensionJsonTestBase;
 use ReflectionClass;
 use ReflectionMethod;
-use Wikibase\Client\Hooks\EchoNotificationsHandlers;
 use Wikibase\Client\Hooks\NoLangLinkHandler;
 use Wikibase\Client\Hooks\ShortDescHandler;
 use Wikibase\Client\WikibaseClient;
@@ -24,15 +24,39 @@ use Wikimedia\TestingAccessWrapper;
  */
 class GlobalStateFactoryMethodsResourceTest extends ExtensionJsonTestBase {
 
-	protected string $extensionJsonPath = __DIR__ . '/../../../../../extension-client.json';
+	protected static string $extensionJsonPath = __DIR__ . '/../../../../../extension-client.json';
 
 	protected ?string $serviceNamePrefix = 'WikibaseClient.';
+
+	protected static bool $requireHookHandlers = true;
 
 	protected function setUp(): void {
 		parent::setUp();
 
 		// Configure the site group so that it doesn’t need to fall back to the DB site store
 		$this->configureSiteGroup();
+	}
+
+	public static function provideHookHandlerNames(): iterable {
+		$hookHandlerNames = parent::provideHookHandlerNames();
+		foreach ( $hookHandlerNames as $hookHandlerName ) {
+			if ( $hookHandlerName[0] === 'CirrusSearchAddQueryFeatures' &&
+				!ExtensionRegistry::getInstance()->isLoaded( 'CirrusSearch' ) ) {
+				continue;
+			}
+			$needsEcho = in_array(
+				$hookHandlerName[0],
+				[ 'EchoGetBundleRulesHandler', 'EchoSetup' ]
+			);
+			if ( $needsEcho && !ExtensionRegistry::getInstance()->isLoaded( 'Echo' ) ) {
+				continue;
+			}
+			if ( $hookHandlerName[0] === 'ScribuntoExternalLibraries' &&
+				!ExtensionRegistry::getInstance()->isLoaded( 'Scribunto' ) ) {
+				continue;
+			}
+			yield $hookHandlerName;
+		}
 	}
 
 	/** @dataProvider provideWikibaseServicesMethods */
@@ -48,11 +72,6 @@ class GlobalStateFactoryMethodsResourceTest extends ExtensionJsonTestBase {
 		foreach ( $reflectionClass->getMethods( ReflectionMethod::IS_PUBLIC ) as $method ) {
 			yield $method->getName() => [ $method->getName() ];
 		}
-	}
-
-	public function testEchoNotificationsHandlers() {
-		EchoNotificationsHandlers::factory();
-		$this->assertTrue( true );
 	}
 
 	public function testNoLangLinkHandler(): void {

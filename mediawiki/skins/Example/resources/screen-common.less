@@ -1,0 +1,206 @@
+/* Common styling for the Example skin */
+
+@import 'mediawiki.mixins.less';
+
+// Page layout
+
+body {
+	background: rgb(255, 225, 106);
+	--theme-community-header-color: black;
+}
+
+#mw-wrapper {
+	max-width: @width;
+	margin: 0 auto;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	box-sizing: border-box;
+}
+
+#p-logo {
+	text-align: center;
+	width: 10em;
+	float: right;
+
+	// Make logo image visible
+	// The class sets the background image from $wgLogo, but we still need to give it a size in order to show up
+	a.mw-wiki-logo {
+		display: block;
+		content: '';
+		width: 10em;
+		height: 10em;
+		background-repeat: no-repeat;
+		background-position: 50% 50%;
+	}
+}
+
+#resizable-container {
+	display: flex;
+	flex-direction: column;
+	margin: 0 auto 48px;
+	max-width: 1236px;
+	position: relative;
+	transition: width .3s, max-width .3s;
+	width: 95%;
+}
+
+// page_main
+.mw-body {
+	position: relative;
+	word-wrap: break-word;
+	background: rgb(248, 225, 168);
+	border-radius: 3px;
+	min-height: 480px;
+	padding: 24px 36px;
+	margin-top: 12px;
+	max-width: none;
+	box-sizing: border-box;
+}
+
+#community-header {
+	display: flex;
+	flex-direction: column;
+	height: 148px;
+	justify-content: flex-end;
+}
+
+#community-header-name-wrapper {
+	align-items: center;
+	display: flex;
+}
+
+#community-header-name {
+	color: inherit;
+	display: -webkit-box;
+	font-size: 18px;
+	font-weight: 500;
+	line-height: 1.25;
+	overflow: hidden;
+	text-decoration: none;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	margin-right: 9px; 
+   font-size: 24px;
+}
+
+.page-counter {
+	font-weight: 500;
+	line-height: ƒ 1;
+	margin-left: auto;
+	margin-right: 6px;
+	text-align: right;
+	text-transform: uppercase;
+}
+
+.page-counter__label {
+	font-size: 14px;
+	line-height: 13px;
+}
+
+.page-counter__value {
+	font-size: 18px;
+	line-height: 17px;
+}
+
+header {
+	color: var(--theme-community-header-color);
+	display: flex;
+	width: 100%;
+}
+
+#community-header-top-container {
+	align-items: flex-end;
+	display: flex;
+	width: 100%;
+}
+
+// Some content stuff
+.firstHeading {
+	margin-top: 0;
+}
+
+.mw-indicators {
+	float: right;
+	margin: 1.5em 0 0 1em;
+}
+
+pre {
+	overflow: auto;
+	white-space: pre-wrap;
+}
+
+.center,
+.center * {
+	margin: auto;
+	text-align: center;
+}
+
+// Splatter the menus and tools at the bottom
+.mw-footer,
+#page-tools,
+#p-personal {
+	margin: 1em 0;
+
+	ul {
+		list-style-type: none;
+		margin: 0;
+	}
+
+	li {
+		padding-right: 1em;
+		display: inline-block;
+	}
+}
+
+#page-tools .mw-portlet {
+	display: inline-block;
+}
+
+#mw-navigation {
+	margin: 1em 0;
+
+	h2 {
+		.mixin-screen-reader-text;
+	}
+}
+
+// Footer
+.mw-footer {
+	border-top: 1px solid @border;
+
+	// stylelint-disable-next-line no-descending-specificity
+	ul {
+		margin-top: 1em;
+	}
+}
+
+#footer-icons {
+	float: right;
+	margin: 0 0 1em 1em;
+}
+
+// hidden stuff
+#page-tools h3,
+#p-search h3,
+#p-personal h3 {
+	.mixin-screen-reader-text;
+}
+
+// user tools
+#user-tools {
+	margin-top: 10px;
+}
+
+#p-user-interface-preferences,
+#p-notifications,
+#p-user-page {
+	display: inline-block;
+	vertical-align: middle;
+}
+
+#p-user-page a::before {
+	content: '👤';
+	display: inline-block;
+	padding-right: 10px;
+}

@@ -1,4 +1,4 @@
-# Architecture Decision Records
+# Architecture Decision Records {#docs_adr_index}
 
 This directory collects Architecture Decision Records, as outlined by Michael Nygard in his article: http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions
 
@@ -14,3 +14,4 @@ Current ADRs include:
 * @subpage adr_0003
 * @subpage adr_0004
 * @subpage adr_0005
+* @subpage adr_0006

@@ -4,7 +4,7 @@ namespace Wikibase\Repo\Tests\Specials;
 
 use MediaWiki\Message\Message;
 use MediaWiki\Request\FauxRequest;
-use SpecialPageTestBase;
+use MediaWiki\Tests\Specials\SpecialPageTestBase;
 use Wikibase\DataModel\Entity\Item;
 use Wikibase\Repo\Content\EntityContent;
 use Wikibase\Repo\WikibaseRepo;
@@ -138,6 +138,20 @@ abstract class SpecialModifyTermTestCase extends SpecialPageTestBase {
 			both( tagMatchingOutline( "<p class='error'/>" ) )
 			->andAlso( havingTextContents( new Message( 'permissionserrors', [], $lang ) ) )
 		) ) ) );
+	}
+
+	public function testEscapesLanguageAndValue(): void {
+		$id = $this->createNewItemWithTerms( 'en', 'foo' );
+
+		$request = new FauxRequest( [
+			'id' => $id,
+			'language' => '<script>alert("language")</script>',
+			'value' => '<script>alert("value")</script>',
+		], true );
+
+		[ $output ] = $this->executeSpecialPage( '', $request );
+
+		$this->assertStringNotContainsString( '<script>alert', $output );
 	}
 
 }

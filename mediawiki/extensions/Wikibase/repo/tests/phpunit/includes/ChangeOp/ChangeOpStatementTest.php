@@ -43,13 +43,8 @@ class ChangeOpStatementTest extends \PHPUnit\Framework\TestCase {
 	 */
 	protected $mockProvider;
 
-	/**
-	 * @param string|null $name
-	 * @param array $data
-	 * @param string $dataName
-	 */
-	public function __construct( $name = null, array $data = [], $dataName = '' ) {
-		parent::__construct( $name, $data, $dataName );
+	protected function setUp(): void {
+		parent::setUp();
 
 		$this->mockProvider = new ChangeOpTestMockProvider( $this );
 	}
@@ -96,9 +91,9 @@ class ChangeOpStatementTest extends \PHPUnit\Framework\TestCase {
 		$this->assertTrue( $changeOpResult->isEntityChanged() );
 	}
 
-	public function provideTestApply() {
-		$item777 = $this->makeNewItemWithStatement( 'Q777', new PropertyNoValueSnak( 45 ) );
-		$item666 = $this->makeNewItemWithStatement( 'Q666', new PropertySomeValueSnak( 44 ) );
+	public static function provideTestApply() {
+		$item777 = self::makeNewItemWithStatement( 'Q777', new PropertyNoValueSnak( 45 ) );
+		$item666 = self::makeNewItemWithStatement( 'Q666', new PropertySomeValueSnak( 44 ) );
 
 		$item777Statements = $item777->getStatements()->toArray();
 		$item666Statements = $item666->getStatements()->toArray();
@@ -243,7 +238,7 @@ class ChangeOpStatementTest extends \PHPUnit\Framework\TestCase {
 		$changeOpStatement->apply( $item );
 	}
 
-	public function applyInvalidThrowsExceptionProvider() {
+	public static function applyInvalidThrowsExceptionProvider() {
 		$itemEmpty = new Item( new ItemId( 'Q888' ) );
 		$noValueSnak = new PropertyNoValueSnak( new NumericPropertyId( 'P45' ) );
 		$someValueSnak = new PropertySomeValueSnak( new NumericPropertyId( 'P44' ) );
@@ -251,8 +246,8 @@ class ChangeOpStatementTest extends \PHPUnit\Framework\TestCase {
 		$statementWithInvalidGuid = new Statement( $noValueSnak );
 		$statementWithInvalidGuid->setGuid( 'Q0$' );
 
-		$item777 = $this->makeNewItemWithStatement( 'Q777', $noValueSnak );
-		$item666 = $this->makeNewItemWithStatement( 'Q666', $someValueSnak );
+		$item777 = self::makeNewItemWithStatement( 'Q777', $noValueSnak );
+		$item666 = self::makeNewItemWithStatement( 'Q666', $someValueSnak );
 
 		$item777Statements = $item777->getStatements()->toArray();
 		$item666Statements = $item666->getStatements()->toArray();
@@ -293,9 +288,9 @@ class ChangeOpStatementTest extends \PHPUnit\Framework\TestCase {
 		);
 	}
 
-	public function provideInvalidApply() {
+	public static function provideInvalidApply(): iterable {
 		$snak = new PropertyNoValueSnak( 67573284 );
-		$item = $this->makeNewItemWithStatement( 'Q777', $snak );
+		$item = self::makeNewItemWithStatement( 'Q777', $snak );
 		$statements = $item->getStatements()->toArray();
 		/** @var Statement $statement */
 		$statement = reset( $statements );
@@ -307,15 +302,13 @@ class ChangeOpStatementTest extends \PHPUnit\Framework\TestCase {
 
 		// apply change to the wrong item
 		$wrongItem = new Item( new ItemId( 'Q888' ) );
-		$args['wrong entity'] = [ $wrongItem, $this->newChangeOpStatement( $newStatement ) ];
+		$args['wrong entity'] = [ $wrongItem, $newStatement ];
 
 		// update an existing statement with wrong main snak property
 		$newSnak = new PropertyNoValueSnak( 23452345 );
 		$newStatement->setMainSnak( $newSnak );
 
-		$changeOp = $this->newChangeOpStatement( $newStatement );
-
-		$args['wrong main snak property'] = [ $item, $changeOp ];
+		$args['wrong main snak property'] = [ $item, $newStatement ];
 
 		return $args;
 	}
@@ -323,19 +316,14 @@ class ChangeOpStatementTest extends \PHPUnit\Framework\TestCase {
 	/**
 	 * @dataProvider provideInvalidApply
 	 */
-	public function testInvalidApply( EntityDocument $item, ChangeOpStatement $changeOp ) {
+	public function testInvalidApply( EntityDocument $item, Statement $statement ) {
 		$this->expectException( ChangeOpException::class );
 
+		$changeOp = $this->newChangeOpStatement( $statement );
 		$changeOp->apply( $item );
 	}
 
-	/**
-	 * @param string $idString
-	 * @param Snak $mainSnak
-	 *
-	 * @return Item
-	 */
-	private function makeNewItemWithStatement( $idString, Snak $mainSnak ) {
+	private static function makeNewItemWithStatement( string $idString, Snak $mainSnak ): Item {
 		$id = new ItemId( $idString );
 
 		$statement = new Statement( $mainSnak );

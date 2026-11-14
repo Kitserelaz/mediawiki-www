@@ -2,38 +2,53 @@
 
 namespace Wikibase\Repo;
 
-use LogEntry;
-use MediaWiki\Api\ApiBase;
+use MediaWiki\Actions\Hook\InfoActionHook;
+use MediaWiki\Actions\Hook\PageHistoryLineEndingHook;
 use MediaWiki\Api\ApiEditPage;
-use MediaWiki\Api\ApiMain;
-use MediaWiki\Api\ApiModuleManager;
 use MediaWiki\Api\ApiQuery;
-use MediaWiki\Api\ApiQuerySiteinfo;
+use MediaWiki\Api\Hook\ApiCheckCanExecuteHook;
+use MediaWiki\Api\Hook\ApiMain__moduleManagerHook;
+use MediaWiki\Api\Hook\ApiMain__onExceptionHook;
+use MediaWiki\Api\Hook\ApiQuery__moduleManagerHook;
+use MediaWiki\Api\Hook\APIQuerySiteInfoGeneralInfoHook;
 use MediaWiki\Content\Content;
-use MediaWiki\Context\IContextSource;
-use MediaWiki\Linker\LinkTarget;
+use MediaWiki\Content\Hook\ContentModelCanBeUsedOnHook;
+use MediaWiki\Context\RequestContext;
+use MediaWiki\Hook\FormatAutocommentsHook;
+use MediaWiki\Hook\MaintenanceShellStartHook;
+use MediaWiki\Hook\MediaWikiServicesHook;
+use MediaWiki\Hook\TitleGetRestrictionTypesHook;
+use MediaWiki\Hook\UnitTestsListHook;
+use MediaWiki\Import\Hook\ImportHandleRevisionXMLTagHook;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Output\Hook\BeforePageDisplayHook;
+use MediaWiki\Output\Hook\OutputPageBodyAttributesHook;
+use MediaWiki\Output\Hook\OutputPageParserOutputHook;
 use MediaWiki\Output\OutputPage;
-use MediaWiki\Pager\HistoryPager;
-use MediaWiki\Parser\Parser;
-use MediaWiki\Parser\ParserOutput;
+use MediaWiki\Page\Hook\BeforeDisplayNoArticleTextHook;
+use MediaWiki\Page\Hook\RevisionFromEditCompleteHook;
+use MediaWiki\Parser\Hook\ParserFirstCallInitHook;
+use MediaWiki\Parser\Hook\ParserOptionsRegisterHook;
+use MediaWiki\Parser\ParserOptions;
+use MediaWiki\Preferences\Hook\GetPreferencesHook;
 use MediaWiki\Registration\ExtensionRegistry;
-use MediaWiki\ResourceLoader\ResourceLoader;
+use MediaWiki\ResourceLoader\CodexModule;
+use MediaWiki\ResourceLoader\Context;
+use MediaWiki\ResourceLoader\Hook\ResourceLoaderRegisterModulesHook;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
-use MediaWiki\StubObject\StubUserLang;
+use MediaWiki\Skin\Hook\SidebarBeforeOutputHook;
+use MediaWiki\Skin\Hook\SkinPageReadyConfigHook;
+use MediaWiki\Skin\Hook\SkinTemplateNavigation__UniversalHook;
+use MediaWiki\Skin\Skin;
+use MediaWiki\Title\Hook\NamespaceIsMovableHook;
 use MediaWiki\Title\Title;
-use MediaWiki\User\User;
-use MediaWiki\User\UserIdentity;
 use RuntimeException;
-use Skin;
-use SkinTemplate;
-use Throwable;
 use UnexpectedValueException;
 use Wikibase\DataModel\Entity\Item;
 use Wikibase\DataModel\Entity\Property;
-use Wikibase\Lib\ContentLanguages;
 use Wikibase\Lib\Formatters\AutoCommentFormatter;
+use Wikibase\Lib\Hooks\WikibaseContentLanguagesHook;
 use Wikibase\Lib\LibHooks;
 use Wikibase\Lib\ParserFunctions\CommaSeparatedList;
 use Wikibase\Lib\SettingsArray;
@@ -45,6 +60,7 @@ use Wikibase\Repo\Api\MetaDataBridgeConfig;
 use Wikibase\Repo\Api\ModifyEntity;
 use Wikibase\Repo\Content\EntityContent;
 use Wikibase\Repo\Content\EntityHandler;
+use Wikibase\Repo\Domains\Reuse\Infrastructure\GraphQL\ActionWikibaseGraphQL;
 use Wikibase\Repo\Hooks\Helpers\OutputPageEntityViewChecker;
 use Wikibase\Repo\Hooks\InfoActionHookHandler;
 use Wikibase\Repo\Hooks\OutputPageEntityIdReader;
@@ -55,16 +71,67 @@ use Wikibase\Repo\ParserOutput\TermboxView;
 use Wikibase\Repo\Store\RateLimitingIdGenerator;
 use Wikibase\Repo\Store\Sql\SqlSubscriptionLookup;
 use Wikibase\View\ViewHooks;
-use WikiImporter;
+use Wikibase\View\Wbui2025FeatureFlag;
 use Wikimedia\Rdbms\IDBAccessObject;
-use WikiPage;
 
 /**
  * File defining the hook handlers for the Wikibase extension.
  *
  * @license GPL-2.0-or-later
  */
-final class RepoHooks {
+final class RepoHooks implements
+	APIQuerySiteInfoGeneralInfoHook,
+	ApiCheckCanExecuteHook,
+	ApiMain__moduleManagerHook,
+	ApiMain__onExceptionHook,
+	ApiQuery__moduleManagerHook,
+	BeforePageDisplayHook,
+	BeforeDisplayNoArticleTextHook,
+	ContentModelCanBeUsedOnHook,
+	FormatAutocommentsHook,
+	ImportHandleRevisionXMLTagHook,
+	InfoActionHook,
+	MaintenanceShellStartHook,
+	MediaWikiServicesHook,
+	NamespaceIsMovableHook,
+	OutputPageBodyAttributesHook,
+	OutputPageParserOutputHook,
+	PageHistoryLineEndingHook,
+	ParserFirstCallInitHook,
+	ParserOptionsRegisterHook,
+	ResourceLoaderRegisterModulesHook,
+	RevisionFromEditCompleteHook,
+	SidebarBeforeOutputHook,
+	SkinPageReadyConfigHook,
+	SkinTemplateNavigation__UniversalHook,
+	TitleGetRestrictionTypesHook,
+	UnitTestsListHook,
+	WikibaseContentLanguagesHook,
+	GetPreferencesHook
+{
+	/**
+	 * We implement this solely to replace the standard message that
+	 * is shown when an entity does not exists.
+	 *
+	 * @inheritDoc
+	 */
+	public function onBeforeDisplayNoArticleText( $article ) {
+		$namespaceLookup = WikibaseRepo::getLocalEntityNamespaceLookup();
+		$contentFactory = WikibaseRepo::getEntityContentFactory();
+
+		$ns = $article->getTitle()->getNamespace();
+		$oldid = $article->getOldID();
+
+		if ( !$oldid && $namespaceLookup->isEntityNamespace( $ns ) ) {
+			$entityType = $namespaceLookup->getEntityType( $ns );
+			$handler = $contentFactory->getContentHandlerForType( $entityType );
+			$handler->showMissingEntity( $article->getTitle(), $article->getContext() );
+
+			return false;
+		}
+
+		return true;
+	}
 
 	/**
 	 * Handler for the BeforePageDisplay hook, that conditionally adds the wikibase
@@ -76,7 +143,7 @@ final class RepoHooks {
 	 * @param OutputPage $out
 	 * @param Skin $skin
 	 */
-	public static function onBeforePageDisplay( OutputPage $out, Skin $skin ) {
+	public function onBeforePageDisplay( $out, $skin ): void {
 		$entityNamespaceLookup = WikibaseRepo::getEntityNamespaceLookup();
 		$namespace = $out->getTitle()->getNamespace();
 		$isEntityTitle = $entityNamespaceLookup->isNamespaceWithEntities( $namespace );
@@ -85,7 +152,12 @@ final class RepoHooks {
 		if ( $settings->getSetting( 'enableEntitySearchUI' ) === true ) {
 			$skinName = $skin->getSkinName();
 			if ( $skinName === 'vector-2022' ) {
-				$out->addModules( 'wikibase.vector.searchClient' );
+				// IMPORTANT: Don't load Vue.js here as that would be a considerable amount of JS to pull on page load
+				// It will be lazy loaded by the search client via the SkinPageReadyConfig hook.
+				// See also onSkinPageReadyConfig() for further search setup.
+				if ( $settings->getSetting( 'tmpEnableScopedTypeaheadSearch' ) ) {
+					$out->addModuleStyles( 'wikibase.vector.scopedTypeaheadSearchStyles' );
+				}
 			} elseif ( $skinName !== 'minerva' ) {
 				// Minerva uses its own search widget.
 				$out->addModules( 'wikibase.ui.entitysearch' );
@@ -112,26 +184,31 @@ final class RepoHooks {
 	}
 
 	/**
-	 * Handler for the SetupAfterCache hook, completing the content and namespace setup.
+	 * Handler for the MediaWikiServices hook, completing the content and namespace setup.
 	 * This updates the $wgContentHandlers and $wgNamespaceContentModels registries
 	 * according to information provided by entity type definitions and the entityNamespaces
 	 * setting for the local entity source.
+	 * Note that we must not access any MediaWiki core services here (except for the hook container);
+	 * see the warning in {@link \MediaWiki\Hook\MediaWikiServicesHook::onMediaWikiServices()}.
+	 *
+	 * @param MediaWikiServices $services
+	 * @return bool|void True or no return value to continue or false to abort
 	 */
-	public static function onSetupAfterCache() {
+	public function onMediaWikiServices( $services ) {
 		global $wgContentHandlers,
 			$wgNamespaceContentModels;
 
-		if ( WikibaseRepo::getSettings()->getSetting( 'defaultEntityNamespaces' ) ) {
+		if ( WikibaseRepo::getSettings( $services )->getSetting( 'defaultEntityNamespaces' ) ) {
 			self::defaultEntityNamespaces();
 		}
 
-		$namespaces = WikibaseRepo::getLocalEntitySource()->getEntityNamespaceIds();
-		$namespaceLookup = WikibaseRepo::getEntityNamespaceLookup();
+		$namespaces = WikibaseRepo::getLocalEntitySource( $services )->getEntityNamespaceIds();
+		$namespaceLookup = WikibaseRepo::getEntityNamespaceLookup( $services );
 
 		// Register entity namespaces.
 		// Note that $wgExtraNamespaces and $wgNamespaceAliases have already been processed at this
 		// point and should no longer be touched.
-		$contentModelIds = WikibaseRepo::getContentModelMappings();
+		$contentModelIds = WikibaseRepo::getContentModelMappings( $services );
 
 		foreach ( $namespaces as $entityType => $namespace ) {
 			// TODO: once there is a mechanism for registering the default content model for
@@ -147,8 +224,8 @@ final class RepoHooks {
 
 		// Register callbacks for instantiating ContentHandlers for EntityContent.
 		foreach ( $contentModelIds as $entityType => $model ) {
-			$wgContentHandlers[$model] = function () use ( $entityType ) {
-				$entityContentFactory = WikibaseRepo::getEntityContentFactory();
+			$wgContentHandlers[$model] = function () use ( $services, $entityType ) {
+				$entityContentFactory = WikibaseRepo::getEntityContentFactory( $services );
 				return $entityContentFactory->getContentHandlerForType( $entityType );
 			};
 		}
@@ -190,34 +267,23 @@ final class RepoHooks {
 		}
 	}
 
-	/**
-	 * Hook to add PHPUnit test cases.
-	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/UnitTestsList
-	 *
-	 * @param string[] &$paths
-	 */
-	public static function registerUnitTests( array &$paths ) {
+	/** @inheritDoc */
+	public function onUnitTestsList( &$paths ) {
 		$paths[] = __DIR__ . '/../tests/phpunit/';
 		$paths[] = __DIR__ . '/../rest-api/tests/phpunit/';
+		$paths[] = __DIR__ . '/../domains/crud/tests/phpunit/';
+		$paths[] = __DIR__ . '/../domains/search/tests/phpunit/';
+		$paths[] = __DIR__ . '/../domains/reuse/tests/phpunit/';
 	}
 
-	/**
-	 * Handler for the NamespaceIsMovable hook.
-	 *
-	 * Implemented to prevent moving pages that are in an entity namespace.
-	 *
-	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/NamespaceIsMovable
-	 *
-	 * @param int $ns Namespace ID
-	 * @param bool &$movable
-	 */
-	public static function onNamespaceIsMovable( $ns, &$movable ) {
+	/** @inheritDoc */
+	public function onNamespaceIsMovable( $ns, &$movable ) {
 		if ( self::isNamespaceUsedByLocalEntities( $ns ) ) {
 			$movable = false;
 		}
 	}
 
-	private static function isNamespaceUsedByLocalEntities( $namespace ) {
+	private static function isNamespaceUsedByLocalEntities( int $namespace ): bool {
 		$namespaceLookup = WikibaseRepo::getEntityNamespaceLookup();
 
 		// TODO: this logic seems badly misplaced, probably WikibaseRepo should be asked and be
@@ -249,36 +315,28 @@ final class RepoHooks {
 		return false;
 	}
 
-	/**
-	 * Called when a revision was inserted due to an edit.
-	 *
-	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/RevisionFromEditComplete
-	 *
-	 * @param WikiPage $wikiPage
-	 * @param RevisionRecord $revisionRecord
-	 * @param int $baseID
-	 * @param UserIdentity $user
-	 */
-	public static function onRevisionFromEditComplete(
-		WikiPage $wikiPage,
-		RevisionRecord $revisionRecord,
-		$baseID,
-		UserIdentity $user
+	/** @inheritDoc */
+	public function onRevisionFromEditComplete(
+		$wikiPage,
+		$rev,
+		$originalRevId,
+		$user,
+		&$tags
 	) {
 		$entityContentFactory = WikibaseRepo::getEntityContentFactory();
 
 		if ( $entityContentFactory->isEntityContentModel( $wikiPage->getContent()->getModel() ) ) {
 			self::notifyEntityStoreWatcherOnUpdate(
 				// @phan-suppress-next-line PhanTypeMismatchArgumentSuperType Content model is checked
-				$revisionRecord->getContent( SlotRecord::MAIN ),
-				$revisionRecord
+				$rev->getContent( SlotRecord::MAIN ),
+				$rev
 			);
 
 			$notifier = WikibaseRepo::getChangeNotifier();
-			$parentId = $revisionRecord->getParentId();
+			$parentId = $rev->getParentId();
 
 			if ( !$parentId ) {
-				$notifier->notifyOnPageCreated( $revisionRecord );
+				$notifier->notifyOnPageCreated( $rev );
 			} else {
 				$parent = MediaWikiServices::getInstance()
 					->getRevisionLookup()
@@ -290,7 +348,7 @@ final class RepoHooks {
 						. 'failed to load parent revision with ID ' . $parentId
 					);
 				} else {
-					$notifier->notifyOnPageModified( $revisionRecord, $parent );
+					$notifier->notifyOnPageModified( $rev, $parent );
 				}
 			}
 		}
@@ -319,85 +377,11 @@ final class RepoHooks {
 	}
 
 	/**
-	 * Occurs after the delete article request has been processed.
-	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/ArticleDeleteComplete
-	 *
-	 * @param WikiPage $wikiPage
-	 * @param User $user
-	 * @param string $reason
-	 * @param int $id id of the article that was deleted
-	 * @param Content|null $content
-	 * @param LogEntry $logEntry
-	 */
-	public static function onArticleDeleteComplete(
-		WikiPage $wikiPage,
-		User $user,
-		$reason,
-		$id,
-		?Content $content,
-		LogEntry $logEntry
-	) {
-		$entityContentFactory = WikibaseRepo::getEntityContentFactory();
-
-		// Bail out if we are not looking at an entity
-		if ( !$content || !$entityContentFactory->isEntityContentModel( $content->getModel() ) ) {
-			return;
-		}
-
-		/** @var EntityContent $content */
-		'@phan-var EntityContent $content';
-
-		// Notify storage/lookup services that the entity was deleted. Needed to track page-level deletion.
-		// May be redundant in some cases. Take care not to cause infinite regress.
-		WikibaseRepo::getEntityStoreWatcher()->entityDeleted( $content->getEntityId() );
-
-		$notifier = WikibaseRepo::getChangeNotifier();
-		$notifier->notifyOnPageDeleted( $content, $user, $logEntry->getTimestamp() );
-	}
-
-	/**
-	 * Handle changes for undeletions
-	 *
-	 * @param Title $title
-	 * @param bool $created
-	 * @param string $comment
-	 */
-	public static function onArticleUndelete( Title $title, $created, $comment ) {
-		$entityContentFactory = WikibaseRepo::getEntityContentFactory();
-
-		// Bail out if we are not looking at an entity
-		if ( !$entityContentFactory->isEntityContentModel( $title->getContentModel() ) ) {
-			return;
-		}
-
-		$revisionId = $title->getLatestRevID();
-		$revisionRecord = MediaWikiServices::getInstance()
-			->getRevisionLookup()
-			->getRevisionById( $revisionId );
-		if ( !$revisionRecord ) {
-			return;
-		}
-
-		$content = $revisionRecord->getContent( SlotRecord::MAIN );
-		if ( !( $content instanceof EntityContent ) ) {
-			return;
-		}
-
-		$notifier = WikibaseRepo::getChangeNotifier();
-		$notifier->notifyOnPageUndeleted( $revisionRecord );
-	}
-
-	/**
-	 * Allows to add user preferences.
-	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/GetPreferences
-	 *
 	 * NOTE: Might make sense to put the inner functionality into a well structured Preferences file once this
 	 *       becomes more.
-	 *
-	 * @param User $user
-	 * @param array[] &$preferences
+	 * @inheritDoc
 	 */
-	public static function onGetPreferences( User $user, array &$preferences ) {
+	public function onGetPreferences( $user, &$preferences ) {
 		$preferences['wb-acknowledgedcopyrightversion'] = [
 			'type' => 'api',
 		];
@@ -435,21 +419,13 @@ final class RepoHooks {
 		$defaultOptions[ 'wb-languages-' . $defaultLang ] = 1;
 	}
 
-	/**
-	 * Modify line endings on history page.
-	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/PageHistoryLineEnding
-	 *
-	 * @param HistoryPager $history
-	 * @param \stdClass $row
-	 * @param string &$html
-	 * @param array $classes
-	 */
-	public static function onPageHistoryLineEnding( HistoryPager $history, $row, &$html, array $classes ) {
+	/** @inheritDoc */
+	public function onPageHistoryLineEnding( $historyAction, &$row, &$s, &$classes, &$attribs ) {
 		// Note: This assumes that HistoryPager::getTitle returns a Title.
 		$entityContentFactory = WikibaseRepo::getEntityContentFactory();
 		$services = MediaWikiServices::getInstance();
 
-		$title = $history->getTitle();
+		$title = $historyAction->getTitle();
 		$revisionRecord = $services->getRevisionFactory()->newRevisionFromRow(
 			$row,
 			IDBAccessObject::READ_NORMAL,
@@ -461,14 +437,14 @@ final class RepoHooks {
 			&& $title->getLatestRevID() !== $revisionRecord->getId()
 			&& $services->getPermissionManager()->quickUserCan(
 				'edit',
-				$history->getUser(),
+				$historyAction->getUser(),
 				$linkTarget
 			)
 			&& !$revisionRecord->isDeleted( RevisionRecord::DELETED_TEXT )
 		) {
 			$link = $services->getLinkRenderer()->makeKnownLink(
 				$linkTarget,
-				$history->msg( 'wikibase-restoreold' )->text(),
+				$historyAction->msg( 'wikibase-restoreold' )->text(),
 				[],
 				[
 					'action' => 'edit',
@@ -476,33 +452,29 @@ final class RepoHooks {
 				]
 			);
 
-			$html .= ' ' . $history->msg( 'parentheses' )->rawParams( $link )->escaped();
+			$s .= ' ' . $historyAction->msg( 'parentheses' )->rawParams( $link )->escaped();
 		}
 	}
 
 	/**
-	 * Alter the structured navigation links in SkinTemplates.
-	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/SkinTemplateNavigation::Universal
-	 *
 	 * @todo T282549 Consider moving some of this logic into a place where it can be more adequately tested
 	 *
-	 * @param SkinTemplate $skinTemplate
-	 * @param array[] &$links
+	 * @inheritDoc
 	 */
-	public static function onSkinTemplateNavigationUniversal( SkinTemplate $skinTemplate, array &$links ) {
+	public function onSkinTemplateNavigation__Universal( $sktemplate, &$links ): void {
 		$entityContentFactory = WikibaseRepo::getEntityContentFactory();
 
-		$title = $skinTemplate->getRelevantTitle();
+		$title = $sktemplate->getRelevantTitle();
 
 		if ( $entityContentFactory->isEntityContentModel( $title->getContentModel() ) ) {
 			unset( $links['views']['edit'] );
 			unset( $links['views']['viewsource'] );
 
 			if ( MediaWikiServices::getInstance()->getPermissionManager()
-					->quickUserCan( 'edit', $skinTemplate->getUser(), $title )
+					->quickUserCan( 'edit', $sktemplate->getUser(), $title )
 			) {
-				$out = $skinTemplate->getOutput();
-				$request = $skinTemplate->getRequest();
+				$out = $sktemplate->getOutput();
+				$request = $sktemplate->getRequest();
 				$old = !$out->isRevisionCurrent()
 					&& !$request->getCheck( 'diff' );
 
@@ -527,7 +499,7 @@ final class RepoHooks {
 					$neck = [
 						'restore' => [
 							'class' => $restore ? 'selected' : false,
-							'text' => $skinTemplate->getLanguage()->ucfirst(
+							'text' => $sktemplate->getLanguage()->ucfirst(
 								wfMessage( 'wikibase-restoreold' )->text()
 							),
 							'href' => $title->getLocalURL( [
@@ -545,13 +517,9 @@ final class RepoHooks {
 
 	/**
 	 * Used to append a css class to the body, so the page can be identified as Wikibase item page.
-	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/OutputPageBodyAttributes
-	 *
-	 * @param OutputPage $out
-	 * @param Skin $skin
-	 * @param array &$bodyAttrs
+	 * @inheritDoc
 	 */
-	public static function onOutputPageBodyAttributes( OutputPage $out, Skin $skin, array &$bodyAttrs ) {
+	public function onOutputPageBodyAttributes( $out, $sk, &$bodyAttrs ): void {
 		$outputPageEntityIdReader = new OutputPageEntityIdReader(
 			new OutputPageEntityViewChecker( WikibaseRepo::getEntityContentFactory() ),
 			WikibaseRepo::getEntityIdParser()
@@ -571,7 +539,7 @@ final class RepoHooks {
 		// add another class with the ID of the item:
 		$bodyAttrs['class'] .= ' wb-' . $entityType . 'page-' . $entityId->getSerialization();
 
-		if ( $skin->getRequest()->getCheck( 'diff' ) ) {
+		if ( $sk->getRequest()->getCheck( 'diff' ) ) {
 			$bodyAttrs['class'] .= ' wb-diffpage';
 		}
 
@@ -581,21 +549,14 @@ final class RepoHooks {
 	}
 
 	/**
-	 * Handler for the ApiCheckCanExecute hook in ApiMain.
-	 *
 	 * This implementation causes the execution of ApiEditPage (action=edit) to fail
 	 * for all namespaces reserved for Wikibase entities. This prevents direct text-level editing
 	 * of structured data, and it also prevents other types of content being created in these
 	 * namespaces.
 	 *
-	 * @param ApiBase $module The API module being called
-	 * @param User $user The user calling the API
-	 * @param array|string|null &$message Output-parameter for the message the call should fail
-	 *  with. This can be a message key or an array as expected by {@see ApiBase::dieWithError}.
-	 *
-	 * @return bool true to continue execution, false to abort and with $message as an error message.
+	 * @inheritDoc
 	 */
-	public static function onApiCheckCanExecute( ApiBase $module, User $user, &$message ) {
+	public function onApiCheckCanExecute( $module, $user, &$message ) {
 		if ( $module instanceof ApiEditPage ) {
 			$params = $module->extractRequestParams();
 			$pageObj = $module->getTitleOrPageId( $params );
@@ -659,17 +620,12 @@ final class RepoHooks {
 	}
 
 	/**
-	 * Handler for the TitleGetRestrictionTypes hook.
-	 *
 	 * Implemented to prevent people from protecting pages from being
 	 * created or moved in an entity namespace (which is pointless).
 	 *
-	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/TitleGetRestrictionTypes
-	 *
-	 * @param Title $title
-	 * @param string[] &$types The types of protection available
+	 * @inheritDoc
 	 */
-	public static function onTitleGetRestrictionTypes( Title $title, array &$types ) {
+	public function onTitleGetRestrictionTypes( $title, &$types ) {
 		$namespaceLookup = WikibaseRepo::getLocalEntityNamespaceLookup();
 
 		if ( $namespaceLookup->isEntityNamespace( $title->getNamespace() ) ) {
@@ -682,12 +638,15 @@ final class RepoHooks {
 	 * Hook handler for AbuseFilter's AbuseFilter-contentToString hook, implemented
 	 * to provide a custom text representation of Entities for filtering.
 	 *
-	 * @param Content $content
-	 * @param string &$text The resulting text
+	 * Called when converting a Content object to a string to which
+	 * filters can be applied. If the hook function returns true, Content::getTextForSearchIndex()
+	 * will be used for non-text content.
 	 *
-	 * @return bool
+	 * @param Content $content
+	 * @param ?string &$text Set this to the desired text
+	 * @return bool|void True or no return value to continue or false to abort
 	 */
-	public static function onAbuseFilterContentToString( Content $content, &$text ) {
+	public function onAbuseFilter_contentToString( Content $content, ?string &$text ) { // phpcs:ignore MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName, Generic.Files.LineLength.TooLong
 		if ( $content instanceof EntityContent ) {
 			$text = $content->getTextForFilters();
 
@@ -701,16 +660,11 @@ final class RepoHooks {
 	 * Handler for the FormatAutocomments hook, implementing localized formatting
 	 * for machine readable autocomments generated by SummaryFormatter.
 	 *
-	 * @param string &$comment reference to the autocomment text
-	 * @param bool $pre true if there is content before the autocomment
-	 * @param string $auto the autocomment unformatted
-	 * @param bool $post true if there is content after the autocomment
-	 * @param Title|null $title use for further information
-	 * @param bool $local shall links be generated locally or globally
+	 * @inheritDoc
 	 */
-	public static function onFormat( &$comment, $pre, $auto, $post, $title, $local ) {
+	public function onFormatAutocomments( &$comment, $pre, $auto, $post, $title, $local, $wiki ) {
 		// phpcs:ignore MediaWiki.Usage.DeprecatedGlobalVariables.Deprecated$wgTitle
-		global $wgLang, $wgTitle;
+		global $wgTitle;
 
 		// If it is possible to avoid loading the whole page then the code will be lighter on the server.
 		if ( !( $title instanceof Title ) ) {
@@ -727,11 +681,12 @@ final class RepoHooks {
 			return;
 		}
 
-		if ( $wgLang instanceof StubUserLang ) {
-			StubUserLang::unstub( $wgLang );
-		}
-
-		$formatter = new AutoCommentFormatter( $wgLang, [ 'wikibase-' . $entityType, 'wikibase-entity' ] );
+		$enableWikidataIconsInClientWatchlist = WikibaseRepo::getSettings()->getSetting( 'enableWikidataIconsInClientWatchlist' );
+		$formatter = new AutoCommentFormatter(
+			RequestContext::getMain()->getLanguage(),
+			[ 'wikibase-' . $entityType, 'wikibase-entity' ],
+			$enableWikidataIconsInClientWatchlist
+		);
 		$formattedComment = $formatter->formatAutoComment( $auto );
 
 		if ( is_string( $formattedComment ) ) {
@@ -740,13 +695,10 @@ final class RepoHooks {
 	}
 
 	/**
-	 * Called when pushing meta-info from the ParserOutput into OutputPage.
 	 * Used to transfer 'wikibase-view-chunks' and entity data from ParserOutput to OutputPage.
-	 *
-	 * @param OutputPage $outputPage
-	 * @param ParserOutput $parserOutput
+	 * @inheritDoc
 	 */
-	public static function onOutputPageParserOutput( OutputPage $outputPage, ParserOutput $parserOutput ) {
+	public function onOutputPageParserOutput( $outputPage, $parserOutput ): void {
 		// Set in PlaceholderEmittingEntityTermsView.
 		$placeholders = $parserOutput->getExtensionData( 'wikibase-view-chunks' );
 		if ( $placeholders !== null ) {
@@ -790,13 +742,9 @@ final class RepoHooks {
 	 * Handler for the ContentModelCanBeUsedOn hook, used to prevent pages of inappropriate type
 	 * to be placed in an entity namespace.
 	 *
-	 * @param string $contentModel
-	 * @param LinkTarget $title Actually a Title object, but we only require getNamespace
-	 * @param bool &$ok
-	 *
-	 * @return bool
+	 * @inheritDoc
 	 */
-	public static function onContentModelCanBeUsedOn( $contentModel, LinkTarget $title, &$ok ) {
+	public function onContentModelCanBeUsedOn( $contentModel, $title, &$ok ) {
 		$namespaceLookup = WikibaseRepo::getEntityNamespaceLookup();
 		$contentModelIds = WikibaseRepo::getContentModelMappings();
 
@@ -839,10 +787,9 @@ final class RepoHooks {
 	 * Exposes configuration values to the action=query&meta=siteinfo API, including lists of
 	 * property and data value types, sparql endpoint, and several base URLs and URIs.
 	 *
-	 * @param ApiQuerySiteinfo $api
-	 * @param array &$data
+	 * @inheritDoc
 	 */
-	public static function onAPIQuerySiteInfoGeneralInfo( ApiQuerySiteinfo $api, array &$data ) {
+	public function onAPIQuerySiteInfoGeneralInfo( $module, &$results ) {
 		$repoSettings = WikibaseRepo::getSettings();
 		$dataTypes = WikibaseRepo::getDataTypeFactory()->getTypes();
 		$propertyTypes = [];
@@ -851,30 +798,27 @@ final class RepoHooks {
 			$propertyTypes[$id] = [ 'valuetype' => $type->getDataValueType() ];
 		}
 
-		$data['wikibase-propertytypes'] = $propertyTypes;
+		$results['wikibase-propertytypes'] = $propertyTypes;
 
-		$data['wikibase-conceptbaseuri'] = WikibaseRepo::getLocalEntitySource()->getConceptBaseUri();
+		$results['wikibase-conceptbaseuri'] = WikibaseRepo::getLocalEntitySource()->getConceptBaseUri();
 
 		$geoShapeStorageBaseUrl = $repoSettings->getSetting( 'geoShapeStorageBaseUrl' );
-		$data['wikibase-geoshapestoragebaseurl'] = $geoShapeStorageBaseUrl;
+		$results['wikibase-geoshapestoragebaseurl'] = $geoShapeStorageBaseUrl;
 
 		$tabularDataStorageBaseUrl = $repoSettings->getSetting( 'tabularDataStorageBaseUrl' );
-		$data['wikibase-tabulardatastoragebaseurl'] = $tabularDataStorageBaseUrl;
+		$results['wikibase-tabulardatastoragebaseurl'] = $tabularDataStorageBaseUrl;
 
 		$sparqlEndpoint = $repoSettings->getSetting( 'sparqlEndpoint' );
 		if ( is_string( $sparqlEndpoint ) ) {
-			$data['wikibase-sparql'] = $sparqlEndpoint;
+			$results['wikibase-sparql'] = $sparqlEndpoint;
 		}
 	}
 
 	/**
 	 * Called by Import.php. Implemented to prevent the import of entities.
-	 *
-	 * @param WikiImporter $importer
-	 * @param array $pageInfo
-	 * @param array $revisionInfo
+	 * @inheritDoc
 	 */
-	public static function onImportHandleRevisionXMLTag( $importer, $pageInfo, $revisionInfo ) {
+	public function onImportHandleRevisionXMLTag( $reader, $pageInfo, $revisionInfo ) {
 		if ( isset( $revisionInfo['model'] ) ) {
 			$contentModels = WikibaseRepo::getContentModelMappings();
 			$allowImport = WikibaseRepo::getSettings()->getSetting( 'allowEntityImport' );
@@ -893,11 +837,9 @@ final class RepoHooks {
 	/**
 	 * Add Concept URI link to the toolbox section of the sidebar.
 	 *
-	 * @param Skin $skin
-	 * @param string[] &$sidebar
-	 * @return void
+	 * @inheritDoc
 	 */
-	public static function onSidebarBeforeOutput( Skin $skin, array &$sidebar ): void {
+	public function onSidebarBeforeOutput( $skin, &$sidebar ): void {
 		$hookHandler = new SidebarBeforeOutputHookHandler(
 			WikibaseRepo::getLocalEntitySource()->getConceptBaseUri(),
 			WikibaseRepo::getEntityIdLookup(),
@@ -915,12 +857,8 @@ final class RepoHooks {
 		$sidebar['TOOLBOX']['wb-concept-uri'] = $conceptUriLink;
 	}
 
-	/**
-	 * Register ResourceLoader modules with dynamic dependencies.
-	 *
-	 * @param ResourceLoader $resourceLoader
-	 */
-	public static function onResourceLoaderRegisterModules( ResourceLoader $resourceLoader ) {
+	/** @inheritDoc */
+	public function onResourceLoaderRegisterModules( $rl ): void {
 		$moduleTemplate = [
 			'localBasePath' => __DIR__ . '/..',
 			'remoteExtPath' => 'Wikibase/repo',
@@ -982,16 +920,249 @@ final class RepoHooks {
 			$modules['wikibase.special.languageLabelDescriptionAliases']['dependencies'][] = 'ext.uls.mediawiki';
 		}
 
-		$resourceLoader->register( $modules );
+		// temporarily register this RL module only if the feature flag is enabled,
+		// so that wikis without the feature flag don’t even pay the small cost of loading the module *definition*
+		// (when the feature stabilizes, this should move into repo/resources/Resources.php: T385446)
+		$settings = WikibaseRepo::getSettings();
+		if ( $settings->getSetting( 'tmpEnableScopedTypeaheadSearch' ) ) {
+			$modules['wikibase.vector.scopedTypeaheadSearch'] = $moduleTemplate + [
+				'class' => "Wikibase\\Repo\\View\\ScopedTypeaheadCodexModule",
+				'packageFiles' => [
+					'resources/wikibase.vector.scopedtypeaheadsearch/init.js',
+					'resources/wikibase.vector.scopedtypeaheadsearch/ScopedTypeaheadSearch.vue',
+					[
+						'name' => 'resources/wikibase.vector.scopedtypeaheadsearch/scopedTypeaheadSearchConfig.json',
+						'callback' => function() {
+							return WikibaseRepo::getScopedTypeaheadSearchConfig()->getConfiguration();
+						},
+					],
+				],
+				'codexComponents' => [
+					'CdxSelect',
+					'CdxTypeaheadSearch',
+				],
+				'dependencies' => [
+					'vue',
+				],
+				'messages' => [
+					'searchbutton',
+					'searchsuggest-search',
+					'searchsuggest-containing-html',
+					'wikibase-scoped-search-search-entities',
+					'wikibase-scoped-search-search-entities-description',
+				],
+			];
+			$modules['wikibase.vector.scopedTypeaheadSearchStyles'] = $moduleTemplate + [
+				"styles" => [
+					'resources/wikibase.vector.scopedTypeaheadSearch.less',
+				],
+			];
+		}
+
+		// temporarily register this RL module only if the feature flag for mobile editing or its beta feature are
+		// enabled, so that wikis without either feature flag don't even pay the small cost of loading the module
+		// *definition* (when the feature stabilizes, this should move into repo/resources/Resources.php: T395783)
+		if (
+			$settings->getSetting( 'tmpMobileEditingUI' ) ||
+			$settings->getSetting( 'tmpEnableMobileEditingUIBetaFeature' )
+		) {
+			$modules['wikibase.wbui2025.entityView.styles'] = $moduleTemplate + [
+				'styles' => [
+					'resources/wikibase.wbui2025/components/qualifiers.less',
+					'resources/wikibase.wbui2025/components/statementSections.less',
+					'resources/wikibase.wbui2025/components/statementGroupView.less',
+					'resources/wikibase.wbui2025/components/references.less',
+					'resources/wikibase.wbui2025/components/snakValue.less',
+					'resources/wikibase.wbui2025/components/mainSnak.less',
+					'../view/resources/jquery/wikibase/snakview/themes/default/snakview.SnakTypeSelector.css',
+				],
+			];
+			$modules['wikibase.wbui2025.lib'] = $moduleTemplate + [
+				'packageFiles' => [
+					'resources/wikibase.wbui2025/lib.js',
+					'resources/wikibase.wbui2025/store/snakValueStrategyFactory.js',
+					'resources/wikibase.wbui2025/utils.js',
+					'resources/wikibase.wbui2025/api/api.js',
+					'resources/wikibase.wbui2025/api/editEntity.js',
+					'resources/wikibase.wbui2025/api/lookupSource.js',
+					'resources/wikibase.wbui2025/store/editStatementsStore.js',
+					'resources/wikibase.wbui2025/api/commons.js',
+					'resources/wikibase.wbui2025/store/messageStore.js',
+					'resources/wikibase.wbui2025/store/parsedValueStore.js',
+					'resources/wikibase.wbui2025/store/savedStatementsStore.js',
+					'resources/wikibase.wbui2025/store/serverRenderedHtml.js',
+					'resources/wikibase.wbui2025/store/snakValueStrategies.js',
+					[
+						'name' => 'resources/wikibase.wbui2025/repoSettings.json',
+						'content' => [
+							'tabularDataStorageApiEndpointUrl' => $settings->getSetting( 'tabularDataStorageApiEndpointUrl' ),
+							'geoShapeStorageApiEndpointUrl' => $settings->getSetting( 'geoShapeStorageApiEndpointUrl' ),
+							'viewUiTags' => $settings->getSetting( 'viewUiTags' ),
+						],
+					],
+				],
+				'dependencies' => [
+					'mediawiki.ForeignApi',
+					'pinia',
+					'wikibase',
+				],
+			];
+			$modules['wikibase.wbui2025.entityViewInit'] = $moduleTemplate + [
+				'class' => CodexModule::class,
+				'packageFiles' => [
+					'resources/wikibase.wbui2025/entityViewInit.js',
+					'resources/wikibase.wbui2025/components/qualifiers.vue',
+					'resources/wikibase.wbui2025/components/references.vue',
+					'resources/wikibase.wbui2025/components/snakValue.vue',
+					'resources/wikibase.wbui2025/components/statementView.vue',
+					'resources/wikibase.wbui2025/components/statementSections.vue',
+					'resources/wikibase.wbui2025/components/statementGroupView.vue',
+					'resources/wikibase.wbui2025/components/statusMessage.vue',
+					'resources/wikibase.wbui2025/components/propertyName.vue',
+					'resources/wikibase.wbui2025/components/addStatementButton.vue',
+					'resources/wikibase.wbui2025/components/addStatementValue.vue',
+					'resources/wikibase.wbui2025/components/addQualifier.vue',
+					'resources/wikibase.wbui2025/components/addReference.vue',
+					'resources/wikibase.wbui2025/components/apiItemLookup.vue',
+					'resources/wikibase.wbui2025/components/propertyLookup.vue',
+					'resources/wikibase.wbui2025/components/propertySelector.vue',
+					'resources/wikibase.wbui2025/components/modalOverlay.vue',
+					'resources/wikibase.wbui2025/components/indicatorPopover.vue',
+					'resources/wikibase.wbui2025/components/editableQualifiers.vue',
+					'resources/wikibase.wbui2025/components/editableReference.vue',
+					'resources/wikibase.wbui2025/components/editableReferencesSection.vue',
+					'resources/wikibase.wbui2025/components/editableSnak.vue',
+					'resources/wikibase.wbui2025/components/editableAnyDatatypeSnakValue.vue',
+					'resources/wikibase.wbui2025/components/editableNoValueSomeValueSnakValue.vue',
+					'resources/wikibase.wbui2025/components/editableTimeSnakValue.vue',
+					'resources/wikibase.wbui2025/components/editableQuantitySnakValue.vue',
+					'resources/wikibase.wbui2025/components/editableMonolingualTextSnakValue.vue',
+					'resources/wikibase.wbui2025/components/editableStringSnakValue.vue',
+					'resources/wikibase.wbui2025/components/editableGlobeCoordinateSnakValue.vue',
+					'resources/wikibase.wbui2025/components/editableLookupSnakValue.vue',
+					'resources/wikibase.wbui2025/components/editStatementGroup.vue',
+					'resources/wikibase.wbui2025/components/editStatement.vue',
+					'resources/wikibase.wbui2025/components/mainSnak.vue',
+					'resources/wikibase.wbui2025/components/newReferenceSnak.vue',
+					'resources/wikibase.wbui2025/components/stepper.vue',
+					'resources/wikibase.wbui2025/mixins/saveStatementsFormMixin.js',
+					[
+						'name' => 'resources/wikibase.wbui2025/icons.json',
+						'callback' => CodexModule::getIcons( ... ),
+						'callbackParam' => [
+							'cdxIconAdd',
+							'cdxIconArrowPrevious',
+							'cdxIconCheck',
+							'cdxIconClose',
+							'cdxIconNext',
+							'cdxIconPrevious',
+							'cdxIconTrash',
+							'cdxIconInfo',
+						],
+					],
+				],
+				'dependencies' => [
+					'mediawiki.util',
+					'vue',
+					'wikibase',
+					'wikibase.wbui2025.entityView.styles',
+					'wikibase.utilities.ClaimGuidGenerator',
+					'wikibase.wbui2025.lib',
+				],
+				'messages' => [
+					'wikibase-parse-error',
+					'valueview-expert-globecoordinateinput-precision',
+					'valueview-expert-globecoordinateinput-precisionlabel-thousandth-of-arcsecond',
+					'valueview-expert-globecoordinateinput-precisionlabel-hundredth-of-arcsecond',
+					'valueview-expert-globecoordinateinput-precisionlabel-tenth-of-arcsecond',
+					'valueview-expert-globecoordinateinput-precisionlabel-arcsecond',
+					'valueview-expert-globecoordinateinput-precisionlabel-arcminute',
+					'valueview-expert-timeinput-calendar',
+					'valueview-expert-timeinput-precision',
+					'valueview-expert-timeinput-precision-year1g',
+					'valueview-expert-timeinput-precision-year100m',
+					'valueview-expert-timeinput-precision-year10m',
+					'valueview-expert-timeinput-precision-year1m',
+					'valueview-expert-timeinput-precision-year100k',
+					'valueview-expert-timeinput-precision-year10k',
+					'valueview-expert-timeinput-precision-year1k',
+					'valueview-expert-timeinput-precision-year100',
+					'valueview-expert-timeinput-precision-year10',
+					'valueview-expert-timeinput-precision-year',
+					'valueview-expert-timeinput-precision-month',
+					'valueview-expert-timeinput-precision-day',
+					'valueview-expert-timevalue-calendar-julian',
+					'valueview-expert-timevalue-calendar-gregorian',
+					'wikibase-add',
+					'wikibase-addstatement',
+					'wikibase-addqualifier',
+					'wikibase-addreference',
+					'wikibase-addvalue',
+					'wikibase-cancel',
+					'wikibase-edit',
+					'wikibase-entityselector-notfound',
+					'wikibase-parse-error-time',
+					'wikibase-publish',
+					// This message isn't currently in use (removed in T417041) but since it has already
+					// been widely translated, let's keep it around for now until we are done handling errors
+					// in wbui2025 / MEX (T417377)
+					'wikibase-publishing-error',
+					'wikibase-publishing-progress',
+					'wikibase-publishing-succeeded',
+					'wikibase-quantitydetails-unit-optional',
+					'wikibase-monolingualtextcode-mandatory',
+					'wikibase-remove',
+					'wikibase-save',
+					'wikibase-snakview-property-input-placeholder',
+					'wikibase-snakview-snaktypeselector-value',
+					'wikibase-snakview-variations-novalue-label',
+					'wikibase-snakview-variations-somevalue-label',
+					'wikibase-statementgrouplistview-add',
+					'wikibase-statementgrouplistview-edit',
+					'wikibase-statementlistview-add',
+					'wikibase-statementview-rank-normal',
+					'wikibase-statementview-rank-preferred',
+					'wikibase-statementview-rank-deprecated',
+					'wikibase-statementview-references-counter',
+					'wikibase-wbui2025-editable-snak-value-preview-label',
+					'wikibase-wbui2025-globecoordinateinput-precision-automatic',
+					'wikibase-wbui2025-timeinput-precision-automatic',
+					'wikibase-stepper-progress',
+					'wikibase-indicator-popover-multiple-issue-title',
+					'wikibase-indicator-popover-multiple-issue-previous',
+					'wikibase-indicator-popover-multiple-issue-next',
+					'wikibase-undisplayable-value',
+					'wikibase-error-save-generic',
+				],
+				'codexComponents' => [
+					'CdxAccordion',
+					'CdxButton',
+					'CdxIcon',
+					'CdxLookup',
+					'CdxMenuButton',
+					'CdxMessage',
+					'CdxPopover',
+					'CdxSelect',
+					'CdxTextArea',
+					'CdxTextInput',
+					'CdxProgressBar',
+				],
+			];
+			MediaWikiServices::getInstance()->getHookContainer()->run(
+				'WikibaseRepoWbui2025InitResourceDependenciesHook',
+				[ &$modules['wikibase.wbui2025.entityViewInit']['dependencies'] ]
+			);
+		}
+
+		$rl->register( $modules );
 	}
 
 	/**
 	 * Adds the Wikis using the entity in action=info
 	 *
-	 * @param IContextSource $context
-	 * @param array[] &$pageInfo
+	 * @inheritDoc
 	 */
-	public static function onInfoAction( IContextSource $context, array &$pageInfo ) {
+	public function onInfoAction( $context, &$pageInfo ) {
 		$namespaceChecker = WikibaseRepo::getEntityNamespaceLookup();
 		$title = $context->getTitle();
 
@@ -1028,29 +1199,33 @@ final class RepoHooks {
 	 * will trigger its loading via ParserOutput::recordOption() and thereby include it
 	 * in the cache key to fragment the cache by EntityHandler::PARSER_VERSION.
 	 *
-	 * @param array &$defaults Options and their defaults
-	 * @param array &$inCacheKey Whether each option splits the parser cache
-	 * @param array &$lazyOptions Initializers for lazy-loaded options
+	 * @inheritDoc
 	 */
-	public static function onParserOptionsRegister( &$defaults, &$inCacheKey, &$lazyOptions ) {
+	public function onParserOptionsRegister( &$defaults, &$inCacheKey, &$lazyLoad ) {
 		$defaults['wb'] = null;
 		$inCacheKey['wb'] = true;
-		$lazyOptions['wb'] = function () {
+		$lazyLoad['wb'] = function () {
 			return EntityHandler::PARSER_VERSION;
 		};
 		$defaults['termboxVersion'] = null;
 		$inCacheKey['termboxVersion'] = true;
-		$lazyOptions['termboxVersion'] = function () {
+		$lazyLoad['termboxVersion'] = function () {
 			return TermboxFlag::getInstance()->shouldRenderTermbox() ?
 				TermboxView::TERMBOX_VERSION . TermboxView::CACHE_VERSION :
 				PlaceholderEmittingEntityTermsView::TERMBOX_VERSION . PlaceholderEmittingEntityTermsView::CACHE_VERSION;
 		};
-		$defaults['wbMobile'] = null;
-		$inCacheKey['wbMobile'] = true;
-		$lazyOptions['wbMobile'] = fn () => WikibaseRepo::getMobileSite();
+		$defaults[Wbui2025FeatureFlag::PARSER_OPTION_NAME] = null;
+		$inCacheKey[Wbui2025FeatureFlag::PARSER_OPTION_NAME] = true;
+		$lazyLoad[Wbui2025FeatureFlag::PARSER_OPTION_NAME] = function ( ParserOptions $parserOptions ) {
+			return WikibaseRepo::getWbui2025FeatureFlag()->generateWbMobileFlagValue(
+				WikibaseRepo::getMobileSite(),
+				$parserOptions->getUserIdentity(),
+			);
+		};
 	}
 
-	public static function onApiQueryModuleManager( ApiModuleManager $moduleManager ) {
+	/** @inheritDoc */
+	public function onApiQuery__moduleManager( $moduleManager ) {
 		global $wgWBRepoSettings;
 
 		if ( isset( $wgWBRepoSettings['dataBridgeEnabled'] ) && $wgWBRepoSettings['dataBridgeEnabled'] ) {
@@ -1078,12 +1253,22 @@ final class RepoHooks {
 		}
 	}
 
-	/**
-	 * Register the parser functions.
-	 *
-	 * @param Parser $parser
-	 */
-	public static function onParserFirstCallInit( Parser $parser ) {
+	/** @inheritDoc */
+	public function onApiMain__moduleManager( $moduleManager ) {
+		if ( WikibaseRepo::getSettings()->getSetting( 'tmpEnableGraphQL' ) ) {
+			$moduleManager->addModule(
+				'wbgraphql',
+				'action',
+				[
+					'class' => ActionWikibaseGraphQL::class,
+					'services' => [ "WbReuse.GraphQLService", "WbReuse.GraphQLTracking" ],
+				]
+			);
+		}
+	}
+
+	/** @inheritDoc */
+	public function onParserFirstCallInit( $parser ) {
 		$parser->setFunctionHook(
 			CommaSeparatedList::NAME,
 			[ CommaSeparatedList::class, 'handle' ]
@@ -1129,11 +1314,9 @@ final class RepoHooks {
 	 * to avoid bots wasting significant number of Q-ids by sending faulty data over and over again.
 	 * See T284538 for more information.
 	 *
-	 * @param ApiMain $apiMain
-	 * @param Throwable $e
-	 * @return bool|void
+	 * @inheritDoc
 	 */
-	public static function onApiMainOnException( $apiMain, $e ) {
+	public function onApiMain__onException( $apiMain, $e ) {
 		$module = $apiMain->getModule();
 		if ( !$module instanceof ModifyEntity ) {
 			return;
@@ -1146,9 +1329,9 @@ final class RepoHooks {
 		$apiMain->getUser()->pingLimiter( RateLimitingIdGenerator::RATELIMIT_NAME, $idGeneratorInErrorPingLimiterValue );
 	}
 
-	/** @param ContentLanguages[] &$contentLanguages */
-	public static function onWikibaseContentLanguages( array &$contentLanguages ): void {
-		if ( !WikibaseRepo::getSettings()->getSetting( 'tmpEnableMulLanguageCode' ) ) {
+	/** @inheritDoc */
+	public function onWikibaseContentLanguages( &$contentLanguages ): void {
+		if ( !WikibaseRepo::getSettings()->getSetting( 'enableMulLanguageCode' ) ) {
 			return;
 		}
 
@@ -1162,17 +1345,54 @@ final class RepoHooks {
 		);
 	}
 
-	public static function onMaintenanceShellStart(): void {
+	/** @inheritDoc */
+	public function onMaintenanceShellStart(): void {
 		require_once __DIR__ . '/MaintenanceShellStart.php';
 	}
 
 	/**
 	 * Handler for the VectorSearchResourceLoaderConfig hook to overwrite search pattern highlighting for wikibase
+	 *
+	 * @param array &$vectorSearchConfig
+	 * @return void
 	 */
-	public static function onVectorSearchResourceLoaderConfig( array &$vectorSearchConfig ): void {
+	public function onVectorSearchResourceLoaderConfig( array &$vectorSearchConfig ): void {
 		$settings = WikibaseRepo::getSettings();
 		if ( $settings->getSetting( 'enableEntitySearchUI' ) === true ) {
 			$vectorSearchConfig['highlightQuery'] = false;
 		}
+	}
+
+	/** @inheritDoc */
+	public function onSkinPageReadyConfig( Context $context, array &$config ) {
+		$settings = WikibaseRepo::getSettings();
+
+		// Don't customize search on non-primary Wikibase repos
+		if ( $settings->getSetting( 'enableEntitySearchUI' ) !== true ) {
+			// @phan-suppress-next-line PhanTypeMismatchReturnProbablyReal Hook interface needs update T390760
+			return true;
+		}
+
+		$skin = $context->getSkin();
+		if ( $settings->getSetting( 'tmpEnableScopedTypeaheadSearch' ) &&
+			$skin === 'vector-2022'
+		) {
+			$config['search'] = true;
+			$config['searchModule'] = 'wikibase.vector.scopedTypeaheadSearch';
+			// Stop other hooks using this
+			// @phan-suppress-next-line PhanTypeMismatchReturnProbablyReal Hook interface needs update T390760
+			return false;
+		} elseif ( in_array( $skin, [ 'minerva' ] ) ) {
+			$mainConfig = MediaWikiServices::getInstance()->getMainConfig();
+			$config['searchModule'] = 'wikibase.typeahead.search';
+			// @phan-suppress-next-line PhanTypeMismatchReturnProbablyReal Hook interface needs update T390760
+			return false;
+		} elseif ( in_array( $skin, [ 'vector-2022' ] ) ) {
+			$config['searchModule'] = 'wikibase.typeahead.search';
+			// @phan-suppress-next-line PhanTypeMismatchReturnProbablyReal Hook interface needs update T390760
+			return false;
+		}
+		// @phan-suppress-next-line PhanTypeMismatchReturnProbablyReal Hook interface needs update T390760
+		return true;
 	}
 }

@@ -4,8 +4,8 @@ namespace MediaWiki\Extension\UnlinkedWikibase;
 
 use Config;
 use MediaWiki\MediaWikiServices;
-use Scribunto_LuaEngine;
-use Scribunto_LuaLibraryBase;
+use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LuaEngine as Scribunto_LuaEngine;
+use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LibraryBase as Scribunto_LuaLibraryBase;
 use WANObjectCache;
 
 class UnlinkedWikibaseLuaLibrary extends Scribunto_LuaLibraryBase {

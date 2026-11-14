@@ -2,7 +2,8 @@
 
 namespace Wikibase\Repo\Search\Fields;
 
-use SearchEngine;
+use MediaWiki\Search\SearchEngine;
+use MediaWiki\Search\SearchIndexField;
 
 /**
  * Generic numeric field.
@@ -16,12 +17,12 @@ abstract class WikibaseNumericField implements WikibaseIndexField {
 	 * @param SearchEngine $engine
 	 * @param string $name
 	 *
-	 * @return \SearchIndexField
+	 * @return SearchIndexField
 	 */
 	public function getMappingField( SearchEngine $engine, $name ) {
 		return $engine->makeSearchFieldMapping(
 			$name,
-			\SearchIndexField::INDEX_TYPE_INTEGER
+			SearchIndexField::INDEX_TYPE_INTEGER
 		);
 	}
 

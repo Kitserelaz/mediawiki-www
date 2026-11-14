@@ -44,11 +44,6 @@ class SpecialSetSiteLink extends SpecialModifyEntity {
 	/**
 	 * @var string[]
 	 */
-	private $siteLinkGroups;
-
-	/**
-	 * @var string[]
-	 */
 	private $badgeItems;
 
 	/**
@@ -91,7 +86,6 @@ class SpecialSetSiteLink extends SpecialModifyEntity {
 	 * @param AnonymousEditWarningBuilder $anonymousEditWarningBuilder
 	 * @param SiteLinkPageNormalizer $siteLinkPageNormalizer
 	 * @param SiteLinkTargetProvider $siteLinkTargetProvider
-	 * @param string[] $siteLinkGroups
 	 * @param string[] $badgeItems
 	 * @param FallbackLabelDescriptionLookupFactory $labelDescriptionLookupFactory
 	 * @param SiteLinkChangeOpFactory $siteLinkChangeOpFactory
@@ -105,7 +99,6 @@ class SpecialSetSiteLink extends SpecialModifyEntity {
 		AnonymousEditWarningBuilder $anonymousEditWarningBuilder,
 		SiteLinkPageNormalizer $siteLinkPageNormalizer,
 		SiteLinkTargetProvider $siteLinkTargetProvider,
-		array $siteLinkGroups,
 		array $badgeItems,
 		FallbackLabelDescriptionLookupFactory $labelDescriptionLookupFactory,
 		SiteLinkChangeOpFactory $siteLinkChangeOpFactory
@@ -122,7 +115,6 @@ class SpecialSetSiteLink extends SpecialModifyEntity {
 
 		$this->siteLinkPageNormalizer = $siteLinkPageNormalizer;
 		$this->siteLinkTargetProvider = $siteLinkTargetProvider;
-		$this->siteLinkGroups = $siteLinkGroups;
 		$this->badgeItems = $badgeItems;
 		$this->labelDescriptionLookupFactory = $labelDescriptionLookupFactory;
 		$this->siteLinkChangeOpFactory = $siteLinkChangeOpFactory;
@@ -156,13 +148,13 @@ class SpecialSetSiteLink extends SpecialModifyEntity {
 			$anonymousEditWarningBuilder,
 			$siteLinkPageNormalizer,
 			$siteLinkTargetProvider,
-			$repoSettings->getSetting( 'siteLinkGroups' ),
 			$repoSettings->getSetting( 'badgeItems' ),
 			$labelDescriptionLookupFactory,
 			$siteLinkChangeOpFactory
 		);
 	}
 
+	/** @inheritDoc */
 	public function doesWrites() {
 		return true;
 	}
@@ -249,7 +241,7 @@ class SpecialSetSiteLink extends SpecialModifyEntity {
 		try {
 			$status = $this->setSiteLink( $entity, $this->site, $this->page, $this->badges, $summary );
 		} catch ( ChangeOpException $e ) {
-			$this->showErrorHTML( $e->getMessage() );
+			$this->showErrorHTML( htmlspecialchars( $e->getMessage() ) );
 			return false;
 		}
 
@@ -270,7 +262,7 @@ class SpecialSetSiteLink extends SpecialModifyEntity {
 	 */
 	private function isValidSiteId( $siteId ) {
 		return $siteId !== null
-			&& $this->siteLinkTargetProvider->getSiteList( $this->siteLinkGroups )->hasSite( $siteId );
+			&& $this->siteLinkTargetProvider->getSiteList()->hasSite( $siteId );
 	}
 
 	/**
@@ -339,10 +331,10 @@ class SpecialSetSiteLink extends SpecialModifyEntity {
 				],
 			];
 		} else {
-			$intro = $this->msg( 'wikibase-setsitelink-intro' )->text();
+			$intro = $this->msg( 'wikibase-setsitelink-intro' )->escaped();
 
 			if ( $this->badgeItems ) {
-				$intro .= $this->msg( 'word-separator' )->text() . $this->msg( 'wikibase-setsitelink-intro-badges' )->text();
+				$intro .= $this->msg( 'word-separator' )->escaped() . $this->msg( 'wikibase-setsitelink-intro-badges' )->escaped();
 			}
 
 			$formDescriptor = $this->getFormElements( $entity );
@@ -457,7 +449,7 @@ class SpecialSetSiteLink extends SpecialModifyEntity {
 		foreach ( $badges as $badge ) {
 			try {
 				$badgeId = new ItemId( $badge );
-			} catch ( InvalidArgumentException $ex ) {
+			} catch ( InvalidArgumentException ) {
 				$status->fatal( 'wikibase-wikibaserepopage-not-itemid', $badge );
 				return false;
 			}
@@ -470,7 +462,7 @@ class SpecialSetSiteLink extends SpecialModifyEntity {
 			$itemTitle = $this->getEntityTitle( $badgeId );
 
 			if ( $itemTitle === null || !$itemTitle->exists() ) {
-				$status->fatal( 'wikibase-wikibaserepopage-invalid-id', $badgeId );
+				$status->fatal( 'wikibase-wikibaserepopage-invalid-id', $badgeId->getSerialization() );
 				return false;
 			}
 
@@ -543,7 +535,7 @@ class SpecialSetSiteLink extends SpecialModifyEntity {
 	}
 
 	private function getSiteLinkTargetSite( string $siteId ): ?Site {
-		$targetSites = $this->siteLinkTargetProvider->getSiteList( $this->siteLinkGroups );
+		$targetSites = $this->siteLinkTargetProvider->getSiteList();
 		if ( !$targetSites->hasSite( $siteId ) ) {
 			return null;
 		}

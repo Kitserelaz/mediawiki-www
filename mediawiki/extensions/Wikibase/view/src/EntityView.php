@@ -29,22 +29,34 @@ abstract class EntityView implements EntityDocumentView {
 	protected $languageCode;
 
 	/**
+	 * @var array
+	 */
+	protected $viewOptions;
+
+	/**
 	 * @param TemplateFactory $templateFactory
 	 * @param LanguageDirectionalityLookup $languageDirectionalityLookup
 	 * @param string $languageCode
+	 * @param array $viewOptions
 	 */
 	public function __construct(
 		TemplateFactory $templateFactory,
 		LanguageDirectionalityLookup $languageDirectionalityLookup,
-		$languageCode
+		$languageCode,
+		array $viewOptions = [],
 	) {
 		$this->languageDirectionalityLookup = $languageDirectionalityLookup;
 		$this->languageCode = $languageCode;
 
 		$this->templateFactory = $templateFactory;
+		$this->viewOptions = $viewOptions;
 	}
 
-	protected function renderEntityView( EntityDocument $entity ) {
+	public function getParserOutputOptions(): array {
+		return $this->viewOptions;
+	}
+
+	protected function renderEntityView( EntityDocument $entity ): string {
 		$entityId = $entity->getId() ?: 'new'; // if id is not set, use 'new' suffix for css classes
 
 		return $this->templateFactory->render(

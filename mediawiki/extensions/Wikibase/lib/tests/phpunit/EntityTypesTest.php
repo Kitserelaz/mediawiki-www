@@ -21,7 +21,7 @@ use Wikibase\Lib\EntityTypeDefinitions;
  */
 class EntityTypesTest extends \PHPUnit\Framework\TestCase {
 
-	private function getRegistry() {
+	private static function getRegistry() {
 		return require __DIR__ . '/../../WikibaseLib.entitytypes.php';
 	}
 
@@ -34,10 +34,10 @@ class EntityTypesTest extends \PHPUnit\Framework\TestCase {
 		$serializerFactory = $this->createMock( SerializerFactory::class );
 		$serializerFactory->expects( $this->once() )
 			->method( 'new' . $entityType . 'Serializer' )
-			->willReturn( [
+			->willReturn( match ( $entityType ) {
 				'item' => $this->createStub( ItemSerializer::class ),
 				'property' => $this->createStub( PropertySerializer::class ),
-			][$entityType] );
+			} );
 
 		return $serializerFactory;
 	}
@@ -51,20 +51,20 @@ class EntityTypesTest extends \PHPUnit\Framework\TestCase {
 		$deserializerFactory = $this->createMock( DeserializerFactory::class );
 		$deserializerFactory->expects( $this->once() )
 			->method( 'new' . $entityType . 'Deserializer' )
-			->willReturn( [
+			->willReturn( match ( $entityType ) {
 				'item' => $this->createStub( ItemDeserializer::class ),
 				'property' => $this->createStub( PropertyDeserializer::class ),
-			][$entityType] );
+			} );
 
 		return $deserializerFactory;
 	}
 
-	public function provideEntityTypes() {
+	public static function provideEntityTypes() {
 		return array_map(
 			function( $entityType ) {
 				return [ $entityType ];
 			},
-			array_keys( $this->getRegistry() )
+			array_keys( self::getRegistry() )
 		);
 	}
 
@@ -79,7 +79,7 @@ class EntityTypesTest extends \PHPUnit\Framework\TestCase {
 	 * @dataProvider provideEntityTypes
 	 */
 	public function testSerializerFactory( $entityType ) {
-		$registry = $this->getRegistry();
+		$registry = self::getRegistry();
 		$serializerFactory = $this->getSerializerFactory( $entityType );
 
 		$this->assertArrayHasKey( $entityType, $registry );
@@ -91,7 +91,7 @@ class EntityTypesTest extends \PHPUnit\Framework\TestCase {
 
 		$this->assertInstanceOf(
 			Serializer::class,
-			call_user_func( $callback, $serializerFactory )
+			$callback( $serializerFactory )
 		);
 	}
 
@@ -99,7 +99,7 @@ class EntityTypesTest extends \PHPUnit\Framework\TestCase {
 	 * @dataProvider provideEntityTypes
 	 */
 	public function testDeserializerFactory( $entityType ) {
-		$registry = $this->getRegistry();
+		$registry = self::getRegistry();
 		$deserializerFactory = $this->getDeserializerFactory( $entityType );
 
 		$this->assertArrayHasKey( $entityType, $registry );
@@ -111,7 +111,7 @@ class EntityTypesTest extends \PHPUnit\Framework\TestCase {
 
 		$this->assertInstanceOf(
 			Deserializer::class,
-			call_user_func( $callback, $deserializerFactory )
+			$callback( $deserializerFactory )
 		);
 	}
 

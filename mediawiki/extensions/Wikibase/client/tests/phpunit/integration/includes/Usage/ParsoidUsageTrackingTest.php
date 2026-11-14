@@ -6,7 +6,7 @@ namespace Wikibase\Client\Tests\Unit\Usage;
 
 use DataValues\StringValue;
 use MediaWiki\Extension\Scribunto\ScribuntoContent;
-use MediaWiki\MediaWikiServices;
+use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Parser\Parsoid\Config\SiteConfig;
 use Wikibase\Client\Usage\ParserOutputUsageAccumulator;
 use Wikibase\DataModel\Entity\EntityDocument;
@@ -45,16 +45,19 @@ class ParsoidUsageTrackingTest extends \MediaWikiIntegrationTestCase {
 	}
 
 	private function getPageConfig(): IPageConfig {
-		$pageConfigFactory = MediaWikiServices::getInstance()->getParsoidPageConfigFactory();
+		$pageConfigFactory = $this->getServiceContainer()->getParsoidPageConfigFactory();
 		$pageIdentity = $this->getNonexistingTestPage(); // arbitrary
-		return $pageConfigFactory->create( $pageIdentity );
+		return $pageConfigFactory->createFromParserOptions(
+			ParserOptions::newFromAnon(),
+			$pageIdentity
+		);
 	}
 
 	private function parseText(
 		string $text,
 		ContentMetadataCollector $contentMetadataCollector
 	): string {
-		$dataAccess = MediaWikiServices::getInstance()->getParsoidDataAccess();
+		$dataAccess = $this->getServiceContainer()->getParsoidDataAccess();
 		return $dataAccess->parseWikitext(
 			$this->getPageConfig(),
 			$contentMetadataCollector,
@@ -225,7 +228,7 @@ class ParsoidUsageTrackingTest extends \MediaWikiIntegrationTestCase {
 		);
 
 		// We want to use the same $dataAccess for both parses
-		$dataAccess = MediaWikiServices::getInstance()->getParsoidDataAccess();
+		$dataAccess = $this->getServiceContainer()->getParsoidDataAccess();
 		// And we want to pass them the same $pageConfig
 		$pageConfig = $this->getPageConfig();
 

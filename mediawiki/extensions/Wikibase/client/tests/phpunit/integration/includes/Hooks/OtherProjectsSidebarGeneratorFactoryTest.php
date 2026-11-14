@@ -2,13 +2,13 @@
 
 namespace Wikibase\Client\Tests\Integration\Hooks;
 
-use MediaWiki\HookContainer\HookContainer;
 use MediaWiki\Site\SiteLookup;
 use MediaWikiIntegrationTestCase;
-use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use Wikibase\Client\Hooks\OtherProjectsSidebarGenerator;
 use Wikibase\Client\Hooks\OtherProjectsSidebarGeneratorFactory;
 use Wikibase\Client\Hooks\SidebarLinkBadgeDisplay;
+use Wikibase\Client\Hooks\WikibaseClientHookRunner;
 use Wikibase\Client\Usage\UsageAccumulator;
 use Wikibase\DataModel\Services\Lookup\EntityLookup;
 use Wikibase\Lib\SettingsArray;
@@ -37,8 +37,8 @@ class OtherProjectsSidebarGeneratorFactoryTest extends MediaWikiIntegrationTestC
 			$this->createMock( SiteLookup::class ),
 			$this->createMock( EntityLookup::class ),
 			$this->createMock( SidebarLinkBadgeDisplay::class ),
-			$this->createMock( HookContainer::class ),
-			$this->createMock( LoggerInterface::class )
+			$this->createMock( WikibaseClientHookRunner::class ),
+			new NullLogger()
 		);
 
 		$otherProjectSidebarGenerator = $factory->getOtherProjectsSidebarGenerator( $this->createMock( UsageAccumulator::class ) );

@@ -6,7 +6,9 @@ namespace Wikibase\Lib\Tests\Modules;
 
 use MediaWiki\Language\RawMessage;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Request\FauxRequest;
 use MediaWiki\ResourceLoader\Context;
+use MediaWiki\ResourceLoader\ResourceLoader;
 use MediaWiki\Site\HashSiteStore;
 use MediaWiki\Site\MediaWikiSite;
 use MediaWiki\Site\Site;
@@ -28,9 +30,14 @@ use Wikimedia\ObjectCache\HashBagOStuff;
 class CurrentSiteModuleTest extends \PHPUnit\Framework\TestCase {
 
 	private function getContext(): Context {
-		$context = $this->createMock( Context::class );
+		$context = $this->getMockBuilder( Context::class )
+			->setConstructorArgs( [ $this->createMock( ResourceLoader::class ),
+				new FauxRequest( [ 'lang' => 'en' ] ) ] )
+			->onlyMethods( [ 'msg' ] )
+			->getMock();
+
 		$context->method( 'msg' )
-			->willReturnCallback( function ( $key ) {
+			->willReturnCallback( static function ( $key ) {
 				return new RawMessage( "($key)" );
 			} );
 
@@ -58,7 +65,7 @@ class CurrentSiteModuleTest extends \PHPUnit\Framework\TestCase {
 		$this->assertEquals( 'mw.config.set({"wbCurrentSiteDetails":' . $expected . '});', $result );
 	}
 
-	public function provideScriptDetails() {
+	public static function provideScriptDetails() {
 		$site1 = new MediaWikiSite();
 		$site1->setGlobalId( 'testSiteID' );
 		$site1->setGroup( 'theSiteGroup' );
@@ -124,7 +131,7 @@ class CurrentSiteModuleTest extends \PHPUnit\Framework\TestCase {
 		$this->assertStringContainsString( $expected, $script );
 	}
 
-	public function provideSettingsPairs() {
+	public static function provideSettingsPairs() {
 		yield 'Repo only' => [
 			null,
 			new SettingsArray( [

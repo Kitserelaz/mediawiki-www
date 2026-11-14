@@ -18,6 +18,9 @@ use Wikimedia\TestingAccessWrapper;
 class HooksTest extends MediaWikiIntegrationTestCase {
 
 	private function getContext( Title $title, Config $config, array $messages ): IContextSource {
+		// force content model to prevent database access
+		$title->setContentModel( 'wikitext' );
+
 		$output = RequestContext::newExtraneousContext( $title )->getOutput();
 
 		// We construct a mock context instead of using an actual RequestContext
@@ -37,7 +40,8 @@ class HooksTest extends MediaWikiIntegrationTestCase {
 	}
 
 	private function addNotice( IContextSource $context, string $position ): void {
-		TestingAccessWrapper::newFromObject( new Hooks )->addNotice( $context, $position );
+		TestingAccessWrapper::newFromObject( new Hooks( $this->getServiceContainer()->getParserFactory() ) )
+			->addNotice( $context, $position );
 	}
 
 	public function testAddNoticePerPage(): void {
@@ -64,7 +68,7 @@ class HooksTest extends MediaWikiIntegrationTestCase {
 			new HashConfig( [ 'PageNoticeDisablePerPageNotices' => false ] ),
 			[
 				'top-notice-ns-0' => new RawMessage( 'Trans rights are human rights' ),
-				'bottom-notice-ns-0' => new RawMessage( ':3' ),
+				'bottom-notice-ns-0' => new RawMessage( '<nowiki>:3</nowiki>' ),
 			],
 		);
 
@@ -74,6 +78,24 @@ class HooksTest extends MediaWikiIntegrationTestCase {
 		$output = $context->getOutput()->getHTML();
 		$this->assertStringContainsString( 'Trans rights are human rights', $output );
 		$this->assertStringContainsString( ':3', $output );
+	}
+
+	public function testAddNoticeGlobally(): void {
+		$context = $this->getContext(
+			Title::makeTitle( NS_MAIN, 'Sleep is important!' ),
+			new HashConfig( [ 'PageNoticeDisablePerPageNotices' => false ] ),
+			[
+				'top-notice-global' => new RawMessage( 'Love is love' ),
+				'bottom-notice-global' => new RawMessage( 'Bisexuality is not a phase' ),
+			],
+		);
+
+		$this->addNotice( $context, 'top' );
+		$this->addNotice( $context, 'bottom' );
+
+		$output = $context->getOutput()->getHTML();
+		$this->assertStringContainsString( 'Love is love', $output );
+		$this->assertStringContainsString( 'Bisexuality is not a phase', $output );
 	}
 
 	public function testAddNoticeDisabledPerPage(): void {
@@ -108,36 +130,26 @@ class HooksTest extends MediaWikiIntegrationTestCase {
 		$this->assertArrayHasKey( 'fox', $indicators );
 	}
 
-	public function testModuleAddedOnlyOnce(): void {
+	public function testWikitextTablesAreParsedInNotices(): void {
 		$context = $this->getContext(
-			Title::makeTitle( NS_MAIN, 'Enbies are cute too' ),
+			Title::makeTitle( NS_MAIN, 'WikitextTables' ),
 			new HashConfig( [ 'PageNoticeDisablePerPageNotices' => false ] ),
 			[
-				'top-notice-ns-0' => new RawMessage( 'Let\'s' ),
-				'top-notice-Enbies_are_cute_too' => new RawMessage( 'Get' ),
-				'bottom-notice-Enbies_are_cute_too' => new RawMessage( 'Burger' ),
-				'bottom-notice-ns-0' => new RawMessage( 'Today' ),
+				'top-notice-WikitextTables' => new RawMessage( <<<EOT
+{| class=\"wikitable\"
+! Header 1 !! Header 2
+|-
+| Row 1 || Row 2
+|}
+EOT
+				),
 			],
 		);
 
 		$this->addNotice( $context, 'top' );
-		$this->addNotice( $context, 'bottom' );
 
-		$moduleStyles = $context->getOutput()->getModuleStyles();
-		$this->assertSame( [ 'ext.pageNotice' ], $moduleStyles );
-	}
-
-	public function testModuleNotAddedIfUnused(): void {
-		$context = $this->getContext(
-			Title::makeTitle( NS_MAIN, 'Foxgirls' ),
-			new HashConfig( [ 'PageNoticeDisablePerPageNotices' => false ] ),
-			[],
-		);
-
-		$this->addNotice( $context, 'top' );
-		$this->addNotice( $context, 'bottom' );
-
-		$moduleStyles = $context->getOutput()->getModuleStyles();
-		$this->assertSame( [], $moduleStyles );
+		$output = $context->getOutput()->getHTML();
+		$this->assertStringContainsString( '<table', $output );
+		$this->assertStringContainsString( '<td>Row 1</td>', $output );
 	}
 }

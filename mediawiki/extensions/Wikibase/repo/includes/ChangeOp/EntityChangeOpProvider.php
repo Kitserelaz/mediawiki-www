@@ -29,11 +29,7 @@ class EntityChangeOpProvider {
 	 */
 	public function __construct( array $changeOpDeserializerInstantiators ) {
 		Assert::parameterElementType( 'callable', $changeOpDeserializerInstantiators, '$changeOpDeserializerInstantiators' );
-		Assert::parameterElementType(
-			'string',
-			array_keys( $changeOpDeserializerInstantiators ),
-			'array_keys( $changeOpDeserializerInstantiators )'
-		);
+		Assert::parameterKeyType( 'string', $changeOpDeserializerInstantiators, '$changeOpDeserializerInstantiators' );
 
 		$this->changeOpDeserializerInstantiators = $changeOpDeserializerInstantiators;
 	}
@@ -82,7 +78,7 @@ class EntityChangeOpProvider {
 			);
 		}
 
-		$deserializer = call_user_func( $this->changeOpDeserializerInstantiators[$type] );
+		$deserializer = $this->changeOpDeserializerInstantiators[$type]();
 		Assert::postcondition(
 			$deserializer instanceof ChangeOpDeserializer,
 			'changeop-deserializer-callback defined for entity type: ' . $type . ' does not instantiate ChangeOpDeserializer'

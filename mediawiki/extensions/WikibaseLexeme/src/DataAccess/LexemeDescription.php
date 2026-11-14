@@ -49,14 +49,13 @@ class LexemeDescription {
 		?EntityId $id = null,
 		$default = ""
 	) {
-		if ( !$id ) {
-			return $default;
+		if ( $id ) {
+			$label = $this->lookup->getLabel( $id );
+			if ( $label ) {
+				return $label->getText();
+			}
 		}
-		$label = $this->lookup->getLabel( $id );
-		if ( !$label ) {
-			return $default;
-		}
-		return $label->getText();
+		return $default;
 	}
 
 	/**
@@ -131,7 +130,7 @@ class LexemeDescription {
 	public static function parseOrNull( $text, EntityIdParser $idParser ) {
 		try {
 			$id = $idParser->parse( $text );
-		} catch ( EntityIdParsingException $ex ) {
+		} catch ( EntityIdParsingException ) {
 			return null;
 		}
 		return $id;

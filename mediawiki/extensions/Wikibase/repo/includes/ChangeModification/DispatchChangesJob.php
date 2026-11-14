@@ -4,13 +4,14 @@ declare( strict_types = 1 );
 
 namespace Wikibase\Repo\ChangeModification;
 
-use IJobSpecification;
 use InvalidArgumentException;
-use Job;
-use JobSpecification;
-use Liuggio\StatsdClient\Factory\StatsdDataFactoryInterface;
+use MediaWiki\JobQueue\IJobSpecification;
+use MediaWiki\JobQueue\Job;
 use MediaWiki\JobQueue\JobQueueGroupFactory;
+use MediaWiki\JobQueue\JobSpecification;
+use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
 use Psr\Log\LoggerInterface;
 use Wikibase\Client\WikibaseClient;
 use Wikibase\DataModel\Entity\EntityIdParser;
@@ -26,6 +27,7 @@ use Wikibase\Repo\Store\Sql\SqlSubscriptionLookup;
 use Wikibase\Repo\Store\SubscriptionLookup;
 use Wikibase\Repo\WikibaseRepo;
 use Wikimedia\Assert\Assert;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * @license GPL-2.0-or-later
@@ -68,9 +70,12 @@ class DispatchChangesJob extends Job {
 	private $logger;
 
 	/**
-	 * @var StatsdDataFactoryInterface
+	 * @var StatsFactory
 	 */
-	private $stats;
+	private $statsFactory;
+
+	/** @var string */
+	private $statsPrefix;
 
 	public static function makeJobSpecification( string $entityIdSerialization ): IJobSpecification {
 		return new JobSpecification(
@@ -89,7 +94,7 @@ class DispatchChangesJob extends Job {
 		JobQueueGroupFactory $jobQueueGroupFactory,
 		ChangeStore $changeStore,
 		LoggerInterface $logger,
-		StatsdDataFactoryInterface $stats,
+		StatsFactory $statsFactory,
 		array $params
 	) {
 
@@ -104,13 +109,17 @@ class DispatchChangesJob extends Job {
 		$this->jobQueueGroupFactory = $jobQueueGroupFactory;
 		$this->changeStore = $changeStore;
 		$this->logger = $logger;
-		$this->stats = $stats;
+		$this->statsFactory = $statsFactory->withComponent( 'WikibaseRepo' );
 		$this->removeDuplicates = true;
 
+		$services = MediaWikiServices::getInstance();
+		$mainConfig = $services->getMainConfig();
+
+		$this->statsPrefix = rtrim( $mainConfig->get( MainConfigNames::DBname ), '.' );
 		parent::__construct( 'DispatchChanges', $params );
 	}
 
-	public static function newFromGlobalState( $unused, array $params ): self {
+	public static function newFromGlobalState( ?Title $unused, array $params ): self {
 		return new self(
 			new SqlSubscriptionLookup(
 				WikibaseRepo::getRepoDomainDbFactory()->newRepoDb()
@@ -120,7 +129,7 @@ class DispatchChangesJob extends Job {
 			MediaWikiServices::getInstance()->getJobQueueGroupFactory(),
 			WikibaseRepo::getStore()->getChangeStore(),
 			WikibaseRepo::getLogger(),
-			MediaWikiServices::getInstance()->getPerDbNameStatsdDataFactory(),
+			MediaWikiServices::getInstance()->getStatsFactory(),
 			$params
 		);
 	}
@@ -161,9 +170,20 @@ class DispatchChangesJob extends Job {
 		}
 
 		$this->logUnsubscribedWikisWithSitelinkChanges( $dispatchingClientSites, $subscribedClientSites );
-		// StatsdDataFactoryInterface::timing is used so that p99 and similar aggregation is available
-		$this->stats->timing( 'wikibase.repo.dispatchChangesJob.NumberOfChangesInJob', count( $changes ) );
-		$this->stats->timing( 'wikibase.repo.dispatchChangesJob.numberOfWikisForChange', count( $dispatchingClientSites ) );
+
+		// not really a timing, but works like one (we want percentiles etc.)
+		// TODO: probably a good candidate for T348796
+		$this->statsFactory
+			->getTiming( 'dispatchChangesJob_numberOfChangesInJob_total' )
+			->setLabel( "db", $this->statsPrefix )
+			->copyToStatsdAt( "$this->statsPrefix.wikibase.repo.dispatchChangesJob.NumberOfChangesInJob" )
+			->observe( count( $changes ) );
+
+		$this->statsFactory
+			->getTiming( 'dispatchChangesJob_numberOfWikisForChange_total' )
+			->setLabel( "db", $this->statsPrefix )
+			->copyToStatsdAt( "$this->statsPrefix.wikibase.repo.dispatchChangesJob.numberOfWikisForChange" )
+			->observe( count( $dispatchingClientSites ) );
 
 		$this->logger->info( __METHOD__ . ': dispatching changes for {entity} to {numberOfWikis} clients: {listOfWikis}', [
 			'entity' => $this->entityIdSerialization,
@@ -182,10 +202,14 @@ class DispatchChangesJob extends Job {
 		return true;
 	}
 
-	private function logUnsubscribedWikisWithSitelinkChanges( $dispatchingClientSites, $subscribedClientSites ) {
+	private function logUnsubscribedWikisWithSitelinkChanges( array $dispatchingClientSites, array $subscribedClientSites ) {
 		$clientsWithAddedSitelinks = array_diff( array_keys( $dispatchingClientSites ), $subscribedClientSites );
 		foreach ( $clientsWithAddedSitelinks as $wikiId ) {
-			$this->stats->increment( "wikibase.repo.dispatchChangesJob.sitelinkAdditionDispatched.{$wikiId}" );
+			$metric = $this->statsFactory->getCounter(
+				"dispatchChangesJob_SitelinkAdditionDispatched_total"
+			)->setLabels( [ "db" => $this->statsPrefix, "wikiId" => $wikiId ] );
+			$metric->copyToStatsdAt( "$this->statsPrefix.wikibase.repo.dispatchChangesJob.sitelinkAdditionDispatched.{$wikiId}" )
+				->increment();
 		}
 	}
 
@@ -229,7 +253,12 @@ class DispatchChangesJob extends Job {
 			if ( array_key_exists( $siteID, $allClientWikis ) ) {
 				$clientWikis[$siteID] = $allClientWikis[$siteID];
 			} else {
-				$this->stats->increment( 'wikibase.repo.dispatchChangesJob.clientWikiWithoutConfig' );
+				$metric = $this->statsFactory->getCounter(
+					'dispatchChangesJob_clientWikiWithoutConfig_total'
+				)
+				->setLabels( [ "db" => $this->statsPrefix, "siteId" => $siteID ] );
+				$metric->copyToStatsdAt( "$this->statsPrefix.wikibase.repo.dispatchChangesJob.clientWikiWithoutConfig" )
+					->increment();
 				$this->logger->warning(
 					__METHOD__ . ': No client wiki with site ID {siteID} configured in \$wgWBRepoSettings["localClientDatabases"]!',
 					[

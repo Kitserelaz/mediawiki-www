@@ -30,6 +30,11 @@ use Wikibase\Lib\TermLanguageFallbackChain;
  */
 class FormatterLabelDescriptionLookupFactory {
 
+	/**
+	 * If this option is set, its value must be an instance of {@link TermLanguageFallbackChain};
+	 * furthermore, the {@link ValueFormatter::OPT_LANG} option must then also be set
+	 * and must be consistent with the fallback chain option.
+	 */
 	public const OPT_LANGUAGE_FALLBACK_CHAIN = 'languages';
 
 	/**
@@ -74,7 +79,7 @@ class FormatterLabelDescriptionLookupFactory {
 		}
 	}
 
-	private function newLanguageFallbackLabelDescriptionLookup( FormatterOptions $options ) {
+	private function newLanguageFallbackLabelDescriptionLookup( FormatterOptions $options ): CachingFallbackLabelDescriptionLookup {
 		$fallbackChain = $options->getOption( self::OPT_LANGUAGE_FALLBACK_CHAIN );
 
 		if ( !( $fallbackChain instanceof TermLanguageFallbackChain ) ) {
@@ -90,7 +95,7 @@ class FormatterLabelDescriptionLookupFactory {
 		);
 	}
 
-	private function newLanguageLabelDescriptionLookup( FormatterOptions $options ) {
+	private function newLanguageLabelDescriptionLookup( FormatterOptions $options ): LanguageLabelDescriptionLookup {
 		$languageCode = $options->getOption( ValueFormatter::OPT_LANG );
 
 		if ( !is_string( $languageCode ) ) {

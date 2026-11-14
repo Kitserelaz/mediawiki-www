@@ -44,8 +44,8 @@ class UsageLookupContractTester {
 		$this->putUsagesCallback = $putUsagesCallback;
 	}
 
-	private function putUsages( $pageId, array $usages ) {
-		call_user_func( $this->putUsagesCallback, $pageId, $usages );
+	private function putUsages( int $pageId, array $usages ) {
+		( $this->putUsagesCallback )( $pageId, $usages );
 	}
 
 	public function testGetUsageForPage() {

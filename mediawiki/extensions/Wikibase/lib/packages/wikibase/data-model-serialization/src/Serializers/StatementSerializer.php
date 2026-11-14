@@ -18,8 +18,7 @@ use Wikibase\DataModel\Statement\Statement;
  */
 class StatementSerializer implements DispatchableSerializer {
 
-	/** @var array */
-	private $rankLabels = [
+	private array $rankLabels = [
 		Statement::RANK_DEPRECATED => 'deprecated',
 		Statement::RANK_NORMAL => 'normal',
 		Statement::RANK_PREFERRED => 'preferred',
@@ -80,7 +79,7 @@ class StatementSerializer implements DispatchableSerializer {
 		return $this->getSerialized( $object );
 	}
 
-	private function getSerialized( Statement $statement ) {
+	private function getSerialized( Statement $statement ): array {
 		$serialization = [
 			'mainsnak' => $this->mainSnakSerializer->serialize( $statement->getMainSnak() ),
 			'type' => 'statement',
@@ -115,7 +114,7 @@ class StatementSerializer implements DispatchableSerializer {
 		}
 	}
 
-	private function addQualifiersToSerialization( Statement $statement, &$serialization ) {
+	private function addQualifiersToSerialization( Statement $statement, array &$serialization ) {
 		$qualifiers = $statement->getQualifiers();
 
 		if ( $qualifiers->count() !== 0 ) {
@@ -124,7 +123,7 @@ class StatementSerializer implements DispatchableSerializer {
 		}
 	}
 
-	private function buildQualifiersOrderList( SnakList $snaks ) {
+	private function buildQualifiersOrderList( SnakList $snaks ): array {
 		$list = [];
 
 		/**

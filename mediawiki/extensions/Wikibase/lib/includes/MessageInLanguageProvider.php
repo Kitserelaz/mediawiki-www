@@ -5,9 +5,9 @@ declare( strict_types = 1 );
 namespace Wikibase\Lib;
 
 use MediaWiki\Language\Language;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\Message\Message;
 use MediaWiki\StubObject\StubUserLang;
-use MessageLocalizer;
 use Wikimedia\Message\MessageSpecifier;
 
 /**

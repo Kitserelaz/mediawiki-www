@@ -23,7 +23,7 @@ class EntityDiffChangedAspectsFactory {
 	private $logger;
 
 	public function __construct( ?LoggerInterface $logger = null ) {
-		$this->logger = $logger ?: new NullLogger();
+		$this->logger = $logger ?? new NullLogger();
 	}
 
 	/**
@@ -34,7 +34,9 @@ class EntityDiffChangedAspectsFactory {
 	public function newFromEntityDiff( Diff $entityDiff ) {
 		$labelChanges = [];
 		$descriptionChanges = [];
-		$statementChanges = [];
+		$aliasChanges = [];
+		$statementChangesExcludingQualOrRefOnlyChanges = [];
+		$statementChangesQualOrRefOnly = [];
 		$siteLinkChanges = [];
 		$otherChanges = false;
 
@@ -60,10 +62,17 @@ class EntityDiffChangedAspectsFactory {
 				$descriptionChanges = $this->getChangedDescriptions( $descriptionsDiff );
 			}
 
+			$aliasDiff = $entityDiff->getAliasesDiff();
+			if ( $aliasDiff ) {
+				$remainingDiffOps -= count( $aliasDiff );
+				$aliasChanges = $this->getChangedAliases( $aliasDiff );
+			}
+
 			$claimsDiff = $entityDiff->getClaimsDiff();
 			if ( $claimsDiff ) {
 				$remainingDiffOps -= count( $claimsDiff );
-				$statementChanges = $this->getChangedStatements( $claimsDiff );
+				$statementChangesExcludingQualOrRefOnlyChanges = $this->getChangedStatementsExcludingQualOrRefOnlyChanges( $claimsDiff );
+				$statementChangesQualOrRefOnly = $this->getChangedStatementsQualOrRefOnly( $claimsDiff );
 			}
 		}
 
@@ -74,7 +83,9 @@ class EntityDiffChangedAspectsFactory {
 		return new EntityDiffChangedAspects(
 			$labelChanges,
 			$descriptionChanges,
-			$statementChanges,
+			$aliasChanges,
+			$statementChangesExcludingQualOrRefOnlyChanges,
+			$statementChangesQualOrRefOnly,
 			$siteLinkChanges,
 			$otherChanges
 		);
@@ -83,7 +94,7 @@ class EntityDiffChangedAspectsFactory {
 	/**
 	 * @param Diff $siteLinkDiff
 	 *
-	 * @return array[]
+	 * @return array<string,array{0: ?string, 1: ?string, 2: bool}>
 	 */
 	private function getChangedSiteLinks( Diff $siteLinkDiff ) {
 		$siteLinkChanges = [];
@@ -98,8 +109,7 @@ class EntityDiffChangedAspectsFactory {
 	/**
 	 * @param DiffOp $siteLinkDiffOp
 	 *
-	 * @return array ( string|null $oldPageName, string|null $newPageName, bool $badgesChanged )
-	 * @phan-return array{0:?string,1:?string,2:bool}
+	 * @return array{0: ?string, 1: ?string, 2: bool} ( string|null $oldPageName, string|null $newPageName, bool $badgesChanged )
 	 */
 	private function getSiteLinkChangePerSite( DiffOp $siteLinkDiffOp ) {
 		if ( !$siteLinkDiffOp instanceof Diff ) {
@@ -140,13 +150,21 @@ class EntityDiffChangedAspectsFactory {
 	}
 
 	/**
+	 * @param Diff $aliasesDiff
+	 *
+	 * @return string[]
+	 */
+	private function getChangedAliases( Diff $aliasesDiff ) {
+		return array_keys( iterator_to_array( $aliasesDiff ) );
+	}
+
+	/**
 	 * @param Diff $claimsDiff
 	 *
 	 * @return string[]
 	 */
-	private function getChangedStatements( Diff $claimsDiff ) {
+	private function getChangedStatementsExcludingQualOrRefOnlyChanges( Diff $claimsDiff ) {
 		$changedStatements = [];
-
 		foreach ( $claimsDiff as $pid => $diffOp ) {
 			/** @var Statement $statement */
 			if ( $diffOp instanceof DiffOpAdd ) {
@@ -157,17 +175,46 @@ class EntityDiffChangedAspectsFactory {
 				$statement = $diffOp->getOldValue();
 				/** @var $newStatement Statement */
 				$newStatement = $diffOp->getNewValue();
-
-				$changedStatements[] = $newStatement->getPropertyId()->getSerialization();
+				$isQualOrRefOnlyStatementChange = $statement->getMainSnak()->equals( $newStatement->getMainSnak() );
+				if ( !$isQualOrRefOnlyStatementChange ) {
+					$changedStatements[] = $newStatement->getPropertyId()->getSerialization();
+				} else {
+					// The change is qualifier or reference only - we shouldn't add anything to changedStatements
+					break;
+				}
 			} else {
 				$this->logger->warning( 'Unknown DiffOp type {class}', [
 					'class' => get_class( $diffOp ),
 				] );
 				continue;
 			}
-
 			'@phan-var Statement $statement';
 			$changedStatements[] = $statement->getPropertyId()->getSerialization();
+		}
+		return array_values( array_unique( $changedStatements ) );
+	}
+
+	/**
+	 * @param Diff $claimsDiff
+	 *
+	 * @return string[]
+	 */
+	private function getChangedStatementsQualOrRefOnly( Diff $claimsDiff ) {
+		$changedStatements = [];
+
+		foreach ( $claimsDiff as $pid => $diffOp ) {
+			/** @var Statement $statement */
+			if ( $diffOp instanceof DiffOpChange ) {
+				$statement = $diffOp->getOldValue();
+				/** @var $newStatement Statement */
+				$newStatement = $diffOp->getNewValue();
+				$newStatementId = $newStatement->getPropertyId()->getSerialization();
+				$isQualOrRefOnlyStatementChange = $statement->getMainSnak()->equals( $newStatement->getMainSnak() );
+				if ( $isQualOrRefOnlyStatementChange ) {
+					$changedStatements[] = $newStatementId;
+					// When only a reference or qualifier is changed, the old and new statement Pid will not have changed
+				}
+			}
 		}
 
 		return array_values( array_unique( $changedStatements ) );

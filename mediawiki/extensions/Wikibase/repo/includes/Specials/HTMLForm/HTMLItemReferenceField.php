@@ -40,7 +40,7 @@ class HTMLItemReferenceField extends HTMLTextField {
 
 		parent::__construct( array_merge( $defaultValues, $params ) );
 
-		$this->entityLookup = $entityLookup ?: WikibaseRepo::getEntityLookup();
+		$this->entityLookup = $entityLookup ?? WikibaseRepo::getEntityLookup();
 	}
 
 	/**
@@ -60,7 +60,7 @@ class HTMLItemReferenceField extends HTMLTextField {
 
 		try {
 			$itemId = new ItemId( $value );
-		} catch ( \InvalidArgumentException $e ) {
+		} catch ( \InvalidArgumentException ) {
 			return $this->msg( 'wikibase-item-reference-edit-invalid-format' );
 		}
 

@@ -1,0 +1,18 @@
+version: 2
+updates:
+    - package-ecosystem: github-actions
+      directory: "/"
+      schedule:
+          interval: monthly
+      open-pull-requests-limit: 10
+    - package-ecosystem: npm
+      directory: "/"
+      schedule:
+          interval: monthly
+      open-pull-requests-limit: 15
+      ignore:
+          # use the same version of Vue and Vuex as in MediaWiki core
+          - dependency-name: "vue"
+          - dependency-name: "@vue/compiler-dom"
+          - dependency-name: "@vue/server-renderer"
+          - dependency-name: "vuex"

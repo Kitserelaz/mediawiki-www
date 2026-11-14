@@ -224,13 +224,14 @@ class SimpleCacheWithBagOStuff implements CacheInterface {
 		return $result !== false;
 	}
 
-	private function assertKeysAreValid( $keys ): void {
+	private function assertKeysAreValid( array $keys ): void {
 		foreach ( $keys as $key ) {
 			$this->assertKeyIsValid( $key );
 		}
 	}
 
 	/**
+	 * @param string $key
 	 * @throws CacheInvalidArgumentException
 	 */
 	private function assertKeyIsValid( $key ): void {
@@ -314,6 +315,10 @@ class SimpleCacheWithBagOStuff implements CacheInterface {
 		throw new CacheInvalidArgumentException( "Invalid TTL: `null|int|\DateInterval` expected, `$type` given" );
 	}
 
+	/**
+	 * @param mixed $value
+	 * @return string|false
+	 */
 	private function serialize( $value ) {
 		$dataToStore = serialize( $value );
 
@@ -414,6 +419,9 @@ class SimpleCacheWithBagOStuff implements CacheInterface {
 	 * and {@link self::validate() validated}.
 	 * Even then, we only support unserializing `stdClass`, no other classes.
 	 *
+	 * @param string $decodedData
+	 * @param mixed $default
+	 * @param array $loggingContext
 	 * @return mixed
 	 */
 	private function safelyUnserialize( string $decodedData, $default, array $loggingContext ) {

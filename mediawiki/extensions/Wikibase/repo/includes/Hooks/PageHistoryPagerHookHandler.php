@@ -4,75 +4,40 @@ declare( strict_types=1 );
 
 namespace Wikibase\Repo\Hooks;
 
-use MediaWiki\Hook\PageHistoryPager__doBatchLookupsHook;
-use MediaWiki\Pager\HistoryPager;
-use Psr\Log\LoggerInterface;
+use MediaWiki\Actions\Hook\PageHistoryPager__doBatchLookupsHook;
+use MediaWiki\Actions\Pager\HistoryPager;
 use Wikibase\DataAccess\PrefetchingTermLookup;
 use Wikibase\DataModel\Term\TermTypes;
 use Wikibase\Lib\LanguageFallbackChainFactory;
-use Wikibase\Lib\SettingsArray;
-use Wikibase\Lib\Store\LinkTargetEntityIdLookup;
-use Wikibase\Repo\FederatedProperties\SummaryParsingPrefetchHelper;
 use Wikimedia\Rdbms\IResultWrapper;
 
-//phpcs:disable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
 /**
  * Hook handler for prefetching on history pages.
- *
- * Currently only used when federated properties are enabled.
  *
  * @license GPL-2.0-or-later
  * @author Tobias Andersson
  */
 class PageHistoryPagerHookHandler implements PageHistoryPager__doBatchLookupsHook {
 
-	/** @var bool */
-	private $federatedPropertiesEnabled;
+	private LanguageFallbackChainFactory $languageFallbackChainFactory;
 
-	/** @var LinkTargetEntityIdLookup */
-	private $linkTargetEntityIdLookup;
+	private SummaryParsingPrefetchHelper $summaryParsingPrefetchHelper;
 
-	/** @var LanguageFallbackChainFactory */
-	private $languageFallbackChainFactory;
-
-	/** @var SummaryParsingPrefetchHelper|null */
-	private $federatedPropertiesPrefetchHelper;
-
-	/**
-	 * @param bool $federatedPropertiesEnabled
-	 * @param PrefetchingTermLookup $prefetchingLookup
-	 * @param LinkTargetEntityIdLookup $linkTargetEntityIdLookup
-	 * @param LanguageFallbackChainFactory $languageFallbackChainFactory
-	 * @param LoggerInterface $logger
-	 */
 	public function __construct(
-		bool $federatedPropertiesEnabled,
 		PrefetchingTermLookup $prefetchingLookup,
-		LinkTargetEntityIdLookup $linkTargetEntityIdLookup,
-		LanguageFallbackChainFactory $languageFallbackChainFactory,
-		LoggerInterface $logger
+		LanguageFallbackChainFactory $languageFallbackChainFactory
 	) {
-		$this->federatedPropertiesEnabled = $federatedPropertiesEnabled;
-		$this->linkTargetEntityIdLookup = $linkTargetEntityIdLookup;
 		$this->languageFallbackChainFactory = $languageFallbackChainFactory;
-		if ( $federatedPropertiesEnabled ) {
-			$this->federatedPropertiesPrefetchHelper = new SummaryParsingPrefetchHelper( $prefetchingLookup, $logger );
-		}
+		$this->summaryParsingPrefetchHelper = new SummaryParsingPrefetchHelper( $prefetchingLookup );
 	}
 
 	public static function factory(
 		LanguageFallbackChainFactory $languageFallbackChainFactory,
-		LinkTargetEntityIdLookup $linkTargetEntityIdLookup,
-		LoggerInterface $logger,
-		PrefetchingTermLookup $prefetchingTermLookup,
-		SettingsArray $repoSettings
+		PrefetchingTermLookup $prefetchingTermLookup
 	): self {
 		return new self(
-			$repoSettings->getSetting( 'federatedPropertiesEnabled' ),
 			$prefetchingTermLookup,
-			$linkTargetEntityIdLookup,
 			$languageFallbackChainFactory,
-			$logger
 		);
 	}
 
@@ -81,21 +46,12 @@ class PageHistoryPagerHookHandler implements PageHistoryPager__doBatchLookupsHoo
 	 * @param IResultWrapper $result
 	 */
 	public function onPageHistoryPager__doBatchLookups( $pager, $result ) {
-		if ( !$this->federatedPropertiesEnabled ) {
-			return;
-		}
-
-		$entityId = $this->linkTargetEntityIdLookup->getEntityId( $pager->getTitle() );
-		if ( $entityId === null ) {
-			return;
-		}
-
 		$languageFallbackChain = $this->languageFallbackChainFactory->newFromContext( $pager->getContext() );
 
-		$this->federatedPropertiesPrefetchHelper->prefetchFederatedProperties(
+		$this->summaryParsingPrefetchHelper->prefetchTermsForMentionedEntities(
 			$result,
 			$languageFallbackChain->getFetchLanguageCodes(),
-			[ TermTypes::TYPE_LABEL ]
+			[ TermTypes::TYPE_LABEL, TermTypes::TYPE_DESCRIPTION ]
 		);
 	}
 }

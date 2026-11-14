@@ -10,13 +10,14 @@ use Wikibase\DataModel\Services\EntityId\EntityIdFormatter;
 use Wikibase\Lib\Formatters\DispatchingEntityIdHtmlLinkFormatter;
 
 /**
- * @covers \Wikibase\Lib\DispatchingEntityIdHtmlLinkFormatter
+ * @covers \Wikibase\Lib\Formatters\DispatchingEntityIdHtmlLinkFormatter
  *
  * @group Wikibase
  *
  * @license GPL-2.0-or-later
  */
 class DispatchingEntityIdHtmlLinkFormatterTest extends TestCase {
+	use \MediaWikiCoversValidator;
 
 	/**
 	 * @var EntityIdFormatter|MockObject
@@ -30,8 +31,12 @@ class DispatchingEntityIdHtmlLinkFormatterTest extends TestCase {
 	public function testGivenFormatterMissing_UseDefaultFormatter() {
 		$this->defaultFormatter->expects( $this->once() )
 			->method( 'formatEntityId' );
+		$entityId = $this->createMock( EntityId::class );
+		$entityId->expects( $this->once() )
+			->method( 'getEntityType' )
+			->willReturn( 'unknown' );
 		$formatter = new DispatchingEntityIdHtmlLinkFormatter( [], $this->defaultFormatter );
-		$formatter->formatEntityId( $this->createMock( EntityId::class ) );
+		$formatter->formatEntityId( $entityId );
 	}
 
 	public function testGivenFormatterExists_FormatterUsed() {

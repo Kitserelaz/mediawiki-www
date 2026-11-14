@@ -37,7 +37,7 @@ class TimeFormatterParserRoundtripTest extends \PHPUnit\Framework\TestCase {
 				'January' => 1,
 				'agosto' => 8,
 				'Augusti' => 8,
-				'Avgust' => 8,
+				'avgust' => 8,
 				'December' => 12,
 			] );
 
@@ -62,10 +62,10 @@ class TimeFormatterParserRoundtripTest extends \PHPUnit\Framework\TestCase {
 		];
 	}
 
-	public function timeValueProvider() {
+	public static function timeValueProvider() {
 		$gregorian = 'http://www.wikidata.org/entity/Q1985727';
 
-		foreach ( $this->isoTimestampProvider() as $case ) {
+		foreach ( self::isoTimestampProvider() as $case ) {
 			yield [ new TimeValue( $case[0], 0, 0, 0, $case[1], $gregorian ) ];
 		}
 	}
@@ -199,7 +199,7 @@ class TimeFormatterParserRoundtripTest extends \PHPUnit\Framework\TestCase {
 			// Preserve punctuation as given in MessagesXx.php but skip suffixes and words
 			[
 				'+2013-08-16T00:00:00Z',
-				'16 Avgust, 2013',
+				'16 avgust, 2013',
 				'kaa',
 			],
 			[

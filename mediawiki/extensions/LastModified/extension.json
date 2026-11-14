@@ -9,7 +9,7 @@
 	"descriptionmsg": "lastmodified-desc",
 	"type": "other",
 	"requires": {
-		"MediaWiki": ">= 1.29.0"
+		"MediaWiki": ">= 1.43"
 	},
 	"MessagesDirs": {
 		"LastModified": [
@@ -21,7 +21,7 @@
 	},
 	"ResourceModules": {
 		"last.modified": {
-			"scripts": "lastmodified.js",
+			"packageFiles": "lastmodified.js",
 			"dependencies": [
 				"mediawiki.jqueryMsg"
 			],
@@ -41,13 +41,24 @@
 		"localBasePath": "modules",
 		"remoteExtPath": "LastModified/modules"
 	},
+	"HookHandlers": {
+		"main": {
+			"class": "LastModifiedHooks"
+		}
+	},
 	"Hooks": {
-		"BeforePageDisplay": "LastModifiedHooks::onLastModified"
+		"BeforePageDisplay": "main"
 	},
 	"config": {
 		"LastModifiedRange": {
 			"description": "This variable controls the display range.\nSee documentation on https://www.mediawiki.org/wiki/Extension:LastModified for more details.",
 			"value": 0
+		},
+		"LastModifiedNamespaces": {
+			"description": "The namespaces in which the last modified text will be displayed.",
+			"value": [
+				0
+			]
 		}
 	},
 	"manifest_version": 2

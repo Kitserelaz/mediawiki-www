@@ -55,7 +55,6 @@ abstract class SpecialWikibaseRepoPage extends SpecialWikibasePage {
 
 	/**
 	 * @param string $title The title of the special page
-	 * @param string $restriction The required user right
 	 * @param string[] $tags List of tags to add to edits
 	 * @param SpecialPageCopyrightView $copyrightView
 	 * @param SummaryFormatter $summaryFormatter
@@ -64,14 +63,13 @@ abstract class SpecialWikibaseRepoPage extends SpecialWikibasePage {
 	 */
 	public function __construct(
 		$title,
-		$restriction,
 		array $tags,
 		SpecialPageCopyrightView $copyrightView,
 		SummaryFormatter $summaryFormatter,
 		EntityTitleLookup $entityTitleLookup,
 		MediaWikiEditEntityFactory $editEntityFactory
 	) {
-		parent::__construct( $title, $restriction );
+		parent::__construct( $title );
 		$this->tags = $tags;
 		$this->copyrightView = $copyrightView;
 		$this->summaryFormatter = $summaryFormatter;
@@ -124,7 +122,7 @@ abstract class SpecialWikibaseRepoPage extends SpecialWikibasePage {
 
 		try {
 			$id = $idParser->parse( $rawId );
-		} catch ( RuntimeException $ex ) {
+		} catch ( RuntimeException ) {
 			throw new UserInputException(
 				'wikibase-wikibaserepopage-invalid-id',
 				[ $rawId ],
@@ -229,10 +227,7 @@ abstract class SpecialWikibaseRepoPage extends SpecialWikibasePage {
 	 * @return string HTML
 	 */
 	protected function getCopyrightHTML( ?string $saveMessageKey = null ) {
-		if ( $saveMessageKey === null ) {
-			$saveMessageKey = 'wikibase-' . strtolower( $this->getName() ) . '-submit';
-		}
-
+		$saveMessageKey ??= 'wikibase-' . strtolower( $this->getName() ) . '-submit';
 		return $this->copyrightView->getHtml( $this->getLanguage(), $saveMessageKey );
 	}
 

@@ -1,11 +1,15 @@
 <?php
 
+declare( strict_types = 1 );
+
 namespace Wikibase\Repo\Tests;
 
 use DataValues\StringValue;
 use Diff\Comparer\ComparableComparer;
 use Diff\Differ\OrderedListDiffer;
+use PHPUnit\Framework\TestCase;
 use Wikibase\DataModel\Reference;
+use Wikibase\DataModel\ReferenceList;
 use Wikibase\DataModel\Snak\PropertyNoValueSnak;
 use Wikibase\DataModel\Snak\PropertySomeValueSnak;
 use Wikibase\DataModel\Snak\PropertyValueSnak;
@@ -25,109 +29,83 @@ use Wikibase\Repo\Diff\ClaimDiffer;
  * @author Tobias Gritschacher < tobias.gritschacher@wikimedia.de >
  * @author Daniel Kinzler
  */
-class ClaimSummaryBuilderTest extends \PHPUnit\Framework\TestCase {
+class ClaimSummaryBuilderTest extends TestCase {
 
 	/**
-	 * @return Snak[]
+	 * @return iterable<Snak>
 	 */
-	protected static function snakProvider() {
-		$snaks = [];
-
-		$snaks[] = new PropertyNoValueSnak( 42 );
-		$snaks[] = new PropertySomeValueSnak( 9001 );
-		$snaks[] = new PropertyValueSnak( 7201010, new StringValue( 'o_O' ) );
-
-		return $snaks;
+	protected static function snakProvider(): iterable {
+		yield 'novalue' => new PropertyNoValueSnak( 42 );
+		yield 'somevalue' => new PropertySomeValueSnak( 9001 );
+		yield 'value' => new PropertyValueSnak( 7201010, new StringValue( 'o_O' ) );
 	}
 
-	/**
-	 * @return Statement[]
-	 */
-	protected function statementProvider() {
-		$statements = [];
+	protected static function statementProvider(): iterable {
+		foreach ( self::snakProvider() as $snakType => $snak ) {
+			yield "statement with $snakType main snak" => new Statement( $snak );
+		}
 
 		$mainSnak = new PropertyValueSnak( 112358, new StringValue( "don't panic" ) );
-		$statement = new Statement( $mainSnak );
-		$statements[] = $statement;
-
-		foreach ( $this->snakProvider() as $snak ) {
-			$statement = clone $statement;
-			$snaks = new SnakList( [ $snak ] );
-			$statement->getReferences()->addReference( new Reference( $snaks ) );
-			$statements[] = $statement;
+		foreach ( self::snakProvider() as $snakType => $snak ) {
+			yield "statement with $snakType qualifier snak" => new Statement(
+				$mainSnak,
+				new SnakList( [ $snak ] ),
+			);
+			yield "statement with $snakType reference snak" => new Statement(
+				$mainSnak,
+				references: new ReferenceList( [ new Reference( [ $snak ] ) ] ),
+			);
 		}
-
-		$statement = clone $statement;
-		$snaks = new SnakList( $this->snakProvider() );
-		$statement->getReferences()->addReference( new Reference( $snaks ) );
-		$statements[] = $statement;
-
-		/**
-		 * @var Statement[] $statements
-		 */
-
-		$i = 0;
-		foreach ( $statements as &$statement ) {
-			$i++;
-			$guid = "Q{$i}\$7{$i}d";
-
-			$statement->setGuid( $guid );
-			$statement->setRank( Statement::RANK_NORMAL );
-		}
-
-		return $statements;
 	}
 
-	public function buildUpdateClaimSummaryProvider() {
-		$arguments = [];
-
-		foreach ( $this->statementProvider() as $statement ) {
-			$testCaseArgs = [];
-
-			//change mainsnak
+	public static function buildUpdateClaimSummaryProvider(): iterable {
+		$newMainSnak = new PropertyValueSnak( 112358, new StringValue( "let's panic!!!" ) );
+		foreach ( self::statementProvider() as $name => $statement ) {
 			$modifiedStatement = clone $statement;
-			$modifiedStatement->setMainSnak(
-				new PropertyValueSnak( 112358, new StringValue( "let's panic!!!" ) )
-			);
-			$testCaseArgs[] = $statement;
-			$testCaseArgs[] = $modifiedStatement;
-			$testCaseArgs[] = 'update';
-			$arguments[] = $testCaseArgs;
+			$modifiedStatement->setMainSnak( $newMainSnak );
+			yield "change main snak of $name" => [
+				'originalStatement' => $statement,
+				'modifiedStatement' => $modifiedStatement,
+				'action' => 'update',
+			];
 
-			//change qualifiers
 			$modifiedStatement = clone $statement;
-			$modifiedStatement->setQualifiers( new SnakList( $this->snakProvider() ) );
-			$testCaseArgs[] = $statement;
-			$testCaseArgs[] = $modifiedStatement;
-			$testCaseArgs[] = 'update-qualifiers';
-			$arguments[] = $testCaseArgs;
+			$modifiedStatement->setQualifiers( new SnakList( [ ...self::snakProvider() ] ) );
+			yield "change qualifiers of $name" => [
+				'originalStatement' => $statement,
+				'modifiedStatement' => $modifiedStatement,
+				'action' => 'update-qualifiers',
+			];
 
-			//change rank
+			$modifiedStatement = clone $statement;
+			$modifiedStatement->setReferences( new ReferenceList( [ new Reference( [ ...self::snakProvider() ] ) ] ) );
+			yield "change references of $name" => [
+				'originalStatement' => $statement,
+				'modifiedStatement' => $modifiedStatement,
+				'action' => 'update-references',
+			];
+
 			$modifiedStatement = clone $statement;
 			$modifiedStatement->setRank( Statement::RANK_PREFERRED );
-			$testCaseArgs[] = $statement;
-			$testCaseArgs[] = $modifiedStatement;
-			$testCaseArgs[] = 'update-rank';
-			$arguments[] = $testCaseArgs;
+			yield "change rank of $name" => [
+				'originalStatement' => $statement,
+				'modifiedStatement' => $modifiedStatement,
+				'action' => 'update-rank',
+			];
 
-			//change mainsnak & qualifiers
 			$modifiedStatement = clone $statement;
-			$modifiedStatement->setMainSnak(
-				new PropertyValueSnak( 112358, new StringValue( "let's panic!!!" ) )
-			);
-			$modifiedStatement->setQualifiers( new SnakList( $this->snakProvider() ) );
-			$testCaseArgs[] = $statement;
-			$testCaseArgs[] = $modifiedStatement;
-			$testCaseArgs[] = 'update-rank';
-			$arguments[] = $testCaseArgs;
+			$modifiedStatement->setMainSnak( $newMainSnak );
+			$modifiedStatement->setQualifiers( new SnakList( [ ...self::snakProvider() ] ) );
+			yield "change main snak and qualifiers of $name" => [
+				'originalStatement' => $statement,
+				'modifiedStatement' => $modifiedStatement,
+				'action' => 'update',
+			];
 		}
-
-		return $arguments;
 	}
 
-	public function testBuildCreateClaimSummary() {
+	public function testBuildCreateClaimSummary(): void {
 		$claimSummaryBuilder = new ClaimSummaryBuilder(
-			'wbsetclaim',
 			new ClaimDiffer( new OrderedListDiffer( new ComparableComparer() ) )
 		);
 
@@ -150,10 +128,9 @@ class ClaimSummaryBuilderTest extends \PHPUnit\Framework\TestCase {
 	public function testBuildUpdateClaimSummary(
 		Statement $originalStatement,
 		Statement $modifiedStatement,
-		$action
-	) {
+		string $action,
+	): void {
 		$claimSummaryBuilder = new ClaimSummaryBuilder(
-			'wbsetclaim',
 			new ClaimDiffer( new OrderedListDiffer( new ComparableComparer() ) )
 		);
 

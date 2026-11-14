@@ -13,9 +13,9 @@ use Diff\DiffOp\DiffOpRemove;
 use InvalidArgumentException;
 use MediaWiki\Html\Html;
 use MediaWiki\Language\LanguageCode;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\Site\Site;
 use MediaWiki\Site\SiteLookup;
-use MessageLocalizer;
 use UnexpectedValueException;
 use Wikibase\DataModel\Entity\ItemId;
 use Wikibase\DataModel\Services\EntityId\EntityIdFormatter;
@@ -220,9 +220,7 @@ class SiteLinkDiffView implements DiffView {
 		$attrs = [
 			'dir' => 'auto',
 		];
-		if ( $html === null ) {
-			$html = htmlspecialchars( $pageName );
-		}
+		$html ??= htmlspecialchars( $pageName );
 
 		if ( $site instanceof Site ) {
 			// Otherwise it may have been deleted from the sites table
@@ -242,7 +240,7 @@ class SiteLinkDiffView implements DiffView {
 	private function getBadgeLinkElement( string $idString ): string {
 		try {
 			$itemId = new ItemId( $idString );
-		} catch ( InvalidArgumentException $ex ) {
+		} catch ( InvalidArgumentException ) {
 			return htmlspecialchars( $idString );
 		}
 

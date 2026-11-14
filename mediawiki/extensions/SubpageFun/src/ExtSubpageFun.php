@@ -1,6 +1,6 @@
 <?php
 
-use Wikimedia\AtEase\AtEase;
+use MediaWiki\Title\Title;
 
 class ExtSubpageFun {
 
@@ -151,9 +151,8 @@ class ExtSubpageFun {
 		if ( !preg_match( '/^([\\/\\|%]).*\\1[imsSuUx]*$/', $pattern ) ) {
 			return false;
 		}
-		AtEase::suppressWarnings(); // instead of using the evil @ operator!
-		$isValid = preg_match( $pattern, ' ' ) !== false; // preg_match returns false on error
-		AtEase::restoreWarnings();
+		// phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
+		$isValid = @preg_match( $pattern, ' ' ) !== false; // preg_match returns false on error
 		return $isValid;
 	}
 
@@ -429,7 +428,7 @@ class ExtSubpageFun {
 	/**
 	 * @param string[] &$customVariableIds Array of custom variables that MediaWiki recognizes
 	 */
-	public static function onMagicWordwgVariableIDs( &$customVariableIds ) {
+	public static function onGetMagicVariableIDs( &$customVariableIds ) {
 		// register variable ids:
 		$customVariableIds[] = self::MAG_SUBPAGETITLE;
 		$customVariableIds[] = self::MAG_SUBPAGES;

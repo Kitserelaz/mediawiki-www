@@ -4,11 +4,10 @@ namespace Wikibase\Repo\Tests\Specials;
 
 use Hamcrest\Matcher;
 use HamcrestPHPUnitIntegration;
-use MediaWiki\MediaWikiServices;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\Request\FauxResponse;
 use MediaWiki\Tests\Site\TestSites;
-use SpecialPageTestBase;
+use MediaWiki\Tests\Specials\SpecialPageTestBase;
 use Wikibase\DataModel\Entity\EntityRedirect;
 use Wikibase\DataModel\Entity\Item;
 use Wikibase\DataModel\Entity\ItemId;
@@ -68,7 +67,7 @@ class SpecialSetSiteLinkTest extends SpecialPageTestBase {
 
 	public function addDBDataOnce(): void {
 		self::$matchers = self::createMatchers();
-		$sitesTable = MediaWikiServices::getInstance()->getSiteStore();
+		$sitesTable = $this->getServiceContainer()->getSiteStore();
 		$sitesTable->clear();
 		$sitesTable->saveSites( TestSites::getSites() );
 
@@ -97,7 +96,8 @@ class SpecialSetSiteLinkTest extends SpecialPageTestBase {
 		$siteLinkChangeOpFactory = WikibaseRepo::getChangeOpFactoryProvider()->getSiteLinkChangeOpFactory();
 		$siteLinkTargetProvider = new SiteLinkTargetProvider(
 			$siteLookup,
-			$settings->getSetting( 'specialSiteLinkGroups' )
+			[ 'wikipedia' ],
+			$settings->getSetting( 'specialSiteLinkGroups' ),
 		);
 
 		$copyrightView = new SpecialPageCopyrightView( new CopyrightMessageBuilder(), '', '' );
@@ -111,7 +111,6 @@ class SpecialSetSiteLinkTest extends SpecialPageTestBase {
 			WikibaseRepo::getAnonymousEditWarningBuilder(),
 			WikibaseRepo::getSiteLinkPageNormalizer(),
 			$siteLinkTargetProvider,
-			[ 'wikipedia' ],
 			$settings->getSetting( 'badgeItems' ),
 			WikibaseRepo::getFallbackLabelDescriptionLookupFactory(),
 			$siteLinkChangeOpFactory

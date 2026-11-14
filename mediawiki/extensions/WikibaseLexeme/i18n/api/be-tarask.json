@@ -1,7 +1,8 @@
 {
 	"@metadata": {
 		"authors": [
-			"Renessaince"
+			"Renessaince",
+			"Ucukor"
 		]
 	},
 	"apihelp-wbladdform-example-1": "Дадаць форму да лексэмы з ідэнтыфікатарам <samp>$1</samp>, якая мае прадстаўленьні <samp>$2</samp> з мовамі <samp>$3</samp> адпаведна, і граматычныя асаблівасьці <samp>$4</samp>",

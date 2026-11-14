@@ -2,7 +2,6 @@
 
 namespace Wikibase\Repo\Tests\Maintenance;
 
-use MediaWiki\MediaWikiServices;
 use MediaWiki\Tests\Maintenance\MaintenanceBaseTestCase;
 use MediaWiki\WikiMap\WikiMap;
 use Wikibase\Lib\Changes\ChangeRow;
@@ -10,6 +9,7 @@ use Wikibase\Lib\Changes\EntityChange;
 use Wikibase\Repo\Maintenance\ResubmitChanges;
 use Wikibase\Repo\WikibaseRepo;
 use Wikimedia\Timestamp\ConvertibleTimestamp;
+use Wikimedia\Timestamp\TimestampFormat as TS;
 
 // files in maintenance/ are not autoloaded to avoid accidental usage, so load explicitly
 require_once __DIR__ . '/../../../maintenance/ResubmitChanges.php';
@@ -35,7 +35,7 @@ class ResubmitChangesTest extends MaintenanceBaseTestCase {
 		$this->maintenance->execute();
 
 		$wiki = WikiMap::getCurrentWikiDbDomain()->getId();
-		$jobQueueGroup = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup( $wiki );
+		$jobQueueGroup = $this->getServiceContainer()->getJobQueueGroupFactory()->makeJobQueueGroup( $wiki );
 		$queuedJobs = $jobQueueGroup->get( 'DispatchChanges' )->getAllQueuedJobs();
 
 		$job = $queuedJobs->current();
@@ -55,14 +55,14 @@ class ResubmitChangesTest extends MaintenanceBaseTestCase {
 			ChangeRow::TYPE => 'wikibase-item~' . EntityChange::ADD,
 			ChangeRow::OBJECT_ID => 'Q1',
 		] );
-		$oldChange->setTimestamp( ConvertibleTimestamp::convert( TS_MW, time() - 60 * 15 ) );
+		$oldChange->setTimestamp( ConvertibleTimestamp::convert( TS::MW, time() - 60 * 15 ) );
 		$store->saveChange( $oldChange );
 
 		$newChange = new EntityChange( [
 			ChangeRow::TYPE => 'wikibase-item~' . EntityChange::ADD,
 			ChangeRow::OBJECT_ID => 'Q2',
 		] );
-		$newChange->setTimestamp( ConvertibleTimestamp::convert( TS_MW, time() - 5 ) );
+		$newChange->setTimestamp( ConvertibleTimestamp::convert( TS::MW, time() - 5 ) );
 		$store->saveChange( $newChange );
 	}
 }

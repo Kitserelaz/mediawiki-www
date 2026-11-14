@@ -21,9 +21,10 @@ class TermboxModule extends RL\FileModule {
 	}
 
 	/**
+	 * @param string $file
 	 * @return string[][]|null
 	 */
-	private function readJsonFile( $file ) {
+	private function readJsonFile( string $file ) {
 		// phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
 		$json = @file_get_contents( $file );
 		if ( $json === false ) {

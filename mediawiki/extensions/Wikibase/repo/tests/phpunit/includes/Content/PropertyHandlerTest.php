@@ -4,6 +4,7 @@ namespace Wikibase\Repo\Tests\Content;
 
 use MediaWiki\Page\WikiPageFactory;
 use MediaWiki\Parser\ParserOutput;
+use MediaWiki\Search\SearchEngine;
 use MediaWiki\Title\Title;
 use Wikibase\DataModel\Entity\EntityDocument;
 use Wikibase\DataModel\Entity\EntityId;
@@ -17,6 +18,7 @@ use Wikibase\Repo\Content\EntityInstanceHolder;
 use Wikibase\Repo\Content\PropertyContent;
 use Wikibase\Repo\Content\PropertyHandler;
 use Wikibase\Repo\WikibaseRepo;
+use Wikibase\View\Wbui2025FeatureFlag;
 
 /**
  * @covers \Wikibase\Repo\Content\PropertyHandler
@@ -48,12 +50,12 @@ class PropertyHandlerTest extends EntityHandlerTestCase {
 	/**
 	 * @inheritDoc
 	 */
-	public function contentProvider() {
+	public static function contentProvider(): array {
 		$contents = [];
-		$contents[] = [ $this->newEntityContent() ];
+		$contents[] = [ self::newEntityContent() ];
 
 		/** @var PropertyContent $content */
-		$content = $this->newEntityContent();
+		$content = self::newEntityContent();
 		$content->getEntity()->setAliases( 'en', [ 'foo' ] );
 		$content->getEntity()->setDescription( 'de', 'foobar' );
 		$content->getEntity()->setDescription( 'en', 'baz' );
@@ -101,7 +103,7 @@ class PropertyHandlerTest extends EntityHandlerTestCase {
 		$this->assertEquals( $title->getText(), $id->getSerialization() );
 	}
 
-	protected function newEntity( ?EntityId $id = null ) {
+	protected static function newEntity( ?EntityId $id = null ) {
 		if ( !$id ) {
 			$id = new NumericPropertyId( 'P7' );
 		}
@@ -111,7 +113,7 @@ class PropertyHandlerTest extends EntityHandlerTestCase {
 		return $property;
 	}
 
-	public function entityIdProvider() {
+	public static function entityIdProvider() {
 		return [
 			[ 'P7' ],
 		];
@@ -120,7 +122,7 @@ class PropertyHandlerTest extends EntityHandlerTestCase {
 	/**
 	 * @return PropertyContent
 	 */
-	protected function newEmptyContent() {
+	protected static function newEmptyContent() {
 		return new PropertyContent();
 	}
 
@@ -134,11 +136,11 @@ class PropertyHandlerTest extends EntityHandlerTestCase {
 		return WikibaseRepo::getPropertyHandler();
 	}
 
-	protected function newEntityContent( ?EntityDocument $entity = null ): EntityContent {
-		return new PropertyContent( new EntityInstanceHolder( $entity ?? $this->newEntity() ) );
+	protected static function newEntityContent( ?EntityDocument $entity = null ): EntityContent {
+		return new PropertyContent( new EntityInstanceHolder( $entity ?? self::newEntity() ) );
 	}
 
-	protected function newRedirectContent( EntityId $id, EntityId $target ): ?EntityContent {
+	protected static function newRedirectContent( EntityId $id, EntityId $target ): ?EntityContent {
 		return null;
 	}
 
@@ -167,10 +169,10 @@ class PropertyHandlerTest extends EntityHandlerTestCase {
 		return [];
 	}
 
-	public function providePageProperties() {
+	public static function providePageProperties() {
 		yield from parent::providePageProperties();
 
-		$contentWithClaim = $this->newEntityContent();
+		$contentWithClaim = self::newEntityContent();
 		$snak = new PropertyNoValueSnak( 83 );
 		$guid = '$testing$';
 		$contentWithClaim->getEntity()->getStatements()->addNewStatement( $snak, null, null, $guid );
@@ -183,7 +185,7 @@ class PropertyHandlerTest extends EntityHandlerTestCase {
 
 	public function testDataForSearchIndex() {
 		$handler = $this->getHandler();
-		$engine = $this->createMock( \SearchEngine::class );
+		$engine = $this->createMock( SearchEngine::class );
 
 		$page = $this->getMockWikiPage( $handler );
 		$revision = $page->getRevisionRecord();
@@ -202,7 +204,7 @@ class PropertyHandlerTest extends EntityHandlerTestCase {
 		$title->setContentModel( CONTENT_MODEL_WIKITEXT );
 		$parserOutput = $contentRenderer->getParserOutput( $content, $title );
 
-		$expectedUsedOptions = [ 'userlang', 'wb', 'termboxVersion', 'wbMobile' ];
+		$expectedUsedOptions = [ 'userlang', 'wb', 'termboxVersion', Wbui2025FeatureFlag::PARSER_OPTION_NAME ];
 		$actualOptions = $parserOutput->getUsedOptions();
 		$this->assertEqualsCanonicalizing(
 			$expectedUsedOptions,

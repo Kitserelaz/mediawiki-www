@@ -50,7 +50,7 @@ class LabelsProviderEntityIdHtmlLinkFormatter extends EntityIdLabelFormatter {
 	private $languageFallbackIndicator;
 
 	/**
-	 * @var NonExistingEntityIdHtmlFormatter
+	 * @var NonExistingEntityIdHtmlFormatterLinker
 	 */
 	private $nonExistingEntityIdHtmlFormatter;
 

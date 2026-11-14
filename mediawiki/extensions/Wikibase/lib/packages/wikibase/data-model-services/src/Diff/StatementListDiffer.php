@@ -36,18 +36,23 @@ class StatementListDiffer {
 		);
 	}
 
-	private function newDiffer() {
+	private function newDiffer(): MapDiffer {
 		return new MapDiffer( false, null, new ComparableComparer() );
 	}
 
-	private function toDiffArray( StatementList $statementList ) {
+	private function toDiffArray( StatementList $statementList ): array {
 		$statementArray = [];
 
 		/**
 		 * @var Statement $statement
 		 */
 		foreach ( $statementList as $statement ) {
-			$statementArray[$statement->getGuid()] = $statement;
+			$guid = $statement->getGuid();
+			if ( $guid === null ) {
+				$statementArray[] = $statement;
+			} else {
+				$statementArray[$guid] = $statement;
+			}
 		}
 
 		return $statementArray;

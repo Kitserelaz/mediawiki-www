@@ -3,7 +3,7 @@
 namespace Wikibase\View;
 
 use MediaWiki\Hook\UnitTestsListHook;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Language\LanguageNameUtils;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\ResourceLoader\Context;
@@ -32,8 +32,6 @@ final class ViewHooks implements UnitTestsListHook, ResourceLoaderRegisterModule
 
 	/**
 	 * Register ResourceLoader modules with dynamic dependencies.
-	 *
-	 * @param ResourceLoader $rl
 	 */
 	public function onResourceLoaderRegisterModules( ResourceLoader $rl ): void {
 		$moduleTemplate = [

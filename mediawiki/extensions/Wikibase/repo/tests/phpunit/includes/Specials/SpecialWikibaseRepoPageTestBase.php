@@ -4,12 +4,12 @@ namespace Wikibase\Repo\Tests\Specials;
 
 use DataValues\DataValue;
 use MediaWiki\Language\Language;
+use MediaWiki\Permissions\PermissionStatus;
 use MediaWiki\Site\HashSiteStore;
 use MediaWiki\Site\SiteLookup;
-use MediaWiki\Status\Status;
 use MediaWiki\Tests\Site\TestSites;
+use MediaWiki\Tests\Specials\SpecialPageTestBase;
 use MediaWiki\Title\Title;
-use SpecialPageTestBase;
 use ValueFormatters\ValueFormatter;
 use Wikibase\DataModel\Entity\EntityId;
 use Wikibase\DataModel\Entity\EntityIdParser;
@@ -87,7 +87,7 @@ abstract class SpecialWikibaseRepoPageTestBase extends SpecialPageTestBase {
 	protected function getEntityPermissionChecker() {
 		$permissionChecker = $this->createMock( EntityPermissionChecker::class );
 
-		$ok = Status::newGood();
+		$ok = PermissionStatus::newGood();
 
 		$permissionChecker->method( 'getPermissionStatusForEntity' )
 			->willReturn( $ok );

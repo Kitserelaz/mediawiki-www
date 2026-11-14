@@ -1,5 +1,7 @@
 <?php
 
+// @phan-file-suppress PhanPluginNeverReturnMethod
+
 namespace Wikibase\Lexeme\Domain\Diff;
 
 use Diff\Differ\MapDiffer;
@@ -15,7 +17,6 @@ use Wikibase\Lexeme\Domain\Model\Sense;
 
 /**
  * @license GPL-2.0-or-later
- * @phan-file-suppress PhanPluginNeverReturnMethod
  */
 class SenseDiffer implements EntityDifferStrategy {
 
@@ -101,7 +102,7 @@ class SenseDiffer implements EntityDifferStrategy {
 		return new ChangeSenseDiffOp( $old->getId(), new Diff( $diffOps ) );
 	}
 
-	public function getAddSenseDiff( Sense $sense ) {
+	public function getAddSenseDiff( Sense $sense ): SenseDiff {
 		$diffOps = $this->recursiveMapDiffer->doDiff(
 			[],
 			$this->toSenseDiffArray( $sense )
@@ -114,7 +115,7 @@ class SenseDiffer implements EntityDifferStrategy {
 		return new AddSenseDiff( $sense, new Diff( $diffOps ) );
 	}
 
-	public function getRemoveSenseDiff( Sense $sense ) {
+	public function getRemoveSenseDiff( Sense $sense ): SenseDiff {
 		$diffOps = $this->recursiveMapDiffer->doDiff(
 			$this->toSenseDiffArray( $sense ),
 			[]

@@ -3,7 +3,7 @@
 declare( strict_types = 1 );
 namespace Wikibase\Repo\Tests\Specials;
 
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Language\LanguageNameUtils;
 use MediaWikiIntegrationTestCase;
 use Wikibase\Lib\ContentLanguages;
 use Wikibase\Lib\Store\EntityTitleLookup;
@@ -44,7 +44,8 @@ class ParameterizedDescriptionTraitTest extends MediaWikiIntegrationTestCase {
 	/**
 	 * @dataProvider specialPageProvider
 	 */
-	public function testParameterizedDescriptionOnSetDescriptionPage( $page, $expected ) {
+	public function testParameterizedDescriptionOnSetDescriptionPage( $pageFactory, $expected ) {
+		$page = $pageFactory( $this );
 		$this->setFederatedPropertiesEnabled( false );
 		$this->assertSame(
 			$expected,
@@ -53,9 +54,10 @@ class ParameterizedDescriptionTraitTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @dataProvider specialPageProvider_federatedPropertiesEnabled
+	 * @dataProvider specialPage_federatedPropertiesEnabledProvider
 	 */
-	public function testParameterizedDescriptionOnSetDescriptionPage_federatedPropertiesEnabled( $page, $expected ) {
+	public function testParameterizedDescriptionOnSetDescriptionPage_federatedPropertiesEnabled( $pageFactory, $expected ) {
+		$page = $pageFactory( $this );
 		$this->setFederatedPropertiesEnabled( true );
 		$this->assertSame(
 			$expected,
@@ -64,27 +66,27 @@ class ParameterizedDescriptionTraitTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @return array [ specialPage, expectedOutput ]
+	 * @return array [ string, expectedOutput ]
 	 */
-	public function specialPageProvider() {
+	public static function specialPageProvider(): iterable {
 		return [
 			'SpecialSetLabel' => [
-				$this->newSpecialSetLabelsPage(),
+				fn ( self $self ) => $self->newSpecialSetLabelsPage(),
 				'(special-setlabel-parameterized: (wikibase-entity-item)' .
 				'(special-parameterized-description-separator)(wikibase-entity-property))',
 			],
 			'SpecialSetAliases' => [
-				$this->newSpecialSetAliasesPage(),
+				fn ( self $self ) => $self->newSpecialSetAliasesPage(),
 				'(special-setaliases-parameterized: (wikibase-entity-item)' .
 				'(special-parameterized-description-separator)(wikibase-entity-property))',
 			],
 			'SpecialSetDescription' => [
-				$this->newSpecialSetDescriptionPage(),
+				fn ( self $self ) => $self->newSpecialSetDescriptionPage(),
 				'(special-setdescription-parameterized: (wikibase-entity-item)' .
 				'(special-parameterized-description-separator)(wikibase-entity-property))',
 			],
 			'SpecialSetLabelDescriptionAliases' => [
-				$this->newSpecialSpecialSetLabelDescriptionAliases(),
+				fn ( self $self ) => $self->newSpecialSpecialSetLabelDescriptionAliases(),
 				'(special-setlabeldescriptionaliases-parameterized: (wikibase-entity-item)' .
 				'(special-parameterized-description-separator)(wikibase-entity-property))',
 			],
@@ -92,24 +94,24 @@ class ParameterizedDescriptionTraitTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @return array [ specialPage, expectedOutput ]
+	 * @return array [ string, expectedOutput ]
 	 */
-	public function specialPageProvider_federatedPropertiesEnabled() {
+	public static function specialPage_federatedPropertiesEnabledProvider(): iterable {
 		return [
 			'SpecialSetLabel' => [
-				$this->newSpecialSetLabelsPage(),
+				fn ( self $self ) => $self->newSpecialSetLabelsPage(),
 				'(special-setlabel-parameterized: (wikibase-entity-item))',
 			],
 			'SpecialSetAliases' => [
-				$this->newSpecialSetAliasesPage(),
+				fn ( self $self ) => $self->newSpecialSetAliasesPage(),
 				'(special-setaliases-parameterized: (wikibase-entity-item))',
 			],
 			'SpecialSetDescription' => [
-				$this->newSpecialSetDescriptionPage(),
+				fn ( self $self ) => $self->newSpecialSetDescriptionPage(),
 				'(special-setdescription-parameterized: (wikibase-entity-item))',
 			],
 			'SpecialSetLabelDescriptionAliases' => [
-				$this->newSpecialSpecialSetLabelDescriptionAliases(),
+				fn ( self $self ) => $self->newSpecialSpecialSetLabelDescriptionAliases(),
 				'(special-setlabeldescriptionaliases-parameterized: (wikibase-entity-item))',
 			],
 

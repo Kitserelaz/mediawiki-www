@@ -1,10 +1,13 @@
 {
 	"@metadata": {
 		"authors": [
-			"Bugoslav"
+			"AlanHart",
+			"Bugoslav",
+			"Edina Kamberović"
 		]
 	},
 	"special-newlexeme": "Stvori novi leksem",
 	"wikibase-lexeme-lexicographical-data": "Leksikografski podatci",
-	"wikibase-lexeme-randomlexeme": "Slučajni leksem"
+	"wikibase-lexeme-randomlexeme": "Slučajni leksem",
+	"wikibase-lexeme-scoped-search-scope-name": "Leksemi"
 }

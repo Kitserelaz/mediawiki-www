@@ -5,10 +5,11 @@ declare( strict_types = 1 );
 namespace Wikibase\Repo\Tests\LinkedData;
 
 use DataValues\Serializers\DataValueSerializer;
-use HttpError;
 use MediaWiki\Cache\HTMLCacheUpdater;
 use MediaWiki\Context\DerivativeContext;
 use MediaWiki\Context\RequestContext;
+use MediaWiki\Exception\HttpError;
+use MediaWiki\MainConfigNames;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\Request\FauxResponse;
@@ -75,7 +76,7 @@ class EntityDataRequestHandlerTest extends MediaWikiIntegrationTestCase {
 
 		$this->interfaceTitle = Title::makeTitle( NS_SPECIAL, 'EntityDataRequestHandlerTest' );
 		// ensure the namespace name doesn’t get translated
-		$this->setMwGlobals( 'wgLanguageCode', 'qqx' );
+		$this->overrideConfigValue( MainConfigNames::LanguageCode, 'qqx' );
 
 		$this->obLevel = ob_get_level();
 
@@ -83,22 +84,25 @@ class EntityDataRequestHandlerTest extends MediaWikiIntegrationTestCase {
 		$this->subEntityTypesMap = [];
 	}
 
-	protected function tearDown(): void {
+	protected function assertPostConditions(): void {
 		$obLevel = ob_get_level();
-
-		while ( ob_get_level() > $this->obLevel ) {
-			ob_end_clean();
-		}
-
 		if ( $obLevel !== $this->obLevel ) {
 			$this->fail( "Test changed output buffer level: was {$this->obLevel} before test, but $obLevel after test." );
+		}
+
+		parent::assertPostConditions();
+	}
+
+	protected function tearDown(): void {
+		while ( ob_get_level() > $this->obLevel ) {
+			ob_end_clean();
 		}
 
 		parent::tearDown();
 	}
 
 	protected function newHandler(): EntityDataRequestHandler {
-		global $wgScriptPath;
+		$scriptPath = $this->getConfVar( MainConfigNames::ScriptPath );
 
 		$mockRepository = EntityDataTestProvider::getMockRepository();
 
@@ -195,7 +199,7 @@ class EntityDataRequestHandlerTest extends MediaWikiIntegrationTestCase {
 			$extensions,
 			[
 				// “Special” needs no translation because we override the content language
-				$wgScriptPath . '/index.php?title=Special:EntityDataRequestHandlerTest' .
+				$scriptPath . '/index.php?title=Special:EntityDataRequestHandlerTest' .
 				'/{entity_id}.json&revision={revision_id}',
 			],
 			$entityTitleStoreLookup
@@ -231,7 +235,7 @@ class EntityDataRequestHandlerTest extends MediaWikiIntegrationTestCase {
 	protected function makeOutputPage( array $params, array $headers ): OutputPage {
 		// construct request
 		$request = new FauxRequest( $params );
-		$request->setRequestURL( 'https://repo.example/wiki/Special:EntityData/Q1.ttl' );
+		$request->setRequestURL( '//repo.example/wiki/Special:EntityData/Q1.ttl' );
 		$request->response()->header( 'Status: 200 OK', true, 200 ); // init/reset
 
 		foreach ( $headers as $name => $value ) {

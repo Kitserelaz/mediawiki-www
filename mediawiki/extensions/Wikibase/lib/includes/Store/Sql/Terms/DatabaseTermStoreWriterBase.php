@@ -3,12 +3,13 @@
 declare( strict_types=1 );
 namespace Wikibase\Lib\Store\Sql\Terms;
 
-use JobQueueGroup;
+use MediaWiki\JobQueue\JobQueueGroup;
 use Wikibase\DataModel\Entity\Int32EntityId;
 use Wikibase\DataModel\Term\Fingerprint;
-use Wikibase\Lib\Rdbms\RepoDomainDb;
-use Wikibase\Lib\Store\Sql\Terms\Util\StatsdMonitoring;
+use Wikibase\Lib\Rdbms\TermsDomainDb;
+use Wikibase\Lib\Store\Sql\Terms\Util\StatsMonitoring;
 use Wikibase\Lib\StringNormalizer;
+use Wikimedia\Rdbms\DBReadOnlyError;
 use Wikimedia\Rdbms\IDatabase;
 
 /**
@@ -21,10 +22,10 @@ abstract class DatabaseTermStoreWriterBase {
 
 	use NormalizedTermStorageMappingTrait;
 	use FingerprintableEntityTermStoreTrait;
-	use StatsdMonitoring;
+	use StatsMonitoring;
 
-	/** @var RepoDomainDb */
-	private $repoDb;
+	/** @var TermsDomainDb */
+	private $termsDb;
 
 	/** @var TermInLangIdsAcquirer */
 	private $termInLangIdsAcquirer;
@@ -39,10 +40,10 @@ abstract class DatabaseTermStoreWriterBase {
 	private $jobQueueGroup;
 
 	public function __construct(
-		RepoDomainDb $repoDb, JobQueueGroup $jobQueueGroup, TermInLangIdsAcquirer $termInLangIdsAcquirer,
+		TermsDomainDb $termsDb, JobQueueGroup $jobQueueGroup, TermInLangIdsAcquirer $termInLangIdsAcquirer,
 		TermInLangIdsResolver $termInLangIdsResolver, StringNormalizer $stringNormalizer
 	) {
-		$this->repoDb = $repoDb;
+		$this->termsDb = $termsDb;
 		$this->jobQueueGroup = $jobQueueGroup;
 		$this->termInLangIdsAcquirer = $termInLangIdsAcquirer;
 		$this->termInLangIdsResolver = $termInLangIdsResolver;
@@ -50,17 +51,27 @@ abstract class DatabaseTermStoreWriterBase {
 	}
 
 	private function getDbw(): IDatabase {
-		return $this->repoDb->connections()->getWriteConnection();
+		return $this->termsDb->getWriteConnection();
 	}
 
 	protected function delete( Int32EntityId $entityId ): void {
-		$termInLangIdsToClean = $this->deleteTermsWithoutClean( $entityId );
-		$this->submitJobToCleanTermStorageRowsIfUnused( $termInLangIdsToClean );
+		try {
+			$termInLangIdsToClean = $this->deleteTermsWithoutClean( $entityId );
+			$this->submitJobToCleanTermStorageRowsIfUnused( $termInLangIdsToClean );
+		} catch ( DBReadOnlyError ) {
+			// The terms DB may be different from the repo wiki's main DB, and an external DB's read-only state is not handled as
+			// gracefully. There is nothing to do here, though. The secondary terms storage will fix itself eventually.
+		}
 	}
 
 	protected function store( Int32EntityId $entityId, Fingerprint $fingerprint ): void {
-		$termInLangIdsToClean = $this->acquireAndInsertTerms( $entityId, $fingerprint );
-		$this->submitJobToCleanTermStorageRowsIfUnused( $termInLangIdsToClean );
+		try {
+			$termInLangIdsToClean = $this->acquireAndInsertTerms( $entityId, $fingerprint );
+			$this->submitJobToCleanTermStorageRowsIfUnused( $termInLangIdsToClean );
+		} catch ( DBReadOnlyError ) {
+			// The terms DB may be different from the repo wiki's main DB, and an external DB's read-only state is not handled as
+			// gracefully. There is nothing to do here, though. The secondary terms storage will fix itself eventually.
+		}
 	}
 
 	private function submitJobToCleanTermStorageRowsIfUnused( array $termInLangIdsToClean ): void {
@@ -125,7 +136,6 @@ abstract class DatabaseTermStoreWriterBase {
 		$this->termInLangIdsAcquirer->acquireTermInLangIds(
 			$termsArray,
 			function ( array $newTermInLangIds ) use (
-				$entityId,
 				$oldTermInLangIds,
 				&$termInLangIdsToClean,
 				$fname,

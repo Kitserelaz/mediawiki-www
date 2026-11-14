@@ -35,6 +35,8 @@ use Wikibase\Lib\Store\RevisionedUnresolvedRedirectException;
 use Wikibase\Lib\Store\SiteLinkLookup;
 use Wikibase\Lib\Store\SiteLinkStore;
 use Wikibase\Lib\Store\StorageException;
+use Wikimedia\Timestamp\ConvertibleTimestamp;
+use Wikimedia\Timestamp\TimestampFormat as TS;
 
 /**
  * @deprecated Try to use a simpler fake. The complexity and coupling of this
@@ -60,7 +62,7 @@ class MockRepository implements
 	/**
 	 * Entity id serialization => array of [ EntityRevision, user name ]
 	 *
-	 * @var array[]
+	 * @var array<string,array<int,array{0:EntityRevision,1:string}>>
 	 */
 	private array $entities = [];
 
@@ -100,6 +102,7 @@ class MockRepository implements
 		return $revision === null ? null : $revision->getEntity()->copy();
 	}
 
+	/** @inheritDoc */
 	public function getEntityRevision(
 		EntityId $entityId,
 		$revisionId = 0,
@@ -216,7 +219,7 @@ class MockRepository implements
 		$revision = new EntityRevision(
 			$entity->copy(), // note: always clone
 			$revisionId,
-			wfTimestamp( TS_MW, $timestamp )
+			ConvertibleTimestamp::convert( TS::MW, $timestamp )
 		);
 
 		if ( $user !== null ) {
@@ -228,9 +231,6 @@ class MockRepository implements
 		$key = $entity->getId()->getSerialization();
 		unset( $this->redirects[$key] );
 
-		if ( !array_key_exists( $key, $this->entities ) ) {
-			$this->entities[$key] = [];
-		}
 		$this->entities[$key][$revisionId] = [ $revision, $user ];
 		ksort( $this->entities[$key] );
 
@@ -268,7 +268,7 @@ class MockRepository implements
 		$this->redirects[$key] = new RedirectRevision(
 			$redirect, // EntityRedirect is immutable
 			$revisionId,
-			wfTimestamp( TS_MW, $timestamp )
+			ConvertibleTimestamp::convert( TS::MW, $timestamp )
 		);
 	}
 
@@ -369,6 +369,7 @@ class MockRepository implements
 		throw new PropertyDataTypeLookupException( $propertyId );
 	}
 
+	/** @inheritDoc */
 	public function getLatestRevisionId(
 		EntityId $entityId,
 		$mode = LookupConstants::LATEST_FROM_REPLICA
@@ -439,6 +440,7 @@ class MockRepository implements
 		return $revision;
 	}
 
+	/** @inheritDoc */
 	public function saveRedirect(
 		EntityRedirect $redirect,
 		$summary,
@@ -459,10 +461,12 @@ class MockRepository implements
 		return $revisionId;
 	}
 
+	/** @inheritDoc */
 	public function deleteEntity( EntityId $entityId, $reason, User $user ): void {
 		$this->removeEntity( $entityId );
 	}
 
+	/** @inheritDoc */
 	public function userWasLastToEdit( User $user, EntityId $entityId, $lastRevisionId ): bool {
 		$key = $entityId->getSerialization();
 		if ( !isset( $this->entities[$key] ) ) {
@@ -481,6 +485,7 @@ class MockRepository implements
 		return true;
 	}
 
+	/** @inheritDoc */
 	public function updateWatchlist( User $user, EntityId $entityId, $watch ): void {
 		if ( $watch ) {
 			$this->watchlist[ $user->getName() ][ $entityId->getSerialization() ] = true;
@@ -606,6 +611,7 @@ class MockRepository implements
 		return $redirects;
 	}
 
+	/** @inheritDoc */
 	public function getRedirectForEntityId( EntityId $entityId, $forUpdate = '' ): ?EntityId {
 		$key = $entityId->getSerialization();
 

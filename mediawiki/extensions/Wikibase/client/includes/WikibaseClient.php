@@ -3,7 +3,6 @@
 namespace Wikibase\Client;
 
 use DataValues\Deserializers\DataValueDeserializer;
-use MediaWiki\Language\Language;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Site\Site;
 use MediaWiki\User\ExternalUserNames;
@@ -16,6 +15,7 @@ use Wikibase\Client\DataAccess\DataAccessSnakFormatterFactory;
 use Wikibase\Client\DataAccess\ParserFunctions\Runner;
 use Wikibase\Client\DataAccess\ParserFunctions\StatementGroupRendererFactory;
 use Wikibase\Client\DataAccess\ReferenceFormatterFactory;
+use Wikibase\Client\Hooks\Formatter\ClientEntityLinkFormatter;
 use Wikibase\Client\Hooks\LangLinkHandlerFactory;
 use Wikibase\Client\Hooks\LanguageLinkBadgeDisplay;
 use Wikibase\Client\Hooks\OtherProjectsSidebarGeneratorFactory;
@@ -39,7 +39,7 @@ use Wikibase\DataModel\Services\Diff\EntityDiffer;
 use Wikibase\DataModel\Services\EntityId\EntityIdComposer;
 use Wikibase\DataModel\Services\Lookup\EntityLookup;
 use Wikibase\DataModel\Services\Lookup\PropertyDataTypeLookup;
-use Wikibase\DataModel\Services\Lookup\RestrictedEntityLookup;
+use Wikibase\DataModel\Services\Lookup\RestrictedEntityLookupFactory;
 use Wikibase\DataModel\Services\Lookup\TermLookup;
 use Wikibase\DataModel\Services\Term\PropertyLabelResolver;
 use Wikibase\DataModel\Services\Term\TermBuffer;
@@ -58,6 +58,7 @@ use Wikibase\Lib\LanguageFallbackChainFactory;
 use Wikibase\Lib\MessageInLanguageProvider;
 use Wikibase\Lib\Rdbms\ClientDomainDbFactory;
 use Wikibase\Lib\Rdbms\RepoDomainDbFactory;
+use Wikibase\Lib\Rdbms\TermsDomainDbFactory;
 use Wikibase\Lib\SettingsArray;
 use Wikibase\Lib\Store\EntityIdLookup;
 use Wikibase\Lib\Store\EntityNamespaceLookup;
@@ -213,16 +214,6 @@ final class WikibaseClient {
 	public static function getStore( ?ContainerInterface $services = null ): ClientStore {
 		return ( $services ?: MediaWikiServices::getInstance() )
 			->get( 'WikibaseClient.Store' );
-	}
-
-	/**
-	 * @deprecated Avoid injecting the user language into a service.
-	 * If the service depends on a language, make it part of the parameters when the service is used
-	 * (possibly indirectly, e.g. via an {@link \IContextSource}).
-	 */
-	public static function getUserLanguage( ?ContainerInterface $services = null ): Language {
-		return ( $services ?: MediaWikiServices::getInstance() )
-			->get( 'WikibaseClient.UserLanguage' );
 	}
 
 	public static function getSettings( ?ContainerInterface $services = null ): SettingsArray {
@@ -446,9 +437,9 @@ final class WikibaseClient {
 			->get( 'WikibaseClient.TermsLanguages' );
 	}
 
-	public static function getRestrictedEntityLookup( ?ContainerInterface $services = null ): RestrictedEntityLookup {
+	public static function getRestrictedEntityLookupFactory( ?ContainerInterface $services = null ): RestrictedEntityLookupFactory {
 		return ( $services ?: MediaWikiServices::getInstance() )
-			->get( 'WikibaseClient.RestrictedEntityLookup' );
+			->get( 'WikibaseClient.RestrictedEntityLookupFactory' );
 	}
 
 	public static function getPropertyOrderProvider( ?ContainerInterface $services = null ): PropertyOrderProvider {
@@ -518,9 +509,19 @@ final class WikibaseClient {
 			->get( 'WikibaseClient.ClientDomainDbFactory' );
 	}
 
+	public static function getClientEntityLinkFormatter( ?ContainerInterface $services = null ): ClientEntityLinkFormatter {
+		return ( $services ?: MediaWikiServices::getInstance() )
+		->get( 'WikibaseClient.ClientEntityLinkFormatter' );
+	}
+
 	public static function getRepoDomainDbFactory( ?ContainerInterface $services = null ): RepoDomainDbFactory {
 		return ( $services ?: MediaWikiServices::getInstance() )
 			->get( 'WikibaseClient.RepoDomainDbFactory' );
+	}
+
+	public static function getTermsDomainDbFactory( ?ContainerInterface $services = null ): TermsDomainDbFactory {
+		return ( $services ?: MediaWikiServices::getInstance() )
+			->get( 'WikibaseClient.TermsDomainDbFactory' );
 	}
 
 	public static function getEntitySourceAndTypeDefinitions( ?ContainerInterface $services = null ): EntitySourceAndTypeDefinitions {

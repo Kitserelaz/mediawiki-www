@@ -71,11 +71,11 @@ class LexemeContent extends EntityContent {
 		);
 	}
 
-	public static function newFromRedirect( $redirect, $title ) {
+	public static function newFromRedirect( ?EntityRedirect $redirect, ?Title $title ): self {
 		return new self( null, $redirect, $title );
 	}
 
-	protected function getIgnoreKeysForFilters() {
+	protected function getIgnoreKeysForFilters(): array {
 		// FIXME: This was the default list of keys as extracted form EntityContent
 		// Lexemes should probably have different keys set here but we need to know what
 		// is already being used in AbuseFilter on wikidata.org
@@ -122,10 +122,12 @@ class LexemeContent extends EntityContent {
 		return $this->lexemeHolder;
 	}
 
+	/** @inheritDoc */
 	public function getEntityRedirect() {
 		return $this->redirect;
 	}
 
+	/** @inheritDoc */
 	public function getRedirectTarget() {
 		return $this->redirectTitle;
 	}
@@ -174,6 +176,8 @@ class LexemeContent extends EntityContent {
 	/**
 	 * Make text representation of the Lexeme as list of all lemmas and form representations.
 	 * @see EntityContent::getTextForSearchIndex()
+	 *
+	 * @inheritDoc
 	 */
 	public function getTextForSearchIndex() {
 		if ( $this->isRedirect() ) {

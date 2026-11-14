@@ -6,15 +6,11 @@ namespace Wikibase\Repo\Tests\Unit\ServiceWiring;
 
 use Psr\Log\NullLogger;
 use Wikibase\DataAccess\DatabaseEntitySource;
-use Wikibase\Lib\Rdbms\RepoDomainDb;
-use Wikibase\Lib\Rdbms\RepoDomainDbFactory;
+use Wikibase\Lib\Rdbms\TermsDomainDb;
+use Wikibase\Lib\Rdbms\TermsDomainDbFactory;
 use Wikibase\Lib\Store\Sql\Terms\TermStoreWriterFactory;
-use Wikibase\Lib\Store\Sql\Terms\TypeIdsAcquirer;
-use Wikibase\Lib\Store\Sql\Terms\TypeIdsLookup;
-use Wikibase\Lib\Store\Sql\Terms\TypeIdsResolver;
 use Wikibase\Lib\StringNormalizer;
 use Wikibase\Repo\Tests\Unit\ServiceWiringTestCase;
-use Wikimedia\ObjectCache\WANObjectCache;
 
 /**
  * @coversNothing
@@ -30,19 +26,10 @@ class TermStoreWriterFactoryTest extends ServiceWiringTestCase {
 			$this->createMock( DatabaseEntitySource::class ) );
 		$this->mockService( 'WikibaseRepo.StringNormalizer',
 			new StringNormalizer() );
-		$this->mockService( 'WikibaseRepo.TypeIdsAcquirer',
-			$this->createMock( TypeIdsAcquirer::class ) );
-		$this->mockService( 'WikibaseRepo.TypeIdsLookup',
-			$this->createMock( TypeIdsLookup::class ) );
-		$this->mockService( 'WikibaseRepo.TypeIdsResolver',
-			$this->createMock( TypeIdsResolver::class ) );
-		$dbFactory = $this->createStub( RepoDomainDbFactory::class );
-		$dbFactory->method( 'newRepoDb' )
-			->willReturn( $this->createStub( RepoDomainDb::class ) );
-		$this->mockService( 'WikibaseRepo.RepoDomainDbFactory', $dbFactory );
-		$this->serviceContainer->expects( $this->once() )
-			->method( 'getMainWANObjectCache' )
-			->willReturn( $this->createMock( WANObjectCache::class ) );
+		$dbFactory = $this->createStub( TermsDomainDbFactory::class );
+		$dbFactory->method( 'newTermsDb' )
+			->willReturn( $this->createStub( TermsDomainDb::class ) );
+		$this->mockService( 'WikibaseRepo.TermsDomainDbFactory', $dbFactory );
 		$this->serviceContainer->expects( $this->once() )
 			->method( 'getJobQueueGroup' );
 		$this->mockService( 'WikibaseRepo.Logger',

@@ -4,16 +4,20 @@ namespace Wikibase\Client\RecentChanges;
 
 use MediaWiki\Language\Language;
 use MediaWiki\Message\Message;
+use MediaWiki\RecentChanges\RecentChange;
 use MediaWiki\Title\Title;
 use MediaWiki\User\CentralId\CentralIdLookup;
 use MediaWiki\User\ExternalUserNames;
-use RecentChange;
 use Wikibase\DataAccess\EntitySourceDefinitions;
 use Wikibase\Lib\Changes\ChangeRow;
 use Wikibase\Lib\Changes\EntityChange;
 use Wikibase\Lib\Changes\ItemChange;
 use Wikibase\Lib\Rdbms\ClientDomainDb;
 use Wikimedia\Assert\Assert;
+use Wikimedia\Message\MessageParam;
+use Wikimedia\Message\MessageSpecifier;
+use Wikimedia\Timestamp\ConvertibleTimestamp;
+use Wikimedia\Timestamp\TimestampFormat as TS;
 
 /**
  * @license GPL-2.0-or-later
@@ -96,9 +100,7 @@ class RecentChangeFactory {
 	 * @return RecentChange
 	 */
 	public function newRecentChange( EntityChange $change, Title $target, ?array $preparedAttribs = null ) {
-		if ( $preparedAttribs === null ) {
-			$preparedAttribs = $this->prepareChangeAttributes( $change );
-		}
+		$preparedAttribs ??= $this->prepareChangeAttributes( $change );
 
 		$targetSpecificAttributes = $this->buildTargetSpecificAttributes( $change, $target );
 		$attribs = array_merge( $preparedAttribs, $targetSpecificAttributes );
@@ -149,7 +151,7 @@ class RecentChangeFactory {
 			$userText = '';
 		}
 
-		$time = $metadata['time'] ?? wfTimestamp( TS_MW );
+		$time = $metadata['time'] ?? ConvertibleTimestamp::now( TS::MW );
 
 		$params = [
 			'wikibase-repo-change' => $metadata,
@@ -167,7 +169,6 @@ class RecentChangeFactory {
 			'rc_user' => $clientUserId,
 			'rc_user_text' => $userText,
 			'rc_comment' => $this->getEditCommentMulti( $change ),
-			'rc_type' => RC_EXTERNAL,
 			'rc_minor' => true, // for now, always consider these minor
 			'rc_bot' => $isBot,
 			'rc_patrolled' => RecentChange::PRC_AUTOPATROLLED,
@@ -178,7 +179,6 @@ class RecentChangeFactory {
 			'rc_log_action' => '',
 			'rc_source' => self::SRC_WIKIBASE,
 			'rc_deleted' => false,
-			'rc_new' => false,
 		];
 
 		// Creating a RecentChange by passing a faked-up row needs the correct
@@ -382,6 +382,7 @@ class RecentChangeFactory {
 
 	/**
 	 * @param string $key
+	 * @param MessageParam|MessageSpecifier|string|int|float|list<MessageParam|MessageSpecifier|string|int|float> ...$params
 	 *
 	 * @return Message
 	 */

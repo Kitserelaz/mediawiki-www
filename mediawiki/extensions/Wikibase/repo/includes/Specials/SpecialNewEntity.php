@@ -2,12 +2,12 @@
 
 namespace Wikibase\Repo\Specials;
 
+use MediaWiki\Exception\UserBlockedError;
 use MediaWiki\Html\Html;
 use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\Message\Message;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Status\Status;
-use UserBlockedError;
 use Wikibase\DataModel\Entity\EntityDocument;
 use Wikibase\Lib\Store\EntityNamespaceLookup;
 use Wikibase\Lib\Store\EntityTitleLookup;
@@ -39,17 +39,16 @@ abstract class SpecialNewEntity extends SpecialWikibaseRepoPage {
 
 	/**
 	 * @param string $name Name of the special page, as seen in links and URLs.
-	 * @param string $restriction User right required,
 	 * @param string[] $tags List of tags to add to edits
 	 * @param SpecialPageCopyrightView $copyrightView
 	 * @param EntityNamespaceLookup $entityNamespaceLookup
 	 * @param SummaryFormatter $summaryFormatter
 	 * @param EntityTitleLookup $entityTitleLookup
 	 * @param MediaWikiEditEntityFactory $editEntityFactory
+	 * @param bool $isMobileView
 	 */
 	public function __construct(
 		$name,
-		$restriction,
 		array $tags,
 		SpecialPageCopyrightView $copyrightView,
 		EntityNamespaceLookup $entityNamespaceLookup,
@@ -60,7 +59,6 @@ abstract class SpecialNewEntity extends SpecialWikibaseRepoPage {
 	) {
 		parent::__construct(
 			$name,
-			$restriction,
 			$tags,
 			$copyrightView,
 			$summaryFormatter,
@@ -116,8 +114,8 @@ abstract class SpecialNewEntity extends SpecialWikibaseRepoPage {
 		$submitStatus = $form->tryAuthorizedSubmit();
 
 		if ( $submitStatus && $submitStatus->isGood() ) {
-			// wrap it, in case HTMLForm turned it into a generic Status
-			$submitStatus = EditEntityStatus::wrap( $submitStatus );
+			// cast it back in case HTMLForm turned it into a generic Status
+			$submitStatus = EditEntityStatus::cast( $submitStatus );
 			$this->redirectToEntityPage( $submitStatus );
 
 			return;
@@ -207,7 +205,8 @@ abstract class SpecialNewEntity extends SpecialWikibaseRepoPage {
 		$output->addHTML( $this->getCopyrightHTML() );
 
 		foreach ( $this->getWarnings() as $warning ) {
-			$output->addHTML( Html::rawElement( 'div', [ 'class' => 'warning' ], $warning ) );
+			$this->getOutput()->addModuleStyles( 'mediawiki.codex.messagebox.styles' );
+			$this->getOutput()->addHTML( Html::warningBox( $warning ) );
 		}
 	}
 

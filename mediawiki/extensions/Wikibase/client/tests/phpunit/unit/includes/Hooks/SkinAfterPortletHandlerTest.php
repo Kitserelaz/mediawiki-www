@@ -3,12 +3,13 @@
 namespace Wikibase\Client\Tests\Unit\Hooks;
 
 use MediaWiki\Context\IContextSource;
+use MediaWiki\Language\RawMessage;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Request\FauxRequest;
+use MediaWiki\Skin\Skin;
 use MockTitleTrait;
 use PHPUnit\Framework\TestCase;
-use Skin;
 use Wikibase\Client\Hooks\SkinAfterPortletHandler;
 use Wikibase\Client\NamespaceChecker;
 use Wikibase\Client\RepoItemLinkGenerator;
@@ -41,7 +42,7 @@ class SkinAfterPortletHandlerTest extends TestCase {
 			$this->getSkin( $noExternalLangLinks, $languageUrls )
 		);
 
-		$this->assertStringContainsString( wfMessage( 'wikibase-editlinks' )->text(), $result );
+		$this->assertStringContainsString( '(wikibase-editlinks)', $result );
 	}
 
 	public function testDoSkinAfterPortlet_addLink() {
@@ -54,7 +55,7 @@ class SkinAfterPortletHandlerTest extends TestCase {
 			$this->getSkin( $noExternalLangLinks, $languageUrls )
 		);
 
-		$this->assertStringContainsString( wfMessage( 'wikibase-linkitem-addlinks' )->text(), $result );
+		$this->assertStringContainsString( '(wikibase-linkitem-addlinks)', $result );
 	}
 
 	public function testDoSkinAfterPortlet_nonViewAction() {
@@ -98,8 +99,9 @@ class SkinAfterPortletHandlerTest extends TestCase {
 	}
 
 	private function getHookHandler() {
+		$namespaceInfo = MediaWikiServices::getInstance()->getNamespaceInfo();
 		$linkGenerator = new RepoItemLinkGenerator(
-			new NamespaceChecker( [] ),
+			new NamespaceChecker( $namespaceInfo, [] ),
 			$this->getRepoLinker(),
 			new ItemIdParser(),
 			'wikipedia',
@@ -118,7 +120,8 @@ class SkinAfterPortletHandlerTest extends TestCase {
 	private function getSkin( $noExternalLangLinks, $languageUrls, $action = 'view' ) {
 		$skin = $this->createMock( Skin::class );
 
-		$output = new OutputPage( $this->getContext( $action ) );
+		$context = $this->getContext( $action );
+		$output = new OutputPage( $context );
 		$output->setProperty( 'wikibase_item', 'Q2013' );
 		$output->setProperty( 'noexternallanglinks', $noExternalLangLinks );
 		$title = $output->getTitle();
@@ -131,6 +134,8 @@ class SkinAfterPortletHandlerTest extends TestCase {
 			->willReturn( $languageUrls );
 		$skin->method( 'getActionName' )
 			->willReturn( $action );
+		$skin->method( 'getContext' )
+			->willReturn( $context );
 
 		return $skin;
 	}
@@ -152,6 +157,10 @@ class SkinAfterPortletHandlerTest extends TestCase {
 			->willReturn( $title );
 		$context->method( 'getLanguage' )
 			->willReturn( $lang );
+		$context->method( 'msg' )
+			->willReturnCallback( function ( $key ) use ( $lang ) {
+				return ( new RawMessage( "($key)" ) )->inLanguage( $lang );
+			} );
 		$context->method( 'getConfig' )
 			->willReturn(
 				MediaWikiServices::getInstance()->getMainConfig()

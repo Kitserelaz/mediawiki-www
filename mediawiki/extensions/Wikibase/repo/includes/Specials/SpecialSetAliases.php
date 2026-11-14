@@ -3,7 +3,7 @@
 namespace Wikibase\Repo\Specials;
 
 use InvalidArgumentException;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Language\LanguageNameUtils;
 use MediaWiki\Logger\LoggerFactory;
 use Wikibase\DataModel\Entity\EntityDocument;
 use Wikibase\DataModel\Term\AliasesProvider;
@@ -86,6 +86,7 @@ class SpecialSetAliases extends SpecialModifyTerm {
 		);
 	}
 
+	/** @inheritDoc */
 	public function doesWrites() {
 		return true;
 	}

@@ -1,8 +1,6 @@
 # Wikibase DataModel Serialization
 
-[![Build Status](https://travis-ci.org/wmde/WikibaseDataModelSerialization.svg?branch=master)](https://travis-ci.org/wmde/WikibaseDataModelSerialization)
-[![Scrutinizer Quality Score](https://scrutinizer-ci.com/g/wmde/WikibaseDataModelSerialization/badges/quality-score.png?s=d56b9477c29f4799b3834c4fbcc3731687feae95)](https://scrutinizer-ci.com/g/wmde/WikibaseDataModelSerialization/)
-[![Code Coverage](https://scrutinizer-ci.com/g/wmde/WikibaseDataModelSerialization/badges/coverage.png?s=916d21028b031abe2e685192ccef46c6f47ba76a)](https://scrutinizer-ci.com/g/wmde/WikibaseDataModelSerialization/)
+[![Build Status](https://github.com/wmde/WikibaseDataModelSerialization/actions/workflows/lint-and-test.yaml/badge.svg?branch=master)](https://github.com/wmde/WikibaseDataModelSerialization/actions/workflows/lint-and-test.yaml)
 [![Download count](https://poser.pugx.org/wikibase/data-model-serialization/d/total.png)](https://packagist.org/packages/wikibase/data-model-serialization)
 [![License](https://poser.pugx.org/wikibase/data-model-serialization/license.svg)](https://packagist.org/packages/wikibase/data-model-serialization)
 
@@ -17,6 +15,9 @@ Serialization code for private formats, such as the format used by the Wikibase
 Repo data access layer, belongs in other components.
 
 Recent changes can be found in the [release notes](RELEASE-NOTES.md).
+
+Note that this repository is a mirror of part of the upstream [Wikibase project](https://gerrit.wikimedia.org/r/plugins/gitiles/mediawiki/extensions/Wikibase/+/refs/heads/master/lib/packages/wikibase/data-model-serialization/) on gerrit.
+Contributions should be made to the directories there using MediaWiki's [Gerrit process](https://www.mediawiki.org/wiki/Gerrit).
 
 ## Installation
 
@@ -105,6 +106,10 @@ For a full CI run
 
 	composer ci
 
+## Contributing
+
+This repository is a mirror of part of the upstream [Wikibase project](https://gerrit.wikimedia.org/r/plugins/gitiles/mediawiki/extensions/Wikibase/+/refs/heads/master/lib/packages/wikibase/data-model-serialization/) on Gerrit.
+Contributions should be made to the directories there using MediaWiki's [Gerrit process](https://www.mediawiki.org/wiki/Gerrit).
 
 ## Authors
 
@@ -115,11 +120,9 @@ and by [Jeroen De Dauw](https://www.EntropyWins.wtf) as
 ## Links
 
 * [Wikibase DataModel Serialization on Packagist](https://packagist.org/packages/wikibase/data-model-serialization)
-* [Wikibase DataModel Serialization on TravisCI](https://travis-ci.org/wmde/WikibaseDataModelSerialization)
-* [Wikibase DataModel Serialization on ScrutinizerCI](https://scrutinizer-ci.com/g/wmde/WikibaseDataModelSerialization/)
 * [Wikibase DataModel Serialization on OpenHub](https://www.openhub.net/p/WikibaseDataModelSerialization)
 
-## See also 
+## See also
 
 * [Wikibase DataModel](https://github.com/wmde/WikibaseDataModel)
 * [Wikibase Internal Serialization](https://github.com/wmde/WikibaseInternalSerialization) (For the "internal" serialization format)

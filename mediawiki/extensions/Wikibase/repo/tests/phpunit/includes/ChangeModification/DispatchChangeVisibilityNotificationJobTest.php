@@ -4,7 +4,7 @@ declare( strict_types = 1 );
 
 namespace Wikibase\Repo\Tests\ChangeModification;
 
-use JobQueueGroup;
+use MediaWiki\JobQueue\JobQueueGroup;
 use MediaWiki\JobQueue\JobQueueGroupFactory;
 use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Title\Title;
@@ -31,20 +31,20 @@ class DispatchChangeVisibilityNotificationJobTest extends MediaWikiIntegrationTe
 	 */
 	private static $mwTimestamp;
 
-	public function parameterProvider(): array {
+	public static function parameterProvider(): array {
 		$repoRevision24IdentifierArray = ( new RepoRevisionIdentifier(
 			'Q1042',
-			$this->getMwTimestamp(),
+			self::getMwTimestamp(),
 			12
 		) )->toArray();
 		$repoRevision25IdentifierArray = ( new RepoRevisionIdentifier(
 			'Q1042',
-			$this->getMwTimestamp(),
+			self::getMwTimestamp(),
 			13
 		) )->toArray();
 		$repoRevision26IdentifierArray = ( new RepoRevisionIdentifier(
 			'Q1042',
-			$this->getMwTimestamp(),
+			self::getMwTimestamp(),
 			14
 		) )->toArray();
 		$visibilityChangeMap = [
@@ -170,7 +170,7 @@ class DispatchChangeVisibilityNotificationJobTest extends MediaWikiIntegrationTe
 	 * @dataProvider parameterProvider
 	 */
 	public function testHandle(
-		array $expectedJobParams,
+		array $expectedJobs,
 		array $revisionIds,
 		array $visibilityChangeMap,
 		int $batchSize = 3
@@ -201,17 +201,14 @@ class DispatchChangeVisibilityNotificationJobTest extends MediaWikiIntegrationTe
 
 		foreach ( $wikiIds as $wikiId ) {
 			$this->assertArrayContains(
-				$expectedJobParams,
+				$expectedJobs,
 				$actualJobs[$wikiId] ?? [],
 				"jobs for $wikiId"
 			);
 		}
 	}
 
-	/**
-	 * @return string
-	 */
-	private function getMwTimestamp(): string {
+	private static function getMwTimestamp(): string {
 		if ( !self::$mwTimestamp ) {
 			self::$mwTimestamp = wfTimestampNow();
 		}

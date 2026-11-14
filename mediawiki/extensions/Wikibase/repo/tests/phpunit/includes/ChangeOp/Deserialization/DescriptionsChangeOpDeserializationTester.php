@@ -59,6 +59,9 @@ trait DescriptionsChangeOpDeserializationTester {
 		$this->assertFalse( $entity->getDescriptions()->hasTermForLanguage( 'en' ) );
 	}
 
+	/**
+	 * @return DescriptionsProvider|EntityDocument
+	 */
 	private function getEntityWithEnDescription() {
 		$entity = $this->getEntity();
 		$entity->getDescriptions()->setTextForLanguage( 'en', 'en-description' );
@@ -69,7 +72,7 @@ trait DescriptionsChangeOpDeserializationTester {
 	/**
 	 * @return DescriptionsProvider|EntityDocument
 	 */
-	abstract protected function getEntity();
+	abstract protected static function getEntity();
 
 	/**
 	 * @return ChangeOpDeserializer

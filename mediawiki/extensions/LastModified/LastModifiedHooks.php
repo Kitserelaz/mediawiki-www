@@ -1,20 +1,24 @@
 <?php
 
-class LastModifiedHooks {
-	/**
-	 * @param OutputPage &$out
-	 * @param Skin &$sk
-	 * @return bool
-	 */
-	public static function onLastModified( &$out, &$sk ) {
-		global $wgLastModifiedRange;
+use MediaWiki\Output\OutputPage;
+use MediaWiki\Title\Title;
 
+class LastModifiedHooks implements
+	\MediaWiki\Output\Hook\BeforePageDisplayHook
+{
+	/**
+	 * @param OutputPage $out
+	 * @param Skin $skin
+	 * @return void
+	 */
+	public function onBeforePageDisplay( $out, $skin ): void {
 		$context = $out->getContext();
 		$title = $context->getTitle();
 
 		// Don't try to proceed if we don't care about the target page
-		if ( !( $title instanceof Title && $title->getNamespace() == 0 && $title->exists() ) ) {
-			return true;
+		if ( !( $title instanceof Title && $title->inNamespaces( $out->getConfig()->get( 'LastModifiedNamespaces' ) ) &&
+			$title->exists() ) ) {
+			return;
 		}
 
 		$article = Article::newFromTitle( $title, $context );
@@ -23,10 +27,8 @@ class LastModifiedHooks {
 			$timestamp = wfTimestamp( TS_UNIX, $article->getPage()->getTimestamp() );
 			$out->addMeta( 'http:last-modified', date( 'r', $timestamp ) );
 			$out->addMeta( 'last-modified-timestamp', $timestamp );
-			$out->addMeta( 'last-modified-range', $wgLastModifiedRange );
+			$out->addMeta( 'last-modified-range', $out->getConfig()->get( 'LastModifiedRange' ) );
 			$out->addModules( 'last.modified' );
 		}
-
-		return true;
 	}
 }

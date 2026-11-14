@@ -70,7 +70,7 @@ class MwTimeIsoParser extends StringValueParser {
 	private $lang;
 
 	/**
-	 * @var ValueParser
+	 * @var IsoTimestampParser
 	 */
 	private $isoTimestampParser;
 
@@ -229,7 +229,7 @@ class MwTimeIsoParser extends StringValueParser {
 
 		foreach ( $regexes as $regex ) {
 			// If the msg string ends with BCE also check for BC
-			if ( substr_compare( $regex, 'BCE', -3 ) === 0 ) {
+			if ( str_ends_with( $regex, 'BCE' ) ) {
 				$regexes[] = substr( $regex, 0, -1 );
 			}
 		}
@@ -273,13 +273,8 @@ class MwTimeIsoParser extends StringValueParser {
 		return $this->getTimeFromYear( $year, $isBceMsg );
 	}
 
-	/**
-	 * @param string $msgKey
-	 *
-	 * @return bool
-	 */
-	private function isBceMsg( $msgKey ) {
-		return strstr( $msgKey, '-BCE-' );
+	private function isBceMsg( string $msgKey ): bool {
+		return str_contains( $msgKey, '-BCE-' );
 	}
 
 	/**

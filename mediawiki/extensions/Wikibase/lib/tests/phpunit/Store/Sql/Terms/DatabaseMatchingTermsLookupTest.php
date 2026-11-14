@@ -1,26 +1,24 @@
-<?php
+<?php declare( strict_types = 1 );
 
 namespace Wikibase\Lib\Tests\Store\Sql\Terms;
 
-use MediaWiki\MediaWikiServices;
+use Generator;
 use MediaWikiIntegrationTestCase;
 use Psr\Log\NullLogger;
 use Wikibase\DataModel\Entity\Item;
 use Wikibase\DataModel\Entity\ItemId;
 use Wikibase\DataModel\Entity\NumericPropertyId;
 use Wikibase\DataModel\Services\EntityId\EntityIdComposer;
-use Wikibase\Lib\Rdbms\DomainDb;
+use Wikibase\DataModel\Term\TermTypes;
+use Wikibase\Lib\Rdbms\TermsDomainDb;
 use Wikibase\Lib\Store\Sql\Terms\DatabaseItemTermStoreWriter;
 use Wikibase\Lib\Store\Sql\Terms\DatabaseMatchingTermsLookup;
 use Wikibase\Lib\Store\Sql\Terms\DatabaseTermInLangIdsAcquirer;
 use Wikibase\Lib\Store\Sql\Terms\DatabaseTermInLangIdsResolver;
-use Wikibase\Lib\Store\Sql\Terms\DatabaseTypeIdsStore;
-use Wikibase\Lib\Store\TermIndexSearchCriteria;
 use Wikibase\Lib\StringNormalizer;
 use Wikibase\Lib\TermIndexEntry;
 use Wikibase\Lib\Tests\Rdbms\LocalRepoDbTestHelper;
 use Wikimedia\Rdbms\DatabaseSqlite;
-use Wikimedia\Rdbms\IDatabase;
 
 /**
  * @covers \Wikibase\Lib\Store\Sql\Terms\DatabaseMatchingTermsLookup
@@ -33,23 +31,14 @@ class DatabaseMatchingTermsLookupTest extends MediaWikiIntegrationTestCase {
 
 	use LocalRepoDbTestHelper;
 
-	/**
-	 * @var IDatabase
-	 */
-	private $sqliteDb;
-
-	/**
-	 * @var DomainDb
-	 */
-	private $repoDb;
+	private TermsDomainDb $termsDb;
 
 	protected function setUp(): void {
 		// We can't use the mediawiki integration test since we union temp tables.
-		$this->sqliteDb = $this->setUpNewDb();
-		$this->repoDb = $this->getRepoDomainDb( $this->sqliteDb );
+		$this->termsDb = $this->getTermsDomainDb( $this->setUpNewDb() );
 	}
 
-	private function setUpNewDb() {
+	private function setUpNewDb(): DatabaseSqlite {
 		$db = DatabaseSqlite::newStandaloneInstance( ':memory:' );
 		$db->sourceFile(
 			__DIR__ . '/../../../../../../repo/sql/sqlite/term_store.sql' );
@@ -57,7 +46,7 @@ class DatabaseMatchingTermsLookupTest extends MediaWikiIntegrationTestCase {
 		return $db;
 	}
 
-	private function getTestItems() {
+	private static function getTestItems(): array {
 		$item0 = new Item( new ItemId( 'Q10' ) );
 		$item0->setLabel( 'en', 'kittens' );
 
@@ -70,22 +59,28 @@ class DatabaseMatchingTermsLookupTest extends MediaWikiIntegrationTestCase {
 		$item2->setLabel( 'sv', 'kittens should have mittens' );
 		$item2->setLabel( 'en', 'KITTENS should have mittens' );
 
-		return [ $item0, $item1, $item2 ];
+		$item3 = new Item( new ItemId( 'Q33' ) );
+		$item3->setAliases( 'en', [ 'kittens' ] );
+
+		$item4 = new Item( new ItemId( 'Q44' ) );
+		$item4->setLabel( 'de', 'kittens' );
+
+		$item5 = new Item( new ItemId( 'Q55' ) );
+		$item5->setAliases( 'de', [ 'kittens' ] );
+
+		return [ $item0, $item1, $item2, $item3, $item4, $item5 ];
 	}
 
 	/** @see testGetMatchingTerms */
-	public function provideGetMatchingTerms() {
-		[ $item0, $item1, $item2 ] = $this->getTestItems();
+	public static function provideGetMatchingTerms(): Generator {
+		[ $item0, $item1, $item2, $item3 ] = self::getTestItems();
 
-		yield 'EXACT MATCH not prefix, case sensitive' => [
-			'entities' => [ $item0, $item1, $item2 ],
-			'criteria' => [
-				new TermIndexSearchCriteria( [
-					'termText' => 'Mittens',
-				] ),
-			],
-			'termTypes' => null,
-			'entityTypes' => null,
+		yield 'EXACT MATCH not prefix, case sensitive, labels' => [
+			'entities' => self::getTestItems(),
+			'termText' => 'Mittens',
+			'entityType' => Item::ENTITY_TYPE,
+			'language' => null,
+			'termType' => TermTypes::TYPE_LABEL,
 			'options' => [
 				'prefixSearch' => false,
 				'caseSensitive' => true,
@@ -94,15 +89,107 @@ class DatabaseMatchingTermsLookupTest extends MediaWikiIntegrationTestCase {
 				'Q11/label.de:Mittens',
 			],
 		];
+		yield 'EXACT MATCH not prefix, case sensitive, labels, de THEN en' => [
+			'entities' => self::getTestItems(),
+			'termText' => 'kittens',
+			'entityType' => Item::ENTITY_TYPE,
+			'language' => [ 'de', 'en' ],
+			'termType' => TermTypes::TYPE_LABEL,
+			'options' => [
+				'prefixSearch' => false,
+				'caseSensitive' => true,
+			],
+			'expectedTermKeys' => [
+				'Q44/label.de:kittens',
+				'Q10/label.en:kittens',
+			],
+		];
+		yield 'EXACT MATCH not prefix, case sensitive, labels OR aliases' => [
+			'entities' => [ $item0, $item1, $item2, $item3 ],
+			'termText' => 'kittens',
+			'entityType' => Item::ENTITY_TYPE,
+			'language' => null,
+			'termType' => [ TermTypes::TYPE_LABEL, TermTypes::TYPE_ALIAS ],
+			'options' => [
+				'prefixSearch' => false,
+				'caseSensitive' => true,
+			],
+			'expectedTermKeys' => [
+				'Q10/label.en:kittens',
+				'Q33/alias.en:kittens',
+			],
+		];
+		yield 'EXACT MATCH not prefix, case sensitive, labels OR aliases, de THEN en' => [
+			'entities' => self::getTestItems(),
+			'termText' => 'kittens',
+			'entityType' => Item::ENTITY_TYPE,
+			'language' => [ 'de', 'en' ],
+			'termType' => [ TermTypes::TYPE_LABEL, TermTypes::TYPE_ALIAS ],
+			'options' => [
+				'prefixSearch' => false,
+				'caseSensitive' => true,
+			],
+			'expectedTermKeys' => [
+				'Q44/label.de:kittens',
+				'Q55/alias.de:kittens',
+				'Q10/label.en:kittens',
+				'Q33/alias.en:kittens',
+			],
+		];
+		yield 'EXACT MATCH not prefix, case sensitive, labels OR aliases, LIMIT 1' => [
+			'entities' => [ $item0, $item1, $item2, $item3 ],
+			'termText' => 'kittens',
+			'entityType' => Item::ENTITY_TYPE,
+			'language' => null,
+			'termType' => [ TermTypes::TYPE_LABEL, TermTypes::TYPE_ALIAS ],
+			'options' => [
+				'prefixSearch' => false,
+				'caseSensitive' => true,
+				'LIMIT' => 1,
+			],
+			'expectedTermKeys' => [
+				'Q10/label.en:kittens',
+			],
+		];
+		yield 'EXACT MATCH not prefix, case sensitive, labels OR aliases, LIMIT 1, OFFSET 1' => [
+			'entities' => [ $item0, $item1, $item2, $item3 ],
+			'termText' => 'kittens',
+			'entityType' => Item::ENTITY_TYPE,
+			'language' => null,
+			'termType' => [ TermTypes::TYPE_LABEL, TermTypes::TYPE_ALIAS ],
+			'options' => [
+				'prefixSearch' => false,
+				'caseSensitive' => true,
+				'LIMIT' => 1,
+				'OFFSET' => 1,
+			],
+			'expectedTermKeys' => [
+				'Q33/alias.en:kittens',
+			],
+		];
+		yield 'EXACT MATCH not prefix, case sensitive, labels OR aliases, de THEN en, LIMIT 2, OFFSET 1' => [
+			'entities' => self::getTestItems(),
+			'termText' => 'kittens',
+			'entityType' => Item::ENTITY_TYPE,
+			'language' => [ 'de', 'en' ],
+			'termType' => [ TermTypes::TYPE_LABEL, TermTypes::TYPE_ALIAS ],
+			'options' => [
+				'prefixSearch' => false,
+				'caseSensitive' => true,
+				'LIMIT' => 2,
+				'OFFSET' => 1,
+			],
+			'expectedTermKeys' => [
+				'Q55/alias.de:kittens',
+				'Q10/label.en:kittens',
+			],
+		];
 		yield 'prefix, case sensitive' => [
 			'entities' => [ $item0, $item1, $item2 ],
-			'criteria' => [
-				new TermIndexSearchCriteria( [
-					'termText' => 'Mitte',
-				] ),
-			],
-			'termTypes' => null,
-			'entityTypes' => null,
+			'termText' => 'Mitte',
+			'entityType' => Item::ENTITY_TYPE,
+			'language' => null,
+			'termType' => null,
 			'options' => [
 				'prefixSearch' => true,
 				'caseSensitive' => true,
@@ -113,13 +200,10 @@ class DatabaseMatchingTermsLookupTest extends MediaWikiIntegrationTestCase {
 		];
 		yield 'prefixSearch and not caseSensitive' => [
 			'entities' => [ $item0, $item1, $item2 ],
-			'criteria' => [
-				new TermIndexSearchCriteria( [
-					'termText' => 'KiTTeNS',
-				] ),
-			],
-			'termTypes' => null,
-			'entityTypes' => null,
+			'termText' => 'KiTTeNS',
+			'entityType' => Item::ENTITY_TYPE,
+			'language' => null,
+			'termType' => null,
 			'options' => [
 				'prefixSearch' => true,
 				'caseSensitive' => false,
@@ -134,13 +218,10 @@ class DatabaseMatchingTermsLookupTest extends MediaWikiIntegrationTestCase {
 		];
 		yield 'prefixSearch and not caseSensitive LIMIT 1' => [
 			'entities' => [ $item0, $item1, $item2 ],
-			'criteria' => [
-				new TermIndexSearchCriteria( [
-					'termText' => 'KiTTeNS',
-				] ),
-			],
-			'termTypes' => null,
-			'entityTypes' => null,
+			'termText' => 'KiTTeNS',
+			'entityType' => Item::ENTITY_TYPE,
+			'language' => null,
+			'termType' => null,
 			'options' => [
 				'prefixSearch' => true,
 				'caseSensitive' => false,
@@ -152,15 +233,26 @@ class DatabaseMatchingTermsLookupTest extends MediaWikiIntegrationTestCase {
 		];
 	}
 
-	/** @dataProvider provideGetMatchingTerms */
+	/**
+	 * @dataProvider provideGetMatchingTerms
+	 *
+	 * @param array $entities
+	 * @param string $termText
+	 * @param string $entityType
+	 * @param string|string[]|null $language
+	 * @param string|string[]|null $termType
+	 * @param array $options
+	 * @param array $expectedTermKeys
+	 */
 	public function testGetMatchingTerms(
 		array $entities,
-		array $criteria,
-		$termTypes,
-		$entityTypes,
+		string $termText,
+		string $entityType,
+		$language,
+		$termType,
 		array $options,
 		array $expectedTermKeys
-	) {
+	): void {
 		if ( $options['caseSensitive'] === false ) {
 			$this->markTestSkipped( 'Case insensitive search is not supported yet: T242644' );
 		}
@@ -172,7 +264,7 @@ class DatabaseMatchingTermsLookupTest extends MediaWikiIntegrationTestCase {
 			$store->storeTerms( $entity->getId(), $entity->getFingerprint() );
 		}
 
-		$actual = $lookup->getMatchingTerms( $criteria, $termTypes, $entityTypes, $options );
+		$actual = $lookup->getMatchingTerms( $termText, $entityType, $language, $termType, $options );
 
 		$this->assertIsArray( $actual );
 
@@ -180,7 +272,7 @@ class DatabaseMatchingTermsLookupTest extends MediaWikiIntegrationTestCase {
 		$this->assertEquals( $expectedTermKeys, $actualTermKeys );
 	}
 
-	private function getTermKey( TermIndexEntry $term ) {
+	private function getTermKey( TermIndexEntry $term ): string {
 		$key = '';
 		if ( $term->getEntityId() !== null ) {
 			$key .= $term->getEntityId()->getSerialization();
@@ -204,13 +296,7 @@ class DatabaseMatchingTermsLookupTest extends MediaWikiIntegrationTestCase {
 		return $key;
 	}
 
-	private function getMatchingTermsLookup() {
-		$store = new DatabaseTypeIdsStore(
-			$this->repoDb,
-			MediaWikiServices::getInstance()->getMainWANObjectCache(),
-			new NullLogger()
-		);
-
+	private function getMatchingTermsLookup(): DatabaseMatchingTermsLookup {
 		$composer = new EntityIdComposer( [
 			'item' => function ( $uniquePart ) {
 				return new ItemId( 'Q' . $uniquePart );
@@ -220,26 +306,21 @@ class DatabaseMatchingTermsLookupTest extends MediaWikiIntegrationTestCase {
 			},
 		] );
 		return new DatabaseMatchingTermsLookup(
-			$this->repoDb,
-			$store,
-			$store,
+			$this->termsDb,
 			$composer,
 			new NullLogger()
 		);
 	}
 
-	private function getItemTermStoreWriter() {
+	private function getItemTermStoreWriter(): DatabaseItemTermStoreWriter {
 		$logger = new NullLogger();
-		$typeIdsStore = new DatabaseTypeIdsStore(
-			$this->repoDb,
-			MediaWikiServices::getInstance()->getMainWANObjectCache()
-		);
 
-		return new DatabaseItemTermStoreWriter( $this->repoDb,
+		return new DatabaseItemTermStoreWriter(
+			$this->termsDb,
 			$this->getServiceContainer()->getJobQueueGroup(),
-			new DatabaseTermInLangIdsAcquirer( $this->repoDb, $typeIdsStore, $logger ),
-			new DatabaseTermInLangIdsResolver( $typeIdsStore, $typeIdsStore,
-				$this->repoDb, $logger ), new StringNormalizer()
+			new DatabaseTermInLangIdsAcquirer( $this->termsDb, $logger ),
+			new DatabaseTermInLangIdsResolver( $this->termsDb, $logger ),
+			new StringNormalizer()
 		);
 	}
 

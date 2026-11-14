@@ -2,8 +2,8 @@
 
 namespace Wikibase\Repo;
 
-use MediaWiki\Languages\LanguageFactory;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Language\LanguageFactory;
+use MediaWiki\Language\LanguageNameUtils;
 use Wikibase\View\LanguageDirectionalityLookup;
 
 /**

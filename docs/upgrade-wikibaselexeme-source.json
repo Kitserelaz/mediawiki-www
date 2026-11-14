@@ -1,0 +1,144 @@
+{
+  "component": "mediawiki/extensions/WikibaseLexeme",
+  "baseline": "92e19753099b8a1c71205f075da2c3dd93be7e6e",
+  "target": "224dc576f36b3407bb54f6e7271227e3996cc4c9",
+  "preserved_changes": [
+    {
+      "path": ".gitmodules",
+      "change": "use-current-upstream-module-url"
+    },
+    {
+      "path": "i18n/api/be-tarask.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/api/ce.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "i18n/api/el.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/api/mk.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/api/yue-hant.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "i18n/ar.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/be-tarask.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/be.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/cs.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/el.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/fi.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/hr.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/hsb.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "i18n/kaa.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/kea.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "i18n/ks.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "i18n/lb.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/lv.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/mk.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/nb.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ne.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/nl.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/pl.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/pt.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/qqq.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/ru.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/smn.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/sms.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/sv.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/tg-cyrl.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "i18n/yue-hant.json",
+      "change": "local-deletion"
+    },
+    {
+      "path": "i18n/zh-hans.json",
+      "change": "local-source-edit"
+    },
+    {
+      "path": "package-lock.json",
+      "change": "reviewed-target-lock-replacement"
+    }
+  ],
+  "dependency_status": "Root Composer lock regenerated; see docs/upgrade-wikibase-migration.json"
+}

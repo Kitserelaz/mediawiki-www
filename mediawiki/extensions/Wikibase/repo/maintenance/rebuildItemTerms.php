@@ -14,9 +14,11 @@ use Wikibase\Repo\Store\ItemTermsRebuilder;
 use Wikibase\Repo\Store\Store;
 use Wikibase\Repo\WikibaseRepo;
 
+// @codeCoverageIgnoreStart
 $basePath = getenv( 'MW_INSTALL_PATH' ) !== false ? getenv( 'MW_INSTALL_PATH' ) : __DIR__ . '/../../../..';
 
 require_once $basePath . '/maintenance/Maintenance.php';
+// @codeCoverageIgnoreEnd
 
 /**
  * @license GPL-2.0-or-later
@@ -107,7 +109,7 @@ class RebuildItemTerms extends Maintenance {
 		$this->output( "Done.\n" );
 	}
 
-	private function newItemIdIteratorFromFile( $file ): \Iterator {
+	private function newItemIdIteratorFromFile( string $file ): \Iterator {
 		$itemIds = file_get_contents( $file );
 		$itemIds = explode( "\n", $itemIds );
 
@@ -136,7 +138,7 @@ class RebuildItemTerms extends Maintenance {
 			return (int)$this->getOption( 'to-id' );
 		}
 
-		$highestId = WikibaseRepo::getRepoDomainDbFactory()
+		return (int)WikibaseRepo::getRepoDomainDbFactory()
 			->newRepoDb()
 			->connections()
 			->getReadConnection()
@@ -144,8 +146,8 @@ class RebuildItemTerms extends Maintenance {
 			->select( 'id_value' )
 			->from( 'wb_id_counters' )
 			->where( [ 'id_type' => 'wikibase-item' ] )
-			->caller( __METHOD__ )->fetchRow();
-		return (int)$highestId->id_value;
+			->caller( __METHOD__ )
+			->fetchField();
 	}
 
 	private function getReporter(): MessageReporter {
@@ -166,5 +168,7 @@ class RebuildItemTerms extends Maintenance {
 
 }
 
+// @codeCoverageIgnoreStart
 $maintClass = RebuildItemTerms::class;
 require_once RUN_MAINTENANCE_IF_MAIN;
+// @codeCoverageIgnoreEnd

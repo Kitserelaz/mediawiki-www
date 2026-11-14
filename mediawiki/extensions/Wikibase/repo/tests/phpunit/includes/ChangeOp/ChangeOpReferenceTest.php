@@ -37,13 +37,8 @@ class ChangeOpReferenceTest extends \PHPUnit\Framework\TestCase {
 	 */
 	private $mockProvider;
 
-	/**
-	 * @param string|null $name
-	 * @param array $data
-	 * @param string $dataName
-	 */
-	public function __construct( $name = null, array $data = [], $dataName = '' ) {
-		parent::__construct( $name, $data, $dataName );
+	protected function setUp(): void {
+		parent::setUp();
 
 		$this->mockProvider = new ChangeOpTestMockProvider( $this );
 	}
@@ -85,26 +80,26 @@ class ChangeOpReferenceTest extends \PHPUnit\Framework\TestCase {
 		);
 	}
 
-	public function changeOpAddProvider() {
+	public static function changeOpAddProvider(): iterable {
 		$snak = new PropertyValueSnak( 2754236, new StringValue( 'test' ) );
 
-		$item = $this->newItem( $snak );
+		$item = self::newItem( $snak );
 		$statements = $item->getStatements()->toArray();
 		/** @var Statement $statement */
 		$statement = reset( $statements );
 		$snaks = new SnakList();
 		$snaks[] = new PropertyValueSnak( 78462378, new StringValue( 'newQualifier' ) );
 		$newReference = new Reference( $snaks );
-		$changeOp = new ChangeOpReference(
+		$changeOpFactory = fn ( self $self ) => new ChangeOpReference(
 			$statement->getGuid(),
 			$newReference,
 			'',
-			$this->mockProvider->getMockSnakValidator()
+			$self->mockProvider->getMockSnakValidator(),
 		);
 		$referenceHash = $newReference->getHash();
 
 		return [
-			[ $item, $changeOp, $referenceHash ],
+			[ $item, $changeOpFactory, $referenceHash ],
 		];
 	}
 
@@ -113,9 +108,10 @@ class ChangeOpReferenceTest extends \PHPUnit\Framework\TestCase {
 	 */
 	public function testApplyAddNewReference(
 		Item $item,
-		ChangeOpReference $changeOp,
+		callable $changeOpFactory,
 		$referenceHash
 	) {
+		$changeOp = $changeOpFactory( $this );
 		$changeOpResult = $changeOp->apply( $item );
 		$statements = $item->getStatements()->toArray();
 		/** @var Statement $statement */
@@ -125,11 +121,11 @@ class ChangeOpReferenceTest extends \PHPUnit\Framework\TestCase {
 		$this->assertTrue( $changeOpResult->isEntityChanged() );
 	}
 
-	public function changeOpAddProviderWithIndex() {
+	public static function changeOpAddWithIndexProvider(): iterable {
 		$snak = new PropertyNoValueSnak( 1 );
 		$args = [];
 
-		$item = $this->newItem( $snak );
+		$item = self::newItem( $snak );
 		$statements = $item->getStatements()->toArray();
 		/** @var Statement $statement */
 		$statement = reset( $statements );
@@ -146,28 +142,29 @@ class ChangeOpReferenceTest extends \PHPUnit\Framework\TestCase {
 		$newReference = new Reference( new SnakList( [ new PropertyNoValueSnak( 3 ) ] ) );
 		$newReferenceIndex = 1;
 
-		$changeOp = new ChangeOpReference(
+		$changeOpFactory = fn ( self $self ) => new ChangeOpReference(
 			$statement->getGuid(),
 			$newReference,
 			'',
-			$this->mockProvider->getMockSnakValidator(),
+			$self->mockProvider->getMockSnakValidator(),
 			$newReferenceIndex
 		);
 
-		$args[] = [ $item, $changeOp, $newReference, $newReferenceIndex ];
+		$args[] = [ $item, $changeOpFactory, $newReference, $newReferenceIndex ];
 
 		return $args;
 	}
 
 	/**
-	 * @dataProvider changeOpAddProviderWithIndex
+	 * @dataProvider changeOpAddWithIndexProvider
 	 */
 	public function testApplyAddNewReferenceWithIndex(
 		Item $item,
-		ChangeOpReference $changeOp,
+		callable $changeOpFactory,
 		Reference $newReference,
 		$expectedIndex
 	) {
+		$changeOp = $changeOpFactory( $this );
 		$changeOpResult = $changeOp->apply( $item );
 		$statements = $item->getStatements()->toArray();
 		/** @var Statement $statement */
@@ -177,11 +174,11 @@ class ChangeOpReferenceTest extends \PHPUnit\Framework\TestCase {
 		$this->assertTrue( $changeOpResult->isEntityChanged() );
 	}
 
-	public function changeOpSetProvider() {
+	public static function changeOpSetProvider(): iterable {
 		$snak = new PropertyValueSnak( 2754236, new StringValue( 'test' ) );
 		$args = [];
 
-		$item = $this->newItem( $snak );
+		$item = self::newItem( $snak );
 		$statements = $item->getStatements()->toArray();
 		/** @var Statement $statement */
 		$statement = reset( $statements );
@@ -193,16 +190,17 @@ class ChangeOpReferenceTest extends \PHPUnit\Framework\TestCase {
 		$snaks = new SnakList();
 		$snaks[] = new PropertyValueSnak( 78462378, new StringValue( 'changedQualifier' ) );
 		$changedReference = new Reference( $snaks );
-		$changeOp = new ChangeOpReference(
+		$changeOpFactory = fn ( self $self ) => new ChangeOpReference(
 			$statement->getGuid(),
 			$changedReference,
 			$referenceHash,
-			$this->mockProvider->getMockSnakValidator()
+			$self->mockProvider->getMockSnakValidator()
 		);
-		$args[] = [ $item, $changeOp, $changedReference->getHash() ];
+
+		$args[] = [ $item, $changeOpFactory, $changedReference->getHash() ];
 
 		// Just change a reference's index:
-		$item = $this->newItem( $snak );
+		$item = self::newItem( $snak );
 		$statements = $item->getStatements()->toArray();
 		/** @var Statement $statement */
 		$statement = reset( $statements );
@@ -217,14 +215,15 @@ class ChangeOpReferenceTest extends \PHPUnit\Framework\TestCase {
 		$referenceList->addReference( $references[0] );
 		$referenceList->addReference( $references[1] );
 
-		$changeOp = new ChangeOpReference(
+		$changeOpFactory = fn ( self $self ) => new ChangeOpReference(
 			$statement->getGuid(),
 			$references[1],
 			$references[1]->getHash(),
-			$this->mockProvider->getMockSnakValidator(),
+			$self->mockProvider->getMockSnakValidator(),
 			0
 		);
-		$args[] = [ $item, $changeOp, $references[1]->getHash() ];
+
+		$args[] = [ $item, $changeOpFactory, $references[1]->getHash() ];
 
 		return $args;
 	}
@@ -234,9 +233,10 @@ class ChangeOpReferenceTest extends \PHPUnit\Framework\TestCase {
 	 */
 	public function testApplySetReference(
 		Item $item,
-		ChangeOpReference $changeOp,
+		callable $changeOpFactory,
 		$referenceHash
 	) {
+		$changeOp = $changeOpFactory( $this );
 		$changeOpResult = $changeOp->apply( $item );
 		$statements = $item->getStatements()->toArray();
 		/** @var Statement $statement */
@@ -246,12 +246,7 @@ class ChangeOpReferenceTest extends \PHPUnit\Framework\TestCase {
 		$this->assertTrue( $changeOpResult->isEntityChanged() );
 	}
 
-	/**
-	 * @param Snak $snak
-	 *
-	 * @return Item
-	 */
-	private function newItem( Snak $snak ) {
+	private static function newItem( Snak $snak ): Item {
 		$item = new Item( new ItemId( 'Q123' ) );
 
 		$item->getStatements()->addNewStatement(

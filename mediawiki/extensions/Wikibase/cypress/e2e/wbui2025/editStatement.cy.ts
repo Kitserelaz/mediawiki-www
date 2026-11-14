@@ -1,0 +1,70 @@
+import { Util } from 'cypress-wikibase-api';
+
+import { checkA11y } from '../../support/checkA11y';
+import { ItemViewPage } from '../../support/pageObjects/ItemViewPage';
+import { EditStatementFormPage } from '../../support/pageObjects/EditStatementFormPage';
+
+describe( 'wbui2025 item view edit statements', () => {
+	context( 'mobile view', () => {
+		let propertyName: string;
+		let itemId: string;
+
+		before( () => {
+			propertyName = Util.getTestString( 'property' );
+			cy.task( 'MwApi:CreateProperty', { label: propertyName, data: { datatype: 'string' } } )
+				.then( ( newPropertyId: string ) => {
+					const statementData = {
+						claims: [ {
+							mainsnak: {
+								snaktype: 'value',
+								property: newPropertyId,
+								datavalue: {
+									value: 'ExampleString',
+									type: 'string',
+								},
+							},
+							type: 'statement',
+							rank: 'normal',
+						} ],
+					};
+					cy.task( 'MwApi:CreateItem', { label: Util.getTestString( 'item' ), data: statementData } )
+						.then( ( newItemId: string ) => {
+							itemId = newItemId;
+						} );
+				} );
+		} );
+
+		beforeEach( () => {
+			cy.viewport( 375, 1280 );
+		} );
+
+		it( 'loads the item view and shows a statement, which can be edited, '
+			+ 'and all statements can be removed', () => {
+			const itemViewPage = new ItemViewPage( itemId );
+			itemViewPage.open().statementsSection();
+			checkA11y( ItemViewPage.STATEMENTS );
+			itemViewPage.editLinks().first().click();
+			const editFormPage = new EditStatementFormPage();
+			editFormPage.propertyName().should( 'have.text', propertyName );
+			editFormPage.textInput().should( 'have.value', 'ExampleString' );
+			editFormPage.valueForms().should( 'have.length', 1 );
+			editFormPage.removeValueButtons().first().click();
+			editFormPage.valueForms().should( 'have.length', 0 );
+			editFormPage.cancelButton().click();
+			// The form should be hidden
+			itemViewPage.editLinks().should( 'exist' );
+
+			// Open the form again
+			itemViewPage.editLinks().first().click();
+			// The value form should be there
+			editFormPage.valueForms();
+			// Click all the remove buttons
+			editFormPage.removeValueButtons().click();
+			editFormPage.publishButton().click();
+			// The edit form/modal is hidden
+			editFormPage.formRoot().should( 'not.exist' );
+			// The statement values for this property are gone in the item view
+			itemViewPage.statementsSection().should( 'not.contain', 'ExampleString' );
+		} );
+	} );
+} );

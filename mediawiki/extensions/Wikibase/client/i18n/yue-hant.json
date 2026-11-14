@@ -1,8 +1,14 @@
 {
 	"@metadata": {
 		"authors": [
+			"Al12si",
+			"H78c67c",
+			"JeffreyKim",
 			"Ktchankt",
-			"Winston Sung"
+			"SaldırganSincap",
+			"Winston Sung",
+			"Yueman",
+			"Z423x5c6"
 		]
 	},
 	"wikibase-client-desc": "Wikibase擴展客戶端",
@@ -27,10 +33,14 @@
 	"wikibase-rc-wikibase-edit-letter": "D",
 	"wikibase-rc-wikibase-edit-title": "{{WBREPONAME}} 修改",
 	"wikibase-rcfilters-hide-wikibase-label": "{{WBREPONAME}}改動",
+	"wikibase-error-exceeded-entity-access-limit": "存取咗太多{{WBREPONAME}}實體。載入嘅實體數量： $2/$3。",
 	"unconnectedpages": "未連到項目嘅版",
 	"unconnectedpages-summary": "呢一版列示咗未連到數據項目（喺支援連接咗項目嘅空間名）嘅版。",
 	"wikibase-unconnectedpages-submit": "顯示版",
 	"wikibase-pageinfo-entity-id": "{{WBREPONAME}}項目ID",
+	"wikibase-pageinfo-entity-usage-A": "設定其他啲名",
+	"wikibase-pageinfo-entity-usage-A-with-modifier": "其他名:$1",
+	"wikibase-pageinfo-entity-usage-O": "雜項（例如實體存在）",
 	"wikibase-otherprojects": "第啲項目",
 	"wikibase-sitelinks-sitename-columnheading": "話",
 	"connected-redirect-category": "連咗去個{{WBREPONAME}}項目嘅跳轉",

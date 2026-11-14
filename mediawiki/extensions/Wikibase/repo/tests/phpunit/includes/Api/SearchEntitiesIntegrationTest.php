@@ -5,8 +5,8 @@ declare( strict_types  = 1 );
 namespace Wikibase\Repo\Tests\Api;
 
 use MediaWiki\Api\ApiMain;
-use MediaWiki\Cache\LinkBatchFactory;
 use MediaWiki\Context\RequestContext;
+use MediaWiki\Page\LinkBatchFactory;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\Revision\SlotRecord;
 use MediaWikiIntegrationTestCase;
@@ -33,6 +33,8 @@ use Wikibase\Repo\Api\EntityIdSearchHelper;
 use Wikibase\Repo\Api\EntitySearchHelper;
 use Wikibase\Repo\Api\EntityTermSearchHelper;
 use Wikibase\Repo\Api\SearchEntities;
+use Wikibase\Repo\Domains\Search\Infrastructure\Controllers\DispatchingWbSearchEntitiesController;
+use Wikibase\Repo\Domains\Search\Infrastructure\Controllers\FallbackEntitySearchHelperController;
 
 /**
  * @covers \Wikibase\Repo\Api\EntityTermSearchHelper
@@ -144,13 +146,19 @@ class SearchEntitiesIntegrationTest extends MediaWikiIntegrationTestCase {
 				''
 			),
 		], new SubEntityTypesMapper( [] ) );
+		$entitySourceLookup = new EntitySourceLookup( $entitySourceDefinitions, new SubEntityTypesMapper( [] ) );
 		$apiModule = new SearchEntities(
 			new ApiMain( $context ),
 			'',
 			$this->createMock( LinkBatchFactory::class ),
-			$entitySearchTermIndex,
+			new DispatchingWbSearchEntitiesController( [
+				'item' => static fn() =>
+					new FallbackEntitySearchHelperController( 'item', $entitySearchTermIndex, $entitySourceLookup ),
+				'property' => static fn() =>
+					new FallbackEntitySearchHelperController( 'property', $entitySearchTermIndex, $entitySourceLookup ),
+			] ),
 			new StaticContentLanguages( [ 'en' ] ),
-			new EntitySourceLookup( $entitySourceDefinitions, new SubEntityTypesMapper( [] ) ),
+			$entitySourceLookup,
 			$this->createMock( EntityTitleLookup::class ),
 			$this->createMock( EntityTitleTextLookup::class ),
 			$this->createMock( EntityUrlLookup::class ),

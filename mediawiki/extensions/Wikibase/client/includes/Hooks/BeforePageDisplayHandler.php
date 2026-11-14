@@ -6,9 +6,9 @@ namespace Wikibase\Client\Hooks;
 
 use MediaWiki\Output\Hook\BeforePageDisplayHook;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Skin\Skin;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
-use Skin;
 use Wikibase\Client\NamespaceChecker;
 use Wikibase\Lib\SettingsArray;
 
@@ -80,7 +80,7 @@ class BeforePageDisplayHandler implements BeforePageDisplayHook {
 		}
 	}
 
-	private function addJsModules( OutputPage $outputPage, Title $title, $actionName, Skin $skin ): void {
+	private function addJsModules( OutputPage $outputPage, Title $title, string $actionName, Skin $skin ): void {
 		$user = $outputPage->getUser();
 
 		if ( $this->hasLinkItemWidget( $user, $outputPage, $title, $actionName ) ) {

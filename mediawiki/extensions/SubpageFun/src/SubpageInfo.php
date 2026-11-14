@@ -1,5 +1,7 @@
 <?php
 
+use MediaWiki\Title\Title;
+
 /**
  * Static class with functions to gain subpage related information, MediaWiki doesn't offer
  * without further information processing.

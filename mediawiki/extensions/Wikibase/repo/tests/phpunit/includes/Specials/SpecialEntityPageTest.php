@@ -4,12 +4,12 @@ declare( strict_types = 1 );
 
 namespace Wikibase\Repo\Tests\Specials;
 
-use HttpError;
+use MediaWiki\Exception\HttpError;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\Request\FauxResponse;
+use MediaWiki\Tests\Specials\SpecialPageExecutor;
+use MediaWiki\Tests\Specials\SpecialPageTestBase;
 use MediaWiki\Title\Title;
-use SpecialPageExecutor;
-use SpecialPageTestBase;
 use Wikibase\DataModel\Entity\ItemIdParser;
 use Wikibase\Lib\Store\EntityTitleLookup;
 use Wikibase\Repo\Specials\SpecialEntityPage;

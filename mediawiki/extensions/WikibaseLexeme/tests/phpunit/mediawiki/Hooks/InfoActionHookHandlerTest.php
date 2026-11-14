@@ -27,18 +27,16 @@ class InfoActionHookHandlerTest extends TestCase {
 	 */
 	public function testHandle(
 		array $expected,
-		IContextSource $context,
 		array $pageProps
 	) {
+		$context = $this->getContext();
 		$hookHandler = $this->newHookHandler( $context, $pageProps );
 		$pageInfo = $hookHandler->handle( $context, [ 'header-basic' => [] ] );
 
 		$this->assertEquals( $expected, $pageInfo );
 	}
 
-	public function handleProvider() {
-		$context = $this->getContext();
-
+	public static function handleProvider() {
 		return [
 			'some sense and forms' => [
 				[
@@ -47,22 +45,20 @@ class InfoActionHookHandlerTest extends TestCase {
 						[ '(wikibase-pageinfo-wbl-senses)', '4' ],
 					],
 				],
-				$context,
 				[ 'wbl-forms' => 5, 'wbl-senses' => 4 ],
 			],
 			'no sense or forms' => [
 				[
 					'header-basic' => [],
 				],
-				$context,
 				[],
 			],
 		];
 	}
 
 	/**
-	 * @param string[] $subscriptions
 	 * @param IContextSource $context
+	 * @param array $pagePropsValues
 	 *
 	 * @return InfoActionHookHandler
 	 */

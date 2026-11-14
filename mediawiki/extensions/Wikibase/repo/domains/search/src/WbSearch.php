@@ -1,0 +1,76 @@
+<?php declare( strict_types=1 );
+
+namespace Wikibase\Repo\Domains\Search;
+
+use MediaWiki\MediaWikiServices;
+use MediaWiki\Rest\Reporter\ErrorReporter;
+use Psr\Container\ContainerInterface;
+use Wikibase\Repo\Api\EntitySearchHelper;
+use Wikibase\Repo\Domains\Search\Application\UseCases\ItemPrefixSearch\ItemPrefixSearch;
+use Wikibase\Repo\Domains\Search\Application\UseCases\PropertyPrefixSearch\PropertyPrefixSearch;
+use Wikibase\Repo\Domains\Search\Application\UseCases\SimpleItemSearch\SimpleItemSearch;
+use Wikibase\Repo\Domains\Search\Application\UseCases\SimplePropertySearch\SimplePropertySearch;
+use Wikibase\Repo\Domains\Search\Application\Validation\SearchLanguageValidator;
+use Wikibase\Repo\Domains\Search\Infrastructure\DataAccess\EntitySearchHelperFactory;
+use Wikibase\Repo\Domains\Search\Infrastructure\DataAccess\InLabelSearchEngine;
+use Wikibase\Repo\RestApi\Middleware\MiddlewareHandler;
+use Wikibase\Repo\RestApi\Middleware\UnexpectedErrorHandlerMiddleware;
+
+/**
+ * @license GPL-2.0-or-later
+ */
+class WbSearch {
+
+	public static function getEntitySearchHelperFactory( ?ContainerInterface $services = null ): EntitySearchHelperFactory {
+		return ( $services ?: MediaWikiServices::getInstance() )->get( 'WbSearch.EntitySearchHelperFactory' );
+	}
+
+	public static function getErrorReporter( ?ContainerInterface $services = null ): ErrorReporter {
+		return ( $services ?: MediaWikiServices::getInstance() )->get( 'WbSearch.ErrorReporter' );
+	}
+
+	public static function getUnexpectedErrorHandlerMiddleware( ?ContainerInterface $services = null ): UnexpectedErrorHandlerMiddleware {
+		return ( $services ?: MediaWikiServices::getInstance() )->get( 'WbSearch.UnexpectedErrorHandlerMiddleware' );
+	}
+
+	public static function getItemSearchHelper( ?ContainerInterface $services = null ): EntitySearchHelper {
+		return ( $services ?: MediaWikiServices::getInstance() )->get( 'WbSearch.ItemSearchHelper' );
+	}
+
+	public static function getPropertySearchHelper( ?ContainerInterface $services = null ): EntitySearchHelper {
+		return ( $services ?: MediaWikiServices::getInstance() )->get( 'WbSearch.PropertySearchHelper' );
+	}
+
+	public static function getInLabelSearchEngine( ?ContainerInterface $services = null ): InLabelSearchEngine {
+		return ( $services ?: MediaWikiServices::getInstance() )->get( 'WbSearch.InLabelSearchEngine' );
+	}
+
+	public static function getLanguageCodeValidator( ?ContainerInterface $services = null ): SearchLanguageValidator {
+		return ( $services ?: MediaWikiServices::getInstance() )->get( 'WbSearch.LanguageCodeValidator' );
+	}
+
+	public static function getMiddlewareHandler( ?ContainerInterface $services = null ): MiddlewareHandler {
+		return ( $services ?: MediaWikiServices::getInstance() )->get( 'WbSearch.MiddlewareHandler' );
+	}
+
+	public static function getSimpleItemSearch( ?ContainerInterface $services = null ): SimpleItemSearch {
+		return ( $services ?: MediaWikiServices::getInstance() )
+			->get( 'WbSearch.SimpleItemSearch' );
+	}
+
+	public static function getSimplePropertySearch( ?ContainerInterface $services = null ): SimplePropertySearch {
+		return ( $services ?: MediaWikiServices::getInstance() )
+			->get( 'WbSearch.SimplePropertySearch' );
+	}
+
+	public static function getItemPrefixSearch( ?ContainerInterface $services = null ): ItemPrefixSearch {
+		return ( $services ?: MediaWikiServices::getInstance() )
+			->get( 'WbSearch.ItemPrefixSearch' );
+	}
+
+	public static function getPropertyPrefixSearch( ?ContainerInterface $services = null ): PropertyPrefixSearch {
+		return ( $services ?: MediaWikiServices::getInstance() )
+			->get( 'WbSearch.PropertyPrefixSearch' );
+	}
+
+}

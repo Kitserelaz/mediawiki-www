@@ -57,6 +57,9 @@ trait LabelsChangeOpDeserializationTester {
 		$this->assertFalse( $entity->getLabels()->hasTermForLanguage( 'en' ) );
 	}
 
+	/**
+	 * @return LabelsProvider|EntityDocument
+	 */
 	private function getEntityWithEnLabel() {
 		$entity = $this->getEntity();
 		$entity->getLabels()->setTextForLanguage( 'en', 'en-label' );
@@ -67,7 +70,7 @@ trait LabelsChangeOpDeserializationTester {
 	/**
 	 * @return LabelsProvider|EntityDocument
 	 */
-	abstract protected function getEntity();
+	abstract protected static function getEntity();
 
 	/**
 	 * @return ChangeOpDeserializer

@@ -1,11 +1,11 @@
 {
 	"@metadata": {
 		"authors": [
+			"EGobi",
 			"Eduardo Addad de Oliveira",
 			"Eduardoaddad",
 			"NMaia",
-			"TheEduGobi",
-			"EGobi"
+			"TheEduGobi"
 		]
 	},
 	"apierror-wikibaselexeme-form-must-have-at-least-one-representation": "O formulário deve ter pelo menos uma representação",

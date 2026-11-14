@@ -3,7 +3,7 @@
 namespace Wikibase\Repo\Validators;
 
 use InvalidArgumentException;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Language\LanguageNameUtils;
 use ValueValidators\ValueValidator;
 use Wikibase\DataModel\Entity\EntityIdParser;
 use Wikibase\DataModel\Entity\Item;
@@ -144,14 +144,13 @@ class TermValidatorFactory {
 	 * @param string $errorCodePrefix
 	 * @return ValueValidator[]
 	 */
-	private function getCommonTermValidators( $errorCodePrefix ) {
-		$validators = [];
-		$validators[] = new TypeValidator( 'string' );
-		$validators[] = new StringLengthValidator( 1, $this->maxLength, 'mb_strlen', $errorCodePrefix );
-		// no leading/trailing whitespace, no tab or vertical whitespace, no line breaks.
-		$validators[] = new RegexValidator( '/^\s|[\v\t]|\s$/u', true );
-
-		return $validators;
+	private function getCommonTermValidators( $errorCodePrefix ): array {
+		return [
+			new TypeValidator( 'string' ),
+			new StringLengthValidator( 1, $this->maxLength, 'mb_strlen', $errorCodePrefix ),
+			// no leading/trailing whitespace, no tab or vertical whitespace, no line breaks.
+			new RegexValidator( '/^\s|[\v\t]|\s$/u', true ),
+		];
 	}
 
 	public function getLabelLanguageValidator(): ValueValidator {
@@ -173,14 +172,13 @@ class TermValidatorFactory {
 	 * @return ValueValidator[]
 	 */
 	private function getLanguageValidators(): array {
-		$validators = [];
-		$validators[] = new TypeValidator( 'string' );
-		$validators[] = new MembershipValidator( $this->languageCodes, 'not-a-language' );
-
-		return $validators;
+		return [
+			new TypeValidator( 'string' ),
+			new MembershipValidator( $this->languageCodes, 'not-a-language' ),
+		];
 	}
 
-	public function getLabelUniquenessValidator( $entityType ): LabelUniquenessValidator {
+	public function getLabelUniquenessValidator( string $entityType ): LabelUniquenessValidator {
 		return new LabelUniquenessValidator(
 			$this->termsCollisionDetectorFactory->getTermsCollisionDetector( $entityType )
 		);

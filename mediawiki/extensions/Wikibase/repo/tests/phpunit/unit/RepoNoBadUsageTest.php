@@ -14,7 +14,7 @@ use Wikibase\Lib\Tests\NoBadUsageTestBase;
  */
 class RepoNoBadUsageTest extends NoBadUsageTestBase {
 
-	protected function getBadPatternsWithAllowedUsages(): array {
+	protected static function getBadPatternsWithAllowedUsages(): array {
 		return [
 			// don’t reference client in repo
 			'WikibaseClient::' => [
@@ -32,18 +32,19 @@ class RepoNoBadUsageTest extends NoBadUsageTestBase {
 				'tests/phpunit/unit/ServiceWiringTestCase.php' => true, // mock
 			],
 			'/\b((get)?(DB)?|I|)LoadBalancer(Factory)?(?!::|;)/' => [
-				'WikibaseRepo.ServiceWiring.php' => 1, // RepoDomainDbFactory service wiring
+				'WikibaseRepo.ServiceWiring.php' => 2, // RepoDomainDbFactory+TermsDomainDbFactory service wiring
 				'tests/phpunit/includes/Store/Sql/WikiPageEntityMetaDataLookupTest.php' => true, // mock
 				'tests/phpunit/unit/ServiceWiringTestCase.php' => true, // mock
+				'maintenance/DumpEntities.php' => 1, // To set the dump db group
 			],
 		];
 	}
 
-	protected function getBaseDir(): string {
+	protected static function getBaseDir(): string {
 		return __DIR__ . '/../../../';
 	}
 
-	protected function getThisFile(): string {
+	protected static function getThisFile(): string {
 		return __FILE__;
 	}
 

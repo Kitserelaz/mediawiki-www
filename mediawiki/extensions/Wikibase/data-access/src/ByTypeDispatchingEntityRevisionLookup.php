@@ -35,11 +35,12 @@ class ByTypeDispatchingEntityRevisionLookup implements EntityRevisionLookup {
 
 	public function __construct( array $lookups ) {
 		Assert::parameterElementType( EntityRevisionLookup::class, $lookups, '$lookups' );
-		Assert::parameterElementType( 'string', array_keys( $lookups ), 'keys of $lookups' );
+		Assert::parameterKeyType( 'string', $lookups, '$lookups' );
 
 		$this->lookups = $lookups;
 	}
 
+	/** @inheritDoc */
 	public function getEntityRevision(
 		EntityId $entityId,
 		$revisionId = 0,
@@ -54,6 +55,7 @@ class ByTypeDispatchingEntityRevisionLookup implements EntityRevisionLookup {
 		return $lookup->getEntityRevision( $entityId, $revisionId, $mode );
 	}
 
+	/** @inheritDoc */
 	public function getLatestRevisionId( EntityId $entityId, $mode = LookupConstants::LATEST_FROM_REPLICA ) {
 		$lookup = $this->getLookupForEntity( $entityId );
 

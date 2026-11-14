@@ -5,21 +5,25 @@ declare( strict_types = 1 );
 namespace Wikibase\Repo\Tests;
 
 use Exception;
-use ImportStringSource;
 use MediaWiki\Api\ApiMain;
 use MediaWiki\Api\ApiQuerySiteinfo;
 use MediaWiki\Context\DerivativeContext;
 use MediaWiki\Context\RequestContext;
+use MediaWiki\Import\ImportStringSource;
+use MediaWiki\Import\WikiImporter;
 use MediaWiki\Linker\LinkTarget;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Parser\ParserOutput;
+use MediaWiki\Skin\SkinTemplate;
 use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleValue;
+use MediaWiki\User\Options\UserOptionsLookup;
 use MediaWiki\User\User;
+use MediaWiki\User\UserIdentity;
 use MediaWikiIntegrationTestCase;
 use RuntimeException;
-use SkinTemplate;
+use Wikibase\DataAccess\DatabaseEntitySource;
 use Wikibase\Lib\SettingsArray;
 use Wikibase\Lib\Store\EntityNamespaceLookup;
 use Wikibase\Repo\Api\EditEntity;
@@ -29,7 +33,7 @@ use Wikibase\Repo\ParserOutput\TermboxView;
 use Wikibase\Repo\RepoHooks;
 use Wikibase\Repo\Store\RateLimitingIdGenerator;
 use Wikibase\Repo\WikibaseRepo;
-use WikiImporter;
+use Wikibase\View\Wbui2025FeatureFlag;
 
 /**
  * @covers \Wikibase\Repo\RepoHooks
@@ -46,8 +50,7 @@ class RepoHooksTest extends MediaWikiIntegrationTestCase {
 
 	private const FAKE_NS_ID = 4557;
 
-	/** @var bool */
-	private $saveAllowImport = false;
+	private bool $saveAllowImport = false;
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -57,7 +60,6 @@ class RepoHooksTest extends MediaWikiIntegrationTestCase {
 
 	protected function tearDown(): void {
 		$this->getSettings()->setSetting( 'allowEntityImport', $this->saveAllowImport );
-		Title::clearCaches();
 
 		parent::tearDown();
 	}
@@ -69,7 +71,7 @@ class RepoHooksTest extends MediaWikiIntegrationTestCase {
 		return WikibaseRepo::getSettings();
 	}
 
-	public function onBeforePageDisplayProvider() {
+	public static function onBeforePageDisplayProvider(): iterable {
 		$wikibaseMobileNewTermbox = [ 'wikibase.mobile', 'wikibase.termbox' ];
 		$wikibaseMobileNewTermboxStyles = [ 'wikibase.termbox.styles' ];
 		$wikibaseMobile = [ 'wikibase.mobile' ];
@@ -156,7 +158,7 @@ class RepoHooksTest extends MediaWikiIntegrationTestCase {
 		$settings['termboxEnabled'] = $useNewTermbox;
 		$settings['enableEntitySearchUI'] = $enableEntitySearchUI;
 
-		RepoHooks::onBeforePageDisplay(
+		( new RepoHooks )->onBeforePageDisplay(
 			$outputPage,
 			$skin
 		);
@@ -169,7 +171,7 @@ class RepoHooksTest extends MediaWikiIntegrationTestCase {
 		$api = $this->createMock( ApiQuerySiteinfo::class );
 
 		$actual = [];
-		RepoHooks::onAPIQuerySiteInfoGeneralInfo( $api, $actual );
+		( new RepoHooks )->onAPIQuerySiteInfoGeneralInfo( $api, $actual );
 
 		foreach ( $actual['wikibase-propertytypes'] as $key => $value ) {
 			$this->assertIsString( $key );
@@ -233,7 +235,7 @@ class RepoHooksTest extends MediaWikiIntegrationTestCase {
 			$this->expectException( $expectedException );
 		}
 
-		RepoHooks::onImportHandleRevisionXMLTag( $importer, [], $revisionInfo );
+		( new RepoHooks )->onImportHandleRevisionXMLTag( $importer, [], $revisionInfo );
 		$this->assertTrue( true ); // make PHPUnit happy
 	}
 
@@ -350,7 +352,7 @@ XML
 				}
 			} );
 
-		RepoHooks::onOutputPageParserOutput( $outputPage, $parserOutput );
+		( new RepoHooks )->onOutputPageParserOutput( $outputPage, $parserOutput );
 
 		$this->assertSame( TermboxView::TERMBOX_MARKUP, $outputPage->getProperty( TermboxView::TERMBOX_MARKUP ) );
 		$this->assertSame( 'wikibase-view-chunks', $outputPage->getProperty( 'wikibase-view-chunks' ) );
@@ -358,34 +360,66 @@ XML
 		$this->assertSame( $altLinks, $outputPage->getLinkTags() );
 	}
 
-	public function testOnParserOptionsRegister() {
+	public static function provideWbUi2025Setting() {
+		yield 'wbUi2025 disabled mobile site enabled' => [ true, false, false, null, true ];
+		yield 'wbUi2025 enabled mobile site disabled' => [ false, true, false, null, false ];
+		yield 'wbUi2025 enabled mobile site enabled' => [ true, true, false, null, 'wbui2025' ];
+		yield 'wbUi2025 disabled mobile site enabled beta feature enabled' => [ true, false, true, "1", 'wbui2025' ];
+		yield 'wbUi2025 disabled mobile site enabled beta feature enabled user opted out' => [ true, false, true, "0", true ];
+		yield 'wbUi2025 disabled mobile site enabled beta feature disabled user opted in' => [ true, false, false, "1", true ];
+	}
+
+	/**
+	 * @dataProvider provideWbUi2025Setting
+	 */
+	public function testOnParserOptionsRegister(
+		bool $mobileSite,
+		bool $tmpMobileEditingUI,
+		bool $tmpEnableMobileEditingUIBetaFeature,
+		?string $userBetaOptionValue,
+		bool|string $expectedWbMobileValue
+	) {
 		$defaults = [];
 		$inCacheKey = [];
 		$lazyOptions = [];
-		$this->setService( 'WikibaseRepo.MobileSite', true );
+		$this->setService( 'UserOptionsLookup', $this->createConfiguredMock(
+			UserOptionsLookup::class,
+			[ 'getOption' => $userBetaOptionValue ]
+		) );
+		$this->setService( 'WikibaseRepo.MobileSite', fn() => $mobileSite );
+		$this->setService( 'WikibaseRepo.Settings', new SettingsArray( [
+			'tmpMobileEditingUI' => $tmpMobileEditingUI,
+			'tmpEnableMobileEditingUIBetaFeature' => $tmpEnableMobileEditingUIBetaFeature,
+			'disabledDataTypes' => [],
+			'enableMulLanguageCode' => false,
+		] ) );
+		$this->setService( 'WikibaseRepo.LocalEntitySource', $this->createMock( DatabaseEntitySource::class ) );
 
-		RepoHooks::onParserOptionsRegister( $defaults, $inCacheKey, $lazyOptions );
+		( new RepoHooks )->onParserOptionsRegister( $defaults, $inCacheKey, $lazyOptions );
 
 		$this->assertSame( [
 			'wb' => null,
 			'termboxVersion' => null,
-			'wbMobile' => null,
+			Wbui2025FeatureFlag::PARSER_OPTION_NAME => null,
 		], $defaults );
 		$this->assertSame( [
 			'wb' => true,
 			'termboxVersion' => true,
-			'wbMobile' => true,
+			Wbui2025FeatureFlag::PARSER_OPTION_NAME => true,
 		], $inCacheKey );
 		$this->assertSame( [
 			'wb',
 			'termboxVersion',
-			'wbMobile',
+			Wbui2025FeatureFlag::PARSER_OPTION_NAME,
 		], array_keys( $lazyOptions ) );
+		$parserOptions = $this->createConfiguredMock( ParserOptions::class, [
+			'getUserIdentity' => $this->createMock( UserIdentity::class ),
+		] );
 		$this->assertIsCallable( $lazyOptions[ 'wb' ] );
 		$this->assertSame( EntityHandler::PARSER_VERSION, $lazyOptions[ 'wb' ]() );
 		$this->assertIsCallable( $lazyOptions[ 'termboxVersion' ] );
-		$this->assertIsCallable( $lazyOptions[ 'wbMobile' ] );
-		$this->assertSame( true, $lazyOptions[ 'wbMobile' ]() );
+		$this->assertIsCallable( $lazyOptions[ Wbui2025FeatureFlag::PARSER_OPTION_NAME ] );
+		$this->assertSame( $expectedWbMobileValue, $lazyOptions[ Wbui2025FeatureFlag::PARSER_OPTION_NAME ]( $parserOptions ) );
 	}
 
 	public function testOnParserOptionsRegister_hook() {
@@ -432,7 +466,7 @@ XML
 		}
 
 		$ok = true;
-		$return = RepoHooks::onContentModelCanBeUsedOn( $contentModel, $linkTarget, $ok );
+		$return = ( new RepoHooks )->onContentModelCanBeUsedOn( $contentModel, $linkTarget, $ok );
 
 		$this->assertSame( $expectedOk, $ok );
 		$this->assertSame( $expectedOk, $return );
@@ -452,11 +486,10 @@ XML
 		$this->assertSame( 'someSlot', $nsLookup->getEntitySlotRole( $type ) );
 	}
 
-	public function testOnSetupAfterCache() {
+	public function testOnMediaWikiServices() {
+		global $wgNamespaceContentModels, $wgContentHandlers;
 
-		global $wgWBRepoSettings, $wgNamespaceContentModels, $wgContentHandlers;
-
-		$settings = $wgWBRepoSettings;
+		$settings = $this->getConfVar( 'WBRepoSettings' );
 
 		$settings['entitySources'] = [
 			'local' => [
@@ -473,8 +506,8 @@ XML
 		];
 		$settings['localEntitySourceName'] = 'local';
 
+		$this->overrideConfigValue( 'WBRepoSettings', $settings );
 		$this->setMwGlobals( [
-			'wgWBRepoSettings' => $settings,
 			'wgNamespaceContentModels' => [],
 			'wgContentHandlers' => [],
 		] );
@@ -488,7 +521,7 @@ XML
 			$contentModelMappings
 		);
 
-		RepoHooks::onSetupAfterCache();
+		( new RepoHooks )->onMediaWikiServices( $this->getServiceContainer() );
 
 		$this->assertSame( [ WB_NS_ITEM => 'wikibase-item' ], $wgNamespaceContentModels );
 		$this->assertSame( array_values( $contentModelMappings ), array_keys( $wgContentHandlers ) );
@@ -502,11 +535,11 @@ XML
 
 		$settings['localEntitySourceName'] = 'items';
 
-		$this->setMwGlobals( 'wgWBRepoSettings', $settings );
+		$this->overrideConfigValue( 'WBRepoSettings', $settings );
 
 		$canBeMoved = true;
 
-		RepoHooks::onNamespaceIsMovable( $itemNamespace, $canBeMoved );
+		( new RepoHooks )->onNamespaceIsMovable( $itemNamespace, $canBeMoved );
 
 		$this->assertFalse( $canBeMoved );
 	}
@@ -519,11 +552,11 @@ XML
 
 		$settings['localEntitySourceName'] = 'items';
 
-		$this->setMwGlobals( 'wgWBRepoSettings', $settings );
+		$this->overrideConfigValue( 'WBRepoSettings', $settings );
 
 		$canBeMoved = true;
 
-		RepoHooks::onNamespaceIsMovable( $mainNamespace, $canBeMoved );
+		( new RepoHooks )->onNamespaceIsMovable( $mainNamespace, $canBeMoved );
 
 		$this->assertFalse( $canBeMoved );
 	}
@@ -536,11 +569,11 @@ XML
 
 		$settings['localEntitySourceName'] = 'props';
 
-		$this->setMwGlobals( 'wgWBRepoSettings', $settings );
+		$this->overrideConfigValue( 'WBRepoSettings', $settings );
 
 		$canBeMoved = true;
 
-		RepoHooks::onNamespaceIsMovable( $mainNamespace, $canBeMoved );
+		( new RepoHooks )->onNamespaceIsMovable( $mainNamespace, $canBeMoved );
 
 		$this->assertTrue( $canBeMoved );
 	}
@@ -554,11 +587,11 @@ XML
 
 		$settings['localEntitySourceName'] = 'items';
 
-		$this->setMwGlobals( 'wgWBRepoSettings', $settings );
+		$this->overrideConfigValue( 'WBRepoSettings', $settings );
 
 		$canBeMoved = true;
 
-		RepoHooks::onNamespaceIsMovable( $itemNamespace, $canBeMoved );
+		( new RepoHooks )->onNamespaceIsMovable( $itemNamespace, $canBeMoved );
 
 		$this->assertTrue( $canBeMoved );
 	}
@@ -571,19 +604,17 @@ XML
 		$settings = $this->newEntitySourceSettings( $itemNamespace, $propertyNamespace );
 		$settings['localEntitySourceName'] = 'items';
 
-		$this->setMwGlobals( 'wgWBRepoSettings', $settings );
+		$this->overrideConfigValue( 'WBRepoSettings', $settings );
 
 		$canBeMoved = true;
 
-		RepoHooks::onNamespaceIsMovable( $mainNamespace, $canBeMoved );
+		( new RepoHooks )->onNamespaceIsMovable( $mainNamespace, $canBeMoved );
 
 		$this->assertTrue( $canBeMoved );
 	}
 
 	private function newEntitySourceSettings( $itemNamespace, $propertyNamespace ) {
-		global $wgWBRepoSettings;
-
-		$settings = $wgWBRepoSettings;
+		$settings = $this->getConfVar( 'WBRepoSettings' );
 
 		$settings['entitySources'] = [
 			'items' => [
@@ -610,7 +641,7 @@ XML
 	public function testOnGetPreferences() {
 		$preferences = [];
 		$user = $this->createMock( User::class );
-		RepoHooks::onGetPreferences( $user, $preferences );
+		( new RepoHooks )->onGetPreferences( $user, $preferences );
 
 		$this->assertArrayHasKey( 'wb-acknowledgedcopyrightversion', $preferences );
 		$this->assertArrayHasKey( 'wikibase-entitytermsview-showEntitytermslistview', $preferences );
@@ -757,7 +788,7 @@ XML
 		$title->method( 'getContentModel' )->willReturn( CONTENT_MODEL_WIKITEXT );
 		$skinTemplate->method( 'getRelevantTitle' )->willReturn( $title );
 
-		RepoHooks::onSkinTemplateNavigationUniversal( $skinTemplate, $links );
+		( new RepoHooks )->onSkinTemplateNavigation__Universal( $skinTemplate, $links );
 		$this->assertArrayEquals( $expectedLinks, $links );
 	}
 
@@ -770,15 +801,15 @@ XML
 
 		$apiModule = $this->createMock( EditEntity::class );
 		$apiModule->method( 'isFreshIdAssigned' )
-			->willreturn( true );
+			->willReturn( true );
 
 		$apiMain = $this->createMock( ApiMain::class );
 		$apiMain->method( 'getModule' )
-			->willreturn( $apiModule );
+			->willReturn( $apiModule );
 		$apiMain->method( 'getUser' )
-			->willreturn( $user );
+			->willReturn( $user );
 
-		RepoHooks::onApiMainOnException( $apiMain, new Exception( 'foo' ) );
+		( new RepoHooks )->onApiMain__onException( $apiMain, new Exception( 'foo' ) );
 	}
 
 	public function testOnApiMainOnExceptionNoop() {
@@ -789,15 +820,15 @@ XML
 
 		$apiModule = $this->createMock( EditEntity::class );
 		$apiModule->method( 'isFreshIdAssigned' )
-			->willreturn( false );
+			->willReturn( false );
 
 		$apiMain = $this->createMock( ApiMain::class );
 		$apiMain->method( 'getModule' )
-			->willreturn( $apiModule );
+			->willReturn( $apiModule );
 		$apiMain->method( 'getUser' )
-			->willreturn( $user );
+			->willReturn( $user );
 
-		RepoHooks::onApiMainOnException( $apiMain, new Exception( 'foo' ) );
+		( new RepoHooks )->onApiMain__onException( $apiMain, new Exception( 'foo' ) );
 	}
 
 	public function testOnApiMainOnExceptionNoopOnDisabledConfig() {
@@ -813,11 +844,11 @@ XML
 
 		$apiMain = $this->createMock( ApiMain::class );
 		$apiMain->method( 'getModule' )
-			->willreturn( $apiModule );
+			->willReturn( $apiModule );
 		$apiMain->method( 'getUser' )
-			->willreturn( $user );
+			->willReturn( $user );
 
-		RepoHooks::onApiMainOnException( $apiMain, new Exception( 'foo' ) );
+		( new RepoHooks )->onApiMain__onException( $apiMain, new Exception( 'foo' ) );
 	}
 
 }

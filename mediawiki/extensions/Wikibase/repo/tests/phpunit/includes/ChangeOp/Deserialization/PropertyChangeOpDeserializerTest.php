@@ -32,7 +32,7 @@ class PropertyChangeOpDeserializerTest extends \PHPUnit\Framework\TestCase {
 	use DescriptionsChangeOpDeserializationTester;
 	use LabelsChangeOpDeserializationTester;
 
-	public function getEntity() {
+	public static function getEntity() {
 		return new Property( new NumericPropertyId( 'P100' ), null, 'foo' );
 	}
 
@@ -50,7 +50,7 @@ class PropertyChangeOpDeserializerTest extends \PHPUnit\Framework\TestCase {
 			),
 			WikibaseRepo::getExternalFormatStatementDeserializer(),
 			new SiteLinkPageNormalizer( [] ),
-			new SiteLinkTargetProvider( new HashSiteStore() ),
+			new SiteLinkTargetProvider( new HashSiteStore(), [] ),
 			WikibaseRepo::getEntityIdParser(),
 			WikibaseRepo::getEntityLookup(),
 			WikibaseRepo::getStringNormalizer(),

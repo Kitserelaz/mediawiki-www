@@ -5,7 +5,7 @@ declare( strict_types = 1 );
 namespace Wikibase\Repo\Dumpers;
 
 use InvalidArgumentException;
-use MWContentSerializationException;
+use MediaWiki\Content\ContentSerializationException;
 use Serializers\Serializer;
 use Wikibase\DataModel\Entity\EntityId;
 use Wikibase\DataModel\Entity\EntityIdParser;
@@ -116,9 +116,9 @@ class JsonDumpGenerator extends DumpGenerator {
 				throw new EntityLookupException( $entityId, 'Entity not found: ' . $entityId->getSerialization() );
 			}
 
-		} catch ( MWContentSerializationException $ex ) {
+		} catch ( ContentSerializationException ) {
 			throw new StorageException( 'Deserialization error for ' . $entityId->getSerialization() );
-		} catch ( RevisionedUnresolvedRedirectException $e ) {
+		} catch ( RevisionedUnresolvedRedirectException ) {
 			// Redirects aren't supposed to be in the JSON dumps
 			return null;
 		}

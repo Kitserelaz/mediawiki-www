@@ -1,0 +1,60 @@
+{
+	"openapi": "3.1.0",
+	"info": {
+		"title": "Wikibase REST API",
+		"version": "1.5",
+		"description": "OpenAPI definition of Wikibase REST API",
+		"contact": {
+			"name": "Wikimedia Deutschland - Wikibase Reuse Team",
+			"url": "https://phabricator.wikimedia.org/project/board/6692/"
+		},
+		"license": {
+			"name": "GNU General Public License v2.0 or later",
+			"url": "https://spdx.org/licenses/GPL-2.0-or-later.html"
+		}
+	},
+	"paths": {
+		"/v1/openapi.json": {
+			"get": {
+				"operationId": "getOpenApiDoc",
+				"tags": [ "OpenAPI document" ],
+				"summary": "Retrieve the OpenAPI document",
+				"responses": {
+					"200": {
+						"description": "OpenAPI document",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object"
+								},
+								"example": {
+									"openapi": "...",
+									"info": {
+										"title": "Wikibase REST API",
+										"version": "...",
+										"description": "OpenAPI definition of Wikibase REST API"
+									},
+									"paths": "..."
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	},
+	"components": {},
+	"tags": [
+		{
+			"name": "OpenAPI document",
+			"description": "OpenAPI document",
+			"externalDocs": {
+				"description": "Wikibase REST API",
+				"url": "https://doc.wikimedia.org/Wikibase/master/php/repo_rest-api_README.html"
+			}
+		}
+	],
+	"servers": [
+		{ "url": "https://wikibase.example/w/rest.php/wikibase" }
+	]
+}

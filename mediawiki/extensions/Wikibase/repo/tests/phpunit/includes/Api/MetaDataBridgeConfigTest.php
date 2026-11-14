@@ -5,6 +5,7 @@ namespace Wikibase\Repo\Tests\Api;
 use MediaWiki\Api\ApiMain;
 use MediaWiki\Api\ApiQuery;
 use MediaWiki\Context\RequestContext;
+use MediaWiki\MainConfigNames;
 use MediaWiki\Request\FauxRequest;
 use MediaWikiIntegrationTestCase;
 use Wikibase\Lib\SettingsArray;
@@ -22,12 +23,12 @@ use Wikibase\Repo\Api\MetaDataBridgeConfig;
 class MetaDataBridgeConfigTest extends MediaWikiIntegrationTestCase {
 
 	/** @var string[] */
-	private $titleCallbackCalls = [];
+	private array $titleCallbackCalls = [];
 
 	protected function setUp(): void {
 		parent::setUp();
 
-		$this->setMwGlobals( 'wgLanguageCode', 'qqx' );
+		$this->overrideConfigValue( MainConfigNames::LanguageCode, 'qqx' );
 	}
 
 	protected function tearDown(): void {

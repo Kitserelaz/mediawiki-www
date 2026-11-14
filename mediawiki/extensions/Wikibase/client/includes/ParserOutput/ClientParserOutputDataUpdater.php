@@ -7,6 +7,7 @@ namespace Wikibase\Client\ParserOutput;
 use InvalidArgumentException;
 use MediaWiki\Content\Content;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Title\Title;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -15,6 +16,8 @@ use Wikibase\Client\Usage\UsageAccumulatorFactory;
 use Wikibase\DataModel\Entity\Item;
 use Wikibase\DataModel\Entity\ItemId;
 use Wikibase\DataModel\Services\Lookup\EntityLookup;
+use Wikibase\DataModel\Services\Lookup\TermLookup;
+use Wikibase\DataModel\Services\Lookup\TermLookupException;
 use Wikibase\Lib\Store\SiteLinkLookup;
 
 /**
@@ -56,6 +59,12 @@ class ClientParserOutputDataUpdater {
 	 */
 	private $logger;
 
+	/** @var RevisionLookup */
+	private $revisionLookup;
+
+	/** @var TermLookup */
+	private $termLookup;
+
 	/**
 	 * @param OtherProjectsSidebarGeneratorFactory $otherProjectsSidebarGeneratorFactory
 	 *            Use the factory here to defer initialization of things like Site objects.
@@ -63,6 +72,8 @@ class ClientParserOutputDataUpdater {
 	 * @param EntityLookup $entityLookup
 	 * @param UsageAccumulatorFactory $usageAccumulatorFactory
 	 * @param string $siteId The global site ID for the local wiki
+	 * @param RevisionLookup $revisionLookup
+	 * @param TermLookup $termLookup
 	 * @param LoggerInterface|null $logger
 	 *
 	 * @throws InvalidArgumentException
@@ -73,6 +84,8 @@ class ClientParserOutputDataUpdater {
 		EntityLookup $entityLookup,
 		UsageAccumulatorFactory $usageAccumulatorFactory,
 		string $siteId,
+		RevisionLookup $revisionLookup,
+		TermLookup $termLookup,
 		?LoggerInterface $logger = null
 	) {
 		$this->otherProjectsSidebarGeneratorFactory = $otherProjectsSidebarGeneratorFactory;
@@ -80,7 +93,9 @@ class ClientParserOutputDataUpdater {
 		$this->siteLinkLookup = $siteLinkLookup;
 		$this->usageAccumulatorFactory = $usageAccumulatorFactory;
 		$this->siteId = $siteId;
-		$this->logger = $logger ?: new NullLogger();
+		$this->logger = $logger ?? new NullLogger();
+		$this->revisionLookup = $revisionLookup;
+		$this->termLookup = $termLookup;
 	}
 
 	/**
@@ -197,6 +212,40 @@ class ClientParserOutputDataUpdater {
 		foreach ( $siteLink->getBadges() as $badge ) {
 			$parserOutputProvider->getParserOutput()->setUnsortedPageProperty(
 				'wikibase-badge-' . $badge->getSerialization()
+			);
+		}
+	}
+
+	public function updateFirstRevisionTimestampProperty( Title $title, ParserOutputProvider $parserOutputProvider ): void {
+		if ( !$title->canExist() ) {
+			return;
+		}
+		$revisionRecord = $this->revisionLookup->getFirstRevision( $title );
+		$timestamp = $revisionRecord ? $revisionRecord->getTimestamp() : null;
+
+		$parserOutputProvider->getParserOutput()->setExtensionData(
+			'first_revision_timestamp', $timestamp
+		);
+	}
+
+	public function updateWikibaseItemDescriptionProperty(
+		Title $title,
+		ParserOutputProvider $parserOutputProvider,
+		string $langCode
+	): void {
+		$itemId = $this->getItemIdForTitle( $title );
+		if ( $itemId ) {
+			try {
+				/**
+				 * We do not need to add description usage tracking here,
+				 * because it is already tracked by {@link ImplicitDescriptionUsageLookup}
+				 */
+				$description = $this->termLookup->getDescription( $itemId, $langCode );
+			} catch ( TermLookupException ) {
+				$description = '';
+			}
+			$parserOutputProvider->getParserOutput()->setExtensionData(
+				'wikibase_item_description', $description
 			);
 		}
 	}

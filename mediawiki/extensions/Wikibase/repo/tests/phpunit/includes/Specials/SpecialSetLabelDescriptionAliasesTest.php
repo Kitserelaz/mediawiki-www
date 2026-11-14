@@ -2,15 +2,16 @@
 
 namespace Wikibase\Repo\Tests\Specials;
 
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Language\LanguageNameUtils;
+use MediaWiki\Permissions\PermissionStatus;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\Request\FauxResponse;
 use MediaWiki\Request\WebRequest;
 use MediaWiki\Session\Session;
 use MediaWiki\Status\Status;
+use MediaWiki\Tests\Specials\SpecialPageExecutor;
 use MediaWiki\Tests\User\TempUser\TempUserTestTrait;
 use MediaWiki\User\UserIdentity;
-use SpecialPageExecutor;
 use Wikibase\DataModel\Entity\Item;
 use Wikibase\DataModel\Entity\ItemId;
 use Wikibase\DataModel\Services\Diff\EntityDiffer;
@@ -29,7 +30,7 @@ use Wikibase\Repo\Store\EntityPermissionChecker;
 use Wikibase\Repo\Store\TermsCollisionDetectorFactory;
 use Wikibase\Repo\Validators\TermValidatorFactory;
 use Wikibase\Repo\Validators\UniquenessViolation;
-use Wikimedia\Stats\NullStatsdDataFactory;
+use Wikimedia\Stats\StatsFactory;
 use WMDE\HamcrestHtml\HtmlMatcher;
 
 /**
@@ -52,10 +53,9 @@ class SpecialSetLabelDescriptionAliasesTest extends SpecialWikibaseRepoPageTestB
 	private const TAGS = [ 'mw-replace' ];
 
 	/** @var string[] */
-	private static $languageCodes = [ 'en', 'de', 'de-ch', 'ii', 'mul', 'zh' ];
+	private static array $languageCodes = [ 'en', 'de', 'de-ch', 'ii', 'mul', 'zh' ];
 
-	/** @var string */
-	private $submitButtonMessage;
+	private string $submitButtonMessage;
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -84,7 +84,7 @@ class SpecialSetLabelDescriptionAliasesTest extends SpecialWikibaseRepoPageTestB
 				new EntityDiffer(),
 				new EntityPatcher(),
 				$this->getMockEditFitlerHookRunner(),
-				new NullStatsdDataFactory(),
+				StatsFactory::newNull(),
 				$this->getServiceContainer()->getUserOptionsLookup(),
 				$this->getServiceContainer()->getTempUserCreator(),
 				PHP_INT_MAX,
@@ -167,11 +167,11 @@ class SpecialSetLabelDescriptionAliasesTest extends SpecialWikibaseRepoPageTestB
 	 *
 	 * @return Fingerprint
 	 */
-	private function makeFingerprint(
+	private static function makeFingerprint(
 		array $labels = [],
 		array $descriptions = [],
 		array $aliases = []
-	) {
+	): Fingerprint {
 		$fingerprint = new Fingerprint();
 
 		foreach ( $labels as $lang => $text ) {
@@ -189,8 +189,8 @@ class SpecialSetLabelDescriptionAliasesTest extends SpecialWikibaseRepoPageTestB
 		return $fingerprint;
 	}
 
-	public function executeProvider() {
-		$fooFingerprint = $this->makeFingerprint(
+	public static function executeProvider(): iterable {
+		$fooFingerprint = self::makeFingerprint(
 			[ 'de' => 'foo' ]
 		);
 
@@ -202,7 +202,7 @@ class SpecialSetLabelDescriptionAliasesTest extends SpecialWikibaseRepoPageTestB
 					'label' => "FOO\xE2\x80\x82",
 					'aliases' => "\xE2\x80\x82",
 				], true ),
-				$this->makeFingerprint(
+				self::makeFingerprint(
 					[ 'de' => 'foo', 'en' => 'FOO' ]
 				),
 			],
@@ -210,7 +210,7 @@ class SpecialSetLabelDescriptionAliasesTest extends SpecialWikibaseRepoPageTestB
 			'replace label' => [
 				$fooFingerprint,
 				new FauxRequest( [ 'language' => 'de', 'label' => 'FOO' ], true ),
-				$this->makeFingerprint(
+				self::makeFingerprint(
 					[ 'de' => 'FOO' ]
 				),
 			],
@@ -218,7 +218,7 @@ class SpecialSetLabelDescriptionAliasesTest extends SpecialWikibaseRepoPageTestB
 			'add description, keep label' => [
 				$fooFingerprint,
 				new FauxRequest( [ 'language' => 'de', 'description' => 'Lorem Ipsum' ], true ),
-				$this->makeFingerprint(
+				self::makeFingerprint(
 					[ 'de' => 'foo' ],
 					[ 'de' => 'Lorem Ipsum' ]
 				),
@@ -230,7 +230,7 @@ class SpecialSetLabelDescriptionAliasesTest extends SpecialWikibaseRepoPageTestB
 					'language' => 'de',
 					'aliases' => "foo\xE2\x80\x82|bar",
 				], true ),
-				$this->makeFingerprint(
+				self::makeFingerprint(
 					[ 'de' => 'foo' ],
 					[],
 					[ 'de' => [ 'foo', 'bar' ] ]
@@ -387,7 +387,7 @@ class SpecialSetLabelDescriptionAliasesTest extends SpecialWikibaseRepoPageTestB
 	private function newSpecialPageWithForbiddingPermissionChecker() {
 		$copyrightView = new SpecialPageCopyrightView( new CopyrightMessageBuilder(), '', '' );
 
-		$error = Status::newFatal( 'permission error' );
+		$error = PermissionStatus::newFatal( 'permission error' );
 
 		$permissionChecker = $this->createMock( EntityPermissionChecker::class );
 		$permissionChecker->method( $this->anything() )
@@ -406,7 +406,7 @@ class SpecialSetLabelDescriptionAliasesTest extends SpecialWikibaseRepoPageTestB
 				new EntityDiffer(),
 				new EntityPatcher(),
 				$this->getMockEditFitlerHookRunner(),
-				new NullStatsdDataFactory(),
+				StatsFactory::newNull(),
 				$this->getServiceContainer()->getUserOptionsLookup(),
 				$this->getServiceContainer()->getTempUserCreator(),
 				PHP_INT_MAX,

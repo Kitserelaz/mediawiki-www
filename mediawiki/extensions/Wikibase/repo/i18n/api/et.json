@@ -41,7 +41,7 @@
 	"apihelp-wbformatvalue-param-generate": "Vorming, mida soovid väljundis kasutada.",
 	"apihelp-wbformatvalue-param-datatype": "Väärtuse andmetüüp. See on väärtuse tüübist eraldi.",
 	"apihelp-wbformatvalue-param-datavalue": "Vormindatavad andmed. See peab olema andmeväärtuse objekti JSON-vormingus jadastatud kuju.",
-	"apihelp-wbformatvalue-param-options": "Suvandid, mida vormindaja peaks kasutama. Esitatud JSON-objektina.",
+	"apihelp-wbformatvalue-param-options": "Suvandid, mida vormindaja peaks kasutama. Esitatud JSON-objektina.\n\nToetatud suvandid:\n; $1: Keel, milles tuleks väärtus vormindada (MediaWiki keelekood).\n; $2: Kas ümardada arv. Võib olla kahendmuutuja (automaatne / ümardamata) või täisarv (viimase tüvenumbri astendaja). Kasulik ainult suuruste väärtuste puhul.\n; $3: Kas lisada ühik väljundisse (kahendmuutuja). Kasulik ainult suuruste väärtuste puhul.\n; $4: Kas näidata kalendri mudelit. Võib olla kahendmuutuja (näidatakse alati / mitte kunagi) või sõne <code>\"auto\"</code> (määratakse automaatselt, kas näidata). Kasulik ainult ajaväärtuste puhul.",
 	"apihelp-wbformatvalue-param-property": "Omadus (identifikaator), millega andmeväärtus kokku käib, tuleks kasutada parameetri <var>datatype</var> asemel.",
 	"apihelp-wbformatvalue-example-1": "Vorminda lihtne sõneväärtus.",
 	"apihelp-wbformatvalue-example-2": "Esita sõneväärtus HTML-vormingus internetiaadressina",

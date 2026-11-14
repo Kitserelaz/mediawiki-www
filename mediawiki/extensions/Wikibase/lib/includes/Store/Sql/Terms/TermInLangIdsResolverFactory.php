@@ -6,8 +6,7 @@ namespace Wikibase\Lib\Store\Sql\Terms;
 
 use Psr\Log\LoggerInterface;
 use Wikibase\DataAccess\DatabaseEntitySource;
-use Wikibase\Lib\Rdbms\RepoDomainDbFactory;
-use Wikimedia\ObjectCache\WANObjectCache;
+use Wikibase\Lib\Rdbms\TermsDomainDbFactory;
 
 /**
  * @license GPL-2.0-or-later
@@ -15,7 +14,7 @@ use Wikimedia\ObjectCache\WANObjectCache;
 class TermInLangIdsResolverFactory {
 
 	/**
-	 * @var RepoDomainDbFactory
+	 * @var TermsDomainDbFactory
 	 */
 	private $dbFactory;
 
@@ -24,34 +23,17 @@ class TermInLangIdsResolverFactory {
 	 */
 	private $logger;
 
-	/**
-	 * @var WANObjectCache
-	 */
-	private $objectCache;
-
 	public function __construct(
-		RepoDomainDbFactory $dbFactory,
-		LoggerInterface $logger,
-		WANObjectCache $objectCache
+		TermsDomainDbFactory $dbFactory,
+		LoggerInterface $logger
 	) {
 		$this->logger = $logger;
-		$this->objectCache = $objectCache;
 		$this->dbFactory = $dbFactory;
 	}
 
 	public function getResolverForEntitySource( DatabaseEntitySource $entitySource ): DatabaseTermInLangIdsResolver {
 		$db = $this->dbFactory->newForEntitySource( $entitySource );
 
-		$databaseTypeIdsStore = new DatabaseTypeIdsStore(
-			$db,
-			$this->objectCache,
-			$this->logger
-		);
-		return new DatabaseTermInLangIdsResolver(
-			$databaseTypeIdsStore,
-			$databaseTypeIdsStore,
-			$db,
-			$this->logger
-		);
+		return new DatabaseTermInLangIdsResolver( $db, $this->logger );
 	}
 }

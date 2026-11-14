@@ -3,6 +3,8 @@
 namespace Wikibase\Lexeme\Tests\MediaWiki;
 
 use HamcrestPHPUnitIntegration;
+use MediaWiki\Parser\ParserOutput;
+use MediaWiki\Parser\ParserOutputLinkTypes;
 use Wikibase\DataModel\Entity\EntityDocument;
 use Wikibase\Repo\WikibaseRepo;
 
@@ -12,11 +14,6 @@ use Wikibase\Repo\WikibaseRepo;
 abstract class WikibaseLexemeIntegrationTestCase extends \MediaWikiLangTestCase {
 
 	use HamcrestPHPUnitIntegration;
-
-	protected function tearDown(): void {
-		$this->resetServices();
-		parent::tearDown();
-	}
 
 	protected function getEntityStore() {
 		return WikibaseRepo::getEntityStore();
@@ -30,4 +27,10 @@ abstract class WikibaseLexemeIntegrationTestCase extends \MediaWikiLangTestCase 
 		);
 	}
 
+	protected function assertLinksContain( ParserOutput $parserOutput, int $ns, string $dbkey, $message = '' ) {
+		$this->assertTrue( array_any(
+			$parserOutput->getLinkList( ParserOutputLinkTypes::LOCAL, $ns ),
+			static fn ( $item ) => $item['link']->getDBkey() === $dbkey
+		), $message );
+	}
 }

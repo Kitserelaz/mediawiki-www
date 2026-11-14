@@ -16,15 +16,6 @@ module.exports = {
 	module: {
 		rules: [
 			{
-				test: /openapi\.json$/,
-				use: [
-					{
-						// eslint-disable-next-line no-undef
-						loader: path.resolve( __dirname, 'loaders', 'openapi-loader.js' )
-					}
-				]
-			},
-			{
 				test: /\.css$/,
 				use: [
 					{ loader: 'style-loader' },
@@ -58,6 +49,6 @@ module.exports = {
 			directory: __dirname,
 		},
 		compress: true,
-		port: 9000,
+		port: 7000,
 	},
 };

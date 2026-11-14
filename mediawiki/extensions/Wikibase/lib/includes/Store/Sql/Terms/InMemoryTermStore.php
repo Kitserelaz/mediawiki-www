@@ -50,12 +50,12 @@ class InMemoryTermStore implements TermInLangIdsAcquirer, TermInLangIdsResolver,
 		$terms = [];
 
 		foreach ( $this->terms as $type => $termsOfType ) {
-			if ( $types && !in_array( $type, $types ) ) {
+			if ( $types !== null && !in_array( $type, $types ) ) {
 				continue;
 			}
 
 			foreach ( $termsOfType as $lang => $termsOfLang ) {
-				if ( $languages && !in_array( $lang, $languages ) ) {
+				if ( $languages !== null && !in_array( $lang, $languages ) ) {
 					continue;
 				}
 

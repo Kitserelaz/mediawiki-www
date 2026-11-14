@@ -4,10 +4,11 @@ declare( strict_types = 1 );
 
 namespace Wikibase\Repo\Actions;
 
-use Article;
 use LogicException;
 use MediaWiki\Context\DerivativeContext;
 use MediaWiki\Context\IContextSource;
+use MediaWiki\Language\FormatterFactory;
+use MediaWiki\Page\Article;
 use MediaWiki\Page\WikiPageFactory;
 use MediaWiki\Permissions\PermissionManager;
 use MediaWiki\Revision\RevisionLookup;
@@ -44,6 +45,7 @@ class SubmitEntityAction extends EditEntityAction {
 	public const SPEC = [
 		'class' => self::class,
 		'services' => [
+			'FormatterFactory',
 			'PermissionManager',
 			'RevisionLookup',
 			'TempUserCreator',
@@ -57,41 +59,31 @@ class SubmitEntityAction extends EditEntityAction {
 		],
 	];
 
-	private TempUserCreator $tempUserCreator;
-	private UserOptionsLookup $userOptionsLookup;
-	private WatchlistManager $watchlistManager;
-	private WikiPageFactory $wikiPageFactory;
-	private EditFilterHookRunner $editFilterHookRunner;
-
 	public function __construct(
 		Article $article,
 		IContextSource $context,
+		FormatterFactory $formatterFactory,
 		PermissionManager $permissionManager,
 		RevisionLookup $revisionLookup,
-		TempUserCreator $tempUserCreator,
-		UserOptionsLookup $userOptionsLookup,
-		WatchlistManager $watchlistManager,
-		WikiPageFactory $wikiPageFactory,
+		private readonly TempUserCreator $tempUserCreator,
+		private readonly UserOptionsLookup $userOptionsLookup,
+		private readonly WatchlistManager $watchlistManager,
+		private readonly WikiPageFactory $wikiPageFactory,
 		AnonymousEditWarningBuilder $anonymousEditWarningBuilder,
-		EditFilterHookRunner $editFilterHookRunner,
+		private readonly EditFilterHookRunner $editFilterHookRunner,
 		EntityDiffVisualizerFactory $entityDiffVisualizerFactory,
 		SummaryFormatter $summaryFormatter
 	) {
 		parent::__construct(
 			$article,
 			$context,
+			$formatterFactory,
 			$permissionManager,
 			$revisionLookup,
 			$anonymousEditWarningBuilder,
 			$entityDiffVisualizerFactory,
 			$summaryFormatter
 		);
-
-		$this->tempUserCreator = $tempUserCreator;
-		$this->userOptionsLookup = $userOptionsLookup;
-		$this->watchlistManager = $watchlistManager;
-		$this->wikiPageFactory = $wikiPageFactory;
-		$this->editFilterHookRunner = $editFilterHookRunner;
 	}
 
 	public function getName(): string {
@@ -203,24 +195,16 @@ class SubmitEntityAction extends EditEntityAction {
 	}
 
 	/**
-	 * @return Status containing EntityContent
+	 * @return Status<EntityContent>
 	 */
 	private function getPatchContent(
 		RevisionRecord $olderRevision,
 		RevisionRecord $newerRevision,
 		RevisionRecord $latestRevision
 	): Status {
-		/**
-		 * @var EntityContent $olderContent
-		 * @var EntityContent $newerContent
-		 * @var EntityContent $latestContent
-		 */
-		$olderContent = $olderRevision->getContent( SlotRecord::MAIN );
-		$newerContent = $newerRevision->getContent( SlotRecord::MAIN );
-		$latestContent = $latestRevision->getContent( SlotRecord::MAIN );
-		'@phan-var EntityContent $olderContent';
-		'@phan-var EntityContent $newerContent';
-		'@phan-var EntityContent $latestContent';
+		$olderContent = $this->getEntityContent( $olderRevision );
+		$newerContent = $this->getEntityContent( $newerRevision );
+		$latestContent = $this->getEntityContent( $latestRevision );
 
 		if ( $newerContent->isRedirect() !== $latestContent->isRedirect() ) {
 			return Status::newFatal( $latestContent->isRedirect()
@@ -246,7 +230,7 @@ class SubmitEntityAction extends EditEntityAction {
 	): SubmitEntityStatus {
 		$status = $this->getEditTokenStatus( $editToken );
 		if ( !$status->isOK() ) {
-			return SubmitEntityStatus::wrap( $status );
+			return SubmitEntityStatus::cast( $status );
 		}
 
 		$status = $this->getTempUserStatus();
@@ -306,7 +290,7 @@ class SubmitEntityAction extends EditEntityAction {
 		if ( $this->tempUserCreator->shouldAutoCreate( $this->getUser(), 'edit' ) ) {
 			$status = $this->tempUserCreator->create( null, $this->getRequest() );
 			if ( !$status->isOK() ) {
-				return SubmitEntityStatus::wrap( $status );
+				return SubmitEntityStatus::cast( $status );
 			}
 			$user = $status->getUser();
 			$context = new DerivativeContext( $this->getContext() );

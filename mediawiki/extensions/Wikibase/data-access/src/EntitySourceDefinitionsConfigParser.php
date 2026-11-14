@@ -15,6 +15,9 @@ use Wikimedia\Assert\Assert;
  */
 class EntitySourceDefinitionsConfigParser {
 
+	public function __construct( private string $mediawikiCurrentWikiId ) {
+	}
+
 	/**
 	 * @param array[] $sourceConfig
 	 * @param SubEntityTypesMapper $subEntityTypesMapper
@@ -37,9 +40,14 @@ class EntitySourceDefinitionsConfigParser {
 					];
 
 				}
+				$repoDatabase = $sourceData['repoDatabase'];
+				if ( $repoDatabase === $this->mediawikiCurrentWikiId ) {
+					$repoDatabase = false;
+				}
+
 				$sources[] = new DatabaseEntitySource(
 					$sourceName,
-					$sourceData['repoDatabase'],
+					$repoDatabase,
 					$namespaceSlotData,
 					$sourceData['baseUri'],
 					$sourceData['rdfNodeNamespacePrefix'],
@@ -96,7 +104,7 @@ class EntitySourceDefinitionsConfigParser {
 		}
 	}
 
-	private function validateDatabaseSourceConfigFields( $sourceData, $sourceName ) {
+	private function validateDatabaseSourceConfigFields( array $sourceData, string $sourceName ) {
 		if ( !is_string( $sourceData['repoDatabase'] ) && $sourceData['repoDatabase'] !== false ) {
 			throw new InvalidArgumentException(
 				'Symbolic database name of entity source "' . $sourceName . '" should be a string or false.'
@@ -126,6 +134,10 @@ class EntitySourceDefinitionsConfigParser {
 		}
 	}
 
+	/**
+	 * @param int|string $namespaceAndSlot
+	 * @return array{0:int,1:string}
+	 */
 	private static function splitNamespaceAndSlot( $namespaceAndSlot ) {
 		if ( is_int( $namespaceAndSlot ) ) {
 			return [ $namespaceAndSlot, SlotRecord::MAIN ];

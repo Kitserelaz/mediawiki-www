@@ -97,29 +97,44 @@ function renderPipeline() {
 }
 function render() {
   if (!report) return;
-  const privateView = view === 'config' || view === 'working_tree';
+  const localView = view === 'config' || view === 'working_tree';
   const data = report[view];
   document.querySelectorAll('[role=tab]').forEach(t => { const active = t.dataset.view === view; t.setAttribute('aria-selected', active); t.tabIndex = active ? 0 : -1; });
   $('changes').setAttribute('aria-labelledby', `tab-${view}`);
   $('view-title').textContent = { pending: 'From production to main', released: 'What the last release shipped', config: 'Changes to local configuration', working_tree: 'Uncommitted production edits' }[view];
-  $('view-caption').textContent = view === 'working_tree' ? 'Saved live edits are already affecting production. Commit or revert these files before deploying. Contents remain private.' : view === 'config' ? 'Compared with the baseline accepted by the deployment guard. File names only.' : view === 'pending' ? 'These changes are in the repository. They have not shipped to production yet.' : report.previous_commit ? 'Compared with the previous successful production release.' : 'No earlier production release is available for comparison.';
-  $('compare').hidden = privateView || (view === 'released' && !report.previous_commit);
+  $('view-caption').textContent = view === 'working_tree' ? 'Saved live edits are already affecting production. Diffs compare tracked files with the live checkout’s base commit.' : view === 'config' ? 'Drift is measured against the accepted configuration. Inline diffs compare tracked files with the live checkout’s base commit.' : view === 'pending' ? 'These changes are in the repository. They have not shipped to production yet.' : report.previous_commit ? 'Compared with the previous successful production release.' : 'No earlier production release is available for comparison.';
+  $('compare').hidden = localView || (view === 'released' && !report.previous_commit);
   $('compare').href = `${repo}/compare/${view === 'pending' ? report.deployed_commit + '...main' : report.previous_commit + '...' + report.deployed_commit}`;
   $('commits').replaceChildren();
   for (const c of data?.commits || []) {
     const row = element('div', undefined, 'commit'); row.append(link(short(c.sha), `${repo}/commit/${c.sha}`), element('span', c.message.split('\n')[0])); $('commits').append(row);
   }
   const files = data?.files || [], query = $('search').value.toLowerCase();
+  const expanded = new Set([...$('changes').querySelectorAll('details[open]')].map(row => row.dataset.file));
   $('file-count').textContent = `${files.length} CHANGED FILE${files.length === 1 ? '' : 'S'}`;
   $('changes').replaceChildren();
   for (const f of files.filter(f => f.filename.toLowerCase().includes(query))) {
     const row = element('details'), summary = element('summary');
+    row.dataset.file = `${view}/${f.filename}`;
+    row.open = expanded.has(row.dataset.file);
     summary.append(element('span', f.filename, 'filename'), element('span', f.status, 'status'));
-    if (!privateView) { const stats = element('span', undefined, 'stats'); stats.append(element('span', `+${f.additions}`, 'add'), element('span', `−${f.deletions}`, 'del')); summary.append(stats); }
+    if (Number.isInteger(f.additions) && Number.isInteger(f.deletions)) {
+      const stats = element('span', undefined, 'stats');
+      stats.append(element('span', `+${f.additions}`, 'add'), element('span', `−${f.deletions}`, 'del'));
+      summary.append(stats);
+    }
     row.append(summary);
-    if (privateView) row.append(element('pre', 'Contents are private. Review this file directly in the editor or on the server.'));
-    else if (f.patch) { const pre = element('pre'); for (const line of f.patch.split('\n')) pre.append(element('span', line, line.startsWith('@@') ? 'diff-hunk' : line.startsWith('+') ? 'diff-add' : line.startsWith('-') ? 'diff-del' : '')); row.append(pre); }
-    else row.append(element('pre', 'No inline patch available. View the full comparison on GitHub.'));
+    if (f.previous_filename) row.append(element('pre', `Previous path: ${f.previous_filename}`));
+    if (f.patch) {
+      const pre = element('pre');
+      for (const line of f.patch.split('\n')) {
+        const style = line.startsWith('@@') ? 'diff-hunk' : line.startsWith('+') ? 'diff-add' : line.startsWith('-') ? 'diff-del' : '';
+        pre.append(element('span', line, style));
+      }
+      row.append(pre);
+    } else {
+      row.append(element('pre', f.patch_note || (localView ? 'No inline text diff available.' : 'No inline patch available. View the full comparison on GitHub.')));
+    }
     $('changes').append(row);
   }
   if (!$('changes').childElementCount) $('changes').append(element('div', query ? 'No files match this filter.' : view === 'working_tree' ? 'No uncommitted production edits.' : view === 'config' ? (report.config.status === 'clean' ? 'Local configuration matches the accepted baseline.' : 'Configuration status is unavailable.') : !data ? (view === 'released' && !report.previous_commit ? 'No previous production release yet.' : 'Source comparison is temporarily unavailable.') : 'No file changes in this comparison.', 'empty'));
@@ -144,7 +159,7 @@ async function refresh() {
     $('refresh').textContent = `Report · ${stamp(report.generated_at)}`;
     const stale = Date.now() / 1000 - report.generated_at > 180;
     $('notice').hidden = !report.source_stale && !stale && !dirty;
-    $('notice').textContent = dirty ? 'Uncommitted production edits detected. Automatic deployments are blocked until they are committed or reverted. See Live edits for filenames.' : stale ? 'This report is older than expected. The last available data is shown below.' : 'GitHub is temporarily unavailable. The last available source comparison is shown below.';
+    $('notice').textContent = dirty ? 'Uncommitted production edits detected. Automatic deployments are blocked until they are committed or reverted. See Live edits for details.' : stale ? 'This report is older than expected. The last available data is shown below.' : 'GitHub is temporarily unavailable. The last available source comparison is shown below.';
     $('source-time').textContent = report.source_updated_at ? `Source checked ${stamp(report.source_updated_at)} · config refreshes every minute` : 'Waiting for source information';
     renderPipeline();
     render();

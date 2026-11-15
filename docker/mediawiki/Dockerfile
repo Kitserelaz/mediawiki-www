@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libfreetype6-dev libgmp-dev libldap2-dev libmemcached-dev zlib1g-dev libssl-dev \
     imagemagick ffmpeg lua5.1 zip unzip diffutils fonts-freefont-ttf \
     librsvg2-bin ghostscript graphviz ploticus curl ca-certificates mariadb-client tini \
+    kakasi \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j"$(nproc)" intl mbstring mysqli pdo_mysql gd zip gmp bcmath ldap exif calendar pcntl sockets opcache \
     && pecl install redis-6.2.0 memcached-3.3.0 \

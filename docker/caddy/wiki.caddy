@@ -1,3 +1,12 @@
+(wiki_php_client_ip) {
+    env REMOTE_ADDR {client_ip}
+    header_up X-Forwarded-For {client_ip}
+    header_up -CF-Connecting-IP
+    header_up -CF-Connecting-IPv6
+    header_up -X-Real-IP
+    header_up -Forwarded
+}
+
 (wiki) {
     root * /var/www/mediawiki
     encode zstd gzip
@@ -22,6 +31,7 @@
             handle @authArticle {
                 rewrite * /index.php?title={re.authArticle.1}&{query}
                 php_fastcgi php:9000 {
+                    import wiki_php_client_ip
                     env HTTPS on
                     env HTTP_X_FORWARDED_PROTO https
                     env REQUEST_URI {http.request.orig_uri}
@@ -31,6 +41,7 @@
             handle @authEntry {
                 rewrite * /{re.authEntry.1}.php{re.authEntry.2}
                 php_fastcgi php:9000 {
+                    import wiki_php_client_ip
                     env HTTPS on
                     env HTTP_X_FORWARDED_PROTO https
                     env REQUEST_URI {http.request.orig_uri}
@@ -45,11 +56,12 @@
         @entry path_regexp entry ^/(index|api|load|rest|img_auth|thumb|thumb_handler|opensearch_desc)\.php(/.*)?$
         handle @entry {
             php_fastcgi php:9000 {
+                import wiki_php_client_ip
                 env CLOUDWIKI_CUSTOM_WIKI {http.vars.cloudwiki_custom_wiki}
                 env CLOUDWIKI_CUSTOM_HOST {http.vars.cloudwiki_custom_host}
                 env HTTPS on
                 env HTTP_X_FORWARDED_PROTO https
-                    env REQUEST_URI {http.request.orig_uri}
+                env REQUEST_URI {http.request.orig_uri}
             }
         }
         @php path_regexp php (?i)\.php(/|$)
@@ -58,11 +70,12 @@
         handle @upload {
             rewrite * /img_auth.php/{re.upload.1}
             php_fastcgi php:9000 {
+                import wiki_php_client_ip
                 env CLOUDWIKI_CUSTOM_WIKI {http.vars.cloudwiki_custom_wiki}
                 env CLOUDWIKI_CUSTOM_HOST {http.vars.cloudwiki_custom_host}
                 env HTTPS on
                 env HTTP_X_FORWARDED_PROTO https
-                    env REQUEST_URI {http.request.orig_uri}
+                env REQUEST_URI {http.request.orig_uri}
             }
         }
         respond 404

@@ -107,7 +107,8 @@ final class CustomDomainManager {
 		}
 		$error = $this->store->claim( $wiki, $token );
 		if ( $error ) {
-			$this->store->fail( $wiki, $token, $error, false );
+			$retry = $error === 'quota-busy';
+			$this->store->fail( $wiki, $token, $error, $retry, $retry || $error === 'quota-full' );
 			return;
 		}
 		try {

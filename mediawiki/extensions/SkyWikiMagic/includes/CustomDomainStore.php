@@ -7,6 +7,7 @@ use stdClass;
 use Wikimedia\Rdbms\IDatabase;
 
 final class CustomDomainStore {
+	private const FARM_LIMIT = 25;
 	private const STATE = 'cw_custom_domain_state';
 	private const CLAIMS = 'cw_custom_domain_claims';
 	private const CLOUDFLARE = 'cw_custom_domain_cloudflare';
@@ -87,20 +88,41 @@ final class CustomDomainStore {
 	}
 
 	public function claim( string $wiki, string $token ): ?string {
+		// Serialize new claims across wikis and clear any snapshot taken before acquiring the lock.
+		$lockKey = '{' . $this->db->getDomainID() . '}:cloudwiki-custom-domain-capacity';
+		$quotaLock = $this->db->getScopedLockAndFlush( $lockKey, __METHOD__, 5 );
+		if ( !$quotaLock ) {
+			return 'quota-busy';
+		}
 		return $this->atomic( __METHOD__, function () use ( $wiki, $token ) {
 			[ $row, $state ] = $this->lockCandidate( $wiki, $token );
 			if ( !$row || !$state || $state->cd_expires <= time() ) {
 				return 'expired';
 			}
 			$host = $state->cd_candidate;
+			$claimedHosts = $this->db->newSelectQueryBuilder()->select( 'cdc_host' )->from( self::CLAIMS )
+				->caller( __METHOD__ )->fetchFieldValues();
+			$usedHosts = array_fill_keys( $claimedHosts, true );
 			// Include domains assigned before the hostname registry existed, including deleted wikis.
-			$urls = $this->db->newSelectQueryBuilder()->select( 'wiki_url' )->from( 'cw_wikis' )
-				->where( $this->db->expr( 'wiki_url', '!=', null ) )->caller( __METHOD__ )->fetchFieldValues();
-			foreach ( $urls as $url ) {
-				$current = parse_url( str_starts_with( $url, '//' ) ? "https:$url" : $url, PHP_URL_HOST );
-				if ( $current && CustomDomainConfig::hostname( $current ) === $host ) {
+			$wikis = $this->db->newSelectQueryBuilder()->select( [ 'wiki_dbname', 'wiki_url' ] )->from( 'cw_wikis' )
+				->where( $this->db->expr( 'wiki_url', '!=', null ) )->caller( __METHOD__ )->fetchResultSet();
+			foreach ( $wikis as $entry ) {
+				$current = parse_url( $entry->wiki_url, PHP_URL_HOST );
+				$current = $current ? CustomDomainConfig::hostname( $current ) : null;
+				if ( $current === $host ) {
 					return 'taken';
 				}
+				if ( $current !== null && !isset( $usedHosts[$current] ) ) {
+					$builtin = CustomDomainConfig::slug( $entry->wiki_dbname ) . '.' .
+						\MirahezeFunctions::getPrimaryDomain( $entry->wiki_dbname );
+					if ( $current !== $builtin ) {
+						$usedHosts[$current] = true;
+					}
+				}
+			}
+			// An existing reservation can continue verification even when the farm is full.
+			if ( !isset( $usedHosts[$host] ) && count( $usedHosts ) >= self::FARM_LIMIT ) {
+				return 'quota-full';
 			}
 			$this->db->newInsertQueryBuilder()->insertInto( self::CLAIMS )
 				->row( [ 'cdc_host' => $host, 'cdc_wiki' => $wiki, 'cdc_active' => 0 ] )

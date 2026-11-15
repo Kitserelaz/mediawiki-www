@@ -174,6 +174,8 @@
 	"customdomains-use-page": "Use Special:CustomDomains to manage this wiki’s custom address.",
 	"customdomains-expired": "This verification has expired. Start a new setup to get a fresh DNS token.",
 	"customdomains-taken": "This hostname is already assigned to a wiki.",
+	"customdomains-quota-full": "The farm has reached its custom domain limit. Try verification again after a domain is removed or a pending reservation expires.",
+	"customdomains-quota-busy": "Another custom domain is being reserved. CloudWiki will try again.",
 	"customdomains-dns-ownership": "The TXT token is missing or has not propagated yet. CloudWiki will check again.",
 	"customdomains-dns-routing": "The hostname does not resolve to the CloudWiki ingress yet. Check your DNS records. CloudWiki will check again.",
 	"customdomains-cloudflare-config": "Cloudflare provisioning is unavailable. Contact a farm steward.",

@@ -131,6 +131,7 @@
 	"apihelp-skywikisubdomain-summary": "Suggest an available wiki subdomain or check a chosen subdomain.",
 	"apihelp-skywikisubdomain-param-name": "Wiki name to use for an automatic suggestion.",
 	"apihelp-skywikisubdomain-param-subdomain": "An exact subdomain to check instead of generating a suggestion.",
+	"apihelp-skywikisubdomain-param-lang": "Language selected for the new wiki; Japanese enables romaji transliteration of kanji for suggestions.",
 	"createnewwiki-creation-reason": "Created through Special:CreateNewWiki.",
 	"createnewwikilegacy": "Create a wiki (legacy)",
 	"createnewwiki-description": "Welcome! We're glad to have you here - you can start your very own wiki with this form. Please note that the subdomain can only contain alphanumeric characters.",

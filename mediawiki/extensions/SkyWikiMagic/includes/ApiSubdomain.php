@@ -42,7 +42,9 @@ class ApiSubdomain extends ApiBase {
 			];
 		} else {
 			$name = trim( $params['name'] );
-			$subdomain = $name !== '' ? ( new SubdomainSuggester( $this->validator ) )->suggest( $name ) : null;
+			$lang = trim( $params['lang'] );
+			$suggester = new SubdomainSuggester( $this->validator );
+			$subdomain = $name !== '' ? $suggester->suggest( $name, $lang !== '' ? $lang : null ) : null;
 			$result = [
 				'subdomain' => $subdomain ?? '',
 				'available' => $subdomain !== null,
@@ -63,6 +65,11 @@ class ApiSubdomain extends ApiBase {
 				ParamValidator::PARAM_TYPE => 'string',
 				ParamValidator::PARAM_DEFAULT => '',
 				StringDef::PARAM_MAX_BYTES => 255,
+			],
+			'lang' => [
+				ParamValidator::PARAM_TYPE => 'string',
+				ParamValidator::PARAM_DEFAULT => '',
+				StringDef::PARAM_MAX_BYTES => 32,
 			],
 		];
 	}

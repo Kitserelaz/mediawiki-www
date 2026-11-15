@@ -105,6 +105,7 @@
   "apihelp-skywikisubdomain-summary": "使用可能なウィキのサブドメインを提案するか、指定したサブドメインが使用可能か確認します。",
   "apihelp-skywikisubdomain-param-name": "サブドメインの自動提案に使用するウィキ名。",
   "apihelp-skywikisubdomain-param-subdomain": "自動提案を生成せず、使用可能か確認するサブドメイン。",
+  "apihelp-skywikisubdomain-param-lang": "新しいウィキに選択した言語。日本語の場合、提案の際に漢字のローマ字変換が有効になります。",
   "createnewwiki-creation-reason": "Special:CreateNewWiki から作成されました。",
   "createnewwikilegacy": "ウィキを作成（旧方式）",
   "createnewwiki-description": "ようこそ！このフォームから、あなただけのウィキを作成できます。なお、サブドメインには半角英数字のみ使用できます。",

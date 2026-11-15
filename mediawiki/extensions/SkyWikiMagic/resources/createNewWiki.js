@@ -34,6 +34,8 @@
 		subdomain.setAttribute( 'aria-describedby',
 			[ subdomain.getAttribute( 'aria-describedby' ), status.id ].filter( Boolean ).join( ' ' ) );
 
+		const language = document.querySelector( 'select[name="wplanguage"]' );
+
 		const api = new mw.Api();
 		let automatic = autoField.value === '1' || !subdomain.value.trim();
 		autoField.value = automatic ? '1' : '0';
@@ -43,6 +45,16 @@
 			suggest: { generation: 0 },
 			check: { generation: 0 }
 		};
+
+		// Re-suggest when the language changes so the subdomain follows,
+		// e.g. selecting Japanese romanizes kanji with kakasi.
+		if ( language ) {
+			language.addEventListener( 'change', () => {
+				if ( automatic && name.value.trim() ) {
+					schedule( true );
+				}
+			} );
+		}
 
 		function cancel( channel ) {
 			channel.generation++;
@@ -82,7 +94,7 @@
 				channel.request = api.get( Object.assign( {
 					action: 'skywikisubdomain',
 					formatversion: 2
-				}, suggest ? { name: value } : { subdomain: value } ) );
+				}, suggest ? { name: value, lang: language.value } : { subdomain: value } ) );
 				channel.request.then( ( response ) => {
 					if ( current !== channel.generation ) {
 						return;

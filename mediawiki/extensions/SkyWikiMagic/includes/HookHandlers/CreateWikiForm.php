@@ -24,7 +24,6 @@ class CreateWikiForm implements ParserFirstCallInitHook {
 		}
 
 		$parser->getOutput()->addModuleStyles( [ 'ext.skywiki.createWikiForm.styles' ] );
-		$language = $parser->getTargetLanguage();
 		$title = SpecialPage::getTitleFor( 'CreateNewWiki' );
 
 		return Html::rawElement( 'form', [
@@ -37,11 +36,13 @@ class CreateWikiForm implements ParserFirstCallInitHook {
 				Html::input( 'sitename', '', 'text', [
 					'required' => true,
 					'maxlength' => SpecialCreateNewWiki::MAX_SITENAME_LENGTH,
-					'placeholder' => wfMessage( 'createnewwiki-inline-example' )->inLanguage( $language )->text(),
+					'placeholder' => wfMessage( 'createnewwiki-inline-example' )
+					->inLanguage( $parser->getOptions()->getUserLang() )->text(),
 				] )
 			) .
 			Html::element( 'button', [ 'type' => 'submit' ],
-				wfMessage( 'createnewwiki-continue' )->inLanguage( $language )->text()
+				wfMessage( 'createnewwiki-continue' )
+					->inLanguage( $parser->getOptions()->getUserLang() )->text()
 			)
 		);
 	}

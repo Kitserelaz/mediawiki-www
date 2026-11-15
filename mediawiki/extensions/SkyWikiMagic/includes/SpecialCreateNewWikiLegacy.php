@@ -81,7 +81,7 @@ class SpecialCreateNewWikiLegacy extends FormSpecialPage {
 				'section' => 'language',
 				'type' => 'language',
 				'label-message' => 'createwiki-label-language',
-				'default' => 'en',
+				'default' => $this->getLanguage()->getCode(),
 			],
 		];
 

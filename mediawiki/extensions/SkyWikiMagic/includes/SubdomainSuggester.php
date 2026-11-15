@@ -35,12 +35,14 @@ class SubdomainSuggester {
 	}
 
 	/**
-	 * Convert a wiki name to Latin characters. Japanese titles get proper
-	 * readings via kakasi (e.g. 薬屋のひとりごと -> kusuriyanohitorigoto);
-	 * ICU alone would transliterate kanji as Chinese pinyin instead.
+	 * Convert a wiki name to Latin characters. Titles containing kana are
+	 * Japanese and get proper readings via kakasi (e.g. 薬屋のひとりごと ->
+	 * kusuriyanohitorigoto); ICU alone would transliterate kanji as Chinese
+	 * pinyin instead. Kanji-only titles stay on the ICU path, which keeps
+	 * Chinese-language names (which lack kana) transliterating correctly.
 	 */
 	private function romanize( string $sitename ): ?string {
-		if ( !preg_match( '/[\p{Han}\p{Hiragana}\p{Katakana}]/u', $sitename ) ) {
+		if ( !preg_match( '/[\p{Hiragana}\p{Katakana}]/u', $sitename ) ) {
 			return transliterator_transliterate( 'Any-Latin; Latin-ASCII; Lower()', $sitename );
 		}
 
